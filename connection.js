@@ -48,6 +48,7 @@ function Connection(client) {
     this.current_data = '';
     this.current_line = null;
     this.state = 'cmd'; // command or data
+    this.early_talker_delay = config.get('early_talker_delay', 'value') || 1000;
     
     setupClient(this);
 }
@@ -60,8 +61,8 @@ exports.createConnection = function(client) {
 }
 
 Connection.prototype.process_line = function (line) {
-    logger.logdebug("C: " + line);
     if (this.state === 'cmd') {
+        this.state = 'pause';
         this.current_line = line.replace(/\r?\n$/, '');
         var matches = /^([^ ]*)( +(.*))?$/.exec(this.current_line);
         var method = "cmd_" + matches[1].toLowerCase();
@@ -93,10 +94,20 @@ Connection.prototype.process_data = function (data) {
     }
     
     this.current_data += data;
-    
+    this._process_data();
+};
+
+Connection.prototype._process_data = function() {
     var results;
     while (results = line_regexp.exec(this.current_data)) {
         var this_line = results[1];
+        if (this.state === 'pause') {
+            this.early_talker = 1;
+            var self = this;
+            // If you talk early, we're going to give you a delay
+            setTimeout(function() { self._process_data() }, this.early_talker_delay);
+            break;
+        }
         this.current_data = this.current_data.slice(this_line.length);
         this.process_line(this_line);
     }
@@ -141,6 +152,8 @@ Connection.prototype.respond = function(code, messages) {
     catch (err) {
         logger.logerror(err);
     }
+    
+    this.state = 'cmd';
 };
 
 Connection.prototype.disconnect = function() {
