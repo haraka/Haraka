@@ -480,6 +480,7 @@ Connection.prototype.accumulate_data = function(line) {
 };
 
 Connection.prototype.data_done = function() {
+    this.state = 'cmd';
     plugins.run_hooks('data_post', this);
 };
 
