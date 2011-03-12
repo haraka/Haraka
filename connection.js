@@ -28,6 +28,12 @@ function setupClient(self) {
         self.client.on('data', function (data) {
             self.process_data(data);
         });
+        self.client.on('error', function (err) {
+            if (!self.disconnected) {
+                logger.log("client closed with err: " + err);
+                self.disconnect();
+            }
+        });
         self.client.resume();
         self.transaction = trans.createTransaction();
         // TODO - check for early talkers before this
@@ -133,7 +139,10 @@ Connection.prototype.disconnect = function() {
 
 Connection.prototype.disconnect_respond = function () {
     this.disconnected = 1;
-    this.client.end();
+    logger.log("closing client: " + this.client.fd);
+    if (this.client.fd) {
+        this.client.end();
+    }
 };
 
 Connection.prototype.get_capabilities = function() {

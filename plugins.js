@@ -102,7 +102,6 @@ plugins.run_hooks = function (hook, connection, params) {
                 var hook_code_name = plugin.hooks[hook][j];
                 logger.log("adding " + hook_code_name + " to run list");
                 connection.hooks_to_run.push([plugin, hook_code_name]);
-                // plugin.the_plugin[ hook_code_name ](callback, params);
             }
         }
     }
