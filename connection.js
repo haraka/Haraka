@@ -98,6 +98,9 @@ Connection.prototype.process_data = function (data) {
 };
 
 Connection.prototype._process_data = function() {
+    if (this.disconnected) {
+        return;
+    }
     var results;
     while (results = line_regexp.exec(this.current_data)) {
         var this_line = results[1];
@@ -466,7 +469,7 @@ Connection.prototype.data_respond = function(retval, msg) {
                 this.respond(554, msg || "Message denied");
                 this.reset_transaction();
                 break;
-        case constants.deny_disconnect:
+        case constants.denydisconnect:
                 this.respond(554, msg || "Message denied");
                 this.disconnect();
                 break;
