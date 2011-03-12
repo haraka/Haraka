@@ -52,6 +52,9 @@ cfreader.load_config = function(name, type) {
     }
     else {
         result = cfreader.load_flat_config(name);
+        if (result && type === 'value') {
+            result = result[0];
+        }
     }
     
     cfreader._config_cache[name] = result;
