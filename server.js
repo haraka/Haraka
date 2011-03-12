@@ -40,7 +40,7 @@ Server.createServer = function (params) {
     });
     server.listen(config_data.main.port, config_data.main.listen_host,
         function () {
-            logger.log("Listening on port " + config_data.main.port);
+            logger.lognotice("Listening on port " + config_data.main.port);
         }
     );
 };

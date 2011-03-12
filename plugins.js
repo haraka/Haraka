@@ -64,20 +64,30 @@ Plugin.prototype.register_hook = function(hook_name, method_name) {
     this.hooks[hook_name] = this.hooks[hook_name] || [];
     this.hooks[hook_name].push(method_name);
     
-    logger.log("registered hook " + hook_name + " to " + this.name + "." + method_name);
+    logger.logdebug("registered hook " + hook_name + " to " + this.name + "." + method_name);
+}
+
+// copy logger methods into Plugin:
+
+for (var key in logger) {
+    if (key.match(/^log\w/)) {
+        // console.log("adding Plugin." + key + " method");
+        var key_copy = key.slice(0);
+        eval("Plugin.prototype." + key_copy + " = function (data) { logger." + key_copy + "(\"[\" + this.name + \"] \" + data); }");
+    }
 }
 
 var plugins = exports;
 
 plugins.load_plugins = function () {
-    logger.log("Loading plugins");
+    logger.loginfo("Loading plugins");
     var plugin_list = config.get('plugins');
     
     plugins.plugin_list = plugin_list.map(plugins.load_plugin);
 };
 
 plugins.load_plugin = function(plugin) {
-    logger.log("Loading plugin: " + plugin);
+    logger.loginfo("Loading plugin: " + plugin);
     
     // load the plugin here
     return new Plugin(plugin);
@@ -88,7 +98,7 @@ plugins.load_plugins();
 plugins.run_hooks = function (hook, connection, params) {
     if (!params) params = [];
     
-    logger.log("running " + hook + " hooks");
+    logger.logdebug("running " + hook + " hooks");
     
     connection.hooks_to_run = [];
     
@@ -100,7 +110,6 @@ plugins.run_hooks = function (hook, connection, params) {
             plugin.connection = connection;
             for (j = 0; j < plugin.hooks[hook].length; j++) {
                 var hook_code_name = plugin.hooks[hook][j];
-                logger.log("adding " + hook_code_name + " to run list");
                 connection.hooks_to_run.push([plugin, hook_code_name]);
             }
         }
@@ -113,7 +122,7 @@ plugins.run_next_hook = function(hook, connection, params) {
     var called_once = 0;
     var callback = function(retval, msg) {
         if (called_once) {
-            logger.log("callback called multiple times. Ignoring subsequent calls");
+            logger.logerror("callback called multiple times. Ignoring subsequent calls");
             return;
         }
         called_once++;

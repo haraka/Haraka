@@ -14,7 +14,15 @@ var connection = exports;
 function setupClient(self) {
     self.client.pause();
     self.remote_ip = self.client.remoteAddress;
-    logger.log("connection from: " + self.remote_ip);
+    logger.lognotice("got connection from: " + self.remote_ip);
+    
+    self.client.on('error', function (err) {
+        if (!self.disconnected) {
+            logger.logwarn("client closed with err: " + err);
+            self.disconnect();
+        }
+    });
+    
     dns.reverse(self.remote_ip, function(err, domains) {
         if (err) {
             switch (err.code) {
@@ -27,12 +35,6 @@ function setupClient(self) {
         }
         self.client.on('data', function (data) {
             self.process_data(data);
-        });
-        self.client.on('error', function (err) {
-            if (!self.disconnected) {
-                logger.log("client closed with err: " + err);
-                self.disconnect();
-            }
         });
         self.client.resume();
         self.transaction = trans.createTransaction();
@@ -58,7 +60,7 @@ exports.createConnection = function(client) {
 }
 
 Connection.prototype.process_line = function (line) {
-    logger.log("C: " + line);
+    logger.logdebug("C: " + line);
     if (this.state === 'cmd') {
         this.current_line = line.replace(/\r?\n$/, '');
         var matches = /^([^ ]*)( +(.*))?$/.exec(this.current_line);
@@ -69,7 +71,7 @@ Connection.prototype.process_line = function (line) {
                 this[method](remaining);
             }
             catch (err) {
-                logger.log(method + " failed: " + err);
+                logger.logerror(method + " failed: " + err);
                 this.respond(500, "Internal Server Error");
                 this.disconnect;
             }
@@ -86,7 +88,7 @@ Connection.prototype.process_line = function (line) {
 
 Connection.prototype.process_data = function (data) {
     if (this.disconnected) {
-        logger.log("data after disconnect");
+        logger.logwarn("data after disconnect from " + this.remote_ip);
         return;
     }
     
@@ -119,6 +121,9 @@ Connection.prototype.current_line = function() {
 };
 
 Connection.prototype.respond = function(code, messages) {
+    if (this.disconnected) {
+        return;
+    }
     if (!(typeof messages === 'object' && messages.constructor === Array)) {
         // messages not an array, make it so:
         messages = [ '' + messages ];
@@ -130,7 +135,12 @@ Connection.prototype.respond = function(code, messages) {
         buf = buf + line + "\r\n";
     }
     
-    this.client.write(buf);
+    try {
+        this.client.write(buf);
+    }
+    catch (err) {
+        logger.logerror(err);
+    }
 };
 
 Connection.prototype.disconnect = function() {
@@ -139,7 +149,7 @@ Connection.prototype.disconnect = function() {
 
 Connection.prototype.disconnect_respond = function () {
     this.disconnected = 1;
-    logger.log("closing client: " + this.client.fd);
+    logger.logdebug("closing client: " + this.client.fd);
     if (this.client.fd) {
         this.client.end();
     }
@@ -316,7 +326,7 @@ Connection.prototype.rcpt_respond = function(retval, msg) {
                 this.respond(250, msg || "recipient ok");
                 break;
         default:
-                logger.log("No plugin determined if relaying was allowed");
+                logger.logalert("No plugin determined if relaying was allowed");
                 this.respond(450, "Internal server error");
     }
 };

@@ -1,4 +1,3 @@
-var logger    = require('../logger');
 var constants = require('../constants');
 
 exports.register = function() {
@@ -6,8 +5,7 @@ exports.register = function() {
 };
 
 exports.confirm_all = function(callback, params) {
-    console.log(params);
     var recipient = params.shift();
-    logger.log("confirming recipient " + recipient);
+    this.loginfo("confirming recipient " + recipient);
     callback(constants.ok);
 };

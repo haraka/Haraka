@@ -7,9 +7,12 @@ var config = exports;
 var config_path = process.env.HARAKA ? path.join(process.env.HARAKA, 'config') : './config';
 
 config.get = function(name, type) {
+    if (type !== 'nolog') {
+        logger.loginfo("Getting config: " + name);
+    }
+    
     var full_path = path.resolve(config_path, name);
     
-    logger.log("Loading config file: " + full_path);
     var results;
     try {
         results = configloader.read_config(full_path, type);
