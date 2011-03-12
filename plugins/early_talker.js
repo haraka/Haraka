@@ -20,7 +20,7 @@ exports.check_early_talker = function(callback) {
 
 var _check_early_talker = function (connection, callback) {
     if (connection.early_talker) {
-        callback(constants.deny, "You talk too soon");
+        callback(constants.denydisconnect, "You talk too soon");
     }
     else {
         callback(constants.cont);
