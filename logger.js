@@ -21,11 +21,11 @@ logger.log = function (data) {
 };
 
 logger._init_loglevel = function () {
-    var _loglevel = config.get('loglevel', 'nolog');
+    var _loglevel = config.get('loglevel', 'nolog', 'value');
     if (_loglevel) {
-        var loglevel_num = parseInt(_loglevel[0]);
+        var loglevel_num = parseInt(_loglevel);
         if (!loglevel_num || loglevel_num === NaN) {
-            loglevel = logger[_loglevel[0].toUpperCase()];
+            loglevel = logger[_loglevel.toUpperCase()];
         }
         else {
             loglevel = loglevel_num;

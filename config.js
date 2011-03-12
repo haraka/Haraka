@@ -10,6 +10,9 @@ config.get = function(name, type) {
     if (type !== 'nolog') {
         logger.loginfo("Getting config: " + name);
     }
+    else {
+        type = arguments[2];
+    }
     
     var full_path = path.resolve(config_path, name);
     
