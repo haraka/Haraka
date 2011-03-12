@@ -255,9 +255,10 @@ Connection.prototype.ehlo_respond = function(retval, msg) {
                                 "8BITMIME"
                                 ];
                 
-                var databytes = config.get('databytes');
+                var databytes = config.get('databytes', 'value');
                 if (databytes) {
-                    response.push("SIZE " + databytes[0]);
+                    // TODO: need to test for this later
+                    response.push("SIZE " + databytes);
                 }
                 
                 var capabilities = this.get_capabilities();
