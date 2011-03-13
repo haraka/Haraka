@@ -61,6 +61,7 @@ exports.createConnection = function(client) {
 }
 
 Connection.prototype.process_line = function (line) {
+    logger.logprotocol("C: " + line);
     if (this.state === 'cmd') {
         this.state = 'pause';
         this.current_line = line.replace(/\r?\n$/, '');
@@ -146,6 +147,7 @@ Connection.prototype.respond = function(code, messages) {
     var buf = '';
     while (msg = messages.shift()) {
         var line = code + (messages.length ? "-" : " ") + msg;
+        logger.logprotocol("S: " + line);
         buf = buf + line + "\r\n";
     }
     

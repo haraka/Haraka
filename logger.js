@@ -4,6 +4,7 @@ var config = require('./config');
 
 var logger = exports;
 
+logger.LOGPROTOCOL  = 8;
 logger.LOGDEBUG     = 7;
 logger.LOGINFO      = 6;
 logger.LOGNOTICE    = 5;
