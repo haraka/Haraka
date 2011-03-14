@@ -8,7 +8,6 @@ var trans = exports;
 function Transaction() {
     this.mail_from = null;
     this.rcpt_to = [];
-    this.helo_host = null;
     this.data_lines = [];
     this.notes = {};
 }
