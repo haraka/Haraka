@@ -74,7 +74,7 @@ var plugins = exports;
 
 plugins.load_plugins = function () {
     logger.loginfo("Loading plugins");
-    var plugin_list = config.get('plugins');
+    var plugin_list = config.get('plugins', 'list');
     
     plugins.plugin_list = plugin_list.map(plugins.load_plugin);
 };

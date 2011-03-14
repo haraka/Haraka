@@ -4,7 +4,7 @@ var smtp = require('../constants');
 var dns   = require('dns');
 
 exports.register = function() {
-    this.zones = this.config.get('dnsbl.zones');
+    this.zones = this.config.get('dnsbl.zones', 'list');
     this.register_hook('connect', 'check_ip');
 }
 
