@@ -65,3 +65,13 @@ value in a file on its own. Those who have used qmail or qpsmtpd will be
 familiar with this format.
 
 See plugins/dnsbl.js for an example.
+
+Reloading/Caching
+========
+
+Haraka automatically reloads configuration files, but this will only help if
+whatever is looking at that config re-calls config.get() to re-access the 
+configuration file after it has changed. Configuration files are watched for
+changes so this process is not a heavyweight "poll" process, and files are
+not re-read every time config.get() is called so this can be considered a
+lightweight process.
