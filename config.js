@@ -31,7 +31,7 @@ config.get = function(name, type) {
             }
         }
         else {
-            console.log(err.name + ': ' + err.message);
+            logger.logerror(err.name + ': ' + err.message);
         }
     }
     return results;
