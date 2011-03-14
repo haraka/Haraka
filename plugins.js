@@ -49,6 +49,7 @@ var hooks = [
 function Plugin(name) {
     this.name = name;
     this.full_path = path.resolve(plugin_path, name);
+    this.config = config;
     this.hooks = {};
 };
 
@@ -92,9 +93,15 @@ plugins.load_plugin = function(name) {
             logger.logcrit("Method " + method + " already exists in Plugin class while loading plugin " + name);
         }
         plugin[method] = plugin_methods[method];
+        var result;
+        if (result = method.match(/^hook_(\w+)\b/)) {
+            plugin.register_hook(result[1], method);
+        }
     }
     
-    plugin.register();
+    if (plugin.register) {
+        plugin.register();
+    }
     
     return plugin;
 }
@@ -147,6 +154,12 @@ plugins.run_next_hook = function(hook, connection, params) {
     
     // shift the next one off the stack and run it.
     var item = connection.hooks_to_run.shift();
-    item[0][ item[1] ].call(item[0], callback, connection, params);
+    try {
+        item[0][ item[1] ].call(item[0], callback, connection, params);
+    }
+    catch (err) {
+        logger.logcrit("Plugin " + item[0].name + " failed: " + err);
+        callback();
+    }
 };
 
