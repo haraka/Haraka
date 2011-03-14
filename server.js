@@ -23,7 +23,7 @@ function apply_defaults(obj) {
 
 Server.createServer = function (params) {
     Server.ready = 0;
-    var config_data = config.get('smtp', 'ini');
+    var config_data = config.get('smtp.ini', 'ini');
     var param_key;
     for (param_key in params) {
         if (typeof params[param_key] !== 'function') {
