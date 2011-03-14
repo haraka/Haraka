@@ -6,3 +6,6 @@ model to be able to cope with thousands of concurrent connections. Plugins
 are written in Javascript using Node.js, and as such perform extremely
 quickly.
 
+Haraka requires [node.js][] to run.
+
+  []http://nodejs.org/
