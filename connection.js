@@ -12,7 +12,6 @@ var line_regexp = /^([^\n]*\n)/;
 var connection = exports;
 
 function setupClient(self) {
-    self.client.pause();
     self.remote_ip = self.client.remoteAddress;
     logger.lognotice("got connection from: " + self.remote_ip);
     
@@ -37,7 +36,6 @@ function setupClient(self) {
         else {
             self.remote_host = domains[0] || 'Unknown';
         }
-        self.client.resume();
         self.transaction = trans.createTransaction();
         // TODO - check for early talkers before this
         plugins.run_hooks('connect', self);
@@ -49,6 +47,7 @@ function Connection(client) {
     this.current_data = '';
     this.current_line = null;
     this.state = 'pause';
+    this.notes = {};
     this.early_talker_delay = config.get('early_talker_delay', 'value') || 1000;
     
     setupClient(this);
