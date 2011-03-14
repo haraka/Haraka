@@ -9,10 +9,10 @@ exports.register = function() {
     this.register_hook('connect', 'check_ip');
 }
 
-exports.check_ip = function(callback) {
-    this.logdebug("check_ip: " + this.connection.remote_ip);
+exports.check_ip = function(callback, connection) {
+    this.logdebug("check_ip: " + connection.remote_ip);
     
-    var ip = new String(this.connection.remote_ip);
+    var ip = new String(connection.remote_ip);
     var reverse_ip = ip.split('.').reverse().join('.');
     
     if (!this.zones || !this.zones.length) {

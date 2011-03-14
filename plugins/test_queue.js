@@ -7,8 +7,8 @@ exports.register = function() {
     this.register_hook('queue', 'queue_mail');
 };
 
-exports.queue_mail = function(callback) {
-    var lines = this.connection.transaction.data_lines;
+exports.queue_mail = function(callback, connection) {
+    var lines = connection.transaction.data_lines;
     if (lines.length === 0) {
         return callback(constants.deny);
     }

@@ -20,9 +20,9 @@ exports.register = function () {
 
 var smtp_regexp = /^([0-9]{3})([ -])(.*)/;
 
-exports.smtp_forward = function (callback) {
+exports.smtp_forward = function (callback, connection) {
     this.loginfo("smtp forwarding");
-    if (!this.connection.transaction.data_lines.length) {
+    if (!connection.transaction.data_lines.length) {
         // Nothing in the data section, let's just decline it.
         return callback(constants.cont);
     }
@@ -30,11 +30,11 @@ exports.smtp_forward = function (callback) {
     var socket = new linesock.Socket;
     socket.connect(smtp_config.main.port, smtp_config.main.host);
     var self = this;
-    var connection = this.connection;
     var command = 'connect';
     var buf = '';
     var response = [];
-    var recipients = this.connection.transaction.rcpt_to.map(function(item) { return item });
+    // copy the recipients:
+    var recipients = connection.transaction.rcpt_to.map(function(item) { return item });
     console.log(recipients);
     var data_marker = 0;
     

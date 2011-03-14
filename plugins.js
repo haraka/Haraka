@@ -6,6 +6,8 @@ var constants   = require('./constants');
 var path        = require('path');
 
 var plugin_path = process.env.HARAKA ? path.join(process.env.HARAKA, 'plugins') : './plugins';
+// These are the hooks that qpsmtpd implements - I should get around
+// to supporting them all some day... :-/
 var hooks = [
     'connect',
     'pre-connection',
@@ -44,21 +46,11 @@ var hooks = [
     'help'
 ];
 
-function _load_plugin(self) {
-    self.the_plugin = require(self.full_path);
-    self.the_plugin.register.call(self);
-}
-
 function Plugin(name) {
-    var full_path = path.resolve(plugin_path, name);
-    
-    this.full_path = full_path;
     this.name = name;
-    
+    this.full_path = path.resolve(plugin_path, name);
     this.hooks = {};
-    
-    _load_plugin(this);
-}
+};
 
 Plugin.prototype.register_hook = function(hook_name, method_name) {
     this.hooks[hook_name] = this.hooks[hook_name] || [];
@@ -86,11 +78,25 @@ plugins.load_plugins = function () {
     plugins.plugin_list = plugin_list.map(plugins.load_plugin);
 };
 
-plugins.load_plugin = function(plugin) {
-    logger.loginfo("Loading plugin: " + plugin);
+plugins.load_plugin = function(name) {
+    logger.loginfo("Loading plugin: " + name);
     
-    // load the plugin here
-    return new Plugin(plugin);
+    var plugin = new Plugin(name);
+    
+    var plugin_methods = require(plugin.full_path);
+    
+    // copy the plugins' export methods into this new instance.
+    for (var method in plugin_methods) {
+        if (plugin[method]) {
+            // Method already exists
+            logger.logcrit("Method " + method + " already exists in Plugin class while loading plugin " + name);
+        }
+        plugin[method] = plugin_methods[method];
+    }
+    
+    plugin.register();
+    
+    return plugin;
 }
 
 plugins.load_plugins();
@@ -107,7 +113,6 @@ plugins.run_hooks = function (hook, connection, params) {
         
         if (plugin.hooks[hook]) {
             var j;
-            plugin.connection = connection;
             for (j = 0; j < plugin.hooks[hook].length; j++) {
                 var hook_code_name = plugin.hooks[hook][j];
                 connection.hooks_to_run.push([plugin, hook_code_name]);
@@ -142,6 +147,6 @@ plugins.run_next_hook = function(hook, connection, params) {
     
     // shift the next one off the stack and run it.
     var item = connection.hooks_to_run.shift();
-    item[0].the_plugin[ item[1] ].call(item[0], callback, params);
+    item[0][ item[1] ].call(item[0], callback, connection, params);
 };
 

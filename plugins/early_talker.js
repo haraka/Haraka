@@ -8,13 +8,12 @@ exports.register = function() {
     this.register_hook('data', 'check_early_talker');
 };
 
-exports.check_early_talker = function(callback) {
+exports.check_early_talker = function(callback, connection) {
     if (this.pause) {
-        var connection = this.connection;
         setTimeout(function () { _check_early_talker(connection, callback) }, this.pause);
     }
     else {
-        _check_early_talker(self, callback);
+        _check_early_talker(connection, callback);
     }
 };
 
