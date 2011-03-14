@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 
 var logger = require('./logger');
-
 var server = require('./server');
+
+exports.version = '0.1';
 
 process.on('uncaughtException', function (err) {
     if (err.stack) {
@@ -15,5 +16,7 @@ process.on('uncaughtException', function (err) {
         process.exit();
     }
 });
+
+logger.log("Starting up Haraka version " + exports.version);
 
 server.createServer();

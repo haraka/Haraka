@@ -6,6 +6,7 @@ var dns     = require('dns');
 var plugins = require('./plugins');
 var constants = require('./constants');
 var rfc1869   = require('./rfc1869');
+var haraka  = require('./haraka');
 
 var line_regexp = /^([^\n]*\n)/;
 
@@ -36,8 +37,10 @@ function setupClient(self) {
         else {
             self.remote_host = domains[0] || 'Unknown';
         }
+        self.remote_info = self.remote_info || self.remote_host;
+        
+        // Not sure I should create the transaction here, but it won't hurt.
         self.transaction = trans.createTransaction();
-        // TODO - check for early talkers before this
         plugins.run_hooks('connect', self);
     });
 }
@@ -460,7 +463,36 @@ Connection.prototype.cmd_rcpt = function(line) {
     plugins.run_hooks('rcpt', this, [recipient, params]);
 };
 
+var _daynames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+var _monnames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+function _pad(num, n, p) {
+		var s = '' + num;
+		p = p || '0';
+		while (s.length < n) s = p + s;
+		return s;
+}
+
+function _date_to_str(d) {
+    return _daynames[d.getDay()] + ', ' + _pad(d.getDate(),2) + ' ' +
+           _monnames[d.getMonth()] + ' ' + d.getFullYear() + ' ' +
+           _pad(d.getHours(),2) + ':' + _pad(d.getMinutes(),2) + ':' + _pad(d.getSeconds(),2) +
+           ' ' + d.toString().match(/\sGMT([+-]\d+)/)[1];
+}
+
+Connection.prototype.received_line = function() {
+    var smtp = this.greeting === 'EHLO' ? 'ESMTP' : 'SMTP';
+    // TODO - populate authheader and sslheader - see qpsmtpd for how to.
+    return  "from " + this.remote_info
+           +" (HELO " + this.hello_host + ") ("+this.remote_ip
+           +")\n  " + (this.authheader || '') + "  by " + config.get('me', 'value')
+           +" (Haraka/" + haraka.version
+           +") with " + (this.sslheader || '') + smtp + "; "
+           + _date_to_str(new Date());
+};
+
 Connection.prototype.cmd_data = function(line) {
+    this.accumulate_data('Received: ' + this.received_line() + "\r\n");
     plugins.run_hooks('data', this);
 };
 
