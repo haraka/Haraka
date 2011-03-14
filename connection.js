@@ -51,7 +51,7 @@ function Connection(client) {
     this.current_line = null;
     this.state = 'pause';
     this.notes = {};
-    this.early_talker_delay = config.get('early_talker_delay', 'value') || 1000;
+    this.early_talker_delay = config.get('early_talker_delay') || 1000;
     
     setupClient(this);
 }
@@ -216,7 +216,8 @@ Connection.prototype.connect_respond = function(retval, msg) {
                              this.respond(450, msg || "Come back later");
                              break;
         default:
-                             this.respond(220, msg || "myhost ESMTP Haraka VER ready");
+                    var greeting = config.get('smtpgreeting')
+                             this.respond(220, msg || config.get('me') + " ESMTP Haraka " VER ready");
     }
 };
 
@@ -263,7 +264,7 @@ Connection.prototype.ehlo_respond = function(retval, msg) {
                                 "8BITMIME"
                                 ];
                 
-                var databytes = config.get('databytes', 'value');
+                var databytes = config.get('databytes');
                 if (databytes) {
                     // TODO: need to test for this later
                     response.push("SIZE " + databytes);
@@ -485,7 +486,7 @@ Connection.prototype.received_line = function() {
     // TODO - populate authheader and sslheader - see qpsmtpd for how to.
     return  "from " + this.remote_info
            +" (HELO " + this.hello_host + ") ("+this.remote_ip
-           +")\n  " + (this.authheader || '') + "  by " + config.get('me', 'value')
+           +")\n  " + (this.authheader || '') + "  by " + config.get('me')
            +" (Haraka/" + haraka.version
            +") with " + (this.sslheader || '') + smtp + "; "
            + _date_to_str(new Date());
@@ -529,12 +530,21 @@ Connection.prototype.data_respond = function(retval, msg) {
         this.respond(354, "go ahead, make my day");
         // OK... now we get the data
         this.state = 'data';
+        this.data_bytes = 0;
+        this.max_bytes = config.get('databytes');
     }
 };
 
 Connection.prototype.accumulate_data = function(line) {
     if (line === ".\r\n")
         return this.data_done();
+    
+    this.data_bytes += line.length;
+    if (this.max_bytes && this.data_bytes > this.max_bytes) {
+        this.respond(552, "Message too big!");
+        this.disconnect(); // a bit rude, but otherwise people will just keep spewing
+        return;
+    }
     
     // Bare LF checks
     if (line === ".\r" || line === ".\n") {
@@ -543,8 +553,6 @@ Connection.prototype.accumulate_data = function(line) {
         this.disconnect();
         return;
     }
-    
-    // TODO: check size
     
     this.transaction.data_add(line);
 };
