@@ -5,6 +5,11 @@ var net  = require('net');
 var logger = require('./logger');
 var config = require('./config');
 var conn   = require('./connection');
+var multi;
+try { multi = require('./multi-node') }
+catch (err) {
+    logger.log("no multi-node available, running single-process");
+}
 
 var Server = exports;
 
@@ -22,7 +27,6 @@ function apply_defaults(obj) {
 }
 
 Server.createServer = function (params) {
-    Server.ready = 0;
     var config_data = config.get('smtp.ini', 'ini');
     var param_key;
     for (param_key in params) {
@@ -39,10 +43,18 @@ Server.createServer = function (params) {
         client.setTimeout(config_data.main.inactivity_time * 1000);
         conn.createConnection(client);
     });
-    server.listen(config_data.main.port, config_data.main.listen_host,
-        function () {
-            Server.ready = 1;
-            logger.lognotice("Listening on port " + config_data.main.port);
-        }
-    );
+    if (multi && config_data.main.nodes) {
+        Server.nodes = multi.listen({
+            port: config_data.main.port,
+            nodes: config_data.main.nodes,
+            listen_address: config_data.main.listen_host
+            }, server);
+    }
+    else {
+        server.listen(config_data.main.port, config_data.main.listen_host,
+            function () {
+                logger.lognotice("Listening on port " + config_data.main.port);
+            }
+        );
+    }
 };
