@@ -1,4 +1,4 @@
-var constants = require('../constants');
+var smtp = require('../constants');
 
 exports.register = function() {
     this.register_hook('rcpt', 'confirm_all');
@@ -7,5 +7,5 @@ exports.register = function() {
 exports.confirm_all = function(callback, connection, params) {
     var recipient = params.shift();
     this.loginfo("confirming recipient " + recipient);
-    callback(constants.ok);
+    callback(smtp.ok);
 };

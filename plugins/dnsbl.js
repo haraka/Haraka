@@ -1,11 +1,10 @@
 // dnsbl plugin
 
-var constants = require('../constants');
-var config    = require('../config');
-var dns       = require('dns');
+var smtp = require('../constants');
+var dns   = require('dns');
 
 exports.register = function() {
-    this.zones = config.get('dnsbl.zones');
+    this.zones = this.config.get('dnsbl.zones');
     this.register_hook('connect', 'check_ip');
 }
 
@@ -17,7 +16,7 @@ exports.check_ip = function(callback, connection) {
     
     if (!this.zones || !this.zones.length) {
         this.logerror("No zones");
-        return callback(constants.declined);
+        return callback(smtp.declined);
     }
     
     var remaining_zones = [];
@@ -30,10 +29,10 @@ exports.check_ip = function(callback, connection) {
                 self.loginfo("DNS error: " + err);
                 if (remaining_zones.length === 0) {
                     // only call declined if no more results are pending
-                    return callback(constants.declined);
+                    return callback(smtp.cont);
                 }
             }
-            return callback(constants.deny, value);
+            return callback(smtp.deny, value);
         });
         
         remaining_zones.push(zone);

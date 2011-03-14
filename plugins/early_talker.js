@@ -1,10 +1,9 @@
 // This plugin checks for clients that talk before we sent a response
 
-var constants = require('../constants');
-var config    = require('../config');
+var smtp = require('../constants');
 
 exports.register = function() {
-    this.pause = config.get('early_talker.pause', 'value');
+    this.pause = this.config.get('early_talker.pause', 'value');
     this.register_hook('data', 'check_early_talker');
 };
 
@@ -19,9 +18,9 @@ exports.check_early_talker = function(callback, connection) {
 
 var _check_early_talker = function (connection, callback) {
     if (connection.early_talker) {
-        callback(constants.denydisconnect, "You talk too soon");
+        callback(smtp.denydisconnect, "You talk too soon");
     }
     else {
-        callback(constants.cont);
+        callback(smtp.cont);
     }
 };
