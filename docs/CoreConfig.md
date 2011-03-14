@@ -24,6 +24,10 @@ different levels available.
   * listen\_address - default: 0.0.0.0 (i.e. all addresses)
   * inactivity\_time - how long to let clients idle
 
+* me
+
+  A name to use for this server. Used in received lines and elsewhere.
+
 * early\_talker\_delay
 
   If clients talk early we *punish* them with a delay of this many milliseconds

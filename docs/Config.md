@@ -7,17 +7,17 @@ of configuration files.
 The API is fairly simple:
 
     // From within a plugin:
-    var config_item = this.config.get(name, [type='flat']);
+    var config_item = this.config.get(name, [type='value']);
 
 Where type can be one of:
 
 * 'ini' - load an "ini" style file
-* 'value' - load a flat file containing a single value
-* 'flat' - load a flat file containing a list of values
+* 'value' - load a flat file containing a single value (default)
+* 'list' - load a flat file containing a list of values
 
 The name is not a filename, but a name in the config/ directory. For example:
 
-    var config_item = this.config.get('rambling.paths');
+    var config_item = this.config.get('rambling.paths', 'list');
 
 This will look up and load the file config/rambling.paths in the Haraka
 directory.
@@ -63,6 +63,8 @@ Flat Files
 Flat files are simply either lists of values separated by \n or a single
 value in a file on its own. Those who have used qmail or qpsmtpd will be
 familiar with this format.
+
+Lines starting with '#' and blank lines will be ignored.
 
 See plugins/dnsbl.js for an example.
 
