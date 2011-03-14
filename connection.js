@@ -217,7 +217,7 @@ Connection.prototype.connect_respond = function(retval, msg) {
                              break;
         default:
                     var greeting = config.get('smtpgreeting')
-                             this.respond(220, msg || config.get('me') + " ESMTP Haraka " VER ready");
+                             this.respond(220, msg || (config.get('me') + " ESMTP Haraka " + haraka.version + " ready"));
     }
 };
 
