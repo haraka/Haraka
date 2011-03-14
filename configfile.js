@@ -52,7 +52,7 @@ cfreader.load_config = function(name, type) {
     }
     else {
         result = cfreader.load_flat_config(name);
-        if (result && type === 'value') {
+        if (result && type !== 'list') {
             result = result[0];
         }
     }
@@ -66,7 +66,7 @@ cfreader.load_ini_config = function(name) {
     var result       = cfreader.empty_config('ini');
     var current_sect = result.main;
     
-    var data  = new String(fs.readFileSync(name));
+    var data = new String(fs.readFileSync(name));
     var lines = data.split(/\r\n|\r|\n/);
     
     lines.forEach( function(line) {
