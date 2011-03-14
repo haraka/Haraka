@@ -23,6 +23,10 @@ function setupClient(self) {
         }
     });
     
+    self.client.on('data', function (data) {
+        self.process_data(data);
+    });
+    
     dns.reverse(self.remote_ip, function(err, domains) {
         if (err) {
             switch (err.code) {
@@ -33,9 +37,6 @@ function setupClient(self) {
         else {
             self.remote_host = domains[0] || 'Unknown';
         }
-        self.client.on('data', function (data) {
-            self.process_data(data);
-        });
         self.client.resume();
         self.transaction = trans.createTransaction();
         // TODO - check for early talkers before this
@@ -47,7 +48,7 @@ function Connection(client) {
     this.client = client;
     this.current_data = '';
     this.current_line = null;
-    this.state = 'cmd'; // command or data
+    this.state = 'pause';
     this.early_talker_delay = config.get('early_talker_delay', 'value') || 1000;
     
     setupClient(this);
