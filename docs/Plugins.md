@@ -22,18 +22,14 @@ Firstly, to enable a plugin, simply add its name to config/plugins.
 In order to hook into the "rcpt" event, simply create a method in exports
 to hook it:
 
-    var smtp = require('../constants');
-    
     exports.hook_rcpt = function(callback, connection, params) {
         // email address is in params[0]
         // do something with the address... then call:
-        callback(smtp.ok);
+        callback(OK);
     };
 
-We've introduced several new concepts here, so let's go through them:
+We've introduced a couple of new concepts here, so let's go through them:
 
-* constants - the file constants.js contains a bunch of SMTP relevant constants
-that we must pass to our callback.
 * callback - we need to call this when we are done processing or Haraka will
 hang.
 * exports - the plugin acts as an object (with access to "this" if you need it)
@@ -44,6 +40,8 @@ SMTP server, we may need to go off and fetch network information before we
 can return a result. We can do that asynchronously and simply run the callback
 when we are done, which allows Haraka to go on processing other clients while
 we fetch our information.
+
+See "The Callback" below for more details.
 
 Logging
 ------
@@ -79,34 +77,44 @@ method and hook it:
 Then when the earlier hook calls callback(smtp.cont) it continues on to the
 next hook to try that one.
 
+The Callback
+============
+
+The callback passed in takes two parameters: code, msg
+
+The code is one of the below listed return values. The msg corresponds with
+the string to send to the client. Use an Array if you want to send back a
+multi-line response.
+
 Callback Return Values
 ------------------
 
-Assuming: var smtp = require('../constants'):
+These constants are compiled into your plugin when it is loaded, you do not
+need to define them:
 
-* smtp.cont
+* CONT
 
-Continue and let other plugins handle this particular hook.
+  Continue and let other plugins handle this particular hook.
 
-* smtp.deny
+* DENY
 
-Reject the mail with a 5xx error.
+  Reject the mail with a 5xx error.
 
-* smtp.denysoft
+* DENYSOFT
 
-Reject the mail with a 4xx error.
+  Reject the mail with a 4xx error.
 
-* smtp.denydisconnect
+* DENYDISCONNECT
 
-Reject the mail with a 5xx error and immediately disconnect.
+  Reject the mail with a 5xx error and immediately disconnect.
 
-* smtp.disconnect
+* DISCONNECT
 
-Simply immediately disconnect
+  Simply immediately disconnect
 
-* smtp.ok
+* OK
 
-Required by rcpt and queue plugins if are to allow the email, or the queue was
+  Required by rcpt and queue plugins if are to allow the email, or the queue was
 successful, respectively.
 
 
@@ -123,8 +131,8 @@ These are just the name of the hook, with any parameter sent to it:
 * quit
 * vrfy
 * noop
-* mail (from, esmtp\_params)
-* rcpt (to, esmtp\_params)
+* mail ([from, esmtp\_params])
+* rcpt ([to,   esmtp\_params])
 * data
 * queue
 

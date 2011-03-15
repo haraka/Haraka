@@ -1,6 +1,5 @@
 // Forward to an SMTP server
 
-var smtp = require('../../constants');
 var os   = require('os');
 var sock = require('./line_socket');
 
@@ -23,7 +22,7 @@ exports.smtp_forward = function (callback, connection) {
     this.loginfo("smtp forwarding");
     if (!connection.transaction.data_lines.length) {
         // Nothing in the data section, let's just decline it.
-        return callback(smtp.cont);
+        return callback(CONT);
     }
     var smtp_config = this.config.get('smtp_forward.ini', 'ini');
     var socket = new sock.Socket();
@@ -53,7 +52,7 @@ exports.smtp_forward = function (callback, connection) {
     socket.on('error', function (err) {
         self.logerror("Ongoing connection failed: " + err);
         // we don't deny on error - maybe another plugin can deliver
-        callback(smtp.cont); 
+        callback(CONT); 
     });
     socket.on('connect', function () {
     });
@@ -68,7 +67,7 @@ exports.smtp_forward = function (callback, connection) {
             if (cont === ' ') {
                 if (code.match(/^[45]/)) {
                     socket.end();
-                    return callback(smtp.cont);
+                    return callback(CONT);
                 }
                 switch (command) {
                     case 'connect':
@@ -97,7 +96,7 @@ exports.smtp_forward = function (callback, connection) {
                         break;
                     case 'quit':
                         socket.end();
-                        callback(smtp.ok);
+                        callback(OK);
                     default:
                         throw "Unknown command: " + command;
                 }
@@ -108,7 +107,7 @@ exports.smtp_forward = function (callback, connection) {
             // Unrecognised response.
             self.logerror("Unrecognised response from upstream server: " + line);
             socket.end();
-            return callback(smtp.cont);
+            return callback(CONT);
         }
     });
     socket.on('drain', function() {

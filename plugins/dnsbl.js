@@ -1,6 +1,5 @@
 // dnsbl plugin
 
-var smtp = require('../constants');
 var dns   = require('dns');
 
 exports.register = function() {
@@ -16,7 +15,7 @@ exports.check_ip = function(callback, connection) {
     
     if (!this.zones || !this.zones.length) {
         this.logerror("No zones");
-        return callback(smtp.declined);
+        return callback(CONT);
     }
     
     var remaining_zones = [];
@@ -29,10 +28,10 @@ exports.check_ip = function(callback, connection) {
                 self.loginfo("DNS error: " + err);
                 if (remaining_zones.length === 0) {
                     // only call declined if no more results are pending
-                    return callback(smtp.cont);
+                    return callback(CONT);
                 }
             }
-            return callback(smtp.deny, value);
+            return callback(DENY, value);
         });
         
         remaining_zones.push(zone);

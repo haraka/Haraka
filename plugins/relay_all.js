@@ -1,4 +1,4 @@
-var smtp = require('../constants');
+// Just relay everything - could be useful for a spamtrap
 
 exports.register = function() {
     this.register_hook('rcpt', 'confirm_all');
@@ -7,5 +7,5 @@ exports.register = function() {
 exports.confirm_all = function(callback, connection, params) {
     var recipient = params.shift();
     this.loginfo("confirming recipient " + recipient);
-    callback(smtp.ok);
+    callback(OK);
 };

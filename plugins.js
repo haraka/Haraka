@@ -4,6 +4,8 @@ var logger      = require('./logger');
 var config      = require('./config');
 var constants   = require('./constants');
 var path        = require('path');
+var vm          = require('vm');
+var fs          = require('fs');
 
 var plugin_path = process.env.HARAKA ? path.join(process.env.HARAKA, 'plugins') : './plugins';
 // These are the hooks that qpsmtpd implements - I should get around
@@ -48,7 +50,7 @@ var hooks = [
 
 function Plugin(name) {
     this.name = name;
-    this.full_path = path.resolve(plugin_path, name);
+    this.full_path = path.resolve(plugin_path, name) + '.js';
     this.config = config;
     this.hooks = {};
 };
@@ -79,12 +81,20 @@ plugins.load_plugins = function () {
     plugins.plugin_list = plugin_list.map(plugins.load_plugin);
 };
 
+var constants_str = "";
+for (var con in constants) {
+    //console.log("Const: " + con);
+    constants_str += "var " + con.toUpperCase() + " = " + constants[con] + ";\n";
+}
+
 plugins.load_plugin = function(name) {
     logger.loginfo("Loading plugin: " + name);
     
     var plugin = new Plugin(name);
-    
-    var plugin_methods = require(plugin.full_path);
+    var code = constants_str + fs.readFileSync(plugin.full_path);
+    var plugin_methods = {};
+    var sandbox = { require: require, exports: plugin_methods };
+    vm.runInNewContext(code, sandbox, name);
     
     // copy the plugins' export methods into this new instance.
     for (var method in plugin_methods) {
