@@ -22,7 +22,7 @@ different levels available.
   
   * port - the port to use (default: 25)
   * listen\_address - default: 0.0.0.0 (i.e. all addresses)
-  * inactivity\_time - how long to let clients idle
+  * inactivity\_time - how long to let clients idle in seconds (default: 300)
   * nodes - if [multi-node.js][1] is available in the Haraka dir, specifies how
     many processes to fork off. (default: 0)
 
