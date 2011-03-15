@@ -83,7 +83,7 @@ Connection.prototype.process_line = function (line) {
         }
         else {
             // unrecognised command
-            plugins.run_hooks('unrecognized_command', this);
+            plugins.run_hooks('unrecognized_command', this, matches[1]);
         }
     }
     else if (this.state === 'data') {
@@ -194,13 +194,15 @@ Connection.prototype.reset_transaction = function() {
 
 Connection.prototype.unrecognized_command_respond = function(retval, msg) {
     switch(retval) {
-        case constants.deny:        this.respond(500, msg || "Unrecognized command");
-                                    break;
+        case constants.deny:
+                this.respond(500, msg || "Unrecognized command");
+                break;
         case constants.denydisconnect:
-                                    this.respond(521, msg || "Unrecognized command");
-                                    this.disconnect;
-                                    break;
-        default:                    this.respond(500, msg || "Unrecognized command");
+                this.respond(521, msg || "Unrecognized command");
+                this.disconnect();
+                break;
+        default:
+                this.respond(500, msg || "Unrecognized command");
     }
 };
 
@@ -230,7 +232,7 @@ Connection.prototype.helo_respond = function(retval, msg) {
                 break;
         case constants.denydisconnect:
                 this.respond(550, msg || "HELO denied");
-                this.disconnect;
+                this.disconnect();
                 break;
         case constants.denysoft:
                 this.respond(450, msg || "HELO denied");
@@ -251,7 +253,7 @@ Connection.prototype.ehlo_respond = function(retval, msg) {
                 break;
         case constants.denydisconnect:
                 this.respond(550, msg || "EHLO denied");
-                this.disconnect;
+                this.disconnect();
                 break;
         case constants.denysoft:
                 this.respond(450, msg || "EHLO denied");
@@ -350,7 +352,7 @@ Connection.prototype.rcpt_respond = function(retval, msg) {
                 break;
         default:
                 logger.logalert("No plugin determined if relaying was allowed");
-                this.respond(450, "Internal server error");
+                this.respond(450, "I cannot deliver for that user");
     }
 };
 
