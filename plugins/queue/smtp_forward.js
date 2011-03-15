@@ -2,7 +2,7 @@
 
 var smtp = require('../../constants');
 var os   = require('os');
-var sock = require('../../line_socket');
+var sock = require('./line_socket');
 
 var next_state = {
     connect:    'helo',
