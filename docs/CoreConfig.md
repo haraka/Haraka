@@ -24,7 +24,8 @@ different levels available.
   * listen\_address - default: 0.0.0.0 (i.e. all addresses)
   * inactivity\_time - how long to let clients idle in seconds (default: 300)
   * nodes - if [multi-node.js][1] is available in the Haraka dir, specifies how
-    many processes to fork off. (default: 0)
+    many processes to fork off. Can be the string "cpus" to fork off as many
+    children as there are CPUs (default: 0)
 
 [1]: https://github.com/kriszyp/multi-node/blob/master/lib/multi-node.js
 

@@ -5,6 +5,7 @@ var net  = require('net');
 var logger = require('./logger');
 var config = require('./config');
 var conn   = require('./connection');
+var os     = require('os');
 var multi;
 try { multi = require('./multi-node') }
 catch (err) {
@@ -44,9 +45,12 @@ Server.createServer = function (params) {
         conn.createConnection(client);
     });
     if (multi && config_data.main.nodes) {
+        // if nodes=cpus then use the count of CPUs
+        var nodes = config_data.main.nodes === 'cpus' ? os.cpus().length :
+                    config_data.main.nodes;
         Server.nodes = multi.listen({
             port: config_data.main.port,
-            nodes: config_data.main.nodes,
+            nodes: nodes,
             listen_address: config_data.main.listen_host
             }, server);
     }
