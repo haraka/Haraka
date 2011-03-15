@@ -8,6 +8,7 @@ function Socket(options) {
     net.Socket.call(this, options);
     this.current_data = '';
     this.on('data', this.process_data);
+    this.on('end', this.process_end);
 }
 
 util.inherits(Socket, net.Socket);
@@ -24,4 +25,10 @@ Socket.prototype.process_data = function (data) {
         this.current_data = this.current_data.slice(this_line.length);
         this.emit('line', this_line);
     }
+};
+
+Socket.prototype.process_end = function () {
+    if (this.current_data.length)
+        this.emit('line', this.current_data)
+    this.current_data = '';
 };
