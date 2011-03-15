@@ -23,9 +23,9 @@ exports.hook_rcpt = function(callback, connection, params) {
     
     var i;
     for (i in host_list) {
-        this.logdebug("checking " + domain + " against " + host_list[i]);
         var tmp_domain = domain;
-        while (tmp_domain.match('.')) {
+        while (tmp_domain.match(/\./)) {
+            this.logdebug("checking " + tmp_domain + " against " + host_list[i]);
             if (host_list[i] === tmp_domain) {
                 return callback(smtp.ok);
             }
