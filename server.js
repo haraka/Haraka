@@ -40,7 +40,7 @@ Server.createServer = function (params) {
 
     var server = net.createServer();
     server.on('connection', function(client) {
-        client.setTimeout(config_data.main.inactivity_time * 1000);
+        client.setTimeout((config_data.main.inactivity_time || 300) * 1000);
         conn.createConnection(client);
     });
     if (multi && config_data.main.nodes) {

@@ -23,6 +23,13 @@ function setupClient(self) {
         }
     });
     
+    self.client.on('timeout', function () {
+        if (!self.disconnected) {
+            logger.logerror("client (" + self.client.fd + ") timed out");
+            self.disconnect();
+        }
+    });
+    
     self.client.on('data', function (data) {
         self.process_data(data);
     });
