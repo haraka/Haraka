@@ -72,7 +72,7 @@ exports.smtp_forward = function (callback, connection) {
                 }
                 switch (command) {
                     case 'connect':
-                        socket.write('HELO ' + os.hostname() + "\r\n");
+                        socket.write('HELO ' + self.config.get('me') + "\r\n");
                         break;
                     case 'helo':
                         socket.write('MAIL FROM:' + connection.transaction.mail_from + "\r\n");
