@@ -109,8 +109,6 @@ plugins.load_plugin = function(name) {
 plugins.load_plugins();
 
 plugins.run_hooks = function (hook, connection, params) {
-    if (!params) params = [];
-    
     logger.logdebug("running " + hook + " hooks");
     
     connection.hooks_to_run = [];
