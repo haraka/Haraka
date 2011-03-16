@@ -14,15 +14,12 @@ Anatomy of a Plugin
 
 Plugins in Haraka are simply Javascript files in the plugins/ directory.
 
-They are loaded via require() and so must compile as valid Javascript or your
-server will not start.
-
-Firstly, to enable a plugin, simply add its name to config/plugins.
+To enable a plugin, simply add its name to `config/plugins`.
 
 In order to hook into the "rcpt" event, simply create a method in exports
 to hook it:
 
-    exports.hook_rcpt = function(callback, connection, params) {
+    exports.hook_rcpt = function (callback, connection, params) {
         // email address is in params[0]
         // do something with the address... then call:
         callback(OK);
@@ -134,10 +131,12 @@ These are just the name of the hook, with any parameter sent to it:
 * mail ([from, esmtp\_params])
 * rcpt ([to,   esmtp\_params])
 * data
+* data_post
 * queue
 
 Further Reading
 --------------
 
-Now you want to read about the Connection object and the Transaction object.
+Now you want to read about the Connection object.
+
 

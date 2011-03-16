@@ -28,5 +28,6 @@ A safe object in which you can store connection-specific variables
 
 * connection.transaction
 
-The current transaction object, valid after MAIL FROM.
-
+The current transaction object, valid after MAIL FROM, and destroyed at queue
+time, RSET time, or if MAIL FROM was rejected. See the Transaction Object
+documentation file.

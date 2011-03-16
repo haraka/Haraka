@@ -26,6 +26,7 @@ different levels available.
   * nodes - if [multi-node.js][1] is available in the Haraka dir, specifies how
     many processes to fork off. Can be the string "cpus" to fork off as many
     children as there are CPUs (default: 0)
+  * user - optionally a user to drop privileges to. Can be a string or UID.
 
 [1]: https://github.com/kriszyp/multi-node/blob/master/lib/multi-node.js
 
