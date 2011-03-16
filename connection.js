@@ -289,7 +289,7 @@ Connection.prototype.ehlo_respond = function(retval, msg) {
 };
 
 Connection.prototype.quit_respond = function(retval, msg) {
-    this.respond(221, msg || "closing connection. Have jolly good day.");
+    this.respond(221, msg || "closing connection. Have a jolly good day.");
     this.disconnect();
 };
 
