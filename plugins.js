@@ -93,7 +93,14 @@ plugins.load_plugin = function(name) {
     var plugin = new Plugin(name);
     var code = constants_str + fs.readFileSync(plugin.full_path);
     var plugin_methods = {};
-    var sandbox = { require: require, exports: plugin_methods };
+    var sandbox = { 
+        require: require,
+        exports: plugin_methods,
+        setTimeout: setTimeout,
+        clearTimeout: clearTimeout,
+        setInterval: setInterval,
+        clearInterval: clearInterval
+    };
     vm.runInNewContext(code, sandbox, name);
     
     // copy the plugins' export methods into this new instance.
