@@ -9,7 +9,7 @@ var os     = require('os');
 var multi;
 try { multi = require('./multi-node') }
 catch (err) {
-    logger.log("no multi-node available, running single-process");
+    logger.logdebug("no multi-node available, running single-process");
 }
 
 var Server = exports;
@@ -38,12 +38,8 @@ Server.createServer = function (params) {
     
     // config_data defaults
     apply_defaults(config_data.main);
-
+    
     var server = net.createServer();
-    server.on('connection', function(client) {
-        client.setTimeout((config_data.main.inactivity_time || 300) * 1000);
-        conn.createConnection(client);
-    });
     if (multi && config_data.main.nodes) {
         // if nodes=cpus then use the count of CPUs
         var nodes = config_data.main.nodes === 'cpus' ? os.cpus().length :
@@ -61,4 +57,17 @@ Server.createServer = function (params) {
             }
         );
     }
+
+    if (config_data.main.user) {
+        // drop privileges
+        logger.lognotice('Switching from current uid: ' + process.getuid());
+        process.setuid(config_data.main.user);
+        logger.lognotice('New uid: ' + process.getuid());
+    }
+
+    server.on('connection', function(client) {
+        client.setTimeout((config_data.main.inactivity_time || 300) * 1000);
+        conn.createConnection(client);
+    });
+
 };
