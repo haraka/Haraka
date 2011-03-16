@@ -62,6 +62,8 @@ Plugin.prototype.register_hook = function(hook_name, method_name) {
     logger.logdebug("registered hook " + hook_name + " to " + this.name + "." + method_name);
 }
 
+Plugin.prototype.register = function () {}; // noop
+
 // copy logger methods into Plugin:
 
 for (var key in logger) {
@@ -92,33 +94,26 @@ plugins.load_plugin = function(name) {
     
     var plugin = new Plugin(name);
     var code = constants_str + fs.readFileSync(plugin.full_path);
-    var plugin_methods = {};
     var sandbox = { 
         require: require,
-        exports: plugin_methods,
+        exports: plugin,
         setTimeout: setTimeout,
         clearTimeout: clearTimeout,
         setInterval: setInterval,
-        clearInterval: clearInterval
+        clearInterval: clearInterval,
+        process: process
     };
     vm.runInNewContext(code, sandbox, name);
     
-    // copy the plugins' export methods into this new instance.
-    for (var method in plugin_methods) {
-        if (plugin[method]) {
-            // Method already exists
-            logger.logcrit("Method " + method + " already exists in Plugin class while loading plugin " + name);
-        }
-        plugin[method] = plugin_methods[method];
+    // register any hook_blah methods.
+    for (var method in plugin) {
         var result;
         if (result = method.match(/^hook_(\w+)\b/)) {
             plugin.register_hook(result[1], method);
         }
     }
     
-    if (plugin.register) {
-        plugin.register();
-    }
+    plugin.register();
     
     return plugin;
 }
