@@ -3,15 +3,6 @@
 var os   = require('os');
 var sock = require('./line_socket');
 
-var next_state = {
-    connect:    'helo',
-    helo:       'mail_from',
-    mail_from:  'rcpt_to',
-    rcpt_to:    'data',
-    data:       'dot',
-    dot:        'quit',
-};
-
 exports.register = function () {
     this.register_hook('queue', 'smtp_forward');
 };
@@ -20,20 +11,15 @@ var smtp_regexp = /^([0-9]{3})([ -])(.*)/;
 
 exports.smtp_forward = function (callback, connection) {
     this.loginfo("smtp forwarding");
-    if (!connection.transaction.data_lines.length) {
-        // Nothing in the data section, let's just decline it.
-        return callback(CONT);
-    }
     var smtp_config = this.config.get('smtp_forward.ini', 'ini');
     var socket = new sock.Socket();
     socket.connect(smtp_config.main.port, smtp_config.main.host);
+    socket.setTimeout(300 * 1000);
     var self = this;
     var command = 'connect';
-    var buf = '';
     var response = [];
     // copy the recipients:
     var recipients = connection.transaction.rcpt_to.map(function(item) { return item });
-    console.log(recipients);
     var data_marker = 0;
     
     var send_data = function () {
@@ -45,10 +31,25 @@ exports.smtp_forward = function (callback, connection) {
             }
         }
         else {
-            socket.write('.' + "\r\n");
+            socket.send_command('dot');
         }
     }
     
+    socket.send_command = function (cmd, data) {
+        var line = cmd + (data ? (' ' + data) : '');
+        if (cmd === 'dot') {
+            line = '.';
+        }
+        self.logprotocol("Fwd C: " + line);
+        this.write(line + "\r\n");
+        command = cmd.toLowerCase();
+    };
+    
+    socket.on('timeout', function () {
+        self.logerror("Ongoing connection timed out");
+        socket.end();
+        callback(CONT);
+    });
     socket.on('error', function (err) {
         self.logerror("Ongoing connection failed: " + err);
         // we don't deny on error - maybe another plugin can deliver
@@ -66,41 +67,39 @@ exports.smtp_forward = function (callback, connection) {
             response.push(rest);
             if (cont === ' ') {
                 if (code.match(/^[45]/)) {
-                    socket.end();
-                    return callback(CONT);
+                    socket.send_command('QUIT');
+                    return callback(CONT); // Fall through to other queue hooks here
                 }
                 switch (command) {
                     case 'connect':
-                        socket.write('HELO ' + self.config.get('me') + "\r\n");
+                        socket.send_command('HELO', self.config.get('me'));
                         break;
                     case 'helo':
-                        socket.write('MAIL FROM:' + connection.transaction.mail_from + "\r\n");
+                        socket.send_command('MAIL', 'FROM:' + connection.transaction.mail_from);
                         break;
-                    case 'mail_from':
-                        var to_send = 'RCPT TO:' + recipients.shift() + "\r\n";
-                        self.logdebug("C: " + to_send);
-                        socket.write(to_send);
+                    case 'mail':
+                        socket.send_command('RCPT', 'TO:' + recipients.shift());
                         if (recipients.length) {
                             // don't move to next state if we have more recipients
                             return;
                         }
                         break;
-                    case 'rcpt_to':
-                        socket.write('DATA' + "\r\n");
+                    case 'rcpt':
+                        socket.send_command('DATA');
                         break;
                     case 'data':
                         send_data();
                         break;
                     case 'dot':
-                        socket.write('QUIT' + "\r\n");
+                        socket.send_command('QUIT');
+                        callback(OK);
                         break;
                     case 'quit':
                         socket.end();
-                        callback(OK);
+                        break;
                     default:
-                        throw "Unknown command: " + command;
+                        throw new Error("Unknown command: " + command);
                 }
-                command = next_state[command];
             }
         }
         else {
