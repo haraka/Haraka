@@ -539,7 +539,7 @@ Connection.prototype.data_respond = function(retval, msg) {
         this.respond(354, "go ahead, make my day");
         // OK... now we get the data
         this.state = 'data';
-        this.data_bytes = 0;
+        this.transaction.data_bytes = 0;
         this.max_bytes = config.get('databytes');
     }
 };
@@ -548,8 +548,8 @@ Connection.prototype.accumulate_data = function(line) {
     if (line === ".\r\n")
         return this.data_done();
     
-    this.data_bytes += line.length;
-    if (this.max_bytes && this.data_bytes > this.max_bytes) {
+    this.transaction.data_bytes += line.length;
+    if (this.max_bytes && this.transaction.data_bytes > this.max_bytes) {
         this.respond(552, "Message too big!");
         this.disconnect(); // a bit rude, but otherwise people will just keep spewing
         return;
