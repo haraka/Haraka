@@ -44,10 +44,11 @@ for (var key in logger) {
     if (key.match(/^LOG\w/)) {
         var level = key.slice(3);
         var key_copy = key.slice(0); // copy
-        // For some reason I have to use eval here or this doesn't work...
-        eval("logger." + key.toLowerCase() + 
-             " = function (data) { if (loglevel >= " + logger[key_copy] + 
-             ") { logger.log(\"" + level + ": \" + data); } }");
+        logger[key.toLowerCase()] = function(data) {
+			if (loglevel >= logger[key_copy]) { 
+				logger.log("[" + level + "] " + data);
+			}
+		};
     }
 }
 
