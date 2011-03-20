@@ -38,18 +38,21 @@ logger._init_loglevel = function () {
 };
 
 logger._init_loglevel();
-
+var level;
 for (var key in logger) {
-    if (key.match(/^LOG\w/)) {
-		var level = key.slice(3);
-        var key_copy = key.slice(0); // copy
-        logger[key.toLowerCase()] = (function(level) { 
-			return function(data) {
-				if (loglevel >= logger[key_copy]) { 
-					logger.log("[" + level + "] " + data);
+	if(logger.hasOwnProperty(key)) {
+		if (key.match(/^LOG\w/)) {
+			level = key.slice(3);
+			logger[key.toLowerCase()] = (function(level, key) {
+				var key_copy = key.slice(0);
+				
+				return function(data) {
+					if (loglevel >= logger[key_copy]) { 
+						logger.log("[" + level + "] " + data);
+					}
 				}
-			}
-		})(level);
-    }
+			})(level, key);
+		}
+	}
 }
 
