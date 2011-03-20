@@ -35,6 +35,7 @@ logger._init_loglevel = function () {
             loglevel = logger.LOGWARN;
         }
     }
+    // logger.log("Set log level to: " + loglevel);
 };
 
 logger._init_loglevel();
@@ -43,13 +44,10 @@ for (var key in logger) {
     if (key.match(/^LOG\w/)) {
         var level = key.slice(3);
         var key_copy = key.slice(0); // copy
-        logger[key.toLowerCase()] = (function(level) { 
-            return function(data) {
-                if (loglevel >= logger[key_copy]) { 
-                    logger.log("[" + level + "] " + data);
-                }
-            }
-        })(level);
+        // For some reason I have to use eval here or this doesn't work...
+        eval("logger." + key.toLowerCase() + 
+             " = function (data) { if (loglevel >= " + logger[key_copy] + 
+             ") { logger.log(\"" + level + ": \" + data); } }");
     }
 }
 
