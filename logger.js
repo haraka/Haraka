@@ -23,7 +23,7 @@ logger.log = function (data) {
 
 logger._init_loglevel = function () {
     var _loglevel = config.get('loglevel', 'nolog', 'value');
-	if (_loglevel) {
+    if (_loglevel) {
         var loglevel_num = parseInt(_loglevel);
         if (!loglevel_num || loglevel_num === NaN) {
             loglevel = logger[_loglevel.toUpperCase()];
@@ -41,15 +41,15 @@ logger._init_loglevel();
 
 for (var key in logger) {
     if (key.match(/^LOG\w/)) {
-		var level = key.slice(3);
+        var level = key.slice(3);
         var key_copy = key.slice(0); // copy
         logger[key.toLowerCase()] = (function(level) { 
-			return function(data) {
-				if (loglevel >= logger[key_copy]) { 
-					logger.log("[" + level + "] " + data);
-				}
-			}
-		})(level);
+            return function(data) {
+                if (loglevel >= logger[key_copy]) { 
+                    logger.log("[" + level + "] " + data);
+                }
+            }
+        })(level);
     }
 }
 
