@@ -42,9 +42,10 @@ logger._init_loglevel();
 for (var key in logger) {
     if (key.match(/^LOG\w/)) {
         var level = key.slice(3);
-        var key_copy = key.slice(0); // copy
+        var key_copy = 'LOG' + level; // copy
         logger[key.toLowerCase()] = (function(level) { 
             return function(data) {
+                console.log('L:'+loglevel+", K:"+ key_copy + ', Level:'+level);
                 if (loglevel >= logger[key_copy]) { 
                     logger.log("[" + level + "] " + data);
                 }
