@@ -39,18 +39,19 @@ logger._init_loglevel = function () {
 
 logger._init_loglevel();
 
-for (var key in logger) {
-    if (key.match(/^LOG\w/)) {
-        var level = key.slice(3);
-        var key_copy = 'LOG' + level; // copy
-        logger[key.toLowerCase()] = (function(level) { 
-            return function(data) {
-                console.log('L:'+loglevel+", K:"+ key_copy + ', Level:'+level);
-                if (loglevel >= logger[key_copy]) { 
-                    logger.log("[" + level + "] " + data);
+var level, key;
+for (key in logger) {
+    if(logger.hasOwnProperty(key)) {
+        if (key.match(/^LOG\w/)) {
+            level = key.slice(3);
+            logger[key.toLowerCase()] = (function(level, key) {
+                return function(data) {
+                    if (loglevel >= logger[key]) {
+                        logger.log("[" + level + "] " + data);
+                    }
                 }
-            }
-        })(level);
+            })(level, key);
+        }
     }
 }
 
