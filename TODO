@@ -1,6 +1,5 @@
 - Address parser (similar to Qpsmtpd::Address)
 - AUTH
 - TLS
-- SMTP proxy queue plugin
 - Email Parser
 
