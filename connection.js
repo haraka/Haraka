@@ -83,7 +83,13 @@ Connection.prototype.process_line = function (line) {
                 this[method](remaining);
             }
             catch (err) {
-                logger.logerror(method + " failed: " + err);
+                if (err.stack) {
+                    logger.logerror(method + " failed: " + err);
+                    err.stack.split("\n").forEach(logger.logerror);
+                }
+                else {
+                    logger.logerror(method + " failed: " + err);
+                }
                 this.respond(500, "Internal Server Error");
                 this.disconnect;
             }
@@ -548,7 +554,6 @@ Connection.prototype.accumulate_data = function(line) {
     if (line === ".\r\n")
         return this.data_done();
     
-    this.transaction.data_bytes += line.length;
     if (this.max_bytes && this.transaction.data_bytes > this.max_bytes) {
         this.respond(552, "Message too big!");
         this.disconnect(); // a bit rude, but otherwise people will just keep spewing
@@ -563,11 +568,12 @@ Connection.prototype.accumulate_data = function(line) {
         return;
     }
     
-    this.transaction.data_add(line);
+    this.transaction.add_data(line);
 };
 
 Connection.prototype.data_done = function() {
     this.state = 'cmd';
+    // this.transaction.add_header('X-Haraka', 'Version ' + haraka.version);
     plugins.run_hooks('data_post', this);
 };
 
