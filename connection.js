@@ -96,7 +96,9 @@ Connection.prototype.process_line = function (line) {
         }
         else {
             // unrecognised command
-            plugins.run_hooks('unrecognized_command', this, matches[1]);
+            matches.splice(0,1);
+            matches.splice(1,1);
+            plugins.run_hooks('unrecognized_command', this, matches);
         }
     }
     else if (this.state === 'data') {
@@ -192,8 +194,7 @@ Connection.prototype.disconnect_respond = function () {
 Connection.prototype.get_capabilities = function() {
     var capabilities = []
     
-    // TODO get AUTH mechanisms here
-    // TODO get STARTTLS here if loaded?
+    
     
     return capabilities;
 };
@@ -207,6 +208,9 @@ Connection.prototype.reset_transaction = function() {
 
 Connection.prototype.unrecognized_command_respond = function(retval, msg) {
     switch(retval) {
+        case constants.ok:
+                // response already sent, cool...
+                break;
         case constants.deny:
                 this.respond(500, msg || "Unrecognized command");
                 break;
@@ -231,8 +235,9 @@ Connection.prototype.connect_respond = function(retval, msg) {
                              this.respond(450, msg || "Come back later");
                              break;
         default:
-                    var greeting = config.get('smtpgreeting')
-                             this.respond(220, msg || (config.get('me') + " ESMTP Haraka " + haraka.version + " ready"));
+                             var greeting = config.get('smtpgreeting')
+                             this.respond(220, msg || (config.get('me') + 
+                                " ESMTP Haraka " + haraka.version + " ready"));
     }
 };
 
@@ -285,13 +290,14 @@ Connection.prototype.ehlo_respond = function(retval, msg) {
                     response.push("SIZE " + databytes);
                 }
                 
-                var capabilities = this.get_capabilities();
-                var i;
-                for (i = 0; i < capabilities.length; i++) {
-                    response.push(capabilities[i]);
-                }
-                this.respond(250, response);
+                this.capabilities = response;
+                
+                plugins.run_hooks('capabilities', this);
     }
+};
+
+Connection.prototype.capabilities_respond = function (retval, msg) {
+    this.respond(250, this.capabilities);
 };
 
 Connection.prototype.quit_respond = function(retval, msg) {
@@ -483,10 +489,10 @@ var _daynames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 var _monnames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 function _pad(num, n, p) {
-		var s = '' + num;
-		p = p || '0';
-		while (s.length < n) s = p + s;
-		return s;
+        var s = '' + num;
+        p = p || '0';
+        while (s.length < n) s = p + s;
+        return s;
 }
 
 function _date_to_str(d) {

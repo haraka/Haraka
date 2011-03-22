@@ -101,7 +101,8 @@ plugins.load_plugin = function(name) {
         clearTimeout: clearTimeout,
         setInterval: setInterval,
         clearInterval: clearInterval,
-        process: process
+        process: process,
+        Buffer: Buffer
     };
     vm.runInNewContext(code, sandbox, name);
     
