@@ -47,6 +47,7 @@ exports.check_user = function (callback, connection, credentials) {
     this.loginfo("comparing " + hmac_pw + ' to ' + credentials[1]);
     
     if (hmac_pw === credentials[1]) {
+        connection.relaying = 1;
         connection.respond(235, "Authentication successful");
     }
     else {
