@@ -25,6 +25,7 @@ var defaults = {
 
 exports.hook_data_post = function (callback, connection) {
     var config = this.config.get('spamassassin.ini', 'ini');
+    var plugin = this;
     
     for (var key in defaults) {
         config.main[key] = config.main[key] || defaults[key];
@@ -90,6 +91,7 @@ exports.hook_data_post = function (callback, connection) {
     var state = 'line0';
     
     socket.on('line', function (line) {
+        plugin.logprotocol("SA: " + line);
         line = line.replace(/\r?\n/, '');
         if (state === 'line0') {
             spamd_response.line0 = line;
@@ -111,6 +113,7 @@ exports.hook_data_post = function (callback, connection) {
         }
         else if (state === 'tests') {
             spamd_response.tests = line;
+            socket.destroy();
         }
     });
     
@@ -137,11 +140,12 @@ exports.hook_data_post = function (callback, connection) {
         connection.transaction.add_header('X-Spam-Level', stars_string);
         
         if (config.main.reject_threshold && spamd_response.hits >= config.main.reject_threshold) {
-            callback(DENY, "spam score exceeded threshold");
+            return callback(DENY, "spam score exceeded threshold");
         }
         else if (config.main.munge_subject_threshold && spamd_response.hits >= config.main.munge_subject_threshold) {
             // munge the subject - TODO once we have a way to do that.
         }
+        callback(CONT);
     });
 
 };
