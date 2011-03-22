@@ -86,29 +86,61 @@ exports.hook_data_post = function (callback, connection) {
         });
     });
     
-    var line0; // spamd greeting
     var spamd_response = {};
+    var state = 'line0';
     
     socket.on('line', function (line) {
-        if (!line0) {
-            line0 = line;
+        line = line.replace(/\r?\n/, '');
+        if (state === 'line0') {
+            spamd_response.line0 = line;
+            state = 'response';
         }
-        else {
-            var matches;
-            if (matches = line.match(/Spam: (True|False) ; (-?\d+\.\d) \/ (-?\d+\.\d)/)) {
-                spamd_response.flag = matches[1];
-                spamd_response.hits = matches[2];
-                spamd_response.reqd = matches[3];
+        else if (state === 'response') {
+            if (line.match(/\S/)) {
+                var matches;
+                if (matches = line.match(/Spam: (True|False) ; (-?\d+\.\d) \/ (-?\d+\.\d)/)) {
+                    spamd_response.flag = matches[1];
+                    spamd_response.hits = matches[2];
+                    spamd_response.reqd = matches[3];
+                    spamd_response.flag = spamd_response.flag === 'True' ? 'Yes' : 'No'
+                }
             }
+            else {
+                state = 'tests';
+            }
+        }
+        else if (state === 'tests') {
+            spamd_response.tests = line;
         }
     });
     
     socket.on('end', function () {
+        // Now we do stuff with the results...
+        
+        // TODO: We need to cleanup/remove old headers first, but we don't have
+        // the API to do that (yet).
+        
+        if (spamd_response.flag === 'Yes') {
+            connection.transaction.add_header('X-Spam-Flag', 'YES');
+        }
+        connection.transaction.add_header('X-Spam-Status', spamd_response.flag +
+            ', hits=' + spamd_response.hits + ' required=' + spamd_response.reqd +
+            "\n\ttests=" + spamd_response.tests);
+        
+        var stars = Math.floor(spamd_response.hits);
+        if (stars < 1) stars = 1;
+        if (stars > 50) stars = 50;
+        var stars_string = '';
+        for (var i = 0; i < stars; i++) {
+            stars_string += '*';
+        }
+        connection.transaction.add_header('X-Spam-Level', stars_string);
+        
         if (config.main.reject_threshold && spamd_response.hits >= config.main.reject_threshold) {
             callback(DENY, "spam score exceeded threshold");
         }
         else if (config.main.munge_subject_threshold && spamd_response.hits >= config.main.munge_subject_threshold) {
-            // munge the subject
+            // munge the subject - TODO once we have a way to do that.
         }
     });
 
