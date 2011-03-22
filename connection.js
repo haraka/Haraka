@@ -59,6 +59,7 @@ function Connection(client) {
     this.state = 'pause';
     this.notes = {};
     this.early_talker_delay = config.get('early_talker_delay') || 1000;
+    this.relaying = 0;
     
     setupClient(this);
 }
@@ -353,6 +354,11 @@ Connection.prototype.mail_respond = function(retval, msg) {
 };
 
 Connection.prototype.rcpt_respond = function(retval, msg) {
+    
+    if (retval === constants.cont && this.relaying) {
+        retval = constants.ok;
+    }
+        
     switch (retval) {
         case constants.deny:
                 this.respond(550, msg || "delivery denied");
@@ -370,7 +376,8 @@ Connection.prototype.rcpt_respond = function(retval, msg) {
                 this.respond(250, msg || "recipient ok");
                 break;
         default:
-                logger.logalert("No plugin determined if relaying was allowed");
+                if (retval !== constants.cont)
+                    logger.logalert("No plugin determined if relaying was allowed");
                 this.respond(450, "I cannot deliver for that user");
     }
 };
