@@ -31,6 +31,14 @@ exports.hook_data_post = function (callback, connection) {
         config.main[key] = config.main[key] || defaults[key];
     }
     
+    ['reject_threshold', 'munge_subject_threshold', 'max_size'].forEach(
+        function (item) {
+            if (config.main[item]) {
+                config.main[item] = new Number(config.main[item]);
+            }
+        }
+    );
+    
     if (connection.transaction.data_bytes > config.main.max_size) {
         return callback(CONT);
     }
@@ -139,10 +147,14 @@ exports.hook_data_post = function (callback, connection) {
         }
         connection.transaction.add_header('X-Spam-Level', stars_string);
         
-        if (config.main.reject_threshold && spamd_response.hits >= config.main.reject_threshold) {
+        plugin.loginfo("spamassassin returned: " + spamd_response.flag + ', ' +
+            spamd_response.hits + '/' + spamd_response.reqd +
+            " Reject at: " + config.main.reject_threshold);
+        
+        if (config.main.reject_threshold && (spamd_response.hits >= config.main.reject_threshold)) {
             return callback(DENY, "spam score exceeded threshold");
         }
-        else if (config.main.munge_subject_threshold && spamd_response.hits >= config.main.munge_subject_threshold) {
+        else if (config.main.munge_subject_threshold && (spamd_response.hits >= config.main.munge_subject_threshold)) {
             // munge the subject - TODO once we have a way to do that.
         }
         callback(CONT);
