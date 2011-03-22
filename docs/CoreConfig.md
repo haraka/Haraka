@@ -39,3 +39,7 @@ different levels available.
   If clients talk early we *punish* them with a delay of this many milliseconds
   default: 1000.
 
+* plugin_timeout
+
+  Seconds to allow a plugin to run before the next hook is called automatically
+  default: 30

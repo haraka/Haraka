@@ -142,7 +142,11 @@ plugins.run_hooks = function (hook, connection, params) {
 
 plugins.run_next_hook = function(hook, connection, params) {
     var called_once = 0;
+    var timeout_id;
+    
     var callback = function(retval, msg) {
+        if (timeout_id) clearTimeout(timeout_id);
+        
         if (called_once) {
             logger.logerror("callback called multiple times. Ignoring subsequent calls");
             return;
@@ -164,6 +168,13 @@ plugins.run_next_hook = function(hook, connection, params) {
     
     // shift the next one off the stack and run it.
     var item = connection.hooks_to_run.shift();
+
+    timeout_id = setTimeout(function () {
+        logger.logcrit("Plugin " + item[0].name + 
+            " timed out - make sure it calls the callback");
+        callback(constants.cont, "timeout");
+        }, (config.get("plugin_timeout") || 30) * 1000);
+        
     try {
         item[0][ item[1] ].call(item[0], callback, connection, params);
     }
