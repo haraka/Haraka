@@ -33,7 +33,7 @@ exports.parse = function(type, line) {
     var matches;
     while (matches = chew_regexp.exec(line)) {
         params.push(matches[1]);
-        line = line.splice(matches[1].length);
+        line = line.slice(matches[1].length);
     }
     params = params.reverse();
     
