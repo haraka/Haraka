@@ -1,5 +1,5 @@
 - Address parser (similar to Qpsmtpd::Address)
-- AUTH
 - TLS
 - Email Parser
-
+- Support for Cluster: https://github.com/learnboost/cluster instead of
+  multi-node
