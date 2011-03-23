@@ -447,7 +447,10 @@ Connection.prototype.cmd_mail = function(line) {
         results = rfc1869.parse("mail", line);
     }
     catch (err) {
-        return this.respond(501, err);
+        if (err.stack) {
+            err.stack.split(/\n/).forEach(logger.logerror);
+        }
+        return this.respond(501, "Command parsing failed");
     }
     
     this.reset_transaction();
@@ -475,7 +478,10 @@ Connection.prototype.cmd_rcpt = function(line) {
         results = rfc1869.parse("rcpt", line);
     }
     catch (err) {
-        return this.respond(501, err);
+        if (err.stack) {
+            err.stack.split(/\n/).forEach(logger.logerror);
+        }
+        return this.respond(501, "Command parsing failed");
     }
     
     var recipient = results.shift();
