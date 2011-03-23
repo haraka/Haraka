@@ -32,15 +32,27 @@ exports.hook_queue = function (callback, connection) {
     var i = 0;
     var write_more = function () {
         if (i === connection.transaction.data_lines.length) {
-            fs.close(messagePipe[1], function () {
+            return fs.close(messagePipe[1], function () {
                 // now send envelope
-                var envelope = 'F' + connection.transaction.mail_from.replace(/</, '').replace(/>/, '');
-                envelope += '\0';
+                // Hope this will be big enough...
+                var buf = new Buffer(4096);
+                var p = 0;
+                buf[p++] = 70;
+                var mail_from = connection.transaction.mail_from.replace(/</, '').replace(/>/, '');
+                for (var i = 0; i < mail_from.length; i++) {
+                    buf[p++] = mail_from.charCodeAt(i);
+                }
+                buf[p++] = 0;
                 connection.transaction.rcpt_to.forEach(function (rcpt) {
-                    envelope += 'T' + rcpt.replace(/</, '').replace(/>/, '') + '\0';
+                    buf[p++] = 84;
+                    var rcpt_to = rcpt.replace(/</, '').replace(/>/, '');
+                    for (var i = 0; i < rcpt_to.length; i++) {
+                        buf[p++] = rcpt_to.charCodeAt(i);
+                    }
+                    buf[p++] = 0;
                 });
-                envelope += '\0';
-                fs.write(envelopePipe[1], buf, 0, buf.length, null, function () {
+                buf[p++] = 0;
+                fs.write(envelopePipe[1], buf, 0, p, null, function () {
                     fs.close(envelopePipe[1]);
                     // now we just wait for the process to exit, which happens above
                 });
