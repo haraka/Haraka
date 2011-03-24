@@ -1,7 +1,8 @@
 - Address parser (similar to Qpsmtpd::Address)
-- AUTH
 - TLS
 - Email Parser
 - Hook on DENY/DENYSOFT/etc
 - Stats plugin which talks to a DB (redis?)
 - Web UI for above DB
+- Support for Cluster: https://github.com/learnboost/cluster instead of
+  multi-node
