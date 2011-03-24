@@ -118,9 +118,6 @@ Connection.prototype.process_data = function (data) {
 };
 
 Connection.prototype._process_data = function() {
-    if (this.disconnected) {
-        return;
-    }
     var results;
     while (results = line_regexp.exec(this.current_data)) {
         var this_line = results[1];
@@ -450,6 +447,9 @@ Connection.prototype.cmd_mail = function(line) {
         if (err.stack) {
             err.stack.split(/\n/).forEach(logger.logerror);
         }
+        else {
+            logger.logerror(err);
+        }
         return this.respond(501, "Command parsing failed");
     }
     
@@ -480,6 +480,9 @@ Connection.prototype.cmd_rcpt = function(line) {
     catch (err) {
         if (err.stack) {
             err.stack.split(/\n/).forEach(logger.logerror);
+        }
+        else {
+            logger.logerror(err);
         }
         return this.respond(501, "Command parsing failed");
     }
