@@ -2,4 +2,6 @@
 - AUTH
 - TLS
 - Email Parser
-
+- Hook on DENY/DENYSOFT/etc
+- Stats plugin which talks to a DB (redis?)
+- Web UI for above DB
