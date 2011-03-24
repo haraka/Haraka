@@ -22,7 +22,7 @@ config.get = function(name, type) {
     }
     catch (err) {
         if (err.code === 'EBADF') {
-            // do nothing
+            // no such file or directory
             if (type === 'ini') {
                 return configloader.empty_config(type);
             }
