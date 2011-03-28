@@ -6,6 +6,7 @@ var constants   = require('./constants');
 var path        = require('path');
 var vm          = require('vm');
 var fs          = require('fs');
+var utils       = require('./utils');
 
 var plugin_path = process.env.HARAKA ? path.join(process.env.HARAKA, 'plugins') : './plugins';
 // These are the hooks that qpsmtpd implements - I should get around
@@ -69,8 +70,7 @@ Plugin.prototype.register = function () {}; // noop
 for (var key in logger) {
     if (key.match(/^log\w/)) {
         // console.log("adding Plugin." + key + " method");
-        var key_copy = key.slice(0);
-        eval("Plugin.prototype." + key_copy + " = function (data) { logger." + key_copy + "(\"[\" + this.name + \"] \" + data); }");
+        Plugin.prototype[key] = (function (key) { return function (data) { logger[key]("[" + this.name + "] ", data); } })(key);
     }
 }
 
@@ -121,7 +121,7 @@ plugins.load_plugin = function(name) {
 
 plugins.load_plugins();
 
-plugins.run_hooks = function (hook, connection, params) {
+plugins.run_hooks = function (hook, connection, params, no_respond) {
     logger.logdebug("running " + hook + " hooks");
     
     connection.hooks_to_run = [];
@@ -138,13 +138,14 @@ plugins.run_hooks = function (hook, connection, params) {
         }
     }
     
-    plugins.run_next_hook(hook, connection, params);
+    plugins.run_next_hook(hook, connection, params, no_respond);
 };
 
-plugins.run_next_hook = function(hook, connection, params) {
+plugins.run_next_hook = function(hook, connection, params, no_respond) {
     var called_once = 0;
     var timeout_id;
     
+    var item;
     var callback = function(retval, msg) {
         if (timeout_id) clearTimeout(timeout_id);
         
@@ -157,18 +158,23 @@ plugins.run_next_hook = function(hook, connection, params) {
         if (connection.hooks_to_run.length == 0 || 
             retval !== constants.cont)
         {
-            var respond_method = hook + "_respond";
-            connection[respond_method](retval, msg);
+            if (utils.in_array(retval, [constants.deny, constants.denysoft, constants.denydisconnect])) {
+                plugins.run_hooks('deny', connection, [retval, msg, item[0].name, item[1]], 1);
+            }
+            if (!no_respond) {
+                var respond_method = hook + "_respond";
+                connection[respond_method](retval, msg);
+            }
         }
         else {
-            plugins.run_next_hook(hook, connection, params);
+            plugins.run_next_hook(hook, connection, params, no_respond);
         }
     }
     
     if (!connection.hooks_to_run.length) return callback();
     
     // shift the next one off the stack and run it.
-    var item = connection.hooks_to_run.shift();
+    item = connection.hooks_to_run.shift();
 
     timeout_id = setTimeout(function () {
         logger.logcrit("Plugin " + item[0].name + 
@@ -177,6 +183,7 @@ plugins.run_next_hook = function(hook, connection, params) {
         }, (config.get("plugin_timeout") || 30) * 1000);
         
     try {
+        connection.current_hook = item;
         item[0][ item[1] ].call(item[0], callback, connection, params);
     }
     catch (err) {

@@ -45,6 +45,7 @@ Logging
 
 Plugins inherit all the logging methods of logger.js, which are:
 
+* logprotocol
 * logdebug
 * loginfo
 * lognotice
@@ -55,10 +56,10 @@ Plugins inherit all the logging methods of logger.js, which are:
 * logemerg
 
 It should also be noted that if plugins throw an exception directly when in a
-hook the exception will be caught and generate a logcrit level error.
-
-Remember to always use this.logwarn() (or other method) when logging from a
-plugin if you can because it includes extra information in the output.
+hook the exception will be caught and generate a logcrit level error. However
+they will not be caught quite as gracefully if you are in async code within
+your plugin. Use error codes for that, log the error, and run your callback
+appropriately.
 
 Multiple Hooks
 -----
@@ -133,6 +134,7 @@ These are just the name of the hook, with any parameter sent to it:
 * data
 * data_post
 * queue
+* deny - called if a plugin returns one of DENY, DENYSOFT or DENYDISCONNECT
 
 Further Reading
 --------------
