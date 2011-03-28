@@ -1,6 +1,7 @@
 // Log class
 
 var config = require('./config');
+var util = require('util');
 
 var logger = exports;
 
@@ -46,10 +47,20 @@ for (key in logger) {
         if (key.match(/^LOG\w/)) {
             level = key.slice(3);
             logger[key.toLowerCase()] = (function(level, key) {
-                return function(data) {
-                    if (loglevel >= logger[key]) {
-                        logger.log("[" + level + "] " + data);
+                return function() {
+                    if (loglevel < logger[key])
+                        return;
+                    var str = "[" + level + "] ";
+                    for (var i = 0; i < arguments.length; i++) {
+                        var data = arguments[i];
+                        if (typeof(data) === 'object') {
+                            str += util.inspect(data);
+                        }
+                        else {
+                            str += data;
+                        }
                     }
+                    logger.log(str);
                 }
             })(level, key);
         }
