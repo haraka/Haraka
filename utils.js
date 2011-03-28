@@ -1,6 +1,8 @@
 // Various utility functions
 
 // copied from http://www.broofa.com/Tools/Math.uuid.js
+var CHARS = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'.split('');
+
 exports.uuid = function () {
     var chars = CHARS, uuid = new Array(36), rnd=0, r;
     for (var i = 0; i < 36; i++) {
@@ -22,7 +24,7 @@ exports.uuid = function () {
 
 exports.in_array = function (item, array) {
     for (var i in array) {
-        if (item === i) {
+        if (item === array[i]) {
             return true;
         }
     }
