@@ -1,6 +1,5 @@
 // smtp network server
 
-var util = require('util');
 var net  = require('net');
 var logger = require('./logger');
 var config = require('./config');
