@@ -30,3 +30,24 @@ exports.in_array = function (item, array) {
     }
     return false;
 };
+
+exports.sort_keys = function (obj) {
+    var keys = [];
+    for (var i in obj) {
+        if (obj.hasOwnProperty(i)) {
+            keys.push(i);
+        }
+    }
+    keys.sort();
+    return keys;
+};
+
+exports.ISODate = function (d) {
+   function pad(n) {return n<10 ? '0'+n : n}
+   return d.getUTCFullYear()+'-'
+      + pad(d.getUTCMonth()+1)+'-'
+      + pad(d.getUTCDate())+'T'
+      + pad(d.getUTCHours())+':'
+      + pad(d.getUTCMinutes())+':'
+      + pad(d.getUTCSeconds())+'Z'
+}
