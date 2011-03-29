@@ -623,6 +623,7 @@ Connection.prototype.queue_respond = function(retval, msg) {
     
     switch (retval) {
         case constants.ok:
+                plugins.run_hooks("queue_ok", this, null, 1);
                 this.respond(250, msg || "Message Queued");
                 break;
         case constants.deny:
@@ -640,4 +641,3 @@ Connection.prototype.queue_respond = function(retval, msg) {
                 break;
     }
 };
-
