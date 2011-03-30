@@ -32,14 +32,7 @@ exports.in_array = function (item, array) {
 };
 
 exports.sort_keys = function (obj) {
-    var keys = [];
-    for (var i in obj) {
-        if (obj.hasOwnProperty(i)) {
-            keys.push(i);
-        }
-    }
-    keys.sort();
-    return keys;
+    return Object.keys(obj).sort();
 };
 
 exports.ISODate = function (d) {
