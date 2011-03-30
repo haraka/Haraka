@@ -72,7 +72,7 @@ exports.hook_queue_ok = function (callback, connection, params) {
         if (err) {
             if (err.code === 'SQLITE_BUSY') {
                 plugin.loginfo("SQLite Busy on accepted - re-running");
-                return plugin.hook_deny(callback, connection, params);
+                return plugin.hook_queue_ok(callback, connection, params);
             }
             plugin.logerror("Insert failed: " + err);
         }
