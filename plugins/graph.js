@@ -1,6 +1,20 @@
 // log our denys
 
-var deny_list = [];
+var sqlite3 = require('sqlite3').verbose();
+var db = new sqlite3.Database('graphlog.db');
+
+var insert;
+var select;
+db.run("CREATE TABLE graphdata (timestamp INTEGER NOT NULL, plugin TEXT NOT NULL)",
+    function (err) {
+        if (!err) {
+            db.run("CREATE INDEX graphdata_idx ON graphdata.timestamp");
+        }
+        insert = db.prepare("INSERT INTO graphdata VALUES (?,?)");
+        select = db.prepare("SELECT * FROM graphdata WHERE timestamp >= ? ORDER BY timestamp");
+    }
+);
+
 var plugins = {};
 
 var http  = require('http');
@@ -11,16 +25,18 @@ var width = 800;
 exports.register = function () {
     var plugin = this;
     var port = this.config.get('grapher.http_port') || 8080;
-    plugins = {queued: 0};
+    var ignore_re = this.config.get('grapher.ignore_re') || 'queue|graph|relay';
+    ignore_re = new RegExp(ignore_re);
+    
+    plugins = {accepted: 0};
     
     this.config.get('plugins', 'list').forEach(
         function (p) {
-            if (!p.match(/queue|graph|relay/)) {
+            if (!p.match(ignore_re)) {
                 plugins[p] = 0;
             }
         }
     );
-    
     
     var server = http.createServer(
         function (req, res) {
@@ -31,15 +47,23 @@ exports.register = function () {
 };
 
 exports.hook_deny = function (callback, connection, params) {
-    params.unshift((new Date()).getTime());
-    deny_list.push(params);
-    
-    callback(CONT);
+    var plugin = this;
+    insert.run((new Date()).getTime(), params[2], function (err) {
+        if (err) {
+            plugin.logerror("Insert failed: " + err);
+        }
+        callback(CONT);
+    });
 };
 
 exports.hook_queue_ok = function (callback, connection, params) {
-    deny_list.push([new Date().getTime(), OK, "OK", "queued", "hook"]);
-    callback(CONT);
+    var plugin = this;
+    insert.run((new Date()).getTime(), "accepted", function (err) {
+        if (err) {
+            plugin.logerror("Insert failed: " + err);
+        }
+        callback(CONT);
+    });
 };
 
 exports.handle_http_request = function (req, res) {
@@ -67,6 +91,7 @@ exports.handle_root = function (res, parsed) {
           </head>\
           <body onload="onLoad();">\
           <script>\
+            var interval_id;\
             function onLoad(period) {\
               if (!period) {\
                   period = document.location.hash.replace(\'#\',\'\') || \'day\';\
@@ -85,7 +110,9 @@ exports.handle_root = function (res, parsed) {
                     labelsKMB: true\
                 }\
               );\
-              setInterval(function() {\
+              if (interval_id)\
+                clearInterval(interval_id);\
+              interval_id = setInterval(function() {\
                 graph.updateOptions( { file: "data?period=" + period } );\
               }, 10000);\
             }\
@@ -143,31 +170,39 @@ exports.handle_data = function (res, parsed) {
     
     var aggregate = reset_agg();
     var allpoints = reset_agg();
+    var plugin = this;
     
-    for (var i = 0; i < deny_list.length; i++) {
-        if (deny_list[i][0] < earliest) {
-            continue;
+    select.each(earliest, function (err, row) {
+        if (err) {
+            plugin.logerror("SELECT failed: " + err);
+            return;
         }
-        while (deny_list[i][0] > next_stop) {
+        while (row.timestamp > next_stop) {
             write_to(utils.ISODate(new Date(next_stop)) + ',' + 
                 utils.sort_keys(plugins).map(function(i){ return 1000 * (aggregate[i]/group_by) }).join(',')
             );
             aggregate = reset_agg();
             next_stop += group_by;
         }
-        aggregate[deny_list[i][3]]++;
-    }
-    
-    // write zeros if we didn't get up to now
-    while (next_stop <= today) {
-        write_to(utils.ISODate(new Date(next_stop)) + ',' + 
-            utils.sort_keys(plugins).map(function(i){ return 1000 * (aggregate[i]/group_by) }).join(',')
-        );
-        aggregate = reset_agg();
-        next_stop += group_by;
-    }
-    
-    res.end();
+        // plugin.loginfo("adding to " + row.plugin);
+        aggregate[row.plugin]++;
+    }, 
+    function (err, row_count) {
+        if (err) {
+            plugin.logerror("SELECT completion failed: " + err);
+            return;
+        }
+        // write last row and zeros if we didn't get up to now
+        while (next_stop <= today) {
+            write_to(utils.ISODate(new Date(next_stop)) + ',' + 
+                utils.sort_keys(plugins).map(function(i){ return 1000 * (aggregate[i]/group_by) }).join(',')
+            );
+            aggregate = reset_agg();
+            next_stop += group_by;
+        }
+        
+        res.end();
+    });
 };
 
 var reset_agg = function () {
