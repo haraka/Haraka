@@ -8,7 +8,7 @@ var select;
 db.run("CREATE TABLE graphdata (timestamp INTEGER NOT NULL, plugin TEXT NOT NULL)",
     function (err) {
         if (!err) {
-            db.run("CREATE INDEX graphdata_idx ON graphdata.timestamp");
+            db.run("CREATE INDEX graphdata_idx ON graphdata (timestamp)");
         }
         insert = db.prepare("INSERT INTO graphdata VALUES (?,?)");
         select = db.prepare("SELECT * FROM graphdata WHERE timestamp >= ? ORDER BY timestamp");
@@ -41,7 +41,13 @@ exports.register = function () {
     var server = http.createServer(
         function (req, res) {
             plugin.handle_http_request(req, res);
-    }).listen(port, "127.0.0.1");
+    });
+    
+    server.on('error', function (err) {
+        plugin.logerror("http server failed to start. Maybe running elsewhere?" + err);
+    });
+    
+    server.listen(port, "127.0.0.1");
     
     this.loginfo("http server running on port " + port);
 };
@@ -50,6 +56,10 @@ exports.hook_deny = function (callback, connection, params) {
     var plugin = this;
     insert.run((new Date()).getTime(), params[2], function (err) {
         if (err) {
+            if (err.code === 'SQLITE_BUSY') {
+                plugin.loginfo("SQLite Busy - re-running");
+                return plugin.hook_deny(callback, connection, params);
+            }
             plugin.logerror("Insert failed: " + err);
         }
         callback(CONT);
@@ -60,6 +70,10 @@ exports.hook_queue_ok = function (callback, connection, params) {
     var plugin = this;
     insert.run((new Date()).getTime(), "accepted", function (err) {
         if (err) {
+            if (err.code === 'SQLITE_BUSY') {
+                plugin.loginfo("SQLite Busy on accepted - re-running");
+                return plugin.hook_deny(callback, connection, params);
+            }
             plugin.logerror("Insert failed: " + err);
         }
         callback(CONT);
