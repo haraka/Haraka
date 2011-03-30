@@ -57,8 +57,10 @@ exports.hook_deny = function (callback, connection, params) {
     insert.run((new Date()).getTime(), params[2], function (err) {
         if (err) {
             if (err.code === 'SQLITE_BUSY') {
-                plugin.loginfo("SQLite Busy - re-running");
-                return plugin.hook_deny(callback, connection, params);
+                plugin.logdebug("SQLite Busy - re-running");
+                return setTimeout(function () {
+                    plugin.hook_deny(callback, connection, params);
+                }, 50); // try again in 50ms
             }
             plugin.logerror("Insert failed: " + err);
         }
@@ -71,8 +73,10 @@ exports.hook_queue_ok = function (callback, connection, params) {
     insert.run((new Date()).getTime(), "accepted", function (err) {
         if (err) {
             if (err.code === 'SQLITE_BUSY') {
-                plugin.loginfo("SQLite Busy on accepted - re-running");
-                return plugin.hook_queue_ok(callback, connection, params);
+                plugin.logdebug("SQLite Busy on accepted - re-running");
+                return setTimeout(function () {
+                    plugin.hook_queue_ok(callback, connection, params);
+                }, 50); // try again in 50ms
             }
             plugin.logerror("Insert failed: " + err);
         }
