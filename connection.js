@@ -60,6 +60,7 @@ function Connection(client) {
     this.notes = {};
     this.early_talker_delay = config.get('early_talker_delay') || 1000;
     this.relaying = 0;
+    this.hooks_to_run = [];
     
     setupClient(this);
 }
@@ -623,8 +624,7 @@ Connection.prototype.queue_respond = function(retval, msg) {
     
     switch (retval) {
         case constants.ok:
-                plugins.run_hooks("queue_ok", this, null, 1);
-                this.respond(250, msg || "Message Queued");
+                plugins.run_hooks("queue_ok", this);
                 break;
         case constants.deny:
                 this.respond(552, msg || "Message denied");
@@ -640,4 +640,8 @@ Connection.prototype.queue_respond = function(retval, msg) {
                 this.respond(451, msg || "Queuing declined or disabled, try later");
                 break;
     }
+};
+
+Connection.prototype.queue_ok_respond = function (retval, msg) {
+    this.respond(250, msg || "Message Queued");
 };

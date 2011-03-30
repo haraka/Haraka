@@ -86,7 +86,7 @@ plugins.load_plugins = function () {
 var constants_str = "";
 for (var con in constants) {
     //console.log("Const: " + con);
-    constants_str += "var " + con.toUpperCase() + " = " + constants[con] + ";\n";
+    constants_str += "var " + con.toUpperCase() + " = " + constants[con] + "; ";
 }
 
 plugins.load_plugin = function(name) {
@@ -121,8 +121,12 @@ plugins.load_plugin = function(name) {
 
 plugins.load_plugins();
 
-plugins.run_hooks = function (hook, connection, params, no_respond) {
+plugins.run_hooks = function (hook, connection, params) {
     logger.logdebug("running " + hook + " hooks");
+    
+    if (connection.hooks_to_run.length) {
+        throw new Error("We are already running hooks! Fatal error!");
+    }
     
     connection.hooks_to_run = [];
     
@@ -133,15 +137,15 @@ plugins.run_hooks = function (hook, connection, params, no_respond) {
             var j;
             for (j = 0; j < plugin.hooks[hook].length; j++) {
                 var hook_code_name = plugin.hooks[hook][j];
-                connection.hooks_to_run.push([plugin, hook_code_name]);
+                connection.hooks_to_run.push([plugin, hook_code_name, params]);
             }
         }
     }
     
-    plugins.run_next_hook(hook, connection, params, no_respond);
+    plugins.run_next_hook(hook, connection);
 };
 
-plugins.run_next_hook = function(hook, connection, params, no_respond) {
+plugins.run_next_hook = function(hook, connection) {
     var called_once = 0;
     var timeout_id;
     
@@ -158,16 +162,19 @@ plugins.run_next_hook = function(hook, connection, params, no_respond) {
         if (connection.hooks_to_run.length == 0 || 
             retval !== constants.cont)
         {
-            if (utils.in_array(retval, [constants.deny, constants.denysoft, constants.denydisconnect])) {
-                plugins.run_hooks('deny', connection, [retval, msg, item[0].name, item[1]], 1);
+            var respond_method = hook + "_respond";
+            if (item && utils.in_array(retval, [constants.deny, constants.denysoft, constants.denydisconnect])) {
+                connection.deny_respond = function (retval, msg) {
+                    connection[respond_method](retval, msg);
+                };
+                plugins.run_hooks('deny', connection, [retval, msg, item[0].name, item[1], item[2]]);
             }
-            if (!no_respond) {
-                var respond_method = hook + "_respond";
+            else {
                 connection[respond_method](retval, msg);
             }
         }
         else {
-            plugins.run_next_hook(hook, connection, params, no_respond);
+            plugins.run_next_hook(hook, connection);
         }
     }
     
@@ -184,7 +191,7 @@ plugins.run_next_hook = function(hook, connection, params, no_respond) {
         
     try {
         connection.current_hook = item;
-        item[0][ item[1] ].call(item[0], callback, connection, params);
+        item[0][ item[1] ].call(item[0], callback, connection, item[2]);
     }
     catch (err) {
         logger.logcrit("Plugin " + item[0].name + " failed: " + err);
