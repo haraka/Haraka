@@ -8,7 +8,7 @@ var config_path = process.env.HARAKA ? path.join(process.env.HARAKA, 'config') :
 
 config.get = function(name, type) {
     if (type !== 'nolog') {
-        logger.loginfo("Getting config: " + name);
+        logger.logdebug("Getting config: " + name);
     }
     else {
         type = arguments[2];
