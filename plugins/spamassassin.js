@@ -73,12 +73,12 @@ exports.hook_data_post = function (callback, connection) {
     };
 
     socket.on('timeout', function () {
-        self.logerror("spamd connection timed out");
+        plugin.logerror("spamd connection timed out");
         socket.end();
         callback(CONT);
     });
     socket.on('error', function (err) {
-        self.logerror("spamd connection failed: " + err);
+        plugin.logerror("spamd connection failed: " + err);
         // we don't deny on error - maybe another plugin can deliver
         callback(CONT); 
     });
