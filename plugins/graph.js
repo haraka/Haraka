@@ -1,19 +1,35 @@
 // log our denys
 
-var sqlite3 = require('sqlite3').verbose();
-var db = new sqlite3.Database('graphlog.db');
+var sqlite = require('sqlite');
+var db = new sqlite.Database();
 
 var insert;
-var select;
-db.run("CREATE TABLE graphdata (timestamp INTEGER NOT NULL, plugin TEXT NOT NULL)",
-    function (err) {
-        if (!err) {
-            db.run("CREATE INDEX graphdata_idx ON graphdata (timestamp)");
-        }
-        insert = db.prepare("INSERT INTO graphdata VALUES (?,?)");
-        select = db.prepare("SELECT * FROM graphdata WHERE timestamp >= ? ORDER BY timestamp");
+var select = "SELECT * FROM graphdata WHERE timestamp >= ? ORDER BY timestamp";
+
+db.open('graphlog.db', function (err) {
+    if (err) {
+        throw err;
     }
-);
+    db.execute("PRAGMA synchronous=NORMAL", // make faster, rawwwrr
+    function (err, rows) {
+        if (err) {
+            throw err;
+        }
+        db.execute("CREATE TABLE graphdata (timestamp INTEGER NOT NULL, plugin TEXT NOT NULL)",
+        function (err, rows) {
+            if (!err) {
+                db.execute("CREATE INDEX graphdata_idx ON graphdata (timestamp)");
+            }
+            db.prepare("INSERT INTO graphdata VALUES (?,?)",
+            function (err, stmt) {
+                if (err) {
+                    throw err;
+                }
+                insert = stmt;
+            });
+        });
+    });
+});
 
 var plugins = {};
 
@@ -54,33 +70,47 @@ exports.register = function () {
 
 exports.hook_deny = function (callback, connection, params) {
     var plugin = this;
-    insert.run((new Date()).getTime(), params[2], function (err) {
+    insert.bindArray([new Date().getTime(), params[2]], function (err) {
         if (err) {
-            if (err.code === 'SQLITE_BUSY') {
-                plugin.logdebug("SQLite Busy - re-running");
-                return setTimeout(function () {
-                    plugin.hook_deny(callback, connection, params);
-                }, 50); // try again in 50ms
-            }
-            plugin.logerror("Insert failed: " + err);
+            plugin.logerror("Insert DENY failed: " + err);
+            return callback(CONT);
         }
-        callback(CONT);
+        insert.fetchAll(function (err, rows) {
+            if (err) {
+                if (err.code === 'SQLITE_BUSY') {
+                    plugin.logdebug("SQLite Busy - re-running");
+                    return setTimeout(function () {
+                        plugin.hook_deny(callback, connection, params);
+                        }, 50); // try again in 50ms
+                }
+                plugin.logerror("Insert failed: " + err);
+            }
+            try { insert.reset() } catch (err) {}
+            callback(CONT);
+        });
     });
 };
 
 exports.hook_queue_ok = function (callback, connection, params) {
     var plugin = this;
-    insert.run((new Date()).getTime(), "accepted", function (err) {
+    insert.bindArray([new Date().getTime(), 'accepted'], function (err) {
         if (err) {
-            if (err.code === 'SQLITE_BUSY') {
-                plugin.logdebug("SQLite Busy on accepted - re-running");
-                return setTimeout(function () {
-                    plugin.hook_queue_ok(callback, connection, params);
-                }, 50); // try again in 50ms
-            }
-            plugin.logerror("Insert failed: " + err);
+            plugin.logerror("Insert DENY failed: " + err);
+            return callback(CONT);
         }
-        callback(CONT);
+        insert.fetchAll(function (err, rows) {
+            if (err) {
+                if (err.code === 'SQLITE_BUSY') {
+                    plugin.logdebug("SQLite Busy - re-running");
+                    return setTimeout(function () {
+                        plugin.hook_queue_ok(callback, connection, params);
+                        }, 50); // try again in 50ms
+                }
+                plugin.logerror("Insert failed: " + err);
+            }
+            try { insert.reset() } catch (err) {}
+            callback(CONT);
+        });
     });
 };
 
@@ -176,24 +206,42 @@ exports.handle_data = function (res, parsed) {
     var today    = new Date().getTime();
     var earliest = new Date(today - distance).getTime();
     var group_by = distance/width;
+    
+    res.write("Date," + utils.sort_keys(plugins).join(',') + "\n");
+    
+    this.get_data(res, earliest, today, group_by);
+};
+
+exports.get_data = function (res, earliest, today, group_by) {
     var next_stop = earliest + group_by;
-    
-    var plugin = this;
-    function write_to (data) {
-        // plugin.logprotocol(data);
-        res.write(data + "\n");
-    }
-    
-    write_to("Date," + utils.sort_keys(plugins).join(','));
-    
     var aggregate = reset_agg();
     var allpoints = reset_agg();
     var plugin = this;
     
-    select.each(earliest, function (err, row) {
+    function write_to (data) {
+        // plugin.loginfo(data);
+        res.write(data + "\n");
+    }
+    
+    db.query(select, [earliest], function (err, row) {
         if (err) {
-            plugin.logerror("SELECT failed: " + err);
-            return;
+            if (err.code === 'SQLITE_BUSY') {
+                return setTimeout(function () {
+                    plugin.get_data(res, earliest, today, group_by);
+                }, 50); // try again in 50ms
+            }
+            return plugin.logerror("SELECT failed: " + err);
+        }
+        if (!row) {
+            // write last row and zeros if we didn't get up to now
+            while (next_stop <= today) {
+                write_to(utils.ISODate(new Date(next_stop)) + ',' + 
+                    utils.sort_keys(plugins).map(function(i){ return 1000 * (aggregate[i]/group_by) }).join(',')
+                );
+                aggregate = reset_agg();
+                next_stop += group_by;
+            }
+            return res.end();
         }
         while (row.timestamp > next_stop) {
             write_to(utils.ISODate(new Date(next_stop)) + ',' + 
@@ -204,22 +252,6 @@ exports.handle_data = function (res, parsed) {
         }
         // plugin.loginfo("adding to " + row.plugin);
         aggregate[row.plugin]++;
-    }, 
-    function (err, row_count) {
-        if (err) {
-            plugin.logerror("SELECT completion failed: " + err);
-            return;
-        }
-        // write last row and zeros if we didn't get up to now
-        while (next_stop <= today) {
-            write_to(utils.ISODate(new Date(next_stop)) + ',' + 
-                utils.sort_keys(plugins).map(function(i){ return 1000 * (aggregate[i]/group_by) }).join(',')
-            );
-            aggregate = reset_agg();
-            next_stop += group_by;
-        }
-        
-        res.end();
     });
 };
 
