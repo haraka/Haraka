@@ -25,7 +25,14 @@ exports.check_ip = function(callback, connection) {
         dns.resolve(reverse_ip + "." + zone, "TXT", function (err, value) {
             remaining_zones.pop(); // we don't care about order really
             if (err) {
-                self.loginfo("DNS error: " + err);
+                switch (err.code) {
+                    case dns.NOTFOUND:
+                    case dns.NXDOMAIN:
+                    case 'ENOTFOUND':
+                                        break;
+                    default:
+                        self.loginfo("DNS error: " + err);
+                }
                 if (remaining_zones.length === 0) {
                     // only call declined if no more results are pending
                     return callback(CONT);
