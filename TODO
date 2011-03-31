@@ -1,5 +1,5 @@
 - Address parser (similar to Qpsmtpd::Address)
-- TLS
+- TLS (see http://js.5sh.net/starttls.js, and http://js.5sh.net/c2s.js)
 - Email Parser
 - Hook on DENY/DENYSOFT/etc
 - Stats plugin which talks to a DB (redis?)
