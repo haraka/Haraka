@@ -4,7 +4,7 @@ var sqlite = require('sqlite');
 var db = new sqlite.Database();
 
 var insert;
-var select = "SELECT CAST(timestamp AS TEXT) AS timestamp, plugin FROM graphdata WHERE timestamp >= ? ORDER BY timestamp";
+var select = "SELECT COUNT(*) AS hits, plugin FROM graphdata WHERE timestamp >= ? AND timestamp < ? GROUP BY plugin";
 
 db.open('graphlog.db', function (err) {
     if (err) {
@@ -197,7 +197,7 @@ exports.handle_data = function (res, parsed) {
     
     var today    = new Date().getTime();
     var earliest = today - distance;
-    var group_by = distance/width;
+    var group_by = (distance/width)/4;
     
     res.write("Date," + utils.sort_keys(plugins).join(',') + "\n");
     
@@ -207,7 +207,6 @@ exports.handle_data = function (res, parsed) {
 exports.get_data = function (res, earliest, today, group_by) {
     var next_stop = earliest + group_by;
     var aggregate = reset_agg();
-    var allpoints = reset_agg();
     var plugin = this;
     
     function write_to (data) {
@@ -215,32 +214,27 @@ exports.get_data = function (res, earliest, today, group_by) {
         res.write(data + "\n");
     }
     
-    db.query(select, [earliest], function (err, row) {
+    db.query(select, [earliest, next_stop], function (err, row) {
         if (err) {
             res.end();
             return plugin.logerror("SELECT failed: " + err);
         }
         if (!row) {
-            // write last row and zeros if we didn't get up to now
-            while (next_stop <= today) {
-                write_to(utils.ISODate(new Date(next_stop)) + ',' + 
-                    utils.sort_keys(plugins).map(function(i){ return 1000 * (aggregate[i]/group_by) }).join(',')
-                );
-                aggregate = reset_agg();
-                next_stop += group_by;
-            }
-            return res.end();
-        }
-        // plugin.loginfo("got: " + row.timestamp + ", " + row.plugin + " next_stop: " + next_stop);
-        
-        while (row.timestamp > next_stop) {
             write_to(utils.ISODate(new Date(next_stop)) + ',' + 
                 utils.sort_keys(plugins).map(function(i){ return 1000 * (aggregate[i]/group_by) }).join(',')
             );
-            aggregate = reset_agg();
-            next_stop += group_by;
+            if (next_stop >= today) {
+                return res.end();
+            }
+            else {
+                return process.nextTick(function () {
+                    plugin.get_data(res, next_stop, today, group_by);
+                });
+            }
         }
-        aggregate[row.plugin]++;
+        plugin.loginfo("got: " + row.hits + ", " + row.plugin + " next_stop: " + next_stop);
+        
+        aggregate[row.plugin] = row.hits;
     });
 };
 
