@@ -4,7 +4,7 @@ var sqlite = require('sqlite');
 var db = new sqlite.Database();
 
 var insert;
-var select = "SELECT * FROM graphdata WHERE timestamp >= ? ORDER BY timestamp";
+var select = "SELECT CAST(timestamp AS TEXT) AS timestamp, plugin FROM graphdata WHERE timestamp >= ? ORDER BY timestamp";
 
 db.open('graphlog.db', function (err) {
     if (err) {
@@ -77,12 +77,6 @@ exports.hook_deny = function (callback, connection, params) {
         }
         insert.fetchAll(function (err, rows) {
             if (err) {
-                if (err.code === 'SQLITE_BUSY') {
-                    plugin.logdebug("SQLite Busy - re-running");
-                    return setTimeout(function () {
-                        plugin.hook_deny(callback, connection, params);
-                        }, 50); // try again in 50ms
-                }
                 plugin.logerror("Insert failed: " + err);
             }
             try { insert.reset() } catch (err) {}
@@ -100,12 +94,6 @@ exports.hook_queue_ok = function (callback, connection, params) {
         }
         insert.fetchAll(function (err, rows) {
             if (err) {
-                if (err.code === 'SQLITE_BUSY') {
-                    plugin.logdebug("SQLite Busy - re-running");
-                    return setTimeout(function () {
-                        plugin.hook_queue_ok(callback, connection, params);
-                        }, 50); // try again in 50ms
-                }
                 plugin.logerror("Insert failed: " + err);
             }
             try { insert.reset() } catch (err) {}
@@ -161,7 +149,7 @@ exports.handle_root = function (res, parsed) {
               if (interval_id) {\
                 clearInterval(interval_id);\
                 interval_id = null;\
-              }
+              }\
               if (period === "hour") {\
                 interval_id = setInterval(function() {\
                   graph.updateOptions( { file: "data?period=" + period } );\
@@ -208,7 +196,7 @@ exports.handle_data = function (res, parsed) {
     }
     
     var today    = new Date().getTime();
-    var earliest = new Date(today - distance).getTime();
+    var earliest = today - distance;
     var group_by = distance/width;
     
     res.write("Date," + utils.sort_keys(plugins).join(',') + "\n");
@@ -229,11 +217,7 @@ exports.get_data = function (res, earliest, today, group_by) {
     
     db.query(select, [earliest], function (err, row) {
         if (err) {
-            if (err.code === 'SQLITE_BUSY') {
-                return setTimeout(function () {
-                    plugin.get_data(res, earliest, today, group_by);
-                }, 50); // try again in 50ms
-            }
+            res.end();
             return plugin.logerror("SELECT failed: " + err);
         }
         if (!row) {
@@ -247,6 +231,8 @@ exports.get_data = function (res, earliest, today, group_by) {
             }
             return res.end();
         }
+        // plugin.loginfo("got: " + row.timestamp + ", " + row.plugin + " next_stop: " + next_stop);
+        
         while (row.timestamp > next_stop) {
             write_to(utils.ISODate(new Date(next_stop)) + ',' + 
                 utils.sort_keys(plugins).map(function(i){ return 1000 * (aggregate[i]/group_by) }).join(',')
@@ -254,7 +240,6 @@ exports.get_data = function (res, earliest, today, group_by) {
             aggregate = reset_agg();
             next_stop += group_by;
         }
-        // plugin.loginfo("adding to " + row.plugin);
         aggregate[row.plugin]++;
     });
 };
