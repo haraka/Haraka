@@ -158,11 +158,15 @@ exports.handle_root = function (res, parsed) {
                     labelsKMB: true\
                 }\
               );\
-              if (interval_id)\
+              if (interval_id) {\
                 clearInterval(interval_id);\
-              interval_id = setInterval(function() {\
-                graph.updateOptions( { file: "data?period=" + period } );\
-              }, 10000);\
+                interval_id = null;\
+              }
+              if (period === "hour") {\
+                interval_id = setInterval(function() {\
+                  graph.updateOptions( { file: "data?period=" + period } );\
+                }, 10000);\
+              }\
             }\
           </script>\
             <h1>Haraka Mail Graphs</h1>\
