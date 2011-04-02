@@ -2,6 +2,8 @@
 
 var config = require('./config');
 var logger = require('./logger');
+var Header = require('./mailheader').Header;
+var body   = require('./mailbody');
 
 var trans = exports;
 
@@ -12,6 +14,7 @@ function Transaction() {
     this.data_bytes = 0;
     this.header_pos = 0;
     this.notes = {};
+    this.header = new Header();
 }
 
 exports.Transaction = Transaction;
@@ -34,13 +37,13 @@ Transaction.prototype.add_data = function(line) {
     // as it should be - it accepts whitespace in a blank line - we've found this
     // to be a good heuristic rule though).
     if (this.header_pos === 0 && line.match(/^\s*$/)) {
+        this.header.parse(this.data_lines);
         this.header_pos = this.data_lines.length;
     }
     this.data_lines.push(line);
 };
 
 Transaction.prototype.add_header = function(key, value) {
-    var header_lines = this.data_lines.splice(0, this.header_pos);
-    header_lines.push(key + ': ' + value + "\r\n");
-    this.data_lines = header_lines.concat(this.data_lines);
+    this.header.add(key, value);
+    this.data_lines = this.header.lines().concat(this.data_lines.slice(this.header_pos));
 };
