@@ -13,6 +13,7 @@ function Transaction() {
     this.data_lines = [];
     this.data_bytes = 0;
     this.header_pos = 0;
+    this.parse_body = 0;
     this.notes = {};
     this.header = new Header();
 }
@@ -39,6 +40,12 @@ Transaction.prototype.add_data = function(line) {
     if (this.header_pos === 0 && line.match(/^\s*$/)) {
         this.header.parse(this.data_lines);
         this.header_pos = this.data_lines.length;
+        if (this.parse_body) {
+            this.body = new body.Body(this.header);
+        }
+    }
+    else if (this.header_pos && this.parse_body) {
+        this.body.parse_more(line);
     }
     this.data_lines.push(line);
 };
