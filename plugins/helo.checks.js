@@ -20,21 +20,17 @@ exports.register = function () {
     });
 }
 
-exports.helo_no_dot = function (callback, connection, params) {
+exports.helo_no_dot = function (callback, connection, helo) {
     var config = this.config.get('helo.checks.ini', 'ini');
     if (!config.main.check_no_dot) {
         return callback(CONT);
     }
     
-    var helo = params[0];
-    
     /\./.test(helo) ? callback(CONT) : callback(DENY, "HELO must have a dot");
 };
 
-exports.helo_match_re = function (callback, connection, params) {
+exports.helo_match_re = function (callback, connection, helo) {
     var regexps = this.config.get('helo.checks.regexps', 'list');
-    
-    var helo = params[0];
     
     for (var i=0,l=regexps.length; i < l; i++) {
         var re = new RegExp('^' + regexps[i] + '$');
@@ -45,13 +41,11 @@ exports.helo_match_re = function (callback, connection, params) {
     return callback(CONT);
 };
 
-exports.helo_raw_ip = function (callback, connection, params) {
+exports.helo_raw_ip = function (callback, connection, helo) {
     var config = this.config.get('helo.checks.ini', 'ini');
     if (!config.main.check_raw_ip) {
         return callback(CONT);
     }
-    
-    var helo = params[0];
     
     // RAW IPs must be formatted: "[1.2.3.4]" not "1.2.3.4" in HELOs
     /^\d+\.\d+\.\d+\.\d+$/.test(helo) ? 
@@ -59,12 +53,11 @@ exports.helo_raw_ip = function (callback, connection, params) {
       : callback(CONT);
 };
 
-exports.helo_is_dynamic = function (callback, connection, params) {
+exports.helo_is_dynamic = function (callback, connection, helo) {
     return callback(CONT); // TODO!
 };
 
-exports.helo_big_company = function (callback, connection, params) {
-    var helo = params[0];
+exports.helo_big_company = function (callback, connection, helo) {
     var rdns = connection.remote_host;
     
     var big_co = this.config.get('helo.checks.ini', 'ini').bigco;
