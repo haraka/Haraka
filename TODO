@@ -1,8 +1,4 @@
 - Address parser (similar to Qpsmtpd::Address)
 - TLS (see http://js.5sh.net/starttls.js, and http://js.5sh.net/c2s.js)
-- Email Parser
-- Hook on DENY/DENYSOFT/etc
-- Stats plugin which talks to a DB (redis?)
-- Web UI for above DB
 - Support for Cluster: https://github.com/learnboost/cluster instead of
   multi-node
