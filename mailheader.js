@@ -42,7 +42,7 @@ function _decode_header (matched, encoding, cte, data) {
     switch(cte) {
         case 'Q':
             data = data.replace('_', ' ');
-            data = data.replace(/=(\d\d)/g, function (ignore, code) {
+            data = data.replace(/=([A-F0-9][A-F0-9])/gi, function (ignore, code) {
                 return String.fromCharCode(parseInt(code, 16));
             });
             break;
