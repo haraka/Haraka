@@ -8,7 +8,7 @@ function Body (header, options) {
     this.header = header || new Header();
     this.header_lines = [];
     this.options = options;
-    this.body = '';
+    this.bodytext = '';
     this.children = []; // if multipart
     this.state = 'start';
 }
@@ -29,6 +29,8 @@ Body.prototype.parse_child = function (line) {
         }
         else {
             var bod = new Body(new Header(), this.options);
+            this.listeners('attachment_start').forEach(function (cb) { bod.on('attachment_start', cb) });
+            this.listeners('attachment_data').forEach( function (cb) { bod.on('attachment_data', cb) });
             this.children.push(bod);
             bod.state = 'headers';
             return;
@@ -87,7 +89,7 @@ Body.prototype.parse_start = function (line) {
 }
 
 Body.prototype.parse_body = function (line) {
-    this.body += this.decode_function(line);
+    this.bodytext += this.decode_function(line);
 }
 
 Body.prototype.parse_multipart_preamble = function (line) {
@@ -100,6 +102,8 @@ Body.prototype.parse_multipart_preamble = function (line) {
             else {
                 // next section
                 var bod = new Body(new Header(), this.options);
+                this.listeners('attachment_start').forEach(function (cb) { bod.on('attachment_start', cb) });
+                this.listeners('attachment_data').forEach( function (cb) { bod.on('attachment_data', cb) });
                 this.children.push(bod);
                 bod.state = 'headers';
                 this.state = 'child';
@@ -107,7 +111,7 @@ Body.prototype.parse_multipart_preamble = function (line) {
             }
         }
     }
-    this.body += this.decode_function(line);
+    this.bodytext += this.decode_function(line);
 }
 
 Body.prototype.parse_multipart = function (line) {
@@ -148,7 +152,7 @@ Body.prototype.decode_bin_qp = function (line) {
 }
 
 Body.prototype.decode_qp = function (line) {
-    line = line.replace(/=$/, '');
+    line = line.replace(/=\r?\n/, '');
     line = line.replace(/=([A-F0-9][A-F0-9])/g, function (ignore, code) {
         return String.fromCharCode(parseInt(code, 16));
     });
