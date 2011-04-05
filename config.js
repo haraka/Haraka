@@ -14,6 +14,8 @@ config.get = function(name, type) {
         type = arguments[2];
     }
     
+    type = type || 'value';
+    
     var full_path = path.resolve(config_path, name);
     
     var results;
@@ -23,7 +25,7 @@ config.get = function(name, type) {
     catch (err) {
         if (err.code === 'EBADF') {
             // no such file or directory
-            if (type === 'ini') {
+            if (type != 'value' ) {
                 return configloader.empty_config(type);
             }
             else {
