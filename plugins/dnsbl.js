@@ -22,7 +22,9 @@ exports.check_ip = function(callback, connection) {
     
     var self = this;
     this.zones.forEach(function(zone) {
+        self.logdebug("Querying: " + reverse_ip + "." + zone);
         dns.resolve(reverse_ip + "." + zone, "TXT", function (err, value) {
+            if (!remaining_zones.length) return;
             remaining_zones.pop(); // we don't care about order really
             if (err) {
                 switch (err.code) {
@@ -37,7 +39,9 @@ exports.check_ip = function(callback, connection) {
                     // only call declined if no more results are pending
                     return callback(CONT);
                 }
+                return;
             }
+            remaining_zones = [];
             return callback(DENY, value);
         });
         

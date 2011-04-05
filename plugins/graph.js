@@ -18,7 +18,7 @@ db.open('graphlog.db', function (err) {
         db.execute("CREATE TABLE graphdata (timestamp INTEGER NOT NULL, plugin TEXT NOT NULL)",
         function (err, rows) {
             if (!err) {
-                db.execute("CREATE INDEX graphdata_idx ON graphdata (timestamp)");
+                db.execute("CREATE INDEX graphdata_idx ON graphdata (timestamp)", function(){});
             }
             db.prepare("INSERT INTO graphdata VALUES (?,?)",
             function (err, stmt) {

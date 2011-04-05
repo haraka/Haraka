@@ -161,11 +161,13 @@ plugins.run_next_hook = function(hook, connection) {
             var respond_method = hook + "_respond";
             if (item && utils.in_array(retval, [constants.deny, constants.denysoft, constants.denydisconnect])) {
                 connection.deny_respond = function () {
+                    connection.hooks_to_run = [];
                     connection[respond_method](retval, msg);
                 };
                 plugins.run_hooks('deny', connection, [retval, msg, item[0].name, item[1], item[2]]);
             }
             else {
+                connection.hooks_to_run = [];
                 connection[respond_method](retval, msg);
             }
         }

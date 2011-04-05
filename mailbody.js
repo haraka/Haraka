@@ -54,11 +54,11 @@ Body.prototype.parse_headers = function (line) {
 
 Body.prototype.parse_start = function (line) {
     var ct = this.header.get_decoded('content-type') || 'text/plain';
-    var enc = this.header.get_decoded('content-transfer-encoding') || 'plain';
+    var enc = this.header.get_decoded('content-transfer-encoding') || '8bit';
     
-    if (!enc.match(/^base64|quoted-printable|plain$/i)) {
+    if (!enc.match(/^base64|quoted-printable|8bit$/i)) {
         logger.logerror("Invalid CTE on email: " + enc);
-        enc = 'plain';
+        enc = '8bit';
     }
     enc = enc.replace(/^quoted-printable$/i, 'qp');
     
@@ -169,10 +169,10 @@ Body.prototype.decode_base64 = function (line) {
     return new Buffer(line, "base64").toString();
 }
 
-Body.prototype.decode_plain = function (line) {
+Body.prototype.decode_8bit = function (line) {
     return line;
 }
 
-Body.prototype.decode_bin_plain = function (line) {
+Body.prototype.decode_bin_8bit = function (line) {
     return new Buffer(line);
 }
