@@ -1,6 +1,9 @@
 // Look up URLs in SURBL
-var util = require('util');
 var url  = require('url');
+var dns  = require('dns');
+var logger = require('./logger');
+
+var two_level_tlds = {};
 
 exports.hook_data = function (callback, connection) {
     // enable mail body parsing
@@ -11,13 +14,58 @@ exports.hook_data = function (callback, connection) {
 exports.hook_data_post = function (callback, connection) {
     var zones = this.config.get('data.uribl.zones', 'list');
     
+    this.config.get('data.uribl.two_level_tlds', 'list').forEach(function (tld) {
+        two_level_tlds[tld] = 1;
+    });
+    
+    // this.loginfo(two_level_tlds);
+    
     var urls = {};
     
     // this.loginfo(connection.transaction.body);
     
     extract_urls(urls, connection.transaction.body);
-        
-    callback(CONT);
+    
+    var hosts = Object.keys(urls);
+    
+    var pending_queries = 0;
+    var callback_ran = 0;
+    var plugin = this;
+    
+    for (var i=0,l=hosts.length; i < l; i++) {
+        var host = hosts[i];
+        var match = host.match(/([^\.]+\.)?([^\.]+\.[^\.]+)$/);
+        if (match && !host.match(/^\d+\.\d+\.\d+\.\d+$/)) {
+            if (two_level_tlds[match[2]]) {
+                host = match[0];
+            }
+            else {
+                host = match[2];
+            }
+        }
+        // Now query for "host".zone
+        for (var i=0,l=zones.length; i < l; i++) {
+            pending_queries++;
+            this.logdebug("Looking up: " + host + '.' + zones[i]);
+            dns.resolveTxt(host + '.' + zones[i], function (err, addresses) {
+                pending_queries--;
+                if (!err) {
+                    if (!callback_ran) {
+                        callback_ran++;
+                        return callback(DENY, addresses);
+                    }
+                }
+                if (pending_queries === 0) {
+                    callback(CONT);
+                }
+            });
+        }
+    }
+    
+    if (pending_queries === 0) {
+        // we didn't execute any DNS queries
+        callback(CONT);
+    }
 }
 
 var numeric_ip = /\w{3,16}:\/+(\S+@)?(\d+|0[xX][0-9A-Fa-f]+)\.(\d+|0[xX][0-9A-Fa-f]+)\.(\d+|0[xX][0-9A-Fa-f]+)\.(\d+|0[xX][0-9A-Fa-f]+)/g;
@@ -30,7 +78,7 @@ function extract_urls (urls, body) {
     // extract numeric URIs
     while (match = numeric_ip.exec(body.bodytext)) {
         var uri = url.parse(match[0]);
-        urls[uri.hostname] = uri;
+        urls[uri.hostname.split(/\./).reverse().join('.')] = uri;
     }
     
     // match plain hostname.tld
@@ -45,8 +93,7 @@ function extract_urls (urls, body) {
         urls[uri.hostname] = uri;
     }
     
-    if (body.children.length) {
-        // has kids
-        body.children.forEach(function (b) { extract_urls(urls, b) });
+    for (var i=0,l=body.children.length; i < l; i++) {
+        extract_urls(urls, body.children[i]);
     }
 }
