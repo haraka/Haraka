@@ -232,7 +232,7 @@ exports.get_data = function (res, earliest, today, group_by) {
                 });
             }
         }
-        plugin.loginfo("got: " + row.hits + ", " + row.plugin + " next_stop: " + next_stop);
+        // plugin.loginfo("got: " + row.hits + ", " + row.plugin + " next_stop: " + next_stop);
         
         aggregate[row.plugin] = row.hits;
     });
