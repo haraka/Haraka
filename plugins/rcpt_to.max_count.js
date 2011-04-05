@@ -3,8 +3,12 @@
 // as a way of probing for a working address
 
 exports.hook_rcpt = function (callback, connection) {
-    connection.transaction.notes.rcpt_to_count ||= 0;
-    connection.transaction.notes.rcpt_to_count++;
+    if (connection.transaction.notes.rcpt_to_count) {
+        connection.transaction.notes.rcpt_to_count++;
+    }
+    else {
+        connection.transaction.notes.rcpt_to_count = 1;
+    }
     
     var max_count = this.config.get('rcpt_to.max_count') || 40;
     
