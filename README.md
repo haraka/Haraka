@@ -46,12 +46,41 @@ Starting Haraka is simple. First edit the supplied <tt>config/smtp.ini</tt>
 file to determine which host and port to run on. Then edit
 <tt>config/me</tt> to give your server an appropriate name (usually your
 hostname is correct, but in a multi-server setup you may wish to use a
-unified name). Finally just start Haraka:
+unified name).
+
+Finally just start Haraka:
 
     node haraka.js
 
 And it will run.
 
-(Adding in daemonisation code and inetd code is left as an exercise, for now)
+However the big thing you need to do next is to edit the <tt>config/plugins</tt>
+file. This determines what plugins run in Haraka, and controls the overall
+behaviour of the server. For example if you want to proxy connections to
+a backend SMTP server you want to set your queue plugin to be
+<tt>queue/smtp_proxy</tt>. Have a good look over the plugins in the
+<tt>plugins/</tt> directory to see what is applicable to your setup.
+
+As a typical example here is what I have on my personal server:
+
+	dnsbl
+	data.nomsgid
+	data.noreceived
+	data.signatures
+	data.uribl
+	early_talker
+	graph
+	helo.checks
+	mail_from.is_resolvable
+	mail_from.nobounces
+	max_unrecognized_commands
+	rcpt_to.in_host_list
+	rcpt_to.max_count
+	rdns.regexp
+	queue/qmail-queue
+
+However this may not be to your taste. Also bear in mind that each plugin
+often has configuration of its own. Look at the code, and if it's not
+obvious just email me at helpme@gmail.com and I'll give you some assistance.
 
 [1]: http://nodejs.org/
