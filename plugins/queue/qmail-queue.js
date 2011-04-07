@@ -9,7 +9,7 @@ exports.register = function () {
     this.queue_exec = this.config.get('qmail-queue.path') || '/var/qmail/bin/qmail-queue';
 };
 
-exports.hook_queue = function (callback, connection) {
+exports.hook_queue = function (next, connection) {
     var plugin = this;
     var messagePipe  = netBinding.pipe();
     var envelopePipe = netBinding.pipe();
@@ -22,10 +22,10 @@ exports.hook_queue = function (callback, connection) {
     qmail_queue.on('exit', function (code) {
         if (code !== 0) {
             plugin.logerror("Unable to queue message to qmail-queue: " + code);
-            callback(CONT);
+            next();
         }
         else {
-            callback(OK, "Queued!");
+            next(OK, "Queued!");
         }
     });
     

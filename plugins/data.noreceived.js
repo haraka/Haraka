@@ -3,12 +3,12 @@
 // NB: Don't check this on your outbounds. It's also a pretty strict check
 //     for inbounds too, so use with caution.
 
-exports.hook_data_post = function (callback, connection) {
+exports.hook_data_post = function (next, connection) {
     // We always have the received header that Haraka added, so check for 1
     if (connection.transaction.header.get_all('Received').length === 1) {
-        callback(DENY, "Mails here must have a Received header");
+        next(DENY, "Mails here must have a Received header");
     }
     else {
-        callback(CONT);
+        next();
     }
 }

@@ -5,13 +5,13 @@ var logger = require('./logger');
 
 var two_level_tlds = {};
 
-exports.hook_data = function (callback, connection) {
+exports.hook_data = function (next, connection) {
     // enable mail body parsing
     connection.transaction.parse_body = 1;
-    callback(CONT);
+    next();
 }
 
-exports.hook_data_post = function (callback, connection) {
+exports.hook_data_post = function (next, connection) {
     var zones = this.config.get('data.uribl.zones', 'list');
     
     this.config.get('data.uribl.two_level_tlds', 'list').forEach(function (tld) {
@@ -29,7 +29,7 @@ exports.hook_data_post = function (callback, connection) {
     var hosts = Object.keys(urls);
     
     var pending_queries = 0;
-    var callback_ran = 0;
+    var next_ran = 0;
     var plugin = this;
     
     for (var i=0,l=hosts.length; i < l; i++) {
@@ -50,13 +50,13 @@ exports.hook_data_post = function (callback, connection) {
             dns.resolveTxt(host + '.' + zones[i], function (err, addresses) {
                 pending_queries--;
                 if (!err) {
-                    if (!callback_ran) {
-                        callback_ran++;
-                        return callback(DENY, addresses);
+                    if (!next_ran) {
+                        next_ran++;
+                        return next(DENY, addresses);
                     }
                 }
                 if (pending_queries === 0) {
-                    callback(CONT);
+                    next();
                 }
             });
         }
@@ -64,7 +64,7 @@ exports.hook_data_post = function (callback, connection) {
     
     if (pending_queries === 0) {
         // we didn't execute any DNS queries
-        callback(CONT);
+        next();
     }
 }
 

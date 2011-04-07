@@ -68,36 +68,36 @@ exports.register = function () {
     this.loginfo("http server running on port " + port);
 };
 
-exports.hook_deny = function (callback, connection, params) {
+exports.hook_deny = function (next, connection, params) {
     var plugin = this;
     insert.bindArray([new Date().getTime(), params[2]], function (err) {
         if (err) {
             plugin.logerror("Insert DENY failed: " + err);
-            return callback(CONT);
+            return next();
         }
         insert.fetchAll(function (err, rows) {
             if (err) {
                 plugin.logerror("Insert failed: " + err);
             }
             try { insert.reset() } catch (err) {}
-            callback(CONT);
+            next();
         });
     });
 };
 
-exports.hook_queue_ok = function (callback, connection, params) {
+exports.hook_queue_ok = function (next, connection, params) {
     var plugin = this;
     insert.bindArray([new Date().getTime(), 'accepted'], function (err) {
         if (err) {
             plugin.logerror("Insert DENY failed: " + err);
-            return callback(CONT);
+            return next();
         }
         insert.fetchAll(function (err, rows) {
             if (err) {
                 plugin.logerror("Insert failed: " + err);
             }
             try { insert.reset() } catch (err) {}
-            callback(CONT);
+            next();
         });
     });
 };

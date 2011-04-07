@@ -7,7 +7,7 @@ exports.register = function() {
     this.register_hook('connect', 'check_ip');
 }
 
-exports.check_ip = function(callback, connection) {
+exports.check_ip = function(next, connection) {
     this.logdebug("check_ip: " + connection.remote_ip);
     
     var ip = new String(connection.remote_ip);
@@ -15,7 +15,7 @@ exports.check_ip = function(callback, connection) {
     
     if (!this.zones || !this.zones.length) {
         this.logerror("No zones");
-        return callback(CONT);
+        return next();
     }
     
     var remaining_zones = [];
@@ -37,12 +37,12 @@ exports.check_ip = function(callback, connection) {
                 }
                 if (remaining_zones.length === 0) {
                     // only call declined if no more results are pending
-                    return callback(CONT);
+                    return next();
                 }
                 return;
             }
             remaining_zones = [];
-            return callback(DENY, value);
+            return next(DENY, value);
         });
         
         remaining_zones.push(zone);

@@ -1,18 +1,18 @@
 // Simple string signatures
 
-exports.hook_data = function (callback, connection) {
+exports.hook_data = function (next, connection) {
     // enable mail body parsing
     connection.transaction.parse_body = 1;
-    callback(CONT);
+    next();
 }
 
-exports.hook_data_post = function (callback, connection) {
+exports.hook_data_post = function (next, connection) {
     var sigs = this.config.get('data.signatures', 'list');
     
     if (check_sigs(sigs, connection.transaction.body)) {
-        return callback(DENY, "Mail matches a known spam signature");
+        return next(DENY, "Mail matches a known spam signature");
     }
-    return callback(CONT);
+    return next();
 }
 
 function check_sigs (sigs, body) {

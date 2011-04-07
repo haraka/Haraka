@@ -2,7 +2,7 @@
 // this helps guard against some spammers who send RCPT TO a gazillion times
 // as a way of probing for a working address
 
-exports.hook_rcpt = function (callback, connection) {
+exports.hook_rcpt = function (next, connection) {
     if (connection.transaction.notes.rcpt_to_count) {
         connection.transaction.notes.rcpt_to_count++;
     }
@@ -13,7 +13,7 @@ exports.hook_rcpt = function (callback, connection) {
     var max_count = this.config.get('rcpt_to.max_count') || 40;
     
     if (connection.transaction.notes.rcpt_to_count > max_count) {
-        return callback(DENYDISCONNECT, "Too many recipient attempts");
+        return next(DENYDISCONNECT, "Too many recipient attempts");
     }
-    return callback(CONT);
+    return next();
 };

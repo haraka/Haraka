@@ -23,7 +23,7 @@ var defaults = {
     max_size:     500000
 };
 
-exports.hook_data_post = function (callback, connection) {
+exports.hook_data_post = function (next, connection) {
     var config = this.config.get('spamassassin.ini', 'ini');
     var plugin = this;
     
@@ -40,7 +40,7 @@ exports.hook_data_post = function (callback, connection) {
     );
     
     if (connection.transaction.data_bytes > config.main.max_size) {
-        return callback(CONT);
+        return next();
     }
     
     var socket = new sock.Socket();
@@ -75,12 +75,12 @@ exports.hook_data_post = function (callback, connection) {
     socket.on('timeout', function () {
         plugin.logerror("spamd connection timed out");
         socket.end();
-        callback(CONT);
+        next();
     });
     socket.on('error', function (err) {
         plugin.logerror("spamd connection failed: " + err);
         // we don't deny on error - maybe another plugin can deliver
-        callback(CONT); 
+        next(); 
     });
     socket.on('connect', function () {
         socket.write("SYMBOLS SPAMC/1.3\r\n", function () {
@@ -152,12 +152,12 @@ exports.hook_data_post = function (callback, connection) {
             " Reject at: " + config.main.reject_threshold);
         
         if (config.main.reject_threshold && (spamd_response.hits >= config.main.reject_threshold)) {
-            return callback(DENY, "spam score exceeded threshold");
+            return next(DENY, "spam score exceeded threshold");
         }
         else if (config.main.munge_subject_threshold && (spamd_response.hits >= config.main.munge_subject_threshold)) {
             // munge the subject - TODO once we have a way to do that.
         }
-        callback(CONT);
+        next();
     });
 
 };

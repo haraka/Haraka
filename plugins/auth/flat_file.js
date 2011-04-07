@@ -2,15 +2,15 @@
 
 var crypto = require('crypto');
 
-exports.hook_capabilities = function (callback, connection) {
+exports.hook_capabilities = function (next, connection) {
     connection.capabilities.push('AUTH CRAM-MD5');
-    callback(OK);
+    next(OK);
 }
 
-exports.hook_unrecognized_command = function (callback, connection, params) {
+exports.hook_unrecognized_command = function (next, connection, params) {
     if (connection.transaction.notes.auth_flat_file_ticket) {
         var credentials = unbase64(params[0]).split(' ');
-        return this.check_user(callback, connection, credentials);
+        return this.check_user(next, connection, credentials);
     }
     else if (params[0] === 'AUTH' && params[1] === 'CRAM-MD5') {
         var ticket = '<' + hexi(Math.floor(Math.random() * 1000000)) + '.' +
@@ -18,16 +18,16 @@ exports.hook_unrecognized_command = function (callback, connection, params) {
         this.loginfo("ticket: " + ticket);
         connection.respond(334, base64(ticket));
         connection.transaction.notes.auth_flat_file_ticket = ticket;
-        return callback(OK);
+        return next(OK);
     }
-    return callback(CONT);
+    return next();
 }
 
-exports.check_user = function (callback, connection, credentials) {
+exports.check_user = function (next, connection, credentials) {
     if (!(credentials[0] && credentials[1])) {
         connection.respond(504, "Invalid AUTH string");
         connection.reset_transaction();
-        return callback(OK);
+        return next(OK);
     }
     
     var config = this.config.get('auth_flat_file.ini', 'ini');
@@ -35,7 +35,7 @@ exports.check_user = function (callback, connection, credentials) {
     if (!config.users[credentials[0]]) {
         connection.respond(535, "Authentication failed for " + credentials[0]);
         connection.reset_transaction();
-        return callback(OK);
+        return next(OK);
     }
     
     var clear_pw = config.users[credentials[0]];
@@ -54,7 +54,7 @@ exports.check_user = function (callback, connection, credentials) {
         connection.respond(535, "Authentication failed");
         connection.reset_transaction();
     }
-    return callback(OK);
+    return next(OK);
 }
 
 function hexi (number) {
