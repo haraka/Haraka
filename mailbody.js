@@ -79,7 +79,7 @@ Body.prototype.parse_start = function (line) {
         if (!match) {
             match = ct.match(/name\s*=\s*["']?([^'";]+)["']?/i);
         }
-        var filename = match[1] || '';
+        var filename = match ? match[1] : '';
         this.emit('attachment_start', ct, filename);
         this.state = 'attachment';
         this.decode_function = this["decode_bin_" + enc];
