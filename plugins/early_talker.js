@@ -5,20 +5,20 @@ exports.register = function() {
     this.register_hook('data', 'check_early_talker');
 };
 
-exports.check_early_talker = function(callback, connection) {
+exports.check_early_talker = function(next, connection) {
     if (this.pause) {
-        setTimeout(function () { _check_early_talker(connection, callback) }, this.pause);
+        setTimeout(function () { _check_early_talker(connection, next) }, this.pause);
     }
     else {
-        _check_early_talker(connection, callback);
+        _check_early_talker(connection, next);
     }
 };
 
-var _check_early_talker = function (connection, callback) {
+var _check_early_talker = function (connection, next) {
     if (connection.early_talker) {
-        callback(DENYDISCONNECT, "You talk too soon");
+        next(DENYDISCONNECT, "You talk too soon");
     }
     else {
-        callback(CONT);
+        next();
     }
 };

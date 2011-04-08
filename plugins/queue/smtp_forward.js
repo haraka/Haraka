@@ -9,7 +9,7 @@ exports.register = function () {
 
 var smtp_regexp = /^([0-9]{3})([ -])(.*)/;
 
-exports.smtp_forward = function (callback, connection) {
+exports.smtp_forward = function (next, connection) {
     this.loginfo("smtp forwarding");
     var smtp_config = this.config.get('smtp_forward.ini', 'ini');
     var socket = new sock.Socket();
@@ -48,12 +48,12 @@ exports.smtp_forward = function (callback, connection) {
     socket.on('timeout', function () {
         self.logerror("Ongoing connection timed out");
         socket.end();
-        callback(CONT);
+        next();
     });
     socket.on('error', function (err) {
         self.logerror("Ongoing connection failed: " + err);
         // we don't deny on error - maybe another plugin can deliver
-        callback(CONT); 
+        next(); 
     });
     socket.on('connect', function () {
     });
@@ -68,7 +68,7 @@ exports.smtp_forward = function (callback, connection) {
             if (cont === ' ') {
                 if (code.match(/^[45]/)) {
                     socket.send_command('QUIT');
-                    return callback(CONT); // Fall through to other queue hooks here
+                    return next(); // Fall through to other queue hooks here
                 }
                 switch (command) {
                     case 'connect':
@@ -92,7 +92,7 @@ exports.smtp_forward = function (callback, connection) {
                         break;
                     case 'dot':
                         socket.send_command('QUIT');
-                        callback(OK);
+                        next(OK);
                         break;
                     case 'quit':
                         socket.end();
@@ -106,7 +106,7 @@ exports.smtp_forward = function (callback, connection) {
             // Unrecognised response.
             self.logerror("Unrecognised response from upstream server: " + line);
             socket.end();
-            return callback(CONT);
+            return next();
         }
     });
     socket.on('drain', function() {

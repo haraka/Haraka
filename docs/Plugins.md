@@ -19,26 +19,26 @@ To enable a plugin, simply add its name to `config/plugins`.
 In order to hook into the "rcpt" event, simply create a method in exports
 to hook it:
 
-    exports.hook_rcpt = function (callback, connection, params) {
+    exports.hook_rcpt = function (next, connection, params) {
         // email address is in params[0]
         // do something with the address... then call:
-        callback(OK);
+        next(OK);
     };
 
 We've introduced a couple of new concepts here, so let's go through them:
 
-* callback - we need to call this when we are done processing or Haraka will
+* next - we need to call this when we are done processing or Haraka will
 hang.
 * exports - the plugin acts as an object (with access to "this" if you need it)
 but methods go directly into exports.
 
-The callback is the most critical thing here - since Haraka is an event based
+The next() method is the most critical thing here - since Haraka is an event based
 SMTP server, we may need to go off and fetch network information before we
-can return a result. We can do that asynchronously and simply run the callback
+can return a result. We can do that asynchronously and simply run next()
 when we are done, which allows Haraka to go on processing other clients while
 we fetch our information.
 
-See "The Callback" below for more details.
+See "The Next Function" below for more details.
 
 Logging
 ------
@@ -58,8 +58,8 @@ Plugins inherit all the logging methods of logger.js, which are:
 It should also be noted that if plugins throw an exception directly when in a
 hook the exception will be caught and generate a logcrit level error. However
 they will not be caught quite as gracefully if you are in async code within
-your plugin. Use error codes for that, log the error, and run your callback
-appropriately.
+your plugin. Use error codes for that, log the error, and run your next()
+function appropriately.
 
 Multiple Hooks
 -----
@@ -72,27 +72,29 @@ method and hook it:
         this.register_hook('queue', 'try_queue_highway');
     };
 
-Then when the earlier hook calls callback(smtp.cont) it continues on to the
-next hook to try that one.
+Then when the earlier hook calls next() it continues on to the next hook to try
+that one.
 
-The Callback
-============
+The Next Function
+=================
 
-The callback passed in takes two parameters: code, msg
+The next() function takes two optional parameters: code, msg
 
 The code is one of the below listed return values. The msg corresponds with
-the string to send to the client. Use an Array if you want to send back a
-multi-line response.
+the string to send to the client in case of a failure. Use an Array if you need
+to send back a multi-line response. The msg should NOT contain the code number
+- that is taken care of by the Haraka internals.
 
-Callback Return Values
-------------------
+Return Values
+-------------
 
 These constants are compiled into your plugin when it is loaded, you do not
 need to define them:
 
 * CONT
 
-  Continue and let other plugins handle this particular hook.
+  Continue and let other plugins handle this particular hook. This is the
+  default if no parameters are given.
 
 * DENY
 
