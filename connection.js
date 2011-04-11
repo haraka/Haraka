@@ -18,15 +18,13 @@ function setupClient(self) {
     
     self.client.on('error', function (err) {
         if (!self.disconnected) {
-            logger.logwarn("client closed with err: " + err);
-            self.disconnect();
+            self.fail("client closed with err: " + err);
         }
     });
     
     self.client.on('timeout', function () {
         if (!self.disconnected) {
-            logger.logerror("client (" + self.client.fd + ") timed out");
-            self.disconnect();
+            self.fail("client (" + self.client.fd + ") timed out");
         }
     });
     
@@ -93,7 +91,7 @@ Connection.prototype.process_line = function (line) {
                     logger.logerror(method + " failed: " + err);
                 }
                 this.respond(500, "Internal Server Error");
-                this.disconnect;
+                this.disconnect();
             }
         }
         else {
@@ -177,6 +175,12 @@ Connection.prototype.respond = function(code, messages) {
     
     this.state = 'cmd';
 };
+
+Connection.prototype.fail = function (err) {
+    logger.logwarn(err);
+    this.hooks_to_run = [];
+    this.disconnect();
+}
 
 Connection.prototype.disconnect = function() {
     plugins.run_hooks('disconnect', this);
