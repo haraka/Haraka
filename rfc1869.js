@@ -18,7 +18,7 @@
 //   inner-esmtp-cmd  ::= ("MAIL FROM:" reverse-path)   /
 //                        ("RCPT TO:" forward-path)
 
-var chew_regexp = /\s+([A-Za-z0-9][A-Za-z0-9\-]*(=[^= \x00-\x1f]+)?)$/;
+var chew_regexp = /\s+([A-Za-z0-9][A-Za-z0-9\-]*(?:=[^= \x00-\x1f]+)?)$/g;
 
 exports.parse = function(type, line) {
     var params = [];
@@ -30,11 +30,11 @@ exports.parse = function(type, line) {
         line = line.replace(/to:/i, "");
     }
     
-    var matches;
-    while (matches = chew_regexp.exec(line)) {
-        params.push(matches[1]);
-        line = line.slice(matches[0].length);
-    }
+    line = line.replace(chew_regexp, function repl(str, p1) {
+        params.push(p1);
+        return '';
+    });
+    
     params = params.reverse();
     
     // the above will "fail" (i.e. all of the line in params) on 
