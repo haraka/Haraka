@@ -46,7 +46,7 @@ Server.createServer = function (params) {
           c.set('workers', config_data.main.nodes);
         }
         c.set('host', config_data.main.listen_host);
-        c.listen(config_data.main.port);
+        c.listen(parseInt(config_data.main.port));
 
     }
     else {
