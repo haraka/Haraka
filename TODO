@@ -1,4 +1,2 @@
 - Address parser (similar to Qpsmtpd::Address)
 - TLS (see http://js.5sh.net/starttls.js, and http://js.5sh.net/c2s.js)
-- Support for Cluster: https://github.com/learnboost/cluster instead of
-  multi-node

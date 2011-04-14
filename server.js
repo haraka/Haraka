@@ -5,10 +5,10 @@ var logger = require('./logger');
 var config = require('./config');
 var conn   = require('./connection');
 var os     = require('os');
-var multi;
-try { multi = require('./multi-node') }
+var cluster;
+try { cluster = require('cluster') } // cluster can be installed with npm
 catch (err) {
-    logger.logdebug("no multi-node available, running single-process");
+    logger.logdebug("no cluster available, running single-process");
 }
 
 var Server = exports;
@@ -39,15 +39,15 @@ Server.createServer = function (params) {
     apply_defaults(config_data.main);
     
     var server = net.createServer();
-    if (multi && config_data.main.nodes) {
-        // if nodes=cpus then use the count of CPUs
-        var nodes = config_data.main.nodes === 'cpus' ? os.cpus().length :
-                    config_data.main.nodes;
-        Server.nodes = multi.listen({
-            port: config_data.main.port,
-            nodes: nodes,
-            listen_address: config_data.main.listen_host
-            }, server);
+    if (cluster && config_data.main.nodes) {
+         
+        var c = cluster(server);
+        if (config_data.main.nodes !== 'cpus') {
+          c.set('workers', config_data.main.nodes);
+        }
+        c.set('host', config_data.main.listen_host);
+        c.listen(config_data.main.port);
+
     }
     else {
         server.listen(config_data.main.port, config_data.main.listen_host,
