@@ -44,7 +44,7 @@ exports.register = function () {
     var ignore_re = this.config.get('grapher.ignore_re') || 'queue|graph|relay';
     ignore_re = new RegExp(ignore_re);
     
-    plugins = {accepted: 0};
+    plugins = {accepted: 0, disconnect_early: 0};
     
     this.config.get('plugins', 'list').forEach(
         function (p) {
@@ -67,6 +67,14 @@ exports.register = function () {
     
     this.loginfo("http server running on port " + port);
 };
+
+exports.hook_disconnect = function (next, connection) {
+    if (!connection.current_line) {
+        // disconnect without saying anything
+        return this.hook_deny(next, connection, [DENY, "random disconnect", "disconnect_early"]);
+    }
+    next();
+}
 
 exports.hook_deny = function (next, connection, params) {
     var plugin = this;
@@ -140,10 +148,12 @@ exports.handle_root = function (res, parsed) {
                     fillGraph: true,\
                     stackedGraph: true,\
                     legend: "always",\
-                    rollPeriod: 5,\
-                    showRoller: false,\
+                    rollPeriod: 10,\
+                    showRoller: true,\
                     labelsDiv: document.getElementById("labels"),\
-                    labelsKMB: true\
+                    labelsKMB: true,\
+                    ylabel: "Emails Per Minute",\
+                    labelsSeparateLines: true,\
                 }\
               );\
               if (interval_id) {\
@@ -197,7 +207,7 @@ exports.handle_data = function (res, parsed) {
     
     var today    = new Date().getTime();
     var earliest = today - distance;
-    var group_by = (distance/width)/4;
+    var group_by = distance/width; // one data point per pixel
     
     res.write("Date," + utils.sort_keys(plugins).join(',') + "\n");
     
@@ -221,7 +231,7 @@ exports.get_data = function (res, earliest, today, group_by) {
         }
         if (!row) {
             write_to(utils.ISODate(new Date(next_stop)) + ',' + 
-                utils.sort_keys(plugins).map(function(i){ return 1000 * (aggregate[i]/group_by) }).join(',')
+                utils.sort_keys(plugins).map(function(i){ return 1000 * 60 * (aggregate[i]/group_by) }).join(',')
             );
             if (next_stop >= today) {
                 return res.end();
