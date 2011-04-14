@@ -23,12 +23,12 @@ different levels available.
   * port - the port to use (default: 25)
   * listen\_address - default: 0.0.0.0 (i.e. all addresses)
   * inactivity\_time - how long to let clients idle in seconds (default: 300)
-  * nodes - if [multi-node.js][1] is available in the Haraka dir, specifies how
+  * nodes - if [cluster][1] is available, specifies how
     many processes to fork off. Can be the string "cpus" to fork off as many
-    children as there are CPUs (default: 0)
+    children as there are CPUs (default: 0, which disables cluster mode)
   * user - optionally a user to drop privileges to. Can be a string or UID.
 
-[1]: https://github.com/kriszyp/multi-node/blob/master/lib/multi-node.js
+[1]: http://learnboost.github.com/cluster/
 
 * me
 
