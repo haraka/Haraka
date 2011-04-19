@@ -43,3 +43,13 @@ different levels available.
 
   Seconds to allow a plugin to run before the next hook is called automatically
   default: 30
+
+* cluster_modules
+
+  A list of cluster modules to load. Use colons to separate parameters to be
+  passed to the module/plugin. Typical example:
+
+    repl:8888
+    stats
+
+  The above allows you to get stats on your setup via the repl on port 8888.

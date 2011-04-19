@@ -42,9 +42,21 @@ Server.createServer = function (params) {
     if (cluster && config_data.main.nodes) {
          
         var c = cluster(server);
+        var cluster_modules = config.get('cluster_modules', 'list');
+        
         if (config_data.main.nodes !== 'cpus') {
-          c.set('workers', config_data.main.nodes);
+            c.set('workers', config_data.main.nodes);
         }
+        if (config_data.main.user) {
+            c.set('user', config_data.main.user);
+        }
+        
+        for (var i=0,l=cluster_modules.length; i < l; i++) {
+            var parts = cluster_modules[i].split(':');
+            var module = parts.shift();
+            c.use(cluster[module].apply(cluster, parts));
+        }
+        
         c.set('host', config_data.main.listen_host);
         c.listen(parseInt(config_data.main.port));
 
