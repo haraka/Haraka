@@ -3,7 +3,7 @@
 var logger = require('./logger');
 var server = require('./server');
 
-exports.version = '0.2';
+exports.version = '0.3';
 
 process.on('uncaughtException', function (err) {
     if (err.stack) {
