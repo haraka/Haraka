@@ -599,7 +599,7 @@ Connection.prototype.accumulate_data = function(line) {
 };
 
 Connection.prototype.data_done = function() {
-    this.state = 'cmd';
+    this.state = 'pause';
     // this.transaction.add_header('X-Haraka', 'Version ' + haraka.version);
     plugins.run_hooks('data_post', this);
 };
