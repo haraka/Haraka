@@ -55,10 +55,12 @@ Transaction.prototype.add_header = function(key, value) {
     this.data_lines = this.header.lines().concat(this.data_lines.slice(this.header_pos));
 };
 
-Transaction.prototype.attachment_hooks = function (start, data) {
+Transaction.prototype.attachment_hooks = function (start, data, end) {
     this.parse_body = 1;
     this.body = this.body || new body.Body(this.header);
     this.body.on('attachment_start', start);
     if (data)
         this.body.on('attachment_data',  data);
+    if (end)
+        this.body.on('attachment_end', end);
 };

@@ -35,6 +35,21 @@ exports.sort_keys = function (obj) {
     return Object.keys(obj).sort();
 };
 
+exports.uniq = function (arr) {
+    var out = [];
+    var o = 0;
+    for (var i=0,l=arr.length; i < l; i++) {
+        if (out.length === 0) {
+            out.push(arr[i]);
+        }
+        else if (out[o] != arr[i]) {
+            out.push(arr[i]);
+            o++;
+        }
+    }
+    return out;
+}
+
 exports.ISODate = function (d) {
    function pad(n) {return n<10 ? '0'+n : n}
    return d.getUTCFullYear()+'-'

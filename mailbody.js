@@ -25,12 +25,14 @@ Body.prototype.parse_child = function (line) {
     if (line.substr(0, (this.boundary.length + 2)) === ('--' + this.boundary)) {
         if (line.substr(this.boundary.length + 2, 2) === '--') {
             // end
+            this.emit('attachment_end');
             return;
         }
         else {
             var bod = new Body(new Header(), this.options);
             this.listeners('attachment_start').forEach(function (cb) { bod.on('attachment_start', cb) });
-            this.listeners('attachment_data').forEach( function (cb) { bod.on('attachment_data', cb) });
+            this.listeners('attachment_data' ).forEach(function (cb) { bod.on('attachment_data', cb) });
+            this.listeners('attachment_end'  ).forEach(function (cb) { bod.on('attachment_end', cb) });
             this.children.push(bod);
             bod.state = 'headers';
             return;
@@ -114,9 +116,6 @@ Body.prototype.parse_multipart_preamble = function (line) {
     this.bodytext += this.decode_function(line);
 }
 
-Body.prototype.parse_multipart = function (line) {
-}
-
 Body.prototype.parse_attachment = function (line) {
     if (this.boundary) {
         if (line.substr(0, (this.boundary.length + 2)) === ('--' + this.boundary)) {
@@ -157,7 +156,9 @@ Body.prototype.decode_qp = function (line) {
         return String.fromCharCode(parseInt(code, 16));
     });
     // TODO - figure out encoding and apply it
-    return line;
+    var encoding = 'utf8';
+    
+    return new Buffer(line, encoding);
 }
 
 Body.prototype.decode_bin_base64 = function (line) {
