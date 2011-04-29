@@ -59,12 +59,14 @@ Address.prototype.parse = function (addr) {
     if (addr === '') {
         this.user = null;
         this.host = null;
+        return;
     }
 
     // bare postmaster is permissible, perl RFC-2821 (4.5.1)
     if (addr.toLowerCase() === 'postmaster') {
         this.user = 'postmaster';
         this.host = null;
+        return;
     }
 
     var matches;
@@ -80,11 +82,13 @@ Address.prototype.parse = function (addr) {
         // simple case, we are done
         this.user = localpart;
         this.host = domainpart;
+        return;
     }
     else if (matches = qt_re.exec(localpart)) {
         localpart = matches[1];
         this.user = localpart.replace(exports.text_expr, '$1', 'g');
         this.host = domainpart;
+        return;
     }
     else {
         throw new Error("Failed to parse address: " + addr);
