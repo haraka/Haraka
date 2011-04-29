@@ -5,12 +5,15 @@ var qchar = /([^a-zA-Z0-9!#\$\%\&\x27\*\+\x2D\/=\?\^_`{\|}~.])/;
 function Address (user, host) {
     var match = /^<(.*)>$/.exec(user);
     if (match) {
+        this.original = user;
         this.parse(match[1]);
     }
     else if (!host) {
+        this.original = user;
         this.parse(user);
     }
     else {
+        this.original = user + '@' + host;
         this.user = user;
         this.host = host;
     }
