@@ -1,0 +1,121 @@
+// a class encapsulating an email address as per RFC-2821
+
+var qchar = /([^a-zA-Z0-9!#\$\%\&\x27\*\+\x2D\/=\?\^_`{\|}~.])/;
+
+function Address (user, host) {
+    var match = /^<(.*)>$/.exec(user);
+    if (match) {
+        this.parse(match[1]);
+    }
+    else if (!host) {
+        this.parse(user);
+    }
+    else {
+        this.user = user;
+        this.host = host;
+    }
+}
+
+
+exports.atom_expr = /[a-zA-Z0-9!#%&*+=?^_`{|}~\$\x27\x2D\/]+/;
+exports.address_literal_expr =
+  /(?:\[(?:\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}|IPv6:[0-9A-Fa-f:.]+)\])/;
+exports.subdomain_expr = /(?:[a-zA-Z0-9](?:[-a-zA-Z0-9]*[a-zA-Z0-9])?)/;
+exports.domain_expr;
+exports.qtext_expr = /[\x01-\x08\x0B\x0C\x0E-\x1F\x21\x23-\x5B\x5D-\x7F]/;
+exports.text_expr  = /\\([\x01-\x09\x0B\x0C\x0E-\x7F])/;
+
+var domain_re, source_route_re, user_host_re, atoms_re, qt_re;
+
+exports.compile_re = function () {
+    domain_re = exports.domain_expr ? exports.domain_expr
+                                    : new RegExp (
+                                         exports.subdomain_expr.source + 
+                                         '(?:\.' + exports.subdomain_expr.source + ')*'
+                                         );
+    
+    if (!exports.domain_expr && exports.address_literal_expr) {
+        // if address_literal_expr is set, add it in
+        domain_re = new RegExp('(?:' + exports.address_literal_expr.source +
+                               '|'   + domain_re.source + ')');
+    }
+    
+    source_route_re = new RegExp('^\@' + domain_re.source + '(?:,\@' + domain_re.source + ')*:');
+    
+    user_host_re = new RegExp('^(.*)\@(' + domain_re.source + ')$');
+    
+    atoms_re = new RegExp('^' + exports.atom_expr.source + '(\.' + exports.atom_expr.source + ')*');
+    
+    qt_re = new RegExp('^"((' + exports.qtext_expr.source + '|' + exports.text_expr.source + ')*)"$');
+}
+
+exports.compile_re();
+
+Address.prototype.parse = function (addr) {
+    // strip source route
+    addr = addr.replace(source_route_re, '');
+    
+    // empty addr is ok
+    if (addr === '') {
+        this.user = null;
+        this.host = null;
+    }
+
+    // bare postmaster is permissible, perl RFC-2821 (4.5.1)
+    if (addr.toLowerCase() === 'postmaster') {
+        this.user = 'postmaster';
+        this.host = null;
+    }
+
+    var matches;
+    
+    if (!(matches = user_host_re.exec(addr))) {
+        throw new Error("Failed to parse address: " + addr);
+    }
+    
+    var localpart  = matches[1];
+    var domainpart = matches[2];
+
+    if (atoms_re.test(localpart)) {
+        // simple case, we are done
+        this.user = localpart;
+        this.host = domainpart;
+    }
+    else if (matches = qt_re.exec(localpart)) {
+        localpart = matches[1];
+        this.user = localpart.replace(exports.text_expr, '$1', 'g');
+        this.host = domainpart;
+    }
+    else {
+        throw new Error("Failed to parse address: " + addr);
+    }
+}
+
+Address.prototype.isNull = function () {
+    return this.user ? 0 : 1;
+}
+
+Address.prototype.format = function () {
+    if (this.isNull()) {
+        return '<>';
+    }
+    
+    var user = this.user.replace(qchar, '\\$1', 'g');
+    if (user != this.user) {
+        return '<"' + user + '"' + (this.host ? ('@' + this.host) : '') + '>';
+    }
+    return '<' + this.address() + '>';
+}
+
+Address.prototype.address = function (set) {
+    if (set) {
+        this.parse(set);
+    }
+    return (this.user ? this.user : '') + (this.host ? ('@' + this.host) : '');
+}
+
+Address.prototype.toString = function () {
+    return this.format();
+}
+
+exports.Address = Address;
