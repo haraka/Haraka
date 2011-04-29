@@ -3,7 +3,7 @@
 
 exports.hook_mail = function (next, connection, params) {
     var mail_from = params[0];
-    if (mail_from === '<>') {
+    if (mail_from.isNull()) {
         return next(DENY, "No bounces accepted here");
     }
     return next();

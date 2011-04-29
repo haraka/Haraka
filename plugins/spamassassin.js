@@ -86,7 +86,7 @@ exports.hook_data_post = function (next, connection) {
         socket.write("SYMBOLS SPAMC/1.3\r\n", function () {
             socket.write("User: " + username + "\r\n\r\n", function () {
                 socket.write("X-Envelope-From: " + 
-                            connection.transaction.mail_from.replace(/</, '').replace(/>/, '')
+                            connection.transaction.mail_from.address()
                             + "\r\n", function ()
                 {
                     send_data();

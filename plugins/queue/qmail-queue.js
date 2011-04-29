@@ -38,14 +38,14 @@ exports.hook_queue = function (next, connection) {
                 var buf = new Buffer(4096);
                 var p = 0;
                 buf[p++] = 70;
-                var mail_from = connection.transaction.mail_from.replace(/</, '').replace(/>/, '');
+                var mail_from = connection.transaction.mail_from.address();
                 for (var i = 0; i < mail_from.length; i++) {
                     buf[p++] = mail_from.charCodeAt(i);
                 }
                 buf[p++] = 0;
                 connection.transaction.rcpt_to.forEach(function (rcpt) {
                     buf[p++] = 84;
-                    var rcpt_to = rcpt.replace(/</, '').replace(/>/, '');
+                    var rcpt_to = rcpt.address();
                     for (var i = 0; i < rcpt_to.length; i++) {
                         buf[p++] = rcpt_to.charCodeAt(i);
                     }

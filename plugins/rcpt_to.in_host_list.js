@@ -3,19 +3,13 @@
 exports.hook_rcpt = function(next, connection, params) {
     var rcpt = params[0];
     // Check for RCPT TO without an @ first - ignore those here
-    if (!rcpt.match(/@/)) {
+    if (!rcpt.host) {
         return next();
     }
     
     this.loginfo("Checking if " + rcpt + " host is in host_list");
     
-    var matches = rcpt.match(/@([^@>]*)>?/);
-    if (!matches) {
-        this.logerror("TO address does not parse: " + rcpt);
-        return next(DENY, "TO address does not parse");
-    }
-    
-    var domain = matches[1];
+    var domain = rcpt.host;
     var host_list = this.config.get('host_list', 'list');
     var allow_subdomain = this.config.get('host_list.ini', 'ini').main.allow_subdomains;
     

@@ -5,18 +5,14 @@ var dns = require('dns');
 exports.hook_mail = function(next, connection, params) {
     var mail_from = params[0];
     // Check for MAIL FROM without an @ first - ignore those here
-    if (!mail_from.match(/@/)) {
+    if (!mail_from.host) {
         return next();
     }
-    var matches = mail_from.match(/@([^@>]*)>?/);
-    if (!matches) {
-        this.logerror("FROM address does not parse: " + mail_from);
-        return next(DENY, "FROM address does not parse");
-    }
     
-    var domain = matches[1];
+    var domain = mail_from.host;
     var plugin = this;
     
+    // TODO: this is too simple I think - needs work on handling DNS errors
     dns.resolveMx(domain, function(err, addresses) {
         if (err && err.code != dns.NXDOMAIN) {
             plugin.logerror("DNS Error: " + err);

@@ -7,6 +7,7 @@ var plugins = require('./plugins');
 var constants = require('./constants');
 var rfc1869   = require('./rfc1869');
 var haraka  = require('./haraka');
+var Address = require('./address').Address;
 
 var line_regexp = /^([^\n]*\n)/;
 
@@ -445,8 +446,10 @@ Connection.prototype.cmd_help = function() {
 
 Connection.prototype.cmd_mail = function(line) {
     var results;
+    var from;
     try {
         results = rfc1869.parse("mail", line);
+        from    = new Address (results.shift());
     }
     catch (err) {
         if (err.stack) {
@@ -459,7 +462,6 @@ Connection.prototype.cmd_mail = function(line) {
     }
     
     this.reset_transaction();
-    var from = results.shift();
     this.transaction.mail_from = from;
     
     // Get rest of key=value pairs
@@ -479,8 +481,10 @@ Connection.prototype.cmd_rcpt = function(line) {
     }
     
     var results;
+    var recip;
     try {
         results = rfc1869.parse("rcpt", line);
+        recip   = new Address(results.shift());
     }
     catch (err) {
         if (err.stack) {
@@ -492,8 +496,7 @@ Connection.prototype.cmd_rcpt = function(line) {
         return this.respond(501, "Command parsing failed");
     }
     
-    var recipient = results.shift();
-    this.transaction.rcpt_to.push(recipient);
+    this.transaction.rcpt_to.push(recip);
     
     // Get rest of key=value pairs
     var params = {};
@@ -503,7 +506,7 @@ Connection.prototype.cmd_rcpt = function(line) {
             params[kv[0]] = kv[1];
     });
     
-    plugins.run_hooks('rcpt', this, [recipient, params]);
+    plugins.run_hooks('rcpt', this, [recip, params]);
 };
 
 var _daynames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
