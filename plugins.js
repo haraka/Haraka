@@ -100,7 +100,16 @@ plugins.load_plugin = function(name) {
         process: process,
         Buffer: Buffer
     };
-    vm.runInNewContext(code, sandbox, name);
+    try {
+        vm.runInNewContext(code, sandbox, name);
+    }
+    catch (err) {
+        logger.logcrit("Loading plugin " + name + " failed: ", err.stack);
+        if (config.get('smtp.ini', 'ini').main.stop_on_bad_plugins) {
+            process.exit();
+        }
+        return;
+    }
     
     // register any hook_blah methods.
     for (var method in plugin) {
