@@ -3,6 +3,7 @@ var path = require('path');
 var dns = require('dns');
 var utils = require('./utils');
 var sock = require('./line_socket');
+var server = require('./server');
 
 var Address = require('./address').Address;
 
@@ -69,19 +70,38 @@ exports.register = function () {
     this.queue_dir = path.resolve(this.config.get('deliver.queue_dir') || './queue');
     this.uniq = Math.round(Math.random() * MAX_UNIQ);
     
-    // no reason not to do this stuff syncronously - we're just loading here
-    if (!path.existsSync(this.queue_dir)) {
-        try {
-            fs.mkdirSync(this.queue_dir, 0755   );
-        }
-        catch (err) {
-            if (err.code != 'EEXIST') {
-                throw err;
+    this.try_load_queue();
+}
+
+exports.try_load_queue = function () {
+    if (server.ready) {
+        this.load_queue();
+    }
+    else {
+        var self = this;
+        // server not ready - try again in 1 second
+        setTimeout(function () { self.try_load_queue() }, 1000);
+    }
+}
+
+exports.load_queue = function () {
+    // Initialise and load queue. If we're running under cluster, only do this in the master process
+    if (!server.cluster || server.cluster.isMaster) {
+        // no reason not to do this stuff syncronously - we're just loading here
+        if (!path.existsSync(this.queue_dir)) {
+            this.logdebug("Creating queue directory " + this.queue_dir);
+            try {
+                fs.mkdirSync(this.queue_dir, 0755   );
+            }
+            catch (err) {
+                if (err.code != 'EEXIST') {
+                    throw err;
+                }
             }
         }
-    }
     
-    this._load_cur_queue("_add_file");
+        this._load_cur_queue("_add_file");
+    }
 }
 
 exports._next_uniq = function () {
@@ -274,20 +294,25 @@ exports.build_todo = function (dom, recips, from, ws, write_more) {
 }
 
 exports._load_cur_queue = function (cb_name) {
-    var files = fs.readdirSync(this.queue_dir);
-    
-    
-    this.cur_time = new Date(); // set this once so we're not calling it a lot
+    var plugin = this;
+    plugin.loginfo("Loading outbound queue from " + plugin.queue_dir);
+    fs.readdir(plugin.queue_dir, function (err, files) {
+        if (err) {
+            return plugin.logerror("Failed to load queue directory (" + plugin.queue_dir + "): " + err);
+        }
+        
+        plugin.cur_time = new Date(); // set this once so we're not calling it a lot
 
-    for (var i=0,l=files.length; i < l; i++) {
-        try {
-            var hmail = new HMailItem(files[i], path.join(this.queue_dir, files[i]));
-            this[cb_name](hmail);
+        for (var i=0,l=files.length; i < l; i++) {
+            try {
+                var hmail = new HMailItem(files[i], path.join(plugin.queue_dir, files[i]));
+                plugin[cb_name](hmail);
+            }
+            catch (err) {
+                plugin.logwarn("Warning processing queue directory: " + err);
+            }
         }
-        catch (err) {
-            this.logwarn("Warning processing queue directory: " + err);
-        }
-    }
+    });
 }
 
 exports._add_file = function (hmail) {
