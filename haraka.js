@@ -13,6 +13,7 @@ process.on('uncaughtException', function (err) {
         logger.logcrit('Caught exception: ' + err);
     }
     if (!server.ready) {
+        logger.logcrit('Server not ready yet. Stopping.');
         process.exit();
     }
 });

@@ -59,21 +59,25 @@ Server.createServer = function (params) {
         
         c.set('host', config_data.main.listen_host);
         c.listen(parseInt(config_data.main.port));
-
+        c.on('listening', function () {
+            logger.lognotice("Listening on port " + config_data.main.port);
+            Server.ready = 1;
+        });
     }
     else {
         server.listen(config_data.main.port, config_data.main.listen_host,
             function () {
                 logger.lognotice("Listening on port " + config_data.main.port);
+                Server.ready = 1;
             }
         );
-    }
-
-    if (config_data.main.user) {
-        // drop privileges
-        logger.lognotice('Switching from current uid: ' + process.getuid());
-        process.setuid(config_data.main.user);
-        logger.lognotice('New uid: ' + process.getuid());
+        
+        if (config_data.main.user) {
+            // drop privileges
+            logger.lognotice('Switching from current uid: ' + process.getuid());
+            process.setuid(config_data.main.user);
+            logger.lognotice('New uid: ' + process.getuid());
+        }
     }
 
     server.on('connection', function(client) {
