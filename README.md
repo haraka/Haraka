@@ -8,16 +8,21 @@ quickly.
 
 Haraka can be used either as an inbound SMTP server, and is designed with
 good anti-spam protections in mind (see the plugins directory), or it can
-be used as a lightweight outbound mail server (run it on port 587 with an
-"auth" plugin to authenticate your users).
+be used as an outbound mail server (run it on port 587 with an "auth" plugin
+to authenticate your users).
 
-What Haraka doesn't do is fully replace your mail system. It doesn't do
-mail queueing or delivery with retries. For that we expect you to have
-something like postfix, exim or qmail installed already. It also doesn't
-have an inbound message store, for that you should probably run an IMAP
-server.
+What Haraka doesn't do is fully replace your mail system (yet). It currently
+has no built-in facilities for mapping email addresses to user accounts and
+delivering them to said accounts. For that we expect you to keep something
+like postfix, exim or any other user-based mail system, and have Haraka
+deliver mail to those systems for that mapping. However nothing is stopping
+someone writing a plugin which replicates that facility - it just has yet to
+be done.
 
-### Why Use Haraka Then?
+Haraka does have a scalable outbound mail delivery engine in the `deliver`
+plugin, which should work well for most sites.
+
+### Why Use Haraka?
 
 Haraka's primary purpose is to provide you with a much easier to extend
 mail server than most available SMTP servers out there such as Postfix,
@@ -26,8 +31,8 @@ excellent ability to deliver mail to users.
 
 The plugin system makes it trivial to code new features. A typical example
 might be to provide qmail-like extended addresses to an Exchange system,
-whereby you could receive mail as user-anywordshere@domain.com, and yet
-still have it correctly routed to user@domain.com. This is a few lines of
+whereby you could receive mail as `user-anywordshere@domain.com`, and yet
+still have it correctly routed to `user@domain.com`. This is a few lines of
 code in Haraka, or maybe someone has already written this plugin.
 
 Plugins are already provided for running mail through SpamAssassin, checking
@@ -40,7 +45,7 @@ easily fine-tune your list of plugins to more effectively stop spam.
 
 ### Running Haraka
 
-Haraka requires [node.js][1] to run.
+Haraka is written in Javascript and requires [node.js][1] to run.
 
 Starting Haraka is simple. First edit the supplied <tt>config/smtp.ini</tt>
 file to determine which host and port to run on. Then edit
@@ -82,5 +87,23 @@ As a typical example here is what I have on my personal server:
 However this may not be to your taste. Also bear in mind that each plugin
 often has configuration of its own. Look at the code, and if it's not
 obvious just email me at helpme@gmail.com and I'll give you some assistance.
+
+### Performance
+
+Haraka is fast, due to the nature of using the v8 Javascript engine, and
+it is scalable due to using async I/O everywhere. On my local system I have
+managed to scale it up to 5000 emails per second (with minimal plugins).
+
+I welcome other performance evaluations.
+
+### License and Author
+
+Haraka is MIT licensed - see the LICENSE file for details.
+
+Haraka is a project started by Matt Sergeant, a 10 year veteran of the email
+and anti-spam world. Previous projects have been the project leader for
+SpamAssassin and a hacker on Qpsmtpd, a perl based mail server which is 
+quite similar to Haraka (but not as fast due to perl being slower than
+Javascript).
 
 [1]: http://nodejs.org/
