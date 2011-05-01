@@ -104,11 +104,11 @@ plugins.load_plugin = function(name) {
         vm.runInNewContext(code, sandbox, name);
     }
     catch (err) {
-        logger.logcrit("Loading plugin " + name + " failed: ", err.stack);
-        if (config.get('smtp.ini', 'ini').main.stop_on_bad_plugins) {
-            process.exit();
+        if (config.get('smtp.ini', 'ini').main.ignore_bad_plugins) {
+            logger.logcrit("Loading plugin " + name + " failed: ", err.stack);
+            return;
         }
-        return;
+        throw err; // default is to re-throw and stop Haraka
     }
     
     // register any hook_blah methods.
