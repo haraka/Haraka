@@ -27,6 +27,9 @@ different levels available.
     many processes to fork off. Can be the string "cpus" to fork off as many
     children as there are CPUs (default: 0, which disables cluster mode)
   * user - optionally a user to drop privileges to. Can be a string or UID.
+  * ignore_bad_plugins - If a plugin fails to compile by default Haraka will stop at load time.
+    If, however, you wish to continue on without that plugin's facilities, then
+    set this config option
 
 [1]: http://learnboost.github.com/cluster/
 
