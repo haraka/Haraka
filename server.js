@@ -59,18 +59,14 @@ Server.createServer = function (params) {
         
         c.set('host', config_data.main.listen_host);
         c.listen(parseInt(config_data.main.port));
-        c.on('listening', function () {
-            logger.lognotice("Listening on port " + config_data.main.port);
+        c.on('listening', listening);
+        Server.cluster = c;
+        if (c.isMaster) {
             Server.ready = 1;
-        });
+        }
     }
     else {
-        server.listen(config_data.main.port, config_data.main.listen_host,
-            function () {
-                logger.lognotice("Listening on port " + config_data.main.port);
-                Server.ready = 1;
-            }
-        );
+        server.listen(config_data.main.port, config_data.main.listen_host, listening);
         
         if (config_data.main.user) {
             // drop privileges
@@ -86,3 +82,9 @@ Server.createServer = function (params) {
     });
 
 };
+
+function listening () {
+    var config_data = config.get('smtp.ini', 'ini');
+    logger.lognotice("Listening on port " + config_data.main.port);
+    Server.ready = 1;
+}
