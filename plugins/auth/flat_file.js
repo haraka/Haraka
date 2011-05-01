@@ -4,7 +4,7 @@ var crypto = require('crypto');
 
 exports.hook_capabilities = function (next, connection) {
     connection.capabilities.push('AUTH CRAM-MD5');
-    next(OK);
+    next();
 }
 
 exports.hook_unrecognized_command = function (next, connection, params) {
