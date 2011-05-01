@@ -534,7 +534,6 @@ exports.populate_bounce_message = function (from, to, reason, hmail, cb) {
         pid: process.pid,
     };
     
-    // TODO: check that I have the reference copy working here in both cases..
     var bounce_msg_ = this.config.get('deliver.bounce_message', 'list');
     if (bounce_msg_.length === 0) {
         bounce_msg_ = default_bounce_template;
