@@ -1,5 +1,7 @@
 // a class encapsulating an email address as per RFC-2821
 
+var logger = require('./logger');
+
 var qchar = /([^a-zA-Z0-9!#\$\%\&\x27\*\+\x2D\/=\?\^_`{\|}~.])/;
 
 function Address (user, host) {
