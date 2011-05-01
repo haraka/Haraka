@@ -24,7 +24,7 @@ exports.smtp_forward = function (next, connection) {
     
     var send_data = function () {
         if (data_marker < connection.transaction.data_lines.length) {
-            var wrote_all = socket.write(connection.transaction.data_lines[data_marker].replace(/^\./, '..'));
+            var wrote_all = socket.write(connection.transaction.data_lines[data_marker].replace(/^\./, '..').replace(/\r?\n/g, '\r\n'));
             data_marker++;
             if (wrote_all) {
                 send_data();
@@ -59,7 +59,7 @@ exports.smtp_forward = function (next, connection) {
     });
     socket.on('line', function (line) {
         var matches;
-        self.logdebug("S: " + line);
+        self.logprotocol("S: " + line);
         if (matches = smtp_regexp.exec(line)) {
             var code = matches[1],
                 cont = matches[2],

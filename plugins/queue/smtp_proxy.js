@@ -25,7 +25,7 @@ exports.hook_mail = function (next, connection, params) {
     
     smtp_proxy.send_data = function () {
         if (data_marker < connection.transaction.data_lines.length) {
-            var wrote_all = smtp_proxy.socket.write(connection.transaction.data_lines[data_marker].replace(/^\./, '..'));
+            var wrote_all = smtp_proxy.socket.write(connection.transaction.data_lines[data_marker].replace(/^\./, '..').replace(/\r?\n/g, '\r\n'));
             data_marker++;
             if (wrote_all) {
                 smtp_proxy.send_data();
