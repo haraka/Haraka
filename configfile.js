@@ -68,6 +68,7 @@ cfreader.load_ini_config = function(name) {
     
     var data = new String(fs.readFileSync(name));
     var lines = data.split(/\r\n|\r|\n/);
+    var match;
     
     lines.forEach( function(line) {
         if (regex.comment.test(line)) {
@@ -76,12 +77,15 @@ cfreader.load_ini_config = function(name) {
         else if (regex.blank.test(line)) {
             return;
         }
-        else if (regex.param.test(line)) {
-            var match = line.match(regex.param);
-            current_sect[match[1]] = match[2];
+        else if (match = regex.param.exec(line)) {
+            if (/^\d+$/.test(match[2])) {
+                current_sect[match[1]] = parseInt(match[2]);
+            }
+            else {
+                current_sect[match[1]] = match[2];
+            }
         }
-        else if (regex.section.test(line)) {
-            var match = line.match(regex.section);
+        else if (match = regex.section.exec(line)) {
             current_sect = result[match[1]] = {};
         }
         else {
