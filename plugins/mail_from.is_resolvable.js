@@ -14,7 +14,7 @@ exports.hook_mail = function(next, connection, params) {
     
     // TODO: this is too simple I think - needs work on handling DNS errors
     dns.resolveMx(domain, function(err, addresses) {
-        if (err && err.code != dns.NXDOMAIN) {
+        if (err && err.code != dns.NXDOMAIN && err.code != 'ENOTFOUND') {
             plugin.logerror("DNS Error: " + err);
             return next(DENYSOFT, "Temporary resolver error");
         }
