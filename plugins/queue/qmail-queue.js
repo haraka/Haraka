@@ -20,6 +20,8 @@ exports.hook_queue = function (next, connection) {
     );
     
     qmail_queue.on('exit', function (code) {
+        fs.close(messagePipe[0]);
+        fs.close(envelopePipe[0]);
         if (code !== 0) {
             plugin.logerror("Unable to queue message to qmail-queue: " + code);
             next();
