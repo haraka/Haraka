@@ -1,7 +1,6 @@
 // Look up URLs in SURBL
 var url  = require('url');
 var dns  = require('dns');
-var logger = require('./logger');
 
 var two_level_tlds = {};
 
