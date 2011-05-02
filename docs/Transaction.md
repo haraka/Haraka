@@ -35,6 +35,10 @@ A safe place to store transaction specific values.
 
 Adds a header to the email.
 
+* transaction.remove_header(key)
+
+Deletes a header from the email.
+
 * transaction.header
 
 The header of the email. See `Header Object`.

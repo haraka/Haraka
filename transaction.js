@@ -52,7 +52,18 @@ Transaction.prototype.add_data = function(line) {
 
 Transaction.prototype.add_header = function(key, value) {
     this.header.add(key, value);
-    this.data_lines = this.header.lines().concat(this.data_lines.slice(this.header_pos));
+    this.reset_headers();
+};
+
+Transaction.prototype.reset_headers = function () {
+    var header_lines = this.header.lines();
+    this.data_lines = header_lines.concat(this.data_lines.slice(this.header_pos));
+    this.header_pos = header_lines.length();
+};
+
+Transaction.prototype.remove_header = function (key) {
+    this.header.remove(key);
+    this.reset_headers();
 };
 
 Transaction.prototype.attachment_hooks = function (start, data, end) {

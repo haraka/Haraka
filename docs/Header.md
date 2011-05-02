@@ -26,7 +26,10 @@ they may have used.
 
 * header.remove(key)
 
-Removes all headers with the given name.
+Removes all headers with the given name. DO NOT USE. This is transparent to
+the transaction and it will not see the header(s) you removed. Instead use
+`transaction.remove_header(key)` which will also correct the data part of
+the email.
 
 * header.add(key, value)
 
