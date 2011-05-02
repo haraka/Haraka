@@ -174,6 +174,14 @@ exports.hook_queue = function (next, connection) {
     
     var self = this;
     
+    // add in potentially missing headers
+    if (!connection.transaction.header.get_all('Message-Id').length) {
+        connection.transaction.add_header('Message-Id', '<' + utils.uuid() + '@' + this.config.get('me') + '>');
+    }
+    if (!connection.transaction.header.get_all('Date').length) {
+        connection.transaction.add_header('Date', new Date().toString());
+    }
+    
     // First get each domain
     var recips = {};
     connection.transaction.rcpt_to.forEach(function (item) {
@@ -539,6 +547,7 @@ var default_bounce_template = ['Received: (Haraka {pid} invoked for bounce); {da
 'From: MAILER-DAEMON@{me}\n',
 'To: {from}\n',
 'Subject: failure notice\n',
+'Message-Id: {msgid}\n',
 '\n',
 'Hi. This is the Haraka Mailer program at {me}.\n',
 'I\'m afraid I wasn\'t able to deliver your message to the following addresses.\n',
@@ -551,12 +560,13 @@ var default_bounce_template = ['Received: (Haraka {pid} invoked for bounce); {da
 
 exports.populate_bounce_message = function (from, to, reason, hmail, cb) {
     var values = {
-        date: new Date(),
+        date: new Date().toString(),
         me:   this.config.get('me'),
         from: from,
         to:   to,
         reason: reason,
         pid: process.pid,
+        msgid: '<' + utils.uuid() + '@' + this.config.get('me') + '>',
     };
     
     var bounce_msg_ = this.config.get('deliver.bounce_message', 'list');
