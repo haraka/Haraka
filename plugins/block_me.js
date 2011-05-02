@@ -13,6 +13,10 @@ exports.hook_data = function (next, connection) {
 }
 
 exports.hook_data_post = function (next, connection) {
+    if (!connection.relaying) {
+        return next();
+    }
+    
     var recip = (this.config.get('block_me.recipient') || '').toLowerCase();
     var senders = this.config.get('block_me.senders', 'list');
     
