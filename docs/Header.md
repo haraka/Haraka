@@ -30,7 +30,10 @@ Removes all headers with the given name.
 
 * header.add(key, value)
 
-Adds a header with the given name and value.
+Adds a header with the given name and value. DO NOT USE. This is transparent
+to the transaction and it will not see the header you added. Instead use
+`transaction.add_header(key, value)` which will add the header to the data
+part of the email.
 
 * header.lines()
 
