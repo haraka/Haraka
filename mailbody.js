@@ -58,11 +58,12 @@ Body.prototype.parse_start = function (line) {
     var ct = this.header.get_decoded('content-type') || 'text/plain';
     var enc = this.header.get_decoded('content-transfer-encoding') || '8bit';
     
-    if (!enc.match(/^base64|quoted-printable|8bit$/i)) {
-        logger.logerror("Invalid CTE on email: " + enc);
+    if (!enc.match(/^base64|quoted-printable|[78]bit$/i)) {
+        logger.logerror("Invalid CTE on email: " + enc + ", using 8bit");
         enc = '8bit';
     }
     enc = enc.replace(/^quoted-printable$/i, 'qp');
+    enc = enc.toLowerCase();
     
     this.decode_function = this["decode_" + enc];
     this.ct = ct;
@@ -177,3 +178,6 @@ Body.prototype.decode_8bit = function (line) {
 Body.prototype.decode_bin_8bit = function (line) {
     return new Buffer(line);
 }
+
+Body.prototype.decode_7bit = Body.prototype.decode_8bit;
+Body.prototype.decode_bin_7bit = Body.prototype.decode_bin_8bit;
