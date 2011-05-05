@@ -47,11 +47,14 @@ easily fine-tune your list of plugins to more effectively stop spam.
 
 Haraka is written in Javascript and requires [node.js][1] to run.
 
-Starting Haraka is simple. First edit the supplied <tt>config/smtp.ini</tt>
-file to determine which host and port to run on. Then edit
-<tt>config/me</tt> to give your server an appropriate name (usually your
-hostname is correct, but in a multi-server setup you may wish to use a
-unified name).
+Starting Haraka is simple. First we need to tell Haraka our hostname. Make
+sure you are in the Haraka directory and enter the following commands:
+
+    $ hostname > config/me
+    $ hostname > config/host_list
+
+This assumes that `hostname` gives you the correct host you want to receive
+mail for. If not, edit the `host_list` file (though leave the `me` file alone).
 
 Finally just start Haraka:
 
@@ -59,34 +62,18 @@ Finally just start Haraka:
 
 And it will run.
 
-However the big thing you need to do next is to edit the <tt>config/plugins</tt>
+However the big thing you need to do next is to edit the `config/plugins`
 file. This determines what plugins run in Haraka, and controls the overall
-behaviour of the server. For example if you want to proxy connections to
-a backend SMTP server you want to set your queue plugin to be
-<tt>queue/smtp_proxy</tt>. Have a good look over the plugins in the
-<tt>plugins/</tt> directory to see what is applicable to your setup.
+behaviour of the server. By default the server is setup to receive mails for
+domains in `host_list` and deliver them via `qmail-queue`. Queueing to
+qmail is likely not what you need unless you have qmail installed, so this is
+likely the first thing you want to change.
 
-As a typical example here is what I have on my personal server:
+Each plugin has documentation in the `docs/plugins` directory. Look there
+for information about how each plugin is configured, edit your `config/plugins`
+file, and restart Haraka and enjoy!
 
-	dnsbl
-	data.nomsgid
-	data.noreceived
-	data.signatures
-	data.uribl
-	early_talker
-	graph
-	helo.checks
-	mail_from.is_resolvable
-	mail_from.nobounces
-	max_unrecognized_commands
-	rcpt_to.in_host_list
-	rcpt_to.max_count
-	rdns.regexp
-	queue/qmail-queue
-
-However this may not be to your taste. Also bear in mind that each plugin
-often has configuration of its own. Look at the code, and if it's not
-obvious just email me at helpme@gmail.com and I'll give you some assistance.
+Feel free to email me at `helpme@gmail.com` with any questions.
 
 ### Performance
 
