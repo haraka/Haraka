@@ -1,4 +1,4 @@
-// RFC 1869 email address parser
+// RFC 1869 command parser
 
 // 6.  MAIL FROM and RCPT TO Parameters
 // [...]
@@ -18,22 +18,28 @@
 //   inner-esmtp-cmd  ::= ("MAIL FROM:" reverse-path)   /
 //                        ("RCPT TO:" forward-path)
 
-var chew_regexp = /\s+([A-Za-z0-9][A-Za-z0-9\-]*(?:=[^= \x00-\x1f]+)?)$/g;
+var chew_regexp = /\s+([A-Za-z0-9][A-Za-z0-9\-]*(?:=[^= \x00-\x1f]+)?)$/;
 
 exports.parse = function(type, line) {
     var params = [];
     line = (new String(line)).replace(/\s*$/, '');
     if (type === "mail") {
-        line = line.replace(/from:/i, "");
+        line = line.replace(/from:\s*/i, "");
     }
     else {
-        line = line.replace(/to:/i, "");
+        line = line.replace(/to:\s*/i, "");
     }
     
-    line = line.replace(chew_regexp, function repl(str, p1) {
-        params.push(p1);
-        return '';
-    });
+    while (1) {
+        var old_length = line.length;
+        line = line.replace(chew_regexp, function repl(str, p1) {
+            params.push(p1);
+            return '';
+        });
+        if (old_length === line.length) {
+            break;
+        }
+    }
     
     params = params.reverse();
     
@@ -47,7 +53,7 @@ exports.parse = function(type, line) {
         // parameter syntax error, i.e. not all of the arguments were 
         // stripped by the while() loop:
         if (line.match(/\@.*\s/)) {
-            throw "Syntax error in parameters";
+            throw new Error("Syntax error in parameters (" + line + ")");
         }
         
         params.unshift(line);
@@ -61,18 +67,18 @@ exports.parse = function(type, line) {
             return ["<>"]; // 'MAIL FROM:' --> 'MAIL FROM:<>'
         }
         if (line.match(/\@.*\s/)) {
-            throw "Syntax error in parameters";
+            throw new Error("Syntax error in parameters");
         }
     }
     else {
         if (line.match(/\@.*\s/)) {
-            throw "Syntax error in parameters";
+            throw new Error("Syntax error in parameters");
         } 
         else {
             if (line.match(/\s/))
-                throw "Syntax error in parameters";
+                throw new Error("Syntax error in parameters");
             if (!line.match(/^(postmaster|abuse)$/i))
-                throw "Syntax error in address";
+                throw new Error("Syntax error in address");
         }
     }
     
