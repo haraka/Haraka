@@ -4,9 +4,13 @@ var childproc = require('child_process');
 var net = require('net');
 var netBinding = process.binding('net');
 var fs = require('fs');
+var path = require('path');
 
 exports.register = function () {
     this.queue_exec = this.config.get('qmail-queue.path') || '/var/qmail/bin/qmail-queue';
+    if (!path.existsSync(this.queue_exec)) {
+        throw new Error("Cannot find qmail-queue binary (" + this.queue_exec + ")");
+    }
 };
 
 exports.hook_queue = function (next, connection) {
@@ -19,7 +23,7 @@ exports.hook_queue = function (next, connection) {
         { customFds: [messagePipe[0], envelopePipe[0]] }
     );
     
-    qmail_queue.on('exit', function (code) {
+    var finished = function (code) {
         fs.close(messagePipe[0]);
         fs.close(envelopePipe[0]);
         if (code !== 0) {
@@ -29,7 +33,9 @@ exports.hook_queue = function (next, connection) {
         else {
             next(OK, "Queued!");
         }
-    });
+    };
+    
+    qmail_queue.on('exit', finished);
     
     var i = 0;
     var write_more = function () {

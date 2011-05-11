@@ -1,4 +1,5 @@
 // a single connection
+var path = require('path');
 var config  = require('./config');
 var logger  = require('./logger');
 var trans   = require('./transaction');
@@ -6,7 +7,7 @@ var dns     = require('dns');
 var plugins = require('./plugins');
 var constants = require('./constants');
 var rfc1869   = require('./rfc1869');
-var haraka  = require('./haraka');
+var haraka  = path.join(__dirname, './haraka');
 var Address = require('./address').Address;
 
 var line_regexp = /^([^\n]*\n)/;
@@ -45,8 +46,6 @@ function setupClient(self) {
         }
         self.remote_info = self.remote_info || self.remote_host;
         
-        self.reset_timeout();
-        
         // Not sure I should create the transaction here, but it won't hurt.
         self.transaction = trans.createTransaction();
         plugins.run_hooks('connect', self);
@@ -71,19 +70,6 @@ exports.Connection = Connection;
 exports.createConnection = function(client) {
     var s = new Connection(client);
     return s;
-}
-
-// set a 5 minute timeout while waiting for data from the client
-Connection.prototype.reset_timeout = function () {
-    this.clear_timeout();
-    var self = this;
-    this.timeout_id = setTimeout(function () { self.fail("timeout") }, 300 * 1000);
-}
-
-Connection.prototype.clear_timeout = function () {
-    if (this.timeout_id) {
-        clearTimeout(this.timeout_id);
-    }
 }
 
 Connection.prototype.process_line = function (line) {
@@ -127,8 +113,6 @@ Connection.prototype.process_data = function (data) {
         logger.logwarn("data after disconnect from " + this.remote_ip);
         return;
     }
-    
-    this.reset_timeout();
     
     this.current_data += data;
     this._process_data();
@@ -201,7 +185,6 @@ Connection.prototype.fail = function (err) {
 }
 
 Connection.prototype.disconnect = function() {
-    this.clear_timeout();
     plugins.run_hooks('disconnect', this);
 };
 
@@ -210,9 +193,6 @@ Connection.prototype.disconnect_respond = function () {
     logger.logdebug("closing client: " + this.client.fd);
     if (this.client.fd) {
         this.client.end();
-        var client = this.client;
-        // force a disconnect if they don't close nicely in 1 minute
-        setTimeout(function () { client.destroy() }, 60 * 1000);
     }
 };
 

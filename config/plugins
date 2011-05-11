@@ -1,4 +1,23 @@
+# default list of plugins
+
+# block mails from known bad hosts (see config/dnsbl.zones for the DNS zones queried)
 dnsbl
-relay_all
-test_queue
-early_talker
+
+# allow bad mail signatures from the config/data.signatures file.
+data.signatures
+
+# block mail from some known bad HELOs - see config/helo.checks.ini for configuration
+helo.checks
+
+# block mail from known bad email addresses you put in config/mail_from.blocklist
+mail_from.blocklist
+
+# Only accept mail where the MAIL FROM domain is resolvable to an MX record
+mail_from.is_resolvable
+
+# Only accept mail for your personal list of hosts
+rcpt_to.in_host_list
+
+# Queue mail via qmail-queue
+queue/qmail-queue
+
