@@ -15,7 +15,7 @@
   },
   "dependencies": {
     "cluster": ">= 0.6.1",
-    "nopt": ">=1.0.5"
+    "nopt": ">= 1.0.5"
   },
   "licenses": [ {
     "type": "MIT",
