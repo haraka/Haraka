@@ -36,6 +36,6 @@ Configuration
       
       Example:
       
-        yahoo.com=yahoo.com,yahoo.co.jp
-        aol.com=aol.com
-        
+            yahoo.com=yahoo.com,yahoo.co.jp
+            aol.com=aol.com
+       
