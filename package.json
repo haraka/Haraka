@@ -11,7 +11,7 @@
   },
   "main": "haraka.js",
   "engines": {
-    "node": ">= v0.4.7"
+    "node": ">= v0.4.0"
   },
   "dependencies": {
     "cluster": ">= 0.6.1",
