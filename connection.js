@@ -1,4 +1,5 @@
 // a single connection
+var path = require('path');
 var config  = require('./config');
 var logger  = require('./logger');
 var trans   = require('./transaction');
@@ -6,7 +7,7 @@ var dns     = require('dns');
 var plugins = require('./plugins');
 var constants = require('./constants');
 var rfc1869   = require('./rfc1869');
-var haraka  = require('./haraka');
+var haraka  = path.join(__dirname, './haraka');
 var Address = require('./address').Address;
 
 var line_regexp = /^([^\n]*\n)/;
