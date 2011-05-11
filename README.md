@@ -9,7 +9,7 @@ quickly.
 Haraka can be used either as an inbound SMTP server, and is designed with
 good anti-spam protections in mind (see the plugins directory), or it can
 be used as an outbound mail server (run it on port 587 with an "auth" plugin
-to authenticate your users).
+to authenticate your users). Or of course it can function as both.
 
 What Haraka doesn't do is fully replace your mail system (yet). It currently
 has no built-in facilities for mapping email addresses to user accounts and
@@ -43,37 +43,51 @@ Furthermore Haraka comes with a simple plugin called "graph" which shows you
 real-time charts of which plugins rejected the most mail, allowing you to
 easily fine-tune your list of plugins to more effectively stop spam.
 
-### Running Haraka
+### Installing Haraka
 
 Haraka is written in Javascript and requires [node.js][1] to run.
 
-Starting Haraka is simple. First we need to tell Haraka our hostname. Make
-sure you are in the Haraka directory and enter the following commands:
+Installation is very simple via [npm][2]:
 
-    $ hostname > config/me
-    $ hostname > config/host_list
+    $ npm install -g Haraka
+
+That will provide you with a `haraka` binary which allows you to setup the
+service.
+
+### Running Haraka
+
+Setting up Haraka is simple. Firstly we need to create the service:
+
+    $ haraka -i /path/to/haraka_test
+
+That creates the directory `haraka_test` and creates `config` and `plugin`
+directories in there, and automatically sets the host name used by Haraka
+to the output of the `hostname` command.
 
 This assumes that `hostname` gives you the correct host you want to receive
-mail for. If not, edit the `host_list` file (though leave the `me` file alone).
+mail for. If not, edit the `config/host_list` file. For example if you want
+to receive mail addressed to `user@domain.com`, add `domain.com` to the
+`config/host_list` file.
 
 Finally just start Haraka:
 
-    node haraka.js
+    $ haraka -c /path/to/haraka_test
 
 And it will run.
 
-However the big thing you need to do next is to edit the `config/plugins`
+However the big thing you want to do next is to edit the `config/plugins`
 file. This determines what plugins run in Haraka, and controls the overall
 behaviour of the server. By default the server is setup to receive mails for
 domains in `host_list` and deliver them via `qmail-queue`. Queueing to
 qmail is likely not what you need unless you have qmail installed, so this is
 likely the first thing you want to change.
 
-Each plugin has documentation in the `docs/plugins` directory. Look there
-for information about how each plugin is configured, edit your `config/plugins`
-file, and restart Haraka and enjoy!
+Each plugin has documentation available via `haraka -h plugins/&lt;name>`.
+Look there for information about how each plugin is configured, edit your
+`config/plugins` file, restart Haraka and enjoy!
 
-Feel free to email me at `helpme@gmail.com` with any questions.
+Feel free to email me at `helpme@gmail.com` with any questions. Or use github
+"Issues".
 
 ### Performance
 
