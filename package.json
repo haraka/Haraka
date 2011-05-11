@@ -14,7 +14,8 @@
     "node": ">= v0.4.7"
   },
   "dependencies": {
-    "cluster": ">= 0.6.1"
+    "cluster": ">= 0.6.1",
+    "nopt": ">=1.0.5"
   },
   "licenses": [ {
     "type": "MIT",
@@ -23,5 +24,6 @@
   "bugs": {
     "mail" : "helpme@gmail.com",
     "web" : "https://github.com/baudehlo/Haraka/issues"
-  }
+  },
+  "bin": { "haraka": "./bin/haraka" }
 }
