@@ -5,14 +5,15 @@
 // https://github.com/tnantoka/LooseLeaf/blob/master/bin/looseleaf
 
 
-var fs = require('fs'),
+var fs   = require('fs'),
     path = require('path'),
     nopt = require("nopt"),
+    os   = require('os'),
     base = path.join(__dirname, '..'),
-    ver = JSON.parse(fs.readFileSync(base+'/package.json', 'utf8'))['version'],
+    ver  = JSON.parse(fs.readFileSync(base+'/package.json', 'utf8'))['version'],
     knownOpts = {
         "version": Boolean,
-        "help": Boolean,
+        "help":    [String, null],
         "configs": path,
         "install": path
     },
@@ -31,6 +32,7 @@ var usage = [
     "Options:",
     "\t-v, --version \t\tOutputs version number",
     "\t-h, --help    \t\tOutputs this help message",
+    "\t-h NAME       \t\tShows help for NAME",
     "\t-c, --configs \t\tPath to your config directory",
     "\t-i, --install \t\tCopies the default configs to a specified dir"
 ].join('\n');
@@ -43,82 +45,119 @@ function create(path) {
 
 // Warning messsage
 function warning(msg) {
-  console.error('\x1b[31mwarning\x1b[0m: ' + msg);
+    console.error('\x1b[31mwarning\x1b[0m: ' + msg);
 }
 
 // Make directory if NOT exist
 function mkDir(dstPath) {
     try {
-      fs.mkdirSync(dstPath, fs.statSync(__dirname).mode);
-      create(dstPath)
-    } catch (e) {
-      // File exists
-      if (e.errno = 17) {
-        warning(e.message);
-      } else {
-        throw e;
-      }
+        fs.mkdirSync(dstPath, fs.statSync(__dirname).mode);
+        create(dstPath)
+    }
+    catch (e) {
+        // File exists
+        if (e.errno = 17) {
+            warning(e.message);
+        }
+        else {
+            throw e;
+        }
     }
 }
 
 // Copy directory
 function copyDir(srcPath, dstPath) {
 
-  if (!/\/$/.test(srcPath)) srcPath += '/';
-  if (!/\/$/.test(dstPath)) dstPath += '/';
-
-  mkDir(dstPath);
-  var files = fs.readdirSync(srcPath);
+    mkDir(dstPath);
+    var files = fs.readdirSync(srcPath);
     
-  for(var i = 0; i < files.length; i++) {
-
-    // Ignore ".*"  
-    if (/^\./.test(files[i])) {
-      continue;
-    }
+    for(var i = 0; i < files.length; i++) {
     
-    var srcFile = srcPath + files[i];
-    var dstFile = dstPath + files[i];
-
-    var srcStat = fs.statSync(srcFile);
-      
-    // Recursive call If direcotory
-    if (srcStat.isDirectory()) {
-      copyDir(srcFile, dstFile);
-    }
-    // Copy to dstPath if file
-    else if (srcStat.isFile()) {
-      // NOT overwrite file
-      try {
-        var dstStat = fs.statSync(dstFile);
-        // File exists
-        warning("EEXIST, File exists '" + dstFile + "'");
-      } catch (e) {
-        // File NOT exists
-        if (e.errno = 2) {
-          var data = fs.readFileSync(srcFile);
-          fs.writeFileSync(dstFile, data);
-          create(dstFile)
-        } else {
-          throw e;
+        // Ignore ".*"  
+        if (/^\./.test(files[i])) {
+            continue;
         }
-      }
+    
+        var srcFile = path.join(srcPath, files[i]);
+        var dstFile = path.join(dstPath, files[i]);
+
+        var srcStat = fs.statSync(srcFile);
+      
+        // Recursive call If direcotory
+        if (srcStat.isDirectory()) {
+            copyDir(srcFile, dstFile);
+        }
+        // Copy to dstPath if file
+        else if (srcStat.isFile()) {
+            // NOT overwrite file
+            try {
+                var dstStat = fs.statSync(dstFile);
+                // File exists
+                warning("EEXIST, File exists '" + dstFile + "'");
+            }
+            catch (e) {
+                // File NOT exists
+                if (e.errno = 2) {
+                    var data = fs.readFileSync(srcFile);
+                    fs.writeFileSync(dstFile, data);
+                    create(dstFile)
+                }
+                else {
+                    throw e;
+                }
+            }
+        }
     }
-  }
+}
+
+function setupHostname(confPath) {
+    var hostname = os.hostname() + "\n";
+    
+    try {
+        var fd = fs.openSync(path.join(confPath, 'me'), 'w');
+        fs.writeSync(fd, hostname, null);
+    }
+    catch (e) {
+        warning("Unable to write config/me file: " + e);
+    }
+    
+    try {
+        var fd = fs.openSync(path.join(confPath, 'host_list'), 'w');
+        fs.writeSync(fd, hostname, null);
+    }
+    catch (e) {
+        warning("Unable to write config/host_list file: " + e);
+    }
 }
 
 
-if (parsed['version']) {
+if (parsed.version) {
     console.log("\033[32;40mHaraka.js\033[0m — Version: " + ver);
-} else if (parsed['help']) {
-    console.log(usage);
-} else if (parsed['configs']) {
+}
+else if (parsed.help) {
+    if (parsed.help === 'true') {
+        console.log(usage);
+    }
+    else {
+        var md_path = path.join(base, 'docs', parsed.help) + '.md';
+        if (!path.existsSync(md_path)) {
+            warning("No documentation found for: " + parsed.help);
+            process.exit();
+        }
+        var spawn = require('child_process').spawn;
+        var less  = spawn(process.env.PAGER ? process.env.PAGER : 'less', [md_path], { customFds: [0, 1, 2] });
+        less.on('exit', function() {
+            process.exit(0);
+        });
+    }
+}
+else if (parsed['configs']) {
     
     process.env.HARAKA = parsed['configs'];
     
-    var logger = require(base+'/logger')
-        server = require(base+'/server');
-        
+    var logger = require(path.join(base, 'logger'))
+        server = require(path.join(base, 'server'));
+    
     process.on('uncaughtException', function (err) {
         if (err.stack) {
             err.stack.split("\n").forEach(logger.logcrit);
@@ -135,11 +174,14 @@ if (parsed['version']) {
     logger.log("Starting up Haraka version " + ver);
     server.createServer();
     
-} else if (parsed['install']) {
+}
+else if (parsed['install']) {
     mkDir(parsed['install']);
     mkDir(path.join(parsed['install'], 'plugins'));
-    copyDir(base+'/config', path.join(parsed['install'], 'config'));
-} else {
+    copyDir(path.join(base, 'config'), path.join(parsed['install'], 'config'));
+    setupHostname(path.join(parsed['install'], 'config'));
+}
+else {
     console.log("\033[31;40mError\033[0m: Undefined or erroneous arguments\n");
     console.log(usage);
 }
