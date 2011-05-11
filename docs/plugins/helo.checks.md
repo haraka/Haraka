@@ -18,24 +18,24 @@ Configuration
 * helo.checks.ini
 
   INI file which controls enabling of certain checks:
-  
+
     * check_no_dot=1
-      
+    
       Checks that the HELO has at least one '.' in it.
-  
+    
     * check_raw_ip=1
-      
+    
       Checks for HELO <IP> where the IP is not surrounded by square brackets.
       This is an RFC violation so should always be enabled.
-  
+    
     * [bigco]
-      
+    
       A list of <helo>=<rdns>[,<rdns>...] to match against. If the HELO matches
       what's on the left hand side, the reverse-DNS must match one of the
       entries on the right hand side or the mail is blocked.
       
       Example:
-        
-          yahoo.com=yahoo.com,yahoo.co.jp
-          aol.com=aol.com
+      
+        yahoo.com=yahoo.com,yahoo.co.jp
+        aol.com=aol.com
         
