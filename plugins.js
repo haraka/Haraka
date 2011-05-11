@@ -8,7 +8,8 @@ var vm          = require('vm');
 var fs          = require('fs');
 var utils       = require('./utils');
 
-var plugin_path = process.env.HARAKA ? path.join(process.env.HARAKA, 'plugins') : './plugins';
+var plugin_paths = [path.join(__dirname, './plugins')];
+if (process.env.HARAKA) { plugin_paths.unshift(path.join(process.env.HARAKA, 'plugins')); } 
 // These are the hooks that qpsmtpd implements - I should get around
 // to supporting them all some day... :-/
 var regular_hooks = {
@@ -47,7 +48,11 @@ var regular_hooks = {
 
 function Plugin(name) {
     this.name = name;
-    this.full_path = path.resolve(plugin_path, name) + '.js';
+    var full_paths = []
+    plugin_paths.forEach(function (pp) {
+        full_paths.push(path.resolve(pp, name) + '.js');
+    });
+    this.full_paths = full_paths;
     this.config = config;
     this.hooks = {};
 };
@@ -89,7 +94,17 @@ plugins.load_plugin = function(name) {
     logger.loginfo("Loading plugin: " + name);
     
     var plugin = new Plugin(name);
-    var code = constants_str + fs.readFileSync(plugin.full_path);
+    var fp = plugin.full_paths,
+        rf;
+    for (var i=0, j=fp.length; i<j; i++) {
+        try {
+            rf = fs.readFileSync(fp[i]);
+            break;
+        } catch(err) {
+            continue;
+        }
+    }
+    var code = constants_str + rf;
     var sandbox = { 
         require: require,
         exports: plugin,
