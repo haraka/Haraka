@@ -4,7 +4,7 @@ var logger       = require('./logger');
 
 var config = exports;
 
-var config_path = process.env.HARAKA ? path.join(process.env.HARAKA, 'config') : './config';
+var config_path = process.env.HARAKA ? path.join(process.env.HARAKA, 'config') : path.join(__dirname, './config');
 
 config.get = function(name, type) {
     if (type !== 'nolog') {
