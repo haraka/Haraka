@@ -1,1 +1,4 @@
 - TLS (see http://js.5sh.net/starttls.js, and http://js.5sh.net/c2s.js)
+- DKIM (need a node dkim library first - perhaps based on libdkimpp?)
+- Rate Limiting for outbound mail
+
