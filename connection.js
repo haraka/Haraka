@@ -59,7 +59,7 @@ function Connection(client) {
     this.state = 'pause';
     this.notes = {};
     this.early_talker_delay = config.get('early_talker_delay') || 1000;
-    this.relaying = 0;
+    this.relaying = false;
     this.hooks_to_run = [];
     
     setupClient(this);
