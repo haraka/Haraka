@@ -58,7 +58,7 @@ Transaction.prototype.add_header = function(key, value) {
 Transaction.prototype.reset_headers = function () {
     var header_lines = this.header.lines();
     this.data_lines = header_lines.concat(this.data_lines.slice(this.header_pos));
-    this.header_pos = header_lines.length();
+    this.header_pos = header_lines.length;
 };
 
 Transaction.prototype.remove_header = function (key) {
