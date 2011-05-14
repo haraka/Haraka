@@ -13,6 +13,7 @@ var regex = {
 
 var cfreader = exports;
 
+cfreader.watch_files = true;
 cfreader._config_cache = {};
 
 cfreader.read_config = function(name, type) {
@@ -25,13 +26,15 @@ cfreader.read_config = function(name, type) {
     // load config file
     var result = cfreader.load_config(name, type);
     
-    fs.unwatchFile(name);
-    fs.watchFile(name, function (curr, prev) {
-        // file has changed
-        if (curr.mtime.getTime() !== prev.mtime.getTime()) {
-            cfreader.load_config(name, type);
-        }
-    });
+    if (cfreader.watch_files) {
+        fs.unwatchFile(name);
+        fs.watchFile(name, function (curr, prev) {
+            // file has changed
+            if (curr.mtime.getTime() !== prev.mtime.getTime()) {
+                cfreader.load_config(name, type);
+            }
+        });
+    }
     
     return result;
 }

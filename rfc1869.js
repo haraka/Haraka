@@ -61,7 +61,7 @@ exports.parse = function(type, line) {
         return params;
     }
 
-    line = params.shift();
+    line = params.shift() || '';
     if (type === "mail") {
         if (!line.length) {
             return ["<>"]; // 'MAIL FROM:' --> 'MAIL FROM:<>'
