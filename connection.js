@@ -9,14 +9,36 @@ var constants = require('./constants');
 var rfc1869   = require('./rfc1869');
 var haraka  = path.join(__dirname, './haraka');
 var Address = require('./address').Address;
+var uuid    = require('./utils').uuid;
 
 var line_regexp = /^([^\n]*\n)/;
 
 var connection = exports;
 
+// copy logger methods into Connection:
+for (var key in logger) {
+    if (key.match(/^log\w/)) {
+        Connection.prototype[key] = (function (key) {
+            return function () {
+                var args = [ (this.transaction ? this.transaction.uuid : this.uuid) + " " ];
+                var start = 0;
+                if (arguments.length && arguments[0] instanceof plugins.Plugin) {
+                    start = 1;
+                    args.unshift("[" + arguments[0].name + "]");
+                }
+                for (var i=start, l=arguments.length; i<l; i++) {
+                    args.push(arguments[i]);
+                }
+                logger[key].apply(logger, args);
+            }
+        })(key);
+    }
+}
+
+
 function setupClient(self) {
     self.remote_ip = self.client.remoteAddress;
-    logger.lognotice("got connection from: " + self.remote_ip);
+    self.lognotice("got connection from: " + self.remote_ip);
     
     self.client.on('error', function (err) {
         if (!self.disconnected) {
@@ -46,8 +68,6 @@ function setupClient(self) {
         }
         self.remote_info = self.remote_info || self.remote_host;
         
-        // Not sure I should create the transaction here, but it won't hurt.
-        self.transaction = trans.createTransaction();
         plugins.run_hooks('connect', self);
     });
 }
@@ -57,7 +77,9 @@ function Connection(client) {
     this.current_data = '';
     this.current_line = null;
     this.state = 'pause';
+    this.uuid = uuid();
     this.notes = {};
+    this.tran_count = 0;
     this.early_talker_delay = config.get('early_talker_delay') || 1000;
     this.relaying = false;
     this.hooks_to_run = [];
@@ -73,7 +95,7 @@ exports.createConnection = function(client) {
 }
 
 Connection.prototype.process_line = function (line) {
-    logger.logprotocol("C: " + line);
+    this.logprotocol("C: " + line);
     if (this.state === 'cmd') {
         this.state = 'pause';
         this.current_line = line.replace(/\r?\n$/, '');
@@ -86,11 +108,12 @@ Connection.prototype.process_line = function (line) {
             }
             catch (err) {
                 if (err.stack) {
-                    logger.logerror(method + " failed: " + err);
-                    err.stack.split("\n").forEach(logger.logerror);
+                    var c = this;
+                    c.logerror(method + " failed: " + err);
+                    err.stack.split("\n").forEach(c.logerror);
                 }
                 else {
-                    logger.logerror(method + " failed: " + err);
+                    this.logerror(method + " failed: " + err);
                 }
                 this.respond(500, "Internal Server Error");
                 this.disconnect();
@@ -110,7 +133,7 @@ Connection.prototype.process_line = function (line) {
 
 Connection.prototype.process_data = function (data) {
     if (this.disconnected) {
-        logger.logwarn("data after disconnect from " + this.remote_ip);
+        this.logwarn("data after disconnect from " + this.remote_ip);
         return;
     }
     
@@ -164,7 +187,7 @@ Connection.prototype.respond = function(code, messages) {
     var buf = '';
     while (msg = messages.shift()) {
         var line = code + (messages.length ? "-" : " ") + msg;
-        logger.logprotocol("S: " + line);
+        this.logprotocol("S: " + line);
         buf = buf + line + "\r\n";
     }
     
@@ -172,14 +195,14 @@ Connection.prototype.respond = function(code, messages) {
         this.client.write(buf);
     }
     catch (err) {
-        logger.logerror(err);
+        this.logerror(err);
     }
     
     this.state = 'cmd';
 };
 
 Connection.prototype.fail = function (err) {
-    logger.logwarn(err);
+    this.logwarn(err);
     this.hooks_to_run = [];
     this.disconnect();
 }
@@ -190,7 +213,7 @@ Connection.prototype.disconnect = function() {
 
 Connection.prototype.disconnect_respond = function () {
     this.disconnected = 1;
-    logger.logdebug("closing client: " + this.client.fd);
+    this.logdebug("closing client");
     if (this.client.fd) {
         this.client.end();
     }
@@ -199,14 +222,21 @@ Connection.prototype.disconnect_respond = function () {
 Connection.prototype.get_capabilities = function() {
     var capabilities = []
     
-    
-    
     return capabilities;
 };
 
+Connection.prototype.tran_uuid = function () {
+    this.tran_count++;
+    return this.uuid + '.' + this.tran_count;
+}
+
 Connection.prototype.reset_transaction = function() {
-    this.transaction = trans.createTransaction();
+    delete this.transaction;
 };
+
+Connection.prototype.init_transaction = function() {
+    this.transaction = trans.createTransaction(this.tran_uuid());
+}
 
 /////////////////////////////////////////////////////////////////////////////
 // SMTP Responses
@@ -381,7 +411,7 @@ Connection.prototype.rcpt_respond = function(retval, msg) {
                 break;
         default:
                 if (retval !== constants.cont)
-                    logger.logalert("No plugin determined if relaying was allowed");
+                    this.logalert("No plugin determined if relaying was allowed");
                 this.respond(450, "I cannot deliver for that user");
     }
 };
@@ -454,15 +484,16 @@ Connection.prototype.cmd_mail = function(line) {
     }
     catch (err) {
         if (err.stack) {
-            err.stack.split(/\n/).forEach(logger.logerror);
+            var c = this;
+            err.stack.split(/\n/).forEach(c.logerror);
         }
         else {
-            logger.logerror(err);
+            this.logerror(err);
         }
         return this.respond(501, "Command parsing failed");
     }
     
-    this.reset_transaction();
+    this.init_transaction();
     this.transaction.mail_from = from;
     
     // Get rest of key=value pairs
@@ -489,10 +520,11 @@ Connection.prototype.cmd_rcpt = function(line) {
     }
     catch (err) {
         if (err.stack) {
-            err.stack.split(/\n/).forEach(logger.logerror);
+            var c = this;
+            err.stack.split(/\n/).forEach(c.logerror);
         }
         else {
-            logger.logerror(err);
+            this.logerror(err);
         }
         return this.respond(501, "Command parsing failed");
     }
@@ -628,14 +660,13 @@ Connection.prototype.data_post_respond = function(retval, msg) {
 };
 
 Connection.prototype.queue_respond = function(retval, msg) {
-    this.reset_transaction();
-    
     switch (retval) {
         case constants.ok:
                 plugins.run_hooks("queue_ok", this);
                 break;
         case constants.deny:
                 this.respond(552, msg || "Message denied");
+                this.reset_transaction();
                 break;
         case constants.denydisconnect:
                 this.respond(552, msg || "Message denied");
@@ -643,13 +674,16 @@ Connection.prototype.queue_respond = function(retval, msg) {
                 break;
         case constants.denysoft:
                 this.respond(452, msg || "Message denied temporarily");
+                this.reset_transaction();
                 break;
         default:
                 this.respond(451, msg || "Queuing declined or disabled, try later");
+                this.reset_transaction();
                 break;
     }
 };
 
 Connection.prototype.queue_ok_respond = function (retval, msg) {
+    this.reset_transaction();
     this.respond(250, msg || "Message Queued");
 };

@@ -9,7 +9,8 @@ var fs          = require('fs');
 var utils       = require('./utils');
 
 var plugin_paths = [path.join(__dirname, './plugins')];
-if (process.env.HARAKA) { plugin_paths.unshift(path.join(process.env.HARAKA, 'plugins')); } 
+if (process.env.HARAKA) { plugin_paths.unshift(path.join(process.env.HARAKA, 'plugins')); }
+
 // These are the hooks that qpsmtpd implements - I should get around
 // to supporting them all some day... :-/
 var regular_hooks = {
@@ -71,11 +72,21 @@ Plugin.prototype.register = function () {}; // noop
 for (var key in logger) {
     if (key.match(/^log\w/)) {
         // console.log("adding Plugin." + key + " method");
-        Plugin.prototype[key] = (function (key) { return function (data) { logger[key]("[" + this.name + "] ", data); } })(key);
+        Plugin.prototype[key] = (function (key) {
+            return function () {
+                var args = ["[" + this.name + "] "];
+                for (var i=0, l=arguments.length; i<l; i++) {
+                    args.push(arguments[i]);
+                }
+                logger[key].apply(logger, args);
+            }
+        })(key);
     }
 }
 
 var plugins = exports;
+
+plugins.Plugin = Plugin;
 
 plugins.load_plugins = function () {
     logger.loginfo("Loading plugins");
@@ -86,7 +97,6 @@ plugins.load_plugins = function () {
 
 var constants_str = "";
 for (var con in constants) {
-    //console.log("Const: " + con);
     constants_str += "var " + con.toUpperCase() + " = " + constants[con] + "; ";
 }
 
@@ -142,7 +152,7 @@ plugins.load_plugin = function(name) {
 plugins.load_plugins();
 
 plugins.run_hooks = function (hook, connection, params) {
-    logger.logdebug("running " + hook + " hooks");
+    connection.logdebug("running " + hook + " hooks");
     
     if (regular_hooks[hook] && connection.hooks_to_run.length) {
         throw new Error("We are already running hooks! Fatal error!");
@@ -174,7 +184,7 @@ plugins.run_next_hook = function(hook, connection) {
         if (timeout_id) clearTimeout(timeout_id);
         
         if (called_once) {
-            logger.logerror("callback called multiple times. Ignoring subsequent calls");
+            connection.logerror("callback called multiple times. Ignoring subsequent calls");
             return;
         }
         called_once++;
@@ -184,6 +194,7 @@ plugins.run_next_hook = function(hook, connection) {
         {
             var respond_method = hook + "_respond";
             if (item && utils.in_array(retval, [constants.deny, constants.denysoft, constants.denydisconnect])) {
+                connection.loginfo("plugin returned deny(soft?): ", msg);
                 connection.deny_respond = function () {
                     connection.hooks_to_run = [];
                     connection[respond_method](retval, msg);
@@ -206,17 +217,17 @@ plugins.run_next_hook = function(hook, connection) {
     item = connection.hooks_to_run.shift();
 
     timeout_id = setTimeout(function () {
-        logger.logcrit("Plugin " + item[0].name + 
+        connection.logcrit("Plugin " + item[0].name + 
             " timed out - make sure it calls the callback");
         callback(constants.cont, "timeout");
-        }, (config.get("plugin_timeout") || 30) * 1000);
+    }, (config.get("plugin_timeout") || 30) * 1000);
         
     try {
         connection.current_hook = item;
         item[0][ item[1] ].call(item[0], callback, connection, item[2]);
     }
     catch (err) {
-        logger.logcrit("Plugin " + item[0].name + " failed: " + err);
+        connection.logcrit("Plugin " + item[0].name + " failed: " + err);
         callback();
     }
 };
