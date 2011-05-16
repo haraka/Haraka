@@ -169,14 +169,14 @@ function get_mx (domain, cb) {
 
 exports.hook_queue = function (next, connection) {
     if (!connection.relaying) {
-        next(); // we're not relaying so don't deliver outbound
+        return next(); // we're not relaying so don't deliver outbound
     }
     
     var self = this;
     
     // add in potentially missing headers
     if (!connection.transaction.header.get_all('Message-Id').length) {
-        connection.transaction.add_header('Message-Id', '<' + utils.uuid() + '@' + this.config.get('me') + '>');
+        connection.transaction.add_header('Message-Id', '<' + connection.transaction.uuid + '@' + this.config.get('me') + '>');
     }
     if (!connection.transaction.header.get_all('Date').length) {
         connection.transaction.add_header('Date', new Date().toString());
@@ -303,7 +303,7 @@ exports.build_todo = function (dom, recips, from, ws, write_more) {
 
 exports._load_cur_queue = function (cb_name) {
     var plugin = this;
-    plugin.loginfo("Loading outbound queue from " + plugin.queue_dir);
+    plugin.loginfo("Loading outbound queue from ", plugin.queue_dir);
     fs.readdir(plugin.queue_dir, function (err, files) {
         if (err) {
             return plugin.logerror("Failed to load queue directory (" + plugin.queue_dir + "): " + err);
