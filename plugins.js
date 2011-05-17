@@ -114,7 +114,13 @@ plugins.load_plugin = function(name) {
             continue;
         }
     }
-    if (!rf) { throw "Can't load plugin: " + name; }
+    if (!rf) {
+        if (config.get('smtp.ini', 'ini').main.ignore_bad_plugins) {
+            logger.logcrit("Loading plugin " + name + " failed.");
+            return;
+        }
+        throw "Loading plugin " + name + " failed.";
+    }
     var code = constants_str + rf;
     var sandbox = { 
         require: require,
