@@ -114,6 +114,7 @@ plugins.load_plugin = function(name) {
             continue;
         }
     }
+    if (!rf) { throw "Can't load plugin: " + name; }
     var code = constants_str + rf;
     var sandbox = { 
         require: require,
