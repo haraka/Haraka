@@ -82,7 +82,7 @@ domains in `host_list` and deliver them via `qmail-queue`. Queueing to
 qmail is likely not what you need unless you have qmail installed, so this is
 likely the first thing you want to change.
 
-Each plugin has documentation available via `haraka -h plugins/&lt;name>`.
+Each plugin has documentation available via `haraka -h plugins/<name>`.
 Look there for information about how each plugin is configured, edit your
 `config/plugins` file, restart Haraka and enjoy!
 
