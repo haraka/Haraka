@@ -154,6 +154,7 @@ else if (parsed.help) {
 else if (parsed['configs']) {
     
     process.env.HARAKA = parsed['configs'];
+    require.paths.unshift(path.join(process.env.HARAKA, 'node_modules'));
     
     var logger = require(path.join(base, 'logger'))
         server = require(path.join(base, 'server'));
