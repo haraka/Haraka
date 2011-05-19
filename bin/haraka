@@ -15,13 +15,15 @@ var fs   = require('fs'),
         "version": Boolean,
         "help":    [String, null],
         "configs": path,
-        "install": path
+        "install": path,
+        "list":    Boolean 
     },
     shortHands = {
         "v": ["--version"],
         "h": ["--help"],
         "c": ["--configs"],
-        "i": ["--install"]
+        "i": ["--install"],
+        "l": ["--list"]
     },
     parsed = nopt(knownOpts, shortHands, process.argv, 2);
 
@@ -34,8 +36,34 @@ var usage = [
     "\t-h, --help    \t\tOutputs this help message",
     "\t-h NAME       \t\tShows help for NAME",
     "\t-c, --configs \t\tPath to your config directory",
-    "\t-i, --install \t\tCopies the default configs to a specified dir"
+    "\t-i, --install \t\tCopies the default configs to a specified dir",
+    "\t-l, --list    \t\tList the plugins bundled with Haraka"
 ].join('\n');
+
+
+var listPlugins = function (dir) {
+    
+    if (!dir) { dir = "plugins/"; }
+    
+    var plist = "\n" + dir + "\n",
+        subdirs = [],
+        pd = fs.readdirSync(path.join(base, dir));
+    
+    pd.forEach(function (p) {
+        if (~p.search('.js')) {
+            plist += "\t" + p.replace('.js', '') + "\n";
+        } else {
+            subdirs.push(dir + p + "/");
+        }
+    });
+    
+    subdirs.forEach(function (s) {
+        plist += listPlugins(s);
+    });
+    
+    return plist;
+    
+}
 
 
 // Show message when create 
@@ -166,6 +194,9 @@ function createReadme(readmePath) {
 
 if (parsed.version) {
     console.log("\033[32;40mHaraka.js\033[0m — Version: " + ver);
+}
+else if (parsed.list) {
+    console.log(listPlugins());
 }
 else if (parsed.help) {
     if (parsed.help === 'true') {
