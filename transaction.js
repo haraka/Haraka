@@ -20,8 +20,9 @@ function Transaction() {
 
 exports.Transaction = Transaction;
 
-exports.createTransaction = function() {
+exports.createTransaction = function(uuid) {
     var t = new Transaction();
+    t.uuid = uuid;
     return t;
 };
 
