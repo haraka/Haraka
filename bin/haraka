@@ -178,7 +178,8 @@ else if (parsed.help) {
             process.exit();
         }
         var spawn = require('child_process').spawn;
-        var less  = spawn(process.env.PAGER ? process.env.PAGER : 'less', [md_path], { customFds: [0, 1, 2] });
+        var less  = spawn(process.env.PAGER ? process.env.PAGER : 'less',
+                         [md_path], { customFds: [0, 1, 2] });
         less.on('exit', function() {
             process.exit(0);
         });
