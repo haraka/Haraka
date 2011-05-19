@@ -41,13 +41,14 @@ var usage = [
 ].join('\n');
 
 
-var listPlugins = function (dir) {
-    
+var listPlugins = function (b, dir) {
+ 
     if (!dir) { dir = "plugins/"; }
     
-    var plist = "\n" + dir + "\n",
+    var plist = dir + "\n",
         subdirs = [],
-        pd = fs.readdirSync(path.join(base, dir));
+        gl = path.join((b ? b : base), dir),
+        pd = fs.readdirSync(gl);
     
     pd.forEach(function (p) {
         if (~p.search('.js')) {
@@ -58,7 +59,7 @@ var listPlugins = function (dir) {
     });
     
     subdirs.forEach(function (s) {
-        plist += listPlugins(s);
+        plist += "\n" + listPlugins(b, s);
     });
     
     return plist;
@@ -196,7 +197,10 @@ if (parsed.version) {
     console.log("\033[32;40mHaraka.js\033[0m — Version: " + ver);
 }
 else if (parsed.list) {
-    console.log(listPlugins());
+    console.log("\033[32;40m*global\033[0m\n" + listPlugins());
+    if (parsed['configs']) {
+        console.log("\033[32;40m*local\033[0m\n" + listPlugins(parsed['configs']));
+    }
 }
 else if (parsed.help) {
     if (parsed.help === 'true') {
