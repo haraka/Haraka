@@ -346,7 +346,7 @@ var util = require('util');
 
 exports._send_email = function (hmail) {
     var plugin = this;
-    plugin.loginfo("Hmail: " + util.inspect(hmail, null, null));
+    // plugin.loginfo("Hmail: " + util.inspect(hmail, null, null));
     
     get_mx(hmail.todo.domain, function (err, mxs) {
         if (err) {
@@ -431,9 +431,9 @@ exports.try_deliver_host = function (hmail) {
     socket.setTimeout(300 * 1000);
     var command = 'connect';
     var response = [];
-    this.loginfo(hmail.todo.rcpt_to);
+    // this.loginfo(hmail.todo.rcpt_to);
     var recipients = hmail.todo.rcpt_to.map(function (a) { return new Address (a.original) });
-    this.loginfo(recipients);
+    // this.loginfo(recipients);
     var mail_from  = new Address (hmail.todo.mail_from.original);
     var data_marker = 0;
     
@@ -574,15 +574,9 @@ exports.populate_bounce_message = function (from, to, reason, hmail, cb) {
         bounce_msg_ = default_bounce_template;
     }
     
-    this.loginfo("Bounce msg before:");
-    this.loginfo(bounce_msg_);
-    
     var bounce_msg = bounce_msg_.map(function (item) {
         return item.replace(/\{(\w+)\}/g, function (i, word) { return values[word] || '?' });
     });
-    
-    this.loginfo("Bounce msg after:");
-    this.loginfo(bounce_msg);
     
     var data_stream = hmail.data_stream();
     data_stream.on('data', function (data) {
