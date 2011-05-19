@@ -130,6 +130,39 @@ function setupHostname(confPath) {
     }
 }
 
+var readme = [
+"Haraka",
+"",
+"Congratulations on creating a new installation of Haraka.",
+"",
+"This directory contains two key directories for how Haraka will function:",
+"",
+" - config",
+"           This directory contains configuration files for Haraka. The",
+"           directory contains the default configuration. You probably want",
+"           to modify some files in here, particularly `smtp.ini`.",
+" - plugins",
+"           This directory contains custom plugins which you write to run in",
+"           Haraka. The plugins which ship with Haraka are still available",
+"           to use.",
+"",
+"Documentation for Haraka is available via `haraka -h <name> where the name",
+"is either the name of a plugin (without the .js extension) or the name of",
+"a core Haraka module, such as `Connection` or `Transaction`.",
+"",
+"To get documentation on writing a plugin type `haraka -h Plugins`.",
+"",
+].join("\n");
+
+function createReadme(readmePath) {
+    try {
+        var fd = fs.openSync(readmePath, 'w');
+        fs.writeSync(fd, readme, null);
+    }
+    catch (e) {
+        warning("Unable to create README file: " + e);
+    }
+}
 
 if (parsed.version) {
     console.log("\033[32;40mHaraka.js\033[0m — Version: " + ver);
@@ -179,6 +212,7 @@ else if (parsed['install']) {
     mkDir(parsed['install']);
     mkDir(path.join(parsed['install'], 'plugins'));
     copyDir(path.join(base, 'config'), path.join(parsed['install'], 'config'));
+    createReadme(path.join(parsed['install'], 'README'));
     setupHostname(path.join(parsed['install'], 'config'));
 }
 else {
