@@ -183,13 +183,20 @@ var readme = [
 "",
 ].join("\n");
 
-function createReadme(readmePath) {
+var packageJson = JSON.stringify({
+  "name": "Local Haraka",
+  "description": "An SMTP Server project.",
+  "version": "0.0.1",
+  "dependencies": {}
+});
+
+function createFile(filePath, data) {
     try {
-        var fd = fs.openSync(readmePath, 'w');
-        fs.writeSync(fd, readme, null);
+        var fd = fs.openSync(filePath, 'w');
+        fs.writeSync(fd, data, null);
     }
     catch (e) {
-        warning("Unable to create README file: " + e);
+        warning("Unable to create file: " + e);
     }
 }
 
@@ -199,7 +206,7 @@ if (parsed.version) {
 else if (parsed.list) {
     console.log("\033[32;40m*global\033[0m\n" + listPlugins());
     if (parsed['configs']) {
-        console.log("\033[32;40m*local\033[0m\n" + listPlugins(parsed['configs']));
+        console.log("\033[32;40m*local\033[0m\n" + listPlugins(parsed.configs));
     }
 }
 else if (parsed.help) {
@@ -207,8 +214,16 @@ else if (parsed.help) {
         console.log(usage);
     }
     else {
-        var md_path = path.join(base, 'docs', parsed.help) + '.md';
-        if (!path.existsSync(md_path)) {
+        var md_path,
+            md_paths = [path.join(base, 'docs', parsed.help) + '.md'];
+        if (parsed.configs) { md_paths.unshift(path.join(parsed.configs, 'docs', parsed.help) + '.md'); }
+        for (var i=0, j=md_paths.length; i<j; i++) {
+            if(path.existsSync(md_paths[i])) {
+                md_path = md_paths[i];
+                break;
+            }
+        }
+        if (!md_path) {
             warning("No documentation found for: " + parsed.help);
             process.exit();
         }
@@ -219,9 +234,9 @@ else if (parsed.help) {
         });
     }
 }
-else if (parsed['configs']) {
+else if (parsed.configs) {
     
-    process.env.HARAKA = parsed['configs'];
+    process.env.HARAKA = parsed.configs;
     require.paths.unshift(path.join(process.env.HARAKA, 'node_modules'));
     
     var logger = require(path.join(base, 'logger'))
@@ -244,12 +259,16 @@ else if (parsed['configs']) {
     server.createServer();
     
 }
-else if (parsed['install']) {
-    mkDir(parsed['install']);
-    mkDir(path.join(parsed['install'], 'plugins'));
-    copyDir(path.join(base, 'config'), path.join(parsed['install'], 'config'));
-    createReadme(path.join(parsed['install'], 'README'));
-    setupHostname(path.join(parsed['install'], 'config'));
+else if (parsed.install) {
+    var pa = parsed.install;
+    mkDir(parsed.install);
+    mkDir(path.join(pa, 'plugins'));
+    mkDir(path.join(pa, 'docs'));
+    mkDir(path.join(pa, 'docs/plugins'));
+    copyDir(path.join(base, 'config'), path.join(pa, 'config'));
+    createFile(path.join(pa, 'README'), readme);
+    createFile(path.join(pa, 'package.json'), packageJson);
+    setupHostname(path.join(pa, 'config'));
 }
 else {
     console.log("\033[31;40mError\033[0m: Undefined or erroneous arguments\n");
