@@ -218,7 +218,11 @@ exports.hook_queue = function (next, connection) {
         else if (num_domains === 1) {
             for (var i=0,l=hmails.length; i < l; i++) {
                 var hmail = hmails[i];
-                setTimeout(function () {self.send_email(hmail)}, 0);
+                setTimeout(function (h) {
+                    return function () {
+                        self.send_email(h)
+                    }
+                }(hmail), 0);
             }
             next(code, msg);
         }
@@ -666,6 +670,10 @@ exports.temp_fail = function (hmail) {
         if (err) {
             return plugin.bounce("Error re-queueing email: " + err, hmail);
         }
+        
+        hmail.path = path.join(this.queue_dir, new_filename);
+        hmail.filename = new_filename;
+
         setTimeout(function () {plugin.send_email(hmail)}, delay);
     });
 }
