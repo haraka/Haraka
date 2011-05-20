@@ -7,7 +7,8 @@ var dns     = require('dns');
 var plugins = require('./plugins');
 var constants = require('./constants');
 var rfc1869   = require('./rfc1869');
-var haraka  = path.join(__dirname, './haraka');
+var fs      = require('fs');
+var version  = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'))).version;
 var Address = require('./address').Address;
 var uuid    = require('./utils').uuid;
 
@@ -272,7 +273,7 @@ Connection.prototype.connect_respond = function(retval, msg) {
         default:
                              var greeting = config.get('smtpgreeting')
                              this.respond(220, msg || (config.get('me') + 
-                                " ESMTP Haraka " + haraka.version + " ready"));
+                                " ESMTP Haraka " + version + " ready"));
     }
 };
 
@@ -565,7 +566,7 @@ Connection.prototype.received_line = function() {
     return  "from " + this.remote_info
            +" (HELO " + this.hello_host + ") ("+this.remote_ip
            +")\n  " + (this.authheader || '') + "  by " + config.get('me')
-           +" (Haraka/" + haraka.version
+           +" (Haraka/" + version
            +") with " + (this.sslheader || '') + smtp + "; "
            + _date_to_str(new Date());
 };
@@ -636,7 +637,7 @@ Connection.prototype.accumulate_data = function(line) {
 
 Connection.prototype.data_done = function() {
     this.state = 'pause';
-    // this.transaction.add_header('X-Haraka', 'Version ' + haraka.version);
+    // this.transaction.add_header('X-Haraka', 'Version ' + version);
     plugins.run_hooks('data_post', this);
 };
 
