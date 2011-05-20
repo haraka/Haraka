@@ -1,5 +1,5 @@
 // a single connection
-var path = require('path');
+var fs = require('fs');
 var config  = require('./config');
 var logger  = require('./logger');
 var trans   = require('./transaction');
@@ -7,7 +7,7 @@ var dns     = require('dns');
 var plugins = require('./plugins');
 var constants = require('./constants');
 var rfc1869   = require('./rfc1869');
-var haraka  = path.join(__dirname, './haraka');
+var haraka  = JSON.parse(fs.readFileSync('./package.json', 'utf8'));
 var Address = require('./address').Address;
 var uuid    = require('./utils').uuid;
 
