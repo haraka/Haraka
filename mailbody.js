@@ -4,6 +4,8 @@ var Header = require('./mailheader').Header;
 var events = require('events');
 var util   = require('util');
 
+var buf_siz = 65536;
+
 function Body (header, options) {
     this.header = header || new Header();
     this.header_lines = [];
@@ -11,6 +13,8 @@ function Body (header, options) {
     this.bodytext = '';
     this.children = []; // if multipart
     this.state = 'start';
+    this.buf = new Buffer(buf_siz);
+    this.buf_fill = 0;
 }
 
 util.inherits(Body, events.EventEmitter);
@@ -23,10 +27,18 @@ Body.prototype.parse_more = function (line) {
 Body.prototype.parse_child = function (line) {
     // check for MIME boundary
     if (line.substr(0, (this.boundary.length + 2)) === ('--' + this.boundary)) {
+
+        if (this.children[this.children.length -1].state === 'attachment') {
+            var child = this.children[this.children.length - 1];
+            if (child.buf_fill > 0) {
+                this.emit('attachment_data', child.buf.slice(0, child.buf_fill));
+            }
+            this.emit('attachment_end');
+        }
+
         if (line.substr(this.boundary.length + 2, 2) === '--') {
             // end
-            this.emit('attachment_end');
-            return;
+            this.state = 'end';
         }
         else {
             var bod = new Body(new Header(), this.options);
@@ -35,8 +47,8 @@ Body.prototype.parse_child = function (line) {
             this.listeners('attachment_end'  ).forEach(function (cb) { bod.on('attachment_end', cb) });
             this.children.push(bod);
             bod.state = 'headers';
-            return;
         }
+        return;
     }
     // Pass data into last child
     this.children[this.children.length - 1].parse_more(line);
@@ -84,11 +96,16 @@ Body.prototype.parse_start = function (line) {
         }
         var filename = match ? match[1] : '';
         this.emit('attachment_start', ct, filename);
+        this.buf_fill = 0;
         this.state = 'attachment';
         this.decode_function = this["decode_bin_" + enc];
     }
     
     this["parse_" + this.state](line);
+}
+
+Body.prototype.parse_end = function (line) {
+    // ignore these lines - but we could store somewhere I guess.
 }
 
 Body.prototype.parse_body = function (line) {
@@ -131,8 +148,23 @@ Body.prototype.parse_attachment = function (line) {
             }
         }
     }
+
     var buf = this.decode_function(line);
-    this.emit('attachment_data', buf);
+    if ((buf.length + this.buf_fill) > buf_siz) {
+        this.emit('attachment_data', this.buf.slice(0, this.buf_fill));
+        if (buf.length > buf_siz) {
+            this.emit('attachment_data', buf);
+            this.buf_fill = 0;
+        }
+        else {
+            buf.copy(this.buf);
+            this.buf_fill = buf.length;
+        }
+    }
+    else {
+        buf.copy(this.buf, this.buf_fill);
+        this.buf_fill += buf.length;
+    }
 }
 
 Body.prototype.decode_bin_qp = function (line) {
