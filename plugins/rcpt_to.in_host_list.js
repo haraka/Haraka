@@ -9,7 +9,7 @@ exports.hook_rcpt = function(next, connection, params) {
     
     this.loginfo("Checking if " + rcpt + " host is in host_list");
     
-    var domain = rcpt.host;
+    var domain = rcpt.host.toLowerCase();
     var host_list = this.config.get('host_list', 'list');
     var allow_subdomain = this.config.get('host_list.ini', 'ini').main.allow_subdomains;
     
@@ -18,7 +18,7 @@ exports.hook_rcpt = function(next, connection, params) {
         var tmp_domain = domain;
         while (tmp_domain.match(/\./)) {
             this.logdebug("checking " + tmp_domain + " against " + host_list[i]);
-            if (host_list[i] === tmp_domain) {
+            if (host_list[i].toLowerCase() === tmp_domain) {
                 return next(OK);
             }
             if (allow_subdomain) {
