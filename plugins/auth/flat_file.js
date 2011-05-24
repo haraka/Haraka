@@ -8,7 +8,7 @@ exports.hook_capabilities = function (next, connection) {
 }
 
 exports.hook_unrecognized_command = function (next, connection, params) {
-    if (connection.transaction.notes.auth_flat_file_ticket) {
+    if (connection.notes.auth_flat_file_ticket) {
         var credentials = unbase64(params[0]).split(' ');
         return this.check_user(next, connection, credentials);
     }
@@ -17,7 +17,7 @@ exports.hook_unrecognized_command = function (next, connection, params) {
                     hexi(Date.now()) + '@' + this.config.get('me') + '>';
         this.loginfo("ticket: " + ticket);
         connection.respond(334, base64(ticket));
-        connection.transaction.notes.auth_flat_file_ticket = ticket;
+        connection.notes.auth_flat_file_ticket = ticket;
         return next(OK);
     }
     return next();
@@ -41,7 +41,7 @@ exports.check_user = function (next, connection, credentials) {
     var clear_pw = config.users[credentials[0]];
     
     var hmac = crypto.createHmac('md5', clear_pw);
-    hmac.update(connection.transaction.notes.auth_flat_file_ticket);
+    hmac.update(connection.notes.auth_flat_file_ticket);
     var hmac_pw = hmac.digest('hex');
     
     this.loginfo("comparing " + hmac_pw + ' to ' + credentials[1]);
