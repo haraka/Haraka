@@ -18,6 +18,7 @@ var fs   = require('fs'),
         "install": path,
         "list":    Boolean,
         "plugin":  String,
+        "force":   Boolean,
     },
     shortHands = {
         "v": ["--version"],
@@ -26,6 +27,7 @@ var fs   = require('fs'),
         "i": ["--install"],
         "l": ["--list"],
         "p": ["--plugin"],
+        "f": ["--force"],
     },
     parsed = nopt(knownOpts, shortHands, process.argv, 2);
 
@@ -41,6 +43,7 @@ var usage = [
     "\t-i, --install \t\tCopies the default configs to a specified dir",
     "\t-l, --list    \t\tList the plugins bundled with Haraka",
     "\t-p, --plugin  \t\tGenerate a new plugin with the given name",
+    "\t-f, --force   \t\tForce overwriting of old files",
 ].join('\n');
 
 
@@ -220,6 +223,9 @@ var plugin_doc = [
 
 function createFile(filePath, data, info) {
     try {
+        if (path.existsSync(filePath) && !parsed.force) {
+            throw filePath + " already exists";
+        }
         var fd = fs.openSync(filePath, 'w');
         var output = data.replace(/\%(\w+)\%/g, function (i, m1) { return info[m1] });
         fs.writeSync(fd, output, null);
@@ -280,8 +286,9 @@ else if (parsed.configs && parsed.plugin) {
                plugin_doc, { plugin: parsed.plugin, config: parsed.configs });
     
     console.log("Plugin " + parsed.plugin + " created");
-    console.log("Now edit javascript in: " + js_path);
-    console.log("Then edit documentation in: " + doc_path);
+    console.log("Now edit javascript in:    " + js_path);
+    console.log("Add the plugin to config:  " + path.join(parsed.configs, 'config', 'plugins'));
+    console.log("And edit documentation in: " + doc_path);
 }
 else if (parsed.configs) {
     
