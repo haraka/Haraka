@@ -16,14 +16,16 @@ var fs   = require('fs'),
         "help":    [String, null],
         "configs": path,
         "install": path,
-        "list":    Boolean 
+        "list":    Boolean,
+        "plugin":  String,
     },
     shortHands = {
         "v": ["--version"],
         "h": ["--help"],
         "c": ["--configs"],
         "i": ["--install"],
-        "l": ["--list"]
+        "l": ["--list"],
+        "p": ["--plugin"],
     },
     parsed = nopt(knownOpts, shortHands, process.argv, 2);
 
@@ -37,7 +39,8 @@ var usage = [
     "\t-h NAME       \t\tShows help for NAME",
     "\t-c, --configs \t\tPath to your config directory",
     "\t-i, --install \t\tCopies the default configs to a specified dir",
-    "\t-l, --list    \t\tList the plugins bundled with Haraka"
+    "\t-l, --list    \t\tList the plugins bundled with Haraka",
+    "\t-p, --plugin  \t\tGenerate a new plugin with the given name",
 ].join('\n');
 
 
@@ -174,6 +177,8 @@ var readme = [
 "           This directory contains custom plugins which you write to run in",
 "           Haraka. The plugins which ship with Haraka are still available",
 "           to use.",
+" - docs/plugins",
+"           This directory contains documentation for your plugins.",
 "",
 "Documentation for Haraka is available via `haraka -h <name> where the name",
 "is either the name of a plugin (without the .js extension) or the name of",
@@ -184,16 +189,40 @@ var readme = [
 ].join("\n");
 
 var packageJson = JSON.stringify({
-  "name": "Local Haraka",
+  "name": "My Haraka Installation",
   "description": "An SMTP Server project.",
   "version": "0.0.1",
   "dependencies": {}
 });
 
-function createFile(filePath, data) {
+var plugin_src = [
+"// %plugin%",
+"",
+"// documentation via: haraka -c %config% -h plugins/%plugin%",
+"",
+"// Put your plugin code here",
+"// type: `haraka -h Plugins` for documentation on how to create a plugin",
+"",
+].join("\n");
+
+var plugin_doc = [
+"%plugin%",
+"========",
+"",
+"Describe what your plugin does here.",
+"",
+"Configuration",
+"-------------",
+"",
+"* `config/some_file` - describe what effect this config file has",
+"",
+].join("\n");
+
+function createFile(filePath, data, info) {
     try {
         var fd = fs.openSync(filePath, 'w');
-        fs.writeSync(fd, data, null);
+        var output = data.replace(/\%(\w+)\%/g, function (i, m1) { return info[m1] });
+        fs.writeSync(fd, output, null);
     }
     catch (e) {
         warning("Unable to create file: " + e);
@@ -215,8 +244,14 @@ else if (parsed.help) {
     }
     else {
         var md_path,
-            md_paths = [path.join(base, 'docs', parsed.help) + '.md'];
-        if (parsed.configs) { md_paths.unshift(path.join(parsed.configs, 'docs', parsed.help) + '.md'); }
+            md_paths = [
+                path.join(base, 'docs', parsed.help + '.md'),
+                path.join(base, 'docs', 'plugins', parsed.help + '.md'),
+            ];
+        if (parsed.configs) {
+            md_paths.unshift(path.join(parsed.configs, 'docs', 'plugins', parsed.help + '.md'));
+            md_paths.unshift(path.join(parsed.configs, 'docs', parsed.help + '.md'));
+        }
         for (var i=0, j=md_paths.length; i<j; i++) {
             if(path.existsSync(md_paths[i])) {
                 md_path = md_paths[i];
@@ -234,6 +269,19 @@ else if (parsed.help) {
             process.exit(0);
         });
     }
+}
+else if (parsed.configs && parsed.plugin) {
+    var js_path = path.join(parsed.configs, 'plugins', parsed.plugin + '.js');
+    createFile(js_path,
+               plugin_src, { plugin: parsed.plugin, config: parsed.configs });
+    
+    var doc_path = path.join(parsed.configs, 'docs', 'plugins', parsed.plugin + '.md');
+    createFile(doc_path,
+               plugin_doc, { plugin: parsed.plugin, config: parsed.configs });
+    
+    console.log("Plugin " + parsed.plugin + " created");
+    console.log("Now edit javascript in: " + js_path);
+    console.log("Then edit documentation in: " + doc_path);
 }
 else if (parsed.configs) {
     
