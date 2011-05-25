@@ -196,7 +196,7 @@ Connection.prototype.respond = function(code, messages) {
         this.client.write(buf);
     }
     catch (err) {
-        this.logerror(err);
+        return this.fail("Writing response: " + buf + " failed: " + err);
     }
     
     this.state = 'cmd';
