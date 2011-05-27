@@ -86,13 +86,16 @@ Address.prototype.parse = function (addr) {
     if (atoms_re.test(localpart)) {
         // simple case, we are done
         this.user = localpart;
-        this.host = domainpart;
+        // I'm lower-case'ing here. Not sure if that's the "right" thing
+        // to do, as the original case could be useful (but then you can get
+        // that from address.original I guess).
+        this.host = domainpart.toLowerCase();
         return;
     }
     else if (matches = qt_re.exec(localpart)) {
         localpart = matches[1];
         this.user = localpart.replace(exports.text_expr, '$1', 'g');
-        this.host = domainpart;
+        this.host = domainpart.toLowerCase();
         return;
     }
     else {
