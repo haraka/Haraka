@@ -4,6 +4,7 @@ var dns = require('dns');
 var utils = require('./utils');
 var sock = require('./line_socket');
 var server = require('./server');
+var logger = require('./logger');
 
 var Address = require('./address').Address;
 
@@ -63,6 +64,14 @@ HMailItem.prototype.read_todo = function () {
                 self.ready_cb();
             }
         });
+        td_reader.on('error', function (err) {
+            logger.logerror("Error reading todo: " + err);
+        })
+        td_reader.on('end', function () {
+            if (todo.length === todo_len) {
+                logger.logerror("Didn't find enough data in todo!");
+            }
+        })
     });
 }
 
@@ -260,7 +269,7 @@ exports.process_domain = function (dom, recips, from, data_lines, hmails, cb) {
                     }
                 });
             });
-            ws.destroy();
+            ws.destroySoon();
             return;
         }
     
@@ -303,6 +312,58 @@ exports.build_todo = function (dom, recips, from, ws, write_more) {
         // later anyway to call write_more_data()
         write_more();
     }
+}
+
+exports.split_to_new_recipients = function (hmail, recipients) {
+    var plugin = this;
+    var fname = this._fname();
+    var tmp_path = path.join(this.queue_dir, '.' + fname);
+    var ws = fs.createWriteStream(tmp_path);
+
+    var writing = false;
+
+    var write_more = function () {
+        if (writing) return;
+        writing = true;
+        var rs = hmail.data_stream();
+        rs.pipe(ws, {end: false});
+        rs.on('error', function (err) {
+            plugin.logerror("Reading original mail error: " + err);
+        })
+        rs.on('end', function () {
+            // rs.destroy();
+            plugin.delivered(hmail);
+            ws.on('close', function () {
+                var dest_path = path.join(plugin.queue_dir, fname);
+                fs.rename(tmp_path, dest_path, function (err) {
+                    if (err) {
+                        plugin.logerror("Unable to rename tmp file!: " + err);
+                        plugin.bounce("Error re-queuing some recipients", hmail);
+                    }
+                    else {
+                        var split_mail = new HMailItem (fname, dest_path);
+                        if (!split_mail.is_ready()) {
+                            split_mail.ready_cb = function () {
+                                plugin.temp_fail(split_mail);
+                            }
+                        }
+                    }
+                });
+            });
+            ws.destroySoon();
+            return;
+        });
+    }
+
+    ws.on('error', function (err) {
+        plugin.logerror("Unable to write queue file (" + fname + "): " + err);
+        ws.destroy();
+        plugin.bounce("Error re-queueing some recipients", hmail);
+    });
+
+    ws.on('drain', write_more);
+
+    plugin.build_todo(hmail.todo.domain, recipients, hmail.todo.mail_from, ws, write_more);
 }
 
 exports._load_cur_queue = function (cb_name) {
@@ -352,6 +413,10 @@ exports._send_email = function (hmail) {
     var plugin = this;
     // plugin.loginfo("Hmail: " + util.inspect(hmail, null, null));
     
+    // FOR TESTING!
+    // hmail.mxlist = [{priority: 0, exchange: '127.0.0.1'}];
+    // return plugin.try_deliver(hmail);
+
     get_mx(hmail.todo.domain, function (err, mxs) {
         if (err) {
             plugin.logerror("MX Lookup for " + hmail.todo.domain + " failed: " + err);
@@ -440,6 +505,9 @@ exports.try_deliver_host = function (hmail) {
     // this.loginfo(recipients);
     var mail_from  = new Address (hmail.todo.mail_from.original);
     var data_marker = 0;
+    var last_recip;
+    var ok_recips = 0;
+    var fail_recips = [];
     
     socket.send_command = function (cmd, data) {
         var line = cmd + (data ? (' ' + data) : '');
@@ -474,12 +542,19 @@ exports.try_deliver_host = function (hmail) {
             response.push(rest);
             if (cont === ' ') {
                 if (code.match(/^4/)) {
-                    socket.send_command('QUIT');
-                     // TODO: this needs fixed - we actually need different
-                     // responses depending on where we are at. e.g. if we
-                     // managed some RCPTs but later ones failed, perhaps we
-                     // tried too many.
-                    return self.temp_fail(hmail);
+                    if (/^rcpt/.test(command)) {
+                        // this recipient was rejected
+                        fail_recips.push(last_recip);
+                        if (!(ok_recips || recipients.length)) {
+                            // no accepted recipients, and no more left so bail out
+                            socket.send_command('QUIT');
+                            return self.temp_fail(hmail);
+                        }
+                    }
+                    else {
+                        socket.send_command('QUIT');
+                        return self.temp_fail(hmail);
+                    }
                 }
                 else if (code.match(/^5/)) {
                     socket.send_command('QUIT');
@@ -493,10 +568,13 @@ exports.try_deliver_host = function (hmail) {
                         socket.send_command('MAIL', 'FROM:' + mail_from);
                         break;
                     case 'mail':
-                        socket.send_command('RCPT', 'TO:' + recipients.shift());
+                    case 'rcpt_':
+                        if (command === 'rcpt_') ok_recips++;
+                        last_recip = recipients.shift();
+                        socket.send_command('RCPT', 'TO:' + last_recip.format());
                         if (recipients.length) {
                             // don't move to next state if we have more recipients
-                            return;
+                            command = 'rcpt_';
                         }
                         break;
                     case 'rcpt':
@@ -504,30 +582,25 @@ exports.try_deliver_host = function (hmail) {
                         break;
                     case 'data':
                         var data_stream = hmail.data_stream();
+                        data_stream.pipe(socket, {end: false});
+                        data_stream.on('error', function (err) {
+                            self.logerror("Reading from the data stream failed: " + err);
+                        });
                         data_stream.on('data', function (data) {
                             self.logprotocol("C: " + data);
-                            if (!socket.write(data.toString().replace(/\r?\n/g, '\r\n'))) {
-                                // didn't write everything to the kernel, so pause the file reading
-                                data_stream.pause();
-                            }
                         });
                         data_stream.on('end', function () {
                             socket.send_command('dot');
                         });
-                        socket.on('drain', function() {
-                            if (command === 'data') {
-                                if (data_stream.readable) {
-                                    data_stream.resume();
-                                }
-                                else {
-                                    self.logerror("Odd error - data_stream unreadable!");
-                                }
-                            }
-                        });
                         break;
                     case 'dot':
                         socket.send_command('QUIT');
-                        self.delivered(hmail);
+                        if (fail_recips.length) {
+                            self.split_to_new_recipients(hmail, fail_recips);
+                        }
+                        else {
+                            self.delivered(hmail);
+                        }
                         break;
                     case 'quit':
                         socket.end();
@@ -587,8 +660,11 @@ exports.populate_bounce_message = function (from, to, reason, hmail, cb) {
         bounce_msg.push(data.toString());
     });
     data_stream.on('end', function () {
-        cb(bounce_msg);
+        cb(null, bounce_msg);
     });
+    data_stream.on('error', function (err) {
+        cb(err);
+    })
 }
 
 exports.bounce = function (err, hmail) {
@@ -608,14 +684,16 @@ exports._bounce = function (err, hmail) {
     var self = this;
     if (! hmail.todo.mail_from.user) {
         // double bounce - mail was already a bounce
-        return this.double_bounce(hmail);
+        return this.double_bounce("Mail was already a bounce", hmail);
     }
     
     var from = new Address ('<>');
     var recip = new Address (hmail.todo.mail_from.user, hmail.todo.mail_from.host);
     var dom = recip.host;
-    this.populate_bounce_message(from, recip, err, hmail, function (data_lines) {
-        fs.unlink(hmail.path);
+    this.populate_bounce_message(from, recip, err, hmail, function (err, data_lines) {
+        if (err) {
+            return self.double_bounce("Error populating bounce message: " + err);
+        }
 
         var hmails = [];
 
@@ -623,8 +701,7 @@ exports._bounce = function (err, hmail) {
             function (path, code, msg) {
                 if (code === DENY) {
                     // failed to even queue the mail
-                    self.logerror("Unable to queue the bounce message. Not sending bounce!");
-                    return self.double_bounce(hmail);
+                    return self.double_bounce("Unable to queue the bounce message. Not sending bounce!", hmail);
                 }
                 setTimeout(function () {self.send_email(hmails[0])}, 0);
             }
@@ -632,10 +709,12 @@ exports._bounce = function (err, hmail) {
     });
 }
 
-exports.double_bounce = function (hmail) {
-    this.logerror("Double bounce!");
+exports.double_bounce = function (err, hmail) {
+    this.logerror("Double bounce: " + err);
     fs.unlink(hmail.path);
-    // TODO: fill this in...
+    // TODO: fill this in... ?
+    // One strategy is perhaps log to an mbox file. What do other servers do?
+    // Another strategy might be delivery "plugins" to cope with this.
 }
 
 exports.delivered = function (hmail) {
@@ -671,7 +750,7 @@ exports.temp_fail = function (hmail) {
             return plugin.bounce("Error re-queueing email: " + err, hmail);
         }
         
-        hmail.path = path.join(this.queue_dir, new_filename);
+        hmail.path = path.join(plugin.queue_dir, new_filename);
         hmail.filename = new_filename;
 
         setTimeout(function () {plugin.send_email(hmail)}, delay);
