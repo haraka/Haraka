@@ -699,6 +699,7 @@ exports._bounce = function (err, hmail) {
 
         self.process_domain(dom, [recip], from, data_lines, hmails,
             function (path, code, msg) {
+                fs.unlink(hmail.path);
                 if (code === DENY) {
                     // failed to even queue the mail
                     return self.double_bounce("Unable to queue the bounce message. Not sending bounce!", hmail);
