@@ -1,6 +1,8 @@
 var fs = require('fs');
 var path = require('path');
 var dns = require('dns');
+var util = require("util");
+var events = require("events");
 var utils = require('./utils');
 var sock = require('./line_socket');
 var server = require('./server');
@@ -8,11 +10,14 @@ var logger = require('./logger');
 
 var Address = require('./address').Address;
 
+var delivery_concurrency = 0;
+
 var MAX_UNIQ = 10000;
 var host = require('os').hostname().replace(/\\/, '\\057').replace(/:/, '\\072');
 var fn_re = /^(\d+)_(\d+)_/; // I like how this looks like a person
 
 function HMailItem (filename, path) {
+    events.EventEmitter.call(this);
     var matches = filename.match(fn_re);
     if (!matches) {
         throw new Error("Bad filename: " + filename);
@@ -21,11 +26,11 @@ function HMailItem (filename, path) {
     this.filename = filename;
     this.next_process = matches[1];
     this.num_failures = matches[2];
-    this.ready_cb     = function () {};
-    this.is_ready     = function () { return this.todo ? true : false };
     
     this.size_file();
 }
+
+util.inherits(HMailItem, events.EventEmitter);
 
 HMailItem.prototype.data_stream = function () {
     return fs.createReadStream(this.path, {start: this.data_start, end: this.file_size});
@@ -61,7 +66,7 @@ HMailItem.prototype.read_todo = function () {
                 // we read everything
                 todo = JSON.parse(todo);
                 self.todo = todo;
-                self.ready_cb();
+                self.emit('ready');
             }
         });
         td_reader.on('error', function (err) {
@@ -78,6 +83,8 @@ HMailItem.prototype.read_todo = function () {
 exports.register = function () {
     this.queue_dir = path.resolve(this.config.get('deliver.queue_dir') || './queue');
     this.uniq = Math.round(Math.random() * MAX_UNIQ);
+
+    this.max_concurrency = this.config.get('deliver.max_concurrency') || 100;
     
     this.try_load_queue();
 }
@@ -342,11 +349,9 @@ exports.split_to_new_recipients = function (hmail, recipients) {
                     }
                     else {
                         var split_mail = new HMailItem (fname, dest_path);
-                        if (!split_mail.is_ready()) {
-                            split_mail.ready_cb = function () {
-                                plugin.temp_fail(split_mail);
-                            }
-                        }
+                        split_mail.on('ready', function () {
+                            plugin.temp_fail("Split into multiple recipients", split_mail);
+                        });
                     }
                 });
             });
@@ -376,16 +381,41 @@ exports._load_cur_queue = function (cb_name) {
         
         plugin.cur_time = new Date(); // set this once so we're not calling it a lot
 
-        for (var i=0,l=files.length; i < l; i++) {
-            try {
-                var hmail = new HMailItem(files[i], path.join(plugin.queue_dir, files[i]));
-                plugin[cb_name](hmail);
-            }
-            catch (err) {
-                plugin.logwarn("Warning processing queue directory: " + err);
-            }
-        }
+        plugin.load_queue_files(cb_name, files);
     });
+}
+
+exports.load_queue_files = function (cb_name, files) {
+    var plugin = this;
+    if (files.length === 0) return;
+
+    this.loginfo("Loading some of the queue...");
+
+    if ((delivery_concurrency >= this.max_concurrency)
+        || this.config.get('deliver.disabled'))
+    {
+        // try again in 1 second if delivery is disabled
+        setTimeout(function () {plugin.load_queue_files(cb_name, files)}, 1000);
+        return;
+    }
+
+    for (var i=1; i <= this.max_concurrency; i++) {
+        if (files.length === 0) break;
+        var file = files.shift();
+        if (/^\./.test(file)) {
+            // dot-file...
+            continue;
+        }
+        var hmail = new HMailItem(file, path.join(this.queue_dir, file));
+        this[cb_name](hmail);
+
+        if ((files.length === 0) || (i === this.max_concurrency)) {
+            // end of loop or end of files
+            var self = this;
+            hmail.on('ready', function () {self.load_queue_files(cb_name, files)});
+            break;
+        }
+    }
 }
 
 exports._add_file = function (hmail) {
@@ -395,22 +425,31 @@ exports._add_file = function (hmail) {
 }
 
 exports.send_email = function (hmail) {
-    this.loginfo("Sending mail: " + hmail.filename);
-    if (!hmail.is_ready()) {
-        // haven't finished reading the todo, delay here...
-        this.loginfo("Waiting until todo is loaded...");
+    if (!hmail.todo) {
         var self = this;
-        hmail.ready_cb = function () { self._send_email(hmail) }
-        return;
+        hmail.on('ready', function () { self._send_email(hmail) });
     }
-    
-    this._send_email(hmail);
+    else {
+        this._send_email(hmail);
+    }
 }
 
 var util = require('util');
 
 exports._send_email = function (hmail) {
     var plugin = this;
+
+    if ((delivery_concurrency >= this.max_concurrency)
+        || this.config.get('deliver.disabled'))
+    {
+        // try again in 1 second if delivery is disabled
+        plugin.logdebug("delivery disabled temporarily");
+        setTimeout(function () {plugin._send_email(hmail)}, 1000);
+        return;
+    }
+
+    this.logdebug("Sending mail: " + hmail.filename);
+
     // plugin.loginfo("Hmail: " + util.inspect(hmail, null, null));
     
     // FOR TESTING!
@@ -428,7 +467,7 @@ exports._send_email = function (hmail) {
             }
             else {
                 // every other error is transient
-                plugin.temp_fail(hmail);
+                plugin.temp_fail("DNS lookup failure: " + err, hmail);
             }
         }
         else {
@@ -462,9 +501,11 @@ var smtp_regexp = /^([0-9]{3})([ -])(.*)/;
 
 exports.try_deliver = function (hmail) {
     var self = this;
+    delivery_concurrency++;
+
     // check if there are any MXs left
     if (hmail.mxlist.length === 0) {
-        return this.temp_fail(hmail);
+        return this.temp_fail("Tried all MXs", hmail);
     }
     
     var host = hmail.mxlist.shift().exchange;
@@ -472,11 +513,13 @@ exports.try_deliver = function (hmail) {
     dns.resolve(host, function (err, addresses) {
         if (err) {
             self.logerror("DNS lookup of " + host + " failed: " + err);
+            delivery_concurrency--;
             return self.try_deliver(hmail);
         }
         if (addresses.length === 0) {
             // NODATA or empty host list
             self.logerror("DNS lookup of " + host + " resulted in no data");
+            delivery_concurrency--;
             return self.try_deliver(hmail);
         }
         hmail.hostlist = addresses;
@@ -488,12 +531,13 @@ exports.try_deliver_host = function (hmail) {
     var self = this;
     
     if (hmail.hostlist.length === 0) {
+        delivery_concurrency--;
         return this.try_deliver(hmail);
     }
     
     var host = hmail.hostlist.shift();
     
-    self.loginfo("Attempting to deliver to: " + host);
+    self.loginfo("Attempting to deliver to: " + host + " (" + delivery_concurrency + ")");
     
     var socket = new sock.Socket();
     socket.connect(25, host);
@@ -548,12 +592,12 @@ exports.try_deliver_host = function (hmail) {
                         if (!(ok_recips || recipients.length)) {
                             // no accepted recipients, and no more left so bail out
                             socket.send_command('QUIT');
-                            return self.temp_fail(hmail);
+                            return self.temp_fail("Upstream error: " + code + " " + rest, hmail);
                         }
                     }
                     else {
                         socket.send_command('QUIT');
-                        return self.temp_fail(hmail);
+                        return self.temp_fail("Upstream error: " + code + " " + rest, hmail);
                     }
                 }
                 else if (code.match(/^5/)) {
@@ -669,11 +713,10 @@ exports.populate_bounce_message = function (from, to, reason, hmail, cb) {
 
 exports.bounce = function (err, hmail) {
     this.loginfo("bouncing mail: " + err);
-    if (!hmail.is_ready()) {
+    if (!hmail.todo) {
         // haven't finished reading the todo, delay here...
-        this.loginfo("Waiting until todo is loaded (bounce)...");
         var self = this;
-        hmail.ready_cb = function () { self._bounce(err, hmail) }
+        hmail.on('ready', function () { self._bounce(err, hmail) });
         return;
     }
     
@@ -682,6 +725,7 @@ exports.bounce = function (err, hmail) {
 
 exports._bounce = function (err, hmail) {
     var self = this;
+    delivery_concurrency--;
     if (! hmail.todo.mail_from.user) {
         // double bounce - mail was already a bounce
         return this.double_bounce("Mail was already a bounce", hmail);
@@ -720,15 +764,17 @@ exports.double_bounce = function (err, hmail) {
 
 exports.delivered = function (hmail) {
     this.loginfo("Successfully delivered mail: " + hmail.filename);
+    delivery_concurrency--;
     fs.unlink(hmail.path);
 }
 
-exports.temp_fail = function (hmail) {
+exports.temp_fail = function (err, hmail) {
     var plugin = this;
     hmail.num_failures++;
+    delivery_concurrency--;
     
     if (hmail.num_failures >= 13) {
-        return this.bounce("Too many failures", hmail);
+        return this.bounce("Too many failures (" + err + ")", hmail);
     }
 
     // basic strategy is we exponentially grow the delay to the power
@@ -742,7 +788,7 @@ exports.temp_fail = function (hmail) {
     var delay = (Math.pow(2, (hmail.num_failures + 5)) * 1000);
     var until = new Date().getTime() + delay;
     
-    this.loginfo("Temp failing " + hmail.filename + " for " + (delay/1000) + " seconds");
+    this.loginfo("Temp failing " + hmail.filename + " for " + (delay/1000) + " seconds: " + err);
     
     var new_filename = hmail.filename.replace(/^(\d+)_(\d+)_/, until + '_' + hmail.num_failures + '_');
     
