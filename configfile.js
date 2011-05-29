@@ -57,6 +57,9 @@ cfreader.load_config = function(name, type) {
         result = cfreader.load_flat_config(name);
         if (result && type !== 'list') {
             result = result[0];
+            if (/^\d+$/.test(result)) {
+                result = parseInt(result);
+            }
         }
     }
     
