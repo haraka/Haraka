@@ -31,7 +31,10 @@ Body.prototype.parse_child = function (line) {
         if (this.children[this.children.length -1].state === 'attachment') {
             var child = this.children[this.children.length - 1];
             if (child.buf_fill > 0) {
-                this.emit('attachment_data', child.buf.slice(0, child.buf_fill));
+                // see below for why we create a new buffer here.
+                var to_emit = new Buffer(child.buf_fill);
+                child.buf.copy(to_emit, 0, 0, child.buf_fill);
+                this.emit('attachment_data', to_emit);
             }
             this.emit('attachment_end');
         }
@@ -150,9 +153,20 @@ Body.prototype.parse_attachment = function (line) {
     }
 
     var buf = this.decode_function(line);
+    //this.emit('attachment_data', buf);
+    //return;
+
     if ((buf.length + this.buf_fill) > buf_siz) {
-        this.emit('attachment_data', this.buf.slice(0, this.buf_fill));
+        // now we have to create a new buffer, because if we write this out
+        // using async code, it will get overwritten under us. Creating a new
+        // buffer eliminates that problem (at the expense of a malloc and a
+        // memcpy())
+        var to_emit = new Buffer(this.buf_fill);
+        this.buf.copy(to_emit, 0, 0, this.buf_fill);
+        this.emit('attachment_data', to_emit);
         if (buf.length > buf_siz) {
+            // this is an unusual case - the base64/whatever data is larger
+            // than our buffer size, so we just emit it and reset the counter.
             this.emit('attachment_data', buf);
             this.buf_fill = 0;
         }
