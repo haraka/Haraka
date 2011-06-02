@@ -2,3 +2,4 @@
 - DKIM (need a node dkim library first - perhaps based on libdkimpp?)
 - Rate Limiting for outbound mail
 - Milter support
+- A simple mailing list manager
