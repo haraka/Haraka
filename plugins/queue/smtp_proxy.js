@@ -87,7 +87,7 @@ exports.hook_mail = function (next, connection, params) {
                     case 'mail':
                         return smtp_proxy.next();
                     case 'rcpt':
-                        return smtp_proxy.next(OK);
+                        return smtp_proxy.next();
                     case 'data':
                         return smtp_proxy.next();
                     case 'dot':
@@ -116,8 +116,7 @@ exports.hook_mail = function (next, connection, params) {
     });
 };
 
-exports.hook_rcpt = function (next, connection, params) {
-    var recipient = params[0];
+exports.hook_rcpt_ok = function (next, connection, recipient) {
     var smtp_proxy = connection.transaction.notes.smtp_proxy;
     smtp_proxy.next = next;
     smtp_proxy.socket.send_command('RCPT', 'TO:' + recipient);
