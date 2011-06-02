@@ -6,8 +6,8 @@ extent that no mail will even be received unless you have a minimum of a 'rcpt'
 plugin and a 'queue' plugin.
 
 The 'rcpt' plugin is used to determine if a particular recipient should be
-allowed to be relayed for. The 'queue' plugin queue's the email somewhere -
-perhaps to disk, or perhaps to an onward SMTP server.
+allowed to be relayed or received for. The 'queue' plugin queue's the email
+somewhere - perhaps to disk, or perhaps to an onward SMTP server.
 
 Anatomy of a Plugin
 ------
@@ -22,7 +22,7 @@ to hook it:
     exports.hook_rcpt = function (next, connection, params) {
         // email address is in params[0]
         // do something with the address... then call:
-        next(OK);
+        next();
     };
 
 We've introduced a couple of new concepts here, so let's go through them:
@@ -43,7 +43,7 @@ See "The Next Function" below for more details.
 Logging
 ------
 
-Plugins inherit all the logging methods of logger.js, which are:
+Plugins inherit all the logging methods of `logger.js`, which are:
 
 * logprotocol
 * logdebug
@@ -115,7 +115,8 @@ need to define them:
 * OK
 
   Required by rcpt and queue plugins if are to allow the email, or the queue was
-successful, respectively.
+successful, respectively. Once a plugin calls next(OK) no further plugins
+will run after it.
 
 
 Available Hooks
@@ -133,10 +134,24 @@ These are just the name of the hook, with any parameter sent to it:
 * noop
 * mail ([from, esmtp\_params])
 * rcpt ([to,   esmtp\_params])
+* rcpt_ok (to)
 * data
 * data_post
 * queue
 * deny - called if a plugin returns one of DENY, DENYSOFT or DENYDISCONNECT
+
+The `rcpt` hook is slightly special. If we have a plugin (prior to rcpt) that
+sets the `connection.relaying = true` flag, then we do not need any rcpt
+hooks, or if we do, none of them need call `next(OK)`. However if
+`connection.relaying` remains `false` (as is the default - you don't want an
+open relay!), then one rcpt plugin MUST return `next(OK)` or your sender
+will receive the error message "I cannot deliver for that user". The most
+obvious choice for this activity is the `rcpt_to.in_host_list` plugin, which
+lists the domains for which you wish to receive email.
+
+If a rcpt plugin DOES call `next(OK)` then the `rcpt_ok` hook is run. This
+is primarily used by the queue/smtp_proxy plugin which needs to run after
+all rcpt hooks.
 
 Further Reading
 --------------

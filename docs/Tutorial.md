@@ -26,13 +26,10 @@ reject mails to that address after the expiry date. If the address hasn't
 expired yet it will re-write the address to `user@domain.com` before onward
 delivery.
 
-This document assumes you already have Haraka setup and delivering your
-inbound mail.
-
 What You Will Need
 ------------------
 
-* Node.js
+* Node.js and npm
 * Haraka
 * A text editor
 * [swaks][1]
@@ -43,17 +40,62 @@ What You Will Need
 Getting Started
 ---------------
 
-The first thing we need to do is create our empty plugin file and have
-Haraka load it. This is as simple as:
+First install Haraka via npm if you haven't already:
 
-    $ touch plugins/rcpt_to.disposable.js
-    $ mv config/plugins config/.plugins; (echo rcpt_to.disposable; cat config/.plugins) > config/plugins
+    $ sudo npm -g install Haraka
 
-Note that the second command pre-pends rcpt_to.disposable to the list of
-plugins - we do this because there will be a `rcpt` plugin later in the list
-which confirms the `RCPT TO` commands as valid for your server. This later
-plugin will mean no other `rcpt` plugins get run, so we need to pre-pend your
-new plugin to the list.
+Now we can create our project directory to get started with:
+
+    $ haraka -i /path/to/new_project
+
+Make sure you use a directory that doesn't exist for your project.
+
+Next, let's create a new plugin:
+
+    $ haraka -c /path/to/new_project -p rcpt_to.disposable
+
+This should output a bunch of information about files it has created:
+
+    Plugin rcpt_to.disposable created
+	Now edit javascript in:    /path/to/new_project/plugins/rcpt_to.disposable.js
+	Add the plugin to config:  /path/to/new_project/config/plugins
+	And edit documentation in: /path/to/new_project/docs/plugins/rcpt_to.disposable.md
+
+So let's do the second part now - load up the `config/plugins` file and lets
+set this up to test things. Comment out most of the plugins, except for
+`rcpt_to.in_host_list` and add in our new plugin, and change the queue
+plugin to `test_queue`. The final file should look like this:
+
+	# default list of plugins
+
+	# block mails from known bad hosts (see config/dnsbl.zones for the DNS zones queried)
+	#dnsbl
+
+	# allow bad mail signatures from the config/data.signatures file.
+	#data.signatures
+
+	# block mail from some known bad HELOs - see config/helo.checks.ini for configuration
+	#helo.checks
+
+	# block mail from known bad email addresses you put in config/mail_from.blocklist
+	#mail_from.blocklist
+
+	# Only accept mail where the MAIL FROM domain is resolvable to an MX record
+	#mail_from.is_resolvable
+
+	# Allow dated tagged addresses
+	rcpt_to.disposable
+
+	# Only accept mail for your personal list of hosts
+	rcpt_to.in_host_list
+
+	# Queue mail via qmail-queue
+	#queue/qmail-queue
+
+	test_queue
+
+Remember that the ordering here is important - our new plugin has to come
+before `rcpt_to.in_host_list`.
 
 Now fire up your favourite editor and put the following into
 the `plugins/rcpt_to.disposable.js` file:
@@ -69,20 +111,20 @@ All we are doing here is logging the fact that we got the recipient.
 Check this works. You'll need two terminal windows. In window 1:
 
     $ echo LOGDEBUG > config/loglevel
-    $ node haraka.js
+    $ echo myserver.com >> config/host_list
+    $ sudo haraka -c /path/to/new_project
 
 And in window 2:
 
     $ swaks -h domain.com -t booya@myserver.com -f somewhere@example.com \
       -s localhost -p 25
 
-(this assumes you are running Haraka on localhost port 25)
-
 In the logs you should see:
 
     [INFO] [rcpt_to.disposable] Got recipient: <booya@myserver.com>
 
-Which indicates everything is working.
+Which indicates everything is working. You should also have a file
+`/tmp/mail.eml` containing the email that swaks sent.
 
 Parsing Out The Date
 --------------------
@@ -124,7 +166,7 @@ we now have a date object, which we can now compare to the current date.
 Rejecting Expired Emails
 ------------------------
 
-The final edit we have to do is to add in code to compare to the current date
+The next edit we have to do is to add in code to compare to the current date
 and reject expired emails. Again, this is very simple:
 
 	exports.hook_rcpt = function (next, connection, params) {
