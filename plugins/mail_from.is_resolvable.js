@@ -19,7 +19,7 @@ exports.hook_mail = function(next, connection, params) {
             return next(DENYSOFT, "Temporary resolver error");
         }
         if (addresses && addresses.length) {
-            return next(OK, "From address is OK");
+            return next();
         }
         return next(DENYSOFT, "No MX for your FROM address");
     });
