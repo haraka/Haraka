@@ -75,10 +75,11 @@ function extract_urls (urls, body) {
     // extract from body.bodytext
     var match;
     // extract numeric URIs
-    while (match = numeric_ip.exec(body.bodytext)) {
-        var uri = url.parse(match[0]);
-        urls[uri.hostname.split(/\./).reverse().join('.')] = uri;
-    }
+    // commented out because DBL doesn't allow numeric IP queries
+    //while (match = numeric_ip.exec(body.bodytext)) {
+    //    var uri = url.parse(match[0]);
+    //    urls[uri.hostname.split(/\./).reverse().join('.')] = uri;
+    //}
     
     // match plain hostname.tld
     while (match = schemeless.exec(body.bodytext)) {
