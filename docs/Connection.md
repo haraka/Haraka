@@ -6,10 +6,6 @@ For each connection to Haraka there is one connection object.
 API
 ---
 
-* connection.uuid
-
-A unique UUID for this connection.
-
 * connection.remote_ip
 
 The remote IP address
@@ -35,14 +31,3 @@ A safe object in which you can store connection-specific variables
 The current transaction object, valid after MAIL FROM, and destroyed at queue
 time, RSET time, or if MAIL FROM was rejected. See the Transaction Object
 documentation file.
-
-* connection.relaying
-
-A boolean flag to say whether this connection is allowed to relay mails (i.e.
-deliver mails outbound). This is normally set by SMTP AUTH, or sometimes via
-an IP address check.
-
-* connection.current_line
-
-For low level use. Contains the current line sent from the remote end,
-verbatim as it was sent. Can be useful in certain botnet detection techniques.
