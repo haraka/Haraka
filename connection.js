@@ -528,7 +528,7 @@ Connection.prototype.cmd_mail = function(line) {
 };
 
 Connection.prototype.cmd_rcpt = function(line) {
-    if (!this.transaction.mail_from) {
+    if (!this.transaction || !this.transaction.mail_from) {
         return this.respond(503, "Use MAIL before RCPT");
     }
     
@@ -591,6 +591,10 @@ Connection.prototype.received_line = function() {
 };
 
 Connection.prototype.cmd_data = function(line) {
+    if (!this.transaction) {
+        return this.respond(503, "MAIL required first");
+    }
+
     this.accumulate_data('Received: ' + this.received_line() + "\r\n");
     plugins.run_hooks('data', this);
 };
