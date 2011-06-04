@@ -20,4 +20,3 @@ rcpt_to.in_host_list
 
 # Queue mail via qmail-queue
 queue/qmail-queue
-

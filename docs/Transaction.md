@@ -6,6 +6,11 @@ An SMTP transaction is valid from MAIL FROM time until RSET or "final-dot".
 API
 ---
 
+* transaction.uuid
+
+A unique UUID for this transaction. Is equal to the connection.uuid + '.N'
+where N increments for each transaction on this connection.
+
 * transaction.mail\_from
 
 The value of the MAIL FROM command as an `Address` object.
