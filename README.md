@@ -22,6 +22,10 @@ be done.
 Haraka does have a scalable outbound mail delivery engine in the `deliver`
 plugin, which should work well for most sites.
 
+### Screencast
+
+<iframe width="560" height="349" src="http://www.youtube.com/embed/6twKXMAsPsw" frameborder="0" allowfullscreen></iframe>
+
 ### Why Use Haraka?
 
 Haraka's primary purpose is to provide you with a much easier to extend
