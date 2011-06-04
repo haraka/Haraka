@@ -24,7 +24,7 @@ plugin, which should work well for most sites.
 
 ### Screencast
 
-<iframe width="560" height="349" src="http://www.youtube.com/embed/6twKXMAsPsw" frameborder="0" allowfullscreen></iframe>
+<object width="853" height="510"><param name="movie" value="http://www.youtube.com/v/6twKXMAsPsw?version=3&amp;hl=en_GB&amp;hd=1"></param><param name="allowFullScreen" value="true"></param><param name="allowscriptaccess" value="always"></param><embed src="http://www.youtube.com/v/6twKXMAsPsw?version=3&amp;hl=en_GB&amp;hd=1" type="application/x-shockwave-flash" width="853" height="510" allowscriptaccess="always" allowfullscreen="true"></embed></object>
 
 ### Why Use Haraka?
 
