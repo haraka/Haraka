@@ -192,8 +192,8 @@ var readme = [
 ].join("\n");
 
 var packageJson = JSON.stringify({
-  "name": "My Haraka Installation",
-  "description": "An SMTP Server project.",
+  "name": "haraka_local",
+  "description": "An SMTP Server",
   "version": "0.0.1",
   "dependencies": {}
 });
