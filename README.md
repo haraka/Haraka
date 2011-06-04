@@ -24,7 +24,7 @@ plugin, which should work well for most sites.
 
 ### Screencast
 
-<object width="853" height="510"><param name="movie" value="http://www.youtube.com/v/6twKXMAsPsw?version=3&amp;hl=en_GB&amp;hd=1"></param><param name="allowFullScreen" value="true"></param><param name="allowscriptaccess" value="always"></param><embed src="http://www.youtube.com/v/6twKXMAsPsw?version=3&amp;hl=en_GB&amp;hd=1" type="application/x-shockwave-flash" width="853" height="510" allowscriptaccess="always" allowfullscreen="true"></embed></object>
+[Getting started with Haraka][2]
 
 ### Why Use Haraka?
 
@@ -112,3 +112,4 @@ quite similar to Haraka (but not as fast due to perl being slower than
 Javascript).
 
 [1]: http://nodejs.org/
+[2]: http://youtu.be/6twKXMAsPsw
