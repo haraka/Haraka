@@ -322,7 +322,6 @@ Connection.prototype.ehlo_respond = function(retval, msg) {
                 
                 var databytes = config.get('databytes');
                 if (databytes) {
-                    // TODO: need to test for this later
                     response.push("SIZE " + databytes);
                 }
                 
