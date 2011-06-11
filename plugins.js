@@ -105,21 +105,23 @@ plugins.load_plugin = function(name) {
     
     var plugin = new Plugin(name);
     var fp = plugin.full_paths,
-        rf;
+        rf, last_err;
     for (var i=0, j=fp.length; i<j; i++) {
         try {
             rf = fs.readFileSync(fp[i]);
             break;
-        } catch(err) {
+        }
+        catch (err) {
+            last_err = err;
             continue;
         }
     }
     if (!rf) {
         if (config.get('smtp.ini', 'ini').main.ignore_bad_plugins) {
-            logger.logcrit("Loading plugin " + name + " failed.");
+            logger.logcrit("Loading plugin " + name + " failed: " + last_err);
             return;
         }
-        throw "Loading plugin " + name + " failed.";
+        throw "Loading plugin " + name + " failed: " + last_err;
     }
     var code = constants_str + rf;
     var sandbox = { 
