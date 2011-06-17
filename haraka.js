@@ -1,5 +1,8 @@
 #!/usr/bin/env node
 
+var path = require('path');
+require.paths.unshift(path.join(process.env.HARAKA, 'node_modules'));
+
 var fs     = require('fs');
 var logger = require('./logger');
 var server = require('./server');

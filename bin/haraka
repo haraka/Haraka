@@ -292,6 +292,7 @@ else if (parsed.configs && parsed.plugin) {
 }
 else if (parsed.configs) {
     
+    process.argv[1] = path.join(__dirname, '../haraka.js');
     process.env.HARAKA = parsed.configs;
     require.paths.unshift(path.join(process.env.HARAKA, 'node_modules'));
     
