@@ -1,10 +1,15 @@
 #!/usr/bin/env node
 
+var path = require('path');
+require.paths.unshift(path.join(process.env.HARAKA, 'node_modules'));
+
 var fs     = require('fs');
 var logger = require('./logger');
 var server = require('./server');
 
-exports.version = JSON.parse(fs.readFileSync('./package.json', 'utf8')).version;
+exports.version = JSON.parse(
+        fs.readFileSync(path.join(__dirname, './package.json'), 'utf8')
+    ).version;
 
 process.on('uncaughtException', function (err) {
     if (err.stack) {

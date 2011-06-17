@@ -14,13 +14,21 @@
 //                        Default: same as current user
 //   max_size=N         - don't scan mails bigger than this
 //                        Default: 500000
+//   old_headers_action=[rename|drop|keep]
+//                      - if old X-Spam-* headers are in the email, what do
+//                        we do with them? Default is to rename them
+//                        X-Old-Spam-*. "drop" will delete them. "keep" will
+//                        keep them (new X-Spam-* headers appear lower down
+//                        in the headers then).
 //
 
 var sock = require('./line_socket');
 
 var defaults = {
     spamd_socket: 'localhost:783',
-    max_size:     500000
+    max_size:     500000,
+    old_headers_action: "rename",
+    subject_prefix: "*** SPAM ***",
 };
 
 exports.hook_data_post = function (next, connection) {
@@ -128,9 +136,8 @@ exports.hook_data_post = function (next, connection) {
     socket.on('end', function () {
         // Now we do stuff with the results...
         
-        // TODO: We need to cleanup/remove old headers first, but we don't have
-        // the API to do that (yet).
-        
+        plugin.fixup_old_headers(config.main.old_headers_action, connection.transaction);
+
         if (spamd_response.flag === 'Yes') {
             connection.transaction.add_header('X-Spam-Flag', 'YES');
         }
@@ -155,9 +162,31 @@ exports.hook_data_post = function (next, connection) {
             return next(DENY, "spam score exceeded threshold");
         }
         else if (config.main.munge_subject_threshold && (spamd_response.hits >= config.main.munge_subject_threshold)) {
-            // munge the subject - TODO once we have a way to do that.
+            var subj = connection.transaction.header.get('Subject');
+            connection.transaction.remove_header('Subject');
+            connection.transaction.add_header('Subject', config.main.subject_prefix + " " + subj);
         }
         next();
     });
 
 };
+
+exports.fixup_old_headers = function (action, transaction) {
+    var headers = ['X-Spam-Flag', 'X-Spam-Status', 'X-Spam-Level'];
+
+    switch (action) {
+        case "keep": return;
+        case "drop": for (var key in headers) { transaction.remove_header(key) }
+                     break;
+        case "rename":
+        default:
+                     for (var key in headers) {
+                         var old_val = transaction.header.get(key);
+                         if (old_val) {
+                             transaction.header.remove_header(key);
+                             transaction.header.add_header(key.replace(/X-/, 'X-Old-'), old_val);
+                         }
+                     }
+                     break;
+    }
+}

@@ -22,6 +22,10 @@ be done.
 Haraka does have a scalable outbound mail delivery engine in the `deliver`
 plugin, which should work well for most sites.
 
+### Screencast
+
+[Getting started with Haraka][2]
+
 ### Why Use Haraka?
 
 Haraka's primary purpose is to provide you with a much easier to extend
@@ -108,3 +112,4 @@ quite similar to Haraka (but not as fast due to perl being slower than
 Javascript).
 
 [1]: http://nodejs.org/
+[2]: http://youtu.be/6twKXMAsPsw
