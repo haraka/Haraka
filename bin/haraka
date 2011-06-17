@@ -291,11 +291,10 @@ else if (parsed.configs && parsed.plugin) {
     console.log("And edit documentation in: " + doc_path);
 }
 else if (parsed.configs) {
-    
-    process.argv[1] = path.join(__dirname, '../haraka.js');
+    var harPath = path.join(base, 'haraka.js');
+    process.argv[1] = harPath;
     process.env.HARAKA = parsed.configs;
-    require(path.join(base, 'haraka.js'));
-    
+    require(harPath);
 }
 else if (parsed.install) {
     var pa = parsed.install;
