@@ -292,27 +292,9 @@ else if (parsed.configs && parsed.plugin) {
 }
 else if (parsed.configs) {
     
+    process.argv[1] = path.join(__dirname, '../haraka.js');
     process.env.HARAKA = parsed.configs;
-    require.paths.unshift(path.join(process.env.HARAKA, 'node_modules'));
-    
-    var logger = require(path.join(base, 'logger'))
-        server = require(path.join(base, 'server'));
-    
-    process.on('uncaughtException', function (err) {
-        if (err.stack) {
-            err.stack.split("\n").forEach(logger.logcrit);
-        }
-        else {
-            logger.logcrit('Caught exception: ' + err);
-        }
-        if (!server.ready) {
-            logger.logcrit('Server not ready yet. Stopping.');
-            process.exit();
-        }
-    });
-    
-    logger.log("Starting up Haraka version " + ver);
-    server.createServer();
+    require(path.join(base, 'haraka.js'));
     
 }
 else if (parsed.install) {
