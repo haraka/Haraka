@@ -556,7 +556,7 @@ exports.try_deliver_host = function (hmail) {
     socket.send_command = function (cmd, data) {
         var line = cmd + (data ? (' ' + data) : '');
         if (cmd === 'dot') {
-            line = '.';
+            line = '\r\n.';
         }
         self.logprotocol("C: " + line);
         this.write(line + "\r\n");
