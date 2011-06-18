@@ -280,8 +280,8 @@ exports.process_domain = function (dom, recips, from, data_lines, hmails, cb) {
             return;
         }
         
-        # write, but fixup "." at the beginning of the line to be ".."
-        # and fixup \n to be \r\n
+        // write, but fixup "." at the beginning of the line to be ".."
+        // and fixup \n to be \r\n
         if (ws.write(data_lines[data_pos++].replace(/^\./m, '..').replace(/\r?\n/g, "\r\n"))) {
             write_more();
         }
