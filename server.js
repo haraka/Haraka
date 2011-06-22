@@ -4,6 +4,7 @@ var net  = require('net');
 var logger = require('./logger');
 var config = require('./config');
 var conn   = require('./connection');
+var out    = require('./outbound');
 var os     = require('os');
 var cluster;
 try { cluster = require('cluster') } // cluster can be installed with npm
@@ -86,5 +87,6 @@ Server.createServer = function (params) {
 function listening () {
     var config_data = config.get('smtp.ini', 'ini');
     logger.lognotice("Listening on port " + config_data.main.port);
+    out.init();
     Server.ready = 1;
 }

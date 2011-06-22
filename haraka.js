@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 var path = require('path');
+process.env.HARAKA = process.env.HARAKA || path.resolve('.');
 require.paths.unshift(path.join(process.env.HARAKA, 'node_modules'));
 
 var fs     = require('fs');
