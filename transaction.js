@@ -4,6 +4,7 @@ var config = require('./config');
 var logger = require('./logger');
 var Header = require('./mailheader').Header;
 var body   = require('./mailbody');
+var utils  = require('./utils');
 
 var trans = exports;
 
@@ -22,15 +23,8 @@ exports.Transaction = Transaction;
 
 exports.createTransaction = function(uuid) {
     var t = new Transaction();
-    t.uuid = uuid;
+    t.uuid = uuid || utils.uuid();
     return t;
-};
-
-Transaction.prototype.mail_from = function() {
-    if (arguments.length) {
-        this.mail_from = arguments[0];
-    }
-    return this.mail_from;
 };
 
 Transaction.prototype.add_data = function(line) {
