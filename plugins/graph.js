@@ -40,7 +40,6 @@ var width = 800;
 
 exports.register = function () {
     var plugin = this;
-    var port = this.config.get('grapher.http_port') || 8080;
     var ignore_re = this.config.get('grapher.ignore_re') || 'queue|graph|relay';
     ignore_re = new RegExp(ignore_re);
     
@@ -53,20 +52,26 @@ exports.register = function () {
             }
         }
     );
-    
+};
+
+exports.hook_master_init = function (next) {
+    var plugin = this;
+    var port = this.config.get('grapher.http_port') || 8080;
     var server = http.createServer(
         function (req, res) {
             plugin.handle_http_request(req, res);
-    });
+        });
     
     server.on('error', function (err) {
         plugin.logerror("http server failed to start. Maybe running elsewhere?" + err);
+        next(DENY);
     });
     
-    server.listen(port, "127.0.0.1");
-    
-    this.loginfo("http server running on port " + port);
-};
+    server.listen(port, "127.0.0.1", function () {
+        plugin.loginfo("http server running on port " + port);
+        next();
+    });
+}
 
 exports.hook_disconnect = function (next, connection) {
     if (!connection.current_line) {
