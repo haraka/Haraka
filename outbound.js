@@ -9,6 +9,7 @@ var server = require('./server');
 var logger = require('./logger');
 var config  = require('./config');
 var constants = require('./constants');
+var trans = require('./transaction');
 
 var Address = require('./address').Address;
 
@@ -215,7 +216,66 @@ function get_mx (domain, cb) {
     });
 }
 
-exports.send_email = function (transaction, next) {
+exports.send_email = function () {
+    if (arguments.length === 2) {
+        return this.send_trans_email(arguments[0], arguments[1]);
+    }
+
+    var from = arguments[0],
+        to   = arguments[1],
+        contents = arguments[2],
+        next = arguments[3];
+    
+    var transaction = trans.createTransaction();
+
+    // set MAIL FROM address, and parse if it's not an Address object
+    if (from instanceof Address) {
+        transaction.mail_from = from;
+    }
+    else {
+        try {
+            from = new Address(from);
+        }
+        catch (err) {
+            return next(DENY, "Malformed from: " + err);
+        }
+        transaction.mail_from = from;
+    }
+
+    // Make sure to is an array
+    if (!to instanceof Array) {
+        // turn into an array
+        to = [ to ];
+    }
+
+    if (to.length === 0) {
+        return next(DENY, "No recipients for email");
+    }
+
+    // Set RCPT TO's, and parse each if it's not an Address object.
+    for (var i=0,l=to.length; i < l; i++) {
+        if (!(to[i] instanceof Address)) {
+            try {
+                to[i] = new Address(to[i]);
+            }
+            catch (err) {
+                return next(DENY, "Malformed to address (" + to[i] + "): " + err);
+            }
+        }
+    }
+
+    transaction.rcpt_to = to;
+
+    // Set data_lines to lines in contents
+    var match;
+    while (match = /^([^\n]*\n?)/y.exec(contents)) {
+        transaction.add_data(match[1]);
+    }
+
+    this.send_trans_email(transaction, next);
+}
+
+exports.send_trans_email = function (transaction, next) {
     var self = this;
     
     // add in potentially missing headers
