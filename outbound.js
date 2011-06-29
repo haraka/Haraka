@@ -40,9 +40,11 @@ exports.init = function () {
 
     this.uniq = Math.round(Math.random() * MAX_UNIQ);
 
-    this.max_concurrency = config.get('outbound_concurrency_max') || 100;
+    this.max_concurrency = config.get('outbound.concurrency_max') || 100;
 
-    this.load_queue();
+    this.queue_count = 0;
+
+    return this;
 }
 
 function HMailItem (filename, path) {
@@ -109,7 +111,28 @@ HMailItem.prototype.read_todo = function () {
     });
 }
 
+exports.list_queue = function () {
+    if (!this.queue_dir) {
+        this.init();
+    }
+    
+    this._load_cur_queue("_list_file");
+}
+
+exports.stat_queue = function () {
+    if (!this.queue_dir) {
+        this.init();
+    }
+    
+    this._load_cur_queue("_stat_file");
+    return this.stats();
+}
+
 exports.load_queue = function () {
+    if (!this.queue_dir) {
+        this.init();
+    }
+
     // Initialise and load queue. If we're running under cluster, only do this in the master process
     if (!server.cluster || server.cluster.isMaster) {
         // no reason not to do this stuff syncronously - we're just loading here
@@ -429,6 +452,25 @@ exports._add_file = function (hmail) {
     var self = this;
     this.loginfo("Adding file: " + hmail.filename);
     setTimeout(function () { self.internal_send_email(hmail) }, hmail.next_process - this.cur_time);
+}
+
+exports._list_file = function (hmail) {
+    // TODO: output more data here
+    console.log("Q: " + hmail.filename);
+}
+
+exports._get_stats = function (hmail) {
+    this.queue_count++;
+}
+
+exports.stats = function () {
+    // TODO: output more data here
+    var results = {
+        queue_dir:   this.queue_dir,
+        queue_count: this.queue_count,
+    };
+
+    return results;
 }
 
 exports.internal_send_email = function (hmail) {

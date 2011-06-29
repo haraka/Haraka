@@ -35,7 +35,8 @@ different levels available.
 
 * me
 
-  A name to use for this server. Used in received lines and elsewhere.
+  A name to use for this server. Used in received lines and elsewhere. Setup
+  by default to be your hostname.
 
 * early\_talker\_delay
 
@@ -56,3 +57,24 @@ different levels available.
     stats
 
   The above allows you to get stats on your setup via the repl on port 8888.
+
+* smtpgreeting
+
+  The greeting line used when a client connects. This can be multiple lines
+  if required (this may cause some connecting machines to fail - though
+  usually only spam-bots).
+
+* outbound.concurrency_max
+
+  Maximum concurrency to use when delivering mails outbound. Defaults to 100.
+
+* outbound.disabled
+
+  Put a `1` in this file to temporarily disable outbound delivery. Useful to
+  do while you're figuring out network issues, or just testing things.
+
+* outbound.bounce_message
+
+  The bounce message should delivery of the mail fail. See the source of. The
+  default is normally fine. Bounce messages contain a number of template
+  replacement values which are best discovered by looking at the source code.

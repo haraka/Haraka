@@ -158,8 +158,6 @@ plugins.load_plugin = function(name) {
     return plugin;
 }
 
-plugins.load_plugins();
-
 plugins.run_hooks = function (hook, connection, params) {
     connection.logdebug("running " + hook + " hooks");
     

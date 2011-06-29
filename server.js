@@ -1,11 +1,13 @@
 // smtp network server
 
-var net  = require('net');
-var logger = require('./logger');
-var config = require('./config');
-var conn   = require('./connection');
-var out    = require('./outbound');
-var os     = require('os');
+var net     = require('net');
+var logger  = require('./logger');
+var config  = require('./config');
+var conn    = require('./connection');
+var out     = require('./outbound');
+var plugins = require('./plugins');
+var os      = require('os');
+
 var cluster;
 try { cluster = require('cluster') } // cluster can be installed with npm
 catch (err) {
@@ -87,6 +89,7 @@ Server.createServer = function (params) {
 function listening () {
     var config_data = config.get('smtp.ini', 'ini');
     logger.lognotice("Listening on port " + config_data.main.port);
-    out.init();
+    plugins.load_plugins();
+    out.load_queue();
     Server.ready = 1;
 }

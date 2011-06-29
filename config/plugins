@@ -19,4 +19,4 @@ mail_from.is_resolvable
 rcpt_to.in_host_list
 
 # Queue mail via qmail-queue
-queue/qmail-queue
+queue/smtp_forward

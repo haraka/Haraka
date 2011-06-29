@@ -271,9 +271,17 @@ Connection.prototype.connect_respond = function(retval, msg) {
                              this.respond(450, msg || "Come back later");
                              break;
         default:
-                             var greeting = config.get('smtpgreeting')
-                             this.respond(220, msg || (config.get('me') + 
-                                " ESMTP Haraka " + version + " ready"));
+                             var greeting = config.get('smtpgreeting', 'list');
+                             if (greeting.length) {
+                                 if (!(/(^|\W)ESMTP(\W|$)/.test(greeting[0]))) {
+                                     greeting[0] += " ESMTP";
+                                 }
+                             }
+                             else {
+                                 greeting = (config.get('me') + 
+                                            " ESMTP Haraka " + version + " ready");
+                             }
+                             this.respond(220, msg || greeting);
     }
 };
 
@@ -678,9 +686,51 @@ Connection.prototype.data_post_respond = function(retval, msg) {
                 this.reset_transaction();
                 break;
         default:
-                plugins.run_hooks("queue", this);
+                if (this.relaying) {
+                    plugins.run_hooks("queue_outbound", this);
+                }
+                else {
+                    plugins.run_hooks("queue", this);
+                }
     }
 };
+
+Connection.prototype.queue_outbound_respond = function(retval, msg) {
+    switch(retval) {
+        case constants.ok:
+                plugins.run_hooks("queue_ok", this);
+                break;
+        case constants.deny:
+                this.respond(552, msg || "Message denied");
+                this.reset_transaction();
+                break;
+        case constants.denydisconnect:
+                this.respond(552, msg || "Message denied");
+                this.disconnect();
+                break;
+        case constants.denysoft:
+                this.respond(452, msg || "Message denied temporarily");
+                this.reset_transaction();
+                break;
+        default:
+                var conn = this;
+                outbound.send_email(this.transaction, function(retval, msg) {
+                    switch(retval) {
+                        case constants.ok:
+                                plugins.run_hooks("queue_ok", conn);
+                                break;
+                        case constants.deny:
+                                conn.respond(552, msg || "Message denied");
+                                conn.reset_transaction();
+                                break;
+                        default:
+                                conn.logerror("Unrecognised response from outbound layer: " + retval + " : " + msg);
+                                conn.respond(552, msg || "Internal Server Error");
+                                conn.reset_transaction();
+                    }
+                });
+    }
+}
 
 Connection.prototype.queue_respond = function(retval, msg) {
     switch (retval) {

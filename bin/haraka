@@ -13,12 +13,16 @@ var fs   = require('fs'),
     ver  = JSON.parse(fs.readFileSync(base+'/package.json', 'utf8'))['version'],
     knownOpts = {
         "version": Boolean,
+        "verbose": Boolean,
         "help":    [String, null],
         "configs": path,
         "install": path,
         "list":    Boolean,
         "plugin":  String,
         "force":   Boolean,
+        "qlist":   Boolean,
+        "qstat":   Boolean,
+        "qempty":  Boolean,
     },
     shortHands = {
         "v": ["--version"],
@@ -44,6 +48,8 @@ var usage = [
     "\t-l, --list    \t\tList the plugins bundled with Haraka",
     "\t-p, --plugin  \t\tGenerate a new plugin with the given name",
     "\t-f, --force   \t\tForce overwriting of old files",
+    "\t--qlist       \t\tList the outbound queue",
+    "\t--qstat       \t\tGet statistics on the outbound queue",
 ].join('\n');
 
 
@@ -81,6 +87,11 @@ function create(path) {
 // Warning messsage
 function warning(msg) {
     console.error('\x1b[31mwarning\x1b[0m: ' + msg);
+}
+
+function fail(msg) {
+    console.error('\x1b[31merror\x1b[0m: ' + msg);
+    process.exit(-1);
 }
 
 // Make directory if NOT exist
@@ -289,6 +300,37 @@ else if (parsed.configs && parsed.plugin) {
     console.log("Now edit javascript in:    " + js_path);
     console.log("Add the plugin to config:  " + path.join(parsed.configs, 'config', 'plugins'));
     console.log("And edit documentation in: " + doc_path);
+}
+else if (parsed.qlist) {
+    if (!parsed.configs) {
+        fail("qlist option requires config path");
+    }
+    process.env.HARAKA = parsed.configs;
+    var logger = require(path.join(base, "logger"));
+    if (!parsed.verbose)
+        logger.log = function () {} // disable logging for this
+    var outbound = require(path.join(base, "outbound")).init();
+    outbound.list_queue();
+    process.exit();
+}
+else if (parsed.qstat) {
+    if (!parsed.configs) {
+        fail("qlist option requires config path");
+    }
+    process.env.HARAKA = parsed.configs;
+    var logger = require(path.join(base, "logger"));
+    if (!parsed.verbose)
+        logger.log = function () {} // disable logging for this
+    var outbound = require(path.join(base, "outbound")).init();
+    var stats = outbound.stat_queue();
+    console.log(stats);
+    process.exit();
+}
+else if (parsed.qempty) {
+    if (!parsed.configs) {
+        fail("qlist option requires config path");
+    }
+    fail("qempty is unimplemented");
 }
 else if (parsed.configs) {
     var haraka_path = path.join(base, 'haraka.js');

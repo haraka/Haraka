@@ -15,12 +15,13 @@ What Haraka doesn't do is fully replace your mail system (yet). It currently
 has no built-in facilities for mapping email addresses to user accounts and
 delivering them to said accounts. For that we expect you to keep something
 like postfix, exim or any other user-based mail system, and have Haraka
-deliver mail to those systems for that mapping. However nothing is stopping
+deliver mail to those systems for inbound email. However nothing is stopping
 someone writing a plugin which replicates that facility - it just has yet to
 be done.
 
-Haraka does have a scalable outbound mail delivery engine in the `deliver`
-plugin, which should work well for most sites.
+Haraka does have a scalable outbound mail delivery engine built in. Any mail
+marked as `relaying` (such as via an `auth` plugin) will automatically be
+queued for outbound delivery.
 
 ### Screencast
 
