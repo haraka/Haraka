@@ -85,7 +85,6 @@ Server.createServer = function (params) {
             plugins.run_hooks('init_master', Server);
         });
         c.on('worker', function () {
-            console.log(process.env);
             plugins.run_hooks('init_child', Server);
         });
     }

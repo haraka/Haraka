@@ -1,16 +1,18 @@
 // a single connection
-var path = require('path');
-var config  = require('./config');
-var logger  = require('./logger');
-var trans   = require('./transaction');
-var dns     = require('dns');
-var plugins = require('./plugins');
-var constants = require('./constants');
-var rfc1869   = require('./rfc1869');
-var fs      = require('fs');
+var path        = require('path');
+var config      = require('./config');
+var logger      = require('./logger');
+var trans       = require('./transaction');
+var dns         = require('dns');
+var plugins     = require('./plugins');
+var constants   = require('./constants');
+var rfc1869     = require('./rfc1869');
+var fs          = require('fs');
+var Address     = require('./address').Address;
+var uuid        = require('./utils').uuid;
+var outbound    = require('./outbound');
+
 var version  = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'))).version;
-var Address = require('./address').Address;
-var uuid    = require('./utils').uuid;
 
 var line_regexp = /^([^\n]*\n)/;
 
