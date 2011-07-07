@@ -22,6 +22,7 @@ var MAX_UNIQ = 10000;
 var host = require('os').hostname().replace(/\\/, '\\057').replace(/:/, '\\072');
 var fn_re = /^(\d+)_(\d+)_/; // I like how this looks like a person
 
+// Need these here so we can run hooks
 for (var key in logger) {
     if (key.match(/^log\w/)) {
         exports[key] = (function (key) {
