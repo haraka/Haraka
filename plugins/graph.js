@@ -54,7 +54,7 @@ exports.register = function () {
     );
 };
 
-exports.hook_master_init = function (next) {
+exports.hook_init_master = function (next) {
     var plugin = this;
     var port = this.config.get('grapher.http_port') || 8080;
     var server = http.createServer(
