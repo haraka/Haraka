@@ -866,7 +866,17 @@ HMailItem.prototype.bounce = function (err) {
 }
 
 HMailItem.prototype._bounce = function (err) {
+    plugins.run_hooks("bounce", this, err);
+}
+
+HMailItem.prototype.bounce_respond = function (retval, msg) {
+    if (retval != constants.cont) {
+        this.loginfo("plugin responded with: " + retval + ". Not sending bounce.");
+        return;
+    }
+
     var self = this;
+
     delivery_concurrency--;
     if (!this.todo.mail_from.user) {
         // double bounce - mail was already a bounce
