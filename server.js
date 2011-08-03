@@ -15,6 +15,7 @@ catch (err) {
     logger.logdebug("no cluster available, running single-process");
 }
 
+// Need these here so we can run hooks
 for (var key in logger) {
     if (key.match(/^log\w/)) {
         exports[key] = (function (key) {

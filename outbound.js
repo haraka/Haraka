@@ -74,6 +74,7 @@ function _fname () {
 
 exports.send_email = function () {
     if (arguments.length === 2) {
+        this.loginfo("Sending email as with a transaction");
         return this.send_trans_email(arguments[0], arguments[1]);
     }
 
@@ -82,6 +83,8 @@ exports.send_email = function () {
         contents = arguments[2],
         next = arguments[3];
     
+    this.loginfo("Sending email via params");
+
     var transaction = trans.createTransaction();
 
     // set MAIL FROM address, and parse if it's not an Address object
@@ -99,7 +102,7 @@ exports.send_email = function () {
     }
 
     // Make sure to is an array
-    if (!to instanceof Array) {
+    if (!(to instanceof Array)) {
         // turn into an array
         to = [ to ];
     }
@@ -124,8 +127,13 @@ exports.send_email = function () {
 
     // Set data_lines to lines in contents
     var match;
-    while (match = /^([^\n]*\n?)/y.exec(contents)) {
+    var re = /^([^\n]*\n?)/;
+    while (match = re.exec(contents)) {
         transaction.add_data(match[1]);
+        contents = contents.substr(match[1].length);
+        if (contents.length === 0) {
+            break;
+        }
     }
 
     this.send_trans_email(transaction, next);
@@ -136,9 +144,11 @@ exports.send_trans_email = function (transaction, next) {
     
     // add in potentially missing headers
     if (!transaction.header.get_all('Message-Id').length) {
+        this.loginfo("Adding missing Message-Id header");
         transaction.add_header('Message-Id', '<' + transaction.uuid + '@' + config.get('me') + '>');
     }
     if (!transaction.header.get_all('Date').length) {
+        this.loginfo("Adding missing Date header");
         transaction.add_header('Date', new Date().toString());
     }
     
@@ -199,6 +209,7 @@ exports.send_trans_email = function (transaction, next) {
 
 exports.process_domain = function (dom, recips, from, data_lines, hmails, cb) {
     var plugin = this;
+    this.loginfo("Processing domain: " + dom);
     var fname = _fname();
     var tmp_path = path.join(queue_dir, '.' + fname);
     var ws = fs.createWriteStream(tmp_path);
@@ -855,7 +866,17 @@ HMailItem.prototype.bounce = function (err) {
 }
 
 HMailItem.prototype._bounce = function (err) {
+    plugins.run_hooks("bounce", this, err);
+}
+
+HMailItem.prototype.bounce_respond = function (retval, msg) {
+    if (retval != constants.cont) {
+        this.loginfo("plugin responded with: " + retval + ". Not sending bounce.");
+        return;
+    }
+
     var self = this;
+
     delivery_concurrency--;
     if (!this.todo.mail_from.user) {
         // double bounce - mail was already a bounce

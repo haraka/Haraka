@@ -103,6 +103,9 @@ Connection.prototype.process_line = function (line) {
         this.state = 'pause';
         this.current_line = line.replace(/\r?\n$/, '');
         var matches = /^([^ ]*)( +(.*))?$/.exec(this.current_line);
+        if (!matches) {
+            return plugins.run_hooks('unrecognized_command', this, this.current_line);
+        }
         var method = "cmd_" + matches[1].toLowerCase();
         var remaining = matches[3] || '';
         if (this[method]) {
