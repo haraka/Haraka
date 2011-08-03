@@ -38,12 +38,14 @@ exports.hook_mail = function (next, connection, params) {
     
     smtp_proxy.socket.on('error', function (err) {
         self.logerror("Ongoing connection failed: " + err);
+        smtp_proxy.socket.destroy();
         // we don't deny on error - maybe another plugin can deliver
-        next(); 
+        smtp_proxy.next();
     });
+
     smtp_proxy.socket.on('timeout', function () {
         self.logerror("Ongoing connection timed out");
-        smtp_proxy.socket.end();
+        smtp_proxy.socket.destroy();
         smtp_proxy.next();
     });
     
@@ -94,7 +96,7 @@ exports.hook_mail = function (next, connection, params) {
                         smtp_proxy.socket.send_command('QUIT');
                         return smtp_proxy.next(OK);
                     case 'quit':
-                        smtp_proxy.socket.end();
+                        smtp_proxy.socket.destroySoon();
                         break;
                     default:
                         throw "Unknown command: " + smtp_proxy.command;
@@ -104,12 +106,12 @@ exports.hook_mail = function (next, connection, params) {
         else {
             // Unrecognised response.
             self.logerror("Unrecognised response from upstream server: " + line);
-            smtp_proxy.socket.end();
-            return next(); // maybe should be DENY?
+            smtp_proxy.socket.destroy();
+            return smtp_proxy.next(DENYSOFT);
         }
     });
     smtp_proxy.socket.on('drain', function() {
-        self.logdebug("Drained");
+        self.logprotocol("Drained");
         if (smtp_proxy.command === 'dot') {
             smtp_proxy.send_data();
         }
