@@ -98,8 +98,8 @@ exports.createConnection = function(client) {
 }
 
 Connection.prototype.process_line = function (line) {
-    this.logprotocol("C: " + line);
     if (this.state === 'cmd') {
+        this.logprotocol("C: " + line);
         this.state = 'pause';
         this.current_line = line.replace(/\r?\n$/, '');
         var matches = /^([^ ]*)( +(.*))?$/.exec(this.current_line);
@@ -133,6 +133,7 @@ Connection.prototype.process_line = function (line) {
         }
     }
     else if (this.state === 'data') {
+        this.logdata("C: " + line);
         this.accumulate_data(line);
     }
 };
@@ -516,8 +517,7 @@ Connection.prototype.cmd_mail = function(line) {
     }
     catch (err) {
         if (err.stack) {
-            var c = this;
-            err.stack.split(/\n/).forEach(c.logerror);
+            this.logerror(err.stack.split(/\n/)[0]);
         }
         else {
             this.logerror(err);
@@ -552,8 +552,7 @@ Connection.prototype.cmd_rcpt = function(line) {
     }
     catch (err) {
         if (err.stack) {
-            var c = this;
-            err.stack.split(/\n/).forEach(c.logerror);
+            this.logerror(err.stack.split(/\n/)[0]);
         }
         else {
             this.logerror(err);

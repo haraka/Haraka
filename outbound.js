@@ -151,6 +151,8 @@ exports.send_trans_email = function (transaction, next) {
         this.loginfo("Adding missing Date header");
         transaction.add_header('Date', new Date().toString());
     }
+
+    transaction.add_header('Received', 'via haraka outbound.js at ' + new Date().toString());
     
     // First get each domain
     var recips = {};
@@ -884,7 +886,7 @@ HMailItem.prototype.bounce_respond = function (retval, msg) {
     }
     
     var from = new Address ('<>');
-    var recip = new Address (hmail.todo.mail_from.user, hmail.todo.mail_from.host);
+    var recip = new Address (this.todo.mail_from.user, this.todo.mail_from.host);
     var dom = recip.host;
     populate_bounce_message(from, recip, err, this, function (err, data_lines) {
         if (err) {
