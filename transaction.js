@@ -14,7 +14,7 @@ function Transaction() {
     this.data_lines = [];
     this.data_bytes = 0;
     this.header_pos = 0;
-    this.parse_body = 0;
+    this.parse_body = false;
     this.notes = {};
     this.header = new Header();
 }
