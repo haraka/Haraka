@@ -94,6 +94,23 @@ Look there for information about how each plugin is configured, edit your
 Feel free to email me at `helpme@gmail.com` with any questions. Or use github
 "Issues".
 
+### Running from git
+
+If you are unable to use npm to install Haraka, you can run from git by
+following these steps:
+
+First clone the repository:
+
+    $ git clone https://github.com/baudehlo/Haraka.git
+    $ cd Haraka
+
+Edit `config/plugins` and `config/smtp.ini` to specify the plugins and
+config you want.
+
+Finally run Haraka:
+
+    $ node haraka.js
+
 ### Performance
 
 Haraka is fast, due to the nature of using the v8 Javascript engine, and
