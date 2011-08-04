@@ -5,6 +5,7 @@ var util = require('util');
 
 var logger = exports;
 
+logger.LOGDATA      = 9;
 logger.LOGPROTOCOL  = 8;
 logger.LOGDEBUG     = 7;
 logger.LOGINFO      = 6;
