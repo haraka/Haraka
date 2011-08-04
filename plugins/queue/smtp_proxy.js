@@ -39,7 +39,8 @@ exports.hook_mail = function (next, connection, params) {
     smtp_proxy.socket.on('error', function (err) {
         self.logerror("Ongoing connection failed: " + err);
         smtp_proxy.socket.destroy();
-        delete connection.transaction.notes.smtp_proxy;
+        if (connection.transaction)
+            delete connection.transaction.notes.smtp_proxy;
         // we don't deny on error - maybe another plugin can deliver
         smtp_proxy.next();
     });
@@ -47,7 +48,8 @@ exports.hook_mail = function (next, connection, params) {
     smtp_proxy.socket.on('timeout', function () {
         self.logerror("Ongoing connection timed out");
         smtp_proxy.socket.destroy();
-        delete connection.transaction.notes.smtp_proxy;
+        if (connection.transaction)
+            delete connection.transaction.notes.smtp_proxy;
         smtp_proxy.next();
     });
     
