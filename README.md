@@ -23,6 +23,11 @@ Haraka does have a scalable outbound mail delivery engine built in. Any mail
 marked as `relaying` (such as via an `auth` plugin) will automatically be
 queued for outbound delivery.
 
+### Join the Mailing List
+
+To get started with Haraka and ask questions about it, please join the
+mailing list: mailto:haraka-sub@harakamail.com
+
 ### Screencast
 
 [Getting started with Haraka][2]
