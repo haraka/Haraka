@@ -5,10 +5,10 @@ var path   = require('path');
 // this must be set before "server.js" is loaded
 process.env.HARAKA = process.env.HARAKA || path.resolve('.');
 try {
-  require.paths.unshift(path.join(process.env.HARAKA, 'node_modules'));
-} catch(e) {
-  logger.loginfo('No require paths. Must be node v0.5');
-  process.env.NODE_PATH += ':' + path.join(process.env.HARAKA, 'node_modules');
+    require.paths.unshift(path.join(process.env.HARAKA, 'node_modules'));
+}
+catch(e) {
+    process.env.NODE_PATH += ':' + path.join(process.env.HARAKA, 'node_modules');
 }
 
 var fs     = require('fs');
