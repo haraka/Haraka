@@ -98,7 +98,7 @@ Body.prototype.parse_start = function (line) {
             match = ct.match(/name\s*=\s*["']?([^'";]+)["']?/i);
         }
         var filename = match ? match[1] : '';
-        this.emit('attachment_start', ct, filename);
+        this.emit('attachment_start', ct, filename, this);
         this.buf_fill = 0;
         this.state = 'attachment';
         this.decode_function = this["decode_bin_" + enc];
@@ -126,7 +126,8 @@ Body.prototype.parse_multipart_preamble = function (line) {
                 // next section
                 var bod = new Body(new Header(), this.options);
                 this.listeners('attachment_start').forEach(function (cb) { bod.on('attachment_start', cb) });
-                this.listeners('attachment_data').forEach( function (cb) { bod.on('attachment_data', cb) });
+                this.listeners('attachment_data' ).forEach(function (cb) { bod.on('attachment_data', cb) });
+                this.listeners('attachment_end'  ).forEach(function (cb) { bod.on('attachment_end', cb) });
                 this.children.push(bod);
                 bod.state = 'headers';
                 this.state = 'child';
