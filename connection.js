@@ -653,6 +653,7 @@ Connection.prototype.accumulate_data = function(line) {
         return this.data_done();
     
     if (this.max_bytes && this.transaction.data_bytes > this.max_bytes) {
+        this.logerror("Incoming message exceeded databytes size of " + this.max_bytes);
         this.respond(552, "Message too big!");
         this.disconnect(); // a bit rude, but otherwise people will just keep spewing
         return;
@@ -661,6 +662,7 @@ Connection.prototype.accumulate_data = function(line) {
     // Bare LF checks
     if (line === ".\r" || line === ".\n") {
         // I really should create my own URL...
+        this.logerror("Client sent bare line-feed - .\\r or .\\n rather than .\\r\\n");
         this.respond(421, "See http://smtpd.develooper.com/barelf.html");
         this.disconnect();
         return;
