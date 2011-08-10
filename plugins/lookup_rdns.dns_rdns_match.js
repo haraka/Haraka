@@ -12,7 +12,11 @@ exports.hook_lookup_rdns = function (next, connection) {
     var rev_dnserror  = config.reverse && (config.reverse['dnserror'] || '');
     var nomatch       = config.general && (config.general['nomatch']  || '');
 
+    plugin.logdebug('XXX: lookup dns hook called.');
+
     dns.reverse(connection.remote_ip, function(err, domains) {
+        plugin.logdebug('XXX: doing reverse lookup');
+
         if (err) {
             switch (err.code) {
                 case dns.NXDOMAIN:
@@ -76,10 +80,14 @@ exports.hook_lookup_rdns = function (next, connection) {
 //                        }
 //                    });
 //                });
+                plugin.logdebug('XXX: return OK');
                 return next(OK, rdns);
             });
 
+            plugin.logdebug('XXX: return DENYDISCONNECT');
             return next(DENYDISCONNECT, nomatch);
         }
     });
+
+    plugin.logdebug('XXX: end of function scope');
 };
