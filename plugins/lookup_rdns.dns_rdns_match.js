@@ -12,11 +12,7 @@ exports.hook_lookup_rdns = function (next, connection) {
     var rev_dnserror  = config.reverse && (config.reverse['dnserror'] || '');
     var nomatch       = config.general && (config.general['nomatch']  || '');
 
-    plugin.logdebug('XXX: lookup dns hook called.');
-
     dns.reverse(connection.remote_ip, function(err, domains) {
-        plugin.logdebug('XXX: doing reverse lookup');
-
         if (err) {
             switch (err.code) {
                 case dns.NXDOMAIN:
@@ -48,48 +44,39 @@ exports.hook_lookup_rdns = function (next, connection) {
             domains.forEach(function (dom) {
                 rdns = dom;
     
-//                dns.resolve4(rdns, function(err, addresses) {
-//                    if (err) {
-//                        switch (err.code) {
-//                            case dns.NXDOMAIN:
-//                                // NXDOMAIN
-//                                plugin.loginfo('could not find address for ' +
-//                                    rdns + '. Disconnecting.');
-//                                return next(DENYDISCONNECT, [
-//                                    'Sorry we could not find address for ' +
-//                                    rdns + '.', fwd_nxdomain
-//                                ]);
-//                            break;
-//            
-//                            default:
-//                                // DNSERROR
-//                                plugin.loginfo('encountered an error when ' +
-//                                    'looking up ' + rdns + '. Disconnecting.');
-//                                return next(DENYDISCONNECT, [
-//                                    'Sorry we encountered an error when ' +
-//                                    'looking up ' + rdns + '.', fwd_dnserror
-//                                ]);
-//                            break;
-//                        }
-//                    }
-//    
-//                    addresses.forEach(function (address) {
-//                        if (address === connection.remote_ip) {
-//                            // We found a match
-//                            return next(OK, rdns);
-//                        }
-//                    });
-//                });
-                plugin.logdebug('XXX: return OK');
-                //return next(DENYDISCONNECT, nomatch);
-                return next(OK, rdns);
+                dns.resolve4(rdns, function(err, addresses) {
+                    if (err) {
+                        switch (err.code) {
+                            case dns.NXDOMAIN:
+                                // NXDOMAIN
+                                plugin.loginfo('could not find address for ' +
+                                    rdns + '. Disconnecting.');
+                                return next(DENYDISCONNECT, [
+                                    'Sorry we could not find address for ' +
+                                    rdns + '.', fwd_nxdomain
+                                ]);
+                            break;
+            
+                            default:
+                                // DNSERROR
+                                plugin.loginfo('encountered an error when ' +
+                                    'looking up ' + rdns + '. Disconnecting.');
+                                return next(DENYDISCONNECT, [
+                                    'Sorry we encountered an error when ' +
+                                    'looking up ' + rdns + '.', fwd_dnserror
+                                ]);
+                            break;
+                        }
+                    }
+    
+                    for (i = 0; i < addresses.length ; i++) {
+                        if (address[i] === connection.remote_ip) {
+                            // We found a match
+                            return next(OK, rdns);
+                        }
+                    });
+                });
             });
-
-            plugin.logdebug('XXX: return next() in dns.reverse()');
-            return next();
         }
     });
-
-    plugin.logdebug('XXX: end of original function scope');
-    return next();
 };
