@@ -18,20 +18,20 @@ exports.hook_lookup_rdns = function (next, connection) {
                 case dns.NXDOMAIN:
                     // NXDOMAIN
                     plugin.loginfo('could not find a reverse address for ' +
-                        connecton.remote_ip + '. Disconnecting.');
+                        connection.remote_ip + '. Disconnecting.');
                     return next(DENYDISCONNECT, [
                         'Sorry we could not find a reverse address for ' +
-                        connecton.remote_ip + '.', rev_nxdomain
+                        connection.remote_ip + '.', rev_nxdomain
                     ]);
                 break;
 
                 default:
                     // DNSERROR
                     plugin.loginfo('encountered an error when looking up ' +
-                        connecton.remote_ip + '. Disconnecting.');
+                        connection.remote_ip + '. Disconnecting.');
                     return next(DENYDISCONNECT, [
                         'Sorry we encountered an error when looking up ' +
-                        connecton.remote_ip + '.', rev_dnserror
+                        connection.remote_ip + '.', rev_dnserror
                     ]);
                 break;
             }
