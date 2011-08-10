@@ -75,9 +75,8 @@ exports.hook_lookup_rdns = function (next, connection) {
 //                            return next(OK, rdns);
 //                        }
 //                    });
-
+//                });
                 return next(OK, rdns);
-                });
             });
 
             return next(DENYDISCONNECT, nomatch);
