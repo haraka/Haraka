@@ -44,30 +44,30 @@ exports.hook_lookup_rdns = function (next, connection) {
             domains.forEach(function (dom) {
                 rdns = dom;
     
-                dns.resolve4(rdns, function(err, addresses) {
-                    if (err) {
-                        switch (err.code) {
-                            case dns.NXDOMAIN:
-                                // NXDOMAIN
-                                plugin.loginfo('could not find address for ' +
-                                    rdns + '. Disconnecting.');
-                                return next(DENYDISCONNECT, [
-                                    'Sorry we could not find address for ' +
-                                    rdns + '.', fwd_nxdomain
-                                ]);
-                            break;
-            
-                            default:
-                                // DNSERROR
-                                plugin.loginfo('encountered an error when ' +
-                                    'looking up ' + rdns + '. Disconnecting.');
-                                return next(DENYDISCONNECT, [
-                                    'Sorry we encountered an error when ' +
-                                    'looking up ' + rdns + '.', fwd_dnserror
-                                ]);
-                            break;
-                        }
-                    }
+//                dns.resolve4(rdns, function(err, addresses) {
+//                    if (err) {
+//                        switch (err.code) {
+//                            case dns.NXDOMAIN:
+//                                // NXDOMAIN
+//                                plugin.loginfo('could not find address for ' +
+//                                    rdns + '. Disconnecting.');
+//                                return next(DENYDISCONNECT, [
+//                                    'Sorry we could not find address for ' +
+//                                    rdns + '.', fwd_nxdomain
+//                                ]);
+//                            break;
+//            
+//                            default:
+//                                // DNSERROR
+//                                plugin.loginfo('encountered an error when ' +
+//                                    'looking up ' + rdns + '. Disconnecting.');
+//                                return next(DENYDISCONNECT, [
+//                                    'Sorry we encountered an error when ' +
+//                                    'looking up ' + rdns + '.', fwd_dnserror
+//                                ]);
+//                            break;
+//                        }
+//                    }
     
                     addresses.forEach(function (address) {
                         if (address === connection.remote_ip) {
