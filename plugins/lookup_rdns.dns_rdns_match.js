@@ -68,13 +68,15 @@ exports.hook_lookup_rdns = function (next, connection) {
 //                            break;
 //                        }
 //                    }
-    
-                    addresses.forEach(function (address) {
-                        if (address === connection.remote_ip) {
-                            // We found a match
-                            return next(OK, rdns);
-                        }
-                    });
+//    
+//                    addresses.forEach(function (address) {
+//                        if (address === connection.remote_ip) {
+//                            // We found a match
+//                            return next(OK, rdns);
+//                        }
+//                    });
+
+                return next(OK, rdns);
                 });
             });
 
