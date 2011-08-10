@@ -89,5 +89,6 @@ exports.hook_lookup_rdns = function (next, connection) {
         }
     });
 
-    plugin.logdebug('XXX: end of function scope');
+    plugin.logdebug('XXX: end of original function scope');
+    return next();
 };
