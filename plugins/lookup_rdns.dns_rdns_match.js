@@ -81,11 +81,12 @@ exports.hook_lookup_rdns = function (next, connection) {
 //                    });
 //                });
                 plugin.logdebug('XXX: return OK');
+                //return next(DENYDISCONNECT, nomatch);
                 return next(OK, rdns);
             });
 
-            plugin.logdebug('XXX: return DENYDISCONNECT');
-            return next(DENYDISCONNECT, nomatch);
+            plugin.logdebug('XXX: return next() in dns.reverse()');
+            return next();
         }
     });
 
