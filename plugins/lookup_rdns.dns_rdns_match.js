@@ -4,7 +4,7 @@ var dns = require('dns');
 
 exports.hook_lookup_rdns = function (next, connection) {
     var plugin        = this;
-    var config        = this.config.get('dns_rdns_match', 'ini');
+    var config        = this.config.get('dns_rdns_match.ini', 'ini');
     var rdns          = '';
     var fwd_nxdomain  = config.forward && (config.forward['nxdomain'] || '');
     var fwd_dnserror  = config.forward && (config.forward['dnserror'] || '');
