@@ -27,6 +27,7 @@ exports.hook_lookup_rdns = function (next, connection) {
                         return next(DENYDISCONNECT, [
                             'Sorry we could not find a reverse address for ' +
                             connection.remote_ip + '.', rev_nxdomain
+                        ]);
                     break;
     
                     default:
