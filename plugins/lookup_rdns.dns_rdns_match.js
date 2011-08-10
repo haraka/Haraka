@@ -1,8 +1,5 @@
 // check rdns against forward
 
-var dns         = require('dns');
-var plugin      = require('./plugins');
-
 exports.hook_lookup_rdns = function (next, connection)
 {
     var config        = this.config.get('dns_rdns_match', 'ini');
@@ -12,6 +9,8 @@ exports.hook_lookup_rdns = function (next, connection)
     var rev_nxdomain  = config.reverse && (config.reverse['nxdomain'] || '');
     var rev_dnserror  = config.reverse && (config.reverse['dnserror'] || '');
     var nomatch       = config.general && (config.general['nomatch']  || '');
+    var dns           = connection.dns;
+    var loginfo       = this.loginfo;
 
     dns.reverse(connection.remote_ip, function(err, domains)
     {
@@ -21,7 +20,7 @@ exports.hook_lookup_rdns = function (next, connection)
             {
                 case dns.NXDOMAIN:
                     // NXDOMAIN
-                    plugin.loginfo('could not find a reverse address for ' +
+                    loginfo('could not find a reverse address for ' +
                         connecton.remote_ip + '. Disconnecting.');
                     return next(DENYDISCONNECT, [
                         'Sorry we could not find a reverse address for ' +
@@ -31,7 +30,7 @@ exports.hook_lookup_rdns = function (next, connection)
 
                 default:
                     // DNSERROR
-                    plugin.loginfo('encountered an error when looking up ' +
+                    loginfo('encountered an error when looking up ' +
                         connecton.remote_ip + '. Disconnecting.');
                     return next(DENYDISCONNECT, [
                         'Sorry we encountered an error when looking up ' +
@@ -59,7 +58,7 @@ exports.hook_lookup_rdns = function (next, connection)
                         {
                             case dns.NXDOMAIN:
                                 // NXDOMAIN
-                                plugin.loginfo('could not find address for ' +
+                                loginfo('could not find address for ' +
                                     rdns + '. Disconnecting.');
                                 return next(DENYDISCONNECT, [
                                     'Sorry we could not find address for ' +
@@ -69,7 +68,7 @@ exports.hook_lookup_rdns = function (next, connection)
             
                             default:
                                 // DNSERROR
-                                plugin.loginfo('encountered an error when ' +
+                                loginfo('encountered an error when ' +
                                     'looking up ' + rdns + '. Disconnecting.');
                                 return next(DENYDISCONNECT, [
                                     'Sorry we encountered an error when ' +
