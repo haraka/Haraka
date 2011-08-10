@@ -1,5 +1,7 @@
 // check rdns against forward
 
+var dns = require('dns');
+
 exports.hook_lookup_rdns = function (next, connection) {
     var plugin        = this;
     var config        = this.config.get('dns_rdns_match', 'ini');
@@ -9,7 +11,6 @@ exports.hook_lookup_rdns = function (next, connection) {
     var rev_nxdomain  = config.reverse && (config.reverse['nxdomain'] || '');
     var rev_dnserror  = config.reverse && (config.reverse['dnserror'] || '');
     var nomatch       = config.general && (config.general['nomatch']  || '');
-    var dns           = connection.dns;
 
     dns.reverse(connection.remote_ip, function(err, domains) {
         if (err) {
