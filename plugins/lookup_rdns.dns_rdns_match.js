@@ -1,6 +1,7 @@
 // check rdns against forward
 
-var dns = require('dns');
+var dns         = require('dns');
+var plugin      = require('./plugins');
 
 exports.hook_lookup_rdns = function (next, connection)
 {
