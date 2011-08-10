@@ -11,7 +11,6 @@ exports.hook_lookup_rdns = function (next, connection)
     var rev_nxdomain  = config.reverse && (config.reverse['nxdomain'] || '');
     var rev_dnserror  = config.reverse && (config.reverse['dnserror'] || '');
     var nomatch       = config.general && (config.general['nomatch']  || '');
-    var type          = config.general && (config.general['type']     || 'A');
 
     dns.reverse(connection.remote_ip, function(err, domains)
     {
@@ -51,7 +50,7 @@ exports.hook_lookup_rdns = function (next, connection)
             {
                 rdns = dom;
     
-                dns.resolve(rdns, type, function(err, addresses)
+                dns.resolve4(rdns, function(err, addresses)
                 {
                     if (err)
                     {

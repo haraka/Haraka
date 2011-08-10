@@ -13,11 +13,6 @@ Configuration
 
   Text to send the user if there is no reverse to forward match.
 
-* lookup_rdns.dns_rdns_match.general.type
-
-  The version of records this server cares about for forward lookups.  That is
-  does the server want 'A' or 'AAAA' records.  default is 'A'.
-
 * lookup_rdns.dns_rdns_match.forward.nxdomain
 
   Text to send the user if there is no forward match.
