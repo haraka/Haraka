@@ -1,7 +1,7 @@
 // check rdns against forward
 
-exports.hook_lookup_rdns = function (next, connection)
-{
+exports.hook_lookup_rdns = function (next, connection) {
+    var plugin        = this;
     var config        = this.config.get('dns_rdns_match', 'ini');
     var rdns          = '';
     var fwd_nxdomain  = config.forward && (config.forward['nxdomain'] || '');
@@ -10,17 +10,13 @@ exports.hook_lookup_rdns = function (next, connection)
     var rev_dnserror  = config.reverse && (config.reverse['dnserror'] || '');
     var nomatch       = config.general && (config.general['nomatch']  || '');
     var dns           = connection.dns;
-    var loginfo       = this.loginfo;
 
-    dns.reverse(connection.remote_ip, function(err, domains)
-    {
-        if (err)
-        {
-            switch (err.code)
-            {
+    dns.reverse(connection.remote_ip, function(err, domains) {
+        if (err) {
+            switch (err.code) {
                 case dns.NXDOMAIN:
                     // NXDOMAIN
-                    loginfo('could not find a reverse address for ' +
+                    plugin.loginfo('could not find a reverse address for ' +
                         connecton.remote_ip + '. Disconnecting.');
                     return next(DENYDISCONNECT, [
                         'Sorry we could not find a reverse address for ' +
@@ -30,7 +26,7 @@ exports.hook_lookup_rdns = function (next, connection)
 
                 default:
                     // DNSERROR
-                    loginfo('encountered an error when looking up ' +
+                    plugin.loginfo('encountered an error when looking up ' +
                         connecton.remote_ip + '. Disconnecting.');
                     return next(DENYDISCONNECT, [
                         'Sorry we encountered an error when looking up ' +
@@ -38,27 +34,21 @@ exports.hook_lookup_rdns = function (next, connection)
                     ]);
                 break;
             }
-        }
-        else
-        {
+        } else {
             // Now we should make sure that the reverse response matches
             // the forward address.  Almost no one will have more than one
             // PTR record for a domain, however, DNS protocol does not
             // restrict one from having multiple PTR records for the same
             // address.  So here we are, dealing with that case.
-            domains.forEach(function (dom)
-            {
+            domains.forEach(function (dom) {
                 rdns = dom;
     
-                dns.resolve4(rdns, function(err, addresses)
-                {
-                    if (err)
-                    {
-                        switch (err.code)
-                        {
+                dns.resolve4(rdns, function(err, addresses) {
+                    if (err) {
+                        switch (err.code) {
                             case dns.NXDOMAIN:
                                 // NXDOMAIN
-                                loginfo('could not find address for ' +
+                                plugin.loginfo('could not find address for ' +
                                     rdns + '. Disconnecting.');
                                 return next(DENYDISCONNECT, [
                                     'Sorry we could not find address for ' +
@@ -68,7 +58,7 @@ exports.hook_lookup_rdns = function (next, connection)
             
                             default:
                                 // DNSERROR
-                                loginfo('encountered an error when ' +
+                                plugin.loginfo('encountered an error when ' +
                                     'looking up ' + rdns + '. Disconnecting.');
                                 return next(DENYDISCONNECT, [
                                     'Sorry we encountered an error when ' +
@@ -78,10 +68,8 @@ exports.hook_lookup_rdns = function (next, connection)
                         }
                     }
     
-                    addresses.forEach(function (address)
-                    {
-                        if (address === connection.remote_ip)
-                        {
+                    addresses.forEach(function (address) {
+                        if (address === connection.remote_ip) {
                             // We found a match
                             return next(OK, rdns);
                         }
