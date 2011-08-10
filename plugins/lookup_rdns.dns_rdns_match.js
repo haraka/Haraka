@@ -26,7 +26,7 @@ exports.hook_lookup_rdns = function (next, connection) {
                             connection.remote_ip + '. Disconnecting.');
                         return next(DENYDISCONNECT, [
                             'Sorry we could not find a reverse address for ' +
-                            connection.remote_ip + '.', rev_nxdomain
+                            connection.remote_ip + '. ' + rev_nxdomain
                         ]);
                     break;
     
@@ -36,7 +36,7 @@ exports.hook_lookup_rdns = function (next, connection) {
                             connection.remote_ip + '. Disconnecting.');
                         return next(DENYDISCONNECT, [
                             'Sorry we encountered an error when looking up ' +
-                            connection.remote_ip + '.', rev_dnserror
+                            connection.remote_ip + '. ' + rev_dnserror
                         ]);
                     break;
                 }
@@ -64,7 +64,7 @@ exports.hook_lookup_rdns = function (next, connection) {
                                         'for ' + rdns + '. Disconnecting.');
                                     return next(DENYDISCONNECT, [
                                         'Sorry we could not find address for ' +
-                                        rdns + '.', fwd_nxdomain
+                                        rdns + '. ' + fwd_nxdomain
                                     ]);
                                 break;
                 
@@ -75,7 +75,8 @@ exports.hook_lookup_rdns = function (next, connection) {
                                         '. Disconnecting.');
                                     return next(DENYDISCONNECT, [
                                         'Sorry we encountered an error when ' +
-                                        'looking up ' + rdns + '.', fwd_dnserror
+                                        'looking up ' + rdns + '. ' +
+                                        fwd_dnserror
                                     ]);
                                 break;
                             }
