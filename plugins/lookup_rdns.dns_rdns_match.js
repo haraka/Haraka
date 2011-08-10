@@ -86,7 +86,7 @@ exports.hook_lookup_rdns = function (next, connection)
                         }
                     });
                 });
-            }
+            });
 
             return next(DENYDISCONNECT, nomatch);
         }
