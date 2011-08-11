@@ -59,7 +59,7 @@ exports.hook_lookup_rdns = function (next, connection) {
                         if (!called_next && !total_checks) {
                             called_next++;
 
-                            _dns_error(next, err, rdns fwd_nxdomain,
+                            _dns_error(next, err, rdns, fwd_nxdomain,
                                 fwd_dnserror);
                         }
                     } else {
