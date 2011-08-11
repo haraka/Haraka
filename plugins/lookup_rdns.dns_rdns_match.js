@@ -26,13 +26,25 @@ exports.hook_lookup_rdns = function (next, connection) {
     var plugin        = this;
     var config        = this.config.get('dns_rdns_match.ini', 'ini');
     var rdns          = '';
-    var fwd_nxdomain  = config.forward && (config.forward['nxdomain'] || '');
-    var fwd_dnserror  = config.forward && (config.forward['dnserror'] || '');
-    var rev_nxdomain  = config.reverse && (config.reverse['nxdomain'] || '');
-    var rev_dnserror  = config.reverse && (config.reverse['dnserror'] || '');
-    var nomatch       = config.general && (config.general['nomatch']  || '');
+    var fwd_nxdomain  = config.forward && (config.forward['nxdomain']    || '');
+    var fwd_dnserror  = config.forward && (config.forward['dnserror']    || '');
+    var rev_nxdomain  = config.reverse && (config.reverse['nxdomain']    || '');
+    var rev_dnserror  = config.reverse && (config.reverse['dnserror']    || '');
+    var nomatch       = config.general && (config.general['nomatch']     || '');
+    var timeout       = config.general && (config.general['timeout']     || '');
+    var timeout_msg   = config.general && (config.general['timeout_msg'] || '');
     var total_checks  = 0;
     var called_next   = 0;
+    var timeout_id;
+
+    timeout_id = setTimeout(function () {
+        if (!called_next) {
+            plugin.loginfo('timed out when looking up ' +
+                connection.remote_ip + '. Disconnecting.');
+            called_next++;
+            next(DENYDISCONNECT, timeout_msg);
+        }
+    }, timeout * 1000);
 
     dns.reverse(connection.remote_ip, function (err, domains) {
         if (err) {
