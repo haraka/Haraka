@@ -38,6 +38,13 @@ different levels available.
   A name to use for this server. Used in received lines and elsewhere. Setup
   by default to be your hostname.
 
+* deny_includes_uuid
+
+  Each connection and mail in Haraka includes a UUID which is also in most log
+  messages. If you put a `1` in this file then every denied mail (either via
+  DENY/5xx or DENYSOFT/4xx return codes) will include a note containing the
+  uuid, making it easy to track problems back to the logs.
+
 * early\_talker\_delay
 
   If clients talk early we *punish* them with a delay of this many milliseconds
