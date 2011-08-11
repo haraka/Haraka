@@ -16,45 +16,46 @@ exports.hook_lookup_rdns = function (next, connection) {
 
     dns.reverse(connection.remote_ip, function(err, domains) {
         if (err) {
-            if (!called_next) {
-                called_next++;
+           switch (err.code) {
+               case dns.NXDOMAIN:
+                   // NXDOMAIN
+                   plugin.loginfo('could not find a reverse address for ' +
+                       connection.remote_ip + '. Disconnecting.');
+                   return next(DENYDISCONNECT, [
+                       'Sorry we could not find a reverse address for ' +
+                       connection.remote_ip + '. ' + rev_nxdomain
+                   ]);
+               break;
 
-                switch (err.code) {
-                    case dns.NXDOMAIN:
-                        // NXDOMAIN
-                        plugin.loginfo('could not find a reverse address for ' +
-                            connection.remote_ip + '. Disconnecting.');
-                        return next(DENYDISCONNECT, [
-                            'Sorry we could not find a reverse address for ' +
-                            connection.remote_ip + '. ' + rev_nxdomain
-                        ]);
-                    break;
-    
-                    default:
-                        // DNSERROR
-                        plugin.loginfo('encountered an error when looking up ' +
-                            connection.remote_ip + '. Disconnecting.');
-                        return next(DENYDISCONNECT, [
-                            'Sorry we encountered an error when looking up ' +
-                            connection.remote_ip + '. ' + rev_dnserror
-                        ]);
-                    break;
-                }
-            }
+               default:
+                   // DNSERROR
+                   plugin.loginfo('encountered an error when looking up ' +
+                       connection.remote_ip + '. Disconnecting.');
+                   return next(DENYDISCONNECT, [
+                       'Sorry we encountered an error when looking up ' +
+                       connection.remote_ip + '. ' + rev_dnserror
+                   ]);
+               break;
+           }
         } else {
+            // Anything this strange needs documentation.  Since we are
+            // checking M (A) addresses for N (PTR) records, we need to
+            // keep track of our total progress.  That way, at the end,
+            // we know to send an error of nothing has been found.  Also,
+            // on err, this helps us figure out if we still have more to check.
+            total_checks = domains.length - 1;
+
             // Now we should make sure that the reverse response matches
             // the forward address.  Almost no one will have more than one
             // PTR record for a domain, however, DNS protocol does not
             // restrict one from having multiple PTR records for the same
             // address.  So here we are, dealing with that case.
-            for (var i = 0; i < domains.length ; i++) {
-                rdns = domains[i];
-    
+            domains.forEach(function (rdns) {
                 dns.resolve4(rdns, function(err, addresses) {
-                    total_checks++;
+                    total_checks--;
 
                     if (err) {
-                        if (!called_next) {
+                        if (!called_next && !total_checks) {
                             called_next++;
 
                             switch (err.code) {
@@ -82,8 +83,6 @@ exports.hook_lookup_rdns = function (next, connection) {
                             }
                         }
                     } else {
-                        total_checks--;
-
                         for (var i = 0; i < addresses.length ; i++) {
                             if (addresses[i] === connection.remote_ip) {
                                 // We found a match
@@ -94,13 +93,13 @@ exports.hook_lookup_rdns = function (next, connection) {
                             }
                         }
 
-                        if (!total_checks && !called_next) {
+                        if (!called_next && !total_checks) {
                             called_next++;
                             return next(DENYDISCONNECT, nomatch);
                         }
                     }
                 });
-            }
+            });
         }
     });
 };
