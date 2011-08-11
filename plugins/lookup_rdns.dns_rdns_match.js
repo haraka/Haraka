@@ -43,7 +43,7 @@ exports.hook_lookup_rdns = function (next, connection) {
             // keep track of our total progress.  That way, at the end,
             // we know to send an error of nothing has been found.  Also,
             // on err, this helps us figure out if we still have more to check.
-            total_checks = domains.length - 1;
+            total_checks = domains.length;
 
             // Now we should make sure that the reverse response matches
             // the forward address.  Almost no one will have more than one
