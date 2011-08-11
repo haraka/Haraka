@@ -2,9 +2,9 @@
 
 var dns = require('dns');
 
-// dns_error handles err from node.dns callbacks.  It will always call next()
+// _dns_error handles err from node.dns callbacks.  It will always call next()
 // with a DENYDISCONNECT for this plugin.
-function dns_error(next, err, host, nxdomain, dnserror) {
+function _dns_error(next, err, host, nxdomain, dnserror) {
     switch (err.code) {
         case dns.NXDOMAIN:
             plugin.loginfo('could not find a address for ' + host +
@@ -20,8 +20,6 @@ function dns_error(next, err, host, nxdomain, dnserror) {
                 'looking up ' + host + '. ' + dnserror);
         break;
     }
-
-    return;
 }
 
 exports.hook_lookup_rdns = function (next, connection) {
@@ -36,9 +34,9 @@ exports.hook_lookup_rdns = function (next, connection) {
     var total_checks  = 0;
     var called_next   = 0;
 
-    dns.reverse(connection.remote_ip, function(err, domains) {
+    dns.reverse(connection.remote_ip, function (err, domains) {
         if (err) {
-            dns_error(next, err, connection.remote_ip, rev_nxdomain,
+            _dns_error(next, err, connection.remote_ip, rev_nxdomain,
                 rev_dnserror);
         } else {
             // Anything this strange needs documentation.  Since we are
@@ -54,14 +52,14 @@ exports.hook_lookup_rdns = function (next, connection) {
             // restrict one from having multiple PTR records for the same
             // address.  So here we are, dealing with that case.
             domains.forEach(function (rdns) {
-                dns.resolve4(rdns, function(err, addresses) {
+                dns.resolve4(rdns, function (err, addresses) {
                     total_checks--;
 
                     if (err) {
                         if (!called_next && !total_checks) {
                             called_next++;
 
-                            dns_error(next, err, rdns fwd_nxdomain,
+                            _dns_error(next, err, rdns fwd_nxdomain,
                                 fwd_dnserror);
                         }
                     } else {
