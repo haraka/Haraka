@@ -2,6 +2,26 @@
 
 var dns = require('dns');
 
+// _dns_error handles err from node.dns callbacks.  It will always call next()
+// with a DENYDISCONNECT for this plugin.
+function _dns_error(next, err, host, nxdomain, dnserror) {
+    switch (err.code) {
+        case dns.NXDOMAIN:
+            plugin.loginfo('could not find a address for ' + host +
+                '. Disconnecting.');
+            next(DENYDISCONNECT, 'Sorry we could not find address for ' +
+                host + '. ' + nxdomain);
+        break;
+    
+        default:
+            plugin.loginfo('encountered an error when looking up ' +
+                host + '. Disconnecting.');
+            next(DENYDISCONNECT, 'Sorry we encountered an error when ' +
+                'looking up ' + host + '. ' + dnserror);
+        break;
+    }
+}
+
 exports.hook_lookup_rdns = function (next, connection) {
     var plugin        = this;
     var config        = this.config.get('dns_rdns_match.ini', 'ini');
@@ -16,27 +36,8 @@ exports.hook_lookup_rdns = function (next, connection) {
 
     dns.reverse(connection.remote_ip, function(err, domains) {
         if (err) {
-           switch (err.code) {
-               case dns.NXDOMAIN:
-                   // NXDOMAIN
-                   plugin.loginfo('could not find a reverse address for ' +
-                       connection.remote_ip + '. Disconnecting.');
-                   return next(DENYDISCONNECT, [
-                       'Sorry we could not find a reverse address for ' +
-                       connection.remote_ip + '. ' + rev_nxdomain
-                   ]);
-               break;
-
-               default:
-                   // DNSERROR
-                   plugin.loginfo('encountered an error when looking up ' +
-                       connection.remote_ip + '. Disconnecting.');
-                   return next(DENYDISCONNECT, [
-                       'Sorry we encountered an error when looking up ' +
-                       connection.remote_ip + '. ' + rev_dnserror
-                   ]);
-               break;
-           }
+            _dns_error(next, err, connection.remote_ip, rev_nxdomain,
+                rev_dnserror);
         } else {
             // Anything this strange needs documentation.  Since we are
             // checking M (A) addresses for N (PTR) records, we need to
@@ -58,44 +59,24 @@ exports.hook_lookup_rdns = function (next, connection) {
                         if (!called_next && !total_checks) {
                             called_next++;
 
-                            switch (err.code) {
-                                case dns.NXDOMAIN:
-                                    // NXDOMAIN
-                                    plugin.loginfo('could not find address ' +
-                                        'for ' + rdns + '. Disconnecting.');
-                                    return next(DENYDISCONNECT, [
-                                        'Sorry we could not find address for ' +
-                                        rdns + '. ' + fwd_nxdomain
-                                    ]);
-                                break;
-                
-                                default:
-                                    // DNSERROR
-                                    plugin.loginfo('encountered an error ' +
-                                        'when looking up ' + rdns +
-                                        '. Disconnecting.');
-                                    return next(DENYDISCONNECT, [
-                                        'Sorry we encountered an error when ' +
-                                        'looking up ' + rdns + '. ' +
-                                        fwd_dnserror
-                                    ]);
-                                break;
-                            }
+                            _dns_error(next, err, rdns fwd_nxdomain,
+                                fwd_dnserror);
                         }
                     } else {
                         for (var i = 0; i < addresses.length ; i++) {
                             if (addresses[i] === connection.remote_ip) {
-                                // We found a match
+                                // We found a match, call next() and return
                                 if (!called_next) {
-                                   called_next++;
-                                   return next(OK, rdns);
+                                    called_next++;
+                                    next(OK, rdns);
+                                    return;
                                 }
                             }
                         }
 
                         if (!called_next && !total_checks) {
                             called_next++;
-                            return next(DENYDISCONNECT, nomatch);
+                            next(DENYDISCONNECT, nomatch);
                         }
                     }
                 });
