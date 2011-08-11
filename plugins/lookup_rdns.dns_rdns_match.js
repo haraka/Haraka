@@ -4,7 +4,7 @@ var dns = require('dns');
 
 // _dns_error handles err from node.dns callbacks.  It will always call next()
 // with a DENYDISCONNECT for this plugin.
-function _dns_error(next, err, host, nxdomain, dnserror) {
+function _dns_error(next, err, host, plugin, nxdomain, dnserror) {
     switch (err.code) {
         case dns.NXDOMAIN:
             plugin.loginfo('could not find a address for ' + host +
@@ -36,7 +36,7 @@ exports.hook_lookup_rdns = function (next, connection) {
 
     dns.reverse(connection.remote_ip, function (err, domains) {
         if (err) {
-            _dns_error(next, err, connection.remote_ip, rev_nxdomain,
+            _dns_error(next, err, connection.remote_ip, plugin, rev_nxdomain,
                 rev_dnserror);
         } else {
             // Anything this strange needs documentation.  Since we are
@@ -59,7 +59,7 @@ exports.hook_lookup_rdns = function (next, connection) {
                         if (!called_next && !total_checks) {
                             called_next++;
 
-                            _dns_error(next, err, rdns, fwd_nxdomain,
+                            _dns_error(next, err, rdns, plugin, fwd_nxdomain,
                                 fwd_dnserror);
                         }
                     } else {
