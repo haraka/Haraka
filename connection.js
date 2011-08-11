@@ -59,20 +59,7 @@ function setupClient(self) {
         self.process_data(data);
     });
     
-    dns.reverse(self.remote_ip, function(err, domains) {
-        if (err) {
-            switch (err.code) {
-                case dns.NXDOMAIN: self.remote_host = 'NXDOMAIN'; break;
-                default:           self.remote_host = 'DNSERROR'; break;
-            }
-        }
-        else {
-            self.remote_host = domains[0] || 'Unknown';
-        }
-        self.remote_info = self.remote_info || self.remote_host;
-        
-        plugins.run_hooks('connect', self);
-    });
+    plugins.run_hooks('lookup_rdns', self);
 }
 
 function Connection(client) {
@@ -247,6 +234,43 @@ Connection.prototype.init_transaction = function() {
 
 /////////////////////////////////////////////////////////////////////////////
 // SMTP Responses
+
+Connection.prototype.lookup_rdns_respond = function (retval, msg) {
+    switch(retval) {
+        case constants.ok:
+                this.remote_host = msg || 'Unknown';
+                plugins.run_hooks('connect', this);
+                break;
+        case constants.deny:
+        case constants.denydisconnect:
+        case constants.disconnect:
+                this.respond(500, msg || "rDNS Lookup Failed");
+                this.disconnect();
+                break;
+        case constants.denysoft:
+                this.respond(450, msg || "rDNS Temporary Failure");
+                break;
+        default:
+                var self = this;
+                dns.reverse(this.remote_ip, function(err, domains) {
+                    self.rdns_response(err, domains);
+                })
+    }
+}
+
+Connection.prototype.rdns_response = function (err, domains) {
+    if (err) {
+        switch (err.code) {
+            case dns.NXDOMAIN: this.remote_host = 'NXDOMAIN'; break;
+            default:           this.remote_host = 'DNSERROR'; break;
+        }
+    }
+    else {
+        this.remote_host = domains[0] || 'Unknown';
+    }
+    this.remote_info = this.remote_info || this.remote_host;
+    plugins.run_hooks('connect', this);
+}
 
 Connection.prototype.unrecognized_command_respond = function(retval, msg) {
     switch(retval) {
