@@ -96,7 +96,7 @@ Each plugin has documentation available via `haraka -h plugins/<name>`.
 Look there for information about how each plugin is configured, edit your
 `config/plugins` file, restart Haraka and enjoy!
 
-Feel free to email me at `helpme@gmail.com` with any questions. Or use github
+Feel free to write to the mailing list with any questions. Or use github
 "Issues".
 
 ### Running from git

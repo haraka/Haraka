@@ -868,6 +868,7 @@ HMailItem.prototype.bounce = function (err) {
 }
 
 HMailItem.prototype._bounce = function (err) {
+    this.bounce_error = err;
     plugins.run_hooks("bounce", this, err);
 }
 
@@ -878,6 +879,7 @@ HMailItem.prototype.bounce_respond = function (retval, msg) {
     }
 
     var self = this;
+    var err  = this.bounce_error;
 
     delivery_concurrency--;
     if (!this.todo.mail_from.user) {
