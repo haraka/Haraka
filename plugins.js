@@ -185,6 +185,7 @@ plugins.run_hooks = function (hook, connection, params) {
 plugins.run_next_hook = function(hook, connection) {
     var called_once = 0;
     var timeout_id;
+    var plugin_timeout;
     
     var item;
     var callback = function(retval, msg) {
@@ -223,12 +224,24 @@ plugins.run_next_hook = function(hook, connection) {
     // shift the next one off the stack and run it.
     item = connection.hooks_to_run.shift();
 
-    timeout_id = setTimeout(function () {
-        connection.logcrit("Plugin " + item[0].name + 
-            " timed out - make sure it calls the callback");
-        callback(constants.cont, "timeout");
-    }, (config.get("plugin_timeout") || 30) * 1000);
-        
+    plugin_timeout = config.get(item[0].name + ".timeout");
+
+    if (!(plugin_timeout === 0)) {
+        plugin_timeout = plugin_timeout || config.get("plugin_timeout");
+        plugin_timeout = plugin_timeout || 30;
+
+        connection.logdebug("plugin timeout is: " + plugin_timeout);
+
+        timeout_id = setTimeout(function () {
+            connection.logcrit("Plugin " + item[0].name + 
+                " timed out after " + plugin_timeout +
+                " seconds - make sure it calls the callback");
+            callback(constants.cont, "timeout");
+        }, plugin_timeout * 1000);
+    } else {
+        connection.logdebug("plugin timeout is: " + plugin_timeout);
+    }        
+
     try {
         connection.current_hook = item;
         item[0][ item[1] ].call(item[0], callback, connection, item[2]);
