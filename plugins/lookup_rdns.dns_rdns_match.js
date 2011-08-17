@@ -22,10 +22,10 @@ function _dns_error(next, err, host, plugin, nxdomain, dnserror) {
     }
 }
 
-function _in_whitelist(address, allow_subdomain) {
+function _in_whitelist(plugin, address, allow_subdomain) {
     var domain    = address.toLowerCase();
     var host_list =
-        this.config.get('lookup_rdns.dns_rdns_match.whitelist', 'list');
+        plugin.config.get('lookup_rdns.dns_rdns_match.whitelist', 'list');
     
     this.loginfo("Checking if " + address + " is in the " +
         "lookup_rdns.dns_rdns_match.whitelist");
@@ -89,7 +89,7 @@ exports.hook_lookup_rdns = function (next, connection) {
 
     dns.reverse(connection.remote_ip, function (err, domains) {
         if (err) {
-            if (_in_whitelist(connection.remote_ip, allow_subdom)) {
+            if (_in_whitelist(plugin, connection.remote_ip, allow_subdom)) {
                 next(OK, connection.remote_ip);
             } else {
                 _dns_error(next, err, connection.remote_ip, plugin,
@@ -116,7 +116,7 @@ exports.hook_lookup_rdns = function (next, connection) {
                         if (!called_next && !total_checks) {
                             called_next++;
 
-                            if (_in_whitelist(rdns, allow_subdom)) {
+                            if (_in_whitelist(plugin, rdns, allow_subdom)) {
                                 next(OK, rdns);
                             } else {
                                 _dns_error(next, err, rdns, plugin,
@@ -136,7 +136,7 @@ exports.hook_lookup_rdns = function (next, connection) {
 
                         if (!called_next && !total_checks) {
                             called_next++;
-                            if (_in_whitelist(rdns, allow_subdom)) {
+                            if (_in_whitelist(plugin, rdns, allow_subdom)) {
                                 next(OK, rdns);
                             } else {
                                 next(DENYDISCONNECT, nomatch);
