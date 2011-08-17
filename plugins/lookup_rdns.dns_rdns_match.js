@@ -83,13 +83,18 @@ exports.hook_lookup_rdns = function (next, connection) {
             plugin.loginfo('timed out when looking up ' +
                 connection.remote_ip + '. Disconnecting.');
             called_next++;
-            next(DENYDISCONNECT, timeout_msg);
+
+            if (_in_whitelist(plugin, connection.remote_ip, 0)) {
+                next(OK, connection.remote_ip);
+            } else {
+                next(DENYDISCONNECT, timeout_msg);
+            }
         }
     }, timeout * 1000);
 
     dns.reverse(connection.remote_ip, function (err, domains) {
         if (err) {
-            if (_in_whitelist(plugin, connection.remote_ip, allow_subdom)) {
+            if (_in_whitelist(plugin, connection.remote_ip, 0)) {
                 next(OK, connection.remote_ip);
             } else {
                 _dns_error(next, err, connection.remote_ip, plugin,
