@@ -62,22 +62,21 @@ function _in_whitelist(address, allow_subdomain) {
 }
 
 exports.hook_lookup_rdns = function (next, connection) {
-    var plugin        = this;
-    var config        = this.config.get('dns_rdns_match.ini', 'ini');
-    var rdns          = '';
-    var fwd_nxdomain  = config.forward && (config.forward['nxdomain']    || '');
-    var fwd_dnserror  = config.forward && (config.forward['dnserror']    || '');
-    var rev_nxdomain  = config.reverse && (config.reverse['nxdomain']    || '');
-    var rev_dnserror  = config.reverse && (config.reverse['dnserror']    || '');
-    var nomatch       = config.general && (config.general['nomatch']     || '');
-    var timeout       = config.general && (config.general['timeout']     || '');
-    var timeout_msg   = config.general && (config.general['timeout_msg'] || '');
-    var allow_subdom  = config.general &&
+    var plugin       = this;
+    var total_checks = 0;
+    var called_next  = 0;
+    var timeout_id   = 0;
+    var config       = this.config.get('lookup_rdns.dns_rdns_match.ini', 'ini');
+    var rdns         = '';
+    var fwd_nxdomain = config.forward && (config.forward['nxdomain']    || '');
+    var fwd_dnserror = config.forward && (config.forward['dnserror']    || '');
+    var rev_nxdomain = config.reverse && (config.reverse['nxdomain']    || '');
+    var rev_dnserror = config.reverse && (config.reverse['dnserror']    || '');
+    var nomatch      = config.general && (config.general['nomatch']     || '');
+    var timeout      = config.general && (config.general['timeout']     || '');
+    var timeout_msg  = config.general && (config.general['timeout_msg'] || '');
+    var allow_subdom = config.general &&
         (config.general['allow_subdomain'] || '');
-
-    var total_checks  = 0;
-    var called_next   = 0;
-    var timeout_id;
 
     timeout_id = setTimeout(function () {
         if (!called_next) {
