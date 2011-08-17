@@ -27,14 +27,14 @@ function _in_whitelist(plugin, address, allow_subdomain) {
     var host_list =
         plugin.config.get('lookup_rdns.dns_rdns_match.whitelist', 'list');
     
-    this.loginfo("Checking if " + address + " is in the " +
+    plugin.loginfo("Checking if " + address + " is in the " +
         "lookup_rdns.dns_rdns_match.whitelist");
 
     var i;
     for (i in host_list) {
         var tmp_domain = domain;
         while (tmp_domain.match(/\./)) {
-            this.logdebug("checking " + tmp_domain + " against " +
+            plugin.logdebug("checking " + tmp_domain + " against " +
                 host_list[i]);
 
             var regex = new RegExp (host_list[i]);
@@ -45,7 +45,7 @@ function _in_whitelist(plugin, address, allow_subdomain) {
             // regex.
             if (host_list[i].toLowerCase() === tmp_domain ||
                 tmp_domain.match(regex)) {
-                this.logdebug("Allowing " + tmp_domain);
+                plugin.logdebug("Allowing " + tmp_domain);
                 return 1;
             }
 
