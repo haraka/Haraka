@@ -241,7 +241,10 @@ plugins.run_next_hook = function(hook, object, params) {
             callback(constants.denysoft, "timeout");
         }, item[0].timeout * 1000);
     }
-            
+    
+    if (hook != 'log')
+        object.logdebug("running " + hook + " hook in " + item[0].name + " plugin");
+    
     try {
         object.current_hook = item;
         item[0][ item[1] ].call(item[0], callback, object, params);
