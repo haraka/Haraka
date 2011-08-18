@@ -55,6 +55,10 @@ different levels available.
   Seconds to allow a plugin to run before the next hook is called automatically
   default: 30
 
+  Note also that each plugin can have a `config/&lt;plugin_name&gt;.timeout`
+  file specifying a per-plugin timeout. In this file you can set a timeout
+  of 0 to mean that this plugin's hooks never time out. Use this with care.
+
 * cluster_modules
 
   A list of cluster modules to load. Use colons to separate parameters to be
