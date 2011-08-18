@@ -28,7 +28,7 @@ exports.hook_rcpt = function(next, connection, params) {
             // very small potential for a literal name to match the
             // regex.
             if (host_list[i].toLowerCase() === tmp_domain ||
-                tmp_domain.test(regex)) {
+                tmp_domain.match(regex)) {
                 this.logdebug("Allowing " + tmp_domain);
                 return next(OK);
             }
