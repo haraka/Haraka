@@ -7,10 +7,11 @@ exports.hook_rcpt = function(next, connection, params) {
         return next();
     }
     
-    this.loginfo("Checking if " + rcpt + " host is in host_list");
+    this.loginfo("Checking if " + rcpt + " host is in host_lists");
     
-    var domain = rcpt.host.toLowerCase();
-    var host_list = this.config.get('host_list', 'list');
+    var domain          = rcpt.host.toLowerCase();
+    var host_list       = this.config.get('host_list', 'list');
+    var host_list_regex = this.config.get('host_list_regex', 'list');
     var allow_subdomain =
         this.config.get('host_list.ini', 'ini').main.allow_subdomains;
     
@@ -21,14 +22,30 @@ exports.hook_rcpt = function(next, connection, params) {
             this.logdebug("checking " + tmp_domain + " against " +
                 host_list[i]);
 
+            // normal matches
+            if (host_list[i].toLowerCase() === tmp_domain) {
+                this.logdebug("Allowing " + tmp_domain);
+                return next(OK);
+            }
+            if (allow_subdomain) {
+                tmp_domain = tmp_domain.replace(/^[^\.]*\./, '');
+            }
+            else {
+                break;
+            }
+        }
+    }
+
+    for (i in host_list_regex) {
+        var tmp_domain = domain;
+        while (tmp_domain.match(/\./)) {
+            this.logdebug("checking " + tmp_domain + " against " +
+                host_list[i]);
+
             var regex = new RegExp (host_list[i]);
 
-            // now we either check for the domain exactly or
-            // we turn the line into a regex.  Yes, there is a very
-            // very small potential for a literal name to match the
-            // regex.
-            if (host_list[i].toLowerCase() === tmp_domain ||
-                tmp_domain.match(regex)) {
+            // regex matches
+            if (tmp_domain.match(regex)) {
                 this.logdebug("Allowing " + tmp_domain);
                 return next(OK);
             }

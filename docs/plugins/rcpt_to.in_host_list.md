@@ -11,8 +11,11 @@ Configuration
 
 * host_list
   
-  Specifies the list of hosts that are local to this server.  This can be
-  a simple list of hosts, or it can be a regex.
+  Specifies the list of hosts that are local to this server.
+
+* host_list_regex
+  
+  Specifies the list of regexes that are local to this server.
 
 * host_list.ini
 
