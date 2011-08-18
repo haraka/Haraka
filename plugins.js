@@ -7,6 +7,7 @@ var path        = require('path');
 var vm          = require('vm');
 var fs          = require('fs');
 var utils       = require('./utils');
+var util = require('util');
 
 var plugin_paths = [path.join(__dirname, './plugins')];
 if (process.env.HARAKA) { plugin_paths.unshift(path.join(process.env.HARAKA, 'plugins')); }
@@ -163,14 +164,15 @@ plugins.load_plugin = function(name) {
     return plugin;
 }
 
-plugins.run_hooks = function (hook, connection, params) {
-    connection.logdebug("running " + hook + " hooks");
+plugins.run_hooks = function (hook, object, params) {
+    if (hook != 'log')
+        object.logdebug("running " + hook + " hooks");
     
-    if (regular_hooks[hook] && connection.hooks_to_run.length) {
+    if (regular_hooks[hook] && object.hooks_to_run.length) {
         throw new Error("We are already running hooks! Fatal error!");
     }
     
-    connection.hooks_to_run = [];
+    object.hooks_to_run = [];
     
     for (i = 0; i < plugins.plugin_list.length; i++) {
         var plugin = plugins.plugin_list[i];
@@ -179,15 +181,15 @@ plugins.run_hooks = function (hook, connection, params) {
             var j;
             for (j = 0; j < plugin.hooks[hook].length; j++) {
                 var hook_code_name = plugin.hooks[hook][j];
-                connection.hooks_to_run.push([plugin, hook_code_name, params]);
+                object.hooks_to_run.push([plugin, hook_code_name]);
             }
         }
     }
     
-    plugins.run_next_hook(hook, connection);
+    plugins.run_next_hook(hook, object, params);
 };
 
-plugins.run_next_hook = function(hook, connection) {
+plugins.run_next_hook = function(hook, object, params) {
     var called_once = 0;
     var timeout_id;
     
@@ -196,52 +198,56 @@ plugins.run_next_hook = function(hook, connection) {
         if (timeout_id) clearTimeout(timeout_id);
         
         if (called_once) {
-            connection.logerror("callback called multiple times. Ignoring subsequent calls");
+            if (hook != 'log')
+                object.logerror("callback called multiple times. Ignoring subsequent calls");
             return;
         }
         called_once++;
         if (!retval) retval = constants.cont;
-        if (connection.hooks_to_run.length == 0 || 
+        if (object.hooks_to_run.length == 0 || 
             retval !== constants.cont)
         {
             var respond_method = hook + "_respond";
             if (item && utils.in_array(retval, [constants.deny, constants.denysoft, constants.denydisconnect])) {
-                connection.loginfo("plugin returned deny(soft?): ", msg);
-                connection.deny_respond = function () {
-                    connection.hooks_to_run = [];
-                    connection[respond_method](retval, msg);
+                if (hook != 'log')
+                    object.loginfo("plugin returned deny(soft?): ", msg);
+                object.deny_respond = function () {
+                    object.hooks_to_run = [];
+                    object[respond_method](retval, msg);
                 };
-                plugins.run_hooks('deny', connection, [retval, msg, item[0].name, item[1], item[2]]);
+                plugins.run_hooks('deny', object, [retval, msg, item[0].name, item[1], params]);
             }
             else {
-                connection.hooks_to_run = [];
-                connection[respond_method](retval, msg);
+                object.hooks_to_run = [];
+                object[respond_method](retval, msg, params);
             }
         }
         else {
-            plugins.run_next_hook(hook, connection);
+            plugins.run_next_hook(hook, object);
         }
     }
     
-    if (!connection.hooks_to_run.length) return callback();
+    if (!object.hooks_to_run.length) return callback();
     
     // shift the next one off the stack and run it.
-    item = connection.hooks_to_run.shift();
+    item = object.hooks_to_run.shift();
 
-    if (item[0].timeout) {
+    if (item[0].timeout && hook != 'log') {
         timeout_id = setTimeout(function () {
-            connection.logcrit("Plugin " + item[0].name + 
+            object.logcrit("Plugin " + item[0].name + 
                 " timed out - make sure it calls the callback");
             callback(constants.denysoft, "timeout");
         }, item[0].timeout * 1000);
     }
             
     try {
-        connection.current_hook = item;
-        item[0][ item[1] ].call(item[0], callback, connection, item[2]);
+        object.current_hook = item;
+        item[0][ item[1] ].call(item[0], callback, object, params);
     }
     catch (err) {
-        connection.logcrit("Plugin " + item[0].name + " failed: " + err);
+        if (hook != 'log') {
+            object.logcrit("Plugin " + item[0].name + " failed: " + (err.stack || err));
+        }
         callback();
     }
 };

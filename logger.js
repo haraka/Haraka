@@ -1,7 +1,9 @@
 // Log class
 
-var config = require('./config');
-var util = require('util');
+var config    = require('./config');
+var plugins;
+var constants = require('./constants');
+var util      = require('util');
 
 var logger = exports;
 
@@ -18,9 +20,28 @@ logger.LOGEMERG     = 0;
 
 var loglevel = logger.LOGWARN;
 
+var deferred_logs = [];
+
 logger.log = function (data) {
     data = data.replace(/\n?$/, "");
-    console.log(data);
+    // todo - just buffer these up (defer) until plugins are loaded
+    if (plugins.plugin_list) {
+        while (deferred_logs.length > 0) {
+            var log_item = deferred_logs.shift();
+            plugins.run_hooks('log', logger, log_item);
+        }
+        plugins.run_hooks('log', logger, data);
+    }
+    else {
+        deferred_logs.push(data);
+    }
+}
+
+logger.log_respond = function (retval, msg, data) {
+    // any other return code is irrelevant
+    if (retval === constants.cont) {
+        return console.log(data);
+    }
 };
 
 logger._init_loglevel = function () {
@@ -68,3 +89,5 @@ for (key in logger) {
     }
 }
 
+// load this down here so it sees all the logger methods compiled above
+plugins = require('./plugins');
