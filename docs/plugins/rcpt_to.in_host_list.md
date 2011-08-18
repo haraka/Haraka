@@ -15,13 +15,5 @@ Configuration
 
 * host_list_regex
   
-  Specifies the list of regexes that are local to this server.
-
-* host_list.ini
-
-  Specifies the following sub-configuration:
-  
-  * allow_subdomains=[1|0]
-  
-    Whether or not the hosts in `host_list` will match subdomains.
-    
+  Specifies the list of regexes that are local to this server.  Please
+  try to always anchor your regexes to reduce the chance of false matches.

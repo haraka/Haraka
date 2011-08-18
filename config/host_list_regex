@@ -1,1 +1,2 @@
-# add regexes in here we want to accept mail for
+# Add regexes in here we want to accept mail for.  Please try to anchor
+# your regexes to reduce the chance of false matches.
