@@ -224,7 +224,7 @@ plugins.run_next_hook = function(hook, object, params) {
             }
         }
         else {
-            plugins.run_next_hook(hook, object);
+            plugins.run_next_hook(hook, object, params);
         }
     }
     
