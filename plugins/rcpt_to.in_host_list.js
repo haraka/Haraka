@@ -15,7 +15,7 @@ exports.hook_rcpt = function(next, connection, params) {
     var allow_subdomain =
         this.config.get('host_list.ini', 'ini').main.allow_subdomains;
     
-    var i;
+    var i = 0;
     for (i in host_list) {
         var tmp_domain = domain;
         while (tmp_domain.match(/\./)) {
@@ -40,9 +40,9 @@ exports.hook_rcpt = function(next, connection, params) {
         var tmp_domain = domain;
         while (tmp_domain.match(/\./)) {
             this.logdebug("checking " + tmp_domain + " against " +
-                host_list[i]);
+                host_list_regex[i]);
 
-            var regex = new RegExp (host_list[i]);
+            var regex = new RegExp (host_list_regex[i]);
 
             // regex matches
             if (tmp_domain.match(regex)) {
