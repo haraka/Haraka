@@ -70,8 +70,8 @@ function Connection(client) {
     this.uuid = uuid();
     this.notes = {};
     this.tran_count = 0;
-    this.early_talker_delay = config.get('early_talker_delay') || 1000;
-    this.deny_includes_uuid = config.get('deny_includes_uuid') ? true : false;
+    this.early_talker_delay = config.get('early_talker_delay', 'nolog') || 1000;
+    this.deny_includes_uuid = config.get('deny_includes_uuid', 'nolog') ? true : false;
     this.relaying = false;
     this.hooks_to_run = [];
     
@@ -307,14 +307,14 @@ Connection.prototype.connect_respond = function(retval, msg) {
                              this.respond(450, msg || "Come back later");
                              break;
         default:
-                             var greeting = config.get('smtpgreeting', 'list');
+                             var greeting = config.get('smtpgreeting', 'nolog', 'list');
                              if (greeting.length) {
                                  if (!(/(^|\W)ESMTP(\W|$)/.test(greeting[0]))) {
                                      greeting[0] += " ESMTP";
                                  }
                              }
                              else {
-                                 greeting = (config.get('me') + 
+                                 greeting = (config.get('me', 'nolog') + 
                                             " ESMTP Haraka " + version + " ready");
                              }
                              this.respond(220, msg || greeting);
@@ -364,7 +364,7 @@ Connection.prototype.ehlo_respond = function(retval, msg) {
                                 "8BITMIME"
                                 ];
                 
-                var databytes = config.get('databytes');
+                var databytes = config.get('databytes', 'nolog');
                 if (databytes) {
                     response.push("SIZE " + databytes);
                 }
@@ -625,7 +625,7 @@ Connection.prototype.received_line = function() {
     // TODO - populate authheader and sslheader - see qpsmtpd for how to.
     return  "from " + this.remote_info
            +" (HELO " + this.hello_host + ") ("+this.remote_ip
-           +")\n  " + (this.authheader || '') + "  by " + config.get('me')
+           +")\n  " + (this.authheader || '') + "  by " + config.get('me', 'nolog')
            +" (Haraka/" + version
            +") with " + (this.sslheader || '') + smtp + "; "
            + _date_to_str(new Date());
@@ -674,7 +674,7 @@ Connection.prototype.data_respond = function(retval, msg) {
         // OK... now we get the data
         this.state = 'data';
         this.transaction.data_bytes = 0;
-        this.max_bytes = config.get('databytes');
+        this.max_bytes = config.get('databytes', 'nolog');
     }
 };
 

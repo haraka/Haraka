@@ -23,9 +23,9 @@ var MAX_UNIQ = 10000;
 var host = require('os').hostname().replace(/\\/, '\\057').replace(/:/, '\\072');
 var fn_re = /^(\d+)_(\d+)_/; // I like how this looks like a person
 
-var queue_dir = path.resolve(config.get('queue_dir') || (process.env.HARAKA + '/queue'));
+var queue_dir = path.resolve(config.get('queue_dir', 'nolog') || (process.env.HARAKA + '/queue'));
 var uniq = Math.round(Math.random() * MAX_UNIQ);
-var max_concurrency = config.get('outbound.concurrency_max') || 100;
+var max_concurrency = config.get('outbound.concurrency_max', 'nolog') || 100;
 var queue_count = 0;
 
 exports.list_queue = function () {
@@ -145,7 +145,7 @@ exports.send_trans_email = function (transaction, next) {
     // add in potentially missing headers
     if (!transaction.header.get_all('Message-Id').length) {
         this.loginfo("Adding missing Message-Id header");
-        transaction.add_header('Message-Id', '<' + transaction.uuid + '@' + config.get('me') + '>');
+        transaction.add_header('Message-Id', '<' + transaction.uuid + '@' + config.get('me', 'nolog') + '>');
     }
     if (!transaction.header.get_all('Date').length) {
         this.loginfo("Adding missing Date header");
@@ -349,7 +349,7 @@ exports.load_queue_files = function (cb_name, files) {
     this.loginfo("Loading some of the queue...");
 
     if ((delivery_concurrency >= max_concurrency)
-        || config.get('outbound.disabled'))
+        || config.get('outbound.disabled', 'nolog'))
     {
         // try again in 1 second if delivery is disabled
         setTimeout(function () {plugin.load_queue_files(cb_name, files)}, 1000);
@@ -496,7 +496,7 @@ HMailItem.prototype.send = function () {
 
 HMailItem.prototype._send = function () {
     if ((delivery_concurrency >= max_concurrency)
-        || config.get('outbound.disabled'))
+        || config.get('outbound.disabled', 'nolog'))
     {
         // try again in 1 second if delivery is disabled
         this.logdebug("delivery disabled temporarily. Retrying in 1s.");
@@ -750,7 +750,7 @@ HMailItem.prototype.try_deliver_host = function () {
                 }
                 switch (command) {
                     case 'connect':
-                        socket.send_command('HELO', config.get('me'));
+                        socket.send_command('HELO', config.get('me', 'nolog'));
                         break;
                     case 'helo':
                         socket.send_command('MAIL', 'FROM:' + mail_from);
@@ -826,15 +826,15 @@ var default_bounce_template = ['Received: (Haraka {pid} invoked for bounce); {da
 function populate_bounce_message (from, to, reason, hmail, cb) {
     var values = {
         date: new Date().toString(),
-        me:   config.get('me'),
+        me:   config.get('me', 'nolog'),
         from: from,
         to:   to,
         reason: reason,
         pid: process.pid,
-        msgid: '<' + utils.uuid() + '@' + config.get('me') + '>',
+        msgid: '<' + utils.uuid() + '@' + config.get('me', 'nolog') + '>',
     };
     
-    var bounce_msg_ = config.get('outbound.bounce_message', 'list');
+    var bounce_msg_ = config.get('outbound.bounce_message', 'nolog', 'list');
     if (bounce_msg_.length === 0) {
         bounce_msg_ = default_bounce_template;
     }

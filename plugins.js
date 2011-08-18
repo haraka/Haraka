@@ -50,9 +50,9 @@ var regular_hooks = {
 
 function Plugin(name) {
     this.name = name;
-    this.timeout = config.get(name + '.timeout');
+    this.timeout = config.get(name + '.timeout', 'nolog');
     if (this.timeout === null) {
-        this.timeout = config.get('plugin_timeout') || 30;
+        this.timeout = config.get('plugin_timeout', 'nolog') || 30;
     }
     logger.logdebug("plugin " + name + " set timeout to: " + this.timeout + "s");
     var full_paths = []
@@ -96,7 +96,7 @@ plugins.Plugin = Plugin;
 
 plugins.load_plugins = function () {
     logger.loginfo("Loading plugins");
-    var plugin_list = config.get('plugins', 'list');
+    var plugin_list = config.get('plugins', 'nolog', 'list');
     
     plugins.plugin_list = plugin_list.map(plugins.load_plugin);
 };
@@ -123,7 +123,7 @@ plugins.load_plugin = function(name) {
         }
     }
     if (!rf) {
-        if (config.get('smtp.ini', 'ini').main.ignore_bad_plugins) {
+        if (config.get('smtp.ini', 'nolog', 'ini').main.ignore_bad_plugins) {
             logger.logcrit("Loading plugin " + name + " failed: " + last_err);
             return;
         }
@@ -144,7 +144,7 @@ plugins.load_plugin = function(name) {
         vm.runInNewContext(code, sandbox, name);
     }
     catch (err) {
-        if (config.get('smtp.ini', 'ini').main.ignore_bad_plugins) {
+        if (config.get('smtp.ini', 'nolog', 'ini').main.ignore_bad_plugins) {
             logger.logcrit("Loading plugin " + name + " failed: ", err.stack);
             return;
         }
