@@ -54,7 +54,9 @@ function Plugin(name) {
     if (this.timeout === null) {
         this.timeout = config.get('plugin_timeout', 'nolog') || 30;
     }
-    logger.logdebug("plugin " + name + " set timeout to: " + this.timeout + "s");
+    else {
+        logger.logdebug("plugin " + name + " set timeout to: " + this.timeout + "s");
+    }
     var full_paths = []
     plugin_paths.forEach(function (pp) {
         full_paths.push(path.resolve(pp, name) + '.js');
