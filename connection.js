@@ -71,6 +71,7 @@ function Connection(client) {
     this.notes = {};
     this.tran_count = 0;
     this.early_talker_delay = config.get('early_talker_delay') || 1000;
+    this.deny_includes_uuid = config.get('deny_includes_uuid') ? true : false;
     this.relaying = false;
     this.hooks_to_run = [];
     
@@ -177,6 +178,11 @@ Connection.prototype.respond = function(code, messages) {
         // messages not an array, make it so:
         messages = [ '' + messages ];
     }
+
+    if (code >= 400 && this.deny_includes_uuid) {
+        messages.push("for support please provide uuid:" + (this.transaction || this).uuid);
+    }
+    
     var msg;
     var buf = '';
     while (msg = messages.shift()) {
