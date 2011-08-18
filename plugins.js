@@ -49,6 +49,11 @@ var regular_hooks = {
 
 function Plugin(name) {
     this.name = name;
+    this.timeout = config.get(name + '.timeout');
+    if (this.timeout === null) {
+        this.timeout = config.get('plugin_timeout') || 30;
+    }
+    logger.logdebug("plugin " + name + " set timeout to: " + this.timeout + "s");
     var full_paths = []
     plugin_paths.forEach(function (pp) {
         full_paths.push(path.resolve(pp, name) + '.js');
@@ -226,8 +231,8 @@ plugins.run_next_hook = function(hook, connection) {
     timeout_id = setTimeout(function () {
         connection.logcrit("Plugin " + item[0].name + 
             " timed out - make sure it calls the callback");
-        callback(constants.cont, "timeout");
-    }, (config.get("plugin_timeout") || 30) * 1000);
+        callback(constants.denysoft, "timeout");
+    }, item[0].timeout * 1000);
         
     try {
         connection.current_hook = item;
