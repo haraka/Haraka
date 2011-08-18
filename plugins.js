@@ -228,12 +228,14 @@ plugins.run_next_hook = function(hook, connection) {
     // shift the next one off the stack and run it.
     item = connection.hooks_to_run.shift();
 
-    timeout_id = setTimeout(function () {
-        connection.logcrit("Plugin " + item[0].name + 
-            " timed out - make sure it calls the callback");
-        callback(constants.denysoft, "timeout");
-    }, item[0].timeout * 1000);
-        
+    if (item[0].timeout) {
+        timeout_id = setTimeout(function () {
+            connection.logcrit("Plugin " + item[0].name + 
+                " timed out - make sure it calls the callback");
+            callback(constants.denysoft, "timeout");
+        }, item[0].timeout * 1000);
+    }
+            
     try {
         connection.current_hook = item;
         item[0][ item[1] ].call(item[0], callback, connection, item[2]);
