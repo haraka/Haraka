@@ -15,5 +15,7 @@ Configuration
 
 * host_list_regex
   
-  Specifies the list of regexes that are local to this server.  Please
-  try to always anchor your regexes to reduce the chance of false matches.
+  Specifies the list of regexes that are local to this server.  Note
+  all these regexes are anchored with ^regex$. One can not choose not to
+  anchor with .* and that there is a good potential for bad regexes being
+  over permissive if we don\'t do this.
