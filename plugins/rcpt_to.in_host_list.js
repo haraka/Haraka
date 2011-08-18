@@ -15,35 +15,25 @@ exports.hook_rcpt = function(next, connection, params) {
 
     var i = 0;
     for (i in host_list) {
-        while (domain.match(/\./)) {
-            this.logdebug("checking " + domain + " against " + host_list[i]);
+        this.logdebug("checking " + domain + " against " + host_list[i]);
 
-            // normal matches
-            if (host_list[i].toLowerCase() === domain) {
-                this.logdebug("Allowing " + domain);
-                return next(OK);
-            }
-            else {
-                break;
-            }
+        // normal matches
+        if (host_list[i].toLowerCase() === domain) {
+            this.logdebug("Allowing " + domain);
+            return next(OK);
         }
     }
 
     for (i in host_list_regex) {
-        while (domain.match(/\./)) {
-            this.logdebug("checking " + domain + " against " +
-                host_list_regex[i]);
+        this.logdebug("checking " + domain + " against regexp " +
+            host_list_regex[i]);
 
-            var regex = new RegExp ('^' + host_list_regex[i] + '$');
+        var regex = new RegExp ('^' + host_list_regex[i] + '$', 'i');
 
-            // regex matches
-            if (domain.match(regex)) {
-                this.logdebug("Allowing " + domain);
-                return next(OK);
-            }
-            else {
-                break;
-            }
+        // regex matches
+        if (domain.match(regex)) {
+            this.logdebug("Allowing " + domain);
+            return next(OK);
         }
     }
     
