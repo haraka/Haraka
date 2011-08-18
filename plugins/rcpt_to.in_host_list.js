@@ -19,7 +19,6 @@ exports.hook_rcpt = function(next, connection, params) {
         while (tmp_domain.match(/\./)) {
             this.logdebug("checking " + tmp_domain + " against " + host_list[i]);
             if (host_list[i].toLowerCase() === tmp_domain) {
-                this.logdebug("Allowing " + tmp_domain);
                 return next(OK);
             }
             if (allow_subdomain) {
