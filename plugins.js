@@ -194,7 +194,6 @@ plugins.run_hooks = function (hook, object, params) {
 plugins.run_next_hook = function(hook, object, params) {
     var called_once = 0;
     var timeout_id;
-    var plugin_timeout;
     
     var item;
     var callback = function(retval, msg) {
