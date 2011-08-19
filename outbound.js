@@ -775,7 +775,7 @@ HMailItem.prototype.try_deliver_host = function () {
                             self.logerror("Reading from the data stream failed: " + err);
                         });
                         data_stream.on('data', function (data) {
-                            self.logprotocol("C: " + data);
+                            self.logdata("C: " + data);
                         });
                         data_stream.on('end', function () {
                             socket.send_command('dot');
