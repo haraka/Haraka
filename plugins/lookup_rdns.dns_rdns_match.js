@@ -22,39 +22,39 @@ function _dns_error(next, err, host, plugin, nxdomain, dnserror) {
     }
 }
 
-function _in_whitelist(plugin, address, allow_subdomain) {
-    var domain    = address.toLowerCase();
-    var host_list =
+function _in_whitelist(plugin, address) {
+    var domain          = address.toLowerCase();
+    var host_list       =
         plugin.config.get('lookup_rdns.dns_rdns_match.whitelist', 'list');
+    var host_list_regex =
+        plugin.config.get('lookup_rdns.dns_rdns_match.whitelist_regex', 'list');
     
     plugin.loginfo("Checking if " + address + " is in the " +
-        "lookup_rdns.dns_rdns_match.whitelist");
+        "lookup_rdns.dns_rdns_match.whitelist files");
 
     var i;
     for (i in host_list) {
-        var tmp_domain = domain;
-        while (tmp_domain.match(/\./)) {
-            plugin.logdebug("checking " + tmp_domain + " against " +
-                host_list[i]);
+        plugin.logdebug("checking " + domain + " against " + host_list[i]);
 
-            var regex = new RegExp (host_list[i]);
+        if (host_list[i].toLowerCase() === domain) {
+            plugin.logdebug("Allowing " + domain);
+            return 1;
+        }
+    }
 
-            // now we either check for the domain exactly or
-            // we turn the line into a regex.  Yes, there is a very
-            // very small potential for a literal name to match the
-            // regex.
-            if (host_list[i].toLowerCase() === tmp_domain ||
-                tmp_domain.match(regex)) {
-                plugin.logdebug("Allowing " + tmp_domain);
-                return 1;
-            }
+    for (i in host_list_regex) {
+        plugin.logdebug("checking " + domain + " against " +
+            host_list_regex[i]);
 
-            if (allow_subdomain) {
-                tmp_domain = tmp_domain.replace(/^[^\.]*\./, '');
-            }
-            else {
-                break;
-            }
+        var regex = new RegExp ('^' + host_list_regex[i] + '$', 'i');
+
+        // now we either check for the domain exactly or
+        // we turn the line into a regex.  Yes, there is a very
+        // very small potential for a literal name to match the
+        // regex.
+        if (domain.match(regex)) {
+            plugin.logdebug("Allowing " + domain);
+            return 1;
         }
     }
     
@@ -75,8 +75,6 @@ exports.hook_lookup_rdns = function (next, connection) {
     var nomatch      = config.general && (config.general['nomatch']     || '');
     var timeout      = config.general && (config.general['timeout']     || '');
     var timeout_msg  = config.general && (config.general['timeout_msg'] || '');
-    var allow_subdom = config.general &&
-        (config.general['allow_subdomain'] || '');
 
     timeout_id = setTimeout(function () {
         if (!called_next) {
@@ -84,7 +82,7 @@ exports.hook_lookup_rdns = function (next, connection) {
                 connection.remote_ip + '. Disconnecting.');
             called_next++;
 
-            if (_in_whitelist(plugin, connection.remote_ip, 0)) {
+            if (_in_whitelist(plugin, connection.remote_ip)) {
                 next(OK, connection.remote_ip);
             } else {
                 next(DENYDISCONNECT, timeout_msg);
@@ -94,7 +92,7 @@ exports.hook_lookup_rdns = function (next, connection) {
 
     dns.reverse(connection.remote_ip, function (err, domains) {
         if (err) {
-            if (_in_whitelist(plugin, connection.remote_ip, 0)) {
+            if (_in_whitelist(plugin, connection.remote_ip)) {
                 next(OK, connection.remote_ip);
             } else {
                 _dns_error(next, err, connection.remote_ip, plugin,
@@ -121,7 +119,7 @@ exports.hook_lookup_rdns = function (next, connection) {
                         if (!called_next && !total_checks) {
                             called_next++;
 
-                            if (_in_whitelist(plugin, rdns, allow_subdom)) {
+                            if (_in_whitelist(plugin, rdns)) {
                                 next(OK, rdns);
                             } else {
                                 _dns_error(next, err, rdns, plugin,
@@ -141,7 +139,7 @@ exports.hook_lookup_rdns = function (next, connection) {
 
                         if (!called_next && !total_checks) {
                             called_next++;
-                            if (_in_whitelist(plugin, rdns, allow_subdom)) {
+                            if (_in_whitelist(plugin, rdns)) {
                                 next(OK, rdns);
                             } else {
                                 next(DENYDISCONNECT, nomatch);

@@ -28,12 +28,6 @@ parsing options.
   Text to send when plugin reaches timeout (text).
 
 
-* lookup_rdns.dns_rdns_match.general.allow_subdomains=[1|0]
-
-  Whether or not the hosts in `lookup_rdns.dns_rdns_match.whitelist`
-  will match subdomains.
-
-
 * lookup_rdns.dns_rdns_match.forward.nxdomain
 
   Text to send the user if there is no forward match (text).
@@ -73,17 +67,14 @@ required by RFC, and there will always be some legitimate mail server that
 has great trouble getting their DNS in order.  For this reason we are
 providing a whitelist.
 
-This file has two formats that can be mixed.  Each line of the file will
-be tested against the connection ip and the reverse dns response.
+This file will match exactly what you put on each line.
 
-The first format is a literal string match.  If I want to allow host
-1.2.3.4 through, I can put that on one line of the whitelist file.
 
-The second format is a regex match.  This means if I want to allow everything
-from dod.net, I could put '.*\.dod\.net$' on a line.
+Configuration lookup_rdns.dns_rdns_match.whitelist_regex
+--------------------------------------------------------
 
-Both formats are checked for each line, meaning the '.' in 1.2.3.4 would
-match 1A2B3C4, but it is improbable that you will run into problems with this.
-If you need to make sure this never happens, then please always use the
-regex form of the match '1\.2\.3\.4'.
-
+Does the same thing as the whitelist file, but each line is a regex.
+Each line is also anchored for you, meaning '^' + regex + '$' is added for
+you.  If you need to get around this restriction, you may use a '.*' at
+either the start or the end of your regex.  This should help prevent people
+from writing overly permissive rules on accident.
