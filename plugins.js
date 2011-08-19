@@ -50,11 +50,13 @@ var regular_hooks = {
 
 function Plugin(name) {
     this.name = name;
-    this.timeout = config.get(name + '.timeout');
+    this.timeout = config.get(name + '.timeout', 'nolog');
     if (this.timeout === null) {
-        this.timeout = config.get('plugin_timeout') || 30;
+        this.timeout = config.get('plugin_timeout', 'nolog') || 30;
     }
-    logger.logdebug("plugin " + name + " set timeout to: " + this.timeout + "s");
+    else {
+        logger.logdebug("plugin " + name + " set timeout to: " + this.timeout + "s");
+    }
     var full_paths = []
     plugin_paths.forEach(function (pp) {
         full_paths.push(path.resolve(pp, name) + '.js');
@@ -96,7 +98,7 @@ plugins.Plugin = Plugin;
 
 plugins.load_plugins = function () {
     logger.loginfo("Loading plugins");
-    var plugin_list = config.get('plugins', 'list');
+    var plugin_list = config.get('plugins', 'nolog', 'list');
     
     plugins.plugin_list = plugin_list.map(plugins.load_plugin);
 };
@@ -123,7 +125,7 @@ plugins.load_plugin = function(name) {
         }
     }
     if (!rf) {
-        if (config.get('smtp.ini', 'ini').main.ignore_bad_plugins) {
+        if (config.get('smtp.ini', 'nolog', 'ini').main.ignore_bad_plugins) {
             logger.logcrit("Loading plugin " + name + " failed: " + last_err);
             return;
         }
@@ -144,7 +146,7 @@ plugins.load_plugin = function(name) {
         vm.runInNewContext(code, sandbox, name);
     }
     catch (err) {
-        if (config.get('smtp.ini', 'ini').main.ignore_bad_plugins) {
+        if (config.get('smtp.ini', 'nolog', 'ini').main.ignore_bad_plugins) {
             logger.logcrit("Loading plugin " + name + " failed: ", err.stack);
             return;
         }
@@ -240,7 +242,10 @@ plugins.run_next_hook = function(hook, object, params) {
             callback(constants.denysoft, "timeout");
         }, item[0].timeout * 1000);
     }
-            
+    
+    if (hook != 'log')
+        object.logdebug("running " + hook + " hook in " + item[0].name + " plugin");
+    
     try {
         object.current_hook = item;
         item[0][ item[1] ].call(item[0], callback, object, params);
