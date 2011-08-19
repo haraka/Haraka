@@ -88,11 +88,15 @@ exports.hook_lookup_rdns = function (next, connection) {
 
     dns.reverse(connection.remote_ip, function (err, domains) {
         if (err) {
-            if (_in_whitelist(plugin, connection.remote_ip)) {
-                next(OK, connection.remote_ip);
-            } else {
-                _dns_error(next, err, connection.remote_ip, plugin,
-                    rev_nxdomain, rev_dnserror);
+            if (!called_next) {
+                called_next++;
+
+                if (_in_whitelist(plugin, connection.remote_ip)) {
+                    next(OK, connection.remote_ip);
+                } else {
+                    _dns_error(next, err, connection.remote_ip, plugin,
+                        rev_nxdomain, rev_dnserror);
+                }
             }
         } else {
             // Anything this strange needs documentation.  Since we are
