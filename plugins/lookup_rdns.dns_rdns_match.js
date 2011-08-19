@@ -48,10 +48,6 @@ function _in_whitelist(plugin, address) {
 
         var regex = new RegExp ('^' + host_list_regex[i] + '$', 'i');
 
-        // now we either check for the domain exactly or
-        // we turn the line into a regex.  Yes, there is a very
-        // very small potential for a literal name to match the
-        // regex.
         if (domain.match(regex)) {
             plugin.logdebug("Allowing " + domain);
             return 1;
