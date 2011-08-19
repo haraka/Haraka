@@ -73,6 +73,7 @@ function Connection(client) {
     this.early_talker_delay = config.get('early_talker_delay', 'nolog') || 1000;
     this.deny_includes_uuid = config.get('deny_includes_uuid', 'nolog') ? true : false;
     this.relaying = false;
+    this.disconnected = false;
     this.hooks_to_run = [];
     
     setupClient(this);
@@ -208,11 +209,12 @@ Connection.prototype.fail = function (err) {
 }
 
 Connection.prototype.disconnect = function() {
+    if (this.disconnected) return;
     plugins.run_hooks('disconnect', this);
 };
 
 Connection.prototype.disconnect_respond = function () {
-    this.disconnected = 1;
+    this.disconnected = true;
     this.logdebug("closing client");
     if (this.client.fd) {
         this.client.end();
