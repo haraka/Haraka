@@ -60,6 +60,8 @@ Server.createServer = function (params) {
     plugins.load_plugins();
         
     var server = net.createServer();
+    server.notes = {};
+    
     if (cluster && config_data.main.nodes) {
          
         var c = cluster(server);
@@ -104,7 +106,7 @@ Server.createServer = function (params) {
 
     server.on('connection', function(client) {
         client.setTimeout((config_data.main.inactivity_time || 300) * 1000);
-        conn.createConnection(client);
+        conn.createConnection(client, server);
     });
 
 };
