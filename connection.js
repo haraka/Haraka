@@ -62,8 +62,9 @@ function setupClient(self) {
     plugins.run_hooks('lookup_rdns', self);
 }
 
-function Connection(client) {
+function Connection(client, server) {
     this.client = client;
+    this.server = server;
     this.current_data = '';
     this.current_line = null;
     this.state = 'pause';
@@ -81,8 +82,8 @@ function Connection(client) {
 
 exports.Connection = Connection;
 
-exports.createConnection = function(client) {
-    var s = new Connection(client);
+exports.createConnection = function(client, server) {
+    var s = new Connection(client, server);
     return s;
 }
 
