@@ -79,7 +79,7 @@ Body.prototype.parse_start = function (line) {
         enc = '8bit';
     }
     enc = enc.replace(/^quoted-printable$/i, 'qp');
-    enc = enc.toLowerCase();
+    enc = enc.toLowerCase().split("\n").pop().trim();
     
     this.decode_function = this["decode_" + enc];
     this.ct = ct;
