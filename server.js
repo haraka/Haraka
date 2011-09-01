@@ -1,6 +1,9 @@
 // smtp network server
 
+var util        = require("util");
 var net         = require('net');
+var fs          = require("fs");
+var starttls    = require("./starttls");
 var logger      = require('./logger');
 var config      = require('./config');
 var conn        = require('./connection');
@@ -53,15 +56,29 @@ Server.createServer = function (params) {
             config_data.main[param_key] = params[param_key];
         }
     }
-    
+
     // config_data defaults
     apply_defaults(config_data.main);
     
     plugins.load_plugins();
-        
-    var server = net.createServer();
-    server.notes = {};
-    
+
+    /* Setup the TLS options. */
+    var options = {
+        key: fs.readFileSync(config_data.main.sslKeyFile),
+        cert: fs.readFileSync(config_data.main.sslCertFile)
+    };
+
+    /* Start a TLS server which uses the above options. */
+    var server = starttls.createServer(options,
+        function(client) {
+            client.cryptoSocket.setTimeout((config_data.main.inactivity_time || 300) * 1000);
+            client.notes= {advertiseTLS: config_data.main.sslCertFile ? true : false};
+            conn.createConnection(client, server);
+        }
+    );
+    server.notes= {};
+
+    /* Note: Cluster operation has NOT been tested with TLS. */
     if (cluster && config_data.main.nodes) {
          
         var c = cluster(server);
@@ -103,11 +120,6 @@ Server.createServer = function (params) {
             Server.lognotice('New uid: ' + process.getuid());
         }
     }
-
-    server.on('connection', function(client) {
-        client.setTimeout((config_data.main.inactivity_time || 300) * 1000);
-        conn.createConnection(client, server);
-    });
 
 };
 
