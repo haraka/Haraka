@@ -258,7 +258,7 @@ exports.build_todo = function (dom, recips, from, ws, write_more) {
         {
             domain: dom,
             mail_from: from,
-            rcpt_to:   recips,
+            rcpt_to:   recips
         }
     );
     
@@ -394,7 +394,7 @@ exports.stats = function () {
     // TODO: output more data here
     var results = {
         queue_dir:   queue_dir,
-        queue_count: queue_count,
+        queue_count: queue_count
     };
 
     return results;
@@ -507,7 +507,7 @@ HMailItem.prototype._send = function () {
 
     this.logdebug("Sending mail: " + this.filename);
 
-    // plugin.loginfo("Hmail: " + util.inspect(hmail, null, null));
+    // this.loginfo("Hmail: " + util.inspect(hmail));
     
     this.get_mx();
 }
@@ -831,7 +831,7 @@ function populate_bounce_message (from, to, reason, hmail, cb) {
         to:   to,
         reason: reason,
         pid: process.pid,
-        msgid: '<' + utils.uuid() + '@' + config.get('me', 'nolog') + '>',
+        msgid: '<' + utils.uuid() + '@' + config.get('me', 'nolog') + '>'
     };
     
     var bounce_msg_ = config.get('outbound.bounce_message', 'nolog', 'list');

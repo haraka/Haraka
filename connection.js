@@ -1,4 +1,5 @@
 // a single connection
+var util        = require("util");
 var path        = require('path');
 var config      = require('./config');
 var logger      = require('./logger');
@@ -318,7 +319,7 @@ Connection.prototype.connect_respond = function(retval, msg) {
                              }
                              else {
                                  greeting = (config.get('me', 'nolog') + 
-                                            " ESMTP Haraka " + version + " ready");
+                                            " ESMTP Haraka " + version + " ready ");
                              }
                              this.respond(220, msg || greeting);
     }
@@ -366,6 +367,7 @@ Connection.prototype.ehlo_respond = function(retval, msg) {
                                 "PIPELINING",
                                 "8BITMIME"
                                 ];
+                if(this.client.notes && this.client.notes.advertiseTLS)response.push("STARTTLS");
                 
                 var databytes = config.get('databytes', 'nolog');
                 if (databytes) {
@@ -517,6 +519,17 @@ Connection.prototype.cmd_ehlo = function(line) {
     this.hello_host = host;
     
     plugins.run_hooks('ehlo', this, host);
+};
+
+Connection.prototype.cmd_starttls = function() {
+    /* Respond to STARTTLS command. */
+    this.respond(220,"Go ahead.");
+    /* Upgrade the connection to TLS. */
+    this.client.upgrade(this.client.cryptoOptions); // Use the options which were saved by starttls.createServer().
+    /* Place a marker in the socket object so that onConnection() will know this is associated with a dotNetClient. */
+    this.client.dotNetClient = true;
+    /* Force the startup protocol to repeat. */
+    this.hello_host= undefined;
 };
 
 Connection.prototype.cmd_quit = function() {
