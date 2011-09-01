@@ -72,18 +72,19 @@ Body.prototype.parse_headers = function (line) {
 Body.prototype.parse_start = function (line) {
     var ct = this.header.get_decoded('content-type') || 'text/plain';
     var enc = this.header.get_decoded('content-transfer-encoding') || '8bit';
+    var cd = this.header.get_decoded('content-disposition') || '';
     
     if (!enc.match(/^base64|quoted-printable|[78]bit$/i)) {
         logger.logerror("Invalid CTE on email: " + enc + ", using 8bit");
         enc = '8bit';
     }
     enc = enc.replace(/^quoted-printable$/i, 'qp');
-    enc = enc.toLowerCase();
+    enc = enc.toLowerCase().split("\n").pop().trim();
     
     this.decode_function = this["decode_" + enc];
     this.ct = ct;
     
-    if (/^text\//i.test(ct)) {
+    if (/^text\//i.test(ct) && !/^attachment/i.test(cd) ) {
         this.state = 'body';
     }
     else if (/^multipart\//i.test(ct)) {
@@ -92,7 +93,6 @@ Body.prototype.parse_start = function (line) {
         this.state = 'multipart_preamble';
     }
     else {
-        var cd = this.header.get_decoded('content-disposition') || '';
         var match = cd.match(/name\s*=\s*["']?([^'";]+)["']?/i);
         if (!match) {
             match = ct.match(/name\s*=\s*["']?([^'";]+)["']?/i);
