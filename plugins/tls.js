@@ -2,7 +2,6 @@
 // just advertises it.
 
 var utils = require('./utils');
-var constants = require('./constants');
 
 // To create a key:
 // openssl req -x509 -nodes -days 2190 -newkey rsa:1024 \
@@ -15,7 +14,7 @@ exports.hook_capabilities = function (next, connection) {
         connection.notes.tls_enabled = 1;
     }
     /* Let the plugin chain continue. */
-    next(constants.cont);
+    next();
 };
 
 exports.hook_unrecognized_command = function (next, connection, params) {
@@ -35,8 +34,8 @@ exports.hook_unrecognized_command = function (next, connection, params) {
         connection.hello_host = undefined;
         connection.using_tls = true;
         /* Return OK since we responded to the client. */
-        return next(constants.ok);
+        return next(OK);
     }
     /* Let the plugin chain continue. */
-    next(constants.cont);
+    next();
 };
