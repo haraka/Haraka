@@ -143,7 +143,7 @@ function createServer(cb) {
             var cleartext = pipe(pair, socket.cryptoSocket);
 
             pair.on('secure', function() {
-                var verifyError = pair._ssl.verifyError();
+                var verifyError = pair.ssl.verifyError();
 
                 log.logdebug("TLS secured.");
                 if (verifyError) {
@@ -188,7 +188,7 @@ function connect(port, host, cb) {
         var cleartext = pipe(pair, socket.cryptoSocket);
 
         pair.on('secure', function() {
-            var verifyError = pair._ssl.verifyError();
+            var verifyError = pair.ssl.verifyError();
 
             log.logdebug("client TLS secured.");
             if (verifyError) {
