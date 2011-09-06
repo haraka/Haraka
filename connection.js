@@ -15,7 +15,7 @@ var outbound    = require('./outbound');
 var version  = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'))).version;
 
 var line_regexp = /^([^\n]*\n)/;
-var msg_regexp = /^(\d{3})\s+(.+)$/;
+var msg_regexp = /^([245]\d{2})\s+(.+)$/;
 
 var connection = exports;
 
