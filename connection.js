@@ -15,6 +15,7 @@ var outbound    = require('./outbound');
 var version  = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'))).version;
 
 var line_regexp = /^([^\n]*\n)/;
+var msg_regexp = /^(\d{3})\s+(.+)$/;
 
 var connection = exports;
 
@@ -248,6 +249,11 @@ Connection.prototype.init_transaction = function() {
 // SMTP Responses
 
 Connection.prototype.lookup_rdns_respond = function (retval, msg) {
+    var m;
+    if ((m = msg_regexp.exec(msg))) {
+        code = m[1];
+        msg  = m[2];
+    }
     switch(retval) {
         case constants.ok:
                 this.remote_host = msg || 'Unknown';
@@ -256,11 +262,11 @@ Connection.prototype.lookup_rdns_respond = function (retval, msg) {
         case constants.deny:
         case constants.denydisconnect:
         case constants.disconnect:
-                this.respond(500, msg || "rDNS Lookup Failed");
+                this.respond(code || 500, msg || "rDNS Lookup Failed");
                 this.disconnect();
                 break;
         case constants.denysoft:
-                this.respond(450, msg || "rDNS Temporary Failure");
+                this.respond(code || 450, msg || "rDNS Temporary Failure");
                 break;
         default:
                 var self = this;
@@ -285,32 +291,42 @@ Connection.prototype.rdns_response = function (err, domains) {
 }
 
 Connection.prototype.unrecognized_command_respond = function(retval, msg) {
+    var m;
+    if ((m = msg_regexp.exec(msg))) {
+        code = m[1];
+        msg  = m[2];
+    }
     switch(retval) {
         case constants.ok:
                 // response already sent, cool...
                 break;
         case constants.deny:
-                this.respond(500, msg || "Unrecognized command");
+                this.respond(code || 500, msg || "Unrecognized command");
                 break;
         case constants.denydisconnect:
-                this.respond(521, msg || "Unrecognized command");
+                this.respond(code || 521, msg || "Unrecognized command");
                 this.disconnect();
                 break;
         default:
-                this.respond(500, msg || "Unrecognized command");
+                this.respond(code || 500, msg || "Unrecognized command");
     }
 };
 
 Connection.prototype.connect_respond = function(retval, msg) {
+    var m;
+    if ((m = msg_regexp.exec(msg))) {
+        code = m[1];
+        msg  = m[2];
+    }
     switch (retval) {
         case constants.deny:
         case constants.denydisconnect:
         case constants.disconnect:
-                             this.respond(550, msg || "Your mail is not welcome here");
+                             this.respond(code || 550, msg || "Your mail is not welcome here");
                              this.disconnect();
                              break;
         case constants.denysoft:
-                             this.respond(450, msg || "Come back later");
+                             this.respond(code || 450, msg || "Come back later");
                              break;
         default:
                              var greeting = config.get('smtpgreeting', 'nolog', 'list');
@@ -328,18 +344,23 @@ Connection.prototype.connect_respond = function(retval, msg) {
 };
 
 Connection.prototype.helo_respond = function(retval, msg) {
+    var m;
+    if ((m = msg_regexp.exec(msg))) {
+        code = m[1];
+        msg  = m[2];
+    }
     switch (retval) {
         case constants.deny:
-                this.respond(550, msg || "HELO denied");
+                this.respond(code || 550, msg || "HELO denied");
                 this.greeting = null;
                 this.hello_host = null;
                 break;
         case constants.denydisconnect:
-                this.respond(550, msg || "HELO denied");
+                this.respond(code || 550, msg || "HELO denied");
                 this.disconnect();
                 break;
         case constants.denysoft:
-                this.respond(450, msg || "HELO denied");
+                this.respond(code || 450, msg || "HELO denied");
                 this.greeting = null;
                 this.hello_host = null;
                 break;
@@ -349,18 +370,23 @@ Connection.prototype.helo_respond = function(retval, msg) {
 };
 
 Connection.prototype.ehlo_respond = function(retval, msg) {
+    var m;
+    if ((m = msg_regexp.exec(msg))) {
+        code = m[1];
+        msg  = m[2];
+    }
     switch (retval) {
         case constants.deny:
-                this.respond(550, msg || "EHLO denied");
+                this.respond(code || 550, msg || "EHLO denied");
                 this.greeting = null;
                 this.hello_host = null;
                 break;
         case constants.denydisconnect:
-                this.respond(550, msg || "EHLO denied");
+                this.respond(code || 550, msg || "EHLO denied");
                 this.disconnect();
                 break;
         case constants.denysoft:
-                this.respond(450, msg || "EHLO denied");
+                this.respond(code || 450, msg || "EHLO denied");
                 this.greeting = null;
                 this.hello_host = null;
                 break;
@@ -391,13 +417,18 @@ Connection.prototype.quit_respond = function(retval, msg) {
 };
 
 Connection.prototype.vrfy_respond = function(retval, msg) {
+    var m;
+    if ((m = msg_regexp.exec(msg))) {
+        code = m[1];
+        msg  = m[2];
+    }
     switch (retval) {
         case constants.deny:
-                this.respond(554, msg || "Access Denied");
+                this.respond(code || 554, msg || "Access Denied");
                 this.reset_transaction();
                 break;
         case constants.ok:
-                this.respond(250, msg || "User OK");
+                this.respond(code || 250, msg || "User OK");
                 break;
         default:
                 this.respond(252, "Just try sending a mail and we'll see how it turns out...");
@@ -405,12 +436,17 @@ Connection.prototype.vrfy_respond = function(retval, msg) {
 };
 
 Connection.prototype.noop_respond = function(retval, msg) {
+    var m;
+    if ((m = msg_regexp.exec(msg))) {
+        code = m[1];
+        msg  = m[2];
+    }
     switch (retval) {
         case constants.deny:
-                this.respond(500, msg || "Stop wasting my time");
+                this.respond(code || 500, msg || "Stop wasting my time");
                 break;
         case constants.denydisconnect:
-                this.respond(500, msg || "Stop wasting my time");
+                this.respond(code || 500, msg || "Stop wasting my time");
                 this.disconnect();
                 break;
         default:
@@ -419,17 +455,22 @@ Connection.prototype.noop_respond = function(retval, msg) {
 };
 
 Connection.prototype.mail_respond = function(retval, msg) {
+    var m;
+    if ((m = msg_regexp.exec(msg))) {
+        code = m[1];
+        msg  = m[2];
+    }
     switch (retval) {
         case constants.deny:
-                this.respond(550, msg || "mail from denied");
+                this.respond(code || 550, msg || "mail from denied");
                 this.reset_transaction();
                 break;
         case constants.denydisconnect:
-                this.respond(550, msg || "mail from denied");
+                this.respond(code || 550, msg || "mail from denied");
                 this.disconnect();
                 break;
         case constants.denysoft:
-                this.respond(450, msg || "mail from denied");
+                this.respond(code || 450, msg || "mail from denied");
                 this.reset_transaction();
                 break;
         default:
@@ -438,17 +479,22 @@ Connection.prototype.mail_respond = function(retval, msg) {
 };
 
 Connection.prototype.rcpt_ok_respond = function (retval, msg) {
+    var m;
+    if ((m = msg_regexp.exec(msg))) {
+        code = m[1];
+        msg  = m[2];
+    }
     switch (retval) {
         case constants.deny:
-                this.respond(550, msg || "delivery denied");
+                this.respond(code || 550, msg || "delivery denied");
                 this.transaction.rcpt_to.pop();
                 break;
         case constants.denydisconnect:
-                this.respond(550, msg || "delivery denied");
+                this.respond(code || 550, msg || "delivery denied");
                 this.disconnect();
                 break;
         case constants.denysoft:
-                this.respond(450, msg || "delivery denied for now");
+                this.respond(code || 450, msg || "delivery denied for now");
                 this.transaction.rcpt_to.pop();
                 break;
         default:
@@ -457,6 +503,11 @@ Connection.prototype.rcpt_ok_respond = function (retval, msg) {
 }
 
 Connection.prototype.rcpt_respond = function(retval, msg) {
+    var m;
+    if ((m = msg_regexp.exec(msg))) {
+        code = m[1];
+        msg  = m[2];
+    }
     
     if (retval === constants.cont && this.relaying) {
         retval = constants.ok;
@@ -464,15 +515,15 @@ Connection.prototype.rcpt_respond = function(retval, msg) {
         
     switch (retval) {
         case constants.deny:
-                this.respond(550, msg || "delivery denied");
+                this.respond(code || 550, msg || "delivery denied");
                 this.transaction.rcpt_to.pop();
                 break;
         case constants.denydisconnect:
-                this.respond(550, msg || "delivery denied");
+                this.respond(code || 550, msg || "delivery denied");
                 this.disconnect();
                 break;
         case constants.denysoft:
-                this.respond(450, msg || "delivery denied for now");
+                this.respond(code || 450, msg || "delivery denied for now");
                 this.transaction.rcpt_to.pop();
                 break;
         case constants.ok:
