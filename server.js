@@ -1,6 +1,6 @@
 // smtp network server
 
-var net         = require('net');
+var net         = require('./tls_server');
 var logger      = require('./logger');
 var config      = require('./config');
 var conn        = require('./connection');
@@ -58,8 +58,11 @@ Server.createServer = function (params) {
     apply_defaults(config_data.main);
     
     plugins.load_plugins();
-        
-    var server = net.createServer();
+    
+    var server = net.createServer(function (client) {
+        client.cryptoSocket.setTimeout((config_data.main.inactivity_time || 300) * 1000);
+        conn.createConnection(client, server);
+    });
     server.notes = {};
     
     if (cluster && config_data.main.nodes) {
@@ -103,12 +106,6 @@ Server.createServer = function (params) {
             Server.lognotice('New uid: ' + process.getuid());
         }
     }
-
-    server.on('connection', function(client) {
-        client.setTimeout((config_data.main.inactivity_time || 300) * 1000);
-        conn.createConnection(client, server);
-    });
-
 };
 
 Server.init_master_respond = function (retval, msg) {

@@ -28,6 +28,7 @@ process.on('uncaughtException', function (err) {
     }
     if (!server.ready) {
         logger.logcrit('Server not ready yet. Stopping.');
+        logger.dump_logs();
         process.exit();
     }
 });

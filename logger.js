@@ -22,6 +22,13 @@ var loglevel = logger.LOGWARN;
 
 var deferred_logs = [];
 
+logger.dump_logs = function () {
+    while (deferred_logs.length > 0) {
+        var log_item = deferred_logs.shift();
+        console.log(log_item);
+    }
+}
+
 logger.log = function (data) {
     data = data.replace(/\n?$/, "");
     // todo - just buffer these up (defer) until plugins are loaded
