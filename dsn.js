@@ -68,88 +68,88 @@ var enum_status_codes = [
 ];
 
 function DSN(code, msg, def, subject, detail) {
-    if (code) {
-        if (!(/^[245]\d{2}/.exec(code))) {
-            msg = code;
-            this.code = def || 450;
-        } else {
-            this.code = code;
-        }
-    } else {
-        this.code = def || 450;
-    }
+    this.code = (/^[245]\d{2}/.exec(code)) ? code : null || def || 450;
     this.msg = msg;
     this.cls = parseInt(new String(this.code)[0]);
     this.sub = (enum_status_codes[subject]) ? subject : 0;
     this.det = (enum_status_codes[this.sub][detail]) ? detail : 0;
     this.default_msg = enum_status_codes[this.sub][this.det];
-    this.reply = [this.cls, this.sub, this.det].join('.') + ' ' + (this.msg || this.default_msg);
+    // Handle multi-line replies
+    if (typeof(this.msg) === 'object' && this.msg.constructor === Array) {
+        this.reply = new Array;
+        var m;
+        while (m = this.msg.shift()) {
+            this.reply.push([this.cls, this.sub, this.det].join('.') + ' ' + m);
+        }
+    } else {
+        this.reply = [this.cls, this.sub, this.det].join('.') + ' ' + (this.msg || this.default_msg);
+    }
 }
 
-exports.unspecified                 = function(code, msg) { return new DSN(code, msg, 450, 0, 0); }
+exports.unspecified                 = function(msg, code) { return new DSN(code, msg, 450, 0, 0); }
 
 // addr_*
-exports.addr_unspecified            = function(code, msg) { return new DSN(code, msg, 450, 1, 0); }
-exports.addr_bad_dest_mbox          = function(code, msg) { return new DSN(code, msg, 550, 1, 1); }
-exports.no_such_user                = function(code, msg) { return new DSN(code, msg || 'No such user', 550, 1, 1); }
-exports.addr_bad_dest_system        = function(code, msg) { return new DSN(code, msg, 550, 1, 2); }
-exports.addr_bad_dest_syntax        = function(code, msg) { return new DSN(code, msg, 550, 1, 3); }
-exports.addr_dest_ambigous          = function(code, msg) { return new DSN(code, msg, 450, 1, 4); }
-exports.addr_rcpt_ok                = function(code, msg) { return new DSN(code, msg, 250, 1, 5); }
-exports.addr_mbox_moved             = function(code, msg) { return new DSN(code, msg, 550, 1, 6); }
-exports.addr_bad_from_syntax        = function(code, msg) { return new DSN(code, msg, 550, 1, 7); }
-exports.addr_bad_from_system        = function(code, msg) { return new DSN(code, msg, 550, 1, 8); }
+exports.addr_unspecified            = function(msg, code) { return new DSN(code, msg, 450, 1, 0); }
+exports.addr_bad_dest_mbox          = function(msg, code) { return new DSN(code, msg, 550, 1, 1); }
+exports.no_such_user                = function(msg, code) { return new DSN(code, msg || 'No such user', 550, 1, 1); }
+exports.addr_bad_dest_system        = function(msg, code) { return new DSN(code, msg, 550, 1, 2); }
+exports.addr_bad_dest_syntax        = function(msg, code) { return new DSN(code, msg, 550, 1, 3); }
+exports.addr_dest_ambigous          = function(msg, code) { return new DSN(code, msg, 450, 1, 4); }
+exports.addr_rcpt_ok                = function(msg, code) { return new DSN(code, msg, 250, 1, 5); }
+exports.addr_mbox_moved             = function(msg, code) { return new DSN(code, msg, 550, 1, 6); }
+exports.addr_bad_from_syntax        = function(msg, code) { return new DSN(code, msg, 550, 1, 7); }
+exports.addr_bad_from_system        = function(msg, code) { return new DSN(code, msg, 550, 1, 8); }
 
 // mbox_*
-exports.mbox_unspecified            = function(code, msg) { return new DSN(code, msg, 450, 2, 0); }
-exports.mbox_disabled               = function(code, msg) { return new DSN(code, msg, 550, 2, 1); }
-exports.mbox_full                   = function(code, msg) { return new DSN(code, msg, 450, 2, 2); }
-exports.mbox_msg_too_long           = function(code, msg) { return new DSN(code, msg, 550, 2, 3); }
-exports.mbox_list_expansion_problem = function(code, msg) { return new DSN(code, msg, 450, 2, 4); }
+exports.mbox_unspecified            = function(msg, code) { return new DSN(code, msg, 450, 2, 0); }
+exports.mbox_disabled               = function(msg, code) { return new DSN(code, msg, 550, 2, 1); }
+exports.mbox_full                   = function(msg, code) { return new DSN(code, msg, 450, 2, 2); }
+exports.mbox_msg_too_long           = function(msg, code) { return new DSN(code, msg, 550, 2, 3); }
+exports.mbox_list_expansion_problem = function(msg, code) { return new DSN(code, msg, 450, 2, 4); }
 
 // sys_*
-exports.sys_unspecified             = function(code, msg) { return new DSN(code, msg, 450, 3, 0); }
-exports.sys_disk_full               = function(code, msg) { return new DSN(code, msg, 450, 3, 1); }
-exports.sys_not_accepting_mail      = function(code, msg) { return new DSN(code, msg, 450, 3, 2); }
-exports.sys_not_supported           = function(code, msg) { return new DSN(code, msg, 450, 3, 3); }
-exports.sys_msg_too_big             = function(code, msg) { return new DSN(code, msg, 550, 3, 4); }
+exports.sys_unspecified             = function(msg, code) { return new DSN(code, msg, 450, 3, 0); }
+exports.sys_disk_full               = function(msg, code) { return new DSN(code, msg, 450, 3, 1); }
+exports.sys_not_accepting_mail      = function(msg, code) { return new DSN(code, msg, 450, 3, 2); }
+exports.sys_not_supported           = function(msg, code) { return new DSN(code, msg, 450, 3, 3); }
+exports.sys_msg_too_big             = function(msg, code) { return new DSN(code, msg, 550, 3, 4); }
 
 // net_*
-exports.net_unspecified             = function(code, msg) { return new DSN(code, msg, 450, 4, 0); }
-exports.net_no_answer               = function(code, msg) { return new DSN(code, msg, 450, 4, 1); }
-exports.net_bad_connection          = function(code, msg) { return new DSN(code, msg, 450, 4, 2); }
-exports.net_directory_server_failed = function(code, msg) { return new DSN(code, msg, 450, 4, 3); }
-exports.temp_resolver_failed        = function(code, msg) { return new DSN(code, msg || 'Temporary address resolution failure', 450, 4, 3); }
-exports.net_unable_to_route         = function(code, msg) { return new DSN(code, msg, 550, 4, 4); }
-exports.net_system_congested        = function(code, msg) { return new DSN(code, msg, 450, 4, 5); }
-exports.net_routing_loop            = function(code, msg) { return new DSN(code, msg, 550, 4, 6); }
-exports.too_many_hops               = function(code, msg) { return new DSN(code, msg || 'Too many hops', 550, 4, 6); }
-exports.net_delivery_time_expired   = function(code, msg) { return new DSN(code, msg, 550, 4, 7); }
+exports.net_unspecified             = function(msg, code) { return new DSN(code, msg, 450, 4, 0); }
+exports.net_no_answer               = function(msg, code) { return new DSN(code, msg, 450, 4, 1); }
+exports.net_bad_connection          = function(msg, code) { return new DSN(code, msg, 450, 4, 2); }
+exports.net_directory_server_failed = function(msg, code) { return new DSN(code, msg, 450, 4, 3); }
+exports.temp_resolver_failed        = function(msg, code) { return new DSN(code, msg || 'Temporary address resolution failure', 450, 4, 3); }
+exports.net_unable_to_route         = function(msg, code) { return new DSN(code, msg, 550, 4, 4); }
+exports.net_system_congested        = function(msg, code) { return new DSN(code, msg, 450, 4, 5); }
+exports.net_routing_loop            = function(msg, code) { return new DSN(code, msg, 550, 4, 6); }
+exports.too_many_hops               = function(msg, code) { return new DSN(code, msg || 'Too many hops', 550, 4, 6); }
+exports.net_delivery_time_expired   = function(msg, code) { return new DSN(code, msg, 550, 4, 7); }
 
 // proto_*
-exports.proto_unspecified           = function(code, msg) { return new DSN(code, msg, 450, 5, 0); }
-exports.proto_invalid_command       = function(code, msg) { return new DSN(code, msg, 550, 5, 1); }
-exports.proto_syntax_error          = function(code, msg) { return new DSN(code, msg, 550, 5, 2); }
-exports.proto_rcpt_list_too_long    = function(code, msg) { return new DSN(code, msg, 450, 5, 3); }
-exports.too_many_rcpts              = function(code, msg) { return new DSN(code, msg || 'Too many recipients', 450, 5, 3); }
-exports.proto_invalid_cmd_args      = function(code, msg) { return new DSN(code, msg, 550, 5, 4); }
-exports.proto_wrong_version         = function(code, msg) { return new DSN(code, msg, 450, 5, 5); }
+exports.proto_unspecified           = function(msg, code) { return new DSN(code, msg, 450, 5, 0); }
+exports.proto_invalid_command       = function(msg, code) { return new DSN(code, msg, 550, 5, 1); }
+exports.proto_syntax_error          = function(msg, code) { return new DSN(code, msg, 550, 5, 2); }
+exports.proto_rcpt_list_too_long    = function(msg, code) { return new DSN(code, msg, 450, 5, 3); }
+exports.too_many_rcpts              = function(msg, code) { return new DSN(code, msg || 'Too many recipients', 450, 5, 3); }
+exports.proto_invalid_cmd_args      = function(msg, code) { return new DSN(code, msg, 550, 5, 4); }
+exports.proto_wrong_version         = function(msg, code) { return new DSN(code, msg, 450, 5, 5); }
 
 // media_*
-exports.media_unspecified           = function(code, msg) { return new DSN(code, msg, 450, 6, 0); }
-exports.media_unsupported           = function(code, msg) { return new DSN(code, msg, 550, 6, 1); }
-exports.media_conv_prohibited       = function(code, msg) { return new DSN(code, msg, 550, 6, 2); }
-exports.media_conv_unsupported      = function(code, msg) { return new DSN(code, msg, 450, 6, 3); }
-exports.media_conv_lossy            = function(code, msg) { return new DSN(code, msg, 450, 6, 4); }
+exports.media_unspecified           = function(msg, code) { return new DSN(code, msg, 450, 6, 0); }
+exports.media_unsupported           = function(msg, code) { return new DSN(code, msg, 550, 6, 1); }
+exports.media_conv_prohibited       = function(msg, code) { return new DSN(code, msg, 550, 6, 2); }
+exports.media_conv_unsupported      = function(msg, code) { return new DSN(code, msg, 450, 6, 3); }
+exports.media_conv_lossy            = function(msg, code) { return new DSN(code, msg, 450, 6, 4); }
 
 // sec_*
-exports.sec_unspecified             = function(code, msg) { return new DSN(code, msg, 450, 7, 0); }
-exports.sec_unauthorized            = function(code, msg) { return new DSN(code, msg, 550, 7, 1); }
-exports.bad_sender_ip               = function(code, msg) { return new DSN(code, msg || 'Bad sender IP', 550, 7, 1); }
-exports.relaying_denied             = function(code, msg) { return new DSN(code, msg || 'Relaying denied', 550, 7, 1); }
-exports.sec_list_dest_prohibited    = function(code, msg) { return new DSN(code, msg, 550, 7, 2); }
-exports.sec_conv_failed             = function(code, msg) { return new DSN(code, msg, 550, 7, 3); }
-exports.sec_feature_unsupported     = function(code, msg) { return new DSN(code, msg, 550, 7, 4); }
-exports.sec_crypto_failure          = function(code, msg) { return new DSN(code, msg, 550, 7, 5); }
-exports.sec_crypto_algo_unsupported = function(code, msg) { return new DSN(code, msg, 450, 7, 6); }
-exports.sec_msg_integrity_failure   = function(code, msg) { return new DSN(code, msg, 550, 7, 7); }
+exports.sec_unspecified             = function(msg, code) { return new DSN(code, msg, 450, 7, 0); }
+exports.sec_unauthorized            = function(msg, code) { return new DSN(code, msg, 550, 7, 1); }
+exports.bad_sender_ip               = function(msg, code) { return new DSN(code, msg || 'Bad sender IP', 550, 7, 1); }
+exports.relaying_denied             = function(msg, code) { return new DSN(code, msg || 'Relaying denied', 550, 7, 1); }
+exports.sec_list_dest_prohibited    = function(msg, code) { return new DSN(code, msg, 550, 7, 2); }
+exports.sec_conv_failed             = function(msg, code) { return new DSN(code, msg, 550, 7, 3); }
+exports.sec_feature_unsupported     = function(msg, code) { return new DSN(code, msg, 550, 7, 4); }
+exports.sec_crypto_failure          = function(msg, code) { return new DSN(code, msg, 550, 7, 5); }
+exports.sec_crypto_algo_unsupported = function(msg, code) { return new DSN(code, msg, 450, 7, 6); }
+exports.sec_msg_integrity_failure   = function(msg, code) { return new DSN(code, msg, 550, 7, 7); }
