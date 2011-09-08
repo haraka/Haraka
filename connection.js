@@ -176,6 +176,12 @@ Connection.prototype.respond = function(code, messages) {
     if (this.disconnected) {
         return;
     }
+    // Check to see if DSN object was passed in
+    if (typeof messages === 'object' && messages.constructor.name === 'DSN') {
+        // Override
+        code = messages.code;
+        messages = messages.reply;
+    }
     if (!(typeof messages === 'object' && messages.constructor === Array)) {
         // messages not an array, make it so:
         messages = [ '' + messages ];
@@ -452,12 +458,11 @@ Connection.prototype.rcpt_ok_respond = function (retval, msg) {
                 this.transaction.rcpt_to.pop();
                 break;
         default:
-                this.respond(250, msg || "recipient ok");
+                this.respond(250, msg || "recipient OK");
     }
 }
 
 Connection.prototype.rcpt_respond = function(retval, msg) {
-    
     if (retval === constants.cont && this.relaying) {
         retval = constants.ok;
     }
