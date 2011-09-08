@@ -377,9 +377,7 @@ Connection.prototype.ehlo_respond = function(retval, msg) {
                                 ];
                 
                 var databytes = config.get('databytes', 'nolog');
-                if (databytes) {
-                    response.push("SIZE " + databytes);
-                }
+                response.push("SIZE " + databytes || 0);
                 
                 this.capabilities = response;
                 
