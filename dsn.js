@@ -53,7 +53,7 @@ var enum_status_codes = [
         "Conversion required and prohibited",                       // X.6.2
         "Conversion required but not supported",                    // X.6.3
         "Conversion with loss performed",                           // X.6.4
-        "Conversion Failed",                                        // X.6.5
+        "Conversion failed",                                        // X.6.5
     ],
     [   // X.7.XXX Security or Policy Status        (sec_*)
         "Other or undefined security status",                       // X.7.0
@@ -113,6 +113,7 @@ exports.sys_disk_full               = function(msg, code) { return new DSN(code,
 exports.sys_not_accepting_mail      = function(msg, code) { return new DSN(code, msg, 450, 3, 2); }
 exports.sys_not_supported           = function(msg, code) { return new DSN(code, msg, 450, 3, 3); }
 exports.sys_msg_too_big             = function(msg, code) { return new DSN(code, msg, 550, 3, 4); }
+exports.sys_incorrectly_configured  = function(msg, code) { return new DSN(code, msg, 450, 3, 5); }
 
 // net_*
 exports.net_unspecified             = function(msg, code) { return new DSN(code, msg, 450, 4, 0); }
@@ -130,8 +131,7 @@ exports.net_delivery_time_expired   = function(msg, code) { return new DSN(code,
 exports.proto_unspecified           = function(msg, code) { return new DSN(code, msg, 450, 5, 0); }
 exports.proto_invalid_command       = function(msg, code) { return new DSN(code, msg, 550, 5, 1); }
 exports.proto_syntax_error          = function(msg, code) { return new DSN(code, msg, 550, 5, 2); }
-exports.proto_rcpt_list_too_long    = function(msg, code) { return new DSN(code, msg, 450, 5, 3); }
-exports.too_many_rcpts              = function(msg, code) { return new DSN(code, msg || 'Too many recipients', 450, 5, 3); }
+exports.proto_too_many_rcpts        = function(msg, code) { return new DSN(code, msg, 450, 5, 3); }
 exports.proto_invalid_cmd_args      = function(msg, code) { return new DSN(code, msg, 550, 5, 4); }
 exports.proto_wrong_version         = function(msg, code) { return new DSN(code, msg, 450, 5, 5); }
 
@@ -141,13 +141,14 @@ exports.media_unsupported           = function(msg, code) { return new DSN(code,
 exports.media_conv_prohibited       = function(msg, code) { return new DSN(code, msg, 550, 6, 2); }
 exports.media_conv_unsupported      = function(msg, code) { return new DSN(code, msg, 450, 6, 3); }
 exports.media_conv_lossy            = function(msg, code) { return new DSN(code, msg, 450, 6, 4); }
+exports.media_conv_failed           = function(msg, code) { return new DSN(code, msg, 450, 6, 5); }
 
 // sec_*
 exports.sec_unspecified             = function(msg, code) { return new DSN(code, msg, 450, 7, 0); }
 exports.sec_unauthorized            = function(msg, code) { return new DSN(code, msg, 550, 7, 1); }
 exports.bad_sender_ip               = function(msg, code) { return new DSN(code, msg || 'Bad sender IP', 550, 7, 1); }
 exports.relaying_denied             = function(msg, code) { return new DSN(code, msg || 'Relaying denied', 550, 7, 1); }
-exports.sec_list_dest_prohibited    = function(msg, code) { return new DSN(code, msg, 550, 7, 2); }
+exports.sec_list_expn_prohibited    = function(msg, code) { return new DSN(code, msg, 550, 7, 2); }
 exports.sec_conv_failed             = function(msg, code) { return new DSN(code, msg, 550, 7, 3); }
 exports.sec_feature_unsupported     = function(msg, code) { return new DSN(code, msg, 550, 7, 4); }
 exports.sec_crypto_failure          = function(msg, code) { return new DSN(code, msg, 550, 7, 5); }
