@@ -27,5 +27,11 @@ Configuration
     
     The port to connect to.
 
+  * timeout=SECONDS
+    
+    The amount of seconds to let a backend connection live idle in the
+    proxy pool.  This should always be less than the global plugin timeout,
+    which should in turn be less than the connection timeout.
+
   Both values are required.
   
