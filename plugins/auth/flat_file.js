@@ -3,7 +3,10 @@
 var crypto = require('crypto');
 
 exports.hook_capabilities = function (next, connection) {
-    connection.capabilities.push('AUTH LOGIN CRAM-MD5');
+    var config = this.config.get('auth_flat_file.ini', 'ini'),
+	methods = config.methods['allowed'].split(',');
+    if(methods.length > 0)
+	connection.capabilities.push('AUTH ' + methods.join(' '));
     next();
 }
 
