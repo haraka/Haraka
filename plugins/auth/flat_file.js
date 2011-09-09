@@ -8,7 +8,6 @@ exports.hook_capabilities = function (next, connection) {
 }
 
 exports.hook_unrecognized_command = function (next, connection, params) {
-    this.loginfo(params);
     if (connection.notes.auth_flat_file_ticket) {
         var credentials = unbase64(params[0]).split(' ');
         return this.check_user(next, connection, credentials, 'MD5');
@@ -23,7 +22,7 @@ exports.hook_unrecognized_command = function (next, connection, params) {
 		connection.notes.auth_login_flat_file_login,
 		pass
 	    ];
-        return this.check_user_plain(next, connection, [connection.notes.auth_login_flat_file_login, pass]);
+        return this.check_user(next, connection, [connection.notes.auth_login_flat_file_login, pass], 'PLAIN');
     }
     else if (params[0] === 'AUTH' && params[1] === 'CRAM-MD5') {
         var ticket = '<' + hexi(Math.floor(Math.random() * 1000000)) + '.' +
@@ -56,10 +55,9 @@ exports.check_user = function (next, connection, credentials, method) {
     }
     
     var clear_pw = config.users[credentials[0]],
-	hmac_pw;
-    if(method === 'PLAIN') {
 	hmac_pw = clear_pw;
-    } else if(method === "MD5") {
+
+    if(method === "MD5") {
 	var hmac = crypto.createHmac('md5', clear_pw);
 	hmac.update(connection.notes.auth_flat_file_ticket);
 	hmac_pw = hmac.digest('hex');
