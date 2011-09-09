@@ -113,10 +113,11 @@ plugins.load_plugin = function(name) {
     
     var plugin = new Plugin(name);
     var fp = plugin.full_paths,
-        rf, last_err;
+        rf, last_err, plugin_file;
     for (var i=0, j=fp.length; i<j; i++) {
         try {
             rf = fs.readFileSync(fp[i]);
+            plugin_file = fp[i];
             break;
         }
         catch (err) {
@@ -143,7 +144,13 @@ plugins.load_plugin = function(name) {
         Buffer: Buffer
     };
     try {
-        vm.runInNewContext(code, sandbox, name);
+        if (/\.mod$/.test(name)) {
+            var pluginModule = require(plugin_file);
+            for (var k in pluginModule) if (pluginModule.hasOwnProperty(k)) plugin[k] = pluginModule[k];
+        }
+        else {
+            vm.runInNewContext(code, sandbox, name);
+        }
     }
     catch (err) {
         if (config.get('smtp.ini', 'nolog', 'ini').main.ignore_bad_plugins) {
