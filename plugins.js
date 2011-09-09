@@ -140,6 +140,7 @@ plugins.load_plugin = function(name) {
         setInterval: setInterval,
         clearInterval: clearInterval,
         process: process,
+        console: console
         Buffer: Buffer
     };
     try {
