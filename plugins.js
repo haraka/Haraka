@@ -103,11 +103,6 @@ plugins.load_plugins = function () {
     plugins.plugin_list = plugin_list.map(plugins.load_plugin);
 };
 
-var constants_str = "";
-for (var con in constants) {
-    constants_str += "var " + con.toUpperCase() + " = " + constants[con] + "; ";
-}
-
 plugins.load_plugin = function(name) {
     logger.loginfo("Loading plugin: " + name);
     
@@ -131,7 +126,7 @@ plugins.load_plugin = function(name) {
         }
         throw "Loading plugin " + name + " failed: " + last_err;
     }
-    var code = constants_str + rf;
+    var code = rf;
     var sandbox = { 
         require: require,
         exports: plugin,
@@ -142,6 +137,7 @@ plugins.load_plugin = function(name) {
         process: process,
         Buffer: Buffer
     };
+    constants.import(sandbox);
     try {
         vm.runInNewContext(code, sandbox, name);
     }
