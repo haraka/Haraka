@@ -49,6 +49,7 @@ exports.check_user = function (next, connection, credentials) {
     if (hmac_pw === credentials[1]) {
         connection.relaying = 1;
         connection.respond(235, "Authentication successful");
+        connection.authheader = "(authenticated bits=0)\n";
     }
     else {
         connection.respond(535, "Authentication failed");
