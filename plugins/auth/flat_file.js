@@ -9,9 +9,9 @@ var LOGIN_STRING2 = 'UGFzc3dvcmQ6'; //Password: base64 coded
 
 exports.hook_capabilities = function (next, connection) {
     var config = this.config.get('auth_flat_file.ini', 'ini');
-	var methods = (config.core && config.core.methods ) ? config.core.methods.split(',') : null;
+    var methods = (config.core && config.core.methods ) ? config.core.methods.split(',') : null;
     if(methods && methods.length > 0) {
-	    connection.capabilities.push('AUTH ' + methods.join(' '));
+        connection.capabilities.push('AUTH ' + methods.join(' '));
         connection.notes.allowed_auth_methods = methods;
     }
     next();
@@ -20,9 +20,11 @@ exports.hook_capabilities = function (next, connection) {
 exports.hook_unrecognized_command = function (next, connection, params) {
     if(params[0] === AUTH_COMMAND && params[1]) {
         return this.select_auth_method(next, connection, params[1]);
-    } else if (connection.notes.auth_method === AUTH_METHOD_CRAM_MD5 && connection.notes.auth_flat_file_ticket) {
+    }
+    else if (connection.notes.auth_method === AUTH_METHOD_CRAM_MD5 && connection.notes.auth_flat_file_ticket) {
         return this.auth_cram_md5 (next, connection, params);
-    } else if (connection.notes.auth_method === AUTH_METHOD_LOGIN) {
+    }
+    else if (connection.notes.auth_method === AUTH_METHOD_LOGIN) {
         return this.auth_login(next, connection, params);
     }
     return next();
@@ -43,12 +45,12 @@ exports.check_user = function (next, connection, credentials, method) {
     }
     
     var clear_pw = config.users[credentials[0]];
-	var hmac_pw = clear_pw;
+    var hmac_pw = clear_pw;
 
     if(method === AUTH_METHOD_CRAM_MD5) {
-	    var hmac = crypto.createHmac('md5', clear_pw);
-	    hmac.update(connection.notes.auth_flat_file_ticket);
-	    hmac_pw = hmac.digest('hex');
+        var hmac = crypto.createHmac('md5', clear_pw);
+        hmac.update(connection.notes.auth_flat_file_ticket);
+        hmac_pw = hmac.digest('hex');
     }
     
     this.loginfo("comparing " + hmac_pw + ' to ' + credentials[1]);
@@ -70,7 +72,8 @@ exports.select_auth_method = function(next, connection, method) {
         connection.notes.auth_method = method;
         if(method === AUTH_METHOD_LOGIN) {
             return this.auth_login(next, connection);
-        } else if( method === AUTH_METHOD_CRAM_MD5) {
+        }
+        else if( method === AUTH_METHOD_CRAM_MD5) {
             return this.auth_cram_md5(next, connection);
         }
     }
@@ -83,7 +86,8 @@ exports.auth_login = function(next, connection, params) {
         connection.respond(334, LOGIN_STRING2);
         connection.notes.auth_login_userlogin = login;
         return next(OK);
-    }else if (connection.notes.auth_login_userlogin) {
+    }
+    else if (connection.notes.auth_login_userlogin) {
         var credentials = [
 		        connection.notes.auth_login_userlogin,
 		        unbase64(params[0])
