@@ -563,18 +563,25 @@ Connection.prototype.cmd_mail = function(line) {
         }
         return this.respond(501, "Command parsing failed");
     }
-    
-    this.init_transaction();
-    this.transaction.mail_from = from;
-    
+   
     // Get rest of key=value pairs
     var params = {};
     results.forEach(function(param) {
-        var kv = param.match(/^(.*?)=(.*)$/);
+        var kv = param.match(/^([^=]+)(?:=(.+))?$/);
         if (kv)
-            params[kv[0]] = kv[1];
+            params[kv[1]] = kv[2] || null;
     });
+
+    // Handle SIZE extension
+    if (params && params['SIZE'] && params['SIZE'] > 0) {
+        var databytes = config.get('databytes', 'nolog');
+        if (databytes && databytes > 0 && params['SIZE'] > databytes) {
+            return this.respond(550, 'Message too big!');
+        }
+    } 
     
+    this.init_transaction();
+    this.transaction.mail_from = from
     plugins.run_hooks('mail', this, [from, params]);
 };
 
@@ -604,9 +611,9 @@ Connection.prototype.cmd_rcpt = function(line) {
     // Get rest of key=value pairs
     var params = {};
     results.forEach(function(param) {
-        var kv = param.match(/^(.*?)=(.*)$/);
+        var kv = param.match(/^([^=]+)(?:=(.+))?$/);
         if (kv)
-            params[kv[0]] = kv[1];
+            params[kv[1]] = kv[2] || null;
     });
     
     plugins.run_hooks('rcpt', this, [recip, params]);
