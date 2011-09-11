@@ -75,6 +75,7 @@ function Connection(client, server) {
     this.deny_includes_uuid = config.get('deny_includes_uuid', 'nolog') ? true : false;
     this.relaying = false;
     this.disconnected = false;
+    this.esmtp = false;
     this.hooks_to_run = [];
     
     setupClient(this);
@@ -382,6 +383,7 @@ Connection.prototype.ehlo_respond = function(retval, msg) {
                 this.capabilities = response;
                 
                 plugins.run_hooks('capabilities', this);
+                this.esmtp = true;
     }
 };
 
@@ -569,8 +571,13 @@ Connection.prototype.cmd_mail = function(line) {
     results.forEach(function(param) {
         var kv = param.match(/^([^=]+)(?:=(.+))?$/);
         if (kv)
-            params[kv[1]] = kv[2] || null;
+            params[kv[1].toUpperCase()] = kv[2] || null;
     });
+
+    // Parameters are only valid if EHLO was sent
+    if (!this.esmtp && Object.keys(params).length > 0) {
+        return this.respond(555, 'Invalid command parameters');
+    }
 
     // Handle SIZE extension
     if (params && params['SIZE'] && params['SIZE'] > 0) {
@@ -606,16 +613,20 @@ Connection.prototype.cmd_rcpt = function(line) {
         return this.respond(501, "Command parsing failed");
     }
     
-    this.transaction.rcpt_to.push(recip);
-    
     // Get rest of key=value pairs
     var params = {};
     results.forEach(function(param) {
         var kv = param.match(/^([^=]+)(?:=(.+))?$/);
         if (kv)
-            params[kv[1]] = kv[2] || null;
+            params[kv[1].toUpperCase()] = kv[2] || null;
     });
-    
+
+    // Parameters are only valid if EHLO was sent
+    if (!this.esmtp && Object.keys(params).length > 0) {
+        return this.respond(555, 'Invalid command parameters');
+    }
+
+    this.transaction.rcpt_to.push(recip);
     plugins.run_hooks('rcpt', this, [recip, params]);
 };
 
