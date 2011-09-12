@@ -651,8 +651,8 @@ Connection.prototype.received_line = function() {
     var smtp = this.greeting === 'EHLO' ? 'ESMTP' : 'SMTP';
     // TODO - populate authheader and sslheader - see qpsmtpd for how to.
     return  "from " + this.remote_info
-           +" (HELO " + this.hello_host + ") ("+this.remote_ip
-           +")\n  " + (this.authheader || '') + "  by " + config.get('me', 'nolog')
+           +" (" + this.hello_host + " ["+this.remote_ip
+           +"])\n  " + (this.authheader || '') + "  by " + config.get('me', 'nolog')
            +" (Haraka/" + version
            +") with " + (this.sslheader || '') + smtp + "; "
            + _date_to_str(new Date());
