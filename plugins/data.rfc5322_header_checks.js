@@ -1,27 +1,27 @@
 // Enforce RFC 5322 Section 3.6 
-exports.hook_data_post = function (next, connection) {
-    var called_next = 0;
+var required_headers = ['Date', 'From'];
+var singular_headers =  ['Date', 'From', 'Sender', 'Reply-To', 'To', 'Cc',
+                         'Bcc', 'Message-Id', 'In-Reply-To', 'References',
+                         'Subject'];
 
+exports.hook_data_post = function (next, connection) {
+    var header = connection.transaction.header;
     // Headers that MUST be present
-    ['Date', 'From'].forEach(function (h) {
-        if (connection.transaction &&
-            connection.transaction.header.get_all(h).length === 0) {
-            called_next++;
-            return next(DENY, "Required header '" + h + "' missing");
+    for (var i=0,l=required_headers.length; i < l; i++) {
+        if (header.get_all(required_headers[i]).length === 0)
+        {
+            return next(DENY, "Required header '" + required_headers[i] + 
+                                "' missing");
         }
-    });
+    }
 
     // Headers that MUST be unique if present
-    if (!called_next)
-        ['Date', 'From', 'Sender', 'Reply-To', 'To', 'Cc', 'Bcc', 'Message-Id',
-        'In-Reply-To', 'References', 'Subject'].forEach(function (h) {
-            if (connection.transaction && 
-                 connection.transaction.header.get_all(h).length > 1) {
-                 called_next++;
-                 return next(DENY, "Message contains non-unique '" + h + "' header");
-            }
-        });
+    for (var i=0,l=singular_headers.length; i < l; i++) {
+        if (header.get_all(singular_headers[i]).length > 1) {
+             return next(DENY, "Message contains non-unique '" +
+                                singular_headers[i] + "' header");
+        }
+    }
 
-    if (!called_next) 
-        return next();
+    return next();
 }
