@@ -29,20 +29,26 @@ exports.hook_data = function (next, connection) {
 
 exports.hook_data_post = function (next, connection) {
     var plugin = this;
+    var transaction = connection.transaction;
+
     // Load config
     var config = this.config.get('clamdscan.ini', 'ini');
     for (var key in defaults) {
         config.main[key] = config.main[key] || defaults[key];
     }
+
     // Do we need to run?
     if (config.main['only_with_attachments'] &&
-        !connection.transaction.notes.clamdscan_found_attachment) {
+        !transaction.notes.clamdscan_found_attachment) 
+    {
         plugin.logdebug('Skipping message as no attachments found');
         return next();
     }
+
     var virus_regexp = /^stream: (\S+) FOUND/;
     var virus_name;
-    var clamdscan = spawn(config.main['clamdscan_bin'], ['-i', '--no-summary', '-']);
+    var clamdscan = spawn(config.main['clamdscan_bin'], 
+                          ['-i', '--no-summary', '-']);
     plugin.logdebug('Spawned child pid: ' + clamdscan.pid);
 
     // Create a timeout
@@ -53,13 +59,14 @@ exports.hook_data_post = function (next, connection) {
 
     var data_marker = 0;
     var send_data = function() {
-        if (data_marker < connection.transaction.data_lines.length) {
-            var line = connection.transaction.data_lines[data_marker];
+        if (data_marker < transaction.data_lines.length) {
+            var line = transaction.data_lines[data_marker];
             plugin.logprotocol('wrote: ' + line);
             var wrote_all = clamdscan.stdin.write(line);
             data_marker++;
-            if (wrote_all) 
+            if (wrote_all) { 
                 send_data();
+            }
         }
         else {
             clamdscan.stdin.end();
@@ -79,8 +86,9 @@ exports.hook_data_post = function (next, connection) {
     clamdscan.stdout.on('data', function(data) {
         plugin.logprotocol('received: ' + data);
         var m = virus_regexp.exec(data);
-        if (m && m[1])
+        if (m && m[1]) {
             virus_name = m[1];
+        }
     });
 
     clamdscan.stderr.on('data', function(data) {
@@ -98,11 +106,12 @@ exports.hook_data_post = function (next, connection) {
         if (code) {
             plugin.logdebug('Child exited with code: ' + code);
             switch (code) {
-                case 1:         // Virus found
-                    return next(DENY, 'Message is infected with ' + (virus_name || 'UNKNOWN'));
+                case 1:   // Virus found
+                    return next(DENY, 'Message is infected with ' 
+                                    + (virus_name || 'UNKNOWN'));
                     break;
-                case 2:         // Error
-                case 127:       // No such file or directory
+                case 2:   // Error
+                case 127: // No such file or directory
                     return next(DENYSOFT, 'Error running virus scanner');
                     break;
                 default:
@@ -111,8 +120,9 @@ exports.hook_data_post = function (next, connection) {
         }
         if (signal) {
             plugin.logdebug('Child terminated by signal: ' + signal);
-            if (signal === 'SIGTERM')
+            if (signal === 'SIGTERM') {
                 return next(DENYSOFT, 'Virus scanner timed out');
+            }
         }
         return next();
     });
