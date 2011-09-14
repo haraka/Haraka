@@ -11,7 +11,7 @@ If an error occurs (e.g. clamd not running or a timeout occurs) then the
 message will be rejected with a temporary failure.  
 
 As this plug-in forks a child process for each message it is not suitable
-for high message volumes.
+for high message volumes, use the clamd plug-in for this instead.
 
 Configuration
 -------------
