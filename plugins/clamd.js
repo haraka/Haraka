@@ -107,7 +107,7 @@ exports.hook_data_post = function (next, connection) {
     });
     socket.on('connect', function () {
         var hp = socket.address();
-        plugin.loginfo('connected to host: ' + hp.address + (hp.port ? ':'+hp.port : ''));
+        plugin.loginfo('connected to host: ' + hp.address + ':' + hp.port);
         socket.write("zINSTREAM\0", function () {
             send_data();
         });
