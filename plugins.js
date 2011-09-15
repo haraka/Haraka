@@ -223,7 +223,7 @@ plugins.run_next_hook = function(hook, object, params) {
                             object[respond_method](retval, msg);
                     }
                 };
-                plugins.run_hooks('deny', object, [retval, msg, item[0].name, item[1], params]);
+                plugins.run_hooks('deny', object, [retval, msg, item[0].name, item[1], params, hook]);
             }
             else {
                 object.hooks_to_run = [];
