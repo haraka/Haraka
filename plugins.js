@@ -215,7 +215,9 @@ plugins.run_next_hook = function(hook, object, params) {
                     switch(deny_retval) {
                         case constants.ok:
                             // Override rejection
-                            object[respond_method]();
+                            object.loginfo('deny(soft?) overriden by deny hook' + 
+                                           (deny_msg ? ': ' + deny_msg : ''));
+                            object[respond_method](constants.cont, deny_msg);
                             break;
                         default:
                             object[respond_method](retval, msg);
