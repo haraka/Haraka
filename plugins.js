@@ -207,11 +207,19 @@ plugins.run_next_hook = function(hook, object, params) {
         {
             var respond_method = hook + "_respond";
             if (item && utils.in_array(retval, [constants.deny, constants.denysoft, constants.denydisconnect])) {
-                if (hook != 'log')
+                if (hook != 'log') {
                     object.loginfo("plugin returned deny(soft?): ", msg);
-                object.deny_respond = function () {
+                }
+                object.deny_respond = function (deny_retval, deny_msg) {
                     object.hooks_to_run = [];
-                    object[respond_method](retval, msg);
+                    switch(deny_retval) {
+                        case constants.ok:
+                            // Override rejection
+                            object[respond_method]();
+                            break;
+                        default:
+                            object[respond_method](retval, msg);
+                    }
                 };
                 plugins.run_hooks('deny', object, [retval, msg, item[0].name, item[1], params]);
             }
