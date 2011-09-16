@@ -5,7 +5,7 @@ var done_syslog_init = false;
 
 exports.hook_log = function (next, logger, log) {
     var options  = 0;
-    var ini      = this.config.get('log.syslog.ini', 'ini');
+    var ini      = this.config.get('log.syslog.ini', 'nolog', 'ini');
     var name     = ini.general && (ini.general['name']       || 'haraka');
     var facility = ini.general && (ini.general['facility']   || 'MAIL');
     var pid      = ini.general && (ini.general['log_pid']    || 1);

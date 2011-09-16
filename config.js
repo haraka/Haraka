@@ -7,12 +7,13 @@ var config = exports;
 var config_path = process.env.HARAKA ? path.join(process.env.HARAKA, 'config') : path.join(__dirname, './config');
 
 config.get = function(name, type) {
+    var nolog = false;
+
     if (type !== 'nolog') {
-        if (!(name.match(/^log\./))) {
-            logger.logdebug("Getting config: " + name);
-        }
+        logger.logdebug("Getting config: " + name);
     }
     else {
+        nolog = true;
         type = arguments[2];
     }
 
@@ -34,7 +35,7 @@ config.get = function(name, type) {
                 return null;
             }
         }
-        else if (!(name.match(/^log\./))) {
+        else if (!(nolog)) {
             logger.logerror(err.name + ': ' + err.message);
         }
     }
