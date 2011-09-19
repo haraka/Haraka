@@ -81,6 +81,7 @@ exports.smtp_forward = function (next, connection) {
                         socket.send_command('RCPT', 'TO:' + recipients.shift());
                         if (recipients.length) {
                             // don't move to next state if we have more recipients
+                            command = 'mail';
                             return;
                         }
                         break;
@@ -111,7 +112,7 @@ exports.smtp_forward = function (next, connection) {
     });
     socket.on('drain', function() {
         self.logdebug("Drained");
-        if (command === 'dot') {
+        if (command === 'data') {
             send_data();
         }
     });
