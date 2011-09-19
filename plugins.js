@@ -169,7 +169,12 @@ plugins.run_hooks = function (hook, object, params) {
     if (regular_hooks[hook] && object.hooks_to_run.length) {
         throw new Error("We are already running hooks! Fatal error!");
     }
-    
+
+    if (hook === 'deny') {
+        // Save the hooks_to_run list so that we can run any remaining 
+        // plugins on the previous hook once this hook is complete.
+        object.saved_hooks_to_run = object.hooks_to_run;
+    }
     object.hooks_to_run = [];
     
     for (i = 0; i < plugins.plugin_list.length; i++) {
@@ -211,15 +216,24 @@ plugins.run_next_hook = function(hook, object, params) {
                     object.loginfo("plugin returned deny(soft?): ", msg);
                 }
                 object.deny_respond = function (deny_retval, deny_msg) {
-                    object.hooks_to_run = [];
                     switch(deny_retval) {
                         case constants.ok:
                             // Override rejection
                             object.loginfo('deny(soft?) overriden by deny hook' + 
                                            (deny_msg ? ': ' + deny_msg : ''));
-                            object[respond_method](constants.cont, deny_msg);
+                            // Restore hooks_to_run with saved copy so that
+                            // any other plugins on this hook can also run.
+                            if (object.saved_hooks_to_run.length > 0) {
+                                object.hooks_to_run = object.saved_hooks_to_run;
+                                plugins.run_next_hook(hook, object, params);
+                            }
+                            else {
+                                object[respond_method](constants.cont, deny_msg);
+                            }
                             break;
                         default:
+                            object.saved_hooks_to_run = [];
+                            object.hooks_to_run = [];
                             object[respond_method](retval, msg);
                     }
                 };
