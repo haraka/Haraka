@@ -1,9 +1,7 @@
 // send logs to syslog
 var Syslog = require('node-syslog');
 
-var done_syslog_init = false;
-
-exports.hook_log = function (next, logger, log) {
+exports.register = function() {
     var options  = 0;
     var ini      = this.config.get('log.syslog.ini', 'nolog', 'ini');
     var name     = ini.general && (ini.general['name']       || 'haraka');
@@ -14,100 +12,81 @@ exports.hook_log = function (next, logger, log) {
     var ndelay   = ini.general && (ini.general['log_ndelay'] || 0);
     var nowait   = ini.general && (ini.general['log_nowait'] || 0);
 
-    // We do not want to call Syslog.init(), and thus openlog(), every time
-    // we log.  This should set our syslog connection up once, and then
-    // reuse that connection.
-    if (!(done_syslog_init)) {
-        if (pid)
-          options |= Syslog.LOG_PID;
+    if (pid)
+      options |= Syslog.LOG_PID;
 
-        if (odelay)
-          options |= Syslog.LOG_ODELAY;
+    if (odelay)
+      options |= Syslog.LOG_ODELAY;
 
-        if (cons)
-          options |= Syslog.LOG_CONS;
+    if (cons)
+      options |= Syslog.LOG_CONS;
 
-        if (ndelay)
-          options |= Syslog.LOG_NDELAY;
+    if (ndelay)
+      options |= Syslog.LOG_NDELAY;
 
-        if (nowait)
-          options |= Syslog.LOG_NOWAIT;
+    if (nowait)
+      options |= Syslog.LOG_NOWAIT;
 
-        switch(facility.toUpperCase()) {
-            case 'MAIL':
-                Syslog.init(name, options, Syslog.LOG_MAIL);
-                done_syslog_init = true;
-                break;
-            case 'KERN':
-                Syslog.init(name, options, Syslog.LOG_KERN);
-                done_syslog_init = true;
-                break;
-            case 'USER':
-                Syslog.init(name, options, Syslog.LOG_USER);
-                done_syslog_init = true;
-                break;
-            case 'DAEMON':
-                Syslog.init(name, options, Syslog.LOG_DAEMON);
-                done_syslog_init = true;
-                break;
-            case 'AUTH':
-                Syslog.init(name, options, Syslog.LOG_AUTH);
-                done_syslog_init = true;
-                break;
-            case 'SYSLOG':
-                Syslog.init(name, options, Syslog.LOG_SYSLOG);
-                done_syslog_init = true;
-                break;
-            case 'LPR':
-                Syslog.init(name, options, Syslog.LOG_LPR);
-                done_syslog_init = true;
-                break;
-            case 'NEWS':
-                Syslog.init(name, options, Syslog.LOG_NEWS);
-                done_syslog_init = true;
-                break;
-            case 'UUCP':
-                Syslog.init(name, options, Syslog.LOG_UUCP);
-                done_syslog_init = true;
-                break;
-            case 'LOCAL0':
-                Syslog.init(name, options, Syslog.LOG_LOCAL0);
-                done_syslog_init = true;
-                break;
-            case 'LOCAL1':
-                Syslog.init(name, options, Syslog.LOG_LOCAL1);
-                done_syslog_init = true;
-                break;
-            case 'LOCAL2':
-                Syslog.init(name, options, Syslog.LOG_LOCAL2);
-                done_syslog_init = true;
-                break;
-            case 'LOCAL3':
-                Syslog.init(name, options, Syslog.LOG_LOCAL3);
-                done_syslog_init = true;
-                break;
-            case 'LOCAL4':
-                Syslog.init(name, options, Syslog.LOG_LOCAL4);
-                done_syslog_init = true;
-                break;
-            case 'LOCAL5':
-                Syslog.init(name, options, Syslog.LOG_LOCAL5);
-                done_syslog_init = true;
-                break;
-            case 'LOCAL6':
-                Syslog.init(name, options, Syslog.LOG_LOCAL6);
-                done_syslog_init = true;
-                break;
-            case 'LOCAL7':
-                Syslog.init(name, options, Syslog.LOG_LOCAL7);
-                done_syslog_init = true;
-                break;
-            default:
-                Syslog.init(name, options, Syslog.LOG_MAIL);
-                done_syslog_init = true;
-        }
+    switch(facility.toUpperCase()) {
+        case 'MAIL':
+            Syslog.init(name, options, Syslog.LOG_MAIL);
+            break;
+        case 'KERN':
+            Syslog.init(name, options, Syslog.LOG_KERN);
+            break;
+        case 'USER':
+            Syslog.init(name, options, Syslog.LOG_USER);
+            break;
+        case 'DAEMON':
+            Syslog.init(name, options, Syslog.LOG_DAEMON);
+            break;
+        case 'AUTH':
+            Syslog.init(name, options, Syslog.LOG_AUTH);
+            break;
+        case 'SYSLOG':
+            Syslog.init(name, options, Syslog.LOG_SYSLOG);
+            break;
+        case 'LPR':
+            Syslog.init(name, options, Syslog.LOG_LPR);
+            break;
+        case 'NEWS':
+            Syslog.init(name, options, Syslog.LOG_NEWS);
+            break;
+        case 'UUCP':
+            Syslog.init(name, options, Syslog.LOG_UUCP);
+            break;
+        case 'LOCAL0':
+            Syslog.init(name, options, Syslog.LOG_LOCAL0);
+            break;
+        case 'LOCAL1':
+            Syslog.init(name, options, Syslog.LOG_LOCAL1);
+            break;
+        case 'LOCAL2':
+            Syslog.init(name, options, Syslog.LOG_LOCAL2);
+            break;
+        case 'LOCAL3':
+            Syslog.init(name, options, Syslog.LOG_LOCAL3);
+            break;
+        case 'LOCAL4':
+            Syslog.init(name, options, Syslog.LOG_LOCAL4);
+            break;
+        case 'LOCAL5':
+            Syslog.init(name, options, Syslog.LOG_LOCAL5);
+            break;
+        case 'LOCAL6':
+            Syslog.init(name, options, Syslog.LOG_LOCAL6);
+            break;
+        case 'LOCAL7':
+            Syslog.init(name, options, Syslog.LOG_LOCAL7);
+            break;
+        default:
+            Syslog.init(name, options, Syslog.LOG_MAIL);
     }
 
+    this.register_hook('log', 'syslog');
+}
+
+exports.syslog = function (next, logger, log) {
     switch(log.level.toUpperCase()) {
         case 'INFO':
             Syslog.log(Syslog.LOG_INFO, log.data);
