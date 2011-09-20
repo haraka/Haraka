@@ -25,11 +25,11 @@ var deferred_logs = [];
 logger.dump_logs = function () {
     while (deferred_logs.length > 0) {
         var log_item = deferred_logs.shift();
-        console.log(log_item);
+        console.log(log_item.data);
     }
 }
 
-logger.log = function (data) {
+logger.log = function (level, data) {
     data = data.replace(/\n?$/, "");
     // todo - just buffer these up (defer) until plugins are loaded
     if (plugins.plugin_list) {
@@ -37,17 +37,23 @@ logger.log = function (data) {
             var log_item = deferred_logs.shift();
             plugins.run_hooks('log', logger, log_item);
         }
-        plugins.run_hooks('log', logger, data);
+        plugins.run_hooks('log', logger, {
+            'level' : level,
+            'data'  : data
+        });
     }
     else {
-        deferred_logs.push(data);
+        deferred_logs.push({
+            'level' : level,
+            'data'  : data
+        });
     }
 }
 
 logger.log_respond = function (retval, msg, data) {
     // any other return code is irrelevant
     if (retval === constants.cont) {
-        return console.log(data);
+        return console.log(data.data);
     }
 };
 
@@ -89,7 +95,7 @@ for (key in logger) {
                             str += data;
                         }
                     }
-                    logger.log(str);
+                    logger.log(level, str);
                 }
             })(level, key);
         }
