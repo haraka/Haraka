@@ -69,7 +69,7 @@ exports.hook_lookup_rdns = function (next, connection) {
     var rev_nxdomain = config.reverse && (config.reverse['nxdomain']    || '');
     var rev_dnserror = config.reverse && (config.reverse['dnserror']    || '');
     var nomatch      = config.general && (config.general['nomatch']     || '');
-    var timeout      = config.general && (config.general['timeout']     || '');
+    var timeout      = config.general && (config.general['timeout']     || 60);
     var timeout_msg  = config.general && (config.general['timeout_msg'] || '');
 
     timeout_id = setTimeout(function () {
@@ -90,6 +90,7 @@ exports.hook_lookup_rdns = function (next, connection) {
         if (err) {
             if (!called_next) {
                 called_next++;
+                clearTimeout(timeout_id);
 
                 if (_in_whitelist(plugin, connection.remote_ip)) {
                     next(OK, connection.remote_ip);
@@ -118,6 +119,7 @@ exports.hook_lookup_rdns = function (next, connection) {
                     if (err) {
                         if (!called_next && !total_checks) {
                             called_next++;
+                            clearTimeout(timeout_id);
 
                             if (_in_whitelist(plugin, rdns)) {
                                 next(OK, rdns);
@@ -132,6 +134,7 @@ exports.hook_lookup_rdns = function (next, connection) {
                                 // We found a match, call next() and return
                                 if (!called_next) {
                                     called_next++;
+                                    clearTimeout(timeout_id);
                                     return next(OK, rdns);
                                 }
                             }
@@ -139,6 +142,8 @@ exports.hook_lookup_rdns = function (next, connection) {
 
                         if (!called_next && !total_checks) {
                             called_next++;
+                            clearTimeout(timeout_id);
+
                             if (_in_whitelist(plugin, rdns)) {
                                 next(OK, rdns);
                             } else {
