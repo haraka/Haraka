@@ -30,12 +30,12 @@ var queue_count = 0;
 
 exports.list_queue = function () {
     this._load_cur_queue("_list_file");
-}
+};
 
 exports.stat_queue = function () {
     this._load_cur_queue("_stat_file");
     return this.stats();
-}
+};
 
 exports.load_queue = function () {
     // Initialise and load queue
@@ -57,7 +57,7 @@ exports.load_queue = function () {
     }
 
     this._load_cur_queue("_add_file");
-}
+};
 
 function _next_uniq () {
     var result = uniq++;
@@ -137,7 +137,7 @@ exports.send_email = function () {
     }
 
     this.send_trans_email(transaction, next);
-}
+};
 
 exports.send_trans_email = function (transaction, next) {
     var self = this;
@@ -153,7 +153,7 @@ exports.send_trans_email = function (transaction, next) {
     }
 
     transaction.add_header('Received', 'via haraka outbound.js at ' + new Date().toString());
-    
+
     // First get each domain
     var recips = {};
     transaction.rcpt_to.forEach(function (item) {
@@ -170,16 +170,22 @@ exports.send_trans_email = function (transaction, next) {
     var next_sent = 0;
     var num_domains = Object.keys(recips).length;
     var mynext = function (path, code, msg) {
+        var i;
+        var l;
         if (next_sent) {
             // means a DENY next() has been sent. Unlink everything...
-            for (var i=0,l=ok_paths.length; i<l; i++) {
+            for (i=0,l=ok_paths.length; i<l; i++) {
                 fs.unlink(ok_paths[i]);
             }
             fs.unlink(path);
+            /* Trigger the undelivered plugin chain on the unprocessed hmail items. */
+            for (i=ok_paths.length-1,l=hmails.length; i < l; i += 1) {
+                plugins.run_hooks("undelivered", hmails[i], hmails[i].bounce_error);
+            }
         }
         else if (code === DENY) {
             // unlink everything sent before.
-            for (var i=0,l=ok_paths.length; i<l; i++) {
+            for (i=0,l=ok_paths.length; i<l; i++) {
                 fs.unlink(ok_paths[i]);
             }
             ok_paths = [];
@@ -188,7 +194,7 @@ exports.send_trans_email = function (transaction, next) {
             next(code, msg);
         }
         else if (num_domains === 1) {
-            for (var i=0,l=hmails.length; i < l; i++) {
+            for (i=0,l=hmails.length; i < l; i++) {
                 var hmail = hmails[i];
                 setTimeout(function (h) {
                     return function () { h.send() }
@@ -200,16 +206,19 @@ exports.send_trans_email = function (transaction, next) {
             ok_paths.push(path);
         }
         num_domains--;
-    }
+    };
     
     for (var dom in recips) {
         var from = transaction.mail_from;
         var data_lines = transaction.data_lines;
-        this.process_domain(dom, recips[dom], from, data_lines, hmails, mynext);
+        this.process_domain(transaction.notes.todo_id ? transaction.notes.todo_id : transaction.uuid, dom, recips[dom], from, data_lines, hmails, transaction.notes, mynext);
+        /* Note for the above invocation: The first parameter is either the Haraka generated UUID OR */
+        /* if the user has included a todo_id in transaction.notes, it is utilized. This allows the  */
+        /* 'delivered' and 'undelivered' plugins to have an identifying tag(s) for the email.        */
     }
-}
+};
 
-exports.process_domain = function (dom, recips, from, data_lines, hmails, cb) {
+exports.process_domain = function (id, dom, recips, from, data_lines, hmails, notes, cb) {
     var plugin = this;
     this.loginfo("Processing domain: " + dom);
     var fname = _fname();
@@ -226,7 +235,7 @@ exports.process_domain = function (dom, recips, from, data_lines, hmails, cb) {
                         cb(tmp_path, DENY, "Queue error");
                     }
                     else {
-                        hmails.push(new HMailItem (fname, dest_path));
+                        hmails.push(new HMailItem (fname, dest_path, notes));
                         cb(tmp_path, OK, "Queued!");
                     }
                 });
@@ -250,12 +259,13 @@ exports.process_domain = function (dom, recips, from, data_lines, hmails, cb) {
 
     ws.on('drain', write_more);
 
-    plugin.build_todo(dom, recips, from, ws, write_more);
-}
+    plugin.build_todo(id, dom, recips, from, ws, write_more);
+};
 
-exports.build_todo = function (dom, recips, from, ws, write_more) {
+exports.build_todo = function (id, dom, recips, from, ws, write_more) {
     var todo_str = JSON.stringify(
         {
+            id: id,  // Include an id value in the header.
             domain: dom,
             mail_from: from,
             rcpt_to:   recips,
@@ -276,7 +286,7 @@ exports.build_todo = function (dom, recips, from, ws, write_more) {
         // later anyway to call write_more_data()
         write_more();
     }
-}
+};
 
 exports.split_to_new_recipients = function (hmail, recipients) {
     var plugin = this;
@@ -293,7 +303,7 @@ exports.split_to_new_recipients = function (hmail, recipients) {
         rs.pipe(ws, {end: false});
         rs.on('error', function (err) {
             plugin.logerror("Reading original mail error: " + err);
-        })
+        });
         rs.on('end', function () {
             // rs.destroy();
             hmail.delivered();
@@ -313,9 +323,8 @@ exports.split_to_new_recipients = function (hmail, recipients) {
                 });
             });
             ws.destroySoon();
-            return;
         });
-    }
+    };
 
     ws.on('error', function (err) {
         plugin.logerror("Unable to write queue file (" + fname + "): " + err);
@@ -325,8 +334,8 @@ exports.split_to_new_recipients = function (hmail, recipients) {
 
     ws.on('drain', write_more);
 
-    plugin.build_todo(hmail.todo.domain, recipients, hmail.todo.mail_from, ws, write_more);
-}
+    plugin.build_todo(hmail.todo.id, hmail.todo.domain, recipients, hmail.todo.mail_from, ws, write_more);
+};
 
 exports._load_cur_queue = function (cb_name) {
     var plugin = this;
@@ -340,7 +349,7 @@ exports._load_cur_queue = function (cb_name) {
 
         plugin.load_queue_files(cb_name, files);
     });
-}
+};
 
 exports.load_queue_files = function (cb_name, files) {
     var plugin = this;
@@ -373,22 +382,22 @@ exports.load_queue_files = function (cb_name, files) {
             break;
         }
     }
-}
+};
 
 exports._add_file = function (hmail) {
     var self = this;
     this.loginfo("Adding file: " + hmail.filename);
     setTimeout(function () { hmail.send() }, hmail.next_process - this.cur_time);
-}
+};
 
 exports._list_file = function (hmail) {
     // TODO: output more data here
     console.log("Q: " + hmail.filename);
-}
+};
 
 exports._get_stats = function (hmail) {
     queue_count++;
-}
+};
 
 exports.stats = function () {
     // TODO: output more data here
@@ -398,14 +407,14 @@ exports.stats = function () {
     };
 
     return results;
-}
+};
 
 
 
 /////////////////////////////////////////////////////////////////////////////
 // HMailItem - encapsulates an individual outbound mail item
 
-function HMailItem (filename, path) {
+function HMailItem (filename, path, notes) {
     events.EventEmitter.call(this);
     var matches = filename.match(fn_re);
     if (!matches) {
@@ -415,7 +424,7 @@ function HMailItem (filename, path) {
     this.filename = filename;
     this.next_process = matches[1];
     this.num_failures = matches[2];
-    
+    this.notes= notes === undefined ? {} : notes;
     this.size_file();
 }
 
@@ -438,7 +447,7 @@ for (var key in logger) {
 
 HMailItem.prototype.data_stream = function () {
     return fs.createReadStream(this.path, {start: this.data_start, end: this.file_size});
-}
+};
 
 HMailItem.prototype.size_file = function () {
     var self = this;
@@ -451,7 +460,7 @@ HMailItem.prototype.size_file = function () {
             self.read_todo();
         }
     });
-}
+};
 
 HMailItem.prototype.read_todo = function () {
     var self = this;
@@ -482,7 +491,7 @@ HMailItem.prototype.read_todo = function () {
             }
         })
     });
-}
+};
 
 HMailItem.prototype.send = function () {
     if (!this.todo) {
@@ -492,7 +501,7 @@ HMailItem.prototype.send = function () {
     else {
         this._send();
     }
-}
+};
 
 HMailItem.prototype._send = function () {
     if ((delivery_concurrency >= max_concurrency)
@@ -510,13 +519,13 @@ HMailItem.prototype._send = function () {
     // plugin.loginfo("Hmail: " + util.inspect(hmail, null, null));
     
     this.get_mx();
-}
+};
 
 HMailItem.prototype.get_mx = function () {
     var domain = this.todo.domain;
 
     plugins.run_hooks('get_mx', this, domain);
-}
+};
 
 HMailItem.prototype.get_mx_respond = function (retval, mx) {
     switch(retval) {
@@ -589,7 +598,7 @@ HMailItem.prototype.get_mx_respond = function (retval, mx) {
             hmail.found_mx(err);
         });
     });
-}
+};
 
 HMailItem.prototype.found_mx = function (err, mxs) {
     if (err) {
@@ -611,7 +620,7 @@ HMailItem.prototype.found_mx = function (err, mxs) {
         this.mxlist = mxlist;
         this.try_deliver();
     }
-}
+};
 
 // MXs must be sorted by priority order, but matched priorities must be
 // randomly shuffled in that list, so this is a bit complex.
@@ -665,7 +674,7 @@ HMailItem.prototype.try_deliver = function () {
         self.hostlist = addresses;
         self.try_deliver_host();
     });
-}
+};
 
 HMailItem.prototype.try_deliver_host = function () {
     if (this.hostlist.length === 0) {
@@ -805,7 +814,7 @@ HMailItem.prototype.try_deliver_host = function () {
             return self.bounce("Unrecognised response from upstream server: " + line);
         }
     });
-}
+};
 
 var default_bounce_template = ['Received: (Haraka {pid} invoked for bounce); {date}\n',
 'Date: {date}\n',
@@ -865,12 +874,16 @@ HMailItem.prototype.bounce = function (err) {
     }
     
     this._bounce(err);
-}
+};
 
 HMailItem.prototype._bounce = function (err) {
     this.bounce_error = err;
+<<<<<<< HEAD
+=======
+    plugins.run_hooks("undelivered", this, err);
+>>>>>>> 6df4162... Added undelivered and delivered hooks to outbound.js.
     plugins.run_hooks("bounce", this, err);
-}
+};
 
 HMailItem.prototype.bounce_respond = function (retval, msg) {
     if (retval != constants.cont) {
@@ -897,7 +910,7 @@ HMailItem.prototype.bounce_respond = function (retval, msg) {
 
         var hmails = [];
 
-        exports.process_domain(dom, [recip], from, data_lines, hmails,
+        exports.process_domain(this.todo.id, dom, [recip], from, data_lines, hmails,
             function (path, code, msg) {
                 fs.unlink(self.path);
                 if (code === DENY) {
@@ -908,7 +921,7 @@ HMailItem.prototype.bounce_respond = function (retval, msg) {
             }
         );
     });
-}
+};
 
 HMailItem.prototype.double_bounce = function (err) {
     this.logerror("Double bounce: " + err);
@@ -916,19 +929,24 @@ HMailItem.prototype.double_bounce = function (err) {
     // TODO: fill this in... ?
     // One strategy is perhaps log to an mbox file. What do other servers do?
     // Another strategy might be delivery "plugins" to cope with this.
-}
+};
 
 HMailItem.prototype.delivered = function () {
     this.loginfo("Successfully delivered mail: " + this.filename);
     delivery_concurrency--;
     fs.unlink(this.path);
+<<<<<<< HEAD
 }
+=======
+    plugins.run_hooks("delivered", this, null);
+};
+>>>>>>> 6df4162... Added undelivered and delivered hooks to outbound.js.
 
 HMailItem.prototype.temp_fail = function (err) {
     this.num_failures++;
     delivery_concurrency--;
     
-    if (this.num_failures >= 13) {
+    if (this.num_failures >= 2) { // TODO: Make this configurable.
         return this.bounce("Too many failures (" + err + ")");
     }
 
@@ -958,4 +976,21 @@ HMailItem.prototype.temp_fail = function (err) {
 
         setTimeout(function () {hmail.send()}, delay);
     });
+<<<<<<< HEAD
 }
+=======
+};
+
+/* Neither of the following two handlers has an impact on outgoing mail. */
+HMailItem.prototype.delivered_respond = function (retval, msg) {
+    if (retval != constants.cont && retval != constants.ok) {
+        this.logwarn("delivered plugin responded with: " + retval + " msg=" + msg + ".");
+    }
+};
+
+HMailItem.prototype.undelivered_respond = function (retval, msg) {
+    if (retval != constants.cont && retval != constants.ok) {
+        this.logwarn("undelivered plugin responded with: " + retval + " msg=" + msg + ".");
+    }
+};
+>>>>>>> 6df4162... Added undelivered and delivered hooks to outbound.js.
