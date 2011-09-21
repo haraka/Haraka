@@ -878,10 +878,7 @@ HMailItem.prototype.bounce = function (err) {
 
 HMailItem.prototype._bounce = function (err) {
     this.bounce_error = err;
-<<<<<<< HEAD
-=======
     plugins.run_hooks("undelivered", this, err);
->>>>>>> 6df4162... Added undelivered and delivered hooks to outbound.js.
     plugins.run_hooks("bounce", this, err);
 };
 
@@ -935,12 +932,8 @@ HMailItem.prototype.delivered = function () {
     this.loginfo("Successfully delivered mail: " + this.filename);
     delivery_concurrency--;
     fs.unlink(this.path);
-<<<<<<< HEAD
-}
-=======
     plugins.run_hooks("delivered", this, null);
 };
->>>>>>> 6df4162... Added undelivered and delivered hooks to outbound.js.
 
 HMailItem.prototype.temp_fail = function (err) {
     this.num_failures++;
@@ -976,9 +969,6 @@ HMailItem.prototype.temp_fail = function (err) {
 
         setTimeout(function () {hmail.send()}, delay);
     });
-<<<<<<< HEAD
-}
-=======
 };
 
 /* Neither of the following two handlers has an impact on outgoing mail. */
@@ -993,4 +983,3 @@ HMailItem.prototype.undelivered_respond = function (retval, msg) {
         this.logwarn("undelivered plugin responded with: " + retval + " msg=" + msg + ".");
     }
 };
->>>>>>> 6df4162... Added undelivered and delivered hooks to outbound.js.
