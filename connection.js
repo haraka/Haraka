@@ -183,7 +183,7 @@ Connection.prototype.respond = function(code, messages) {
         code = messages.code;
         messages = messages.reply;
     }
-    if (!(typeof messages === 'object' && messages.constructor === Array)) {
+    if (!(typeof messages === 'object' && messages.constructor.name === 'Array')) {
         // messages not an array, make it so:
         messages = [ '' + messages ];
     }
