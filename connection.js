@@ -296,6 +296,9 @@ Connection.prototype.unrecognized_command_respond = function(retval, msg) {
         case constants.ok:
                 // response already sent, cool...
                 break;
+        case constants.next_hook:
+                plugins.run_hooks(msg, this);
+                break;
         case constants.deny:
                 this.respond(500, msg || "Unrecognized command");
                 break;
@@ -374,7 +377,7 @@ Connection.prototype.ehlo_respond = function(retval, msg) {
         default:
                 var response = ["Haraka says hi " + this.remote_host + " [" + this.remote_ip + "]",
                                 "PIPELINING",
-                                "8BITMIME"
+                                "8BITMIME",
                                 ];
                 
                 var databytes = config.get('databytes', 'nolog');
@@ -423,6 +426,12 @@ Connection.prototype.noop_respond = function(retval, msg) {
                 this.respond(250, "OK");
     }
 };
+
+Connection.prototype.rset_respond = function(retval, msg) {
+    // We ignore any plugin responses
+    this.reset_transaction();    
+    this.respond(250, "OK");
+}
 
 Connection.prototype.mail_respond = function(retval, msg) {
     switch (retval) {
@@ -484,8 +493,10 @@ Connection.prototype.rcpt_respond = function(retval, msg) {
                 plugins.run_hooks('rcpt_ok', this, this.transaction.rcpt_to[this.transaction.rcpt_to.length - 1]);
                 break;
         default:
-                if (retval !== constants.cont)
+                if (retval !== constants.cont) {
                     this.logalert("No plugin determined if relaying was allowed");
+                }
+                this.transaction.rcpt_to.pop();
                 this.respond(450, "I cannot deliver for that user");
     }
 };
@@ -532,8 +543,7 @@ Connection.prototype.cmd_quit = function() {
 };
 
 Connection.prototype.cmd_rset = function() {
-    this.reset_transaction();
-    this.respond(250, "OK");
+    plugins.run_hooks('rset', this);
 };
 
 Connection.prototype.cmd_vrfy = function(line) {
