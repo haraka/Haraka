@@ -115,9 +115,13 @@ need to define them:
 * OK
 
   Required by rcpt and queue plugins if we are to allow the email to be
-accepted, or the queue was successful, respectively. Once a plugin calls
-next(OK) no further plugins will run after it.
+accepted, or the queue was successful, respectively. 
 
+  This also has a special meaning when used on deny hook.  Returning OK
+on the deny hook will override the result to CONT.
+
+  Once a plugin calls next(OK) no further plugins on the same hook will 
+run after it.
 
 Available Hooks
 -------------

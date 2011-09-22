@@ -33,7 +33,7 @@ process.on('uncaughtException', function (err) {
     }
 });
 
-logger.log("Starting up Haraka version " + exports.version);
+logger.log("INFO", "Starting up Haraka version " + exports.version);
 
 
 server.createServer();
