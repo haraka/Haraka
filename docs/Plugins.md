@@ -159,7 +159,6 @@ These are just the name of the hook, with any parameter sent to it:
 * deny - called if a plugin returns one of DENY, DENYSOFT or DENYDISCONNECT
 * get_mx - called when sending outbound mail to lookup the MX record
 * bounce - called when sending outbound mail if the mail would bounce
-* xclient - called when the XCLIENT command is sent (see the xclient plugin)
 
 The `rcpt` hook is slightly special. If we have a plugin (prior to rcpt) that
 sets the `connection.relaying = true` flag, then we do not need any rcpt
