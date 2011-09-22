@@ -79,17 +79,18 @@ exports.smtp_forward = function (next, connection) {
                         else {
                             socket.send_command('HELO', connection.hello_host);
                         }
+                        return;
                     }
                     // Parse CAPABILITIES
-                    if (!this.xclient) {
-                        for (i in response) {
-                            if (response[i].match(/^XCLIENT/)) {
+                    for (i in response) {
+                        if (response[i].match(/^XCLIENT/)) {
+                            if(!this.xclient) {
                                 // Just use the ADDR= key for now
                                 socket.send_command('XCLIENT', 'ADDR=' + connection.remote_ip);
                                 return;
                             }
-                            // TODO: TLS support here...
                         }
+                        // TODO: TLS support here...
                     }
                 }
                 if (command === 'xclient' && code.match(/^5/)) {

@@ -296,6 +296,9 @@ Connection.prototype.unrecognized_command_respond = function(retval, msg) {
         case constants.ok:
                 // response already sent, cool...
                 break;
+        case constants.next_hook:
+                plugins.run_hooks(msg, this);
+                break;
         case constants.deny:
                 this.respond(500, msg || "Unrecognized command");
                 break;
@@ -387,25 +390,6 @@ Connection.prototype.ehlo_respond = function(retval, msg) {
     }
 };
 
-Connection.prototype.xclient_respond = function(retval, msg) {
-    switch (retval) {
-        case constants.ok:
-            // Reset connection state
-            if (this.remote_host) {
-                // XCLIENT plugin set the remote host already
-                plugins.run_hooks('connect', this);
-            } else {
-                plugins.run_hooks('lookup_rdns', this);
-            }
-            break;
-        case constants.deny:
-            this.respond(550, msg || 'XCLIENT denied')
-            break;
-        default:
-            this.respond(550, 'Not authorized');
-    }
-};
-
 Connection.prototype.capabilities_respond = function (retval, msg) {
     this.respond(250, this.capabilities);
 };
@@ -442,6 +426,12 @@ Connection.prototype.noop_respond = function(retval, msg) {
                 this.respond(250, "OK");
     }
 };
+
+Connection.prototype.rset_respond = function(retval, msg) {
+    // We ignore any plugin responses
+    this.reset_transaction();    
+    this.respond(250, "OK");
+}
 
 Connection.prototype.mail_respond = function(retval, msg) {
     switch (retval) {
@@ -548,18 +538,12 @@ Connection.prototype.cmd_ehlo = function(line) {
     plugins.run_hooks('ehlo', this, host);
 };
 
-Connection.prototype.cmd_xclient = function(line) {
-    // Implemented via plugin
-    plugins.run_hooks('xclient', this, line);
-}
-
 Connection.prototype.cmd_quit = function() {
     plugins.run_hooks('quit', this);
 };
 
 Connection.prototype.cmd_rset = function() {
-    this.reset_transaction();
-    this.respond(250, "OK");
+    plugins.run_hooks('rset', this);
 };
 
 Connection.prototype.cmd_vrfy = function(line) {

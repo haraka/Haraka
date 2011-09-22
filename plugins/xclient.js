@@ -10,7 +10,11 @@ exports.hook_capabilities = function (next, connection) {
     next();
 };
 
-exports.hook_xclient = function (next, connection, params) {
+exports.hook_unrecognized_command = function (next, connection, params) {
+    if (!params[0] === 'XCLIENT') {
+        return next();
+    }
+
     // XCLIENT is not allowed after transaction start
     if (connection.transaction) {
         return next(DENY, DSN.proto_unspecified('Mail transaction in progress', 503));
@@ -28,12 +32,12 @@ exports.hook_xclient = function (next, connection, params) {
         }
     }
     if (!found) {
-        return next();
+        return next(DENY, DSN.proto_unspecified('Not authorized', 550));
     }
 
     // If we get here - the client is allowed to use XCLIENT
     // Process arguments
-    var args = (new String(params)).toLowerCase().split(/ /);
+    var args = (new String(params[1])).toLowerCase().split(/ /);
     var xclient = {};
     for (a=0; a < args.length; a++) {
         var match = /^([^=]+)=([^ ]+)/.exec(args[a]);
@@ -94,5 +98,10 @@ exports.hook_xclient = function (next, connection, params) {
     }
     connection.esmtp = (xclient.proto === 'esmtp') ? true : false;
     connection.xclient = true;
-    return next(OK);
+    if (!xclient.name) {
+        return next(NEXT_HOOK, 'lookup_rdns');
+    }
+    else {
+        return next(NEXT_HOOK, 'connect');
+    }
 };
