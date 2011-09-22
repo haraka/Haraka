@@ -503,8 +503,10 @@ Connection.prototype.rcpt_respond = function(retval, msg) {
                 plugins.run_hooks('rcpt_ok', this, this.transaction.rcpt_to[this.transaction.rcpt_to.length - 1]);
                 break;
         default:
-                if (retval !== constants.cont)
+                if (retval !== constants.cont) {
                     this.logalert("No plugin determined if relaying was allowed");
+                }
+                this.transaction.rcpt_to.pop();
                 this.respond(450, "I cannot deliver for that user");
     }
 };
