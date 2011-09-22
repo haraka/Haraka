@@ -11,6 +11,7 @@ catch(e) {
     process.env.NODE_PATH += ':' + path.join(process.env.HARAKA, 'node_modules');
 }
 
+var util   = require("util");
 var fs     = require('fs');
 var logger = require('./logger');
 var server = require('./server');
@@ -20,6 +21,7 @@ exports.version = JSON.parse(
     ).version;
 
 process.on('uncaughtException', function (err) {
+    console.log("Uncaught exception, err="+util.inspect(err));
     if (err.stack) {
         err.stack.split("\n").forEach(logger.logcrit);
     }
