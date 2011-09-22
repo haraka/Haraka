@@ -374,7 +374,7 @@ Connection.prototype.ehlo_respond = function(retval, msg) {
         default:
                 var response = ["Haraka says hi " + this.remote_host + " [" + this.remote_ip + "]",
                                 "PIPELINING",
-                                "8BITMIME"
+                                "8BITMIME",
                                 ];
                 
                 var databytes = config.get('databytes', 'nolog');
@@ -384,6 +384,25 @@ Connection.prototype.ehlo_respond = function(retval, msg) {
                 
                 plugins.run_hooks('capabilities', this);
                 this.esmtp = true;
+    }
+};
+
+Connection.prototype.xclient_respond = function(retval, msg) {
+    switch (retval) {
+        case constants.ok:
+            // Reset connection state
+            if (this.remote_host) {
+                // XCLIENT plugin set the remote host already
+                plugins.run_hooks('connect', this);
+            } else {
+                plugins.run_hooks('lookup_rdns', this);
+            }
+            break;
+        case constants.deny:
+            this.respond(550, msg || 'XCLIENT denied')
+            break;
+        default:
+            this.respond(550, 'Not authorized');
     }
 };
 
@@ -526,6 +545,11 @@ Connection.prototype.cmd_ehlo = function(line) {
     
     plugins.run_hooks('ehlo', this, host);
 };
+
+Connection.prototype.cmd_xclient = function(line) {
+    // Implemented via plugin
+    plugins.run_hooks('xclient', this, line);
+}
 
 Connection.prototype.cmd_quit = function() {
     plugins.run_hooks('quit', this);
