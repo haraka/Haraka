@@ -43,6 +43,9 @@ cfreader.empty_config = function(type) {
     if (type === 'ini') {
         return { main: {} };
     }
+    else if (type === 'json') {
+        return {};
+    }
     else {
         return [];
     }
@@ -50,8 +53,11 @@ cfreader.empty_config = function(type) {
 
 cfreader.load_config = function(name, type) {
 
-    if (type === 'ini') {
+    if (type === 'ini' || /\.ini$/.test(name)) {
         result = cfreader.load_ini_config(name);
+    }
+    else if (type === 'json' || /\.json$/.test(name)) {
+        result = cfreader.load_json_config(name);
     }
     else {
         result = cfreader.load_flat_config(name);
@@ -67,6 +73,10 @@ cfreader.load_config = function(name, type) {
     
     return result;
 };
+
+cfreader.load_json_config = function(name) {
+    return JSON.parse(fs.readFileSync(name));
+}
 
 cfreader.load_ini_config = function(name) {
     var result       = cfreader.empty_config('ini');
