@@ -86,13 +86,17 @@ function _destroy_smtp_proxy(self, connection, smtp_proxy) {
         // Note we do not do this operation that often.
         index = connection.server.notes.smtp_proxy_pool.indexOf(smtp_proxy);
         if (index != -1) {
+            // if we are pulling something from the proxy pool, it is not
+            // acttive.  This means we do not want to reset it.
+            reset_active_connections = 0;
             connection.server.notes.smtp_proxy_pool.splice(index, 1);
             self.logdebug("pulling dead proxy connection from pool: (" +
                 connection.server.notes.smtp_proxy_pool.length + ")");
         }
     }
 
-    if (reset_active_connections) {
+    if (reset_active_connections &&
+        connection.server.notes.active_proxy_conections) {
         connection.server.notes.active_proxy_conections--;
         self.logdebug("active proxy connections: (" +
             connection.server.notes.active_proxy_conections + ")");
