@@ -672,6 +672,9 @@ Connection.prototype.cmd_data = function(line) {
     if (!this.transaction) {
         return this.respond(503, "MAIL required first");
     }
+    if (!this.transaction.rcpt_to.length) {
+        return this.respond(503, "RCPT required first");
+    }
 
     this.accumulate_data('Received: ' + this.received_line() + "\r\n");
     plugins.run_hooks('data', this);
@@ -699,20 +702,13 @@ Connection.prototype.data_respond = function(retval, msg) {
     if (!cont) {
         return;
     }
-    
-    if (!this.transaction.mail_from) {
-        this.respond(503, "MAIL required first");
-    }
-    else if (!this.transaction.rcpt_to.length) {
-        this.respond(503, "RCPT required first");
-    }
-    else {
-        this.respond(354, "go ahead, make my day");
-        // OK... now we get the data
-        this.state = 'data';
-        this.transaction.data_bytes = 0;
-        this.max_bytes = config.get('databytes', 'nolog');
-    }
+
+    // We already checked for MAIL/RCPT in cmd_data
+    this.respond(354, "go ahead, make my day");
+    // OK... now we get the data
+    this.state = 'data';
+    this.transaction.data_bytes = 0;
+    this.max_bytes = config.get('databytes', 'nolog');
 };
 
 Connection.prototype.accumulate_data = function(line) {
