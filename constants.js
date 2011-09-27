@@ -7,6 +7,7 @@ exports.denysoft        = 903;
 exports.denydisconnect  = 904;
 exports.disconnect      = 905;
 exports.ok              = 906;
+exports.next_hook       = 907;
 
 exports.import = function (object) {
     for (var k in exports) {

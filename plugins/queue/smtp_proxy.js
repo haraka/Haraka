@@ -86,13 +86,17 @@ function _destroy_smtp_proxy(self, connection, smtp_proxy) {
         // Note we do not do this operation that often.
         index = connection.server.notes.smtp_proxy_pool.indexOf(smtp_proxy);
         if (index != -1) {
+            // if we are pulling something from the proxy pool, it is not
+            // acttive.  This means we do not want to reset it.
+            reset_active_connections = 0;
             connection.server.notes.smtp_proxy_pool.splice(index, 1);
             self.logdebug("pulling dead proxy connection from pool: (" +
                 connection.server.notes.smtp_proxy_pool.length + ")");
         }
     }
 
-    if (reset_active_connections) {
+    if (reset_active_connections &&
+        connection.server.notes.active_proxy_conections) {
         connection.server.notes.active_proxy_conections--;
         self.logdebug("active proxy connections: (" +
             connection.server.notes.active_proxy_conections + ")");
@@ -156,6 +160,7 @@ exports.hook_mail = function (next, connection, params) {
     smtp_proxy.socket.on('error', function (err) {
         self.logdebug("Ongoing connection failed: " + err);
         _destroy_smtp_proxy(self, connection, smtp_proxy);
+        return next(DENYSOFT,'Proxy connection failed');
     });
 
     smtp_proxy.socket.on('timeout', function () {
@@ -189,7 +194,36 @@ exports.hook_mail = function (next, connection, params) {
                 rest = matches[3];
             smtp_proxy.response.push(rest);
             if (cont === ' ') {
-                if (code.match(/^[45]/)) {
+                if (smtp_proxy.command === 'ehlo') {
+                    // Handle fallback to HELO if EHLO is rejected
+                    if (code.match(/^5/)) {
+                        if (smtp_proxy.xclient) {
+                            smtp_proxy.socket.send_command('HELO',
+                                connection.hello_host);
+                        } 
+                        else {
+                            smtp_proxy.socket.send_command('HELO',
+                                self.config.get('me'));
+                        }
+                        return;
+                    }
+                    // Parse CAPABILITIES
+                    for (i in smtp_proxy.response) {
+                        if (smtp_proxy.response[i].match(/^XCLIENT/)) {
+                            if (!smtp_proxy.xclient) {
+                                smtp_proxy.socket.send_command('XCLIENT',
+                                    'ADDR=' + connection.remote_ip);
+                                return;
+                            }
+                        }
+                        // TODO: TLS support here...
+                    }
+                }
+                if (smtp_proxy.command === 'xclient' && code.match(/^5/)) {
+                    // XCLIENT rejected; continue without it
+                    smtp_proxy.command = 'helo';
+                }
+                else if (code.match(/^[45]/)) {
                     if (smtp_proxy.command !== 'rcpt') {
                         // errors are OK for rcpt, but nothing else
                         // this can also happen if the destination server
@@ -203,10 +237,16 @@ exports.hook_mail = function (next, connection, params) {
                 smtp_proxy.response = []; // reset the response
 
                 switch (smtp_proxy.command) {
+                    case 'xclient':
+                        smtp_proxy.xclient = true;
+                        smtp_proxy.socket.send_command('EHLO',
+                            connection.hello_host);
+                        break;
                     case 'connect':
-                        smtp_proxy.socket.send_command('HELO',
+                        smtp_proxy.socket.send_command('EHLO',
                             self.config.get('me'));
                         break;
+                    case 'ehlo':
                     case 'helo':
                         smtp_proxy.socket.send_command('MAIL',
                             'FROM:' + mail_from);
@@ -251,7 +291,15 @@ exports.hook_mail = function (next, connection, params) {
     });
 
     if (smtp_proxy.pool_connection) {
-        smtp_proxy.socket.send_command('MAIL', 'FROM:' + mail_from);
+        // If we used XCLIENT earlier; we *must* re-send it again
+        // To update the proxy with the new client details.
+        if (smtp_proxy.xclient) {
+            smtp_proxy.socket.send_command('XCLIENT',
+                'ADDR=' + connection.remote_ip);
+        }
+        else {
+            smtp_proxy.socket.send_command('MAIL', 'FROM:' + mail_from);
+        }
     }
 };
 
@@ -277,7 +325,15 @@ exports.hook_queue = function (next, connection) {
     smtp_proxy.send_data();
 };
 
+exports.hook_rset = function (next, connection) {
+    this.rset_proxy(next, connection);
+}
+
 exports.hook_quit = function (next, connection) {
+    this.rset_proxy(next, connection);
+}
+
+exports.rset_proxy = function (next, connection) {
     if (!connection.notes.smtp_proxy) return next();
     var smtp_proxy = connection.notes.smtp_proxy;
     smtp_proxy.next = next;
