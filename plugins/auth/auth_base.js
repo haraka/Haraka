@@ -1,4 +1,6 @@
-// Auth against a flat file
+// Base authentication plugin.
+// This cannot be used on its own. You need to inherit from it.
+// See plugins/auth/flat_file.js for an example.
 
 var crypto = require('crypto');
 var AUTH_COMMAND = 'AUTH';
@@ -7,15 +9,17 @@ var AUTH_METHOD_LOGIN = 'LOGIN';
 var LOGIN_STRING1 = 'VXNlcm5hbWU6'; //UserLogin: base64 coded
 var LOGIN_STRING2 = 'UGFzc3dvcmQ6'; //Password: base64 coded
 
+// You should probably override this method as AUTH LOGIN is insecure
 exports.hook_capabilities = function (next, connection) {
-    var config = this.config.get('auth_flat_file.ini', 'ini');
-    var methods = (config.core && config.core.methods ) ? config.core.methods.split(',') : null;
-    if(methods && methods.length > 0) {
-        connection.capabilities.push('AUTH ' + methods.join(' '));
-        connection.notes.allowed_auth_methods = methods;
-    }
+    connection.capabilities.push('AUTH LOGIN CRAM-MD5');
+    connection.notes.allowed_auth_methods = methods;
     next();
-};
+}
+
+// You need to override this at a minimum. Run cb(passwd) to provide a password.
+exports.get_plain_passwd = function (user, cb) {
+    return cb();
+}
 
 exports.hook_unrecognized_command = function (next, connection, params) {
     if(params[0] === AUTH_COMMAND && params[1]) {
@@ -33,14 +37,6 @@ exports.hook_unrecognized_command = function (next, connection, params) {
         return this.auth_login(next, connection, params);
     }
     return next();
-};
-
-exports.get_plain_passwd = function (user, cb) {
-    var config = this.config.get('auth_flat_file.ini');
-    if (config.users[user]) {
-        return cb(config.users[user]);
-    }
-    return cb();
 }
 
 exports.check_plain_passwd = function (user, passwd, cb) {
@@ -99,7 +95,7 @@ exports.check_user = function (next, connection, credentials, method) {
     else if (method === AUTH_METHOD_CRAM_MD5) {
         this.check_cram_md5_passwd(connection.notes.auth_flat_file_ticket, credentials[0], credentials[1], passwd_ok);
     }
-};
+}
 
 exports.select_auth_method = function(next, connection, method) {
     if(connection.notes.allowed_auth_methods.indexOf(method) !== -1) {
@@ -113,7 +109,7 @@ exports.select_auth_method = function(next, connection, method) {
         }
     }
     return next();
-};
+}
 
 exports.auth_login = function(next, connection, params) {
     if (connection.notes.auth_login_asked_login && !connection.notes.auth_login_userlogin) {
@@ -133,7 +129,7 @@ exports.auth_login = function(next, connection, params) {
     connection.respond(334, LOGIN_STRING1);
     connection.notes.auth_login_asked_login = true;
     return next(OK);
-};
+}
 
 exports.auth_cram_md5 = function(next, connection, params) {
     if(params) {
@@ -147,7 +143,7 @@ exports.auth_cram_md5 = function(next, connection, params) {
     connection.respond(334, base64(ticket));
     connection.notes.auth_flat_file_ticket = ticket;
     return next(OK);
-};
+}
 
 function hexi (number) {
     return String(Math.abs(parseInt(number)).toString(16));
