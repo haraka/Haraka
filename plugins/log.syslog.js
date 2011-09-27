@@ -109,8 +109,10 @@ exports.syslog = function (next, logger, log) {
         case 'EMERG':
             Syslog.log(Syslog.LOG_EMERG, log.data);
             break;
-        case 'DATA':
         case 'PROTOCOL':
+            Syslog.log(Syslog.LOG_DEBUG, log.data.replace(/\r$/, ''));
+            break;
+        case 'DATA':
         case 'DEBUG':
         default:
             Syslog.log(Syslog.LOG_DEBUG, log.data);
