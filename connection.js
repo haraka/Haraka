@@ -731,7 +731,7 @@ Connection.prototype.accumulate_data = function(line) {
         return;
     }
     
-    this.transaction.add_data(line.replace(/\r\n$/, "\n"));
+    this.transaction.add_data(line.replace(/^\.\./, '.').replace(/\r\n$/, "\n"));
 };
 
 Connection.prototype.data_done = function() {
