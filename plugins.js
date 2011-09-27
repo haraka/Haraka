@@ -7,7 +7,7 @@ var path        = require('path');
 var vm          = require('vm');
 var fs          = require('fs');
 var utils       = require('./utils');
-var util = require('util');
+var util        = require('util');
 
 var plugin_paths = [path.join(__dirname, './plugins')];
 if (process.env.HARAKA) { plugin_paths.unshift(path.join(process.env.HARAKA, 'plugins')); }
@@ -75,6 +75,18 @@ Plugin.prototype.register_hook = function(hook_name, method_name) {
 
 Plugin.prototype.register = function () {}; // noop
 
+Plugin.prototype.inherits = function (parent_name) {
+    var parent_plugin = plugins._load_and_compile_plugin(parent_name);
+    for (var method in parent_plugin) {
+        if (!this[method]) {
+            this[method] = parent_plugin[method];
+        }
+    }
+    if (parent_plugin.register) {
+        parent_plugin.register.call(this);
+    }
+}
+
 // copy logger methods into Plugin:
 
 for (var key in logger) {
@@ -105,7 +117,14 @@ plugins.load_plugins = function () {
 
 plugins.load_plugin = function(name) {
     logger.loginfo("Loading plugin: " + name);
-    
+
+    var plugin = plugins._load_and_compile_plugin(name);
+    plugins._register_plugin(plugin);
+
+    return plugin;
+}
+
+plugins._load_and_compile_plugin = function(name) {
     var plugin = new Plugin(name);
     var fp = plugin.full_paths,
         rf, last_err;
@@ -135,7 +154,7 @@ plugins.load_plugin = function(name) {
         setInterval: setInterval,
         clearInterval: clearInterval,
         process: process,
-        Buffer: Buffer
+        Buffer: Buffer,
     };
     constants.import(sandbox);
     try {
@@ -149,6 +168,12 @@ plugins.load_plugin = function(name) {
         throw err; // default is to re-throw and stop Haraka
     }
     
+    return plugin;
+}
+
+plugins._register_plugin = function (plugin) {
+    plugin.register();
+    
     // register any hook_blah methods.
     for (var method in plugin) {
         var result;
@@ -156,8 +181,6 @@ plugins.load_plugin = function(name) {
             plugin.register_hook(result[1], method);
         }
     }
-    
-    plugin.register();
     
     return plugin;
 }
