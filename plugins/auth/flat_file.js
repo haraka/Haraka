@@ -21,54 +21,89 @@ exports.hook_unrecognized_command = function (next, connection, params) {
     if(params[0] === AUTH_COMMAND && params[1]) {
         return this.select_auth_method(next, connection, params[1]);
     }
-    else if (connection.notes.auth_method === AUTH_METHOD_CRAM_MD5 && connection.notes.auth_flat_file_ticket) {
-        return this.auth_cram_md5 (next, connection, params);
+    else if (connection.notes.authenticating &&
+             connection.notes.auth_method === AUTH_METHOD_CRAM_MD5 &&
+             connection.notes.auth_flat_file_ticket)
+    {
+        return this.auth_cram_md5(next, connection, params);
     }
-    else if (connection.notes.auth_method === AUTH_METHOD_LOGIN) {
+    else if (connection.notes.authenticating &&
+             connection.notes.auth_method === AUTH_METHOD_LOGIN)
+    {
         return this.auth_login(next, connection, params);
     }
     return next();
 };
 
+exports.get_plain_passwd = function (user, cb) {
+    var config = this.config.get('auth_flat_file.ini');
+    if (config.users[user]) {
+        return cb(config.users[user]);
+    }
+    return cb();
+}
+
+exports.check_plain_passwd = function (user, passwd, cb) {
+    this.get_plain_passwd(user, function (plain_pw) {
+        if (plain_pw === null) {
+            return cb(false);
+        }
+        if (plain_pw === passwd) {
+            return cb(true);
+        }
+        return cb(false);
+    })
+}
+
+exports.check_cram_md5_passwd = function (ticket, user, passwd, cb) {
+    this.get_plain_passwd(user, function (plain_pw) {
+        if (plain_pw === null) {
+            return cb(false);
+        }
+        
+        var hmac = crypto.createHmac('md5', plain_pw);
+        hmac.update(ticket);
+        var hmac_pw = hmac.digest('hex');
+
+        if (hmac_pw === passwd) {
+            return cb(true);
+        }
+        return cb(false);
+    })
+}
+
 exports.check_user = function (next, connection, credentials, method) {
+    connection.notes.authenticating = false;
     if (!(credentials[0] && credentials[1])) {
         connection.respond(504, "Invalid AUTH string");
         connection.reset_transaction();
         return next(OK);
     }
-    
-    var config = this.config.get('auth_flat_file.ini', 'ini');
-    if (!config.users[credentials[0]]) {
-        connection.respond(535, "Authentication failed for " + credentials[0]);
-        connection.reset_transaction();
+
+    var passwd_ok = function (valid) {
+        if (valid) {
+            connection.relaying = 1;
+            connection.respond(235, "Authentication successful");
+            connection.authheader = "(authenticated bits=0)\n";
+        }
+        else {
+            connection.respond(535, "Authentication failed");
+            connection.reset_transaction();
+        }
         return next(OK);
     }
-    
-    var clear_pw = config.users[credentials[0]];
-    var hmac_pw = clear_pw;
 
-    if(method === AUTH_METHOD_CRAM_MD5) {
-        var hmac = crypto.createHmac('md5', clear_pw);
-        hmac.update(connection.notes.auth_flat_file_ticket);
-        hmac_pw = hmac.digest('hex');
+    if (method === AUTH_METHOD_LOGIN) {
+        this.check_plain_passwd(credentials[0], credentials[1], passwd_ok);
     }
-    
-    this.loginfo("comparing " + hmac_pw + ' to ' + credentials[1]);
-    
-    if (hmac_pw === credentials[1]) {
-        connection.relaying = 1;
-        connection.respond(235, "Authentication successful");
-        connection.authheader = "(authenticated bits=0)\n";
+    else if (method === AUTH_METHOD_CRAM_MD5) {
+        this.check_cram_md5_passwd(connection.notes.auth_flat_file_ticket, credentials[0], credentials[1], passwd_ok);
     }
-    else {
-        connection.respond(535, "Authentication failed");
-        connection.reset_transaction();
-    }
-    return next(OK);
 };
 
 exports.select_auth_method = function(next, connection, method) {
     if(connection.notes.allowed_auth_methods.indexOf(method) !== -1) {
+        connection.notes.authenticating = true;
         connection.notes.auth_method = method;
         if(method === AUTH_METHOD_LOGIN) {
             return this.auth_login(next, connection);
