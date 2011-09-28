@@ -667,7 +667,6 @@ Connection.prototype.received_line = function() {
            +" (Haraka/" + version
            +") with " + (this.sslheader || '') + smtp
            +" id " + this.uuid + "." + this.tran_count
-           +"\n    for " + this.transaction.rcpt_to 
            +"; " + _date_to_str(new Date());
 };
 
