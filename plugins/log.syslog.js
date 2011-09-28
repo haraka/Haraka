@@ -87,35 +87,35 @@ exports.register = function() {
 }
 
 exports.syslog = function (next, logger, log) {
+    var data = log.data.replace(/\r/, '');
+
     switch(log.level.toUpperCase()) {
         case 'INFO':
-            Syslog.log(Syslog.LOG_INFO, log.data);
+            Syslog.log(Syslog.LOG_INFO, data);
             break;
         case 'NOTICE':
-            Syslog.log(Syslog.LOG_NOTICE, log.data);
+            Syslog.log(Syslog.LOG_NOTICE, data);
             break;
         case 'WARN':
-            Syslog.log(Syslog.LOG_WARNING, log.data);
+            Syslog.log(Syslog.LOG_WARNING, data);
             break;
         case 'ERROR':
-            Syslog.log(Syslog.LOG_ERR, log.data);
+            Syslog.log(Syslog.LOG_ERR, data);
             break;
         case 'CRIT':
-            Syslog.log(Syslog.LOG_CRIT, log.data);
+            Syslog.log(Syslog.LOG_CRIT, data);
             break;
         case 'ALERT':
-            Syslog.log(Syslog.LOG_ALERT, log.data);
+            Syslog.log(Syslog.LOG_ALERT, data);
             break;
         case 'EMERG':
-            Syslog.log(Syslog.LOG_EMERG, log.data);
-            break;
-        case 'PROTOCOL':
-            Syslog.log(Syslog.LOG_DEBUG, log.data.replace(/\r$/, ''));
+            Syslog.log(Syslog.LOG_EMERG, data);
             break;
         case 'DATA':
+        case 'PROTOCOL':
         case 'DEBUG':
         default:
-            Syslog.log(Syslog.LOG_DEBUG, log.data);
+            Syslog.log(Syslog.LOG_DEBUG, data);
     }
 
     return next();
