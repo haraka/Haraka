@@ -176,6 +176,10 @@ exports.send_trans_email = function (transaction, next) {
                 fs.unlink(ok_paths[i]);
             }
             fs.unlink(path);
+            // Trigger the undelivered plugin chain on the unprocessed hmail items.
+            for (i=ok_paths.length-1,l=hmails.length; i < l; i++) {
+                plugins.run_hooks("undelivered", hmails[i], hmails[i].bounce_error);
+            }
         }
         else if (code === DENY) {
             // unlink everything sent before.
@@ -205,11 +209,14 @@ exports.send_trans_email = function (transaction, next) {
     for (var dom in recips) {
         var from = transaction.mail_from;
         var data_lines = transaction.data_lines;
-        this.process_domain(dom, recips[dom], from, data_lines, hmails, mynext);
+        this.process_domain(transaction.notes.todo_id ? transaction.notes.todo_id : transaction.uuid, dom, recips[dom], from, data_lines, hmails, transaction.notes, mynext);
+        // Note for the above invocation: The first parameter is either the Haraka generated UUID OR
+        // if the user has included a todo_id in transaction.notes, it is utilized. This allows the
+        // 'delivered' and 'undelivered' plugins to have an identifying tag(s) for the email.
     }
 }
 
-exports.process_domain = function (dom, recips, from, data_lines, hmails, cb) {
+exports.process_domain = function (id, dom, recips, from, data_lines, hmails, notes, cb) {
     var plugin = this;
     this.loginfo("Processing domain: " + dom);
     var fname = _fname();
@@ -226,7 +233,7 @@ exports.process_domain = function (dom, recips, from, data_lines, hmails, cb) {
                         cb(tmp_path, DENY, "Queue error");
                     }
                     else {
-                        hmails.push(new HMailItem (fname, dest_path));
+                        hmails.push(new HMailItem (fname, dest_path, notes));
                         cb(tmp_path, OK, "Queued!");
                     }
                 });
@@ -250,12 +257,13 @@ exports.process_domain = function (dom, recips, from, data_lines, hmails, cb) {
 
     ws.on('drain', write_more);
 
-    plugin.build_todo(dom, recips, from, ws, write_more);
+    plugin.build_todo(id, dom, recips, from, ws, write_more);
 }
 
-exports.build_todo = function (dom, recips, from, ws, write_more) {
+exports.build_todo = function (id, dom, recips, from, ws, write_more) {
     var todo_str = JSON.stringify(
         {
+            id: id,  // Include an id value in the header.
             domain: dom,
             mail_from: from,
             rcpt_to:   recips,
@@ -405,7 +413,7 @@ exports.stats = function () {
 /////////////////////////////////////////////////////////////////////////////
 // HMailItem - encapsulates an individual outbound mail item
 
-function HMailItem (filename, path) {
+function HMailItem (filename, path, notes) {
     events.EventEmitter.call(this);
     var matches = filename.match(fn_re);
     if (!matches) {
@@ -415,7 +423,8 @@ function HMailItem (filename, path) {
     this.filename = filename;
     this.next_process = matches[1];
     this.num_failures = matches[2];
-    
+    this.notes= notes === undefined ? {} : notes;
+
     this.size_file();
 }
 
@@ -869,6 +878,7 @@ HMailItem.prototype.bounce = function (err) {
 
 HMailItem.prototype._bounce = function (err) {
     this.bounce_error = err;
+    plugins.run_hooks("undelivered", this, err);
     plugins.run_hooks("bounce", this, err);
 }
 
@@ -922,6 +932,7 @@ HMailItem.prototype.delivered = function () {
     this.loginfo("Successfully delivered mail: " + this.filename);
     delivery_concurrency--;
     fs.unlink(this.path);
+    plugins.run_hooks("delivered", this, null);
 }
 
 HMailItem.prototype.temp_fail = function (err) {
@@ -959,3 +970,16 @@ HMailItem.prototype.temp_fail = function (err) {
         setTimeout(function () {hmail.send()}, delay);
     });
 }
+
+// Neither of the following two handlers has an impact on outgoing mail.
+HMailItem.prototype.delivered_respond = function (retval, msg) {
+    if (retval != constants.cont && retval != constants.ok) {
+        this.logwarn("delivered plugin responded with: " + retval + " msg=" + msg + ".");
+    }
+};
+
+HMailItem.prototype.undelivered_respond = function (retval, msg) {
+    if (retval != constants.cont && retval != constants.ok) {
+        this.logwarn("undelivered plugin responded with: " + retval + " msg=" + msg + ".");
+    }
+};
