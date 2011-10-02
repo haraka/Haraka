@@ -37,21 +37,28 @@ If you wish to keep a copy of the message in your plugin, simply either:
 ```javascript
 connection.notes.quarantine = [ 1 | true | 'sub/directory/path' ];
 ```
+
 or
+
 ```javascript
 connection.transaction.notes.quarantine = [ 1 | true | 'sub/directory/path' ];
 ```
+
 e.g.
+
 ```javascript
 connection.notes.quarantine = 1;
 ```
+
 would save the message to '/var/spool/quarantine/haraka/YYYYMMDD/UUID' where
 YYYMMDD and UUID are expanded to current date and transaction UUID.
 
 and
+
 ```javascript
 connection.notes.quarantine = 'corpus';
 ```
+
 would save the message to '/var/spool/quarantine/haraka/corpus/YYYYMMDD/UUID'.
 
 Note: you can specify 'corpus/foo' or 'corpus/foo/bar' and the directories will
