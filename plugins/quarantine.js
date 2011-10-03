@@ -29,6 +29,25 @@ var zeroPad = exports.zeroPad = function (n, digits) {
     return n;
 }
 
+exports.hook_init_master = function (next) {
+    // At start-up; delete any files in the temporary directory
+    // NOTE: This is deliberately syncronous to ensure that this
+    //       is completed prior to any messages being received.
+    var config = this.config.get('quarantine.ini', 'ini');
+    var base_dir = (config.main.quarantine_path) ?
+                    config.main.quarantine_path  :
+                    '/var/spool/haraka/quarantine';
+    var tmp_dir = [ base_dir, 'tmp' ].join('/');
+    if (path.existsSync(tmp_dir)) {
+        var dirent = fs.readdirSync(tmp_dir);
+        this.loginfo('Removing temporary files from: ' + tmp_dir);
+        for (i=0; i<dirent.length; i++) {
+            fs.unlinkSync([ tmp_dir, dirent[i] ].join('/'));
+        }
+    }
+    return next();
+}
+
 exports.quarantine = function (next, connection) {
     var transaction = connection.transaction;
     if ((connection.notes.quarantine || transaction.notes.quarantine)) {
@@ -42,37 +61,62 @@ exports.quarantine = function (next, connection) {
         var yyyymmdd = d.getFullYear() + zeroPad(d.getMonth(), 2) 
             + this.zeroPad(d.getDate(), 2);
         var config = this.config.get('quarantine.ini', 'ini');
-        var dir = (config.main.quarantine_path) ? config.main.quarantine_path :
-                  '/var/spool/haraka/quarantine';
+        var base_dir = (config.main.quarantine_path) ? 
+                        config.main.quarantine_path  :
+                        '/var/spool/haraka/quarantine';
+        var dir;
         // Allow either boolean or a sub-directory to be specified
         if (connection.notes.quarantine) {
             if (typeof(connection.notes.quarantine) !== 'boolean' &&
                 connection.notes.quarantine !== 1)
             {
-                dir += '/' + connection.notes.quarantine;
+                dir = connection.notes.quarantine;
             }
         }
         else if (transaction.notes.quarantine) {
             if (typeof(transaction.notes.quarantine) !== 'boolean' &&
                 transaction.notes.quarantine !== 1)
             {
-                dir += '/' + transaction.notes.quarantine;
+                dir = transaction.notes.quarantine;
             }
         }
-        dir += '/' + yyyymmdd;
+        if (!dir) {
+            dir = yyyymmdd;
+        } else {
+            dir = [ dir, yyyymmdd ].join('/');
+        }
         var plugin = this;
-        mkdirs(dir, 0770, function () {
-            fs.writeFile([dir, transaction.uuid].join('/'), lines.join(''), 
-                function(err) {
-                    if (err) {
-                        plugin.logerror('Error writing quarantine file: ' + err);
-                    }
-                    else {
-                        plugin.loginfo('Stored copy of message in quarantine: ' + 
-                            [ dir, transaction.uuid ].join('/'));
-                    }
-                    return next();
+        // Create all the directories recursively if they do not exist first.
+        // Then write the file to a temporary directory first, once this is 
+        // successful we hardlink the file to the final destination and then 
+        // remove the temporary file to guarantee a complete file in the 
+        // final destination.
+        mkdirs([ base_dir, 'tmp' ].join('/'), 0770, function () {
+            mkdirs([ base_dir, dir ].join('/'), 0770, function () {
+                fs.writeFile([ base_dir, 'tmp', transaction.uuid ].join('/'), lines.join(''), 
+                    function(err) {
+                        if (err) {
+                            plugin.logerror('Error writing quarantine file: ' + err);
+                        }
+                        else {
+                            fs.link([ base_dir, 'tmp', transaction.uuid ].join('/'), 
+                                    [ base_dir, dir, transaction.uuid ].join('/'),
+                                    function (err) {
+                                        if (err) {
+                                            plugin.logerror('Error writing quarantine file: ' + err);
+                                        }
+                                        else {
+                                            plugin.loginfo('Stored copy of message in quarantine: ' + 
+                                                           [ base_dir, dir, transaction.uuid ].join('/'));
+                                            // Now delete the temporary file
+                                            fs.unlink([ base_dir, 'tmp', transaction.uuid ].join('/'));
+                                        }
+                                        return next();
+                                    }
+                            );
+                        }
                 });
+            });
         });
     } 
     else {
