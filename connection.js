@@ -666,7 +666,7 @@ Connection.prototype.received_line = function() {
            +"])\n  " + (this.authheader || '') + "  by " + config.get('me', 'nolog')
            +" (Haraka/" + version
            +") with " + (this.sslheader || '') + smtp
-           +" id " + this.uuid + "." + this.tran_count
+           +" id " + this.uuid
            +";\n    " + _date_to_str(new Date());
 };
 
