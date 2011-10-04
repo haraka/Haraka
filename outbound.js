@@ -194,9 +194,7 @@ exports.send_trans_email = function (transaction, next) {
         else if (num_domains === 1) {
             for (var i=0,l=hmails.length; i < l; i++) {
                 var hmail = hmails[i];
-                setTimeout(function (h) {
-                    return function () { h.send() }
-                }(hmail), 0);
+                plugins.run_hooks("queue_file",hmail);
             }
             next(code, msg);
         }
@@ -209,14 +207,11 @@ exports.send_trans_email = function (transaction, next) {
     for (var dom in recips) {
         var from = transaction.mail_from;
         var data_lines = transaction.data_lines;
-        this.process_domain(transaction.notes.todo_id ? transaction.notes.todo_id : transaction.uuid, dom, recips[dom], from, data_lines, hmails, transaction.notes, mynext);
-        // Note for the above invocation: The first parameter is either the Haraka generated UUID OR
-        // if the user has included a todo_id in transaction.notes, it is utilized. This allows the
-        // 'delivered' and 'undelivered' plugins to have an identifying tag(s) for the email.
+        this.process_domain(dom, recips[dom], from, data_lines, hmails, transaction.notes, mynext);
     }
 }
 
-exports.process_domain = function (id, dom, recips, from, data_lines, hmails, notes, cb) {
+exports.process_domain = function (dom, recips, from, data_lines, hmails, notes, cb) {
     var plugin = this;
     this.loginfo("Processing domain: " + dom);
     var fname = _fname();
@@ -257,13 +252,12 @@ exports.process_domain = function (id, dom, recips, from, data_lines, hmails, no
 
     ws.on('drain', write_more);
 
-    plugin.build_todo(id, dom, recips, from, ws, write_more);
+    plugin.build_todo(dom, recips, from, ws, write_more);
 }
 
-exports.build_todo = function (id, dom, recips, from, ws, write_more) {
+exports.build_todo = function (dom, recips, from, ws, write_more) {
     var todo_str = JSON.stringify(
         {
-            id: id,  // Include an id value in the header.
             domain: dom,
             mail_from: from,
             rcpt_to:   recips,
@@ -371,7 +365,7 @@ exports.load_queue_files = function (cb_name, files) {
             // dot-file...
             continue;
         }
-        var hmail = new HMailItem(file, path.join(queue_dir, file));
+        var hmail = new HMailItemQ(file, path.join(queue_dir, file));
         this[cb_name](hmail);
 
         if ((files.length === 0) || (i === max_concurrency)) {
@@ -424,8 +418,6 @@ function HMailItem (filename, path, notes) {
     this.next_process = matches[1];
     this.num_failures = matches[2];
     this.notes= notes === undefined ? {} : notes;
-
-    this.size_file();
 }
 
 util.inherits(HMailItem, events.EventEmitter);
@@ -454,6 +446,7 @@ HMailItem.prototype.size_file = function () {
     fs.stat(self.path, function (err, stats) {
         if (err) {
             // we are fucked... guess I need somewhere for this to go
+            logger.logerror("Error obtaining file size: " + err);
         }
         else {
             self.file_size = stats.size;
@@ -907,7 +900,7 @@ HMailItem.prototype.bounce_respond = function (retval, msg) {
 
         var hmails = [];
 
-        exports.process_domain(dom, [recip], from, data_lines, hmails,
+        exports.process_domain(dom, [recip], from, data_lines, hmails, self.notes,
             function (path, code, msg) {
                 fs.unlink(self.path);
                 if (code === DENY) {
@@ -971,15 +964,48 @@ HMailItem.prototype.temp_fail = function (err) {
     });
 }
 
-// Neither of the following two handlers has an impact on outgoing mail.
+HMailItem.prototype.queue_file_respond = function (retval, msg) {
+    // We need information from the file.
+    // The file may have been modified by the plugin. For example, a DKIM header may have been inserted.
+    this.size_file();
+    // How should we proceed?
+    if (retval === undefined || retval === constants.cont) {
+        // Send the email.
+        process.nextTick(function(h){return function(){h.send()}}(this));
+    }else{
+        // Suppress the sending.
+        this.logwarn("queue_file plugin responded with: " + retval + " msg=" + msg + ".");
+        this.bounce(msg);
+    }
+};
+
+// The following handler has an impact on outgoing mail.
 HMailItem.prototype.delivered_respond = function (retval, msg) {
     if (retval != constants.cont && retval != constants.ok) {
         this.logwarn("delivered plugin responded with: " + retval + " msg=" + msg + ".");
     }
 };
 
+// The following handler has an impact on outgoing mail.
 HMailItem.prototype.undelivered_respond = function (retval, msg) {
     if (retval != constants.cont && retval != constants.ok) {
         this.logwarn("undelivered plugin responded with: " + retval + " msg=" + msg + ".");
     }
 };
+
+// An alternate constructor for HMail items.
+function HMailItemQ (filename, path, notes) {
+    events.EventEmitter.call(this);
+    var matches = filename.match(fn_re);
+    if (!matches) {
+        throw new Error("Bad filename: " + filename);
+    }
+    this.path     = path;
+    this.filename = filename;
+    this.next_process = matches[1];
+    this.num_failures = matches[2];
+    this.notes= notes === undefined ? {} : notes;
+    this.size_file(); // Obtain file info.
+}
+
+util.inherits(HMailItemQ, HMailItem );
