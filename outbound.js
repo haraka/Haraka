@@ -365,7 +365,7 @@ exports.load_queue_files = function (cb_name, files) {
             // dot-file...
             continue;
         }
-        var hmail = new HMailItemQ(file, path.join(queue_dir, file));
+        var hmail = new HMailItem(file, path.join(queue_dir, file));
         this[cb_name](hmail);
 
         if ((files.length === 0) || (i === max_concurrency)) {
@@ -418,6 +418,8 @@ function HMailItem (filename, path, notes) {
     this.next_process = matches[1];
     this.num_failures = matches[2];
     this.notes= notes === undefined ? {} : notes;
+
+    this.size_file();
 }
 
 util.inherits(HMailItem, events.EventEmitter);
@@ -967,6 +969,8 @@ HMailItem.prototype.temp_fail = function (err) {
 HMailItem.prototype.queue_file_respond = function (retval, msg) {
     // We need information from the file.
     // The file may have been modified by the plugin. For example, a DKIM header may have been inserted.
+    delete this.todo;
+    delete this.file_size;
     this.size_file();
     // How should we proceed?
     if (retval === undefined || retval === constants.cont) {
@@ -992,20 +996,3 @@ HMailItem.prototype.undelivered_respond = function (retval, msg) {
         this.logwarn("undelivered plugin responded with: " + retval + " msg=" + msg + ".");
     }
 };
-
-// An alternate constructor for HMail items.
-function HMailItemQ (filename, path, notes) {
-    events.EventEmitter.call(this);
-    var matches = filename.match(fn_re);
-    if (!matches) {
-        throw new Error("Bad filename: " + filename);
-    }
-    this.path     = path;
-    this.filename = filename;
-    this.next_process = matches[1];
-    this.num_failures = matches[2];
-    this.notes= notes === undefined ? {} : notes;
-    this.size_file(); // Obtain file info.
-}
-
-util.inherits(HMailItemQ, HMailItem );
