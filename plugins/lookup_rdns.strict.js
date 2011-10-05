@@ -42,8 +42,8 @@ function _in_whitelist(plugin, address) {
         }
     }
 
-    if (host_list.length) {
-        var regex = new RegExp ('^(?:' + host_list.join('|') + ')$', 'i');
+    if (host_list_regex.length) {
+        var regex = new RegExp ('^(?:' + host_list_regex.join('|') + ')$', 'i');
 
         plugin.logdebug("checking " + domain + " against " + regex.source);
 
