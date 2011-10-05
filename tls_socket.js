@@ -1,5 +1,5 @@
 /*----------------------------------------------------------------------------------------------*/
-/* Obtained from http://js.5sh.net/starttls.js on 8/18/2011.                                    */
+/* Obtained and modified from http://js.5sh.net/starttls.js on 8/18/2011.                       */
 /*----------------------------------------------------------------------------------------------*/
 
 var tls = require('tls');
@@ -61,6 +61,9 @@ pluggableStream.prototype.attach = function (socket) {
     self.targetsocket.on('error', function (exception) {
         self.emit('error', exception);
     });
+    self.targetsocket.on('timeout', function () {
+        self.emit('timeout');
+    });
     if (self.targetsocket.remotePort) {
         self.remotePort = self.targetsocket.remotePort;
     }
@@ -92,10 +95,19 @@ pluggableStream.prototype.write = function (data) {
         this.targetsocket.write(data);
 };
 
+pluggableStream.prototype.end = function () {
+    if (this.targetsocket.end)
+        this.targetsocket.end();
+}
+
 pluggableStream.prototype.setKeepAlive = function (/* true||false, timeout */) {
 };
 
 pluggableStream.prototype.setNoDelay = function (/* true||false */) {
+};
+
+pluggableStream.prototype.setTimeout = function (timeout) {
+    return this.targetsocket.setTimeout(timeout);
 };
 
 function pipe(pair, socket) {
@@ -129,18 +141,17 @@ function createServer(cb) {
     var serv = net.createServer(function (cryptoSocket) {
 
         var socket = new pluggableStream(cryptoSocket);
-        socket.cryptoSocket = cryptoSocket;
 
         socket.upgrade = function (options) {
             log.logdebug("Upgrading to TLS");
             
             socket.clean();
-            socket.cryptoSocket.removeAllListeners('data');
+            cryptoSocket.removeAllListeners('data');
             var sslcontext = crypto.createCredentials(options);
 
             var pair = tls.createSecurePair(sslcontext, true, false, false);
 
-            var cleartext = pipe(pair, socket.cryptoSocket);
+            var cleartext = pipe(pair, cryptoSocket);
 
             pair.on('secure', function() {
                 var verifyError = (pair.ssl || pair._ssl).verifyError();
@@ -153,6 +164,7 @@ function createServer(cb) {
                     cleartext.authorized = true;
                 }
 
+                socket.emit('secure');
             });
 
             cleartext._controlReleased = true;
@@ -169,23 +181,22 @@ function createServer(cb) {
 }
 
 function connect(port, host, cb) {
-    var cryptoSocket = new net.Stream();
+    var cryptoSocket = new net.Socket();
 
     cryptoSocket.connect(port, host);
 
     var socket = new pluggableStream(cryptoSocket);
-    socket.cryptoSocket = cryptoSocket;
 
     socket.upgrade = function (options) {
         socket.clean();
-        socket.cryptoSocket.removeAllListeners('data');
+        cryptoSocket.removeAllListeners('data');
         var sslcontext = crypto.createCredentials(options);
 
         var pair = tls.createSecurePair(sslcontext, false);
 
         socket.pair = pair;
 
-        var cleartext = pipe(pair, socket.cryptoSocket);
+        var cleartext = pipe(pair, cryptoSocket);
 
         pair.on('secure', function() {
             var verifyError = (pair.ssl || pair._ssl).verifyError();
@@ -199,6 +210,8 @@ function connect(port, host, cb) {
             }
 
             if (cb) cb();
+
+            socket.emit('secure');
         });
 
         cleartext._controlReleased = true;
