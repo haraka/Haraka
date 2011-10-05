@@ -81,6 +81,8 @@ exports.rdns_access = function(next, connection) {
             return next(DENY, plugin.deny_msg);
         }
     }
+
+    return next();
 }
 
 function _in_whitelist(plugin, host) {
