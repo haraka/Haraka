@@ -23,7 +23,6 @@ function _dns_error(next, err, host, plugin, nxdomain, dnserror) {
 }
 
 function _in_whitelist(plugin, address) {
-    var alternation     = '';
     var domain          = address.toLowerCase();
     var host_list       =
         plugin.config.get('lookup_rdns.strict.whitelist', 'list');
@@ -43,15 +42,11 @@ function _in_whitelist(plugin, address) {
         }
     }
 
-    for (i in host_list_regex) {
-        alternation += host_list_regex[i] + '|';
-    }
+    if (host_list.length) {
+        var regex = new RegExp ('^(?:' + host_list.join('|') + ')$', 'i');
 
-    if (alternation.length) {
         plugin.logdebug("checking " + domain + " against " +
-            '^(?:' + alternation + ')$');
-
-        var regex = new RegExp ('^(?:' + alternation + ')$', 'i');
+            '^(?:' + regex.source + ')$');
 
         if (domain.match(regex)) {
             plugin.logdebug("Allowing " + domain);

@@ -3,33 +3,21 @@
 exports.register = function() {
     var i;
     var config = this.config.get('connect.rdns_access.ini', 'ini');
-    this.wl_alternation = '';
-    this.bl_alternation = '';
     this.wl = this.config.get('connect.rdns_access.whitelist', 'list');
     this.bl = this.config.get('connect.rdns_access.blacklist', 'list');
     this.deny_msg = config.general && (config.general['deny_msg'] ||
         'Connection rejected.');
-    var whitelist_regex =
+    var white_regex =
         this.config.get('connect.rdns_access.whitelist_regex', 'list');
-    var blacklist_regex =
+    var black_regex =
         this.config.get('connect.rdns_access.blacklist_regex', 'list');
 
-    for (i in whitelist_regex) {
-        this.wl_alternation += whitelist_regex[i] + '|';
+    if (white_regex.length) {
+        this.wlregex = new RegExp('^(?:' + white_regex.join('|') + ')$', 'i');
     }
 
-    if (this.wl_alternation.length) {
-        this.wl_alternation = this.wl_alternation.slice(0, -1);
-        this.wlregex = new RegExp ('^(?:' + this.wl_alternation + ')$', 'i');
-    }
-
-    for (i in blacklist_regex) {
-        this.bl_alternation += blacklist_regex[i] + '|';
-    }
-
-    if (this.bl_alternation.length) {
-        this.bl_alternation = this.bl_alternation.slice(0, -1);
-        this.blregex = new RegExp ('^(?:' + this.bl_alternation + ')$', 'i');
+    if (black_regex.length) {
+        this.blregex = new RegExp('^(?:' + black_regex.join('|') + ')$', 'i');
     }
 
     this.register_hook('connect', 'rdns_access');
@@ -95,9 +83,9 @@ function _in_whitelist(plugin, host) {
         }
     }
 
-    if (plugin.wl_alternation.length) {
+    if (plugin.wlregex) {
         plugin.logdebug('checking ' + host + ' against ' +
-            '^(?:' + plugin.wl_alternation + ')$');
+            plugin.wlregex.source);
 
         if (host.match(plugin.wlregex)) {
             return 1;
@@ -117,9 +105,9 @@ function _in_blacklist(plugin, host) {
         }
     }
 
-    if (plugin.bl_alternation.length) {
+    if (plugin.blregex) {
         plugin.logdebug('checking ' + host + ' against ' +
-            '^(?:' + plugin.bl_alternation + ')$');
+            plugin.blregex.source);
 
         if (host.match(plugin.blregex)) {
             return 1;

@@ -12,7 +12,6 @@ exports.hook_rcpt = function(next, connection, params) {
     var domain          = rcpt.host.toLowerCase();
     var host_list       = this.config.get('host_list', 'list');
     var host_list_regex = this.config.get('host_list_regex', 'list');
-    var alternation     = '';
 
     var i = 0;
     for (i in host_list) {
@@ -25,15 +24,11 @@ exports.hook_rcpt = function(next, connection, params) {
         }
     }
 
-    for (i in host_list_regex) {
-        alternation += host_list_regex[i] + '|';
-    }
+    if (host_list_regex.length) {
+        var regex = new RegExp ('^(?:' + host_list_regex.join('|') + ')$', 'i');
 
-    if (alternation.length) {
         this.logdebug("checking " + domain + " against regexp " +
-            '^(?:' + alternation + ')$');
-
-        var regex = new RegExp ('^(?:' + alternation + ')$', 'i');
+            '^(?:' + regex.source + ')$');
 
         // regex matches
         if (domain.match(regex)) {
