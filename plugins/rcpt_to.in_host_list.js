@@ -27,8 +27,7 @@ exports.hook_rcpt = function(next, connection, params) {
     if (host_list_regex.length) {
         var regex = new RegExp ('^(?:' + host_list_regex.join('|') + ')$', 'i');
 
-        this.logdebug("checking " + domain + " against regexp " +
-            '^(?:' + regex.source + ')$');
+        this.logdebug("checking " + domain + " against regexp " + regex.source);
 
         // regex matches
         if (domain.match(regex)) {

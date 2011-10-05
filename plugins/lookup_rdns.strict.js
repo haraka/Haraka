@@ -45,8 +45,7 @@ function _in_whitelist(plugin, address) {
     if (host_list.length) {
         var regex = new RegExp ('^(?:' + host_list.join('|') + ')$', 'i');
 
-        plugin.logdebug("checking " + domain + " against " +
-            '^(?:' + regex.source + ')$');
+        plugin.logdebug("checking " + domain + " against " + regex.source);
 
         if (domain.match(regex)) {
             plugin.logdebug("Allowing " + domain);
