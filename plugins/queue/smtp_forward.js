@@ -43,6 +43,8 @@ exports.smtp_forward = function (next, connection) {
         self.logprotocol("Fwd C: " + line);
         this.write(line + "\r\n");
         command = cmd.toLowerCase();
+        // Clear response buffer from previous command
+        response = [];
     };
     
     socket.on('timeout', function () {
@@ -66,14 +68,54 @@ exports.smtp_forward = function (next, connection) {
                 rest = matches[3];
             response.push(rest);
             if (cont === ' ') {
-                if (code.match(/^[45]/)) {
+                self.logdebug('command state: ' + command);
+                // Handle fallback to HELO if EHLO is rejected
+                if (command === 'ehlo') {
+                    if (code.match(/^5/)) {
+                        // Handle fallback to HELO if EHLO is rejected
+                        if (!this.xclient) {
+                            socket.send_command('HELO', self.config.get('me'));
+                        }
+                        else {
+                            socket.send_command('HELO', connection.hello_host);
+                        }
+                        return;
+                    }
+                    // Parse CAPABILITIES
+                    for (i in response) {
+                        if (response[i].match(/^XCLIENT/)) {
+                            if(!this.xclient) {
+                                // Just use the ADDR= key for now
+                                socket.send_command('XCLIENT', 'ADDR=' + connection.remote_ip);
+                                return;
+                            }
+                        }
+                        // TODO: TLS support here...
+                    }
+                }
+                if (command === 'xclient' && code.match(/^5/)) {
+                    // XCLIENT command was rejected (no permission?)
+                    // Carry on without XCLIENT
+                    command = 'helo';
+                } 
+                else if (!(command === 'mail' || command === 'rcpt') && code.match(/^[45]/)) {
+                    // NOTE: recipients can be sent at both 'mail' *AND* 'rcpt'
+                    // command states if multiple recipients are present.
+                    // We ignore errors for both states as the DATA command will
+                    // be rejected by the remote end if there are no recipients.
                     socket.send_command('QUIT');
                     return next(); // Fall through to other queue hooks here
                 }
                 switch (command) {
-                    case 'connect':
-                        socket.send_command('HELO', self.config.get('me'));
+                    case 'xclient':
+                        // If we are in XCLIENT mode, proxy the HELO/EHLO from the client
+                        this.xclient = true;
+                        socket.send_command('EHLO', connection.hello_host);
                         break;
+                    case 'connect':
+                        socket.send_command('EHLO', self.config.get('me'));
+                        break;
+                    case 'ehlo':
                     case 'helo':
                         socket.send_command('MAIL', 'FROM:' + connection.transaction.mail_from);
                         break;
@@ -81,6 +123,7 @@ exports.smtp_forward = function (next, connection) {
                         socket.send_command('RCPT', 'TO:' + recipients.shift());
                         if (recipients.length) {
                             // don't move to next state if we have more recipients
+                            command = 'mail';
                             return;
                         }
                         break;
@@ -111,7 +154,7 @@ exports.smtp_forward = function (next, connection) {
     });
     socket.on('drain', function() {
         self.logdebug("Drained");
-        if (command === 'dot') {
+        if (command === 'data') {
             send_data();
         }
     });

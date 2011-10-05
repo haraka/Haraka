@@ -7,7 +7,7 @@ var path        = require('path');
 var vm          = require('vm');
 var fs          = require('fs');
 var utils       = require('./utils');
-var util = require('util');
+var util        = require('util');
 
 var plugin_paths = [path.join(__dirname, './plugins')];
 if (process.env.HARAKA) { plugin_paths.unshift(path.join(process.env.HARAKA, 'plugins')); }
@@ -75,6 +75,18 @@ Plugin.prototype.register_hook = function(hook_name, method_name) {
 
 Plugin.prototype.register = function () {}; // noop
 
+Plugin.prototype.inherits = function (parent_name) {
+    var parent_plugin = plugins._load_and_compile_plugin(parent_name);
+    for (var method in parent_plugin) {
+        if (!this[method]) {
+            this[method] = parent_plugin[method];
+        }
+    }
+    if (parent_plugin.register) {
+        parent_plugin.register.call(this);
+    }
+}
+
 // copy logger methods into Plugin:
 
 for (var key in logger) {
@@ -105,7 +117,14 @@ plugins.load_plugins = function () {
 
 plugins.load_plugin = function(name) {
     logger.loginfo("Loading plugin: " + name);
-    
+
+    var plugin = plugins._load_and_compile_plugin(name);
+    plugins._register_plugin(plugin);
+
+    return plugin;
+}
+
+plugins._load_and_compile_plugin = function(name) {
     var plugin = new Plugin(name);
     var fp = plugin.full_paths,
         rf, last_err;
@@ -135,7 +154,7 @@ plugins.load_plugin = function(name) {
         setInterval: setInterval,
         clearInterval: clearInterval,
         process: process,
-        Buffer: Buffer
+        Buffer: Buffer,
     };
     constants.import(sandbox);
     try {
@@ -149,6 +168,12 @@ plugins.load_plugin = function(name) {
         throw err; // default is to re-throw and stop Haraka
     }
     
+    return plugin;
+}
+
+plugins._register_plugin = function (plugin) {
+    plugin.register();
+    
     // register any hook_blah methods.
     for (var method in plugin) {
         var result;
@@ -156,8 +181,6 @@ plugins.load_plugin = function(name) {
             plugin.register_hook(result[1], method);
         }
     }
-    
-    plugin.register();
     
     return plugin;
 }
@@ -169,7 +192,12 @@ plugins.run_hooks = function (hook, object, params) {
     if (regular_hooks[hook] && object.hooks_to_run.length) {
         throw new Error("We are already running hooks! Fatal error!");
     }
-    
+
+    if (hook === 'deny') {
+        // Save the hooks_to_run list so that we can run any remaining 
+        // plugins on the previous hook once this hook is complete.
+        object.saved_hooks_to_run = object.hooks_to_run;
+    }
     object.hooks_to_run = [];
     
     for (i = 0; i < plugins.plugin_list.length; i++) {
@@ -207,13 +235,32 @@ plugins.run_next_hook = function(hook, object, params) {
         {
             var respond_method = hook + "_respond";
             if (item && utils.in_array(retval, [constants.deny, constants.denysoft, constants.denydisconnect])) {
-                if (hook != 'log')
+                if (hook != 'log') {
                     object.loginfo("plugin returned deny(soft?): ", msg);
-                object.deny_respond = function () {
-                    object.hooks_to_run = [];
-                    object[respond_method](retval, msg);
+                }
+                object.deny_respond = function (deny_retval, deny_msg) {
+                    switch(deny_retval) {
+                        case constants.ok:
+                            // Override rejection
+                            object.loginfo('deny(soft?) overriden by deny hook' + 
+                                           (deny_msg ? ': ' + deny_msg : ''));
+                            // Restore hooks_to_run with saved copy so that
+                            // any other plugins on this hook can also run.
+                            if (object.saved_hooks_to_run.length > 0) {
+                                object.hooks_to_run = object.saved_hooks_to_run;
+                                plugins.run_next_hook(hook, object, params);
+                            }
+                            else {
+                                object[respond_method](constants.cont, deny_msg);
+                            }
+                            break;
+                        default:
+                            object.saved_hooks_to_run = [];
+                            object.hooks_to_run = [];
+                            object[respond_method](retval, msg);
+                    }
                 };
-                plugins.run_hooks('deny', object, [retval, msg, item[0].name, item[1], params]);
+                plugins.run_hooks('deny', object, [retval, msg, item[0].name, item[1], params, hook]);
             }
             else {
                 object.hooks_to_run = [];

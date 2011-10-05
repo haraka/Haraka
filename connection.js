@@ -183,7 +183,7 @@ Connection.prototype.respond = function(code, messages) {
         code = messages.code;
         messages = messages.reply;
     }
-    if (!(typeof messages === 'object' && messages.constructor === Array)) {
+    if (!(typeof messages === 'object' && messages.constructor.name === 'Array')) {
         // messages not an array, make it so:
         messages = [ '' + messages ];
     }
@@ -296,6 +296,9 @@ Connection.prototype.unrecognized_command_respond = function(retval, msg) {
         case constants.ok:
                 // response already sent, cool...
                 break;
+        case constants.next_hook:
+                plugins.run_hooks(msg, this);
+                break;
         case constants.deny:
                 this.respond(500, msg || "Unrecognized command");
                 break;
@@ -374,7 +377,7 @@ Connection.prototype.ehlo_respond = function(retval, msg) {
         default:
                 var response = ["Haraka says hi " + this.remote_host + " [" + this.remote_ip + "]",
                                 "PIPELINING",
-                                "8BITMIME"
+                                "8BITMIME",
                                 ];
                 
                 var databytes = config.get('databytes', 'nolog');
@@ -423,6 +426,12 @@ Connection.prototype.noop_respond = function(retval, msg) {
                 this.respond(250, "OK");
     }
 };
+
+Connection.prototype.rset_respond = function(retval, msg) {
+    // We ignore any plugin responses
+    this.reset_transaction();    
+    this.respond(250, "OK");
+}
 
 Connection.prototype.mail_respond = function(retval, msg) {
     switch (retval) {
@@ -484,8 +493,10 @@ Connection.prototype.rcpt_respond = function(retval, msg) {
                 plugins.run_hooks('rcpt_ok', this, this.transaction.rcpt_to[this.transaction.rcpt_to.length - 1]);
                 break;
         default:
-                if (retval !== constants.cont)
+                if (retval !== constants.cont) {
                     this.logalert("No plugin determined if relaying was allowed");
+                }
+                this.transaction.rcpt_to.pop();
                 this.respond(450, "I cannot deliver for that user");
     }
 };
@@ -532,8 +543,7 @@ Connection.prototype.cmd_quit = function() {
 };
 
 Connection.prototype.cmd_rset = function() {
-    this.reset_transaction();
-    this.respond(250, "OK");
+    plugins.run_hooks('rset', this);
 };
 
 Connection.prototype.cmd_vrfy = function(line) {
@@ -662,6 +672,9 @@ Connection.prototype.cmd_data = function(line) {
     if (!this.transaction) {
         return this.respond(503, "MAIL required first");
     }
+    if (!this.transaction.rcpt_to.length) {
+        return this.respond(503, "RCPT required first");
+    }
 
     this.accumulate_data('Received: ' + this.received_line() + "\r\n");
     plugins.run_hooks('data', this);
@@ -689,20 +702,13 @@ Connection.prototype.data_respond = function(retval, msg) {
     if (!cont) {
         return;
     }
-    
-    if (!this.transaction.mail_from) {
-        this.respond(503, "MAIL required first");
-    }
-    else if (!this.transaction.rcpt_to.length) {
-        this.respond(503, "RCPT required first");
-    }
-    else {
-        this.respond(354, "go ahead, make my day");
-        // OK... now we get the data
-        this.state = 'data';
-        this.transaction.data_bytes = 0;
-        this.max_bytes = config.get('databytes', 'nolog');
-    }
+
+    // We already checked for MAIL/RCPT in cmd_data
+    this.respond(354, "go ahead, make my day");
+    // OK... now we get the data
+    this.state = 'data';
+    this.transaction.data_bytes = 0;
+    this.max_bytes = config.get('databytes', 'nolog');
 };
 
 Connection.prototype.accumulate_data = function(line) {
@@ -725,7 +731,7 @@ Connection.prototype.accumulate_data = function(line) {
         return;
     }
     
-    this.transaction.add_data(line.replace(/\r\n$/, "\n"));
+    this.transaction.add_data(line.replace(/^\.\./, '.').replace(/\r\n$/, "\n"));
 };
 
 Connection.prototype.data_done = function() {
