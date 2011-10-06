@@ -253,6 +253,7 @@ Connection.prototype.lookup_rdns_respond = function (retval, msg) {
     switch(retval) {
         case constants.ok:
                 this.remote_host = msg || 'Unknown';
+                this.remote_info = this.remote_info || this.remote_host;
                 plugins.run_hooks('connect', this);
                 break;
         case constants.deny:
@@ -659,8 +660,9 @@ Connection.prototype.received_line = function() {
            +" (" + this.hello_host + " ["+this.remote_ip
            +"])\n  " + (this.authheader || '') + "  by " + config.get('me', 'nolog')
            +" (Haraka/" + version
-           +") with " + (this.sslheader || '') + smtp + "; "
-           + _date_to_str(new Date());
+           +") with " + (this.sslheader || '') + smtp
+           +" id " + this.uuid
+           +";\n    " + _date_to_str(new Date());
 };
 
 Connection.prototype.cmd_data = function(line) {
