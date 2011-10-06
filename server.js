@@ -1,6 +1,6 @@
 // smtp network server
 
-var net         = require('./tls_server');
+var net         = require('./tls_socket');
 var logger      = require('./logger');
 var config      = require('./config');
 var conn        = require('./connection');
@@ -60,7 +60,7 @@ Server.createServer = function (params) {
     plugins.load_plugins();
     
     var server = net.createServer(function (client) {
-        client.cryptoSocket.setTimeout((config_data.main.inactivity_time || 300) * 1000);
+        client.setTimeout((config_data.main.inactivity_time || 300) * 1000);
         conn.createConnection(client, server);
     });
     server.notes = {};
