@@ -91,13 +91,16 @@ pluggableStream.prototype.clean = function (data) {
 };
 
 pluggableStream.prototype.write = function (data) {
-    if (this.targetsocket.write)
-        this.targetsocket.write(data);
+    if (this.targetsocket.write) {
+        return this.targetsocket.write(data);
+    }
+    return false;
 };
 
 pluggableStream.prototype.end = function () {
-    if (this.targetsocket.end)
+    if (this.targetsocket.end) {
         this.targetsocket.end();
+    }
 }
 
 pluggableStream.prototype.setKeepAlive = function (/* true||false, timeout */) {
