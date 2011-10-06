@@ -224,12 +224,7 @@ Connection.prototype.disconnect = function() {
 Connection.prototype.disconnect_respond = function () {
     this.disconnected = true;
     this.logdebug("closing client");
-    if (this.client.cryptoSocket && this.client.cryptoSocket.fd) {
-        this.client.cryptoSocket.end();
-    }
-    else if (this.client.fd) {
-        this.client.end();
-    }
+    this.client.end();
 };
 
 Connection.prototype.get_capabilities = function() {
