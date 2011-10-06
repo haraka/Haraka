@@ -27,4 +27,7 @@ Configuration
     The port to connect to.
 
   Both values are required.
-  
+
+  * disable_tls=[true|1]
+
+    Disables the use of TLS
