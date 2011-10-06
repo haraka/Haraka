@@ -42,11 +42,10 @@ function _in_whitelist(plugin, address) {
         }
     }
 
-    for (i in host_list_regex) {
-        plugin.logdebug("checking " + domain + " against " +
-            host_list_regex[i]);
+    if (host_list_regex.length) {
+        var regex = new RegExp ('^(?:' + host_list_regex.join('|') + ')$', 'i');
 
-        var regex = new RegExp ('^' + host_list_regex[i] + '$', 'i');
+        plugin.logdebug("checking " + domain + " against " + regex.source);
 
         if (domain.match(regex)) {
             plugin.logdebug("Allowing " + domain);

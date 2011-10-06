@@ -24,11 +24,10 @@ exports.hook_rcpt = function(next, connection, params) {
         }
     }
 
-    for (i in host_list_regex) {
-        this.logdebug("checking " + domain + " against regexp " +
-            host_list_regex[i]);
+    if (host_list_regex.length) {
+        var regex = new RegExp ('^(?:' + host_list_regex.join('|') + ')$', 'i');
 
-        var regex = new RegExp ('^' + host_list_regex[i] + '$', 'i');
+        this.logdebug("checking " + domain + " against regexp " + regex.source);
 
         // regex matches
         if (domain.match(regex)) {
