@@ -1,6 +1,11 @@
 rdns.regexp
 ===========
 
+WARNING: The services offered by this plugin, and much more, are now provided
+more efficiently with the connect.rdns_access plugin.  Please transition over
+to using the new connect.rdns_access plugin, as this plugin is now deprecated
+and may be removed in a future version of Haraka.
+
 This plugin checks the reverse-DNS against a list of regular expressions. Any
 matches will result in a rejection, unless there is an allow rule to
 balance off broad regexes.
