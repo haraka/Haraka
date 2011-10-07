@@ -595,6 +595,7 @@ Connection.prototype.cmd_mail = function(line) {
     
     this.init_transaction();
     this.transaction.mail_from = from
+    this.loginfo('MAIL FROM: ' + from);
     plugins.run_hooks('mail', this, [from, params]);
 };
 
@@ -633,6 +634,7 @@ Connection.prototype.cmd_rcpt = function(line) {
     }
 
     this.transaction.rcpt_to.push(recip);
+    this.loginfo('RCPT TO: ' + recip);
     plugins.run_hooks('rcpt', this, [recip, params]);
 };
 
