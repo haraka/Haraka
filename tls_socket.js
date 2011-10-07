@@ -99,7 +99,19 @@ pluggableStream.prototype.write = function (data) {
 
 pluggableStream.prototype.end = function () {
     if (this.targetsocket.end) {
-        this.targetsocket.end();
+        return this.targetsocket.end();
+    }
+}
+
+pluggableStream.prototype.destroySoon = function () {
+    if (this.targetsocket.destroySoon) {
+        return this.targetsocket.destroySoon();
+    }
+}
+
+pluggableStream.prototype.destroy = function () {
+    if (this.targetsocket.destroy) {
+        return this.targetsocket.destroy();
     }
 }
 
@@ -200,7 +212,7 @@ function connect(port, host, cb) {
         socket.pair = pair;
 
         var cleartext = pipe(pair, cryptoSocket);
-
+        
         pair.on('secure', function() {
             var verifyError = (pair.ssl || pair._ssl).verifyError();
 
