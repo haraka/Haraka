@@ -176,6 +176,10 @@ exports.send_trans_email = function (transaction, next) {
                 fs.unlink(ok_paths[i]);
             }
             fs.unlink(path);
+            // Trigger the undelivered plugin chain on the unprocessed hmail items.
+            for (i=ok_paths.length-1,l=hmails.length; i < l; i++) {
+                plugins.run_hooks("undelivered", hmails[i], hmails[i].bounce_error);
+            }
         }
         else if (code === DENY) {
             // unlink everything sent before.
@@ -190,9 +194,7 @@ exports.send_trans_email = function (transaction, next) {
         else if (num_domains === 1) {
             for (var i=0,l=hmails.length; i < l; i++) {
                 var hmail = hmails[i];
-                setTimeout(function (h) {
-                    return function () { h.send() }
-                }(hmail), 0);
+                plugins.run_hooks("queue_file",hmail);
             }
             next(code, msg);
         }
@@ -205,11 +207,11 @@ exports.send_trans_email = function (transaction, next) {
     for (var dom in recips) {
         var from = transaction.mail_from;
         var data_lines = transaction.data_lines;
-        this.process_domain(dom, recips[dom], from, data_lines, hmails, mynext);
+        this.process_domain(dom, recips[dom], from, data_lines, hmails, transaction.notes, mynext);
     }
 }
 
-exports.process_domain = function (dom, recips, from, data_lines, hmails, cb) {
+exports.process_domain = function (dom, recips, from, data_lines, hmails, notes, cb) {
     var plugin = this;
     this.loginfo("Processing domain: " + dom);
     var fname = _fname();
@@ -226,7 +228,7 @@ exports.process_domain = function (dom, recips, from, data_lines, hmails, cb) {
                         cb(tmp_path, DENY, "Queue error");
                     }
                     else {
-                        hmails.push(new HMailItem (fname, dest_path));
+                        hmails.push(new HMailItem (fname, dest_path, notes));
                         cb(tmp_path, OK, "Queued!");
                     }
                 });
@@ -405,7 +407,7 @@ exports.stats = function () {
 /////////////////////////////////////////////////////////////////////////////
 // HMailItem - encapsulates an individual outbound mail item
 
-function HMailItem (filename, path) {
+function HMailItem (filename, path, notes) {
     events.EventEmitter.call(this);
     var matches = filename.match(fn_re);
     if (!matches) {
@@ -415,7 +417,8 @@ function HMailItem (filename, path) {
     this.filename = filename;
     this.next_process = matches[1];
     this.num_failures = matches[2];
-    
+    this.notes= notes === undefined ? {} : notes;
+
     this.size_file();
 }
 
@@ -445,6 +448,7 @@ HMailItem.prototype.size_file = function () {
     fs.stat(self.path, function (err, stats) {
         if (err) {
             // we are fucked... guess I need somewhere for this to go
+            logger.logerror("Error obtaining file size: " + err);
         }
         else {
             self.file_size = stats.size;
@@ -918,6 +922,7 @@ HMailItem.prototype.bounce = function (err) {
 
 HMailItem.prototype._bounce = function (err) {
     this.bounce_error = err;
+    plugins.run_hooks("undelivered", this, err);
     plugins.run_hooks("bounce", this, err);
 }
 
@@ -946,7 +951,7 @@ HMailItem.prototype.bounce_respond = function (retval, msg) {
 
         var hmails = [];
 
-        exports.process_domain(dom, [recip], from, data_lines, hmails,
+        exports.process_domain(dom, [recip], from, data_lines, hmails, self.notes,
             function (path, code, msg) {
                 fs.unlink(self.path);
                 if (code === DENY) {
@@ -971,6 +976,7 @@ HMailItem.prototype.delivered = function () {
     this.loginfo("Successfully delivered mail: " + this.filename);
     delivery_concurrency--;
     fs.unlink(this.path);
+    plugins.run_hooks("delivered", this, null);
 }
 
 HMailItem.prototype.temp_fail = function (err) {
@@ -1008,3 +1014,34 @@ HMailItem.prototype.temp_fail = function (err) {
         setTimeout(function () {hmail.send()}, delay);
     });
 }
+
+HMailItem.prototype.queue_file_respond = function (retval, msg) {
+    // We need information from the file.
+    // The file may have been modified by the plugin. For example, a DKIM header may have been inserted.
+    delete this.todo;
+    delete this.file_size;
+    this.size_file();
+    // How should we proceed?
+    if (retval === undefined || retval === constants.cont) {
+        // Send the email.
+        process.nextTick(function(h){return function(){h.send()}}(this));
+    }else{
+        // Suppress the sending.
+        this.logwarn("queue_file plugin responded with: " + retval + " msg=" + msg + ".");
+        this.bounce(msg);
+    }
+};
+
+// The following handler has an impact on outgoing mail.
+HMailItem.prototype.delivered_respond = function (retval, msg) {
+    if (retval != constants.cont && retval != constants.ok) {
+        this.logwarn("delivered plugin responded with: " + retval + " msg=" + msg + ".");
+    }
+};
+
+// The following handler has an impact on outgoing mail.
+HMailItem.prototype.undelivered_respond = function (retval, msg) {
+    if (retval != constants.cont && retval != constants.ok) {
+        this.logwarn("undelivered plugin responded with: " + retval + " msg=" + msg + ".");
+    }
+};
