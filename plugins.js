@@ -9,6 +9,8 @@ var fs          = require('fs');
 var utils       = require('./utils');
 var util        = require('util');
 
+// @TODO remove "./". It's not needed (I think) and it's potentially danagerous for Windoof servers
+// @TODO this is more or less the same as in config.js and haraka.js. For consistency reasons it might be better centralized in one lib/place
 var plugin_paths = [path.join(__dirname, './plugins')];
 if (process.env.HARAKA) { plugin_paths.unshift(path.join(process.env.HARAKA, 'plugins')); }
 
@@ -48,17 +50,29 @@ var regular_hooks = {
     'help': 1
 };
 
+/**
+ * Constructor for a Plugin object
+ * 
+ * @param name The name of the plugin
+ */
 function Plugin(name) {
     this.name = name;
+    
+    // Every plugin can have a <name>.timeout config with one value: the timeout
     this.timeout = config.get(name + '.timeout', 'nolog');
     if (this.timeout === null) {
+    	// If not present, than try the plugin_timeout config file.
+    	// If plugin_timeout doesn't exist, than use system default 
+    	// @TODO move system default into global var or haraka provided global system settings
         this.timeout = config.get('plugin_timeout', 'nolog') || 30;
     }
+    // @TODO Shouldn't the "else" be removed?
     else {
         logger.logdebug("plugin " + name + " set timeout to: " + this.timeout + "s");
     }
     var full_paths = []
     plugin_paths.forEach(function (pp) {
+    	// @?? Does push() do nothing with an emtpy value? E.g. in case resolve() doesn't find the file.
         full_paths.push(path.resolve(pp, name) + '.js');
     });
     this.full_paths = full_paths;
@@ -66,6 +80,12 @@ function Plugin(name) {
     this.hooks = {};
 };
 
+/**
+ * Add register_hook() function to all Plugin instances
+ * 
+ * @param hook_name 
+ * @param method_name
+ */
 Plugin.prototype.register_hook = function(hook_name, method_name) {
     this.hooks[hook_name] = this.hooks[hook_name] || [];
     this.hooks[hook_name].push(method_name);
@@ -73,8 +93,16 @@ Plugin.prototype.register_hook = function(hook_name, method_name) {
     logger.logdebug("registered hook " + hook_name + " to " + this.name + "." + method_name);
 }
 
+/**
+ * Add register() function to all Plugin instances
+ */
 Plugin.prototype.register = function () {}; // noop
 
+/**
+ * Add inherits() function to all Plugin instances. The method allows plugins to inherit from other plugins.
+ * 
+ * @param parent_name
+ */
 Plugin.prototype.inherits = function (parent_name) {
     var parent_plugin = plugins._load_and_compile_plugin(parent_name);
     for (var method in parent_plugin) {
@@ -82,13 +110,15 @@ Plugin.prototype.inherits = function (parent_name) {
             this[method] = parent_plugin[method];
         }
     }
+
+    // @?? Should all Plugins have a register() method because of the prototype above?
     if (parent_plugin.register) {
         parent_plugin.register.call(this);
     }
 }
 
 // copy logger methods into Plugin:
-
+// @TODO why is this necessary? Same code as in server.js => utils.js
 for (var key in logger) {
     if (key.match(/^log\w/)) {
         // console.log("adding Plugin." + key + " method");
@@ -108,6 +138,9 @@ var plugins = exports;
 
 plugins.Plugin = Plugin;
 
+/**
+ * Load all plugins listed in config/plugins
+ */
 plugins.load_plugins = function () {
     logger.loginfo("Loading plugins");
     var plugin_list = config.get('plugins', 'nolog', 'list');
@@ -115,6 +148,9 @@ plugins.load_plugins = function () {
     plugins.plugin_list = plugin_list.map(plugins.load_plugin);
 };
 
+/**
+ * Load, compile and register the plugin with 'name'
+ */
 plugins.load_plugin = function(name) {
     logger.loginfo("Loading plugin: " + name);
 
@@ -124,10 +160,13 @@ plugins.load_plugin = function(name) {
     return plugin;
 }
 
+/**
+ * Load and compile the plugin with 'name'
+ */
 plugins._load_and_compile_plugin = function(name) {
     var plugin = new Plugin(name);
-    var fp = plugin.full_paths,
-        rf, last_err;
+    var fp = plugin.full_paths, rf, last_err;
+
     for (var i=0, j=fp.length; i<j; i++) {
         try {
             rf = fs.readFileSync(fp[i]);
@@ -145,6 +184,7 @@ plugins._load_and_compile_plugin = function(name) {
         }
         throw "Loading plugin " + name + " failed: " + last_err;
     }
+
     var code = rf;
     var sandbox = { 
         require: require,
@@ -156,6 +196,7 @@ plugins._load_and_compile_plugin = function(name) {
         process: process,
         Buffer: Buffer,
     };
+    
     constants.import(sandbox);
     try {
         vm.runInNewContext(code, sandbox, name);
@@ -171,6 +212,9 @@ plugins._load_and_compile_plugin = function(name) {
     return plugin;
 }
 
+/**
+ * Register the plugin
+ */
 plugins._register_plugin = function (plugin) {
     plugin.register();
     
@@ -185,6 +229,11 @@ plugins._register_plugin = function (plugin) {
     return plugin;
 }
 
+/**
+ * @param hook
+ * @param object
+ * @param params
+ */
 plugins.run_hooks = function (hook, object, params) {
     if (hook != 'log')
         object.logdebug("running " + hook + " hooks");
@@ -215,6 +264,11 @@ plugins.run_hooks = function (hook, object, params) {
     plugins.run_next_hook(hook, object, params);
 };
 
+/**
+ * @param hook
+ * @param object
+ * @param params
+ */
 plugins.run_next_hook = function(hook, object, params) {
     var called_once = 0;
     var timeout_id;

@@ -1,2 +1,6 @@
+# Modules to be added to cluster.js 
+# - One line per modul
+# - 1: module name
+# - 2+: config parameters applies to the module's constructor in the exact same order
 repl:8888
 stats
