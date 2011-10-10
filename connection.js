@@ -38,20 +38,25 @@ for (var key in logger) {
     }
 }
 
-
 function setupClient(self) {
     self.remote_ip = self.client.remoteAddress;
     self.lognotice("got connection from: " + self.remote_ip);
-    
+
+    self.client.on('end', function () {
+        if (!self.disconnected) {
+            self.fail("client (" + self.remote_ip + ") closed connection");
+        }
+    });
+
     self.client.on('error', function (err) {
         if (!self.disconnected) {
-            self.fail("client closed with err: " + err);
+            self.fail("client (" + self.remote_ip + ") closed with err: " + err);
         }
     });
     
     self.client.on('timeout', function () {
         if (!self.disconnected) {
-            self.fail("client (" + self.client.fd + ") timed out");
+            self.fail("client (" + self.remote_ip + ") timed out");
         }
     });
     
