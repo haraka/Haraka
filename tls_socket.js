@@ -91,13 +91,28 @@ pluggableStream.prototype.clean = function (data) {
 };
 
 pluggableStream.prototype.write = function (data) {
-    if (this.targetsocket.write)
-        this.targetsocket.write(data);
+    if (this.targetsocket.write) {
+        return this.targetsocket.write(data);
+    }
+    return false;
 };
 
 pluggableStream.prototype.end = function () {
-    if (this.targetsocket.end)
-        this.targetsocket.end();
+    if (this.targetsocket.end) {
+        return this.targetsocket.end();
+    }
+}
+
+pluggableStream.prototype.destroySoon = function () {
+    if (this.targetsocket.destroySoon) {
+        return this.targetsocket.destroySoon();
+    }
+}
+
+pluggableStream.prototype.destroy = function () {
+    if (this.targetsocket.destroy) {
+        return this.targetsocket.destroy();
+    }
 }
 
 pluggableStream.prototype.setKeepAlive = function (/* true||false, timeout */) {
@@ -197,7 +212,7 @@ function connect(port, host, cb) {
         socket.pair = pair;
 
         var cleartext = pipe(pair, cryptoSocket);
-
+        
         pair.on('secure', function() {
             var verifyError = (pair.ssl || pair._ssl).verifyError();
 

@@ -30,7 +30,7 @@ logger.dump_logs = function () {
 }
 
 logger.log = function (level, data) {
-    data = data.replace(/\n?$/, "");
+    data = data.replace(/\r?\n/g, "\\n");
     // todo - just buffer these up (defer) until plugins are loaded
     if (plugins.plugin_list) {
         while (deferred_logs.length > 0) {

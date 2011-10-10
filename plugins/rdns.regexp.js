@@ -1,4 +1,10 @@
 // check rdns against list of regexps
+//
+// WARNING: The services offered by this plugin, and much more, are now provided
+// more efficiently with the connect.rdns_access plugin.  Please transition over
+// to using the new connect.rdns_access plugin, as this plugin is now deprecated
+// and may be removed in a future version of Haraka.
+
 
 exports.hook_connect = function (next, connection) {
     var deny_list = this.config.get('rdns.deny_regexps', 'list');

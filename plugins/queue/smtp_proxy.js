@@ -38,8 +38,7 @@ function _get_smtp_proxy(self, next, connection) {
         smtp_proxy.socket.removeAllListeners('drain');
     } else {
         smtp_proxy.config = self.config.get('smtp_proxy.ini', 'ini');
-        smtp_proxy.socket = new sock.Socket();
-        smtp_proxy.socket.connect(smtp_proxy.config.main.port,
+        smtp_proxy.socket = sock.connect(smtp_proxy.config.main.port,
             smtp_proxy.config.main.host);
         smtp_proxy.socket.setTimeout((smtp_proxy.config.main.timeout) ?
             (smtp_proxy.config.main.timeout * 1000) : (300 * 1000));
@@ -140,22 +139,36 @@ exports.hook_mail = function (next, connection, params) {
     var mail_from = params[0];
     var data_marker = 0;
     var smtp_proxy = _get_smtp_proxy(self, next, connection);
+    var in_write = false;
+    var dot_pending = true;
 
     smtp_proxy.send_data = function () {
         if (data_marker < connection.transaction.data_lines.length) {
-            var wrote_all = smtp_proxy.socket.write(connection.transaction.data_lines[data_marker].replace(/^\./, '..').replace(/\r?\n/g, '\r\n'));
+            var line = connection.transaction.data_lines[data_marker];
             data_marker++;
+            self.logdata("Proxy C: " + line);
+            // this protection is due to bug #
+            in_write = true;
+            var wrote_all = smtp_proxy.socket.write(line.replace(/^\./, '..').replace(/\r?\n/g, '\r\n'));
+            in_write = false;
             if (wrote_all) {
-                smtp_proxy.send_data();
+                return smtp_proxy.send_data();
             }
         }
-        else {
+        else if (dot_pending) {
+            dot_pending = false;
             smtp_proxy.socket.send_command('dot');
         }
     }
 
     // Add socket event listeners.    
     // Note, if new ones are added here, please remove them in _get_smtp_proxy.
+
+    smtp_proxy.socket.on('drain', function() {
+        if (dot_pending && smtp_proxy.command === 'mailbody') {
+            process.nextTick(function () { smtp_proxy.send_data() });
+        }
+    });
 
     smtp_proxy.socket.on('error', function (err) {
         self.logdebug("Ongoing connection failed: " + err);
@@ -216,7 +229,18 @@ exports.hook_mail = function (next, connection, params) {
                                 return;
                             }
                         }
-                        // TODO: TLS support here...
+                        if (smtp_proxy.response[i].match(/^STARTTLS/)) {
+                            var key = self.config.get('tls_key.pem', 'list').join("\n");
+                            var cert = self.config.get('tls_cert.pem', 'list').join("\n");
+                            if (key && cert && (/(true|yes|1)/i.exec(smtp_proxy.config.main.enable_tls))) {
+                                self.logdebug('before TLS: ' + smtp_proxy.socket.listeners('drain'));
+                                this.on('secure', function () {
+                                    smtp_proxy.socket.send_command('EHLO', self.config.get('me','nolog'));
+                                });
+                                smtp_proxy.socket.send_command('STARTTLS');
+                                return;
+                            }
+                        }
                     }
                 }
                 if (smtp_proxy.command === 'xclient' && code.match(/^5/)) {
@@ -241,6 +265,10 @@ exports.hook_mail = function (next, connection, params) {
                         smtp_proxy.xclient = true;
                         smtp_proxy.socket.send_command('EHLO',
                             connection.hello_host);
+                        break;
+                    case 'starttls':
+                        var tls_options = { key: key, cert: cert };
+                        smtp_proxy.socket.upgrade(tls_options);
                         break;
                     case 'connect':
                         smtp_proxy.socket.send_command('EHLO',
@@ -283,13 +311,6 @@ exports.hook_mail = function (next, connection, params) {
         }
     });
 
-    smtp_proxy.socket.on('drain', function() {
-        self.logprotocol("Drained");
-        if (smtp_proxy.command === 'dot') {
-            smtp_proxy.send_data();
-        }
-    });
-
     if (smtp_proxy.pool_connection) {
         // If we used XCLIENT earlier; we *must* re-send it again
         // To update the proxy with the new client details.
@@ -320,7 +341,7 @@ exports.hook_data = function (next, connection) {
 exports.hook_queue = function (next, connection) {
     if (!connection.notes.smtp_proxy) return next();
     var smtp_proxy = connection.notes.smtp_proxy;
-    smtp_proxy.command = 'dot';
+    smtp_proxy.command = 'mailbody';
     smtp_proxy.next = next;
     smtp_proxy.send_data();
 };

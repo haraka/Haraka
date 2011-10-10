@@ -224,12 +224,7 @@ Connection.prototype.disconnect = function() {
 Connection.prototype.disconnect_respond = function () {
     this.disconnected = true;
     this.logdebug("closing client");
-    if (this.client.cryptoSocket && this.client.cryptoSocket.fd) {
-        this.client.cryptoSocket.end();
-    }
-    else if (this.client.fd) {
-        this.client.end();
-    }
+    this.client.end();
 };
 
 Connection.prototype.get_capabilities = function() {
@@ -258,6 +253,7 @@ Connection.prototype.lookup_rdns_respond = function (retval, msg) {
     switch(retval) {
         case constants.ok:
                 this.remote_host = msg || 'Unknown';
+                this.remote_info = this.remote_info || this.remote_host;
                 plugins.run_hooks('connect', this);
                 break;
         case constants.deny:
@@ -599,6 +595,7 @@ Connection.prototype.cmd_mail = function(line) {
     
     this.init_transaction();
     this.transaction.mail_from = from
+    this.loginfo('MAIL FROM: ' + from);
     plugins.run_hooks('mail', this, [from, params]);
 };
 
@@ -637,6 +634,7 @@ Connection.prototype.cmd_rcpt = function(line) {
     }
 
     this.transaction.rcpt_to.push(recip);
+    this.loginfo('RCPT TO: ' + recip);
     plugins.run_hooks('rcpt', this, [recip, params]);
 };
 
@@ -664,8 +662,9 @@ Connection.prototype.received_line = function() {
            +" (" + this.hello_host + " ["+this.remote_ip
            +"])\n  " + (this.authheader || '') + "  by " + config.get('me', 'nolog')
            +" (Haraka/" + version
-           +") with " + (this.sslheader || '') + smtp + "; "
-           + _date_to_str(new Date());
+           +") with " + (this.sslheader || '') + smtp
+           +" id " + this.uuid
+           +";\n    " + _date_to_str(new Date());
 };
 
 Connection.prototype.cmd_data = function(line) {
