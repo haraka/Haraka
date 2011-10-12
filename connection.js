@@ -721,7 +721,6 @@ Connection.prototype.accumulate_data = function(line) {
 
     // Bare LF checks
     if (line === ".\r" || line === ".\n") {
-        // I really should create my own URL...
         this.logerror("Client sent bare line-feed - .\\r or .\\n rather than .\\r\\n");
         this.respond(451, "See http://haraka.github.com/barelf.html");
         this.reset_transaction();
