@@ -115,7 +115,7 @@ Header.prototype._add_header = function (key, value) {
 
 Header.prototype.add = function (key, value) {
     this._add_header(key.toLowerCase(), value);
-    this.header_list.push(key + ': ' + value + '\n');
+    this.header_list.unshift(key + ': ' + value + '\n');
 };
 
 Header.prototype.lines = function () {
