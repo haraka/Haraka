@@ -411,11 +411,11 @@ function HMailItem (filename, path, notes) {
     if (!matches) {
         throw new Error("Bad filename: " + filename);
     }
-    this.path     = path;
-    this.filename = filename;
+    this.path         = path;
+    this.filename     = filename;
     this.next_process = matches[1];
     this.num_failures = matches[2];
-    this.notes= notes === undefined ? {} : notes;
+    this.notes        = notes || {};
 
     this.size_file();
 }
@@ -926,7 +926,9 @@ HMailItem.prototype._bounce = function (err) {
 HMailItem.prototype.bounce_respond = function (retval, msg) {
     if (retval != constants.cont) {
         this.loginfo("plugin responded with: " + retval + ". Not sending bounce.");
-        if(retval === constants.stop)fs.unlink(this.path);
+        if (retval === constants.stop) {
+            fs.unlink(this.path);
+        }
         return;
     }
 
