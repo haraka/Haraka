@@ -718,29 +718,35 @@ Connection.prototype.data_respond = function(retval, msg) {
 Connection.prototype.accumulate_data = function(line) {
     if (line === ".\r\n")
         return this.data_done();
-    
-    if (this.max_bytes && this.transaction.data_bytes > this.max_bytes) {
-        this.logerror("Incoming message exceeded databytes size of " + this.max_bytes);
-        this.respond(552, "Message too big!");
-        this.disconnect(); // a bit rude, but otherwise people will just keep spewing
-        return;
-    }
-    
+
     // Bare LF checks
     if (line === ".\r" || line === ".\n") {
         // I really should create my own URL...
         this.logerror("Client sent bare line-feed - .\\r or .\\n rather than .\\r\\n");
-        this.respond(421, "See http://smtpd.develooper.com/barelf.html");
-        this.disconnect();
+        this.respond(451, "See http://smtpd.develooper.com/barelf.html");
+        this.reset_transaction();
         return;
     }
-    
+
+    // Stop accumulating data as we're going to reject at dot.
+    if (this.max_bytes && this.transaction.data_bytes > this.max_bytes) { 
+        return;
+    }
+
     this.transaction.add_data(line.replace(/^\.\./, '.').replace(/\r\n$/, "\n"));
 };
 
 Connection.prototype.data_done = function() {
     this.state = 'pause';
-    // this.transaction.add_header('X-Haraka', 'Version ' + version);
+
+    // Check message size limit
+    if (this.max_bytes && this.transaction.data_bytes > this.max_bytes) {
+        this.logerror("Incoming message exceeded databytes size of " + this.max_bytes);
+        this.respond(550, "Message too big!");
+        this.reset_transaction();
+        return;
+    }
+
     plugins.run_hooks('data_post', this);
 };
 
