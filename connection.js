@@ -38,20 +38,25 @@ for (var key in logger) {
     }
 }
 
-
 function setupClient(self) {
     self.remote_ip = self.client.remoteAddress;
     self.lognotice("got connection from: " + self.remote_ip);
-    
+
+    self.client.on('end', function () {
+        if (!self.disconnected) {
+            self.fail("client (" + self.remote_ip + ") closed connection");
+        }
+    });
+
     self.client.on('error', function (err) {
         if (!self.disconnected) {
-            self.fail("client closed with err: " + err);
+            self.fail("client (" + self.remote_ip + ") closed with err: " + err);
         }
     });
     
     self.client.on('timeout', function () {
         if (!self.disconnected) {
-            self.fail("client (" + self.client.fd + ") timed out");
+            self.fail("client (" + self.remote_ip + ") timed out");
         }
     });
     
@@ -595,6 +600,7 @@ Connection.prototype.cmd_mail = function(line) {
     
     this.init_transaction();
     this.transaction.mail_from = from
+    this.loginfo('MAIL FROM: ' + from);
     plugins.run_hooks('mail', this, [from, params]);
 };
 
@@ -633,6 +639,7 @@ Connection.prototype.cmd_rcpt = function(line) {
     }
 
     this.transaction.rcpt_to.push(recip);
+    this.loginfo('RCPT TO: ' + recip);
     plugins.run_hooks('rcpt', this, [recip, params]);
 };
 
