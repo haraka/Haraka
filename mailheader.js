@@ -106,17 +106,22 @@ Header.prototype._remove_more = function (key) {
     }
 };
 
-Header.prototype._add_header = function (key, value) {
+Header.prototype._add_header = function (key, value, method) {
     this.headers[key] = this.headers[key] || [];
-    this.headers[key].push(value);
+    this.headers[key][method](value);
     this.headers_decoded[key] = this.headers_decoded[key] || [];
-    this.headers_decoded[key].push(decode_header(value));
+    this.headers_decoded[key][method](decode_header(value));
 };
 
 Header.prototype.add = function (key, value) {
-    this._add_header(key.toLowerCase(), value);
-    this.header_list.push(key + ': ' + value + '\n');
+    this._add_header(key.toLowerCase(), value, "unshift");
+    this.header_list.unshift(key + ': ' + value + '\n');
 };
+
+Header.prototype.add_end = function (key, value) {
+    this._add_header(key.toLowerCase(), value, "push");
+    this.header_list.push(key + ': ' + value + '\n');
+}
 
 Header.prototype.lines = function () {
     return this.header_list;
