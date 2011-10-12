@@ -205,11 +205,11 @@ exports.send_trans_email = function (transaction, next) {
     for (var dom in recips) {
         var from = transaction.mail_from;
         var data_lines = transaction.data_lines;
-        this.process_domain(dom, recips[dom], from, data_lines, hmails, mynext);
+        this.process_domain(dom, recips[dom], from, data_lines, hmails, transaction.notes, mynext);
     }
 }
 
-exports.process_domain = function (dom, recips, from, data_lines, hmails, cb) {
+exports.process_domain = function (dom, recips, from, data_lines, hmails, notes, cb) {
     var plugin = this;
     this.loginfo("Processing domain: " + dom);
     var fname = _fname();
@@ -226,7 +226,7 @@ exports.process_domain = function (dom, recips, from, data_lines, hmails, cb) {
                         cb(tmp_path, DENY, "Queue error");
                     }
                     else {
-                        hmails.push(new HMailItem (fname, dest_path));
+                        hmails.push(new HMailItem (fname, dest_path, notes));
                         cb(tmp_path, OK, "Queued!");
                     }
                 });
@@ -405,7 +405,7 @@ exports.stats = function () {
 /////////////////////////////////////////////////////////////////////////////
 // HMailItem - encapsulates an individual outbound mail item
 
-function HMailItem (filename, path) {
+function HMailItem (filename, path, notes) {
     events.EventEmitter.call(this);
     var matches = filename.match(fn_re);
     if (!matches) {
@@ -415,7 +415,8 @@ function HMailItem (filename, path) {
     this.filename = filename;
     this.next_process = matches[1];
     this.num_failures = matches[2];
-    
+    this.notes= notes === undefined ? {} : notes;
+
     this.size_file();
 }
 
@@ -445,6 +446,7 @@ HMailItem.prototype.size_file = function () {
     fs.stat(self.path, function (err, stats) {
         if (err) {
             // we are fucked... guess I need somewhere for this to go
+            logger.logerror("Error obtaining file size: " + err);
         }
         else {
             self.file_size = stats.size;
@@ -924,6 +926,7 @@ HMailItem.prototype._bounce = function (err) {
 HMailItem.prototype.bounce_respond = function (retval, msg) {
     if (retval != constants.cont) {
         this.loginfo("plugin responded with: " + retval + ". Not sending bounce.");
+        if(retval === constants.stop)fs.unlink(this.path);
         return;
     }
 
@@ -946,7 +949,7 @@ HMailItem.prototype.bounce_respond = function (retval, msg) {
 
         var hmails = [];
 
-        exports.process_domain(dom, [recip], from, data_lines, hmails,
+        exports.process_domain(dom, [recip], from, data_lines, hmails, self.notes,
             function (path, code, msg) {
                 fs.unlink(self.path);
                 if (code === DENY) {
@@ -970,7 +973,7 @@ HMailItem.prototype.double_bounce = function (err) {
 HMailItem.prototype.delivered = function () {
     this.loginfo("Successfully delivered mail: " + this.filename);
     delivery_concurrency--;
-    fs.unlink(this.path);
+    plugins.run_hooks("delivered", this, null);
 }
 
 HMailItem.prototype.temp_fail = function (err) {
@@ -1008,3 +1011,12 @@ HMailItem.prototype.temp_fail = function (err) {
         setTimeout(function () {hmail.send()}, delay);
     });
 }
+
+// The following handler has an impact on outgoing mail. It does remove the queue file.
+HMailItem.prototype.delivered_respond = function (retval, msg) {
+    if (retval != constants.cont && retval != constants.ok) {
+        this.logwarn("delivered plugin responded with: " + retval + " msg=" + msg + ".");
+    }
+    // Remove the file.
+    fs.unlink(this.path);
+};
