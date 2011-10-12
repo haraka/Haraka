@@ -740,7 +740,7 @@ HMailItem.prototype.try_deliver_host = function () {
             }
         }
 
-        if (smtp_properties.tls) {
+        if (smtp_properties.tls && config.get('outbound.enable_tls')) {
             this.on('secure', function () {
                 socket.send_command('EHLO', config.get('me', 'nolog'));
             });
