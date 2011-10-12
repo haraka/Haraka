@@ -1,6 +1,13 @@
+/**
+ * @@ Standard Header @@
+ */
+
 // Various utility functions
 
-// copied from http://www.broofa.com/Tools/Math.uuid.js
+// ---------------------------------------------------------------------------------
+// UUID function copied from http://www.broofa.com/Tools/Math.uuid.js
+// ---------------------------------------------------------------------------------
+
 var CHARS = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'.split('');
 
 exports.uuid = function () {
@@ -22,6 +29,11 @@ exports.uuid = function () {
     return uuid.join('');
 };
 
+/**
+ * @param item The search item
+ * @param array The array to search for the item
+ * @return true, if found, else false
+ */
 exports.in_array = function (item, array) {
     for (var i in array) {
         if (item === array[i]) {
@@ -31,10 +43,18 @@ exports.in_array = function (item, array) {
     return false;
 };
 
+/**
+ * @param obj The relevant obj to introspect
+ * @return A sorted list of all keys of 'obj'
+ */
 exports.sort_keys = function (obj) {
     return Object.keys(obj).sort();
 };
 
+/**
+ * @param arr The input array. The array must already be sorted.
+ * @return Same as 'arr' but without any dublicates
+ */
 exports.uniq = function (arr) {
     var out = [];
     var o = 0;
@@ -50,6 +70,12 @@ exports.uniq = function (arr) {
     return out;
 }
 
+/**
+ * Provide ISO compliant string representation of the date provided.
+ * 
+ * @param d Date
+ * @return ISO date string representation
+ */
 exports.ISODate = function (d) {
    function pad(n) {return n<10 ? '0'+n : n}
    return d.getUTCFullYear()+'-'

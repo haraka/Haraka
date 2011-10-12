@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-var path   = require('path');
+var path = require('path');
 
 // this must be set before "server.js" is loaded
 process.env.HARAKA = process.env.HARAKA || path.resolve('.');
@@ -16,7 +16,7 @@ var logger = require('./logger');
 var server = require('./server');
 
 exports.version = JSON.parse(
-        fs.readFileSync(path.join(__dirname, './package.json'), 'utf8')
+        fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8')
     ).version;
 
 process.on('uncaughtException', function (err) {
@@ -34,6 +34,5 @@ process.on('uncaughtException', function (err) {
 });
 
 logger.log("INFO", "Starting up Haraka version " + exports.version);
-
 
 server.createServer();

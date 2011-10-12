@@ -8,6 +8,9 @@ var utils  = require('./utils');
 
 var trans = exports;
 
+/**
+ * (private) Constructor
+ */
 function Transaction() {
     this.mail_from = null;
     this.rcpt_to = [];
@@ -21,6 +24,9 @@ function Transaction() {
 
 exports.Transaction = Transaction;
 
+/**
+ * Create a new Transaction with proper UUID
+ */
 exports.createTransaction = function(uuid) {
     var t = new Transaction();
     t.uuid = uuid || utils.uuid();
