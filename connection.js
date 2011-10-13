@@ -435,40 +435,44 @@ Connection.prototype.rset_respond = function(retval, msg) {
 }
 
 Connection.prototype.mail_respond = function(retval, msg) {
+    var sender = this.transaction.mail_from;
+    var dmsg   = "sender " + sender.format();
     switch (retval) {
         case constants.deny:
-                this.respond(550, msg || "mail from denied");
+                this.respond(550, msg || dmsg + " denied");
                 this.reset_transaction();
                 break;
         case constants.denydisconnect:
-                this.respond(550, msg || "mail from denied");
+                this.respond(550, msg || dmsg + " denied");
                 this.disconnect();
                 break;
         case constants.denysoft:
-                this.respond(450, msg || "mail from denied");
+                this.respond(450, msg || dmsg + " denied");
                 this.reset_transaction();
                 break;
         default:
-                this.respond(250, msg || "sender OK");
+                this.respond(250, msg || dmsg + " OK");
     }
 };
 
 Connection.prototype.rcpt_ok_respond = function (retval, msg) {
+    var rcpt = this.transaction.rcpt_to[this.transaction.rcpt_to.length - 1];
+    var dmsg = "recipient " + rcpt.format();
     switch (retval) {
         case constants.deny:
-                this.respond(550, msg || "delivery denied");
+                this.respond(550, msg || dmsg + " denied");
                 this.transaction.rcpt_to.pop();
                 break;
         case constants.denydisconnect:
-                this.respond(550, msg || "delivery denied");
+                this.respond(550, msg || dmsg + " denied");
                 this.disconnect();
                 break;
         case constants.denysoft:
-                this.respond(450, msg || "delivery denied for now");
+                this.respond(450, msg || dmsg + " denied");
                 this.transaction.rcpt_to.pop();
                 break;
         default:
-                this.respond(250, msg || "recipient OK");
+                this.respond(250, msg || dmsg + " OK");
     }
 }
 
@@ -476,29 +480,31 @@ Connection.prototype.rcpt_respond = function(retval, msg) {
     if (retval === constants.cont && this.relaying) {
         retval = constants.ok;
     }
-        
+
+    var rcpt = this.transaction.rcpt_to[this.transaction.rcpt_to.length - 1];
+    var dmsg = "recipient " + rcpt.format();
     switch (retval) {
         case constants.deny:
-                this.respond(550, msg || "delivery denied");
+                this.respond(550, msg || dmsg + " denied");
                 this.transaction.rcpt_to.pop();
                 break;
         case constants.denydisconnect:
-                this.respond(550, msg || "delivery denied");
+                this.respond(550, msg || dmsg + " denied");
                 this.disconnect();
                 break;
         case constants.denysoft:
-                this.respond(450, msg || "delivery denied for now");
+                this.respond(450, msg || dmsg + " denied");
                 this.transaction.rcpt_to.pop();
                 break;
         case constants.ok:
-                plugins.run_hooks('rcpt_ok', this, this.transaction.rcpt_to[this.transaction.rcpt_to.length - 1]);
+                plugins.run_hooks('rcpt_ok', this, rcpt);
                 break;
         default:
                 if (retval !== constants.cont) {
                     this.logalert("No plugin determined if relaying was allowed");
                 }
                 this.transaction.rcpt_to.pop();
-                this.respond(450, "I cannot deliver for that user");
+                this.respond(450, "I cannot deliver mail for " + rcpt.format());
     }
 };
 
