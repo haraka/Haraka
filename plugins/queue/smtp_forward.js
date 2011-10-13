@@ -11,7 +11,7 @@ var smtp_regexp = /^([0-9]{3})([ -])(.*)/;
 
 exports.smtp_forward = function (next, connection) {
     this.loginfo("smtp forwarding");
-    var smtp_config = this.config.get('smtp_forward.ini', 'ini');
+    var smtp_config = this.config.get('smtp_forward.ini');
     var socket = sock.connect(smtp_config.main.port, smtp_config.main.host);
     socket.setTimeout(300 * 1000);
     var self = this;

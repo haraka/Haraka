@@ -33,7 +33,7 @@ exports.hook_init_master = function (next) {
     // At start-up; delete any files in the temporary directory
     // NOTE: This is deliberately syncronous to ensure that this
     //       is completed prior to any messages being received.
-    var config = this.config.get('quarantine.ini', 'ini');
+    var config = this.config.get('quarantine.ini');
     var base_dir = (config.main.quarantine_path) ?
                     config.main.quarantine_path  :
                     '/var/spool/haraka/quarantine';
@@ -60,7 +60,7 @@ exports.quarantine = function (next, connection) {
         var d = new Date();
         var yyyymmdd = d.getFullYear() + zeroPad(d.getMonth(), 2) 
             + this.zeroPad(d.getDate(), 2);
-        var config = this.config.get('quarantine.ini', 'ini');
+        var config = this.config.get('quarantine.ini');
         var base_dir = (config.main.quarantine_path) ? 
                         config.main.quarantine_path  :
                         '/var/spool/haraka/quarantine';

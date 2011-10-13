@@ -12,7 +12,7 @@ var defaults = {
 exports.hook_data = function (next, connection) {
     var plugin = this;
     // Load config
-    var config = this.config.get('clamd.ini', 'ini');
+    var config = this.config.get('clamd.ini');
     for (var key in defaults) {
         config.main[key] = config.main[key] || defaults[key];
     }   
@@ -32,7 +32,7 @@ exports.hook_data_post = function (next, connection) {
     var transaction = connection.transaction;
 
     // Config
-    var config = this.config.get('clamd.ini', 'ini');
+    var config = this.config.get('clamd.ini');
     for (var key in defaults) {
         config.main[key] = config.main[key] || defaults[key];
     }

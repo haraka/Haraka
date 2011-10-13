@@ -2,7 +2,7 @@
 
 exports.register = function() {
     var i;
-    var config = this.config.get('connect.rdns_access.ini', 'ini');
+    var config = this.config.get('connect.rdns_access.ini');
     this.wl = this.config.get('connect.rdns_access.whitelist', 'list');
     this.bl = this.config.get('connect.rdns_access.blacklist', 'list');
     this.deny_msg = config.general && (config.general['deny_msg'] ||

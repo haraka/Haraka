@@ -46,7 +46,7 @@ function apply_defaults(obj) {
 }
 
 Server.createServer = function (params) {
-    var config_data = config.get('smtp.ini', 'nolog', 'ini');
+    var config_data = config.get('smtp.ini', 'nolog');
     var param_key;
     for (param_key in params) {
         if (typeof params[param_key] !== 'function') {
@@ -132,7 +132,7 @@ Server.init_child_respond = function (retval, msg) {
 }
 
 function listening () {
-    var config_data = config.get('smtp.ini', 'nolog', 'ini');
+    var config_data = config.get('smtp.ini', 'nolog');
     logger.lognotice("Listening on port " + config_data.main.port);
     out.load_queue();
     Server.ready = 1;
