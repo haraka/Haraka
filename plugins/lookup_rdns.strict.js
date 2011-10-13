@@ -42,11 +42,10 @@ function _in_whitelist(plugin, address) {
         }
     }
 
-    for (i in host_list_regex) {
-        plugin.logdebug("checking " + domain + " against " +
-            host_list_regex[i]);
+    if (host_list_regex.length) {
+        var regex = new RegExp ('^(?:' + host_list_regex.join('|') + ')$', 'i');
 
-        var regex = new RegExp ('^' + host_list_regex[i] + '$', 'i');
+        plugin.logdebug("checking " + domain + " against " + regex.source);
 
         if (domain.match(regex)) {
             plugin.logdebug("Allowing " + domain);
@@ -62,7 +61,7 @@ exports.hook_lookup_rdns = function (next, connection) {
     var total_checks = 0;
     var called_next  = 0;
     var timeout_id   = 0;
-    var config       = this.config.get('lookup_rdns.strict.ini', 'ini');
+    var config       = this.config.get('lookup_rdns.strict.ini');
     var rdns         = '';
     var fwd_nxdomain = config.forward && (config.forward['nxdomain']    || '');
     var fwd_dnserror = config.forward && (config.forward['dnserror']    || '');

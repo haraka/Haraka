@@ -14,7 +14,7 @@ exports.hook_mail = function(next, connection, params) {
     var timeout_id   = 0;
     var plugin       = this;
     var domain       = mail_from.host;
-    var config       = this.config.get('mail_from.is_resolvable.ini', 'ini');
+    var config       = this.config.get('mail_from.is_resolvable.ini');
     var timeout      = config.general && (config.general['timeout']     || 60);
     var timeout_msg  = config.general && (config.general['timeout_msg'] || '');
 

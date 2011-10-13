@@ -411,11 +411,11 @@ function HMailItem (filename, path, notes) {
     if (!matches) {
         throw new Error("Bad filename: " + filename);
     }
-    this.path     = path;
-    this.filename = filename;
+    this.path         = path;
+    this.filename     = filename;
     this.next_process = matches[1];
     this.num_failures = matches[2];
-    this.notes= notes === undefined ? {} : notes;
+    this.notes        = notes || {};
 
     this.size_file();
 }
@@ -635,8 +635,6 @@ function sort_mx (mx_list) {
     return sorted;
 }
 
-var smtp_regexp = /^([0-9]{3})([ -])(.*)/;
-
 HMailItem.prototype.try_deliver = function () {
     var self = this;
     delivery_concurrency++;
@@ -669,6 +667,8 @@ HMailItem.prototype.try_deliver = function () {
     });
 }
 
+var smtp_regexp = /^([0-9]{3})([ -])(.*)/;
+
 HMailItem.prototype.try_deliver_host = function () {
     if (this.hostlist.length === 0) {
         delivery_concurrency--;
@@ -679,8 +679,9 @@ HMailItem.prototype.try_deliver_host = function () {
     
     this.loginfo("Attempting to deliver to: " + host + " (" + delivery_concurrency + ")");
     
-    var socket = new sock.Socket();
+    var socket = sock.connect(25, host);
     var self = this;
+
     socket.on('error', function (err) {
         self.logerror("Ongoing connection failed: " + err);
         // try the next MX
@@ -688,8 +689,6 @@ HMailItem.prototype.try_deliver_host = function () {
     });
 
     socket.setTimeout(300 * 1000); // TODO: make this configurable
-    
-    socket.connect(25, host);
     
     var command = 'connect';
     var response = [];
@@ -702,6 +701,12 @@ HMailItem.prototype.try_deliver_host = function () {
     var last_recip;
     var ok_recips = 0;
     var fail_recips = [];
+    var smtp_properties = {
+        "tls": false,
+        "max_size": 0,
+        "eightbitmime": false,
+        "enh_status_codes": false,
+    };
     
     socket.send_command = function (cmd, data) {
         var line = cmd + (data ? (' ' + data) : '');
@@ -711,7 +716,40 @@ HMailItem.prototype.try_deliver_host = function () {
         self.logprotocol("C: " + line);
         this.write(line + "\r\n");
         command = cmd.toLowerCase();
+        response = [];
     };
+
+    socket.process_ehlo_data = function () {
+        for (var i=0,l=response.length; i < l; i++) {
+            var r = response[i];
+            if (r.toUpperCase() === '8BITMIME') {
+                smtp_properties.eightbitmime = true;
+            }
+            else if (r.toUpperCase() === 'STARTTLS') {
+                smtp_properties.tls = true;
+            }
+            else if (r.toUpperCase() === 'ENHANCEDSTATUSCODES') {
+                smtp_properties.enh_status_codes = true;
+            }
+            else {
+                var matches;
+                matches = r.match(/^SIZE\s+(\d+)$/);
+                if (matches) {
+                    smtp_properties.max_size = matches[1];
+                }
+            }
+        }
+
+        if (smtp_properties.tls && config.get('outbound.enable_tls')) {
+            this.on('secure', function () {
+                socket.send_command('EHLO', config.get('me', 'nolog'));
+            });
+            this.send_command('STARTTLS');
+        }
+        else {
+            this.send_command('MAIL', 'FROM:' + mail_from);
+        }
+    }
     
     socket.on('timeout', function () {
         self.logerror("Outbound connection timed out");
@@ -752,7 +790,18 @@ HMailItem.prototype.try_deliver_host = function () {
                 }
                 switch (command) {
                     case 'connect':
-                        socket.send_command('HELO', config.get('me', 'nolog'));
+                        socket.send_command('EHLO', config.get('me', 'nolog'));
+                        break;
+                    case 'ehlo':
+                        socket.process_ehlo_data();
+                        break;
+                    case 'starttls':
+                        var key = config.get('tls_key.pem', 'list').join("\n");
+                        var cert = config.get('tls_cert.pem', 'list').join("\n");
+                        var tls_options = { key: key, cert: cert };
+
+                        smtp_properties = {};
+                        socket.upgrade(tls_options);
                         break;
                     case 'helo':
                         socket.send_command('MAIL', 'FROM:' + mail_from);
@@ -877,7 +926,9 @@ HMailItem.prototype._bounce = function (err) {
 HMailItem.prototype.bounce_respond = function (retval, msg) {
     if (retval != constants.cont) {
         this.loginfo("plugin responded with: " + retval + ". Not sending bounce.");
-        if(retval === constants.stop)fs.unlink(this.path);
+        if (retval === constants.stop) {
+            fs.unlink(this.path);
+        }
         return;
     }
 

@@ -11,9 +11,8 @@ var smtp_regexp = /^([0-9]{3})([ -])(.*)/;
 
 exports.smtp_forward = function (next, connection) {
     this.loginfo("smtp forwarding");
-    var smtp_config = this.config.get('smtp_forward.ini', 'ini');
-    var socket = new sock.Socket();
-    socket.connect(smtp_config.main.port, smtp_config.main.host);
+    var smtp_config = this.config.get('smtp_forward.ini');
+    var socket = sock.connect(smtp_config.main.port, smtp_config.main.host);
     socket.setTimeout(300 * 1000);
     var self = this;
     var command = 'connect';
@@ -41,8 +40,10 @@ exports.smtp_forward = function (next, connection) {
             line = '.';
         }
         self.logprotocol("Fwd C: " + line);
-        this.write(line + "\r\n");
+        // Set this before we write() in case 'drain' is called
+        // to stop send_data() form calling 'dot' twice.
         command = cmd.toLowerCase();
+        this.write(line + "\r\n");
         // Clear response buffer from previous command
         response = [];
     };
@@ -61,7 +62,7 @@ exports.smtp_forward = function (next, connection) {
     });
     socket.on('line', function (line) {
         var matches;
-        self.logprotocol("S: " + line);
+        self.logprotocol("Fwd S: " + line);
         if (matches = smtp_regexp.exec(line)) {
             var code = matches[1],
                 cont = matches[2],
@@ -74,7 +75,7 @@ exports.smtp_forward = function (next, connection) {
                     if (code.match(/^5/)) {
                         // Handle fallback to HELO if EHLO is rejected
                         if (!this.xclient) {
-                            socket.send_command('HELO', self.config.get('me'));
+                            socket.send_command('HELO', self.config.get('me','nolog'));
                         }
                         else {
                             socket.send_command('HELO', connection.hello_host);
@@ -90,7 +91,18 @@ exports.smtp_forward = function (next, connection) {
                                 return;
                             }
                         }
-                        // TODO: TLS support here...
+                        if (response[i].match(/^STARTTLS/)) {
+                            var key = self.config.get('tls_key.pem', 'list').join("\n");
+                            var cert = self.config.get('tls_cert.pem', 'list').join("\n");
+                            // Use TLS opportunistically if we found the key and certificate
+                            if (key && cert && (!/(true|1)/i.exec(smtp_config.main.disable_tls))) {
+                                this.on('secure', function () {
+                                    socket.send_command('EHLO', self.config.get('me','nolog'));
+                                });
+                                socket.send_command('STARTTLS');
+                                return;
+                            }
+                        }
                     }
                 }
                 if (command === 'xclient' && code.match(/^5/)) {
@@ -111,6 +123,10 @@ exports.smtp_forward = function (next, connection) {
                         // If we are in XCLIENT mode, proxy the HELO/EHLO from the client
                         this.xclient = true;
                         socket.send_command('EHLO', connection.hello_host);
+                        break;
+                    case 'starttls':
+                        var tls_options = { key: key, cert: cert };
+                        this.upgrade(tls_options);
                         break;
                     case 'connect':
                         socket.send_command('EHLO', self.config.get('me'));

@@ -11,7 +11,7 @@ exports.hook_capabilities = function (next, connection) {
 };
 
 exports.hook_unrecognized_command = function (next, connection, params) {
-    if (!params[0] === 'XCLIENT') {
+    if (params[0] !== 'XCLIENT') {
         return next();
     }
 
@@ -21,7 +21,7 @@ exports.hook_unrecognized_command = function (next, connection, params) {
     }
 
     // Check that the client is authorized
-    var config = this.config.get('xclient.hosts.ini','list');
+    var config = this.config.get('xclient.hosts','list');
     var found;
     for (i in config) {
         this.logdebug('Checking ' + connection.remote_ip + ' == ' + config[i]);

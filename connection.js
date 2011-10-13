@@ -38,20 +38,25 @@ for (var key in logger) {
     }
 }
 
-
 function setupClient(self) {
     self.remote_ip = self.client.remoteAddress;
     self.lognotice("got connection from: " + self.remote_ip);
-    
+
+    self.client.on('end', function () {
+        if (!self.disconnected) {
+            self.fail("client (" + self.remote_ip + ") closed connection");
+        }
+    });
+
     self.client.on('error', function (err) {
         if (!self.disconnected) {
-            self.fail("client closed with err: " + err);
+            self.fail("client (" + self.remote_ip + ") closed with err: " + err);
         }
     });
     
     self.client.on('timeout', function () {
         if (!self.disconnected) {
-            self.fail("client (" + self.client.fd + ") timed out");
+            self.fail("client (" + self.remote_ip + ") timed out");
         }
     });
     
@@ -224,12 +229,7 @@ Connection.prototype.disconnect = function() {
 Connection.prototype.disconnect_respond = function () {
     this.disconnected = true;
     this.logdebug("closing client");
-    if (this.client.cryptoSocket && this.client.cryptoSocket.fd) {
-        this.client.cryptoSocket.end();
-    }
-    else if (this.client.fd) {
-        this.client.end();
-    }
+    this.client.end();
 };
 
 Connection.prototype.get_capabilities = function() {
@@ -258,6 +258,7 @@ Connection.prototype.lookup_rdns_respond = function (retval, msg) {
     switch(retval) {
         case constants.ok:
                 this.remote_host = msg || 'Unknown';
+                this.remote_info = this.remote_info || this.remote_host;
                 plugins.run_hooks('connect', this);
                 break;
         case constants.deny:
@@ -434,40 +435,44 @@ Connection.prototype.rset_respond = function(retval, msg) {
 }
 
 Connection.prototype.mail_respond = function(retval, msg) {
+    var sender = this.transaction.mail_from;
+    var dmsg   = "sender " + sender.format();
     switch (retval) {
         case constants.deny:
-                this.respond(550, msg || "mail from denied");
+                this.respond(550, msg || dmsg + " denied");
                 this.reset_transaction();
                 break;
         case constants.denydisconnect:
-                this.respond(550, msg || "mail from denied");
+                this.respond(550, msg || dmsg + " denied");
                 this.disconnect();
                 break;
         case constants.denysoft:
-                this.respond(450, msg || "mail from denied");
+                this.respond(450, msg || dmsg + " denied");
                 this.reset_transaction();
                 break;
         default:
-                this.respond(250, msg || "sender OK");
+                this.respond(250, msg || dmsg + " OK");
     }
 };
 
 Connection.prototype.rcpt_ok_respond = function (retval, msg) {
+    var rcpt = this.transaction.rcpt_to[this.transaction.rcpt_to.length - 1];
+    var dmsg = "recipient " + rcpt.format();
     switch (retval) {
         case constants.deny:
-                this.respond(550, msg || "delivery denied");
+                this.respond(550, msg || dmsg + " denied");
                 this.transaction.rcpt_to.pop();
                 break;
         case constants.denydisconnect:
-                this.respond(550, msg || "delivery denied");
+                this.respond(550, msg || dmsg + " denied");
                 this.disconnect();
                 break;
         case constants.denysoft:
-                this.respond(450, msg || "delivery denied for now");
+                this.respond(450, msg || dmsg + " denied");
                 this.transaction.rcpt_to.pop();
                 break;
         default:
-                this.respond(250, msg || "recipient OK");
+                this.respond(250, msg || dmsg + " OK");
     }
 }
 
@@ -475,29 +480,31 @@ Connection.prototype.rcpt_respond = function(retval, msg) {
     if (retval === constants.cont && this.relaying) {
         retval = constants.ok;
     }
-        
+
+    var rcpt = this.transaction.rcpt_to[this.transaction.rcpt_to.length - 1];
+    var dmsg = "recipient " + rcpt.format();
     switch (retval) {
         case constants.deny:
-                this.respond(550, msg || "delivery denied");
+                this.respond(550, msg || dmsg + " denied");
                 this.transaction.rcpt_to.pop();
                 break;
         case constants.denydisconnect:
-                this.respond(550, msg || "delivery denied");
+                this.respond(550, msg || dmsg + " denied");
                 this.disconnect();
                 break;
         case constants.denysoft:
-                this.respond(450, msg || "delivery denied for now");
+                this.respond(450, msg || dmsg + " denied");
                 this.transaction.rcpt_to.pop();
                 break;
         case constants.ok:
-                plugins.run_hooks('rcpt_ok', this, this.transaction.rcpt_to[this.transaction.rcpt_to.length - 1]);
+                plugins.run_hooks('rcpt_ok', this, rcpt);
                 break;
         default:
                 if (retval !== constants.cont) {
                     this.logalert("No plugin determined if relaying was allowed");
                 }
                 this.transaction.rcpt_to.pop();
-                this.respond(450, "I cannot deliver for that user");
+                this.respond(450, "I cannot deliver mail for " + rcpt.format());
     }
 };
 
@@ -599,6 +606,7 @@ Connection.prototype.cmd_mail = function(line) {
     
     this.init_transaction();
     this.transaction.mail_from = from
+    this.loginfo('MAIL FROM: ' + from);
     plugins.run_hooks('mail', this, [from, params]);
 };
 
@@ -637,6 +645,7 @@ Connection.prototype.cmd_rcpt = function(line) {
     }
 
     this.transaction.rcpt_to.push(recip);
+    this.loginfo('RCPT TO: ' + recip);
     plugins.run_hooks('rcpt', this, [recip, params]);
 };
 
@@ -664,8 +673,9 @@ Connection.prototype.received_line = function() {
            +" (" + this.hello_host + " ["+this.remote_ip
            +"])\n  " + (this.authheader || '') + "  by " + config.get('me', 'nolog')
            +" (Haraka/" + version
-           +") with " + (this.sslheader || '') + smtp + "; "
-           + _date_to_str(new Date());
+           +") with " + (this.sslheader || '') + smtp
+           +" id " + this.uuid
+           +";\n    " + _date_to_str(new Date());
 };
 
 Connection.prototype.cmd_data = function(line) {
@@ -714,29 +724,34 @@ Connection.prototype.data_respond = function(retval, msg) {
 Connection.prototype.accumulate_data = function(line) {
     if (line === ".\r\n")
         return this.data_done();
-    
-    if (this.max_bytes && this.transaction.data_bytes > this.max_bytes) {
-        this.logerror("Incoming message exceeded databytes size of " + this.max_bytes);
-        this.respond(552, "Message too big!");
-        this.disconnect(); // a bit rude, but otherwise people will just keep spewing
-        return;
-    }
-    
+
     // Bare LF checks
     if (line === ".\r" || line === ".\n") {
-        // I really should create my own URL...
         this.logerror("Client sent bare line-feed - .\\r or .\\n rather than .\\r\\n");
-        this.respond(421, "See http://smtpd.develooper.com/barelf.html");
-        this.disconnect();
+        this.respond(451, "See http://haraka.github.com/barelf.html");
+        this.reset_transaction();
         return;
     }
-    
+
+    // Stop accumulating data as we're going to reject at dot.
+    if (this.max_bytes && this.transaction.data_bytes > this.max_bytes) { 
+        return;
+    }
+
     this.transaction.add_data(line.replace(/^\.\./, '.').replace(/\r\n$/, "\n"));
 };
 
 Connection.prototype.data_done = function() {
     this.state = 'pause';
-    // this.transaction.add_header('X-Haraka', 'Version ' + version);
+
+    // Check message size limit
+    if (this.max_bytes && this.transaction.data_bytes > this.max_bytes) {
+        this.logerror("Incoming message exceeded databytes size of " + this.max_bytes);
+        this.respond(550, "Message too big!");
+        this.reset_transaction();
+        return;
+    }
+
     plugins.run_hooks('data_post', this);
 };
 

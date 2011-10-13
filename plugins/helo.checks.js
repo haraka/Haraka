@@ -21,7 +21,7 @@ exports.register = function () {
 }
 
 exports.helo_no_dot = function (next, connection, helo) {
-    var config = this.config.get('helo.checks.ini', 'ini');
+    var config = this.config.get('helo.checks.ini');
     if (!config.main.check_no_dot) {
         return next();
     }
@@ -42,7 +42,7 @@ exports.helo_match_re = function (next, connection, helo) {
 };
 
 exports.helo_raw_ip = function (next, connection, helo) {
-    var config = this.config.get('helo.checks.ini', 'ini');
+    var config = this.config.get('helo.checks.ini');
     if (!config.main.check_raw_ip) {
         return next();
     }
@@ -60,7 +60,7 @@ exports.helo_is_dynamic = function (next, connection, helo) {
 exports.helo_big_company = function (next, connection, helo) {
     var rdns = connection.remote_host;
     
-    var big_co = this.config.get('helo.checks.ini', 'ini').bigco;
+    var big_co = this.config.get('helo.checks.ini').bigco;
     if (big_co[helo]) {
         var allowed_rdns = big_co[helo].split(/,/);
         for (var i=0,l=allowed_rdns.length; i < l; i++) {

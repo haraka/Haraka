@@ -1,6 +1,6 @@
 // smtp network server
 
-var net         = require('./tls_server');
+var net         = require('./tls_socket');
 var logger      = require('./logger');
 var config      = require('./config');
 var conn        = require('./connection');
@@ -46,7 +46,7 @@ function apply_defaults(obj) {
 }
 
 Server.createServer = function (params) {
-    var config_data = config.get('smtp.ini', 'nolog', 'ini');
+    var config_data = config.get('smtp.ini', 'nolog');
     var param_key;
     for (param_key in params) {
         if (typeof params[param_key] !== 'function') {
@@ -60,7 +60,7 @@ Server.createServer = function (params) {
     plugins.load_plugins();
     
     var server = net.createServer(function (client) {
-        client.cryptoSocket.setTimeout((config_data.main.inactivity_time || 300) * 1000);
+        client.setTimeout((config_data.main.inactivity_time || 300) * 1000);
         conn.createConnection(client, server);
     });
     server.notes = {};
@@ -132,7 +132,7 @@ Server.init_child_respond = function (retval, msg) {
 }
 
 function listening () {
-    var config_data = config.get('smtp.ini', 'nolog', 'ini');
+    var config_data = config.get('smtp.ini', 'nolog');
     logger.lognotice("Listening on port " + config_data.main.port);
     out.load_queue();
     Server.ready = 1;
