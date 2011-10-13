@@ -152,8 +152,7 @@ exports.send_trans_email = function (transaction, next) {
         transaction.add_header('Date', new Date().toString());
     }
 
-    // This header will break a DKIM signature.
-    // transaction.add_header('Received', 'via haraka outbound.js at ' + new Date().toString());
+    transaction.add_header('Received', 'via haraka outbound.js at ' + new Date().toString());
     
     // First get each domain
     var recips = {};
