@@ -34,7 +34,7 @@ var Server = exports;
 
 var defaults = {
     port: 25,
-    listen_host: '0.0.0.0',
+    listen_host: '::',
     inactivity_timeout: 600
 };
 
