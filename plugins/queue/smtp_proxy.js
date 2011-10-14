@@ -37,7 +37,7 @@ function _get_smtp_proxy(self, next, connection) {
         smtp_proxy.socket.removeAllListeners('line');
         smtp_proxy.socket.removeAllListeners('drain');
     } else {
-        smtp_proxy.config = self.config.get('smtp_proxy.ini', 'ini');
+        smtp_proxy.config = self.config.get('smtp_proxy.ini');
         smtp_proxy.socket = sock.connect(smtp_proxy.config.main.port,
             smtp_proxy.config.main.host);
         smtp_proxy.socket.setTimeout((smtp_proxy.config.main.timeout) ?

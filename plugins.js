@@ -140,7 +140,7 @@ plugins._load_and_compile_plugin = function(name) {
         }
     }
     if (!rf) {
-        if (config.get('smtp.ini', 'nolog', 'ini').main.ignore_bad_plugins) {
+        if (config.get('smtp.ini', 'nolog').main.ignore_bad_plugins) {
             logger.logcrit("Loading plugin " + name + " failed: " + last_err);
             return;
         }
@@ -162,7 +162,7 @@ plugins._load_and_compile_plugin = function(name) {
         vm.runInNewContext(code, sandbox, name);
     }
     catch (err) {
-        if (config.get('smtp.ini', 'nolog', 'ini').main.ignore_bad_plugins) {
+        if (config.get('smtp.ini', 'nolog').main.ignore_bad_plugins) {
             logger.logcrit("Loading plugin " + name + " failed: ", err.stack);
             return;
         }

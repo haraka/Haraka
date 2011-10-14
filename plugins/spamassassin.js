@@ -32,7 +32,7 @@ var defaults = {
 };
 
 exports.hook_data_post = function (next, connection) {
-    var config = this.config.get('spamassassin.ini', 'ini');
+    var config = this.config.get('spamassassin.ini');
     var plugin = this;
     
     for (var key in defaults) {
