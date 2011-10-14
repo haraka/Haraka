@@ -148,6 +148,8 @@ plugins._load_and_compile_plugin = function(name) {
     var code = rf;
     var sandbox = { 
         require: require,
+        __filename: fp[i],
+        __dirname:  path.dirname(fp[i]),
         exports: plugin,
         setTimeout: setTimeout,
         clearTimeout: clearTimeout,
