@@ -32,7 +32,11 @@ implemented as a Haraka plugin.
 
 ### Screencast
 
-[Getting started with Haraka][2]
+Getting Started with Haraka
+
+<iframe width="560" height="315" src="http://www.youtube.com/embed/6twKXMAsPsw" frameborder="0" allowfullscreen></iframe>
+
+External Link: [Getting started with Haraka][2]
 
 ### Why Use Haraka?
 
