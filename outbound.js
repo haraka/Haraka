@@ -578,7 +578,7 @@ HMailItem.prototype.get_mx_respond = function (retval, mx) {
             return;
         }
         
-        // if MX lookup failed, we lookup an A record. To do that we change
+        // if MX lookup failed, we lookup an AAAA or A record. To do that we change
         // wrap_mx() to return same thing as resolveMx() does.
         wrap_mx = function (a) { return {priority:0,exchange:a} };
 
@@ -610,7 +610,14 @@ HMailItem.prototype.found_mx = function (err, mxs) {
     else {
         // got MXs
         var mxlist = sort_mx(mxs);
-        this.mxlist = mxlist;
+        // duplicate each MX for each ip address family
+        this.mxlist = [];
+        for (var mx in mxlist) {
+          this.mxlist.push(
+              { exchange: mxlist[mx].exchange, priority: mxlist[mx].priority, family: 'AAAA' },
+              { exchange: mxlist[mx].exchange, priority: mxlist[mx].priority, family: 'A' }
+          );
+        }
         this.try_deliver();
     }
 }
@@ -644,13 +651,15 @@ HMailItem.prototype.try_deliver = function () {
         return this.temp_fail("Tried all MXs");
     }
     
-    var host = this.mxlist.shift().exchange;
-    
-    this.loginfo("Looking up A records for: " + host);
+    var lookup = this.mxlist.shift();
+    var host   = lookup.exchange;
+    var family = lookup.family;
+
+    this.loginfo("Looking up " + family + " records for: " + host);
 
     // now we have a host, we have to lookup the addresses for that host
     // and try each one in order they appear
-    dns.resolve(host, function (err, addresses) {
+    dns.resolve(host, rrtype=family, function (err, addresses) {
         if (err) {
             self.logerror("DNS lookup of " + host + " failed: " + err);
             delivery_concurrency--;
