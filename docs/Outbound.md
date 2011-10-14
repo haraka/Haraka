@@ -11,6 +11,34 @@ flag to `true` via a plugin. The simplest way of doing that is to use SMTP
 AUTH, and have the client authenticate. For example using the `auth/flat_file`
 plugin. However it is very simple to write a custom plugin to do this.
 
+Outbound Configuration Files
+----------------------------
+
+### outbound.concurrency_max
+
+Default: 100. Specifies the maximum concurrent connections to make. Note that
+if using cluster (multiple CPUs) then this will be multiplied by the number
+of CPUs that you have.
+
+### outbound.enable_tls
+
+Default: 0. Put a "1" in this file to enable TLS for outbound mail when the
+remote end is capable of receiving TLS connections.
+
+This uses the same `tls_key.pem` and `tls_cert.pem` files that the `tls`
+plugin uses. See the plugin documentation for information on generating those
+files.
+
+### outbound.bounce_message
+
+See "Bounce Messages" below for details.
+
+### outbound.disabled
+
+Allows you to temporarily disable outbound delivery, while still able to
+receive and queue emails. This can be done while Haraka is running due to
+how Haraka watches for config file changes.
+
 Outbound Mail Hooks
 -------------------
 
