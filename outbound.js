@@ -858,22 +858,6 @@ HMailItem.prototype.try_deliver_host = function () {
     });
 }
 
-var default_bounce_template = ['Received: (Haraka {pid} invoked for bounce); {date}\n',
-'Date: {date}\n',
-'From: MAILER-DAEMON@{me}\n',
-'To: {from}\n',
-'Subject: failure notice\n',
-'Message-Id: {msgid}\n',
-'\n',
-'Hi. This is the Haraka Mailer program at {me}.\n',
-'I\'m afraid I wasn\'t able to deliver your message to the following addresses.\n',
-'This is a permanent error; I\'ve given up. Sorry it didn\'t work out.\n',
-'\n',
-'{to}: {reason}\n',
-'\n',
-'--- Below this line is a copy of the message.\n',
-'\n'];
-
 function populate_bounce_message (from, to, reason, hmail, cb) {
     var values = {
         date: new Date().toString(),
@@ -885,13 +869,10 @@ function populate_bounce_message (from, to, reason, hmail, cb) {
         msgid: '<' + utils.uuid() + '@' + config.get('me', 'nolog') + '>',
     };
     
-    var bounce_msg_ = config.get('outbound.bounce_message', 'nolog', 'list');
-    if (bounce_msg_.length === 0) {
-        bounce_msg_ = default_bounce_template;
-    }
+    var bounce_msg_ = config.get('outbound.bounce_message', 'nolog', 'data');
     
     var bounce_msg = bounce_msg_.map(function (item) {
-        return item.replace(/\{(\w+)\}/g, function (i, word) { return values[word] || '?' });
+        return item.replace(/\{(\w+)\}/g, function (i, word) { return values[word] || '?' }) + '\n';
     });
     
     var data_stream = hmail.data_stream();

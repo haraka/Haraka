@@ -60,8 +60,8 @@ cfreader.load_config = function(name, type) {
         result = cfreader.load_json_config(name);
     }
     else {
-        result = cfreader.load_flat_config(name);
-        if (result && type !== 'list') {
+        result = cfreader.load_flat_config(name, type);
+        if (result && type !== 'list' && type !== 'data') {
             result = result[0];
             if (/^\d+$/.test(result)) {
                 result = parseInt(result);
@@ -112,9 +112,17 @@ cfreader.load_ini_config = function(name) {
     return result;
 };
 
-cfreader.load_flat_config = function(name) {
+cfreader.load_flat_config = function(name, type) {
     var result = [];
     var data   = new String(fs.readFileSync(name));
+    if (type === 'data') {
+        while (data.length > 0) {
+            var match = data.match(/^([^\n]*)\n?/);
+            result.push(match[1]);
+            data = data.slice(match[0].length);
+        }
+        return result;
+    }
     var lines  = data.split(/\r\n|\r|\n/);
     
     lines.forEach( function(line) {
