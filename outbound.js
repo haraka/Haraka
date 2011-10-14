@@ -796,8 +796,8 @@ HMailItem.prototype.try_deliver_host = function () {
                         socket.process_ehlo_data();
                         break;
                     case 'starttls':
-                        var key = config.get('tls_key.pem', 'list').join("\n");
-                        var cert = config.get('tls_cert.pem', 'list').join("\n");
+                        var key = config.get('tls_key.pem', 'data').join("\n");
+                        var cert = config.get('tls_cert.pem', 'data').join("\n");
                         var tls_options = { key: key, cert: cert };
 
                         smtp_properties = {};

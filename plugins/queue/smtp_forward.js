@@ -92,8 +92,8 @@ exports.smtp_forward = function (next, connection) {
                             }
                         }
                         if (response[i].match(/^STARTTLS/)) {
-                            var key = self.config.get('tls_key.pem', 'list').join("\n");
-                            var cert = self.config.get('tls_cert.pem', 'list').join("\n");
+                            var key = self.config.get('tls_key.pem', 'data').join("\n");
+                            var cert = self.config.get('tls_cert.pem', 'data').join("\n");
                             // Use TLS opportunistically if we found the key and certificate
                             if (key && cert && (!/(true|1)/i.exec(smtp_config.main.disable_tls))) {
                                 this.on('secure', function () {
