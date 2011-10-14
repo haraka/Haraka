@@ -235,7 +235,7 @@ exports.hook_mail = function (next, connection, params) {
                             if (key && cert && (/(true|yes|1)/i.exec(smtp_proxy.config.main.enable_tls))) {
                                 self.logdebug('before TLS: ' + smtp_proxy.socket.listeners('drain'));
                                 this.on('secure', function () {
-                                    smtp_proxy.socket.send_command('EHLO', self.config.get('me','nolog'));
+                                    smtp_proxy.socket.send_command('EHLO', self.config.get('me'));
                                 });
                                 smtp_proxy.socket.send_command('STARTTLS');
                                 return;

@@ -75,7 +75,7 @@ exports.smtp_forward = function (next, connection) {
                     if (code.match(/^5/)) {
                         // Handle fallback to HELO if EHLO is rejected
                         if (!this.xclient) {
-                            socket.send_command('HELO', self.config.get('me','nolog'));
+                            socket.send_command('HELO', self.config.get('me'));
                         }
                         else {
                             socket.send_command('HELO', connection.hello_host);
@@ -97,7 +97,7 @@ exports.smtp_forward = function (next, connection) {
                             // Use TLS opportunistically if we found the key and certificate
                             if (key && cert && (!/(true|1)/i.exec(smtp_config.main.disable_tls))) {
                                 this.on('secure', function () {
-                                    socket.send_command('EHLO', self.config.get('me','nolog'));
+                                    socket.send_command('EHLO', self.config.get('me'));
                                 });
                                 socket.send_command('STARTTLS');
                                 return;
