@@ -19,6 +19,19 @@ exports.version = JSON.parse(
         fs.readFileSync(path.join(__dirname, './package.json'), 'utf8')
     ).version;
 
+process.on('uncaughtException', function (err) {
+    if (err.stack) {
+        err.stack.split("\n").forEach(function (line) {
+            logger.logcrit(line);
+        });
+    }
+    else {
+        logger.logcrit('Caught exception: ' + err);
+    }
+    logger.dump_logs();
+    process.exit();
+});
+
 logger.log("INFO", "Starting up Haraka version " + exports.version);
 
 server.createServer();

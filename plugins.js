@@ -114,13 +114,16 @@ plugins.load_plugins = function () {
     var plugin_list = config.get('plugins', 'list');
     
     plugins.plugin_list = plugin_list.map(plugins.load_plugin);
+    logger.dump_logs(); // now logging plugins are loaded.
 };
 
 plugins.load_plugin = function(name) {
     logger.loginfo("Loading plugin: " + name);
 
     var plugin = plugins._load_and_compile_plugin(name);
-    plugins._register_plugin(plugin);
+    if (plugin) {
+        plugins._register_plugin(plugin);
+    }
 
     return plugin;
 }
@@ -164,8 +167,10 @@ plugins._load_and_compile_plugin = function(name) {
         vm.runInNewContext(code, sandbox, name);
     }
     catch (err) {
+        logger.logcrit("Compiling plugin: " + name + " failed");
         if (config.get('smtp.ini').main.ignore_bad_plugins) {
-            logger.logcrit("Loading plugin " + name + " failed: ", err.stack);
+            logger.logcrit("Loading plugin " + name + " failed: ", err.message
+                           + " - will skip this plugin and continue");
             return;
         }
         throw err; // default is to re-throw and stop Haraka
@@ -206,7 +211,7 @@ plugins.run_hooks = function (hook, object, params) {
     for (i = 0; i < plugins.plugin_list.length; i++) {
         var plugin = plugins.plugin_list[i];
         
-        if (plugin.hooks[hook]) {
+        if (plugin && plugin.hooks[hook]) {
             var j;
             for (j = 0; j < plugin.hooks[hook].length; j++) {
                 var hook_code_name = plugin.hooks[hook][j];
