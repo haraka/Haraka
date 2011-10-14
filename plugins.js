@@ -85,6 +85,7 @@ Plugin.prototype.inherits = function (parent_name) {
     if (parent_plugin.register) {
         parent_plugin.register.call(this);
     }
+    this.base = parent_plugin;
 }
 
 // copy logger methods into Plugin:
