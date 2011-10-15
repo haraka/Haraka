@@ -60,7 +60,7 @@ Server.createServer = function (params) {
     plugins.load_plugins();
     
     var server = net.createServer(function (client) {
-        client.setTimeout((config_data.main.inactivity_time || 300) * 1000);
+        client.setTimeout((config_data.main.inactivity_timeout || 300) * 1000);
         conn.createConnection(client, server);
     });
     server.notes = {};
