@@ -28,7 +28,7 @@ Header.prototype.parse = function (lines) {
             var key = match[1].toLowerCase();
             var val = match[2];
             
-            this._add_header(key, val);
+            this._add_header(key, val, "push");
         }
         else {
             logger.logerror("Header did not look right: " + this.header_list[i]);

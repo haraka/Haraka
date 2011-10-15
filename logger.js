@@ -57,8 +57,9 @@ logger.log_respond = function (retval, msg, data) {
     }
 };
 
+// TODO: would be nice if there were some way to reload the loglevel
 logger._init_loglevel = function () {
-    var _loglevel = config.get('loglevel', 'nolog', 'value');
+    var _loglevel = config.get('loglevel');
     if (_loglevel) {
         var loglevel_num = parseInt(_loglevel);
         if (!loglevel_num || loglevel_num === NaN) {
@@ -71,7 +72,6 @@ logger._init_loglevel = function () {
             loglevel = logger.LOGWARN;
         }
     }
-    // logger.log("Set log level to: " + loglevel);
 };
 
 logger._init_loglevel();

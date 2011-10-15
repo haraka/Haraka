@@ -76,8 +76,8 @@ function Connection(client, server) {
     this.uuid = uuid();
     this.notes = {};
     this.tran_count = 0;
-    this.early_talker_delay = config.get('early_talker_delay', 'nolog') || 1000;
-    this.deny_includes_uuid = config.get('deny_includes_uuid', 'nolog') ? true : false;
+    this.early_talker_delay = config.get('early_talker_delay') || 1000;
+    this.deny_includes_uuid = config.get('deny_includes_uuid') ? true : false;
     this.relaying = false;
     this.disconnected = false;
     this.esmtp = false;
@@ -324,14 +324,14 @@ Connection.prototype.connect_respond = function(retval, msg) {
                              this.respond(450, msg || "Come back later");
                              break;
         default:
-                             var greeting = config.get('smtpgreeting', 'nolog', 'list');
+                             var greeting = config.get('smtpgreeting', 'list');
                              if (greeting.length) {
                                  if (!(/(^|\W)ESMTP(\W|$)/.test(greeting[0]))) {
                                      greeting[0] += " ESMTP";
                                  }
                              }
                              else {
-                                 greeting = (config.get('me', 'nolog') + 
+                                 greeting = (config.get('me') + 
                                             " ESMTP Haraka " + version + " ready");
                              }
                              this.respond(220, msg || greeting);
@@ -381,7 +381,7 @@ Connection.prototype.ehlo_respond = function(retval, msg) {
                                 "8BITMIME",
                                 ];
                 
-                var databytes = config.get('databytes', 'nolog');
+                var databytes = config.get('databytes');
                 response.push("SIZE " + databytes || 0);
                 
                 this.capabilities = response;
@@ -598,7 +598,7 @@ Connection.prototype.cmd_mail = function(line) {
 
     // Handle SIZE extension
     if (params && params['SIZE'] && params['SIZE'] > 0) {
-        var databytes = config.get('databytes', 'nolog');
+        var databytes = config.get('databytes');
         if (databytes && databytes > 0 && params['SIZE'] > databytes) {
             return this.respond(550, 'Message too big!');
         }
@@ -671,7 +671,7 @@ Connection.prototype.received_line = function() {
     // TODO - populate authheader and sslheader - see qpsmtpd for how to.
     return  "from " + this.remote_info
            +" (" + this.hello_host + " ["+this.remote_ip
-           +"])\n  " + (this.authheader || '') + "  by " + config.get('me', 'nolog')
+           +"])\n  " + (this.authheader || '') + "  by " + config.get('me')
            +" (Haraka/" + version
            +") with " + (this.sslheader || '') + smtp
            +" id " + this.uuid
@@ -718,7 +718,7 @@ Connection.prototype.data_respond = function(retval, msg) {
     // OK... now we get the data
     this.state = 'data';
     this.transaction.data_bytes = 0;
-    this.max_bytes = config.get('databytes', 'nolog');
+    this.max_bytes = config.get('databytes');
 };
 
 Connection.prototype.accumulate_data = function(line) {
