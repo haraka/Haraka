@@ -11,9 +11,12 @@ The API is fairly simple:
 
 Where type can be one of:
 
-* 'ini' - load an "ini" style file
 * 'value' - load a flat file containing a single value (default)
+* 'ini' - load an "ini" style file
+* 'json' - load a json file
 * 'list' - load a flat file containing a list of values
+* 'data' - load a flat file containing a list of values, keeping comments and
+whitespace.
 
 The name is not a filename, but a name in the config/ directory. For example:
 
@@ -21,6 +24,9 @@ The name is not a filename, but a name in the config/ directory. For example:
 
 This will look up and load the file config/rambling.paths in the Haraka
 directory.
+
+However if you name your ini and json files ending in `.ini` and `.json`
+respectively then the `type` parameter can be left off.
 
 File Formats
 ============
@@ -64,9 +70,15 @@ Flat files are simply either lists of values separated by \n or a single
 value in a file on its own. Those who have used qmail or qpsmtpd will be
 familiar with this format.
 
-Lines starting with '#' and blank lines will be ignored.
+Lines starting with '#' and blank lines will be ignored unless the type is
+specified as 'data', however even then line endings will be stripped.
 
 See plugins/dnsbl.js for an example.
+
+JSON Files
+----------
+
+These are as you would expect, and returns an object as given in the file.
 
 Reloading/Caching
 ========

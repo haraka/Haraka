@@ -50,9 +50,9 @@ var regular_hooks = {
 
 function Plugin(name) {
     this.name = name;
-    this.timeout = config.get(name + '.timeout', 'nolog');
+    this.timeout = config.get(name + '.timeout');
     if (this.timeout === null) {
-        this.timeout = config.get('plugin_timeout', 'nolog') || 30;
+        this.timeout = config.get('plugin_timeout') || 30;
     }
     else {
         logger.logdebug("plugin " + name + " set timeout to: " + this.timeout + "s");
@@ -85,6 +85,7 @@ Plugin.prototype.inherits = function (parent_name) {
     if (parent_plugin.register) {
         parent_plugin.register.call(this);
     }
+    this.base = parent_plugin;
 }
 
 // copy logger methods into Plugin:
@@ -110,16 +111,19 @@ plugins.Plugin = Plugin;
 
 plugins.load_plugins = function () {
     logger.loginfo("Loading plugins");
-    var plugin_list = config.get('plugins', 'nolog', 'list');
+    var plugin_list = config.get('plugins', 'list');
     
     plugins.plugin_list = plugin_list.map(plugins.load_plugin);
+    logger.dump_logs(); // now logging plugins are loaded.
 };
 
 plugins.load_plugin = function(name) {
     logger.loginfo("Loading plugin: " + name);
 
     var plugin = plugins._load_and_compile_plugin(name);
-    plugins._register_plugin(plugin);
+    if (plugin) {
+        plugins._register_plugin(plugin);
+    }
 
     return plugin;
 }
@@ -139,7 +143,7 @@ plugins._load_and_compile_plugin = function(name) {
         }
     }
     if (!rf) {
-        if (config.get('smtp.ini', 'nolog').main.ignore_bad_plugins) {
+        if (config.get('smtp.ini').main.ignore_bad_plugins) {
             logger.logcrit("Loading plugin " + name + " failed: " + last_err);
             return;
         }
@@ -148,6 +152,8 @@ plugins._load_and_compile_plugin = function(name) {
     var code = rf;
     var sandbox = { 
         require: require,
+        __filename: fp[i],
+        __dirname:  path.dirname(fp[i]),
         exports: plugin,
         setTimeout: setTimeout,
         clearTimeout: clearTimeout,
@@ -161,8 +167,10 @@ plugins._load_and_compile_plugin = function(name) {
         vm.runInNewContext(code, sandbox, name);
     }
     catch (err) {
-        if (config.get('smtp.ini', 'nolog').main.ignore_bad_plugins) {
-            logger.logcrit("Loading plugin " + name + " failed: ", err.stack);
+        logger.logcrit("Compiling plugin: " + name + " failed");
+        if (config.get('smtp.ini').main.ignore_bad_plugins) {
+            logger.logcrit("Loading plugin " + name + " failed: ", err.message
+                           + " - will skip this plugin and continue");
             return;
         }
         throw err; // default is to re-throw and stop Haraka
@@ -203,7 +211,7 @@ plugins.run_hooks = function (hook, object, params) {
     for (i = 0; i < plugins.plugin_list.length; i++) {
         var plugin = plugins.plugin_list[i];
         
-        if (plugin.hooks[hook]) {
+        if (plugin && plugin.hooks[hook]) {
             var j;
             for (j = 0; j < plugin.hooks[hook].length; j++) {
                 var hook_code_name = plugin.hooks[hook][j];

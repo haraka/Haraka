@@ -1,23 +1,24 @@
 Haraka - a Node.js Mail Server
 ------------------------------
 
-Haraka is a plugin capable SMTP server. It uses a highly scalable event
-model to be able to cope with thousands of concurrent connections. Plugins
-are written in Javascript using [Node.js][1], and as such perform extremely
-quickly.
+Haraka is an SMTP server which uses a plugin architecture to implement most
+of its functionality. It uses a highly scalable event model to be able to
+cope with thousands of concurrent connections. Plugins are written in
+Javascript using [Node.js][1], and as such perform extremely quickly. The
+core Haraka framework is capable of processing thousands of messages per
+second on the right hardware.
 
 Haraka can be used either as an inbound SMTP server, and is designed with
-good anti-spam protections in mind (see the plugins directory), or it can
-be used as an outbound mail server (run it on port 587 with an "auth" plugin
-to authenticate your users). Or of course it can function as both.
+good anti-spam protections in mind (see the `plugins` directory), or it can
+be used as an outbound mail server - the most common way of doing this is by
+running it on port 587 with an "auth" plugin to authenticate your users.
 
-What Haraka doesn't do is fully replace your mail system (yet). It currently
-has no built-in facilities for mapping email addresses to user accounts and
-delivering them to said accounts. For that we expect you to keep something
-like postfix, exim or any other user-based mail system, and have Haraka
-deliver mail to those systems for inbound email. However nothing is stopping
-someone writing a plugin which replicates that facility - it just has yet to
-be done.
+A full mail system for end users is vastly complicated, and so Haraka makes
+no attempt to be an IMAP server, figure out where mails should be delivered,
+or implement any of the functionality of a mail store. As such it is common
+to have a backend mail server which Haraka delivers to for that sort of
+functionality - Exchange, Postfix, Dovecot or Courier would be examples of
+such systems.
 
 Haraka does have a scalable outbound mail delivery engine built in. Any mail
 marked as `relaying` (such as via an `auth` plugin) will automatically be
@@ -26,7 +27,8 @@ queued for outbound delivery.
 ### Join the Mailing List
 
 To get started with Haraka and ask questions about it, please join the
-mailing list: mailto:haraka-sub@harakamail.com
+mailing list: mailto:haraka-sub@harakamail.com - the mailing list is
+implemented as a Haraka plugin.
 
 ### Screencast
 

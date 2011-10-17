@@ -46,7 +46,7 @@ function apply_defaults(obj) {
 }
 
 Server.createServer = function (params) {
-    var config_data = config.get('smtp.ini', 'nolog');
+    var config_data = config.get('smtp.ini');
     var param_key;
     for (param_key in params) {
         if (typeof params[param_key] !== 'function') {
@@ -60,7 +60,7 @@ Server.createServer = function (params) {
     plugins.load_plugins();
     
     var server = net.createServer(function (client) {
-        client.setTimeout((config_data.main.inactivity_time || 300) * 1000);
+        client.setTimeout((config_data.main.inactivity_timeout || 300) * 1000);
         conn.createConnection(client, server);
     });
     server.notes = {};
@@ -68,7 +68,7 @@ Server.createServer = function (params) {
     if (cluster && config_data.main.nodes) {
          
         var c = cluster(server);
-        var cluster_modules = config.get('cluster_modules', 'nolog', 'list');
+        var cluster_modules = config.get('cluster_modules', 'list');
         
         if (config_data.main.nodes !== 'cpus') {
             c.set('workers', config_data.main.nodes);
@@ -132,7 +132,7 @@ Server.init_child_respond = function (retval, msg) {
 }
 
 function listening () {
-    var config_data = config.get('smtp.ini', 'nolog');
+    var config_data = config.get('smtp.ini');
     logger.lognotice("Listening on port " + config_data.main.port);
     out.load_queue();
     Server.ready = 1;

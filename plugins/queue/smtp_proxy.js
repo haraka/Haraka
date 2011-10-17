@@ -230,12 +230,12 @@ exports.hook_mail = function (next, connection, params) {
                             }
                         }
                         if (smtp_proxy.response[i].match(/^STARTTLS/)) {
-                            var key = self.config.get('tls_key.pem', 'list').join("\n");
-                            var cert = self.config.get('tls_cert.pem', 'list').join("\n");
+                            var key = self.config.get('tls_key.pem', 'data').join("\n");
+                            var cert = self.config.get('tls_cert.pem', 'data').join("\n");
                             if (key && cert && (/(true|yes|1)/i.exec(smtp_proxy.config.main.enable_tls))) {
                                 self.logdebug('before TLS: ' + smtp_proxy.socket.listeners('drain'));
                                 this.on('secure', function () {
-                                    smtp_proxy.socket.send_command('EHLO', self.config.get('me','nolog'));
+                                    smtp_proxy.socket.send_command('EHLO', self.config.get('me'));
                                 });
                                 smtp_proxy.socket.send_command('STARTTLS');
                                 return;
