@@ -962,7 +962,8 @@ HMailItem.prototype.delivered = function () {
 HMailItem.prototype.temp_fail = function (err) {
     this.num_failures++;
     delivery_concurrency--;
-    
+
+    // Test for max failures which is configurable.
     if (this.num_failures >= (config.get('outbound.maxTempFailures', 'nolog') || 13)) {
         return this.bounce("Too many failures (" + err + ")");
     }
