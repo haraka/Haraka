@@ -819,6 +819,7 @@ Connection.prototype.queue_outbound_respond = function(retval, msg) {
 Connection.prototype.queue_respond = function(retval, msg) {
     switch (retval) {
         case constants.ok:
+                this.respond(250, msg || "Message Queued");
                 plugins.run_hooks("queue_ok", this);
                 break;
         case constants.deny:
@@ -842,5 +843,4 @@ Connection.prototype.queue_respond = function(retval, msg) {
 
 Connection.prototype.queue_ok_respond = function (retval, msg) {
     this.reset_transaction();
-    this.respond(250, msg || "Message Queued");
 };
