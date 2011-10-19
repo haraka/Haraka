@@ -20,7 +20,9 @@ exports.smtp_forward = function (next, connection) {
     // copy the recipients:
     var recipients = connection.transaction.rcpt_to.map(function(item) { return item });
     var data_marker = 0;
-    
+    var dot_pending = true;
+    var got_data_response = false;
+
     var send_data = function () {
         if (data_marker < connection.transaction.data_lines.length) {
             var wrote_all = socket.write(connection.transaction.data_lines[data_marker].replace(/^\./, '..').replace(/\r?\n/g, '\r\n'));
@@ -28,8 +30,9 @@ exports.smtp_forward = function (next, connection) {
             if (wrote_all) {
                 send_data();
             }
-        }
-        else {
+        }   
+        else if (dot_pending) {
+            dot_pending = false;
             socket.send_command('dot');
         }
     }
@@ -95,7 +98,7 @@ exports.smtp_forward = function (next, connection) {
                             var key = self.config.get('tls_key.pem', 'data').join("\n");
                             var cert = self.config.get('tls_cert.pem', 'data').join("\n");
                             // Use TLS opportunistically if we found the key and certificate
-                            if (key && cert && (!/(true|1)/i.exec(smtp_config.main.disable_tls))) {
+                            if (key && cert && (!/(true|yes|1)/i.exec(smtp_config.main.enable_tls))) {
                                 this.on('secure', function () {
                                     socket.send_command('EHLO', self.config.get('me'));
                                 });
@@ -147,11 +150,14 @@ exports.smtp_forward = function (next, connection) {
                         socket.send_command('DATA');
                         break;
                     case 'data':
+                        got_data_response = true;
                         send_data();
                         break;
                     case 'dot':
+                        // Return the response from the forwarder back to the client
+                        // But add in our transaction UUID at the end of the line.
+                        next(OK, response + ' (' + connection.transaction.uuid + ')');
                         socket.send_command('QUIT');
-                        next(OK);
                         break;
                     case 'quit':
                         socket.end();
@@ -170,8 +176,8 @@ exports.smtp_forward = function (next, connection) {
     });
     socket.on('drain', function() {
         self.logdebug("Drained");
-        if (command === 'data') {
-            send_data();
+        if (got_data_response && dot_pending && command === 'data') {
+            process.nextTick(function () { send_data() });
         }
     });
 };
