@@ -1,3 +1,4 @@
+"use strict";
 // Constants
 
 exports.cont            = 900;

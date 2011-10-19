@@ -1,3 +1,4 @@
+"use strict";
 var configloader = require('./configfile');
 var path         = require('path');
 var logger       = require('./logger');

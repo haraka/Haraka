@@ -1,3 +1,4 @@
+"use strict";
 // Various utility functions
 
 // copied from http://www.broofa.com/Tools/Math.uuid.js

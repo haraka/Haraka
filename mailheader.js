@@ -1,3 +1,4 @@
+"use strict";
 // An RFC 2822 email header parser
 var logger = require('./logger');
 

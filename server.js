@@ -1,3 +1,4 @@
+"use strict";
 // smtp network server
 
 var net         = require('./tls_socket');

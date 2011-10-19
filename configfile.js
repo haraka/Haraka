@@ -1,3 +1,4 @@
+"use strict";
 // Config file loader
 
 var fs = require('fs');
@@ -52,6 +53,8 @@ cfreader.empty_config = function(type) {
 };
 
 cfreader.load_config = function(name, type) {
+
+    var result;
 
     if (type === 'ini' || /\.ini$/.test(name)) {
         result = cfreader.load_ini_config(name);

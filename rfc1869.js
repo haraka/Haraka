@@ -1,3 +1,4 @@
+"use strict";
 // RFC 1869 command parser
 
 // 6.  MAIL FROM and RCPT TO Parameters

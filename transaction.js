@@ -1,3 +1,4 @@
+"use strict";
 // An SMTP Transaction
 
 var config = require('./config');

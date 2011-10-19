@@ -1,3 +1,4 @@
+"use strict";
 var fs          = require('fs');
 var path        = require('path');
 var dns         = require('dns');
@@ -47,7 +48,7 @@ exports.load_queue = function () {
     if (!path.existsSync(queue_dir)) {
         this.logdebug("Creating queue directory " + queue_dir);
         try {
-            fs.mkdirSync(queue_dir, 0755   );
+            fs.mkdirSync(queue_dir, 493); // 493 == 0755
         }
         catch (err) {
             if (err.code != 'EEXIST') {

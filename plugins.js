@@ -1,3 +1,4 @@
+"use strict";
 // load all defined plugins
 
 var logger      = require('./logger');
@@ -11,42 +12,6 @@ var util        = require('util');
 
 var plugin_paths = [path.join(__dirname, './plugins')];
 if (process.env.HARAKA) { plugin_paths.unshift(path.join(process.env.HARAKA, 'plugins')); }
-
-// These are the hooks that qpsmtpd implements - I should get around
-// to supporting them all some day... :-/
-var regular_hooks = {
-    'connect':1,
-    'pre-connection': 1,
-    'connect': 1,
-    'ehlo_parse': 1,
-    'ehlo': 1,
-    'helo_parse': 1,
-    'helo': 1,
-    'auth_parse': 1,
-    'auth': 1,
-    'auth-plain': 1,
-    'auth-login': 1,
-    'auth-cram-md5': 1,
-    'rcpt_parse': 1,
-    'rcpt_pre': 1,
-    'rcpt': 1,
-    'mail_parse': 1,
-    'mail': 1,
-    'mail_pre': 1, 
-    'data': 1,
-    'data_headers_end': 1,
-    'data_post': 1,
-    'queue_pre': 1,
-    'queue': 1,
-    'queue_post': 1,
-    'vrfy': 1,
-    'noop': 1,
-    'quit': 1,
-    'reset_transaction': 1,
-    'disconnect': 1,
-    'unrecognized_command': 1,
-    'help': 1
-};
 
 function Plugin(name) {
     this.name = name;
@@ -149,7 +114,7 @@ plugins._load_and_compile_plugin = function(name) {
         }
         throw "Loading plugin " + name + " failed: " + last_err;
     }
-    var code = rf;
+    var code = '"use strict";' + rf;
     var sandbox = { 
         require: require,
         __filename: fp[i],
@@ -197,7 +162,7 @@ plugins.run_hooks = function (hook, object, params) {
     if (hook != 'log')
         object.logdebug("running " + hook + " hooks");
     
-    if (regular_hooks[hook] && object.hooks_to_run.length) {
+    if (hook != 'deny' && hook != 'log' && object.hooks_to_run.length) {
         throw new Error("We are already running hooks! Fatal error!");
     }
 

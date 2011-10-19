@@ -1,3 +1,4 @@
+"use strict";
 // a single connection
 var path        = require('path');
 var config      = require('./config');

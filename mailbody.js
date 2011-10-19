@@ -1,3 +1,4 @@
+"use strict";
 // Mail Body Parser
 var logger = require('./logger');
 var Header = require('./mailheader').Header;

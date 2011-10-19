@@ -1,3 +1,4 @@
+"use strict";
 // Log class
 
 var config    = require('./config');

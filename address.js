@@ -1,3 +1,4 @@
+"use strict";
 // a class encapsulating an email address as per RFC-2821
 
 var logger = require('./logger');
