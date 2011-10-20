@@ -221,7 +221,7 @@ exports.hook_mail = function (next, connection, params) {
                         return;
                     }
                     // Parse CAPABILITIES
-                    for (i in smtp_proxy.response) {
+                    for (var i in smtp_proxy.response) {
                         if (smtp_proxy.response[i].match(/^XCLIENT/)) {
                             if (!smtp_proxy.xclient) {
                                 smtp_proxy.socket.send_command('XCLIENT',
