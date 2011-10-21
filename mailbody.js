@@ -4,11 +4,7 @@ var logger = require('./logger');
 var Header = require('./mailheader').Header;
 var events = require('events');
 var util   = require('util');
-var Iconv;
-try { Iconv = require('iconv').Iconv }
-catch (err) {
-    logger.logdebug("No iconv available - install with 'npm install iconv'");
-}
+var Iconv  = require('./mailheader').Iconv;
 
 var buf_siz = 65536;
 
@@ -121,26 +117,32 @@ Body.prototype.parse_end = function (line) {
         var buf = this.decode_function(this.body_text_encoded);
         if (Iconv) {
             var ct = this.header.get_decoded('content-type') || 'text/plain';
-            var enc = 'utf-8';
-            var matches = /\bcharset=(?:\"|3D|')(.*?)(?:\"|3D|')/.exec(ct);
+            var enc = 'UTF-8';
+            var matches = /\bcharset\s*=\s*(?:\"|3D|')?([\w_\-]*)(?:\"|3D|')?/.exec(ct);
             if (matches) {
                 enc = matches[1];
             }
-            try {
-                var converter = new Iconv(enc, "UTF-8");
-                this.bodytext = converter.convert(buf).toString();
-            }
-            catch (err) {
-                logger.logerror("iconv conversion from " + enc + " to UTF-8 failed: " + err);
-                this.body_encoding = 'broken';
+            this.body_encoding = enc;
+            if (/UTF-?8/i.test(enc)) {
                 this.bodytext = buf.toString();
+            }
+            else {
+                try {
+                    var converter = new Iconv(enc, "UTF-8");
+                    this.bodytext = converter.convert(buf).toString();
+                }
+                catch (err) {
+                    logger.logerror("iconv conversion from " + enc + " to UTF-8 failed: " + err);
+                    this.body_encoding = 'broken';
+                    this.bodytext = buf.toString();
+                }
             }
         }
         else {
             this.body_encoding = 'no_iconv';
             this.bodytext = buf.toString();
         }
-        delete this.body_text_encoded;
+        // delete this.body_text_encoded;
     }
 }
 
@@ -215,21 +217,7 @@ Body.prototype.parse_attachment = function (line) {
     }
 }
 
-Body.prototype.decode_qp = function (line) {
-    line = line.replace(/=$/mg, '');
-    var buf = new Buffer(line.length);
-    var offset = 0;
-    var match;
-    while (match = line.match(/^([\s\S]*?)=([A-F0-9][A-F0-9])/)) {
-        line = line.substr(match[0].length);
-        offset += buf.write(match[1], offset);
-        buf[offset++] = parseInt(match[2], 16);
-    }
-    if (line.length) {
-        buf.write(line, offset);
-    }
-    return buf;
-}
+Body.prototype.decode_qp = require('./mailheader').decode_qp;
 
 Body.prototype.decode_base64 = function (line) {
     return new Buffer(line, "base64");

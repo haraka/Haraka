@@ -64,7 +64,7 @@ function setupClient(self) {
     self.client.on('data', function (data) {
         self.process_data(data);
     });
-    
+
     plugins.run_hooks('lookup_rdns', self);
 }
 
@@ -98,7 +98,7 @@ Connection.prototype.process_line = function (line) {
     if (this.state === 'cmd') {
         this.logprotocol("C: " + line);
         this.state = 'pause';
-        this.current_line = line.replace(/\r?\n$/, '');
+        this.current_line = line.replace(/\r?\n/, '');
         var matches = /^([^ ]*)( +(.*))?$/.exec(this.current_line);
         if (!matches) {
             return plugins.run_hooks('unrecognized_command', this, this.current_line);
@@ -752,6 +752,8 @@ Connection.prototype.data_done = function() {
         this.reset_transaction();
         return;
     }
+
+    this.transaction.end_data();
 
     plugins.run_hooks('data_post', this);
 };

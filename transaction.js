@@ -46,6 +46,12 @@ Transaction.prototype.add_data = function(line) {
     this.data_lines.push(line);
 };
 
+Transaction.prototype.end_data = function() {
+    if (this.header_pos && this.parse_body) {
+        this.body.parse_end();
+    }
+}
+
 Transaction.prototype.add_header = function(key, value) {
     this.header.add(key, value);
     this.reset_headers();
