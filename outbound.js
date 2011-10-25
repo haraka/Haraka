@@ -507,11 +507,20 @@ HMailItem.prototype._send = function () {
         return;
     }
 
-    this.logdebug("Sending mail: " + this.filename);
+    plugins.run_hooks('send_email', this);
 
-    // plugin.loginfo("Hmail: " + util.inspect(hmail, null, null));
-    
-    this.get_mx();
+}
+
+HMailItem.prototype.send_email_respond = function (retval, delaySeconds) {
+    if(retval === constants.delay){
+        // Try again in 'delay' seconds.
+        this.logdebug("Delivery delayed.");
+        var hmail = this;
+        setTimeout(function () {hmail._send()}, delaySeconds*1000);
+    }else{
+        this.logdebug("Sending mail: " + this.filename);
+        this.get_mx();
+    }
 }
 
 HMailItem.prototype.get_mx = function () {
