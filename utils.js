@@ -1,8 +1,6 @@
 "use strict";
 // Various utility functions
 
-var isIPv4 = require('net').isIPv4;
-
 // copied from http://www.broofa.com/Tools/Math.uuid.js
 var CHARS = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'.split('');
 
