@@ -12,6 +12,7 @@ var fs          = require('fs');
 var Address     = require('./address').Address;
 var uuid        = require('./utils').uuid;
 var outbound    = require('./outbound');
+var date_to_str = require('./utils').date_to_str;
 
 var version  = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'))).version;
 
@@ -650,23 +651,6 @@ Connection.prototype.cmd_rcpt = function(line) {
     plugins.run_hooks('rcpt', this, [recip, params]);
 };
 
-var _daynames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-var _monnames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-
-function _pad(num, n, p) {
-        var s = '' + num;
-        p = p || '0';
-        while (s.length < n) s = p + s;
-        return s;
-}
-
-function _date_to_str(d) {
-    return _daynames[d.getDay()] + ', ' + _pad(d.getDate(),2) + ' ' +
-           _monnames[d.getMonth()] + ' ' + d.getFullYear() + ' ' +
-           _pad(d.getHours(),2) + ':' + _pad(d.getMinutes(),2) + ':' + _pad(d.getSeconds(),2) +
-           ' ' + d.toString().match(/\sGMT([+-]\d+)/)[1];
-}
-
 Connection.prototype.received_line = function() {
     var smtp = this.greeting === 'EHLO' ? 'ESMTP' : 'SMTP';
     // TODO - populate authheader and sslheader - see qpsmtpd for how to.
@@ -676,7 +660,7 @@ Connection.prototype.received_line = function() {
            +" (Haraka/" + version
            +") with " + (this.sslheader || '') + smtp
            +" id " + this.uuid
-           +";\n    " + _date_to_str(new Date());
+           +";\n    " + date_to_str(new Date());
 };
 
 Connection.prototype.cmd_data = function(line) {
