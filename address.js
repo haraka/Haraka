@@ -122,6 +122,7 @@ Address.prototype.format = function () {
 
 Address.prototype.address = function (set) {
     if (set) {
+        this.original = set;
         this.parse(set);
     }
     return (this.user ? this.user : '') + (this.host ? ('@' + this.host) : '');
