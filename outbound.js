@@ -12,7 +12,7 @@ var config      = require('./config');
 var constants   = require('./constants');
 var trans       = require('./transaction');
 var plugins     = require('./plugins');
-
+var date_to_str = require('./utils').date_to_str;
 var Address     = require('./address').Address;
 
 var delivery_concurrency = 0;
@@ -150,10 +150,10 @@ exports.send_trans_email = function (transaction, next) {
     }
     if (!transaction.header.get_all('Date').length) {
         this.loginfo("Adding missing Date header");
-        transaction.add_header('Date', new Date().toString());
+        transaction.add_header('Date', date_to_str(new Date()));
     }
 
-    transaction.add_header('Received', 'via haraka outbound.js at ' + new Date().toString());
+    transaction.add_header('Received', 'via haraka outbound.js at ' + date_to_str(new Date()));
     
     // First get each domain
     var recips = {};
