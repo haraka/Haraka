@@ -21,7 +21,7 @@ different levels available.
   Keys:
   
   * port - the port to use (default: 25)
-  * listen\_address - default: 0.0.0.0 (i.e. all addresses)
+  * listen\_address - default: :: (i.e. all ipv4 & ipv6 addresses)
   * inactivity\_time - how long to let clients idle in seconds (default: 300)
   * nodes - if [cluster][1] is available, specifies how
     many processes to fork off. Can be the string "cpus" to fork off as many
