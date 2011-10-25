@@ -785,6 +785,7 @@ Connection.prototype.data_post_respond = function(retval, msg) {
 Connection.prototype.queue_outbound_respond = function(retval, msg) {
     switch(retval) {
         case constants.ok:
+                this.respond(250, msg || "Message Queued");
                 plugins.run_hooks("queue_ok", this);
                 break;
         case constants.deny:
@@ -804,6 +805,7 @@ Connection.prototype.queue_outbound_respond = function(retval, msg) {
                 outbound.send_email(this.transaction, function(retval, msg) {
                     switch(retval) {
                         case constants.ok:
+                                conn.respond(250, msg || "Message Queued");
                                 plugins.run_hooks("queue_ok", conn);
                                 break;
                         case constants.deny:
