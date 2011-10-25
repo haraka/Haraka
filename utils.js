@@ -63,33 +63,6 @@ exports.ISODate = function (d) {
       + pad(d.getUTCSeconds())+'Z'
 }
 
-exports.ip_to_long = function (ip) {
-    if (!isIPv4(ip)) {
-        return false;
-    }
-    else {
-        var d = ip.split('.');
-        return ((((((+d[0])*256)+(+d[1]))*256)+(+d[2]))*256)+(+d[3]);
-    }
-}
-
-exports.long_to_ip = function (n) {
-    var d = n%256;
-    for (var i=3; i>0; i--) { 
-        num = Math.floor(num/256);
-        d = num%256 + '.' + d;
-    }
-    return d;
-}
-
-exports.dec_to_hex = function (d) {
-    return d.toString(16);
-}
-
-exports.hex_to_dec = function (h) {
-    return parseInt(h, 16);
-}
-
 var _daynames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 var _monnames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
