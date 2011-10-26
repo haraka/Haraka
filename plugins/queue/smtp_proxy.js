@@ -143,19 +143,21 @@ exports.hook_mail = function (next, connection, params) {
     var dot_pending = true;
 
     smtp_proxy.send_data = function () {
-        if (data_marker < connection.transaction.data_lines.length) {
+        var wrote_all = true;
+        while (wrote_all && (data_marker < connection.transaction.data_lines.length)) {
             var line = connection.transaction.data_lines[data_marker];
             data_marker++;
             self.logdata("Proxy C: " + line);
             // this protection is due to bug #
             in_write = true;
-            var wrote_all = smtp_proxy.socket.write(line.replace(/^\./, '..').replace(/\r?\n/g, '\r\n'));
+            wrote_all = smtp_proxy.socket.write(line.replace(/^\./, '..').replace(/\r?\n/g, '\r\n'));
             in_write = false;
-            if (wrote_all) {
-                return smtp_proxy.send_data();
+            if (!wrote_all) {
+                return;
             }
         }
-        else if (dot_pending) {
+        // we get here if wrote_all still true, and we got to end of data_lines
+        if (dot_pending) {
             dot_pending = false;
             smtp_proxy.socket.send_command('dot');
         }
