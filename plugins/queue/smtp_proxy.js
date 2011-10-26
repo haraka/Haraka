@@ -144,15 +144,15 @@ exports.hook_mail = function (next, connection, params) {
 
     smtp_proxy.send_data = function () {
         if (data_marker < connection.transaction.data_lines.length) {
-            var line = connection.transaction.data_lines[data_marker];
-            data_marker++;
-            self.logdata("Proxy C: " + line);
-            // this protection is due to bug #
-            in_write = true;
-            var wrote_all = smtp_proxy.socket.write(line.replace(/^\./, '..').replace(/\r?\n/g, '\r\n'));
-            in_write = false;
-            if (wrote_all) {
-                return smtp_proxy.send_data();
+            var wrote_all = true;
+            while (wrote_all && (data_marker < connection.transaction.data_lines.length)) {
+                var line = connection.transaction.data_lines[data_marker];
+                data_marker++;
+                self.logdata("Proxy C: " + line);
+                // this protection is due to bug #
+                in_write = true;
+                wrote_all = smtp_proxy.socket.write(line.replace(/^\./, '..').replace(/\r?\n/g, '\r\n'));
+                in_write = false;
             }
         }
         else if (dot_pending) {
