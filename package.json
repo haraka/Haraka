@@ -23,7 +23,7 @@
   } ],
   "bugs": {
     "mail" : "helpme@gmail.com",
-    "web" : "https://github.com/baudehlo/Haraka/issues"
+    "url" : "https://github.com/baudehlo/Haraka/issues"
   },
   "bin": { "haraka": "./bin/haraka" }
 }
