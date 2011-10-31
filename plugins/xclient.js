@@ -23,7 +23,7 @@ exports.hook_unrecognized_command = function (next, connection, params) {
     // Check that the client is authorized
     var config = this.config.get('xclient.hosts','list');
     var found;
-    for (i in config) {
+    for (var i in config) {
         this.logdebug('Checking ' + connection.remote_ip + ' == ' + config[i]);
         // TODO: handle ip/mask here.
         if (connection.remote_ip === config[i]) {
@@ -39,7 +39,7 @@ exports.hook_unrecognized_command = function (next, connection, params) {
     // Process arguments
     var args = (new String(params[1])).toLowerCase().split(/ /);
     var xclient = {};
-    for (a=0; a < args.length; a++) {
+    for (var a=0; a < args.length; a++) {
         var match = /^([^=]+)=([^ ]+)/.exec(args[a]);
         if (match) {
             this.logdebug('found key=' + match[1] + ' value=' + match[2]);
