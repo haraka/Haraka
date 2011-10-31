@@ -29,7 +29,7 @@ config.get = function(name, type) {
             else {
                 var match = /\.(ini|json)$/.exec(name);
                 if (match) {
-                    return configloader.empty_config(matches[1]);
+                    return configloader.empty_config(match[1]);
                 }
                 return null;
             }
