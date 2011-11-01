@@ -85,7 +85,7 @@ cfreader.load_ini_config = function(name) {
     var result       = cfreader.empty_config('ini');
     var current_sect = result.main;
     
-    var data = new String(fs.readFileSync(name));
+    var data = fs.readFileSync(name, "UTF-8");
     var lines = data.split(/\r\n|\r|\n/);
     var match;
     
@@ -117,7 +117,7 @@ cfreader.load_ini_config = function(name) {
 
 cfreader.load_flat_config = function(name, type) {
     var result = [];
-    var data   = new String(fs.readFileSync(name));
+    var data   = fs.readFileSync(name, "UTF-8");
     if (type === 'data') {
         while (data.length > 0) {
             var match = data.match(/^([^\n]*)\n?/);
