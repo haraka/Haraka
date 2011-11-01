@@ -23,7 +23,7 @@ config.get = function(name, type) {
     catch (err) {
         if (err.code === 'EBADF' || err.code === 'ENOENT') {
             // no such file or directory
-            if (type != 'value' ) {
+            if (type !== 'value' ) {
                 return configloader.empty_config(type);
             }
             else {
