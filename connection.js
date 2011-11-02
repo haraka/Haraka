@@ -526,7 +526,7 @@ Connection.prototype.cmd_helo = function(line) {
     
     this.greeting   = 'HELO';
     this.hello_host = host;
-    
+
     plugins.run_hooks('helo', this, host);
 };
 
@@ -543,7 +543,7 @@ Connection.prototype.cmd_ehlo = function(line) {
     
     this.greeting   = 'EHLO';
     this.hello_host = host;
-    
+
     plugins.run_hooks('ehlo', this, host);
 };
 
@@ -569,6 +569,9 @@ Connection.prototype.cmd_help = function() {
 };
 
 Connection.prototype.cmd_mail = function(line) {
+    if (!this.hello_host) {
+        return this.respond(503, 'Use EHLO/HELO before MAIL');
+    }
     var results;
     var from;
     try {
