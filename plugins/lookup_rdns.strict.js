@@ -80,7 +80,8 @@ exports.hook_lookup_rdns = function (next, connection) {
             if (_in_whitelist(plugin, connection.remote_ip)) {
                 next(OK, connection.remote_ip);
             } else {
-                next(DENYDISCONNECT, timeout_msg);
+                next(DENYDISCONNECT, '[' + connection.remote_ip + '] ' +
+                    timeout_msg);
             }
         }
     }, timeout * 1000);
@@ -146,7 +147,8 @@ exports.hook_lookup_rdns = function (next, connection) {
                             if (_in_whitelist(plugin, rdns)) {
                                 next(OK, rdns);
                             } else {
-                                next(DENYDISCONNECT, nomatch);
+                                next(DENYDISCONNECT, rdns + '[' +
+                                    connection.remote_ip + '] ' + nomatch);
                             }
                         }
                     }
