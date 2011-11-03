@@ -199,6 +199,9 @@ Connection.prototype.respond = function(code, messages) {
 
     if (code >= 400 && this.deny_includes_uuid) {
         uuid = (this.transaction || this).uuid;
+        if (this.deny_includes_uuid > 1) {
+            uuid = uuid.substr(0, this.deny_includes_uuid);
+        }
     }
     
     var msg;

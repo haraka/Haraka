@@ -42,8 +42,13 @@ different levels available.
 
   Each connection and mail in Haraka includes a UUID which is also in most log
   messages. If you put a `1` in this file then every denied mail (either via
-  DENY/5xx or DENYSOFT/4xx return codes) will include a note containing the
-  uuid, making it easy to track problems back to the logs.
+  DENY/5xx or DENYSOFT/4xx return codes) will include the uuid at the start
+  of each line of the deny message in brackets, making it easy to track
+  problems back to the logs.
+
+  Because UUIDs are long, if you put a number greater than 1 in the config
+  file, it will be truncated to that length. We recommend a 6 as a good
+  balance of finding in the logs and not making lines too long.
 
 * early\_talker\_delay
 
