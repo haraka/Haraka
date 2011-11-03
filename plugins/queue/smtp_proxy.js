@@ -254,6 +254,7 @@ exports.hook_mail = function (next, connection, params) {
                         // errors are OK for rcpt, but nothing else
                         // this can also happen if the destination server
                         // times out, but that is okay.
+                        self.loginfo("message denied, proxying failed");
                         smtp_proxy.socket.send_command('RSET');
                     }
                     return smtp_proxy.next(code.match(/^4/) ?
@@ -292,6 +293,7 @@ exports.hook_mail = function (next, connection, params) {
                         break;
                     case 'dot':
                         smtp_proxy.socket.send_command('RSET');
+                        self.loginfo("message delivered, proxying complete");
                         smtp_proxy.next(OK);
                         break;
                     case 'rset':
@@ -308,6 +310,7 @@ exports.hook_mail = function (next, connection, params) {
         else {
             // Unrecognised response.
             self.logerror("Unrecognised response from upstream server: " + line);
+            self.loginfo("message denied, proxying failed");
             smtp_proxy.socket.send_command('RSET');
             return smtp_proxy.next(DENYSOFT);
         }

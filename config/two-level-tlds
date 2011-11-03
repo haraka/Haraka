@@ -1,4 +1,4 @@
-# update from: http://george.surbl.org/two-level-tlds
+# update from http://george.surbl.org/two-level-tlds
 0.bg
 1.bg
 110mb.com
@@ -276,7 +276,6 @@ avocat.fr
 avoues.fr
 axis.museum
 az.us
-xn--aroport-bya.ci
 b.bg
 b.se
 ba.it
@@ -450,6 +449,7 @@ bydgoszcz.pl
 bygland.no
 bykle.no
 bytom.pl
+bz.cm
 bz.it
 c.bg
 c.la
@@ -816,12 +816,15 @@ cs.it
 csiro.au
 ct.it
 ct.us
+cu.cc
 cul.na
 cultural.museum
 culturalcenter.museum
 culture.museum
 cuneo.it
 cv.ua
+cw.cm
+cx.cc
 cyber.museum
 cymru.museum
 cyt.cu
@@ -891,11 +894,11 @@ dr.tr
 drammen.no
 drangedal.no
 drobak.no
-xn--drbak-wua.no
 dudinka.ru
 durham.museum
 dyroy.no
 e-burg.ru
+e-famoso.it
 e.bg
 e.se
 e12.ve
@@ -1201,6 +1204,7 @@ fot.br
 foundation.museum
 fr.it
 fr.ms
+fr.nf
 fr.pn
 fr.tc
 fr.tt
@@ -1507,6 +1511,7 @@ grong.no
 grosseto.it
 groundhandling.aero
 group.aero
+grouply.com
 grozny.ru
 grp.lk
 grue.no
@@ -1521,6 +1526,7 @@ gunma.jp
 guovdageaidnu.no
 gv.ao
 gv.at
+gv.vg
 gwangju.kr
 gx.cn
 gyeongbuk.kr
@@ -1652,6 +1658,7 @@ ie.tc
 iespana.es
 if.ua
 ifrance.com
+iim.bz
 il.im
 il.us
 ilawa.pl
@@ -1953,7 +1960,6 @@ law.pro
 law.za
 lc.it
 le.it
-xn--leagaviika-52b.no
 leangaviika.no
 leasing.aero
 lebesby.no
@@ -1982,6 +1988,7 @@ lierne.no
 lillehammer.no
 lillesand.no
 limanowa.pl
+limewebs.com
 lincoln.museum
 lindas.no
 lindesnes.no
@@ -2833,7 +2840,6 @@ oskol.ru
 oslo.no
 osoyro.no
 osteroy.no
-xn--ostery-fya.no
 ostre-toten.no
 ostroda.pl
 ostroleka.pl
@@ -3244,6 +3250,7 @@ sherbrooke.museum
 shiga.jp
 shimane.jp
 shizuoka.jp
+shop.co
 shop.ht
 shop.hu
 shop.ms
@@ -3416,6 +3423,7 @@ t.bg
 t.se
 t3.to
 t35.com
+t35.me
 t35.net
 ta.it
 takamatsu.jp
@@ -3460,6 +3468,8 @@ tj.cn
 tjeldsund.no
 tjome.no
 tld.am
+tld.tc
+tld.tl
 tlf.nr
 tm.cy
 tm.fr
@@ -3530,6 +3540,7 @@ ts.it
 tsaritsyn.ru
 tsk.ru
 tula.ru
+tumblr.com
 tur.br
 tur.cu
 turek.pl
@@ -3552,7 +3563,6 @@ tynset.no
 tysfjord.no
 tysnes.no
 tysvar.no
-xn--tysvr-vra.no
 tyumen.ru
 u.bg
 u.se
@@ -3581,11 +3591,11 @@ unbi.ba
 unblog.fr
 undersea.museum
 uni.cc
+uni7.net
 union.aero
 uniti.al
 university.museum
 unjarga.no
-xn--unjrga-rta.no
 unlugar.com
 unsa.ba
 upt.al
@@ -3648,7 +3658,6 @@ ve.it
 vefsn.no
 vega.no
 vegarshei.no
-xn--vegrshei-c0a.no
 venezia.it
 venice.it
 vennesla.no
@@ -3769,6 +3778,13 @@ x.se
 xanga.com
 xf.cz
 xj.cn
+xn--aroport-bya.ci
+xn--drbak-wua.no
+xn--leagaviika-52b.no
+xn--ostery-fya.no
+xn--tysvr-vra.no
+xn--unjrga-rta.no
+xn--vegrshei-c0a.no
 xorg.pl
 xz.cn
 y.bg

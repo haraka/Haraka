@@ -181,6 +181,8 @@ Connection.prototype.current_line = function() {
 };
 
 Connection.prototype.respond = function(code, messages) {
+    var uuid = '';
+
     if (this.disconnected) {
         return;
     }
@@ -196,13 +198,14 @@ Connection.prototype.respond = function(code, messages) {
     }
 
     if (code >= 400 && this.deny_includes_uuid) {
-        messages.push("for support please provide uuid:" + (this.transaction || this).uuid);
+        uuid = (this.transaction || this).uuid;
     }
     
     var msg;
     var buf = '';
     while (msg = messages.shift()) {
-        var line = code + (messages.length ? "-" : " ") + msg;
+        var line = code + (messages.length ? "-" : " ") + 
+            (uuid ? '[' + uuid + '] ' : '' ) + msg;
         this.logprotocol("S: " + line);
         buf = buf + line + "\r\n";
     }
@@ -526,7 +529,7 @@ Connection.prototype.cmd_helo = function(line) {
     
     this.greeting   = 'HELO';
     this.hello_host = host;
-    
+
     plugins.run_hooks('helo', this, host);
 };
 
@@ -543,7 +546,7 @@ Connection.prototype.cmd_ehlo = function(line) {
     
     this.greeting   = 'EHLO';
     this.hello_host = host;
-    
+
     plugins.run_hooks('ehlo', this, host);
 };
 
@@ -569,6 +572,9 @@ Connection.prototype.cmd_help = function() {
 };
 
 Connection.prototype.cmd_mail = function(line) {
+    if (!this.hello_host) {
+        return this.respond(503, 'Use EHLO/HELO before MAIL');
+    }
     var results;
     var from;
     try {
