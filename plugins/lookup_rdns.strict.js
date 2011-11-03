@@ -147,7 +147,7 @@ exports.hook_lookup_rdns = function (next, connection) {
                             if (_in_whitelist(plugin, rdns)) {
                                 next(OK, rdns);
                             } else {
-                                next(DENYDISCONNECT, rdns + '[' +
+                                next(DENYDISCONNECT, rdns + ' [' +
                                     connection.remote_ip + '] ' + nomatch);
                             }
                         }

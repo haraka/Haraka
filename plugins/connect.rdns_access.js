@@ -55,7 +55,7 @@ exports.rdns_access = function(next, connection) {
 
         if (_in_blacklist(plugin, connection.remote_ip)) {
             plugin.logdebug("Rejecting, matched: " + connection.remote_ip);
-            return next(DENY, connection.remote_host.toLowerCase + '[' +
+            return next(DENY, connection.remote_host.toLowerCase + ' [' +
                 connection.remote_ip + '] ' + plugin.deny_msg);
         }
     }
@@ -67,7 +67,7 @@ exports.rdns_access = function(next, connection) {
 
         if (_in_blacklist(plugin, connection.remote_host.toLowerCase())) {
             plugin.logdebug("Rejecting, matched: " + connection.remote_host);
-            return next(DENY, connection.remote_host.toLowerCase + '[' +
+            return next(DENY, connection.remote_host.toLowerCase + ' [' +
                 connection.remote_ip + '] ' + plugin.deny_msg);
         }
     }
