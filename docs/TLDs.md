@@ -35,7 +35,7 @@ This module depends on the following files to function:
 
   This allows for additional 2nd and 3rd level TLDs to be
   from a single file.  Used for site customizations or
-  and for the URIBL hosters.txt that can be updated from:
+  for the URIBL hosters.txt that can be updated from:
   http://rss.uribl.com/hosters/hosters.txt
 
 Usage

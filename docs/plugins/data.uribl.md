@@ -6,8 +6,8 @@ This plugin extracts URIs and feeds them to RHS based blacklists such as
 [SURBL][3] and [URIBL][4].
 
 This plugin will discard any domain name that does not have a valid TLD
-or any IP address within RFC1918, 127/8 or 169.254/16 (APIPA) and wil
-convert and in-addr.arpa URI into an IP address lookup.
+or any IP address within RFC1918, 127/8 or 169.254/16 (APIPA) and will
+convert any URI ending in in-addr.arpa into an IP address lookup.
 
 Configuration
 -------------
@@ -20,13 +20,17 @@ each zone within that section.
 
 The main section can contain the following options:
 
-* timeout                                               Default: 30
+* timeout
+
+  Default: 30
 
   The total timeout in seconds for each group of lookups.  Any group of
   lookups that takes longer than this will be aborted and the session
   will continue.
 
-* max_uris_per_list                                     Default: 20
+* max_uris_per_list                                     
+
+  Default: 20
 
   This option limits the maximum number of unique lookups that will be 
   submitted for each list after the input has been normalized into the 
