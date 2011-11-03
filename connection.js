@@ -181,6 +181,8 @@ Connection.prototype.current_line = function() {
 };
 
 Connection.prototype.respond = function(code, messages) {
+    var uuid = '';
+
     if (this.disconnected) {
         return;
     }
@@ -196,13 +198,14 @@ Connection.prototype.respond = function(code, messages) {
     }
 
     if (code >= 400 && this.deny_includes_uuid) {
-        messages.push("for support please provide uuid:" + (this.transaction || this).uuid);
+        uuid = (this.transaction || this).uuid;
     }
     
     var msg;
     var buf = '';
     while (msg = messages.shift()) {
-        var line = code + (messages.length ? "-" : " ") + msg;
+        var line = code + (messages.length ? "-" : " ") + 
+            (uuid ? '[' + uuid + '] ' : '' ) + msg;
         this.logprotocol("S: " + line);
         buf = buf + line + "\r\n";
     }
