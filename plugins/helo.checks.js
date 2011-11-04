@@ -1,6 +1,5 @@
 // Check various bits of the HELO string
-var tlds = require('./tlds');
-var utils = require('./utils');
+var net_utils = require('./net_utils');
 
 // Checks to implement:
 // - HELO has no "dot"
@@ -8,9 +7,6 @@ var utils = require('./utils');
 // - HELO raw IP
 // - HELO looks dynamic
 // - Well known HELOs that must match rdns
-
-// Regexp to match private IPv4 ranges
-var re_private_ipv4 = /(?:10|127|169\.254|172\.(?:1[6-9]|2[0-9]|3[01])|192\.168)\..*/;
 
 exports.register = function () {
     var plugin = this;
@@ -30,7 +26,7 @@ exports.helo_no_dot = function (next, connection, helo) {
     if (!config.main.check_no_dot      ||
         !config.main.require_valid_tld ||
         (config.main.skip_private_ip   &&
-        re_private_ipv4.test(connection.remote_ip))) 
+        net_utils.is_rfc1918(connection.remote_ip))) 
     {
         return next();
     }
@@ -41,7 +37,7 @@ exports.helo_no_dot = function (next, connection, helo) {
 
     if (config.main.require_valid_tld) {
         var tld = (helo.split(/\./).reverse())[0];
-        if (!/^\[\d+\.\d+\.\d+\.\d+\]$/.test(helo) && !tlds.top_level_tlds[tld]) {
+        if (!/^\[\d+\.\d+\.\d+\.\d+\]$/.test(helo) && !net_utils.top_level_tlds[tld]) {
             return next(DENY, "HELO must have a valid TLD");
         }
     }
@@ -65,7 +61,7 @@ exports.helo_raw_ip = function (next, connection, helo) {
     var config = this.config.get('helo.checks.ini');
     if (!config.main.check_raw_ip     ||
         (config.main.skip_private_ip &&
-        re_private_ipv4.test(connection.remote_ip)))
+        net_utils.is_rfc1918(connection.remote_ip)))
     {
         return next();
     }
@@ -80,7 +76,7 @@ exports.helo_is_dynamic = function (next, connection, helo) {
     var config = this.config.get('helo.checks.ini');
     if (!config.main.check_dynamic   ||
         (config.main.skip_private_ip &&
-        re_private_ipv4.test(connection.remote_ip)))
+        net_utils.is_rfc1918(connection.remote_ip)))
     {
         return next();
     }
@@ -89,7 +85,7 @@ exports.helo_is_dynamic = function (next, connection, helo) {
         return next();
     }
 
-    (utils.ip_in_str(connection.remote_ip, helo)) ?
+    (utils.is_ip_in_str(connection.remote_ip, helo)) ?
         next(DENY, 'HELO is dynamic')
       : next();
 };
