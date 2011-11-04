@@ -1,11 +1,8 @@
 // Look up URLs in SURBL
-var url    = require('url');
-var dns    = require('dns');
-var tlds   = require('./tlds');
-var isIPv4 = require('net').isIPv4;
-
-// Regexp to match private IPv4 ranges
-var re_private_ipv4 = /(?:10|127|169\.254|172\.(?:1[6-9]|2[0-9]|3[01])|192\.168)\..*/;
+var url       = require('url');
+var dns       = require('dns');
+var isIPv4    = require('net').isIPv4;
+var net_utils = require('./net_utils.js');
 
 // Default regexps to extract the URIs from the message
 var numeric_ip = /\w{3,16}:\/+(\S+@)?(\d+|0[xX][0-9A-Fa-f]+)\.(\d+|0[xX][0-9A-Fa-f]+)\.(\d+|0[xX][0-9A-Fa-f]+)\.(\d+|0[xX][0-9A-Fa-f]+)/gi;
@@ -34,13 +31,13 @@ function check_excludes_list(host) {
 
 exports.register = function() {
     // Override regexps if top_level_tlds file is present
-    if (tlds.top_level_tlds && Object.keys(tlds.top_level_tlds).length) {
+    if (net_utils.top_level_tlds && Object.keys(net_utils.top_level_tlds).length) {
         this.logdebug('Building new regexps from TLD file');
         var re_schemeless = '((?:www\\.)?[a-zA-Z0-9][a-zA-Z0-9\\-.]+\\.(?:' +
-            Object.keys(tlds.top_level_tlds).join('|') + '))(?!\\w)';
+            Object.keys(net_utils.top_level_tlds).join('|') + '))(?!\\w)';
         schemeless = new RegExp(re_schemeless, 'gi');
         var re_schemed = '(\\w{3,16}:\\/+(?:\\S+@)?([a-zA-Z0-9][a-zA-Z0-9\\-.]+\\.(?:' +
-            Object.keys(tlds.top_level_tlds).join('|') + ')))(?!\\w)';
+            Object.keys(net_utils.top_level_tlds).join('|') + ')))(?!\\w)';
         schemed = new RegExp(re_schemed, 'gi');
     }
 }
@@ -78,7 +75,7 @@ exports.do_lookups = function (next, hosts, type) {
         var host = hosts[i].toLowerCase();
         this.logdebug('(' + type + ') checking: ' + host);
         // Make sure we have a valid TLD
-        if (!isIPv4(host) && !tlds.top_level_tlds[(host.split('\.').reverse())[0]]) {
+        if (!isIPv4(host) && !net_utils.top_level_tlds[(host.split('\.').reverse())[0]]) {
             continue;
         }
         // Check the exclusion list
@@ -107,13 +104,13 @@ exports.do_lookups = function (next, hosts, type) {
                     continue;
                 }
                 // Skip any private IPs
-                if (re_private_ipv4.test(host)) continue;
+                if (net_utils.is_rfc1918(host)) continue;
                 // Reverse IP for lookup
                 lookup = host.split(/\./).reverse().join('.');
             }
             // Handle zones that require host to be stripped to a domain boundary
             else if (/^(?:1|true|yes|enabled|on)$/i.test(lists[zone].strip_to_domain)) {
-                lookup = (tlds.split_hostname(host, 3))[1];
+                lookup = (net_utils.split_hostname(host, 3))[1];
             }
             // Anything else..
             else {

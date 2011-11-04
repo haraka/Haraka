@@ -27,7 +27,21 @@ Configuration
     
       Checks for HELO <IP> where the IP is not surrounded by square brackets.
       This is an RFC violation so should always be enabled.
-    
+   
+    * check_dynamic=1
+
+      Checks to see if all or part the connecting IP address appears within 
+      the HELO argument to indicate that the client has a dynamic IP address.
+
+    * require_valid_tld=1
+
+      Requires the HELO argument ends in a valid TLD if it is not an IP literal.
+
+    * skip_private_ip=1
+
+      Bypasses check_no_dot, check_raw_ip, check_dynamic and require_valid_tld 
+      for clients within RFC1918, Loopback or APIPA IP address ranges.
+
     * [bigco]
     
       A list of <helo>=<rdns>[,<rdns>...] to match against. If the HELO matches
