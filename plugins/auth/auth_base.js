@@ -31,7 +31,7 @@ exports.hook_unrecognized_command = function (next, connection, params) {
     }
     else if (connection.notes.authenticating &&
              connection.notes.auth_method === AUTH_METHOD_CRAM_MD5 &&
-             connection.notes.ticket)
+             connection.notes.auth_ticket)
     {
         return this.auth_cram_md5(next, connection, params);
     }
@@ -97,7 +97,7 @@ exports.check_user = function (next, connection, credentials, method) {
         this.check_plain_passwd(credentials[0], credentials[1], passwd_ok);
     }
     else if (method === AUTH_METHOD_CRAM_MD5) {
-        this.check_cram_md5_passwd(connection.notes.ticket, credentials[0], credentials[1], passwd_ok);
+        this.check_cram_md5_passwd(connection.notes.auth_ticket, credentials[0], credentials[1], passwd_ok);
     }
 }
 
@@ -160,7 +160,7 @@ exports.auth_cram_md5 = function(next, connection, params) {
                     hexi(Date.now()) + '@' + this.config.get('me') + '>';
     this.loginfo("ticket: " + ticket);
     connection.respond(334, base64(ticket));
-    connection.notes.ticket = ticket;
+    connection.notes.auth_ticket = ticket;
     return next(OK);
 }
 
