@@ -177,3 +177,6 @@ function unbase64 (str) {
     var buffer = new Buffer(str, "base64");
     return buffer.toString("UTF-8");
 }
+
+exports.base64 = base64;
+exports.unbase64 = unbase64;
