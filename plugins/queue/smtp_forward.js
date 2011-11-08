@@ -1,6 +1,4 @@
 // Forward to an SMTP server
-
-var os   = require('os');
 var sock = require('./line_socket');
 
 exports.register = function () {
@@ -86,7 +84,7 @@ exports.smtp_forward = function (next, connection) {
                         return;
                     }
                     // Parse CAPABILITIES
-                    for (i in response) {
+                    for (var i in response) {
                         if (response[i].match(/^XCLIENT/)) {
                             if(!this.xclient) {
                                 // Just use the ADDR= key for now
