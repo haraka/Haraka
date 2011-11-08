@@ -287,7 +287,6 @@ exports.hook_mail = function (next, connection, params) {
                         smtp_proxy.next();
                         break;
                     case 'dot':
-                        //smtp_proxy.socket.send_command('RSET');
                         self.loginfo("message delivered, proxying complete");
                         smtp_proxy.next(OK, smtp_proxy.response + ' (' + connection.transaction.uuid + ')');
                         smtp_proxy.socket.send_command('RSET');
