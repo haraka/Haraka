@@ -1,5 +1,4 @@
 // Proxy AUTH requests selectively by domain
-var os   = require('os');
 var sock = require('./line_socket');
 var smtp_regexp = /^([0-9]{3})([ -])(.*)/;
 
