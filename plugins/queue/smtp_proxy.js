@@ -2,9 +2,7 @@
 // Opens the connection to the ongoing SMTP server at MAIL FROM time
 // and passes back any errors seen on the ongoing server to the originating server.
 
-var os   = require('os');
 var sock = require('./line_socket');
-
 var smtp_regexp = /^([0-9]{3})([ -])(.*)/;
 
 // Local function to get an smtp_proxy connection.
@@ -198,6 +196,7 @@ exports.hook_mail = function (next, connection, params) {
         self.logprotocol("Proxy C: " + line);
         this.write(line + "\r\n");
         smtp_proxy.command = cmd.toLowerCase();
+        smtp_proxy.response = [];
     };
     
     smtp_proxy.socket.on('line', function (line) {
@@ -235,7 +234,6 @@ exports.hook_mail = function (next, connection, params) {
                             var key = self.config.get('tls_key.pem', 'data').join("\n");
                             var cert = self.config.get('tls_cert.pem', 'data').join("\n");
                             if (key && cert && (/(true|yes|1)/i.exec(smtp_proxy.config.main.enable_tls))) {
-                                self.logdebug('before TLS: ' + smtp_proxy.socket.listeners('drain'));
                                 this.on('secure', function () {
                                     smtp_proxy.socket.send_command('EHLO', self.config.get('me'));
                                 });
@@ -260,9 +258,6 @@ exports.hook_mail = function (next, connection, params) {
                     return smtp_proxy.next(code.match(/^4/) ?
                         DENYSOFT : DENY, smtp_proxy.response);
                 }
-
-                smtp_proxy.response = []; // reset the response
-
                 switch (smtp_proxy.command) {
                     case 'xclient':
                         smtp_proxy.xclient = true;
@@ -292,9 +287,10 @@ exports.hook_mail = function (next, connection, params) {
                         smtp_proxy.next();
                         break;
                     case 'dot':
-                        smtp_proxy.socket.send_command('RSET');
+                        //smtp_proxy.socket.send_command('RSET');
                         self.loginfo("message delivered, proxying complete");
-                        smtp_proxy.next(OK);
+                        smtp_proxy.next(OK, smtp_proxy.response + ' (' + connection.transaction.uuid + ')');
+                        smtp_proxy.socket.send_command('RSET');
                         break;
                     case 'rset':
                         _smtp_proxy_idle(self, connection);
