@@ -7,6 +7,7 @@ var net_utils = require('./net_utils');
 // - HELO raw IP
 // - HELO looks dynamic
 // - Well known HELOs that must match rdns
+// - IP literal that doesn't match connecting IP
 
 exports.register = function () {
     var plugin = this;
@@ -14,7 +15,8 @@ exports.register = function () {
      'helo_match_re',
      'helo_raw_ip',
      'helo_is_dynamic',
-     'helo_big_company'
+     'helo_big_company',
+     'helo_literal_mismatch'
      ].forEach(function (hook) {
          plugin.register_hook('helo', hook);
          plugin.register_hook('ehlo', hook);
@@ -60,7 +62,7 @@ exports.helo_match_re = function (next, connection, helo) {
 exports.helo_raw_ip = function (next, connection, helo) {
     var config = this.config.get('helo.checks.ini');
     if (!config.main.check_raw_ip     ||
-        (config.main.skip_private_ip &&
+        (config.main.skip_private_ip  &&
         net_utils.is_rfc1918(connection.remote_ip)))
     {
         return next();
@@ -81,11 +83,12 @@ exports.helo_is_dynamic = function (next, connection, helo) {
         return next();
     }
 
-    if (!/\./.test(helo) && !/^\[?\d+\.\d+\.\d+\.\d+\]?$/.test(helo)) {
+    // Skip if no dots or an IP literal or address
+    if (!/\./.test(helo) || /^\[?\d+\.\d+\.\d+\.\d+\]?$/.test(helo)) {
         return next();
     }
 
-    (utils.is_ip_in_str(connection.remote_ip, helo)) ?
+    (net_utils.is_ip_in_str(connection.remote_ip, helo)) ?
         next(DENY, 'HELO is dynamic')
       : next();
 };
@@ -108,3 +111,31 @@ exports.helo_big_company = function (next, connection, helo) {
         return next();
     }
 };
+
+exports.helo_literal_mismatch = function (next, connection, helo) {
+    var config = this.config.get('helo.checks.ini');
+    if (!config.main.check_literal_mismatch ||
+        (config.main.skip_private_ip        &&
+        net_utils.is_rfc1918(connection.remote_ip)))
+    {
+        return next();
+    }
+
+    var literal = /^\[(\d+\.\d+\.\d+\.\d+)\]$/.exec(helo);
+    if (literal) {
+        if (parseInt(config.main.check_literal_mismatch) === 2) {
+            // Only match the /24
+            if (literal[1].split(/\./).splice(0,3).join('.') !== 
+                connection.remote_ip.split(/\./).splice(0,3).join('.'))
+            {
+                return next(DENY, 'HELO IP literal not in the same /24 as your IP address');
+            }
+            return next();
+        }
+
+        if (literal[1] !== connection.remote_ip) {
+            return next(DENY, 'HELO IP literal does not match your IP address');
+        }
+    }
+    return next();
+}
