@@ -136,6 +136,6 @@ exports.helo_literal_mismatch = function (next, connection, helo) {
         if (literal[1] !== connection.remote_ip) {
             return next(DENY, 'HELO IP literal does not match your IP address');
         }
-        return next();
     }
+    return next();
 }
