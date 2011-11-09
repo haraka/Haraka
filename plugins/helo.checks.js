@@ -123,10 +123,19 @@ exports.helo_literal_mismatch = function (next, connection, helo) {
 
     var literal = /^\[(\d+\.\d+\.\d+\.\d+)\]$/.exec(helo);
     if (literal) {
-        connection.logdebug('found literal: ' + literal[1]);
+        if (parseInt(config.main.check_literal_mismatch) === 2) {
+            // Only match the /24
+            if (literal[1].split(/\./).splice(0,3).join('.') !== 
+                connection.remote_ip.split(/\./).splice(0,3).join('.'))
+            {
+                return next(DENY, 'HELO IP literal not in the same /24 as your IP address');
+            }
+            return next();
+        }
+
         if (literal[1] !== connection.remote_ip) {
             return next(DENY, 'HELO IP literal does not match your IP address');
         }
+        return next();
     }
-    return next();
 }
