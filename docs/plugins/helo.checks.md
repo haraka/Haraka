@@ -32,6 +32,10 @@ Configuration
 
       Checks to see if all or part the connecting IP address appears within 
       the HELO argument to indicate that the client has a dynamic IP address.
+    
+    * check_literal_mismatch=1
+
+      Checks to see if the IP literal used matches the connecting IP address.
 
     * require_valid_tld=1
 
