@@ -12,6 +12,7 @@ This plugin uses the INI-style file format and accepts the following options:
 * timeout
 
   Default: 30
+  
   Maximum limit in seconds for queries to complete.  If the timeout is
   reached a TEMPFAIL is returned to the client.
 
@@ -24,4 +25,5 @@ This plugin uses the INI-style file format and accepts the following options:
 
   Return DENY and reject the command if no MX record is found.  Otherwise a
   DENYSOFT (TEMPFAIL) is returned and the client will retry later.
+  
   DNS errors always return DENYSOFT, so this should be safe to enable.
