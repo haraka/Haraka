@@ -4,27 +4,26 @@ mail_from.is_resolvable
 This plugin checks that the domain used in MAIL FROM is resolvable to an MX
 record.
 
+Configuration
+-------------
 
-Configuration mail_from.is_resolvable.ini
-------------------------------------------
+This plugin uses the INI-style file format and accepts the following options:
 
-This is the general configuration file for the plugin.
+* timeout
 
-* mail_from.is_resolvable.general.timeout
+  Default: 30
+  
+  Maximum limit in seconds for queries to complete.  If the timeout is
+  reached a TEMPFAIL is returned to the client.
 
-  How long we should give this plugin before we time it out (seconds).
+* allow_mx_ip=[0|1]
 
+  Allow MX records that return IP addresses instead of hostnames.
+  This is not allowed as per the RFC, but some MTAs allow it.
 
-* mail_from.is_resolvable.general.timeout_msg
+* reject_no_mx=[0|1]
 
-  Text to send when plugin reaches timeout (text).
-
-
-Configuration mail_from.is_resolvable.timeout
----------------------------------------------
-
-This is how we specify to Haraka that our plugin should have a certain timeout.
-If you specify 0 here, then the plugin will never timeout while the connection
-is active.  This is also required for this plugin, which needs to handle its
-own timeouts.  To actually specify the timeout for this plugin, please see
-the general config in mail_from.is_resolvable.ini.
+  Return DENY and reject the command if no MX record is found.  Otherwise a
+  DENYSOFT (TEMPFAIL) is returned and the client will retry later.
+  
+  DNS errors always return DENYSOFT, so this should be safe to enable.
