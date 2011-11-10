@@ -25,7 +25,7 @@ for (var key in logger) {
     if (key.match(/^log\w/)) {
         Connection.prototype[key] = (function (key) {
             return function () {
-                var args = [ (this.transaction ? this.transaction.uuid : this.uuid) + " " ];
+                var args = [ "[" + (this.transaction ? this.transaction.uuid : this.uuid) + "] " ];
                 var start = 0;
                 if (arguments.length && arguments[0] instanceof plugins.Plugin) {
                     start = 1;

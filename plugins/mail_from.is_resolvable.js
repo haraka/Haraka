@@ -21,7 +21,7 @@ exports.hook_mail = function(next, connection, params) {
     // Just in case DNS never comes back (UDP), we should DENYSOFT.
     timeout_id = setTimeout(function () {
         plugin.loginfo('timed out when looking up ' + domain +
-            '\'s MX record. Disconnecting.');
+            '\'s MX record. Disconnecting.'), connection;
         called_next++;
         return next(DENYSOFT, timeout_msg);
     }, timeout * 1000);
@@ -34,7 +34,7 @@ exports.hook_mail = function(next, connection, params) {
             return;
         }
         if (err && err.code != dns.NXDOMAIN && err.code != 'ENOTFOUND') {
-            plugin.logerror("DNS Error: " + err);
+            plugin.logerror("DNS Error: " + err, connection);
             clearTimeout(timeout_id);
             return next(DENYSOFT, "Temporary resolver error");
         }

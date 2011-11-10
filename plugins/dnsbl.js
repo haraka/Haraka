@@ -8,13 +8,13 @@ exports.register = function() {
 }
 
 exports.check_ip = function(next, connection) {
-    this.logdebug("check_ip: " + connection.remote_ip);
+    this.logdebug("check_ip: " + connection.remote_ip, connection);
     
     var ip = new String(connection.remote_ip);
     var reverse_ip = ip.split('.').reverse().join('.');
     
     if (!this.zones || !this.zones.length) {
-        this.logerror("No zones");
+        this.logerror("No zones", connection);
         return next();
     }
     
@@ -22,7 +22,7 @@ exports.check_ip = function(next, connection) {
     
     var self = this;
     this.zones.forEach(function(zone) {
-        self.logdebug("Querying: " + reverse_ip + "." + zone);
+        self.logdebug("Querying: " + reverse_ip + "." + zone, connection);
         dns.resolve(reverse_ip + "." + zone, "TXT", function (err, value) {
             if (!remaining_zones.length) return;
             remaining_zones.pop(); // we don't care about order really
@@ -33,7 +33,7 @@ exports.check_ip = function(next, connection) {
                     case 'ENOTFOUND':
                                         break;
                     default:
-                        self.loginfo("DNS error: " + err);
+                        self.loginfo("DNS error: " + err, connection);
                 }
                 if (remaining_zones.length === 0) {
                     // only call declined if no more results are pending

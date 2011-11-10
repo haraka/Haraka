@@ -86,17 +86,34 @@ for (key in logger) {
                 return function() {
                     if (loglevel < logger[key])
                         return;
-                    var str = "[" + level + "] ";
+                    var levelstr = "[" + level + "]";
+                    var str = "";
+                    var uuidstr = "[no_connection]";
+                    var pluginstr = "[haraka_core]";
                     for (var i = 0; i < arguments.length; i++) {
                         var data = arguments[i];
                         if (typeof(data) === 'object') {
-                            str += util.inspect(data);
+                            // if the object is a connection, we wish to add
+                            // the connection id
+                            if (("uuid" in data) && ("tran_count" in data)) {
+                                // this looks like a connection
+                                uuidstr = "[" + data.uuid;
+                                if (data.tran_count > 0) {
+                                  uuidstr += "." + data.tran_count;
+                                }
+                                uuidstr += "]";
+                            } else if (("name" in data) && ("full_paths" in data)) {
+                                // lame attempt to sniff this object as a plugin.
+                                pluginstr = "[" + data.name + "]"; 
+                            } else {
+                                str += util.inspect(data);
+                            }
                         }
                         else {
                             str += data;
                         }
                     }
-                    logger.log(level, str);
+                    logger.log(level, [levelstr, uuidstr, pluginstr, str].join(" "));
                 }
             })(level, key);
         }

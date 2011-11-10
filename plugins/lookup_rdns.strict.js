@@ -4,25 +4,25 @@ var dns = require('dns');
 
 // _dns_error handles err from node.dns callbacks.  It will always call next()
 // with a DENYDISCONNECT for this plugin.
-function _dns_error(next, err, host, plugin, nxdomain, dnserror) {
+function _dns_error(next, err, host, plugin, nxdomain, dnserror, connection) {
     switch (err.code) {
         case dns.NXDOMAIN:
             plugin.loginfo('could not find a address for ' + host +
-                '. Disconnecting.');
+                '. Disconnecting.', connection);
             next(DENYDISCONNECT, 'Sorry we could not find address for ' +
                 host + '. ' + nxdomain);
         break;
     
         default:
             plugin.loginfo('encountered an error when looking up ' +
-                host + '. Disconnecting.');
+                host + '. Disconnecting.', connection);
             next(DENYDISCONNECT, 'Sorry we encountered an error when ' +
                 'looking up ' + host + '. ' + dnserror);
         break;
     }
 }
 
-function _in_whitelist(plugin, address) {
+function _in_whitelist(plugin, address, connection) {
     var domain          = address.toLowerCase();
     var host_list       =
         plugin.config.get('lookup_rdns.strict.whitelist', 'list');
@@ -30,14 +30,14 @@ function _in_whitelist(plugin, address) {
         plugin.config.get('lookup_rdns.strict.whitelist_regex', 'list');
     
     plugin.loginfo("Checking if " + address + " is in the " +
-        "lookup_rdns.strict.whitelist files");
+        "lookup_rdns.strict.whitelist files", connection);
 
     var i;
     for (i in host_list) {
-        plugin.logdebug("checking " + domain + " against " + host_list[i]);
+        plugin.logdebug("checking " + domain + " against " + host_list[i], connection);
 
         if (host_list[i].toLowerCase() === domain) {
-            plugin.logdebug("Allowing " + domain);
+            plugin.logdebug("Allowing " + domain, connection);
             return 1;
         }
     }
@@ -45,10 +45,10 @@ function _in_whitelist(plugin, address) {
     if (host_list_regex.length) {
         var regex = new RegExp ('^(?:' + host_list_regex.join('|') + ')$', 'i');
 
-        plugin.logdebug("checking " + domain + " against " + regex.source);
+        plugin.logdebug("checking " + domain + " against " + regex.source, connection);
 
         if (domain.match(regex)) {
-            plugin.logdebug("Allowing " + domain);
+            plugin.logdebug("Allowing " + domain, connection);
             return 1;
         }
     }
@@ -74,10 +74,10 @@ exports.hook_lookup_rdns = function (next, connection) {
     timeout_id = setTimeout(function () {
         if (!called_next) {
             plugin.loginfo('timed out when looking up ' +
-                connection.remote_ip + '. Disconnecting.');
+                connection.remote_ip + '. Disconnecting.', connection);
             called_next++;
 
-            if (_in_whitelist(plugin, connection.remote_ip)) {
+            if (_in_whitelist(plugin, connection.remote_ip, connection)) {
                 next(OK, connection.remote_ip);
             } else {
                 next(DENYDISCONNECT, '[' + connection.remote_ip + '] ' +
@@ -92,11 +92,11 @@ exports.hook_lookup_rdns = function (next, connection) {
                 called_next++;
                 clearTimeout(timeout_id);
 
-                if (_in_whitelist(plugin, connection.remote_ip)) {
+                if (_in_whitelist(plugin, connection.remote_ip, connection)) {
                     next(OK, connection.remote_ip);
                 } else {
                     _dns_error(next, err, connection.remote_ip, plugin,
-                        rev_nxdomain, rev_dnserror);
+                        rev_nxdomain, rev_dnserror, connection);
                 }
             }
         } else {
@@ -121,11 +121,11 @@ exports.hook_lookup_rdns = function (next, connection) {
                             called_next++;
                             clearTimeout(timeout_id);
 
-                            if (_in_whitelist(plugin, rdns)) {
+                            if (_in_whitelist(plugin, rdns, connection)) {
                                 next(OK, rdns);
                             } else {
                                 _dns_error(next, err, rdns, plugin,
-                                    fwd_nxdomain, fwd_dnserror);
+                                    fwd_nxdomain, fwd_dnserror, connection);
                             }
                         }
                     } else {
@@ -144,7 +144,7 @@ exports.hook_lookup_rdns = function (next, connection) {
                             called_next++;
                             clearTimeout(timeout_id);
 
-                            if (_in_whitelist(plugin, rdns)) {
+                            if (_in_whitelist(plugin, rdns, connection)) {
                                 next(OK, rdns);
                             } else {
                                 next(DENYDISCONNECT, rdns + ' [' +
