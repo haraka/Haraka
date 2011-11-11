@@ -79,9 +79,19 @@ Server.createServer = function (params) {
         }
         
         for (var i=0,l=cluster_modules.length; i < l; i++) {
-            var parts = cluster_modules[i].split(':');
-            var module = parts.shift();
-            c.use(cluster[module].apply(cluster, parts));
+            var matches = /^(\w+)\s*(?::\s*(.*))?$/.exec(cluster_modules[i]);
+            if (!matches) {
+                Server.logerror("cluster_modules in invalid format: " + cluster_modules[i]);
+                continue;
+            }
+            var module = matches[1];
+            var params = matches[2];
+            if (params) {
+                c.use(cluster[module](JSON.parse(params)));
+            }
+            else {
+                c.use(cluster[module]());
+            }
         }
         
         c.set('host', config_data.main.listen_host);
