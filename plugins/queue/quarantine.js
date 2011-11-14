@@ -41,7 +41,7 @@ exports.hook_init_master = function (next) {
     if (path.existsSync(tmp_dir)) {
         var dirent = fs.readdirSync(tmp_dir);
         this.loginfo('Removing temporary files from: ' + tmp_dir);
-        for (i=0; i<dirent.length; i++) {
+        for (var i=0; i<dirent.length; i++) {
             fs.unlinkSync([ tmp_dir, dirent[i] ].join('/'));
         }
     }
@@ -58,7 +58,7 @@ exports.quarantine = function (next, connection) {
         }
         // Calculate date in YYYYMMDD format
         var d = new Date();
-        var yyyymmdd = d.getFullYear() + zeroPad(d.getMonth(), 2) 
+        var yyyymmdd = d.getFullYear() + zeroPad(d.getMonth()+1, 2) 
             + this.zeroPad(d.getDate(), 2);
         var config = this.config.get('quarantine.ini');
         var base_dir = (config.main.quarantine_path) ? 
@@ -91,8 +91,8 @@ exports.quarantine = function (next, connection) {
         // successful we hardlink the file to the final destination and then 
         // remove the temporary file to guarantee a complete file in the 
         // final destination.
-        mkdirs([ base_dir, 'tmp' ].join('/'), 0770, function () {
-            mkdirs([ base_dir, dir ].join('/'), 0770, function () {
+        mkdirs([ base_dir, 'tmp' ].join('/'), parseInt('0770', 8), function () {
+            mkdirs([ base_dir, dir ].join('/'), parseInt('0770', 8), function () {
                 fs.writeFile([ base_dir, 'tmp', transaction.uuid ].join('/'), lines.join(''), 
                     function(err) {
                         if (err) {
