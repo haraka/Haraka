@@ -165,7 +165,7 @@ function createServer(cb) {
             cryptoSocket.removeAllListeners('data');
             var sslcontext = crypto.createCredentials(options);
 
-            var pair = tls.createSecurePair(sslcontext, true, false, false);
+            var pair = tls.createSecurePair(sslcontext, true, true, false);
 
             var cleartext = pipe(pair, cryptoSocket);
 
