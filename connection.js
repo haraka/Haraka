@@ -662,14 +662,26 @@ Connection.prototype.cmd_rcpt = function(line) {
 
 Connection.prototype.received_line = function() {
     var smtp = this.greeting === 'EHLO' ? 'ESMTP' : 'SMTP';
+    // Implement RFC3848
+    if (this.using_tls)  smtp = smtp + 'S';
+    if (this.authheader) smtp = smtp + 'A';
     // TODO - populate authheader and sslheader - see qpsmtpd for how to.
-    return  "from " + this.remote_info
-           +" (" + this.hello_host + " ["+this.remote_ip
-           +"])\n  " + (this.authheader || '') + "  by " + config.get('me')
-           +" (Haraka/" + version
-           +") with " + (this.sslheader || '') + smtp
-           +" id " + this.uuid
-           +";\n    " + date_to_str(new Date());
+    // sslheader is not possible with TLS support in node yet.
+    return [
+        'from ',
+            // If no rDNS then use an IP literal here
+            ((!/^(?:DNSERROR|NXDOMAIN)/.test(this.remote_info)) 
+                ? this.remote_info : '[' + this.remote_ip + ']'),
+            ' (', this.hello_host, ' [', this.remote_ip, ']) ', 
+        "\n\t", 
+            'by ', config.get('me'), ' (Haraka/', version, ') with ', smtp, 
+            ' id ', this.transaction.uuid, 
+        "\n\t",
+            '(envelope-from ', this.transaction.mail_from.format(), ')',
+            // ((this.sslheader) ? ' ' + this.sslheader.replace(/\r?\n\t?$/,'') : ''), 
+            ((this.authheader) ? ' ' + this.authheader.replace(/\r?\n\t?$/, '') : ''),
+        ";\n\t", date_to_str(new Date())
+    ].join('');
 };
 
 Connection.prototype.cmd_data = function(line) {
