@@ -128,7 +128,7 @@ Body.prototype.parse_end = function (line) {
             }
             else {
                 try {
-                    var converter = new Iconv(enc, "UTF-8//IGNORE");
+                    var converter = new Iconv(enc, "UTF-8");
                     this.bodytext = converter.convert(buf).toString();
                 }
                 catch (err) {

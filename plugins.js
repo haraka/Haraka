@@ -125,7 +125,6 @@ plugins._load_and_compile_plugin = function(name) {
         setInterval: setInterval,
         clearInterval: clearInterval,
         process: process,
-        console: console,
         Buffer: Buffer,
     };
     constants.import(sandbox);
@@ -263,9 +262,8 @@ plugins.run_next_hook = function(hook, object, params) {
         object.logdebug("running " + hook + " hook in " + item[0].name + " plugin");
     
     try {
-        object.hook = hook;
         object.current_hook = item;
-        item[0][ item[1] ].call(item[0], callback, object, params, hook);
+        item[0][ item[1] ].call(item[0], callback, object, params);
     }
     catch (err) {
         if (hook != 'log') {

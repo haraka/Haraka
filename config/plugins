@@ -1,45 +1,22 @@
-#utf8blocks
-
-auth/auth_proxy
 # default list of plugins
-tls
-#xclient
-#stats
-
-#rdns
-
-# 
-#dnswl
 
 # block mails from known bad hosts (see config/dnsbl.zones for the DNS zones queried)
-#dnsbl
+dnsbl
 
 # allow bad mail signatures from the config/data.signatures file.
-#data.signatures
+data.signatures
 
 # block mail from some known bad HELOs - see config/helo.checks.ini for configuration
-#helo.checks
+helo.checks
 
 # block mail from known bad email addresses you put in config/mail_from.blocklist
-#mail_from.blocklist
+mail_from.blocklist
 
 # Only accept mail where the MAIL FROM domain is resolvable to an MX record
-#mail_from.is_resolvable
-
-# valid_rcpt
-queue/quarantine
-accept_and_discard_all
-redis_log
-
-#data.uribl
+mail_from.is_resolvable
 
 # Only accept mail for your personal list of hosts
-#rcpt_to.in_host_list
-#valid_rcpt
-#greylist
+rcpt_to.in_host_list
 
 # Queue mail via smtp
-#queue/smtp_forward
-#queue/smtp_proxy
-
-#delay_checks
+queue/smtp_forward

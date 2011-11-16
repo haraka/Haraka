@@ -77,6 +77,7 @@ Server.createServer = function (params) {
         if (config_data.main.user) {
             c.set('user', config_data.main.user);
         }
+        
         for (var i=0,l=cluster_modules.length; i < l; i++) {
             var matches = /^(\w+)\s*(?::\s*(.*))?$/.exec(cluster_modules[i]);
             if (!matches) {

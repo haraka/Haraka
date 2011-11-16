@@ -33,7 +33,6 @@ exports.hook_unrecognized_command = function (next, connection, params) {
         connection.reset_transaction();
         connection.hello_host = undefined;
         connection.using_tls = true;
-        this.logdebug(connection.client.cleartext.getPeerCertificate());
         /* Return OK since we responded to the client. */
         return next(OK);
     }
