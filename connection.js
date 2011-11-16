@@ -130,6 +130,15 @@ Connection.prototype.process_line = function (line) {
             plugins.run_hooks('unrecognized_command', this, matches);
         }
     }
+    else if (this.state === 'loop') {
+        this.logprotocol("C: " + line);
+        // Allow QUIT
+        if (line.replace(/\r?\n/, '').toUpperCase() === 'QUIT') {
+            this.cmd_quit();
+        } else {
+            this.respond(this.loop_code, this.loop_msg);
+        }
+    }
     else if (this.state === 'data') {
         this.logdata("C: " + line);
         this.accumulate_data(line);
@@ -219,8 +228,11 @@ Connection.prototype.respond = function(code, messages) {
     catch (err) {
         return this.fail("Writing response: " + buf + " failed: " + err);
     }
-    
-    this.state = 'cmd';
+
+    // Don't change loop state
+    if (this.state !== 'loop') {
+        this.state = 'cmd';
+    }
 };
 
 Connection.prototype.fail = function (err) {
@@ -259,6 +271,13 @@ Connection.prototype.init_transaction = function() {
     this.transaction = trans.createTransaction(this.tran_uuid());
 }
 
+Connection.prototype.loop_respond = function (code, msg) {
+    this.state = 'loop';
+    this.loop_code = code;
+    this.loop_msg = msg;
+    this.respond(code, msg);
+}
+
 /////////////////////////////////////////////////////////////////////////////
 // SMTP Responses
 
@@ -270,13 +289,15 @@ Connection.prototype.lookup_rdns_respond = function (retval, msg) {
                 plugins.run_hooks('connect', this);
                 break;
         case constants.deny:
+                this.loop_respond(554, msg || "rDNS Lookup Failed");
+                break;
         case constants.denydisconnect:
         case constants.disconnect:
-                this.respond(500, msg || "rDNS Lookup Failed");
+                this.respond(554, msg || "rDNS Lookup Failed");
                 this.disconnect();
                 break;
         case constants.denysoft:
-                this.respond(450, msg || "rDNS Temporary Failure");
+                this.loop_respond(421, msg || "rDNS Temporary Failure");
                 break;
         default:
                 var self = this;
@@ -321,28 +342,34 @@ Connection.prototype.unrecognized_command_respond = function(retval, msg) {
 };
 
 Connection.prototype.connect_respond = function(retval, msg) {
+    // RFC 5321 Section 4.3.2 states that the only valid SMTP codes here are:
+    // 220 = Service ready
+    // 554 = Transaction failed (no SMTP service here)
+    // 421 = Service shutting down and closing transmission channel
     switch (retval) {
         case constants.deny:
+                this.loop_respond(554, msg || "Your mail is not welcome here");
+                break;
         case constants.denydisconnect:
         case constants.disconnect:
-                             this.respond(550, msg || "Your mail is not welcome here");
-                             this.disconnect();
-                             break;
+                this.respond(554, msg || "Your mail is not welcome here");
+                this.disconnect();
+                break;
         case constants.denysoft:
-                             this.respond(450, msg || "Come back later");
-                             break;
+                this.loop_respond(421, msg || "Come back later");
+                break;
         default:
-                             var greeting = config.get('smtpgreeting', 'list');
-                             if (greeting.length) {
-                                 if (!(/(^|\W)ESMTP(\W|$)/.test(greeting[0]))) {
-                                     greeting[0] += " ESMTP";
-                                 }
-                             }
-                             else {
-                                 greeting = (config.get('me') + 
-                                            " ESMTP Haraka " + version + " ready");
-                             }
-                             this.respond(220, msg || greeting);
+                var greeting = config.get('smtpgreeting', 'list');
+                if (greeting.length) {
+                    if (!(/(^|\W)ESMTP(\W|$)/.test(greeting[0]))) {
+                        greeting[0] += " ESMTP";
+                    }
+                }
+                else {
+                    greeting = (config.get('me') + 
+                        " ESMTP Haraka " + version + " ready");
+                }
+                this.respond(220, msg || greeting);
     }
 };
 
@@ -363,7 +390,10 @@ Connection.prototype.helo_respond = function(retval, msg) {
                 this.hello_host = null;
                 break;
         default:
-                this.respond(250, "Haraka says hi " + this.remote_host + " [" + this.remote_ip + "]");
+                this.respond(250, "Haraka says hi " + 
+                    ((this.remote_host && this.remote_host !== 'DNSERROR' 
+                    && this.remote_host !== 'NXDOMAIN') ? this.remote_host + ' ' : '') 
+                    + "[" + this.remote_ip + "]");
     }
 };
 
@@ -384,7 +414,10 @@ Connection.prototype.ehlo_respond = function(retval, msg) {
                 this.hello_host = null;
                 break;
         default:
-                var response = ["Haraka says hi " + this.remote_host + " [" + this.remote_ip + "]",
+                var response = ["Haraka says hi " + 
+                                ((this.remote_host && this.remote_host !== 'DNSERROR' && 
+                                this.remote_host !== 'NXDOMAIN') ? this.remote_host + ' ' : '')
+                                + "[" + this.remote_ip + "]",
                                 "PIPELINING",
                                 "8BITMIME",
                                 ];
@@ -553,11 +586,21 @@ Connection.prototype.cmd_ehlo = function(line) {
     plugins.run_hooks('ehlo', this, host);
 };
 
-Connection.prototype.cmd_quit = function() {
+Connection.prototype.cmd_quit = function(args) {
+    // RFC 5321 Section 4.3.2
+    // QUIT does not accept arguments
+    if (args) {
+        return this.respond(501, "Syntax error");
+    }
     plugins.run_hooks('quit', this);
 };
 
-Connection.prototype.cmd_rset = function() {
+Connection.prototype.cmd_rset = function(args) {
+    // RFC 5321 Section 4.3.2
+    // RSET does not accept arguments
+    if (args) {
+        return this.respond(501, "Syntax error");
+    }
     plugins.run_hooks('rset', this);
 };
 
@@ -684,7 +727,12 @@ Connection.prototype.received_line = function() {
     ].join('');
 };
 
-Connection.prototype.cmd_data = function(line) {
+Connection.prototype.cmd_data = function(args) {
+    // RFC 5321 Section 4.3.2
+    // DATA does not accept arguments
+    if (args) {
+        return this.respond(501, "Syntax error");
+    }
     if (!this.transaction) {
         return this.respond(503, "MAIL required first");
     }
