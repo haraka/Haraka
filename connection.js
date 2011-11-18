@@ -299,6 +299,10 @@ Connection.prototype.lookup_rdns_respond = function (retval, msg) {
         case constants.denysoft:
                 this.loop_respond(421, msg || "rDNS Temporary Failure");
                 break;
+        case constants.denysoftdisconnect:
+                this.respond(421, msg || "rDNS Temporary Failure");
+                this.disconnect();
+                break;
         default:
                 var self = this;
                 dns.reverse(this.remote_ip, function(err, domains) {
@@ -358,6 +362,10 @@ Connection.prototype.connect_respond = function(retval, msg) {
         case constants.denysoft:
                 this.loop_respond(421, msg || "Come back later");
                 break;
+        case constants.denysoftdisconnect:
+                this.respond(421, msg || "Come back later");
+                this.disconnect();
+                break;
         default:
                 var greeting = config.get('smtpgreeting', 'list');
                 if (greeting.length) {
@@ -389,6 +397,10 @@ Connection.prototype.helo_respond = function(retval, msg) {
                 this.greeting = null;
                 this.hello_host = null;
                 break;
+        case constants.denysoftdisconnect:
+                this.respond(450, msg || "HELO denied");
+                this.disconnect();
+                break;
         default:
                 this.respond(250, "Haraka says hi " + 
                     ((this.remote_host && this.remote_host !== 'DNSERROR' 
@@ -412,6 +424,10 @@ Connection.prototype.ehlo_respond = function(retval, msg) {
                 this.respond(450, msg || "EHLO denied");
                 this.greeting = null;
                 this.hello_host = null;
+                break;
+        case constants.denysoftdisconnect:
+                this.respond(450, msg || "EHLO denied");
+                this.disconnect();
                 break;
         default:
                 var response = ["Haraka says hi " + 
@@ -444,8 +460,20 @@ Connection.prototype.quit_respond = function(retval, msg) {
 Connection.prototype.vrfy_respond = function(retval, msg) {
     switch (retval) {
         case constants.deny:
-                this.respond(554, msg || "Access Denied");
+                this.respond(550, msg || "Access Denied");
                 this.reset_transaction();
+                break;
+        case constants.denydisconnect:
+                this.respond(550, msg || "Access Denied");
+                this.disconnect();
+                break;
+        case constants.denysoft:
+                this.respond(450, msg || "Lookup Failed");
+                this.reset_transaction();
+                break;
+        case constants.denysoftdisconnect:
+                this.respond(450, msg || "Lookup Failed");
+                this.disconnect();
                 break;
         case constants.ok:
                 this.respond(250, msg || "User OK");
@@ -491,6 +519,10 @@ Connection.prototype.mail_respond = function(retval, msg) {
                 this.respond(450, msg || dmsg + " denied");
                 this.reset_transaction();
                 break;
+        case constants.denysoftdisconnect:
+                this.respond(450, msg || dmsg + " denied");
+                this.disconnect();
+                break;
         default:
                 this.respond(250, msg || dmsg + " OK");
     }
@@ -511,6 +543,10 @@ Connection.prototype.rcpt_ok_respond = function (retval, msg) {
         case constants.denysoft:
                 this.respond(450, msg || dmsg + " denied");
                 this.transaction.rcpt_to.pop();
+                break;
+        case constants.denysoftdisconnect:
+                this.respond(450, msg || dmsg + " denied");
+                this.disconnect();
                 break;
         default:
                 this.respond(250, msg || dmsg + " OK");
@@ -536,6 +572,10 @@ Connection.prototype.rcpt_respond = function(retval, msg) {
         case constants.denysoft:
                 this.respond(450, msg || dmsg + " denied");
                 this.transaction.rcpt_to.pop();
+                break;
+        case constants.denysoftdisconnect:
+                this.respond(450, msg || dmsg + " denied");
+                this.disconnect();
                 break;
         case constants.ok:
                 plugins.run_hooks('rcpt_ok', this, rcpt);
@@ -759,6 +799,10 @@ Connection.prototype.data_respond = function(retval, msg) {
                 this.respond(451, msg || "Message denied");
                 this.reset_transaction();
                 break;
+        case constants.denysoftdisconnect:
+                this.respond(451, msg || "Message denied");
+                this.disconnect();
+                break;
         default:
                 cont = 1;
     }
@@ -825,6 +869,10 @@ Connection.prototype.data_post_respond = function(retval, msg) {
                 this.respond(452, msg || "Message denied temporarily");
                 this.reset_transaction();
                 break;
+        case constants.denysoftdisconnect:
+                this.respond(452, msg || "Message denied temporarily");
+                this.disconnect();
+                break;
         default:
                 if (this.relaying) {
                     plugins.run_hooks("queue_outbound", this);
@@ -852,6 +900,10 @@ Connection.prototype.queue_outbound_respond = function(retval, msg) {
         case constants.denysoft:
                 this.respond(452, msg || "Message denied temporarily");
                 this.reset_transaction();
+                break;
+        case constatns.denysoftdisconnect:
+                this.respond(452, msg || "Message denied temporarily");
+                this.disconnect();
                 break;
         default:
                 var conn = this;
@@ -891,6 +943,10 @@ Connection.prototype.queue_respond = function(retval, msg) {
         case constants.denysoft:
                 this.respond(452, msg || "Message denied temporarily");
                 this.reset_transaction();
+                break;
+        case constants.denysoftdisconnect:
+                this.respond(452, msg || "Message denied temporarily");
+                this.disconnect();
                 break;
         default:
                 this.respond(451, msg || "Queuing declined or disabled, try later");
