@@ -135,6 +135,15 @@ Connection.prototype.process_line = function (line) {
             plugins.run_hooks('unrecognized_command', this, matches);
         }
     }
+    else if (this.state === STATE_LOOP) {
+        this.logprotocol("C: " + line);
+        // Allow QUIT
+        if (line.replace(/\r?\n/, '').toUpperCase() === 'QUIT') {
+            this.cmd_quit();
+        } else {
+            this.respond(this.loop_code, this.loop_msg);
+        }
+    }
     else if (this.state === STATE_DATA) {
         this.logdata("C: " + line);
         this.accumulate_data(line);
@@ -224,8 +233,11 @@ Connection.prototype.respond = function(code, messages) {
     catch (err) {
         return this.fail("Writing response: " + buf + " failed: " + err);
     }
-    
-    this.state = STATE_CMD;
+
+    // Don't change loop state
+    if (this.state !== STATE_LOOP) {
+        this.state = STATE_CMD;
+    }
 };
 
 Connection.prototype.fail = function (err) {
@@ -264,6 +276,13 @@ Connection.prototype.init_transaction = function() {
     this.transaction = trans.createTransaction(this.tran_uuid());
 }
 
+Connection.prototype.loop_respond = function (code, msg) {
+    this.state = 'loop';
+    this.loop_code = code;
+    this.loop_msg = msg;
+    this.respond(code, msg);
+}
+
 /////////////////////////////////////////////////////////////////////////////
 // SMTP Responses
 
@@ -275,13 +294,19 @@ Connection.prototype.lookup_rdns_respond = function (retval, msg) {
                 plugins.run_hooks('connect', this);
                 break;
         case constants.deny:
+                this.loop_respond(554, msg || "rDNS Lookup Failed");
+                break;
         case constants.denydisconnect:
         case constants.disconnect:
-                this.respond(500, msg || "rDNS Lookup Failed");
+                this.respond(554, msg || "rDNS Lookup Failed");
                 this.disconnect();
                 break;
         case constants.denysoft:
-                this.respond(450, msg || "rDNS Temporary Failure");
+                this.loop_respond(421, msg || "rDNS Temporary Failure");
+                break;
+        case constants.denysoftdisconnect:
+                this.respond(421, msg || "rDNS Temporary Failure");
+                this.disconnect();
                 break;
         default:
                 var self = this;
@@ -326,28 +351,38 @@ Connection.prototype.unrecognized_command_respond = function(retval, msg) {
 };
 
 Connection.prototype.connect_respond = function(retval, msg) {
+    // RFC 5321 Section 4.3.2 states that the only valid SMTP codes here are:
+    // 220 = Service ready
+    // 554 = Transaction failed (no SMTP service here)
+    // 421 = Service shutting down and closing transmission channel
     switch (retval) {
         case constants.deny:
+                this.loop_respond(554, msg || "Your mail is not welcome here");
+                break;
         case constants.denydisconnect:
         case constants.disconnect:
-                             this.respond(550, msg || "Your mail is not welcome here");
-                             this.disconnect();
-                             break;
+                this.respond(554, msg || "Your mail is not welcome here");
+                this.disconnect();
+                break;
         case constants.denysoft:
-                             this.respond(450, msg || "Come back later");
-                             break;
+                this.loop_respond(421, msg || "Come back later");
+                break;
+        case constants.denysoftdisconnect:
+                this.respond(421, msg || "Come back later");
+                this.disconnect();
+                break;
         default:
-                             var greeting = config.get('smtpgreeting', 'list');
-                             if (greeting.length) {
-                                 if (!(/(^|\W)ESMTP(\W|$)/.test(greeting[0]))) {
-                                     greeting[0] += " ESMTP";
-                                 }
-                             }
-                             else {
-                                 greeting = (config.get('me') + 
-                                            " ESMTP Haraka " + version + " ready");
-                             }
-                             this.respond(220, msg || greeting);
+                var greeting = config.get('smtpgreeting', 'list');
+                if (greeting.length) {
+                    if (!(/(^|\W)ESMTP(\W|$)/.test(greeting[0]))) {
+                        greeting[0] += " ESMTP";
+                    }
+                }
+                else {
+                    greeting = (config.get('me') + 
+                        " ESMTP Haraka " + version + " ready");
+                }
+                this.respond(220, msg || greeting);
     }
 };
 
@@ -367,8 +402,15 @@ Connection.prototype.helo_respond = function(retval, msg) {
                 this.greeting = null;
                 this.hello_host = null;
                 break;
+        case constants.denysoftdisconnect:
+                this.respond(450, msg || "HELO denied");
+                this.disconnect();
+                break;
         default:
-                this.respond(250, "Haraka says hi " + this.remote_host + " [" + this.remote_ip + "]");
+                this.respond(250, "Haraka says hi " + 
+                    ((this.remote_host && this.remote_host !== 'DNSERROR' 
+                    && this.remote_host !== 'NXDOMAIN') ? this.remote_host + ' ' : '') 
+                    + "[" + this.remote_ip + "]");
     }
 };
 
@@ -388,8 +430,15 @@ Connection.prototype.ehlo_respond = function(retval, msg) {
                 this.greeting = null;
                 this.hello_host = null;
                 break;
+        case constants.denysoftdisconnect:
+                this.respond(450, msg || "EHLO denied");
+                this.disconnect();
+                break;
         default:
-                var response = ["Haraka says hi " + this.remote_host + " [" + this.remote_ip + "]",
+                var response = ["Haraka says hi " + 
+                                ((this.remote_host && this.remote_host !== 'DNSERROR' && 
+                                this.remote_host !== 'NXDOMAIN') ? this.remote_host + ' ' : '')
+                                + "[" + this.remote_ip + "]",
                                 "PIPELINING",
                                 "8BITMIME",
                                 ];
@@ -416,8 +465,20 @@ Connection.prototype.quit_respond = function(retval, msg) {
 Connection.prototype.vrfy_respond = function(retval, msg) {
     switch (retval) {
         case constants.deny:
-                this.respond(554, msg || "Access Denied");
+                this.respond(550, msg || "Access Denied");
                 this.reset_transaction();
+                break;
+        case constants.denydisconnect:
+                this.respond(550, msg || "Access Denied");
+                this.disconnect();
+                break;
+        case constants.denysoft:
+                this.respond(450, msg || "Lookup Failed");
+                this.reset_transaction();
+                break;
+        case constants.denysoftdisconnect:
+                this.respond(450, msg || "Lookup Failed");
+                this.disconnect();
                 break;
         case constants.ok:
                 this.respond(250, msg || "User OK");
@@ -463,6 +524,10 @@ Connection.prototype.mail_respond = function(retval, msg) {
                 this.respond(450, msg || dmsg + " denied");
                 this.reset_transaction();
                 break;
+        case constants.denysoftdisconnect:
+                this.respond(450, msg || dmsg + " denied");
+                this.disconnect();
+                break;
         default:
                 this.respond(250, msg || dmsg + " OK");
     }
@@ -483,6 +548,10 @@ Connection.prototype.rcpt_ok_respond = function (retval, msg) {
         case constants.denysoft:
                 this.respond(450, msg || dmsg + " denied");
                 this.transaction.rcpt_to.pop();
+                break;
+        case constants.denysoftdisconnect:
+                this.respond(450, msg || dmsg + " denied");
+                this.disconnect();
                 break;
         default:
                 this.respond(250, msg || dmsg + " OK");
@@ -508,6 +577,10 @@ Connection.prototype.rcpt_respond = function(retval, msg) {
         case constants.denysoft:
                 this.respond(450, msg || dmsg + " denied");
                 this.transaction.rcpt_to.pop();
+                break;
+        case constants.denysoftdisconnect:
+                this.respond(450, msg || dmsg + " denied");
+                this.disconnect();
                 break;
         case constants.ok:
                 plugins.run_hooks('rcpt_ok', this, rcpt);
@@ -558,11 +631,21 @@ Connection.prototype.cmd_ehlo = function(line) {
     plugins.run_hooks('ehlo', this, host);
 };
 
-Connection.prototype.cmd_quit = function() {
+Connection.prototype.cmd_quit = function(args) {
+    // RFC 5321 Section 4.3.2
+    // QUIT does not accept arguments
+    if (args) {
+        return this.respond(501, "Syntax error");
+    }
     plugins.run_hooks('quit', this);
 };
 
-Connection.prototype.cmd_rset = function() {
+Connection.prototype.cmd_rset = function(args) {
+    // RFC 5321 Section 4.3.2
+    // RSET does not accept arguments
+    if (args) {
+        return this.respond(501, "Syntax error");
+    }
     plugins.run_hooks('rset', this);
 };
 
@@ -667,17 +750,34 @@ Connection.prototype.cmd_rcpt = function(line) {
 
 Connection.prototype.received_line = function() {
     var smtp = this.greeting === 'EHLO' ? 'ESMTP' : 'SMTP';
+    // Implement RFC3848
+    if (this.using_tls)  smtp = smtp + 'S';
+    if (this.authheader) smtp = smtp + 'A';
     // TODO - populate authheader and sslheader - see qpsmtpd for how to.
-    return  "from " + this.remote_info
-           +" (" + this.hello_host + " ["+this.remote_ip
-           +"])\n  " + (this.authheader || '') + "  by " + config.get('me')
-           +" (Haraka/" + version
-           +") with " + (this.sslheader || '') + smtp
-           +" id " + this.uuid
-           +";\n    " + date_to_str(new Date());
+    // sslheader is not possible with TLS support in node yet.
+    return [
+        'from ',
+            // If no rDNS then use an IP literal here
+            ((!/^(?:DNSERROR|NXDOMAIN)/.test(this.remote_info)) 
+                ? this.remote_info : '[' + this.remote_ip + ']'),
+            ' (', this.hello_host, ' [', this.remote_ip, ']) ', 
+        "\n\t", 
+            'by ', config.get('me'), ' (Haraka/', version, ') with ', smtp, 
+            ' id ', this.transaction.uuid, 
+        "\n\t",
+            '(envelope-from ', this.transaction.mail_from.format(), ')',
+            // ((this.sslheader) ? ' ' + this.sslheader.replace(/\r?\n\t?$/,'') : ''), 
+            ((this.authheader) ? ' ' + this.authheader.replace(/\r?\n\t?$/, '') : ''),
+        ";\n\t", date_to_str(new Date())
+    ].join('');
 };
 
-Connection.prototype.cmd_data = function(line) {
+Connection.prototype.cmd_data = function(args) {
+    // RFC 5321 Section 4.3.2
+    // DATA does not accept arguments
+    if (args) {
+        return this.respond(501, "Syntax error");
+    }
     if (!this.transaction) {
         return this.respond(503, "MAIL required first");
     }
@@ -703,6 +803,10 @@ Connection.prototype.data_respond = function(retval, msg) {
         case constants.denysoft:
                 this.respond(451, msg || "Message denied");
                 this.reset_transaction();
+                break;
+        case constants.denysoftdisconnect:
+                this.respond(451, msg || "Message denied");
+                this.disconnect();
                 break;
         default:
                 cont = 1;
@@ -770,6 +874,10 @@ Connection.prototype.data_post_respond = function(retval, msg) {
                 this.respond(452, msg || "Message denied temporarily");
                 this.reset_transaction();
                 break;
+        case constants.denysoftdisconnect:
+                this.respond(452, msg || "Message denied temporarily");
+                this.disconnect();
+                break;
         default:
                 if (this.relaying) {
                     plugins.run_hooks("queue_outbound", this);
@@ -797,6 +905,10 @@ Connection.prototype.queue_outbound_respond = function(retval, msg) {
         case constants.denysoft:
                 this.respond(452, msg || "Message denied temporarily");
                 this.reset_transaction();
+                break;
+        case constatns.denysoftdisconnect:
+                this.respond(452, msg || "Message denied temporarily");
+                this.disconnect();
                 break;
         default:
                 var conn = this;
@@ -836,6 +948,10 @@ Connection.prototype.queue_respond = function(retval, msg) {
         case constants.denysoft:
                 this.respond(452, msg || "Message denied temporarily");
                 this.reset_transaction();
+                break;
+        case constants.denysoftdisconnect:
+                this.respond(452, msg || "Message denied temporarily");
+                this.disconnect();
                 break;
         default:
                 this.respond(451, msg || "Queuing declined or disabled, try later");
