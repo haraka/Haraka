@@ -2,7 +2,7 @@
 
 "use strict";
 
-var path   = require('path');
+var path = require('path');
 
 // this must be set before "server.js" is loaded
 process.env.HARAKA = process.env.HARAKA || path.resolve('.');
