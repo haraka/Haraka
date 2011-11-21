@@ -20,6 +20,11 @@ var line_regexp = /^([^\n]*\n)/;
 
 var connection = exports;
 
+var STATE_CMD   = 1;
+var STATE_LOOP  = 2;
+var STATE_DATA  = 3;
+var STATE_PAUSE = 4;
+
 // copy logger methods into Connection:
 for (var key in logger) {
     if (key.match(/^log\w/)) {
@@ -74,7 +79,7 @@ function Connection(client, server) {
     this.server = server;
     this.current_data = '';
     this.current_line = null;
-    this.state = 'pause';
+    this.state = STATE_PAUSE;
     this.uuid = uuid();
     this.notes = {};
     this.tran_count = 0;
@@ -96,9 +101,9 @@ exports.createConnection = function(client, server) {
 }
 
 Connection.prototype.process_line = function (line) {
-    if (this.state === 'cmd') {
+    if (this.state === STATE_CMD) {
         this.logprotocol("C: " + line);
-        this.state = 'pause';
+        this.state = STATE_PAUSE;
         this.current_line = line.replace(/\r?\n/, '');
         var matches = /^([^ ]*)( +(.*))?$/.exec(this.current_line);
         if (!matches) {
@@ -130,7 +135,7 @@ Connection.prototype.process_line = function (line) {
             plugins.run_hooks('unrecognized_command', this, matches);
         }
     }
-    else if (this.state === 'data') {
+    else if (this.state === STATE_DATA) {
         this.logdata("C: " + line);
         this.accumulate_data(line);
     }
@@ -150,7 +155,7 @@ Connection.prototype._process_data = function() {
     var results;
     while (results = line_regexp.exec(this.current_data)) {
         var this_line = results[1];
-        if (this.state === 'pause') {
+        if (this.state === STATE_PAUSE) {
             this.early_talker = 1;
             var self = this;
             // If you talk early, we're going to give you a delay
@@ -220,7 +225,7 @@ Connection.prototype.respond = function(code, messages) {
         return this.fail("Writing response: " + buf + " failed: " + err);
     }
     
-    this.state = 'cmd';
+    this.state = STATE_CMD;
 };
 
 Connection.prototype.fail = function (err) {
@@ -710,7 +715,7 @@ Connection.prototype.data_respond = function(retval, msg) {
     // We already checked for MAIL/RCPT in cmd_data
     this.respond(354, "go ahead, make my day");
     // OK... now we get the data
-    this.state = 'data';
+    this.state = STATE_DATA;
     this.transaction.data_bytes = 0;
     this.max_bytes = config.get('databytes');
 };
@@ -736,7 +741,7 @@ Connection.prototype.accumulate_data = function(line) {
 };
 
 Connection.prototype.data_done = function() {
-    this.state = 'pause';
+    this.state = STATE_PAUSE;
 
     // Check message size limit
     if (this.max_bytes && this.transaction.data_bytes > this.max_bytes) {
