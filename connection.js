@@ -277,7 +277,7 @@ Connection.prototype.init_transaction = function() {
 }
 
 Connection.prototype.loop_respond = function (code, msg) {
-    this.state = 'loop';
+    this.state = STATE_LOOP;
     this.loop_code = code;
     this.loop_msg = msg;
     this.respond(code, msg);
