@@ -24,7 +24,7 @@ exports.hook_unrecognized_command = function (next, connection, params) {
     var config = this.config.get('xclient.hosts','list');
     var found;
     for (var i in config) {
-        this.logdebug('Checking ' + connection.remote_ip + ' == ' + config[i]);
+        connection.logdebug('[xclient] Checking ' + connection.remote_ip + ' == ' + config[i]);
         // TODO: handle ip/mask here.
         if (connection.remote_ip === config[i]) {
             found = true;
@@ -42,7 +42,7 @@ exports.hook_unrecognized_command = function (next, connection, params) {
     for (var a=0; a < args.length; a++) {
         var match = /^([^=]+)=([^ ]+)/.exec(args[a]);
         if (match) {
-            this.logdebug('found key=' + match[1] + ' value=' + match[2]);
+            connection.logdebug('[xclient] found key=' + match[1] + ' value=' + match[2]);
             switch(match[1]) {
                 case 'addr':
                     // IPv6 is prefixed in the XCLIENT protocol
@@ -74,11 +74,11 @@ exports.hook_unrecognized_command = function (next, connection, params) {
                     }
                     break;
                 default:
-                    this.logwarn('unknown argument: ' + args[a]);
+                    connection.logwarn('[xclient] unknown argument: ' + args[a]);
             }
         } 
         else {
-            this.logwarn('unknown argument: ' + args[a]);
+            connection.logwarn('[xclient] unknown argument: ' + args[a]);
         }
     }
 

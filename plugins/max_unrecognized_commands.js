@@ -8,11 +8,11 @@ exports.hook_connect = function(next, connection) {
 };
 
 exports.hook_unrecognized_command = function(next, connection, cmd) {
-    this.loginfo("Unrecognized command: " + cmd);
+    connection.loginfo("[max_unrecognized_commands] Unrecognized command: " + cmd);
     
     connection.notes.unrecognized_command_count++;
     if (connection.notes.unrecognized_command_count >= connection.notes.unrecognized_command_max) {
-        this.loginfo("Closing connection. Too many bad commands.");
+        connection.loginfo("[max_unrecognized_commands] Closing connection. Too many bad commands.");
         return next(DENYDISCONNECT, "Too many bad commands");
     }
     next();

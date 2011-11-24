@@ -8,8 +8,8 @@ exports.register = function () {
 var smtp_regexp = /^([0-9]{3})([ -])(.*)/;
 
 exports.smtp_forward = function (next, connection) {
-    this.loginfo("smtp forwarding");
     var smtp_config = this.config.get('smtp_forward.ini');
+    connection.loginfo("[queue/smtp_forward] forwarding to " + smtp_config.main.host + ":" + smtp_config.main.port);
     var socket = sock.connect(smtp_config.main.port, smtp_config.main.host);
     socket.setTimeout(300 * 1000);
     var self = this;
@@ -40,7 +40,7 @@ exports.smtp_forward = function (next, connection) {
         if (cmd === 'dot') {
             line = '.';
         }
-        self.logprotocol("Fwd C: " + line);
+        connection.logprotocol("[queue/smtp_forward] C: " + line);
         // Set this before we write() in case 'drain' is called
         // to stop send_data() form calling 'dot' twice.
         command = cmd.toLowerCase();
@@ -50,12 +50,12 @@ exports.smtp_forward = function (next, connection) {
     };
     
     socket.on('timeout', function () {
-        self.logerror("Ongoing connection timed out");
+        connection.logerror("[queue/smtp_forward] Ongoing connection timed out");
         socket.end();
         next();
     });
     socket.on('error', function (err) {
-        self.logerror("Ongoing connection failed: " + err);
+        connection.logerror("[queue/smtp_forward] Ongoing connection failed: " + err);
         // we don't deny on error - maybe another plugin can deliver
         next(); 
     });
@@ -63,14 +63,14 @@ exports.smtp_forward = function (next, connection) {
     });
     socket.on('line', function (line) {
         var matches;
-        self.logprotocol("Fwd S: " + line);
+        connection.logprotocol("[queue/smtp_forward] S: " + line);
         if (matches = smtp_regexp.exec(line)) {
             var code = matches[1],
                 cont = matches[2],
                 rest = matches[3];
             response.push(rest);
             if (cont === ' ') {
-                self.logdebug('command state: ' + command);
+                connection.logdebug('[queue/smtp_forward] command state: ' + command);
                 // Handle fallback to HELO if EHLO is rejected
                 if (command === 'ehlo') {
                     if (code.match(/^5/)) {
@@ -167,13 +167,13 @@ exports.smtp_forward = function (next, connection) {
         }
         else {
             // Unrecognised response.
-            self.logerror("Unrecognised response from upstream server: " + line);
+            connection.logerror("[queue/smtp_forward] Unrecognised response from upstream server: " + line);
             socket.end();
             return next();
         }
     });
     socket.on('drain', function() {
-        self.logdebug("Drained");
+        connection.logdebug("[queue/smtp_forward] Drained");
         if (got_data_response && dot_pending && command === 'data') {
             process.nextTick(function () { send_data() });
         }

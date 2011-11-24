@@ -9,7 +9,7 @@ exports.discard = function (next, connection) {
     if (connection.notes.discard ||
         transaction.notes.discard) 
     {
-        this.loginfo('discarding message');
+        connection.loginfo('[queue/discard] discarding message');
         // Pretend we delivered the message
         return next(OK);
     }

@@ -81,12 +81,12 @@ exports.hook_data_post = function (next, connection) {
     };
 
     socket.on('timeout', function () {
-        plugin.logerror("spamd connection timed out");
+        connection.logerror("[spamassassin] spamd connection timed out");
         socket.end();
         next();
     });
     socket.on('error', function (err) {
-        plugin.logerror("spamd connection failed: " + err);
+        connection.logerror("[spamassassin] spamd connection failed: " + err);
         // we don't deny on error - maybe another plugin can deliver
         next(); 
     });
@@ -107,7 +107,7 @@ exports.hook_data_post = function (next, connection) {
     var state = 'line0';
     
     socket.on('line', function (line) {
-        plugin.logprotocol("SA: " + line);
+        connection.logprotocol("[spamassassin] Spamd C: " + line);
         line = line.replace(/\r?\n/, '');
         if (state === 'line0') {
             spamd_response.line0 = line;
@@ -154,7 +154,7 @@ exports.hook_data_post = function (next, connection) {
         }
         connection.transaction.add_header('X-Spam-Level', stars_string);
         
-        plugin.loginfo("spamassassin returned: " + spamd_response.flag + ', ' +
+        connection.loginfo("[spamassassin] spamassassin returned: " + spamd_response.flag + ', ' +
             spamd_response.hits + '/' + spamd_response.reqd +
             " Reject at: " + config.main.reject_threshold);
         
