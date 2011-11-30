@@ -30,7 +30,8 @@ for (var key in logger) {
     if (key.match(/^log\w/)) {
         Connection.prototype[key] = (function (key) {
             return function () {
-                var args = [ (this.transaction ? this.transaction.uuid : this.uuid) + " " ];
+                // pass the connection instance to logger
+                var args = [ this ];
                 var start = 0;
                 if (arguments.length && arguments[0] instanceof plugins.Plugin) {
                     start = 1;
