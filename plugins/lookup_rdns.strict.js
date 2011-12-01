@@ -7,14 +7,14 @@ var dns = require('dns');
 function _dns_error(connection, next, err, host, plugin, nxdomain, dnserror) {
     switch (err.code) {
         case dns.NXDOMAIN:
-            connection.loginfo('[lookup_rdns.strict] could not find a address for ' + host +
+            connection.loginfo(plugin, 'could not find a address for ' + host +
                 '. Disconnecting.');
             next(DENYDISCONNECT, 'Sorry we could not find address for ' +
                 host + '. ' + nxdomain);
         break;
     
         default:
-            connection.loginfo('[lookup_rdns.strict] encountered an error when looking up ' +
+            connection.loginfo(plugin, 'encountered an error when looking up ' +
                 host + '. Disconnecting.');
             next(DENYDISCONNECT, 'Sorry we encountered an error when ' +
                 'looking up ' + host + '. ' + dnserror);
@@ -29,15 +29,15 @@ function _in_whitelist(connection, plugin, address) {
     var host_list_regex =
         plugin.config.get('lookup_rdns.strict.whitelist_regex', 'list');
     
-    connection.loginfo("[lookup_rdns.strict] Checking if " + address + " is in the " +
+    connection.loginfo(plugin, "Checking if " + address + " is in the " +
         "lookup_rdns.strict.whitelist files");
 
     var i;
     for (i in host_list) {
-        connection.logdebug("[lookup_rdns.strict] checking " + domain + " against " + host_list[i]);
+        connection.logdebug(plugin, "checking " + domain + " against " + host_list[i]);
 
         if (host_list[i].toLowerCase() === domain) {
-            connection.logdebug("[lookup_rdns.strict] Allowing " + domain);
+            connection.logdebug(plugin, "Allowing " + domain);
             return 1;
         }
     }
@@ -45,10 +45,10 @@ function _in_whitelist(connection, plugin, address) {
     if (host_list_regex.length) {
         var regex = new RegExp ('^(?:' + host_list_regex.join('|') + ')$', 'i');
 
-        connection.logdebug("[lookup_rdns.strict] checking " + domain + " against " + regex.source);
+        connection.logdebug(plugin, "checking " + domain + " against " + regex.source);
 
         if (domain.match(regex)) {
-            connection.logdebug("[lookup_rdns.strict] Allowing " + domain);
+            connection.logdebug(plugin, "Allowing " + domain);
             return 1;
         }
     }
@@ -73,7 +73,7 @@ exports.hook_lookup_rdns = function (next, connection) {
 
     timeout_id = setTimeout(function () {
         if (!called_next) {
-            connection.loginfo('[lookup_rdns.strict] timed out when looking up ' +
+            connection.loginfo(plugin, 'timed out when looking up ' +
                 connection.remote_ip + '. Disconnecting.');
             called_next++;
 
