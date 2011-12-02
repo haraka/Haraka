@@ -30,13 +30,16 @@ for (var key in logger) {
     if (key.match(/^log\w/)) {
         Connection.prototype[key] = (function (key) {
             return function () {
-                var args = [ (this.transaction ? this.transaction.uuid : this.uuid) + " " ];
-                var start = 0;
-                if (arguments.length && arguments[0] instanceof plugins.Plugin) {
-                    start = 1;
-                    args.unshift("[" + arguments[0].name + "]");
-                }
-                for (var i=start, l=arguments.length; i<l; i++) {
+                // pass the connection instance to logger
+                var args = [ this ];
+                // XXX jt since logger now handles plugin instance, i don't thnk we
+                // need to sniff it here...
+                //var start = 0;
+                //if (arguments.length && arguments[0] instanceof plugins.Plugin) {
+                //    start = 1;
+                //    args.unshift("[" + arguments[0].name + "]");
+                //}
+                for (var i=0, l=arguments.length; i<l; i++) {
                     args.push(arguments[i]);
                 }
                 logger[key].apply(logger, args);

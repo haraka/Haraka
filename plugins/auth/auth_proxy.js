@@ -22,14 +22,14 @@ exports.check_plain_passwd = function (connection, user, passwd, cb) {
         var domain = domain[1].toLowerCase();
     } else {
         // AUTH user not in user@domain.com format
-        connection.logerror('[auth/auth_proxy] AUTH user="' + user + '" error="not in required format"');
+        connection.logerror(this, 'AUTH user="' + user + '" error="not in required format"');
         return cb(false);
     }
 
     // Check if domain exists in configuration file
     var config = this.config.get('auth_proxy.ini');
     if (!config.domains[domain]) {
-        connection.logerror('[auth/auth_proxy] AUTH user="' + user + '" error="domain \'' + domain + '\' is not defined"');
+        connection.logerror(this, 'AUTH user="' + user + '" error="domain \'' + domain + '\' is not defined"');
         return cb(false);
     }
 
@@ -52,7 +52,7 @@ exports.try_auth_proxy = function (connection, hosts, user, passwd, cb) {
 
     var hostport = host.split(/:/)
     var socket = sock.connect(((hostport[1]) ? hostport[1] : 25), hostport[0]);
-    connection.logdebug('[auth/auth_proxy] attempting connection to host=' + hostport[0] + ' port=' + ((hostport[1]) ? hostport[1] : 25));
+    connection.logdebug(self, 'attempting connection to host=' + hostport[0] + ' port=' + ((hostport[1]) ? hostport[1] : 25));
     socket.setTimeout(30 * 1000);
     socket.on('connect', function () {
     });
@@ -61,17 +61,17 @@ exports.try_auth_proxy = function (connection, hosts, user, passwd, cb) {
             // Try next host
             return self.try_auth_proxy(connection, hosts, user, passwd, cb);
         }
-        connection.loginfo('[auth/auth_proxy] AUTH user="' + user + '" host="' + host + '" success=' + auth_success);
+        connection.loginfo(self, 'AUTH user="' + user + '" host="' + host + '" success=' + auth_success);
         return cb(auth_success);
     });
     socket.on('timeout', function () {
-        connection.logerror("[auth/auth_proxy] connection timed out");
+        connection.logerror(self, "connection timed out");
         socket.end();
         // Try next host
         return self.try_auth_proxy(connection, hosts, user, passwd, cb);
     });
     socket.on('error', function (err) {
-        connection.logerror("[auth/auth_proxy] connection failed to host " + host + ": " + err);
+        connection.logerror(self, "connection failed to host " + host + ": " + err);
         return self.try_auth_proxy(connection, hosts, user, passwd, cb);
     });
     socket.send_command = function (cmd, data) {
@@ -79,7 +79,7 @@ exports.try_auth_proxy = function (connection, hosts, user, passwd, cb) {
         if (cmd === 'dot') {
             line = '.';
         }
-        connection.logprotocol("[auth/auth_proxy] C: " + line);
+        connection.logprotocol(self, "C: " + line);
         command = cmd.toLowerCase();
         this.write(line + "\r\n");
         // Clear response buffer from previous command
@@ -87,14 +87,14 @@ exports.try_auth_proxy = function (connection, hosts, user, passwd, cb) {
     };
     socket.on('line', function (line) {
         var matches;
-        connection.logprotocol("[auth/auth_proxy] S: " + line);
+        connection.logprotocol(self, "S: " + line);
         if (matches = smtp_regexp.exec(line)) {
             var code = matches[1],
                 cont = matches[2],
                 rest = matches[3];
             response.push(rest);
             if (cont === ' ') {
-                connection.logdebug('[auth/auth_proxy] command state: ' + command);
+                connection.logdebug(self, 'command state: ' + command);
                 if (command === 'ehlo') {
                     if (code.match(/^5/)) {
                         // EHLO command rejected; we have to abort
@@ -120,7 +120,7 @@ exports.try_auth_proxy = function (connection, hosts, user, passwd, cb) {
                             // Parse supported AUTH methods
                             var parse = /^AUTH (.+)$/.exec(response[i]);
                             methods = parse[1].split(/\s+/);
-                            connection.logdebug('[auth/auth_proxy] found supported AUTH methods: ' + methods);
+                            connection.logdebug(self, 'found supported AUTH methods: ' + methods);
                             // Prefer PLAIN as it's easiest
                             if (methods.indexOf('PLAIN') !== -1) {
                                 socket.send_command('AUTH','PLAIN ' + self.base64("\0" + user + "\0" + passwd));
@@ -132,7 +132,7 @@ exports.try_auth_proxy = function (connection, hosts, user, passwd, cb) {
                             }
                             else {
                                 // No compatible methods; abort...
-                                connection.logdebug('[auth/auth_proxy] no compatible AUTH methods');
+                                connection.logdebug(self, 'no compatible AUTH methods');
                                 socket.send_command('QUIT');
                                 return;
                             }
@@ -170,7 +170,7 @@ exports.try_auth_proxy = function (connection, hosts, user, passwd, cb) {
                 }
                 if (/^[345]/.test(code)) {
                     // Got an unhandled error
-                    connection.logdebug('[auth/auth_proxy] error: ' + line);
+                    connection.logdebug(self, 'error: ' + line);
                     socket.send_command('QUIT');
                     return;
                 }
@@ -200,7 +200,7 @@ exports.try_auth_proxy = function (connection, hosts, user, passwd, cb) {
         }
         else {
             // Unrecognised response.
-            connection.logerror("[auth/auth_proxy] unrecognised response: " + line);
+            connection.logerror(self, "unrecognised response: " + line);
             socket.end();
             return;
         }

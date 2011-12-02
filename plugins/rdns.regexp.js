@@ -16,13 +16,13 @@ exports.hook_connect = function (next, connection) {
             for (var i=0,l=allow_list.length; i < l; i++) {
                 var re = new RegExp(allow_list[i]);
                 if (re.test(connection.remote_host)) {
-                    connection.loginfo("[rdns.regexp] rdns matched: " + allow_list[i] +
+                    connection.loginfo(this, "rdns matched: " + allow_list[i] +
                         ", allowing");
                     return next();
                 }
             }
 
-            connection.loginfo("[rdns.regexp] rdns matched: " + deny_list[i] + ", blocking");
+            connection.loginfo(this, "rdns matched: " + deny_list[i] + ", blocking");
             return next(DENY, "Connection from a known bad host");
         }
     }

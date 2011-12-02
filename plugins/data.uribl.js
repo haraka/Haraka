@@ -60,27 +60,29 @@ exports.load_uri_config = function (next) {
 }
 
 exports.do_lookups = function (connection, next, hosts, type) {
+    var plugin = this;
+
     if (typeof hosts === 'string') {
         hosts = [ hosts ];
     }
     if (!hosts || (hosts && !hosts.length)) {
-        connection.logdebug('[uribl] (' + type + ') no items found for lookup');
+        connection.logdebug(plugin, '(' + type + ') no items found for lookup');
         return next();
     } 
     else {
-        connection.logdebug('[uribl] (' + type + ') found ' + hosts.length + ' items for lookup');
+        connection.logdebug(plugin, '(' + type + ') found ' + hosts.length + ' items for lookup');
     }
     var queries = {};
     for (var i=0; i < hosts.length; i++) {
         var host = hosts[i].toLowerCase();
-        connection.logdebug('[uribl] (' + type + ') checking: ' + host);
+        connection.logdebug(plugin, '(' + type + ') checking: ' + host);
         // Make sure we have a valid TLD
         if (!isIPv4(host) && !net_utils.top_level_tlds[(host.split('\.').reverse())[0]]) {
             continue;
         }
         // Check the exclusion list
         if (check_excludes_list(host)) {
-            connection.logdebug('[uribl] skipping excluded domain:' + host);
+            connection.logdebug(plugin, 'skipping excluded domain:' + host);
             continue;
         }
         // Loop through the zones
@@ -88,7 +90,7 @@ exports.do_lookups = function (connection, next, hosts, type) {
             var zone = zones[j];
             if (zone === 'main') continue;  // skip config
             if (!lists[zone] || (lists[zone] && !/^(?:1|true|yes|enabled|on)$/i.test(lists[zone][type]))) {
-                connection.logdebug('[uribl] skipping zone ' + zone + ' as it does not support lookup type ' + type);
+                connection.logdebug(plugin, 'skipping zone ' + zone + ' as it does not support lookup type ' + type);
                 continue;
             }
             // Convert in-addr.arpa into bare IPv4 lookup
@@ -100,7 +102,7 @@ exports.do_lookups = function (connection, next, hosts, type) {
             // Handle zones that do not allow IP queries (e.g. Spamhaus DBL)
             if (isIPv4(host)) {
                 if (/^(?:1|true|yes|enabled|on)$/i.test(lists[zone].no_ip_lookups)) {
-                    connection.logdebug('[uribl] skipping IP lookup (' + host + ') for zone ' + zone);
+                    connection.logdebug(plugin, 'skipping IP lookup (' + host + ') for zone ' + zone);
                     continue;
                 }
                 // Skip any private IPs
@@ -119,7 +121,7 @@ exports.do_lookups = function (connection, next, hosts, type) {
             if (!lookup) continue;
             if (!queries[zone]) queries[zone] = {};
             if (Object.keys(queries[zone]).length > lists.main.max_uris_per_list) {
-                connection.logwarn('[uribl] discarding lookup ' + lookup + ' for zone ' +
+                connection.logwarn(plugin, 'discarding lookup ' + lookup + ' for zone ' +
                               zone + ' maximum query limit reached');
                 continue;
             }
@@ -148,7 +150,7 @@ exports.do_lookups = function (connection, next, hosts, type) {
     var called_next = false;
 
     var timer = setTimeout(function () {
-        connection.logdebug('[uribl] timeout');
+        connection.logdebug(plugin, 'timeout');
         if (!called_next) {
             called_next = true;
             return next();
@@ -165,7 +167,7 @@ exports.do_lookups = function (connection, next, hosts, type) {
         pending_queries++;
         dns.resolve4(lookup, function(err, addrs) {
             pending_queries--;
-            connection.logdebug('[uribl] ' + lookup + ' => ' + ((err) ? err : addrs.join(', ')));
+            connection.logdebug(plugin, lookup + ' => ' + ((err) ? err : addrs.join(', ')));
             if (!err && !called_next) {
                 var skip = false;
                 var do_reject = function (msg) {
@@ -186,7 +188,7 @@ exports.do_lookups = function (connection, next, hosts, type) {
                 if (lists[query[1]] && lists[query[1]].validate) {
                     var re = new RegExp(lists[query[1]].validate);
                     if (!re.test(addrs[0])) {
-                        connection.logdebug('[uribl] ignoring result (' + addrs[0] + ') for: ' + 
+                        connection.logdebug(plugin, 'ignoring result (' + addrs[0] + ') for: ' + 
                                 lookup + ' as it did not match validation rule');
                         var skip = true;
                     }
@@ -198,17 +200,17 @@ exports.do_lookups = function (connection, next, hosts, type) {
                     var last_octet = new Number((addrs[0].split('.'))[3]);
                     var bitmask = new Number(lists[query[1]].bitmask);
                     if ((last_octet & bitmask) > 0) {
-                        connection.loginfo('[uribl] found ' + query[0] + ' in zone ' + query[1] +
+                        connection.loginfo(plugin, 'found ' + query[0] + ' in zone ' + query[1] +
                             ' (' + addrs.join(',') + '; bitmask=' + bitmask + ')');
                         do_reject();
                     } else {
-                        connection.logdebug('[uribl] ignoring result (' + addrs[0] + ') for: ' + 
+                        connection.logdebug(plugin, 'ignoring result (' + addrs[0] + ') for: ' + 
                                 lookup + ' as the bitmask did not match');
                         var skip = true;
                     }
                 }
                 else {
-                    connection.loginfo('[uribl] found ' + query[0] + ' in zone ' + query[1] + 
+                    connection.loginfo(plugin, 'found ' + query[0] + ' in zone ' + query[1] + 
                         ' (' + addrs.join(',') + ')');
                     do_reject();
                 }
