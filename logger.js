@@ -102,9 +102,11 @@ for (key in logger) {
                                   uuidstr += "." + data.tran_count;
                                 }
                                 uuidstr += "]";
-                            } else if (data instanceof plugins.Plugin) {
+                            }
+                            else if (data instanceof plugins.Plugin) {
                                 pluginstr = "[" + data.name + "]"; 
-                            } else {
+                            }
+                            else {
                                 str += util.inspect(data);
                             }
                         }
