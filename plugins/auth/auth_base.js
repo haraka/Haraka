@@ -158,7 +158,7 @@ exports.auth_cram_md5 = function(next, connection, params) {
     
     var ticket = '<' + hexi(Math.floor(Math.random() * 1000000)) + '.' +
                     hexi(Date.now()) + '@' + this.config.get('me') + '>';
-    connection.loginfo("[auth/auth_base] ticket: " + ticket);
+    connection.loginfo(this, "ticket: " + ticket);
     connection.respond(334, base64(ticket));
     connection.notes.auth_ticket = ticket;
     return next(OK);

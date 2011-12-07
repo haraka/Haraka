@@ -17,7 +17,7 @@ exports.hook_mail = function(next, connection, params) {
 
     // Just in case DNS never comes back (UDP), we should DENYSOFT.
     var timeout_id = setTimeout(function () {
-        connection.loginfo('[mail_from.is_resolvable] timed out when looking up MX for ' + domain);
+        connection.loginfo(plugin, 'timed out when looking up MX for ' + domain);
         called_next++;
         return next(DENYSOFT, 'Temporary resolver error (timeout)');
     }, ((config.main.timeout) ? config.main.timeout : 30) * 1000);
@@ -32,7 +32,7 @@ exports.hook_mail = function(next, connection, params) {
 
     dns.resolveMx(domain, function(err, addresses) {
         if (err) {
-            connection.logdebug('[mail_from.is_resolvable] ' + domain + ': MX => ' + err.message);
+            connection.logdebug(plugin, domain + ': MX => ' + err.message);
             switch (err.code) {
                 case dns.NXDOMAIN:
                 case 'ENOTFOUND':
@@ -53,7 +53,7 @@ exports.hook_mail = function(next, connection, params) {
             var check_results = function () {
                 a_records = Object.keys(a_records);
                 if (a_records && a_records.length) {
-                    connection.logdebug('[mail_from.is_resolvable] ' + domain + ': ' + a_records);
+                    connection.logdebug(plugin, domain + ': ' + a_records);
                     return cb();
                 }
                 return cb(((config.main.reject_no_mx) ? DENY : DENYSOFT),
@@ -64,7 +64,7 @@ exports.hook_mail = function(next, connection, params) {
                 // Handle MX records that are IP addresses
                 // This is invalid - but a lot of MTAs allow it.
                 if (/^\d+\.\d+\.\d+\.\d+$/.test(addr.exchange)) {
-                   connection.logwarn('[mail_from.is_resolvable] ' + domain + ': invalid MX ' + addr.exchange)
+                   connection.logwarn(plugin, domain + ': invalid MX ' + addr.exchange)
                    if (config.main.allow_mx_ip) {
                        a_records[addr.exchange] = 1;
                    }
@@ -74,16 +74,16 @@ exports.hook_mail = function(next, connection, params) {
                 dns.resolve(addr.exchange, function(err, addresses) {
                     pending_queries--;
                     if (err) {
-                        connection.logdebug('[mail_from.is_resolvable] ' + domain + ': MX ' + addr.priority + ' ' 
+                        connection.logdebug(plugin, domain + ': MX ' + addr.priority + ' ' 
                                         + addr.exchange + ' => ' + err.message);
                     }
                     else {
-                        connection.logdebug('[mail_from.is_resolvable] ' + domain + ': MX ' + addr.priority + ' '
+                        connection.logdebug(plugin, domain + ': MX ' + addr.priority + ' '
                                         + addr.exchange + ' => ' + addresses);
                         for (var i=0; i < addresses.length; i++) {
                             // Ignore anything obviously bogus
                             if (re_bogus_ip.test(addresses[i])) {
-                                connection.logdebug('[mail_from.is_resolvable] ' + addr.exchange + ': discarding ' + addresses[i]);
+                                connection.logdebug(plugin, addr.exchange + ': discarding ' + addresses[i]);
                                 continue;
                             }
                             a_records[addresses[i]] = 1;
@@ -103,7 +103,7 @@ exports.hook_mail = function(next, connection, params) {
             // Check for implicit MX 0 record
             dns.resolve(domain, function(err, addresses) {
                 if (err) {
-                    connection.logdebug('[mail_from.is_resolvable] ' + domain + ': A => ' + err.message);
+                    connection.logdebug(plugin, domain + ': A => ' + err.message);
                     switch (err.code) {
                         case dns.NXDOMAIN:
                         case 'ENOTFOUND':
@@ -117,12 +117,12 @@ exports.hook_mail = function(next, connection, params) {
                     }
                 }
                 if (addresses && addresses.length) {
-                    connection.logdebug('[mail_from.is_resolvable] ' + domain + ': A => ' + addresses);
+                    connection.logdebug(plugin, domain + ': A => ' + addresses);
                     var a_records = {};
                     for (var i=0; i < addresses.length; i++) {
                         // Ignore anything obviously bogus
                         if (re_bogus_ip.test(addresses[i])) {
-                            connection.logdebug('[mail_from.is_resolvable] ' + domain + ': discarding ' + addresses[i]);
+                            connection.logdebug(plugin, domain + ': discarding ' + addresses[i]);
                             continue;
                         }
                         a_records[addresses[i]] = 1;
