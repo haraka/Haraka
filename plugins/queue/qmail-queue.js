@@ -15,6 +15,7 @@ exports.register = function () {
 
 exports.hook_queue = function (next, connection) {
     var plugin = this;
+    // TODO: This will not work on 0.6 so we need to do something about that
     var messagePipe  = netBinding.pipe();
     var envelopePipe = netBinding.pipe();
     var qmail_queue = childproc.spawn(
@@ -27,7 +28,7 @@ exports.hook_queue = function (next, connection) {
         fs.close(messagePipe[0]);
         fs.close(envelopePipe[0]);
         if (code !== 0) {
-            plugin.logerror("Unable to queue message to qmail-queue: " + code);
+            connection.logerror(plugin, "Unable to queue message to qmail-queue: " + code);
             next();
         }
         else {
