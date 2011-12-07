@@ -94,7 +94,7 @@ exports.check_user = function (next, connection, credentials, method) {
     }
 
     if (method === AUTH_METHOD_PLAIN || method === AUTH_METHOD_LOGIN) {
-        this.check_plain_passwd(credentials[0], credentials[1], passwd_ok);
+        this.check_plain_passwd(connection, credentials[0], credentials[1], passwd_ok);
     }
     else if (method === AUTH_METHOD_CRAM_MD5) {
         this.check_cram_md5_passwd(connection.notes.auth_ticket, credentials[0], credentials[1], passwd_ok);
@@ -158,7 +158,7 @@ exports.auth_cram_md5 = function(next, connection, params) {
     
     var ticket = '<' + hexi(Math.floor(Math.random() * 1000000)) + '.' +
                     hexi(Date.now()) + '@' + this.config.get('me') + '>';
-    this.loginfo("ticket: " + ticket);
+    connection.loginfo(this, "ticket: " + ticket);
     connection.respond(334, base64(ticket));
     connection.notes.auth_ticket = ticket;
     return next(OK);

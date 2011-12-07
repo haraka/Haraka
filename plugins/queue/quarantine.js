@@ -96,17 +96,17 @@ exports.quarantine = function (next, connection) {
                 fs.writeFile([ base_dir, 'tmp', transaction.uuid ].join('/'), lines.join(''), 
                     function(err) {
                         if (err) {
-                            plugin.logerror('Error writing quarantine file: ' + err);
+                            connection.logerror(plugin, 'Error writing quarantine file: ' + err);
                         }
                         else {
                             fs.link([ base_dir, 'tmp', transaction.uuid ].join('/'), 
                                     [ base_dir, dir, transaction.uuid ].join('/'),
                                     function (err) {
                                         if (err) {
-                                            plugin.logerror('Error writing quarantine file: ' + err);
+                                            connection.logerror(plugin, 'Error writing quarantine file: ' + err);
                                         }
                                         else {
-                                            plugin.loginfo('Stored copy of message in quarantine: ' + 
+                                            connection.loginfo(plugin, 'Stored copy of message in quarantine: ' + 
                                                            [ base_dir, dir, transaction.uuid ].join('/'));
                                             // Now delete the temporary file
                                             fs.unlink([ base_dir, 'tmp', transaction.uuid ].join('/'));

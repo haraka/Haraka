@@ -20,7 +20,7 @@ exports.hook_data = function (next, connection) {
         var transaction = connection.transaction;
         transaction.parse_body = 1;
         transaction.attachment_hooks(function (ctype, filename, body) {
-            plugin.logdebug('found ctype=' + ctype + ', filename=' + filename);
+            connection.logdebug(plugin, 'found ctype=' + ctype + ', filename=' + filename);
             transaction.notes.clamd_found_attachment = 1;
         });
     }
@@ -41,13 +41,13 @@ exports.hook_data_post = function (next, connection) {
     if (config.main['only_with_attachments'] &&
         !transaction.notes.clamd_found_attachment)
     {
-        plugin.logdebug('skipping: no attachments found');
+        connection.logdebug(plugin, 'skipping: no attachments found');
         return next();
     }
 
     // Limit message size
     if (transaction.data_bytes > config.main.max_size) {
-        plugin.logdebug('skipping: message too big');
+        connection.logdebug(plugin, 'skipping: message too big');
         return next();
     }
 
@@ -83,7 +83,7 @@ exports.hook_data_post = function (next, connection) {
                 data_marker++;
             });
             if (wrote_all) {
-                send_data();
+                send_data(); // TODO: Fix to be non-recursive like queue/proxy
             }
         }
         else {
@@ -92,22 +92,22 @@ exports.hook_data_post = function (next, connection) {
     };
 
     socket.on('drain', function () {
-        plugin.logdebug('drain');
+        connection.logdebug(plugin, 'drain');
         send_data();
     });
     socket.on('timeout', function () {
-        plugin.logerror("connection timed out");
+        connection.logerror(plugin, "connection timed out");
         socket.destroy();
         return next(DENYSOFT,'Virus scanner timed out');
     });
     socket.on('error', function (err) {
-        plugin.logerror("connection failed: " + err);
+        connection.logerror(plugin, "connection failed: " + err);
         socket.destroy();
         return next(DENYSOFT,'Error connecting to virus scanner');
     });
     socket.on('connect', function () {
         var hp = socket.address();
-        plugin.loginfo('connected to host: ' + hp.address + ':' + hp.port);
+        connection.loginfo(plugin, 'connected to host: ' + hp.address + ':' + hp.port);
         socket.write("zINSTREAM\0", function () {
             send_data();
         });
@@ -115,7 +115,7 @@ exports.hook_data_post = function (next, connection) {
     
     var result = "";
     socket.on('line', function (line) {
-        plugin.logprotocol(line);
+        connection.logprotocol(plugin, 'C:' + line);
         result = line.replace(/\r?\n/, '');
     });
     
@@ -134,13 +134,13 @@ exports.hook_data_post = function (next, connection) {
                         (virus || 'UNKNOWN'));
         }
         else if (/size limit exceeded/.test(result)) {
-            plugin.loginfo('INSTREAM size limit exceeded. ' +
+            connection.loginfo(plugin, 'INSTREAM size limit exceeded. ' +
                            'Check StreamMaxLength in clamd.conf');
             // Continue as StreamMaxLength default is 25Mb
             return next();
         } else {
             // Unknown result
-            plugin.logerror('unknown result: ' + result);
+            connection.logerror(plugin, 'unknown result: ' + result);
             return next(DENYSOFT, 'Error running virus scanner');
         }
         return next();
