@@ -60,7 +60,7 @@ for (var key in logger) {
         // console.log("adding Plugin." + key + " method");
         Plugin.prototype[key] = (function (key) {
             return function () {
-                var args = ["[" + this.name + "] "];
+                var args = [this];
                 for (var i=0, l=arguments.length; i<l; i++) {
                     args.push(arguments[i]);
                 }
