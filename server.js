@@ -102,6 +102,12 @@ Server.createServer = function (params) {
             plugins.run_hooks('init_master', Server);
         });
         c.on('worker', function () {
+            // reseed PRNG
+            // if we don't, we will have UUID collisions.
+            require('./seedrandom');
+            Math.seedrandom(new Date().getTime()+":"+process.pid);
+            Server.logdebug("seeded prng");
+
             plugins.run_hooks('init_child', Server);
         });
     }
