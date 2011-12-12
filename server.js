@@ -65,7 +65,6 @@ Server.createServer = function (params) {
         conn.createConnection(client, server);
     });
     server.notes = {};
-    
     if (cluster && config_data.main.nodes) {
          
         var c = cluster(server);
@@ -101,9 +100,9 @@ Server.createServer = function (params) {
         c.on('start', function () {
             plugins.run_hooks('init_master', Server);
         });
-        c.on('worker', function () {
+        if (c.isWorker) {
             plugins.run_hooks('init_child', Server);
-        });
+        }
     }
     else {
         server.listen(config_data.main.port, config_data.main.listen_host, listening);
