@@ -250,15 +250,16 @@ exports.process_domain = function (dom, recips, from, data_lines, hmails, notes,
 
     ws.on('drain', write_more);
 
-    plugin.build_todo(dom, recips, from, ws, write_more);
+    plugin.build_todo(dom, recips, from, notes, ws, write_more);
 }
 
-exports.build_todo = function (dom, recips, from, ws, write_more) {
+exports.build_todo = function (dom, recips, from, notes, ws, write_more) {
     var todo_str = JSON.stringify(
         {
             domain: dom,
             mail_from: from,
             rcpt_to:   recips,
+            notes: notes
         }
     );
     
@@ -325,7 +326,7 @@ exports.split_to_new_recipients = function (hmail, recipients) {
 
     ws.on('drain', write_more);
 
-    plugin.build_todo(hmail.todo.domain, recipients, hmail.todo.mail_from, ws, write_more);
+    plugin.build_todo(hmail.todo.domain, recipients, hmail.todo.mail_from, hmail.todo.notes, ws, write_more);
 }
 
 exports._load_cur_queue = function (cb_name) {
