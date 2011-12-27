@@ -902,7 +902,7 @@ Connection.prototype.queue_outbound_respond = function(retval, msg) {
                 this.respond(452, msg || "Message denied temporarily");
                 this.reset_transaction();
                 break;
-        case constatns.denysoftdisconnect:
+        case constants.denysoftdisconnect:
                 this.respond(452, msg || "Message denied temporarily");
                 this.disconnect();
                 break;
