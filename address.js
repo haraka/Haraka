@@ -1,3 +1,4 @@
+"use strict";
 // a class encapsulating an email address as per RFC-2821
 
 var logger = require('./logger');
@@ -22,21 +23,20 @@ function Address (user, host) {
 }
 
 
-exports.atom_expr = /[a-zA-Z0-9!#%&*+=?^_`{|}~\$\x27\x2D\/]+/;
+exports.atom_expr = /[a-zA-Z0-9!#%&*+=?\^_`{|}~\$\x27\x2D\/]+/;
 exports.address_literal_expr =
   /(?:\[(?:\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}|IPv6:[0-9A-Fa-f:.]+)\])/;
-exports.subdomain_expr = /(?:[a-zA-Z0-9](?:[-a-zA-Z0-9]*[a-zA-Z0-9])?)/;
-exports.domain_expr;
+exports.subdomain_expr = /(?:[a-zA-Z0-9](?:[\-a-zA-Z0-9]*[a-zA-Z0-9])?)/;
+exports.domain_expr = undefined; // so you can override this when loading and re-run compile_re()
 exports.qtext_expr = /[\x01-\x08\x0B\x0C\x0E-\x1F\x21\x23-\x5B\x5D-\x7F]/;
 exports.text_expr  = /\\([\x01-\x09\x0B\x0C\x0E-\x7F])/;
 
 var domain_re, source_route_re, user_host_re, atoms_re, qt_re;
 
 exports.compile_re = function () {
-    domain_re = exports.domain_expr ? exports.domain_expr
-                                    : new RegExp (
-                                         exports.subdomain_expr.source + 
-                                         '(?:\.' + exports.subdomain_expr.source + ')*'
+    domain_re = exports.domain_expr || new RegExp (
+                                         exports.subdomain_expr.source +
+                                         '(?:\\.' + exports.subdomain_expr.source + ')*'
                                          );
     
     if (!exports.domain_expr && exports.address_literal_expr) {
@@ -45,13 +45,16 @@ exports.compile_re = function () {
                                '|'   + domain_re.source + ')');
     }
     
-    source_route_re = new RegExp('^\@' + domain_re.source + '(?:,\@' + domain_re.source + ')*:');
+    source_route_re = new RegExp('^@' + domain_re.source +
+                                 '(?:,@' + domain_re.source + ')*:');
     
-    user_host_re = new RegExp('^(.*)\@(' + domain_re.source + ')$');
+    user_host_re = new RegExp('^(.*)@(' + domain_re.source + ')$');
     
-    atoms_re = new RegExp('^' + exports.atom_expr.source + '(\.' + exports.atom_expr.source + ')*');
+    atoms_re = new RegExp('^' + exports.atom_expr.source +
+                          '(\\.' + exports.atom_expr.source + ')*');
     
-    qt_re = new RegExp('^"((' + exports.qtext_expr.source + '|' + exports.text_expr.source + ')*)"$');
+    qt_re = new RegExp('^"((' + exports.qtext_expr.source +
+                       '|' + exports.text_expr.source + ')*)"$');
 }
 
 exports.compile_re();
@@ -113,7 +116,7 @@ Address.prototype.format = function () {
     }
     
     var user = this.user.replace(qchar, '\\$1', 'g');
-    if (user != this.user) {
+    if (user !== this.user) {
         return '<"' + user + '"' + (this.host ? ('@' + this.host) : '') + '>';
     }
     return '<' + this.address() + '>';
@@ -121,9 +124,10 @@ Address.prototype.format = function () {
 
 Address.prototype.address = function (set) {
     if (set) {
+        this.original = set;
         this.parse(set);
     }
-    return (this.user ? this.user : '') + (this.host ? ('@' + this.host) : '');
+    return (this.user || '') + (this.host ? ('@' + this.host) : '');
 }
 
 Address.prototype.toString = function () {

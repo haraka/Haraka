@@ -1,6 +1,4 @@
 // Forward to an SMTP server
-
-var os   = require('os');
 var sock = require('./line_socket');
 
 exports.register = function () {
@@ -10,8 +8,8 @@ exports.register = function () {
 var smtp_regexp = /^([0-9]{3})([ -])(.*)/;
 
 exports.smtp_forward = function (next, connection) {
-    this.loginfo("smtp forwarding");
     var smtp_config = this.config.get('smtp_forward.ini');
+    connection.loginfo(this, "forwarding to " + smtp_config.main.host + ":" + smtp_config.main.port);
     var socket = sock.connect(smtp_config.main.port, smtp_config.main.host);
     socket.setTimeout(300 * 1000);
     var self = this;
@@ -20,7 +18,9 @@ exports.smtp_forward = function (next, connection) {
     // copy the recipients:
     var recipients = connection.transaction.rcpt_to.map(function(item) { return item });
     var data_marker = 0;
-    
+    var dot_pending = true;
+    var got_data_response = false;
+
     var send_data = function () {
         if (data_marker < connection.transaction.data_lines.length) {
             var wrote_all = socket.write(connection.transaction.data_lines[data_marker].replace(/^\./, '..').replace(/\r?\n/g, '\r\n'));
@@ -28,8 +28,9 @@ exports.smtp_forward = function (next, connection) {
             if (wrote_all) {
                 send_data();
             }
-        }
-        else {
+        }   
+        else if (dot_pending) {
+            dot_pending = false;
             socket.send_command('dot');
         }
     }
@@ -39,7 +40,7 @@ exports.smtp_forward = function (next, connection) {
         if (cmd === 'dot') {
             line = '.';
         }
-        self.logprotocol("Fwd C: " + line);
+        connection.logprotocol(self, "C: " + line);
         // Set this before we write() in case 'drain' is called
         // to stop send_data() form calling 'dot' twice.
         command = cmd.toLowerCase();
@@ -49,12 +50,12 @@ exports.smtp_forward = function (next, connection) {
     };
     
     socket.on('timeout', function () {
-        self.logerror("Ongoing connection timed out");
+        connection.logerror(self, "Ongoing connection timed out");
         socket.end();
         next();
     });
     socket.on('error', function (err) {
-        self.logerror("Ongoing connection failed: " + err);
+        connection.logerror(self, "Ongoing connection failed: " + err);
         // we don't deny on error - maybe another plugin can deliver
         next(); 
     });
@@ -62,14 +63,14 @@ exports.smtp_forward = function (next, connection) {
     });
     socket.on('line', function (line) {
         var matches;
-        self.logprotocol("Fwd S: " + line);
+        connection.logprotocol(self, "S: " + line);
         if (matches = smtp_regexp.exec(line)) {
             var code = matches[1],
                 cont = matches[2],
                 rest = matches[3];
             response.push(rest);
             if (cont === ' ') {
-                self.logdebug('command state: ' + command);
+                connection.logdebug(self, 'command state: ' + command);
                 // Handle fallback to HELO if EHLO is rejected
                 if (command === 'ehlo') {
                     if (code.match(/^5/)) {
@@ -83,7 +84,7 @@ exports.smtp_forward = function (next, connection) {
                         return;
                     }
                     // Parse CAPABILITIES
-                    for (i in response) {
+                    for (var i in response) {
                         if (response[i].match(/^XCLIENT/)) {
                             if(!this.xclient) {
                                 // Just use the ADDR= key for now
@@ -95,7 +96,7 @@ exports.smtp_forward = function (next, connection) {
                             var key = self.config.get('tls_key.pem', 'data').join("\n");
                             var cert = self.config.get('tls_cert.pem', 'data').join("\n");
                             // Use TLS opportunistically if we found the key and certificate
-                            if (key && cert && (!/(true|1)/i.exec(smtp_config.main.disable_tls))) {
+                            if (key && cert && (!/(true|yes|1)/i.exec(smtp_config.main.enable_tls))) {
                                 this.on('secure', function () {
                                     socket.send_command('EHLO', self.config.get('me'));
                                 });
@@ -147,11 +148,14 @@ exports.smtp_forward = function (next, connection) {
                         socket.send_command('DATA');
                         break;
                     case 'data':
+                        got_data_response = true;
                         send_data();
                         break;
                     case 'dot':
+                        // Return the response from the forwarder back to the client
+                        // But add in our transaction UUID at the end of the line.
+                        next(OK, response + ' (' + connection.transaction.uuid + ')');
                         socket.send_command('QUIT');
-                        next(OK);
                         break;
                     case 'quit':
                         socket.end();
@@ -163,15 +167,15 @@ exports.smtp_forward = function (next, connection) {
         }
         else {
             // Unrecognised response.
-            self.logerror("Unrecognised response from upstream server: " + line);
+            connection.logerror(self, "Unrecognised response from upstream server: " + line);
             socket.end();
             return next();
         }
     });
     socket.on('drain', function() {
-        self.logdebug("Drained");
-        if (command === 'data') {
-            send_data();
+        connection.logdebug(self, "Drained");
+        if (got_data_response && dot_pending && command === 'data') {
+            process.nextTick(function () { send_data() });
         }
     });
 };

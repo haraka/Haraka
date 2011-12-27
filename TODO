@@ -1,3 +1,6 @@
 - DKIM (need a node dkim library first - perhaps based on libdkimpp?)
 - Rate Limiting for outbound mail
 - Milter support
+- Ability to modify the body of email (e.g add a banner) and have it re-write the data_lines
+- Create a config file for each of the core shipping configs, so people have something as a baseline
+- IMAP server (long shot for now)

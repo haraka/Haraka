@@ -2,9 +2,7 @@
 // Opens the connection to the ongoing SMTP server at MAIL FROM time
 // and passes back any errors seen on the ongoing server to the originating server.
 
-var os   = require('os');
 var sock = require('./line_socket');
-
 var smtp_regexp = /^([0-9]{3})([ -])(.*)/;
 
 // Local function to get an smtp_proxy connection.
@@ -14,7 +12,7 @@ function _get_smtp_proxy(self, next, connection) {
 
     if (connection.server.notes.smtp_proxy_pool &&
         connection.server.notes.smtp_proxy_pool.length) {
-        self.logdebug("using connection from the pool: (" +
+        connection.logdebug(self, "using connection from the pool: (" +
             connection.server.notes.smtp_proxy_pool.length + ")");
 
         smtp_proxy = connection.server.notes.smtp_proxy_pool.shift();
@@ -56,7 +54,7 @@ function _get_smtp_proxy(self, next, connection) {
         connection.server.notes.active_proxy_conections = 1;
     }
 
-    self.logdebug("active proxy connections: (" +
+    connection.logdebug(self, "active proxy connections: (" +
         connection.server.notes.active_proxy_conections + ")");
 
     return smtp_proxy;
@@ -68,7 +66,7 @@ function _destroy_smtp_proxy(self, connection, smtp_proxy) {
     var index;
 
     if (smtp_proxy && smtp_proxy.socket) {
-        self.logdebug("destroying proxy connection");
+        connection.logdebug(self, "destroying proxy connection");
         smtp_proxy.socket.destroySoon();
         smtp_proxy.socket = 0;
         reset_active_connections = 1;
@@ -89,7 +87,7 @@ function _destroy_smtp_proxy(self, connection, smtp_proxy) {
             // acttive.  This means we do not want to reset it.
             reset_active_connections = 0;
             connection.server.notes.smtp_proxy_pool.splice(index, 1);
-            self.logdebug("pulling dead proxy connection from pool: (" +
+            connection.logdebug(self, "pulling dead proxy connection from pool: (" +
                 connection.server.notes.smtp_proxy_pool.length + ")");
         }
     }
@@ -97,7 +95,7 @@ function _destroy_smtp_proxy(self, connection, smtp_proxy) {
     if (reset_active_connections &&
         connection.server.notes.active_proxy_conections) {
         connection.server.notes.active_proxy_conections--;
-        self.logdebug("active proxy connections: (" +
+        connection.logdebug(self, "active proxy connections: (" +
             connection.server.notes.active_proxy_conections + ")");
     }
 
@@ -119,9 +117,9 @@ function _smtp_proxy_idle(self, connection) {
 
     connection.server.notes.active_proxy_conections--;
 
-    self.logdebug("putting proxy connection back in pool: (" +
+    connection.logdebug(self, "putting proxy connection back in pool: (" +
         connection.server.notes.smtp_proxy_pool.length + ")");
-    self.logdebug("active proxy connections: (" +
+    connection.logdebug(self, "active proxy connections: (" +
         connection.server.notes.active_proxy_conections + ")");
 
     // Unlink this connection from the proxy now that it is back
@@ -134,7 +132,7 @@ function _smtp_proxy_idle(self, connection) {
 }
 
 exports.hook_mail = function (next, connection, params) {
-    this.loginfo("smtp proxying");
+    connection.loginfo(this, "proxying");
     var self = this;
     var mail_from = params[0];
     var data_marker = 0;
@@ -143,19 +141,21 @@ exports.hook_mail = function (next, connection, params) {
     var dot_pending = true;
 
     smtp_proxy.send_data = function () {
-        if (data_marker < connection.transaction.data_lines.length) {
+        var wrote_all = true;
+        while (wrote_all && (data_marker < connection.transaction.data_lines.length)) {
             var line = connection.transaction.data_lines[data_marker];
             data_marker++;
-            self.logdata("Proxy C: " + line);
+            connection.logdata(self, "C: " + line);
             // this protection is due to bug #
             in_write = true;
-            var wrote_all = smtp_proxy.socket.write(line.replace(/^\./, '..').replace(/\r?\n/g, '\r\n'));
+            wrote_all = smtp_proxy.socket.write(line.replace(/^\./, '..').replace(/\r?\n/g, '\r\n'));
             in_write = false;
-            if (wrote_all) {
-                return smtp_proxy.send_data();
+            if (!wrote_all) {
+                return;
             }
         }
-        else if (dot_pending) {
+        // we get here if wrote_all still true, and we got to end of data_lines
+        if (dot_pending) {
             dot_pending = false;
             smtp_proxy.socket.send_command('dot');
         }
@@ -171,18 +171,18 @@ exports.hook_mail = function (next, connection, params) {
     });
 
     smtp_proxy.socket.on('error', function (err) {
-        self.logdebug("Ongoing connection failed: " + err);
+        connection.logdebug(self, "Ongoing connection failed: " + err);
         _destroy_smtp_proxy(self, connection, smtp_proxy);
         return next(DENYSOFT,'Proxy connection failed');
     });
 
     smtp_proxy.socket.on('timeout', function () {
-        self.logdebug("Ongoing connection timed out");
+        connection.logdebug(self, "Ongoing connection timed out");
         _destroy_smtp_proxy(self, connection, smtp_proxy);
     });
     
     smtp_proxy.socket.on('close', function (had_error) {
-        self.logdebug("Ongoing connection closed");
+        connection.logdebug(self, "Ongoing connection closed");
         _destroy_smtp_proxy(self, connection, smtp_proxy);
     });
 
@@ -193,14 +193,15 @@ exports.hook_mail = function (next, connection, params) {
         if (cmd === 'dot') {
             line = '.';
         }
-        self.logprotocol("Proxy C: " + line);
+        connection.logprotocol(self, "C: " + line);
         this.write(line + "\r\n");
         smtp_proxy.command = cmd.toLowerCase();
+        smtp_proxy.response = [];
     };
     
     smtp_proxy.socket.on('line', function (line) {
         var matches;
-        self.logprotocol("Proxy S: " + line);
+        connection.logprotocol(self, "S: " + line);
         if (matches = smtp_regexp.exec(line)) {
             var code = matches[1],
                 cont = matches[2],
@@ -221,7 +222,7 @@ exports.hook_mail = function (next, connection, params) {
                         return;
                     }
                     // Parse CAPABILITIES
-                    for (i in smtp_proxy.response) {
+                    for (var i in smtp_proxy.response) {
                         if (smtp_proxy.response[i].match(/^XCLIENT/)) {
                             if (!smtp_proxy.xclient) {
                                 smtp_proxy.socket.send_command('XCLIENT',
@@ -233,7 +234,6 @@ exports.hook_mail = function (next, connection, params) {
                             var key = self.config.get('tls_key.pem', 'data').join("\n");
                             var cert = self.config.get('tls_cert.pem', 'data').join("\n");
                             if (key && cert && (/(true|yes|1)/i.exec(smtp_proxy.config.main.enable_tls))) {
-                                self.logdebug('before TLS: ' + smtp_proxy.socket.listeners('drain'));
                                 this.on('secure', function () {
                                     smtp_proxy.socket.send_command('EHLO', self.config.get('me'));
                                 });
@@ -252,14 +252,12 @@ exports.hook_mail = function (next, connection, params) {
                         // errors are OK for rcpt, but nothing else
                         // this can also happen if the destination server
                         // times out, but that is okay.
+                        connection.loginfo(self, "message denied, proxying failed");
                         smtp_proxy.socket.send_command('RSET');
                     }
                     return smtp_proxy.next(code.match(/^4/) ?
                         DENYSOFT : DENY, smtp_proxy.response);
                 }
-
-                smtp_proxy.response = []; // reset the response
-
                 switch (smtp_proxy.command) {
                     case 'xclient':
                         smtp_proxy.xclient = true;
@@ -289,8 +287,9 @@ exports.hook_mail = function (next, connection, params) {
                         smtp_proxy.next();
                         break;
                     case 'dot':
+                        connection.loginfo(self, "message delivered, proxying complete");
+                        smtp_proxy.next(OK, smtp_proxy.response + ' (' + connection.transaction.uuid + ')');
                         smtp_proxy.socket.send_command('RSET');
-                        smtp_proxy.next(OK);
                         break;
                     case 'rset':
                         _smtp_proxy_idle(self, connection);
@@ -305,7 +304,8 @@ exports.hook_mail = function (next, connection, params) {
         }
         else {
             // Unrecognised response.
-            self.logerror("Unrecognised response from upstream server: " + line);
+            connection.logerror(self, "Unrecognised response from upstream server: " + line);
+            connection.loginfo(self, "message denied, proxying failed");
             smtp_proxy.socket.send_command('RSET');
             return smtp_proxy.next(DENYSOFT);
         }

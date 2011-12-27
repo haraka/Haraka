@@ -1,3 +1,4 @@
+"use strict";
 // a single connection
 var path        = require('path');
 var config      = require('./config');
@@ -11,6 +12,7 @@ var fs          = require('fs');
 var Address     = require('./address').Address;
 var uuid        = require('./utils').uuid;
 var outbound    = require('./outbound');
+var date_to_str = require('./utils').date_to_str;
 
 var version  = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'))).version;
 
@@ -18,18 +20,19 @@ var line_regexp = /^([^\n]*\n)/;
 
 var connection = exports;
 
+var STATE_CMD   = 1;
+var STATE_LOOP  = 2;
+var STATE_DATA  = 3;
+var STATE_PAUSE = 4;
+
 // copy logger methods into Connection:
 for (var key in logger) {
     if (key.match(/^log\w/)) {
         Connection.prototype[key] = (function (key) {
             return function () {
-                var args = [ (this.transaction ? this.transaction.uuid : this.uuid) + " " ];
-                var start = 0;
-                if (arguments.length && arguments[0] instanceof plugins.Plugin) {
-                    start = 1;
-                    args.unshift("[" + arguments[0].name + "]");
-                }
-                for (var i=start, l=arguments.length; i<l; i++) {
+                // pass the connection instance to logger
+                var args = [ this ];
+                for (var i=0, l=arguments.length; i<l; i++) {
                     args.push(arguments[i]);
                 }
                 logger[key].apply(logger, args);
@@ -63,7 +66,7 @@ function setupClient(self) {
     self.client.on('data', function (data) {
         self.process_data(data);
     });
-    
+
     plugins.run_hooks('lookup_rdns', self);
 }
 
@@ -72,7 +75,7 @@ function Connection(client, server) {
     this.server = server;
     this.current_data = '';
     this.current_line = null;
-    this.state = 'pause';
+    this.state = STATE_PAUSE;
     this.uuid = uuid();
     this.notes = {};
     this.tran_count = 0;
@@ -94,10 +97,10 @@ exports.createConnection = function(client, server) {
 }
 
 Connection.prototype.process_line = function (line) {
-    if (this.state === 'cmd') {
+    if (this.state === STATE_CMD) {
         this.logprotocol("C: " + line);
-        this.state = 'pause';
-        this.current_line = line.replace(/\r?\n$/, '');
+        this.state = STATE_PAUSE;
+        this.current_line = line.replace(/\r?\n/, '');
         var matches = /^([^ ]*)( +(.*))?$/.exec(this.current_line);
         if (!matches) {
             return plugins.run_hooks('unrecognized_command', this, this.current_line);
@@ -128,7 +131,16 @@ Connection.prototype.process_line = function (line) {
             plugins.run_hooks('unrecognized_command', this, matches);
         }
     }
-    else if (this.state === 'data') {
+    else if (this.state === STATE_LOOP) {
+        this.logprotocol("C: " + line);
+        // Allow QUIT
+        if (line.replace(/\r?\n/, '').toUpperCase() === 'QUIT') {
+            this.cmd_quit();
+        } else {
+            this.respond(this.loop_code, this.loop_msg);
+        }
+    }
+    else if (this.state === STATE_DATA) {
         this.logdata("C: " + line);
         this.accumulate_data(line);
     }
@@ -148,7 +160,7 @@ Connection.prototype._process_data = function() {
     var results;
     while (results = line_regexp.exec(this.current_data)) {
         var this_line = results[1];
-        if (this.state === 'pause') {
+        if (this.state === STATE_PAUSE) {
             this.early_talker = 1;
             var self = this;
             // If you talk early, we're going to give you a delay
@@ -179,6 +191,8 @@ Connection.prototype.current_line = function() {
 };
 
 Connection.prototype.respond = function(code, messages) {
+    var uuid = '';
+
     if (this.disconnected) {
         return;
     }
@@ -194,13 +208,17 @@ Connection.prototype.respond = function(code, messages) {
     }
 
     if (code >= 400 && this.deny_includes_uuid) {
-        messages.push("for support please provide uuid:" + (this.transaction || this).uuid);
+        uuid = (this.transaction || this).uuid;
+        if (this.deny_includes_uuid > 1) {
+            uuid = uuid.substr(0, this.deny_includes_uuid);
+        }
     }
     
     var msg;
     var buf = '';
     while (msg = messages.shift()) {
-        var line = code + (messages.length ? "-" : " ") + msg;
+        var line = code + (messages.length ? "-" : " ") + 
+            (uuid ? '[' + uuid + '] ' : '' ) + msg;
         this.logprotocol("S: " + line);
         buf = buf + line + "\r\n";
     }
@@ -211,8 +229,11 @@ Connection.prototype.respond = function(code, messages) {
     catch (err) {
         return this.fail("Writing response: " + buf + " failed: " + err);
     }
-    
-    this.state = 'cmd';
+
+    // Don't change loop state
+    if (this.state !== STATE_LOOP) {
+        this.state = STATE_CMD;
+    }
 };
 
 Connection.prototype.fail = function (err) {
@@ -251,6 +272,13 @@ Connection.prototype.init_transaction = function() {
     this.transaction = trans.createTransaction(this.tran_uuid());
 }
 
+Connection.prototype.loop_respond = function (code, msg) {
+    this.state = STATE_LOOP;
+    this.loop_code = code;
+    this.loop_msg = msg;
+    this.respond(code, msg);
+}
+
 /////////////////////////////////////////////////////////////////////////////
 // SMTP Responses
 
@@ -262,13 +290,19 @@ Connection.prototype.lookup_rdns_respond = function (retval, msg) {
                 plugins.run_hooks('connect', this);
                 break;
         case constants.deny:
+                this.loop_respond(554, msg || "rDNS Lookup Failed");
+                break;
         case constants.denydisconnect:
         case constants.disconnect:
-                this.respond(500, msg || "rDNS Lookup Failed");
+                this.respond(554, msg || "rDNS Lookup Failed");
                 this.disconnect();
                 break;
         case constants.denysoft:
-                this.respond(450, msg || "rDNS Temporary Failure");
+                this.loop_respond(421, msg || "rDNS Temporary Failure");
+                break;
+        case constants.denysoftdisconnect:
+                this.respond(421, msg || "rDNS Temporary Failure");
+                this.disconnect();
                 break;
         default:
                 var self = this;
@@ -313,28 +347,38 @@ Connection.prototype.unrecognized_command_respond = function(retval, msg) {
 };
 
 Connection.prototype.connect_respond = function(retval, msg) {
+    // RFC 5321 Section 4.3.2 states that the only valid SMTP codes here are:
+    // 220 = Service ready
+    // 554 = Transaction failed (no SMTP service here)
+    // 421 = Service shutting down and closing transmission channel
     switch (retval) {
         case constants.deny:
+                this.loop_respond(554, msg || "Your mail is not welcome here");
+                break;
         case constants.denydisconnect:
         case constants.disconnect:
-                             this.respond(550, msg || "Your mail is not welcome here");
-                             this.disconnect();
-                             break;
+                this.respond(554, msg || "Your mail is not welcome here");
+                this.disconnect();
+                break;
         case constants.denysoft:
-                             this.respond(450, msg || "Come back later");
-                             break;
+                this.loop_respond(421, msg || "Come back later");
+                break;
+        case constants.denysoftdisconnect:
+                this.respond(421, msg || "Come back later");
+                this.disconnect();
+                break;
         default:
-                             var greeting = config.get('smtpgreeting', 'list');
-                             if (greeting.length) {
-                                 if (!(/(^|\W)ESMTP(\W|$)/.test(greeting[0]))) {
-                                     greeting[0] += " ESMTP";
-                                 }
-                             }
-                             else {
-                                 greeting = (config.get('me') + 
-                                            " ESMTP Haraka " + version + " ready");
-                             }
-                             this.respond(220, msg || greeting);
+                var greeting = config.get('smtpgreeting', 'list');
+                if (greeting.length) {
+                    if (!(/(^|\W)ESMTP(\W|$)/.test(greeting[0]))) {
+                        greeting[0] += " ESMTP";
+                    }
+                }
+                else {
+                    greeting = (config.get('me') + 
+                        " ESMTP Haraka " + version + " ready");
+                }
+                this.respond(220, msg || greeting);
     }
 };
 
@@ -354,8 +398,15 @@ Connection.prototype.helo_respond = function(retval, msg) {
                 this.greeting = null;
                 this.hello_host = null;
                 break;
+        case constants.denysoftdisconnect:
+                this.respond(450, msg || "HELO denied");
+                this.disconnect();
+                break;
         default:
-                this.respond(250, "Haraka says hi " + this.remote_host + " [" + this.remote_ip + "]");
+                this.respond(250, "Haraka says hi " + 
+                    ((this.remote_host && this.remote_host !== 'DNSERROR' 
+                    && this.remote_host !== 'NXDOMAIN') ? this.remote_host + ' ' : '') 
+                    + "[" + this.remote_ip + "]");
     }
 };
 
@@ -375,8 +426,15 @@ Connection.prototype.ehlo_respond = function(retval, msg) {
                 this.greeting = null;
                 this.hello_host = null;
                 break;
+        case constants.denysoftdisconnect:
+                this.respond(450, msg || "EHLO denied");
+                this.disconnect();
+                break;
         default:
-                var response = ["Haraka says hi " + this.remote_host + " [" + this.remote_ip + "]",
+                var response = ["Haraka says hi " + 
+                                ((this.remote_host && this.remote_host !== 'DNSERROR' && 
+                                this.remote_host !== 'NXDOMAIN') ? this.remote_host + ' ' : '')
+                                + "[" + this.remote_ip + "]",
                                 "PIPELINING",
                                 "8BITMIME",
                                 ];
@@ -403,8 +461,20 @@ Connection.prototype.quit_respond = function(retval, msg) {
 Connection.prototype.vrfy_respond = function(retval, msg) {
     switch (retval) {
         case constants.deny:
-                this.respond(554, msg || "Access Denied");
+                this.respond(550, msg || "Access Denied");
                 this.reset_transaction();
+                break;
+        case constants.denydisconnect:
+                this.respond(550, msg || "Access Denied");
+                this.disconnect();
+                break;
+        case constants.denysoft:
+                this.respond(450, msg || "Lookup Failed");
+                this.reset_transaction();
+                break;
+        case constants.denysoftdisconnect:
+                this.respond(450, msg || "Lookup Failed");
+                this.disconnect();
                 break;
         case constants.ok:
                 this.respond(250, msg || "User OK");
@@ -450,6 +520,10 @@ Connection.prototype.mail_respond = function(retval, msg) {
                 this.respond(450, msg || dmsg + " denied");
                 this.reset_transaction();
                 break;
+        case constants.denysoftdisconnect:
+                this.respond(450, msg || dmsg + " denied");
+                this.disconnect();
+                break;
         default:
                 this.respond(250, msg || dmsg + " OK");
     }
@@ -470,6 +544,10 @@ Connection.prototype.rcpt_ok_respond = function (retval, msg) {
         case constants.denysoft:
                 this.respond(450, msg || dmsg + " denied");
                 this.transaction.rcpt_to.pop();
+                break;
+        case constants.denysoftdisconnect:
+                this.respond(450, msg || dmsg + " denied");
+                this.disconnect();
                 break;
         default:
                 this.respond(250, msg || dmsg + " OK");
@@ -495,6 +573,10 @@ Connection.prototype.rcpt_respond = function(retval, msg) {
         case constants.denysoft:
                 this.respond(450, msg || dmsg + " denied");
                 this.transaction.rcpt_to.pop();
+                break;
+        case constants.denysoftdisconnect:
+                this.respond(450, msg || dmsg + " denied");
+                this.disconnect();
                 break;
         case constants.ok:
                 plugins.run_hooks('rcpt_ok', this, rcpt);
@@ -524,7 +606,7 @@ Connection.prototype.cmd_helo = function(line) {
     
     this.greeting   = 'HELO';
     this.hello_host = host;
-    
+
     plugins.run_hooks('helo', this, host);
 };
 
@@ -541,15 +623,25 @@ Connection.prototype.cmd_ehlo = function(line) {
     
     this.greeting   = 'EHLO';
     this.hello_host = host;
-    
+
     plugins.run_hooks('ehlo', this, host);
 };
 
-Connection.prototype.cmd_quit = function() {
+Connection.prototype.cmd_quit = function(args) {
+    // RFC 5321 Section 4.3.2
+    // QUIT does not accept arguments
+    if (args) {
+        return this.respond(501, "Syntax error");
+    }
     plugins.run_hooks('quit', this);
 };
 
-Connection.prototype.cmd_rset = function() {
+Connection.prototype.cmd_rset = function(args) {
+    // RFC 5321 Section 4.3.2
+    // RSET does not accept arguments
+    if (args) {
+        return this.respond(501, "Syntax error");
+    }
     plugins.run_hooks('rset', this);
 };
 
@@ -567,6 +659,9 @@ Connection.prototype.cmd_help = function() {
 };
 
 Connection.prototype.cmd_mail = function(line) {
+    if (!this.hello_host) {
+        return this.respond(503, 'Use EHLO/HELO before MAIL');
+    }
     var results;
     var from;
     try {
@@ -649,36 +744,36 @@ Connection.prototype.cmd_rcpt = function(line) {
     plugins.run_hooks('rcpt', this, [recip, params]);
 };
 
-var _daynames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-var _monnames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-
-function _pad(num, n, p) {
-        var s = '' + num;
-        p = p || '0';
-        while (s.length < n) s = p + s;
-        return s;
-}
-
-function _date_to_str(d) {
-    return _daynames[d.getDay()] + ', ' + _pad(d.getDate(),2) + ' ' +
-           _monnames[d.getMonth()] + ' ' + d.getFullYear() + ' ' +
-           _pad(d.getHours(),2) + ':' + _pad(d.getMinutes(),2) + ':' + _pad(d.getSeconds(),2) +
-           ' ' + d.toString().match(/\sGMT([+-]\d+)/)[1];
-}
-
 Connection.prototype.received_line = function() {
     var smtp = this.greeting === 'EHLO' ? 'ESMTP' : 'SMTP';
+    // Implement RFC3848
+    if (this.using_tls)  smtp = smtp + 'S';
+    if (this.authheader) smtp = smtp + 'A';
     // TODO - populate authheader and sslheader - see qpsmtpd for how to.
-    return  "from " + this.remote_info
-           +" (" + this.hello_host + " ["+this.remote_ip
-           +"])\n  " + (this.authheader || '') + "  by " + config.get('me')
-           +" (Haraka/" + version
-           +") with " + (this.sslheader || '') + smtp
-           +" id " + this.uuid
-           +";\n    " + _date_to_str(new Date());
+    // sslheader is not possible with TLS support in node yet.
+    return [
+        'from ',
+            // If no rDNS then use an IP literal here
+            ((!/^(?:DNSERROR|NXDOMAIN)/.test(this.remote_info)) 
+                ? this.remote_info : '[' + this.remote_ip + ']'),
+            ' (', this.hello_host, ' [', this.remote_ip, ']) ', 
+        "\n\t", 
+            'by ', config.get('me'), ' (Haraka/', version, ') with ', smtp, 
+            ' id ', this.transaction.uuid, 
+        "\n\t",
+            '(envelope-from ', this.transaction.mail_from.format(), ')',
+            // ((this.sslheader) ? ' ' + this.sslheader.replace(/\r?\n\t?$/,'') : ''), 
+            ((this.authheader) ? ' ' + this.authheader.replace(/\r?\n\t?$/, '') : ''),
+        ";\n\t", date_to_str(new Date())
+    ].join('');
 };
 
-Connection.prototype.cmd_data = function(line) {
+Connection.prototype.cmd_data = function(args) {
+    // RFC 5321 Section 4.3.2
+    // DATA does not accept arguments
+    if (args) {
+        return this.respond(501, "Syntax error");
+    }
     if (!this.transaction) {
         return this.respond(503, "MAIL required first");
     }
@@ -705,6 +800,10 @@ Connection.prototype.data_respond = function(retval, msg) {
                 this.respond(451, msg || "Message denied");
                 this.reset_transaction();
                 break;
+        case constants.denysoftdisconnect:
+                this.respond(451, msg || "Message denied");
+                this.disconnect();
+                break;
         default:
                 cont = 1;
     }
@@ -716,7 +815,7 @@ Connection.prototype.data_respond = function(retval, msg) {
     // We already checked for MAIL/RCPT in cmd_data
     this.respond(354, "go ahead, make my day");
     // OK... now we get the data
-    this.state = 'data';
+    this.state = STATE_DATA;
     this.transaction.data_bytes = 0;
     this.max_bytes = config.get('databytes');
 };
@@ -742,7 +841,7 @@ Connection.prototype.accumulate_data = function(line) {
 };
 
 Connection.prototype.data_done = function() {
-    this.state = 'pause';
+    this.state = STATE_PAUSE;
 
     // Check message size limit
     if (this.max_bytes && this.transaction.data_bytes > this.max_bytes) {
@@ -751,6 +850,8 @@ Connection.prototype.data_done = function() {
         this.reset_transaction();
         return;
     }
+
+    this.transaction.end_data();
 
     plugins.run_hooks('data_post', this);
 };
@@ -769,6 +870,10 @@ Connection.prototype.data_post_respond = function(retval, msg) {
                 this.respond(452, msg || "Message denied temporarily");
                 this.reset_transaction();
                 break;
+        case constants.denysoftdisconnect:
+                this.respond(452, msg || "Message denied temporarily");
+                this.disconnect();
+                break;
         default:
                 if (this.relaying) {
                     plugins.run_hooks("queue_outbound", this);
@@ -782,6 +887,7 @@ Connection.prototype.data_post_respond = function(retval, msg) {
 Connection.prototype.queue_outbound_respond = function(retval, msg) {
     switch(retval) {
         case constants.ok:
+                this.respond(250, msg || "Message Queued");
                 plugins.run_hooks("queue_ok", this);
                 break;
         case constants.deny:
@@ -796,11 +902,16 @@ Connection.prototype.queue_outbound_respond = function(retval, msg) {
                 this.respond(452, msg || "Message denied temporarily");
                 this.reset_transaction();
                 break;
+        case constatns.denysoftdisconnect:
+                this.respond(452, msg || "Message denied temporarily");
+                this.disconnect();
+                break;
         default:
                 var conn = this;
                 outbound.send_email(this.transaction, function(retval, msg) {
                     switch(retval) {
                         case constants.ok:
+                                conn.respond(250, msg || "Message Queued");
                                 plugins.run_hooks("queue_ok", conn);
                                 break;
                         case constants.deny:
@@ -819,6 +930,7 @@ Connection.prototype.queue_outbound_respond = function(retval, msg) {
 Connection.prototype.queue_respond = function(retval, msg) {
     switch (retval) {
         case constants.ok:
+                this.respond(250, msg || "Message Queued");
                 plugins.run_hooks("queue_ok", this);
                 break;
         case constants.deny:
@@ -833,6 +945,10 @@ Connection.prototype.queue_respond = function(retval, msg) {
                 this.respond(452, msg || "Message denied temporarily");
                 this.reset_transaction();
                 break;
+        case constants.denysoftdisconnect:
+                this.respond(452, msg || "Message denied temporarily");
+                this.disconnect();
+                break;
         default:
                 this.respond(451, msg || "Queuing declined or disabled, try later");
                 this.reset_transaction();
@@ -842,5 +958,4 @@ Connection.prototype.queue_respond = function(retval, msg) {
 
 Connection.prototype.queue_ok_respond = function (retval, msg) {
     this.reset_transaction();
-    this.respond(250, msg || "Message Queued");
 };

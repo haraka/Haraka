@@ -28,6 +28,6 @@ Configuration
 
   Both values are required.
 
-  * disable_tls=[true|1]
+  * enable_tls=[true|yes|1]
 
-    Disables the use of TLS
+    Enable TLS with the forward host (if supported)

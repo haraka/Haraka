@@ -23,8 +23,8 @@ exports.hook_unrecognized_command = function (next, connection, params) {
     // Check that the client is authorized
     var config = this.config.get('xclient.hosts','list');
     var found;
-    for (i in config) {
-        this.logdebug('Checking ' + connection.remote_ip + ' == ' + config[i]);
+    for (var i in config) {
+        connection.logdebug(this, 'Checking ' + connection.remote_ip + ' == ' + config[i]);
         // TODO: handle ip/mask here.
         if (connection.remote_ip === config[i]) {
             found = true;
@@ -39,10 +39,10 @@ exports.hook_unrecognized_command = function (next, connection, params) {
     // Process arguments
     var args = (new String(params[1])).toLowerCase().split(/ /);
     var xclient = {};
-    for (a=0; a < args.length; a++) {
+    for (var a=0; a < args.length; a++) {
         var match = /^([^=]+)=([^ ]+)/.exec(args[a]);
         if (match) {
-            this.logdebug('found key=' + match[1] + ' value=' + match[2]);
+            connection.logdebug(this, 'found key=' + match[1] + ' value=' + match[2]);
             switch(match[1]) {
                 case 'addr':
                     // IPv6 is prefixed in the XCLIENT protocol
@@ -74,11 +74,11 @@ exports.hook_unrecognized_command = function (next, connection, params) {
                     }
                     break;
                 default:
-                    this.logwarn('unknown argument: ' + args[a]);
+                    connection.logwarn(this, 'unknown argument: ' + args[a]);
             }
         } 
         else {
-            this.logwarn('unknown argument: ' + args[a]);
+            connection.logwarn(this, 'unknown argument: ' + args[a]);
         }
     }
 

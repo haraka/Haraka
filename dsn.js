@@ -1,3 +1,4 @@
+"use strict";
 // RFC 3463 Enhanced Status Codes
 var enum_status_codes = [
     [   // X.0.XXX Other or Undefined Status        (unspecified)

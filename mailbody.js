@@ -1,8 +1,10 @@
+"use strict";
 // Mail Body Parser
 var logger = require('./logger');
 var Header = require('./mailheader').Header;
 var events = require('events');
 var util   = require('util');
+var Iconv  = require('./mailheader').Iconv;
 
 var buf_siz = 65536;
 
@@ -11,6 +13,7 @@ function Body (header, options) {
     this.header_lines = [];
     this.options = options;
     this.bodytext = '';
+    this.body_text_encoded = '';
     this.children = []; // if multipart
     this.state = 'start';
     this.buf = new Buffer(buf_siz);
@@ -27,6 +30,8 @@ Body.prototype.parse_more = function (line) {
 Body.prototype.parse_child = function (line) {
     // check for MIME boundary
     if (line.substr(0, (this.boundary.length + 2)) === ('--' + this.boundary)) {
+
+        this.children[this.children.length -1].parse_end(line);
 
         if (this.children[this.children.length -1].state === 'attachment') {
             var child = this.children[this.children.length - 1];
@@ -101,7 +106,6 @@ Body.prototype.parse_start = function (line) {
         this.emit('attachment_start', ct, filename, this);
         this.buf_fill = 0;
         this.state = 'attachment';
-        this.decode_function = this["decode_bin_" + enc];
     }
     
     this["parse_" + this.state](line);
@@ -109,10 +113,41 @@ Body.prototype.parse_start = function (line) {
 
 Body.prototype.parse_end = function (line) {
     // ignore these lines - but we could store somewhere I guess.
+    if (this.body_text_encoded.length) {
+        var buf = this.decode_function(this.body_text_encoded);
+        if (Iconv) {
+            var ct = this.header.get_decoded('content-type') || 'text/plain';
+            var enc = 'UTF-8';
+            var matches = /\bcharset\s*=\s*(?:\"|3D|')?([\w_\-]*)(?:\"|3D|')?/.exec(ct);
+            if (matches) {
+                enc = matches[1];
+            }
+            this.body_encoding = enc;
+            if (/UTF-?8/i.test(enc)) {
+                this.bodytext = buf.toString();
+            }
+            else {
+                try {
+                    var converter = new Iconv(enc, "UTF-8");
+                    this.bodytext = converter.convert(buf).toString();
+                }
+                catch (err) {
+                    logger.logerror("iconv conversion from " + enc + " to UTF-8 failed: " + err);
+                    this.body_encoding = 'broken//' + enc;
+                    this.bodytext = buf.toString();
+                }
+            }
+        }
+        else {
+            this.body_encoding = 'no_iconv';
+            this.bodytext = buf.toString();
+        }
+        // delete this.body_text_encoded;
+    }
 }
 
 Body.prototype.parse_body = function (line) {
-    this.bodytext += this.decode_function(line);
+    this.body_text_encoded += line;
 }
 
 Body.prototype.parse_multipart_preamble = function (line) {
@@ -135,7 +170,7 @@ Body.prototype.parse_multipart_preamble = function (line) {
             }
         }
     }
-    this.bodytext += this.decode_function(line);
+    this.body_text_encoded += line;
 }
 
 Body.prototype.parse_attachment = function (line) {
@@ -182,49 +217,14 @@ Body.prototype.parse_attachment = function (line) {
     }
 }
 
-Body.prototype.decode_bin_qp = function (line) {
-    line = line.replace(/=$/, '');
-    var buf = new Buffer(line.length);
-    var offset = 0;
-    var match;
-    while (match = line.match(/^(.*?)=([A-F0-9][A-F0-9])/)) {
-        line = line.substr(match[0].length);
-        offset += buf.write(match[1], offset);
-        buf[offset++] = parseInt(match[2], 16);
-    }
-    if (line.length) {
-        buf.write(line, offset);
-    }
-    return buf;
-}
+Body.prototype.decode_qp = require('./mailheader').decode_qp;
 
-Body.prototype.decode_qp = function (line) {
-    line = line.replace(/=\r?\n/, '');
-    line = line.replace(/=([A-F0-9][A-F0-9])/g, function (ignore, code) {
-        return String.fromCharCode(parseInt(code, 16));
-    });
-    // TODO - figure out encoding and apply it
-    var encoding = 'utf8';
-    
-    return new Buffer(line, encoding);
-}
-
-Body.prototype.decode_bin_base64 = function (line) {
+Body.prototype.decode_base64 = function (line) {
     return new Buffer(line, "base64");
 }
 
-Body.prototype.decode_base64 = function (line) {
-    // TODO - figure out encoding and apply it
-    return new Buffer(line, "base64").toString();
-}
-
 Body.prototype.decode_8bit = function (line) {
-    return line;
-}
-
-Body.prototype.decode_bin_8bit = function (line) {
     return new Buffer(line);
 }
 
 Body.prototype.decode_7bit = Body.prototype.decode_8bit;
-Body.prototype.decode_bin_7bit = Body.prototype.decode_bin_8bit;

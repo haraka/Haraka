@@ -1,3 +1,4 @@
+"use strict";
 var configloader = require('./configfile');
 var path         = require('path');
 var logger       = require('./logger');
@@ -22,13 +23,13 @@ config.get = function(name, type) {
     catch (err) {
         if (err.code === 'EBADF' || err.code === 'ENOENT') {
             // no such file or directory
-            if (type != 'value' ) {
+            if (type !== 'value' ) {
                 return configloader.empty_config(type);
             }
             else {
                 var match = /\.(ini|json)$/.exec(name);
                 if (match) {
-                    return configloader.empty_config(matches[1]);
+                    return configloader.empty_config(match[1]);
                 }
                 return null;
             }
