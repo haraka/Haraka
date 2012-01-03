@@ -32,7 +32,11 @@ logger.dump_logs = function () {
 }
 
 logger.log = function (level, data) {
-    data = data.replace(/\r?\n/g, "\\n");
+    if (level === 'PROTOCOL') {
+        data = data.replace(/\n/g, '\\n\n');
+    }
+    data = data.replace(/\r/g, '\\r')
+               .replace(/\n$/, '');
     // todo - just buffer these up (defer) until plugins are loaded
     if (plugins.plugin_list) {
         while (deferred_logs.length > 0) {
@@ -89,8 +93,8 @@ for (key in logger) {
                         return;
                     var levelstr = "[" + level + "]";
                     var str = "";
-                    var uuidstr = "[no_connection]";
-                    var pluginstr = "[haraka_core]";
+                    var uuidstr = "[-]";
+                    var pluginstr = "[core]";
                     for (var i = 0; i < arguments.length; i++) {
                         var data = arguments[i];
                         if (typeof(data) === 'object') {
