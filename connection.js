@@ -140,7 +140,8 @@ Connection.prototype.process_line = function (line) {
         // Allow QUIT
         if (line.replace(/\r?\n/, '').toUpperCase() === 'QUIT') {
             this.cmd_quit();
-        } else {
+        } 
+        else {
             this.respond(this.loop_code, this.loop_msg);
         }
     }

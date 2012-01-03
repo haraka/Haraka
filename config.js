@@ -41,7 +41,8 @@ config.get = function(name, type) {
     // Pass arrays by value to prevent config being modified accidentally.
     if (typeof results === 'object' && results.constructor.name === 'Array') {
         return results.slice();
-    } else {
+    } 
+    else {
         return results;
     }
 };
