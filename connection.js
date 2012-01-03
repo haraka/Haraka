@@ -81,6 +81,7 @@ function Connection(client, server) {
     this.notes = {};
     this.tran_count = 0;
     this.early_talker_delay = config.get('early_talker_delay') || 1000;
+    this.banner_includes_uuid = config.get('banner_includes_uuid') ? true : false;
     this.deny_includes_uuid = config.get('deny_includes_uuid') ? true : false;
     this.relaying = false;
     this.disconnected = false;
@@ -193,21 +194,25 @@ Connection.prototype.current_line = function() {
     return this.current_line;
 };
 
-Connection.prototype.respond = function(code, messages) {
+Connection.prototype.respond = function(code, msg) {
     var uuid = '';
+    var messages;
 
     if (this.disconnected) {
         return;
     }
     // Check to see if DSN object was passed in
-    if (typeof messages === 'object' && messages.constructor.name === 'DSN') {
+    if (typeof msg === 'object' && msg.constructor.name === 'DSN') {
         // Override
         code = messages.code;
-        messages = messages.reply;
+        msg = messages.reply;
     }
-    if (!(typeof messages === 'object' && messages.constructor.name === 'Array')) {
-        // messages not an array, make it so:
-        messages = [ '' + messages ];
+    if (!(typeof msg === 'object' && msg.constructor.name === 'Array')) {
+        // msg not an array, make it so:
+        messages = [ '' + msg ];
+    } else {
+        // copy
+        messages = msg.slice();
     }
 
     if (code >= 400 && this.deny_includes_uuid) {
@@ -217,15 +222,16 @@ Connection.prototype.respond = function(code, messages) {
         }
     }
     
-    var msg;
+    var mess;
     var buf = '';
-    while (msg = messages.shift()) {
+
+    while (mess = messages.shift()) {
         var line = code + (messages.length ? "-" : " ") + 
-            (uuid ? '[' + uuid + '] ' : '' ) + msg;
+            (uuid ? '[' + uuid + '] ' : '' ) + mess;
         this.logprotocol("S: " + line);
         buf = buf + line + "\r\n";
     }
-    
+
     try {
         this.client.write(buf);
     }
@@ -379,11 +385,15 @@ Connection.prototype.connect_respond = function(retval, msg) {
                     if (!(/(^|\W)ESMTP(\W|$)/.test(greeting[0]))) {
                         greeting[0] += " ESMTP";
                     }
-                    greeting[0] += ' (' + this.uuid + ')'; 
+                    if (this.banner_includes_uuid) {
+                        greeting[0] += ' (' + this.uuid + ')'; 
+                    }
                 }
                 else {
-                    greeting = (config.get('me') + 
-                        " ESMTP Haraka " + version + " ready (" + this.uuid + ")");
+                    greeting = config.get('me') + " ESMTP Haraka " + version + " ready";
+                    if (this.banner_includes_uuid) {
+                        greeting += ' (' + this.uuid + ')';
+                    }
                 }
                 this.respond(220, msg || greeting);
     }

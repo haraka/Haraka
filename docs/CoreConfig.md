@@ -50,6 +50,10 @@ different levels available.
   file, it will be truncated to that length. We recommend a 6 as a good
   balance of finding in the logs and not making lines too long.
 
+* banner_include_uuid
+
+  This will add the full UUID to the first line of the SMTP greeting banner.
+
 * early\_talker\_delay
 
   If clients talk early we *punish* them with a delay of this many milliseconds
