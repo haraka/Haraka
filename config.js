@@ -38,5 +38,10 @@ config.get = function(name, type) {
             logger.logerror(err.name + ': ' + err.message);
         }
     }
-    return results;
+    // Pass arrays by value to prevent config being modified accidentally.
+    if (typeof results === 'object' && results.constructor.name === 'Array') {
+        return results.slice();
+    } else {
+        return results;
+    }
 };
