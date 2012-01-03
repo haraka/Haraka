@@ -2,6 +2,7 @@
 // Config file loader
 
 var fs = require('fs');
+var logger = require('./logger');
 
 // for "ini" type files
 var regex = {
@@ -32,6 +33,7 @@ cfreader.read_config = function(name, type) {
         fs.watchFile(name, function (curr, prev) {
             // file has changed
             if (curr.mtime.getTime() !== prev.mtime.getTime()) {
+                logger.loginfo("update detected: reloading " + name); 
                 cfreader.load_config(name, type);
             }
         });
