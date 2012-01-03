@@ -47,6 +47,7 @@ function setupClient(self) {
 
     self.client.on('end', function () {
         if (!self.disconnected) {
+            self.remote_close = true;
             self.fail("client (" + self.remote_ip + ") closed connection");
         }
     });
@@ -84,6 +85,8 @@ function Connection(client, server) {
     this.relaying = false;
     this.disconnected = false;
     this.esmtp = false;
+    this.last_response = null;
+    this.remote_close = false;
     this.hooks_to_run = [];
     
     setupClient(this);
@@ -230,6 +233,9 @@ Connection.prototype.respond = function(code, messages) {
         return this.fail("Writing response: " + buf + " failed: " + err);
     }
 
+    // Store the last response
+    this.last_response = buf;
+
     // Don't change loop state
     if (this.state !== STATE_LOOP) {
         this.state = STATE_CMD;
@@ -373,10 +379,11 @@ Connection.prototype.connect_respond = function(retval, msg) {
                     if (!(/(^|\W)ESMTP(\W|$)/.test(greeting[0]))) {
                         greeting[0] += " ESMTP";
                     }
+                    greeting[0] += ' (' + this.uuid + ')'; 
                 }
                 else {
                     greeting = (config.get('me') + 
-                        " ESMTP Haraka " + version + " ready");
+                        " ESMTP Haraka " + version + " ready (" + this.uuid + ")");
                 }
                 this.respond(220, msg || greeting);
     }
@@ -902,7 +909,7 @@ Connection.prototype.queue_outbound_respond = function(retval, msg) {
                 this.respond(452, msg || "Message denied temporarily");
                 this.reset_transaction();
                 break;
-        case constatns.denysoftdisconnect:
+        case constants.denysoftdisconnect:
                 this.respond(452, msg || "Message denied temporarily");
                 this.disconnect();
                 break;
