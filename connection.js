@@ -13,7 +13,6 @@ var Address     = require('./address').Address;
 var uuid        = require('./utils').uuid;
 var outbound    = require('./outbound');
 var date_to_str = require('./utils').date_to_str;
-var hostname    = require('os').hostname;
 
 var version  = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'))).version;
 
@@ -392,9 +391,7 @@ Connection.prototype.connect_respond = function(retval, msg) {
                     }
                 }
                 else {
-                    var me = config.get('me');
-                    greeting = (me ? me : hostname()) 
-                                + " ESMTP Haraka " + version + " ready";
+                    greeting = config.get('me') + " ESMTP Haraka " + version + " ready";
                     if (this.banner_includes_uuid) {
                         greeting += ' (' + this.uuid + ')';
                     }
