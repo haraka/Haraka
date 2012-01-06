@@ -46,3 +46,11 @@ an IP address check.
 
 For low level use. Contains the current line sent from the remote end,
 verbatim as it was sent. Can be useful in certain botnet detection techniques.
+
+* connection.last_response
+
+Contains the last SMTP response sent to the client.
+
+* connection.remote_close
+
+For low level use.  This value is set when the remote host drops the connection.

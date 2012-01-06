@@ -47,6 +47,7 @@ function setupClient(self) {
 
     self.client.on('end', function () {
         if (!self.disconnected) {
+            self.remote_close = true;
             self.fail("client (" + self.remote_ip + ") closed connection");
         }
     });
@@ -80,10 +81,13 @@ function Connection(client, server) {
     this.notes = {};
     this.tran_count = 0;
     this.early_talker_delay = config.get('early_talker_delay') || 1000;
+    this.banner_includes_uuid = config.get('banner_includes_uuid') ? true : false;
     this.deny_includes_uuid = config.get('deny_includes_uuid') ? true : false;
     this.relaying = false;
     this.disconnected = false;
     this.esmtp = false;
+    this.last_response = null;
+    this.remote_close = false;
     this.hooks_to_run = [];
     
     setupClient(this);
@@ -136,7 +140,8 @@ Connection.prototype.process_line = function (line) {
         // Allow QUIT
         if (line.replace(/\r?\n/, '').toUpperCase() === 'QUIT') {
             this.cmd_quit();
-        } else {
+        } 
+        else {
             this.respond(this.loop_code, this.loop_msg);
         }
     }
@@ -190,21 +195,25 @@ Connection.prototype.current_line = function() {
     return this.current_line;
 };
 
-Connection.prototype.respond = function(code, messages) {
+Connection.prototype.respond = function(code, msg) {
     var uuid = '';
+    var messages;
 
     if (this.disconnected) {
         return;
     }
     // Check to see if DSN object was passed in
-    if (typeof messages === 'object' && messages.constructor.name === 'DSN') {
+    if (typeof msg === 'object' && msg.constructor.name === 'DSN') {
         // Override
         code = messages.code;
-        messages = messages.reply;
+        msg = messages.reply;
     }
-    if (!(typeof messages === 'object' && messages.constructor.name === 'Array')) {
-        // messages not an array, make it so:
-        messages = [ '' + messages ];
+    if (!(typeof msg === 'object' && msg.constructor.name === 'Array')) {
+        // msg not an array, make it so:
+        messages = [ '' + msg ];
+    } else {
+        // copy
+        messages = msg.slice();
     }
 
     if (code >= 400 && this.deny_includes_uuid) {
@@ -214,21 +223,25 @@ Connection.prototype.respond = function(code, messages) {
         }
     }
     
-    var msg;
+    var mess;
     var buf = '';
-    while (msg = messages.shift()) {
+
+    while (mess = messages.shift()) {
         var line = code + (messages.length ? "-" : " ") + 
-            (uuid ? '[' + uuid + '] ' : '' ) + msg;
+            (uuid ? '[' + uuid + '] ' : '' ) + mess;
         this.logprotocol("S: " + line);
         buf = buf + line + "\r\n";
     }
-    
+
     try {
         this.client.write(buf);
     }
     catch (err) {
         return this.fail("Writing response: " + buf + " failed: " + err);
     }
+
+    // Store the last response
+    this.last_response = buf;
 
     // Don't change loop state
     if (this.state !== STATE_LOOP) {
@@ -373,10 +386,15 @@ Connection.prototype.connect_respond = function(retval, msg) {
                     if (!(/(^|\W)ESMTP(\W|$)/.test(greeting[0]))) {
                         greeting[0] += " ESMTP";
                     }
+                    if (this.banner_includes_uuid) {
+                        greeting[0] += ' (' + this.uuid + ')'; 
+                    }
                 }
                 else {
-                    greeting = (config.get('me') + 
-                        " ESMTP Haraka " + version + " ready");
+                    greeting = config.get('me') + " ESMTP Haraka " + version + " ready";
+                    if (this.banner_includes_uuid) {
+                        greeting += ' (' + this.uuid + ')';
+                    }
                 }
                 this.respond(220, msg || greeting);
     }
@@ -902,7 +920,7 @@ Connection.prototype.queue_outbound_respond = function(retval, msg) {
                 this.respond(452, msg || "Message denied temporarily");
                 this.reset_transaction();
                 break;
-        case constatns.denysoftdisconnect:
+        case constants.denysoftdisconnect:
                 this.respond(452, msg || "Message denied temporarily");
                 this.disconnect();
                 break;

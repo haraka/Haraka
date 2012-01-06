@@ -2,6 +2,7 @@
 var configloader = require('./configfile');
 var path         = require('path');
 var logger       = require('./logger');
+var hostname     = require('os').hostname;
 
 var config = exports;
 
@@ -31,6 +32,10 @@ config.get = function(name, type) {
                 if (match) {
                     return configloader.empty_config(match[1]);
                 }
+                // Return os.hostname() is 'me' is empty
+                if (name === 'me') {
+                    return hostname();
+                }
                 return null;
             }
         }
@@ -38,5 +43,12 @@ config.get = function(name, type) {
             logger.logerror(err.name + ': ' + err.message);
         }
     }
-    return results;
+
+    // Pass arrays by value to prevent config being modified accidentally.
+    if (typeof results === 'object' && results.constructor.name === 'Array') {
+        return results.slice();
+    } 
+    else {
+        return results;
+    }
 };
