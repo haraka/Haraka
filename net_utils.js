@@ -144,7 +144,7 @@ exports.is_ip_in_str = function(ip, str) {
             var part = host_part_copy.indexOf(ip_hex.substring(i*2, (i*2)+2));
             if (part === -1) break;
             if (i === 3) return true;
-            host_part = host_part_copy.substring(0, part) + host_part.substring(part+2);
+            host_part_copy = host_part_copy.substring(0, part) + host_part.substring(part+2);
         }
     }
     return false;
