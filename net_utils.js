@@ -31,7 +31,7 @@ config.get('extra-tlds', 'list').forEach(function (tld) {
     }
 });
 
-logger.loginfo('[tlds] loaded TLD files:' +
+logger.loginfo('loaded TLD files:' +
  ' 1=' + Object.keys(top_level_tlds).length +
  ' 2=' + Object.keys(two_level_tlds).length +
  ' 3=' + Object.keys(three_level_tlds).length
@@ -96,24 +96,55 @@ exports.ip_to_long = function (ip) {
 exports.is_ip_in_str = function(ip, str) {
     // Only IPv4 for now
     if (isIPv4(ip)) {
-        var host_part = (this.split_hostname(str))[0].toLowerCase();
+        var host_part = (this.split_hostname(str,1))[0].toString();
         var ip_split = ip.split('.');
-        // 3rd and 4th octets
-        if ((host_part.indexOf(ip_split[2]) !== -1) && (host_part.indexOf(ip_split[3]) !== -1)) {
-            return true;
+        // See if the 3rd and 4th octets appear in the string
+        // We test the largest of the two octets first
+        if (ip_split[3].length >= ip_split[2].length) {
+            var oct4 = host_part.lastIndexOf(ip_split[3]);
+            if (oct4 !== -1) {
+                var oct3 = (host_part.substring(0, oct4) + host_part.substring(oct4 + ip_split[3].length));
+                if (oct3.lastIndexOf(ip_split[2]) !== -1) {
+                    return true;
+                }
+            }
+        } 
+        else {
+            var oct3 = host_part.indexOf(ip_split[2]);
+            if (oct3 !== -1) {
+                var oct4 = (host_part.substring(0, oct3) + host_part.substring(oct3 + ip_split[2].length));
+                if (oct4.lastIndexOf(ip_split[3]) !== -1) {
+                    return true;
+                }
+            }
         }
         // 1st and 2nd octets
-        if ((host_part.indexOf(ip_split[0]) !== -1) && (host_part.indexOf(ip_split[1]) !== -1)) {
-            return true;
+        if (ip_split[1].length >= ip_split[2].length) {
+            var oct2 = host_part.lastIndexOf(ip_split[1]);
+            if (oct2 !== -1) {
+                var oct1 = (host_part.substring(0, oct2) + host_part.substring(oct2 + ip_split[1].length));
+                if (oct1.lastIndexOf(ip_split[0]) !== -1) {
+                    return true;
+                }
+            }
         }
-        var ip_hex = this.dec_to_hex(this.ip_to_long(ip));
+        else {
+            var oct1 = host_part.lastIndexOf(ip_split[0]);
+            if (oct1 !== -1) {
+                var oct2 = (host_part.substring(0, oct1) + host_part.substring(oct1 + ip_split[0].length));
+                if (oct2.lastIndexOf(ip_split[1]) !== -1) {
+                    return true;
+                }
+            }
+        }
         // Whole IP in hex
-        if ( (host_part.indexOf(ip_hex[0] + ip_hex[1]) !== -1) &&
-             (host_part.indexOf(ip_hex[2] + ip_hex[3]) !== -1) &&
-             (host_part.indexOf(ip_hex[4] + ip_hex[5]) !== -1) &&
-             (host_part.indexOf(ip_hex[6] + ip_hex[7]) !== -1) )
-        {
-            return true;
+        var host_part_copy = host_part;
+        var ip_hex = this.dec_to_hex(this.ip_to_long(ip));
+        for (var i=0; i<4; i++) {
+            var part = host_part_copy.indexOf(ip_hex.substring(i*2, (i*2)+2));
+            if (part === -1) break;
+            if (i === 3) return true;
+            host_part = host_part_copy.substring(0, part) + host_part.substring(part+2);
         }
     }
     return false;
