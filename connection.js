@@ -205,8 +205,8 @@ Connection.prototype.respond = function(code, msg) {
     // Check to see if DSN object was passed in
     if (typeof msg === 'object' && msg.constructor.name === 'DSN') {
         // Override
-        code = messages.code;
-        msg = messages.reply;
+        code = msg.code;
+        msg = msg.reply;
     }
     if (!(typeof msg === 'object' && msg.constructor.name === 'Array')) {
         // msg not an array, make it so:
