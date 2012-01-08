@@ -24,10 +24,13 @@ var loglevel = logger.LOGWARN;
 
 var deferred_logs = [];
 
-logger.dump_logs = function () {
+logger.dump_logs = function (exit) {
     while (deferred_logs.length > 0) {
         var log_item = deferred_logs.shift();
         console.log(log_item.data);
+    }
+    if (exit) {
+        process.exit();
     }
 }
 

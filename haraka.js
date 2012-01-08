@@ -31,7 +31,7 @@ process.on('uncaughtException', function (err) {
         logger.logcrit('Caught exception: ' + err);
     }
     logger.dump_logs();
-    process.exit();
+    process.exit(1);
 });
 
 logger.log("INFO", "Starting up Haraka version " + exports.version);
