@@ -251,15 +251,16 @@ exports.process_domain = function (dom, recips, from, data_lines, hmails, notes,
 
     ws.on('drain', write_more);
 
-    plugin.build_todo(dom, recips, from, ws, write_more);
+    plugin.build_todo(dom, recips, from, notes, ws, write_more);
 }
 
-exports.build_todo = function (dom, recips, from, ws, write_more) {
+exports.build_todo = function (dom, recips, from, notes, ws, write_more) {
     var todo_str = JSON.stringify(
         {
             domain: dom,
             mail_from: from,
             rcpt_to:   recips,
+            notes: notes
         }
     );
     
@@ -326,7 +327,7 @@ exports.split_to_new_recipients = function (hmail, recipients) {
 
     ws.on('drain', write_more);
 
-    plugin.build_todo(hmail.todo.domain, recipients, hmail.todo.mail_from, ws, write_more);
+    plugin.build_todo(hmail.todo.domain, recipients, hmail.todo.mail_from, hmail.todo.notes, ws, write_more);
 }
 
 exports._load_cur_queue = function (cb_name) {
@@ -508,11 +509,20 @@ HMailItem.prototype._send = function () {
         return;
     }
 
-    this.logdebug("Sending mail: " + this.filename);
+    plugins.run_hooks('send_email', this);
 
-    // plugin.loginfo("Hmail: " + util.inspect(hmail, null, null));
-    
-    this.get_mx();
+}
+
+HMailItem.prototype.send_email_respond = function (retval, delaySeconds) {
+    if(retval === constants.delay){
+        // Try again in 'delay' seconds.
+        this.logdebug("Delivery delayed.");
+        var hmail = this;
+        setTimeout(function () {hmail._send()}, delaySeconds*1000);
+    }else{
+        this.logdebug("Sending mail: " + this.filename);
+        this.get_mx();
+    }
 }
 
 HMailItem.prototype.get_mx = function () {
@@ -963,8 +973,9 @@ HMailItem.prototype.delivered = function () {
 HMailItem.prototype.temp_fail = function (err) {
     this.num_failures++;
     delivery_concurrency--;
-    
-    if (this.num_failures >= 13) {
+
+    // Test for max failures which is configurable.
+    if (this.num_failures >= (config.get('outbound.maxTempFailures') || 13)) {
         return this.bounce("Too many failures (" + err + ")");
     }
 

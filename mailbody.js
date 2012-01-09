@@ -133,7 +133,7 @@ Body.prototype.parse_end = function (line) {
                 }
                 catch (err) {
                     logger.logerror("iconv conversion from " + enc + " to UTF-8 failed: " + err);
-                    this.body_encoding = 'broken';
+                    this.body_encoding = 'broken//' + enc;
                     this.bodytext = buf.toString();
                 }
             }

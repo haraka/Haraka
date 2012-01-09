@@ -65,7 +65,6 @@ Server.createServer = function (params) {
         conn.createConnection(client, server);
     });
     server.notes = {};
-    
     if (cluster && config_data.main.nodes) {
          
         var c = cluster(server);
@@ -79,9 +78,19 @@ Server.createServer = function (params) {
         }
         
         for (var i=0,l=cluster_modules.length; i < l; i++) {
-            var parts = cluster_modules[i].split(':');
-            var module = parts.shift();
-            c.use(cluster[module].apply(cluster, parts));
+            var matches = /^(\w+)\s*(?::\s*(.*))?$/.exec(cluster_modules[i]);
+            if (!matches) {
+                Server.logerror("cluster_modules in invalid format: " + cluster_modules[i]);
+                continue;
+            }
+            var module = matches[1];
+            var params = matches[2];
+            if (params) {
+                c.use(cluster[module](JSON.parse(params)));
+            }
+            else {
+                c.use(cluster[module]());
+            }
         }
         
         c.set('host', config_data.main.listen_host);
@@ -91,9 +100,9 @@ Server.createServer = function (params) {
         c.on('start', function () {
             plugins.run_hooks('init_master', Server);
         });
-        c.on('worker', function () {
+        if (c.isWorker) {
             plugins.run_hooks('init_child', Server);
-        });
+        }
     }
     else {
         server.listen(config_data.main.port, config_data.main.listen_host, listening);

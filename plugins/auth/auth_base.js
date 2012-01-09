@@ -5,14 +5,18 @@
 var crypto = require('crypto');
 var AUTH_COMMAND = 'AUTH';
 var AUTH_METHOD_CRAM_MD5 = 'CRAM-MD5';
+var AUTH_METHOD_PLAIN = 'PLAIN';
 var AUTH_METHOD_LOGIN = 'LOGIN';
 var LOGIN_STRING1 = 'VXNlcm5hbWU6'; //UserLogin: base64 coded
 var LOGIN_STRING2 = 'UGFzc3dvcmQ6'; //Password: base64 coded
 
-// You should probably override this method as AUTH LOGIN is insecure
 exports.hook_capabilities = function (next, connection) {
-    connection.capabilities.push('AUTH LOGIN CRAM-MD5');
-    connection.notes.allowed_auth_methods = methods;
+    // Don't offer AUTH capabilities by default unless session is encrypted
+    if (connection.using_tls) {
+        var methods = [ 'PLAIN', 'LOGIN', 'CRAM-MD5' ];
+        connection.capabilities.push('AUTH ' + methods.join(' '));
+        connection.notes.allowed_auth_methods = methods;
+    }
     next();
 }
 
@@ -27,7 +31,7 @@ exports.hook_unrecognized_command = function (next, connection, params) {
     }
     else if (connection.notes.authenticating &&
              connection.notes.auth_method === AUTH_METHOD_CRAM_MD5 &&
-             connection.notes.auth_flat_file_ticket)
+             connection.notes.auth_ticket)
     {
         return this.auth_cram_md5(next, connection, params);
     }
@@ -89,25 +93,40 @@ exports.check_user = function (next, connection, credentials, method) {
         return next(OK);
     }
 
-    if (method === AUTH_METHOD_LOGIN) {
-        this.check_plain_passwd(credentials[0], credentials[1], passwd_ok);
+    if (method === AUTH_METHOD_PLAIN || method === AUTH_METHOD_LOGIN) {
+        this.check_plain_passwd(connection, credentials[0], credentials[1], passwd_ok);
     }
     else if (method === AUTH_METHOD_CRAM_MD5) {
-        this.check_cram_md5_passwd(connection.notes.auth_flat_file_ticket, credentials[0], credentials[1], passwd_ok);
+        this.check_cram_md5_passwd(connection.notes.auth_ticket, credentials[0], credentials[1], passwd_ok);
     }
 }
 
 exports.select_auth_method = function(next, connection, method) {
-    if(connection.notes.allowed_auth_methods.indexOf(method) !== -1) {
+    var split = method.split(/\s+/);
+    method = split.shift();
+    var params = split;
+    if(connection.notes.allowed_auth_methods &&
+       connection.notes.allowed_auth_methods.indexOf(method) !== -1)
+    {
         connection.notes.authenticating = true;
         connection.notes.auth_method = method;
-        if(method === AUTH_METHOD_LOGIN) {
+        if(method === AUTH_METHOD_PLAIN) {
+            return this.auth_plain(next, connection, params);
+        }
+        else if(method === AUTH_METHOD_LOGIN) {
             return this.auth_login(next, connection);
         }
         else if( method === AUTH_METHOD_CRAM_MD5) {
             return this.auth_cram_md5(next, connection);
         }
     }
+    return next();
+}
+
+exports.auth_plain = function(next, connection, params) {
+    var credentials = unbase64(params[0]).split(/\0/);
+    credentials.shift();  // Discard authid
+    return this.check_user(next, connection, credentials, AUTH_METHOD_PLAIN);
     return next();
 }
 
@@ -139,9 +158,9 @@ exports.auth_cram_md5 = function(next, connection, params) {
     
     var ticket = '<' + hexi(Math.floor(Math.random() * 1000000)) + '.' +
                     hexi(Date.now()) + '@' + this.config.get('me') + '>';
-    this.loginfo("ticket: " + ticket);
+    connection.loginfo(this, "ticket: " + ticket);
     connection.respond(334, base64(ticket));
-    connection.notes.auth_flat_file_ticket = ticket;
+    connection.notes.auth_ticket = ticket;
     return next(OK);
 }
 
@@ -158,3 +177,6 @@ function unbase64 (str) {
     var buffer = new Buffer(str, "base64");
     return buffer.toString("UTF-8");
 }
+
+exports.base64 = base64;
+exports.unbase64 = unbase64;

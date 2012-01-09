@@ -28,33 +28,33 @@ exports.rdns_access = function(next, connection) {
 
     // IP whitelist checks
     if (connection.remote_ip) {
-        plugin.logdebug('checking ' + connection.remote_ip +
+        connection.logdebug(plugin, 'checking ' + connection.remote_ip +
             ' against connect.rdns_access.whitelist');
 
-        if (_in_whitelist(plugin, connection.remote_ip)) {
-            plugin.logdebug("Allowing " + connection.remote_ip);
+        if (_in_whitelist(connection, plugin, connection.remote_ip)) {
+            connection.logdebug(plugin, "Allowing " + connection.remote_ip);
             return next();
         }
     }
 
     // hostname whitelist checks
     if (connection.remote_host) {
-        plugin.logdebug('checking ' + connection.remote_host +
+        connection.logdebug(plugin, 'checking ' + connection.remote_host +
             ' against connect.rdns_access.whitelist');
 
-        if (_in_whitelist(plugin, connection.remote_host.toLowerCase())) {
-            plugin.logdebug("Allowing " + connection.remote_host);
+        if (_in_whitelist(connection, plugin, connection.remote_host.toLowerCase())) {
+            connection.logdebug(plugin, "Allowing " + connection.remote_host);
             return next();
         }
     }
 
     // IP blacklist checks
     if (connection.remote_ip) {
-        plugin.logdebug('checking ' + connection.remote_ip +
+        connection.logdebug(plugin, 'checking ' + connection.remote_ip +
             ' against connect.rdns_access.blacklist');
 
-        if (_in_blacklist(plugin, connection.remote_ip)) {
-            plugin.logdebug("Rejecting, matched: " + connection.remote_ip);
+        if (_in_blacklist(connection, plugin, connection.remote_ip)) {
+            connection.logdebug(plugin, "Rejecting, matched: " + connection.remote_ip);
             return next(DENY, connection.remote_host.toLowerCase() + ' [' +
                 connection.remote_ip + '] ' + plugin.deny_msg);
         }
@@ -62,11 +62,11 @@ exports.rdns_access = function(next, connection) {
 
     // hostname blacklist checks
     if (connection.remote_host) {
-        plugin.logdebug('checking ' + connection.remote_host +
+        connection.logdebug(plugin, 'checking ' + connection.remote_host +
             ' against connect.rdns_access.blacklist');
 
-        if (_in_blacklist(plugin, connection.remote_host.toLowerCase())) {
-            plugin.logdebug("Rejecting, matched: " + connection.remote_host);
+        if (_in_blacklist(connection, plugin, connection.remote_host.toLowerCase())) {
+            connection.logdebug(plugin, "Rejecting, matched: " + connection.remote_host);
             return next(DENY, connection.remote_host.toLowerCase() + ' [' +
                 connection.remote_ip + '] ' + plugin.deny_msg);
         }
@@ -75,10 +75,10 @@ exports.rdns_access = function(next, connection) {
     return next();
 }
 
-function _in_whitelist(plugin, host) {
+function _in_whitelist(connection, plugin, host) {
     var i;
     for (i in plugin.wl) {
-        plugin.logdebug('checking ' + host + ' against ' + plugin.wl[i]);
+        connection.logdebug(plugin, 'checking ' + host + ' against ' + plugin.wl[i]);
 
         if (plugin.wl[i].toLowerCase() === host) {
             return 1;
@@ -86,7 +86,7 @@ function _in_whitelist(plugin, host) {
     }
 
     if (plugin.wlregex) {
-        plugin.logdebug('checking ' + host + ' against ' +
+        connection.logdebug(plugin, 'checking ' + host + ' against ' +
             plugin.wlregex.source);
 
         if (host.match(plugin.wlregex)) {
@@ -97,10 +97,10 @@ function _in_whitelist(plugin, host) {
     return 0;
 }
 
-function _in_blacklist(plugin, host) {
+function _in_blacklist(connection, plugin, host) {
     var i;
     for (i in plugin.bl) {
-        plugin.logdebug('checking ' + host + ' against ' + plugin.bl[i]);
+        connection.logdebug(plugin, 'checking ' + host + ' against ' + plugin.bl[i]);
 
         if (plugin.bl[i].toLowerCase() === host) {
             return 1;
@@ -108,7 +108,7 @@ function _in_blacklist(plugin, host) {
     }
 
     if (plugin.blregex) {
-        plugin.logdebug('checking ' + host + ' against ' +
+        connection.logdebug(plugin, 'checking ' + host + ' against ' +
             plugin.blregex.source);
 
         if (host.match(plugin.blregex)) {

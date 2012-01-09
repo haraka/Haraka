@@ -2,7 +2,7 @@
 
 "use strict";
 
-var path   = require('path');
+var path = require('path');
 
 // this must be set before "server.js" is loaded
 process.env.HARAKA = process.env.HARAKA || path.resolve('.');
@@ -31,7 +31,7 @@ process.on('uncaughtException', function (err) {
         logger.logcrit('Caught exception: ' + err);
     }
     logger.dump_logs();
-    process.exit();
+    process.exit(1);
 });
 
 logger.log("INFO", "Starting up Haraka version " + exports.version);

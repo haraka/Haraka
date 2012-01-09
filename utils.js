@@ -1,5 +1,4 @@
 "use strict";
-// Various utility functions
 
 // copied from http://www.broofa.com/Tools/Math.uuid.js
 var CHARS = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'.split('');
@@ -79,4 +78,3 @@ exports.date_to_str = function (d) {
            _pad(d.getHours(),2) + ':' + _pad(d.getMinutes(),2) + ':' + _pad(d.getSeconds(),2) +
            ' ' + d.toString().match(/\sGMT([+-]\d+)/)[1];
 }
-
