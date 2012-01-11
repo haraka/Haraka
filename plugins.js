@@ -126,6 +126,7 @@ plugins._load_and_compile_plugin = function(name) {
         clearInterval: clearInterval,
         process: process,
         Buffer: Buffer,
+        Math: Math,
     };
     constants.import(sandbox);
     try {
