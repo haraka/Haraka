@@ -198,19 +198,33 @@ plugins.run_next_hook = function(hook, object, params) {
         
         if (called_once) {
             if (hook != 'log')
-                object.logerror("callback called multiple times. Ignoring subsequent calls");
+                object.logerror(item[0].name + ' plugin ran callback multiple times - ignoring subsequent calls');
+                // Write a stack trace to the log to aid debugging
+                object.logerror((new Error).stack);
             return;
         }
         called_once++;
         if (!retval) retval = constants.cont;
+        // Log what is being run
+        if (item && hook !== 'log') {
+            var log = 'logdebug';
+            if (utils.in_array(retval, [constants.deny, constants.denysoft, constants.denydisconnect, constants.denysoftdisconnect])) {
+                log = 'loginfo';
+            }
+            object[log]([
+                'hook='     + hook,
+                'plugin='   + item[0].name,
+                'function=' + item[1], 
+                'params="'  + ((params) ? ((typeof params === 'string') ? params : params[0]) : '') + '"',
+                'retval='   + constants.translate(retval),
+                'msg="'     + ((msg) ? msg : '') + '"',
+            ].join(' '));
+        }
         if (object.hooks_to_run.length == 0 || 
             retval !== constants.cont)
         {
             var respond_method = hook + "_respond";
-            if (item && utils.in_array(retval, [constants.deny, constants.denysoft, constants.denydisconnect])) {
-                if (hook != 'log') {
-                    object.loginfo("plugin returned deny(soft?): ", msg);
-                }
+            if (item && utils.in_array(retval, [constants.deny, constants.denysoft, constants.denydisconnect, constants.denysoftdisconnect])) {
                 object.deny_respond = function (deny_retval, deny_msg) {
                     switch(deny_retval) {
                         case constants.ok:
@@ -253,8 +267,8 @@ plugins.run_next_hook = function(hook, object, params) {
     if (item[0].timeout && hook != 'log') {
         timeout_id = setTimeout(function () {
             object.logcrit("Plugin " + item[0].name + 
-                " timed out - make sure it calls the callback");
-            callback(constants.denysoft, "timeout");
+                " timed out on hook " + hook + " - make sure it calls the callback");
+            callback(constants.denysoft, "plugin timeout");
         }, item[0].timeout * 1000);
     }
     

@@ -19,3 +19,14 @@ exports.import = function (object) {
         }
     }
 }
+
+exports.translate = function (value) {
+    var t = {};
+    for (var k in exports) {
+        if (typeof exports[k] === 'number') {
+            t[exports[k]] = k.toUpperCase();
+        }
+    }
+    if (t[value]) return t[value];
+    return 'UNKNOWN';
+}
