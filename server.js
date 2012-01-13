@@ -108,13 +108,6 @@ Server.createServer = function (params) {
         server.listen(config_data.main.port, config_data.main.listen_host, listening);
         
         plugins.run_hooks('init_master', Server);
-
-        if (config_data.main.user) {
-            // drop privileges
-            Server.lognotice('Switching from current uid: ' + process.getuid());
-            process.setuid(config_data.main.user);
-            Server.lognotice('New uid: ' + process.getuid());
-        }
     }
 };
 
@@ -146,4 +139,11 @@ function listening () {
     logger.lognotice("Listening on port " + config_data.main.port);
     out.load_queue();
     Server.ready = 1;
+
+    if (config_data.main.user) {
+        // drop privileges
+        Server.lognotice('Switching from current uid: ' + process.getuid());
+        process.setuid(config_data.main.user);
+        Server.lognotice('New uid: ' + process.getuid());
+    }
 }

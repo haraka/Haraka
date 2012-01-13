@@ -921,6 +921,7 @@ HMailItem.prototype.bounce_respond = function (retval, msg) {
         if (retval === constants.stop) {
             fs.unlink(this.path);
         }
+        delivery_concurrency--;
         return;
     }
 
