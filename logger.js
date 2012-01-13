@@ -80,6 +80,11 @@ logger._init_loglevel = function () {
     }
 };
 
+logger.would_log = function (level) {
+    if (loglevel < level) return false;
+    return true;
+}
+
 logger._init_loglevel();
 
 var level, key;

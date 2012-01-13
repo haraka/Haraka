@@ -208,17 +208,18 @@ plugins.run_next_hook = function(hook, object, params) {
         // Log what is being run
         if (item && hook !== 'log') {
             var log = 'logdebug';
-            if (utils.in_array(retval, [constants.deny, constants.denysoft, constants.denydisconnect, constants.denysoftdisconnect])) {
-                log = 'loginfo';
+            var is_deny = utils.in_array(retval, [constants.deny, constants.denysoft, constants.denydisconnect, constants.denysoftdisconnect]);
+            if (is_deny) log = 'loginfo';
+            if (logger.would_log(logger.LOGDEBUG) || is_deny) {
+                object[log]([
+                    'hook='     + hook,
+                    'plugin='   + item[0].name,
+                    'function=' + item[1], 
+                    'params="'  + ((params) ? ((typeof params === 'string') ? params : params[0]) : '') + '"',
+                    'retval='   + constants.translate(retval),
+                    'msg="'     + ((msg) ? msg : '') + '"',
+                ].join(' '));
             }
-            object[log]([
-                'hook='     + hook,
-                'plugin='   + item[0].name,
-                'function=' + item[1], 
-                'params="'  + ((params) ? ((typeof params === 'string') ? params : params[0]) : '') + '"',
-                'retval='   + constants.translate(retval),
-                'msg="'     + ((msg) ? msg : '') + '"',
-            ].join(' '));
         }
         if (object.hooks_to_run.length == 0 || 
             retval !== constants.cont)
