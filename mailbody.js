@@ -89,7 +89,7 @@ Body.prototype.parse_start = function (line) {
     this.decode_function = this["decode_" + enc];
     this.ct = ct;
     
-    if (/^text\//i.test(ct) && !/^attachment/i.test(cd) ) {
+    if (/^(?:text|message)\//i.test(ct) && !/^attachment/i.test(cd) ) {
         this.state = 'body';
     }
     else if (/^multipart\//i.test(ct)) {
