@@ -7,7 +7,7 @@ of configuration files.
 The API is fairly simple:
 
     // From within a plugin:
-    var config_item = this.config.get(name, [type='value']);
+    var config_item = this.config.get(name, [type='value'], [callback]);
 
 Where type can be one of:
 
@@ -27,6 +27,10 @@ directory.
 
 However if you name your ini and json files ending in `.ini` and `.json`
 respectively then the `type` parameter can be left off.
+
+You can optionally pass in a callback function which will be called whenever
+an update is detected on the file.  This can then be used to update your 
+plugin configuration dynamically during run-time.
 
 File Formats
 ============

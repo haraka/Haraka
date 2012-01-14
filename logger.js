@@ -63,7 +63,6 @@ logger.log_respond = function (retval, msg, data) {
     }
 };
 
-// TODO: would be nice if there were some way to reload the loglevel
 logger._init_loglevel = function () {
     var self = this;
     var _loglevel = config.get('loglevel', 'value', function () {
