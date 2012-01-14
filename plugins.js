@@ -208,7 +208,7 @@ plugins.run_next_hook = function(hook, object, params) {
         // Log what is being run
         if (item && hook !== 'log') {
             var log = 'logdebug';
-            var is_not_cont = (retval !== constants.cont && logger.would_log(logger.LOGINFO)) ? true : false;
+            var is_not_cont = (retval !== constants.cont && logger.would_log(logger.LOGINFO));
             if (is_not_cont) log = 'loginfo';
             if (is_not_cont || logger.would_log(logger.LOGDEBUG)) {
                 object[log]([
