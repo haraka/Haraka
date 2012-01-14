@@ -8,9 +8,9 @@ Limitations
 -----------
 
 This plugin cannot detect forged MIME types where the sender is lying
-about the filetype.  The type is not confirmed in any way currently.
+about the type.  The type is not confirmed in any way currently.
 
-It also cannot read the filenames with tar/zip/rar archives.
+It also cannot read the filenames within tar/zip/rar archives.
 
 Configuration
 -------------
