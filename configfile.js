@@ -33,7 +33,7 @@ cfreader.read_config = function(name, type, cb) {
             // file has changed
             if (curr.mtime.getTime() !== prev.mtime.getTime()) {
                 cfreader.load_config(name, type);
-                if(typeof cb === 'function') cb();
+                if (typeof cb === 'function') cb();
             }
         });
     }

@@ -208,9 +208,9 @@ plugins.run_next_hook = function(hook, object, params) {
         // Log what is being run
         if (item && hook !== 'log') {
             var log = 'logdebug';
-            var is_deny = utils.in_array(retval, [constants.deny, constants.denysoft, constants.denydisconnect, constants.denysoftdisconnect]);
-            if (is_deny) log = 'loginfo';
-            if (logger.would_log(logger.LOGDEBUG) || is_deny) {
+            var is_not_cont = (retval === constants.cont) ? false : true;
+            if (is_not_cont) log = 'loginfo';
+            if (logger.would_log(logger.LOGDEBUG) || is_not_cont) {
                 object[log]([
                     'hook='     + hook,
                     'plugin='   + item[0].name,
