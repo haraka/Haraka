@@ -8,7 +8,7 @@ var config = exports;
 
 var config_path = process.env.HARAKA ? path.join(process.env.HARAKA, 'config') : path.join(__dirname, './config');
 
-config.get = function(name, type) {
+config.get = function(name, type, cb) {
     if (type === 'nolog') {
         type = arguments[2]; // deprecated - TODO: remove later
     }
@@ -19,7 +19,7 @@ config.get = function(name, type) {
     
     var results;
     try {
-        results = configloader.read_config(full_path, type);
+        results = configloader.read_config(full_path, type, cb);
     }
     catch (err) {
         if (err.code === 'EBADF' || err.code === 'ENOENT') {

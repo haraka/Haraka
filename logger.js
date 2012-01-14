@@ -41,7 +41,7 @@ logger.log = function (level, data) {
     data = data.replace(/\r/g, '\\r')
                .replace(/\n$/, '');
     // todo - just buffer these up (defer) until plugins are loaded
-    if (plugins.plugin_list) {
+    if (plugins && plugins.plugin_list) {
         while (deferred_logs.length > 0) {
             var log_item = deferred_logs.shift();
             plugins.run_hooks('log', logger, log_item);
@@ -68,10 +68,14 @@ logger.log_respond = function (retval, msg, data) {
 
 // TODO: would be nice if there were some way to reload the loglevel
 logger._init_loglevel = function () {
-    var _loglevel = config.get('loglevel');
+    var self = this;
+    var _loglevel = config.get('loglevel', 'value', function () {
+        self._init_loglevel();
+    });
     if (_loglevel) {
         var loglevel_num = parseInt(_loglevel);
         if (!loglevel_num || loglevel_num === NaN) {
+            this.log('info', 'loglevel: ' + _loglevel.toUpperCase());
             loglevel = logger[_loglevel.toUpperCase()];
         }
         else {
@@ -82,6 +86,11 @@ logger._init_loglevel = function () {
         }
     }
 };
+
+logger.would_log = function (level) {
+    if (loglevel < level) return false;
+    return true;
+}
 
 logger._init_loglevel();
 
