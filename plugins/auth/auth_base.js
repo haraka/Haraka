@@ -43,7 +43,7 @@ exports.hook_unrecognized_command = function (next, connection, params) {
     return next();
 }
 
-exports.check_plain_passwd = function (user, passwd, cb) {
+exports.check_plain_passwd = function (connection, user, passwd, cb) {
     this.get_plain_passwd(user, function (plain_pw) {
         if (plain_pw === null) {
             return cb(false);
