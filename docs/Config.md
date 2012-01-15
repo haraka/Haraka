@@ -29,8 +29,7 @@ However if you name your ini and json files ending in `.ini` and `.json`
 respectively then the `type` parameter can be left off.
 
 You can optionally pass in a callback function which will be called whenever
-an update is detected on the file.  This can then be used to update your 
-plugin configuration dynamically during run-time.
+an update is detected on the file.
 
 File Formats
 ============
