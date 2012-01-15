@@ -43,7 +43,7 @@ exports.hook_unrecognized_command = function (next, connection, params) {
     return next();
 }
 
-exports.check_plain_passwd = function (user, passwd, cb) {
+exports.check_plain_passwd = function (connection, user, passwd, cb) {
     this.get_plain_passwd(user, function (plain_pw) {
         if (plain_pw === null) {
             return cb(false);
@@ -94,7 +94,7 @@ exports.check_user = function (next, connection, credentials, method) {
     }
 
     if (method === AUTH_METHOD_PLAIN || method === AUTH_METHOD_LOGIN) {
-        this.check_plain_passwd(credentials[0], credentials[1], passwd_ok);
+        this.check_plain_passwd(connection, credentials[0], credentials[1], passwd_ok);
     }
     else if (method === AUTH_METHOD_CRAM_MD5) {
         this.check_cram_md5_passwd(connection.notes.auth_ticket, credentials[0], credentials[1], passwd_ok);
