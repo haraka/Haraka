@@ -3,7 +3,7 @@ var dns = require('dns');
 var net = require('net');
 var is_rfc1918 = require('./net_utils').is_rfc1918;
 
-exports.stats_enabled = true;
+exports.enable_stats = false;
 
 var redis_avail = false;
 // See if redis is available
@@ -31,7 +31,7 @@ exports.lookup = function (lookup, zone, cb) {
         return cb();
     }
 
-    if (redis_avail && this.stats_enabled) {
+    if (redis_avail && this.enable_stats) {
         var start = (new Date).getTime();
     }
 
@@ -44,7 +44,7 @@ exports.lookup = function (lookup, zone, cb) {
     this.logdebug('looking up: ' + query);
     dns.resolve(query, 'A', function (err, a) {
         // Statistics
-        if (redis_avail && self.stats_enabled) {
+        if (redis_avail && self.enable_stats) {
             var elapsed = (new Date).getTime() - start;
             client.hincrby('dns-list-stat:' + zone, 'TOTAL', 1);
             (err) 
@@ -84,7 +84,7 @@ exports.multi = function (lookup, zones, cb) {
             // All queries completed?
             if (pending === 0) {
                 // Statistics: check hit overlap
-                if (redis_avail && self.stats_enabled && listed.length > 0) {
+                if (redis_avail && self.enable_stats && listed.length > 0) {
                     listed.forEach(function (zone) {
                         for (var i=0; i < listed.length; i++) {
                             (listed[i] === zone)
@@ -112,9 +112,10 @@ exports.first = function (lookup, zones, cb) {
 }
 
 
-exports.check_zones = function () {
+exports.check_zones = function (interval) {
+    var self = this;
+    if (interval) interval = parseInt(interval);
     if ((this.zones && this.zones.length) || (this.disabled_zones && this.disabled_zones.length)) {
-        var self = this;
         var zones = [];
         if (this.zones && this.zones.length) zones = zones.concat(this.zones);
         if (this.disabled_zones && this.disabled_zones.length) zones = zones.concat(this.disabled_zones);
@@ -140,10 +141,11 @@ exports.check_zones = function () {
         });
     }
     // Set-up a timer to re-test
-    if (!this._interval) {
+    if (interval && interval >= 5 && !this._interval) {
+        this.logdebug('will re-test list zones every ' + interval + ' minutes');
         this._interval = setInterval(function () {
-            self.check_zones(self.zones);
-        }, 300 * 1000);
+            self.check_zones();
+        }, (interval * 60) * 1000);
     }
 }
 
