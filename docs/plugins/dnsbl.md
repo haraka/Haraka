@@ -13,10 +13,12 @@ dnsbl.zones - Contains a list of zones to query, one per line.
 dnsbl.ini - INI format with options described below:
 
 * zones       
+
     A comma or semi-colon list of zones to query.  It will be merged with
     any lists in dnsbl.zones.
 
 * periodic_checks  
+
     If enabled, this will check all the zones every n minutes.
     The minimum value that will be accepted here is 5.  Any value less
     than 5 will cause the checks to be run at start-up only.
@@ -43,7 +45,7 @@ dnsbl.ini - INI format with options described below:
     the hash field is the other list names.
 
     Example:
-    <code>
+    <pre><code>
     redis 127.0.0.1:6379> hgetall dns-list-stat:zen.spamhaus.org
     1) "TOTAL"
     2) "23"
@@ -53,7 +55,6 @@ dnsbl.ini - INI format with options described below:
     6) "12"
     7) "AVG_RT"
     8) "45.5"
-
     redis 127.0.0.1:6379> hgetall dns-list-overlap:zen.spamhaus.org
     1) "b.barracudacentral.org"
     2) "1"
@@ -61,4 +62,4 @@ dnsbl.ini - INI format with options described below:
     4) "1"
     5) "TOTAL"
     6) "1"
-    </code>
+    </code></pre>
