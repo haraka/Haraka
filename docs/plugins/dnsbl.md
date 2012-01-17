@@ -10,6 +10,7 @@ Configuration
 This plugins uses the following files:
 
 dnsbl.zones - Contains a list of zones to query, one per line.
+
 dnsbl.ini - INI format with options described below:
 
 * zones       
@@ -45,8 +46,7 @@ dnsbl.ini - INI format with options described below:
     the hash field is the other list names.
 
     Example:
-    <pre><code>
-    redis 127.0.0.1:6379> hgetall dns-list-stat:zen.spamhaus.org
+    <pre><code>redis 127.0.0.1:6379> hgetall dns-list-stat:zen.spamhaus.org
     1) "TOTAL"
     2) "23"
     3) "ENOTFOUND"
