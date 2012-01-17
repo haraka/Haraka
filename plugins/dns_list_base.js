@@ -4,6 +4,7 @@ var net = require('net');
 var is_rfc1918 = require('./net_utils').is_rfc1918;
 
 exports.enable_stats = false;
+exports.disable_allowed = false;
 
 var redis_avail = false;
 // See if redis is available
@@ -114,6 +115,7 @@ exports.first = function (lookup, zones, cb) {
 
 exports.check_zones = function (interval) {
     var self = this;
+    this.disable_allowed = true;
     if (interval) interval = parseInt(interval);
     if ((this.zones && this.zones.length) || (this.disabled_zones && this.disabled_zones.length)) {
         var zones = [];
@@ -150,7 +152,7 @@ exports.check_zones = function (interval) {
 }
 
 exports.disable_zone = function (zone, result) {
-    if (zone && this.zones && this.zones.length) {
+    if (zone && this.zones && this.zones.length && this.disable_allowed) {
         var idx = this.zones.indexOf(zone);
         if (idx !== -1) {
             this.zones.splice(idx, 1);
