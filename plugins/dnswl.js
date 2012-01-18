@@ -23,7 +23,8 @@ exports.register = function() {
     }
 
     var self = this;
-    ['ehlo','helo','mail','rcpt'].forEach(function (hook) {
+    // IMPORTANT: don't run this on hook_rcpt otherwise we're an open relay...
+    ['ehlo','helo','mail'].forEach(function (hook) {
         self.register_hook(hook, 'check_dnswl');
     });
 }           
