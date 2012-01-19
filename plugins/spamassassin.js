@@ -63,22 +63,37 @@ exports.hook_data_post = function (next, connection) {
     
     socket.setTimeout(300 * 1000);
     
-    var username = config.main.spamd_user || process.getuid();
+    var username = config.main.spamd_user || 
+                   connection.transaction.notes.spamd_user || 
+                   process.getuid();
     
     var data_marker = 0;
+    var in_data = false;
+    var end_pending = true;
     
     var send_data = function () {
-        if (data_marker < connection.transaction.data_lines.length) {
-            var wrote_all = socket.write(connection.transaction.data_lines[data_marker]);
+        in_data = true;
+        var wrote_all = true;
+        while (wrote_all && (data_marker < connection.transaction.data_lines.length)) {
+            var line = connection.transaction.data_lines[data_marker];
             data_marker++;
-            if (wrote_all) {
-                send_data();
-            }
+            // dot-stuffing not necessary for spamd
+            wrote_all = socket.write(line);
+            if (!wrote_all) return;
         }
-        else {
+        // we get here if wrote_all still true, and we got to end of data_lines
+        if (end_pending) {
+            end_pending = false;
             socket.end("\r\n");
         }
     };
+
+    socket.on('drain', function () {
+        connection.logdebug(plugin, 'drain');
+        if (end_pending && in_data) {
+            process.nextTick(function () { send_data() });
+        }
+    });
 
     socket.on('timeout', function () {
         connection.logerror(plugin, "spamd connection timed out");
@@ -129,13 +144,13 @@ exports.hook_data_post = function (next, connection) {
         }
         else if (state === 'tests') {
             spamd_response.tests = line;
-            socket.destroy();
+            socket.end();
         }
     });
     
     socket.on('end', function () {
         // Now we do stuff with the results...
-        
+ 
         plugin.fixup_old_headers(config.main.old_headers_action, connection.transaction);
 
         if (spamd_response.flag === 'Yes') {
