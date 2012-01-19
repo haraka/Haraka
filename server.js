@@ -92,14 +92,14 @@ Server.createServer = function (params) {
                 c.use(cluster[module]());
             }
         }
-        
+
         c.set('host', config_data.main.listen_host);
         c.listen(parseInt(config_data.main.port));
         c.on('listening', listening);
         Server.cluster = c;
-        c.on('start', function () {
+        if (c.isMaster) {
             plugins.run_hooks('init_master', Server);
-        });
+        }
         if (c.isWorker) {
             plugins.run_hooks('init_child', Server);
         }
