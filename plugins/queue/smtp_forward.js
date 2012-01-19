@@ -177,11 +177,4 @@ exports.smtp_forward = function (next, connection) {
             return next();
         }
     });
-    socket.on('drain', function() {
-        connection.logdebug(self, "Drained");
-        if (got_data_response && dot_pending && command === 'data') {
-            process.nextTick(function () { send_data() });
-        }
-    });
 };
-
