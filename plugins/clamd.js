@@ -74,26 +74,31 @@ exports.hook_data_post = function (next, connection) {
     }
 
     var data_marker = 0;
+    var in_data = false;
+    var close_pending = true;
+
     var send_data = function () {
-        if (data_marker < transaction.data_lines.length) {
+        in_data = true;
+        var wrote_all = true;
+        while (wrote_all && (data_marker < transaction.data_lines.length)) {
             var line = transaction.data_lines[data_marker];
             var len = pack_len(Buffer.byteLength(line));
-            var wrote_all = socket.write(len, function() {
+            wrote_all = socket.write(len, function() {
                 socket.write(line);
                 data_marker++;
             });
-            if (wrote_all) {
-                send_data(); // TODO: Fix to be non-recursive like queue/proxy
-            }
+            if (!wrote_all) return;
         }
-        else {
+        if (close_pending) {
+            close_pending = false;
             socket.end(pack_len(0));
         }
     };
 
     socket.on('drain', function () {
-        connection.logdebug(plugin, 'drain');
-        send_data();
+        if (close_pending && in_data) {
+            process.nextTick(function () { send_data() });
+        }
     });
     socket.on('timeout', function () {
         connection.logerror(plugin, "connection timed out");
