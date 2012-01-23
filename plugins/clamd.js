@@ -76,6 +76,7 @@ exports.hook_data_post = function (next, connection) {
     var data_marker = 0;
     var in_data = false;
     var close_pending = true;
+    var wrote_len = false;
 
     var send_data = function () {
         in_data = true;
@@ -83,11 +84,17 @@ exports.hook_data_post = function (next, connection) {
         while (wrote_all && (data_marker < transaction.data_lines.length)) {
             var line = transaction.data_lines[data_marker];
             var len = pack_len(Buffer.byteLength(line));
-            wrote_all = socket.write(len, function() {
-                socket.write(line);
-                data_marker++;
-            });
-            if (!wrote_all) return;
+            // Write the length followed by the data
+            // If we fail to write either; wait for drain
+            if (!wrote_len) {
+                wrote_len = socket.write(len);
+                if (wrote_len) wrote_all = socket.write(line);
+            } else {
+                wrote_all = socket.write(line);
+            }
+            if (!wrote_len || !wrote_all) return;
+            data_marker++;
+            wrote_len = false;
         }
         if (close_pending) {
             close_pending = false;
@@ -97,6 +104,7 @@ exports.hook_data_post = function (next, connection) {
 
     socket.on('drain', function () {
         if (close_pending && in_data) {
+            connection.logdebug(plugin, 'drain');
             process.nextTick(function () { send_data() });
         }
     });
