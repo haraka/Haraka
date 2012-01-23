@@ -773,6 +773,7 @@ HMailItem.prototype.try_deliver_host = function () {
     });
     
     socket.on('connect', function () {
+      self.emit('connect', socket);
     });
 
     socket.on('line', function (line) {
