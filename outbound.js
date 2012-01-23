@@ -729,7 +729,12 @@ HMailItem.prototype.try_deliver_host = function () {
             line = '.';
         }
         self.logprotocol("C: " + line);
-        this.write(line + "\r\n");
+        try {
+          this.write(line + "\r\n");
+        } catch(e) {
+          //socket might have gone away in rare case
+          this.emit('error', new Error('Socket write failed'));
+        }
         command = cmd.toLowerCase();
         response = [];
     };
