@@ -7,7 +7,7 @@ exports.hook_rcpt = function(next, connection, params) {
         return next();
     }
     
-    connection.loginfo(this, "Checking if " + rcpt + " host is in host_lists");
+    connection.logdebug(this, "Checking if " + rcpt + " host is in host_lists");
     
     var domain          = rcpt.host.toLowerCase();
     var host_list       = this.config.get('host_list', 'list');
