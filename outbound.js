@@ -13,6 +13,7 @@ var constants   = require('./constants');
 var trans       = require('./transaction');
 var plugins     = require('./plugins');
 var date_to_str = require('./utils').date_to_str;
+var is_rfc1918 = require('./net_utils').is_rfc1918;
 var Address     = require('./address').Address;
 
 var delivery_concurrency = 0;
@@ -667,6 +668,9 @@ HMailItem.prototype.try_deliver = function () {
             delivery_concurrency--;
             return self.try_deliver(); // try next MX
         }
+        addresses = addresses.filter(function(host) {
+          return !is_rfc1918(host);
+        });
         if (addresses.length === 0) {
             // NODATA or empty host list
             self.logerror("DNS lookup of " + host + " resulted in no data");
@@ -725,7 +729,12 @@ HMailItem.prototype.try_deliver_host = function () {
             line = '.';
         }
         self.logprotocol("C: " + line);
-        this.write(line + "\r\n");
+        try {
+          this.write(line + "\r\n");
+        } catch(e) {
+          //socket might have gone away in rare case
+          this.emit('error', new Error('Socket write failed'));
+        }
         command = cmd.toLowerCase();
         response = [];
     };
@@ -769,6 +778,7 @@ HMailItem.prototype.try_deliver_host = function () {
     });
     
     socket.on('connect', function () {
+      self.emit('connect', socket);
     });
 
     socket.on('line', function (line) {
