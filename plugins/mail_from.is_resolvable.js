@@ -64,7 +64,7 @@ exports.hook_mail = function(next, connection, params) {
                 // Handle MX records that are IP addresses
                 // This is invalid - but a lot of MTAs allow it.
                 if (/^\d+\.\d+\.\d+\.\d+$/.test(addr.exchange)) {
-                   connection.logwarn(plugin, domain + ': invalid MX ' + addr.exchange)
+                   connection.logwarn(plugin, domain + ': invalid MX ' + addr.exchange);
                    if (config.main.allow_mx_ip) {
                        a_records[addr.exchange] = 1;
                    }
