@@ -72,13 +72,13 @@ method and hook it:
         this.register_hook('queue', 'try_queue_highway');
     };
 
-Then when the earlier hook calls next() it continues on to the next hook to try
-that one.
+Then when the earlier hook calls `next()` (without parameters) it continues on
+to the next hook you registered to try that one.
 
 The Next Function
 =================
 
-The next() function takes two optional parameters: code, msg
+The next() function takes two optional parameters: `code` and `msg`
 
 The code is one of the below listed return values. The msg corresponds with
 the string to send to the client in case of a failure. Use an Array if you need
@@ -114,9 +114,21 @@ need to define them:
 
 * OK
 
-  Required by rcpt and queue plugins if are to allow the email, or the queue was
-successful, respectively. Once a plugin calls next(OK) no further plugins
-will run after it.
+  Required by rcpt and queue plugins if we are to allow the email to be
+accepted, or the queue was successful, respectively. 
+
+  This also has a special meaning when used on deny hook.  Returning OK
+on the deny hook will override the result to CONT.
+
+  Once a plugin calls next(OK) no further plugins on the same hook will 
+run after it.
+
+* HOOK_NEXT
+
+  This is a special return value that is currently only available on the
+unrecognized_command hook.  It instructs Haraka to run a different plugin
+hook instead of responding normally.  The `msg` argument is required and
+must be set to the name of the hook that is to be run.
 
 
 Available Hooks
@@ -124,7 +136,11 @@ Available Hooks
 
 These are just the name of the hook, with any parameter sent to it:
 
+* init_master - called when the main (master) process is started
+* init_child - called whenever a child process is started when using multiple "nodes"
+* lookup_rdns - called to look up the rDNS - return the rDNS via `next(OK, rdns)`
 * connect - called after we got rDNS
+* capabilities - called to get the ESMTP capabilities (such as STARTTLS)
 * unrecognized_command - called when the remote end sends a command we don't recognise
 * disconnect - called upon disconnect
 * helo (hostname)
@@ -132,13 +148,17 @@ These are just the name of the hook, with any parameter sent to it:
 * quit
 * vrfy
 * noop
+* rset
 * mail ([from, esmtp\_params])
 * rcpt ([to,   esmtp\_params])
 * rcpt_ok (to)
-* data
-* data_post
-* queue
+* data - called at the DATA command
+* data_post - called at the end-of-data marker
+* queue - called to queue the mail
+* queue_ok - called when a mail has been queued successfully
 * deny - called if a plugin returns one of DENY, DENYSOFT or DENYDISCONNECT
+* get_mx - called when sending outbound mail to lookup the MX record
+* bounce - called when sending outbound mail if the mail would bounce
 
 The `rcpt` hook is slightly special. If we have a plugin (prior to rcpt) that
 sets the `connection.relaying = true` flag, then we do not need any rcpt

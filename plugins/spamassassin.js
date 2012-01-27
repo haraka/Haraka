@@ -32,7 +32,7 @@ var defaults = {
 };
 
 exports.hook_data_post = function (next, connection) {
-    var config = this.config.get('spamassassin.ini', 'ini');
+    var config = this.config.get('spamassassin.ini');
     var plugin = this;
     
     for (var key in defaults) {
@@ -63,30 +63,45 @@ exports.hook_data_post = function (next, connection) {
     
     socket.setTimeout(300 * 1000);
     
-    var username = config.main.spamd_user || process.getuid();
+    var username = config.main.spamd_user || 
+                   connection.transaction.notes.spamd_user || 
+                   process.getuid();
     
     var data_marker = 0;
+    var in_data = false;
+    var end_pending = true;
     
     var send_data = function () {
-        if (data_marker < connection.transaction.data_lines.length) {
-            var wrote_all = socket.write(connection.transaction.data_lines[data_marker]);
+        in_data = true;
+        var wrote_all = true;
+        while (wrote_all && (data_marker < connection.transaction.data_lines.length)) {
+            var line = connection.transaction.data_lines[data_marker];
             data_marker++;
-            if (wrote_all) {
-                send_data();
-            }
+            // dot-stuffing not necessary for spamd
+            wrote_all = socket.write(line);
+            if (!wrote_all) return;
         }
-        else {
+        // we get here if wrote_all still true, and we got to end of data_lines
+        if (end_pending) {
+            end_pending = false;
             socket.end("\r\n");
         }
     };
 
+    socket.on('drain', function () {
+        connection.logdebug(plugin, 'drain');
+        if (end_pending && in_data) {
+            process.nextTick(function () { send_data() });
+        }
+    });
+
     socket.on('timeout', function () {
-        plugin.logerror("spamd connection timed out");
+        connection.logerror(plugin, "spamd connection timed out");
         socket.end();
         next();
     });
     socket.on('error', function (err) {
-        plugin.logerror("spamd connection failed: " + err);
+        connection.logerror(plugin, "spamd connection failed: " + err);
         // we don't deny on error - maybe another plugin can deliver
         next(); 
     });
@@ -107,7 +122,7 @@ exports.hook_data_post = function (next, connection) {
     var state = 'line0';
     
     socket.on('line', function (line) {
-        plugin.logprotocol("SA: " + line);
+        connection.logprotocol(plugin, "Spamd C: " + line);
         line = line.replace(/\r?\n/, '');
         if (state === 'line0') {
             spamd_response.line0 = line;
@@ -129,13 +144,13 @@ exports.hook_data_post = function (next, connection) {
         }
         else if (state === 'tests') {
             spamd_response.tests = line;
-            socket.destroy();
+            socket.end();
         }
     });
     
     socket.on('end', function () {
         // Now we do stuff with the results...
-        
+ 
         plugin.fixup_old_headers(config.main.old_headers_action, connection.transaction);
 
         if (spamd_response.flag === 'Yes') {
@@ -154,7 +169,7 @@ exports.hook_data_post = function (next, connection) {
         }
         connection.transaction.add_header('X-Spam-Level', stars_string);
         
-        plugin.loginfo("spamassassin returned: " + spamd_response.flag + ', ' +
+        connection.loginfo(plugin, "spamassassin returned: " + spamd_response.flag + ', ' +
             spamd_response.hits + '/' + spamd_response.reqd +
             " Reject at: " + config.main.reject_threshold);
         

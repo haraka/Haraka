@@ -61,7 +61,7 @@ The body of the email if you set `parse_body` above. See `Body Object`.
 
 Sets event emitter hooks for attachments if you set `parse_body` above.
 
-The `start` event will receive `(content_type, filename)` as parameters.
+The `start` event will receive `(content_type, filename, body)` as parameters.
 
 The `data` event will receive a `Buffer` object containing some of the
 attachment data.
@@ -69,3 +69,8 @@ attachment data.
 The `end` event will be called with no parameters when an attachment ends.
 
 Both the `data` and `end` params are optional.
+
+Note that in the `start` event, you can set per-attachment events via:
+
+    body.on('attachment_data', cb)
+    body.on('attachment_end', cb)

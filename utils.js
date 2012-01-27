@@ -1,4 +1,4 @@
-// Various utility functions
+"use strict";
 
 // copied from http://www.broofa.com/Tools/Math.uuid.js
 var CHARS = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'.split('');
@@ -58,4 +58,23 @@ exports.ISODate = function (d) {
       + pad(d.getUTCHours())+':'
       + pad(d.getUTCMinutes())+':'
       + pad(d.getUTCSeconds())+'Z'
+}
+
+var _daynames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+var _monnames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+function _pad (num, n, p) {
+    var s = '' + num;
+    p = p || '0';
+    while (s.length < n) s = p + s;
+    return s;
+}
+
+exports.pad = _pad;
+
+exports.date_to_str = function (d) {
+    return _daynames[d.getDay()] + ', ' + _pad(d.getDate(),2) + ' ' +
+           _monnames[d.getMonth()] + ' ' + d.getFullYear() + ' ' +
+           _pad(d.getHours(),2) + ':' + _pad(d.getMinutes(),2) + ':' + _pad(d.getSeconds(),2) +
+           ' ' + d.toString().match(/\sGMT([+-]\d+)/)[1];
 }

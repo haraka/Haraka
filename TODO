@@ -1,5 +1,9 @@
-- TLS (see http://js.5sh.net/starttls.js, and http://js.5sh.net/c2s.js)
 - DKIM (need a node dkim library first - perhaps based on libdkimpp?)
 - Rate Limiting for outbound mail
 - Milter support
-- A simple mailing list manager
+- Ability to modify the body of email (e.g add a banner) and have it re-write the data_lines
+- Create a config file for each of the core shipping configs, so people have something as a baseline
+- IMAP server (long shot for now)
+- Spool data to disk once databytes reaches a certain size to save memory
+- Add the option to define special/important plugins that are always run, even if an earlier 
+  plugin on the same hook returns OK

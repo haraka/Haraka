@@ -27,4 +27,7 @@ Configuration
     The port to connect to.
 
   Both values are required.
-  
+
+  * enable_tls=[true|yes|1]
+
+    Enable TLS with the forward host (if supported)

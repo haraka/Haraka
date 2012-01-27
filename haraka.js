@@ -1,8 +1,17 @@
 #!/usr/bin/env node
 
+"use strict";
+
 var path = require('path');
+
+// this must be set before "server.js" is loaded
 process.env.HARAKA = process.env.HARAKA || path.resolve('.');
-require.paths.unshift(path.join(process.env.HARAKA, 'node_modules'));
+try {
+    require.paths.push(path.join(process.env.HARAKA, 'node_modules'));
+}
+catch(e) {
+    process.env.NODE_PATH += ':' + path.join(process.env.HARAKA, 'node_modules');
+}
 
 var fs     = require('fs');
 var logger = require('./logger');
@@ -14,18 +23,17 @@ exports.version = JSON.parse(
 
 process.on('uncaughtException', function (err) {
     if (err.stack) {
-        err.stack.split("\n").forEach(logger.logcrit);
+        err.stack.split("\n").forEach(function (line) {
+            logger.logcrit(line);
+        });
     }
     else {
         logger.logcrit('Caught exception: ' + err);
     }
-    if (!server.ready) {
-        logger.logcrit('Server not ready yet. Stopping.');
-        process.exit();
-    }
+    logger.dump_logs();
+    process.exit(1);
 });
 
-logger.log("Starting up Haraka version " + exports.version);
-
+logger.log("INFO", "Starting up Haraka version " + exports.version);
 
 server.createServer();

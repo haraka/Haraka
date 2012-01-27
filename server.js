@@ -1,6 +1,7 @@
+"use strict";
 // smtp network server
 
-var net         = require('net');
+var net         = require('./tls_socket');
 var logger      = require('./logger');
 var config      = require('./config');
 var conn        = require('./connection');
@@ -46,7 +47,7 @@ function apply_defaults(obj) {
 }
 
 Server.createServer = function (params) {
-    var config_data = config.get('smtp.ini', 'ini');
+    var config_data = config.get('smtp.ini');
     var param_key;
     for (param_key in params) {
         if (typeof params[param_key] !== 'function') {
@@ -58,8 +59,12 @@ Server.createServer = function (params) {
     apply_defaults(config_data.main);
     
     plugins.load_plugins();
-        
-    var server = net.createServer();
+    
+    var server = net.createServer(function (client) {
+        client.setTimeout((config_data.main.inactivity_timeout || 300) * 1000);
+        conn.createConnection(client, server);
+    });
+    server.notes = {};
     if (cluster && config_data.main.nodes) {
          
         var c = cluster(server);
@@ -73,40 +78,37 @@ Server.createServer = function (params) {
         }
         
         for (var i=0,l=cluster_modules.length; i < l; i++) {
-            var parts = cluster_modules[i].split(':');
-            var module = parts.shift();
-            c.use(cluster[module].apply(cluster, parts));
+            var matches = /^(\w+)\s*(?::\s*(.*))?$/.exec(cluster_modules[i]);
+            if (!matches) {
+                Server.logerror("cluster_modules in invalid format: " + cluster_modules[i]);
+                continue;
+            }
+            var module = matches[1];
+            var params = matches[2];
+            if (params) {
+                c.use(cluster[module](JSON.parse(params)));
+            }
+            else {
+                c.use(cluster[module]());
+            }
         }
-        
+
         c.set('host', config_data.main.listen_host);
         c.listen(parseInt(config_data.main.port));
         c.on('listening', listening);
         Server.cluster = c;
-        c.on('start', function () {
+        if (c.isMaster) {
             plugins.run_hooks('init_master', Server);
-        });
-        c.on('worker', function () {
+        }
+        if (c.isWorker) {
             plugins.run_hooks('init_child', Server);
-        });
+        }
     }
     else {
         server.listen(config_data.main.port, config_data.main.listen_host, listening);
         
         plugins.run_hooks('init_master', Server);
-
-        if (config_data.main.user) {
-            // drop privileges
-            Server.lognotice('Switching from current uid: ' + process.getuid());
-            process.setuid(config_data.main.user);
-            Server.lognotice('New uid: ' + process.getuid());
-        }
     }
-
-    server.on('connection', function(client) {
-        client.setTimeout((config_data.main.inactivity_time || 300) * 1000);
-        conn.createConnection(client);
-    });
-
 };
 
 Server.init_master_respond = function (retval, msg) {
@@ -133,8 +135,15 @@ Server.init_child_respond = function (retval, msg) {
 }
 
 function listening () {
-    var config_data = config.get('smtp.ini', 'ini');
+    var config_data = config.get('smtp.ini');
     logger.lognotice("Listening on port " + config_data.main.port);
     out.load_queue();
     Server.ready = 1;
+
+    if (config_data.main.user) {
+        // drop privileges
+        Server.lognotice('Switching from current uid: ' + process.getuid());
+        process.setuid(config_data.main.user);
+        Server.lognotice('New uid: ' + process.getuid());
+    }
 }

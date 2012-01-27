@@ -7,26 +7,32 @@ exports.hook_rcpt = function(next, connection, params) {
         return next();
     }
     
-    this.loginfo("Checking if " + rcpt + " host is in host_list");
+    connection.logdebug(this, "Checking if " + rcpt + " host is in host_lists");
     
-    var domain = rcpt.host.toLowerCase();
-    var host_list = this.config.get('host_list', 'list');
-    var allow_subdomain = this.config.get('host_list.ini', 'ini').main.allow_subdomains;
-    
-    var i;
+    var domain          = rcpt.host.toLowerCase();
+    var host_list       = this.config.get('host_list', 'list');
+    var host_list_regex = this.config.get('host_list_regex', 'list');
+
+    var i = 0;
     for (i in host_list) {
-        var tmp_domain = domain;
-        while (tmp_domain.match(/\./)) {
-            this.logdebug("checking " + tmp_domain + " against " + host_list[i]);
-            if (host_list[i].toLowerCase() === tmp_domain) {
-                return next(OK);
-            }
-            if (allow_subdomain) {
-                tmp_domain = tmp_domain.replace(/^[^\.]*\./, '');
-            }
-            else {
-                break;
-            }
+        connection.logdebug(this, "checking " + domain + " against " + host_list[i]);
+
+        // normal matches
+        if (host_list[i].toLowerCase() === domain) {
+            connection.logdebug(this, "Allowing " + domain);
+            return next(OK);
+        }
+    }
+
+    if (host_list_regex.length) {
+        var regex = new RegExp ('^(?:' + host_list_regex.join('|') + ')$', 'i');
+
+        connection.logdebug(this, "checking " + domain + " against regexp " + regex.source);
+
+        // regex matches
+        if (domain.match(regex)) {
+            connection.logdebug(this, "Allowing " + domain);
+            return next(OK);
         }
     }
     

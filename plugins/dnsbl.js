@@ -1,51 +1,38 @@
 // dnsbl plugin
 
-var dns   = require('dns');
+var cfg;
 
 exports.register = function() {
-    this.zones = this.config.get('dnsbl.zones', 'list');
-    this.register_hook('connect', 'check_ip');
+    cfg = this.config.get('dnsbl.ini');
+    this.inherits('dns_list_base');
+
+    if (cfg.main.enable_stats) {
+        this.logdebug('stats reporting enabled');
+        this.enable_stats = 1;
+    }
+
+    this.zones = [];
+    // Compatibility with old-plugin
+    this.zones = this.zones.concat(this.config.get('dnsbl.zones', 'list'));
+    if (cfg.main.zones) {
+        this.zones = this.zones.concat(cfg.main.zones.replace(/\s+/g,'').split(/[;,]/));
+    }
+
+    if (cfg.main.periodic_checks) {
+        this.check_zones(cfg.main.periodic_checks);
+    } 
 }
 
-exports.check_ip = function(next, connection) {
-    this.logdebug("check_ip: " + connection.remote_ip);
-    
-    var ip = new String(connection.remote_ip);
-    var reverse_ip = ip.split('.').reverse().join('.');
-    
+exports.hook_connect = function(next, connection) {
     if (!this.zones || !this.zones.length) {
-        this.logerror("No zones");
+        connection.logerror(this, "no zones");
         return next();
     }
-    
-    var remaining_zones = [];
-    
     var self = this;
-    this.zones.forEach(function(zone) {
-        self.logdebug("Querying: " + reverse_ip + "." + zone);
-        dns.resolve(reverse_ip + "." + zone, "TXT", function (err, value) {
-            if (!remaining_zones.length) return;
-            remaining_zones.pop(); // we don't care about order really
-            if (err) {
-                switch (err.code) {
-                    case dns.NOTFOUND:
-                    case dns.NXDOMAIN:
-                    case 'ENOTFOUND':
-                                        break;
-                    default:
-                        self.loginfo("DNS error: " + err);
-                }
-                if (remaining_zones.length === 0) {
-                    // only call declined if no more results are pending
-                    return next();
-                }
-                return;
-            }
-            remaining_zones = [];
-            return next(DENY, value);
-        });
-        
-        remaining_zones.push(zone);
+    this.first(connection.remote_ip, this.zones, function (err, zone, a) {
+        if (a) {
+            return next(DENY, 'host [' + connection.remote_ip + '] is blacklisted by ' + zone);
+        }
+        return next();
     });
-    
 }

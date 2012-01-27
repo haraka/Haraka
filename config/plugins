@@ -18,5 +18,5 @@ mail_from.is_resolvable
 # Only accept mail for your personal list of hosts
 rcpt_to.in_host_list
 
-# Queue mail via qmail-queue
+# Queue mail via smtp
 queue/smtp_forward

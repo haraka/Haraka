@@ -1,3 +1,4 @@
+"use strict";
 // Config file loader
 
 var fs = require('fs');
@@ -5,7 +6,7 @@ var fs = require('fs');
 // for "ini" type files
 var regex = {
     section: /^\s*\[\s*([^\]]*)\s*\]\s*$/,
-    param:   /^\s*(\w+)\s*=\s*(.*)\s*$/,
+    param:   /^\s*([\w@\._]+)\s*=\s*(.*)\s*$/,
     comment: /^\s*[;#].*$/,
     line:    /^\s*(.*)\s*$/,
     blank:   /^\s*$/
@@ -16,7 +17,7 @@ var cfreader = exports;
 cfreader.watch_files = true;
 cfreader._config_cache = {};
 
-cfreader.read_config = function(name, type) {
+cfreader.read_config = function(name, type, cb) {
     // Check cache first
     if (cfreader._config_cache[name]) {
         return cfreader._config_cache[name];
@@ -32,6 +33,7 @@ cfreader.read_config = function(name, type) {
             // file has changed
             if (curr.mtime.getTime() !== prev.mtime.getTime()) {
                 cfreader.load_config(name, type);
+                if (typeof cb === 'function') cb();
             }
         });
     }
@@ -43,6 +45,9 @@ cfreader.empty_config = function(type) {
     if (type === 'ini') {
         return { main: {} };
     }
+    else if (type === 'json') {
+        return {};
+    }
     else {
         return [];
     }
@@ -50,12 +55,17 @@ cfreader.empty_config = function(type) {
 
 cfreader.load_config = function(name, type) {
 
-    if (type === 'ini') {
+    var result;
+
+    if (type === 'ini' || /\.ini$/.test(name)) {
         result = cfreader.load_ini_config(name);
     }
+    else if (type === 'json' || /\.json$/.test(name)) {
+        result = cfreader.load_json_config(name);
+    }
     else {
-        result = cfreader.load_flat_config(name);
-        if (result && type !== 'list') {
+        result = cfreader.load_flat_config(name, type);
+        if (result && type !== 'list' && type !== 'data') {
             result = result[0];
             if (/^\d+$/.test(result)) {
                 result = parseInt(result);
@@ -68,11 +78,15 @@ cfreader.load_config = function(name, type) {
     return result;
 };
 
+cfreader.load_json_config = function(name) {
+    return JSON.parse(fs.readFileSync(name));
+}
+
 cfreader.load_ini_config = function(name) {
     var result       = cfreader.empty_config('ini');
     var current_sect = result.main;
     
-    var data = new String(fs.readFileSync(name));
+    var data = fs.readFileSync(name, "UTF-8");
     var lines = data.split(/\r\n|\r|\n/);
     var match;
     
@@ -102,9 +116,17 @@ cfreader.load_ini_config = function(name) {
     return result;
 };
 
-cfreader.load_flat_config = function(name) {
+cfreader.load_flat_config = function(name, type) {
     var result = [];
-    var data   = new String(fs.readFileSync(name));
+    var data   = fs.readFileSync(name, "UTF-8");
+    if (type === 'data') {
+        while (data.length > 0) {
+            var match = data.match(/^([^\n]*)\n?/);
+            result.push(match[1]);
+            data = data.slice(match[0].length);
+        }
+        return result;
+    }
     var lines  = data.split(/\r\n|\r|\n/);
     
     lines.forEach( function(line) {

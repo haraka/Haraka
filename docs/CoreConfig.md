@@ -38,6 +38,22 @@ different levels available.
   A name to use for this server. Used in received lines and elsewhere. Setup
   by default to be your hostname.
 
+* deny_includes_uuid
+
+  Each connection and mail in Haraka includes a UUID which is also in most log
+  messages. If you put a `1` in this file then every denied mail (either via
+  DENY/5xx or DENYSOFT/4xx return codes) will include the uuid at the start
+  of each line of the deny message in brackets, making it easy to track
+  problems back to the logs.
+
+  Because UUIDs are long, if you put a number greater than 1 in the config
+  file, it will be truncated to that length. We recommend a 6 as a good
+  balance of finding in the logs and not making lines too long.
+
+* banner_include_uuid
+
+  This will add the full UUID to the first line of the SMTP greeting banner.
+
 * early\_talker\_delay
 
   If clients talk early we *punish* them with a delay of this many milliseconds
@@ -48,13 +64,17 @@ different levels available.
   Seconds to allow a plugin to run before the next hook is called automatically
   default: 30
 
+  Note also that each plugin can have a `config/&lt;plugin_name&gt;.timeout`
+  file specifying a per-plugin timeout. In this file you can set a timeout
+  of 0 to mean that this plugin's hooks never time out. Use this with care.
+
 * cluster\_modules
 
-  A list of cluster modules to load. Use colons to separate parameters to be
+  A list of cluster modules to load. Use a colon to separate parameters to be
   passed to the module/plugin. Typical example:
 
     repl:8888
-    stats
+    stats: {"connections": true}
 
   The above allows you to get stats on your setup via the repl on port 8888.
 

@@ -19,6 +19,8 @@ exports.hook_data_post = function (next, connection) {
     
     var recip = (this.config.get('block_me.recipient') || '').toLowerCase();
     var senders = this.config.get('block_me.senders', 'list');
+
+    var self = this;
     
     // Make sure only 1 recipient
     if (connection.transaction.rcpt_to.length != 1) {
@@ -39,11 +41,11 @@ exports.hook_data_post = function (next, connection) {
     // Now extract the "From" from the body...
     var to_block = extract_from_line(connection.transaction.body);
     if (!to_block) {
-        this.logerror("No sender found in email");
+        connection.logerror(this, "No sender found in email");
         return next();
     }
     
-    this.loginfo("Blocking new sender: " + to_block);
+    connection.loginfo(this, "Blocking new sender: " + to_block);
     
     connection.transaction.notes.block_me = 1;
     
@@ -55,7 +57,7 @@ exports.hook_data_post = function (next, connection) {
             });
         }
         else {
-            plugin.logerror("Unable to append to mail_from.blocklist: " + err);
+            connection.logerror(self, "Unable to append to mail_from.blocklist: " + err);
         }
     });
     

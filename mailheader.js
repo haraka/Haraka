@@ -1,5 +1,11 @@
+"use strict";
 // An RFC 2822 email header parser
 var logger = require('./logger');
+var Iconv;
+try { Iconv = require('iconv').Iconv }
+catch (err) {
+    logger.logdebug("No iconv available - install with 'npm install iconv'");
+}
 
 function Header (options) {
     this.headers = {};
@@ -9,6 +15,28 @@ function Header (options) {
 };
 
 exports.Header = Header;
+exports.Iconv  = Iconv;
+exports.decode_qp = function (line) {
+    if (! /=/.test(line)) {
+        // this may be a pointless optimisation...
+        return new Buffer(line);
+    }
+    line = line.replace(/=\n/mg, '');
+    var buf = new Buffer(line.length);
+    var pos = 0;
+    for (var i=0,l=line.length; i < l; i++) {
+        if (line[i] === '=') {
+            i++;
+            buf[pos] = parseInt(line[i] + line[i+1], 16);
+            i++;
+        }
+        else {
+            buf[pos] = line.charCodeAt(i);
+        }
+        pos++;
+    }
+    return buf.slice(0, pos);
+}
 
 Header.prototype.parse = function (lines) {
     for (var i=0,l=lines.length; i < l; i++) {
@@ -28,7 +56,7 @@ Header.prototype.parse = function (lines) {
             var key = match[1].toLowerCase();
             var val = match[2];
             
-            this._add_header(key, val);
+            this._add_header(key, val, "push");
         }
         else {
             logger.logerror("Header did not look right: " + this.header_list[i]);
@@ -41,21 +69,28 @@ function _decode_header (matched, encoding, cte, data) {
     
     switch(cte) {
         case 'Q':
-            data = data.replace('_', ' ');
-            data = data.replace(/=([A-F0-9][A-F0-9])/gi, function (ignore, code) {
-                return String.fromCharCode(parseInt(code, 16));
-            });
+            data = exports.decode_qp(data.replace(/_/g, ' '));
             break;
         case 'B':
-            data = new Buffer(data, "base64").toString();
+            data = new Buffer(data, "base64");
             break;
         default:
             logger.logerror("Invalid header encoding type: " + cte);
     }
     
     // todo: convert with iconv if encoding != UTF-8
+    if (Iconv) {
+        try {
+            var converter = new Iconv(encoding, "UTF-8");
+            // console.log(data.toString());
+            data = converter.convert(data);
+        }
+        catch (err) {
+            logger.logerror("header iconv conversion from " + encoding + " to UTF-8 failed: " + err);
+        }
+    }
     
-    return data;            
+    return data.toString();
 }
 
 function decode_header (val) {
@@ -106,17 +141,22 @@ Header.prototype._remove_more = function (key) {
     }
 };
 
-Header.prototype._add_header = function (key, value) {
+Header.prototype._add_header = function (key, value, method) {
     this.headers[key] = this.headers[key] || [];
-    this.headers[key].push(value);
+    this.headers[key][method](value);
     this.headers_decoded[key] = this.headers_decoded[key] || [];
-    this.headers_decoded[key].push(decode_header(value));
+    this.headers_decoded[key][method](decode_header(value));
 };
 
 Header.prototype.add = function (key, value) {
-    this._add_header(key.toLowerCase(), value);
-    this.header_list.push(key + ': ' + value + '\n');
+    this._add_header(key.toLowerCase(), value, "unshift");
+    this.header_list.unshift(key + ': ' + value + '\n');
 };
+
+Header.prototype.add_end = function (key, value) {
+    this._add_header(key.toLowerCase(), value, "push");
+    this.header_list.push(key + ': ' + value + '\n');
+}
 
 Header.prototype.lines = function () {
     return this.header_list;
