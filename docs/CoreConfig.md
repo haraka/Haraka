@@ -43,12 +43,12 @@ different levels available.
   If clients talk early we *punish* them with a delay of this many milliseconds
   default: 1000.
 
-* plugin_timeout
+* plugin\_timeout
 
   Seconds to allow a plugin to run before the next hook is called automatically
   default: 30
 
-* cluster_modules
+* cluster\_modules
 
   A list of cluster modules to load. Use colons to separate parameters to be
   passed to the module/plugin. Typical example:
@@ -63,6 +63,11 @@ different levels available.
   The greeting line used when a client connects. This can be multiple lines
   if required (this may cause some connecting machines to fail - though
   usually only spam-bots).
+
+* max_received_count
+
+  The maximum number of "Received" headers allowed in an email. This is a
+  simple protection against mail loops. Defaults to 100.
 
 * outbound.concurrency_max
 

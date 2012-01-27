@@ -670,6 +670,12 @@ Connection.prototype.accumulate_data = function(line) {
 Connection.prototype.data_done = function() {
     this.state = 'pause';
     // this.transaction.add_header('X-Haraka', 'Version ' + version);
+    var max_received = config.get('max_received_count') || 100;
+    if (this.transaction.header.get_all('received').length > max_received) {
+        this.respond(552, "Too many received headers - possible mail loop");
+        this.reset_transaction();
+        return;
+    }
     plugins.run_hooks('data_post', this);
 };
 
