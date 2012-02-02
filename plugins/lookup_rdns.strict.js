@@ -29,7 +29,7 @@ function _in_whitelist(connection, plugin, address) {
     var host_list_regex =
         plugin.config.get('lookup_rdns.strict.whitelist_regex', 'list');
     
-    connection.loginfo(plugin, "Checking if " + address + " is in the " +
+    connection.logdebug(plugin, "Checking if " + address + " is in the " +
         "lookup_rdns.strict.whitelist files");
 
     var i;
