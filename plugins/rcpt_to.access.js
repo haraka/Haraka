@@ -45,7 +45,7 @@ exports.rcpt_to_access = function(next, connection, params) {
 
         if (_in_blacklist(connection, plugin, rcpt_to)) {
             connection.logdebug(plugin, "Rejecting, matched: " + rcpt_to);
-            return next(DENY, rcpt_to + plugin.deny_msg);
+            return next(DENY, rcpt_to + ' ' + plugin.deny_msg);
         }
     }
 
@@ -55,7 +55,8 @@ exports.rcpt_to_access = function(next, connection, params) {
 function _in_whitelist(connection, plugin, address) {
     var i;
     for (i in plugin.wl) {
-        connection.logdebug(plugin, 'checking ' + address + ' against ' + plugin.wl[i]);
+        connection.logdebug(plugin, 'checking ' + address + ' against ' +
+            plugin.wl[i]);
 
         if (plugin.wl[i] === address) {
             return 1;
@@ -77,7 +78,8 @@ function _in_whitelist(connection, plugin, address) {
 function _in_blacklist(connection, plugin, address) {
     var i;
     for (i in plugin.bl) {
-        connection.logdebug(plugin, 'checking ' + address + ' against ' + plugin.bl[i]);
+        connection.logdebug(plugin, 'checking ' + address + ' against ' +
+            plugin.bl[i]);
 
         if (plugin.bl[i] === address) {
             return 1;
