@@ -54,9 +54,10 @@ exports.rdns_access = function(next, connection) {
             ' against connect.rdns_access.blacklist');
 
         if (_in_blacklist(connection, plugin, connection.remote_ip)) {
-            connection.logdebug(plugin, "Rejecting, matched: " + connection.remote_ip);
-            return next(DENY, connection.remote_host.toLowerCase() + ' [' +
-                connection.remote_ip + '] ' + plugin.deny_msg);
+            connection.logdebug(plugin, "Rejecting, matched: " +
+                connection.remote_ip);
+            return next(DENYDISCONNECT, connection.remote_host.toLowerCase() +
+                ' [' + connection.remote_ip + '] ' + plugin.deny_msg);
         }
     }
 
@@ -66,9 +67,10 @@ exports.rdns_access = function(next, connection) {
             ' against connect.rdns_access.blacklist');
 
         if (_in_blacklist(connection, plugin, connection.remote_host.toLowerCase())) {
-            connection.logdebug(plugin, "Rejecting, matched: " + connection.remote_host);
-            return next(DENY, connection.remote_host.toLowerCase() + ' [' +
-                connection.remote_ip + '] ' + plugin.deny_msg);
+            connection.logdebug(plugin, "Rejecting, matched: " +
+               connection.remote_host);
+            return next(DENYDISCONNECT, connection.remote_host.toLowerCase() +
+                ' [' + connection.remote_ip + '] ' + plugin.deny_msg);
         }
     }
 
@@ -78,7 +80,8 @@ exports.rdns_access = function(next, connection) {
 function _in_whitelist(connection, plugin, host) {
     var i;
     for (i in plugin.wl) {
-        connection.logdebug(plugin, 'checking ' + host + ' against ' + plugin.wl[i]);
+        connection.logdebug(plugin, 'checking ' + host + ' against ' +
+            plugin.wl[i]);
 
         if (plugin.wl[i].toLowerCase() === host) {
             return 1;
@@ -100,7 +103,8 @@ function _in_whitelist(connection, plugin, host) {
 function _in_blacklist(connection, plugin, host) {
     var i;
     for (i in plugin.bl) {
-        connection.logdebug(plugin, 'checking ' + host + ' against ' + plugin.bl[i]);
+        connection.logdebug(plugin, 'checking ' + host + ' against ' +
+            plugin.bl[i]);
 
         if (plugin.bl[i].toLowerCase() === host) {
             return 1;
