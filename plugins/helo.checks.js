@@ -38,7 +38,7 @@ exports.helo_no_dot = function (next, connection, helo) {
     }
 
     if (config.main.require_valid_tld) {
-        var tld = (helo.split(/\./).reverse())[0];
+        var tld = (helo.split(/\./).reverse())[0].toLowerCase();
         if (!/^\[\d+\.\d+\.\d+\.\d+\]$/.test(helo) && !net_utils.top_level_tlds[tld]) {
             return next(DENY, "HELO must have a valid TLD");
         }
