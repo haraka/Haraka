@@ -20,10 +20,10 @@ exports.register = function() {
         this.blregex = new RegExp('^(?:' + black_regex.join('|') + ')$', 'i');
     }
 
-    this.register_hook('connect', 'rdns_access');
+    this.register_hook('mail_from', 'mail_from_access');
 }
 
-exports.rdns_access = function(next, connection, params) {
+exports.mail_from_access = function(next, connection, params) {
     var plugin = this;
     var mail_from = params[0].address();
 
