@@ -20,7 +20,7 @@ exports.register = function() {
         this.blregex = new RegExp('^(?:' + black_regex.join('|') + ')$', 'i');
     }
 
-    this.register_hook('rcpt_to', 'rcpt_to_access');
+    this.register_hook('rcpt', 'rcpt_to_access');
 }
 
 exports.rcpt_to_access = function(next, connection, params) {
