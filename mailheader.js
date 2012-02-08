@@ -149,15 +149,13 @@ Header.prototype._add_header = function (key, value, method) {
 };
 
 Header.prototype.add = function (key, value) {
-    value = value.replace(/\n?$/, "\n")
     this._add_header(key.toLowerCase(), value, "unshift");
-    this.header_list.unshift(key + ': ' + value);
+    this.header_list.unshift(key + ': ' + value + '\n');
 };
 
 Header.prototype.add_end = function (key, value) {
-    value = value.replace(/\n?$/, "\n")
     this._add_header(key.toLowerCase(), value, "push");
-    this.header_list.push(key + ': ' + value);
+    this.header_list.push(key + ': ' + value + '\n');
 }
 
 Header.prototype.lines = function () {
