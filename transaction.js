@@ -53,7 +53,7 @@ Transaction.prototype.end_data = function() {
 }
 
 Transaction.prototype.add_header = function(key, value) {
-    this.header.add(key, value);
+    this.header.add_end(key, value);
     if (this.header_pos > 0) this.reset_headers();
 };
 
@@ -65,7 +65,7 @@ Transaction.prototype.reset_headers = function () {
 
 Transaction.prototype.remove_header = function (key) {
     this.header.remove(key);
-    this.reset_headers();
+    if (this.header_pos > 0) this.reset_headers();
 };
 
 Transaction.prototype.attachment_hooks = function (start, data, end) {
