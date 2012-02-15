@@ -7,7 +7,6 @@ module.exports = function (returnValue) {
   }
 
   stub.called = false;
-  stub.relaying = false;
 
   return stub;
 };

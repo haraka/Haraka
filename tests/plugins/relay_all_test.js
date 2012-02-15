@@ -1,5 +1,8 @@
+require('function-bind.js');
+
 var stub             = require('tests/fixtures/stub'),
-    constants        = require('../../constants');
+    constants        = require('../../constants'),
+    Connection       = require('tests/fixtures/stub_connection'),
     Plugin           = require('tests/fixtures/stub_plugin');
 
 // huge hack here, but plugin tests need constants
@@ -7,10 +10,12 @@ constants.import(global);
 
 function _set_up(callback) {
   this.backup = {};
+  this.client = {};
+  this.server = {};
 
   // needed for tests
   this.plugin = Plugin.createPlugin('plugins/relay_all');
-  this.connection = stub();
+  this.connection = Connection.createConnection();
   this.params = ['foo@bar.com'];
 
   // backup modifications
@@ -21,7 +26,7 @@ function _set_up(callback) {
   this.plugin.register_hook = stub();
   this.connection.loginfo = stub();
 
-  // going to need this in multiple tests
+  // going to need these in multiple tests
   this.plugin.register();
 
   callback();
@@ -68,14 +73,14 @@ exports.relay_all = {
     };
 
     this.plugin.confirm_all(next, this.connection, this.params);
+  },
+  'confirm_all hook always sets connection.relaying to 1' : function (test) {
+    var next = function (action) {
+      test.expect(1);
+      test.equals(this.connection.relaying, 1);
+      test.done();
+    }.bind(this);
+
+    this.plugin.confirm_all(next, this.connection, this.params);
   }
 };
-
-
-// exports.confirm_all = function(next, connection, params) {
-//     var recipient = params.shift();
-//     connection.loginfo(this, "confirming recipient " + recipient);
-//     connection.relaying = 1;
-//     next(OK);
-// };
-

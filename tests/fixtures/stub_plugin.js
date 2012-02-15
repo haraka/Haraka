@@ -18,4 +18,4 @@ plugin.createPlugin = function(name) {
   }
 
   return obj;
-}
+};
