@@ -10,8 +10,6 @@ constants.import(global);
 
 function _set_up(callback) {
   this.backup = {};
-  this.client = {};
-  this.server = {};
 
   // needed for tests
   this.plugin = Plugin.createPlugin('plugins/relay_all');

@@ -1,3 +1,5 @@
+require('function-bind');
+
 // send logs to syslog
 var Syslog = require('node-syslog');
 
@@ -84,7 +86,7 @@ exports.register = function() {
     }
 
     this.register_hook('log', 'syslog');
-}
+};
 
 exports.syslog = function (next, logger, log) {
     switch(log.level.toUpperCase()) {
@@ -117,4 +119,4 @@ exports.syslog = function (next, logger, log) {
     }
 
     return next();
-}
+};
