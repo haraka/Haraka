@@ -1,18 +1,21 @@
 require('function-bind');
 
 // send logs to syslog
-var Syslog = require('node-syslog');
+var Syslog = exports.Syslog = require('node-syslog');
 
 exports.register = function() {
-    var options  = 0;
-    var ini      = this.config.get('log.syslog.ini');
-    var name     = ini.general && (ini.general['name']       || 'haraka');
-    var facility = ini.general && (ini.general['facility']   || 'MAIL');
-    var pid      = ini.general && (ini.general['log_pid']    || 1);
-    var odelay   = ini.general && (ini.general['log_odelay'] || 1);
-    var cons     = ini.general && (ini.general['log_cons']   || 0);
-    var ndelay   = ini.general && (ini.general['log_ndelay'] || 0);
-    var nowait   = ini.general && (ini.general['log_nowait'] || 0);
+    var options   = 0;
+    var ini       = this.config.get('log.syslog.ini');
+    var name      = ini.general && (ini.general['name']       || 'haraka');
+    var facility  = ini.general && (ini.general['facility']   || 'MAIL');
+    var pid       = ini.general && (ini.general['log_pid']    || 1);
+    var odelay    = ini.general && (ini.general['log_odelay'] || 1);
+    var cons      = ini.general && (ini.general['log_cons']   || 0);
+    var ndelay    = ini.general && (ini.general['log_ndelay'] || 0);
+    var nowait    = ini.general && (ini.general['log_nowait'] || 0);
+    var always_ok = ini.general && (ini.general['always_ok']  || false);
+
+    this.always_ok = always_ok;
 
     if (pid)
       options |= Syslog.LOG_PID;
@@ -89,6 +92,8 @@ exports.register = function() {
 };
 
 exports.syslog = function (next, logger, log) {
+    var plugin = this;
+
     switch(log.level.toUpperCase()) {
         case 'INFO':
             Syslog.log(Syslog.LOG_INFO, log.data);
@@ -118,5 +123,9 @@ exports.syslog = function (next, logger, log) {
             Syslog.log(Syslog.LOG_DEBUG, log.data);
     }
 
-    return next();
+    if (plugin.always_ok) {
+        return next(OK);
+    } else {
+        return next();
+    }
 };
