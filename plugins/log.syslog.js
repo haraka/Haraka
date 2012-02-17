@@ -1,5 +1,3 @@
-require('function-bind');
-
 // send logs to syslog
 var Syslog = exports.Syslog = require('node-syslog');
 
