@@ -124,7 +124,8 @@ exports.syslog = function (next, logger, log) {
 
     if (plugin.always_ok) {
         return next(OK);
-    } else {
+    }
+    else {
         return next();
     }
 };
