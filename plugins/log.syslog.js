@@ -4,14 +4,15 @@ var Syslog = exports.Syslog = require('node-syslog');
 exports.register = function() {
     var options   = 0;
     var ini       = this.config.get('log.syslog.ini');
-    var name      = ini.general && (ini.general['name']       || 'haraka');
-    var facility  = ini.general && (ini.general['facility']   || 'MAIL');
-    var pid       = ini.general && (ini.general['log_pid']    || 1);
-    var odelay    = ini.general && (ini.general['log_odelay'] || 1);
-    var cons      = ini.general && (ini.general['log_cons']   || 0);
-    var ndelay    = ini.general && (ini.general['log_ndelay'] || 0);
-    var nowait    = ini.general && (ini.general['log_nowait'] || 0);
-    var always_ok = ini.general && (ini.general['always_ok']  || false);
+    ini.general   ||= {};
+    var name      = ini.general['name']       || 'haraka';
+    var facility  = ini.general['facility']   || 'MAIL';
+    var pid       = ini.general['log_pid']    || 1;
+    var odelay    = ini.general['log_odelay'] || 1;
+    var cons      = ini.general['log_cons']   || 0;
+    var ndelay    = ini.general['log_ndelay'] || 0;
+    var nowait    = ini.general['log_nowait'] || 0;
+    var always_ok = ini.general['always_ok']  || false;
 
     this.always_ok = always_ok;
 
