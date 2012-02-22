@@ -15,6 +15,7 @@ if (process.env.HARAKA) { plugin_paths.unshift(path.join(process.env.HARAKA, 'pl
 
 function Plugin(name) {
     this.name = name;
+    this.base = {};
     this.timeout = config.get(name + '.timeout');
     if (this.timeout === null) {
         this.timeout = config.get('plugin_timeout') || 30;
@@ -50,7 +51,7 @@ Plugin.prototype.inherits = function (parent_name) {
     if (parent_plugin.register) {
         parent_plugin.register.call(this);
     }
-    this.base = parent_plugin;
+    this.base[parent_name] = parent_plugin;
 }
 
 // copy logger methods into Plugin:
