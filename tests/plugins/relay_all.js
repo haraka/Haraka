@@ -1,5 +1,3 @@
-require('function-bind.js');
-
 var stub             = require('tests/fixtures/stub'),
     constants        = require('../../constants'),
     Connection       = require('tests/fixtures/stub_connection'),

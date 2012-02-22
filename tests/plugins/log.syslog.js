@@ -1,8 +1,5 @@
-require('function-bind.js');
-
 var stub             = require('tests/fixtures/stub'),
     constants        = require('../../constants'),
-    util             = require('util'),
     Logger           = require('tests/fixtures/stub_logger'),
     Plugin           = require('tests/fixtures/stub_plugin');
 
