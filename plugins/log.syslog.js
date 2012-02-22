@@ -4,7 +4,7 @@ var Syslog = exports.Syslog = require('node-syslog');
 exports.register = function() {
     var options   = 0;
     var ini       = this.config.get('log.syslog.ini');
-    ini.general   ||= {};
+    ini.general   = ini.general               || {};
     var name      = ini.general['name']       || 'haraka';
     var facility  = ini.general['facility']   || 'MAIL';
     var pid       = ini.general['log_pid']    || 1;
