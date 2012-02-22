@@ -8,14 +8,14 @@ function Plugin(name) {
 }
 
 plugin.createPlugin = function(name) {
-  var obj  = new Plugin(name);
-  var plug = require(name);
+    var obj  = new Plugin(name);
+    var plug = require(name);
 
-  for (var k in plug) {
-    if (plug.hasOwnProperty(k)) {
-      obj[k] = plug[k];
+    for (var k in plug) {
+        if (plug.hasOwnProperty(k)) {
+            obj[k] = plug[k];
+        }
     }
-  }
 
-  return obj;
+    return obj;
 };

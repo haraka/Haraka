@@ -8,6 +8,6 @@ function Logger() {
 }
 
 logger.createLogger = function() {
-  var obj  = new Logger();
-  return obj;
+    var obj  = new Logger();
+    return obj;
 };
