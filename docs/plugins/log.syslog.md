@@ -61,3 +61,11 @@ chosen for you.
 
     Don't wait for child processes that may have been created while
     logging the message.
+
+
+* log.syslog.general.always_ok (default: false)
+
+    If false, then this plugin will return with just next() allowing other
+    plugins that have registered for the log hook to run.  To speed things up,
+    if no other log hooks need to run (daemon), then one can make this true.
+    This will case the plugin to always call next(OK).
