@@ -309,7 +309,7 @@ else if (parsed.qlist) {
     var logger = require(path.join(base, "logger"));
     if (!parsed.verbose)
         logger.log = function () {} // disable logging for this
-    var outbound = require(path.join(base, "outbound")).init();
+    var outbound = require(path.join(base, "outbound"));
     outbound.list_queue();
     process.exit();
 }
@@ -321,7 +321,7 @@ else if (parsed.qstat) {
     var logger = require(path.join(base, "logger"));
     if (!parsed.verbose)
         logger.log = function () {} // disable logging for this
-    var outbound = require(path.join(base, "outbound")).init();
+    var outbound = require(path.join(base, "outbound"));
     var stats = outbound.stat_queue();
     console.log(stats);
     process.exit();
