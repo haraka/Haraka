@@ -40,7 +40,8 @@ config.get = function(name, type, cb) {
             }
         }
         else {
-            logger.logerror(err.name + ': ' + err.message);
+            // Broken config means the server dies. Tough luck!
+            throw err;
         }
     }
 
