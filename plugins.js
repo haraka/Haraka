@@ -15,6 +15,7 @@ if (process.env.HARAKA) { plugin_paths.unshift(path.join(process.env.HARAKA, 'pl
 
 function Plugin(name) {
     this.name = name;
+    this.base = {};
     this.timeout = config.get(name + '.timeout');
     if (this.timeout === null) {
         this.timeout = config.get('plugin_timeout') || 30;
@@ -50,7 +51,7 @@ Plugin.prototype.inherits = function (parent_name) {
     if (parent_plugin.register) {
         parent_plugin.register.call(this);
     }
-    this.base = parent_plugin;
+    this.base[parent_name] = parent_plugin;
 }
 
 // copy logger methods into Plugin:
@@ -126,6 +127,7 @@ plugins._load_and_compile_plugin = function(name) {
         clearInterval: clearInterval,
         process: process,
         Buffer: Buffer,
+        Math: Math,
     };
     constants.import(sandbox);
     try {
@@ -198,19 +200,34 @@ plugins.run_next_hook = function(hook, object, params) {
         
         if (called_once) {
             if (hook != 'log')
-                object.logerror("callback called multiple times. Ignoring subsequent calls");
+                object.logerror(item[0].name + ' plugin ran callback multiple times - ignoring subsequent calls');
+                // Write a stack trace to the log to aid debugging
+                object.logerror((new Error).stack);
             return;
         }
         called_once++;
         if (!retval) retval = constants.cont;
+        // Log what is being run
+        if (item && hook !== 'log') {
+            var log = 'logdebug';
+            var is_not_cont = (retval !== constants.cont && logger.would_log(logger.LOGINFO));
+            if (is_not_cont) log = 'loginfo';
+            if (is_not_cont || logger.would_log(logger.LOGDEBUG)) {
+                object[log]([
+                    'hook='     + hook,
+                    'plugin='   + item[0].name,
+                    'function=' + item[1], 
+                    'params="'  + ((params) ? ((typeof params === 'string') ? params : params[0]) : '') + '"',
+                    'retval='   + constants.translate(retval),
+                    'msg="'     + ((msg) ? msg : '') + '"',
+                ].join(' '));
+            }
+        }
         if (object.hooks_to_run.length == 0 || 
             retval !== constants.cont)
         {
             var respond_method = hook + "_respond";
-            if (item && utils.in_array(retval, [constants.deny, constants.denysoft, constants.denydisconnect])) {
-                if (hook != 'log') {
-                    object.loginfo("plugin returned deny(soft?): ", msg);
-                }
+            if (item && utils.in_array(retval, [constants.deny, constants.denysoft, constants.denydisconnect, constants.denysoftdisconnect])) {
                 object.deny_respond = function (deny_retval, deny_msg) {
                     switch(deny_retval) {
                         case constants.ok:
@@ -253,8 +270,8 @@ plugins.run_next_hook = function(hook, object, params) {
     if (item[0].timeout && hook != 'log') {
         timeout_id = setTimeout(function () {
             object.logcrit("Plugin " + item[0].name + 
-                " timed out - make sure it calls the callback");
-            callback(constants.denysoft, "timeout");
+                " timed out on hook " + hook + " - make sure it calls the callback");
+            callback(constants.denysoft, "plugin timeout");
         }, item[0].timeout * 1000);
     }
     

@@ -17,7 +17,7 @@ var cfreader = exports;
 cfreader.watch_files = true;
 cfreader._config_cache = {};
 
-cfreader.read_config = function(name, type) {
+cfreader.read_config = function(name, type, cb) {
     // Check cache first
     if (cfreader._config_cache[name]) {
         return cfreader._config_cache[name];
@@ -33,6 +33,7 @@ cfreader.read_config = function(name, type) {
             // file has changed
             if (curr.mtime.getTime() !== prev.mtime.getTime()) {
                 cfreader.load_config(name, type);
+                if (typeof cb === 'function') cb();
             }
         });
     }

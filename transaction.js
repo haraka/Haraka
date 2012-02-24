@@ -41,7 +41,7 @@ Transaction.prototype.add_data = function(line) {
         }
     }
     else if (this.header_pos && this.parse_body) {
-        this.body.parse_more(line);
+        line = this.body.parse_more(line);
     }
     this.data_lines.push(line);
 };
@@ -53,8 +53,8 @@ Transaction.prototype.end_data = function() {
 }
 
 Transaction.prototype.add_header = function(key, value) {
-    this.header.add(key, value);
-    this.reset_headers();
+    this.header.add_end(key, value);
+    if (this.header_pos > 0) this.reset_headers();
 };
 
 Transaction.prototype.reset_headers = function () {
@@ -65,7 +65,7 @@ Transaction.prototype.reset_headers = function () {
 
 Transaction.prototype.remove_header = function (key) {
     this.header.remove(key);
-    this.reset_headers();
+    if (this.header_pos > 0) this.reset_headers();
 };
 
 Transaction.prototype.attachment_hooks = function (start, data, end) {

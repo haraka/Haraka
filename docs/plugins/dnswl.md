@@ -1,22 +1,27 @@
-dnsbl
+dnswl
 =====
 
-This plugin looks up the connecting IP address in an IP blocklist. Mails
-found to be in the blocklist are rejected.
+This plugin looks up the connecting IP address in an IP whitelist.
+If the host is listed, then the plugin will return OK for all hooks
+up to hook_data.
+
+IMPORTANT!  The order of plugins in config/plugins is important when
+this plugin is used.  It should be listed *before* any plugins that
+you wish to skip, but after any plugins that accept recipients.
 
 Configuration
 -------------
 
 This plugins uses the following files:
 
-dnsbl.zones - Contains a list of zones to query, one per line.
+dnswl.zones - Contains a list of zones to query, one per line.
 
-dnsbl.ini - INI format with options described below:
+dnswl.ini - INI format with options described below:
 
 * zones       
 
     A comma or semi-colon list of zones to query.  It will be merged with
-    any lists in dnsbl.zones.
+    any lists in dnswl.zones.
 
 * periodic_checks  
 

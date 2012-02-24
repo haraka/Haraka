@@ -869,6 +869,15 @@ Connection.prototype.data_done = function() {
         return;
     }
 
+    // Check max received headers count
+    var max_received = config.get('max_received_count') || 100;
+    if (this.transaction.header.get_all('received').length > max_received) {
+        this.logerror("Incoming message had too many Received headers");
+        this.respond(552, "Too many received headers - possible mail loop");
+        this.reset_transaction();
+        return;
+    }
+
     this.transaction.end_data();
 
     plugins.run_hooks('data_post', this);

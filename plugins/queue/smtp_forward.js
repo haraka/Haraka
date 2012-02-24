@@ -19,30 +19,35 @@ exports.smtp_forward = function (next, connection) {
     var recipients = connection.transaction.rcpt_to.map(function(item) { return item });
     var data_marker = 0;
     var dot_pending = true;
-    var got_data_response = false;
 
     var send_data = function () {
-        if (data_marker < connection.transaction.data_lines.length) {
-            var wrote_all = socket.write(connection.transaction.data_lines[data_marker].replace(/^\./, '..').replace(/\r?\n/g, '\r\n'));
+        var wrote_all = true;
+        while (wrote_all && (data_marker < connection.transaction.data_lines.length)) {
+            var line = connection.transaction.data_lines[data_marker];
             data_marker++;
-            if (wrote_all) {
-                send_data();
-            }
-        }   
-        else if (dot_pending) {
+            wrote_all = socket.write(line.replace(/^\./, '..').replace(/\r?\n/g, '\r\n'));
+            if (!wrote_all) return;
+        }
+        // we get here if wrote_all still true, and we got to end of data_lines
+        if (dot_pending) {
             dot_pending = false;
             socket.send_command('dot');
         }
-    }
-    
+    };
+
+    socket.on('drain', function () {
+        connection.logdebug(self, 'drain');
+        if (dot_pending && command === 'databody') {
+            process.nextTick(function () { send_data() });
+        }
+    });
+
     socket.send_command = function (cmd, data) {
         var line = cmd + (data ? (' ' + data) : '');
         if (cmd === 'dot') {
             line = '.';
         }
         connection.logprotocol(self, "C: " + line);
-        // Set this before we write() in case 'drain' is called
-        // to stop send_data() form calling 'dot' twice.
         command = cmd.toLowerCase();
         this.write(line + "\r\n");
         // Clear response buffer from previous command
@@ -148,7 +153,7 @@ exports.smtp_forward = function (next, connection) {
                         socket.send_command('DATA');
                         break;
                     case 'data':
-                        got_data_response = true;
+                        command = 'databody';
                         send_data();
                         break;
                     case 'dot':
@@ -172,11 +177,4 @@ exports.smtp_forward = function (next, connection) {
             return next();
         }
     });
-    socket.on('drain', function() {
-        connection.logdebug(self, "Drained");
-        if (got_data_response && dot_pending && command === 'data') {
-            process.nextTick(function () { send_data() });
-        }
-    });
 };
-
