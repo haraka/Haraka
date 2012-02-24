@@ -24,7 +24,7 @@ util.inherits(Body, events.EventEmitter);
 exports.Body = Body;
 
 Body.prototype.parse_more = function (line) {
-    this["parse_" + this.state](line);
+    return this["parse_" + this.state](line);
 }
 
 Body.prototype.parse_child = function (line) {
@@ -56,10 +56,10 @@ Body.prototype.parse_child = function (line) {
             this.children.push(bod);
             bod.state = 'headers';
         }
-        return;
+        return line;
     }
     // Pass data into last child
-    this.children[this.children.length - 1].parse_more(line);
+    return this.children[this.children.length - 1].parse_more(line);
 }
 
 Body.prototype.parse_headers = function (line) {
@@ -72,6 +72,7 @@ Body.prototype.parse_headers = function (line) {
     else {
         this.header_lines.push(line);
     }
+    return line;
 }
 
 Body.prototype.parse_start = function (line) {
@@ -108,7 +109,7 @@ Body.prototype.parse_start = function (line) {
         this.state = 'attachment';
     }
     
-    this["parse_" + this.state](line);
+    return this["parse_" + this.state](line);
 }
 
 Body.prototype.parse_end = function (line) {
@@ -144,10 +145,12 @@ Body.prototype.parse_end = function (line) {
         }
         // delete this.body_text_encoded;
     }
+    return line;
 }
 
 Body.prototype.parse_body = function (line) {
     this.body_text_encoded += line;
+    return line;
 }
 
 Body.prototype.parse_multipart_preamble = function (line) {
@@ -155,7 +158,6 @@ Body.prototype.parse_multipart_preamble = function (line) {
         if (line.substr(0, (this.boundary.length + 2)) === ('--' + this.boundary)) {
             if (line.substr(this.boundary.length + 2, 2) === '--') {
                 // end
-                return;
             }
             else {
                 // next section
@@ -166,11 +168,12 @@ Body.prototype.parse_multipart_preamble = function (line) {
                 this.children.push(bod);
                 bod.state = 'headers';
                 this.state = 'child';
-                return;
             }
+            return line;
         }
     }
     this.body_text_encoded += line;
+    return line;
 }
 
 Body.prototype.parse_attachment = function (line) {
@@ -178,13 +181,12 @@ Body.prototype.parse_attachment = function (line) {
         if (line.substr(0, (this.boundary.length + 2)) === ('--' + this.boundary)) {
             if (line.substr(this.boundary.length + 2, 2) === '--') {
                 // end
-                return;
             }
             else {
                 // next section
                 this.state = 'headers';
-                return;
             }
+            return line;
         }
     }
 
@@ -215,6 +217,7 @@ Body.prototype.parse_attachment = function (line) {
         buf.copy(this.buf, this.buf_fill);
         this.buf_fill += buf.length;
     }
+    return line;
 }
 
 Body.prototype.decode_qp = require('./mailheader').decode_qp;
