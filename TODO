@@ -4,3 +4,15 @@
 - Ability to modify the body of email (e.g add a banner) and have it re-write the data_lines
 - Create a config file for each of the core shipping configs, so people have something as a baseline
 - IMAP server (long shot for now)
+- Add the option to define special/important plugins that are always run, even if an earlier 
+  plugin on the same hook returns OK
+- Spool data to disk once databytes reaches a certain size to save memory
+  - The plan for this is as follows:
+    1. Create a subclass of Stream which is read/writable, and spools to
+       memory at first, and then to disk after a configurable size is
+       reached.
+    2. Convert code that reads data_lines to use that class instead
+    3. Convert code that sends over a socket to use .pipe() instead - see
+       how outbound.js does that as it is reading from disk.
+    4. Somehow work into all that ability to re-write the email after
+       adding banners etc.

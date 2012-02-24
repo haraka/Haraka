@@ -73,27 +73,43 @@ exports.hook_data_post = function (next, connection) {
         return len;
     }
 
-    var data_marker = 0;
+    var data_marker = 0; ///< The current line number we're sending to clamd
+    var in_data = false; ///< We're sending data, but not done yet
+    var data_line = "";  ///< The current line we're sending to clamd
+    
     var send_data = function () {
-        if (data_marker < transaction.data_lines.length) {
-            var line = transaction.data_lines[data_marker];
-            var len = pack_len(Buffer.byteLength(line));
-            var wrote_all = socket.write(len, function() {
-                socket.write(line);
+        in_data = true;
+        var wrote_all = true;
+        while (wrote_all && (data_marker < transaction.data_lines.length)) {
+            if (data_line) {
+                // If the current line is not empty, we haven't sent it yet
                 data_marker++;
-            });
-            if (wrote_all) {
-                send_data(); // TODO: Fix to be non-recursive like queue/proxy
+                wrote_all = socket.write(data_line);
+                data_line = "";
+                if (!wrote_all) {
+                    return;
+                }
+            }
+            if (data_marker < transaction.data_lines.length) {
+                // If we a line yet to write, encode the length and send it
+                data_line = transaction.data_lines[data_marker];
+                var len = Buffer.byteLength(data_line);
+                var buf = pack_len(len);
+                connection.logdata(plugin, "C{len=" + len + "}: " + data_line);
+                wrote_all = socket.write(buf);
             }
         }
-        else {
+        if (wrote_all) {
+            // We're at the end of the data_lines - send a zero length line
+            in_data = false; // We don't need to be called by socket.on('drain' ...
             socket.end(pack_len(0));
         }
     };
 
     socket.on('drain', function () {
-        connection.logdebug(plugin, 'drain');
-        send_data();
+        if (in_data) {
+            process.nextTick(function () { send_data() });
+        }
     });
     socket.on('timeout', function () {
         connection.logerror(plugin, "connection timed out");

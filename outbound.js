@@ -15,6 +15,9 @@ var plugins     = require('./plugins');
 var date_to_str = require('./utils').date_to_str;
 var Address     = require('./address').Address;
 
+var core_consts = require('constants');
+var WRITE_EXCL  = core_consts.O_CREAT | core_consts.O_TRUNC | core_consts.O_WRONLY | core_consts.O_EXCL;
+
 var delivery_concurrency = 0;
 
 var DENY = constants.deny;
@@ -215,7 +218,7 @@ exports.process_domain = function (dom, recips, from, data_lines, hmails, notes,
     this.loginfo("Processing domain: " + dom);
     var fname = _fname();
     var tmp_path = path.join(queue_dir, '.' + fname);
-    var ws = fs.createWriteStream(tmp_path);
+    var ws = fs.createWriteStream(tmp_path, { flags: WRITE_EXCL });
     var data_pos = 0;
     var write_more = function () {
         if (data_pos === data_lines.length) {
@@ -284,7 +287,7 @@ exports.split_to_new_recipients = function (hmail, recipients) {
     var plugin = this;
     var fname = _fname();
     var tmp_path = path.join(queue_dir, '.' + fname);
-    var ws = fs.createWriteStream(tmp_path);
+    var ws = fs.createWriteStream(tmp_path, { flags: WRITE_EXCL });
 
     var writing = false;
 
@@ -921,6 +924,7 @@ HMailItem.prototype.bounce_respond = function (retval, msg) {
         if (retval === constants.stop) {
             fs.unlink(this.path);
         }
+        delivery_concurrency--;
         return;
     }
 

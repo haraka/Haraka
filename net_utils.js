@@ -4,7 +4,7 @@ var config = require('./config');
 var isIPv4 = require('net').isIPv4;
 
 // Regexp to match private IPv4 ranges
-var re_private_ipv4 = /(?:10|127|169\.254|172\.(?:1[6-9]|2[0-9]|3[01])|192\.168)\..*/;
+var re_private_ipv4 = /^(?:10|127|169\.254|172\.(?:1[6-9]|2[0-9]|3[01])|192\.168)\..*/;
 
 var top_level_tlds = {};
 config.get('top-level-tlds','list').forEach(function (tld) {

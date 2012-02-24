@@ -5,6 +5,8 @@ exports.register = function() {
 };
 
 exports.check_early_talker = function(next, connection) {
+    // Don't delay AUTH/RELAY clients
+    if (connection.relaying) return next();
     var pause = this.config.get('early_talker.pause');
     if (pause) {
         setTimeout(function () { _check_early_talker(connection, next) }, pause);
