@@ -33,8 +33,8 @@ function _set_up(callback) {
             log_pid : 1,
             log_odelay : 1,
             log_cons : 0,
-            log_ndelay : 0,
-            log_nowait : 0,
+            log_ndelay : false,
+            log_nowait : 'random',
             always_ok : false
         }
     };
@@ -113,7 +113,7 @@ exports.log_syslog = {
         // local teardown
         this.plugin.Syslog.init = this.backup.plugin.Syslog.init;
     },
-    'hook returns just next() if configured to do so' : function (test) {
+    'hook returns just next() by default (missing always_ok)' : function (test) {
         var next = function (action) {
             test.expect(1);
             test.isUndefined(action);
@@ -122,15 +122,77 @@ exports.log_syslog = {
 
         this.plugin.syslog(next, this.logger, this.log);
     },
-    'hook returns next(OK) if configured to do so' : function (test) {
+    'hook returns just next() if always_ok is false' : function (test) {
         // local setup
         this.backup.configfile = this.configfile;
-        this.configfile.general.always_ok = true;
+        this.configfile.general.always_ok = 'false';
+        this.plugin.register();
+
+        var next = function (action) {
+            test.expect(1);
+            test.isUndefined(action);
+            test.done();
+        };
+
+        this.plugin.syslog(next, this.logger, this.log);
+    },
+    'hook returns next(OK) if always_ok is true' : function (test) {
+        // local setup
+        this.backup.configfile = this.configfile;
+        this.configfile.general.always_ok = 'true';
         this.plugin.register();
 
         var next = function (action) {
             test.expect(1);
             test.equals(action, constants.ok);
+            test.done();
+        };
+
+        this.plugin.syslog(next, this.logger, this.log);
+
+        // local teardown
+        this.configfile = this.backup.configfile;
+    },
+    'hook returns just next() if always_ok is 0' : function (test) {
+        // local setup
+        this.backup.configfile = this.configfile;
+        this.configfile.general.always_ok = 0;
+        this.plugin.register();
+
+        var next = function (action) {
+            test.expect(1);
+            test.isUndefined(action);
+            test.done();
+        };
+
+        this.plugin.syslog(next, this.logger, this.log);
+    },
+    'hook returns next(OK) if always_ok is 1' : function (test) {
+        // local setup
+        this.backup.configfile = this.configfile;
+        this.configfile.general.always_ok = 1;
+        this.plugin.register();
+
+        var next = function (action) {
+            test.expect(1);
+            test.equals(action, constants.ok);
+            test.done();
+        };
+
+        this.plugin.syslog(next, this.logger, this.log);
+
+        // local teardown
+        this.configfile = this.backup.configfile;
+    },
+    'hook returns next() if always_ok is random' : function (test) {
+        // local setup
+        this.backup.configfile = this.configfile;
+        this.configfile.general.always_ok = 'random';
+        this.plugin.register();
+
+        var next = function (action) {
+            test.expect(1);
+            test.isUndefined(action);
             test.done();
         };
 
