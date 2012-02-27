@@ -14,22 +14,29 @@ exports.register = function() {
     var nowait    = ini.general['log_nowait'] || 0;
     var always_ok = ini.general['always_ok']  || false;
 
-    this.always_ok = always_ok;
+    if (always_ok && (always_ok >= 1 || always_ok.toLowerCase() === 'true')) {
+        this.always_ok = always_ok = true;
+    }
 
-    if (pid)
-      options |= Syslog.LOG_PID;
+    if (pid && (pid >= 1 || pid.toLowerCase() === 'true')) {
+        options |= Syslog.LOG_PID;
+    }
 
-    if (odelay)
-      options |= Syslog.LOG_ODELAY;
+    if (odelay && (odelay >= 1 || odelay.toLowerCase() === 'true')) {
+        options |= Syslog.LOG_ODELAY;
+    }
 
-    if (cons)
-      options |= Syslog.LOG_CONS;
+    if (cons && (cons >= 1 || cons.toLowerCase() === 'true')) {
+        options |= Syslog.LOG_CONS;
+    }
 
-    if (ndelay)
-      options |= Syslog.LOG_NDELAY;
+    if (ndelay && (ndelay >= 1 || ndelay.toLowerCase() === 'true')) {
+        options |= Syslog.LOG_NDELAY;
+    }
 
-    if (nowait)
-      options |= Syslog.LOG_NOWAIT;
+    if (nowait && (nowait >= 1 || nowait.toLowerCase() === 'true')) {
+        options |= Syslog.LOG_NOWAIT;
+    }
 
     switch(facility.toUpperCase()) {
         case 'MAIL':
