@@ -2,8 +2,8 @@
   "author": "Matt Sergeant <helpme@gmail.com> (http://baudehlo.wordpress.com/)",
   "name": "Haraka",
   "description": "An SMTP Server project.",
-  "keywords": ["haraka", "smtp", "server", "email", "cluster"],
-  "version": "1.1.0",
+  "keywords": ["haraka", "smtp", "server", "email"],
+  "version": "1.2.0",
   "homepage": "https://github.com/baudehlo/Haraka/",
   "repository": {
     "type": "git",
@@ -14,7 +14,6 @@
     "node": ">= v0.4.0"
   },
   "dependencies": {
-    "cluster": ">= 0.6.1",
     "nopt": ">= 1.0.5"
   },
   "licenses": [ {
