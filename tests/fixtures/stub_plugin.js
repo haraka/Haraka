@@ -5,6 +5,7 @@ var stub = require('tests/fixtures/stub');
 var plugin = exports;
 
 function Plugin(name) {
+    this.inherits = stub();
 }
 
 plugin.createPlugin = function(name) {
