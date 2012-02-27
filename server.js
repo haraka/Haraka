@@ -136,9 +136,6 @@ Server.init_child_respond = function (retval, msg) {
 
 function listening () {
     var config_data = config.get('smtp.ini');
-    logger.lognotice("Listening on port " + config_data.main.port);
-    out.load_queue();
-    Server.ready = 1;
 
     if (config_data.main.user) {
         // drop privileges
@@ -146,4 +143,9 @@ function listening () {
         process.setuid(config_data.main.user);
         Server.lognotice('New uid: ' + process.getuid());
     }
+
+    logger.lognotice("Listening on port " + config_data.main.port);
+    Server.ready = 1;
+    
+    out.load_queue();
 }
