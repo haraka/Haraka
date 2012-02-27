@@ -41,7 +41,7 @@ Transaction.prototype.add_data = function(line) {
         }
     }
     else if (this.header_pos && this.parse_body) {
-        line = this.body.parse_more(line);
+        this.body.parse_more(line);
     }
     this.data_lines.push(line);
 };
