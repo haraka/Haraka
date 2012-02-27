@@ -33,8 +33,8 @@ function _set_up(callback) {
             log_pid : 1,
             log_odelay : 1,
             log_cons : 0,
-            log_ndelay : 0,
-            log_nowait : 0,
+            log_ndelay : false,
+            log_nowait : 'random',
             always_ok : false
         }
     };
