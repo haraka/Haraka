@@ -74,7 +74,7 @@ Transaction.prototype.remove_header = function (key) {
 
 Transaction.prototype.attachment_hooks = function (start, data, end) {
     this.parse_body = 1;
-    this.body = this.body || new body.Body(this.header);
+    this.body = this.body || new body.Body(this.header, {"banner": this.banner});
     this.body.on('attachment_start', start);
     if (data)
         this.body.on('attachment_data',  data);
