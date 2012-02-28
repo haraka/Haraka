@@ -74,3 +74,9 @@ Note that in the `start` event, you can set per-attachment events via:
 
     body.on('attachment_data', cb)
     body.on('attachment_end', cb)
+
+* transaction.set_banner(text, html)
+
+Sets a banner to be added to the end of the email. If the html part is not
+given (optional) then the text part will have each line ending replaced with
+`<br/>` when being inserted into HTML parts.

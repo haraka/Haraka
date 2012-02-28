@@ -2,6 +2,7 @@
 // Mail Body Parser
 var logger = require('./logger');
 var Header = require('./mailheader').Header;
+var utils  = require('./utils');
 var events = require('events');
 var util   = require('util');
 var Iconv  = require('./mailheader').Iconv;
@@ -11,6 +12,7 @@ var buf_siz = 65536;
 function Body (header, options) {
     this.header = header || new Header();
     this.header_lines = [];
+    this.is_html = false;
     this.options = options;
     this.bodytext = '';
     this.body_text_encoded = '';
@@ -31,7 +33,7 @@ Body.prototype.parse_child = function (line) {
     // check for MIME boundary
     if (line.substr(0, (this.boundary.length + 2)) === ('--' + this.boundary)) {
 
-        this.children[this.children.length -1].parse_end(line);
+        line = this.children[this.children.length -1].parse_end(line);
 
         if (this.children[this.children.length -1].state === 'attachment') {
             var child = this.children[this.children.length - 1];
@@ -79,6 +81,10 @@ Body.prototype.parse_start = function (line) {
     var ct = this.header.get_decoded('content-type') || 'text/plain';
     var enc = this.header.get_decoded('content-transfer-encoding') || '8bit';
     var cd = this.header.get_decoded('content-disposition') || '';
+
+    if (/text\/html/i.test(ct)) {
+        this.is_html = true;
+    }
     
     if (!enc.match(/^base64|quoted-printable|[78]bit$/i)) {
         logger.logerror("Invalid CTE on email: " + enc + ", using 8bit");
@@ -113,6 +119,9 @@ Body.prototype.parse_start = function (line) {
 }
 
 Body.prototype.parse_end = function (line) {
+    if (!line) {
+        line = '';
+    }
     // ignore these lines - but we could store somewhere I guess.
     if (this.body_text_encoded.length) {
         var buf = this.decode_function(this.body_text_encoded);
@@ -143,6 +152,50 @@ Body.prototype.parse_end = function (line) {
             this.body_encoding = 'no_iconv';
             this.bodytext = buf.toString();
         }
+        if (this.options.banner) {
+            console.log("BANNERING");
+            // up until this point we've returned '' for line, so now we insert
+            // the banner and return the whole lot as one line, re-encoded using
+            // whatever encoding scheme we had to use to decode it in the first
+            // place.
+
+            // First put banner in bodytext
+            if (this.is_html) {
+                this.bodytext = this.bodytext.replace(/<\/(body|html)>/i, '<p>' + this.options.banner[1] + '</$1>');
+            }
+            else {
+                // TODO: maybe we don't need the first \n?
+                this.bodytext += '\n' + this.options.banner[0] + '\n';
+            }
+
+            // Now re-encode with iconv:
+            if (Iconv && ! /broken\/\//.test(this.body_encoding)) {
+                try {
+                    var converter = new Iconv("UTF-8", this.body_encoding);
+                    buf = converter.convert(this.bodytext);
+                }
+                catch (err) {
+                    logger.logerror("iconv conversion after bannering from UTF-8 to " + enc + " failed: " + err);
+                    buf = new Buffer(this.bodytext);
+                }
+            }
+            else {
+                buf = new Buffer(this.bodytext);
+            }
+
+            // Now convert back to base_64 or QP if required:
+            if (this.decode_function === this.decode_qp) {
+                line = utils.encode_qp(buf.toString()) + "\n" + line;
+            }
+            else if (this.decode_function === this.decode_base64) {
+                line = buf.toString("base64").replace(/(.{1,76})/g, "$1\n") + line;
+            }
+            else {
+                line = buf.toString("binary") + line; // "binary" is deprecated, lets hope this works...
+            }
+
+            console.log("Output:\n" + line);
+        }
         // delete this.body_text_encoded;
     }
     return line;
@@ -150,6 +203,8 @@ Body.prototype.parse_end = function (line) {
 
 Body.prototype.parse_body = function (line) {
     this.body_text_encoded += line;
+    if (this.options.banner)
+        return '';
     return line;
 }
 
@@ -220,7 +275,7 @@ Body.prototype.parse_attachment = function (line) {
     return line;
 }
 
-Body.prototype.decode_qp = require('./mailheader').decode_qp;
+Body.prototype.decode_qp = utils.decode_qp;
 
 Body.prototype.decode_base64 = function (line) {
     return new Buffer(line, "base64");
