@@ -165,13 +165,3 @@ Header.prototype.lines = function () {
 Header.prototype.toString = function () {
     return this.header_list.join("\n");
 };
-
-Header.prototype.body_encoding = function () {
-    var ct = this.get_decoded('content-type') || 'text/plain';
-    var enc = 'UTF-8';
-    var matches = /\bcharset\s*=\s*(?:\"|3D|')?([\w_\-]*)(?:\"|3D|')?/.exec(ct);
-    if (matches) {
-        enc = matches[1];
-    }
-    return enc;
-}

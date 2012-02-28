@@ -11,7 +11,6 @@ var trans = exports;
 
 function Transaction() {
     this.mail_from = null;
-    this.banner = null;
     this.rcpt_to = [];
     this.data_lines = [];
     this.data_bytes = 0;
@@ -38,7 +37,7 @@ Transaction.prototype.add_data = function(line) {
         this.header.parse(this.data_lines);
         this.header_pos = this.data_lines.length;
         if (this.parse_body) {
-            this.body = this.body || new body.Body(this.header, { "banner": this.banner });
+            this.body = this.body || new body.Body(this.header);
         }
     }
     else if (this.header_pos && this.parse_body) {
@@ -78,10 +77,3 @@ Transaction.prototype.attachment_hooks = function (start, data, end) {
     if (end)
         this.body.on('attachment_end', end);
 };
-
-Transaction.prototype.set_banner = function (text, html) {
-    if (!html) {
-        html = text.replace(/\n/g, '<br/>\n');
-    }
-    this.banner = [text, html];
-}

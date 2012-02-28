@@ -13,7 +13,6 @@ function Body (header, options) {
     this.header_lines = [];
     this.options = options;
     this.bodytext = '';
-    this.is_html = false;
     this.body_text_encoded = '';
     this.children = []; // if multipart
     this.state = 'start';
@@ -67,23 +66,6 @@ Body.prototype.parse_headers = function (line) {
     if (/^\s*$/.test(line)) {
         // end of headers
         this.header.parse(this.header_lines);
-        if (this.options.banner && this.header.get_decoded('content-type').match(/^text\/(?:plain|html)/i)) {
-            var enc = this.header.body_encoding();
-            try {
-                var converter = new Iconv("UTF-8", enc);
-                this.enc_banner = [
-                    converter.convert(this.options.banner[0]).toString(),
-                    converter.convert(this.options.banner[1]).toString()
-                ];
-                if (this.header.get_decoded('content-type').match(/^text\/html/i)) {
-                    this.is_html = true;
-                }
-            }
-            catch (err) {
-                logger.logerror("iconv conversion of banner from UTF-8 to " + enc + " failed: " + err);
-                this.enc_banner = null;
-            }
-        }
         delete this.header_lines;
         this.state = 'start';
     }
@@ -134,7 +116,12 @@ Body.prototype.parse_end = function (line) {
     if (this.body_text_encoded.length) {
         var buf = this.decode_function(this.body_text_encoded);
         if (Iconv) {
-            var enc = this.header.body_encoding();
+            var ct = this.header.get_decoded('content-type') || 'text/plain';
+            var enc = 'UTF-8';
+            var matches = /\bcharset\s*=\s*(?:\"|3D|')?([\w_\-]*)(?:\"|3D|')?/.exec(ct);
+            if (matches) {
+                enc = matches[1];
+            }
             this.body_encoding = enc;
             if (/UTF-?8/i.test(enc)) {
                 this.bodytext = buf.toString();
@@ -160,12 +147,6 @@ Body.prototype.parse_end = function (line) {
 }
 
 Body.prototype.parse_body = function (line) {
-    if (this.enc_banner && this.is_html) {
-        var match = line.match(/^(.*)<\/body>(.*)$/i);
-        if (match) {
-            line = match[1] + this.enc_banner[1] + match[2];
-        }
-    }
     this.body_text_encoded += line;
 }
 
