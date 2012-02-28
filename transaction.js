@@ -44,7 +44,9 @@ Transaction.prototype.add_data = function(line) {
     else if (this.header_pos && this.parse_body) {
         line = this.body.parse_more(line);
     }
-    this.data_lines.push(line);
+    if (line.length) {
+        this.data_lines.push(line);
+    }
 };
 
 Transaction.prototype.end_data = function() {
