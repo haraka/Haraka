@@ -102,15 +102,15 @@ exports.decode_qp = function (line) {
 }
 
 function _char_to_qp (ch) {
-    return "=" + _pad(ch.charCodeAt(0).toString(16), 2);
+    return "=" + _pad(ch.charCodeAt(0).toString(16).toUpperCase(), 2);
 }
 // Shameless attempt to copy from Perl's MIME::QuotedPrint::Perl code.
 exports.encode_qp = function (str) {
     var broken_lines = '';
-    str = str.replace(/([^ \t\n!"#\$%&'()*+,\-.\/0-9:;<>?\@A-Z\[\\\]^_`a-z{|}~])/g, function (orig, p1) {
+    str = str.replace(/([^\ \t\n!"#\$%&'()*+,\-.\/0-9:;<>?\@A-Z\[\\\]^_`a-z{|}~])/g, function (orig, p1) {
         return _char_to_qp(p1);
     }).replace(/([ \t]+)$/gm, function (orig, p1) {
-        p1.split('').map(_char_to_qp).join('');
+        return p1.split('').map(_char_to_qp).join('');
     }).replace(/([\s\S]*?^[^\n]{73}(?:[^=\n]{2}(?![^=\n]{0,1}$)|[^=\n](?![^=\n]{0,2}$)|(?![^=\n]{0,3}$)))/gm,
         function (orig, p1) {
             broken_lines += p1 + "=\n";
