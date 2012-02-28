@@ -153,7 +153,6 @@ Body.prototype.parse_end = function (line) {
             this.bodytext = buf.toString();
         }
         if (this.options.banner) {
-            console.log("BANNERING");
             // up until this point we've returned '' for line, so now we insert
             // the banner and return the whole lot as one line, re-encoded using
             // whatever encoding scheme we had to use to decode it in the first
@@ -171,7 +170,7 @@ Body.prototype.parse_end = function (line) {
             // Now re-encode with iconv:
             if (Iconv && ! /broken\/\//.test(this.body_encoding)) {
                 try {
-                    var converter = new Iconv("UTF-8", this.body_encoding);
+                    var converter = new Iconv("UTF-8", this.body_encoding + "//IGNORE");
                     buf = converter.convert(this.bodytext);
                 }
                 catch (err) {
@@ -185,7 +184,7 @@ Body.prototype.parse_end = function (line) {
 
             // Now convert back to base_64 or QP if required:
             if (this.decode_function === this.decode_qp) {
-                line = utils.encode_qp(buf.toString()) + "\n" + line;
+                line = utils.encode_qp(buf.toString("binary")) + "\n" + line;
             }
             else if (this.decode_function === this.decode_base64) {
                 line = buf.toString("base64").replace(/(.{1,76})/g, "$1\n") + line;
