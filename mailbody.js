@@ -13,7 +13,7 @@ function Body (header, options) {
     this.header = header || new Header();
     this.header_lines = [];
     this.is_html = false;
-    this.options = options;
+    this.options = options || {};
     this.bodytext = '';
     this.body_text_encoded = '';
     this.children = []; // if multipart
