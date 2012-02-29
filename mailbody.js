@@ -150,7 +150,7 @@ Body.prototype.parse_end = function (line) {
         line = '';
     }
     // ignore these lines - but we could store somewhere I guess.
-    if (this.body_text_encoded.length) {
+    if (this.body_text_encoded.length && this.bodytext.length === 0) {
         var buf = this.decode_function(this.body_text_encoded);
 
         var ct = this.header.get_decoded('content-type') || 'text/plain';
@@ -161,7 +161,7 @@ Body.prototype.parse_end = function (line) {
         }
         this.body_encoding = enc;
 
-        if (this.options.banner) {
+        if (this.options.banner && /^text\//i.test(ct)) {
             // up until this point we've returned '' for line, so now we insert
             // the banner and return the whole lot as one line, re-encoded using
             // whatever encoding scheme we had to use to decode it in the first
@@ -184,8 +184,8 @@ Body.prototype.parse_end = function (line) {
                 banner_buf = new Buffer(banner_str);
             }
 
-            // Allocate a new buffer: (3 or 2 is <p> vs \n + \n - correct that if you change those!)
-            var new_buf = new Buffer(buf.length + banner_buf.length + (this.is_html ? 3 : 2))
+            // Allocate a new buffer: (6 or 1 is <p>...</p> vs \n...\n - correct that if you change those!)
+            var new_buf = new Buffer(buf.length + banner_buf.length + (this.is_html ? 6 : 1));
 
             // Now we find where to insert it and combine it with the original buf:
             if (this.is_html) {
@@ -194,11 +194,21 @@ Body.prototype.parse_end = function (line) {
                 // copy start of buf into new_buf
                 buf.copy(new_buf, 0, 0, insert_pos);
 
+                // add in <p>
+                new_buf[insert_pos++] = 60;
+                new_buf[insert_pos++] = 80;
+                new_buf[insert_pos++] = 62;
+
                 // copy all of banner into new_buf
                 banner_buf.copy(new_buf, insert_pos);
                 
+                new_buf[banner_buf.length + insert_pos++] = 60;
+                new_buf[banner_buf.length + insert_pos++] = 47;
+                new_buf[banner_buf.length + insert_pos++] = 80;
+                new_buf[banner_buf.length + insert_pos++] = 62;
+
                 // copy remainder of buf into new_buf
-                buf.copy(new_buf, insert_pos + banner_buf.length, insert_pos + 1);
+                buf.copy(new_buf, insert_pos + banner_buf.length, insert_pos - 6);
             }
             else {
                 buf.copy(new_buf);
