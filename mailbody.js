@@ -129,7 +129,7 @@ function _get_html_insert_position (buf) {
                  buf[i+6] === 62)
             {
                 // matched </body>
-                return i - 1;
+                return i;
             }
             if ( (buf[i+2] === 104 || buf[i+2] === 72) && // "h" or "H"
                  (buf[i+3] === 116 || buf[i+3] === 84) && // "t" or "T"
@@ -138,7 +138,7 @@ function _get_html_insert_position (buf) {
                  buf[i+6] === 62)
             {
                 // matched </html>
-                return i - 1;
+                return i;
             }
         }
     }
@@ -208,7 +208,7 @@ Body.prototype.parse_end = function (line) {
                 new_buf[banner_buf.length + insert_pos++] = 62;
 
                 // copy remainder of buf into new_buf
-                buf.copy(new_buf, insert_pos + banner_buf.length, insert_pos - 6);
+                buf.copy(new_buf, insert_pos + banner_buf.length, insert_pos - 7);
             }
             else {
                 buf.copy(new_buf);
