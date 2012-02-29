@@ -190,7 +190,7 @@ Body.prototype.parse_end = function (line) {
             // Now we find where to insert it and combine it with the original buf:
             if (this.is_html) {
                 var insert_pos = _get_html_insert_position(buf);
-                
+
                 // copy start of buf into new_buf
                 buf.copy(new_buf, 0, 0, insert_pos);
 
@@ -207,8 +207,10 @@ Body.prototype.parse_end = function (line) {
                 new_buf[banner_buf.length + insert_pos++] = 80;
                 new_buf[banner_buf.length + insert_pos++] = 62;
 
-                // copy remainder of buf into new_buf
-                buf.copy(new_buf, insert_pos + banner_buf.length, insert_pos - 7);
+                // copy remainder of buf into new_buf, if there is buf remaining
+                if (buf.length > (insert_pos - 6)) {
+                    buf.copy(new_buf, insert_pos + banner_buf.length, insert_pos - 7);
+                }
             }
             else {
                 buf.copy(new_buf);
