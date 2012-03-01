@@ -177,24 +177,6 @@ Connection.prototype._process_data = function() {
     }
 };
 
-Connection.prototype.remote_host = function() {
-    if (arguments.length) {
-        this.remote_host = arguments[0];
-    }
-    return this.remote_host;
-};
-
-Connection.prototype.remote_ip = function() {
-    if (arguments.length) {
-        this.remote_ip = arguments[0];
-    }
-    return this.remote_ip;
-};
-
-Connection.prototype.current_line = function() {
-    return this.current_line;
-};
-
 Connection.prototype.respond = function(code, msg) {
     var uuid = '';
     var messages;
