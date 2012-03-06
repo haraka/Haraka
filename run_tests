@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 
-require.paths.unshift(__dirname);
+"use strict";
+
+require.paths.unshift(__dirname + "/tests/fixtures");
 
 try {
     var reporter = require('nodeunit').reporters.default;
@@ -18,4 +20,4 @@ catch(e) {
 }
 
 process.chdir(__dirname);
-reporter.run(['tests/plugins']);
+reporter.run(['tests/plugins', 'tests/plugins/queue']);

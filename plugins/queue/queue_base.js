@@ -2,11 +2,20 @@
 // This cannot be used on its own. You need to inherit from it.
 // See plugins/queue/smtp_forward.js for an example.
 
+var sock = require('line_socket');
+
 // XXX: pass in host, port, and timeout (read from config)
 // XXX: auto-register event handlers
 // XXX: test these three function
 exports.get_conn = function (self, next, connection, host, port, timeout) {
     var conn = {};
+    host = (host) ? host : 'localhost';
+    port = (port) ? port : 25;
+    timeout = (timeout || timeout == 0) ? timeout : 300;
+
+    if (!self || !next || !connection) {
+        throw new Error("Invalid Arguments");
+    }
 
     if (connection.server.notes.conn_pool &&
         connection.server.notes.conn_pool.length) {
@@ -31,9 +40,10 @@ exports.get_conn = function (self, next, connection, host, port, timeout) {
         conn.socket.removeAllListeners('connect');
         conn.socket.removeAllListeners('line');
         conn.socket.removeAllListeners('drain');
-    } else {
+    }
+    else {
         conn.socket = sock.connect(port, host);
-        conn.socket.setTimeout((timeout) ? (timeout * 1000) : (300 * 1000));
+        conn.socket.setTimeout(timeout * 1000);
         conn.command = 'connect';
         conn.response = [];
         conn.recipient_marker = 0;
@@ -44,7 +54,8 @@ exports.get_conn = function (self, next, connection, host, port, timeout) {
 
     if (connection.server.notes.active_conections >= 0) {
         connection.server.notes.active_conections++;
-    } else {
+    }
+    else {
         connection.server.notes.active_conections = 1;
     }
 
@@ -105,7 +116,8 @@ exports.conn_idle = function (self, connection) {
 
     if (connection.server.notes.conn_pool) {
         connection.server.notes.conn_pool.push(conn);
-    } else {
+    }
+    else {
         connection.server.notes.conn_pool = [ conn ];
     }
 

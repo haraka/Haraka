@@ -1,5 +1,5 @@
 // Check various bits of the HELO string
-var net_utils = require('./net_utils');
+var net_utils = require('/net_utils');
 
 // Checks to implement:
 // - HELO has no "dot"
