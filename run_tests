@@ -2,6 +2,8 @@
 
 "use strict";
 
+require.paths.unshift(__dirname);
+require.paths.unshift(__dirname + "/plugins");
 require.paths.unshift(__dirname + "/tests/fixtures");
 
 try {

@@ -2,7 +2,7 @@
 // This cannot be used on its own. You need to inherit from it.
 // See plugins/queue/smtp_forward.js for an example.
 
-var sock = require('line_socket');
+var sock = require('./line_socket');
 
 // XXX: pass in host, port, and timeout (read from config)
 // XXX: auto-register event handlers

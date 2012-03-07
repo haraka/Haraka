@@ -10,16 +10,11 @@ function _set_up(callback) {
     this.backup = {};
 
     // needed for tests
-    this.plugin = Plugin.createPlugin('plugins/relay_all');
+    this.plugin = Plugin('plugins/relay_all');
     this.connection = Connection.createConnection();
     this.params = ['foo@bar.com'];
 
-    // backup modifications
-    this.backup.plugin = {};
-    this.backup.plugin.register_hook = this.plugin.register_hook;
-
     // stub out functions
-    this.plugin.register_hook = stub();
     this.connection.loginfo = stub();
 
     // going to need these in multiple tests
@@ -29,9 +24,6 @@ function _set_up(callback) {
 }
 
 function _tear_down(callback) {
-    // restore backed up functions
-    this.plugin.register_hook = this.backup.plugin.register_hook;
-
     callback();
 }
 

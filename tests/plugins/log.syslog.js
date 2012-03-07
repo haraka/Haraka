@@ -10,17 +10,14 @@ function _set_up(callback) {
     this.backup = {};
 
     // needed for tests
-    this.plugin = Plugin.createPlugin('plugins/log.syslog');
+    this.plugin = new Plugin('plugins/log.syslog');
     this.logger = Logger.createLogger();
 
     // backup modifications
     this.backup.plugin = {};
     this.backup.plugin.Syslog = {};
-    this.backup.plugin.register_hook = this.plugin.register_hook;
 
     // stub out functions
-    this.plugin.register_hook = stub();
-    this.plugin.config = stub();
     this.log = stub();
     this.log.level = 'info';
     this.log.data = "this is a test log message";
@@ -42,16 +39,10 @@ function _set_up(callback) {
         return this.configfile;
     }.bind(this);
 
-    // going to need these in multiple tests
-    this.plugin.register();
-
     callback();
 }
 
 function _tear_down(callback) {
-    // restore backed up functions
-    this.plugin.register_hook = this.backup.plugin.register_hook;
-
     callback();
 }
 
@@ -65,16 +56,19 @@ exports.log_syslog = {
         test.done();
     },
     'register function should call register_hook()' : function (test) {
+        this.plugin.register();
         test.expect(1);
         test.ok(this.plugin.register_hook.called);
         test.done();
     },
     'register_hook() should register for propper hook' : function (test) {
+        this.plugin.register();
         test.expect(1);
         test.equals(this.plugin.register_hook.args[0], 'log');
         test.done();
     },
     'register_hook() should register available function' : function (test) {
+        this.plugin.register();
         test.expect(3);
         test.equals(this.plugin.register_hook.args[1], 'syslog');
         test.isNotNull(this.plugin.syslog);

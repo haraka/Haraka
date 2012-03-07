@@ -11,18 +11,12 @@ function _set_up(callback) {
     this.backup = {};
 
     // needed for tests
-    this.plugin = Plugin.createPlugin('plugins/aliases');
+    this.plugin = new Plugin('plugins/aliases');
     this.connection = Connection.createConnection();
     this.recip = new Address('<test1@example.com>');
     this.params = [this.recip];
-    // backup modifications
-
-    this.backup.plugin = {};
-    this.backup.plugin.register_hook = this.plugin.register_hook;
 
     // stub out functions
-    this.plugin.config = stub();
-    this.plugin.register_hook = stub();
     this.connection.loginfo = stub();
     this.connection.logdebug = stub();
     this.connection.notes = stub();
@@ -53,9 +47,6 @@ function _set_up(callback) {
 }
 
 function _tear_down(callback) {
-    // restore backed up functions
-    this.plugin.register_hook = this.backup.plugin.register_hook;
-
     callback();
 }
 
