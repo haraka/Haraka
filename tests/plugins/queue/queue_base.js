@@ -17,6 +17,9 @@ function _set_up(callback) {
 
     // stub out functions
     this.connection.logdebug = stub();
+    this.connection.notes = stub();
+    this.connection.server = stub();
+    this.connection.server.notes = stub();
     this.next = stub();
 
     // going to need these in multiple tests
@@ -77,6 +80,20 @@ exports.queue_base = {
         catch (err) {
             test.isNotNull(err);
             test.equals(err.message, "Invalid Arguments");
+        }
+
+        test.done();
+    },
+    'should set connection.notes.conn' : function (test) {
+        test.expect(1);
+
+        try {
+            this.plugin.get_conn(this, this.next, this.connection,
+                'localhost', 25, 0);
+            test.isNotNull(this.connection.notes.conn);
+        }
+        catch (err) {
+            console.log(err.stack);
         }
 
         test.done();

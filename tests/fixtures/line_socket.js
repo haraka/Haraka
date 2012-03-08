@@ -2,12 +2,16 @@
 
 var stub = require('tests/fixtures/stub');
 
-var line_socket = exports;
-
-function LineSocket() {
+function Socket() {
+    if (!(this instanceof Socket)) return new Socket();
+    var self = this;
+    self.setTimeout = stub();
 }
 
-line_socket.create = function() {
-    var obj  = new LineSocket();
-    return obj;
-};
+exports.Socket = Socket;
+
+// New interface - uses TLS
+exports.connect = function (port, host, cb) {
+    var sock = new Socket();
+    return sock;
+}
