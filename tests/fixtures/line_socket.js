@@ -6,6 +6,7 @@ function Socket() {
     if (!(this instanceof Socket)) return new Socket();
     var self = this;
     self.setTimeout = stub();
+    self.removeAllListeners = stub();
 }
 
 exports.Socket = Socket;

@@ -26,11 +26,7 @@ exports.get_conn = function (self, next, connection, host, port, timeout) {
 
         // We should just reset these things when we shift a connection off
         // since we have to setup stuff based on _this_ connection.
-        conn.response = [];
-        conn.recipient_marker = 0;
-        conn.pool_connection = 1;
-        connection.notes.conn = conn;
-        conn.next = next;
+        conn.pool_connection = true;
 
         // Cleanup all old event listeners
         // Note, if new ones are added in the caller, please remove them here.
@@ -44,13 +40,19 @@ exports.get_conn = function (self, next, connection, host, port, timeout) {
     else {
         conn.socket = sock.connect(port, host);
         conn.socket.setTimeout(timeout * 1000);
-        conn.command = 'connect';
-        conn.response = [];
-        conn.recipient_marker = 0;
-        conn.pool_connection = 0;
-        connection.notes.conn = conn;
-        conn.next = next;
+
+        // XXX: This socket.connect should be handled in smtp_proxy and in
+        // smtp_forward
+        conn.socket.command = 'connect';
+        conn.pool_connection = false;
     }
+
+    // XXX: This socket.connect should be handled in smtp_proxy and in
+    // smtp_forward
+    conn.response = [];
+
+    connection.notes.conn = conn;
+    conn.next = next;
 
     if (connection.server.notes.active_conections >= 0) {
         connection.server.notes.active_conections++;
