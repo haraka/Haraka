@@ -122,8 +122,11 @@ exports.hook_data_post = function (next, connection) {
         return next(DENYSOFT,'Error connecting to virus scanner');
     });
     socket.on('connect', function () {
-        var hp = socket.address();
-        connection.loginfo(plugin, 'connected to host: ' + hp.address + ':' + hp.port);
+        var hp = socket.address(),
+          addressInfo = hp === null ? '' : ' ' + hp.address + ':' + hp.port;
+
+        connection.loginfo(plugin, 'connected to host' + addressInfo);
+
         socket.write("zINSTREAM\0", function () {
             send_data();
         });
