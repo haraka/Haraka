@@ -7,7 +7,7 @@ var sock = require('./line_socket');
 // XXX: pass in host, port, and timeout (read from config)
 // XXX: auto-register event handlers
 // XXX: test these three function
-exports.get_conn = function (self, next, connection, host, port, timeout) {
+exports.conn_get = function (self, next, connection, host, port, timeout) {
     var conn = {};
     host = (host) ? host : 'localhost';
     port = (port) ? port : 25;
@@ -68,7 +68,7 @@ exports.get_conn = function (self, next, connection, host, port, timeout) {
 }
 
 // function will destroy an conn and pull it out of the idle array
-exports.destroy_conn = function (self, connection, conn) {
+exports.conn_destroy = function (self, connection, conn) {
     var reset_active_connections = 0;
 
     if (!self || !connection || !conn) {
@@ -113,6 +113,10 @@ exports.destroy_conn = function (self, connection, conn) {
 }
 
 exports.conn_idle = function (self, connection) {
+    if (!self || !connection) {
+        throw new Error("Invalid Arguments");
+    }
+
     var conn = connection.notes.conn;
 
     if (!(conn)) {
