@@ -133,7 +133,9 @@ exports.send_email = function () {
     var match;
     var re = /^([^\n]*\n?)/;
     while (match = re.exec(contents)) {
-        transaction.add_data(match[1]);
+        var line = match[1];
+        line = line.replace(/\n?$/, '\n'); // make sure it ends in \n
+        transaction.add_data(line);
         contents = contents.substr(match[1].length);
         if (contents.length === 0) {
             break;
