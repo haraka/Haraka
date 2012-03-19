@@ -70,7 +70,10 @@ exports.get_conn = function (self, next, connection, host, port, timeout) {
 // function will destroy an conn and pull it out of the idle array
 exports.destroy_conn = function (self, connection, conn) {
     var reset_active_connections = 0;
-    var index;
+
+    if (!self || !connection || !conn) {
+        throw new Error("Invalid Arguments");
+    }
 
     if (conn && conn.socket) {
         connection.logdebug(self, "destroying connection");
@@ -88,7 +91,7 @@ exports.destroy_conn = function (self, connection, conn) {
     if (connection.server.notes.conn_pool) {
         // Pull that conn from the proxy pool.
         // Note we do not do this operation that often.
-        index = connection.server.notes.conn_pool.indexOf(conn);
+        var index = connection.server.notes.conn_pool.indexOf(conn);
         if (index != -1) {
             // if we are pulling something from the proxy pool, it is not
             // acttive.  This means we do not want to reset it.

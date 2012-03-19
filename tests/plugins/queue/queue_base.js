@@ -42,7 +42,7 @@ exports.queue_base = {
         test.isFunction(this.plugin.get_conn);
         test.done();
     },
-    'should throw with missing argument 0' : function (test) {
+    'get_conn should throw with missing argument 0' : function (test) {
         test.expect(2);
 
         try {
@@ -56,7 +56,7 @@ exports.queue_base = {
 
         test.done();
     },
-    'should throw with missing argument 1' : function (test) {
+    'get_conn should throw with missing argument 1' : function (test) {
         test.expect(2);
 
         try {
@@ -70,7 +70,7 @@ exports.queue_base = {
 
         test.done();
     },
-    'should throw with missing argument 2' : function (test) {
+    'get_conn should throw with missing argument 2' : function (test) {
         test.expect(2);
 
         try {
@@ -84,7 +84,7 @@ exports.queue_base = {
 
         test.done();
     },
-    'should set connection.notes.conn' : function (test) {
+    'get_conn should set connection.notes.conn' : function (test) {
         test.expect(2);
 
         try {
@@ -99,7 +99,7 @@ exports.queue_base = {
 
         test.done();
     },
-    'should set connection.notes.conn.socket' : function (test) {
+    'get_conn should set connection.notes.conn.socket' : function (test) {
         test.expect(3);
 
         try {
@@ -115,77 +115,86 @@ exports.queue_base = {
 
         test.done();
     },
-    'should call connection.notes.conn.socket.setTimeout' : function (test) {
-        test.expect(2);
+    'get_conn should call connection.notes.conn.socket.setTimeout' :
+        function (test) {
+            test.expect(2);
+    
+            try {
+                this.plugin.get_conn(this, this.next, this.connection,
+                    'localhost', 25, 666);
+                test.ok(this.connection.notes.conn.socket.setTimeout.called);
+                test.equals(
+                    this.connection.notes.conn.socket.setTimeout.args[0],
+                    1000 * 666);
+            }
+            catch (err) {
+                console.log(err.stack);
+            }
+    
+            test.done();
+        },
+    'get_conn should set connection.notes.conn.pool_connection false' :
+        function (test) {
+            test.expect(1);
 
-        try {
-            this.plugin.get_conn(this, this.next, this.connection,
-                'localhost', 25, 666);
-            test.ok(this.connection.notes.conn.socket.setTimeout.called);
-            test.equals(this.connection.notes.conn.socket.setTimeout.args[0],
-                1000 * 666);
-        }
-        catch (err) {
-            console.log(err.stack);
-        }
+            try {
+                this.plugin.get_conn(this, this.next, this.connection,
+                    'localhost', 25, 0);
+                test.ok(!this.connection.notes.conn.pool_connection);
+            }
+            catch (err) {
+                console.log(err.stack);
+            }
 
-        test.done();
-    },
-    'should set connection.notes.conn.pool_connection false' : function (test) {
-        test.expect(1);
+            test.done();
+        },
+    'get_conn should set connection.notes.conn.pool_connection true' :
+        function (test) {
+            test.expect(1);
 
-        try {
-            this.plugin.get_conn(this, this.next, this.connection,
-                'localhost', 25, 0);
-            test.ok(!this.connection.notes.conn.pool_connection);
-        }
-        catch (err) {
-            console.log(err.stack);
-        }
+            try {
+                var conn = this.plugin.get_conn(this, this.next,
+                    this.connection, 'localhost', 25, 0);
+                this.connection.server.notes.conn_pool = [ conn ];
+                this.plugin.get_conn(this, this.next, this.connection,
+                    'localhost', 25, 0);
+                test.ok(this.connection.notes.conn.pool_connection);
+            }
+            catch (err) {
+                console.log(err.stack);
+            }
 
-        test.done();
-    },
-    'should set connection.notes.conn.pool_connection true' : function (test) {
-        test.expect(1);
+            test.done();
+        },
+    'get_conn should set connection.server.notes.active_conections' :
+        function (test) {
+            test.expect(4);
 
-        try {
-            var socket = this.plugin.get_conn(this, this.next, this.connection,
-                'localhost', 25, 0);
-            this.connection.server.notes.conn_pool = [ socket ];
-            this.plugin.get_conn(this, this.next, this.connection,
-                'localhost', 25, 0);
-            test.ok(this.connection.notes.conn.pool_connection);
-        }
-        catch (err) {
-            console.log(err.stack);
-        }
+            try {
+                this.plugin.get_conn(this, this.next, this.connection,
+                    'localhost', 25, 0);
+                test.isNumber(this.connection.server.notes.active_conections);
+                test.equals(this.connection.server.notes.active_conections, 1);
+                this.plugin.get_conn(this, this.next, this.connection,
+                    'localhost', 25, 0);
+                test.isNumber(this.connection.server.notes.active_conections);
+                test.equals(this.connection.server.notes.active_conections, 2);
+            }
+            catch (err) {
+                console.log(err.stack);
+            }
 
-        test.done();
-    },
-    'should set connection.server.notes.active_conections' : function (test) {
-        test.expect(2);
-
-        try {
-            this.plugin.get_conn(this, this.next, this.connection,
-                'localhost', 25, 0);
-            test.isNumber(this.connection.server.notes.active_conections);
-            test.equals(this.connection.server.notes.active_conections, 1);
-        }
-        catch (err) {
-            console.log(err.stack);
-        }
-
-        test.done();
-    },
-    'should return conn that equals connection.notes.conn' : function (test) {
+            test.done();
+        },
+    'get_conn should return conn == connection.notes.conn' : function (test) {
         test.expect(3);
 
         try {
-            var socket = this.plugin.get_conn(this, this.next, this.connection,
+            var conn = this.plugin.get_conn(this, this.next, this.connection,
                 'localhost', 25, 0);
-            test.isObject(socket);
+            test.isObject(conn);
             test.isObject(this.connection.notes.conn);
-            test.equals(socket, this.connection.notes.conn);
+            test.equals(conn, this.connection.notes.conn);
         }
         catch (err) {
             console.log(err.stack);
@@ -193,7 +202,7 @@ exports.queue_base = {
 
         test.done();
     },
-    'should set connection.notes.conn.next to next' : function (test) {
+    'get_conn should set connection.notes.conn.next to next' : function (test) {
         test.expect(3);
 
         try {
@@ -209,23 +218,23 @@ exports.queue_base = {
 
         test.done();
     },
-    'should call socket.removeAllListeners()' : function (test) {
+    'get_conn should call socket.removeAllListeners()' : function (test) {
         test.expect(7);
 
         try {
-            var socket = this.plugin.get_conn(this, this.next, this.connection,
+            var conn = this.plugin.get_conn(this, this.next, this.connection,
                 'localhost', 25, 0);
-            this.connection.server.notes.conn_pool = [ socket ];
-            socket = this.plugin.get_conn(this, this.next, this.connection,
+            this.connection.server.notes.conn_pool = [ conn ];
+            conn = this.plugin.get_conn(this, this.next, this.connection,
                 'localhost', 25, 0);
             test.ok(
                 this.connection.notes.conn.socket.removeAllListeners.called);
-            test.equals(socket.socket.removeAllListeners.args[0][0], 'error');
-            test.equals(socket.socket.removeAllListeners.args[1][0], 'timeout');
-            test.equals(socket.socket.removeAllListeners.args[2][0], 'close');
-            test.equals(socket.socket.removeAllListeners.args[3][0], 'connect');
-            test.equals(socket.socket.removeAllListeners.args[4][0], 'line');
-            test.equals(socket.socket.removeAllListeners.args[5][0], 'drain');
+            test.equals(conn.socket.removeAllListeners.args[0][0], 'error');
+            test.equals(conn.socket.removeAllListeners.args[1][0], 'timeout');
+            test.equals(conn.socket.removeAllListeners.args[2][0], 'close');
+            test.equals(conn.socket.removeAllListeners.args[3][0], 'connect');
+            test.equals(conn.socket.removeAllListeners.args[4][0], 'line');
+            test.equals(conn.socket.removeAllListeners.args[5][0], 'drain');
         }
         catch (err) {
             console.log(err.stack);
@@ -233,23 +242,23 @@ exports.queue_base = {
 
         test.done();
     },
-    'should call socket.removeAllListeners()' : function (test) {
+    'get_conn should call socket.removeAllListeners()' : function (test) {
         test.expect(7);
 
         try {
-            var socket = this.plugin.get_conn(this, this.next, this.connection,
+            var conn = this.plugin.get_conn(this, this.next, this.connection,
                 'localhost', 25, 0);
-            this.connection.server.notes.conn_pool = [ socket ];
-            socket = this.plugin.get_conn(this, this.next, this.connection,
+            this.connection.server.notes.conn_pool = [ conn ];
+            conn = this.plugin.get_conn(this, this.next, this.connection,
                 'localhost', 25, 0);
             test.ok(
                 this.connection.notes.conn.socket.removeAllListeners.called);
-            test.equals(socket.socket.removeAllListeners.args[0][0], 'error');
-            test.equals(socket.socket.removeAllListeners.args[1][0], 'timeout');
-            test.equals(socket.socket.removeAllListeners.args[2][0], 'close');
-            test.equals(socket.socket.removeAllListeners.args[3][0], 'connect');
-            test.equals(socket.socket.removeAllListeners.args[4][0], 'line');
-            test.equals(socket.socket.removeAllListeners.args[5][0], 'drain');
+            test.equals(conn.socket.removeAllListeners.args[0][0], 'error');
+            test.equals(conn.socket.removeAllListeners.args[1][0], 'timeout');
+            test.equals(conn.socket.removeAllListeners.args[2][0], 'close');
+            test.equals(conn.socket.removeAllListeners.args[3][0], 'connect');
+            test.equals(conn.socket.removeAllListeners.args[4][0], 'line');
+            test.equals(conn.socket.removeAllListeners.args[5][0], 'drain');
         }
         catch (err) {
             console.log(err.stack);
@@ -257,17 +266,166 @@ exports.queue_base = {
 
         test.done();
     },
-    'should call socket.removeAllListeners()' : function (test) {
+    'get_conn should call socket.removeAllListeners()' : function (test) {
         test.expect(2);
 
         try {
-            var socket = this.plugin.get_conn(this, this.next, this.connection,
+            var conn = this.plugin.get_conn(this, this.next, this.connection,
                 'localhost', 25, 0);
-            this.connection.server.notes.conn_pool = [ socket ];
+            this.connection.server.notes.conn_pool = [ conn ];
             test.equals(this.connection.server.notes.conn_pool.length, 1);
-            socket = this.plugin.get_conn(this, this.next, this.connection,
+            conn = this.plugin.get_conn(this, this.next, this.connection,
                 'localhost', 25, 0);
             test.equals(this.connection.server.notes.conn_pool.length, 0);
+        }
+        catch (err) {
+            console.log(err.stack);
+        }
+
+        test.done();
+    },
+    'should have destroy_conn function' : function (test) {
+        test.expect(2);
+        test.isNotNull(this.plugin);
+        test.isFunction(this.plugin.destroy_conn);
+        test.done();
+    },
+    'destroy_conn should throw with missing argument 0' : function (test) {
+        test.expect(2);
+
+        try {
+            this.plugin.destroy_conn(null, this.connection,
+                this.connection.notes.conn);
+        }
+        catch (err) {
+            test.isNotNull(err);
+            test.equals(err.message, "Invalid Arguments");
+        }
+
+        test.done();
+    },
+    'destroy_conn should throw with missing argument 1' : function (test) {
+        test.expect(2);
+
+        try {
+            this.plugin.destroy_conn(this, null, this.connection.notes.conn);
+        }
+        catch (err) {
+            test.isNotNull(err);
+            test.equals(err.message, "Invalid Arguments");
+        }
+
+        test.done();
+    },
+    'destroy_conn should throw with missing argument 2' : function (test) {
+        test.expect(2);
+
+        try {
+            this.plugin.destroy_conn(this, this.connection, null);
+        }
+        catch (err) {
+            test.isNotNull(err);
+            test.equals(err.message, "Invalid Arguments");
+        }
+
+        test.done();
+    },
+    'destroy_conn should call socket.destroySoon()' : function (test) {
+        test.expect(1);
+
+        try {
+            var conn = this.plugin.get_conn(this, this.next, this.connection,
+                'localhost', 25, 0);
+            var testSocket = conn.socket;
+            this.plugin.destroy_conn(this, this.connection, conn);
+            test.ok(testSocket.destroySoon.called);
+        }
+        catch (err) {
+            console.log(err.stack);
+        }
+
+        test.done();
+    },
+    'destroy_conn should set conn.socket to 0' : function (test) {
+        test.expect(1);
+
+        try {
+            var conn = this.plugin.get_conn(this, this.next, this.connection,
+                'localhost', 25, 0);
+            this.plugin.destroy_conn(this, this.connection, conn);
+            test.equals(conn.socket, 0);
+        }
+        catch (err) {
+            console.log(err.stack);
+        }
+
+        test.done();
+    },
+    'destroy_conn should unlink connection.notes.conn' : function (test) {
+        test.expect(1);
+
+        try {
+            var conn = this.plugin.get_conn(this, this.next, this.connection,
+                'localhost', 25, 0);
+            this.plugin.destroy_conn(this, this.connection, conn);
+            test.isUndefined(this.connection.notes.conn);
+        }
+        catch (err) {
+            console.log(err.stack);
+        }
+
+        test.done();
+    },
+    'destroy_conn should decrement active_conections' : function (test) {
+        test.expect(14);
+
+        try {
+            var conn = this.plugin.get_conn(this, this.next, this.connection,
+                'localhost', 25, 0);
+            test.isNumber(this.connection.server.notes.active_conections);
+            test.equals(this.connection.server.notes.active_conections, 1);
+
+            this.plugin.destroy_conn(this, this.connection, conn);
+            test.isNumber(this.connection.server.notes.active_conections);
+            test.equals(this.connection.server.notes.active_conections, 0);
+
+            conn = this.plugin.get_conn(this, this.next, this.connection,
+                'localhost', 25, 0);
+            test.isNumber(this.connection.server.notes.active_conections);
+            test.equals(this.connection.server.notes.active_conections, 1);
+
+            var conn2 = this.plugin.get_conn(this, this.next, this.connection,
+                'localhost', 25, 0);
+            test.isNumber(this.connection.server.notes.active_conections);
+            test.equals(this.connection.server.notes.active_conections, 2);
+
+            this.plugin.destroy_conn(this, this.connection, conn);
+            test.isNumber(this.connection.server.notes.active_conections);
+            test.equals(this.connection.server.notes.active_conections, 1);
+
+            this.plugin.destroy_conn(this, this.connection, conn);
+            test.isNumber(this.connection.server.notes.active_conections);
+            test.equals(this.connection.server.notes.active_conections, 1);
+
+            this.plugin.destroy_conn(this, this.connection, conn2);
+            test.isNumber(this.connection.server.notes.active_conections);
+            test.equals(this.connection.server.notes.active_conections, 0);
+        }
+        catch (err) {
+            console.log(err.stack);
+        }
+
+        test.done();
+    },
+    'destroy_conn should not have a conn_pool for actives' : function (test) {
+        test.expect(2);
+
+        try {
+            var conn = this.plugin.get_conn(this, this.next, this.connection,
+                'localhost', 25, 0);
+            test.isUndefined(this.connection.server.notes.conn_pool);
+            this.plugin.destroy_conn(this, this.connection, conn);
+            test.isUndefined(this.connection.server.notes.conn_pool);
         }
         catch (err) {
             console.log(err.stack);

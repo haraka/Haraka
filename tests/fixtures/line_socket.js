@@ -5,6 +5,7 @@ var stub = require('tests/fixtures/stub');
 function Socket() {
     if (!(this instanceof Socket)) return new Socket();
     var self = this;
+    self.destroySoon = stub();
     self.setTimeout = stub();
     self.removeAllListeners = stub();
 }
