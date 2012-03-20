@@ -49,12 +49,12 @@ checked for updates on every run.
     
     Set this to disable DKIM signing
 
-- selector = <name>                         (REQUIRED)
+- selector = name                           (REQUIRED)
 
     Set this to the selector name published in DNS under the
     _domainkey sub-domain of the domain referenced below.
 
-- domain = <name>                           (REQUIRED)
+- domain = name                             (REQUIRED)
 
     Set this to the domain name that will be used to sign the
     message.  The DNS TXT entry for:
@@ -64,9 +64,10 @@ checked for updates on every run.
     MUST be present, otherwise remote systems will not be able
     to validate the signature applied to the message.
 
-- headers_to_sign = <list of headers>       (REQUIRED)
+- headers_to_sign = list, of; headers      (REQUIRED)
 
-    Set this to the list of headers that should be signed.
+    Set this to the list of headers that should be signed
+    separated by either a comma, colon or semi-colon.
     This is to prevent any tampering of the specified headers.
     The 'From' header is required to be present by the RFC and
     will be added if it is missing.
