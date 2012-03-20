@@ -91,8 +91,10 @@ exports.hook_queue_outbound = function (next, connection) {
         }
     };
     var dkim_header = 'v=1;a=rsa-sha256;bh=' + bodyhash + 
-                      ';c=relaxed/simple;d=fsl.com;h=' + headers.join(':') + 
-                      ';s=mail;b=';
+                      ';c=relaxed/simple;d=' + config.main.domain +
+                      ';h=' + headers.join(':') + 
+                      ';s=' + config.main.selector +
+                      ';b=';
     signer.update('dkim-signature:' + dkim_header);
     var signature = signer.sign(private_key, 'base64');
     dkim_header += signature;
