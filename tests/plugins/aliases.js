@@ -22,6 +22,7 @@ function _set_up(callback) {
     this.connection.notes = stub();
     this.connection.transaction = stub();
     this.connection.transaction.notes = stub();
+    this.connection.transaction.rcpt_to = [ this.params ];
 
     // some test data
     this.configfile = {
@@ -117,13 +118,14 @@ exports.aliases = {
         // these will get reset in _set_up everytime
         this.recip = new Address('<test2-specific@example.com>');
         this.params = [this.recip];
+        var result = new Address('<test2@example.com>');
 
         var next = function (action) {
-            test.expect(3);
+            test.expect(4);
             test.isUndefined(this.connection.transaction.notes.discard);
             test.isNotNull(this.connection.transaction.rcpt_to);
-            test.equals(this.connection.transaction.rcpt_to,
-                "test2@example.com");
+            test.isArray(this.connection.transaction.rcpt_to);
+            test.deepEqual(this.connection.transaction.rcpt_to.pop(), result);
             test.done();
         }.bind(this);
 
@@ -133,12 +135,13 @@ exports.aliases = {
         // these will get reset in _set_up everytime
         this.recip = new Address('<test3@example.com>');
         this.params = [this.recip];
+        var result = new Address('<test3-works@example.com>');
 
         var next = function (action) {
-            test.expect(2);
+            test.expect(3);
             test.isNotNull(this.connection.transaction.rcpt_to);
-            test.equals(this.connection.transaction.rcpt_to,
-                "test3-works@example.com");
+            test.isArray(this.connection.transaction.rcpt_to);
+            test.deepEqual(this.connection.transaction.rcpt_to.pop(), result);
             test.done();
         }.bind(this);
 
@@ -148,12 +151,13 @@ exports.aliases = {
         // these will get reset in _set_up everytime
         this.recip = new Address('<test4-testing@example.com>');
         this.params = [this.recip];
+        var result = new Address('<test4@example.com>');
 
         var next = function (action) {
-            test.expect(2);
+            test.expect(3);
             test.isNotNull(this.connection.transaction.rcpt_to);
-            test.equals(this.connection.transaction.rcpt_to,
-                "test4@example.com");
+            test.isArray(this.connection.transaction.rcpt_to);
+            test.deepEqual(this.connection.transaction.rcpt_to.pop(), result);
             test.done();
         }.bind(this);
 
@@ -163,12 +167,13 @@ exports.aliases = {
         // these will get reset in _set_up everytime
         this.recip = new Address('<test5@example.com>');
         this.params = [this.recip];
+        var result = new Address('<test5-works@success.com>');
 
         var next = function (action) {
-            test.expect(2);
+            test.expect(3);
             test.isNotNull(this.connection.transaction.rcpt_to);
-            test.equals(this.connection.transaction.rcpt_to,
-                "test5-works@success.com");
+            test.isArray(this.connection.transaction.rcpt_to);
+            test.deepEqual(this.connection.transaction.rcpt_to.pop(), result);
             test.done();
         }.bind(this);
 
@@ -178,12 +183,13 @@ exports.aliases = {
         // these will get reset in _set_up everytime
         this.recip = new Address('<test6-testing@example.com>');
         this.params = [this.recip];
+        var result = new Address('<test6-works@success.com>');
 
         var next = function (action) {
-            test.expect(2);
+            test.expect(3);
             test.isNotNull(this.connection.transaction.rcpt_to);
-            test.equals(this.connection.transaction.rcpt_to,
-                "test6-works@success.com");
+            test.isArray(this.connection.transaction.rcpt_to);
+            test.deepEqual(this.connection.transaction.rcpt_to.pop(), result);
             test.done();
         }.bind(this);
 

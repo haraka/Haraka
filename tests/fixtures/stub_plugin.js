@@ -42,6 +42,10 @@ Plugin.prototype.load_plugin = function(name) {
     }
 
     var code = '"use strict";' + rf;
+
+    // hax for testing
+    code = code.replace("./address", "../../address");
+
     var sandbox = {
         require: require,
         __filename: full_paths[i],
