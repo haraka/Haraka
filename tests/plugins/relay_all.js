@@ -1,7 +1,7 @@
-var stub             = require('tests/fixtures/stub'),
+var stub             = require('../fixtures/stub'),
     constants        = require('../../constants'),
-    Connection       = require('tests/fixtures/stub_connection'),
-    Plugin           = require('tests/fixtures/stub_plugin');
+    Connection       = require('../fixtures/stub_connection'),
+    Plugin           = require('../fixtures/stub_plugin');
 
 // huge hack here, but plugin tests need constants
 constants.import(global);

@@ -1,6 +1,6 @@
 "use strict";
 
-var stub      = require('tests/fixtures/stub'),
+var stub      = require('../fixtures/stub'),
     path      = require('path'),
     constants = require('../../constants'),
     vm        = require('vm'),
@@ -21,10 +21,11 @@ function Plugin(name) {
 Plugin.prototype.load_plugin = function(name) {
     var rf;
     var last_err;
-    var full_paths = [];
+    var full_paths = []
+    var env_paths = process.env.ENV_NODE_PATH.split(":");
 
-    require.paths.forEach(function (pp) {
-        full_paths.push(path.resolve(pp, name) + '.js');
+    env_paths.forEach(function (pp) {
+        full_paths.push(pp + '/' + name + '.js');
     });
 
     for (var i=0, j=full_paths.length; i<j; i++) {

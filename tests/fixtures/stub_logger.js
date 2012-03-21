@@ -1,6 +1,6 @@
 "use strict";
 
-var stub = require('tests/fixtures/stub');
+var stub = require('./stub');
 
 var logger = exports;
 

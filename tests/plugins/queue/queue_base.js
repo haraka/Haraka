@@ -1,7 +1,7 @@
-var stub             = require('tests/fixtures/stub'),
+var stub             = require('../../fixtures/stub'),
     constants        = require('../../../constants'),
-    Connection       = require('tests/fixtures/stub_connection'),
-    Plugin           = require('tests/fixtures/stub_plugin');
+    Connection       = require('../../fixtures/stub_connection'),
+    Plugin           = require('../../fixtures/stub_plugin');
 
 // huge hack here, but plugin tests need constants
 constants.import(global);
@@ -461,6 +461,20 @@ exports.queue_base = {
         catch (err) {
             test.isNotNull(err);
             test.equals(err.message, "Invalid Arguments");
+        }
+
+        test.done();
+    },
+    'conn_idle should throw with missing argument 1' : function (test) {
+
+        try {
+            test.expect(2);
+            test.isUndefined(this.connection.notes.conn);
+            this.plugin.conn_idle(this, this.connection);
+            test.isUndefined(this.connection.server.notes.conn_pool);
+        }
+        catch (err) {
+            console.log(err.stack);
         }
 
         test.done();
