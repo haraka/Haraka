@@ -10,7 +10,7 @@ function _set_up(callback) {
     this.backup = {};
 
     // needed for tests
-    this.plugin = Plugin('plugins/relay_all');
+    this.plugin = Plugin('relay_all');
     this.connection = Connection.createConnection();
     this.params = ['foo@bar.com'];
 

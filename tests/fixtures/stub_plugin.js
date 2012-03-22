@@ -20,28 +20,14 @@ function Plugin(name) {
 
 Plugin.prototype.load_plugin = function(name) {
     var rf;
-    var last_err;
-    var full_paths = []
-    var env_paths = process.env.ENV_NODE_PATH.split(":");
+    var full_path = __dirname + "/../../plugins/" + name + ".js";
 
-    env_paths.forEach(function (pp) {
-        full_paths.push(pp + '/' + name + '.js');
-    });
-
-    for (var i=0, j=full_paths.length; i<j; i++) {
-        try {
-            rf = fs.readFileSync(full_paths[i]);
-            break;
-        }
-        catch (err) {
-            last_err = err;
-            continue;
-        }
+    try {
+        rf = fs.readFileSync(full_path);
     }
-    if (!rf) {
-        throw "Loading test plugin " + name + " failed: " + last_err;
+    catch (err) {
+        throw "Loading test plugin " + name + " failed: " + err;
     }
-
     var code = '"use strict";' + rf;
 
     // hax for testing
@@ -49,8 +35,8 @@ Plugin.prototype.load_plugin = function(name) {
 
     var sandbox = {
         require: require,
-        __filename: full_paths[i],
-        __dirname:  path.dirname(full_paths[i]),
+        __filename: full_path,
+        __dirname:  path.dirname(full_path),
         exports: this,
         console: console,
         setTimeout: setTimeout,

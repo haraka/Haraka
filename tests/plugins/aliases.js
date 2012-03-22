@@ -11,7 +11,7 @@ function _set_up(callback) {
     this.backup = {};
 
     // needed for tests
-    this.plugin = new Plugin('plugins/aliases');
+    this.plugin = new Plugin('aliases');
     this.connection = Connection.createConnection();
     this.recip = new Address('<test1@example.com>');
     this.params = [this.recip];

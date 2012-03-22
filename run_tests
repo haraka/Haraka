@@ -2,17 +2,6 @@
 
 "use strict";
 
-var new_node_path = __dirname + "/tests/fixtures" + ":" +
-                    __dirname + "/plugins" + ":" +
-                    __dirname;
-
-if (process.env.ENV_NODE_PATH) {
-    process.env.ENV_NODE_PATH = new_node_path + ":" + new_node_path;
-}
-else {
-    process.env.ENV_NODE_PATH = new_node_path;
-}
-
 try {
     var reporter = require('nodeunit').reporters.default;
 }

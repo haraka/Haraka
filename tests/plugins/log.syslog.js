@@ -10,7 +10,7 @@ function _set_up(callback) {
     this.backup = {};
 
     // needed for tests
-    this.plugin = new Plugin('plugins/log.syslog');
+    this.plugin = new Plugin('log.syslog');
     this.logger = Logger.createLogger();
 
     // backup modifications

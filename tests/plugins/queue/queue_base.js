@@ -10,7 +10,7 @@ function _set_up(callback) {
     this.backup = {};
 
     // needed for tests
-    this.plugin = new Plugin('plugins/queue/queue_base');
+    this.plugin = new Plugin('queue/queue_base');
     this.connection = Connection.createConnection();
 
     // backup modifications
