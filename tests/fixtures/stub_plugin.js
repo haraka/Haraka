@@ -30,11 +30,19 @@ Plugin.prototype.load_plugin = function(name) {
     }
     var code = '"use strict";' + rf;
 
-    // hax for testing
-    code = code.replace("./address", "../../address");
+    var sandbox_require = function (id) {
+        if (id[0] == '.') {
+            try {
+                fs.statSync(__dirname + '/' + id + '.js');
+            } catch (e) {
+                id = '../../' + id;
+            }
+        }
+        return require(id);
+    }
 
     var sandbox = {
-        require: require,
+        require: sandbox_require,
         __filename: full_path,
         __dirname:  path.dirname(full_path),
         exports: this,
