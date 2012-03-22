@@ -7,6 +7,7 @@
 // add your logs and uncomment this require.  Just make sure to comment
 // out again when everything is working.  If you don't tests will hang.
 // var logger = require('./logger');
+
 var qchar = /([^a-zA-Z0-9!#\$\%\&\x27\*\+\x2D\/=\?\^_`{\|}~.])/;
 
 function Address (user, host) {
