@@ -4,9 +4,7 @@
 
 var sock = require('./line_socket');
 
-// XXX: pass in host, port, and timeout (read from config)
 // XXX: auto-register event handlers
-// XXX: test these three function
 exports.conn_get = function (self, next, connection, host, port, timeout) {
     var conn = {};
     host = (host) ? host : 'localhost';
@@ -36,6 +34,18 @@ exports.conn_get = function (self, next, connection, host, port, timeout) {
         conn.socket.removeAllListeners('connect');
         conn.socket.removeAllListeners('line');
         conn.socket.removeAllListeners('drain');
+
+        conn.socket.on('error', function (err) {
+            this.conn_destroy(self, connection, conn);
+        });
+
+        conn.socket.on('timeout', function () {
+            this.conn_destroy(self, connection, conn);
+        });
+
+        conn.socket.on('close', function (had_error) {
+            this.conn_destroy(self, connection, conn);
+        });
     }
     else {
         conn.socket = sock.connect(port, host);

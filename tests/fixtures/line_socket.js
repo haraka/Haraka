@@ -8,6 +8,7 @@ function Socket() {
     self.destroySoon = stub();
     self.setTimeout = stub();
     self.removeAllListeners = stub();
+    self.on = stub();
 }
 
 exports.Socket = Socket;

@@ -224,7 +224,7 @@ exports.queue_base = {
         try {
             var conn = this.plugin.conn_get(this, this.next, this.connection,
                 'localhost', 25, 0);
-            this.connection.server.notes.conn_pool = [ conn ];
+            this.plugin.conn_idle(this, this.connection);
             conn = this.plugin.conn_get(this, this.next, this.connection,
                 'localhost', 25, 0);
             test.ok(
@@ -242,41 +242,40 @@ exports.queue_base = {
 
         test.done();
     },
-    'conn_get should call socket.removeAllListeners()' : function (test) {
-        test.expect(7);
-
-        try {
-            var conn = this.plugin.conn_get(this, this.next, this.connection,
-                'localhost', 25, 0);
-            this.connection.server.notes.conn_pool = [ conn ];
-            conn = this.plugin.conn_get(this, this.next, this.connection,
-                'localhost', 25, 0);
-            test.ok(
-                this.connection.notes.conn.socket.removeAllListeners.called);
-            test.equals(conn.socket.removeAllListeners.args[0][0], 'error');
-            test.equals(conn.socket.removeAllListeners.args[1][0], 'timeout');
-            test.equals(conn.socket.removeAllListeners.args[2][0], 'close');
-            test.equals(conn.socket.removeAllListeners.args[3][0], 'connect');
-            test.equals(conn.socket.removeAllListeners.args[4][0], 'line');
-            test.equals(conn.socket.removeAllListeners.args[5][0], 'drain');
-        }
-        catch (err) {
-            console.log(err.stack);
-        }
-
-        test.done();
-    },
-    'conn_get should call socket.removeAllListeners()' : function (test) {
+    'conn_get should use conn_pool correctly' : function (test) {
         test.expect(2);
 
         try {
             var conn = this.plugin.conn_get(this, this.next, this.connection,
                 'localhost', 25, 0);
-            this.connection.server.notes.conn_pool = [ conn ];
+            this.plugin.conn_idle(this, this.connection);
             test.equals(this.connection.server.notes.conn_pool.length, 1);
             conn = this.plugin.conn_get(this, this.next, this.connection,
                 'localhost', 25, 0);
             test.equals(this.connection.server.notes.conn_pool.length, 0);
+        }
+        catch (err) {
+            console.log(err.stack);
+        }
+
+        test.done();
+    },
+    'conn_get should listen for error event' : function (test) {
+        test.expect(7);
+
+        try {
+            var conn = this.plugin.conn_get(this, this.next, this.connection,
+                'localhost', 25, 0);
+            this.plugin.conn_idle(this, this.connection);
+            conn = this.plugin.conn_get(this, this.next, this.connection,
+                'localhost', 25, 0);
+            test.ok(this.connection.notes.conn.socket.on.called);
+            test.equals(conn.socket.on.args[0][0], 'error');
+            test.equals(conn.socket.on.args[1][0], 'timeout');
+            test.equals(conn.socket.on.args[2][0], 'close');
+            test.isFunction(conn.socket.on.args[0][1]);
+            test.isFunction(conn.socket.on.args[1][1]);
+            test.isFunction(conn.socket.on.args[2][1]);
         }
         catch (err) {
             console.log(err.stack);
@@ -465,13 +464,126 @@ exports.queue_base = {
 
         test.done();
     },
-    'conn_idle should throw with missing argument 1' : function (test) {
-
+    'conn_idle should return on null connection.notes.conn' : function (test) {
         try {
             test.expect(2);
             test.isUndefined(this.connection.notes.conn);
             this.plugin.conn_idle(this, this.connection);
             test.isUndefined(this.connection.server.notes.conn_pool);
+        }
+        catch (err) {
+            console.log(err.stack);
+        }
+
+        test.done();
+    },
+    'conn_idle should put conn in conn_pool' : function (test) {
+        try {
+            test.expect(8);
+            test.isUndefined(this.connection.notes.conn);
+            var conn = this.plugin.conn_get(this, this.next, this.connection,
+                'localhost', 25, 0);
+            test.isNotUndefined(this.connection.notes.conn);
+            test.isUndefined(this.connection.server.notes.conn_pool);
+            this.plugin.conn_idle(this, this.connection);
+            test.isUndefined(this.connection.notes.conn);
+            test.isNotUndefined(this.connection.server.notes.conn_pool);
+            test.isArray(this.connection.server.notes.conn_pool);
+            test.equals(this.connection.server.notes.conn_pool.length, 1);
+            test.deepEqual(this.connection.server.notes.conn_pool[0],
+                conn);
+        }
+        catch (err) {
+            console.log(err.stack);
+        }
+
+        test.done();
+    },
+    'conn_idle should put multiple conns in conn_pool' : function (test) {
+        try {
+            test.expect(15);
+            test.isUndefined(this.connection.notes.conn);
+            var conn = this.plugin.conn_get(this, this.next, this.connection,
+                'localhost', 25, 0);
+            test.isNotUndefined(this.connection.notes.conn);
+            test.isUndefined(this.connection.server.notes.conn_pool);
+            var conn2 = this.plugin.conn_get(this, this.next, this.connection,
+                'localhost', 25, 0);
+            test.isNotUndefined(this.connection.notes.conn);
+            test.isUndefined(this.connection.server.notes.conn_pool);
+
+            this.plugin.conn_idle(this, this.connection);
+            test.isUndefined(this.connection.notes.conn);
+            test.isNotUndefined(this.connection.server.notes.conn_pool);
+            test.isArray(this.connection.server.notes.conn_pool);
+            test.equals(this.connection.server.notes.conn_pool.length, 1);
+            test.deepEqual(this.connection.server.notes.conn_pool[0],
+                conn2);
+
+            this.connection.notes.conn = conn;
+            this.plugin.conn_idle(this, this.connection);
+            test.isUndefined(this.connection.notes.conn);
+            test.isNotUndefined(this.connection.server.notes.conn_pool);
+            test.isArray(this.connection.server.notes.conn_pool);
+            test.equals(this.connection.server.notes.conn_pool.length, 2);
+            test.deepEqual(this.connection.server.notes.conn_pool[1],
+                conn);
+        }
+        catch (err) {
+            console.log(err.stack);
+        }
+
+        test.done();
+    },
+    'conn_idle should put multiple conns in conn_pool' : function (test) {
+        try {
+            test.expect(15);
+            test.isUndefined(this.connection.notes.conn);
+            var conn = this.plugin.conn_get(this, this.next, this.connection,
+                'localhost', 25, 0);
+            test.isNotUndefined(this.connection.notes.conn);
+            test.isUndefined(this.connection.server.notes.conn_pool);
+            var conn2 = this.plugin.conn_get(this, this.next, this.connection,
+                'localhost', 25, 0);
+            test.isNotUndefined(this.connection.notes.conn);
+            test.isUndefined(this.connection.server.notes.conn_pool);
+
+            this.plugin.conn_idle(this, this.connection);
+            test.isUndefined(this.connection.notes.conn);
+            test.isNotUndefined(this.connection.server.notes.conn_pool);
+            test.isArray(this.connection.server.notes.conn_pool);
+            test.equals(this.connection.server.notes.conn_pool.length, 1);
+            test.deepEqual(this.connection.server.notes.conn_pool[0],
+                conn2);
+
+            this.connection.notes.conn = conn;
+            this.plugin.conn_idle(this, this.connection);
+            test.isUndefined(this.connection.notes.conn);
+            test.isNotUndefined(this.connection.server.notes.conn_pool);
+            test.isArray(this.connection.server.notes.conn_pool);
+            test.equals(this.connection.server.notes.conn_pool.length, 2);
+            test.deepEqual(this.connection.server.notes.conn_pool[1],
+                conn);
+        }
+        catch (err) {
+            console.log(err.stack);
+        }
+
+        test.done();
+    },
+    'conn_idle should remove active_conections count' : function (test) {
+        try {
+            test.expect(7);
+            test.isUndefined(this.connection.server.notes.active_conections);
+            var conn = this.plugin.conn_get(this, this.next, this.connection,
+                'localhost', 25, 0);
+            test.isNotUndefined(this.connection.server.notes.active_conections);
+            test.isNumber(this.connection.server.notes.active_conections);
+            test.equals(this.connection.server.notes.active_conections, 1);
+            this.plugin.conn_idle(this, this.connection);
+            test.isNotUndefined(this.connection.server.notes.active_conections);
+            test.isNumber(this.connection.server.notes.active_conections);
+            test.equals(this.connection.server.notes.active_conections, 0);
         }
         catch (err) {
             console.log(err.stack);
