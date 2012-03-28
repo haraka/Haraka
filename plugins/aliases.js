@@ -1,5 +1,6 @@
 // This is the aliases plugin
 // One must not run this plugin with the queue/smtp_proxy plugin.
+var Address = require('./address').Address;
 
 exports.register = function () {
     this.inherits('queue/discard');
@@ -48,6 +49,7 @@ function _drop(plugin, connection, rcpt) {
 
 function _alias(plugin, connection, key, config, host) {
     var to;
+    var toAddress;
 
     if (config.to) {
         if (config.to.search("@") !== -1) {
@@ -59,7 +61,10 @@ function _alias(plugin, connection, key, config, host) {
 
         connection.logdebug(plugin, "aliasing " +
             connection.transaction.rcpt_to + " to " + to);
-        connection.transaction.rcpt_to = to;
+
+        toAddress = new Address('<' + to + '>');
+        connection.transaction.rcpt_to.pop();
+        connection.transaction.rcpt_to.push(toAddress);
     }
     else {
         connection.loginfo(plugin, 'alias failed for ' + key +
