@@ -10,7 +10,7 @@ function _set_up(callback) {
     this.backup = {};
 
     // needed for tests
-    this.plugin = new Plugin('queue/queue_base');
+    this.plugin = new Plugin('queue/conn_pool_base');
     this.connection = Connection.createConnection();
 
     // backup modifications
@@ -33,7 +33,7 @@ function _tear_down(callback) {
     callback();
 }
 
-exports.queue_base = {
+exports.conn_pool_base = {
     setUp : _set_up,
     tearDown : _tear_down,
     'should have conn_get function' : function (test) {
