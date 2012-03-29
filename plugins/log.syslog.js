@@ -15,8 +15,13 @@ exports.register = function() {
     var always_ok = ini.general['always_ok']  || false;
 
     if (always_ok && (always_ok >= 1 || always_ok.toLowerCase() === 'true')) {
-        this.always_ok = always_ok = true;
+        always_ok = true;
     }
+    else {
+        always_ok = false;
+    }
+
+    this.always_ok = always_ok;
 
     if (pid && (pid >= 1 || pid.toLowerCase() === 'true')) {
         options |= Syslog.LOG_PID;
