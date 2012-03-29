@@ -4,7 +4,6 @@
 
 var sock = require('./line_socket');
 
-// XXX: auto-register event handlers
 exports.conn_get = function (self, next, connection, host, port, timeout) {
     var conn = {};
     host = (host) ? host : 'localhost';
@@ -50,19 +49,12 @@ exports.conn_get = function (self, next, connection, host, port, timeout) {
     else {
         conn.socket = sock.connect(port, host);
         conn.socket.setTimeout(timeout * 1000);
-
-        // XXX: This socket.connect should be handled in smtp_proxy and in
-        // smtp_forward
-        conn.socket.command = 'connect';
         conn.pool_connection = false;
     }
 
-    // XXX: This socket.connect should be handled in smtp_proxy and in
-    // smtp_forward
     conn.response = [];
-
-    connection.notes.conn = conn;
     conn.next = next;
+    connection.notes.conn = conn;
 
     if (connection.server.notes.active_conections >= 0) {
         connection.server.notes.active_conections++;

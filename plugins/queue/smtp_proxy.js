@@ -23,6 +23,10 @@ exports.hook_mail = function (next, connection, params) {
     var in_write = false;
     var dot_pending = true;
 
+    if (!smtp_proxy.pool_connection) {
+        smtp_proxy.command = 'connect';
+    }
+
     smtp_proxy.send_data = function () {
         var wrote_all = true;
         while (wrote_all &&
