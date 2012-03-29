@@ -217,22 +217,22 @@ exports.hook_mail = function (next, connection, params) {
 };
 
 exports.hook_rcpt_ok = function (next, connection, recipient) {
-    if (!connection.notes.smtp_proxy) return next();
-    var smtp_proxy = connection.notes.smtp_proxy;
+    var smtp_proxy = connection.notes.conn;
+    if (!smtp_proxy) return next();
     smtp_proxy.next = next;
     smtp_proxy.socket.send_command('RCPT', 'TO:' + recipient);
 };
 
 exports.hook_data = function (next, connection) {
-    if (!connection.notes.smtp_proxy) return next();
-    var smtp_proxy = connection.notes.smtp_proxy;
+    var smtp_proxy = connection.notes.conn;
+    if (!smtp_proxy) return next();
     smtp_proxy.next = next;
     smtp_proxy.socket.send_command("DATA");
 };
 
 exports.hook_queue = function (next, connection) {
-    if (!connection.notes.smtp_proxy) return next();
-    var smtp_proxy = connection.notes.smtp_proxy;
+    var smtp_proxy = connection.notes.conn;
+    if (!smtp_proxy) return next();
     smtp_proxy.command = 'mailbody';
     smtp_proxy.next = next;
     smtp_proxy.send_data();
@@ -247,8 +247,8 @@ exports.hook_quit = function (next, connection) {
 }
 
 exports.rset_proxy = function (next, connection) {
-    if (!connection.notes.smtp_proxy) return next();
-    var smtp_proxy = connection.notes.smtp_proxy;
+    var smtp_proxy = connection.notes.conn;
+    if (!smtp_proxy) return next();
     smtp_proxy.next = next;
     smtp_proxy.socket.send_command("RSET");
     smtp_proxy.next(OK);
