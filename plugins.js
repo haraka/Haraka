@@ -161,6 +161,14 @@ plugins._register_plugin = function (plugin) {
 }
 
 plugins.run_hooks = function (hook, object, params) {
+    // Bail out if the client has disconnected
+    if (object.constructor.name === 'Connection' && object.disconnected) {
+        if (hook != 'log') {
+            object.logdebug('aborting ' + hook + ' hook as client has disconnected');
+        }
+        return;
+    }
+
     if (hook != 'log')
         object.logdebug("running " + hook + " hooks");
     
@@ -191,18 +199,28 @@ plugins.run_hooks = function (hook, object, params) {
 };
 
 plugins.run_next_hook = function(hook, object, params) {
+    // Bail if client has disconnected
+    if (object.constructor.name === 'Connection' && object.disconnected) {
+        object.logdebug('aborting ' + hook + ' hook as client has disconnected');
+        return;
+    }
     var called_once = 0;
     var timeout_id;
-    
+    var timed_out = false;
     var item;
     var callback = function(retval, msg) {
         if (timeout_id) clearTimeout(timeout_id);
-        
-        if (called_once) {
-            if (hook != 'log')
+        // Bail if client has disconnected
+        if (object.constructor.name === 'Connection' && object.disconnected) {
+            object.logdebug('ignoring ' + item[0].name + ' plugin callback as client has disconnected');
+            return;
+        }
+        if (called_once && hook != 'log') {
+            if (!timed_out) {
                 object.logerror(item[0].name + ' plugin ran callback multiple times - ignoring subsequent calls');
                 // Write a stack trace to the log to aid debugging
                 object.logerror((new Error).stack);
+            }
             return;
         }
         called_once++;
@@ -269,6 +287,7 @@ plugins.run_next_hook = function(hook, object, params) {
 
     if (item[0].timeout && hook != 'log') {
         timeout_id = setTimeout(function () {
+            timed_out = true;
             object.logcrit("Plugin " + item[0].name + 
                 " timed out on hook " + hook + " - make sure it calls the callback");
             callback(constants.denysoft, "plugin timeout");
