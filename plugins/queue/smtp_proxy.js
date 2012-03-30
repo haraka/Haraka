@@ -59,7 +59,9 @@ exports.hook_mail = function (next, connection, params) {
 
     smtp_proxy.socket.on('error', function (err) {
         connection.logdebug(self, "Ongoing connection failed: " + err);
-        return next(DENYSOFT,'Proxy connection failed');
+        if (smtp_proxy) {
+            smtp_proxy.next(DENYSOFT,'Proxy connection failed');
+        }
     });
 
     smtp_proxy.socket.on('timeout', function () {
@@ -145,8 +147,14 @@ exports.hook_mail = function (next, connection, params) {
                            "message denied, proxying failed");
                         smtp_proxy.socket.send_command('RSET');
                     }
-                    return smtp_proxy.next(code.match(/^4/) ?
-                        DENYSOFT : DENY, response_array);
+
+                    if (smtp_proxy) {
+                        return smtp_proxy.next(code.match(/^4/) ?
+                            DENYSOFT : DENY, response_array);
+                    }
+                    else {
+                        return;
+                    }
                 }
                 switch (smtp_proxy.command) {
                     case 'xclient':
@@ -168,26 +176,28 @@ exports.hook_mail = function (next, connection, params) {
                             'FROM:' + mail_from);
                         break;
                     case 'mail':
-                        smtp_proxy.next();
+                        if (smtp_proxy) smtp_proxy.next();
                         break;
                     case 'rcpt':
-                        smtp_proxy.next();
+                        if (smtp_proxy) smtp_proxy.next();
                         break;
                     case 'data':
-                        smtp_proxy.next();
+                        if (smtp_proxy) smtp_proxy.next();
                         break;
                     case 'dot':
                         connection.loginfo(self,
                             "message delivered, proxying complete");
-                        smtp_proxy.next(OK, smtp_proxy.response + ' (' +
-                            connection.transaction.uuid + ')');
-                        smtp_proxy.socket.send_command('RSET');
+                        if (smtp_proxy) {
+                            smtp_proxy.next(OK, smtp_proxy.response + ' (' +
+                                connection.transaction.uuid + ')');
+                            smtp_proxy.socket.send_command('RSET');
+                        }
                         break;
                     case 'rset':
-                        self.conn_idle(self, connection);
                         // We do not call next() here because many paths
                         // lead to this conclusion, and next() is called
                         // on a case-by-case basis.
+                        self.conn_idle(self, connection);
                         break;
                     default:
                         throw "Unknown command: " + smtp_proxy.command;
@@ -200,7 +210,7 @@ exports.hook_mail = function (next, connection, params) {
                 "Unrecognised response from upstream server: " + line);
             connection.loginfo(self, "message denied, proxying failed");
             smtp_proxy.socket.send_command('RSET');
-            return smtp_proxy.next(DENYSOFT);
+            if (smtp_proxy) return smtp_proxy.next(DENYSOFT);
         }
     });
 
