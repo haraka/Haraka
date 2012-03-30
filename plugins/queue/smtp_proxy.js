@@ -258,6 +258,8 @@ exports.hook_quit = function (next, connection) {
 }
 
 exports.hook_disconnect = function (next, connection) {
+    var smtp_proxy = connection.notes.conn;
+    if (smtp_proxy) smtp_proxy.next();
     this.rset_proxy(next, connection);
 };
 
