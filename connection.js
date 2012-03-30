@@ -902,8 +902,7 @@ Connection.prototype.data_post_respond = function(retval, msg) {
 Connection.prototype.queue_outbound_respond = function(retval, msg) {
     switch(retval) {
         case constants.ok:
-                this.transaction.queue_ok_msg = msg || 'Message Queued';
-                plugins.run_hooks("queue_ok", this);
+                plugins.run_hooks("queue_ok", this, msg || 'Message Queued');
                 break;
         case constants.deny:
                 this.respond(552, msg || "Message denied");
@@ -926,8 +925,7 @@ Connection.prototype.queue_outbound_respond = function(retval, msg) {
                 outbound.send_email(this.transaction, function(retval, msg) {
                     switch(retval) {
                         case constants.ok:
-                                conn.transaction.queue_ok_msg = msg || 'Message Queued';
-                                plugins.run_hooks("queue_ok", conn);
+                                plugins.run_hooks("queue_ok", conn, msg || 'Message Queued');
                                 break;
                         case constants.deny:
                                 conn.respond(552, msg || "Message denied");
@@ -945,8 +943,7 @@ Connection.prototype.queue_outbound_respond = function(retval, msg) {
 Connection.prototype.queue_respond = function(retval, msg) {
     switch (retval) {
         case constants.ok:
-                this.transaction.queue_ok_msg = msg || 'Message Queued';
-                plugins.run_hooks("queue_ok", this);
+                plugins.run_hooks("queue_ok", this, msg || 'Message Queued');
                 break;
         case constants.deny:
                 this.respond(552, msg || "Message denied");
@@ -971,7 +968,7 @@ Connection.prototype.queue_respond = function(retval, msg) {
     }
 };
 
-Connection.prototype.queue_ok_respond = function (retval, msg) {
-    this.respond(250, this.transaction.queue_ok_msg);
+Connection.prototype.queue_ok_respond = function (retval, msg, params) {
+    this.respond(250, params);
     this.reset_transaction();
 };
