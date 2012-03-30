@@ -136,6 +136,7 @@ exports.hook_mail = function (next, connection, params) {
                     smtp_proxy.command = 'helo';
                 }
                 else if (code.match(/^[45]/)) {
+                    var response_array = smtp_proxy.response.slice();
                     if (smtp_proxy.command !== 'rcpt') {
                         // errors are OK for rcpt, but nothing else
                         // this can also happen if the destination server
@@ -145,7 +146,7 @@ exports.hook_mail = function (next, connection, params) {
                         smtp_proxy.socket.send_command('RSET');
                     }
                     return smtp_proxy.next(code.match(/^4/) ?
-                        DENYSOFT : DENY, smtp_proxy.response);
+                        DENYSOFT : DENY, response_array);
                 }
                 switch (smtp_proxy.command) {
                     case 'xclient':
