@@ -264,7 +264,6 @@ exports.hook_disconnect = function (next, connection) {
 exports.rset_proxy = function (next, connection) {
     var smtp_proxy = connection.notes.conn;
     if (!smtp_proxy) return next();
-    smtp_proxy.next = next;
     smtp_proxy.socket.send_command("RSET");
-    smtp_proxy.next();
+    next();
 };
