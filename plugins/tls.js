@@ -28,8 +28,6 @@ exports.hook_unrecognized_command = function (next, connection, params) {
         connection.respond(220, "Go ahead.");
         /* Upgrade the connection to TLS. */
         connection.client.upgrade(options); // Use the options which were saved by starttls.createServer().
-        /* Force the startup protocol to repeat. */
-        connection.uuid = utils.uuid();
         connection.reset_transaction();
         connection.hello_host = undefined;
         connection.using_tls = true;
