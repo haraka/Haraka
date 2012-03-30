@@ -10,17 +10,19 @@ exports.conn_get = function (self, next, connection, host, port, timeout) {
     host = (host) ? host : 'localhost';
     port = (port) ? port : 25;
     timeout = (timeout || timeout == 0) ? timeout : 300;
+    conn.pool_name = host + ':' + port + ':' + timeout;
 
     if (!self || !next || !connection) {
         throw new Error("Invalid Arguments");
     }
 
     if (connection.server.notes.conn_pool &&
-        connection.server.notes.conn_pool.length) {
+        connection.server.notes.conn_pool[conn.pool_name] &&
+        connection.server.notes.conn_pool[conn.pool_name].length) {
         connection.logdebug(self, "using connection from the pool: (" +
-            connection.server.notes.conn_pool.length + ")");
+            connection.server.notes.conn_pool[conn.pool_name].length + ")");
 
-        conn = connection.server.notes.conn_pool.shift();
+        conn = connection.server.notes.conn_pool[conn.pool_name].shift();
 
         // We should just reset these things when we shift a connection off
         // since we have to setup stuff based on _this_ connection.
@@ -98,17 +100,18 @@ exports.conn_destroy = function (self, connection, conn) {
         delete connection.notes.conn;
     }
 
-    if (connection.server.notes.conn_pool) {
+    if (connection.server.notes.conn_pool &&
+        connection.server.notes.conn_pool[conn.pool_name]) {
         // Pull that conn from the proxy pool.
         // Note we do not do this operation that often.
-        var index = connection.server.notes.conn_pool.indexOf(conn);
+        var index = connection.server.notes.conn_pool[conn.pool_name].indexOf(conn);
         if (index != -1) {
             // if we are pulling something from the proxy pool, it is not
             // acttive.  This means we do not want to reset it.
             reset_active_connections = 0;
-            connection.server.notes.conn_pool.splice(index, 1);
+            connection.server.notes.conn_pool[conn.pool_name].splice(index, 1);
             connection.logdebug(self, "pulling dead connection from pool: (" +
-                connection.server.notes.conn_pool.length + ")");
+                connection.server.notes.conn_pool[conn.pool_name].length + ")");
         }
     }
 
@@ -134,16 +137,22 @@ exports.conn_idle = function (self, connection) {
     }
 
     if (connection.server.notes.conn_pool) {
-        connection.server.notes.conn_pool.push(conn);
+        if (connection.server.notes.conn_pool[conn.pool_name]) {
+            connection.server.notes.conn_pool[conn.pool_name].push(conn);
+        }
+        else {
+            connection.server.notes.conn_pool[conn.pool_name] = [ conn ];
+        }
     }
     else {
-        connection.server.notes.conn_pool = [ conn ];
+        connection.server.notes.conn_pool = {}
+        connection.server.notes.conn_pool[conn.pool_name] = [ conn ];
     }
 
     connection.server.notes.active_conections--;
 
     connection.logdebug(self, "putting connection back in pool: (" +
-        connection.server.notes.conn_pool.length + ")");
+        connection.server.notes.conn_pool[conn.pool_name].length + ")");
     connection.logdebug(self, "active connections: (" +
         connection.server.notes.active_conections + ")");
 
