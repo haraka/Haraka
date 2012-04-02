@@ -35,15 +35,15 @@ exports.conn_get = function (self, next, connection, host, port, timeout) {
         conn.socket.removeAllListeners('drain');
 
         conn.socket.on('error', function (err) {
-            this.conn_destroy(self, connection, conn);
+            self.conn_destroy(self, connection, conn);
         });
 
         conn.socket.on('timeout', function () {
-            this.conn_destroy(self, connection, conn);
+            self.conn_destroy(self, connection, conn);
         });
 
         conn.socket.on('close', function (had_error) {
-            this.conn_destroy(self, connection, conn);
+            self.conn_destroy(self, connection, conn);
         });
     }
     else {
