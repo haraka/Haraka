@@ -11,7 +11,7 @@ var smtp_regexp = /^([0-9]{3})([ -])(.*)/;
 exports.smtp_forward = function (next, connection) {
     var smtp_config = this.config.get('smtp_forward.ini');
     connection.loginfo(this, "forwarding to " + smtp_config.main.host + ":" + smtp_config.main.port);
-    var smtp_forward = this.conn_get(this, next, connection, smtp_config.main.host, smtp_config.main.port, 300 * 1000);
+    var smtp_forward = this.conn_get(connection, smtp_config.main.host, smtp_config.main.port, 300 * 1000);
     var socket = smtp_forward.socket;
     var command = 'connect';
     var self = this;
@@ -163,7 +163,7 @@ exports.smtp_forward = function (next, connection) {
                         socket.send_command('RSET');
                         break;
                     case 'rset':
-                        self.conn_idle(self, connection);
+                        self.conn_idle(connection);
                         break;
                     default:
                         throw new Error("Unknown command: " + command);
