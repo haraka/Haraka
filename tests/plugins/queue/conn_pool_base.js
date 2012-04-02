@@ -261,7 +261,7 @@ exports.conn_pool_base = {
         test.done();
     },
     'conn_get should listen for error event' : function (test) {
-        test.expect(7);
+        test.expect(5);
 
         try {
             var conn = this.plugin.conn_get(this, this.next, this.connection,
@@ -270,12 +270,10 @@ exports.conn_pool_base = {
             conn = this.plugin.conn_get(this, this.next, this.connection,
                 'localhost', 25, 0);
             test.ok(this.connection.notes.conn.socket.on.called);
-            test.equals(conn.socket.on.args[0][0], 'error');
-            test.equals(conn.socket.on.args[1][0], 'timeout');
-            test.equals(conn.socket.on.args[2][0], 'close');
+            test.equals(conn.socket.on.args[0][0], 'timeout');
+            test.equals(conn.socket.on.args[1][0], 'close');
             test.isFunction(conn.socket.on.args[0][1]);
             test.isFunction(conn.socket.on.args[1][1]);
-            test.isFunction(conn.socket.on.args[2][1]);
         }
         catch (err) {
             console.log(err.stack);

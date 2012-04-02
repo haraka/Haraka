@@ -57,12 +57,18 @@ exports.hook_mail = function (next, connection, params) {
         }
     });
 
-    smtp_proxy.socket.on('error', function (err) {
+    // Call this in the case of socket error, or the socket throws an error.
+    var socket_error = function (err) {
         connection.logdebug(self, "Ongoing connection failed: " + err);
+
         if (smtp_proxy) {
             smtp_proxy.next(DENYSOFT,'Proxy connection failed');
         }
-    });
+
+        self.conn_destroy(self, connection, smtp_proxy);
+    };
+
+    smtp_proxy.socket.on('error', socket_error);
 
     smtp_proxy.socket.on('timeout', function () {
         connection.logdebug(self, "Ongoing connection timed out");
@@ -72,15 +78,27 @@ exports.hook_mail = function (next, connection, params) {
         connection.logdebug(self, "Ongoing connection closed");
     });
 
-    smtp_proxy.socket.on('connect', function () {});
+    smtp_proxy.socket.on('connect', function () {
+        connection.logdebug(self, "Ongoing connection established");
+    });
     
     smtp_proxy.socket.send_command = function (cmd, data) {
         var line = cmd + (data ? (' ' + data) : '');
+
         if (cmd === 'dot') {
             line = '.';
         }
+
         connection.logprotocol(self, "C: " + line);
-        this.write(line + "\r\n");
+
+        try {
+            this.write(line + "\r\n");
+        }
+        catch (err) {
+            socket_error(err);
+            return;
+        }
+
         smtp_proxy.command = cmd.toLowerCase();
         smtp_proxy.response = [];
     };
