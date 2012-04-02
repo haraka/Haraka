@@ -155,7 +155,8 @@ exports.conn_pool_base = {
             try {
                 var conn = this.plugin.conn_get(this, this.next,
                     this.connection, 'localhost', 25, 0);
-                this.connection.server.notes.conn_pool = [ conn ];
+                this.connection.server.notes.conn_pool = {}
+                this.connection.server.notes.conn_pool[conn.pool_name] = [ conn ];
                 this.plugin.conn_get(this, this.next, this.connection,
                     'localhost', 25, 0);
                 test.ok(this.connection.notes.conn.pool_connection);
@@ -249,10 +250,10 @@ exports.conn_pool_base = {
             var conn = this.plugin.conn_get(this, this.next, this.connection,
                 'localhost', 25, 0);
             this.plugin.conn_idle(this, this.connection);
-            test.equals(this.connection.server.notes.conn_pool.length, 1);
+            test.equals(this.connection.server.notes.conn_pool[conn.pool_name].length, 1);
             conn = this.plugin.conn_get(this, this.next, this.connection,
                 'localhost', 25, 0);
-            test.equals(this.connection.server.notes.conn_pool.length, 0);
+            test.equals(this.connection.server.notes.conn_pool[conn.pool_name].length, 0);
         }
         catch (err) {
             console.log(err.stack);
@@ -487,10 +488,10 @@ exports.conn_pool_base = {
             test.isUndefined(this.connection.server.notes.conn_pool);
             this.plugin.conn_idle(this, this.connection);
             test.isUndefined(this.connection.notes.conn);
-            test.isNotUndefined(this.connection.server.notes.conn_pool);
-            test.isArray(this.connection.server.notes.conn_pool);
-            test.equals(this.connection.server.notes.conn_pool.length, 1);
-            test.deepEqual(this.connection.server.notes.conn_pool[0],
+            test.isNotUndefined(this.connection.server.notes.conn_pool[conn.pool_name]);
+            test.isArray(this.connection.server.notes.conn_pool[conn.pool_name]);
+            test.equals(this.connection.server.notes.conn_pool[conn.pool_name].length, 1);
+            test.deepEqual(this.connection.server.notes.conn_pool[conn.pool_name][0],
                 conn);
         }
         catch (err) {
@@ -514,19 +515,19 @@ exports.conn_pool_base = {
 
             this.plugin.conn_idle(this, this.connection);
             test.isUndefined(this.connection.notes.conn);
-            test.isNotUndefined(this.connection.server.notes.conn_pool);
-            test.isArray(this.connection.server.notes.conn_pool);
-            test.equals(this.connection.server.notes.conn_pool.length, 1);
-            test.deepEqual(this.connection.server.notes.conn_pool[0],
+            test.isNotUndefined(this.connection.server.notes.conn_pool[conn.pool_name]);
+            test.isArray(this.connection.server.notes.conn_pool[conn.pool_name]);
+            test.equals(this.connection.server.notes.conn_pool[conn.pool_name].length, 1);
+            test.deepEqual(this.connection.server.notes.conn_pool[conn.pool_name][0],
                 conn2);
 
             this.connection.notes.conn = conn;
             this.plugin.conn_idle(this, this.connection);
             test.isUndefined(this.connection.notes.conn);
-            test.isNotUndefined(this.connection.server.notes.conn_pool);
-            test.isArray(this.connection.server.notes.conn_pool);
-            test.equals(this.connection.server.notes.conn_pool.length, 2);
-            test.deepEqual(this.connection.server.notes.conn_pool[1],
+            test.isNotUndefined(this.connection.server.notes.conn_pool[conn.pool_name]);
+            test.isArray(this.connection.server.notes.conn_pool[conn.pool_name]);
+            test.equals(this.connection.server.notes.conn_pool[conn.pool_name].length, 2);
+            test.deepEqual(this.connection.server.notes.conn_pool[conn.pool_name][1],
                 conn);
         }
         catch (err) {
@@ -550,19 +551,19 @@ exports.conn_pool_base = {
 
             this.plugin.conn_idle(this, this.connection);
             test.isUndefined(this.connection.notes.conn);
-            test.isNotUndefined(this.connection.server.notes.conn_pool);
-            test.isArray(this.connection.server.notes.conn_pool);
-            test.equals(this.connection.server.notes.conn_pool.length, 1);
-            test.deepEqual(this.connection.server.notes.conn_pool[0],
+            test.isNotUndefined(this.connection.server.notes.conn_pool[conn.pool_name]);
+            test.isArray(this.connection.server.notes.conn_pool[conn.pool_name]);
+            test.equals(this.connection.server.notes.conn_pool[conn.pool_name].length, 1);
+            test.deepEqual(this.connection.server.notes.conn_pool[conn.pool_name][0],
                 conn2);
 
             this.connection.notes.conn = conn;
             this.plugin.conn_idle(this, this.connection);
             test.isUndefined(this.connection.notes.conn);
-            test.isNotUndefined(this.connection.server.notes.conn_pool);
-            test.isArray(this.connection.server.notes.conn_pool);
-            test.equals(this.connection.server.notes.conn_pool.length, 2);
-            test.deepEqual(this.connection.server.notes.conn_pool[1],
+            test.isNotUndefined(this.connection.server.notes.conn_pool[conn.pool_name]);
+            test.isArray(this.connection.server.notes.conn_pool[conn.pool_name]);
+            test.equals(this.connection.server.notes.conn_pool[conn.pool_name].length, 2);
+            test.deepEqual(this.connection.server.notes.conn_pool[conn.pool_name][1],
                 conn);
         }
         catch (err) {
