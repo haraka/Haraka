@@ -276,6 +276,18 @@ exports.hook_quit = function (next, connection) {
 }
 
 exports.hook_disconnect = function (next, connection) {
+    var smtp_proxy = connection.notes.conn;
+    if (smtp_proxy) {
+        switch (smtp_proxy.command) {
+            case 'mail':
+            case 'rcpt':
+            case 'data':
+                smtp_proxy.next();
+                break;
+            default:
+                break;
+        }
+    }
     this.rset_proxy(next, connection);
 };
 
