@@ -5,21 +5,21 @@
 var sock = require('./line_socket');
 
 // XXX: auto-register event handlers
-exports.conn_get = function (self, next, connection, host, port, timeout) {
+exports.conn_get = function (connection, host, port, timeout) {
     var conn = {};
     host = (host) ? host : 'localhost';
     port = (port) ? port : 25;
     timeout = (timeout || timeout == 0) ? timeout : 300;
     conn.pool_name = host + ':' + port + ':' + timeout;
 
-    if (!self || !next || !connection) {
+    if (!connection) {
         throw new Error("Invalid Arguments");
     }
 
     if (connection.server.notes.conn_pool &&
         connection.server.notes.conn_pool[conn.pool_name] &&
         connection.server.notes.conn_pool[conn.pool_name].length) {
-        connection.logdebug(self, "using connection from the pool: (" +
+        connection.logdebug(this, "using connection from the pool: (" +
             connection.server.notes.conn_pool[conn.pool_name].length + ")");
 
         conn = connection.server.notes.conn_pool[conn.pool_name].shift();
@@ -37,6 +37,7 @@ exports.conn_get = function (self, next, connection, host, port, timeout) {
         conn.socket.removeAllListeners('line');
         conn.socket.removeAllListeners('drain');
 
+        var self = this;
         conn.socket.on('error', function (err) {
             this.conn_destroy(self, connection, conn);
         });
@@ -59,12 +60,7 @@ exports.conn_get = function (self, next, connection, host, port, timeout) {
         conn.pool_connection = false;
     }
 
-    // XXX: This socket.connect should be handled in smtp_proxy and in
-    // smtp_forward
-    conn.response = [];
-
     connection.notes.conn = conn;
-    conn.next = next;
 
     if (connection.server.notes.active_conections >= 0) {
         connection.server.notes.active_conections++;
@@ -73,22 +69,22 @@ exports.conn_get = function (self, next, connection, host, port, timeout) {
         connection.server.notes.active_conections = 1;
     }
 
-    connection.logdebug(self, "active connections: (" +
+    connection.logdebug(this, "active connections: (" +
         connection.server.notes.active_conections + ")");
 
     return conn;
 }
 
 // function will destroy an conn and pull it out of the idle array
-exports.conn_destroy = function (self, connection, conn) {
+exports.conn_destroy = function (connection, conn) {
     var reset_active_connections = 0;
 
-    if (!self || !connection || !conn) {
+    if (!connection || !conn) {
         throw new Error("Invalid Arguments");
     }
 
     if (conn && conn.socket) {
-        connection.logdebug(self, "destroying connection");
+        connection.logdebug(this, "destroying connection");
         conn.socket.destroySoon();
         conn.socket = 0;
         reset_active_connections = 1;
@@ -110,7 +106,7 @@ exports.conn_destroy = function (self, connection, conn) {
             // acttive.  This means we do not want to reset it.
             reset_active_connections = 0;
             connection.server.notes.conn_pool[conn.pool_name].splice(index, 1);
-            connection.logdebug(self, "pulling dead connection from pool: (" +
+            connection.logdebug(this, "pulling dead connection from pool: (" +
                 connection.server.notes.conn_pool[conn.pool_name].length + ")");
         }
     }
@@ -118,15 +114,15 @@ exports.conn_destroy = function (self, connection, conn) {
     if (reset_active_connections &&
         connection.server.notes.active_conections) {
         connection.server.notes.active_conections--;
-        connection.logdebug(self, "active connections: (" +
+        connection.logdebug(this, "active connections: (" +
             connection.server.notes.active_conections + ")");
     }
 
     return;
 }
 
-exports.conn_idle = function (self, connection) {
-    if (!self || !connection) {
+exports.conn_idle = function (connection) {
+    if (!connection) {
         throw new Error("Invalid Arguments");
     }
 
@@ -151,9 +147,9 @@ exports.conn_idle = function (self, connection) {
 
     connection.server.notes.active_conections--;
 
-    connection.logdebug(self, "putting connection back in pool: (" +
+    connection.logdebug(this, "putting connection back in pool: (" +
         connection.server.notes.conn_pool[conn.pool_name].length + ")");
-    connection.logdebug(self, "active connections: (" +
+    connection.logdebug(this, "active connections: (" +
         connection.server.notes.active_conections + ")");
 
     // Unlink this connection from the proxy now that it is back

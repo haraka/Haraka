@@ -2,6 +2,7 @@
 var sock = require('./line_socket');
 
 exports.register = function () {
+    this.inherits('queue/conn_pool_base');
     this.register_hook('queue', 'smtp_forward');
 };
 
@@ -10,10 +11,10 @@ var smtp_regexp = /^([0-9]{3})([ -])(.*)/;
 exports.smtp_forward = function (next, connection) {
     var smtp_config = this.config.get('smtp_forward.ini');
     connection.loginfo(this, "forwarding to " + smtp_config.main.host + ":" + smtp_config.main.port);
-    var socket = sock.connect(smtp_config.main.port, smtp_config.main.host);
-    socket.setTimeout(300 * 1000);
-    var self = this;
+    var smtp_forward = this.conn_get(connection, smtp_config.main.host, smtp_config.main.port, 300 * 1000);
+    var socket = smtp_forward.socket;
     var command = 'connect';
+    var self = this;
     var response = [];
     // copy the recipients:
     var recipients = connection.transaction.rcpt_to.map(function(item) { return item });
@@ -49,14 +50,13 @@ exports.smtp_forward = function (next, connection) {
         }
         connection.logprotocol(self, "C: " + line);
         command = cmd.toLowerCase();
-        this.write(line + "\r\n");
+        socket.write(line + "\r\n");
         // Clear response buffer from previous command
         response = [];
     };
     
     socket.on('timeout', function () {
         connection.logerror(self, "Ongoing connection timed out");
-        socket.end();
         next();
     });
     socket.on('error', function (err) {
@@ -80,7 +80,7 @@ exports.smtp_forward = function (next, connection) {
                 if (command === 'ehlo') {
                     if (code.match(/^5/)) {
                         // Handle fallback to HELO if EHLO is rejected
-                        if (!this.xclient) {
+                        if (!socket.xclient) {
                             socket.send_command('HELO', self.config.get('me'));
                         }
                         else {
@@ -91,7 +91,7 @@ exports.smtp_forward = function (next, connection) {
                     // Parse CAPABILITIES
                     for (var i in response) {
                         if (response[i].match(/^XCLIENT/)) {
-                            if(!this.xclient) {
+                            if(!socket.xclient) {
                                 // Just use the ADDR= key for now
                                 socket.send_command('XCLIENT', 'ADDR=' + connection.remote_ip);
                                 return;
@@ -102,7 +102,7 @@ exports.smtp_forward = function (next, connection) {
                             var cert = self.config.get('tls_cert.pem', 'data').join("\n");
                             // Use TLS opportunistically if we found the key and certificate
                             if (key && cert && (!/(true|yes|1)/i.exec(smtp_config.main.enable_tls))) {
-                                this.on('secure', function () {
+                                socket.on('secure', function () {
                                     socket.send_command('EHLO', self.config.get('me'));
                                 });
                                 socket.send_command('STARTTLS');
@@ -121,18 +121,18 @@ exports.smtp_forward = function (next, connection) {
                     // command states if multiple recipients are present.
                     // We ignore errors for both states as the DATA command will
                     // be rejected by the remote end if there are no recipients.
-                    socket.send_command('QUIT');
+                    socket.send_command('RSET');
                     return next(); // Fall through to other queue hooks here
                 }
                 switch (command) {
                     case 'xclient':
                         // If we are in XCLIENT mode, proxy the HELO/EHLO from the client
-                        this.xclient = true;
+                        socket.xclient = true;
                         socket.send_command('EHLO', connection.hello_host);
                         break;
                     case 'starttls':
                         var tls_options = { key: key, cert: cert };
-                        this.upgrade(tls_options);
+                        socket.upgrade(tls_options);
                         break;
                     case 'connect':
                         socket.send_command('EHLO', self.config.get('me'));
@@ -160,10 +160,10 @@ exports.smtp_forward = function (next, connection) {
                         // Return the response from the forwarder back to the client
                         // But add in our transaction UUID at the end of the line.
                         next(OK, response + ' (' + connection.transaction.uuid + ')');
-                        socket.send_command('QUIT');
+                        socket.send_command('RSET');
                         break;
-                    case 'quit':
-                        socket.end();
+                    case 'rset':
+                        self.conn_idle(connection);
                         break;
                     default:
                         throw new Error("Unknown command: " + command);
@@ -177,4 +177,15 @@ exports.smtp_forward = function (next, connection) {
             return next();
         }
     });
+
+    if (smtp_forward.pool_connection) {
+        // If we used XCLIENT earlier; we *must* re-send it again
+        // To update the proxy with the new client details.
+        if (socket.xclient) {
+            socket.send_command('XCLIENT', 'ADDR=' + connection.remote_ip);
+        }
+        else {
+            socket.send_command('MAIL', 'FROM:' + connection.transaction.mail_from);
+        }
+    }
 };
