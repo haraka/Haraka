@@ -27,6 +27,25 @@ exports.hook_mail = function (next, connection, params) {
         smtp_proxy.command = 'connect';
     }
 
+    smtp_proxy.set_next = function (cb) {
+        this.next_called = false;
+
+        this.next = function (retval, msg) {
+            this.next_called = true;
+
+            if (retval && msg) {
+                return cb(retval, msg);
+            }
+            else if(retval) {
+                return cb(retval);
+            }
+            else {
+                return cb();
+            }
+        };
+    };
+    smtp_proxy.set_next(next);
+
     // Call this in the case of socket error, or the socket throws an error.
     var socket_error = function (err) {
         connection.logdebug(self, "Ongoing connection failed: " + err);
