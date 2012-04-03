@@ -52,8 +52,26 @@ exports.conn_get = function (self, next, connection, host, port, timeout) {
         conn.pool_connection = false;
     }
 
+    conn.set_next = function (cb) {
+        this.next_called = false;
+
+        this.next = function (retval, msg) {
+            this.next_called = true;
+
+            if (retval && msg) {
+                return cb(retval, msg);
+            }
+            else if(retval) {
+                return cb(retval);
+            }
+            else {
+                return cb();
+            }
+        };
+    };
+
     conn.response = [];
-    conn.next = next;
+    conn.set_next(next);
     connection.notes.conn = conn;
 
     if (connection.server.notes.active_conections >= 0) {

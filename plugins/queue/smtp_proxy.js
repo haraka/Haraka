@@ -27,36 +27,6 @@ exports.hook_mail = function (next, connection, params) {
         smtp_proxy.command = 'connect';
     }
 
-    smtp_proxy.send_data = function () {
-        var wrote_all = true;
-        while (wrote_all &&
-              (data_marker < connection.transaction.data_lines.length)) {
-            var line = connection.transaction.data_lines[data_marker];
-            data_marker++;
-            connection.logdata(self, "C: " + line);
-            // this protection is due to bug #
-            in_write = true;
-            wrote_all =smtp_proxy.socket.write(
-                line.replace(/^\./, '..').replace(/\r?\n/g, '\r\n'));
-            in_write = false;
-            if (!wrote_all) {
-                return;
-            }
-        }
-        // we get here if wrote_all still true, and we got to end of data_lines
-        if (dot_pending) {
-            dot_pending = false;
-            smtp_proxy.socket.send_command('dot');
-        }
-    }
-
-    // Add socket event listeners.
-    smtp_proxy.socket.on('drain', function() {
-        if (dot_pending && smtp_proxy.command === 'mailbody') {
-            process.nextTick(function () { smtp_proxy.send_data() });
-        }
-    });
-
     // Call this in the case of socket error, or the socket throws an error.
     var socket_error = function (err) {
         connection.logdebug(self, "Ongoing connection failed: " + err);
@@ -67,6 +37,44 @@ exports.hook_mail = function (next, connection, params) {
 
         self.conn_destroy(self, connection, smtp_proxy);
     };
+
+    smtp_proxy.send_data = function () {
+        var wrote_all = true;
+
+        try {
+            while (wrote_all &&
+                  (data_marker < connection.transaction.data_lines.length)) {
+                var line = connection.transaction.data_lines[data_marker];
+                data_marker++;
+                connection.logdata(self, "C: " + line);
+                // this protection is due to bug #
+                in_write = true;
+                wrote_all = smtp_proxy.socket.write(
+                    line.replace(/^\./, '..').replace(/\r?\n/g, '\r\n'));
+                in_write = false;
+                if (!wrote_all) {
+                    return;
+                }
+            }
+            // we get here if wrote_all still true,
+            // and we got to end of data_lines
+            if (dot_pending) {
+                dot_pending = false;
+                smtp_proxy.socket.send_command('dot');
+            }
+        }
+        catch (err) {
+            socket_error(err);
+            return;
+        }
+    }
+
+    // Add socket event listeners.
+    smtp_proxy.socket.on('drain', function() {
+        if (dot_pending && smtp_proxy.command === 'mailbody') {
+            process.nextTick(function () { smtp_proxy.send_data() });
+        }
+    });
 
     smtp_proxy.socket.on('error', socket_error);
 
@@ -212,9 +220,9 @@ exports.hook_mail = function (next, connection, params) {
                         }
                         break;
                     case 'rset':
-                        // We do not call next() here because many paths
-                        // lead to this conclusion, and next() is called
-                        // on a case-by-case basis.
+                        if (smtp_proxy && !smtp_proxy.next_called) {
+                            smtp_proxy.next();
+                        }
                         self.conn_idle(self, connection);
                         break;
                     default:
@@ -248,14 +256,14 @@ exports.hook_mail = function (next, connection, params) {
 exports.hook_rcpt_ok = function (next, connection, recipient) {
     var smtp_proxy = connection.notes.conn;
     if (!smtp_proxy) return next();
-    smtp_proxy.next = next;
+    smtp_proxy.set_next(next);
     smtp_proxy.socket.send_command('RCPT', 'TO:' + recipient);
 };
 
 exports.hook_data = function (next, connection) {
     var smtp_proxy = connection.notes.conn;
     if (!smtp_proxy) return next();
-    smtp_proxy.next = next;
+    smtp_proxy.set_next(next);
     smtp_proxy.socket.send_command("DATA");
 };
 
@@ -263,7 +271,7 @@ exports.hook_queue = function (next, connection) {
     var smtp_proxy = connection.notes.conn;
     if (!smtp_proxy) return next();
     smtp_proxy.command = 'mailbody';
-    smtp_proxy.next = next;
+    smtp_proxy.set_next(next);
     smtp_proxy.send_data();
 };
 
@@ -276,24 +284,13 @@ exports.hook_quit = function (next, connection) {
 }
 
 exports.hook_disconnect = function (next, connection) {
-    var smtp_proxy = connection.notes.conn;
-    if (smtp_proxy) {
-        switch (smtp_proxy.command) {
-            case 'mail':
-            case 'rcpt':
-            case 'data':
-                smtp_proxy.next();
-                break;
-            default:
-                break;
-        }
-    }
+    // XXX: what if this happens durring data or queue?
     this.rset_proxy(next, connection);
 };
 
 exports.rset_proxy = function (next, connection) {
     var smtp_proxy = connection.notes.conn;
     if (!smtp_proxy) return next();
+    smtp_proxy.set_next(next);
     smtp_proxy.socket.send_command("RSET");
-    next();
 };
