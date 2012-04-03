@@ -19,7 +19,7 @@ exports.hook_mail = function (next, connection, params) {
     var port = (config.main.port) ? config.main.port : 25;
     var timeout = (config.main.timeout || config.main.timeout == 0) ?
         config.main.timeout : 300;
-    var smtp_proxy = self.conn_get(self, next, connection, host, port, timeout);
+    var smtp_proxy = self.conn_get(connection, host, port, timeout);
     var in_write = false;
     var dot_pending = true;
 
@@ -54,7 +54,7 @@ exports.hook_mail = function (next, connection, params) {
             smtp_proxy.next(DENYSOFT,'Proxy connection failed');
         }
 
-        self.conn_destroy(self, connection, smtp_proxy);
+        self.conn_destroy(connection, smtp_proxy);
     };
 
     smtp_proxy.send_data = function () {
@@ -242,7 +242,7 @@ exports.hook_mail = function (next, connection, params) {
                         if (smtp_proxy && !smtp_proxy.next_called) {
                             smtp_proxy.next();
                         }
-                        self.conn_idle(self, connection);
+                        self.conn_idle(connection);
                         break;
                     default:
                         throw "Unknown command: " + smtp_proxy.command;
