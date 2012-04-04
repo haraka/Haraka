@@ -67,7 +67,7 @@ var listPlugins = function (b, dir) {
         if (stat.isFile() && ~p.search('.js')) {
             plist += "\t" + p.replace('.js', '') + "\n";
         }
-	else if (stat.isDirectory()) {
+        else if (stat.isDirectory()) {
             subdirs.push(dir + p + "/");
         }
     });
