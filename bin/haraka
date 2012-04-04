@@ -63,9 +63,11 @@ var listPlugins = function (b, dir) {
         pd = fs.readdirSync(gl);
     
     pd.forEach(function (p) {
-        if (~p.search('.js')) {
+        var stat = fs.statSync(gl + '/' + p);
+        if (stat.isFile() && ~p.search('.js')) {
             plist += "\t" + p.replace('.js', '') + "\n";
-        } else {
+        }
+	else if (stat.isDirectory()) {
             subdirs.push(dir + p + "/");
         }
     });
