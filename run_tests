@@ -18,4 +18,4 @@ catch(e) {
 }
 
 process.chdir(__dirname);
-reporter.run(['tests/plugins', 'tests/plugins/queue']);
+reporter.run(['tests/plugins']);

@@ -3,49 +3,34 @@
 // and passes back any errors seen on the ongoing server to the
 // originating server.
 
-var smtp_regexp = /^([0-9]{3})([ -])(.*)/;
-
-exports.register = function () {
-    this.inherits('queue/conn_pool_base');
-};
+var smtp_client_mod = require('./smtp_client');
 
 exports.hook_queue = function (next, connection) {
     var config = this.config.get('smtp_forward.ini');
     connection.loginfo(this, "forwarding to " + config.main.host + ":" + config.main.port);
-    var smtp_conn = this.smtp_conn_get(connection, config.main.host, config.main.port, config.main.timeout, config.main.enable_tls);
-    smtp_conn.next = next;
-    var recipients = connection.transaction.rcpt_to.map(function(item) { return item });
+    smtp_client_mod.get_client_plugin(this, connection, config, function (err, smtp_client) {
+        smtp_client.next = next;
+        var rcpt = 0;
+        var send_rcpt = function () {
+            if (rcpt < connection.transaction.rcpt_to.length) {
+                smtp_client.send_command('RCPT',
+                    'TO:' + connection.transaction.rcpt_to[rcpt]);
+                rcpt++;
+            }
+            else {
+                smtp_client.send_command('DATA');
+            }
+        };
+        smtp_client.on('mail', send_rcpt);
+        smtp_client.on('rcpt', send_rcpt);
 
-    smtp_conn.on_error = function (code) {
-        if (!(smtp_conn.command === 'mail' || smtp_conn.command === 'rcpt')) {
-            // NOTE: recipients can be sent at both 'mail' *AND* 'rcpt'
-            // command states if multiple recipients are present.
-            // We ignore errors for both states as the DATA command will
-            // be rejected by the remote end if there are no recipients.
-            smtp_conn.reset();
-            smtp_conn.call_next(); // Fall through to other queue hooks here
-            return false;
-        }
-        return true;
-    };
+        smtp_client.on('data', function () {
+            smtp_client.start_data(connection.transaction.data_lines);
+        });
 
-    smtp_conn.on_mail = function () {
-        smtp_conn.send_command('RCPT', 'TO:' + recipients.shift());
-        if (recipients.length) {
-            // don't move to next state if we have more recipients
-            smtp_conn.command = 'mail';
-            return;
-        }
-    };
-
-    smtp_conn.on_rcpt = function () {
-        smtp_conn.send_command('DATA');
-    };
-
-    smtp_conn.on_data = function () {
-        smtp_conn.command = 'mailbody';
-        smtp_conn.send_data();
-    };
-
-    smtp_conn.start();
+        smtp_client.on('bad_code', function (code, msg) {
+            smtp_client.release();
+            smtp_client.call_next();
+        });
+    });
 };
