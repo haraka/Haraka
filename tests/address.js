@@ -1,44 +1,50 @@
-var test = require("tap").test;
-require('../configfile').watch_files = false;
 var Address = require("../address").Address;
 
-var addresses = [
-'<>', {user: null, host: null},
-'<postmaster>', {user: 'postmaster', host: null},
-'<foo@example.com>', {user: 'foo', host: 'example.com'},
-'<"musa_ibrah@caramail.comandrea.luger"@wifo.ac.at>', {user: 'musa_ibrah@caramail.comandrea.luger', host: 'wifo.ac.at'},
-'<foo bar@example.com>', {user: 'foo bar', host: 'example.com'},
-'foo@example.com', {user: 'foo', host: 'example.com'},
-'<foo@foo.x.example.com>', {user: 'foo', host: 'foo.x.example.com'},
-'foo@foo.x.example.com', {user: 'foo', host: 'foo.x.example.com'},
-];
+function _check(test, address, user, host) {
+    test.expect(2);
+    var address = new Address(address);
+    test.equal(address.user, user);
+    test.equal(address.host, host);
+    test.done();
+}
 
-test("Email Address Parsing", function(t) {
-    // t.plan(addresses.length);
-    for (var i=1,l=addresses.length; i<l; i = i+2) {
-        var addr = new Address(addresses[i-1]);
-        var result = addresses[i];
-        t.equal(addr.user, result.user, "Check " + addresses[i-1] + " user");
-        t.equal(addr.host, result.host, "Check " + addresses[i-1] + " host");
+exports.good = {
+    '<>': function (test) {
+        _check(test, '<>', null, null);
+    },
+    '<postmaster>': function (test) {
+        _check(test, '<postmaster>', 'postmaster', null);
+    },
+    '<foo@example.com>': function (test) {
+        _check(test, '<foo@example.com>', 'foo', 'example.com');
+    },
+    '<"musa_ibrah@caramail.comandrea.luger"@wifo.ac.at>': function (test) {
+        _check(test, '<"musa_ibrah@caramail.comandrea.luger"@wifo.ac.at>',
+            'musa_ibrah@caramail.comandrea.luger', 'wifo.ac.at');
+    },
+    '<foo bar@example.com>': function (test) {
+        _check(test, '<foo bar@example.com>', 'foo bar', 'example.com');
+    },
+    'foo@example.com': function (test) {
+        _check(test, 'foo@example.com', 'foo', 'example.com');
+    },
+    '<foo@foo.x.example.com>': function (test) {
+        _check(test, '<foo@foo.x.example.com>', 'foo', 'foo.x.example.com');
+    },
+    'foo@foo.x.example.com': function (test) {
+        _check(test, 'foo@foo.x.example.com', 'foo', 'foo.x.example.com');
     }
-    t.end();
-});
+};
 
-var bad_addresses = [
-'<user@example.com#>',
-]
-
-test("Addresses that fail", function (t) {
-    t.plan(bad_addresses.length);
-    for (var i=0; i < bad_addresses.length; i++) {
+exports.bad = {
+    '<user@example.com#>': function (test) {
+        test.expect(1);
         try {
-            var a = new Address(bad_addresses[i]);
-            // shouldn't get here...
-            t.ok(false, "Parse worked? " + bad_addresses[i])
+            var address = new Address('<user@example.com#>');
         }
         catch (e) {
-            t.ok(1, "Exception occurred for: " + bad_addresses[i]);
+            test.ok(true);
         }
+        test.done();
     }
-    t.end();
-})
+};

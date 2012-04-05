@@ -21,6 +21,10 @@ exports.hook_mail = function (next, connection, params) {
             delete connection.notes.smtp_client;
         });
 
+        smtp_client.on('error', function () {
+            delete connection.notes.smtp_client;
+        });
+
         smtp_client.on('bad_code', function (code, msg) {
             if (smtp_client.command !== 'rcpt') {
                 // errors are OK for rcpt, but nothing else
