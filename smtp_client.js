@@ -6,7 +6,6 @@ var events = require('events');
 var util = require('util');
 var generic_pool = require('generic-pool');
 var line_socket = require('./line_socket');
-var config_mod = require('./config');
 var logger = require('./logger');
 
 var smtp_regexp = /^([0-9]{3})([ -])(.*)/;
@@ -204,11 +203,11 @@ SMTPClient.prototype.release = function () {
     this.send_command('RSET');
 };
 
-exports.get_pool = function (server, config) {
-    var port = config.main.port || 25;
-    var host = config.main.host || 'localhost';
-    var timeout = (config.main.timeout == undefined) ? 300 : config.main.timeout;
-    var enable_tls = /(true|yes|1)/i.exec(config.main.enable_tls) != null;
+exports.get_pool = function (server, port, host, timeout, enable_tls, max) {
+    var port = port || 25;
+    var host = host || 'localhost';
+    var timeout = (timeout == undefined) ? 300 : timeout;
+    var enable_tls = /(true|yes|1)/i.exec(enable_tls) != null;
     var name = port + ':' + host + ':' + timeout + ':' + enable_tls;
     if (!server.notes.pool) {
         server.notes.pool = {};
@@ -225,7 +224,7 @@ exports.get_pool = function (server, config) {
                     smtp_client.socket.destroy();
                 }
             },
-            max: config.main.max_connections || 1000,
+            max: max || 1000,
             idleTimeoutMillis: timeout * 1000,
             log: function (str, level) {
                 level = (level == 'verbose') ? 'debug' : level;
@@ -251,12 +250,15 @@ exports.get_pool = function (server, config) {
     return server.notes.pool[name];
 };
 
-exports.get_client = function (server, config, callback) {
-    exports.get_pool(server, config).acquire(callback);
+exports.get_client = function (server, port, host, timeout, enable_tls, max) {
+    var pool = exports.get_pool(server, port, host, timeout, enable_tls, max);
+    pool.acquire(callback);
 };
 
 exports.get_client_plugin = function (plugin, connection, config, callback) {
-    var pool = exports.get_pool(connection.server, config);
+    var pool = exports.get_pool(connection.server, config.main.port,
+        config.main.host, config.main.timeout, config.main.enable_tls,
+        config.main.max);
     pool.acquire(function (err, smtp_client) {
         smtp_client.call_next = function (retval, msg) {
             if (this.next) {
@@ -266,11 +268,11 @@ exports.get_client_plugin = function (plugin, connection, config, callback) {
         };
 
         smtp_client.on('client_protocol', function (line) {
-            connection.logprotocol('C: ' + line);
+            connection.logprotocol(plugin, 'C: ' + line);
         });
 
         smtp_client.on('server_protocol', function (line) {
-            connection.logprotocol('S: ' + line);
+            connection.logprotocol(plugin, 'S: ' + line);
         });
 
         var helo = function (command) {
@@ -294,8 +296,8 @@ exports.get_client_plugin = function (plugin, connection, config, callback) {
                     }
                 }
                 if (smtp_client.response[line].match(/^STARTTLS/)) {
-                    var key = config_mod.get('tls_key.pem', 'data').join("\n");
-                    var cert = config_mod.get('tls_cert.pem', 'data').join("\n");
+                    var key = plugin.config.get('tls_key.pem', 'data').join("\n");
+                    var cert = plugin.config.get('tls_cert.pem', 'data').join("\n");
                     if (key && cert && enable_tls) {
                         this.on('secure', function () {
                             smtp_client.emit('greeting', 'EHLO');
@@ -318,7 +320,7 @@ exports.get_client_plugin = function (plugin, connection, config, callback) {
         });
 
         smtp_client.on('error', function (msg) {
-            connection.logerror(msg);
+            connection.logerror(plugin, msg);
             smtp_client.call_next();
         });
 

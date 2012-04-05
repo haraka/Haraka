@@ -8,6 +8,7 @@ var smtp_client_mod = require('./smtp_client');
 exports.hook_mail = function (next, connection, params) {
     var config = this.config.get('smtp_proxy.ini');
     connection.loginfo(this, "proxying to " + config.main.host + ":" + config.main.port);
+    var self = this;
     smtp_client_mod.get_client_plugin(this, connection, config, function (err, smtp_client) {
         connection.notes.smtp_client = smtp_client;
         smtp_client.next = next;
@@ -25,7 +26,7 @@ exports.hook_mail = function (next, connection, params) {
                 // errors are OK for rcpt, but nothing else
                 // this can also happen if the destination server
                 // times out, but that is okay.
-                connection.loginfo("message denied, proxying failed");
+                connection.loginfo(self, "message denied, proxying failed");
                 smtp_client.release();
                 delete connection.notes.smtp_client;
             }
