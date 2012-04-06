@@ -21,7 +21,14 @@ exports.hook_mail = function (next, connection, params) {
             delete connection.notes.smtp_client;
         });
 
+        smtp_client.on('error', function () {
+            delete connection.notes.smtp_client;
+        });
+
         smtp_client.on('bad_code', function (code, msg) {
+            smtp_client.call_next(code.match(/^4/) ? DENYSOFT : DENY,
+                smtp_client.response.slice());
+
             if (smtp_client.command !== 'rcpt') {
                 // errors are OK for rcpt, but nothing else
                 // this can also happen if the destination server
@@ -30,9 +37,6 @@ exports.hook_mail = function (next, connection, params) {
                 smtp_client.release();
                 delete connection.notes.smtp_client;
             }
-
-            smtp_client.call_next(code.match(/^4/) ? DENYSOFT : DENY,
-                smtp_client.response.slice());
         });
     });
 };
