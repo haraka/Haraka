@@ -252,7 +252,7 @@ exports.get_pool = function (server, port, host, timeout, enable_tls, max) {
 };
 
 // Get a smtp_client for the given attributes.
-exports.get_client = function (server, port, host, timeout, enable_tls, max) {
+exports.get_client = function (server, callback, port, host, timeout, enable_tls, max) {
     var pool = exports.get_pool(server, port, host, timeout, enable_tls, max);
     pool.acquire(callback);
 };
