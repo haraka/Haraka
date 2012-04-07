@@ -26,11 +26,11 @@ function SMTPClient(port, host, timeout, enable_tls) {
     var self = this;
 
     this.socket.on('line', function (line) {
-        this.emit('server_protocol', line);
+        self.emit('server_protocol', line);
         var matches = smtp_regexp.exec(line);
         if (!matches) {
             self.emit('error', 'Unrecognised response from upstream server: ' + line);
-            self.pool.destroy(this);
+            self.pool.destroy(self);
             return;
         }
 
@@ -299,7 +299,7 @@ exports.get_client_plugin = function (plugin, connection, config, callback) {
                     var key = plugin.config.get('tls_key.pem', 'data').join("\n");
                     var cert = plugin.config.get('tls_cert.pem', 'data').join("\n");
                     if (key && cert && enable_tls) {
-                        this.on('secure', function () {
+                        smtp_client.socket.on('secure', function () {
                             smtp_client.emit('greeting', 'EHLO');
                         });
                         smtp_client.send_command('STARTTLS');
