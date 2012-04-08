@@ -260,6 +260,7 @@ exports.get_client_plugin = function (plugin, connection, config, callback) {
         config.main.host, config.main.timeout, config.main.enable_tls,
         config.main.max);
     pool.acquire(function (err, smtp_client) {
+        connection.logdebug(plugin, 'Got smtp_client (' + connection.uuid + ' ' + connection.transaction + ' ' + smtp_client.listeners('helo').length + ')');
         smtp_client.call_next = function (retval, msg) {
             if (this.next) {
                 this.next(retval, msg);
@@ -310,6 +311,7 @@ exports.get_client_plugin = function (plugin, connection, config, callback) {
         });
 
         smtp_client.on('helo', function () {
+            connection.logdebug(plugin, 'Sending mail to in smtp_client (' + connection.uuid + ' ' + connection.transaction + ' ' + smtp_client.listeners('helo').length + ')');
             smtp_client.send_command('MAIL',
                 'FROM:' + connection.transaction.mail_from);
         });
