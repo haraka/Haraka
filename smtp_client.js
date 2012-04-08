@@ -311,6 +311,7 @@ exports.get_client_plugin = function (plugin, connection, config, callback) {
         });
 
         smtp_client.on('helo', function () {
+            connection.logdebug(plugin, 'Sending mail to in smtp_client (' + connection.uuid + ' ' + connection.transaction + ' ' + smtp_client.listeners('helo').length + ')');
             smtp_client.send_command('MAIL',
                 'FROM:' + connection.transaction.mail_from);
         });
