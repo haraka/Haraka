@@ -182,6 +182,12 @@ SMTPClient.prototype.send_data_line = function (line) {
 };
 
 SMTPClient.prototype.release = function () {
+    if (this.command == 'data' || this.command == 'mailbody') {
+        // Destroy here, we can't reuse a connection that was mid-data.
+        this.pool.destroy(this);
+        return;
+    }
+
     this.state = STATE_RELEASED;
     this.removeAllListeners('greeting');
     this.removeAllListeners('capabilities');
