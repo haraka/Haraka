@@ -275,8 +275,9 @@ exports.get_client_plugin = function (plugin, connection, config, callback) {
     pool.acquire(function (err, smtp_client) {
         smtp_client.call_next = function (retval, msg) {
             if (this.next) {
-                this.next(retval, msg);
+                var next = this.next;
                 delete this.next;
+                next(retval, msg);
             }
         };
 
