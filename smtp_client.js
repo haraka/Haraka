@@ -183,7 +183,19 @@ SMTPClient.prototype.send_data_line = function (line) {
 
 SMTPClient.prototype.release = function () {
     this.state = STATE_RELEASED;
-    this.removeAllListeners();
+    this.removeAllListeners('greeting');
+    this.removeAllListeners('capabilities');
+    this.removeAllListeners('xclient');
+    this.removeAllListeners('helo');
+    this.removeAllListeners('mail');
+    this.removeAllListeners('rcpt');
+    this.removeAllListeners('data');
+    this.removeAllListeners('dot');
+    this.removeAllListeners('rset');
+    this.removeAllListeners('client_protocol');
+    this.removeAllListeners('server_protocol');
+    this.removeAllListeners('error');
+    this.removeAllListeners('bad_code');
 
     this.on('bad_code', function (code, msg) {
         this.pool.destroy(this);
@@ -191,7 +203,8 @@ SMTPClient.prototype.release = function () {
 
     this.on('rset', function () {
         this.state = STATE_IDLE;
-        this.removeAllListeners();
+        this.removeAllListeners('rset');
+        this.removeAllListeners('bad_code');
         this.pool.release(this);
     });
 
@@ -260,7 +273,6 @@ exports.get_client_plugin = function (plugin, connection, config, callback) {
         config.main.host, config.main.timeout, config.main.enable_tls,
         config.main.max);
     pool.acquire(function (err, smtp_client) {
-        connection.logdebug(plugin, 'Got smtp_client (' + connection.uuid + ' ' + connection.transaction + ' ' + smtp_client.listeners('helo').length + ')');
         smtp_client.call_next = function (retval, msg) {
             if (this.next) {
                 this.next(retval, msg);
@@ -311,7 +323,6 @@ exports.get_client_plugin = function (plugin, connection, config, callback) {
         });
 
         smtp_client.on('helo', function () {
-            connection.logdebug(plugin, 'Sending mail to in smtp_client (' + connection.uuid + ' ' + connection.transaction + ' ' + smtp_client.listeners('helo').length + ')');
             smtp_client.send_command('MAIL',
                 'FROM:' + connection.transaction.mail_from);
         });
