@@ -5,7 +5,7 @@ function dot_files(element) {
     return element.match(/^\./) == null;
 }
 
-function sandbox_require(id) {
+exports.sandbox_require = function (id) {
     if (id[0] == '.') {
         try {
             var override = __dirname + '/' + id + '.js';
@@ -23,7 +23,7 @@ function make_test(module_path, test_path) {
         var code = fs.readFileSync(module_path);
         code += fs.readFileSync(test_path);
         var sandbox = {
-            require: sandbox_require,
+            require: exports.sandbox_require,
             console: console,
             exports: {},
             test: test

@@ -90,6 +90,7 @@ function SMTPClient(port, host, timeout, enable_tls) {
                 self.emit(self.command);
                 break;
             case 'quit':
+                self.emit('quit');
                 self.pool.destroy(self);
                 break;
             default:

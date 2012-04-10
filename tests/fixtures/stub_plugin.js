@@ -1,10 +1,11 @@
 "use strict";
 
-var stub      = require('../fixtures/stub'),
-    path      = require('path'),
-    constants = require('../../constants'),
-    vm        = require('vm'),
-    fs        = require('fs');
+var stub       = require('./stub'),
+    vm_harness = require('./vm_harness'),
+    path       = require('path'),
+    constants  = require('../../constants'),
+    vm         = require('vm'),
+    fs         = require('fs');
 
 function Plugin(name) {
     if (false === (this instanceof Plugin)) {
@@ -30,19 +31,8 @@ Plugin.prototype.load_plugin = function(name) {
     }
     var code = '"use strict";' + rf;
 
-    var sandbox_require = function (id) {
-        if (id[0] == '.') {
-            try {
-                fs.statSync(__dirname + '/' + id + '.js');
-            } catch (e) {
-                id = '../../' + id;
-            }
-        }
-        return require(id);
-    }
-
     var sandbox = {
-        require: sandbox_require,
+        require: vm_harness.sandbox_require,
         __filename: full_path,
         __dirname:  path.dirname(full_path),
         exports: this,
