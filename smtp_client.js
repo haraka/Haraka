@@ -124,14 +124,17 @@ function SMTPClient(port, host, timeout, enable_tls) {
         }
     });
 
-    this.socket.on('close', function (had_error) {
+    var closed = function () {
         if (self.state == STATE_IDLE) {
             self.state = STATE_DEAD;
         }
         else {
             self.pool.destroy(self);
         }
-    });
+    };
+
+    this.socket.on('close', closed);
+    this.socket.on('end', closed);
 }
 
 util.inherits(SMTPClient, events.EventEmitter);
@@ -184,12 +187,13 @@ SMTPClient.prototype.send_data_line = function (line) {
 };
 
 SMTPClient.prototype.release = function () {
-    if (this.command == 'data' || this.command == 'mailbody') {
+    if (!this.connected || this.command == 'data' || this.command == 'mailbody') {
         // Destroy here, we can't reuse a connection that was mid-data.
         this.pool.destroy(this);
         return;
     }
 
+    logger.logdebug('[smtp_client_pool] ' + this.uuid + ' resetting');
     this.state = STATE_RELEASED;
     this.removeAllListeners('greeting');
     this.removeAllListeners('capabilities');
@@ -213,6 +217,7 @@ SMTPClient.prototype.release = function () {
         this.state = STATE_IDLE;
         this.removeAllListeners('rset');
         this.removeAllListeners('bad_code');
+        logger.logdebug('[smtp_client_pool] ' + this.uuid + ' releasing');
         this.pool.release(this);
     });
 
@@ -283,6 +288,7 @@ exports.get_client_plugin = function (plugin, connection, config, callback) {
         config.main.host, config.main.timeout, config.main.enable_tls,
         config.main.max);
     pool.acquire(function (err, smtp_client) {
+        connection.logdebug(plugin, 'Got smtp_client: ' + smtp_client.uuid);
         smtp_client.call_next = function (retval, msg) {
             if (this.next) {
                 var next = this.next;
