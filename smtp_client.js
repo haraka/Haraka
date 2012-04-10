@@ -8,6 +8,7 @@ var generic_pool = require('generic-pool');
 var line_socket = require('./line_socket');
 var logger = require('./logger');
 var constants = require('./constants');
+var uuid = require('./utils').uuid;
 
 var smtp_regexp = /^([0-9]{3})([ -])(.*)/;
 var STATE_IDLE = 1;
@@ -17,6 +18,7 @@ var STATE_DEAD = 4;
 
 function SMTPClient(port, host, timeout, enable_tls) {
     events.EventEmitter.call(this);
+    this.uuid = uuid();
     this.socket = line_socket.connect(port, host);
     this.socket.setTimeout(timeout * 1000);
     this.state = STATE_IDLE;
@@ -29,7 +31,7 @@ function SMTPClient(port, host, timeout, enable_tls) {
         self.emit('server_protocol', line);
         var matches = smtp_regexp.exec(line);
         if (!matches) {
-            self.emit('error', 'Unrecognised response from upstream server: ' + line);
+            self.emit('error', self.uuid + ': Unrecognised response from upstream server: ' + line);
             self.pool.destroy(self);
             return;
         }
@@ -106,7 +108,7 @@ function SMTPClient(port, host, timeout, enable_tls) {
             self.state = STATE_DEAD;
         }
         else {
-            self.emit('error', 'SMTP connection failed: ' + err);
+            self.emit('error', self.uuid + ': SMTP connection failed: ' + err);
             self.pool.destroy(self);
         }
     });
@@ -116,7 +118,7 @@ function SMTPClient(port, host, timeout, enable_tls) {
             self.state = STATE_DEAD;
         }
         else {
-            self.emit('error', 'SMTP connection timed out');
+            self.emit('error', self.uuid + ': SMTP connection timed out');
             self.pool.destroy(self);
         }
     });
@@ -177,7 +179,6 @@ SMTPClient.prototype.continue_data = function () {
 
 SMTPClient.prototype.send_data_line = function (line) {
     line = line.replace(/^\./, '..').replace(/\r?\n/g, '\r\n');
-    console.log('BODY: ' + line);
     return this.socket.write(line);
 };
 
@@ -232,9 +233,11 @@ exports.get_pool = function (server, port, host, timeout, enable_tls, max) {
             name: name,
             create: function (callback) {
                 var smtp_client = new SMTPClient(port, host, timeout, enable_tls);
+                logger.logdebug('[smtp_client_pool] ' + smtp_client.uuid + ' created');
                 callback(null, smtp_client);
             },
             destroy: function(smtp_client) {
+                logger.logdebug('[smtp_client_pool] ' + smtp_client.uuid + ' destroyed, state=' + smtp_client.state);
                 if (smtp_client.state != STATE_DEAD) {
                     smtp_client.socket.destroy();
                 }
