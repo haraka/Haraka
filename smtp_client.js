@@ -15,6 +15,7 @@ var STATE_IDLE = 1;
 var STATE_ACTIVE = 2;
 var STATE_RELEASED = 3;
 var STATE_DEAD = 4;
+var STATE_DESTROYED = 4;
 
 function SMTPClient(port, host, timeout, enable_tls) {
     events.EventEmitter.call(this);
@@ -32,7 +33,7 @@ function SMTPClient(port, host, timeout, enable_tls) {
         var matches = smtp_regexp.exec(line);
         if (!matches) {
             self.emit('error', self.uuid + ': Unrecognised response from upstream server: ' + line);
-            self.pool.destroy(self);
+            self.destroy();
             return;
         }
 
@@ -91,7 +92,7 @@ function SMTPClient(port, host, timeout, enable_tls) {
                 break;
             case 'quit':
                 self.emit('quit');
-                self.pool.destroy(self);
+                self.destroy();
                 break;
             default:
                 throw new Error("Unknown command: " + self.command);
@@ -104,37 +105,25 @@ function SMTPClient(port, host, timeout, enable_tls) {
         }
     });
 
-    this.socket.on('error', function (err) {
-        if (self.state == STATE_IDLE) {
-            self.state = STATE_DEAD;
-        }
-        else {
-            self.emit('error', self.uuid + ': SMTP connection failed: ' + err);
-            self.pool.destroy(self);
-        }
-    });
-
-    this.socket.on('timeout', function () {
-        if (self.state == STATE_IDLE) {
-            self.state = STATE_DEAD;
-        }
-        else {
-            self.emit('error', self.uuid + ': SMTP connection timed out');
-            self.pool.destroy(self);
-        }
-    });
-
-    var closed = function () {
-        if (self.state == STATE_IDLE) {
-            self.state = STATE_DEAD;
-        }
-        else {
-            self.pool.destroy(self);
-        }
+    var closed = function (msg) {
+        return function (error) {
+            if (self.state == STATE_IDLE) {
+                self.state = STATE_DEAD;
+            }
+            else if (self.state != STATE_DESTROYED) {
+                if (!error) {
+                    error = '';
+                }
+                self.emit('error', self.uuid + ': SMTP connection ' + msg + ' ' + error);
+                self.destroy();
+            }
+        };
     };
 
-    this.socket.on('close', closed);
-    this.socket.on('end', closed);
+    this.socket.on('error', closed('errored'));
+    this.socket.on('timeout', closed('timed out'));
+    this.socket.on('close', closed('closed'));
+    this.socket.on('end', closed('ended'));
 }
 
 util.inherits(SMTPClient, events.EventEmitter);
@@ -189,7 +178,7 @@ SMTPClient.prototype.send_data_line = function (line) {
 SMTPClient.prototype.release = function () {
     if (!this.connected || this.command == 'data' || this.command == 'mailbody') {
         // Destroy here, we can't reuse a connection that was mid-data.
-        this.pool.destroy(this);
+        this.destroy();
         return;
     }
 
@@ -210,7 +199,7 @@ SMTPClient.prototype.release = function () {
     this.removeAllListeners('bad_code');
 
     this.on('bad_code', function (code, msg) {
-        this.pool.destroy(this);
+        this.destroy();
     });
 
     this.on('rset', function () {
@@ -222,6 +211,12 @@ SMTPClient.prototype.release = function () {
     });
 
     this.send_command('RSET');
+};
+
+SMTPClient.prototype.destroy = function () {
+    if (this.state != STATE_DESTROYED) {
+        this.pool.destroy(this);
+    }
 };
 
 // Separate pools are kept for each set of server attributes.
@@ -244,9 +239,8 @@ exports.get_pool = function (server, port, host, timeout, enable_tls, max) {
             },
             destroy: function(smtp_client) {
                 logger.logdebug('[smtp_client_pool] ' + smtp_client.uuid + ' destroyed, state=' + smtp_client.state);
-                if (smtp_client.state != STATE_DEAD) {
-                    smtp_client.socket.destroy();
-                }
+                smtp_client.state = STATE_DESTROYED;
+                smtp_client.socket.destroy();
             },
             max: max || 1000,
             idleTimeoutMillis: timeout * 1000,
@@ -259,11 +253,12 @@ exports.get_pool = function (server, port, host, timeout, enable_tls, max) {
         var acquire = pool.acquire;
         pool.acquire = function (callback, priority) {
             var callback_wrapper = function (err, smtp_client) {
+                smtp_client.pool = pool;
                 if (smtp_client.state == STATE_DEAD) {
+                    smtp_client.destroy();
                     pool.acquire(callback, priority);
                     return;
                 }
-                smtp_client.pool = pool;
                 smtp_client.state = STATE_ACTIVE;
                 callback(err, smtp_client);
             };
