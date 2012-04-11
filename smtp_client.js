@@ -345,7 +345,7 @@ exports.get_client_plugin = function (plugin, connection, config, callback) {
         });
 
         smtp_client.on('error', function (msg) {
-            connection.loginfo(plugin, msg);
+            connection.logwarn(plugin, msg);
             smtp_client.call_next();
         });
 
