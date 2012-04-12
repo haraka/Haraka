@@ -45,12 +45,15 @@ function setupClient(self) {
     self.remote_ip = self.client.remoteAddress;
     self.lognotice("got connection from: " + self.remote_ip);
 
-    self.client.on('end', function () {
+    var closed = function () {
         if (!self.disconnected) {
             self.remote_close = true;
             self.fail("client (" + self.remote_ip + ") closed connection");
         }
-    });
+    };
+
+    self.client.on('end', closed);
+    self.client.on('close', closed);
 
     self.client.on('close', function (has_error) {
         if (!self.disconnected) {

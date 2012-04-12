@@ -26,8 +26,17 @@ Configuration
     
     The port to connect to.
 
-  Both values are required.
+  * timeout=SECONDS
+    
+    The amount of seconds to let a backend connection live idle in the
+    connection pool.  This should always be less than the global plugin
+    timeout, which should in turn be less than the connection timeout.
+
+  * max=NUMBER
+   
+    Maximum number of connections to create at any given time.
 
   * enable_tls=[true|yes|1]
 
     Enable TLS with the forward host (if supported)
+
