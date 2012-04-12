@@ -33,7 +33,7 @@ Configuration
     proxy pool.  This should always be less than the global plugin timeout,
     which should in turn be less than the connection timeout.
 
-  * max=NUMBER
+  * max_connections=NUMBER
     
     Maximum number of connections to create at any given time.
 

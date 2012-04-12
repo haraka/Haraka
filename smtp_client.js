@@ -281,7 +281,7 @@ exports.get_client = function (server, callback, port, host, timeout, enable_tls
 exports.get_client_plugin = function (plugin, connection, config, callback) {
     var pool = exports.get_pool(connection.server, config.main.port,
         config.main.host, config.main.timeout, config.main.enable_tls,
-        config.main.max);
+        config.main.max_connections);
     pool.acquire(function (err, smtp_client) {
         connection.logdebug(plugin, 'Got smtp_client: ' + smtp_client.uuid);
         smtp_client.call_next = function (retval, msg) {
