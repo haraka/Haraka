@@ -14,7 +14,8 @@
     "node": ">= v0.4.0"
   },
   "dependencies": {
-    "nopt": ">= 1.0.5"
+    "nopt": ">= 1.0.5",
+    "generic-pool": ">= 1.0.9"
   },
   "licenses": [ {
     "type": "MIT",

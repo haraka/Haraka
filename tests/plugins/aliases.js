@@ -1,11 +1,7 @@
 var stub             = require('../fixtures/stub'),
-    constants        = require('../../constants'),
     Address          = require('../../address').Address,
     Connection       = require('../fixtures/stub_connection'),
     Plugin           = require('../fixtures/stub_plugin');
-
-// huge hack here, but plugin tests need constants
-constants.import(global);
 
 function _set_up(callback) {
     this.backup = {};
