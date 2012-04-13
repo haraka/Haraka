@@ -110,7 +110,7 @@ function SMTPClient(port, host, timeout, enable_tls) {
             if (self.state == STATE_IDLE) {
                 self.state = STATE_DEAD;
             }
-            else if (self.state != STATE_DEAD && self.state != STATE_DESTROYED) {
+            else if (self.state == STATE_ACTIVE) {
                 if (!error) {
                     error = '';
                 }
