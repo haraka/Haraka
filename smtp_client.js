@@ -107,15 +107,18 @@ function SMTPClient(port, host, timeout, enable_tls) {
 
     var closed = function (msg) {
         return function (error) {
-            if (self.state == STATE_IDLE) {
-                self.state = STATE_DEAD;
+            if (!error) {
+                error = '';
             }
-            else if (self.state == STATE_ACTIVE) {
-                if (!error) {
-                    error = '';
-                }
+            if (self.state == STATE_ACTIVE) {
                 self.emit('error', self.uuid + ': SMTP connection ' + msg + ' ' + error);
                 self.destroy();
+            }
+            else {
+                logger.logdebug('[smtp_client_pool] ' + self.uuid + ': SMTP connection ' + msg + ' ' + error + ' (state=' + self.state + ')');
+                if (self.state == STATE_IDLE) {
+                    self.state = STATE_DEAD;
+                }
             }
         };
     };
