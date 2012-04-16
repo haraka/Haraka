@@ -30,7 +30,6 @@ function Plugin(name) {
     this.full_paths = full_paths;
     this.config = config;
     this.hooks = {};
-    this.server = {};
 };
 
 Plugin.prototype.register_hook = function(hook_name, method_name) {
@@ -76,16 +75,10 @@ var plugins = exports;
 
 plugins.Plugin = Plugin;
 
-plugins.server = {};
-
-plugins.load_plugins = function (notes) {
+plugins.load_plugins = function () {
     logger.loginfo("Loading plugins");
     var plugin_list = config.get('plugins', 'list');
-
-    // Add ref to server.notes here
-    this.server = {};
-    this.server.notes = notes;
-
+    
     plugins.plugin_list = plugin_list.map(plugins.load_plugin);
     logger.dump_logs(); // now logging plugins are loaded.
 };
@@ -101,9 +94,12 @@ plugins.load_plugin = function(name) {
     return plugin;
 }
 
+// Set in server.js; initialized to empty object
+// to prevent it from blowing up any unit tests.
+plugins.server = {};
+
 plugins._load_and_compile_plugin = function(name) {
     var plugin = new Plugin(name);
-    plugin.server = this.server;
     var fp = plugin.full_paths,
         rf, last_err;
     for (var i=0, j=fp.length; i<j; i++) {
@@ -136,6 +132,7 @@ plugins._load_and_compile_plugin = function(name) {
         process: process,
         Buffer: Buffer,
         Math: Math,
+        server: plugins.server,
     };
     constants.import(sandbox);
     try {
