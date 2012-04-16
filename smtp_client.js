@@ -15,7 +15,7 @@ var STATE_IDLE = 1;
 var STATE_ACTIVE = 2;
 var STATE_RELEASED = 3;
 var STATE_DEAD = 4;
-var STATE_DESTROYED = 4;
+var STATE_DESTROYED = 5;
 
 function SMTPClient(port, host, timeout, enable_tls) {
     events.EventEmitter.call(this);
