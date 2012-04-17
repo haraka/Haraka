@@ -188,7 +188,10 @@ SMTPClient.prototype.release = function () {
         return;
     }
 
-    logger.logdebug('[smtp_client_pool] ' + this.uuid + ' resetting');
+    logger.logdebug('[smtp_client_pool] ' + this.uuid + ' resetting, state=' + this.state);
+    if (this.state == STATE_DESTROYED) {
+        return;
+    }
     this.state = STATE_RELEASED;
     this.removeAllListeners('greeting');
     this.removeAllListeners('capabilities');
@@ -209,10 +212,13 @@ SMTPClient.prototype.release = function () {
     });
 
     this.on('rset', function () {
+        logger.logdebug('[smtp_client_pool] ' + this.uuid + ' releasing, state=' + this.state);
+        if (this.state == STATE_DESTROYED) {
+            return;
+        }
         this.state = STATE_IDLE;
         this.removeAllListeners('rset');
         this.removeAllListeners('bad_code');
-        logger.logdebug('[smtp_client_pool] ' + this.uuid + ' releasing');
         this.pool.release(this);
     });
 
