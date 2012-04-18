@@ -57,14 +57,15 @@ Server.createServer = function (params) {
     
     // config_data defaults
     apply_defaults(config_data.main);
-    
-    plugins.load_plugins();
-    
+
     var server = net.createServer(function (client) {
         client.setTimeout((config_data.main.inactivity_timeout || 300) * 1000);
         conn.createConnection(client, server);
     });
     server.notes = {};
+    plugins.server = server;
+    plugins.load_plugins();
+
     if (cluster && config_data.main.nodes) {
          
         var c = cluster(server);
@@ -146,6 +147,6 @@ function listening () {
 
     logger.lognotice("Listening on port " + config_data.main.port);
     Server.ready = 1;
-    
+   
     out.load_queue();
 }
