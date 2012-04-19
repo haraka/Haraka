@@ -78,3 +78,44 @@ exports.date_to_str = function (d) {
            _pad(d.getHours(),2) + ':' + _pad(d.getMinutes(),2) + ':' + _pad(d.getSeconds(),2) +
            ' ' + d.toString().match(/\sGMT([+-]\d+)/)[1];
 }
+
+exports.decode_qp = function (line) {
+    if (! /=/.test(line)) {
+        // this may be a pointless optimisation...
+        return new Buffer(line);
+    }
+    line = line.replace(/=\n/mg, '');
+    var buf = new Buffer(line.length);
+    var pos = 0;
+    for (var i=0,l=line.length; i < l; i++) {
+        if (line[i] === '=') {
+            i++;
+            buf[pos] = parseInt(line[i] + line[i+1], 16);
+            i++;
+        }
+        else {
+            buf[pos] = line.charCodeAt(i);
+        }
+        pos++;
+    }
+    return buf.slice(0, pos);
+}
+
+function _char_to_qp (ch) {
+    return "=" + _pad(ch.charCodeAt(0).toString(16).toUpperCase(), 2);
+}
+// Shameless attempt to copy from Perl's MIME::QuotedPrint::Perl code.
+exports.encode_qp = function (str) {
+    var broken_lines = '';
+    str = str.replace(/([^\ \t\n!"#\$%&'()*+,\-.\/0-9:;<>?\@A-Z\[\\\]^_`a-z{|}~])/g, function (orig, p1) {
+        return _char_to_qp(p1);
+    }).replace(/([ \t]+)$/gm, function (orig, p1) {
+        return p1.split('').map(_char_to_qp).join('');
+    }).replace(/([\s\S]*?^[^\n]{73}(?:[^=\n]{2}(?![^=\n]{0,1}$)|[^=\n](?![^=\n]{0,2}$)|(?![^=\n]{0,3}$)))/gm,
+        function (orig, p1) {
+            broken_lines += p1 + "=\n";
+            return '';
+        });
+    return broken_lines + str;
+}
+
