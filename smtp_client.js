@@ -7,7 +7,6 @@ var util = require('util');
 var generic_pool = require('generic-pool');
 var line_socket = require('./line_socket');
 var logger = require('./logger');
-var constants = require('./constants');
 var uuid = require('./utils').uuid;
 
 var smtp_regexp = /^([0-9]{3})([ -])(.*)/;
@@ -349,11 +348,6 @@ exports.get_client_plugin = function (plugin, connection, config, callback) {
         smtp_client.on('helo', function () {
             smtp_client.send_command('MAIL',
                 'FROM:' + connection.transaction.mail_from);
-        });
-
-        smtp_client.on('dot', function () {
-            smtp_client.call_next(constants.ok, smtp_client.response + ' (' + connection.transaction.uuid + ')');
-            smtp_client.release();
         });
 
         smtp_client.on('error', function (msg) {
