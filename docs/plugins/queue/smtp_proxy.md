@@ -33,5 +33,11 @@ Configuration
     proxy pool.  This should always be less than the global plugin timeout,
     which should in turn be less than the connection timeout.
 
-  Both values are required.
-  
+  * max_connections=NUMBER
+    
+    Maximum number of connections to create at any given time.
+
+  * enable_tls=[true|yes|1]
+ 
+    Enable TLS with the forward host (if supported)
+

@@ -1,7 +1,7 @@
-var stub             = require('tests/fixtures/stub'),
+var stub             = require('../fixtures/stub'),
     constants        = require('../../constants'),
-    Connection       = require('tests/fixtures/stub_connection'),
-    Plugin           = require('tests/fixtures/stub_plugin');
+    Connection       = require('../fixtures/stub_connection'),
+    Plugin           = require('../fixtures/stub_plugin');
 
 // huge hack here, but plugin tests need constants
 constants.import(global);
@@ -10,16 +10,11 @@ function _set_up(callback) {
     this.backup = {};
 
     // needed for tests
-    this.plugin = Plugin.createPlugin('plugins/relay_all');
+    this.plugin = Plugin('relay_all');
     this.connection = Connection.createConnection();
     this.params = ['foo@bar.com'];
 
-    // backup modifications
-    this.backup.plugin = {};
-    this.backup.plugin.register_hook = this.plugin.register_hook;
-
     // stub out functions
-    this.plugin.register_hook = stub();
     this.connection.loginfo = stub();
 
     // going to need these in multiple tests
@@ -29,9 +24,6 @@ function _set_up(callback) {
 }
 
 function _tear_down(callback) {
-    // restore backed up functions
-    this.plugin.register_hook = this.backup.plugin.register_hook;
-
     callback();
 }
 

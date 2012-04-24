@@ -173,6 +173,43 @@ If a rcpt plugin DOES call `next(OK)` then the `rcpt_ok` hook is run. This
 is primarily used by the queue/smtp_proxy plugin which needs to run after
 all rcpt hooks.
 
+Sharing State
+-------------
+
+There are several cases where you might need to share information between
+plugins.  This is done using `notes` - there are three types available:
+
+* server.notes
+
+  Available in all plugins.  This is created at PID start-up and is shared
+  amongst all plugins on the same PID and listener.
+  Typical uses for notes at this level would be to share database
+  connections between multiple plugins or connection pools etc.
+
+* connection.notes
+
+  Available on any hook that passes 'connection' as a function parameter.
+  This is shared amongst all plugins for a single connection and is
+  destroyed after the client disconnects.
+  Typical uses for notes at this level would be to store information
+  about the connected client e.g. rDNS names, HELO/EHLO, white/black
+  list status etc.
+
+* connection.transaction.notes
+
+  Available on any hook that passes 'connection' as a function parameter
+  between hook_mail and hook_data_post.
+  This is shared amongst all plugins for this transaction (e.g. MAIL FROM
+  through until a message is received or the connection is reset).
+  Typical uses for notes at this level would be to store information
+  on things like greylisting which uses client, sender and recipient
+  information etc.
+
+All of these notes are simply a Javascript object underneath - so you use
+them like a simple key/value store e.g.
+
+    connection.transaction.notes.test = 'testing';
+
 Further Reading
 --------------
 

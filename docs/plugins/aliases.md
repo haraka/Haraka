@@ -124,5 +124,5 @@ Example Configuration
     "test3" : { "action" : "alias", "to" : "test3-works" },
     "test4" : { "action" : "alias", "to" : "test4" },
     "test5" : { "action" : "alias", "to" : "test5-works@success.com" },
-    "test6" : { "action" : "alias", "to" : "test6-works@success.com" },
+    "test6" : { "action" : "alias", "to" : "test6-works@success.com" }
 }
