@@ -169,6 +169,10 @@ function createServer(cb) {
 
             var cleartext = pipe(pair, cryptoSocket);
 
+            pair.on('error', function(exception) {
+                socket.emit('error', exception);
+            });
+
             pair.on('secure', function() {
                 var verifyError = (pair.ssl || pair._ssl).verifyError();
 
@@ -213,7 +217,11 @@ function connect(port, host, cb) {
         socket.pair = pair;
 
         var cleartext = pipe(pair, cryptoSocket);
-        
+ 
+        pair.on('error', function(exception) {
+            socket.emit('error', exception);
+        });
+
         pair.on('secure', function() {
             var verifyError = (pair.ssl || pair._ssl).verifyError();
 
