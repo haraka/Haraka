@@ -62,11 +62,11 @@ records for you.
 
 The MX record is sent via next(OK, mx) and can be one of:
 
-* A string of the formats:
-** hostname
-** hostname:port
-** ipaddress
-** ipaddress:port
+* A string of one of the following formats:
+    * hostname
+    * hostname:port
+    * ipaddress
+    * ipaddress:port
 * An MX object of the form: `{priority: 0, exchange: hostname}` and optionally
 a `port` value to specify an alternate port.
 * A list of MX objects in an array.
