@@ -2,6 +2,7 @@
 var fs          = require('fs');
 var path        = require('path');
 var dns         = require('dns');
+var net         = require('net');
 var util        = require("util");
 var events      = require("events");
 var utils       = require('./utils');
@@ -680,6 +681,11 @@ HMailItem.prototype.try_deliver = function () {
     
     this.loginfo("Looking up A records for: " + host);
 
+    if (net.isIP(host)) {
+        self.hostlist = [ host ];
+        return self.try_deliver_host(mx);
+    }
+    
     // now we have a host, we have to lookup the addresses for that host
     // and try each one in order they appear
     dns.resolve(host, function (err, addresses) {
