@@ -539,8 +539,23 @@ HMailItem.prototype.get_mx = function () {
 HMailItem.prototype.get_mx_respond = function (retval, mx) {
     switch(retval) {
         case constants.ok:
+                var mx_list;
+                if (Array.isArray(mx)) {
+                    mx_list = mx;
+                }
+                else if (typeof mx === "object") {
+                    mx_list = [mx];
+                }
+                else {
+                    // assume string
+                    var matches = /^(.*)(:(\d+))?$/.exec(mx);
+                    if (!matches) {
+                        throw("get_mx returned something that doesn't match hostname or hostname:port");
+                    }
+                    mx_list = [{priority: 0, exchange: matches[1], port: matches[3]}];
+                }
                 this.logdebug("Got an MX from Plugin: " + this.todo.domain + " => 0 " + mx);
-                return this.found_mx(null, [{priority: 0, exchange: mx}]);
+                return this.found_mx(null, mx_list);
         case constants.deny:
                 this.logwarn("get_mx plugin returned DENY: " + mx);
                 return this.bounce("No MX for " + this.domain);
@@ -660,7 +675,8 @@ HMailItem.prototype.try_deliver = function () {
         return this.temp_fail("Tried all MXs");
     }
     
-    var host = this.mxlist.shift().exchange;
+    var mx   = this.mxlist.shift();
+    var host = mx.exchange;
     
     this.loginfo("Looking up A records for: " + host);
 
@@ -679,13 +695,13 @@ HMailItem.prototype.try_deliver = function () {
             return self.try_deliver(); // try next MX
         }
         self.hostlist = addresses;
-        self.try_deliver_host();
+        self.try_deliver_host(mx);
     });
 }
 
 var smtp_regexp = /^([0-9]{3})([ -])(.*)/;
 
-HMailItem.prototype.try_deliver_host = function () {
+HMailItem.prototype.try_deliver_host = function (mx) {
     if (this.hostlist.length === 0) {
         delivery_concurrency--;
         return this.try_deliver(); // try next MX
@@ -695,13 +711,14 @@ HMailItem.prototype.try_deliver_host = function () {
     
     this.loginfo("Attempting to deliver to: " + host + " (" + delivery_concurrency + ")");
     
-    var socket = sock.connect(25, host);
-    var self = this;
+    var port   = mx.port || 25;
+    var socket = sock.connect(port, host);
+    var self   = this;
 
     socket.on('error', function (err) {
         self.logerror("Ongoing connection failed: " + err);
         // try the next MX
-        self.try_deliver_host();
+        self.try_deliver_host(mx);
     });
 
     socket.setTimeout(300 * 1000); // TODO: make this configurable
@@ -770,7 +787,7 @@ HMailItem.prototype.try_deliver_host = function () {
     socket.on('timeout', function () {
         self.logerror("Outbound connection timed out");
         socket.end();
-        self.try_deliver_host();
+        self.try_deliver_host(mx);
     });
     
     socket.on('connect', function () {
