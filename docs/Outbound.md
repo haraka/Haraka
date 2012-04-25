@@ -143,3 +143,8 @@ To do that, you can use the `outbound` module directly:
     
     outbound.send_email(from, to, contents, outnext);
 
+The `outnext` callback parameter and anonymous function may be 
+omitted if you don't need to handle errors should delivery fail e.g:
+
+    outbound.send_email(form, to, contents);
+
