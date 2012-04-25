@@ -192,7 +192,7 @@ exports.send_trans_email = function (transaction, next) {
             ok_paths = [];
             fs.unlink(path);
             next_sent = 1;
-            next(code, msg);
+            if (next) next(code, msg);
         }
         else if (num_domains === 1) {
             for (var i=0,l=hmails.length; i < l; i++) {
@@ -201,7 +201,7 @@ exports.send_trans_email = function (transaction, next) {
                     return function () { h.send() }
                 }(hmail), 0);
             }
-            next(code, msg);
+            if (next) next(code, msg);
         }
         else {
             ok_paths.push(path);
