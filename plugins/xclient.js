@@ -92,6 +92,7 @@ exports.hook_unrecognized_command = function (next, connection, params) {
     connection.loginfo(this, 'new uuid=' + new_uuid);
     connection.uuid = new_uuid;
     connection.reset_transaction();
+    connection.relaying = false;
     connection.remote_ip = xclient.addr;
     connection.remote_host = (xclient.name) ? xclient.name : undefined;
     connection.hello_host = (xclient.helo) ? xclient.helo : undefined;
