@@ -440,13 +440,23 @@ function HMailItem (filename, path, notes) {
 }
 
 util.inherits(HMailItem, events.EventEmitter);
+exports.HMailItem = HMailItem;
 
 // populate log functions - so we can use hooks
 for (var key in logger) {
     if (key.match(/^log\w/)) {
-        exports[key] = HMailItem.prototype[key] = (function (key) {
+        exports[key] = (function (key) {
             return function () {
                 var args = ["[outbound] "];
+                for (var i=0, l=arguments.length; i<l; i++) {
+                    args.push(arguments[i]);
+                }
+                logger[key].apply(logger, args);
+            }
+        })(key);
+        HMailItem.prototype[key] = (function (key) {
+            return function () {
+                var args = [ this ];
                 for (var i=0, l=arguments.length; i<l; i++) {
                     args.push(arguments[i]);
                 }

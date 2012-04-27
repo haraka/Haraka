@@ -18,7 +18,6 @@
        adding banners etc.
 
 Outbound improvements
- - Add UUID to outbound log output
  - Fix --qlist and --qstat (currently broken)
  - Add the ability to force a run on a specific queue file or destination domain
  - Make retry times configurable (handle RFC requirements for 5 days and DSN queued warnings)
