@@ -88,7 +88,9 @@ exports.hook_unrecognized_command = function (next, connection, params) {
     }
 
     // Apply changes
-    connection.uuid = utils.uuid();
+    var new_uuid = utils.uuid();
+    connection.loginfo(this, 'new uuid=' + new_uuid);
+    connection.uuid = new_uuid;
     connection.reset_transaction();
     connection.remote_ip = xclient.addr;
     connection.remote_host = (xclient.name) ? xclient.name : undefined;
