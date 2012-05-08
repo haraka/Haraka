@@ -609,6 +609,11 @@ HMailItem.prototype.get_mx_respond = function (retval, mx) {
     var wrap_mx = function (a) { return a };
     var process_dns = function (err, addresses) {
         if (err) {
+            if (err.code === 'ENODATA') {
+                // Most likely this is a hostname with no MX record
+                // Drop through and we'll get the A record instead.
+                return 0;
+            }
             hmail.found_mx(err);
         }
         else if (addresses && addresses.length) {
@@ -898,7 +903,7 @@ HMailItem.prototype.try_deliver_host = function (mx) {
                             exports.split_to_new_recipients(self, fail_recips);
                         }
                         else {
-                            self.delivered();
+                            self.delivered(rest);
                         }
                         break;
                     case 'quit':
@@ -1008,10 +1013,10 @@ HMailItem.prototype.double_bounce = function (err) {
     // Another strategy might be delivery "plugins" to cope with this.
 }
 
-HMailItem.prototype.delivered = function () {
-    this.loginfo("Successfully delivered mail: " + this.filename);
+HMailItem.prototype.delivered = function (response) {
+    this.loginfo("Successfully delivered mail: " + this.filename + ' (' + response + ')');
     delivery_concurrency--;
-    plugins.run_hooks("delivered", this, null);
+    plugins.run_hooks("delivered", this, response);
 }
 
 HMailItem.prototype.temp_fail = function (err) {
