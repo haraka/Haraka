@@ -135,7 +135,6 @@ To do that, you can use the `outbound` module directly:
     
     outbound.send_email(from, to, contents, outnext);
 
-<<<<<<< Updated upstream
 The callback on `send_email()` is passed `OK` if the mail is successfully
 queued to disk, not when it is successfully delivered. To check delivery
 status you still need to hook `delivered` and `bounce` to know if it was
@@ -145,6 +144,3 @@ The callback parameter may be omitted if you don't need to handle errors
 should queueing to disk fail e.g:
 
     outbound.send_email(form, to, contents);
-
-=======
->>>>>>> Stashed changes
