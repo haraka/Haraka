@@ -60,6 +60,17 @@ you to implement a custom handler to find MX records. For most installations
 there is no reason to implement this hook - Haraka will find the correct MX
 records for you.
 
+The MX record is sent via next(OK, mx) and can be one of:
+
+* A string of one of the following formats:
+    * hostname
+    * hostname:port
+    * ipaddress
+    * ipaddress:port
+* An MX object of the form: `{priority: 0, exchange: hostname}` and optionally
+a `port` value to specify an alternate port.
+* A list of MX objects in an array.
+
 ### The bounce hook
 
 If the mail completely bounces then the `bounce` hook is called. This is *not*
