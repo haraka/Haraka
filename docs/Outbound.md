@@ -84,6 +84,9 @@ can return `OK` from this hook to stop it from sending a bounce message.
 When mails are successfully delivered to the remote end then the `delivered`
 hook is called. The return codes from this hook have no effect, so it is only
 useful for logging the fact that a successful delivery occurred.
+This hook is called with `(hmail, response)` as parameters, the `response`
+variable contains the SMTP response text returned by the host that received
+the message and will typically contain the remote queue ID.
 
 Bounce Messages
 ---------------
@@ -152,4 +155,3 @@ The callback parameter may be omitted if you don't need to handle errors
 should queueing to disk fail e.g:
 
     outbound.send_email(form, to, contents);
-
