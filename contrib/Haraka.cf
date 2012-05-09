@@ -1,0 +1,6 @@
+loadplugin Mail::SpamAssassin::Plugin::Haraka	Haraka.pm
+
+ifplugin Mail::SpamAssassin::Plugin::Haraka
+    header   __HARAKA		eval:get_haraka_uuid()
+endif
+

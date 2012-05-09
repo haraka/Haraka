@@ -4,6 +4,9 @@
 // Valid keys:
 //   reject_threshold=N - score at which to reject the mail
 //                        Default: don't reject mail
+//   relay_reject_threshold=N - score at which to reject mail from
+//                        relays (to prevent outbound spam)
+//                        Default: don't reject mail
 //   munge_subject_threshold=N - score at which to munge the subject
 //                        Default: don't munge the subject
 //   subject_prefix=str - prefix to use when munging the subject.
@@ -39,7 +42,8 @@ exports.hook_data_post = function (next, connection) {
         config.main[key] = config.main[key] || defaults[key];
     }
     
-    ['reject_threshold', 'munge_subject_threshold', 'max_size'].forEach(
+    ['reject_threshold', 'relay_reject_threshold', 
+     'munge_subject_threshold', 'max_size'].forEach(
         function (item) {
             if (config.main[item]) {
                 config.main[item] = new Number(config.main[item]);
@@ -64,8 +68,8 @@ exports.hook_data_post = function (next, connection) {
     socket.setTimeout(300 * 1000);
     
     var username = config.main.spamd_user || 
-                   connection.transaction.notes.spamd_user || 
-                   process.getuid();
+                   connection.transaction.notes.spamd_user ||
+                   'default';
     
     var data_marker = 0;
     var in_data = false;
@@ -109,10 +113,12 @@ exports.hook_data_post = function (next, connection) {
         socket.write("SYMBOLS SPAMC/1.3\r\n", function () {
             socket.write("User: " + username + "\r\n\r\n", function () {
                 socket.write("X-Envelope-From: " + 
-                            connection.transaction.mail_from.address()
-                            + "\r\n", function ()
-                {
-                    send_data();
+                    connection.transaction.mail_from.address()
+                    + "\r\n", function () {
+                        socket.write("X-Haraka-UUID: " + 
+                            connection.transaction.uuid + "\r\n", function () {
+                                send_data();
+                        });
                 });
             });
         });
@@ -153,8 +159,10 @@ exports.hook_data_post = function (next, connection) {
  
         plugin.fixup_old_headers(config.main.old_headers_action, connection.transaction);
 
-        if (spamd_response.flag === 'Yes') {
+        if (spamd_response.flag === 'Yes') { 
             connection.transaction.add_header('X-Spam-Flag', 'YES');
+            connection.transaction.remove_header('precedence');
+            connection.transaction.add_header('Precedence', 'junk');
         }
         connection.transaction.add_header('X-Spam-Status', spamd_response.flag +
             ', hits=' + spamd_response.hits + ' required=' + spamd_response.reqd +
@@ -169,17 +177,24 @@ exports.hook_data_post = function (next, connection) {
         }
         connection.transaction.add_header('X-Spam-Level', stars_string);
         
-        connection.loginfo(plugin, "spamassassin returned: " + spamd_response.flag + ', ' +
-            spamd_response.hits + '/' + spamd_response.reqd +
-            " Reject at: " + config.main.reject_threshold);
+        connection.loginfo(plugin, "status=" + spamd_response.flag + ', hits=' +
+            spamd_response.hits + ', required=' + spamd_response.reqd +
+            ", reject=" + ((connection.relaying) ? (config.main.relay_reject_threshold || config.main.reject_threshold) : 
+                           config.main.reject_threshold) + 
+            ", tests=\"" + spamd_response.tests + "\"");
         
-        if (config.main.reject_threshold && (spamd_response.hits >= config.main.reject_threshold)) {
+        if ((connection.relaying && config.main.relay_reject_threshold && (spamd_response.hits >= config.main.relay_reject_threshold)) 
+           || (config.main.reject_threshold && (spamd_response.hits >= config.main.reject_threshold))) {
             return next(DENY, "spam score exceeded threshold");
         }
         else if (config.main.munge_subject_threshold && (spamd_response.hits >= config.main.munge_subject_threshold)) {
             var subj = connection.transaction.header.get('Subject');
-            connection.transaction.remove_header('Subject');
-            connection.transaction.add_header('Subject', config.main.subject_prefix + " " + subj);
+            // Try and prevent any double subject modifications
+            var subject_re = new RegExp('^' + config.main.subject_prefix);
+            if (!subject_re.test(subj)) {
+                connection.transaction.remove_header('Subject');
+                connection.transaction.add_header('Subject', config.main.subject_prefix + " " + subj);
+            }
         }
         next();
     });
