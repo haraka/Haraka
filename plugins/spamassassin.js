@@ -1,30 +1,5 @@
 // Call spamassassin via spamd
 
-// Config is in spamassassin.ini
-// Valid keys:
-//   reject_threshold=N - score at which to reject the mail
-//                        Default: don't reject mail
-//   relay_reject_threshold=N - score at which to reject mail from
-//                        relays (to prevent outbound spam)
-//                        Default: don't reject mail
-//   munge_subject_threshold=N - score at which to munge the subject
-//                        Default: don't munge the subject
-//   subject_prefix=str - prefix to use when munging the subject.
-//                        Default: *** SPAM ***
-//   spamd_socket=[/path|host:port]
-//                      - Default: localhost:783
-//   spamd_user=str     - username to pass to spamd
-//                        Default: same as current user
-//   max_size=N         - don't scan mails bigger than this
-//                        Default: 500000
-//   old_headers_action=[rename|drop|keep]
-//                      - if old X-Spam-* headers are in the email, what do
-//                        we do with them? Default is to rename them
-//                        X-Old-Spam-*. "drop" will delete them. "keep" will
-//                        keep them (new X-Spam-* headers appear lower down
-//                        in the headers then).
-//
-
 var sock = require('./line_socket');
 
 var defaults = {
