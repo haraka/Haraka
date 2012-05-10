@@ -290,6 +290,7 @@ exports.get_client = function (server, callback, port, host, timeout, enable_tls
 // config and listeners for plugins. Currently this is what smtp_proxy and
 // smtp_forward have in common.
 exports.get_client_plugin = function (plugin, connection, config, callback) {
+    var enable_tls = config.main.enable_tls;
     var pool = exports.get_pool(connection.server, config.main.port,
         config.main.host, config.main.timeout, config.main.enable_tls,
         config.main.max_connections);
