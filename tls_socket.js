@@ -183,6 +183,8 @@ function createServer(cb) {
                     cleartext.authorized = true;
                 }
                 var cert = pair.cleartext.getPeerCertificate();
+                // TODO: this is available in 0.8
+                // var cipher = pair.cleartext.getCipher();
 
                 socket.emit('secure');
                 if (cb) cb(cleartext.authorized, verifyError, cert);
