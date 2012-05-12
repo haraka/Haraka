@@ -158,15 +158,14 @@ function createServer(cb) {
 
         var socket = new pluggableStream(cryptoSocket);
 
-        socket.upgrade = function (options) {
+        socket.upgrade = function (options, cb) {
             log.logdebug("Upgrading to TLS");
             
             socket.clean();
             cryptoSocket.removeAllListeners('data');
             var sslcontext = crypto.createCredentials(options);
 
-            var pair = tls.createSecurePair(sslcontext, true, false, false);
-
+            var pair = tls.createSecurePair(sslcontext, true, true, false);
             var cleartext = pipe(pair, cryptoSocket);
 
             pair.on('error', function(exception) {
@@ -183,8 +182,10 @@ function createServer(cb) {
                 } else {
                     cleartext.authorized = true;
                 }
+                var cert = pair.cleartext.getPeerCertificate();
 
                 socket.emit('secure');
+                if (cb) cb(cleartext.authorized, verifyError, cert);
             });
 
             cleartext._controlReleased = true;
