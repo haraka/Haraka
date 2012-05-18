@@ -24,6 +24,7 @@ var STATE_CMD   = 1;
 var STATE_LOOP  = 2;
 var STATE_DATA  = 3;
 var STATE_PAUSE = 4;
+var STATE_PAUSE_SMTP = 5;
 
 // copy logger methods into Connection:
 for (var key in logger) {
@@ -112,7 +113,7 @@ exports.createConnection = function(client, server) {
 Connection.prototype.process_line = function (line) {
     if (this.state === STATE_CMD) {
         this.logprotocol("C: " + line);
-        this.state = STATE_PAUSE;
+        this.state = STATE_PAUSE_SMTP;
         this.current_line = line.replace(/\r?\n/, '');
         var matches = /^([^ ]*)( +(.*))?$/.exec(this.current_line);
         if (!matches) {
@@ -174,8 +175,12 @@ Connection.prototype._process_data = function() {
     var results;
     while (results = line_regexp.exec(this.current_data)) {
         var this_line = results[1];
-        if (this.state === STATE_PAUSE) {
+        // Detect early_talker but allow PIPELINING extension (ESMTP)
+        if (this.state === STATE_PAUSE || (this.state === STATE_PAUSE_SMTP && !this.esmtp)) {
+            this.logdebug('[early_talker] state=' + this.state + ' esmtp=' + this.esmtp + ' line="' + this_line + '"');
             this.early_talker = 1;
+            // Reset state otherwise we'll loop forever...
+            this.state = STATE_CMD;
             var self = this;
             // If you talk early, we're going to give you a delay
             setTimeout(function() { self._process_data() }, this.early_talker_delay);
