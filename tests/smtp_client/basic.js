@@ -2,7 +2,7 @@ test.expect(24);
 var server = {notes: {}};
 
 exports.get_pool(server);
-var pool_name = '25:localhost:300:false';
+var pool_name = '25:localhost:300';
 test.equals(1, Object.keys(server.notes.pool).length);
 test.equals(pool_name, Object.keys(server.notes.pool)[0]);
 test.equals(0, server.notes.pool[pool_name].getPoolSize());
