@@ -87,6 +87,8 @@ function Connection(client, server) {
     this.early_talker_delay = config.get('early_talker_delay') || 1000;
     this.banner_includes_uuid = config.get('banner_includes_uuid') ? true : false;
     this.deny_includes_uuid = config.get('deny_includes_uuid') ? true : false;
+    this.early_talker = 0;
+    this.pipelining = 0;
     this.relaying = false;
     this.disconnected = false;
     this.esmtp = false;
@@ -105,8 +107,10 @@ exports.createConnection = function(client, server) {
 }
 
 Connection.prototype.process_line = function (line) {
+    if (this.state !== STATE_DATA) {
+        this.logprotocol("C: " + line + ' state=' + this.state);
+    }
     if (this.state === STATE_CMD) {
-        this.logprotocol("C: " + line);
         this.state = STATE_PAUSE_SMTP;
         this.current_line = line.replace(/\r?\n/, '');
         var matches = /^([^ ]*)( +(.*))?$/.exec(this.current_line);
@@ -140,7 +144,6 @@ Connection.prototype.process_line = function (line) {
         }
     }
     else if (this.state === STATE_LOOP) {
-        this.logprotocol("C: " + line);
         // Allow QUIT
         if (line.replace(/\r?\n/, '').toUpperCase() === 'QUIT') {
             this.cmd_quit();
@@ -166,22 +169,41 @@ Connection.prototype.process_data = function (data) {
 };
 
 Connection.prototype._process_data = function() {
+    // We *must* detect disconnected connections here as the state 
+    // only transitions to STATE_CMD in the respond function below.
+    // Otherwise if multiple commands are pipelined and then the 
+    // connection is dropped; we'll end up in the function forever.
+    if (this.disconnected) return;
     var results;
     while (results = line_regexp.exec(this.current_data)) {
         var this_line = results[1];
         // Detect early_talker but allow PIPELINING extension (ESMTP)
         if (this.state === STATE_PAUSE || (this.state === STATE_PAUSE_SMTP && !this.esmtp)) {
-            this.logdebug('[early_talker] state=' + this.state + ' esmtp=' + this.esmtp + ' line="' + this_line + '"');
+            if (!this.early_talker) {
+                this.logdebug('[early_talker] state=' + this.state + ' esmtp=' + this.esmtp + ' line="' + this_line + '"');
+            }            
             this.early_talker = 1;
-            // Reset state otherwise we'll loop forever...
-            this.state = STATE_CMD;
             var self = this;
             // If you talk early, we're going to give you a delay
             setTimeout(function() { self._process_data() }, this.early_talker_delay);
             break;
         }
-        this.current_data = this.current_data.slice(this_line.length);
-        this.process_line(this_line);
+        else if (this.state === STATE_PAUSE_SMTP && this.esmtp) {
+            // Valid PIPELINING
+            // We *don't want to process this yet otherwise the 
+            // current_data buffer will be lost.  The respond() 
+            // function will call this function again once it
+            // has reset the state back to STATE_CMD and this 
+            // ensures that we only process one command at a
+            // time.
+            this.pipelining = 1;
+            this.logdebug('pipeline: ' + this_line);
+            break;
+        }
+        else {
+            this.current_data = this.current_data.slice(this_line.length);
+            this.process_line(this_line);
+        }
     }
 };
 
@@ -255,6 +277,9 @@ Connection.prototype.respond = function(code, msg) {
     if (this.state !== STATE_LOOP) {
         this.state = STATE_CMD;
     }
+
+    // Process any buffered commands (PIPELINING)
+    this._process_data();
 };
 
 Connection.prototype.fail = function (err) {
