@@ -15,7 +15,9 @@
   },
   "dependencies": {
     "nopt": ">= 1.0.5",
-    "generic-pool": ">= 1.0.9"
+    "generic-pool": ">= 1.0.9",
+    "node-syslog": ">= 1.1.2",
+    "nodeunit" : "git://github.com/godsflaw/nodeunit.git"
   },
   "licenses": [ {
     "type": "MIT",
