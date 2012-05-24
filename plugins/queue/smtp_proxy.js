@@ -18,6 +18,8 @@ exports.hook_mail = function (next, connection, params) {
         smtp_client.on('data', smtp_client.call_next);
 
         smtp_client.on('dot', function () {
+            smtp_client.call_next(OK, smtp_client.response + ' (' + connection.transaction.uuid + ')');
+            smtp_client.release();
             delete connection.notes.smtp_client;
         });
 
