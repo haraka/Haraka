@@ -36,6 +36,10 @@ for adding banners to the email.
 
 A safe place to store transaction specific values.
 
+* transaction.add_trace_header(key, value)
+
+Adds a header to the top of the header list.
+
 * transaction.add_header(key, value)
 
 Adds a header to the email.

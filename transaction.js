@@ -63,6 +63,11 @@ Transaction.prototype.add_header = function(key, value) {
     if (this.header_pos > 0) this.reset_headers();
 };
 
+Transaction.prototype.add_trace_header = function(key, value) {
+    this.header.add(key, value);
+    if (this.header_pos > 0) this.reset_headers();
+};
+
 Transaction.prototype.reset_headers = function () {
     var header_lines = this.header.lines();
     this.data_lines = header_lines.concat(this.data_lines.slice(this.header_pos));
