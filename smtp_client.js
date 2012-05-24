@@ -7,7 +7,6 @@ var util = require('util');
 var generic_pool = require('generic-pool');
 var line_socket = require('./line_socket');
 var logger = require('./logger');
-var constants = require('./constants');
 var uuid = require('./utils').uuid;
 
 var smtp_regexp = /^([0-9]{3})([ -])(.*)/;
@@ -17,7 +16,7 @@ var STATE_RELEASED = 3;
 var STATE_DEAD = 4;
 var STATE_DESTROYED = 5;
 
-function SMTPClient(port, host, timeout, enable_tls) {
+function SMTPClient(port, host, timeout) {
     events.EventEmitter.call(this);
     this.uuid = uuid();
     this.socket = line_socket.connect(port, host);
@@ -232,12 +231,11 @@ SMTPClient.prototype.destroy = function () {
 };
 
 // Separate pools are kept for each set of server attributes.
-exports.get_pool = function (server, port, host, timeout, enable_tls, max) {
+exports.get_pool = function (server, port, host, timeout, max) {
     var port = port || 25;
     var host = host || 'localhost';
     var timeout = (timeout == undefined) ? 300 : timeout;
-    var enable_tls = /(true|yes|1)/i.exec(enable_tls) != null;
-    var name = port + ':' + host + ':' + timeout + ':' + enable_tls;
+    var name = port + ':' + host + ':' + timeout;
     if (!server.notes.pool) {
         server.notes.pool = {};
     }
@@ -245,7 +243,7 @@ exports.get_pool = function (server, port, host, timeout, enable_tls, max) {
         var pool = generic_pool.Pool({
             name: name,
             create: function (callback) {
-                var smtp_client = new SMTPClient(port, host, timeout, enable_tls);
+                var smtp_client = new SMTPClient(port, host, timeout);
                 logger.logdebug('[smtp_client_pool] ' + smtp_client.uuid + ' created');
                 callback(null, smtp_client);
             },
@@ -282,8 +280,8 @@ exports.get_pool = function (server, port, host, timeout, enable_tls, max) {
 };
 
 // Get a smtp_client for the given attributes.
-exports.get_client = function (server, callback, port, host, timeout, enable_tls, max) {
-    var pool = exports.get_pool(server, port, host, timeout, enable_tls, max);
+exports.get_client = function (server, callback, port, host, timeout, max) {
+    var pool = exports.get_pool(server, port, host, timeout, max);
     pool.acquire(callback);
 };
 
@@ -291,10 +289,9 @@ exports.get_client = function (server, callback, port, host, timeout, enable_tls
 // config and listeners for plugins. Currently this is what smtp_proxy and
 // smtp_forward have in common.
 exports.get_client_plugin = function (plugin, connection, config, callback) {
-    var enable_tls = config.main.enable_tls;
+    var enable_tls = /(true|yes|1)/i.exec(config.main.enable_tls) != null;
     var pool = exports.get_pool(connection.server, config.main.port,
-        config.main.host, config.main.timeout, config.main.enable_tls,
-        config.main.max_connections);
+        config.main.host, config.main.timeout, config.main.max_connections);
     pool.acquire(function (err, smtp_client) {
         connection.logdebug(plugin, 'Got smtp_client: ' + smtp_client.uuid);
         smtp_client.call_next = function (retval, msg) {
@@ -350,11 +347,6 @@ exports.get_client_plugin = function (plugin, connection, config, callback) {
         smtp_client.on('helo', function () {
             smtp_client.send_command('MAIL',
                 'FROM:' + connection.transaction.mail_from);
-        });
-
-        smtp_client.on('dot', function () {
-            smtp_client.call_next(constants.ok, smtp_client.response + ' (' + connection.transaction.uuid + ')');
-            smtp_client.release();
         });
 
         smtp_client.on('error', function (msg) {
