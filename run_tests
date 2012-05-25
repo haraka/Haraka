@@ -9,10 +9,9 @@ catch(e) {
     console.log("Error: " + e.message);
     console.log("");
     console.log("Cannot find nodeunit module.");
-    console.log("You can download submodules for this project by doing:");
+    console.log("Please run the following:");
     console.log("");
-    console.log("    git submodule init");
-    console.log("    git submodule update");
+    console.log("    npm install");
     console.log("");
     process.exit();
 }
