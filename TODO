@@ -16,3 +16,11 @@
        how outbound.js does that as it is reading from disk.
     4. Somehow work into all that ability to re-write the email after
        adding banners etc.
+
+Outbound improvements
+ - Fix --qlist and --qstat (currently broken)
+ - Add the ability to force a run on a specific queue file or destination domain
+ - Make retry times configurable (handle RFC requirements for 5 days and DSN queued warnings)
+ - Limit concurrency by domain
+ - Disable deliveries for a domain
+ - Pool connections by domain/MX

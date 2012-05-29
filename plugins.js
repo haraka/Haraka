@@ -94,6 +94,10 @@ plugins.load_plugin = function(name) {
     return plugin;
 }
 
+// Set in server.js; initialized to empty object
+// to prevent it from blowing up any unit tests.
+plugins.server = {};
+
 plugins._load_and_compile_plugin = function(name) {
     var plugin = new Plugin(name);
     var fp = plugin.full_paths,
@@ -128,6 +132,7 @@ plugins._load_and_compile_plugin = function(name) {
         process: process,
         Buffer: Buffer,
         Math: Math,
+        server: plugins.server,
     };
     constants.import(sandbox);
     try {

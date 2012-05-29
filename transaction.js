@@ -13,6 +13,7 @@ function Transaction() {
     this.mail_from = null;
     this.rcpt_to = [];
     this.data_lines = [];
+    this.banner = null;
     this.data_bytes = 0;
     this.header_pos = 0;
     this.parse_body = false;
@@ -37,23 +38,33 @@ Transaction.prototype.add_data = function(line) {
         this.header.parse(this.data_lines);
         this.header_pos = this.data_lines.length;
         if (this.parse_body) {
-            this.body = this.body || new body.Body(this.header);
+            this.body = this.body || new body.Body(this.header, {"banner": this.banner});
         }
     }
     else if (this.header_pos && this.parse_body) {
-        this.body.parse_more(line);
+        line = this.body.parse_more(line);
     }
-    this.data_lines.push(line);
+    if (line.length) {
+        this.data_lines.push(line);
+    }
 };
 
 Transaction.prototype.end_data = function() {
     if (this.header_pos && this.parse_body) {
-        this.body.parse_end();
+        var data = this.body.parse_end();
+        if (data.length) {
+            this.data_lines.push(data);
+        }
     }
 }
 
 Transaction.prototype.add_header = function(key, value) {
     this.header.add_end(key, value);
+    if (this.header_pos > 0) this.reset_headers();
+};
+
+Transaction.prototype.add_leading_header = function(key, value) {
+    this.header.add(key, value);
     if (this.header_pos > 0) this.reset_headers();
 };
 
@@ -70,10 +81,18 @@ Transaction.prototype.remove_header = function (key) {
 
 Transaction.prototype.attachment_hooks = function (start, data, end) {
     this.parse_body = 1;
-    this.body = this.body || new body.Body(this.header);
+    this.body = this.body || new body.Body(this.header, {"banner": this.banner});
     this.body.on('attachment_start', start);
     if (data)
         this.body.on('attachment_data',  data);
     if (end)
         this.body.on('attachment_end', end);
 };
+
+Transaction.prototype.set_banner = function (text, html) {
+    this.parse_body = true;
+    if (!html) {
+        html = text.replace(/\n/g, '<br/>\n');
+    }
+    this.banner = [text, html];
+}

@@ -22,20 +22,32 @@ exports.hook_unrecognized_command = function (next, connection, params) {
     if (params[0] === 'STARTTLS') {
         var key = this.config.get('tls_key.pem', 'data').join("\n");
         var cert = this.config.get('tls_cert.pem', 'data').join("\n");
-        var options = { key: key, cert: cert };
+        var options = { key: key, cert: cert, requestCert: true };
 
         /* Respond to STARTTLS command. */
         connection.respond(220, "Go ahead.");
         /* Upgrade the connection to TLS. */
-        connection.client.upgrade(options); // Use the options which were saved by starttls.createServer().
-        /* Force the startup protocol to repeat. */
-        connection.uuid = utils.uuid();
-        connection.reset_transaction();
-        connection.hello_host = undefined;
-        connection.using_tls = true;
-        /* Return OK since we responded to the client. */
-        return next(OK);
+        var self = this;
+        connection.client.upgrade(options, function (authorized, verifyError, cert) {
+            connection.reset_transaction();
+            connection.hello_host = undefined;
+            connection.using_tls = true;
+            connection.notes.tls = { 
+                authorized: authorized,
+                authorizationError: verifyError,
+                peerCertificate: cert,
+            };
+            connection.loginfo(self, 'secured: verified=' + authorized +
+                ((verifyError) ? ' error="' + verifyError + '"' : '' ) +
+                ((cert && cert.subject) ? ' cn="' + cert.subject.CN + '"' + 
+                ' organization="' + cert.subject.O + '"' : '') +
+                ((cert && cert.issuer) ? ' issuer="' + cert.issuer.O + '"' : '') +
+                ((cert && cert.valid_to) ? ' expires="' + cert.valid_to + '"' : '') +
+                ((cert && cert.fingerprint) ? ' fingerprint=' + cert.fingerprint : ''));
+            return next(OK);  // Return OK as we responded to the client
+        });
     }
-    /* Let the plugin chain continue. */
-    next();
+    else {
+        return next();
+    }
 };

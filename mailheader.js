@@ -1,6 +1,7 @@
 "use strict";
 // An RFC 2822 email header parser
 var logger = require('./logger');
+var utils  = require('./utils');
 var Iconv;
 try { Iconv = require('iconv').Iconv }
 catch (err) {
@@ -16,27 +17,6 @@ function Header (options) {
 
 exports.Header = Header;
 exports.Iconv  = Iconv;
-exports.decode_qp = function (line) {
-    if (! /=/.test(line)) {
-        // this may be a pointless optimisation...
-        return new Buffer(line);
-    }
-    line = line.replace(/=\n/mg, '');
-    var buf = new Buffer(line.length);
-    var pos = 0;
-    for (var i=0,l=line.length; i < l; i++) {
-        if (line[i] === '=') {
-            i++;
-            buf[pos] = parseInt(line[i] + line[i+1], 16);
-            i++;
-        }
-        else {
-            buf[pos] = line.charCodeAt(i);
-        }
-        pos++;
-    }
-    return buf.slice(0, pos);
-}
 
 Header.prototype.parse = function (lines) {
     for (var i=0,l=lines.length; i < l; i++) {
@@ -69,7 +49,7 @@ function _decode_header (matched, encoding, cte, data) {
     
     switch(cte) {
         case 'Q':
-            data = exports.decode_qp(data.replace(/_/g, ' '));
+            data = utils.decode_qp(data.replace(/_/g, ' '));
             break;
         case 'B':
             data = new Buffer(data, "base64");
@@ -149,11 +129,13 @@ Header.prototype._add_header = function (key, value, method) {
 };
 
 Header.prototype.add = function (key, value) {
+    value = value.replace(/(\r?\n)*$/, '');
     this._add_header(key.toLowerCase(), value, "unshift");
     this.header_list.unshift(key + ': ' + value + '\n');
 };
 
 Header.prototype.add_end = function (key, value) {
+    value = value.replace(/(\r?\n)*$/, '');
     this._add_header(key.toLowerCase(), value, "push");
     this.header_list.push(key + ': ' + value + '\n');
 }

@@ -2,6 +2,7 @@
 
 exports.register = function () {
     this.register_hook('queue','discard');
+    this.register_hook('queue_outbound', 'discard');
 }
 
 exports.discard = function (next, connection) {

@@ -60,6 +60,17 @@ you to implement a custom handler to find MX records. For most installations
 there is no reason to implement this hook - Haraka will find the correct MX
 records for you.
 
+The MX record is sent via next(OK, mx) and can be one of:
+
+* A string of one of the following formats:
+    * hostname
+    * hostname:port
+    * ipaddress
+    * ipaddress:port
+* An MX object of the form: `{priority: 0, exchange: hostname}` and optionally
+a `port` value to specify an alternate port.
+* A list of MX objects in an array.
+
 ### The bounce hook
 
 If the mail completely bounces then the `bounce` hook is called. This is *not*
@@ -73,6 +84,9 @@ can return `OK` from this hook to stop it from sending a bounce message.
 When mails are successfully delivered to the remote end then the `delivered`
 hook is called. The return codes from this hook have no effect, so it is only
 useful for logging the fact that a successful delivery occurred.
+This hook is called with `(hmail, response)` as parameters, the `response`
+variable contains the SMTP response text returned by the host that received
+the message and will typically contain the remote queue ID.
 
 Bounce Messages
 ---------------
@@ -132,3 +146,12 @@ To do that, you can use the `outbound` module directly:
     
     outbound.send_email(from, to, contents, outnext);
 
+The callback on `send_email()` is passed `OK` if the mail is successfully
+queued to disk, not when it is successfully delivered. To check delivery
+status you still need to hook `delivered` and `bounce` to know if it was
+successfully delivered.
+
+The callback parameter may be omitted if you don't need to handle errors
+should queueing to disk fail e.g:
+
+    outbound.send_email(form, to, contents);

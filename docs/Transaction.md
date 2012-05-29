@@ -36,6 +36,11 @@ for adding banners to the email.
 
 A safe place to store transaction specific values.
 
+* transaction.add_leading_header(key, value)
+
+Adds a header to the top of the header list.  This should only be used in
+very specific cases.  Most people will want to use add_header() instead.
+
 * transaction.add_header(key, value)
 
 Adds a header to the email.
@@ -74,3 +79,9 @@ Note that in the `start` event, you can set per-attachment events via:
 
     body.on('attachment_data', cb)
     body.on('attachment_end', cb)
+
+* transaction.set_banner(text, html)
+
+Sets a banner to be added to the end of the email. If the html part is not
+given (optional) then the text part will have each line ending replaced with
+`<br/>` when being inserted into HTML parts.

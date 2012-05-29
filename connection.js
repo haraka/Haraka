@@ -56,6 +56,12 @@ function setupClient(self) {
     self.client.on('end', closed);
     self.client.on('close', closed);
 
+    self.client.on('close', function (has_error) {
+        if (!self.disconnected) {
+            self.fail("client (" + self.remote_ip + ") dropped connection");
+        }
+    });
+
     self.client.on('error', function (err) {
         if (!self.disconnected) {
             self.fail("client (" + self.remote_ip + ") closed with err: " + err);
@@ -218,11 +224,6 @@ Connection.prototype.remote_ip = function() {
     if (arguments.length) {
         this.remote_ip = arguments[0];
     }
-    return this.remote_ip;
-};
-
-Connection.prototype.current_line = function() {
-    return this.current_line;
 };
 
 Connection.prototype.respond = function(code, msg) {
@@ -947,8 +948,7 @@ Connection.prototype.data_post_respond = function(retval, msg) {
 Connection.prototype.queue_outbound_respond = function(retval, msg) {
     switch(retval) {
         case constants.ok:
-                this.respond(250, msg || "Message Queued");
-                plugins.run_hooks("queue_ok", this);
+                plugins.run_hooks("queue_ok", this, msg || 'Message Queued');
                 break;
         case constants.deny:
                 this.respond(552, msg || "Message denied");
@@ -971,8 +971,7 @@ Connection.prototype.queue_outbound_respond = function(retval, msg) {
                 outbound.send_email(this.transaction, function(retval, msg) {
                     switch(retval) {
                         case constants.ok:
-                                conn.respond(250, msg || "Message Queued");
-                                plugins.run_hooks("queue_ok", conn);
+                                plugins.run_hooks("queue_ok", conn, msg || 'Message Queued');
                                 break;
                         case constants.deny:
                                 conn.respond(552, msg || "Message denied");
@@ -990,8 +989,7 @@ Connection.prototype.queue_outbound_respond = function(retval, msg) {
 Connection.prototype.queue_respond = function(retval, msg) {
     switch (retval) {
         case constants.ok:
-                this.respond(250, msg || "Message Queued");
-                plugins.run_hooks("queue_ok", this);
+                plugins.run_hooks("queue_ok", this, msg || 'Message Queued');
                 break;
         case constants.deny:
                 this.respond(552, msg || "Message denied");
@@ -1016,6 +1014,7 @@ Connection.prototype.queue_respond = function(retval, msg) {
     }
 };
 
-Connection.prototype.queue_ok_respond = function (retval, msg) {
+Connection.prototype.queue_ok_respond = function (retval, msg, params) {
+    this.respond(250, params);
     this.reset_transaction();
 };

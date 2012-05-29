@@ -4,6 +4,7 @@
 var config    = require('./config');
 var plugins;
 var connection;
+var outbound;
 var constants = require('./constants');
 var util      = require('util');
 
@@ -121,6 +122,12 @@ for (key in logger) {
                             else if (data instanceof plugins.Plugin) {
                                 pluginstr = "[" + data.name + "]"; 
                             }
+                            else if (data instanceof outbound.HMailItem) {
+                                pluginstr = "[outbound]";
+                                if (data.todo && data.todo.uuid) {
+                                    uuidstr = "[" + data.todo.uuid + "]";
+                                }
+                            }
                             else {
                                 str += util.inspect(data);
                             }
@@ -138,4 +145,5 @@ for (key in logger) {
 
 // load these down here so it sees all the logger methods compiled above
 plugins = require('./plugins');
-connection = require('./connection'); 
+connection = require('./connection');
+outbound = require('./outbound'); 

@@ -2,6 +2,7 @@
 var fs          = require('fs');
 var path        = require('path');
 var dns         = require('dns');
+var net         = require('net');
 var util        = require("util");
 var events      = require("events");
 var utils       = require('./utils');
@@ -133,7 +134,9 @@ exports.send_email = function () {
     var match;
     var re = /^([^\n]*\n?)/;
     while (match = re.exec(contents)) {
-        transaction.add_data(match[1]);
+        var line = match[1];
+        line = line.replace(/\n?$/, '\n'); // make sure it ends in \n
+        transaction.add_data(line);
         contents = contents.substr(match[1].length);
         if (contents.length === 0) {
             break;
@@ -189,7 +192,7 @@ exports.send_trans_email = function (transaction, next) {
             ok_paths = [];
             fs.unlink(path);
             next_sent = 1;
-            next(code, msg);
+            if (next) next(code, msg);
         }
         else if (num_domains === 1) {
             for (var i=0,l=hmails.length; i < l; i++) {
@@ -198,7 +201,7 @@ exports.send_trans_email = function (transaction, next) {
                     return function () { h.send() }
                 }(hmail), 0);
             }
-            next(code, msg);
+            if (next) next(code, msg);
         }
         else {
             ok_paths.push(path);
@@ -207,21 +210,20 @@ exports.send_trans_email = function (transaction, next) {
     }
     
     for (var dom in recips) {
-        var from = transaction.mail_from;
-        var data_lines = transaction.data_lines;
-        this.process_domain(dom, recips[dom], from, data_lines, hmails, transaction.notes, mynext);
+        var todo = new TODOItem(dom, recips[dom], transaction);
+        this.process_domain(todo, hmails, mynext);
     }
 }
 
-exports.process_domain = function (dom, recips, from, data_lines, hmails, notes, cb) {
+exports.process_domain = function (todo, hmails, cb) {
     var plugin = this;
-    this.loginfo("Processing domain: " + dom);
+    this.loginfo("Processing domain: " + todo.domain);
     var fname = _fname();
     var tmp_path = path.join(queue_dir, '.' + fname);
     var ws = fs.createWriteStream(tmp_path, { flags: WRITE_EXCL });
     var data_pos = 0;
     var write_more = function () {
-        if (data_pos === data_lines.length) {
+        if (data_pos === todo.data_lines.length) {
             ws.on('close', function () {
                 var dest_path = path.join(queue_dir, fname);
                 fs.rename(tmp_path, dest_path, function (err) {
@@ -230,7 +232,7 @@ exports.process_domain = function (dom, recips, from, data_lines, hmails, notes,
                         cb(tmp_path, DENY, "Queue error");
                     }
                     else {
-                        hmails.push(new HMailItem (fname, dest_path, notes));
+                        hmails.push(new HMailItem (fname, dest_path, todo.notes));
                         cb(tmp_path, OK, "Queued!");
                     }
                 });
@@ -241,7 +243,7 @@ exports.process_domain = function (dom, recips, from, data_lines, hmails, notes,
         
         // write, but fixup "." at the beginning of the line to be ".."
         // and fixup \n to be \r\n
-        if (ws.write(data_lines[data_pos++].replace(/^\./m, '..').replace(/\r?\n/g, "\r\n"))) {
+        if (ws.write(todo.data_lines[data_pos++].replace(/^\./m, '..').replace(/\r?\n/g, "\r\n"))) {
             write_more();
         }
     };
@@ -254,19 +256,21 @@ exports.process_domain = function (dom, recips, from, data_lines, hmails, notes,
 
     ws.on('drain', write_more);
 
-    plugin.build_todo(dom, recips, from, notes, ws, write_more);
+    plugin.build_todo(todo, ws, write_more);
 }
 
-exports.build_todo = function (dom, recips, from, notes, ws, write_more) {
-    var todo_str = JSON.stringify(
-        {
-            domain: dom,
-            mail_from: from,
-            rcpt_to:   recips,
-            notes: notes
+exports.build_todo = function (todo, ws, write_more) {
+    // Replacer function to exclude items from the queue file header
+    function exclude_from_json(key, value) {
+        switch (key) {
+            case 'data_lines':
+                return undefined;
+            default:
+                return value;
         }
-    );
-    
+    }
+    var todo_str = JSON.stringify(todo, exclude_from_json);
+
     // since JS has no pack() we have to manually write the bytes of a long
     var todo_length = new Buffer(4);
     var todo_l = todo_str.length;
@@ -330,7 +334,8 @@ exports.split_to_new_recipients = function (hmail, recipients) {
 
     ws.on('drain', write_more);
 
-    plugin.build_todo(hmail.todo.domain, recipients, hmail.todo.mail_from, hmail.todo.notes, ws, write_more);
+    hmail.todo.rcpt_to = recipients;
+    plugin.build_todo(hmail.todo, ws, write_more);
 }
 
 exports._load_cur_queue = function (cb_name) {
@@ -405,7 +410,16 @@ exports.stats = function () {
     return results;
 }
 
-
+// TODOItem - queue file header data
+function TODOItem (domain, recipients, transaction) {
+    this.domain = domain;
+    this.rcpt_to = recipients;
+    this.mail_from = transaction.mail_from;
+    this.data_lines = transaction.data_lines;
+    this.notes = transaction.notes;
+    this.uuid = transaction.uuid;
+    return this;
+}
 
 /////////////////////////////////////////////////////////////////////////////
 // HMailItem - encapsulates an individual outbound mail item
@@ -426,13 +440,23 @@ function HMailItem (filename, path, notes) {
 }
 
 util.inherits(HMailItem, events.EventEmitter);
+exports.HMailItem = HMailItem;
 
 // populate log functions - so we can use hooks
 for (var key in logger) {
     if (key.match(/^log\w/)) {
-        exports[key] = HMailItem.prototype[key] = (function (key) {
+        exports[key] = (function (key) {
             return function () {
                 var args = ["[outbound] "];
+                for (var i=0, l=arguments.length; i<l; i++) {
+                    args.push(arguments[i]);
+                }
+                logger[key].apply(logger, args);
+            }
+        })(key);
+        HMailItem.prototype[key] = (function (key) {
+            return function () {
+                var args = [ this ];
                 for (var i=0, l=arguments.length; i<l; i++) {
                     args.push(arguments[i]);
                 }
@@ -537,8 +561,23 @@ HMailItem.prototype.get_mx = function () {
 HMailItem.prototype.get_mx_respond = function (retval, mx) {
     switch(retval) {
         case constants.ok:
+                var mx_list;
+                if (Array.isArray(mx)) {
+                    mx_list = mx;
+                }
+                else if (typeof mx === "object") {
+                    mx_list = [mx];
+                }
+                else {
+                    // assume string
+                    var matches = /^(.*)(:(\d+))?$/.exec(mx);
+                    if (!matches) {
+                        throw("get_mx returned something that doesn't match hostname or hostname:port");
+                    }
+                    mx_list = [{priority: 0, exchange: matches[1], port: matches[3]}];
+                }
                 this.logdebug("Got an MX from Plugin: " + this.todo.domain + " => 0 " + mx);
-                return this.found_mx(null, [{priority: 0, exchange: mx}]);
+                return this.found_mx(null, mx_list);
         case constants.deny:
                 this.logwarn("get_mx plugin returned DENY: " + mx);
                 return this.bounce("No MX for " + this.domain);
@@ -570,6 +609,11 @@ HMailItem.prototype.get_mx_respond = function (retval, mx) {
     var wrap_mx = function (a) { return a };
     var process_dns = function (err, addresses) {
         if (err) {
+            if (err.code === 'ENODATA') {
+                // Most likely this is a hostname with no MX record
+                // Drop through and we'll get the A record instead.
+                return 0;
+            }
             hmail.found_mx(err);
         }
         else if (addresses && addresses.length) {
@@ -658,10 +702,16 @@ HMailItem.prototype.try_deliver = function () {
         return this.temp_fail("Tried all MXs");
     }
     
-    var host = this.mxlist.shift().exchange;
+    var mx   = this.mxlist.shift();
+    var host = mx.exchange;
     
     this.loginfo("Looking up A records for: " + host);
 
+    if (net.isIP(host)) {
+        self.hostlist = [ host ];
+        return self.try_deliver_host(mx);
+    }
+    
     // now we have a host, we have to lookup the addresses for that host
     // and try each one in order they appear
     dns.resolve(host, function (err, addresses) {
@@ -677,13 +727,13 @@ HMailItem.prototype.try_deliver = function () {
             return self.try_deliver(); // try next MX
         }
         self.hostlist = addresses;
-        self.try_deliver_host();
+        self.try_deliver_host(mx);
     });
 }
 
 var smtp_regexp = /^([0-9]{3})([ -])(.*)/;
 
-HMailItem.prototype.try_deliver_host = function () {
+HMailItem.prototype.try_deliver_host = function (mx) {
     if (this.hostlist.length === 0) {
         delivery_concurrency--;
         return this.try_deliver(); // try next MX
@@ -693,13 +743,14 @@ HMailItem.prototype.try_deliver_host = function () {
     
     this.loginfo("Attempting to deliver to: " + host + " (" + delivery_concurrency + ")");
     
-    var socket = sock.connect(25, host);
-    var self = this;
+    var port   = mx.port || 25;
+    var socket = sock.connect(port, host);
+    var self   = this;
 
     socket.on('error', function (err) {
         self.logerror("Ongoing connection failed: " + err);
         // try the next MX
-        self.try_deliver_host();
+        self.try_deliver_host(mx);
     });
 
     socket.setTimeout(300 * 1000); // TODO: make this configurable
@@ -768,7 +819,7 @@ HMailItem.prototype.try_deliver_host = function () {
     socket.on('timeout', function () {
         self.logerror("Outbound connection timed out");
         socket.end();
-        self.try_deliver_host();
+        self.try_deliver_host(mx);
     });
     
     socket.on('connect', function () {
@@ -852,7 +903,7 @@ HMailItem.prototype.try_deliver_host = function () {
                             exports.split_to_new_recipients(self, fail_recips);
                         }
                         else {
-                            self.delivered();
+                            self.delivered(rest);
                         }
                         break;
                     case 'quit':
@@ -939,24 +990,18 @@ HMailItem.prototype.bounce_respond = function (retval, msg) {
     
     var from = new Address ('<>');
     var recip = new Address (this.todo.mail_from.user, this.todo.mail_from.host);
-    var dom = recip.host;
     populate_bounce_message(from, recip, err, this, function (err, data_lines) {
         if (err) {
             return self.double_bounce("Error populating bounce message: " + err);
         }
 
-        var hmails = [];
-
-        exports.process_domain(dom, [recip], from, data_lines, hmails, self.notes,
-            function (path, code, msg) {
-                fs.unlink(self.path);
-                if (code === DENY) {
-                    // failed to even queue the mail
-                    return self.double_bounce("Unable to queue the bounce message. Not sending bounce!");
-                }
-                setTimeout(function () {hmails[0].send()}, 0);
+        exports.send_email(from, recip, data_lines.join(''), function (code, msg) {
+            fs.unlink(self.path);  // remove the bouncing message from the queue
+            if (code === DENY) {
+                // failed to even queue the mail
+                return self.double_bounce("Unable to queue the bounce message. Not sending bounce!");
             }
-        );
+        });
     });
 }
 
@@ -968,10 +1013,10 @@ HMailItem.prototype.double_bounce = function (err) {
     // Another strategy might be delivery "plugins" to cope with this.
 }
 
-HMailItem.prototype.delivered = function () {
-    this.loginfo("Successfully delivered mail: " + this.filename);
+HMailItem.prototype.delivered = function (response) {
+    this.loginfo("Successfully delivered mail: " + this.filename + ' (' + response + ')');
     delivery_concurrency--;
-    plugins.run_hooks("delivered", this, null);
+    plugins.run_hooks("delivered", this, response);
 }
 
 HMailItem.prototype.temp_fail = function (err) {
