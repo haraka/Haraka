@@ -36,9 +36,10 @@ for adding banners to the email.
 
 A safe place to store transaction specific values.
 
-* transaction.add_trace_header(key, value)
+* transaction.add_leading_header(key, value)
 
-Adds a header to the top of the header list.
+Adds a header to the top of the header list.  This should only be used in
+very specific cases.  Most people will want to use add_header() instead.
 
 * transaction.add_header(key, value)
 
