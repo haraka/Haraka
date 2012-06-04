@@ -57,7 +57,7 @@ exports.hook_data_post = function (next, connection) {
             var line = connection.transaction.data_lines[data_marker];
             data_marker++;
             // dot-stuffing not necessary for spamd
-            wrote_all = socket.write(line);
+            wrote_all = socket.write(new Buffer(line, 'binary'));
             if (!wrote_all) return;
         }
         // we get here if wrote_all still true, and we got to end of data_lines

@@ -84,7 +84,7 @@ exports.hook_data_post = function (next, connection) {
             if (data_line) {
                 // If the current line is not empty, we haven't sent it yet
                 data_marker++;
-                wrote_all = socket.write(data_line);
+                wrote_all = socket.write(new Buffer(data_line, 'binary'));
                 data_line = "";
                 if (!wrote_all) {
                     return;

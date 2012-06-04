@@ -176,8 +176,8 @@ SMTPClient.prototype.continue_data = function () {
 };
 
 SMTPClient.prototype.send_data_line = function (line) {
-    line = line.replace(/^\./, '..').replace(/\r?\n/g, '\r\n');
-    return this.socket.write(line);
+    var buf = new Buffer(line.replace(/^\./, '..').replace(/\r?\n/g, '\r\n'), 'binary');
+    return this.socket.write(buf);
 };
 
 SMTPClient.prototype.release = function () {

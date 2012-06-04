@@ -244,6 +244,8 @@ exports.process_domain = function (todo, hmails, cb) {
         // write, but fixup "." at the beginning of the line to be ".."
         // and fixup \n to be \r\n
         if (ws.write(todo.data_lines[data_pos++].replace(/^\./m, '..').replace(/\r?\n/g, "\r\n"))) {
+        var buf = new Buffer(todo.data_lines[data_pos++].replace(/^\./m, '..').replace(/\r?\n/g, "\r\n"), 'binary');
+        if (ws.write(buf)) {
             write_more();
         }
     };
