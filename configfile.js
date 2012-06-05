@@ -22,22 +22,22 @@ cfreader.read_config = function(name, type, cb) {
     if (cfreader._config_cache[name]) {
         return cfreader._config_cache[name];
     }
-    
-    
+
     // load config file
     var result = cfreader.load_config(name, type);
-    
+
     if (cfreader.watch_files) {
         fs.unwatchFile(name);
         fs.watchFile(name, function (curr, prev) {
-            // file has changed
-            if (curr.mtime.getTime() !== prev.mtime.getTime()) {
+            // file has changed, or files has been removed
+            if ((curr.nlink == 0 && prev.nlink == 1) ||
+                curr.mtime.getTime() !== prev.mtime.getTime()) {
                 cfreader.load_config(name, type);
                 if (typeof cb === 'function') cb();
             }
         });
     }
-    
+
     return result;
 }
 
@@ -79,7 +79,9 @@ cfreader.load_config = function(name, type) {
 };
 
 cfreader.load_json_config = function(name) {
-    return JSON.parse(fs.readFileSync(name));
+    var result = cfreader.empty_config('json');
+    result = JSON.parse(fs.readFileSync(name));
+    return result;
 }
 
 cfreader.load_ini_config = function(name) {
@@ -117,7 +119,7 @@ cfreader.load_ini_config = function(name) {
 };
 
 cfreader.load_flat_config = function(name, type) {
-    var result = [];
+    var result = cfreader.empty_config();
     var data   = fs.readFileSync(name, "UTF-8");
     if (type === 'data') {
         while (data.length > 0) {
