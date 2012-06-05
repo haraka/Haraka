@@ -30,8 +30,8 @@ cfreader.read_config = function(name, type, cb) {
         fs.unwatchFile(name);
         fs.watchFile(name, function (curr, prev) {
             // file has changed, or files has been removed
-            if ((curr.nlink == 0 && prev.nlink == 1) ||
-                curr.mtime.getTime() !== prev.mtime.getTime()) {
+            if (curr.mtime.getTime() !== prev.mtime.getTime() ||
+                curr.nlink !== prev.nlink) {
                 cfreader.load_config(name, type);
                 if (typeof cb === 'function') cb();
             }
