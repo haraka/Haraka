@@ -25,6 +25,7 @@ function make_test(module_path, test_path) {
         var sandbox = {
             require: exports.sandbox_require,
             console: console,
+            Buffer: Buffer,
             exports: {},
             test: test
         };
