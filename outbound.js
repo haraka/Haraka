@@ -887,16 +887,16 @@ HMailItem.prototype.try_deliver_host = function (mx) {
                         break;
                     case 'data':
                         var data_stream = self.data_stream();
-                        data_stream.pipe(socket, {end: false});
-                        data_stream.on('error', function (err) {
-                            self.logerror("Reading from the data stream failed: " + err);
-                        });
                         data_stream.on('data', function (data) {
                             self.logdata("C: " + data);
+                        });
+                        data_stream.on('error', function (err) {
+                            self.logerror("Reading from the data stream failed: " + err);
                         });
                         data_stream.on('end', function () {
                             socket.send_command('dot');
                         });
+                        data_stream.pipe(socket, {end: false});
                         break;
                     case 'dot':
                         socket.send_command('QUIT');
