@@ -51,15 +51,18 @@ pluggableStream.prototype.attach = function (socket) {
         self.emit('secure', a, b);
     });
     self.targetsocket.on('end', function () {
+        self.writable = self.targetsocket.writable;
         self.emit('end');
     });
     self.targetsocket.on('close', function () {
+        self.writable = self.targetsocket.writable;
         self.emit('close');
     });
     self.targetsocket.on('drain', function () {
         self.emit('drain');
     });
     self.targetsocket.on('error', function (exception) {
+        self.writable = self.targetsocket.writable;
         self.emit('error', exception);
     });
     self.targetsocket.on('timeout', function () {
