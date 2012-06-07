@@ -794,7 +794,6 @@ HMailItem.prototype.try_deliver_host = function (mx) {
         }
         var line = cmd + (data ? (' ' + data) : '');
         if (cmd === 'dot') {
-            console.log(this);
             line = '.';
         }
         self.logprotocol("C: " + line);
