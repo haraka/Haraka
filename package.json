@@ -17,8 +17,9 @@
     "nopt"          : ">= 1.0.5",
     "generic-pool"  : ">= 1.0.9",
     "node-syslog"   : ">= 1.1.2",
-    "iconv"         : ">= 1.1.3",
-    "nodeunit"      : "https://github.com/godsflaw/nodeunit.git"
+    "iconv"         : ">= 1.1.3"
+  "optionalDependencies": {
+    "nodeunit"      : "https://github.com/godsflaw/nodeunit/tarball/master"
   },
   "licenses": [ {
     "type": "MIT",
