@@ -571,7 +571,7 @@ HMailItem.prototype.get_mx_respond = function (retval, mx) {
                 }
                 else {
                     // assume string
-                    var matches = /^(.*)(:(\d+))?$/.exec(mx);
+                    var matches = /^(.*?)(:(\d+))?$/.exec(mx);
                     if (!matches) {
                         throw("get_mx returned something that doesn't match hostname or hostname:port");
                     }
@@ -744,15 +744,28 @@ HMailItem.prototype.try_deliver_host = function (mx) {
     
     this.loginfo("Attempting to deliver to: " + host + " (" + delivery_concurrency + ")");
     
-    var port   = mx.port || 25;
-    var socket = sock.connect(port, host);
-    var self   = this;
+    var port            = mx.port || 25;
+    var socket          = sock.connect(port, host);
+    var self            = this;
+    var data_stream     = null;
+    var processing_mail = true;
 
     socket.on('error', function (err) {
         self.logerror("Ongoing connection failed: " + err);
+        processing_mail = false;
         // try the next MX
         self.try_deliver_host(mx);
     });
+
+    socket.on('close', function () {
+        self.logerror("Ongoing connection closed");
+        if (data_stream) {
+            data_stream.destroy();
+        }
+        if (processing_mail) {
+            return self.try_deliver_host(mx);
+        }
+    })
 
     socket.setTimeout(300 * 1000); // TODO: make this configurable
     
@@ -775,6 +788,10 @@ HMailItem.prototype.try_deliver_host = function (mx) {
     };
     
     socket.send_command = function (cmd, data) {
+        if (!this.writable) {
+            self.logerror("Socket writability went away");
+            return self.try_deliver_host(mx);
+        }
         var line = cmd + (data ? (' ' + data) : '');
         if (cmd === 'dot') {
             line = '.';
@@ -819,6 +836,7 @@ HMailItem.prototype.try_deliver_host = function (mx) {
     
     socket.on('timeout', function () {
         self.logerror("Outbound connection timed out");
+        processing_mail = false;
         socket.end();
         self.try_deliver_host(mx);
     });
@@ -886,17 +904,17 @@ HMailItem.prototype.try_deliver_host = function (mx) {
                         socket.send_command('DATA');
                         break;
                     case 'data':
-                        var data_stream = self.data_stream();
-                        data_stream.pipe(socket, {end: false});
-                        data_stream.on('error', function (err) {
-                            self.logerror("Reading from the data stream failed: " + err);
-                        });
+                        data_stream = self.data_stream();
                         data_stream.on('data', function (data) {
                             self.logdata("C: " + data);
+                        });
+                        data_stream.on('error', function (err) {
+                            self.logerror("Reading from the data stream failed: " + err);
                         });
                         data_stream.on('end', function () {
                             socket.send_command('dot');
                         });
+                        data_stream.pipe(socket, {end: false});
                         break;
                     case 'dot':
                         socket.send_command('QUIT');
@@ -908,9 +926,12 @@ HMailItem.prototype.try_deliver_host = function (mx) {
                         }
                         break;
                     case 'quit':
+                        processing_mail = false;
                         socket.end();
                         break;
                     default:
+                        // should never get here - means we did something
+                        // wrong.
                         throw new Error("Unknown command: " + command);
                 }
             }
@@ -918,6 +939,7 @@ HMailItem.prototype.try_deliver_host = function (mx) {
         else {
             // Unrecognised response.
             self.logerror("Unrecognised response from upstream server: " + line);
+            processing_mail = false;
             socket.end();
             return self.bounce("Unrecognised response from upstream server: " + line);
         }
