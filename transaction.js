@@ -19,6 +19,11 @@ function Transaction() {
     this.parse_body = false;
     this.notes = {};
     this.header = new Header();
+    this.rcpt_count = {
+        accept:   0,
+        tempfail: 0,
+        reject:   0,
+    };
 }
 
 exports.Transaction = Transaction;

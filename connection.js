@@ -44,33 +44,35 @@ for (var key in logger) {
 
 function setupClient(self) {
     self.remote_ip = self.client.remoteAddress;
-    self.lognotice("got connection from: " + self.remote_ip);
+    self.lognotice("connect ip=" + self.remote_ip);
 
-    var closed = function () {
+    self.client.on('end', function() {
         if (!self.disconnected) {
             self.remote_close = true;
-            self.fail("client (" + self.remote_ip + ") closed connection");
+            self.fail('client ' + ((self.remote_host) ? self.remote_host + ' ' : '') 
+                                + '[' + self.remote_ip + '] closed connection');
         }
-    };
+    });
 
-    self.client.on('end', closed);
-    self.client.on('close', closed);
-
-    self.client.on('close', function (has_error) {
-        if (!self.disconnected) {
-            self.fail("client (" + self.remote_ip + ") dropped connection");
+    self.client.on('close', function(has_error) {
+        if (!self.disconnected && !has_error) {
+            self.remote_close = true;
+            self.fail('client ' + ((self.remote_host) ? self.remote_host + ' ' : '')
+                                + '[' + self.remote_ip + '] dropped connection');
         }
     });
 
     self.client.on('error', function (err) {
         if (!self.disconnected) {
-            self.fail("client (" + self.remote_ip + ") closed with err: " + err);
+            self.fail('client ' + ((self.remote_host) ? self.remote_host + ' ' : '') 
+                                + '[' + self.remote_ip + '] connection error: ' + err);
         }
     });
     
     self.client.on('timeout', function () {
         if (!self.disconnected) {
-            self.fail("client (" + self.remote_ip + ") timed out");
+            self.fail('client ' + ((self.remote_host) ? self.remote_host + ' ' : '')
+                                + '[' + self.remote_ip + '] connection timed out');
         }
     });
     
@@ -101,7 +103,19 @@ function Connection(client, server) {
     this.last_response = null;
     this.remote_close = false;
     this.hooks_to_run = [];
- 
+    this.start_time = Date.now();
+    this.last_reject = '';
+    this.totalbytes = 0;
+    this.rcpt_count = {
+        accept:   0,
+        tempfail: 0,
+        reject:   0,
+    };
+    this.msg_count = {
+        accept:   0,
+        tempfail: 0,
+        reject:   0,
+    };
     setupClient(this);
 }
 
@@ -266,10 +280,13 @@ Connection.prototype.respond = function(code, msg, func) {
         messages = msg.slice();
     }
 
-    if (code >= 400 && this.deny_includes_uuid) {
-        uuid = (this.transaction || this).uuid;
-        if (this.deny_includes_uuid > 1) {
-            uuid = uuid.substr(0, this.deny_includes_uuid);
+    if (code >= 400) {
+        this.last_reject = code + ' ' + messages.join(' ');
+        if (this.deny_includes_uuid) {
+            uuid = (this.transaction || this).uuid;
+            if (this.deny_includes_uuid > 1) {
+                uuid = uuid.substr(0, this.deny_includes_uuid);
+            }
         }
     }
     
@@ -318,7 +335,27 @@ Connection.prototype.disconnect = function() {
 
 Connection.prototype.disconnect_respond = function () {
     this.disconnected = true;
-    this.logdebug("closing client");
+    var logdetail = [
+        'ip='    + this.remote_ip,
+        'rdns="' + ((this.remote_host) ? this.remote_host : '') + '"',
+        'helo="' + ((this.hello_host) ? this.hello_host : '') + '"',
+        'relay=' + (this.relaying ? 'Y' : 'N'),
+        'early=' + (this.early_talker ? 'Y' : 'N'),
+        'esmtp=' + (this.esmtp ? 'Y' : 'N'),
+        'tls='   + (this.using_tls ? 'Y' : 'N'),
+        'pipe='  + (this.pipelining ? 'Y' : 'N'),
+        'txns='  + this.tran_count,
+        'rcpts=' + this.rcpt_count.accept + '/' +
+                   this.rcpt_count.tempfail + '/' +
+                   this.rcpt_count.reject,
+        'msgs='  + this.msg_count.accept + '/' +
+                   this.msg_count.tempfail + '/' +
+                   this.msg_count.reject,
+        'bytes=' + this.totalbytes,
+        'lr="'   + ((this.last_reject) ? this.last_reject : '') + '"',
+        'time='  + (Date.now() - this.start_time)/1000,
+    ];
+    this.lognotice('disconnect ' + logdetail.join(' '));
     this.client.end();
 };
 
@@ -611,6 +648,10 @@ Connection.prototype.mail_respond = function(retval, msg) {
     var self = this;
     var sender = this.transaction.mail_from;
     var dmsg   = "sender " + sender.format();
+    this.lognotice(dmsg + ' ' + [
+        'code=' + constants.translate(retval),
+        'msg="' + (msg || '') + '"',
+    ].join(' '));
     switch (retval) {
         case constants.deny:
                 this.respond(550, msg || dmsg + " denied", function() {
@@ -641,29 +682,44 @@ Connection.prototype.rcpt_ok_respond = function (retval, msg) {
     var self = this;
     var rcpt = this.transaction.rcpt_to[this.transaction.rcpt_to.length - 1];
     var dmsg = "recipient " + rcpt.format();
+    this.lognotice(dmsg + ' ' + [ 
+        'code=' + constants.translate(retval),
+        'msg="' + (msg || '') + '"',
+    ].join(' '));
     switch (retval) {
         case constants.deny:
                 this.respond(550, msg || dmsg + " denied", function() {
+                    self.transaction.rcpt_count.reject++;
+                    self.rcpt_count.reject++;
                     self.transaction.rcpt_to.pop();
                 });
                 break;
         case constants.denydisconnect:
                 this.respond(550, msg || dmsg + " denied", function() {
+                    self.transaction.rcpt_count.reject++;
+                    self.rcpt_count.reject++;
                     self.disconnect();
                 });
                 break;
         case constants.denysoft:
                 this.respond(450, msg || dmsg + " denied", function() {
+                    self.transaction.rcpt_count.tempfail++;
+                    self.rcpt_count.tempfail++;
                     self.transaction.rcpt_to.pop();
                 });
                 break;
         case constants.denysoftdisconnect:
                 this.respond(450, msg || dmsg + " denied", function() {
+                    self.transaction.rcpt_count.tempfail++;
+                    self.rcpt_count.tempfail++;
                     self.disconnect();
                 });
                 break;
         default:
-                this.respond(250, msg || dmsg + " OK");
+                this.respond(250, msg || dmsg + " OK", function() {
+                    self.rcpt_count.accept++;
+                    self.transaction.rcpt_count.accept++;
+                });
     }
 }
 
@@ -675,24 +731,38 @@ Connection.prototype.rcpt_respond = function(retval, msg) {
     var self = this;
     var rcpt = this.transaction.rcpt_to[this.transaction.rcpt_to.length - 1];
     var dmsg = "recipient " + rcpt.format();
+    if (retval !== constants.ok) {
+        this.lognotice(dmsg + ' ' + [
+            'code=' + constants.translate(retval),
+            'msg="' + (msg || '') + '"',
+        ].join(' '));
+    }
     switch (retval) {
         case constants.deny:
                 this.respond(550, msg || dmsg + " denied", function() {
+                    self.transaction.rcpt_count.reject++;
+                    self.rcpt_count.reject++;
                     self.transaction.rcpt_to.pop();
                 });
                 break;
         case constants.denydisconnect:
                 this.respond(550, msg || dmsg + " denied", function() {
+                    self.transaction.rcpt_count.reject++;
+                    self.rcpt_count.reject++;
                     self.disconnect();
                 });
                 break;
         case constants.denysoft:
                 this.respond(450, msg || dmsg + " denied", function() {
+                    self.transaction.rcpt_count.tempfail++;
+                    self.rcpt_count.tempfail++;
                     self.transaction.rcpt_to.pop();
                 });
                 break;
         case constants.denysoftdisconnect:
                 this.respond(450, msg || dmsg + " denied", function() {
+                    self.transaction.rcpt_count.tempfail++;
+                    self.rcpt_count.tempfail++;
                     self.disconnect();
                 });
                 break;
@@ -704,6 +774,8 @@ Connection.prototype.rcpt_respond = function(retval, msg) {
                     this.logalert("No plugin determined if relaying was allowed");
                 }
                 this.respond(450, "I cannot deliver mail for " + rcpt.format(), function() {
+                    self.transaction.rcpt_count.tempfail++;
+                    self.rcpt_count.tempfail++;
                     self.transaction.rcpt_to.pop();
                 });
     }
@@ -820,7 +892,6 @@ Connection.prototype.cmd_mail = function(line) {
     
     this.init_transaction();
     this.transaction.mail_from = from
-    this.loginfo('MAIL FROM: ' + from);
     plugins.run_hooks('mail', this, [from, params]);
 };
 
@@ -859,7 +930,6 @@ Connection.prototype.cmd_rcpt = function(line) {
     }
 
     this.transaction.rcpt_to.push(recip);
-    this.loginfo('RCPT TO: ' + recip);
     plugins.run_hooks('rcpt', this, [recip, params]);
 };
 
@@ -970,6 +1040,7 @@ Connection.prototype.accumulate_data = function(line) {
 Connection.prototype.data_done = function() {
     var self = this;
     this.state = STATE_PAUSE;
+    this.totalbytes += this.transaction.data_bytes;
 
     // Check message size limit
     if (this.max_bytes && this.transaction.data_bytes > this.max_bytes) {
@@ -992,29 +1063,49 @@ Connection.prototype.data_done = function() {
 
     this.transaction.end_data();
 
+    // Record the start time of this hook as we can't take too long
+    // as the client will typically hang up after 2 to 3 minutes
+    // despite the RFC mandating that 10 minutes should be allowed.
+    this.data_post_start = Date.now();
     plugins.run_hooks('data_post', this);
 };
 
 Connection.prototype.data_post_respond = function(retval, msg) {
+    var mid = this.transaction.header.get('Message-ID') || '';
+    this.lognotice([
+        'message',
+        'mid="'  + mid.replace(/\r?\n/,'') + '"',
+        'size='  + this.transaction.data_bytes,
+        'rcpts=' + this.transaction.rcpt_count.accept + '/' +
+                   this.transaction.rcpt_count.tempfail + '/' +
+                   this.transaction.rcpt_count.reject,
+        'delay=' + (Date.now() - this.data_post_start)/1000,
+        'code='  + constants.translate(retval),
+        'msg="'  + (msg || '') + '"',
+    ].join(' '));
     var self = this;
     switch (retval) {
         case constants.deny:
                 this.respond(552, msg || "Message denied", function() {
+                    self.msg_count.reject++;
                     self.reset_transaction();
                 });
                 break;
         case constants.deny_disconnect:
                 this.respond(552, msg || "Message denied", function() {
+                    self.msg_count.reject++;
                     self.disconnect();
                 });
                 break;
         case constants.denysoft:
                 this.respond(452, msg || "Message denied temporarily", function() {
+                    self.msg_count.tempfail++;
                     self.reset_transaction();
                 });
                 break;
         case constants.denysoftdisconnect:
                 this.respond(452, msg || "Message denied temporarily", function() {
+                    self.msg_count.tempfail++;
                     self.disconnect();
                 });
                 break;
@@ -1030,27 +1121,34 @@ Connection.prototype.data_post_respond = function(retval, msg) {
 
 Connection.prototype.queue_outbound_respond = function(retval, msg) {
     var self = this;
+    if (retval !== constants.ok) {
+        this.lognotice('queue code=' + constants.translate(retval) + ' msg="' + (msg || '') + '"');
+    }
     switch(retval) {
         case constants.ok:
                 plugins.run_hooks("queue_ok", this, msg || 'Message Queued');
                 break;
         case constants.deny:
                 this.respond(552, msg || "Message denied", function() {
+                    self.msg_count.reject++;
                     self.reset_transaction();
                 });
                 break;
         case constants.denydisconnect:
                 this.respond(552, msg || "Message denied", function() {
+                    self.msg_count.reject++;
                     self.disconnect();
                 });
                 break;
         case constants.denysoft:
                 this.respond(452, msg || "Message denied temporarily", function() {
+                    self.msg_count.tempfail++;
                     self.reset_transaction();
                 });
                 break;
         case constants.denysoftdisconnect:
                 this.respond(452, msg || "Message denied temporarily", function() {
+                    self.msg_count.tempfail++;
                     self.disconnect();
                 });
                 break;
@@ -1063,12 +1161,14 @@ Connection.prototype.queue_outbound_respond = function(retval, msg) {
                                 break;
                         case constants.deny:
                                 conn.respond(552, msg || "Message denied", function() {
+                                    self.msg_count.reject++;
                                     conn.reset_transaction();
                                 });
                                 break;
                         default:
                                 conn.logerror("Unrecognised response from outbound layer: " + retval + " : " + msg);
                                 conn.respond(552, msg || "Internal Server Error", function() {
+                                    self.msg_count.reject++;
                                     conn.reset_transaction();
                                 });
                     }
@@ -1078,32 +1178,40 @@ Connection.prototype.queue_outbound_respond = function(retval, msg) {
 
 Connection.prototype.queue_respond = function(retval, msg) {
     var self = this;
+    if (retval !== constants.ok) {
+        this.lognotice('queue code=' + constants.translate(retval) + ' msg="' + (msg || '') + '"');
+    }
     switch (retval) {
         case constants.ok:
                 plugins.run_hooks("queue_ok", this, msg || 'Message Queued');
                 break;
         case constants.deny:
                 this.respond(552, msg || "Message denied", function() {
+                    self.msg_count.reject++;
                     self.reset_transaction();
                 });
                 break;
         case constants.denydisconnect:
                 this.respond(552, msg || "Message denied", function() {
+                    self.msg_count.reject++;
                     self.disconnect();
                 });
                 break;
         case constants.denysoft:
                 this.respond(452, msg || "Message denied temporarily", function() {
+                    self.msg_count.tempfail++;
                     self.reset_transaction();
                 });
                 break;
         case constants.denysoftdisconnect:
                 this.respond(452, msg || "Message denied temporarily", function() {
+                    self.msg_count.tempfail++;
                     self.disconnect();
                 });
                 break;
         default:
                 this.respond(451, msg || "Queuing declined or disabled, try later", function() {
+                    self.msg_count.tempfail++;
                     self.reset_transaction();
                 });
                 break;
@@ -1112,7 +1220,9 @@ Connection.prototype.queue_respond = function(retval, msg) {
 
 Connection.prototype.queue_ok_respond = function (retval, msg, params) {
     var self = this;
+    this.lognotice('queue code=' + constants.translate(retval) + ' msg="' + (params || '') + '"');
     this.respond(250, params, function() {
+        self.msg_count.accept++;
         self.reset_transaction();
     });
 };
