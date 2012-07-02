@@ -6,9 +6,14 @@ var netBinding = process.binding('net');
 var fs = require('fs');
 var path = require('path');
 
+// Node.js v0.6.x backwards compatibility
+if (!fs.existsSync && path.existsSync) {
+  fs.existsSync = path.existsSync.bind( path );
+}
+
 exports.register = function () {
     this.queue_exec = this.config.get('qmail-queue.path') || '/var/qmail/bin/qmail-queue';
-    if (!path.existsSync(this.queue_exec)) {
+    if (!fs.existsSync(this.queue_exec)) {
         throw new Error("Cannot find qmail-queue binary (" + this.queue_exec + ")");
     }
 };
