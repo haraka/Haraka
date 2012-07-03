@@ -107,7 +107,7 @@ exports.send_email = function () {
     }
 
     // Make sure to is an array
-    if (!(to instanceof Array)) {
+    if (!(Array.isArray(to))) {
         // turn into an array
         to = [ to ];
     }
