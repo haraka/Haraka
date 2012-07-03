@@ -258,7 +258,7 @@ Connection.prototype.respond = function(code, msg, func) {
         code = msg.code;
         msg = msg.reply;
     }
-    if (!(typeof msg === 'object' && msg.constructor.name === 'Array')) {
+    if (!(Array.isArray(msg))) {
         // msg not an array, make it so:
         messages = [ '' + msg ];
     } else {
