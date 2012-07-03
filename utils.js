@@ -23,12 +23,7 @@ exports.uuid = function () {
 };
 
 exports.in_array = function (item, array) {
-    for (var i in array) {
-        if (item === array[i]) {
-            return true;
-        }
-    }
-    return false;
+    return (array.indexOf(item) != -1);
 };
 
 exports.sort_keys = function (obj) {
