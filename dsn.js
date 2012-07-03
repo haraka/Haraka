@@ -76,8 +76,8 @@ function DSN(code, msg, def, subject, detail) {
     this.det = (enum_status_codes[this.sub][detail]) ? detail : 0;
     this.default_msg = enum_status_codes[this.sub][this.det];
     // Handle multi-line replies
-    if (typeof(this.msg) === 'object' && this.msg.constructor === Array) {
-        this.reply = new Array;
+    if (Array.isArray(this.msg)) {
+        this.reply = [];
         var m;
         while (m = this.msg.shift()) {
             this.reply.push([this.cls, this.sub, this.det].join('.') + ' ' + m);

@@ -146,7 +146,7 @@ SMTPClient.prototype.start_data = function (data) {
     if (data instanceof Function) {
         this.send_data = data;
     }
-    else if (data instanceof Array) {
+    else if (Array.isArray(data)) {
         var data_marker = 0;
         this.send_data = function () {
             while (data_marker < data.length) {
