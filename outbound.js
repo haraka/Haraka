@@ -33,6 +33,12 @@ var uniq = Math.round(Math.random() * MAX_UNIQ);
 var max_concurrency = config.get('outbound.concurrency_max') || 100;
 var queue_count = 0;
 
+// Node.js v0.6.x backwards compatibility
+if (!fs.existsSync && path.existsSync) {
+  fs.existsSync = path.existsSync.bind( path );
+}
+
+
 exports.list_queue = function () {
     this._load_cur_queue("_list_file");
 }
@@ -49,7 +55,7 @@ exports.load_queue = function () {
     // properly.
 
     // no reason not to do this stuff syncronously - we're just loading here
-    if (!path.existsSync(queue_dir)) {
+    if (!fs.existsSync(queue_dir)) {
         this.logdebug("Creating queue directory " + queue_dir);
         try {
             fs.mkdirSync(queue_dir, 493); // 493 == 0755

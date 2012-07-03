@@ -3,13 +3,21 @@
 var path = require('path');
 var fs = require('fs');
 
+// Node.js v0.6.x backwards compatibility
+if (!fs.existsSync && path.existsSync) {
+  fs.existsSync = path.existsSync.bind( path );
+}
+if (!fs.exists && path.exists) {
+  fs.exists = path.exists.bind( path );
+}
+
 exports.register = function () {
     this.register_hook('queue','quarantine');
 }
 
 // http://unknownerror.net/2011-05/16260-nodejs-mkdirs-recursion-create-directory.html
 var mkdirs = exports.mkdirs = function(dirpath, mode, callback) {
-    path.exists(dirpath, function(exists) {
+    fs.exists(dirpath, function(exists) {
         if (exists) {
             callback(dirpath);
         } 
@@ -38,7 +46,7 @@ exports.hook_init_master = function (next) {
                     config.main.quarantine_path  :
                     '/var/spool/haraka/quarantine';
     var tmp_dir = [ base_dir, 'tmp' ].join('/');
-    if (path.existsSync(tmp_dir)) {
+    if (fs.existsSync(tmp_dir)) {
         var dirent = fs.readdirSync(tmp_dir);
         this.loginfo('Removing temporary files from: ' + tmp_dir);
         for (var i=0; i<dirent.length; i++) {
