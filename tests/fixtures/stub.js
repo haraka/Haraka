@@ -1,7 +1,7 @@
 module.exports = function (returnValue) {
     function stub() {
         stub.called = true;
-        if (Object.prototype.toString.call(stub.args) === '[object Array]') {
+        if (Array.isArray(stub.args)) {
             stub.args.push(arguments);
         }
         else if (stub.args) {
