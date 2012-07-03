@@ -186,7 +186,7 @@ Connection.prototype.process_data = function (data) {
         return;
     }
     
-    this.current_data += data.toString('binary'); // TODO: change all this to use Buffers
+    this.current_data += data.toString('binary'); // TODO: change all this to use Buffers;
     this._process_data();
 };
 
