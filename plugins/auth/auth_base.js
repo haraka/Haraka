@@ -85,6 +85,7 @@ exports.check_user = function (next, connection, credentials, method) {
             connection.relaying = 1;
             connection.respond(235, "Authentication successful");
             connection.authheader = "(authenticated bits=0)\n";
+            connection.notes.auth_user = credentials[0];
         }
         else {
             connection.respond(535, "Authentication failed");
