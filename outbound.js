@@ -745,7 +745,6 @@ HMailItem.prototype.try_deliver_host = function (mx) {
     var port            = mx.port || 25;
     var socket          = sock.connect(port, host);
     var self            = this;
-    var data_stream     = null;
     var processing_mail = true;
 
     this.loginfo("Attempting to deliver to: " + host + ":" + port + " (" + delivery_concurrency + ")");
@@ -900,7 +899,7 @@ HMailItem.prototype.try_deliver_host = function (mx) {
                         socket.send_command('DATA');
                         break;
                     case 'data':
-                        data_stream = self.data_stream();
+                        var data_stream = self.data_stream();
                         data_stream.on('data', function (data) {
                             self.logdata("C: " + data);
                         });
