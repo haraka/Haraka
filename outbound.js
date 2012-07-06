@@ -705,14 +705,15 @@ HMailItem.prototype.try_deliver = function () {
     
     var mx   = this.mxlist.shift();
     var host = mx.exchange;
-    
-    this.loginfo("Looking up A records for: " + host);
 
+    // IP or IP:port 
     if (net.isIP(host)) {
         self.hostlist = [ host ];
         return self.try_deliver_host(mx);
     }
-    
+
+    this.loginfo("Looking up A records for: " + host);
+ 
     // now we have a host, we have to lookup the addresses for that host
     // and try each one in order they appear
     dns.resolve(host, function (err, addresses) {
@@ -741,14 +742,12 @@ HMailItem.prototype.try_deliver_host = function (mx) {
     }
     
     var host = this.hostlist.shift();
-    
-    this.loginfo("Attempting to deliver to: " + host + " (" + delivery_concurrency + ")");
-    
     var port            = mx.port || 25;
     var socket          = sock.connect(port, host);
     var self            = this;
-    var data_stream     = null;
     var processing_mail = true;
+
+    this.loginfo("Attempting to deliver to: " + host + ":" + port + " (" + delivery_concurrency + ")");
 
     socket.on('error', function (err) {
         self.logerror("Ongoing connection failed: " + err);
@@ -758,14 +757,10 @@ HMailItem.prototype.try_deliver_host = function (mx) {
     });
 
     socket.on('close', function () {
-        self.logerror("Ongoing connection closed");
-        if (data_stream) {
-            data_stream.destroy();
-        }
         if (processing_mail) {
             return self.try_deliver_host(mx);
         }
-    })
+    });
 
     socket.setTimeout(300 * 1000); // TODO: make this configurable
     
@@ -904,7 +899,7 @@ HMailItem.prototype.try_deliver_host = function (mx) {
                         socket.send_command('DATA');
                         break;
                     case 'data':
-                        data_stream = self.data_stream();
+                        var data_stream = self.data_stream();
                         data_stream.on('data', function (data) {
                             self.logdata("C: " + data);
                         });
@@ -917,6 +912,7 @@ HMailItem.prototype.try_deliver_host = function (mx) {
                         data_stream.pipe(socket, {end: false});
                         break;
                     case 'dot':
+                        processing_mail = false;
                         socket.send_command('QUIT');
                         if (fail_recips.length) {
                             exports.split_to_new_recipients(self, fail_recips);
@@ -926,7 +922,6 @@ HMailItem.prototype.try_deliver_host = function (mx) {
                         }
                         break;
                     case 'quit':
-                        processing_mail = false;
                         socket.end();
                         break;
                     default:
@@ -1037,7 +1032,7 @@ HMailItem.prototype.double_bounce = function (err) {
 }
 
 HMailItem.prototype.delivered = function (response) {
-    this.loginfo("Successfully delivered mail: " + this.filename + ' (' + response + ')');
+    this.lognotice("delivered file=" + this.filename + ' response="' + response + '"');
     delivery_concurrency--;
     plugins.run_hooks("delivered", this, response);
 }
