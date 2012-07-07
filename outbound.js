@@ -49,7 +49,7 @@ exports.load_queue = function () {
     // properly.
 
     // no reason not to do this stuff syncronously - we're just loading here
-    if (!path.existsSync(queue_dir)) {
+    if (!fs.existsSync(queue_dir)) {
         this.logdebug("Creating queue directory " + queue_dir);
         try {
             fs.mkdirSync(queue_dir, 493); // 493 == 0755
