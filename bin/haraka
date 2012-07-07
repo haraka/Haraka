@@ -236,7 +236,7 @@ var plugin_doc = [
 
 function createFile(filePath, data, info) {
     try {
-        if (path.existsSync(filePath) && !parsed.force) {
+        if (fs.existsSync(filePath) && !parsed.force) {
             throw filePath + " already exists";
         }
         var fd = fs.openSync(filePath, 'w');
@@ -272,7 +272,7 @@ else if (parsed.help) {
             md_paths.unshift(path.join(parsed.configs, 'docs', parsed.help + '.md'));
         }
         for (var i=0, j=md_paths.length; i<j; i++) {
-            if(path.existsSync(md_paths[i])) {
+            if(fs.existsSync(md_paths[i])) {
                 md_path = md_paths[i];
                 break;
             }
