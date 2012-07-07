@@ -9,7 +9,7 @@ exports.register = function () {
 
 // http://unknownerror.net/2011-05/16260-nodejs-mkdirs-recursion-create-directory.html
 var mkdirs = exports.mkdirs = function(dirpath, mode, callback) {
-    path.exists(dirpath, function(exists) {
+    fs.exists(dirpath, function(exists) {
         if (exists) {
             callback(dirpath);
         } 
