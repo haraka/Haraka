@@ -35,8 +35,8 @@ var fs   = require('fs'),
     },
     parsed = nopt(knownOpts, shortHands, process.argv, 2);
 
-var subversion = Number(process.version.split('.')[1])
-var existsSync = (subversion >= 8 ? fs : path).existsSync
+var subversion = Number(process.version.split('.')[1]);
+var existsSync = (subversion >= 8 ? fs : path).existsSync;
 
 var usage = [
     "\033[32;40mHaraka.js\033[0m — A Node.js Email Server project",
