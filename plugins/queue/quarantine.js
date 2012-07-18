@@ -4,7 +4,6 @@ var path = require('path');
 var fs = require('fs');
 
 var existsSync = require('../../existsSync');
-console.log(existsSync)
 
 exports.register = function () {
     this.register_hook('queue','quarantine');

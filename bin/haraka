@@ -273,7 +273,7 @@ else if (parsed.help) {
         }
         for (var i=0, j=md_paths.length; i<j; i++) {
             var _md_path = md_paths[i]
-            if(path.existsSync(_md_path)) {
+            if(existsSync(_md_path)) {
                 md_path = _md_path
                 break;
             }
