@@ -3,7 +3,7 @@
 var path = require('path');
 var fs = require('fs');
 
-var existsSync = require('../../utils').existsSync;
+var existsSync = require('./utils').existsSync;
 
 exports.register = function () {
     this.register_hook('queue','quarantine');
