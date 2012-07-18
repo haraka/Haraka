@@ -3,8 +3,8 @@
 var path = require('path');
 var fs = require('fs');
 
-var subversion = Number(process.version.split('.')[1]);
-var existsSync = (subversion >= 8 ? fs : path).existsSync;
+var existsSync = require('../../existsSync');
+console.log(existsSync)
 
 exports.register = function () {
     this.register_hook('queue','quarantine');
