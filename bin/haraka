@@ -34,7 +34,7 @@ var fs   = require('fs'),
         "f": ["--force"],
     },
     parsed = nopt(knownOpts, shortHands, process.argv, 2),
-    existsSync = require('../utils').existsSync;
+    existsSync = require('./utils').existsSync;
 
 var usage = [
     "\033[32;40mHaraka.js\033[0m — A Node.js Email Server project",
@@ -272,9 +272,9 @@ else if (parsed.help) {
             md_paths.unshift(path.join(parsed.configs, 'docs', parsed.help + '.md'));
         }
         for (var i=0, j=md_paths.length; i<j; i++) {
-            var _md_path = md_paths[i]
+            var _md_path = md_paths[i];
             if(existsSync(_md_path)) {
-                md_path = _md_path
+                md_path = _md_path;
                 break;
             }
         }
