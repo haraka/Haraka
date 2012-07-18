@@ -13,8 +13,9 @@ var config      = require('./config');
 var constants   = require('./constants');
 var trans       = require('./transaction');
 var plugins     = require('./plugins');
-var date_to_str = require('./utils').date_to_str;
 var Address     = require('./address').Address;
+var date_to_str = utils.date_to_str;
+var existsSync  = utils.existsSync;
 
 var core_consts = require('constants');
 var WRITE_EXCL  = core_consts.O_CREAT | core_consts.O_TRUNC | core_consts.O_WRONLY | core_consts.O_EXCL;
@@ -49,7 +50,7 @@ exports.load_queue = function () {
     // properly.
 
     // no reason not to do this stuff syncronously - we're just loading here
-    if (!path.existsSync(queue_dir)) {
+    if (!existsSync(queue_dir)) {
         this.logdebug("Creating queue directory " + queue_dir);
         try {
             fs.mkdirSync(queue_dir, 493); // 493 == 0755

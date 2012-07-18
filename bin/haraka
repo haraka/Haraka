@@ -33,8 +33,8 @@ var fs   = require('fs'),
         "p": ["--plugin"],
         "f": ["--force"],
     },
-    parsed = nopt(knownOpts, shortHands, process.argv, 2);
-
+    parsed = nopt(knownOpts, shortHands, process.argv, 2),
+    existsSync = require('./utils').existsSync;
 
 var usage = [
     "\033[32;40mHaraka.js\033[0m — A Node.js Email Server project",
@@ -236,7 +236,7 @@ var plugin_doc = [
 
 function createFile(filePath, data, info) {
     try {
-        if (path.existsSync(filePath) && !parsed.force) {
+        if (existsSync(filePath) && !parsed.force) {
             throw filePath + " already exists";
         }
         var fd = fs.openSync(filePath, 'w');
@@ -272,8 +272,9 @@ else if (parsed.help) {
             md_paths.unshift(path.join(parsed.configs, 'docs', parsed.help + '.md'));
         }
         for (var i=0, j=md_paths.length; i<j; i++) {
-            if(path.existsSync(md_paths[i])) {
-                md_path = md_paths[i];
+            var _md_path = md_paths[i];
+            if(existsSync(_md_path)) {
+                md_path = _md_path;
                 break;
             }
         }

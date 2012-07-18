@@ -114,3 +114,8 @@ exports.encode_qp = function (str) {
     return broken_lines + str;
 }
 
+var versions   = process.version.split('.'),
+    version    = Number(versions[0].substring(1)),
+    subversion = Number(versions[1]);
+
+exports.existsSync = require((version > 0 || subversion >= 8) ? 'fs' : 'path').existsSync;
