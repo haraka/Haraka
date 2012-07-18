@@ -33,6 +33,9 @@ var uniq = Math.round(Math.random() * MAX_UNIQ);
 var max_concurrency = config.get('outbound.concurrency_max') || 100;
 var queue_count = 0;
 
+var subversion = Number(process.version.split('.')[1])
+var existsSync = (subversion >= 8 ? fs : path).existsSync
+
 exports.list_queue = function () {
     this._load_cur_queue("_list_file");
 }
@@ -49,7 +52,7 @@ exports.load_queue = function () {
     // properly.
 
     // no reason not to do this stuff syncronously - we're just loading here
-    if (!path.existsSync(queue_dir)) {
+    if (!existsSync(queue_dir)) {
         this.logdebug("Creating queue directory " + queue_dir);
         try {
             fs.mkdirSync(queue_dir, 493); // 493 == 0755
