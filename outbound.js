@@ -13,8 +13,9 @@ var config      = require('./config');
 var constants   = require('./constants');
 var trans       = require('./transaction');
 var plugins     = require('./plugins');
-var date_to_str = require('./utils').date_to_str;
 var Address     = require('./address').Address;
+var date_to_str = utils.date_to_str;
+var existsSync  = utils.existsSync;
 
 var core_consts = require('constants');
 var WRITE_EXCL  = core_consts.O_CREAT | core_consts.O_TRUNC | core_consts.O_WRONLY | core_consts.O_EXCL;
@@ -32,8 +33,6 @@ var queue_dir = path.resolve(config.get('queue_dir') || (process.env.HARAKA + '/
 var uniq = Math.round(Math.random() * MAX_UNIQ);
 var max_concurrency = config.get('outbound.concurrency_max') || 100;
 var queue_count = 0;
-
-var existsSync = require('./existsSync')
 
 exports.list_queue = function () {
     this._load_cur_queue("_list_file");
