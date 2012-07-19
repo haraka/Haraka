@@ -94,8 +94,7 @@ Server.createServer = function (params) {
             }
         }
 
-        c.set('host', config_data.main.listen_host);
-        c.listen(parseInt(config_data.main.port));
+        c.listen(parseInt(config_data.main.port), config_data.main.listen_host);
         c.on('listening', listening);
         Server.cluster = c;
         if (c.isMaster) {

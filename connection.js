@@ -13,6 +13,7 @@ var Address     = require('./address').Address;
 var uuid        = require('./utils').uuid;
 var outbound    = require('./outbound');
 var date_to_str = require('./utils').date_to_str;
+var ipaddr      = require('ipaddr.js');
 
 var version  = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'))).version;
 
@@ -43,7 +44,7 @@ for (var key in logger) {
 }
 
 function setupClient(self) {
-    self.remote_ip = self.client.remoteAddress;
+    self.remote_ip = ipaddr.process(self.client.remoteAddress).toString();
     self.lognotice("connect ip=" + self.remote_ip);
 
     self.client.on('end', function() {
