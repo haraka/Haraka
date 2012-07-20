@@ -34,7 +34,7 @@ var fs   = require('fs'),
         "f": ["--force"],
     },
     parsed = nopt(knownOpts, shortHands, process.argv, 2),
-    existsSync = require('./utils').existsSync;
+    existsSync = require(base+'/utils').existsSync;
 
 var usage = [
     "\033[32;40mHaraka.js\033[0m — A Node.js Email Server project",
