@@ -2,6 +2,8 @@
 // Config file loader
 
 var fs = require('fs');
+var logger = require('./logger');
+var utils = require('./utils');
 
 // for "ini" type files
 var regex = {
@@ -31,7 +33,9 @@ cfreader.read_config = function(name, type, cb) {
         fs.watchFile(name, function (curr, prev) {
             // file has changed, or files has been removed
             if (curr.mtime.getTime() !== prev.mtime.getTime() ||
-                curr.nlink !== prev.nlink) {
+                curr.nlink !== prev.nlink)
+            {
+                logger.logdebug('reloading config file \'' + name + '\'');
                 cfreader.load_config(name, type);
                 if (typeof cb === 'function') cb();
             }
@@ -54,7 +58,6 @@ cfreader.empty_config = function(type) {
 };
 
 cfreader.load_config = function(name, type) {
-
     var result;
 
     if (type === 'ini' || /\.ini$/.test(name)) {
@@ -80,69 +83,126 @@ cfreader.load_config = function(name, type) {
 
 cfreader.load_json_config = function(name) {
     var result = cfreader.empty_config('json');
-    result = JSON.parse(fs.readFileSync(name));
+    try {
+        if (utils.existsSync(name)) {
+            result = JSON.parse(fs.readFileSync(name));
+        }
+    }
+    catch (err) {
+        if (err.code === 'EBADF') {
+            logger.logerror('error reading file \'' + err.path + '\': ' + err.message);
+            if (cfreader._config_cache[name]) {
+                logger.logwarn('using previously cache values in file \'' + err.path + '\'');
+                return cfreader._config_cache[name];
+            }
+        }
+        else {
+            throw err;
+        }
+    }
     return result;
 }
 
 cfreader.load_ini_config = function(name) {
     var result       = cfreader.empty_config('ini');
     var current_sect = result.main;
+
+    try {    
+        if (utils.existsSync(name)) {
+            var data = fs.readFileSync(name, "UTF-8");
+            var lines = data.split(/\r\n|\r|\n/);
+            var match;
     
-    var data = fs.readFileSync(name, "UTF-8");
-    var lines = data.split(/\r\n|\r|\n/);
-    var match;
-    
-    lines.forEach( function(line) {
-        if (regex.comment.test(line)) {
-            return;
+            lines.forEach(function(line) {
+                if (regex.comment.test(line)) {
+                    return;
+                }
+                else if (regex.blank.test(line)) {
+                    return;
+                }
+                else if (match = regex.param.exec(line)) {
+                    if (/^\d+$/.test(match[2])) {
+                        current_sect[match[1]] = parseInt(match[2]);
+                    }
+                    else {
+                        current_sect[match[1]] = match[2];
+                    }
+                }
+                else if (match = regex.section.exec(line)) {
+                    current_sect = result[match[1]] = {};
+                }
+                else {
+                    // error ?
+                };
+            });
         }
-        else if (regex.blank.test(line)) {
-            return;
-        }
-        else if (match = regex.param.exec(line)) {
-            if (/^\d+$/.test(match[2])) {
-                current_sect[match[1]] = parseInt(match[2]);
+    }
+    catch (err) {
+        if (err.code === 'EBADF') {
+            logger.logerror('error reading file \'' + err.path + '\': ' + err.message);
+            if (cfreader._config_cache[name]) {
+                logger.logwarn('using previously cache values in file \'' + err.path + '\'');
+                return cfreader._config_cache[name];
             }
-            else {
-                current_sect[match[1]] = match[2];
-            }
-        }
-        else if (match = regex.section.exec(line)) {
-            current_sect = result[match[1]] = {};
         }
         else {
-            // error ?
-        };
-    });
-    
+            throw err;
+        }
+    }
+ 
     return result;
 };
 
 cfreader.load_flat_config = function(name, type) {
     var result = cfreader.empty_config();
-    var data   = fs.readFileSync(name, "UTF-8");
-    if (type === 'data') {
-        while (data.length > 0) {
-            var match = data.match(/^([^\n]*)\n?/);
-            result.push(match[1]);
-            data = data.slice(match[0].length);
+
+    try {
+        if (utils.existsSync(name)) {
+            var data   = fs.readFileSync(name, "UTF-8");
+            if (type === 'data') {
+                while (data.length > 0) {
+                    var match = data.match(/^([^\n]*)\n?/);
+                    result.push(match[1]);
+                    data = data.slice(match[0].length);
+                }
+                return result;
+            }
+            var lines  = data.split(/\r\n|\r|\n/);
+    
+            lines.forEach( function(line) {
+                var line_data;
+                if (regex.comment.test(line)) {
+                    return;
+                }
+                else if (regex.blank.test(line)) {
+                    return;
+                }
+                else if (line_data = regex.line.exec(line)) {
+                    result.push(line_data[1]);
+                }
+            });
         }
+    }
+    catch (err) {
+        if (err.code === 'EBADF') {
+            logger.logerror('error reading file \'' + err.path + '\': ' + err.message);
+            if (cfreader._config_cache[name]) {
+                logger.logwarn('using previously cache values in file \'' + err.path + '\'');
+                return cfreader._config_cache[name];
+            }
+        }
+        else {
+            throw err;
+        }
+    }
+
+    if (result && result.length) {
         return result;
     }
-    var lines  = data.split(/\r\n|\r|\n/);
-    
-    lines.forEach( function(line) {
-        var line_data;
-        if (regex.comment.test(line)) {
-            return;
+    else {
+        if (/\/me$/.test(name)) {
+            return [ require('os').hostname() ];
         }
-        else if (regex.blank.test(line)) {
-            return;
-        }
-        else if (line_data = regex.line.exec(line)) {
-            result.push(line_data[1]);
-        }
-    });
-
-    return result;
+        return null;
+    }
 };
