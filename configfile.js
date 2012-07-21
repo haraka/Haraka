@@ -2,7 +2,6 @@
 // Config file loader
 
 var fs = require('fs');
-var logger = require('./logger');
 var utils = require('./utils');
 
 // for "ini" type files
@@ -35,7 +34,6 @@ cfreader.read_config = function(name, type, cb) {
             if (curr.mtime.getTime() !== prev.mtime.getTime() ||
                 curr.nlink !== prev.nlink)
             {
-                logger.logdebug('reloading config file \'' + name + '\'');
                 cfreader.load_config(name, type);
                 if (typeof cb === 'function') cb();
             }
@@ -90,9 +88,7 @@ cfreader.load_json_config = function(name) {
     }
     catch (err) {
         if (err.code === 'EBADF') {
-            logger.logerror('error reading file \'' + err.path + '\': ' + err.message);
             if (cfreader._config_cache[name]) {
-                logger.logwarn('using previously cache values in file \'' + err.path + '\'');
                 return cfreader._config_cache[name];
             }
         }
@@ -139,9 +135,7 @@ cfreader.load_ini_config = function(name) {
     }
     catch (err) {
         if (err.code === 'EBADF') {
-            logger.logerror('error reading file \'' + err.path + '\': ' + err.message);
             if (cfreader._config_cache[name]) {
-                logger.logwarn('using previously cache values in file \'' + err.path + '\'');
                 return cfreader._config_cache[name];
             }
         }
@@ -185,9 +179,7 @@ cfreader.load_flat_config = function(name, type) {
     }
     catch (err) {
         if (err.code === 'EBADF') {
-            logger.logerror('error reading file \'' + err.path + '\': ' + err.message);
             if (cfreader._config_cache[name]) {
-                logger.logwarn('using previously cache values in file \'' + err.path + '\'');
                 return cfreader._config_cache[name];
             }
         }
