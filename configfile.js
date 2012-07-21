@@ -196,13 +196,16 @@ cfreader.load_flat_config = function(name, type) {
         }
     }
 
-    if (result && result.length) {
-        return result;
+    // Return hostname for 'me' if no result
+    if (/\/me$/.test(name) && !(result && result.length)) {
+        return [ require('os').hostname() ];
     }
-    else {
-        if (/\/me$/.test(name)) {
-            return [ require('os').hostname() ];
+
+    // For value types with no result  
+    if (!(type && (type === 'list' || type === 'data'))) {
+        if (!(result && result.length)) {
+            return null;
         }
-        return null;
     }
+    return result;
 };
