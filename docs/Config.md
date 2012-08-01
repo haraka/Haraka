@@ -92,3 +92,32 @@ configuration file after it has changed. Configuration files are watched for
 changes so this process is not a heavyweight "poll" process, and files are
 not re-read every time config.get() is called so this can be considered a
 lightweight process.
+
+Note that Haraka reads a number of configuration files and any configuration
+read in a plugins register() function *before* it drops privileges, so you
+should make sure that the user/group that runs Haraka has permission to
+read these files otherwise Haraka will not be able to reload them if they
+are changed in which case it will continue to use the cached values.
+
+Advanced
+========
+
+If you need to read files outside of the config directory:
+
+```javascript
+var configfile = require('./configfile');
+var cfg = configfile.read_config('/path/to/file', type);
+```
+
+read_config() handles the caching for you and will return cached values
+if there have been no updates since the file was read.
+
+You can also optionally pass in a callback that is run if the file is 
+updated:
+
+```javascript
+var cfg = configfile.read_config('/path/to/file', type, function() {
+    // Code to run if file is updated
+});
+```
+
