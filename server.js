@@ -74,6 +74,9 @@ Server.createServer = function (params) {
         if (config_data.main.nodes !== 'cpus') {
             c.set('workers', config_data.main.nodes);
         }
+        if (config_data.main.group) {
+            c.set('group', config_data.main.group);
+        }
         if (config_data.main.user) {
             c.set('user', config_data.main.user);
         }
@@ -136,9 +139,14 @@ Server.init_child_respond = function (retval, msg) {
 
 function listening () {
     var config_data = config.get('smtp.ini');
-
+   
+    // Drop privileges
+    if (config_data.main.group) {
+        Server.lognotice('Switching from current gid: ' + process.getgid());
+        process.setgid(config_data.main.group);
+        Server.lognotice('New gid: ' + process.getgid());
+    }
     if (config_data.main.user) {
-        // drop privileges
         Server.lognotice('Switching from current uid: ' + process.getuid());
         process.setuid(config_data.main.user);
         Server.lognotice('New uid: ' + process.getuid());
