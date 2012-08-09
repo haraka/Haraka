@@ -25,6 +25,11 @@ Configuration
   * port=PORT
     
     The port to connect to.
+ 
+  * connect_timeout=SECONDS
+
+    The maximum amount of time to wait when creating a new connection
+    to the host.  Default if unspecified is 30 seconds.
 
   * timeout=SECONDS
     
