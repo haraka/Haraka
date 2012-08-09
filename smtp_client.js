@@ -258,7 +258,7 @@ exports.get_pool = function (server, port, host, connect_timeout, pool_timeout, 
             destroy: function(smtp_client) {
                 logger.logdebug('[smtp_client_pool] ' + smtp_client.uuid + ' destroyed, state=' + smtp_client.state);
                 smtp_client.state = STATE_DESTROYED;
-                smtp_client.destroy();
+                smtp_client.socket.destroy();
             },
             max: max || 1000,
             idleTimeoutMillis: pool_timeout * 1000,
