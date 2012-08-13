@@ -76,5 +76,5 @@ var setupInterval = function (title) {
             ' cc=' + server.notes.pt_concurrent + ' cps=' + cps + '/' + av_cps +
             '/' + server.notes.pt_cps_max;
         server.notes.pt_cps_diff = server.notes.pt_connections;
-    });
+    }, 1000);
 }
