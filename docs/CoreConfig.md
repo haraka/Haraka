@@ -31,8 +31,11 @@ different levels available.
   * ignore_bad_plugins - If a plugin fails to compile by default Haraka will stop at load time.
     If, however, you wish to continue on without that plugin's facilities, then
     set this config option
+  * daemonize - enable this to cause Haraka to fork into the background on start-up (default: 0)
+  * daemon_log_file - (default: /var/log/haraka.log) where to redirect stdout/stderr when daemonized
+  * daemon_pid_file - (default: /var/run/haraka.pid) where to write a PID file to
 
-[1]: http://learnboost.github.com/cluster/
+[1]: http://learnboost.github.com/cluster/ or node version >= 0.8
 
 * me
 
