@@ -81,7 +81,12 @@ function setupClient(self) {
         self.process_data(data);
     });
 
-    plugins.run_hooks('lookup_rdns', self);
+    // Hack: delay the first hook to allow for PROXY
+    setTimeout(function () {
+        if (!self.proxy) {
+            plugins.run_hooks('lookup_rdns', self);
+        }
+    }, 250);
 }
 
 function Connection(client, server) {
@@ -117,6 +122,7 @@ function Connection(client, server) {
         tempfail: 0,
         reject:   0,
     };
+    this.proxy = false;
     setupClient(this);
 }
 
@@ -200,8 +206,15 @@ Connection.prototype._process_data = function() {
     var results;
     while (results = line_regexp.exec(this.current_data)) {
         var this_line = results[1];
+        // Hack: bypass this code to allow HAProxy's PROXY extension
+        if (this.state === STATE_PAUSE && /^PROXY /.test(this_line)) {
+            this.proxy = true;
+            this.state = STATE_CMD;
+            this.current_data = this.current_data.slice(this_line.length);
+            this.process_line(this_line);
+        }
         // Detect early_talker but allow PIPELINING extension (ESMTP)
-        if ((this.state === STATE_PAUSE || this.state === STATE_PAUSE_SMTP) && !this.esmtp) {
+        else if ((this.state === STATE_PAUSE || this.state === STATE_PAUSE_SMTP) && !this.esmtp) {
             if (!this.early_talker) {
                 this.logdebug('[early_talker] state=' + this.state + ' esmtp=' + this.esmtp + ' line="' + this_line + '"');
             }            
@@ -484,7 +497,7 @@ Connection.prototype.connect_respond = function(retval, msg) {
                 break;
         default:
                 var greeting = config.get('smtpgreeting', 'list');
-                if (greeting && greeting.length) {
+                if (greeting.length) {
                     if (!(/(^|\W)ESMTP(\W|$)/.test(greeting[0]))) {
                         greeting[0] += " ESMTP";
                     }
@@ -784,6 +797,10 @@ Connection.prototype.rcpt_respond = function(retval, msg) {
 
 /////////////////////////////////////////////////////////////////////////////
 // SMTP Commands
+
+Connection.prototype.cmd_proxy = function(line) {
+    plugins.run_hooks('proxy', this, line);
+}
 
 Connection.prototype.cmd_helo = function(line) {
     var results = (new String(line)).split(/ +/);
@@ -1227,3 +1244,13 @@ Connection.prototype.queue_ok_respond = function (retval, msg, params) {
         self.reset_transaction();
     });
 };
+
+Connection.prototype.proxy_respond = function (retval) {
+    var self = this;
+    if (retval !== constants.ok) {
+       this.respond(550, 'PROXY denied', function () {
+           self.disconnect();
+       });
+    }
+    plugins.run_hooks('lookup_rdns', this);
+}       
