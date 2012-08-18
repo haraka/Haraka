@@ -3,10 +3,12 @@
 
 var net = require('net');
 
-exports.hook_proxy = function (next, connection, line) {
+exports.hook_unrecognized_command = function (next, connection, params) {
+    if (params[0] !== 'PROXY') return next();
+
     // Parse the remainder of the line
     var match;
-    if (!(match = /^(TCP4|TCP6|UNKNOWN) (\S+) (\S+) (\d+) (\d+)$/.exec(line))) {
+    if (!(match = /^(TCP4|TCP6|UNKNOWN) (\S+) (\S+) (\d+) (\d+)$/.exec(params[1]))) {
         return next(DENYDISCONNECT, 'Invalid PROXY format'); 
     }
     else {
@@ -40,6 +42,6 @@ exports.hook_proxy = function (next, connection, line) {
         connection.remote_ip = src_ip;
         connection.remote_host = undefined;
         connection.hello_host = undefined;
-        return next(OK);
+        return next(NEXT_HOOK, 'lookup_rdns');
     }    
 }

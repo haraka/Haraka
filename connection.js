@@ -798,10 +798,6 @@ Connection.prototype.rcpt_respond = function(retval, msg) {
 /////////////////////////////////////////////////////////////////////////////
 // SMTP Commands
 
-Connection.prototype.cmd_proxy = function(line) {
-    plugins.run_hooks('proxy', this, line);
-}
-
 Connection.prototype.cmd_helo = function(line) {
     var results = (new String(line)).split(/ +/);
     var host = results[0];
@@ -1244,13 +1240,3 @@ Connection.prototype.queue_ok_respond = function (retval, msg, params) {
         self.reset_transaction();
     });
 };
-
-Connection.prototype.proxy_respond = function (retval) {
-    var self = this;
-    if (retval !== constants.ok) {
-       this.respond(550, 'PROXY denied', function () {
-           self.disconnect();
-       });
-    }
-    plugins.run_hooks('lookup_rdns', this);
-}       
