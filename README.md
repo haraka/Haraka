@@ -1,3 +1,4 @@
+[![build status](https://secure.travis-ci.org/baudehlo/Haraka.png)](http://travis-ci.org/baudehlo/Haraka)
 Haraka - a Node.js Mail Server
 ------------------------------
 
