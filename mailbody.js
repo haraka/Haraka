@@ -85,14 +85,14 @@ Body.prototype.parse_start = function (line) {
     if (/text\/html/i.test(ct)) {
         this.is_html = true;
     }
-    
+   
+    enc = enc.toLowerCase().split("\n").pop().trim(); 
     if (!enc.match(/^base64|quoted-printable|[78]bit$/i)) {
         logger.logerror("Invalid CTE on email: " + enc + ", using 8bit");
         enc = '8bit';
     }
     enc = enc.replace(/^quoted-printable$/i, 'qp');
-    enc = enc.toLowerCase().split("\n").pop().trim();
-    
+
     this.decode_function = this["decode_" + enc];
     if (!this.decode_function) {
         logger.logerror("No decode function found for: " + enc);
