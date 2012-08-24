@@ -94,6 +94,10 @@ Body.prototype.parse_start = function (line) {
     enc = enc.toLowerCase().split("\n").pop().trim();
     
     this.decode_function = this["decode_" + enc];
+    if (!this.decode_function) {
+        logger.logerror("No decode function found for: " + enc);
+        this.decode_function = this.decode_8bit;
+    }
     this.ct = ct;
     
     if (/^(?:text|message)\//i.test(ct) && !/^attachment/i.test(cd) ) {
