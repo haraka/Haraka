@@ -44,8 +44,16 @@ for (var key in logger) {
 }
 
 function setupClient(self) {
-    self.remote_ip = ipaddr.process(self.client.remoteAddress).toString();
-    self.lognotice("connect ip=" + self.remote_ip);
+    var ip = self.client.remoteAddress;
+    if (!ip) {
+        self.logdebug('setupClient got no IP address for this connection!');
+        self.client.destroy();
+        return;
+    }
+
+    self.remote_ip = ipaddr.process(ip).toString();
+    self.remote_port = self.client.remotePort;
+    self.lognotice("connect ip=" + self.remote_ip + ' port=' + self.remote_port);
 
     self.client.on('end', function() {
         if (!self.disconnected) {
