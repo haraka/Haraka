@@ -89,12 +89,18 @@ function setupClient(self) {
         self.process_data(data);
     });
 
-    // Hack: delay the first hook to allow for PROXY
-    setTimeout(function () {
-        if (!self.proxy) {
-            plugins.run_hooks('lookup_rdns', self);
-        }
-    }, 250);
+    // Delay the first hook to allow for HAProxy
+    if (config.get('haproxy_hosts','list').length) {
+        setTimeout(function () {
+            if (!self.proxy) {
+                self.proxy_not_found = true;
+                plugins.run_hooks('lookup_rdns', self);
+            }
+        }, (config.get('haproxy_banner_delay') || 250));
+    }
+    else {
+        plugins.run_hooks('lookup_rdns', self);
+    }
 }
 
 function Connection(client, server) {
@@ -131,6 +137,7 @@ function Connection(client, server) {
         reject:   0,
     };
     this.proxy = false;
+    this.proxy_not_found = false;
     setupClient(this);
 }
 
@@ -215,7 +222,8 @@ Connection.prototype._process_data = function() {
     while (results = line_regexp.exec(this.current_data)) {
         var this_line = results[1];
         // Hack: bypass this code to allow HAProxy's PROXY extension
-        if (this.state === STATE_PAUSE && /^PROXY /.test(this_line)) {
+        if (this.state === STATE_PAUSE && /^PROXY /.test(this_line) &&
+            config.get('haproxy_hosts','list').length) {
             this.proxy = true;
             this.state = STATE_CMD;
             this.current_data = this.current_data.slice(this_line.length);
@@ -802,6 +810,90 @@ Connection.prototype.rcpt_respond = function(retval, msg) {
                 });
     }
 };
+
+/////////////////////////////////////////////////////////////////////////////
+// HAProxy support
+
+Connection.prototype.cmd_proxy = function (line) {
+    if (!config.get('haproxy_hosts','list').length) {
+        this.respond(421, 'PROXY not allowed');
+        return this.disconnect();
+    }
+    else if (!this.proxy || this.proxy_not_found) {
+        this.respond(421, 'PROXY command too late');
+        return this.disconnect();
+    }
+ 
+    var match;
+    if (!(match = /(TCP4|TCP6|UNKNOWN) (\S+) (\S+) (\d+) (\d+)$/.exec(line))) {
+        this.respond(421, 'Invalid PROXY format');
+        return this.disconnect();
+    }
+    var proto = match[1];
+    var src_ip = match[2];
+    var dst_ip = match[3];
+    var src_port = match[4];
+    var dst_port = match[5];
+    // Validate source/destination IP
+    switch (proto) {
+        case 'TCP4':
+            if (ipaddr.IPv4.isValid(src_ip) && ipaddr.IPv4.isValid(dst_ip)) {
+                break;
+            }
+        case 'TCP6':
+            if (ipaddr.IPv6.isValid(src_ip) && ipaddr.IPv6.isValid(dst_ip)) {
+                break;
+            }
+        case 'UNKNOWN':
+        default:
+            this.respond(421, 'Invalid PROXY format');
+            return this.disconnect();
+    }        
+
+    // Validate that dst_ip is allowed to use PROXY
+    var found = 0;
+    var hosts = config.get('haproxy_hosts', 'list');
+    for (var i=0; i < hosts.length; i++) {
+        // Check for CIDR
+        var m;
+        if (m = /^([^\/ ]+)\/(\d{1,2})$/.exec(hosts[i])) {
+            var mask = parseInt(m[2]);
+            if ((proto === 'TCP4' && (mask >= 1 && mask <= 32)) ||
+                (proto === 'TCP6' && (mask >= 1 && mask <= 128))) {
+                var addr = ipaddr.parse(this.remote_ip);
+                var range = ipaddr.parse(m[1]);
+                if (addr.match(range, mask)) {
+                    found++;
+                    break;
+                }
+            }
+        }
+        else {
+            // Regular IP address
+            if (this.remote_ip == hosts[i]) {
+                found++;
+                break;
+            }
+        }
+    }
+    if (!found) {
+        this.respond(421, 'PROXY not allowed from ' + this.remote_ip);
+        return this.disconnect();
+    }
+
+    // Apply changes
+    this.loginfo('HAProxy: proto=' + proto + 
+        ' src_ip=' + src_ip + ':' + src_port +
+        ' dst_ip=' + dst_ip + ':' + dst_port);
+    this.reset_transaction();
+    this.relaying = false;
+    this.remote_ip = src_ip;
+    this.remote_host = undefined;
+    this.hello_host = undefined;
+
+    plugins.run_hooks('lookup_rdns', this);    
+}
+
 
 /////////////////////////////////////////////////////////////////////////////
 // SMTP Commands

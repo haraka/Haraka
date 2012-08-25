@@ -74,6 +74,9 @@ different levels available.
 
 * cluster\_modules
 
+  NOTE: this is only valid on node.js 0.4 using the LearnBoost cluster module
+  it is not used on node.js 0.6 or later.
+
   A list of cluster modules to load. Use a colon to separate parameters to be
   passed to the module/plugin. Typical example:
 
@@ -107,3 +110,8 @@ different levels available.
   The bounce message should delivery of the mail fail. See the source of. The
   default is normally fine. Bounce messages contain a number of template
   replacement values which are best discovered by looking at the source code.
+
+* haproxy_hosts
+* haproxy_banner_delay
+
+  See HAProxy.md for further information.
