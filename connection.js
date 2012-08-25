@@ -513,7 +513,7 @@ Connection.prototype.connect_respond = function(retval, msg) {
                 break;
         default:
                 var greeting = config.get('smtpgreeting', 'list');
-                if (greeting.length) {
+                if (greeting && greeting.length) {
                     if (!(/(^|\W)ESMTP(\W|$)/.test(greeting[0]))) {
                         greeting[0] += " ESMTP";
                     }
