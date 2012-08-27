@@ -12,17 +12,17 @@ PROXY command then Haraka will return a DENYSOFTDISCONNECT error.
 DENYSOFT is used to prevent configuration errors from rejecting valid mail.
 
 To enable support for PROXY you must create a `haproxy_hosts` configuration
-file which should contain a list of IP or CIDRs that should be allowed to
-send the PROXY command.   As PROXY must be sent as soon as the socket is
-opened - if this file contains one or more entries then a short banner delay 
-is applied (default: 250ms) to allow for the PROXY command to be sent once 
-the socket is connected.
+file which should contain a list of IP addresses of the HAProxy hosts that 
+should be allowed to send the PROXY command.  
 
-If you have HAProxy hosts that are remote and are on connections with higher
-latency then you may need to increase the banner delay greater than 250ms,
-you can do this by creating a configuration file named `haproxy_banner_delay` 
-which should contain the number of milliseconds of delay that should be 
-applied.
+When a host connects to Haraka that matches an IP address present in the
+`haproxy_hosts` file - a banner is not sent, instead Haraka waits for the
+PROXY command to be sent before proceeding.  The connection will timeout
+with `421 PROXY timed out` if the command is not sent within 30 seconds.
+
+NOTE: because Haraka does not send a banner when a listed HAProxy host 
+connects you cannot use the HAProxy `option smtpchk` to test the host, 
+you must just use the basic TCP check that HAProxy uses by default.
 
 [1] http://haproxy.1wt.eu/download/1.5/doc/proxy-protocol.txt
 
@@ -35,7 +35,6 @@ Here is an example listener section for haproxy.cfg:
 listen smtp :25
         mode tcp
         option tcplog
-        option smtpchk
         balance roundrobin
         server smtp1 ip.of.haraka.server1:25 check inter 10s send-proxy
         server smtp2 ip.of.haraka.server2:25 check inter 10s send-proxy
