@@ -43,6 +43,21 @@ for (var key in logger) {
     }
 }
 
+// Load HAProxy hosts into an object for fast lookups
+// as this list is checked on every new connection.
+var haproxy_hosts = {};
+function loadHAProxyHosts() {
+    var hosts = config.get('haproxy_hosts', 'list', function () {
+        loadHAProxyHosts();
+    });
+    var new_host_list = {};
+    for (var i=0; i<hosts.length; i++) {
+        new_host_list[hosts[i]] = 1;
+    }
+    haproxy_hosts = new_host_list;
+}
+loadHAProxyHosts();
+
 function setupClient(self) {
     var ip = self.client.remoteAddress;
     if (!ip) {
@@ -80,6 +95,7 @@ function setupClient(self) {
     
     self.client.on('timeout', function () {
         if (!self.disconnected) {
+            self.respond(421, 'timeout');
             self.fail('client ' + ((self.remote_host) ? self.remote_host + ' ' : '')
                                 + '[' + self.remote_ip + '] connection timed out');
         }
@@ -89,7 +105,17 @@ function setupClient(self) {
         self.process_data(data);
     });
 
-    plugins.run_hooks('lookup_rdns', self);
+    if (haproxy_hosts[self.remote_ip]) {
+        self.proxy = true;
+        // Wait for PROXY command
+        self.proxy_timer = setTimeout(function () {
+            self.respond(421, 'PROXY timeout');
+            self.disconnect();
+        }, 30 * 1000);
+    }
+    else {
+        plugins.run_hooks('lookup_rdns', self);
+    }
 }
 
 function Connection(client, server) {
@@ -125,6 +151,8 @@ function Connection(client, server) {
         tempfail: 0,
         reject:   0,
     };
+    this.proxy = false;
+    this.proxy_timer = false;
     setupClient(this);
 }
 
@@ -208,8 +236,15 @@ Connection.prototype._process_data = function() {
     var results;
     while (results = line_regexp.exec(this.current_data)) {
         var this_line = results[1];
+        // Hack: bypass this code to allow HAProxy's PROXY extension
+        if (this.state === STATE_PAUSE && this.proxy && /^PROXY /.test(this_line)) {
+            if (this.proxy_timer) clearTimeout(this.proxy_timer);
+            this.state = STATE_CMD;
+            this.current_data = this.current_data.slice(this_line.length);
+            this.process_line(this_line);
+        }
         // Detect early_talker but allow PIPELINING extension (ESMTP)
-        if ((this.state === STATE_PAUSE || this.state === STATE_PAUSE_SMTP) && !this.esmtp) {
+        else if ((this.state === STATE_PAUSE || this.state === STATE_PAUSE_SMTP) && !this.esmtp) {
             if (!this.early_talker) {
                 this.logdebug('[early_talker] state=' + this.state + ' esmtp=' + this.esmtp + ' line="' + this_line + '"');
             }            
@@ -492,7 +527,7 @@ Connection.prototype.connect_respond = function(retval, msg) {
                 break;
         default:
                 var greeting = config.get('smtpgreeting', 'list');
-                if (greeting && greeting.length) {
+                if (greeting.length) {
                     if (!(/(^|\W)ESMTP(\W|$)/.test(greeting[0]))) {
                         greeting[0] += " ESMTP";
                     }
@@ -789,6 +824,55 @@ Connection.prototype.rcpt_respond = function(retval, msg) {
                 });
     }
 };
+
+/////////////////////////////////////////////////////////////////////////////
+// HAProxy support
+
+Connection.prototype.cmd_proxy = function (line) {
+    if (!this.proxy) {
+        this.respond(421, 'PROXY not allowed from ' + this.remote_ip);
+        return this.disconnect();
+    }
+
+    var match;
+    if (!(match = /(TCP4|TCP6|UNKNOWN) (\S+) (\S+) (\d+) (\d+)$/.exec(line))) {
+        this.respond(421, 'Invalid PROXY format');
+        return this.disconnect();
+    }
+    var proto = match[1];
+    var src_ip = match[2];
+    var dst_ip = match[3];
+    var src_port = match[4];
+    var dst_port = match[5];
+    // Validate source/destination IP
+    switch (proto) {
+        case 'TCP4':
+            if (ipaddr.IPv4.isValid(src_ip) && ipaddr.IPv4.isValid(dst_ip)) {
+                break;
+            }
+        case 'TCP6':
+            if (ipaddr.IPv6.isValid(src_ip) && ipaddr.IPv6.isValid(dst_ip)) {
+                break;
+            }
+        case 'UNKNOWN':
+        default:
+            this.respond(421, 'Invalid PROXY format');
+            return this.disconnect();
+    }        
+
+    // Apply changes
+    this.loginfo('HAProxy: proto=' + proto + 
+        ' src_ip=' + src_ip + ':' + src_port +
+        ' dst_ip=' + dst_ip + ':' + dst_port);
+    this.reset_transaction();
+    this.relaying = false;
+    this.remote_ip = src_ip;
+    this.remote_host = undefined;
+    this.hello_host = undefined;
+
+    plugins.run_hooks('lookup_rdns', this);    
+}
+
 
 /////////////////////////////////////////////////////////////////////////////
 // SMTP Commands
