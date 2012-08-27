@@ -43,6 +43,21 @@ for (var key in logger) {
     }
 }
 
+// Load HAProxy hosts into an object for fast lookups
+// as this list is checked on every new connection.
+var haproxy_hosts = {};
+function loadHAProxyHosts() {
+    var hosts = config.get('haproxy_hosts', 'list', function () {
+        loadHAProxyHosts();
+    });
+    var new_host_list = {};
+    for (var i=0; i<hosts.length; i++) {
+        new_host_list[hosts[i]] = 1;
+    }
+    haproxy_hosts = new_host_list;
+}
+loadHAProxyHosts();
+
 function setupClient(self) {
     var ip = self.client.remoteAddress;
     if (!ip) {
@@ -80,6 +95,7 @@ function setupClient(self) {
     
     self.client.on('timeout', function () {
         if (!self.disconnected) {
+            self.respond(421, 'timeout');
             self.fail('client ' + ((self.remote_host) ? self.remote_host + ' ' : '')
                                 + '[' + self.remote_ip + '] connection timed out');
         }
@@ -89,14 +105,13 @@ function setupClient(self) {
         self.process_data(data);
     });
 
-    // Delay the first hook to allow for HAProxy
-    if (config.get('haproxy_hosts','list').length) {
-        setTimeout(function () {
-            if (!self.proxy) {
-                self.proxy_not_found = true;
-                plugins.run_hooks('lookup_rdns', self);
-            }
-        }, (config.get('haproxy_banner_delay') || 250));
+    if (haproxy_hosts[self.remote_ip]) {
+        self.proxy = true;
+        // Wait for PROXY command
+        self.proxy_timer = setTimeout(function () {
+            self.respond(421, 'PROXY timeout');
+            self.disconnect();
+        }, 30 * 1000);
     }
     else {
         plugins.run_hooks('lookup_rdns', self);
@@ -137,7 +152,7 @@ function Connection(client, server) {
         reject:   0,
     };
     this.proxy = false;
-    this.proxy_not_found = false;
+    this.proxy_timer = false;
     setupClient(this);
 }
 
@@ -222,9 +237,8 @@ Connection.prototype._process_data = function() {
     while (results = line_regexp.exec(this.current_data)) {
         var this_line = results[1];
         // Hack: bypass this code to allow HAProxy's PROXY extension
-        if (this.state === STATE_PAUSE && /^PROXY /.test(this_line) &&
-            config.get('haproxy_hosts','list').length) {
-            this.proxy = true;
+        if (this.state === STATE_PAUSE && this.proxy && /^PROXY /.test(this_line)) {
+            if (this.proxy_timer) clearTimeout(this.proxy_timer);
             this.state = STATE_CMD;
             this.current_data = this.current_data.slice(this_line.length);
             this.process_line(this_line);
@@ -513,7 +527,7 @@ Connection.prototype.connect_respond = function(retval, msg) {
                 break;
         default:
                 var greeting = config.get('smtpgreeting', 'list');
-                if (greeting && greeting.length) {
+                if (greeting.length) {
                     if (!(/(^|\W)ESMTP(\W|$)/.test(greeting[0]))) {
                         greeting[0] += " ESMTP";
                     }
@@ -815,15 +829,11 @@ Connection.prototype.rcpt_respond = function(retval, msg) {
 // HAProxy support
 
 Connection.prototype.cmd_proxy = function (line) {
-    if (!config.get('haproxy_hosts','list').length) {
-        this.respond(421, 'PROXY not allowed');
+    if (!this.proxy) {
+        this.respond(421, 'PROXY not allowed from ' + this.remote_ip);
         return this.disconnect();
     }
-    else if (!this.proxy || this.proxy_not_found) {
-        this.respond(421, 'PROXY command too late');
-        return this.disconnect();
-    }
- 
+
     var match;
     if (!(match = /(TCP4|TCP6|UNKNOWN) (\S+) (\S+) (\d+) (\d+)$/.exec(line))) {
         this.respond(421, 'Invalid PROXY format');
@@ -849,37 +859,6 @@ Connection.prototype.cmd_proxy = function (line) {
             this.respond(421, 'Invalid PROXY format');
             return this.disconnect();
     }        
-
-    // Validate that dst_ip is allowed to use PROXY
-    var found = 0;
-    var hosts = config.get('haproxy_hosts', 'list');
-    for (var i=0; i < hosts.length; i++) {
-        // Check for CIDR
-        var m;
-        if (m = /^([^\/ ]+)\/(\d{1,2})$/.exec(hosts[i])) {
-            var mask = parseInt(m[2]);
-            if ((proto === 'TCP4' && (mask >= 1 && mask <= 32)) ||
-                (proto === 'TCP6' && (mask >= 1 && mask <= 128))) {
-                var addr = ipaddr.parse(this.remote_ip);
-                var range = ipaddr.parse(m[1]);
-                if (addr.match(range, mask)) {
-                    found++;
-                    break;
-                }
-            }
-        }
-        else {
-            // Regular IP address
-            if (this.remote_ip == hosts[i]) {
-                found++;
-                break;
-            }
-        }
-    }
-    if (!found) {
-        this.respond(421, 'PROXY not allowed from ' + this.remote_ip);
-        return this.disconnect();
-    }
 
     // Apply changes
     this.loginfo('HAProxy: proto=' + proto + 

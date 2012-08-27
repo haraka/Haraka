@@ -112,6 +112,6 @@ different levels available.
   replacement values which are best discovered by looking at the source code.
 
 * haproxy_hosts
-* haproxy_banner_delay
 
-  See HAProxy.md for further information.
+  A list of HAProxy hosts that Haraka should enable the PROXY protocol from.
+  See HAProxy.md
