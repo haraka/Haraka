@@ -1031,8 +1031,12 @@ Connection.prototype.received_line = function() {
     // Implement RFC3848
     if (this.using_tls)  smtp = smtp + 'S';
     if (this.authheader) smtp = smtp + 'A';
-    // TODO - populate authheader and sslheader - see qpsmtpd for how to.
-    // sslheader is not possible with TLS support in node yet.
+    // sslheader only populated with node.js >= 0.8
+    if (this.notes.tls && this.notes.tls.cipher) {
+        var sslheader = '(version=' + this.notes.tls.cipher.version + 
+            ' cipher=' + this.notes.tls.cipher.name + 
+            ' verify=' + ((this.notes.tls.authorized) ? 'OK' : 'FAIL') + ')';
+    }
     return [
         'from ',
             // If no rDNS then use an IP literal here
@@ -1043,9 +1047,9 @@ Connection.prototype.received_line = function() {
             'by ', config.get('me'), ' (Haraka/', version, ') with ', smtp, 
             ' id ', this.transaction.uuid, 
         "\n\t",
-            '(envelope-from ', this.transaction.mail_from.format(), ')',
-            // ((this.sslheader) ? ' ' + this.sslheader.replace(/\r?\n\t?$/,'') : ''), 
+            'envelope-from ', this.transaction.mail_from.format(),
             ((this.authheader) ? ' ' + this.authheader.replace(/\r?\n\t?$/, '') : ''),
+            ((sslheader) ? "\n\t" + sslheader.replace(/\r?\n\t?$/,'') : ''),
         ";\n\t", date_to_str(new Date())
     ].join('');
 };
