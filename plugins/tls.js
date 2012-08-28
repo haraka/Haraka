@@ -28,7 +28,7 @@ exports.hook_unrecognized_command = function (next, connection, params) {
         connection.respond(220, "Go ahead.");
         /* Upgrade the connection to TLS. */
         var self = this;
-        connection.client.upgrade(options, function (authorized, verifyError, cert) {
+        connection.client.upgrade(options, function (authorized, verifyError, cert, cipher) {
             connection.reset_transaction();
             connection.hello_host = undefined;
             connection.using_tls = true;
@@ -36,8 +36,11 @@ exports.hook_unrecognized_command = function (next, connection, params) {
                 authorized: authorized,
                 authorizationError: verifyError,
                 peerCertificate: cert,
+                cipher: cipher
             };
-            connection.loginfo(self, 'secured: verified=' + authorized +
+            connection.loginfo(self, 'secured:' +
+                ((cipher) ? ' cipher=' + cipher.name + ' version=' + cipher.version : '') + 
+                ' verified=' + authorized +
                 ((verifyError) ? ' error="' + verifyError + '"' : '' ) +
                 ((cert && cert.subject) ? ' cn="' + cert.subject.CN + '"' + 
                 ' organization="' + cert.subject.O + '"' : '') +
