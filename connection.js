@@ -167,6 +167,10 @@ Connection.prototype.process_line = function (line) {
     var self = this;
     if (this.state !== STATE_DATA) {
         this.logprotocol("C: " + line + ' state=' + this.state);
+        // Check for non-ASCII characters
+        if (/[^\x00-\x7F]/.test(line)) {
+            return this.respond(501, 'Syntax error');
+        }
     }
     if (this.state === STATE_CMD) {
         this.state = STATE_PAUSE_SMTP;
