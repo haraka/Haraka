@@ -21,7 +21,7 @@
     "ipaddr.js"     : ">= 0.1.1",
     "semver"        : ">= 1.0.14"
   },
-  "optionalDependencies": {
+  "devDependencies": {
     "nodeunit"      : "https://github.com/godsflaw/nodeunit/tarball/master"
   },
   "licenses": [ {
@@ -32,5 +32,8 @@
     "mail" : "helpme@gmail.com",
     "url" : "https://github.com/baudehlo/Haraka/issues"
   },
-  "bin": { "haraka": "./bin/haraka" }
+  "bin": { "haraka": "./bin/haraka" },
+  "scripts": {
+    "test": "./run_tests"
+  }
 }
