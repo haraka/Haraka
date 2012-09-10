@@ -105,7 +105,7 @@ Body.prototype.parse_start = function (line) {
     }
     else if (/^multipart\//i.test(ct)) {
         var match = ct.match(/boundary\s*=\s*["']?([^"';]+)["']?/i);
-        this.boundary = match[1] || '';
+        this.boundary = match ? match[1] : '';
         this.state = 'multipart_preamble';
     }
     else {
