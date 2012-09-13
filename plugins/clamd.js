@@ -15,7 +15,7 @@ exports.hook_data = function (next, connection) {
     var config = this.config.get('clamd.ini');
     for (var key in defaults) {
         config.main[key] = config.main[key] || defaults[key];
-    }   
+    }
     if (config.main['only_with_attachments']) {
         var transaction = connection.transaction;
         transaction.parse_body = 1;
@@ -47,7 +47,7 @@ exports.hook_data_post = function (next, connection) {
 
     // Limit message size
     if (transaction.data_bytes > config.main.max_size) {
-        connection.logdebug(plugin, 'skipping: message too big');
+        connection.loginfo(plugin, 'skipping: message exceeds maximum size');
         return next();
     }
 
@@ -59,7 +59,7 @@ exports.hook_data_post = function (next, connection) {
     }
     else {
         var hostport = config.main.clamd_socket.split(/:/);
-        socket.connect(hostport[1] || 3310, hostport[0]);
+        socket.connect((hostport[1] || 3310), hostport[0]);
     }
 
     socket.setTimeout(config.main.timeout * 1000);
@@ -73,31 +73,20 @@ exports.hook_data_post = function (next, connection) {
         return len;
     }
 
-    var data_marker = 0; ///< The current line number we're sending to clamd
-    var in_data = false; ///< We're sending data, but not done yet
-    var data_line = "";  ///< The current line we're sending to clamd
-    
+    var data_marker = 0;
+    var in_data = false;
+
     var send_data = function () {
         in_data = true;
         var wrote_all = true;
         while (wrote_all && (data_marker < transaction.data_lines.length)) {
-            if (data_line) {
-                // If the current line is not empty, we haven't sent it yet
-                data_marker++;
-                wrote_all = socket.write(new Buffer(data_line, 'binary'));
-                data_line = "";
-                if (!wrote_all) {
-                    return;
-                }
-            }
-            if (data_marker < transaction.data_lines.length) {
-                // If we a line yet to write, encode the length and send it
-                data_line = transaction.data_lines[data_marker];
-                var len = Buffer.byteLength(data_line);
-                var buf = pack_len(len);
-                connection.logdata(plugin, "C{len=" + len + "}: " + data_line);
-                wrote_all = socket.write(buf);
-            }
+            var data_line = transaction.data_lines[data_marker];
+            var len = Buffer.byteLength(data_line);
+            var buf = new Buffer(parseInt(len + 4));
+            pack_len(len).copy(buf);
+            buf.write(data_line, 4);
+            data_marker++;
+            wrote_all = socket.write(buf);
         }
         if (wrote_all) {
             // We're at the end of the data_lines - send a zero length line
@@ -124,9 +113,7 @@ exports.hook_data_post = function (next, connection) {
     socket.on('connect', function () {
         var hp = socket.address(),
           addressInfo = hp === null ? '' : ' ' + hp.address + ':' + hp.port;
-
-        connection.loginfo(plugin, 'connected to host' + addressInfo);
-
+        connection.logdebug(plugin, 'connected to host' + addressInfo);
         socket.write("zINSTREAM\0", function () {
             send_data();
         });
@@ -153,8 +140,8 @@ exports.hook_data_post = function (next, connection) {
                         (virus || 'UNKNOWN'));
         }
         else if (/size limit exceeded/.test(result)) {
-            connection.loginfo(plugin, 'INSTREAM size limit exceeded. ' +
-                           'Check StreamMaxLength in clamd.conf');
+            connection.logerror(plugin, 'INSTREAM size limit exceeded. ' +
+                                        'Check StreamMaxLength in clamd.conf');
             // Continue as StreamMaxLength default is 25Mb
             return next();
         } else {
