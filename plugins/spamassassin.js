@@ -10,8 +10,9 @@ var defaults = {
 };
 
 exports.hook_data_post = function (next, connection) {
-    var config = this.config.get('spamassassin.ini');
     var plugin = this;
+
+    var config = this.config.get('spamassassin.ini');
     
     for (var key in defaults) {
         config.main[key] = config.main[key] || defaults[key];
@@ -26,7 +27,10 @@ exports.hook_data_post = function (next, connection) {
         }
     );
     
-    if (connection.transaction.data_bytes > config.main.max_size) {
+    if (config.main.max_size > 0 && 
+        connection.transaction.data_bytes > config.main.max_size) 
+    {
+        connection.loginfo(this, 'skipping: message exceeds maximum size');
         return next();
     }
     
@@ -37,7 +41,7 @@ exports.hook_data_post = function (next, connection) {
     }
     else {
         var hostport = config.main.spamd_socket.split(/:/);
-        socket.connect(hostport[1], hostport[0]);
+        socket.connect((hostport[1] || 783), hostport[0]);
     }
     
     socket.setTimeout(300 * 1000);
@@ -49,7 +53,8 @@ exports.hook_data_post = function (next, connection) {
     var data_marker = 0;
     var in_data = false;
     var end_pending = true;
-    
+
+    // TODO: buffer writes into 64K chunks
     var send_data = function () {
         in_data = true;
         var wrote_all = true;
@@ -85,17 +90,18 @@ exports.hook_data_post = function (next, connection) {
         next(); 
     });
     socket.on('connect', function () {
-        socket.write("SYMBOLS SPAMC/1.3\r\n", function () {
-            socket.write("User: " + username + "\r\n\r\n", function () {
-                socket.write("X-Envelope-From: " + 
-                    connection.transaction.mail_from.address()
-                    + "\r\n", function () {
-                        socket.write("X-Haraka-UUID: " + 
-                            connection.transaction.uuid + "\r\n", function () {
-                                send_data();
-                        });
-                });
-            });
+        var headers = [
+            'SYMBOLS SPAMC/1.3',
+            'User: ' + username,
+            '',
+            'X-Envelope-From: ' + connection.transaction.mail_from.address(),
+            'X-Haraka-UUID: ' + connection.transaction.uuid,
+        ];
+        if (connection.relaying) {
+            headers.push('X-Haraka-Relay: true');
+        }
+        socket.write(headers.join("\r\n"), function () {
+            send_data();
         });
     });
     
