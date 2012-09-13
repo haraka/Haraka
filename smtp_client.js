@@ -386,6 +386,24 @@ exports.get_client_plugin = function (plugin, connection, config, callback) {
             }
           }
         });
+        
+        smtp_client.on('helo', function () {
+          if (config.auth && !this.authentiated) {
+            switch (config.auth.type) {
+              case 'plain':
+                connection.logdebug(['SMTP Authenticating as', config.auth.user]);
+                smtp_client.send_command('AUTH',
+                  'PLAIN ' + base64("\0" + config.auth.user + "\0" + config.auth.pass) );
+                  this.authenticated = true;
+                break;
+              case null:
+              case undefined:
+                break; // Nothing to do here
+              default:
+                throw new Error("Unknown AUTH type: " + config.auth.type);
+            }
+          }
+        });
 
         smtp_client.on('helo', function () {
             smtp_client.send_command('MAIL',
