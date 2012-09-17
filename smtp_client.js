@@ -198,6 +198,7 @@ SMTPClient.prototype.release = function () {
         return;
     }
     this.state = STATE_RELEASED;
+    this.authenticated = false;
     this.removeAllListeners('greeting');
     this.removeAllListeners('capabilities');
     this.removeAllListeners('xclient');
@@ -349,23 +350,38 @@ exports.get_client_plugin = function (plugin, connection, config, callback) {
                         return;
                     }
                 }
+                
+                var auth_matches;
+                if (auth_matches = smtp_client.response[line].match(/^AUTH (.*)$/)) {
+                    auth_matches = auth_matches[1].split(' ');
+                    for (var i = 0; i < auth_matches.length; i++) {
+                        connection.auth_capibilities.push(auth_matches[i].toLowerCase());
+                    }
+                }
             }
         });
         
         smtp_client.on('helo', function () {
-          if (config.auth && !this.authentiated) {
-            switch (config.auth.type) {
-              case 'plain':
-                connection.logdebug(['SMTP Authenticating as', config.auth.user]);
-                smtp_client.send_command('AUTH',
-                  'PLAIN ' + base64("\0" + config.auth.user + "\0" + config.auth.pass) );
-                  this.authenticated = true;
-                break;
-              case null:
-              case undefined:
-                break; // Nothing to do here
-              default:
-                throw new Error("Unknown AUTH type: " + config.auth.type);
+            if (config.auth && !smtp_client.authentiated) {
+                if (config.auth.type === null || typeof(config.auth.type) === 'undefined') { return; } // Ignore blank
+                var auth_type = config.auth.type.toLowerCase();
+                if (connection.auth_capibilities.indexOf(auth_type) == -1) {
+                    throw new Error("Auth type \"" + auth_type + "\" not supported by server (supports: " + connection.auth_capibilities.join(',') + ")")
+                }
+                switch (auth_type) {
+                    case 'plain':
+                        if (!config.auth.user || !config.auth.pass) {
+                            throw new Error("Must include auth.user and auth.pass for PLAIN auth.");
+                        }
+                        logger.logdebug('[smtp_client_pool] uuid=' + smtp_client.uuid + ' authenticating as "' + config.auth.user + '"');
+                        smtp_client.send_command('AUTH',
+                            'PLAIN ' + base64(config.auth.user + "\0" + config.auth.user + "\0" + config.auth.pass) );
+                        smtp_client.authenticated = true;
+                        break;
+                    case 'cram-md5':
+                        throw new Error("Not implemented");
+                    default:
+                        throw new Error("Unknown AUTH type: " + auth_type);
             }
           }
         });
