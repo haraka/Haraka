@@ -1,4 +1,4 @@
-test.expect(24);
+test.expect(25);
 var server = {notes: {}};
 
 exports.get_pool(server);
