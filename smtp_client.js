@@ -87,6 +87,7 @@ function SMTPClient(port, host, connect_timeout) {
             case 'data':
             case 'dot':
             case 'rset':
+            case 'auth':
                 self.emit(self.command);
                 break;
             case 'quit':
