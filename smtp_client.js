@@ -303,6 +303,7 @@ exports.get_client_plugin = function (plugin, connection, config, callback) {
     var pool = exports.get_pool(connection.server, config.main.port,
         config.main.host, config.main.connect_timeout, config.main.timeout, config.main.max_connections);
     pool.acquire(function (err, smtp_client) {
+        var auth_capibilities = [];
         connection.logdebug(plugin, 'Got smtp_client: ' + smtp_client.uuid);
         smtp_client.call_next = function (retval, msg) {
             if (this.next) {
@@ -356,7 +357,7 @@ exports.get_client_plugin = function (plugin, connection, config, callback) {
                 if (auth_matches = smtp_client.response[line].match(/^AUTH (.*)$/)) {
                     auth_matches = auth_matches[1].split(' ');
                     for (var i = 0; i < auth_matches.length; i++) {
-                        connection.auth_capibilities.push(auth_matches[i].toLowerCase());
+                        auth_capibilities.push(auth_matches[i].toLowerCase());
                     }
                 }
             }
@@ -366,8 +367,8 @@ exports.get_client_plugin = function (plugin, connection, config, callback) {
             if (config.auth && !smtp_client.authentiated) {
                 if (config.auth.type === null || typeof(config.auth.type) === 'undefined') { return; } // Ignore blank
                 var auth_type = config.auth.type.toLowerCase();
-                if (connection.auth_capibilities.indexOf(auth_type) == -1) {
-                    throw new Error("Auth type \"" + auth_type + "\" not supported by server (supports: " + connection.auth_capibilities.join(',') + ")")
+                if (auth_capibilities.indexOf(auth_type) == -1) {
+                    throw new Error("Auth type \"" + auth_type + "\" not supported by server (supports: " + auth_capibilities.join(',') + ")")
                 }
                 switch (auth_type) {
                     case 'plain':
@@ -391,8 +392,8 @@ exports.get_client_plugin = function (plugin, connection, config, callback) {
             if (config.auth && !smtp_client.authentiated) {
                 if (config.auth.type === null || typeof(config.auth.type) === 'undefined') { return; } // Ignore blank
                 var auth_type = config.auth.type.toLowerCase();
-                if (connection.auth_capibilities.indexOf(auth_type) == -1) {
-                    throw new Error("Auth type \"" + auth_type + "\" not supported by server (supports: " + connection.auth_capibilities.join(',') + ")")
+                if (auth_capibilities.indexOf(auth_type) == -1) {
+                    throw new Error("Auth type \"" + auth_type + "\" not supported by server (supports: " + auth_capibilities.join(',') + ")")
                 }
                 switch (auth_type) {
                     case 'plain':
