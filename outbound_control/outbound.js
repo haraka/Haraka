@@ -16,7 +16,7 @@ var plugins     = require('../plugins');
 var date_to_str = require('../utils').date_to_str;
 var Address     = require('../address').Address;
 var control     = require('./policy');
-var sendcloud   = require('./sendcloud');
+var sc   = require('./send_client');
 var Queue       = require('./queue').Queue;
 var conn_pool   = control.conn_pool;
 
@@ -610,7 +610,7 @@ HMailItem.prototype.try_deliver_host = function (mx) {
     var max = control.getEspConfig(domain, 'conn_limit');
     var hmail = this; 
     
-    sendcloud.run_send(conn_pool, domain, port, host, timeout, enable_tls, max, hmail, 
+    sc.run_send(conn_pool, domain, port, host, timeout, enable_tls, max, hmail, 
 		       function(err, send_client) {
 			   if (err) {
 			       hmail.not_send(constants.no);

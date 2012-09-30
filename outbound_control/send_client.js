@@ -323,7 +323,6 @@ exports.run_send = function(conn_pool, dom, port, host, timeout, enable_tls,
         
 	var closed = function (msg) {
             return function (error) {
-	        hmail.loginfo(new Date().getTime() + 'hello nimei!!!!!!' + msg + send_client.socket.uuid);
 		if (!error) {
                     error = '';
 		}

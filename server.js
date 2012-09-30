@@ -6,6 +6,7 @@ var logger      = require('./logger');
 var config      = require('./config');
 var conn        = require('./connection');
 var out         = require('./outbound');
+var sc_out      = require('./outbound_control/outbound')
 var plugins     = require('./plugins');
 var constants   = require('./constants');
 var os          = require('os');
@@ -231,6 +232,7 @@ function listening () {
 
     logger.lognotice("Listening on port " + config_data.main.port);
     Server.ready = 1;
-   
-    out.load_queue();
+    var out_controlled = config.get('outbound_control');
+    var outbound_server = out_controlled ? sc_out  : out;
+    outbound_server.load_queue()
 }
