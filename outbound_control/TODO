@@ -1,0 +1,8 @@
+outbound control faciliteis work on the following facts:
+* inbound service separates from outbound service
+* inbound server shares the same fs folder with outbound server
+* outbound server periodically checks new files in folder
+
+merge this into the main stream; in this manner, for each email
+file there's one more filesystem read operation, which could
+affect the performace of Haraka. 
