@@ -545,6 +545,33 @@ HMailItem.prototype.check_limit_respond = function(retval) {
     processing_queue.push(this);
 }
 
+HMailItem.prototype.process_bad_code = function(code, msg) {
+    var self = this;
+    self.clear_timers();
+
+    // if this email is delivered successfully; not neccessary
+    // to goto next steps
+    if (self.sent) return;
+
+    // in case the server side respond two error messages to
+    // a single command
+    if (!self.erred)  {
+	self.erred = true;
+	self.bounce(msg);	
+    }
+}
+
+HMailItem.prototype.try_again = function(status) {
+    var self = this;
+    control.getPolicy(self.todo.domain).dispose();
+    self.loginfo(self.filename + ': not send....'  + status);    
+    if (status === constants.no)
+        processing_queue.push(self.todo.domain, self.filename);
+    else if (status === constants.error) 
+        self.temp_fail('connection closed before sent out all data');    
+
+}
+
 HMailItem.prototype._send = function () {
     if ((delivery_concurrency >= max_concurrency)
         || config.get('outbound.disabled'))
