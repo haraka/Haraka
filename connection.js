@@ -132,7 +132,7 @@ function Connection(client, server) {
     this.deny_includes_uuid = config.get('deny_includes_uuid') ? true : false;
     this.early_talker = 0;
     this.pipelining = 0;
-    this.relaying = false;
+    this.relaying = true;
     this.disconnected = false;
     this.esmtp = false;
     this.last_response = null;
