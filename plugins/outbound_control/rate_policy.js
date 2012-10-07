@@ -69,7 +69,7 @@ Policy.prototype.exceed_limit = function()
     exceed_tiny_limit = false,
     exceed_medium_limit = false,
     exceed_big_limit = false;    
-    
+
     // check if we are over daily limit
     if (cur_time - this.big_timestamp < this.BIG) {
 	if (this.big_deliveries >= this.big_limit)
