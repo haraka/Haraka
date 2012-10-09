@@ -364,19 +364,11 @@ exports._load_cur_queue = function (cb_name) {
 
 exports.load_queue_files = function (cb_name, files) {
     var plugin = this;
-    if (files.length === 0) return;
-
+    if (files.length === 0)
+        return plugin.heart_beat();
     this.loginfo("Loading some of the queue...");
-    
-    if ((delivery_concurrency >= max_concurrency)
-        || config.get('outbound.disabled'))
-    {
-        // try again in 1 second if delivery is disabled
-        setTimeout(function () {plugin.load_queue_files(cb_name, files)}, 1000);
-        return;
-    }
-
-    for (var i=1; i <= max_concurrency; i++) {
+    // try to send every email; failed sendings will be push into the queue
+    for (var i=1; i <= files.length; i++) {
         if (files.length === 0) break;
         var file = files.shift();
         if (/^\./.test(file)) {
@@ -385,19 +377,30 @@ exports.load_queue_files = function (cb_name, files) {
         }
         var hmail = new HMailItem(file, path.join(queue_dir, file));
         this[cb_name](hmail);
-        
-        if ((files.length === 0) || (i === max_concurrency)) {
-            // end of loop or end of files
-            var self = this;
-            hmail.on('ready', function () {self.load_queue_files(cb_name, files)});
-            break;
-        }
     }
-    
-    // add some kind of heart beat
-    
+
+    plugin.heart_beat();
 }
 
+exports.heart_beat = function(){
+    console.log("heart beat");
+    var queue_size = processing_queue.size();
+    for (var i=1; i <= max_concurrency; i++) {
+        if (processing_queue.size() == 0)
+            break;
+        
+	var keys =  Object.keys(processing_queue.mails);
+	var index = i % keys.length;
+        var mail = processing_queue.shift(index, keys);
+        mail.send();
+    }
+
+    var interval = processing_queue.size() > 20 ? 3000 : 1000;
+    var plugin = this;
+    setTimeout(function() {
+        plugin.heart_beat();
+    }, interval);
+}
 exports._add_file = function (hmail) {
     var self = this;
     this.loginfo("Adding file: " + hmail.filename);
@@ -529,12 +532,12 @@ HMailItem.prototype.read_todo = function () {
 }
 
 HMailItem.prototype.send = function () {
-
     // check if this email can be delivered    
     plugins.run_hooks("check_limit", this);
 }
 
 HMailItem.prototype.check_limit_respond = function(retval) {
+    console.log('$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$' + retval);
     if (retval == constants.ok) {
         if (!this.todo) {
             var self = this;
@@ -804,36 +807,36 @@ HMailItem.prototype.try_deliver_host = function (mx) {
     var hmail = this;
 
     deliver_client.run_send(conn_pool, domain, port, host, timeout, enable_tls, max, hmail, 
-		       function(err, client) {
-			   if (err) {
-			       hmail.try_again(constants.no);
-	                       return;
-		           }
-			   // actually we only have one address for each mail
-			   var rcpts = hmail.todo.rcpt_to
-			   var send_rcpt = function () {
-			       if (hmail.todo.rcpt_to.length != 0) {
-				   var a = hmail.todo.rcpt_to[0];
-				   var rcpt = new Address (a.original);
-				   client.send_command('RCPT',
+		            function(err, client) {
+			        if (err) {
+			            hmail.try_again(constants.no);
+	                            return;
+		                }
+			        // actually we only have one address for each mail
+			        var rcpts = hmail.todo.rcpt_to
+			        var send_rcpt = function () {
+			            if (hmail.todo.rcpt_to.length != 0) {
+				        var a = hmail.todo.rcpt_to[0];
+				        var rcpt = new Address (a.original);
+				        client.send_command('RCPT',
 							    'TO:' + rcpt);
-			       }
-			       else 
-				   client.send_command('RCPT',
+			            }
+			            else 
+				        client.send_command('RCPT',
 							    'TO: ' + '<>');
-			   };
+			        };
 
-			   var send_data = function() {
-			       client.send_command('DATA');
-			   }
-			   
-			   client.on('mail', send_rcpt);
-			   client.on('rcpt', send_data);
-			   
-			   client.on('data', function () {
-			       client.start_data(hmail.data_stream());
-			   });				   
-		       });    
+			        var send_data = function() {
+			            client.send_command('DATA');
+			        }
+			        
+			        client.on('mail', send_rcpt);
+			        client.on('rcpt', send_data);
+			        
+			        client.on('data', function () {
+			            client.start_data(hmail.data_stream());
+			        });				   
+		            });    
 }
 
 function populate_bounce_message (from, to, reason, hmail, cb) {
@@ -921,7 +924,6 @@ HMailItem.prototype.bounce_respond = function (retval, msg) {
 
 HMailItem.prototype.process_bad_code = function(code, msg) {
     var self = this;
-    self.clear_timers();
     
     // if this email is delivered successfully; not neccessary
     // to goto next steps
@@ -938,7 +940,9 @@ HMailItem.prototype.process_bad_code = function(code, msg) {
 
 HMailItem.prototype.double_bounce = function (err) {
     this.logerror("Double bounce: " + err);
-    fs.unlink(this.path);
+    fs.unlink(this.path, function() {
+        hmail.loginfo(this.filename + ' deleted');
+    });
     this.send_next();
     // TODO: fill this in... ?
     // One strategy is perhaps log to an mbox file. What do other servers do?

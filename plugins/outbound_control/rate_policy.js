@@ -57,7 +57,7 @@ function Policy(dom) {
 Policy.prototype.exceed_limit = function() 
 {
     // check if we are over connection limit
-    if (this.cur_conn >= this.conn_limit)
+    if (this.cur_conn > this.conn_limit)
 	return true;
 
     var cur_time = new Date().getTime();
@@ -85,7 +85,7 @@ Policy.prototype.exceed_limit = function()
 
     // check if we are over hourly limit
     if (cur_time - this.medium_timestamp < this.MEDIUM) {
-	if (this.medium_deliveries >= this.medium_limit)
+	if (this.medium_deliveries > this.medium_limit)
 	    exceed_medium_limit = true;
     }
     else {
@@ -116,7 +116,7 @@ Policy.prototype.exceed_limit = function()
     	this.micro_timestamp = cur_time;
     	this.micro_deliveries = 0;
     }
-
+    
     if (exceed_micro_limit)
     	return true;
     

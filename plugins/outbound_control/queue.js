@@ -22,17 +22,17 @@ Queue.prototype.shift = function(index, keys) {
 }
 
 Queue.prototype.dequeue = function(hmail) {
-    var domain = hmail.dom;
+    var domain = hmail._domain;
     var list = this.mails[domain] || [];
     if (list.length === 0)
         return null;
     else
     {
-        var file = list.shift();
+        var mail = list.shift();
         this.length--;
         if(list.length === 0)
             delete this.mails[domain];
-        return file;
+        return mail;
     }
 }
 
