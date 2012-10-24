@@ -34,13 +34,18 @@ var uniq = Math.round(Math.random() * MAX_UNIQ);
 var max_concurrency = config.get('outbound.concurrency_max') || 100;
 var queue_count = 0;
 
+/**
+ * added by qiw209
+ */
+var deliver_client = require('./plugins/outbound_control/send_client');
+var rate_policy = require('./plugins/outbound_control/rate_policy');
+var get_ispconfig = rate_policy.get_ispconfig;
+var get_policy = rate_policy.get_policy;
+var conn_pool = rate_policy.conn_pool;
+var delivery_concurrency = rate_policy.delivery_concurrency;
 var Queue = require('./plugins/outbound_control/queue').Queue;
 var processing_queue = new Queue();
-var get_ISPConfig = require('./plugins/outbound_control/rate_policy').get_ISPConfig;
-var get_policy = require('./plugins/outbound_control/rate_policy').get_policy;
-var deliver_client = require('./plugins/outbound_control/send_client');
-var delivery_concurrency = require('./plugins/outbound_control/rate_policy').delivery_concurrency;
-var conn_pool = require('./plugins/outbound_control/rate_policy').conn_pool;
+
 
 exports.list_queue = function () {
     this._load_cur_queue("_list_file");
@@ -225,8 +230,9 @@ exports.send_trans_email = function (transaction, next) {
 }
 
 exports.process_domain = function (todo, hmails, cb) {
-    var plugin = this;
+    var plugin = this;    
     this.loginfo("Processing domain: " + todo.domain);
+    // file name ends up with the domain of the email to be sent to
     var fname = _fname() + '@' + todo.domain;
     var tmp_path = path.join(queue_dir, '.' + fname);
     var ws = fs.createWriteStream(tmp_path, { flags: WRITE_EXCL });
@@ -368,22 +374,48 @@ exports.load_queue_files = function (cb_name, files) {
         return plugin.heart_beat();
     this.loginfo("Loading some of the queue...");
     // try to send every email; failed sendings will be push into the queue
-    for (var i=1; i <= files.length; i++) {
-        if (files.length === 0) break;
+    var length = files.length;
+    for (var i=1; i <= length; i++) {
+        if (files.length === 0)  break; 
         var file = files.shift();
         if (/^\./.test(file)) {
             // dot-file...
             continue;
         }
+	console.log(file);
+	/**
+	 *  load all email meta data from the disk into memory
+	 */ 
         var hmail = new HMailItem(file, path.join(queue_dir, file));
-        this[cb_name](hmail);
+        this[cb_name](hmail);        
     }
 
-    plugin.heart_beat();
+    // plugin.heart_beat();
 }
 
+/**
+ *  heart_beat periodically check the queue to see if there are more 
+ *  emails to be processed. The are two ways to invoke email delivering:
+ *  
+ *  1. when haraka process starts, emails are loaded from disk and get 
+ *  delivered;
+ *  2. send_next() will be called each time an email is delivered 
+ *  successfully to send another email for the same domain if there is 
+ *  any;
+ *  3. new emails come and they can be sent withouting breaking outbound
+ *  limit rules
+ *
+ *  There could be one scenario as follows:
+ *  there are more emails than the outbound capacity when haraka process 
+ *  starts; we can only process a certain number of emails according to 
+ *  the outbound limit; there can be unprocessed. And unfortunately, when
+ *  send_next() gets called once each email being sending is delivered,
+ *  we find that for the time being, no more emails can be sent, and no 
+ *  emails come; which means email sending cannot be invoked. That's why
+ *  we need heart_beat() here.
+ *  
+ */
 exports.heart_beat = function(){
-    console.log("heart beat");
     var queue_size = processing_queue.size();
     for (var i=1; i <= max_concurrency; i++) {
         if (processing_queue.size() == 0)
@@ -395,12 +427,16 @@ exports.heart_beat = function(){
         mail.send();
     }
 
+    // how often to call heart_beat depends on how long the 
+    // queue is.
     var interval = processing_queue.size() > 20 ? 3000 : 1000;
     var plugin = this;
     setTimeout(function() {
         plugin.heart_beat();
     }, interval);
 }
+
+
 exports._add_file = function (hmail) {
     var self = this;
     this.loginfo("Adding file: " + hmail.filename);
@@ -422,7 +458,7 @@ exports.stats = function () {
         queue_dir:   queue_dir,
         queue_count: queue_count,
     };
-
+    
     return results;
 }
 
@@ -537,7 +573,8 @@ HMailItem.prototype.send = function () {
 }
 
 HMailItem.prototype.check_limit_respond = function(retval) {
-    console.log('$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$' + retval);
+    console.log(retval + 'OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOo');
+    console.log(get_policy("163.com"));
     if (retval == constants.ok) {
         if (!this.todo) {
             var self = this;
@@ -570,12 +607,20 @@ HMailItem.prototype.process_bad_code = function(code, msg) {
     }
 }
 
+/**
+ *  Try to send again when one of the following happens:
+ *  1. no more connection available to deliver the email
+ *  2. error occurs when obtaining a connection from the pool
+ *  3. error occurs when sending out an email
+ * 
+ *  In the first two cases, we simply push the email back to 
+ *  the queue; while temp_failing the email if case 3 happens
+ */
 HMailItem.prototype.try_again = function(status) {
     var self = this;
-    get_policy(this.dom).dispose();
-    self.loginfo(self.filename + ': not send....'  + status);    
+    get_policy(this._domain).dispose();
     if (status === constants.no)
-        processing_queue.push(this);
+        processing_queue.push(this); 
     else if (status === constants.error)
         self.temp_fail('connection closed before sent out all data');
 }
@@ -803,7 +848,7 @@ HMailItem.prototype.try_deliver_host = function (mx) {
     var from = this.todo.mail_from.original.replace('>','').replace('<','');
     var timeout = 60 * 1000;
     var enable_tls = false;
-    var max = get_ISPConfig(domain, 'conn_limit');
+    var max = get_ispconfig(domain, 'conn_limit');
     var hmail = this;
 
     deliver_client.run_send(conn_pool, domain, port, host, timeout, enable_tls, max, hmail, 
@@ -940,8 +985,9 @@ HMailItem.prototype.process_bad_code = function(code, msg) {
 
 HMailItem.prototype.double_bounce = function (err) {
     this.logerror("Double bounce: " + err);
+    var hmail = this;
     fs.unlink(this.path, function() {
-        hmail.loginfo(this.filename + ' deleted');
+        hmail.loginfo(hmail.filename + ' deleted');
     });
     this.send_next();
     // TODO: fill this in... ?
@@ -1002,15 +1048,18 @@ HMailItem.prototype.delivered_respond = function (retval, msg) {
     // Remove the file; send next mail of the same domain
     fs.unlink(this.path, function(err){
         self.sent = true;
+	get_policy(self._domain).dispose();
         self.send_next();
     });
 };
 
+/**
+ *  Try to get an email for the same domain as the currently delivered email.
+ *  If there is any, deliver it.
+ */
 HMailItem.prototype.send_next = function() {
-    var hmail = processing_queue.dequeue(this);    
+    var domain = this._domain;
+    var hmail = processing_queue.dequeue(domain);
     if (hmail)
-    {
-        get_policy(this.dom).prepose();
-        setTimeout(function(){hmail.send()}, 0);        
-    }
+        setTimeout(function(){ hmail.send() }, 0);        
 }

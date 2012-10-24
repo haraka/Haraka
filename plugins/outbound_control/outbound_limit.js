@@ -2,6 +2,9 @@ var config = exports.config;
 var constants = require('./constants');
 var policy_factory = require('./plugins/outbound_control/rate_policy');
 
+/**
+ * outbound rate limit checker
+ */
 exports.register = function() {
     this.register_hook('check_limit', 'limit_checker');
 }
@@ -15,8 +18,7 @@ exports.limit_checker = function(next, param) {
         next(constants.cont, param);
     }
     else {
-        hmail.loginfo(policy);
-        policy.prepose();
+	policy.prepose();
         next(constants.ok, param);
     }
 }

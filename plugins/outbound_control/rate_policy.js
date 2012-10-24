@@ -1,12 +1,17 @@
+/*
+ * TODO: save outbound_limit.json into redis
+ */
 var util   = require("util");
 var events = require("events")
 var config = require("../../config")
 var config_data = config.get('outbound_limit.json', 'json');
 var delivery_concurrency = 0;
+// connections by domains
 var conn_pool = {};
+// outbound rate limit policy by domains
 var policies = {};
 
-
+// get outbound rate limit policy by domain
 function get_policy(domain) {
     if (!policies[domain]) {	
 	policies[domain]  = new Policy(domain);
@@ -14,16 +19,17 @@ function get_policy(domain) {
     return policies[domain];
 }
 
-function get_ISPConfig(dom, name) {
+// get outbound rate limit data
+function get_ispconfig(dom, name) {
     var data = config_data[dom];
     if (!data)
 	data = config_data['default'];    
     return data[name];
 }
 
+// outbound rate limit object
 function Policy(dom) {    
     this.domain = dom;
-    // this.frozen_ts = -128000;
 
     var data = config_data[dom];
     if (!data)
@@ -54,6 +60,12 @@ function Policy(dom) {
 	= this.big_timestamp = new Date().getTime();
 }
 
+/**
+ * decide if we can send one more email to some domain
+ * by check if we exceed the number of connections we 
+ * can create; the number of emails we can send in the
+ * past X seconds, Y seconds, and Z seconds
+ */
 Policy.prototype.exceed_limit = function() 
 {
     // check if we are over connection limit
@@ -61,9 +73,6 @@ Policy.prototype.exceed_limit = function()
 	return true;
 
     var cur_time = new Date().getTime();
-
-    // if (cur_time - this.frozen_ts < 64 * 1000)
-    //     return true;
 
     var exceed_micro_limit = false,
     exceed_tiny_limit = false,
@@ -123,15 +132,17 @@ Policy.prototype.exceed_limit = function()
     return false;
 }
 
-// Policy.prototype.freeze = function() {
-//     this.frozen_ts = new Date().getTime();
-// }
-
-Policy.prototype.dispose = function(delivered, not_send) {   
+/**
+ * audit after an email is delivered or not delivered
+ */
+Policy.prototype.dispose = function() {   
     delivery_concurrency--;
     this.cur_conn--;
 }
 
+/**
+ * audit before sending an email
+ */
 Policy.prototype.prepose = function() {
     delivery_concurrency++;
     this.cur_conn++;
@@ -143,7 +154,6 @@ Policy.prototype.prepose = function() {
 
 exports.get_policy = get_policy;
 exports.policies = policies;
-exports.get_ISPConfig = get_ISPConfig;
+exports.get_ispconfig = get_ispconfig;
 exports.delivery_concurrency = delivery_concurrency;
 exports.conn_pool = conn_pool;
-// exports.tracked_deliveries = tracked_deliveries;

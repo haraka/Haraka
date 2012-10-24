@@ -152,11 +152,9 @@ SendClient.prototype.start_data = function (data) {
 	    data.removeAllListeners('data');
 	    data.removeAllListeners('end');
 	    data.removeAllListeners('error');
-	    
-	    // this.socket
 
 	    data.pipe(this.socket, {end: false});
-	    
+
             data.on('error', function (err) {
 		self.destroy();
             });
@@ -194,7 +192,7 @@ SendClient.prototype.release = function () {
         return;
     }
 
-    if (this.sent === policy.get_ISPConfig(this.dom, 'sessions')) {
+    if (this.sent === policy.get_ispconfig(this.dom, 'sessions')) {
 	this.destroy();
 	return;
     }
@@ -371,25 +369,23 @@ exports.run_send = function(conn_pool, dom, port, host, timeout, enable_tls,
 	};
 	
 	// transmission error occured
-	// if (!send_client.socket['_events']['error'])
 	send_client.socket.removeAllListeners('error');
 	send_client.socket.removeAllListeners('timeout');
 	send_client.socket.removeAllListeners('end');
 	send_client.socket.removeAllListeners('close');	
 	
-	send_client.socket.on('error', closed('error!!!'));
-	
+	send_client.socket.on('error', closed('error!'));	
 	// timeout due to inactivity
 	// if (!send_client.socket['_events']['timeout'])
-	send_client.socket.on('timeout', closed('timeout!!!'));
+	send_client.socket.on('timeout', closed('timeout!'));
 	
 	// an transmission error occured, and the socket is fully closed
 	// if (!send_client.socket['_events']['close'])
-	send_client.socket.on('close', closed('closed!!!!!'));
+	send_client.socket.on('close', closed('connection closed!'));
 	
 	// the other side close the socket
 	// if (!send_client.socket['_events']['end'])
-	send_client.socket.on('end', closed('end!!!!!!!'));
+	send_client.socket.on('end', closed('end!'));
 
 	// process helo
         var helo = function (command) {
@@ -461,12 +457,6 @@ exports.run_send = function(conn_pool, dom, port, host, timeout, enable_tls,
             }
         }
         
-        // hmail.timeouts = hmail.timeouts || [];
-        // hmail.timeouts.push(setTimeout(function(){
-	//     hmail.loginfo(send_client);
-        //     // send_client.socket.emit('timeout');
-        // }, 150 * 1000));
-
         callback(err, send_client);
     });
 }
