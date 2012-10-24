@@ -382,7 +382,6 @@ exports.load_queue_files = function (cb_name, files) {
             // dot-file...
             continue;
         }
-	console.log(file);
 	/**
 	 *  load all email meta data from the disk into memory
 	 */ 
@@ -573,8 +572,6 @@ HMailItem.prototype.send = function () {
 }
 
 HMailItem.prototype.check_limit_respond = function(retval) {
-    console.log(retval + 'OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOo');
-    console.log(get_policy("163.com"));
     if (retval == constants.ok) {
         if (!this.todo) {
             var self = this;
