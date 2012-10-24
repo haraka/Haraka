@@ -390,7 +390,7 @@ exports.load_queue_files = function (cb_name, files) {
         this[cb_name](hmail);        
     }
 
-    // plugin.heart_beat();
+    plugin.heart_beat();
 }
 
 /**
