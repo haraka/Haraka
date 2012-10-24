@@ -590,7 +590,6 @@ HMailItem.prototype.check_limit_respond = function(retval) {
 
 HMailItem.prototype.process_bad_code = function(code, msg) {
     var self = this;
-    self.clear_timers();
 
     // if this email is delivered successfully; not neccessary
     // to goto next steps
