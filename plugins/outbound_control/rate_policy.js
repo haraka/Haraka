@@ -2,13 +2,14 @@
  * TODO: save outbound_limit.json into redis
  */
 var util   = require("util");
-var events = require("events")
-var config = require("../../config")
-var config_data = config.get('outbound_limit.json', 'json');
+var events = require("events");
+var redis = require("redis");
 var delivery_concurrency = 0;
 // connections by domains
 var conn_pool = {};
 // outbound rate limit policy by domains
+// var config = require("../../config")
+// var config_data = config.get('outbound_limit.json', 'json');
 var policies = {};
 
 // get outbound rate limit policy by domain
@@ -29,35 +30,36 @@ function get_ispconfig(dom, name) {
 
 // outbound rate limit object
 function Policy(dom) {    
-    this.domain = dom;
+    // this.domain = dom;
 
-    var data = config_data[dom];
-    if (!data)
-	data = config_data['default'];
+    // var data = config_data[dom];
+    // if (!data)
+    // 	data = config_data['default'];
 
-    this.cur_conn = 0;
-    this.conn_limit  = data['conn_limit'];    
+    // this.cur_conn = 0;
+    // this.conn_limit  = data['conn_limit'];    
 
-    this.micro_deliveries = 0;
-    this.micro_limit = data['micro_limit'];
+    // this.micro_deliveries = 0;
+    // this.micro_limit = data['micro_limit'];
     
-    this.tiny_deliveries = 0;
-    this.tiny_limit = data['tiny_limit'];
+    // this.tiny_deliveries = 0;
+    // this.tiny_limit = data['tiny_limit'];
     
-    this.medium_deliveries = 0;    
-    this.medium_limit = data['medium_limit'];
+    // this.medium_deliveries = 0;    
+    // this.medium_limit = data['medium_limit'];
 
-    this.big_deliveries = 0;
-    this.big_limit = data['big_limit'];    
+    // this.big_deliveries = 0;
+    // this.big_limit = data['big_limit'];    
 
-    this.MICRO = data['micro'];        
-    this.TINY = data['tiny'];
-    this.MEDIUM = data['medium'];
-    this.BIG = data['big'];
+    // this.MICRO = data['micro'];        
+    // this.TINY = data['tiny'];
+    // this.MEDIUM = data['medium'];
+    // this.BIG = data['big'];
 
-    // initialize three timestamps
-    this.tiny_timestamp =  this.medium_timestamp 
-	= this.big_timestamp = new Date().getTime();
+    // // initialize three timestamps
+    // this.tiny_timestamp =  this.medium_timestamp 
+    // 	= this.big_timestamp = new Date().getTime();
+    
 }
 
 /**

@@ -82,6 +82,7 @@ exports.check_user = function (next, connection, credentials, method) {
 
     var passwd_ok = function (valid) {
         if (valid) {
+	    connection.authenticated = true;
             connection.relaying = 1;
             connection.respond(235, "Authentication successful");
             connection.authheader = "(authenticated bits=0)\n";

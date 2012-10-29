@@ -693,6 +693,7 @@ Connection.prototype.rset_respond = function(retval, msg) {
 }
 
 Connection.prototype.mail_respond = function(retval, msg) {
+    if (!this.authenticated) return this.disconnect();
     var self = this;
     var sender = this.transaction.mail_from;
     var dmsg   = "sender " + sender.format();
