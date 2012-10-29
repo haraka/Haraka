@@ -20,6 +20,7 @@ where:
 * cn = Total number of connections
 * cc = Total number of concurrent connections
 * cps = Number of connections in the last second / average / maximum
+* mps = Number of messages in the last second / average / maximum
 
 If 'cluster' is used then the master process will show the total
 across all workers.
