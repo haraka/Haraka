@@ -104,12 +104,6 @@ function SMTPClient(port, host, connect_timeout) {
         self.socket.setTimeout(0);
     });
 
-    this.socket.on('drain', function () {
-        if (self.command === 'mailbody') {
-            process.nextTick(function () { self.continue_data() });
-        }
-    });
-
     var closed = function (msg) {
         return function (error) {
             if (!error) {
@@ -149,42 +143,9 @@ SMTPClient.prototype.send_command = function (command, data) {
 };
 
 SMTPClient.prototype.start_data = function (data) {
-    this.command = 'mailbody';
-    if (data instanceof Function) {
-        this.send_data = data;
-    }
-    else if (Array.isArray(data)) {
-        var data_marker = 0;
-        this.send_data = function () {
-            while (data_marker < data.length) {
-                var line = data[data_marker];
-                data_marker++;
-                if (!this.send_data_line(line)) {
-                    return false;
-                }
-            }
-            return true;
-        };
-    }
-    else {
-        this.send_data = function () {
-            this.socket.write(data);
-            return true;
-        };
-    }
-    this.continue_data();
-};
-
-SMTPClient.prototype.continue_data = function () {
-    if (!this.send_data()) {
-        return;
-    }
-    this.send_command('dot');
-};
-
-SMTPClient.prototype.send_data_line = function (line) {
-    var buf = new Buffer(line.replace(/^\./, '..').replace(/\r?\n/g, '\r\n'), 'binary');
-    return this.socket.write(buf);
+   this.response = [];
+   this.command = 'dot';
+   data.pipe(this.socket, { dot_stuffing: true, ending_dot: true, emit_end: false });
 };
 
 SMTPClient.prototype.release = function () {

@@ -61,7 +61,7 @@ exports.hook_queue = function (next, connection) {
     var smtp_client = connection.notes.smtp_client;
     if (!smtp_client) return next();
     smtp_client.next = next;
-    smtp_client.start_data(connection.transaction.data_lines);
+    smtp_client.start_data(connection.transaction.messageStream);
 };
 
 exports.hook_rset = function (next, connection) {
