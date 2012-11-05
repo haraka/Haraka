@@ -84,14 +84,18 @@ exports.send_email = function () {
         return this.send_trans_email(arguments[0], arguments[1]);
     }
 
+    var self = this;
+
     var from = arguments[0],
         to   = arguments[1],
         contents = arguments[2],
         next = arguments[3];
-    
+
     this.loginfo("Sending email via params");
 
     var transaction = trans.createTransaction();
+
+    this.loginfo("Created transaction: " + transaction.uuid);
 
     // set MAIL FROM address, and parse if it's not an Address object
     if (from instanceof Address) {
@@ -131,6 +135,7 @@ exports.send_email = function () {
 
     transaction.rcpt_to = to;
 
+
     // Set data_lines to lines in contents
     var match;
     var re = /^([^\n]*\n?)/;
@@ -143,7 +148,7 @@ exports.send_email = function () {
             break;
         }
     }
-
+    transaction.messageStream.add_line_end();
     this.send_trans_email(transaction, next);
 }
 
@@ -160,7 +165,7 @@ exports.send_trans_email = function (transaction, next) {
         transaction.add_header('Date', date_to_str(new Date()));
     }
 
-    transaction.add_header('Received', 'via haraka outbound.js at ' + date_to_str(new Date()));
+    transaction.add_leading_header('Received', 'via haraka outbound.js at ' + date_to_str(new Date()));
     
     // First get each domain
     var recips = {};
@@ -222,56 +227,38 @@ exports.process_domain = function (todo, hmails, cb) {
     var fname = _fname();
     var tmp_path = path.join(queue_dir, '.' + fname);
     var ws = fs.createWriteStream(tmp_path, { flags: WRITE_EXCL });
-    var data_pos = 0;
-    var write_more = function () {
-        if (data_pos === todo.data_lines.length) {
-            ws.on('close', function () {
-                var dest_path = path.join(queue_dir, fname);
-                fs.rename(tmp_path, dest_path, function (err) {
-                    if (err) {
-                        plugin.logerror("Unable to rename tmp file!: " + err);
-                        cb(tmp_path, DENY, "Queue error");
-                    }
-                    else {
-                        hmails.push(new HMailItem (fname, dest_path, todo.notes));
-                        cb(tmp_path, OK, "Queued!");
-                    }
-                });
-            });
-            ws.destroySoon();
-            return;
-        }
-        
-        // write, but fixup "." at the beginning of the line to be ".."
-        // and fixup \n to be \r\n
-        var buf = new Buffer(todo.data_lines[data_pos++].replace(/^\./m, '..').replace(/\r?\n/g, "\r\n"), 'binary');
-        if (ws.write(buf)) {
-            write_more();
-        }
-    };
-
+    ws.on('close', function () {
+        var dest_path = path.join(queue_dir, fname);
+        fs.rename(tmp_path, dest_path, function (err) {
+            if (err) {
+                plugin.logerror("Unable to rename tmp file!: " + err);
+                cb(tmp_path, DENY, "Queue error");
+            }
+            else {
+                hmails.push(new HMailItem (fname, dest_path, todo.notes));
+                cb(tmp_path, OK, "Queued!");
+            }
+        });
+    });
     ws.on('error', function (err) {
         plugin.logerror("Unable to write queue file (" + fname + "): " + err);
         ws.destroy();
         cb(tmp_path, DENY, "Queueing failed");
     });
-
-    ws.on('drain', write_more);
-
-    plugin.build_todo(todo, ws, write_more);
+    plugin.build_todo(todo, ws);
 }
 
-exports.build_todo = function (todo, ws, write_more) {
+exports.build_todo = function (todo, ws) {
     // Replacer function to exclude items from the queue file header
     function exclude_from_json(key, value) {
         switch (key) {
-            case 'data_lines':
+            case 'messageStream':
                 return undefined;
             default:
                 return value;
         }
     }
-    var todo_str = JSON.stringify(todo, exclude_from_json);
+    var todo_str = new Buffer(JSON.stringify(todo, exclude_from_json), 'binary');
 
     // since JS has no pack() we have to manually write the bytes of a long
     var todo_length = new Buffer(4);
@@ -281,12 +268,10 @@ exports.build_todo = function (todo, ws, write_more) {
     todo_length[1] = (todo_str.length >> 16) & 0xff;
     todo_length[0] = (todo_str.length >> 24) & 0xff;
     
-    ws.write(todo_length);
-    if (ws.write(todo_str)) {
-        // if write() above returned false, the 'drain' event will be called
-        // later anyway to call write_more_data()
-        write_more();
-    }
+    var buf = Buffer.concat([todo_length, todo_str], todo_str.length + 4);
+
+    ws.write(buf);
+    todo.messageStream.pipe(ws, { line_endings: '\r\n', dot_stuffing: true, ending_dot: false });
 }
 
 exports.split_to_new_recipients = function (hmail, recipients) {
@@ -417,7 +402,7 @@ function TODOItem (domain, recipients, transaction) {
     this.domain = domain;
     this.rcpt_to = recipients;
     this.mail_from = transaction.mail_from;
-    this.data_lines = transaction.data_lines;
+    this.messageStream = transaction.messageStream;
     this.notes = transaction.notes;
     this.uuid = transaction.uuid;
     return this;
