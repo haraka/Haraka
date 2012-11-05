@@ -53,18 +53,22 @@ ChunkEmitter.prototype.fill = function (input) {
 }
 
 ChunkEmitter.prototype.end = function (cb) {
-    if (this.bufs.length > 0) {
+    var emitted = false;
+    if (this.bufs_size > 0) {
         this.emit('data', Buffer.concat(this.bufs, this.bufs_size));
+        emitted = true;
     } 
     else if (this.pos > 0) {
         this.emit('data', this.buf.slice(0, this.pos));
+        emitted = true;
     }
     // Reset
     this.buf = null;
     this.pos = 0;
     this.bufs = [];
     this.bufs_size = 0;
-    if (cb) cb();
+    if (cb && typeof cb === 'function') cb();
+    return emitted;
 }
 
 exports.ChunkEmitter = ChunkEmitter;

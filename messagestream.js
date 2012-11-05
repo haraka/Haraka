@@ -13,7 +13,8 @@ var STATE_BODY = 2;
 function MessageStream (config, id, headers) {
     if (!id) throw new Error('id required');
     Stream.call(this);
-    this.ce = null;
+    this.write_ce = null;
+    this.read_ce = null;
     this.bytes_read = 0;
     this.state = STATE_HEADERS;
     this.idx = {};
@@ -31,7 +32,7 @@ function MessageStream (config, id, headers) {
     this.filename = this.spool_dir + '/' + id + '.eml';
     this.write_pending = false;
 
-    this.readable = true;
+    this.readable = false;  // Enabled once we've finished writing
     this.paused = false;
     this.headers = headers || [];
     this.headers_done = false;
@@ -40,7 +41,7 @@ function MessageStream (config, id, headers) {
     this.data_buf = null;
     this.dot_stuffing = false;
     this.ending_dot = false;
-    this.emit_end = false;
+    this.emit_end = true;
     this.buffer_size = (1024 * 64);
     this.start = 0;
     //this.end = null;
@@ -56,9 +57,9 @@ MessageStream.prototype.add_line = function (line) {
     }
 
     // create a ChunkEmitter
-    if (!this.ce) {
-        this.ce = new ChunkEmitter();
-        this.ce.on('data', function (chunk) {
+    if (!this.write_ce) {
+        this.write_ce = new ChunkEmitter();
+        this.write_ce.on('data', function (chunk) {
             self._write(chunk);
         });
     }
@@ -95,7 +96,7 @@ MessageStream.prototype.add_line = function (line) {
         }
     } 
 
-    this.ce.fill(line);
+    this.write_ce.fill(line);
 }
 
 MessageStream.prototype.add_line_end = function (cb) {
@@ -107,7 +108,12 @@ MessageStream.prototype.add_line_end = function (cb) {
     if (cb && typeof cb === 'function') {
         this.end_callback = cb;
     }
-    this.ce.end()
+    // Call _write() only if no new data was emitted
+    // This might happen if the message size matches
+    // the size of the chunk buffer.
+    if (!this.write_ce.end()) {
+        this._write();
+    }
 }
 
 MessageStream.prototype._write = function (data) {
@@ -120,29 +126,29 @@ MessageStream.prototype._write = function (data) {
     if (this.buffered > this.max_data_inflight) {
         this.max_data_inflight = this.buffered;
     }
-    // Once this.end_callback is set, we've got all the data
-    if (this.buffer_max === -1) {
-        // Never spool to disk...
-        if (this.end_callback) this.end_callback();
-        return false;
+    // Do we need to spool to disk?
+    if (this.buffer_max !== -1 && this.buffered > this.buffer_max) {
+        this.spooling = true;
     }
-    else if (this.buffered < this.buffer_max && !this.spooling) {
-        // Buffer to memory until we reach the threshold
+    // Have we completely finished writing all data?
+    if (this.end_called && (!this.spooling || (this.spooling && !this._queue.length))) {
+        this.readable = true;
         if (this.end_callback) this.end_callback();
-        return false;
+        // Do we have any waiting readers?
+        if (this.listeners('data').length) {
+            process.nextTick(function () {
+                if (self.readable && !self.paused)
+                    self._read();
+            });
+        }
+        return true;
+    }
+    if (this.buffer_max === -1 || (this.buffered < this.buffer_max && !this.spooling)) {
+        return true;
     }
     else {
-        if (!this.fd && !this.open_pending) {
-            this.spooling = true;
-        }
-        if (!this._queue.length && this.end_callback) {
-            // We written everything from the buffer
-            this.end_callback();
-            return false;
-        }
-    }
-    if (this.open_pending || this.write_pending || !this._queue.length) {
-        return false;
+        // We're spooling to disk
+        if (this.open_pending || this.write_pending) return false;
     }
 
     // Open file descriptor if needed 
@@ -199,10 +205,10 @@ MessageStream.prototype._read = function () {
     if (this.headers.length && !this.headers_done) {
         this.headers_done = true;
         for (var i=0; i<this.headers.length; i++) {
-            this.ce.fill(this.headers[i].replace(/\r?\n/g,this.line_endings));
+            this.read_ce.fill(this.headers[i].replace(/\r?\n/g,this.line_endings));
         }
         // Add end of headers marker
-        this.ce.fill(this.line_endings);
+        this.read_ce.fill(this.line_endings);
         // Loop
         process.nextTick(function () {
             if (self.readable && !self.paused) 
@@ -276,11 +282,11 @@ MessageStream.prototype.process_buf = function (buf) {
                 ], line.length-1 + this.line_endings.length);
             line = le;
         }
-        this.ce.fill(line);
+        this.read_ce.fill(line);
     }
     // Check for data left in the buffer
     if (buf.length > 0) {
-        this.ce.fill(buf);
+        this.read_ce.fill(buf);
     }
 }
 
@@ -288,23 +294,24 @@ MessageStream.prototype._read_finish = function () {
     var self = this;
     // End dot required?
     if (this.ending_dot) {
-        this.ce.fill('.' + this.line_endings);
+        this.read_ce.fill('.' + this.line_endings);
     }
     // Tell the chunk emitter to send whatever is left
     // We don't close the fd here so we can re-use it later.
-    this.ce.end(function () {
+    this.read_ce.end(function () {
         if (self.clamd_style) {
             // Add 0 length to notify end
             var buf = new Buffer(4); 
             buf.writeUInt32BE(0, 0);
             self.emit('data', buf);
         }
-        if (this.emit_end) self.emit('end');
+        if (self.emit_end) self.emit('end');
     });
 }
 
 MessageStream.prototype.pipe = function (destination, options) {
     var self = this;
+    Stream.prototype.pipe.call(this, destination, options);
     // Options
     this.line_endings = ((options && options.line_endings) ? options.line_endings : "\r\n");
     this.dot_stuffing = ((options && options.dot_stuffing) ? options.dot_stuffing : false);
@@ -318,8 +325,8 @@ MessageStream.prototype.pipe = function (destination, options) {
     this.headers_done = false;
     this.headers_found_eoh = false;
     this.data_buf = new Buffer(this.buffer_size); 
-    this.ce = new ChunkEmitter(this.buffer_size);
-    this.ce.on('data', function (chunk) {
+    this.read_ce = new ChunkEmitter(this.buffer_size);
+    this.read_ce.on('data', function (chunk) {
         if (self.clamd_style) {
             // Prefix data length to the beginning of line
             var buf = new Buffer(chunk.length+4);
@@ -331,7 +338,10 @@ MessageStream.prototype.pipe = function (destination, options) {
             self.emit('data', chunk);
         }
     });
-    Stream.prototype.pipe.call(this, destination, options);
+    // Stream won't be readable until we've finished writing and add_line_end() has been called.
+    // As we've registered for events above, the _write() function can now detect that we
+    // are waiting for the data and will call _read() automatically when it is finished.
+    if (!this.readable) return;
     // Create this.fd only if it doesn't already exist
     // This is so we can re-use the already open descriptor
     if (!this.fd && !(this._queue.length > 0)) {
