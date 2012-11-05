@@ -24,7 +24,7 @@ function MessageStream (config, id, headers) {
     this._queue = [];
     this.max_data_inflight = 0;
     this.buffer_max = (!isNaN(config.main.spool_after) ? 
-                      config.main.spool_after : -1);
+                       Number(config.main.spool_after) : -1);
     this.spooling = false;
     this.fd = null;    
     this.open_pending = false;
@@ -126,6 +126,8 @@ MessageStream.prototype._write = function (data) {
     if (this.buffered > this.max_data_inflight) {
         this.max_data_inflight = this.buffered;
     }
+    // Abort if we have pending disk operations
+    if (this.open_pending || this.write_pending) return false;
     // Do we need to spool to disk?
     if (this.buffer_max !== -1 && this.buffered > this.buffer_max) {
         this.spooling = true;
@@ -133,13 +135,15 @@ MessageStream.prototype._write = function (data) {
     // Have we completely finished writing all data?
     if (this.end_called && (!this.spooling || (this.spooling && !this._queue.length))) {
         this.readable = true;
-        if (this.end_callback) this.end_callback();
         // Do we have any waiting readers?
         if (this.listeners('data').length) {
             process.nextTick(function () {
                 if (self.readable && !self.paused)
                     self._read();
             });
+        }
+        if (this.end_callback) {
+            this.end_callback();
         }
         return true;
     }
@@ -148,7 +152,9 @@ MessageStream.prototype._write = function (data) {
     }
     else {
         // We're spooling to disk
-        if (this.open_pending || this.write_pending) return false;
+        if (!this._queue.length) {
+            return false;
+        }
     }
 
     // Open file descriptor if needed 
@@ -167,7 +173,6 @@ MessageStream.prototype._write = function (data) {
     if (!this.fd) return false;
     var to_send = this._queue.shift();
     this.buffered -= to_send.length;
-
     this.write_pending = true;
     fs.write(this.fd, to_send, 0, to_send.length, null, function (err, written, buffer) {
         if (err) return self.emit('error', err);
