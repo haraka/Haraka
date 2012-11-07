@@ -122,7 +122,7 @@ function setupClient(self) {
 function Connection(client, server) {
     this.client = client;
     this.server = server;
-    this.current_data = '';
+    this.current_data = null; 
     this.current_line = null;
     this.state = STATE_PAUSE;
     this.uuid = uuid();
@@ -166,7 +166,14 @@ exports.createConnection = function(client, server) {
 
 Connection.prototype.process_line = function (line) {
     var self = this;
-    if (this.state !== STATE_DATA) {
+    if (this.state === STATE_DATA) {
+        if (logger.would_log(logger.LOGDATA)) {
+            this.logdata("C: " + line);
+        }
+        this.accumulate_data(line);
+        return;
+    }
+    else {
         this.current_line = line.toString('binary').replace(/\r?\n/, '');
         if (logger.would_log(logger.LOGPROTOCOL)) {
             this.logprotocol("C: " + this.current_line + ' state=' + this.state);
@@ -219,11 +226,8 @@ Connection.prototype.process_line = function (line) {
             this.respond(this.loop_code, this.loop_msg);
         }
     }
-    else if (this.state === STATE_DATA) {
-        if (logger.would_log(logger.LOGDATA)) {
-            this.logdata("C: " + line);
-        }
-        this.accumulate_data(line);
+    else {
+        throw new Error('unknown state ' + this.state);
     }
 };
 
@@ -233,7 +237,7 @@ Connection.prototype.process_data = function (data) {
         return;
     }
 
-    if (!Buffer.isBuffer(this.current_data)) {
+    if (!this.current_data || !this.current_data.length) {
         this.current_data = data;
     }
     else {
@@ -256,7 +260,7 @@ Connection.prototype._process_data = function() {
     if (this.disconnected) return;
 
     var offset;
-    while ((offset = indexOfLF(this.current_data)) !== -1) {
+    while (this.current_data && ((offset = indexOfLF(this.current_data)) !== -1)) {
         var this_line = this.current_data.slice(0, offset+1);
         // Hack: bypass this code to allow HAProxy's PROXY extension
         if (this.state === STATE_PAUSE && this.proxy && /^PROXY /.test(this_line)) {
@@ -1154,7 +1158,6 @@ Connection.prototype.accumulate_data = function(line) {
         line[1] === 0x0d &&
         line[2] === 0x0a)
     {
-        //return this.data_done();
         this.transaction.messageStream.add_line_end(function () {
             self.data_done();
         });
@@ -1174,7 +1177,7 @@ Connection.prototype.accumulate_data = function(line) {
     }
 
     // Remove any dot stuffing
-    if (line.length >= 3 &&
+    if (line.length > 3 &&
         line[0] === 0x2e &&
         line[1] === 0x2e)
     {

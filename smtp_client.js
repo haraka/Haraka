@@ -145,7 +145,7 @@ SMTPClient.prototype.send_command = function (command, data) {
 SMTPClient.prototype.start_data = function (data) {
    this.response = [];
    this.command = 'dot';
-   data.pipe(this.socket, { dot_stuffing: true, ending_dot: true, emit_end: false });
+   data.pipe(this.socket, { dot_stuffing: true, ending_dot: true, end: false });
 };
 
 SMTPClient.prototype.release = function () {

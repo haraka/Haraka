@@ -4,7 +4,6 @@ var fs = require('fs');
 var util = require('util');
 var Stream = require('stream').Stream;
 var ChunkEmitter = require('./chunkemitter').ChunkEmitter;
-var logger = require('./logger');
 var indexOfLF = require('./utils').indexOfLF;
 
 var STATE_HEADERS = 1;
@@ -32,7 +31,7 @@ function MessageStream (config, id, headers) {
     this.filename = this.spool_dir + '/' + id + '.eml';
     this.write_pending = false;
 
-    this.readable = false;  // Enabled once we've finished writing
+    this.readable = true;
     this.paused = false;
     this.headers = headers || [];
     this.headers_done = false;
@@ -41,10 +40,9 @@ function MessageStream (config, id, headers) {
     this.data_buf = null;
     this.dot_stuffing = false;
     this.ending_dot = false;
-    this.emit_end = true;
     this.buffer_size = (1024 * 64);
     this.start = 0;
-    //this.end = null;
+    this.write_complete = false;
 }
 
 util.inherits(MessageStream, Stream);
@@ -94,8 +92,8 @@ MessageStream.prototype.add_line = function (line) {
                 }
             }
         }
-    } 
-
+    }
+ 
     this.write_ce.fill(line);
 }
 
@@ -134,7 +132,7 @@ MessageStream.prototype._write = function (data) {
     }
     // Have we completely finished writing all data?
     if (this.end_called && (!this.spooling || (this.spooling && !this._queue.length))) {
-        this.readable = true;
+        this.write_complete = true;
         // Do we have any waiting readers?
         if (this.listeners('data').length) {
             process.nextTick(function () {
@@ -262,9 +260,7 @@ MessageStream.prototype.process_buf = function (buf) {
     var offset = 0;
     while ((offset = indexOfLF(buf)) !== -1) { 
         var line = buf.slice(0, offset+1);
-        if (buf.length > offset) {
-            buf = buf.slice(offset+1);
-        }
+        buf = buf.slice(line.length);
         // Don't output headers if they where sent already
         if (this.headers_done && !this.headers_found_eoh) {
             if (line.length === 1 && line[0] === 0x0a) {
@@ -274,7 +270,7 @@ MessageStream.prototype.process_buf = function (buf) {
         }
         // Add dot-stuffing if required
         if (this.dot_stuffing) {
-            if (line[0] === 0x2e) {
+            if (line.length >= 2 && line[0] === 0x2e) {
                 var dot = Buffer.concat([new Buffer('.'), line], line.length+1);
                 line = dot;
             }
@@ -310,7 +306,7 @@ MessageStream.prototype._read_finish = function () {
             buf.writeUInt32BE(0, 0);
             self.emit('data', buf);
         }
-        if (self.emit_end) self.emit('end');
+        self.emit('end');
     });
 }
 
@@ -321,11 +317,9 @@ MessageStream.prototype.pipe = function (destination, options) {
     this.line_endings = ((options && options.line_endings) ? options.line_endings : "\r\n");
     this.dot_stuffing = ((options && options.dot_stuffing) ? options.dot_stuffing : false);
     this.ending_dot   = ((options && options.ending_dot) ? options.ending_dot : false);
-    this.emit_end     = ((options && options.emit_end === false) ? false : true);
     this.clamd_style  = ((options && options.clamd_style) ? true : false);
     this.buffer_size  = ((options && options.buffer_size) ? options.buffer_size : 1024 * 64);
     this.start        = ((options && parseInt(options.start)) ? parseInt(options.start) : 0);
-    //this.end          = ((options && parseInt(options.end)) ? parseInt(options.end) : null); 
     // Reset
     this.headers_done = false;
     this.headers_found_eoh = false;
@@ -346,7 +340,7 @@ MessageStream.prototype.pipe = function (destination, options) {
     // Stream won't be readable until we've finished writing and add_line_end() has been called.
     // As we've registered for events above, the _write() function can now detect that we
     // are waiting for the data and will call _read() automatically when it is finished.
-    if (!this.readable) return;
+    if (!this.write_complete) return;
     // Create this.fd only if it doesn't already exist
     // This is so we can re-use the already open descriptor
     if (!this.fd && !(this._queue.length > 0)) {
