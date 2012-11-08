@@ -16,7 +16,17 @@ ChunkEmitter.prototype.fill = function (input) {
     if (typeof input === 'string') {
         input = new Buffer(input);
     }
+/*
+    this.bufs.push(input);
+    this.bufs_size += input.length;
 
+    if (this.bufs_size >= this.buffer_size) {
+        var new_buf = Buffer.concat(this.bufs, this.bufs_size);
+        this.emit('data', new_buf);
+        this.bufs = [];
+        this.bufs_size = 0;
+    }
+*/
     // Optimization: don't allocate a new buffer until
     // the input we've had so far is bigger than our
     // buffer size.

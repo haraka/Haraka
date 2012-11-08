@@ -42,7 +42,7 @@ exports.createTransaction = function(uuid) {
 Transaction.prototype.add_data = function(line) {
     this.messageStream.add_line(line);
     if (typeof line !== 'string') {
-        line = line.toString('binary');
+        line = line.toString('binary').replace(/^\.\./, '.').replace(/\r\n$/, '\n');
     }
     // check if this is the end of headers line (note the regexp isn't as strong 
     // as it should be - it accepts whitespace in a blank line - we've found this
@@ -59,19 +59,13 @@ Transaction.prototype.add_data = function(line) {
         this.header_lines.push(line);
     }
     else if (this.header_pos && this.parse_body) {
-        line = this.body.parse_more(line);
+        this.body.parse_more(line);
     }
-//    if (line.length) {
-//        this.data_lines.push(line);
-//    }
 };
 
 Transaction.prototype.end_data = function() {
     if (this.header_pos && this.parse_body) {
         var data = this.body.parse_end();
-//        if (data.length) {
-//            this.data_lines.push(data);
-//        }
     }
 }
 
@@ -87,7 +81,6 @@ Transaction.prototype.add_leading_header = function(key, value) {
 
 Transaction.prototype.reset_headers = function () {
     var header_lines = this.header.lines();
-//    this.data_lines = header_lines.concat(this.data_lines.slice(this.header_pos));
     this.header_pos = header_lines.length;
 };
 

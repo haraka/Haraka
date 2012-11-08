@@ -1176,23 +1176,6 @@ Connection.prototype.accumulate_data = function(line) {
         return;
     }
 
-    // Remove any dot stuffing
-    if (line.length > 3 &&
-        line[0] === 0x2e &&
-        line[1] === 0x2e)
-    {
-        line = line.slice(1);
-    }
-
-    // Remove CR's
-    if (line.length >= 2 &&
-        line[line.length-1] === 0x0a &&
-        line[line.length-2] === 0x0d)
-    {
-        line[line.length-2] = 0x0a;
-        line = line.slice(0, line.length-1);
-    }
-
     // Stop accumulating data as we're going to reject at dot.
     if (this.max_bytes && this.transaction.data_bytes > this.max_bytes) { 
         return;

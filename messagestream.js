@@ -38,6 +38,7 @@ function MessageStream (config, id, headers) {
     this.headers_found_eoh = false;
     this.line_endings = "\r\n";
     this.data_buf = null;
+    this.data_pos = 0;
     this.dot_stuffing = false;
     this.ending_dot = false;
     this.buffer_size = (1024 * 64);
@@ -67,7 +68,7 @@ MessageStream.prototype.add_line = function (line) {
     // Build up an index of 'interesting' data on the fly
     if (this.state === STATE_HEADERS) {
         // Look for end of headers line
-        if (line.length === 1 && line[0] === 0x0a) {
+        if (line.length === 2 && line[0] === 0x0d && line[1] === 0x0a) {
             this.idx['headers'] = { start: 0, end: this.bytes_read-line.length };
             this.state = STATE_BODY;
             this.idx['body'] = { start: this.bytes_read };
@@ -231,9 +232,10 @@ MessageStream.prototype._read = function () {
         } 
         else {
             // Read the message from the queue file
-            fs.read(this.fd, this.data_buf, 0, this.buffer_size, this.start, function (err, bytesRead, buf) {
+            fs.read(this.fd, this.data_buf, 0, this.buffer_size, this.data_pos, function (err, bytesRead, buf) {
                 if (err) throw err;
                 if (self.paused || !self.readable) return;
+                self.data_pos = bytesRead;
                 // Have we finished reading?
                 var complete = false;
                 if (bytesRead < buf.length) {
@@ -263,25 +265,23 @@ MessageStream.prototype.process_buf = function (buf) {
         buf = buf.slice(line.length);
         // Don't output headers if they where sent already
         if (this.headers_done && !this.headers_found_eoh) {
-            if (line.length === 1 && line[0] === 0x0a) {
+            if (line.length === 2 && line[0] === 0x0d && line[1] === 0x0a) {
                 this.headers_found_eoh = true;
             }
             continue;
         }
-        // Add dot-stuffing if required
-        if (this.dot_stuffing) {
-            if (line.length >= 2 && line[0] === 0x2e) {
-                var dot = Buffer.concat([new Buffer('.'), line], line.length+1);
-                line = dot;
-            }
+        // Remove dot-stuffing if required
+        if (!this.dot_stuffing && line.length >= 4 &&
+            line[0] === 0x2e && line[1] === 0x2e)
+        {
+            line = line.slice(1);
         }
-        // By default the lines should be stored in UNIX format
-        if (this.line_endings !== '\n') {
-            var le = Buffer.concat([
-                line.slice(0, line.length-1),
-                new Buffer(this.line_endings)
-                ], line.length-1 + this.line_endings.length);
-            line = le;
+        // We store lines in native CRLF format; so strip CR if requested
+        if (this.line_endings === '\n' && line.length >= 2 &&
+            line[line.length-1] === 0x0a && line[line.length-2] === 0x0d)
+        {
+            line[line.length-2] = 0x0a;
+            line = line.slice(0, line.length-1);
         }
         this.read_ce.fill(line);
     }
@@ -323,7 +323,8 @@ MessageStream.prototype.pipe = function (destination, options) {
     // Reset
     this.headers_done = false;
     this.headers_found_eoh = false;
-    this.data_buf = new Buffer(this.buffer_size); 
+    this.data_buf = new Buffer(this.buffer_size);
+    this.data_pos = 0; 
     this.read_ce = new ChunkEmitter(this.buffer_size);
     this.read_ce.on('data', function (chunk) {
         if (self.clamd_style) {
