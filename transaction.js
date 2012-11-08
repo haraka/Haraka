@@ -11,6 +11,7 @@ var MessageStream = require('./messagestream').MessageStream;
 var trans = exports;
 
 function Transaction() {
+    this.uuid = null;
     this.mail_from = null;
     this.rcpt_to = [];
     this.header_lines = [];

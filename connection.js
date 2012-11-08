@@ -185,7 +185,6 @@ Connection.prototype.process_line = function (line) {
     }
     if (this.state === STATE_CMD) {
         this.state = STATE_PAUSE_SMTP;
-        //this.current_line = line.replace(/\r?\n/, '');
         var matches = /^([^ ]*)( +(.*))?$/.exec(this.current_line);
         if (!matches) {
             return plugins.run_hooks('unrecognized_command', this, this.current_line);
@@ -449,6 +448,7 @@ Connection.prototype.reset_transaction = function() {
 Connection.prototype.init_transaction = function() {
     this.transaction = trans.createTransaction(this.tran_uuid());
     // Catch any errors from the messageStream
+    var self = this;
     this.transaction.messageStream.on('error', function (err) {
         self.logcrit('messageStream error: ' + err.message);
         self.respond('421', 'Internal Server Error', function () {
