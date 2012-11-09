@@ -441,7 +441,9 @@ Connection.prototype.tran_uuid = function () {
 }
 
 Connection.prototype.reset_transaction = function() {
-    this.transaction.messageStream.destroy();
+    if (this.transaction) {
+        this.transaction.messageStream.destroy();
+    }
     delete this.transaction;
 };
 

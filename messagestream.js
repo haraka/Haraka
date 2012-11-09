@@ -12,6 +12,7 @@ var STATE_BODY = 2;
 function MessageStream (config, id, headers) {
     if (!id) throw new Error('id required');
     Stream.call(this);
+    this.uuid = id;
     this.write_ce = null;
     this.read_ce = null;
     this.bytes_read = 0;
@@ -226,7 +227,7 @@ MessageStream.prototype._read = function () {
         if (this._queue.length > 0) {
             // TODO: implement start/end offsets
             for (var i=0; i<this._queue.length; i++) {
-                this.process_buf(this._queue[i]);
+                this.process_buf(this._queue[i].slice(0));
             }
             this._read_finish();       
         } 
@@ -265,7 +266,10 @@ MessageStream.prototype.process_buf = function (buf) {
         buf = buf.slice(line.length);
         // Don't output headers if they where sent already
         if (this.headers_done && !this.headers_found_eoh) {
-            if (line.length === 2 && line[0] === 0x0d && line[1] === 0x0a) {
+            // Allow \r\n or \n here...
+            if ((line.length === 2 && line[0] === 0x0d && line[1] === 0x0a) ||
+                (line.length === 1 && line[0] === 0x0a)) 
+            {
                 this.headers_found_eoh = true;
             }
             continue;
@@ -320,7 +324,9 @@ MessageStream.prototype.pipe = function (destination, options) {
     this.clamd_style  = ((options && options.clamd_style) ? true : false);
     this.buffer_size  = ((options && options.buffer_size) ? options.buffer_size : 1024 * 64);
     this.start        = ((options && parseInt(options.start)) ? parseInt(options.start) : 0);
-    // Reset
+    // Reset 
+    this.readable = true;
+    this.paused = false;
     this.headers_done = false;
     this.headers_found_eoh = false;
     this.data_buf = new Buffer(this.buffer_size);

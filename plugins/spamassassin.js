@@ -71,9 +71,9 @@ exports.hook_data_post = function (next, connection) {
         if (connection.relaying) {
             headers.push('X-Haraka-Relay: true');
         }
-        socket.write(headers.join("\r\n"), function () {
-            connection.transaction.messageStream.pipe(socket);
-        });
+
+        socket.write(headers.join("\r\n"));
+        connection.transaction.messageStream.pipe(socket);
     });
     
     var spamd_response = {};
@@ -107,6 +107,9 @@ exports.hook_data_post = function (next, connection) {
     });
     
     socket.on('end', function () {
+        // Abort if the connection or transaction are gone
+        if (!connection || (connection && !connection.transaction)) return next();
+
         // Now we do stuff with the results...
  
         plugin.fixup_old_headers(config.main.old_headers_action, connection.transaction);
