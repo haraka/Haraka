@@ -26,12 +26,29 @@ function pluggableStream(socket) {
 util.inherits(pluggableStream, stream.Stream);
 util.inherits(pluggableStream, events.EventEmitter);
 
-pluggableStream.prototype.pipe = function    (socket) {
-    this.on('data', function (data) {
-        if (socket.write)
-            socket.write(data);
-    });
-};
+// This should come from Stream in node core.
+// pluggableStream.prototype.pipe = function    (socket) {
+//     this.on('data', function (data) {
+//         if (socket.write)
+//             socket.write(data);
+//     });
+// };
+
+pluggableStream.prototype.pause = function () {
+    if (this.targetsocket.pause) {
+        // console.log("XXXX: Got backpressure...");
+        this.targetsocket.pause();
+        this.readable = false;
+    }
+}
+
+pluggableStream.prototype.resume = function () {
+    if (this.targetsocket.resume) {
+        // console.log("XXXX: Resuming backpressure...");
+        this.targetsocket.resume();
+        this.readable = true;
+    }
+}
 
 pluggableStream.prototype.attach = function (socket) {
     var self = this;
