@@ -88,8 +88,8 @@ exports.send_email = function () {
 
     var from = arguments[0],
         to   = arguments[1],
-        contents = arguments[2],
-        next = arguments[3];
+        contents = arguments[2];
+        var next = arguments[3];
 
     this.loginfo("Sending email via params");
 
@@ -141,14 +141,14 @@ exports.send_email = function () {
     var re = /^([^\n]*\n?)/;
     while (match = re.exec(contents)) {
         var line = match[1];
-        line = line.replace(/\n?$/, '\n'); // make sure it ends in \n
+        line = line.replace(/\n?$/, '\r\n'); // make sure it ends in \r\n
         transaction.add_data(line);
         contents = contents.substr(match[1].length);
         if (contents.length === 0) {
             break;
         }
     }
-    transaction.messageStream.add_line_end();
+    transaction.message_stream.add_line_end();
     this.send_trans_email(transaction, next);
 }
 
@@ -252,7 +252,7 @@ exports.build_todo = function (todo, ws) {
     // Replacer function to exclude items from the queue file header
     function exclude_from_json(key, value) {
         switch (key) {
-            case 'messageStream':
+            case 'message_stream':
                 return undefined;
             default:
                 return value;
@@ -271,7 +271,7 @@ exports.build_todo = function (todo, ws) {
     var buf = Buffer.concat([todo_length, todo_str], todo_str.length + 4);
 
     ws.write(buf);
-    todo.messageStream.pipe(ws, { line_endings: '\r\n', dot_stuffing: true, ending_dot: false });
+    todo.message_stream.pipe(ws, { line_endings: '\r\n', dot_stuffing: true, ending_dot: false });
 }
 
 exports.split_to_new_recipients = function (hmail, recipients) {
@@ -402,7 +402,7 @@ function TODOItem (domain, recipients, transaction) {
     this.domain = domain;
     this.rcpt_to = recipients;
     this.mail_from = transaction.mail_from;
-    this.messageStream = transaction.messageStream;
+    this.message_stream = transaction.message_stream;
     this.notes = transaction.notes;
     this.uuid = transaction.uuid;
     return this;

@@ -6,5 +6,5 @@ exports.hook_queue = function(next, connection) {
     ws.once('end', function () {
         return next(OK);
     }
-    connection.transaction.messageStream.pipe(ws);
+    connection.transaction.message_stream.pipe(ws);
 };

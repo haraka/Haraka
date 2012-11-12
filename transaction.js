@@ -6,7 +6,7 @@ var logger = require('./logger');
 var Header = require('./mailheader').Header;
 var body   = require('./mailbody');
 var utils  = require('./utils');
-var MessageStream = require('./messagestream').MessageStream;
+var MessageStream = require('./messagestream');
 
 var trans = exports;
 
@@ -22,7 +22,7 @@ function Transaction() {
     this.parse_body = false;
     this.notes = {};
     this.header = new Header();
-    this.messageStream = null;
+    this.message_stream = null;
     this.rcpt_count = {
         accept:   0,
         tempfail: 0,
@@ -36,12 +36,12 @@ exports.createTransaction = function(uuid) {
     var t = new Transaction();
     t.uuid = uuid || utils.uuid();
     // Initialize MessageStream here to pass in the UUID
-    t.messageStream = new MessageStream(config.get('smtp.ini'), t.uuid, t.header.header_list);
+    t.message_stream = new MessageStream(config.get('smtp.ini'), t.uuid, t.header.header_list);
     return t;
 };
 
 Transaction.prototype.add_data = function(line) {
-    this.messageStream.add_line(line);
+    this.message_stream.add_line(line);
     if (typeof line !== 'string') {
         line = line.toString('binary').replace(/^\.\./, '.').replace(/\r\n$/, '\n');
     }

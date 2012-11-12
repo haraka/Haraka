@@ -30,7 +30,7 @@ exports.hook_queue = function (next, connection) {
         }
 
         smtp_client.on('data', function () {
-            smtp_client.start_data(connection.transaction.messageStream);
+            smtp_client.start_data(connection.transaction.message_stream);
         });
 
         smtp_client.on('dot', function () {

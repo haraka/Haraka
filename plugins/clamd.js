@@ -79,7 +79,7 @@ exports.hook_data_post = function (next, connection) {
           addressInfo = hp === null ? '' : ' ' + hp.address + ':' + hp.port;
         connection.logdebug(plugin, 'connected to host' + addressInfo);
         socket.write("zINSTREAM\0", function () {
-            transaction.messageStream.pipe(socket, { clamd_style: true });
+            transaction.message_stream.pipe(socket, { clamd_style: true });
         });
     });
     

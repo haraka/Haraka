@@ -180,5 +180,5 @@ exports.hook_queue_outbound = function (next, connection) {
         }
         return next();
     }); 
-    transaction.messageStream.pipe(dkim_sign);
+    transaction.message_stream.pipe(dkim_sign);
 }

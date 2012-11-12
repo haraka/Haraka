@@ -110,7 +110,7 @@ transaction.notes.quarantine = true;
                             }
                     );
                 });
-                transaction.messageStream.pipe(ws, { line_endings: '\n' });
+                transaction.message_stream.pipe(ws, { line_endings: '\n' });
             });
         });
         

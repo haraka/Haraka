@@ -3,7 +3,7 @@
 var fs = require('fs');
 var util = require('util');
 var Stream = require('stream').Stream;
-var ChunkEmitter = require('./chunkemitter').ChunkEmitter;
+var ChunkEmitter = require('./chunkemitter');
 var indexOfLF = require('./utils').indexOfLF;
 
 var STATE_HEADERS = 1;
@@ -388,4 +388,4 @@ MessageStream.prototype.destroy = function () {
     }
 }
 
-exports.MessageStream = MessageStream;
+module.exports = MessageStream;

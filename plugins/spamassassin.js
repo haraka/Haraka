@@ -73,7 +73,7 @@ exports.hook_data_post = function (next, connection) {
         }
 
         socket.write(headers.join("\r\n"));
-        connection.transaction.messageStream.pipe(socket);
+        connection.transaction.message_stream.pipe(socket);
     });
     
     var spamd_response = {};

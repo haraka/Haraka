@@ -442,17 +442,17 @@ Connection.prototype.tran_uuid = function () {
 
 Connection.prototype.reset_transaction = function() {
     if (this.transaction) {
-        this.transaction.messageStream.destroy();
+        this.transaction.message_stream.destroy();
     }
     delete this.transaction;
 };
 
 Connection.prototype.init_transaction = function() {
     this.transaction = trans.createTransaction(this.tran_uuid());
-    // Catch any errors from the messageStream
+    // Catch any errors from the message_stream
     var self = this;
-    this.transaction.messageStream.on('error', function (err) {
-        self.logcrit('messageStream error: ' + err.message);
+    this.transaction.message_stream.on('error', function (err) {
+        self.logcrit('message_stream error: ' + err.message);
         self.respond('421', 'Internal Server Error', function () {
             self.disconnect();
         });
@@ -1160,7 +1160,7 @@ Connection.prototype.accumulate_data = function(line) {
         line[1] === 0x0d &&
         line[2] === 0x0a)
     {
-        this.transaction.messageStream.add_line_end(function () {
+        this.transaction.message_stream.add_line_end(function () {
             self.data_done();
         });
         return;
