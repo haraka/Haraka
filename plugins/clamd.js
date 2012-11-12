@@ -64,42 +64,6 @@ exports.hook_data_post = function (next, connection) {
 
     socket.setTimeout(config.main.timeout * 1000);
 
-    var pack_len = function(length) {
-        var len = new Buffer(4);
-        len[3] = length & 0xFF;
-        len[2] = (length >> 8) & 0xFF;
-        len[1] = (length >> 16) & 0xFF;
-        len[0] = (length >> 24) & 0xFF;
-        return len;
-    }
-
-    var data_marker = 0;
-    var in_data = false;
-
-    var send_data = function () {
-        in_data = true;
-        var wrote_all = true;
-        while (wrote_all && (data_marker < transaction.data_lines.length)) {
-            var data_line = transaction.data_lines[data_marker];
-            var len = Buffer.byteLength(data_line);
-            var buf = new Buffer(parseInt(len + 4));
-            pack_len(len).copy(buf);
-            buf.write(data_line, 4);
-            data_marker++;
-            wrote_all = socket.write(buf);
-        }
-        if (wrote_all) {
-            // We're at the end of the data_lines - send a zero length line
-            in_data = false; // We don't need to be called by socket.on('drain' ...
-            socket.end(pack_len(0));
-        }
-    };
-
-    socket.on('drain', function () {
-        if (in_data) {
-            process.nextTick(function () { send_data() });
-        }
-    });
     socket.on('timeout', function () {
         connection.logerror(plugin, "connection timed out");
         socket.destroy();
@@ -115,7 +79,7 @@ exports.hook_data_post = function (next, connection) {
           addressInfo = hp === null ? '' : ' ' + hp.address + ':' + hp.port;
         connection.logdebug(plugin, 'connected to host' + addressInfo);
         socket.write("zINSTREAM\0", function () {
-            send_data();
+            transaction.message_stream.pipe(socket, { clamd_style: true });
         });
     });
     

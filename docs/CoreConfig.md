@@ -34,6 +34,9 @@ different levels available.
   * daemonize - enable this to cause Haraka to fork into the background on start-up (default: 0)
   * daemon_log_file - (default: /var/log/haraka.log) where to redirect stdout/stderr when daemonized
   * daemon_pid_file - (default: /var/run/haraka.pid) where to write a PID file to
+  * spool_dir - (default: none) directory to create temporary spool files in
+  * spool_after - (default: -1) if message exceeds this size in bytes, then spool the message to disk
+    specify -1 to disable spooling completely or 0 to force all messages to be spooled to disk.
 
 [1]: http://learnboost.github.com/cluster/ or node version >= 0.8
 

@@ -13,6 +13,7 @@ var Address     = require('./address').Address;
 var uuid        = require('./utils').uuid;
 var outbound    = require('./outbound');
 var date_to_str = require('./utils').date_to_str;
+var indexOfLF   = require('./utils').indexOfLF;
 var ipaddr      = require('ipaddr.js');
 
 var version  = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'))).version;
@@ -121,7 +122,7 @@ function setupClient(self) {
 function Connection(client, server) {
     this.client = client;
     this.server = server;
-    this.current_data = '';
+    this.current_data = null; 
     this.current_line = null;
     this.state = STATE_PAUSE;
     this.uuid = uuid();
@@ -165,16 +166,25 @@ exports.createConnection = function(client, server) {
 
 Connection.prototype.process_line = function (line) {
     var self = this;
-    if (this.state !== STATE_DATA) {
-        this.logprotocol("C: " + line + ' state=' + this.state);
+    if (this.state === STATE_DATA) {
+        if (logger.would_log(logger.LOGDATA)) {
+            this.logdata("C: " + line);
+        }
+        this.accumulate_data(line);
+        return;
+    }
+    else {
+        this.current_line = line.toString('binary').replace(/\r?\n/, '');
+        if (logger.would_log(logger.LOGPROTOCOL)) {
+            this.logprotocol("C: " + this.current_line + ' state=' + this.state);
+        }
         // Check for non-ASCII characters
-        if (/[^\x00-\x7F]/.test(line)) {
-            return this.respond(501, 'Syntax error');
+        if (/[^\x00-\x7F]/.test(this.current_line)) {
+            return this.respond(501, 'Syntax error (8-bit characters not allowed)');
         }
     }
     if (this.state === STATE_CMD) {
         this.state = STATE_PAUSE_SMTP;
-        this.current_line = line.replace(/\r?\n/, '');
         var matches = /^([^ ]*)( +(.*))?$/.exec(this.current_line);
         if (!matches) {
             return plugins.run_hooks('unrecognized_command', this, this.current_line);
@@ -208,16 +218,15 @@ Connection.prototype.process_line = function (line) {
     }
     else if (this.state === STATE_LOOP) {
         // Allow QUIT
-        if (line.replace(/\r?\n/, '').toUpperCase() === 'QUIT') {
+        if (this.current_line.toUpperCase() === 'QUIT') {
             this.cmd_quit();
         } 
         else {
             this.respond(this.loop_code, this.loop_msg);
         }
     }
-    else if (this.state === STATE_DATA) {
-        this.logdata("C: " + line);
-        this.accumulate_data(line);
+    else {
+        throw new Error('unknown state ' + this.state);
     }
 };
 
@@ -226,8 +235,19 @@ Connection.prototype.process_data = function (data) {
         this.logwarn("data after disconnect from " + this.remote_ip);
         return;
     }
-    
-    this.current_data += data.toString('binary'); // TODO: change all this to use Buffers
+
+    if (!this.current_data || !this.current_data.length) {
+        this.current_data = data;
+    }
+    else {
+        // Data left over in buffer
+        var buf = Buffer.concat(
+            [ this.current_data, data ], 
+            (this.current_data.length + data.length)
+        );
+        this.current_data = buf;
+    }
+
     this._process_data();
 };
 
@@ -237,9 +257,10 @@ Connection.prototype._process_data = function() {
     // Otherwise if multiple commands are pipelined and then the 
     // connection is dropped; we'll end up in the function forever.
     if (this.disconnected) return;
-    var results;
-    while (results = line_regexp.exec(this.current_data)) {
-        var this_line = results[1];
+
+    var offset;
+    while (this.current_data && ((offset = indexOfLF(this.current_data)) !== -1)) {
+        var this_line = this.current_data.slice(0, offset+1);
         // Hack: bypass this code to allow HAProxy's PROXY extension
         if (this.state === STATE_PAUSE && this.proxy && /^PROXY /.test(this_line)) {
             if (this.proxy_timer) clearTimeout(this.proxy_timer);
@@ -250,6 +271,7 @@ Connection.prototype._process_data = function() {
         // Detect early_talker but allow PIPELINING extension (ESMTP)
         else if ((this.state === STATE_PAUSE || this.state === STATE_PAUSE_SMTP) && !this.esmtp) {
             if (!this.early_talker) {
+                this_line = this_line.toString().replace(/\r?\n/,'');
                 this.logdebug('[early_talker] state=' + this.state + ' esmtp=' + this.esmtp + ' line="' + this_line + '"');
             }            
             this.early_talker = 1;
@@ -260,7 +282,7 @@ Connection.prototype._process_data = function() {
         }
         else if ((this.state === STATE_PAUSE || this.state === STATE_PAUSE_SMTP) && this.esmtp) {
             var valid = true;
-            var cmd = this_line.slice(0,4).toUpperCase();
+            var cmd = this_line.toString('ascii').slice(0,4).toUpperCase();
             switch (cmd) {
                 case 'RSET':
                 case 'MAIL':
@@ -419,11 +441,22 @@ Connection.prototype.tran_uuid = function () {
 }
 
 Connection.prototype.reset_transaction = function() {
+    if (this.transaction) {
+        this.transaction.message_stream.destroy();
+    }
     delete this.transaction;
 };
 
 Connection.prototype.init_transaction = function() {
     this.transaction = trans.createTransaction(this.tran_uuid());
+    // Catch any errors from the message_stream
+    var self = this;
+    this.transaction.message_stream.on('error', function (err) {
+        self.logcrit('message_stream error: ' + err.message);
+        self.respond('421', 'Internal Server Error', function () {
+            self.disconnect();
+        });
+    });
 }
 
 Connection.prototype.loop_respond = function (code, msg) {
@@ -616,8 +649,8 @@ Connection.prototype.ehlo_respond = function(retval, msg) {
                                 "8BITMIME",
                                 ];
                 
-                var databytes = config.get('databytes');
-                response.push("SIZE " + databytes || 0);
+                var databytes = parseInt(config.get('databytes')) || 0;
+                response.push("SIZE " + databytes);
                 
                 this.capabilities = response;
                 
@@ -1118,13 +1151,28 @@ Connection.prototype.data_respond = function(retval, msg) {
 
 Connection.prototype.accumulate_data = function(line) {
     var self = this;
-    if (line === ".\r\n")
-        return this.data_done();
 
-    // Bare LF checks
-    if (line === ".\r" || line === ".\n") {
-        this.logerror("Client sent bare line-feed - .\\r or .\\n rather than .\\r\\n");
-        this.respond(451, "See http://haraka.github.com/barelf.html", function() {
+    this.transaction.data_bytes += line.length;
+ 
+    // Look for .\r\n
+    if (line.length === 3 && 
+        line[0] === 0x2e &&
+        line[1] === 0x0d &&
+        line[2] === 0x0a)
+    {
+        this.transaction.message_stream.add_line_end(function () {
+            self.data_done();
+        });
+        return;
+    }
+
+    // Look for .\n
+    if (line.length === 2 &&
+        line[0] === 0x2e &&
+        line[1] === 0x0a)
+    {
+        this.logerror('Client sent bare line-feed - .\\n rather than .\\r\\n');
+        this.respond(451, "Bare line-feed; see http://haraka.github.com/barelf.html", function() {
             self.reset_transaction();
         });
         return;
@@ -1135,7 +1183,7 @@ Connection.prototype.accumulate_data = function(line) {
         return;
     }
 
-    this.transaction.add_data(line.replace(/^\.\./, '.').replace(/\r\n$/, "\n"));
+    this.transaction.add_data(line);
 };
 
 Connection.prototype.data_done = function() {
