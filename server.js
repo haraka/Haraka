@@ -231,6 +231,5 @@ function listening () {
 
     logger.lognotice("Listening on port " + config_data.main.port);
     Server.ready = 1;
-   
-    out.load_queue();
+    out.load_queue()
 }

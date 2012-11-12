@@ -1,0 +1,24 @@
+{ "gmail.com" : {
+	  "conn_limit" : 16,
+	  "sessions" : 16,
+	  "micro_limit": 60,
+	  "tiny_limit" : 180,
+	  "medium_limit" : 36000,
+	  "big_limit" : 300000,
+	  "micro" : 5000,
+	  "tiny" : 15000,
+	  "medium": 3600000,
+	  "big": 86400000
+ },
+ "default" : {
+	  "conn_limit" : 5,
+	  "micro_limit" : 6,
+	  "tiny_limit" : 12,
+	  "medium_limit" :1000,
+	  "big_limit" : 30000,
+	  "micro" : 5000,
+	  "tiny" : 30000,
+	  "medium": 3600000,
+	  "big": 86400000
+ }
+}

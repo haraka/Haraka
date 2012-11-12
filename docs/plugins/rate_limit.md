@@ -110,7 +110,7 @@ They all use a common configuration format:
 
 ### [concurrency]
 
-**IMPORTANT NOTE:** connection concurrency is recorded in-memory (in 
+**IMPORTANT NOTE:** connection concurrency is recorded in-memory (in
 connection.server.notes) and not in Redis, so the limits are per-server and 
 per-child if you use the cluster module.
 

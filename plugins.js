@@ -229,7 +229,7 @@ plugins.run_next_hook = function(hook, object, params) {
             return;
         }
         called_once++;
-        if (!retval) retval = constants.cont;
+        if (!retval) retval = constants.cont;        
         // Log what is being run
         if (item && hook !== 'log') {
             var log = 'logdebug';

@@ -34,6 +34,19 @@ var uniq = Math.round(Math.random() * MAX_UNIQ);
 var max_concurrency = config.get('outbound.concurrency_max') || 100;
 var queue_count = 0;
 
+/**
+ * added by qiw209
+ */
+var deliver_client = require('./plugins/outbound_control/send_client');
+var rate_policy = require('./plugins/outbound_control/rate_policy');
+var get_ispconfig = rate_policy.get_ispconfig;
+var get_policy = rate_policy.get_policy;
+var conn_pool = rate_policy.conn_pool;
+var delivery_concurrency = rate_policy.delivery_concurrency;
+var Queue = require('./plugins/outbound_control/queue').Queue;
+var processing_queue = new Queue();
+
+
 exports.list_queue = function () {
     this._load_cur_queue("_list_file");
 }
@@ -85,9 +98,9 @@ exports.send_email = function () {
     }
 
     var from = arguments[0],
-        to   = arguments[1],
-        contents = arguments[2],
-        next = arguments[3];
+    to   = arguments[1],
+    contents = arguments[2],
+    next = arguments[3];
     
     this.loginfo("Sending email via params");
 
@@ -131,7 +144,7 @@ exports.send_email = function () {
 
     transaction.rcpt_to = to;
 
-    // Set data_lines to lines in contents
+    // Set dataf_lines to lines in contents
     var match;
     var re = /^([^\n]*\n?)/;
     while (match = re.exec(contents)) {
@@ -217,9 +230,10 @@ exports.send_trans_email = function (transaction, next) {
 }
 
 exports.process_domain = function (todo, hmails, cb) {
-    var plugin = this;
+    var plugin = this;    
     this.loginfo("Processing domain: " + todo.domain);
-    var fname = _fname();
+    // file name ends up with the domain of the email to be sent to
+    var fname = _fname() + '@' + todo.domain;
     var tmp_path = path.join(queue_dir, '.' + fname);
     var ws = fs.createWriteStream(tmp_path, { flags: WRITE_EXCL });
     var data_pos = 0;
@@ -233,7 +247,7 @@ exports.process_domain = function (todo, hmails, cb) {
                         cb(tmp_path, DENY, "Queue error");
                     }
                     else {
-                        hmails.push(new HMailItem (fname, dest_path, todo.notes));
+                        hmails.push(new HMailItem (fname, dest_path, todo));
                         cb(tmp_path, OK, "Queued!");
                     }
                 });
@@ -265,10 +279,10 @@ exports.build_todo = function (todo, ws, write_more) {
     // Replacer function to exclude items from the queue file header
     function exclude_from_json(key, value) {
         switch (key) {
-            case 'data_lines':
-                return undefined;
-            default:
-                return value;
+        case 'data_lines':
+            return undefined;
+        default:
+            return value;
         }
     }
     var todo_str = JSON.stringify(todo, exclude_from_json);
@@ -356,36 +370,71 @@ exports._load_cur_queue = function (cb_name) {
 
 exports.load_queue_files = function (cb_name, files) {
     var plugin = this;
-    if (files.length === 0) return;
-
+    if (files.length === 0)
+        return plugin.heart_beat();
     this.loginfo("Loading some of the queue...");
-
-    if ((delivery_concurrency >= max_concurrency)
-        || config.get('outbound.disabled'))
-    {
-        // try again in 1 second if delivery is disabled
-        setTimeout(function () {plugin.load_queue_files(cb_name, files)}, 1000);
-        return;
-    }
-
-    for (var i=1; i <= max_concurrency; i++) {
-        if (files.length === 0) break;
+    // try to send every email; failed sendings will be push into the queue
+    var length = files.length;
+    for (var i=1; i <= length; i++) {
+        if (files.length === 0)  break; 
         var file = files.shift();
         if (/^\./.test(file)) {
             // dot-file...
             continue;
         }
+	/**
+	 *  load all email meta data from the disk into memory
+	 */ 
         var hmail = new HMailItem(file, path.join(queue_dir, file));
-        this[cb_name](hmail);
-
-        if ((files.length === 0) || (i === max_concurrency)) {
-            // end of loop or end of files
-            var self = this;
-            hmail.on('ready', function () {self.load_queue_files(cb_name, files)});
-            break;
-        }
+        this[cb_name](hmail);        
     }
+
+    plugin.heart_beat();
 }
+
+/**
+ *  heart_beat periodically check the queue to see if there are more 
+ *  emails to be processed. The are two ways to invoke email delivering:
+ *  
+ *  1. when haraka process starts, emails are loaded from disk and get 
+ *  delivered;
+ *  2. send_next() will be called each time an email is delivered 
+ *  successfully to send another email for the same domain if there is 
+ *  any;
+ *  3. new emails come and they can be sent withouting breaking outbound
+ *  limit rules
+ *
+ *  There could be one scenario as follows:
+ *  there are more emails than the outbound capacity when haraka process 
+ *  starts; we can only process a certain number of emails according to 
+ *  the outbound limit; there can be unprocessed. And unfortunately, when
+ *  send_next() gets called once each email being sending is delivered,
+ *  we find that for the time being, no more emails can be sent, and no 
+ *  emails come; which means email sending cannot be invoked. That's why
+ *  we need heart_beat() here.
+ *  
+ */
+exports.heart_beat = function(){
+    var queue_size = processing_queue.size();
+    for (var i=1; i <= max_concurrency; i++) {
+        if (processing_queue.size() == 0)
+            break;
+        
+	var keys =  Object.keys(processing_queue.mails);
+	var index = i % keys.length;
+        var mail = processing_queue.shift(index, keys);
+        mail.send();
+    }
+
+    // how often to call heart_beat depends on how long the 
+    // queue is.
+    var interval = processing_queue.size() > 20 ? 3000 : 1000;
+    var plugin = this;
+    setTimeout(function() {
+        plugin.heart_beat();
+    }, interval);
+}
+
 
 exports._add_file = function (hmail) {
     var self = this;
@@ -408,7 +457,7 @@ exports.stats = function () {
         queue_dir:   queue_dir,
         queue_count: queue_count,
     };
-
+    
     return results;
 }
 
@@ -426,7 +475,7 @@ function TODOItem (domain, recipients, transaction) {
 /////////////////////////////////////////////////////////////////////////////
 // HMailItem - encapsulates an individual outbound mail item
 
-function HMailItem (filename, path, notes) {
+function HMailItem (filename, path, todo) {
     events.EventEmitter.call(this);
     var matches = filename.match(fn_re);
     if (!matches) {
@@ -436,8 +485,8 @@ function HMailItem (filename, path, notes) {
     this.filename     = filename;
     this.next_process = matches[1];
     this.num_failures = matches[2];
-    this.notes        = notes || {};
-
+    this.notes        = todo ? todo.notes : {};
+    this._domain       = todo ? todo.domain : filename.split('@')[1];
     this.size_file();
 }
 
@@ -518,14 +567,60 @@ HMailItem.prototype.read_todo = function () {
 }
 
 HMailItem.prototype.send = function () {
-    if (!this.todo) {
-        var self = this;
-        this.on('ready', function () { self._send() });
+    // check if this email can be delivered    
+    plugins.run_hooks("check_limit", this);
+}
+
+HMailItem.prototype.check_limit_respond = function(retval) {
+    if (retval == constants.ok) {
+        if (!this.todo) {
+            var self = this;
+            this.on('ready', function () { self._send() });
+        }
+        else {
+            this._send();
+        }
     }
-    else {
-        this._send();
+    // push this email back to the queue
+    else
+    {
+        processing_queue.push(this);
     }
 }
+
+HMailItem.prototype.process_bad_code = function(code, msg) {
+    var self = this;
+
+    // if this email is delivered successfully; not neccessary
+    // to goto next steps
+    if (self.sent) return;
+
+    // in case the server side respond two error messages to
+    // a single command
+    if (!self.erred)  {
+	self.erred = true;
+	self.bounce(msg);	
+    }
+}
+
+/**
+ *  Try to send again when one of the following happens:
+ *  1. no more connection available to deliver the email
+ *  2. error occurs when obtaining a connection from the pool
+ *  3. error occurs when sending out an email
+ * 
+ *  In the first two cases, we simply push the email back to 
+ *  the queue; while temp_failing the email if case 3 happens
+ */
+HMailItem.prototype.try_again = function(status) {
+    var self = this;
+    get_policy(this._domain).dispose();
+    if (status === constants.no)
+        processing_queue.push(this); 
+    else if (status === constants.error)
+        self.temp_fail('connection closed before sent out all data');
+}
+
 
 HMailItem.prototype._send = function () {
     if ((delivery_concurrency >= max_concurrency)
@@ -537,7 +632,7 @@ HMailItem.prototype._send = function () {
         setTimeout(function () {hmail._send()}, 1000);
         return;
     }
-
+    
     plugins.run_hooks('send_email', this);
 
 }
@@ -562,30 +657,30 @@ HMailItem.prototype.get_mx = function () {
 
 HMailItem.prototype.get_mx_respond = function (retval, mx) {
     switch(retval) {
-        case constants.ok:
-                var mx_list;
-                if (Array.isArray(mx)) {
-                    mx_list = mx;
-                }
-                else if (typeof mx === "object") {
-                    mx_list = [mx];
-                }
-                else {
-                    // assume string
-                    var matches = /^(.*?)(:(\d+))?$/.exec(mx);
-                    if (!matches) {
-                        throw("get_mx returned something that doesn't match hostname or hostname:port");
-                    }
-                    mx_list = [{priority: 0, exchange: matches[1], port: matches[3]}];
-                }
-                this.logdebug("Got an MX from Plugin: " + this.todo.domain + " => 0 " + mx);
-                return this.found_mx(null, mx_list);
-        case constants.deny:
-                this.logwarn("get_mx plugin returned DENY: " + mx);
-                return this.bounce("No MX for " + this.domain);
-        case constants.denysoft:
-                this.logwarn("get_mx plugin returned DENYSOFT: " + mx);
-                return this.temp_fail("Temporary MX lookup error for " + this.domain);
+    case constants.ok:
+        var mx_list;
+        if (Array.isArray(mx)) {
+            mx_list = mx;
+        }
+        else if (typeof mx === "object") {
+            mx_list = [mx];
+        }
+        else {
+            // assume string
+            var matches = /^(.*?)(:(\d+))?$/.exec(mx);
+            if (!matches) {
+                throw("get_mx returned something that doesn't match hostname or hostname:port");
+            }
+            mx_list = [{priority: 0, exchange: matches[1], port: matches[3]}];
+        }
+        this.logdebug("Got an MX from Plugin: " + this.todo.domain + " => 0 " + mx);
+        return this.found_mx(null, mx_list);
+    case constants.deny:
+        this.logwarn("get_mx plugin returned DENY: " + mx);
+        return this.bounce("No MX for " + this.domain);
+    case constants.denysoft:
+        this.logwarn("get_mx plugin returned DENYSOFT: " + mx);
+        return this.temp_fail("Temporary MX lookup error for " + this.domain);
     }
 
     // if none of the above return codes, drop through to this...
@@ -714,7 +809,7 @@ HMailItem.prototype.try_deliver = function () {
     }
 
     this.loginfo("Looking up A records for: " + host);
- 
+    
     // now we have a host, we have to lookup the addresses for that host
     // and try each one in order they appear
     dns.resolve(host, function (err, addresses) {
@@ -738,208 +833,51 @@ var smtp_regexp = /^([0-9]{3})([ -])(.*)/;
 
 HMailItem.prototype.try_deliver_host = function (mx) {
     if (this.hostlist.length === 0) {
-        delivery_concurrency--;
         return this.try_deliver(); // try next MX
     }
     
-    var host = this.hostlist.shift();
-    var port            = mx.port || 25;
-    var socket          = sock.connect(port, host);
-    var self            = this;
-    var processing_mail = true;
+    var domain = this.dom
+    var host = this.hostlist.shift();    
+    var port   = mx.port || 25;
 
-    this.loginfo("Attempting to deliver to: " + host + ":" + port + " (" + delivery_concurrency + ")");
+    this.loginfo("Attempting to deliver to: " + host + " (" + delivery_concurrency + ")");   
+    var from = this.todo.mail_from.original.replace('>','').replace('<','');
+    var timeout = 60 * 1000;
+    var enable_tls = false;
+    var max = get_ispconfig(domain, 'conn_limit');
+    var hmail = this;
 
-    socket.on('error', function (err) {
-        self.logerror("Ongoing connection failed: " + err);
-        processing_mail = false;
-        // try the next MX
-        self.try_deliver_host(mx);
-    });
+    deliver_client.run_send(conn_pool, domain, port, host, timeout, enable_tls, max, hmail, 
+		            function(err, client) {
+			        if (err) {
+			            hmail.try_again(constants.no);
+	                            return;
+		                }
+			        // actually we only have one address for each mail
+			        var rcpts = hmail.todo.rcpt_to
+			        var send_rcpt = function () {
+			            if (hmail.todo.rcpt_to.length != 0) {
+				        var a = hmail.todo.rcpt_to[0];
+				        var rcpt = new Address (a.original);
+				        client.send_command('RCPT',
+							    'TO:' + rcpt);
+			            }
+			            else 
+				        client.send_command('RCPT',
+							    'TO: ' + '<>');
+			        };
 
-    socket.on('close', function () {
-        if (processing_mail) {
-            return self.try_deliver_host(mx);
-        }
-    });
-
-    socket.setTimeout(300 * 1000); // TODO: make this configurable
-    
-    var command = 'connect';
-    var response = [];
-    
-    var recipients = this.todo.rcpt_to.map(function (a) { return new Address (a.original) });
-
-    var mail_from  = new Address (this.todo.mail_from.original);
-
-    var data_marker = 0;
-    var last_recip;
-    var ok_recips = 0;
-    var fail_recips = [];
-    var smtp_properties = {
-        "tls": false,
-        "max_size": 0,
-        "eightbitmime": false,
-        "enh_status_codes": false,
-    };
-    
-    socket.send_command = function (cmd, data) {
-        if (!this.writable) {
-            self.logerror("Socket writability went away");
-            return self.try_deliver_host(mx);
-        }
-        var line = cmd + (data ? (' ' + data) : '');
-        if (cmd === 'dot') {
-            line = '.';
-        }
-        self.logprotocol("C: " + line);
-        this.write(line + "\r\n");
-        command = cmd.toLowerCase();
-        response = [];
-    };
-
-    socket.process_ehlo_data = function () {
-        for (var i=0,l=response.length; i < l; i++) {
-            var r = response[i];
-            if (r.toUpperCase() === '8BITMIME') {
-                smtp_properties.eightbitmime = true;
-            }
-            else if (r.toUpperCase() === 'STARTTLS') {
-                smtp_properties.tls = true;
-            }
-            else if (r.toUpperCase() === 'ENHANCEDSTATUSCODES') {
-                smtp_properties.enh_status_codes = true;
-            }
-            else {
-                var matches;
-                matches = r.match(/^SIZE\s+(\d+)$/);
-                if (matches) {
-                    smtp_properties.max_size = matches[1];
-                }
-            }
-        }
-
-        if (smtp_properties.tls && config.get('outbound.enable_tls')) {
-            this.on('secure', function () {
-                socket.send_command('EHLO', config.get('me'));
-            });
-            this.send_command('STARTTLS');
-        }
-        else {
-            this.send_command('MAIL', 'FROM:' + mail_from);
-        }
-    }
-    
-    socket.on('timeout', function () {
-        self.logerror("Outbound connection timed out");
-        processing_mail = false;
-        socket.end();
-        self.try_deliver_host(mx);
-    });
-    
-    socket.on('connect', function () {
-    });
-
-    socket.on('line', function (line) {
-        var matches;
-        self.logprotocol("S: " + line);
-        if (matches = smtp_regexp.exec(line)) {
-            var code = matches[1],
-                cont = matches[2],
-                rest = matches[3];
-            response.push(rest);
-            if (cont === ' ') {
-                if (code.match(/^4/)) {
-                    if (/^rcpt/.test(command)) {
-                        // this recipient was rejected
-                        fail_recips.push(last_recip);
-                        if (!(ok_recips || recipients.length)) {
-                            // no accepted recipients, and no more left so bail out
-                            socket.send_command('QUIT');
-                            return self.temp_fail("Upstream error: " + code + " " + rest);
-                        }
-                    }
-                    else {
-                        socket.send_command('QUIT');
-                        return self.temp_fail("Upstream error: " + code + " " + rest);
-                    }
-                }
-                else if (code.match(/^5/)) {
-                    socket.send_command('QUIT');
-                    return self.bounce(rest);
-                }
-                switch (command) {
-                    case 'connect':
-                        socket.send_command('EHLO', config.get('me'));
-                        break;
-                    case 'ehlo':
-                        socket.process_ehlo_data();
-                        break;
-                    case 'starttls':
-                        var key = config.get('tls_key.pem', 'data').join("\n");
-                        var cert = config.get('tls_cert.pem', 'data').join("\n");
-                        var tls_options = { key: key, cert: cert };
-
-                        smtp_properties = {};
-                        socket.upgrade(tls_options);
-                        break;
-                    case 'helo':
-                        socket.send_command('MAIL', 'FROM:' + mail_from);
-                        break;
-                    case 'mail':
-                    case 'rcpt_':
-                        if (command === 'rcpt_') ok_recips++;
-                        last_recip = recipients.shift();
-                        socket.send_command('RCPT', 'TO:' + last_recip.format());
-                        if (recipients.length) {
-                            // don't move to next state if we have more recipients
-                            command = 'rcpt_';
-                        }
-                        break;
-                    case 'rcpt':
-                        socket.send_command('DATA');
-                        break;
-                    case 'data':
-                        var data_stream = self.data_stream();
-                        data_stream.on('data', function (data) {
-                            self.logdata("C: " + data);
-                        });
-                        data_stream.on('error', function (err) {
-                            self.logerror("Reading from the data stream failed: " + err);
-                        });
-                        data_stream.on('end', function () {
-                            socket.send_command('dot');
-                        });
-                        data_stream.pipe(socket, {end: false});
-                        break;
-                    case 'dot':
-                        processing_mail = false;
-                        socket.send_command('QUIT');
-                        if (fail_recips.length) {
-                            exports.split_to_new_recipients(self, fail_recips);
-                        }
-                        else {
-                            self.delivered(rest);
-                        }
-                        break;
-                    case 'quit':
-                        socket.end();
-                        break;
-                    default:
-                        // should never get here - means we did something
-                        // wrong.
-                        throw new Error("Unknown command: " + command);
-                }
-            }
-        }
-        else {
-            // Unrecognised response.
-            self.logerror("Unrecognised response from upstream server: " + line);
-            processing_mail = false;
-            socket.end();
-            return self.bounce("Unrecognised response from upstream server: " + line);
-        }
-    });
+			        var send_data = function() {
+			            client.send_command('DATA');
+			        }
+			        
+			        client.on('mail', send_rcpt);
+			        client.on('rcpt', send_data);
+			        
+			        client.on('data', function () {
+			            client.start_data(hmail.data_stream());
+			        });				   
+		            });    
 }
 
 function populate_bounce_message (from, to, reason, hmail, cb) {
@@ -1024,9 +962,30 @@ HMailItem.prototype.bounce_respond = function (retval, msg) {
     });
 }
 
+
+HMailItem.prototype.process_bad_code = function(code, msg) {
+    var self = this;
+    
+    // if this email is delivered successfully; not neccessary
+    // to goto next steps
+    if (self.sent) return;
+
+    // in case the server side respond two error messages to
+    // a single command
+    if (!self.erred)  {
+	self.erred = true;
+	self.bounce(msg);	
+    }
+}
+
+
 HMailItem.prototype.double_bounce = function (err) {
     this.logerror("Double bounce: " + err);
-    fs.unlink(this.path);
+    var hmail = this;
+    fs.unlink(this.path, function() {
+        hmail.loginfo(hmail.filename + ' deleted');
+    });
+    this.send_next();
     // TODO: fill this in... ?
     // One strategy is perhaps log to an mbox file. What do other servers do?
     // Another strategy might be delivery "plugins" to cope with this.
@@ -1070,16 +1029,33 @@ HMailItem.prototype.temp_fail = function (err) {
         
         hmail.path = path.join(queue_dir, new_filename);
         hmail.filename = new_filename;
-
+        
         setTimeout(function () {hmail.send()}, delay);
     });
 }
 
 // The following handler has an impact on outgoing mail. It does remove the queue file.
 HMailItem.prototype.delivered_respond = function (retval, msg) {
+    var self = this;
     if (retval != constants.cont && retval != constants.ok) {
         this.logwarn("delivered plugin responded with: " + retval + " msg=" + msg + ".");
     }
-    // Remove the file.
-    fs.unlink(this.path);
+
+    // Remove the file; send next mail of the same domain
+    fs.unlink(this.path, function(err){
+        self.sent = true;
+	get_policy(self._domain).dispose();
+        self.send_next();
+    });
 };
+
+/**
+ *  Try to get an email for the same domain as the currently delivered email.
+ *  If there is any, deliver it.
+ */
+HMailItem.prototype.send_next = function() {
+    var domain = this._domain;
+    var hmail = processing_queue.dequeue(domain);
+    if (hmail)
+        setTimeout(function(){ hmail.send() }, 0);        
+}

@@ -1,0 +1,18 @@
+outbound limit control of this implementation works as follows:
+
+1 outbound rates are set in config/outbound_limit.json by domain;
+  you set a couple of time windows, and numbers of emails could be
+  sent in those windowns;
+
+2 every time an email comes, we first check if more emails can be
+  sent to that domain; if negative, push the email into a processing
+  queue.
+
+3 every time an email is delivered, an new email is picked up immediately
+  to be delivered.
+
+4 when haraka starts for the first time, all emails in the queue dir
+  are pushed into a im-memory processing queue
+
+5 a heart beater is used to periodically check if there are remaining
+  emails in the processing queue to be sent.

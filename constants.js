@@ -12,6 +12,15 @@ exports.next_hook          = 907;
 exports.delay              = 908;
 exports.denysoftdisconnect = 909;
 
+exports.not_send           = 910;
+exports.spam               = 911;
+exports.invalid            = 912;
+
+exports.data_sent         = 1;
+exports.error             = 2;
+exports.bad_code          = 4;
+exports.no                = 0;
+
 exports.import = function (object) {
     for (var k in exports) {
         if (exports.hasOwnProperty(k) && k !== "import") {
