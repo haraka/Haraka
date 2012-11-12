@@ -6,6 +6,7 @@ var utils  = require('./utils');
 var events = require('events');
 var util   = require('util');
 var Iconv  = require('./mailheader').Iconv;
+var attstr = require('./attachment_stream');
 
 var buf_siz = 65536;
 
@@ -41,9 +42,9 @@ Body.prototype.parse_child = function (line) {
                 // see below for why we create a new buffer here.
                 var to_emit = new Buffer(child.buf_fill);
                 child.buf.copy(to_emit, 0, 0, child.buf_fill);
-                this.emit('attachment_data', to_emit);
+                child.attachment_stream.emit_data(to_emit);
             }
-            this.emit('attachment_end');
+            child.attachment_stream.emit('end');
         }
 
         if (line.substr(this.boundary.length + 2, 2) === '--') {
@@ -114,7 +115,10 @@ Body.prototype.parse_start = function (line) {
             match = ct.match(/name\s*=\s*["']?([^'";]+)["']?/i);
         }
         var filename = match ? match[1] : '';
-        this.emit('attachment_start', ct, filename, this);
+        console.log("XXX Creating attachmentstream");
+        this.attachment_stream = attstr.createStream();
+        console.log("Attstr: ", this.attachment_stream);
+        this.emit('attachment_start', ct, filename, this, this.attachment_stream);
         this.buf_fill = 0;
         this.state = 'attachment';
     }
@@ -279,8 +283,6 @@ Body.prototype.parse_multipart_preamble = function (line) {
                 // next section
                 var bod = new Body(new Header(), this.options);
                 this.listeners('attachment_start').forEach(function (cb) { bod.on('attachment_start', cb) });
-                this.listeners('attachment_data' ).forEach(function (cb) { bod.on('attachment_data', cb) });
-                this.listeners('attachment_end'  ).forEach(function (cb) { bod.on('attachment_end', cb) });
                 this.children.push(bod);
                 bod.state = 'headers';
                 this.state = 'child';
@@ -307,9 +309,6 @@ Body.prototype.parse_attachment = function (line) {
     }
 
     var buf = this.decode_function(line);
-    //this.emit('attachment_data', buf);
-    //return;
-
     if ((buf.length + this.buf_fill) > buf_siz) {
         // now we have to create a new buffer, because if we write this out
         // using async code, it will get overwritten under us. Creating a new
@@ -317,11 +316,11 @@ Body.prototype.parse_attachment = function (line) {
         // memcpy())
         var to_emit = new Buffer(this.buf_fill);
         this.buf.copy(to_emit, 0, 0, this.buf_fill);
-        this.emit('attachment_data', to_emit);
+        this.attachment_stream.emit_data(to_emit);
         if (buf.length > buf_siz) {
             // this is an unusual case - the base64/whatever data is larger
             // than our buffer size, so we just emit it and reset the counter.
-            this.emit('attachment_data', buf);
+            this.attachment_stream.emit_data(buf);
             this.buf_fill = 0;
         }
         else {
