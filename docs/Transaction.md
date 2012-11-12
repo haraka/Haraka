@@ -19,9 +19,30 @@ The value of the MAIL FROM command as an `Address` object.
 
 An Array of `Address` objects of recipients from the RCPT TO command.
 
-* transaction.data\_lines
+* transaction.message_stream
 
-An Array of the lines of the email after DATA.
+A node.js Readable Stream object for the message. 
+
+You use it like this:
+
+    transaction.message_stream.pipe(WritableStream, options)
+
+Where WritableStream is a node.js Writable Stream object such as a
+net.socket, fs.writableStream, process.stdout/stderr or custom stream.
+
+The options argument should be an object that overrides the following
+properties:
+
+    * line_endings (default: "\r\n")
+    * dot_stuffing (default: false)
+    * ending_dot   (default: false)
+    * end          (default: true)
+    * buffer_size  (default: 65535)
+    * clamd_style  (default: false)
+
+e.g.
+
+    transaction.message_stream.pipe(socket, { dot_stuffing: true, ending_dot: true });
 
 * transaction.data\_bytes
 
@@ -31,6 +52,12 @@ The number of bytes in the email after DATA.
 
 Adds a line of data to the email. Note this is RAW email - it isn't useful
 for adding banners to the email.
+
+* transaction.add_line_end(cb)
+
+Notifies the message_stream that all the data has been received.
+Supply an optional callback function that will be run once any inflight data
+is finished being written.
 
 * transaction.notes
 

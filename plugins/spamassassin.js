@@ -50,35 +50,6 @@ exports.hook_data_post = function (next, connection) {
                    connection.transaction.notes.spamd_user ||
                    'default';
     
-    var data_marker = 0;
-    var in_data = false;
-    var end_pending = true;
-
-    // TODO: buffer writes into 64K chunks
-    var send_data = function () {
-        in_data = true;
-        var wrote_all = true;
-        while (wrote_all && (data_marker < connection.transaction.data_lines.length)) {
-            var line = connection.transaction.data_lines[data_marker];
-            data_marker++;
-            // dot-stuffing not necessary for spamd
-            wrote_all = socket.write(new Buffer(line, 'binary'));
-            if (!wrote_all) return;
-        }
-        // we get here if wrote_all still true, and we got to end of data_lines
-        if (end_pending) {
-            end_pending = false;
-            socket.end("\r\n");
-        }
-    };
-
-    socket.on('drain', function () {
-        connection.logdebug(plugin, 'drain');
-        if (end_pending && in_data) {
-            process.nextTick(function () { send_data() });
-        }
-    });
-
     socket.on('timeout', function () {
         connection.logerror(plugin, "spamd connection timed out");
         socket.end();
@@ -100,9 +71,9 @@ exports.hook_data_post = function (next, connection) {
         if (connection.relaying) {
             headers.push('X-Haraka-Relay: true');
         }
-        socket.write(headers.join("\r\n"), function () {
-            send_data();
-        });
+
+        socket.write(headers.join("\r\n"));
+        connection.transaction.message_stream.pipe(socket);
     });
     
     var spamd_response = {};
@@ -136,6 +107,9 @@ exports.hook_data_post = function (next, connection) {
     });
     
     socket.on('end', function () {
+        // Abort if the connection or transaction are gone
+        if (!connection || (connection && !connection.transaction)) return next();
+
         // Now we do stuff with the results...
  
         plugin.fixup_old_headers(config.main.old_headers_action, connection.transaction);

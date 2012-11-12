@@ -6,12 +6,15 @@ var logger = require('./logger');
 var Header = require('./mailheader').Header;
 var body   = require('./mailbody');
 var utils  = require('./utils');
+var MessageStream = require('./messagestream');
 
 var trans = exports;
 
 function Transaction() {
+    this.uuid = null;
     this.mail_from = null;
     this.rcpt_to = [];
+    this.header_lines = [];
     this.data_lines = [];
     this.banner = null;
     this.data_bytes = 0;
@@ -19,6 +22,7 @@ function Transaction() {
     this.parse_body = false;
     this.notes = {};
     this.header = new Header();
+    this.message_stream = null;
     this.rcpt_count = {
         accept:   0,
         tempfail: 0,
@@ -31,35 +35,38 @@ exports.Transaction = Transaction;
 exports.createTransaction = function(uuid) {
     var t = new Transaction();
     t.uuid = uuid || utils.uuid();
+    // Initialize MessageStream here to pass in the UUID
+    t.message_stream = new MessageStream(config.get('smtp.ini'), t.uuid, t.header.header_list);
     return t;
 };
 
 Transaction.prototype.add_data = function(line) {
-    this.data_bytes += line.length;
+    this.message_stream.add_line(line);
+    if (typeof line !== 'string') {
+        line = line.toString('binary').replace(/^\.\./, '.').replace(/\r\n$/, '\n');
+    }
     // check if this is the end of headers line (note the regexp isn't as strong 
     // as it should be - it accepts whitespace in a blank line - we've found this
     // to be a good heuristic rule though).
     if (this.header_pos === 0 && line.match(/^\s*$/)) {
-        this.header.parse(this.data_lines);
-        this.header_pos = this.data_lines.length;
+        this.header.parse(this.header_lines);
+        this.header_pos = this.header_lines.length;
         if (this.parse_body) {
             this.body = this.body || new body.Body(this.header, {"banner": this.banner});
         }
     }
-    else if (this.header_pos && this.parse_body) {
-        line = this.body.parse_more(line);
+    else if (this.header_pos === 0) {
+        // Build up headers
+        this.header_lines.push(line);
     }
-    if (line.length) {
-        this.data_lines.push(line);
+    else if (this.header_pos && this.parse_body) {
+        this.body.parse_more(line);
     }
 };
 
 Transaction.prototype.end_data = function() {
     if (this.header_pos && this.parse_body) {
         var data = this.body.parse_end();
-        if (data.length) {
-            this.data_lines.push(data);
-        }
     }
 }
 
@@ -75,7 +82,6 @@ Transaction.prototype.add_leading_header = function(key, value) {
 
 Transaction.prototype.reset_headers = function () {
     var header_lines = this.header.lines();
-    this.data_lines = header_lines.concat(this.data_lines.slice(this.header_pos));
     this.header_pos = header_lines.length;
 };
 
