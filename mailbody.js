@@ -115,9 +115,7 @@ Body.prototype.parse_start = function (line) {
             match = ct.match(/name\s*=\s*["']?([^'";]+)["']?/i);
         }
         var filename = match ? match[1] : '';
-        console.log("XXX Creating attachmentstream");
         this.attachment_stream = attstr.createStream();
-        console.log("Attstr: ", this.attachment_stream);
         this.emit('attachment_start', ct, filename, this, this.attachment_stream);
         this.buf_fill = 0;
         this.state = 'attachment';
