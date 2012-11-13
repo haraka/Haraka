@@ -400,6 +400,7 @@ Connection.prototype.fail = function (err) {
 
 Connection.prototype.disconnect = function() {
     if (this.disconnected) return;
+    this.reset_transaction();
     plugins.run_hooks('disconnect', this);
 };
 
