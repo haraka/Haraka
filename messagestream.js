@@ -135,16 +135,17 @@ MessageStream.prototype._write = function (data) {
     }
     // Have we completely finished writing all data?
     if (this.end_called && (!this.spooling || (this.spooling && !this._queue.length))) {
-        this.write_complete = true;
+        if (this.end_callback) this.end_callback();
         // Do we have any waiting readers?
-        if (this.listeners('data').length) {
+        if (this.listeners('data').length && !this.write_complete) {
+            this.write_complete = true;
             process.nextTick(function () {
                 if (self.readable && !self.paused)
                     self._read();
             });
         }
-        if (this.end_callback) {
-            this.end_callback();
+        else {
+            this.write_complete = true;
         }
         return true;
     }
@@ -203,7 +204,7 @@ MessageStream.prototype._read = function () {
         throw new Error('end not called!');
     }
 
-    if (!this.readable || this.paused) {
+    if (!this.readable || this.paused || !this.write_complete) {
         return;
     }
 
