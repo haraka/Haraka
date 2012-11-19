@@ -227,7 +227,7 @@ exports.get_pool = function (server, port, host, connect_timeout, pool_timeout, 
             idleTimeoutMillis: pool_timeout * 1000,
             log: function (str, level) {
                 level = (level === 'verbose') ? 'debug' : level;
-                logger['log' + level]('[smtp_client_pool] ' + str);
+                logger['log' + level]('[smtp_client_pool] [' + name + '] ' + str);
             }
         });
 
