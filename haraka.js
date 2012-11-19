@@ -39,7 +39,6 @@ process.on('uncaughtException', function (err) {
 });
 
 ['SIGTERM', 'SIGINT'].forEach(function (sig) {
-logger.logcrit('registering handler: ' + sig);
     process.on(sig, function () {
         logger.logcrit(sig + ' received');
         logger.dump_logs(1);
