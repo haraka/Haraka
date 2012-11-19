@@ -38,6 +38,18 @@ process.on('uncaughtException', function (err) {
     process.exit(1);
 });
 
+['SIGTERM', 'SIGINT'].forEach(function (sig) {
+    process.on(sig, function () {
+        logger.logcrit(sig + ' received');
+        logger.dump_logs(1);
+    });
+});
+
+process.on('exit', function() {
+    logger.logcrit('Shutting down');
+    logger.dump_logs();
+});
+
 logger.log("INFO", "Starting up Haraka version " + exports.version);
 
 server.createServer();
