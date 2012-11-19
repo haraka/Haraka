@@ -15,7 +15,7 @@
   },
   "dependencies": {
     "nopt"          : ">= 1.0.5",
-    "generic-pool"  : ">= 1.0.9",
+    "generic-pool"  : ">= 2.0.2",
     "node-syslog"   : ">= 1.1.2",
     "iconv"         : ">= 1.1.3",
     "ipaddr.js"     : ">= 0.1.1",
