@@ -17,6 +17,10 @@ function Body (header, options) {
     this.options = options || {};
     this.bodytext = '';
     this.body_text_encoded = '';
+    this.body_encoding = null;
+    this.boundary = null;
+    this.ct = null;
+    this.decode_function = null;
     this.children = []; // if multipart
     this.state = 'start';
     this.buf = new Buffer(buf_siz);

@@ -19,6 +19,7 @@ function Transaction() {
     this.banner = null;
     this.data_bytes = 0;
     this.header_pos = 0;
+    this.body = null;
     this.parse_body = false;
     this.notes = {};
     this.header = new Header();
