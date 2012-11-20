@@ -44,7 +44,7 @@ exports.createTransaction = function(uuid) {
 Transaction.prototype.add_data = function(line) {
     this.message_stream.add_line(line);
     if (typeof line !== 'string') {
-        line = line.toString('binary').replace(/^\.\./, '.').replace(/\r\n$/, '\n');
+        line = line.toString('binary').replace(/^\./, '').replace(/\r\n$/, '\n');
     }
     // check if this is the end of headers line (note the regexp isn't as strong 
     // as it should be - it accepts whitespace in a blank line - we've found this
