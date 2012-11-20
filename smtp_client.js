@@ -143,9 +143,9 @@ SMTPClient.prototype.send_command = function (command, data) {
 };
 
 SMTPClient.prototype.start_data = function (data) {
-   this.response = [];
-   this.command = 'dot';
-   data.pipe(this.socket, { dot_stuffing: true, ending_dot: true, end: false });
+    this.response = [];
+    this.command = 'dot';
+    data.pipe(this.socket, { dot_stuffing: true, ending_dot: true, end: false });
 };
 
 SMTPClient.prototype.release = function () {
@@ -222,6 +222,11 @@ exports.get_pool = function (server, port, host, connect_timeout, pool_timeout, 
                 logger.logdebug('[smtp_client_pool] ' + smtp_client.uuid + ' destroyed, state=' + smtp_client.state);
                 smtp_client.state = STATE_DESTROYED;
                 smtp_client.socket.destroy();
+                // Remove pool object from server notes once empty
+                var size = pool.getPoolSize();
+                if (size === 0) {
+                    delete server.notes.pool[name];
+                }
             },
             max: max || 1000,
             idleTimeoutMillis: pool_timeout * 1000,
