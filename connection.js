@@ -122,12 +122,22 @@ function setupClient(self) {
 function Connection(client, server) {
     this.client = client;
     this.server = server;
+    this.remote_ip = null;
+    this.remote_host = null
+    this.remote_port = null;
+    this.remote_info = null;
     this.current_data = null; 
     this.current_line = null;
+    this.greeting = null;
+    this.hello_host = null;
     this.state = STATE_PAUSE;
+    this.loop_code = null;
+    this.loop_msg = null;
     this.uuid = uuid();
     this.notes = {};
+    this.transaction = null;
     this.tran_count = 0;
+    this.capabilities = null;
     this.early_talker_delay = config.get('early_talker_delay') || 1000;
     this.banner_includes_uuid = config.get('banner_includes_uuid') ? true : false;
     this.deny_includes_uuid = config.get('deny_includes_uuid') ? true : false;
@@ -141,6 +151,7 @@ function Connection(client, server) {
     this.hooks_to_run = [];
     this.start_time = Date.now();
     this.last_reject = '';
+    this.max_bytes = null;
     this.totalbytes = 0;
     this.rcpt_count = {
         accept:   0,
@@ -152,6 +163,7 @@ function Connection(client, server) {
         tempfail: 0,
         reject:   0,
     };
+    this.data_post_start = null;
     this.proxy = false;
     this.proxy_timer = false;
     setupClient(this);
