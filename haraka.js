@@ -40,13 +40,15 @@ process.on('uncaughtException', function (err) {
 
 ['SIGTERM', 'SIGINT'].forEach(function (sig) {
     process.on(sig, function () {
-        logger.logcrit(sig + ' received');
+        process.title = path.basename(process.argv[1], '.js');
+        logger.loginfo(sig + ' received');
         logger.dump_logs(1);
     });
 });
 
 process.on('exit', function() {
-    logger.logcrit('Shutting down');
+    process.title = path.basename(process.argv[1], '.js');
+    logger.loginfo('Shutting down');
     logger.dump_logs();
 });
 
