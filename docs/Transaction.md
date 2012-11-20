@@ -89,23 +89,54 @@ hook_data or before.
 
 The body of the email if you set `parse_body` above. See `Body Object`.
 
-* transaction.attachment_hooks(start, data, end)
+* transaction.attachment_hooks(start)
 
-Sets event emitter hooks for attachments if you set `parse_body` above.
+Sets a callback for when we see an attachment if `parse_body` has been set.
 
-The `start` event will receive `(content_type, filename, body)` as parameters.
+The `start` event will receive `(content_type, filename, body, stream)` as
+parameters.
 
-The `data` event will receive a `Buffer` object containing some of the
-attachment data.
+The stream is a `ReadableStream` - see http://nodejs.org/api/stream.html for
+details on how this works.
 
-The `end` event will be called with no parameters when an attachment ends.
+If you set stream.connection then the stream will apply backpressure to the
+connection, allowing you to process attachments before the connection has
+ended. Here is an example which stores attachments in temporary files using
+the `tmp` library from npm and tells us the size of the file:
 
-Both the `data` and `end` params are optional.
+    exports.hook_data = function (next, connection) {
+        // enable mail body parsing
+        connection.transaction.parse_body = 1;
+        connection.transaction.attachment_hooks(
+            function (ct, fn, body, stream) {
+                start_att(connection, ct, fn, body, stream)
+            }
+        );
+        next();
+    }
 
-Note that in the `start` event, you can set per-attachment events via:
+    function start_att (connection, ct, fn, body, stream) {
+        connection.loginfo("Got attachment: " + ct + ", " + fn + " for user id: " + connection.transaction.notes.hubdoc_user.email);
+        connection.transaction.notes.attachment_count++;
 
-    body.on('attachment_data', cb)
-    body.on('attachment_end', cb)
+        stream.connection = connection; // Allow backpressure
+        stream.pause();
+
+        var tmp = require('tmp');
+
+        tmp.file(function (err, path, fd) {
+            connection.loginfo("Got tempfile: " + path + " (" + fd + ")");
+            var ws = fs.createWriteStream(path);
+            stream.pipe(ws);
+            stream.resume();
+            ws.on('close', function () {
+                connection.loginfo("End of stream reached");
+                fs.fstat(fd, function (err, stats) {
+                    connection.loginfo("Got data of length: " + stats.size);
+                });
+            });
+        });
+    }
 
 * transaction.set_banner(text, html)
 
