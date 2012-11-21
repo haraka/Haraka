@@ -19,6 +19,7 @@ function Transaction() {
     this.banner = null;
     this.data_bytes = 0;
     this.header_pos = 0;
+    this.body = null;
     this.parse_body = false;
     this.notes = {};
     this.header = new Header();
@@ -43,7 +44,7 @@ exports.createTransaction = function(uuid) {
 Transaction.prototype.add_data = function(line) {
     this.message_stream.add_line(line);
     if (typeof line !== 'string') {
-        line = line.toString('binary').replace(/^\.\./, '.').replace(/\r\n$/, '\n');
+        line = line.toString('binary').replace(/^\./, '').replace(/\r\n$/, '\n');
     }
     // check if this is the end of headers line (note the regexp isn't as strong 
     // as it should be - it accepts whitespace in a blank line - we've found this

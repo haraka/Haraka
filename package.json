@@ -3,7 +3,7 @@
   "name": "Haraka",
   "description": "An SMTP Server project.",
   "keywords": ["haraka", "smtp", "server", "email"],
-  "version": "1.4.0",
+  "version": "2.0.0alpha",
   "homepage": "https://github.com/baudehlo/Haraka/",
   "repository": {
     "type": "git",
@@ -15,7 +15,7 @@
   },
   "dependencies": {
     "nopt"          : ">= 1.0.5",
-    "generic-pool"  : ">= 1.0.9",
+    "generic-pool"  : ">= 2.0.2",
     "node-syslog"   : ">= 1.1.2",
     "iconv"         : ">= 1.1.3",
     "ipaddr.js"     : ">= 0.1.1",

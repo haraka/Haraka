@@ -38,13 +38,14 @@ function MessageStream (config, id, headers) {
     this.headers_done = false;
     this.headers_found_eoh = false;
     this.line_endings = "\r\n";
-    this.data_buf = null;
-    this.data_pos = 0;
     this.dot_stuffing = false;
     this.ending_dot = false;
     this.buffer_size = (1024 * 64);
     this.start = 0;
     this.write_complete = false;
+    this.ws = null;
+    this.rs = null;
+    this.in_pipe = false;
 }
 
 util.inherits(MessageStream, Stream);
@@ -134,16 +135,17 @@ MessageStream.prototype._write = function (data) {
     }
     // Have we completely finished writing all data?
     if (this.end_called && (!this.spooling || (this.spooling && !this._queue.length))) {
-        this.write_complete = true;
+        if (this.end_callback) this.end_callback();
         // Do we have any waiting readers?
-        if (this.listeners('data').length) {
+        if (this.listeners('data').length && !this.write_complete) {
+            this.write_complete = true;
             process.nextTick(function () {
                 if (self.readable && !self.paused)
                     self._read();
             });
         }
-        if (this.end_callback) {
-            this.end_callback();
+        else {
+            this.write_complete = true;
         }
         return true;
     }
@@ -160,28 +162,36 @@ MessageStream.prototype._write = function (data) {
     // Open file descriptor if needed 
     if (!this.fd && !this.open_pending) {
         this.open_pending = true;
-        fs.open(this.filename, 'wx+', null, function (err, fd) {
-            if (err) return self.emit('error', err);
+        this.ws = fs.createWriteStream(this.filename, { flags: 'wx+', end: false })
+        this.ws.on('open', function (fd) {
             self.fd = fd;
             self.open_pending = false;
             process.nextTick(function () {
                 self._write();
             });
         });
+        this.ws.on('error', function (error) {
+            self.emit('error', error);
+        }); 
     }
 
     if (!this.fd) return false;
     var to_send = this._queue.shift();
     this.buffered -= to_send.length;
-    this.write_pending = true;
-    fs.write(this.fd, to_send, 0, to_send.length, null, function (err, written, buffer) {
-        if (err) return self.emit('error', err);
-        self.write_pending = false;
-        process.nextTick(function () {
-            self._write();
+    // TODO: try and implement backpressure
+    if (!this.ws.write(to_send)) {
+        this.write_pending = true;
+        this.ws.once('drain', function () {
+            self.write_pending = false;
+            process.nextTick(function () {
+                self._write();
+            });
         });
-    });
-    return true;
+        return false;
+    }
+    else {
+        return true;
+    }
 }
 
 /*
@@ -194,7 +204,7 @@ MessageStream.prototype._read = function () {
         throw new Error('end not called!');
     }
 
-    if (!this.readable || this.paused) {
+    if (!this.readable || this.paused || !this.write_complete) {
         return;
     }
 
@@ -232,28 +242,17 @@ MessageStream.prototype._read = function () {
             this._read_finish();       
         } 
         else {
-            // Read the message from the queue file
-            fs.read(this.fd, this.data_buf, 0, this.buffer_size, this.data_pos, function (err, bytesRead, buf) {
-                if (err) throw err;
-                if (self.paused || !self.readable) return;
-                self.data_pos = bytesRead;
-                // Have we finished reading?
-                var complete = false;
-                if (bytesRead < buf.length) {
-                    buf = buf.slice(0, bytesRead);
-                    complete = true;
-                }
-                self.process_buf(buf);
-                if (complete) {
-                    self._read_finish();
-                }
-                else {
-                    // Loop again
-                    process.nextTick(function () {
-                        if (self.readable && !self.paused)
-                            self._read();
-                    });
-                }
+            this.rs = fs.createReadStream(null, { fd: this.fd, start: 0 });
+            // Prevent the file descriptor from being closed
+            this.rs.destroy = function () {};
+            this.rs.on('error', function (error) {
+                self.emit('error', error);
+            });
+            this.rs.on('data', function (chunk) {
+                self.process_buf(chunk);
+            });
+            this.rs.on('end', function () {
+                self._read_finish();
             });
         }
     }
@@ -310,12 +309,16 @@ MessageStream.prototype._read_finish = function () {
             buf.writeUInt32BE(0, 0);
             self.emit('data', buf);
         }
+        self.in_pipe = false;
         self.emit('end');
     });
 }
 
 MessageStream.prototype.pipe = function (destination, options) {
     var self = this;
+    if (this.in_pipe) {
+        throw new Error('Cannot pipe while currently piping');
+    }
     Stream.prototype.pipe.call(this, destination, options);
     // Options
     this.line_endings = ((options && options.line_endings) ? options.line_endings : "\r\n");
@@ -325,12 +328,12 @@ MessageStream.prototype.pipe = function (destination, options) {
     this.buffer_size  = ((options && options.buffer_size) ? options.buffer_size : 1024 * 64);
     this.start        = ((options && parseInt(options.start)) ? parseInt(options.start) : 0);
     // Reset 
+    this.in_pipe = true;
     this.readable = true;
     this.paused = false;
     this.headers_done = false;
     this.headers_found_eoh = false;
-    this.data_buf = new Buffer(this.buffer_size);
-    this.data_pos = 0; 
+    this.rs = null;
     this.read_ce = new ChunkEmitter(this.buffer_size);
     this.read_ce.on('data', function (chunk) {
         if (self.clamd_style) {
@@ -364,11 +367,17 @@ MessageStream.prototype.pipe = function (destination, options) {
 
 MessageStream.prototype.pause = function () {
     this.paused = true;
+    if (this.rs) this.rs.pause();
 }
 
 MessageStream.prototype.resume = function () {
     this.paused = false;
-    this._read();
+    if (this.rs) {
+        this.rs.resume();
+    }
+    else {
+        this._read();
+    }
 }
 
 MessageStream.prototype.destroy = function () {
