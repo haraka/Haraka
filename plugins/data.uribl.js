@@ -299,7 +299,7 @@ exports.hook_data_post = function (next, connection) {
     // Body
     var do_body = function (cb) {
         var urls = {};
-        extract_urls(urls, trans.body);
+        extract_urls(urls, trans.body, connection, plugin);
         return plugin.do_lookups(connection, cb, Object.keys(urls), 'body');
     }
 
