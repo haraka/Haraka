@@ -96,6 +96,7 @@ exports.do_lookups = function (connection, next, hosts, type) {
             // Convert in-addr.arpa into bare IPv4 lookup
             var arpa = host.split(/\./).reverse();
             if (arpa.shift() === 'arpa' && arpa.shift() === 'in-addr') {
+                if (arpa.length < 4) continue; // Only full IP addresses
                 host = arpa.join('.');
             }
             var lookup;
@@ -298,7 +299,7 @@ exports.hook_data_post = function (next, connection) {
     // Body
     var do_body = function (cb) {
         var urls = {};
-        extract_urls(urls, trans.body);
+        extract_urls(urls, trans.body, connection, plugin);
         return plugin.do_lookups(connection, cb, Object.keys(urls), 'body');
     }
 
@@ -316,33 +317,54 @@ exports.hook_data_post = function (next, connection) {
     chain_caller();
 }
 
-function extract_urls (urls, body) {
+function extract_urls (urls, body, connection, self) {
     // extract from body.bodytext
     var match;
 
     // extract numeric URIs
     while (match = numeric_ip.exec(body.bodytext)) {
-        var uri = url.parse(match[0]);
-        // Don't reverse the IPs here; we do it in the lookup
-        urls[uri.hostname] = uri;
+        var uri;
+        try {
+            uri = url.parse(match[0]);
+            // Don't reverse the IPs here; we do it in the lookup
+            urls[uri.hostname] = uri;
+        }
+        catch (error) {
+            connection.logerror(self, 'parse error: ' + match[0] + 
+                                      ' ' + error.message);
+        }            
     }
     
     // match plain hostname.tld
     while (match = schemeless.exec(body.bodytext)) {
-        var uri = url.parse('http://' + match[1]);
-        urls[uri.hostname] = uri;
+        var uri;
+        try {
+            uri = url.parse('http://' + match[1]);
+            urls[uri.hostname] = uri;
+        }
+        catch (error) {
+            connection.logerror(self, 'parse error: ' + match[1] +
+                                      ' ' + error.message);
+        }
     }
     
     // match scheme:// URI
     while (match = schemed.exec(body.bodytext)) {
-        var uri = url.parse(match[1]);
-        urls[uri.hostname] = uri;
+        var uri;
+        try {
+            uri = url.parse(match[1]);
+            urls[uri.hostname] = uri;
+        }
+        catch (error) {
+            connection.logerror(self, 'parse error: ' + match[1] +
+                                      ' ' + error.message);
+        }
     }
     
     // TODO: URIHASH
     // TODO: MAILHASH 
 
     for (var i=0,l=body.children.length; i < l; i++) {
-        extract_urls(urls, body.children[i]);
+        extract_urls(urls, body.children[i], connection, self);
     }
 }

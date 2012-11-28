@@ -578,9 +578,9 @@ Connection.prototype.connect_respond = function(retval, msg) {
         default:
                 var greeting = config.get('smtpgreeting', 'list');
                 if (greeting.length) {
-                    if (!(/(^|\W)ESMTP(\W|$)/.test(greeting[0]))) {
-                        greeting[0] += " ESMTP";
-                    }
+                    // RFC5321 section 4.2
+                    // Hostname/domain should appear after the 220 
+                    greeting[0] = config.get('me') + ' ESMTP ' + greeting[0];
                     if (this.banner_includes_uuid) {
                         greeting[0] += ' (' + this.uuid + ')'; 
                     }
@@ -621,10 +621,13 @@ Connection.prototype.helo_respond = function(retval, msg) {
                 });
                 break;
         default:
-                this.respond(250, "Haraka says hi " + 
+                // RFC5321 section 4.1.1.1 
+                // Hostname/domain should appear after 250
+                this.respond(250, config.get('me') + " Hello " + 
                     ((this.remote_host && this.remote_host !== 'DNSERROR' 
                     && this.remote_host !== 'NXDOMAIN') ? this.remote_host + ' ' : '') 
-                    + "[" + this.remote_ip + "]");
+                    + "[" + this.remote_ip + "]"
+                    + ", Haraka is at your service.");
     }
 };
 
@@ -654,10 +657,13 @@ Connection.prototype.ehlo_respond = function(retval, msg) {
                 });
                 break;
         default:
-                var response = ["Haraka says hi " + 
+                // RFC5321 section 4.1.1.1 
+                // Hostname/domain should appear after 250
+                var response = [config.get('me') + " Hello " +  
                                 ((this.remote_host && this.remote_host !== 'DNSERROR' && 
                                 this.remote_host !== 'NXDOMAIN') ? this.remote_host + ' ' : '')
-                                + "[" + this.remote_ip + "]",
+                                + "[" + this.remote_ip + "]"
+                                + ", Haraka is at your service.",
                                 "PIPELINING",
                                 "8BITMIME",
                                 ];
@@ -678,7 +684,7 @@ Connection.prototype.capabilities_respond = function (retval, msg) {
 
 Connection.prototype.quit_respond = function(retval, msg) {
     var self = this;
-    this.respond(221, msg || "closing connection. Have a jolly good day.", function() {
+    this.respond(221, msg || config.get('me') + " closing connection. Have a jolly good day.", function() {
         self.disconnect();
     });
 };
