@@ -46,6 +46,7 @@ function MessageStream (config, id, headers) {
     this.ws = null;
     this.rs = null;
     this.in_pipe = false;
+    this.banner = null;
 }
 
 util.inherits(MessageStream, Stream);
@@ -198,6 +199,15 @@ MessageStream.prototype._write = function (data) {
 ** READABLE STREAM
 */
 
+MessageStream.prototype._emit_banner_ct = function (original_ct) {
+    var banner_boundary = "banner_" + Math.random().toString(16);
+    this.banner[2] = banner_boundary;
+    this.banner[3] = original_ct;
+    this.read_ce.fill("Content-Type: multipart/mixed; boundary=" + banner_boundary + this.line_endings);
+    // Might be there already, but fuck it.
+    this.read_ce.fill("MIME-Version: 1.0" + this.line_endings);
+}
+
 MessageStream.prototype._read = function () {
     var self = this;
     if (!this.end_called) {
@@ -219,9 +229,25 @@ MessageStream.prototype._read = function () {
     // loop around again (and check for pause).
     if (this.headers.length && !this.headers_done) {
         this.headers_done = true;
+        var ct_emitted = false;
         for (var i=0; i<this.headers.length; i++) {
-            this.read_ce.fill(this.headers[i].replace(/\r?\n/g,this.line_endings));
+            if (this.banner && /Content-Type:/i.test(this.headers[i])) {
+                this._emit_banner_ct(this.headers[i]);
+                ct_emitted = true;
+            }
+            else if (this.banner && /MIME-Version:/i.test(this.headers[i])) {
+                // Ignore MIME-Version header as it's emitted by the banner code
+            }
+            else {
+                this.read_ce.fill(this.headers[i].replace(/\r?\n/g,this.line_endings));
+            }
         }
+
+        // if banner not yet emitted
+        if (this.banner && !ct_emitted) {
+            this._emit_banner_ct("Content-Type: text/plain\r\n");
+        }
+
         // Add end of headers marker
         this.read_ce.fill(this.line_endings);
         // Loop
@@ -231,6 +257,12 @@ MessageStream.prototype._read = function () {
         });
     }
     else {
+        if (this.banner) {
+            this.read_ce.fill("Please use a MIME capable mail reader" + this.line_endings);
+            this.read_ce.fill(this.line_endings);
+            this.read_ce.fill("--" + this.banner[2] + this.line_endings);
+            this.read_ce.fill(this.banner[3]); // The original Content-Type
+        }
         // Read the message body by line
         // If we have queued entries, then we didn't 
         // create a queue file, so we read from memory.
@@ -296,6 +328,24 @@ MessageStream.prototype.process_buf = function (buf) {
 
 MessageStream.prototype._read_finish = function () {
     var self = this;
+    
+    if (this.banner) {
+        this.read_ce.fill("--" + this.banner[2] + this.line_endings);
+        var banner_end_boundary = "banner_end_" + Math.random().toString(16);
+        this.read_ce.fill("Content-Type: multipart/alternative; boundary=" + banner_end_boundary + this.line_endings);
+        this.read_ce.fill(this.line_endings);
+        this.read_ce.fill("--" + this.banner_end_boundary + this.line_endings);
+        this.read_ce.fill("Content-Type: text/plain" + this.line_endings);
+        this.read_ce.fill(this.line_endings);
+        this.read_ce.fill(this.banner[0] + this.line_endings);
+        this.read_ce.fill("--" + this.banner_end_boundary + this.line_endings);
+        this.read_ce.fill("Content-Type: text/html" + this.line_endings);
+        this.read_ce.fill(this.line_endings);
+        this.read_ce.fill(this.banner[1] + this.line_endings);
+        this.read_ce.fill("--" + this.banner_end_boundary + "--" + this.line_endings);
+        this.read_ce.fill("--" + this.banner[2] + "--" + this.line_endings);
+    }
+
     // End dot required?
     if (this.ending_dot) {
         this.read_ce.fill('.' + this.line_endings);
