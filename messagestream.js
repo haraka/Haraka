@@ -200,9 +200,8 @@ MessageStream.prototype._write = function (data) {
 */
 
 MessageStream.prototype._emit_banner_ct = function (original_ct) {
-    var banner_boundary = "banner_" + Math.random().toString(16);
-    this.banner[2] = banner_boundary;
-    this.banner[3] = original_ct;
+    var banner_boundary = "banner_" + this.uuid;
+    this.banner[2] = original_ct;
     this.read_ce.fill("Content-Type: multipart/mixed; boundary=" + banner_boundary + this.line_endings);
     // Might be there already, but fuck it.
     this.read_ce.fill("MIME-Version: 1.0" + this.line_endings);
@@ -260,8 +259,8 @@ MessageStream.prototype._read = function () {
         if (this.banner) {
             this.read_ce.fill("Please use a MIME capable mail reader" + this.line_endings);
             this.read_ce.fill(this.line_endings);
-            this.read_ce.fill("--" + this.banner[2] + this.line_endings);
-            this.read_ce.fill(this.banner[3]); // The original Content-Type
+            this.read_ce.fill("--banner_" + this.uuid + this.line_endings);
+            this.read_ce.fill(this.banner[2]); // The original Content-Type
             this.read_ce.fill(this.line_endings);
         }
         // Read the message body by line
@@ -331,8 +330,8 @@ MessageStream.prototype._read_finish = function () {
     var self = this;
 
     if (this.banner) {
-        this.read_ce.fill("--" + this.banner[2] + this.line_endings);
-        var banner_end_boundary = "banner_end_" + Math.random().toString(16);
+        this.read_ce.fill("--banner_" + this.uuid + this.line_endings);
+        var banner_end_boundary = "banner_end_" + this.uuid;
         this.read_ce.fill("Content-Type: multipart/alternative; boundary=" + banner_end_boundary + this.line_endings);
         this.read_ce.fill(this.line_endings);
         this.read_ce.fill("--" + banner_end_boundary + this.line_endings);
@@ -344,7 +343,7 @@ MessageStream.prototype._read_finish = function () {
         this.read_ce.fill(this.line_endings);
         this.read_ce.fill(this.banner[1] + this.line_endings);
         this.read_ce.fill("--" + banner_end_boundary + "--" + this.line_endings);
-        this.read_ce.fill("--" + this.banner[2] + "--" + this.line_endings);
+        this.read_ce.fill("--banner_" + this.uuid + "--" + this.line_endings);
     }
 
     // End dot required?
