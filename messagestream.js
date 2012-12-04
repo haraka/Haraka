@@ -231,11 +231,11 @@ MessageStream.prototype._read = function () {
         this.headers_done = true;
         var ct_emitted = false;
         for (var i=0; i<this.headers.length; i++) {
-            if (this.banner && /Content-Type:/i.test(this.headers[i])) {
+            if (this.banner && /^Content-Type:/i.test(this.headers[i])) {
                 this._emit_banner_ct(this.headers[i]);
                 ct_emitted = true;
             }
-            else if (this.banner && /MIME-Version:/i.test(this.headers[i])) {
+            else if (this.banner && /^MIME-Version:/i.test(this.headers[i])) {
                 // Ignore MIME-Version header as it's emitted by the banner code
             }
             else {
