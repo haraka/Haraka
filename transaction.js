@@ -97,7 +97,6 @@ Transaction.prototype.attachment_hooks = function (start, data, end) {
 };
 
 Transaction.prototype.set_banner = function (text, html) {
-    this.parse_body = true;
     if (!html) {
         html = text.replace(/\n/g, '<br/>\n');
     }
