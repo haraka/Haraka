@@ -97,8 +97,9 @@ Transaction.prototype.attachment_hooks = function (start, data, end) {
 };
 
 Transaction.prototype.set_banner = function (text, html) {
-    if (!html) {
-        html = text.replace(/\n/g, '<br/>\n');
-    }
-    this.message_stream.banner = [text, html];
+    this.message_stream.set_banner(text, html);
+}
+
+Transaction.prototype.set_top_banner = function (text, html) {
+    this.message_stream.set_top_banner(text, html);
 }

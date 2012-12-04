@@ -6,12 +6,14 @@ var Stream = require('stream').Stream;
 var ChunkEmitter = require('./chunkemitter');
 var indexOfLF = require('./utils').indexOfLF;
 
-var STATE_HEADERS = 1;
-var STATE_BODY = 2;
+const STATE_HEADERS = 1;
+const STATE_BODY = 2;
 
-const TEXT_BANNER = 0;
-const HTML_BANNER = 1;
-const ORIGINAL_CT = 2;
+const TEXT_BANNER       = 0;
+const HTML_BANNER       = 1;
+const PRE_TEXT_BANNER   = 2;
+const PRE_HTML_BANNER   = 3;
+const ORIGINAL_CT       = 4;
 
 function MessageStream (config, id, headers) {
     if (!id) throw new Error('id required');
@@ -54,6 +56,28 @@ function MessageStream (config, id, headers) {
 }
 
 util.inherits(MessageStream, Stream);
+
+MessageStream.prototype.set_banner = function (text, html) {
+    if (!html) {
+        html = text.replace(/\n/g, '<br/>\n');
+    }
+
+    this.banner = this.banner || [];
+
+    this.banner[TEXT_BANNER] = text;
+    this.banner[HTML_BANNER] = html;
+}
+
+MessageStream.prototype.set_top_banner = function (text, html) {
+    if (!html) {
+        html = text.replace(/\n/g, '<br/>\n');
+    }
+
+    this.banner = this.banner || [];
+
+    this.banner[PRE_TEXT_BANNER] = text;
+    this.banner[PRE_HTML_BANNER] = html;
+}
 
 MessageStream.prototype.add_line = function (line) {
     var self = this;
@@ -263,6 +287,38 @@ MessageStream.prototype._read = function () {
         if (this.banner) {
             this.read_ce.fill("Please use a MIME capable mail reader" + this.line_endings);
             this.read_ce.fill(this.line_endings);
+
+            if (this.banner[PRE_TEXT_BANNER]) {
+                this.read_ce.fill("--banner_" + this.uuid + this.line_endings);
+                if (/text\/plain/i.test(this.banner[ORIGINAL_CT])) {
+                    this.read_ce.fill("Content-Type: text/plain" + this.line_endings);
+                    this.read_ce.fill(this.line_endings);
+                    this.read_ce.fill(this.banner[PRE_TEXT_BANNER] + this.line_endings);
+                }
+                else if (/text\/html/i.test(this.banner[ORIGINAL_CT])) {
+                    this.read_ce.fill("Content-Type: text/html" + this.line_endings);
+                    this.read_ce.fill(this.line_endings);
+                    this.read_ce.fill(this.banner[PRE_HTML_BANNER] + this.line_endings);
+                }
+                else {
+                    // Assume plain/html alternatives - though this isn't 100% valid
+                    // as may be plain or html with attachments. But it's the only
+                    // way we can make this work.
+                    var banner_end_boundary = "banner_end_" + this.uuid;
+                    this.read_ce.fill("Content-Type: multipart/alternative; boundary=" + banner_end_boundary + this.line_endings);
+                    this.read_ce.fill(this.line_endings);
+                    this.read_ce.fill("--" + banner_end_boundary + this.line_endings);
+                    this.read_ce.fill("Content-Type: text/plain" + this.line_endings);
+                    this.read_ce.fill(this.line_endings);
+                    this.read_ce.fill(this.banner[PRE_TEXT_BANNER] + this.line_endings);
+                    this.read_ce.fill("--" + banner_end_boundary + this.line_endings);
+                    this.read_ce.fill("Content-Type: text/html" + this.line_endings);
+                    this.read_ce.fill(this.line_endings);
+                    this.read_ce.fill(this.banner[PRE_HTML_BANNER] + this.line_endings);
+                    this.read_ce.fill("--" + banner_end_boundary + "--" + this.line_endings);
+                }
+            }
+
             this.read_ce.fill("--banner_" + this.uuid + this.line_endings);
             this.read_ce.fill(this.banner[ORIGINAL_CT]);
             this.read_ce.fill(this.line_endings);
@@ -334,33 +390,35 @@ MessageStream.prototype._read_finish = function () {
     var self = this;
 
     if (this.banner) {
-        this.read_ce.fill("--banner_" + this.uuid + this.line_endings);
-        if (/text\/plain/i.test(this.banner[ORIGINAL_CT])) {
-            this.read_ce.fill("Content-Type: text/plain" + this.line_endings);
-            this.read_ce.fill(this.line_endings);
-            this.read_ce.fill(this.banner[TEXT_BANNER] + this.line_endings);
-        }
-        else if (/text\/html/i.test(this.banner[ORIGINAL_CT])) {
-            this.read_ce.fill("Content-Type: text/html" + this.line_endings);
-            this.read_ce.fill(this.line_endings);
-            this.read_ce.fill(this.banner[HTML_BANNER] + this.line_endings);
-        }
-        else {
-            // Assume plain/html alternatives - though this isn't 100% valid
-            // as may be plain or html with attachments. But it's the only
-            // way we can make this work.
-            var banner_end_boundary = "banner_end_" + this.uuid;
-            this.read_ce.fill("Content-Type: multipart/alternative; boundary=" + banner_end_boundary + this.line_endings);
-            this.read_ce.fill(this.line_endings);
-            this.read_ce.fill("--" + banner_end_boundary + this.line_endings);
-            this.read_ce.fill("Content-Type: text/plain" + this.line_endings);
-            this.read_ce.fill(this.line_endings);
-            this.read_ce.fill(this.banner[TEXT_BANNER] + this.line_endings);
-            this.read_ce.fill("--" + banner_end_boundary + this.line_endings);
-            this.read_ce.fill("Content-Type: text/html" + this.line_endings);
-            this.read_ce.fill(this.line_endings);
-            this.read_ce.fill(this.banner[HTML_BANNER] + this.line_endings);
-            this.read_ce.fill("--" + banner_end_boundary + "--" + this.line_endings);
+        if (this.banner[TEXT_BANNER]) {
+            this.read_ce.fill("--banner_" + this.uuid + this.line_endings);
+            if (/text\/plain/i.test(this.banner[ORIGINAL_CT])) {
+                this.read_ce.fill("Content-Type: text/plain" + this.line_endings);
+                this.read_ce.fill(this.line_endings);
+                this.read_ce.fill(this.banner[TEXT_BANNER] + this.line_endings);
+            }
+            else if (/text\/html/i.test(this.banner[ORIGINAL_CT])) {
+                this.read_ce.fill("Content-Type: text/html" + this.line_endings);
+                this.read_ce.fill(this.line_endings);
+                this.read_ce.fill(this.banner[HTML_BANNER] + this.line_endings);
+            }
+            else {
+                // Assume plain/html alternatives - though this isn't 100% valid
+                // as may be plain or html with attachments. But it's the only
+                // way we can make this work.
+                var banner_end_boundary = "banner_end_" + this.uuid;
+                this.read_ce.fill("Content-Type: multipart/alternative; boundary=" + banner_end_boundary + this.line_endings);
+                this.read_ce.fill(this.line_endings);
+                this.read_ce.fill("--" + banner_end_boundary + this.line_endings);
+                this.read_ce.fill("Content-Type: text/plain" + this.line_endings);
+                this.read_ce.fill(this.line_endings);
+                this.read_ce.fill(this.banner[TEXT_BANNER] + this.line_endings);
+                this.read_ce.fill("--" + banner_end_boundary + this.line_endings);
+                this.read_ce.fill("Content-Type: text/html" + this.line_endings);
+                this.read_ce.fill(this.line_endings);
+                this.read_ce.fill(this.banner[HTML_BANNER] + this.line_endings);
+                this.read_ce.fill("--" + banner_end_boundary + "--" + this.line_endings);
+            }
         }
         this.read_ce.fill("--banner_" + this.uuid + "--" + this.line_endings);
     }
