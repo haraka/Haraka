@@ -9,6 +9,10 @@ var indexOfLF = require('./utils').indexOfLF;
 var STATE_HEADERS = 1;
 var STATE_BODY = 2;
 
+const TEXT_BANNER = 0;
+const HTML_BANNER = 1;
+const ORIGINAL_CT = 2;
+
 function MessageStream (config, id, headers) {
     if (!id) throw new Error('id required');
     Stream.call(this);
@@ -201,7 +205,7 @@ MessageStream.prototype._write = function (data) {
 
 MessageStream.prototype._emit_banner_ct = function (original_ct) {
     var banner_boundary = "banner_" + this.uuid;
-    this.banner[2] = original_ct;
+    this.banner[ORIGINAL_CT] = original_ct;
     this.read_ce.fill("Content-Type: multipart/mixed; boundary=" + banner_boundary + this.line_endings);
     // Might be there already, but fuck it.
     this.read_ce.fill("MIME-Version: 1.0" + this.line_endings);
@@ -260,7 +264,7 @@ MessageStream.prototype._read = function () {
             this.read_ce.fill("Please use a MIME capable mail reader" + this.line_endings);
             this.read_ce.fill(this.line_endings);
             this.read_ce.fill("--banner_" + this.uuid + this.line_endings);
-            this.read_ce.fill(this.banner[2]); // The original Content-Type
+            this.read_ce.fill(this.banner[ORIGINAL_CT]);
             this.read_ce.fill(this.line_endings);
         }
         // Read the message body by line
@@ -331,18 +335,33 @@ MessageStream.prototype._read_finish = function () {
 
     if (this.banner) {
         this.read_ce.fill("--banner_" + this.uuid + this.line_endings);
-        var banner_end_boundary = "banner_end_" + this.uuid;
-        this.read_ce.fill("Content-Type: multipart/alternative; boundary=" + banner_end_boundary + this.line_endings);
-        this.read_ce.fill(this.line_endings);
-        this.read_ce.fill("--" + banner_end_boundary + this.line_endings);
-        this.read_ce.fill("Content-Type: text/plain" + this.line_endings);
-        this.read_ce.fill(this.line_endings);
-        this.read_ce.fill(this.banner[0] + this.line_endings);
-        this.read_ce.fill("--" + banner_end_boundary + this.line_endings);
-        this.read_ce.fill("Content-Type: text/html" + this.line_endings);
-        this.read_ce.fill(this.line_endings);
-        this.read_ce.fill(this.banner[1] + this.line_endings);
-        this.read_ce.fill("--" + banner_end_boundary + "--" + this.line_endings);
+        if (/text\/plain/i.test(this.banner[ORIGINAL_CT])) {
+            this.read_ce.fill("Content-Type: text/plain" + this.line_endings);
+            this.read_ce.fill(this.line_endings);
+            this.read_ce.fill(this.banner[TEXT_BANNER] + this.line_endings);
+        }
+        else if (/text\/html/i.test(this.banner[ORIGINAL_CT])) {
+            this.read_ce.fill("Content-Type: text/html" + this.line_endings);
+            this.read_ce.fill(this.line_endings);
+            this.read_ce.fill(this.banner[HTML_BANNER] + this.line_endings);
+        }
+        else {
+            // Assume plain/html alternatives - though this isn't 100% valid
+            // as may be plain or html with attachments. But it's the only
+            // way we can make this work.
+            var banner_end_boundary = "banner_end_" + this.uuid;
+            this.read_ce.fill("Content-Type: multipart/alternative; boundary=" + banner_end_boundary + this.line_endings);
+            this.read_ce.fill(this.line_endings);
+            this.read_ce.fill("--" + banner_end_boundary + this.line_endings);
+            this.read_ce.fill("Content-Type: text/plain" + this.line_endings);
+            this.read_ce.fill(this.line_endings);
+            this.read_ce.fill(this.banner[TEXT_BANNER] + this.line_endings);
+            this.read_ce.fill("--" + banner_end_boundary + this.line_endings);
+            this.read_ce.fill("Content-Type: text/html" + this.line_endings);
+            this.read_ce.fill(this.line_endings);
+            this.read_ce.fill(this.banner[HTML_BANNER] + this.line_endings);
+            this.read_ce.fill("--" + banner_end_boundary + "--" + this.line_endings);
+        }
         this.read_ce.fill("--banner_" + this.uuid + "--" + this.line_endings);
     }
 
