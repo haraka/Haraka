@@ -262,6 +262,7 @@ MessageStream.prototype._read = function () {
             this.read_ce.fill(this.line_endings);
             this.read_ce.fill("--" + this.banner[2] + this.line_endings);
             this.read_ce.fill(this.banner[3]); // The original Content-Type
+            this.read_ce.fill(this.line_endings);
         }
         // Read the message body by line
         // If we have queued entries, then we didn't 
@@ -328,21 +329,21 @@ MessageStream.prototype.process_buf = function (buf) {
 
 MessageStream.prototype._read_finish = function () {
     var self = this;
-    
+
     if (this.banner) {
         this.read_ce.fill("--" + this.banner[2] + this.line_endings);
         var banner_end_boundary = "banner_end_" + Math.random().toString(16);
         this.read_ce.fill("Content-Type: multipart/alternative; boundary=" + banner_end_boundary + this.line_endings);
         this.read_ce.fill(this.line_endings);
-        this.read_ce.fill("--" + this.banner_end_boundary + this.line_endings);
+        this.read_ce.fill("--" + banner_end_boundary + this.line_endings);
         this.read_ce.fill("Content-Type: text/plain" + this.line_endings);
         this.read_ce.fill(this.line_endings);
         this.read_ce.fill(this.banner[0] + this.line_endings);
-        this.read_ce.fill("--" + this.banner_end_boundary + this.line_endings);
+        this.read_ce.fill("--" + banner_end_boundary + this.line_endings);
         this.read_ce.fill("Content-Type: text/html" + this.line_endings);
         this.read_ce.fill(this.line_endings);
         this.read_ce.fill(this.banner[1] + this.line_endings);
-        this.read_ce.fill("--" + this.banner_end_boundary + "--" + this.line_endings);
+        this.read_ce.fill("--" + banner_end_boundary + "--" + this.line_endings);
         this.read_ce.fill("--" + this.banner[2] + "--" + this.line_endings);
     }
 
