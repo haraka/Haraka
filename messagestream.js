@@ -6,14 +6,21 @@ var Stream = require('stream').Stream;
 var ChunkEmitter = require('./chunkemitter');
 var indexOfLF = require('./utils').indexOfLF;
 
-const STATE_HEADERS = 1;
-const STATE_BODY = 2;
+const STATE_HEADERS      = 1;
+const STATE_BODY         = 2;
+const STATE_MIME_HEADERS = 3;
+const STATE_MIME_BODY    = 4
 
 const TEXT_BANNER       = 0;
 const HTML_BANNER       = 1;
 const PRE_TEXT_BANNER   = 2;
 const PRE_HTML_BANNER   = 3;
 const ORIGINAL_CT       = 4;
+const ORIGINAL_CTE      = 5;
+
+const TYPE_PLAIN = 1;
+const TYPE_HTML  = 2;
+const TYPE_BOTH  = 3;
 
 function MessageStream (config, id, headers) {
     if (!id) throw new Error('id required');
@@ -23,7 +30,7 @@ function MessageStream (config, id, headers) {
     this.read_ce = null;
     this.bytes_read = 0;
     this.state = STATE_HEADERS;
-    this.idx = {};
+    this.idx = { ctypes: [] };
     this.end_called = false;
     this.end_callback = null;
     this.buffered = 0;
@@ -53,6 +60,7 @@ function MessageStream (config, id, headers) {
     this.rs = null;
     this.in_pipe = false;
     this.banner = null;
+    this.banner_type = TYPE_PLAIN;
     this.no_banner = false;
 }
 
@@ -98,16 +106,24 @@ MessageStream.prototype.add_line = function (line) {
     this.bytes_read += line.length;
 
     // Build up an index of 'interesting' data on the fly
-    if (this.state === STATE_HEADERS) {
+    if (this.state === STATE_HEADERS || this.state === STATE_MIME_HEADERS) {
         // Look for end of headers line
         if (line.length === 2 && line[0] === 0x0d && line[1] === 0x0a) {
-            this.idx['headers'] = { start: 0, end: this.bytes_read-line.length };
-            this.state = STATE_BODY;
-            this.idx['body'] = { start: this.bytes_read };
+            if (this.state === STATE_HEADERS) {
+                this.idx['headers'] = { start: 0, end: this.bytes_read-line.length };
+                this.state = STATE_BODY;
+                this.idx['body'] = { start: this.bytes_read };
+            } else if (this.state === STATE_MIME_HEADERS) {
+                this.state = STATE_MIME_BODY;
+            }
+        }
+        var ct;
+        if ((ct = /^Content-Type:\s*([^; ]+)/i.exec(line.toString()))) {
+            this.idx.ctypes.push(ct[1].toLowerCase());
         }
     }
 
-    if (this.state === STATE_BODY) {
+    if (this.state === STATE_BODY || this.state === STATE_MIME_BODY) {
         // Look for MIME boundaries
         if (line.length > 4 && line[0] === 0x2d && line[1] == 0x2d) {
             var boundary = line.slice(2).toString().replace(/\s*$/,'');
@@ -116,17 +132,23 @@ MessageStream.prototype.add_line = function (line) {
                 boundary = boundary.slice(0, -2);
                 if (this.idx[boundary]) {
                     this.idx[boundary]['end'] = this.bytes_read;
+                    this.state = STATE_BODY;
                 }
             }
             else {
                 // Start of boundary?
                 if (!this.idx[boundary]) {
                     this.idx[boundary] = { start: this.bytes_read-line.length };
+                    this.state = STATE_MIME_HEADERS;
+                }
+                else {
+                    // Next part
+                    this.state = STATE_MIME_HEADERS;
                 }
             }
         }
     }
- 
+
     this.write_ce.fill(line);
 }
 
@@ -135,6 +157,24 @@ MessageStream.prototype.add_line_end = function (cb) {
     if (this.idx['body']) {
         this.idx['body']['end'] = this.bytes_read;
     }
+
+    // Work out what type of banner we can use
+    var idx;
+    if ((idx = this.idx.ctypes.indexOf('multipart/alternative')) !== -1 &&
+        /text\/(?:plain|html)/.test(this.idx.ctypes[++idx]) &&
+        /text\/(?:plain|html)/.test(this.idx.ctypes[++idx]))
+    {
+        this.banner_type = TYPE_BOTH;
+    }
+    else if (this.idx.ctypes.indexOf('text/html')  !== -1 &&
+             this.idx.ctypes.indexOf('text/plain') === -1)
+    {
+        this.banner_type = TYPE_HTML;
+    }
+    else {
+        this.banner_type = TYPE_PLAIN;
+    }
+
     this.end_called = true;
     if (cb && typeof cb === 'function') {
         this.end_callback = cb;
@@ -232,7 +272,6 @@ MessageStream.prototype._emit_banner_ct = function (original_ct) {
     var banner_boundary = "banner_" + this.uuid;
     this.banner[ORIGINAL_CT] = original_ct;
     this.read_ce.fill("Content-Type: multipart/mixed; boundary=" + banner_boundary + this.line_endings);
-    // Might be there already, but fuck it.
     this.read_ce.fill("MIME-Version: 1.0" + this.line_endings);
 }
 
@@ -266,6 +305,10 @@ MessageStream.prototype._read = function () {
             else if (!this.no_banner && this.banner && /^MIME-Version:/i.test(this.headers[i])) {
                 // Ignore MIME-Version header as it's emitted by the banner code
             }
+            else if (this.banner && /^Content-Transfer-Encoding:/i.test(this.headers[i])) {
+                // We need to store this
+                this.banner[ORIGINAL_CTE] = this.headers[i];
+            }
             else {
                 this.read_ce.fill(this.headers[i].replace(/\r?\n/g,this.line_endings));
             }
@@ -286,42 +329,40 @@ MessageStream.prototype._read = function () {
     }
     else {
         if (!this.no_banner && this.banner) {
-            this.read_ce.fill("Please use a MIME capable mail reader" + this.line_endings);
+            this.read_ce.fill("This is a multi-part message in MIME format." + this.line_endings);
             this.read_ce.fill(this.line_endings);
 
             if (this.banner[PRE_TEXT_BANNER]) {
                 this.read_ce.fill("--banner_" + this.uuid + this.line_endings);
-                if (/text\/plain/i.test(this.banner[ORIGINAL_CT])) {
-                    this.read_ce.fill("Content-Type: text/plain" + this.line_endings);
-                    this.read_ce.fill(this.line_endings);
-                    this.read_ce.fill(this.banner[PRE_TEXT_BANNER] + this.line_endings);
-                }
-                else if (/text\/html/i.test(this.banner[ORIGINAL_CT])) {
-                    this.read_ce.fill("Content-Type: text/html" + this.line_endings);
-                    this.read_ce.fill(this.line_endings);
-                    this.read_ce.fill(this.banner[PRE_HTML_BANNER] + this.line_endings);
-                }
-                else {
-                    // Assume plain/html alternatives - though this isn't 100% valid
-                    // as may be plain or html with attachments. But it's the only
-                    // way we can make this work.
+                if (this.banner_type === TYPE_BOTH) {
                     var banner_end_boundary = "banner_end_" + this.uuid;
                     this.read_ce.fill("Content-Type: multipart/alternative; boundary=" + banner_end_boundary + this.line_endings);
                     this.read_ce.fill(this.line_endings);
                     this.read_ce.fill("--" + banner_end_boundary + this.line_endings);
-                    this.read_ce.fill("Content-Type: text/plain" + this.line_endings);
+                }
+                if (this.banner_type === TYPE_PLAIN || this.banner_type === TYPE_BOTH) {
+                    this.read_ce.fill("Content-Type: text/plain; charset=utf8" + this.line_endings);
                     this.read_ce.fill(this.line_endings);
                     this.read_ce.fill(this.banner[PRE_TEXT_BANNER] + this.line_endings);
+                }
+                if (this.banner_type === TYPE_BOTH) {
                     this.read_ce.fill("--" + banner_end_boundary + this.line_endings);
-                    this.read_ce.fill("Content-Type: text/html" + this.line_endings);
+                }
+                if (this.banner_type === TYPE_HTML || this.banner_type === TYPE_BOTH) {
+                    this.read_ce.fill("Content-Type: text/html; charset=utf8" + this.line_endings);
                     this.read_ce.fill(this.line_endings);
                     this.read_ce.fill(this.banner[PRE_HTML_BANNER] + this.line_endings);
+                }
+                if (this.banner_type === TYPE_BOTH) {
                     this.read_ce.fill("--" + banner_end_boundary + "--" + this.line_endings);
                 }
             }
 
             this.read_ce.fill("--banner_" + this.uuid + this.line_endings);
             this.read_ce.fill(this.banner[ORIGINAL_CT]);
+            if (this.banner[ORIGINAL_CTE]) {
+                this.read_ce.fill(this.banner[ORIGINAL_CTE]);
+            }
             this.read_ce.fill(this.line_endings);
         }
         // Read the message body by line
@@ -393,31 +434,26 @@ MessageStream.prototype._read_finish = function () {
     if (!this.no_banner && this.banner) {
         if (this.banner[TEXT_BANNER]) {
             this.read_ce.fill("--banner_" + this.uuid + this.line_endings);
-            if (/text\/plain/i.test(this.banner[ORIGINAL_CT])) {
-                this.read_ce.fill("Content-Type: text/plain" + this.line_endings);
-                this.read_ce.fill(this.line_endings);
-                this.read_ce.fill(this.banner[TEXT_BANNER] + this.line_endings);
-            }
-            else if (/text\/html/i.test(this.banner[ORIGINAL_CT])) {
-                this.read_ce.fill("Content-Type: text/html" + this.line_endings);
-                this.read_ce.fill(this.line_endings);
-                this.read_ce.fill(this.banner[HTML_BANNER] + this.line_endings);
-            }
-            else {
-                // Assume plain/html alternatives - though this isn't 100% valid
-                // as may be plain or html with attachments. But it's the only
-                // way we can make this work.
+            if (this.banner_type === TYPE_BOTH) {
                 var banner_end_boundary = "banner_end_" + this.uuid;
                 this.read_ce.fill("Content-Type: multipart/alternative; boundary=" + banner_end_boundary + this.line_endings);
                 this.read_ce.fill(this.line_endings);
                 this.read_ce.fill("--" + banner_end_boundary + this.line_endings);
+            }
+            if (this.banner_type === TYPE_BOTH || this.banner_type === TYPE_PLAIN) {
                 this.read_ce.fill("Content-Type: text/plain" + this.line_endings);
                 this.read_ce.fill(this.line_endings);
                 this.read_ce.fill(this.banner[TEXT_BANNER] + this.line_endings);
+            }
+            if (this.banner_type === TYPE_BOTH) {
                 this.read_ce.fill("--" + banner_end_boundary + this.line_endings);
+            }
+            if (this.banner_type === TYPE_BOTH || this.banner_type === TYPE_HTML) {
                 this.read_ce.fill("Content-Type: text/html" + this.line_endings);
                 this.read_ce.fill(this.line_endings);
                 this.read_ce.fill(this.banner[HTML_BANNER] + this.line_endings);
+            }
+            if (this.banner_type === TYPE_BOTH) {
                 this.read_ce.fill("--" + banner_end_boundary + "--" + this.line_endings);
             }
         }
