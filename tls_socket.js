@@ -172,7 +172,8 @@ function createServer(cb) {
             // Set SSL_OP_ALL for maximum compatibility with broken clients
             // See http://www.openssl.org/docs/ssl/SSL_CTX_set_options.html
             if (!options) options = {};
-            options.secureOptions = SSL_OP_ALL;
+            // TODO: bug in Node means we can't do this until it's fixed
+            // options.secureOptions = SSL_OP_ALL;
             
             var sslcontext = crypto.createCredentials(options);
 
@@ -229,7 +230,8 @@ function connect(port, host, cb) {
         // Set SSL_OP_ALL for maximum compatibility with broken servers
         // See http://www.openssl.org/docs/ssl/SSL_CTX_set_options.html
         if (!options) options = {};
-        options.secureOptions = SSL_OP_ALL;
+        // TODO: bug in Node means we can't do this until it's fixed
+        // options.secureOptions = SSL_OP_ALL;
 
         var sslcontext = crypto.createCredentials(options);
 
