@@ -39,6 +39,7 @@ properties:
     * end          (default: true)
     * buffer_size  (default: 65535)
     * clamd_style  (default: false)
+    * no_banner    (default: false)
 
 e.g.
 

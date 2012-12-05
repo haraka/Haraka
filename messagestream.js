@@ -61,6 +61,7 @@ function MessageStream (config, id, headers) {
     this.in_pipe = false;
     this.banner = null;
     this.banner_type = TYPE_PLAIN;
+    this.no_banner = false;
 }
 
 util.inherits(MessageStream, Stream);
@@ -297,11 +298,11 @@ MessageStream.prototype._read = function () {
         this.headers_done = true;
         var ct_emitted = false;
         for (var i=0; i<this.headers.length; i++) {
-            if (this.banner && /^Content-Type:/i.test(this.headers[i])) {
+            if (!this.no_banner && this.banner && /^Content-Type:/i.test(this.headers[i])) {
                 this._emit_banner_ct(this.headers[i]);
                 ct_emitted = true;
             }
-            else if (this.banner && /^MIME-Version:/i.test(this.headers[i])) {
+            else if (!this.no_banner && this.banner && /^MIME-Version:/i.test(this.headers[i])) {
                 // Ignore MIME-Version header as it's emitted by the banner code
             }
             else if (this.banner && /^Content-Transfer-Encoding:/i.test(this.headers[i])) {
@@ -314,7 +315,7 @@ MessageStream.prototype._read = function () {
         }
 
         // if banner not yet emitted
-        if (this.banner && !ct_emitted) {
+        if (!this.no_banner && this.banner && !ct_emitted) {
             this._emit_banner_ct("Content-Type: text/plain\r\n");
         }
 
@@ -327,7 +328,7 @@ MessageStream.prototype._read = function () {
         });
     }
     else {
-        if (this.banner) {
+        if (!this.no_banner && this.banner) {
             this.read_ce.fill("This is a multi-part message in MIME format." + this.line_endings);
             this.read_ce.fill(this.line_endings);
 
@@ -430,7 +431,7 @@ MessageStream.prototype.process_buf = function (buf) {
 MessageStream.prototype._read_finish = function () {
     var self = this;
 
-    if (this.banner) {
+    if (!this.no_banner && this.banner) {
         if (this.banner[TEXT_BANNER]) {
             this.read_ce.fill("--banner_" + this.uuid + this.line_endings);
             if (this.banner_type === TYPE_BOTH) {
@@ -489,6 +490,7 @@ MessageStream.prototype.pipe = function (destination, options) {
     this.ending_dot   = ((options && options.ending_dot) ? options.ending_dot : false);
     this.clamd_style  = ((options && options.clamd_style) ? true : false);
     this.buffer_size  = ((options && options.buffer_size) ? options.buffer_size : 1024 * 64);
+    this.no_banner    = ((options && options.no_banner) ? options.no_banner : false);
     this.start        = ((options && parseInt(options.start)) ? parseInt(options.start) : 0);
     // Reset 
     this.in_pipe = true;
