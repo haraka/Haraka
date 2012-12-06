@@ -49,8 +49,9 @@ exports.hook_queue = function (next, connection) {
         });
 
         smtp_client.on('bad_code', function (code, msg) {
+            smtp_client.call_next(((code && code[0] === '5') ? DENY : DENYSOFT), 
+                                  msg + ' (' + connection.transaction.uuid + ')');
             smtp_client.release();
-            smtp_client.call_next();
         });
     });
 };
