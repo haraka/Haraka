@@ -302,7 +302,7 @@ exports.split_to_new_recipients = function (hmail, recipients) {
                     }
                     else {
                         var split_mail = new HMailItem (fname, dest_path);
-                        split_mail.on('ready', function () {
+                        split_mail.once('ready', function () {
                             split_mail.temp_fail("Split into multiple recipients");
                         });
                     }
@@ -366,7 +366,7 @@ exports.load_queue_files = function (cb_name, files) {
         if ((files.length === 0) || (i === max_concurrency)) {
             // end of loop or end of files
             var self = this;
-            hmail.on('ready', function () {self.load_queue_files(cb_name, files)});
+            hmail.once('ready', function () {self.load_queue_files(cb_name, files)});
             break;
         }
     }
@@ -505,7 +505,7 @@ HMailItem.prototype.read_todo = function () {
 HMailItem.prototype.send = function () {
     if (!this.todo) {
         var self = this;
-        this.on('ready', function () { self._send() });
+        this.once('ready', function () { self._send() });
     }
     else {
         this._send();
@@ -840,17 +840,20 @@ HMailItem.prototype.try_deliver_host = function (mx) {
                         fail_recips.push(last_recip);
                         if (!(ok_recips || recipients.length)) {
                             // no accepted recipients, and no more left so bail out
+                            processing_mail = false;
                             socket.send_command('QUIT');
                             return self.temp_fail("Upstream error: " + code + " " + rest);
                         }
                     }
                     else {
                         socket.send_command('QUIT');
+                        processing_mail = false;
                         return self.temp_fail("Upstream error: " + code + " " + rest);
                     }
                 }
                 else if (code.match(/^5/)) {
                     socket.send_command('QUIT');
+                    processing_mail = false;
                     return self.bounce(rest);
                 }
                 switch (command) {
@@ -961,10 +964,9 @@ HMailItem.prototype.bounce = function (err) {
     if (!this.todo) {
         // haven't finished reading the todo, delay here...
         var self = this;
-        self.on('ready', function () { self._bounce(err) });
+        self.once('ready', function () { self._bounce(err) });
         return;
     }
-    
     this._bounce(err);
 }
 
