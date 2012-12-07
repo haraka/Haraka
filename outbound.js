@@ -13,6 +13,7 @@ var config      = require('./config');
 var constants   = require('./constants');
 var trans       = require('./transaction');
 var plugins     = require('./plugins');
+var async       = require('async');
 var Address     = require('./address').Address;
 var date_to_str = utils.date_to_str;
 var existsSync  = utils.existsSync;
@@ -169,59 +170,44 @@ exports.send_trans_email = function (transaction, next) {
     
     // First get each domain
     var recips = {};
+    var num_domains = 0;
     transaction.rcpt_to.forEach(function (item) {
         var domain = item.host;
-        recips[domain] = recips[domain] || [];
+        if (!recips[domain]) {
+            recips[domain] = [];
+            num_domains++;
+        }
         recips[domain].push(item);
     });
     
-    // we need to create a "mynext" because as we split the mail if one
-    // of them fails we need to fail all of them. Also if one succeeds we
-    // don't want to return next(OK) until the last one succeeded.
     var hmails = [];
     var ok_paths = [];
-    var next_sent = 0;
-    var num_domains = Object.keys(recips).length;
-    var mynext = function (path, code, msg) {
-        if (next_sent) {
-            // means a DENY next() has been sent. Unlink everything...
+
+    async.forEachSeries(Object.keys(recips), function (domain, cb) {
+        var todo = new TODOItem(domain, recips[domain], transaction);
+        self.process_domain(ok_paths, todo, hmails, cb);
+    }, 
+    function (err) {
+        if (err) {
             for (var i=0,l=ok_paths.length; i<l; i++) {
                 fs.unlink(ok_paths[i]);
             }
-            fs.unlink(path);
+            if (next) next(DENY, err);
+            return;
         }
-        else if (code === DENY) {
-            // unlink everything sent before.
-            for (var i=0,l=ok_paths.length; i<l; i++) {
-                fs.unlink(ok_paths[i]);
-            }
-            ok_paths = [];
-            fs.unlink(path);
-            next_sent = 1;
-            if (next) next(code, msg);
+
+        for (var i = 0; i < hmails.length; i++) {
+            var hmail = hmails[i];
+            setTimeout(function (h) {
+                return function () { h.send() }
+            }(hmail), 0);
         }
-        else if (num_domains === 1) {
-            for (var i=0,l=hmails.length; i < l; i++) {
-                var hmail = hmails[i];
-                setTimeout(function (h) {
-                    return function () { h.send() }
-                }(hmail), 0);
-            }
-            if (next) next(code, msg);
-        }
-        else {
-            ok_paths.push(path);
-        }
-        num_domains--;
-    }
-    
-    for (var dom in recips) {
-        var todo = new TODOItem(dom, recips[dom], transaction);
-        this.process_domain(todo, hmails, mynext);
-    }
+
+        if (next) next(OK, "Mail Queued");
+    })
 }
 
-exports.process_domain = function (todo, hmails, cb) {
+exports.process_domain = function (ok_paths, todo, hmails, cb) {
     var plugin = this;
     this.loginfo("Processing domain: " + todo.domain);
     var fname = _fname();
@@ -232,18 +218,21 @@ exports.process_domain = function (todo, hmails, cb) {
         fs.rename(tmp_path, dest_path, function (err) {
             if (err) {
                 plugin.logerror("Unable to rename tmp file!: " + err);
-                cb(tmp_path, DENY, "Queue error");
+                fs.unlink(tmp_path);
+                cb("Queue error");
             }
             else {
                 hmails.push(new HMailItem (fname, dest_path, todo.notes));
-                cb(tmp_path, OK, "Queued!");
+                ok_paths.push(dest_path);
+                cb();
             }
         });
     });
     ws.on('error', function (err) {
         plugin.logerror("Unable to write queue file (" + fname + "): " + err);
         ws.destroy();
-        cb(tmp_path, DENY, "Queueing failed");
+        fs.unlink(tmp_path);
+        cb("Queueing failed");
     });
     plugin.build_todo(todo, ws);
 }
