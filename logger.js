@@ -31,7 +31,7 @@ logger.dump_logs = function (exit) {
         console.log(log_item.data);
     }
     if (exit) {
-        process.exit();
+        process.exit(1);
     }
 }
 
