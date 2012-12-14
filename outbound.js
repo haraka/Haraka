@@ -235,6 +235,7 @@ exports.process_domain = function (ok_paths, todo, hmails, cb) {
         cb("Queueing failed");
     });
     plugin.build_todo(todo, ws);
+    todo.message_stream.pipe(ws, { line_endings: '\r\n', dot_stuffing: true, ending_dot: false });
 }
 
 exports.build_todo = function (todo, ws) {
@@ -260,7 +261,6 @@ exports.build_todo = function (todo, ws) {
     var buf = Buffer.concat([todo_length, todo_str], todo_str.length + 4);
 
     ws.write(buf);
-    todo.message_stream.pipe(ws, { line_endings: '\r\n', dot_stuffing: true, ending_dot: false });
 }
 
 exports.split_to_new_recipients = function (hmail, recipients) {
@@ -893,6 +893,7 @@ HMailItem.prototype.try_deliver_host = function (mx) {
                         processing_mail = false;
                         socket.send_command('QUIT');
                         if (fail_recips.length) {
+                            self.logwarn("Some recipients tempfailed - generating new mail for them")
                             exports.split_to_new_recipients(self, fail_recips);
                         }
                         else {
