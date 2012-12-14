@@ -27,7 +27,7 @@ exports.get_plain_passwd = function (user, cb) {
 
 exports.hook_unrecognized_command = function (next, connection, params) {
     if(params[0] === AUTH_COMMAND && params[1]) {
-        return this.select_auth_method(next, connection, params[1]);
+        return this.select_auth_method(next, connection, params.slice(1).join(' '));
     }
     else if (connection.notes.authenticating &&
              connection.notes.auth_method === AUTH_METHOD_CRAM_MD5 &&
@@ -39,6 +39,11 @@ exports.hook_unrecognized_command = function (next, connection, params) {
              connection.notes.auth_method === AUTH_METHOD_LOGIN)
     {
         return this.auth_login(next, connection, params);
+    }
+    else if (connection.notes.authenticating &&
+             connection.notes.auth_method === AUTH_METHOD_PLAIN)
+    {
+        return this.auth_plain(next, connection, params);
     }
     return next();
 }
@@ -115,7 +120,7 @@ exports.select_auth_method = function(next, connection, method) {
             return this.auth_plain(next, connection, params);
         }
         else if(method === AUTH_METHOD_LOGIN) {
-            return this.auth_login(next, connection);
+            return this.auth_login(next, connection, params);
         }
         else if( method === AUTH_METHOD_CRAM_MD5) {
             return this.auth_cram_md5(next, connection);
@@ -125,17 +130,26 @@ exports.select_auth_method = function(next, connection, method) {
 }
 
 exports.auth_plain = function(next, connection, params) {
-    var credentials = unbase64(params[0]).split(/\0/);
-    credentials.shift();  // Discard authid
-    return this.check_user(next, connection, credentials, AUTH_METHOD_PLAIN);
-    return next();
+    if (!params || (params && !params.length)) {
+        connection.respond(334, ' ');
+        return next(OK);
+    }
+    else { 
+        var credentials = unbase64(params[0]).split(/\0/);
+        credentials.shift();  // Discard authid
+        return this.check_user(next, connection, credentials, AUTH_METHOD_PLAIN);
+        return next();
+    }
 }
 
 exports.auth_login = function(next, connection, params) {
-    if (connection.notes.auth_login_asked_login && !connection.notes.auth_login_userlogin) {
+    if ((!connection.notes.auth_login_asked_login && params[0]) ||
+        (connection.notes.auth_login_asked_login && !connection.notes.auth_login_userlogin)) 
+    {
         var login = unbase64(params[0]);
         connection.respond(334, LOGIN_STRING2);
         connection.notes.auth_login_userlogin = login;
+        connection.notes.auth_login_asked_login = true;
         return next(OK);
     }
     else if (connection.notes.auth_login_userlogin) {
