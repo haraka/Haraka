@@ -263,7 +263,7 @@ exports.build_todo = function (todo, ws) {
     ws.write(buf);
 }
 
-exports.split_to_new_recipients = function (hmail, recipients) {
+exports.split_to_new_recipients = function (hmail, recipients, response) {
     var plugin = this;
     var fname = _fname();
     var tmp_path = path.join(queue_dir, '.' + fname);
@@ -281,7 +281,7 @@ exports.split_to_new_recipients = function (hmail, recipients) {
         })
         rs.on('end', function () {
             // rs.destroy();
-            hmail.delivered();
+            hmail.delivered(response);
             ws.on('close', function () {
                 var dest_path = path.join(queue_dir, fname);
                 fs.rename(tmp_path, dest_path, function (err) {
@@ -894,7 +894,7 @@ HMailItem.prototype.try_deliver_host = function (mx) {
                         socket.send_command('QUIT');
                         if (fail_recips.length) {
                             self.logwarn("Some recipients tempfailed - generating new mail for them")
-                            exports.split_to_new_recipients(self, fail_recips);
+                            exports.split_to_new_recipients(self, fail_recips, rest);
                         }
                         else {
                             self.delivered(rest);
