@@ -263,7 +263,7 @@ exports.build_todo = function (todo, ws) {
     ws.write(buf);
 }
 
-exports.split_to_new_recipients = function (hmail, recipients, response) {
+exports.split_to_new_recipients = function (hmail, recipients, response, cb) {
     var plugin = this;
     var fname = _fname();
     var tmp_path = path.join(queue_dir, '.' + fname);
@@ -280,8 +280,6 @@ exports.split_to_new_recipients = function (hmail, recipients, response) {
             plugin.logerror("Reading original mail error: " + err);
         })
         rs.on('end', function () {
-            // rs.destroy();
-            hmail.delivered(response);
             ws.on('close', function () {
                 var dest_path = path.join(queue_dir, fname);
                 fs.rename(tmp_path, dest_path, function (err) {
@@ -292,7 +290,7 @@ exports.split_to_new_recipients = function (hmail, recipients, response) {
                     else {
                         var split_mail = new HMailItem (fname, dest_path);
                         split_mail.once('ready', function () {
-                            split_mail.temp_fail("Split into multiple recipients");
+                            cb(split_mail);
                         });
                     }
                 });
@@ -411,6 +409,7 @@ function HMailItem (filename, path, notes) {
     this.next_process = matches[1];
     this.num_failures = matches[2];
     this.notes        = notes || {};
+    this.refcount     = 1;
 
     this.size_file();
 }
@@ -747,9 +746,10 @@ HMailItem.prototype.try_deliver_host = function (mx) {
     var mail_from  = new Address (this.todo.mail_from.original);
 
     var data_marker = 0;
-    var last_recip;
+    var last_recip = null;
     var ok_recips = 0;
     var fail_recips = [];
+    var bounce_recips = [];
     var smtp_properties = {
         "tls": false,
         "max_size": 0,
@@ -827,12 +827,6 @@ HMailItem.prototype.try_deliver_host = function (mx) {
                     if (/^rcpt/.test(command)) {
                         // this recipient was rejected
                         fail_recips.push(last_recip);
-                        if (!(ok_recips || recipients.length)) {
-                            // no accepted recipients, and no more left so bail out
-                            processing_mail = false;
-                            socket.send_command('QUIT');
-                            return self.temp_fail("Upstream error: " + code + " " + rest);
-                        }
                     }
                     else {
                         socket.send_command('QUIT');
@@ -841,9 +835,14 @@ HMailItem.prototype.try_deliver_host = function (mx) {
                     }
                 }
                 else if (code.match(/^5/)) {
-                    socket.send_command('QUIT');
-                    processing_mail = false;
-                    return self.bounce(rest);
+                    if (/^rcpt/.test(command)) {
+                        bounce_recips.push(last_recip);
+                    }
+                    else {
+                        socket.send_command('QUIT');
+                        processing_mail = false;
+                        return self.bounce(rest);
+                    }
                 }
                 switch (command) {
                     case 'connect':
@@ -864,17 +863,39 @@ HMailItem.prototype.try_deliver_host = function (mx) {
                         socket.send_command('MAIL', 'FROM:' + mail_from);
                         break;
                     case 'mail':
-                    case 'rcpt_':
-                        if (command === 'rcpt_') ok_recips++;
                         last_recip = recipients.shift();
                         socket.send_command('RCPT', 'TO:' + last_recip.format());
-                        if (recipients.length) {
-                            // don't move to next state if we have more recipients
-                            command = 'rcpt_';
-                        }
                         break;
                     case 'rcpt':
-                        socket.send_command('DATA');
+                        if (last_recip && code.match(/^250/)) ok_recips++;
+                        if (!recipients.length) {
+                            if (fail_recips.length) {
+                                self.refcount++;
+                                exports.split_to_new_recipients(self, fail_recips, "Some recipients temporarily failed", function (hmail) {
+                                    self.discard();
+                                    hmail.temp_fail("Some recipients temp failed");
+                                });
+                            }
+                            if (bounce_recips.length) {
+                                self.refcount++;
+                                exports.split_to_new_recipients(self, bounce_recips, "Some recipients rejected", function (hmail) {
+                                    self.discard();
+                                    hmail.bounce("Some recipients failed");
+                                });
+                            }
+                            if (ok_recips) {
+                                socket.send_command('DATA');
+                            }
+                            else {
+                                processing_mail = false;
+                                socket.send_command('QUIT');
+                                self.discard();
+                            }
+                        }
+                        else {
+                            last_recip = recipients.shift();
+                            socket.send_command('RCPT', 'TO:' + last_recip.format());
+                        }
                         break;
                     case 'data':
                         var data_stream = self.data_stream();
@@ -892,13 +913,7 @@ HMailItem.prototype.try_deliver_host = function (mx) {
                     case 'dot':
                         processing_mail = false;
                         socket.send_command('QUIT');
-                        if (fail_recips.length) {
-                            self.logwarn("Some recipients tempfailed - generating new mail for them")
-                            exports.split_to_new_recipients(self, fail_recips, rest);
-                        }
-                        else {
-                            self.delivered(rest);
-                        }
+                        self.delivered(rest);
                         break;
                     case 'quit':
                         socket.end();
@@ -969,7 +984,7 @@ HMailItem.prototype.bounce_respond = function (retval, msg) {
     if (retval != constants.cont) {
         this.loginfo("plugin responded with: " + retval + ". Not sending bounce.");
         if (retval === constants.stop) {
-            fs.unlink(this.path);
+            this.discard();
         }
         delivery_concurrency--;
         return;
@@ -992,7 +1007,7 @@ HMailItem.prototype.bounce_respond = function (retval, msg) {
         }
 
         exports.send_email(from, recip, data_lines.join(''), function (code, msg) {
-            fs.unlink(self.path);  // remove the bouncing message from the queue
+            this.discard();
             if (code === DENY) {
                 // failed to even queue the mail
                 return self.double_bounce("Unable to queue the bounce message. Not sending bounce!");
@@ -1013,6 +1028,14 @@ HMailItem.prototype.delivered = function (response) {
     this.lognotice("delivered file=" + this.filename + ' response="' + response + '"');
     delivery_concurrency--;
     plugins.run_hooks("delivered", this, response);
+}
+
+HMailItem.prototype.discard = function () {
+    this.refcount--;
+    if (this.refcount === 0) {
+        // Remove the file.
+        fs.unlink(this.path);
+    }
 }
 
 HMailItem.prototype.temp_fail = function (err) {
@@ -1057,6 +1080,5 @@ HMailItem.prototype.delivered_respond = function (retval, msg) {
     if (retval != constants.cont && retval != constants.ok) {
         this.logwarn("delivered plugin responded with: " + retval + " msg=" + msg + ".");
     }
-    // Remove the file.
-    fs.unlink(this.path);
+    this.discard();
 };
