@@ -1095,10 +1095,11 @@ Connection.prototype.received_line = function() {
     }
     return [
         'from ',
-            // If no rDNS then use an IP literal here
+            this.hello_host, ' (',
+            // If there is no rDNS, then don't display it
             ((!/^(?:DNSERROR|NXDOMAIN)/.test(this.remote_info)) 
-                ? this.remote_info : '[' + this.remote_ip + ']'),
-            ' (', this.hello_host, ' [', this.remote_ip, ']) ', 
+                ? this.remote_info + ' ' : ''),
+            '[', this.remote_ip, '])', 
         "\n\t", 
             'by ', config.get('me'), ' (Haraka/', version, ') with ', smtp, 
             ' id ', this.transaction.uuid, 
