@@ -831,7 +831,7 @@ HMailItem.prototype.try_deliver_host = function (mx) {
                     else {
                         socket.send_command('QUIT');
                         processing_mail = false;
-                        return self.temp_fail("Upstream error: " + code + " " + rest);
+                        return self.temp_fail("Upstream error: " + code + " " + response.join(' '));
                     }
                 }
                 else if (code.match(/^5/)) {
@@ -841,7 +841,7 @@ HMailItem.prototype.try_deliver_host = function (mx) {
                     else {
                         socket.send_command('QUIT');
                         processing_mail = false;
-                        return self.bounce(rest);
+                        return self.bounce(response.join(' '));
                     }
                 }
                 switch (command) {
@@ -873,14 +873,14 @@ HMailItem.prototype.try_deliver_host = function (mx) {
                                 self.refcount++;
                                 exports.split_to_new_recipients(self, fail_recips, "Some recipients temporarily failed", function (hmail) {
                                     self.discard();
-                                    hmail.temp_fail("Some recipients temp failed");
+                                    hmail.temp_fail("Some recipients temp failed: " + fail_recips.join(', '));
                                 });
                             }
                             if (bounce_recips.length) {
                                 self.refcount++;
                                 exports.split_to_new_recipients(self, bounce_recips, "Some recipients rejected", function (hmail) {
                                     self.discard();
-                                    hmail.bounce("Some recipients failed");
+                                    hmail.bounce("Some recipients failed: " + bounce_recips.join(', '));
                                 });
                             }
                             if (ok_recips) {
@@ -913,7 +913,7 @@ HMailItem.prototype.try_deliver_host = function (mx) {
                     case 'dot':
                         processing_mail = false;
                         socket.send_command('QUIT');
-                        self.delivered(rest);
+                        self.delivered(response.join(' '));
                         break;
                     case 'quit':
                         socket.end();
