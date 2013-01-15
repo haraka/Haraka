@@ -96,9 +96,10 @@ function setupClient(self) {
     
     self.client.on('timeout', function () {
         if (!self.disconnected) {
-            self.respond(421, 'timeout');
-            self.fail('client ' + ((self.remote_host) ? self.remote_host + ' ' : '')
-                                + '[' + self.remote_ip + '] connection timed out');
+            self.respond(421, 'timeout', function () {
+                self.fail('client ' + ((self.remote_host) ? self.remote_host + ' ' : '')
+                                    + '[' + self.remote_ip + '] connection timed out');
+            });
         }
     });
     
@@ -110,8 +111,9 @@ function setupClient(self) {
         self.proxy = true;
         // Wait for PROXY command
         self.proxy_timer = setTimeout(function () {
-            self.respond(421, 'PROXY timeout');
-            self.disconnect();
+            self.respond(421, 'PROXY timeout', function () {
+                self.disconnect();
+            });
         }, 30 * 1000);
     }
     else {
