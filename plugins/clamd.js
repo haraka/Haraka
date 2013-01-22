@@ -25,7 +25,7 @@ exports.register = function () {
         });
         var new_skip_list_exclude = [];
         var new_skip_list = [];
-        for (var i=0; i<list.length; i++) {
+        for (var i=0; i < list.length; i++) {
             if (list[i][0] === '!') {
                 if (list[i][1] === '/') {
                     // Regexp exclude
@@ -191,13 +191,13 @@ exports.hook_data_post = function (next, connection) {
                     var virus = m[1];
                 }
                 // Check skip list exclusions
-                for (var i=0; i<skip_list_exclude.length; i++) {
+                for (var i=0; i < skip_list_exclude.length; i++) {
                     if (skip_list_exclude[i].test(virus)) {
                         return next(DENY, 'Message is infected with ' + (virus || 'UNKONWN'));
                     }
                 }
                 // Check skip list
-                for (var i=0; i<skip_list.length; i++) {
+                for (var i=0; i < skip_list.length; i++) {
                     if (skip_list[i].test(virus)) {
                         connection.logwarn(plugin, virus + ' matches exclusion');
                         // Add header
@@ -212,7 +212,8 @@ exports.hook_data_post = function (next, connection) {
                                             'Check StreamMaxLength in clamd.conf');
                 // Continue as StreamMaxLength default is 25Mb
                 return next();
-            } else {
+            } 
+            else {
                 // Unknown result
                 connection.logerror(plugin, 'unknown result: ' + result);
                 return next(DENYSOFT, 'Error running virus scanner');
