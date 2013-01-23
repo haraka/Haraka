@@ -9,13 +9,7 @@ var out         = require('./outbound');
 var plugins     = require('./plugins');
 var constants   = require('./constants');
 var os          = require('os');
-var semver      = require('semver');
-
-var cluster;
-try { cluster = require('cluster') } // cluster can be installed with npm
-catch (err) {
-    logger.logdebug("no cluster available, running single-process");
-}
+var cluster     = require('cluster');
 
 var daemon;
 try { daemon = require('daemon'); } // npm install daemon
@@ -93,85 +87,41 @@ Server.createServer = function (params) {
     plugins.server = server;
     plugins.load_plugins();
 
+    // Cluster
     if (cluster && config_data.main.nodes) {
-        // 0.8 cluster support
-        if (semver.satisfies(process.version, '>= 0.8.x')) {
-            server.cluster = cluster;  // Allow plugins to access cluster!  
-            if (cluster.isMaster) {
-                this.daemonize(config_data);
-                // Fork workers
-                var workers = (config_data.main.nodes === 'cpus') ? 
-                    os.cpus().length : config_data.main.nodes;
-                for (var i=0; i<workers; i++) {
+        server.cluster = cluster;  // Allow plugins to access cluster!  
+        if (cluster.isMaster) {
+            this.daemonize(config_data);
+            // Fork workers
+            var workers = (config_data.main.nodes === 'cpus') ? 
+                os.cpus().length : config_data.main.nodes;
+            for (var i=0; i<workers; i++) {
+                cluster.fork({ CLUSTER_MASTER_PID: process.pid });
+            }
+            cluster.on('online', function (worker) {
+                logger.lognotice('worker ' + worker.id + ' started pid=' + worker.process.pid);
+            });
+            cluster.on('listening', function (worker, address) {
+                logger.lognotice('worker ' + worker.id + ' listening on ' + address.address + ':' + address.port);
+            });
+            cluster.on('exit', function (worker, code, signal) {
+                if (signal) {
+                    logger.lognotice('worker ' + worker.id + ' killed by signal ' + signal);
+                }
+                else if (code !== 0) {
+                    logger.lognotice('worker ' + worker.id + ' exited with error code: ' + code);
+                }
+                if (signal || code !== 0) {
+                    // Restart worker
                     cluster.fork({ CLUSTER_MASTER_PID: process.pid });
                 }
-                cluster.on('online', function (worker) {
-                    logger.lognotice('worker ' + worker.id + ' started pid=' + worker.process.pid);
-                });
-                cluster.on('listening', function (worker, address) {
-                    logger.lognotice('worker ' + worker.id + ' listening on ' + address.address + ':' + address.port);
-                });
-                cluster.on('exit', function (worker, code, signal) {
-                    if (signal) {
-                        logger.lognotice('worker ' + worker.id + ' killed by signal ' + signal);
-                    }
-                    else if (code !== 0) {
-                        logger.lognotice('worker ' + worker.id + ' exited with error code: ' + code);
-                    }
-                    if (signal || code !== 0) {
-                        // Restart worker
-                        cluster.fork({ CLUSTER_MASTER_PID: process.pid });
-                    }
-                });
-                plugins.run_hooks('init_master', Server);
-            }
-            else {
-                // Workers
-                server.listen(config_data.main.port, config_data.main.listen_host, listening);
-                plugins.run_hooks('init_child', Server);
-            }
+            });
+            plugins.run_hooks('init_master', Server);
         }
         else {
-            // Old 0.4 cluster module
-            var c = cluster(server);
-            var cluster_modules = config.get('cluster_modules', 'list');
-        
-            if (config_data.main.nodes !== 'cpus') {
-                c.set('workers', config_data.main.nodes);
-            }
-            if (config_data.main.group) {
-                c.set('group', config_data.main.group);
-            }
-            if (config_data.main.user) {
-                c.set('user', config_data.main.user);
-            }
-        
-            for (var i=0,l=cluster_modules.length; i < l; i++) {
-                var matches = /^(\w+)\s*(?::\s*(.*))?$/.exec(cluster_modules[i]);
-                if (!matches) {
-                    Server.logerror("cluster_modules in invalid format: " + cluster_modules[i]);
-                    continue;
-                }
-                var module = matches[1];
-                var params = matches[2];
-                if (params) {
-                    c.use(cluster[module](JSON.parse(params)));
-                }
-                else {
-                    c.use(cluster[module]());
-                }
-            }
-
-            c.listen(parseInt(config_data.main.port), config_data.main.listen_host);
-            c.on('listening', listening);
-            Server.cluster = c;
-            if (c.isMaster) {
-                this.daemonize(config_data);
-                plugins.run_hooks('init_master', Server);
-            }
-            if (c.isWorker) {
-                plugins.run_hooks('init_child', Server);
-            }
+            // Workers
+            server.listen(config_data.main.port, config_data.main.listen_host, listening);
+            plugins.run_hooks('init_child', Server);
         }
     }
     else {
