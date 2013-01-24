@@ -4,7 +4,7 @@
 // Daemonization is now built-in to Haraka.
 
 throw new Error('The daemonize plugin should not be used.' +
-               ' Set daemonize=true in config/smtp.ini instead');
+               ' See haraka -h CoreConfig for details');
 
 // npm install daemon
 var daemon;
