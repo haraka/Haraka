@@ -16,6 +16,9 @@ var STATE_RELEASED = 3;
 var STATE_DEAD = 4;
 var STATE_DESTROYED = 5;
 
+var tls_key;
+var tls_cert;
+
 function SMTPClient(port, host, connect_timeout) {
     events.EventEmitter.call(this);
     this.uuid = uuid();
@@ -72,7 +75,9 @@ function SMTPClient(port, host, connect_timeout) {
                 self.emit('xclient', 'EHLO');
                 break;
             case 'starttls':
-                this.upgrade({key: key, cert: cert});
+                if (tls_key && tls_cert) {
+                    this.upgrade({key: tls_key, cert: tls_cert});
+                }
                 break;
             case 'greeting':
                 self.connected = true;
@@ -308,9 +313,9 @@ exports.get_client_plugin = function (plugin, connection, config, callback) {
                     }
                 }
                 if (smtp_client.response[line].match(/^STARTTLS/)) {
-                    var key = plugin.config.get('tls_key.pem', 'data').join("\n");
-                    var cert = plugin.config.get('tls_cert.pem', 'data').join("\n");
-                    if (key && cert && enable_tls) {
+                    tls_key = plugin.config.get('tls_key.pem', 'data').join("\n");
+                    tls_cert = plugin.config.get('tls_cert.pem', 'data').join("\n");
+                    if (tls_key && tls_cert && enable_tls) {
                         smtp_client.socket.on('secure', function () {
                             smtp_client.emit('greeting', 'EHLO');
                         });
