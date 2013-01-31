@@ -16,11 +16,13 @@
   "dependencies": {
     "nopt"          : ">= 1.0.5",
     "generic-pool"  : ">= 2.0.2",
-    "node-syslog"   : ">= 1.1.2",
     "iconv"         : ">= 1.1.3",
     "ipaddr.js"     : ">= 0.1.1",
     "semver"        : ">= 1.0.14",
     "async"         : ">= 0.1.22"
+  },
+  "optionalDependencies": {
+    "node-syslog"   : ">= 1.1.2"
   },
   "devDependencies": {
     "nodeunit"      : "https://github.com/godsflaw/nodeunit/tarball/master"
