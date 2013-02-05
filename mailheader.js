@@ -58,15 +58,24 @@ function _decode_header (matched, encoding, cte, data) {
             logger.logerror("Invalid header encoding type: " + cte);
     }
     
-    // todo: convert with iconv if encoding != UTF-8
-    if (Iconv) {
+    // convert with iconv if encoding != UTF-8
+    if (Iconv && !(/UTF-?8/i.test(encoding))) {
         try {
             var converter = new Iconv(encoding, "UTF-8");
-            // console.log(data.toString());
             data = converter.convert(data);
         }
         catch (err) {
-            logger.logerror("header iconv conversion from " + encoding + " to UTF-8 failed: " + err);
+            // TODO: raise a flag for this for possible scoring
+            logger.logwarn("initial header iconv conversion from " + encoding + " to UTF-8 failed: " + err.message);
+            if (err.code !== 'EINVAL') {
+                try {
+                    var converter = new Iconv(encoding, "UTF-8//TRANSLIT//IGNORE");
+                    data = converter.convert(data);
+                }
+                catch (e) {
+                    logger.logerror("header iconv from " + encoding + " to UTF-8 failed: " + e.message);
+                }
+            }
         }
     }
     

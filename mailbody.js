@@ -252,9 +252,20 @@ Body.prototype.parse_end = function (line) {
                     this.bodytext = converter.convert(buf).toString();
                 }
                 catch (err) {
-                    logger.logerror("iconv conversion from " + enc + " to UTF-8 failed: " + err);
+                    logger.logwarn("initial iconv conversion from " + enc + " to UTF-8 failed: " + err.message);
                     this.body_encoding = 'broken//' + enc;
-                    this.bodytext = buf.toString();
+                    // EINVAL is returned when the encoding type is not recognised/supported (e.g. ANSI_X3)
+                    if (err.code !== 'EINVAL') {
+                        // Perform the conversion again, but ignore any errors
+                        try { 
+                            var converter = new Iconv(enc, 'UTF-8//TRANSLIT//IGNORE');
+                            this.bodytext = converter.convert(buf).toString();
+                        }
+                        catch (e) {
+                            logger.logerror('iconv conversion from ' + enc + ' to UTF-8 failed: ' + e.message);
+                            this.bodytext = buf.toString();
+                        }
+                    }
                 }
             }
         }
