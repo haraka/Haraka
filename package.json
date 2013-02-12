@@ -3,7 +3,7 @@
   "name": "Haraka",
   "description": "An SMTP Server project.",
   "keywords": ["haraka", "smtp", "server", "email"],
-  "version": "2.0.4",
+  "version": "2.0.5",
   "homepage": "https://github.com/baudehlo/Haraka/",
   "repository": {
     "type": "git",
