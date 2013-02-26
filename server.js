@@ -136,6 +136,7 @@ Server.init_master_respond = function (retval, msg) {
     switch(retval) {
         case constants.ok:
         case constants.cont:
+                out.load_queue();
                 break;
         default:
                 Server.logerror("init_master returned error" + ((msg) ? ': ' + msg : ''));
@@ -181,6 +182,4 @@ function listening () {
 
     logger.lognotice("Listening on port " + config_data.main.port);
     Server.ready = 1;
-   
-    out.load_queue();
 }
