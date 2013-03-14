@@ -561,10 +561,15 @@ HMailItem.prototype.get_mx_respond = function (retval, mx) {
                 return this.temp_fail("Temporary MX lookup error for " + this.domain);
     }
 
-    // if none of the above return codes, drop through to this...
-
-    var mxs = [];
     var hmail = this;
+    // if none of the above return codes, drop through to this...
+    exports.lookup_mx(this.todo.domain, function (err, mxs) {
+        hmail.found_mx(err, mxs);
+    });
+}
+
+exports.lookup_mx = function lookup_mx (domain, cb) {
+    var mxs = [];
     
     // Possible DNS errors
     // NODATA
@@ -589,15 +594,15 @@ HMailItem.prototype.get_mx_respond = function (retval, mx) {
                 // Drop through and we'll get the A record instead.
                 return 0;
             }
-            hmail.found_mx(err);
+            cb(err);
         }
         else if (addresses && addresses.length) {
             for (var i=0,l=addresses.length; i < l; i++) {
                 var mx = wrap_mx(addresses[i]);
-                hmail.logdebug("Got an MX from DNS: " + hmail.todo.domain + " => " + mx.priority + " " + mx.exchange);
+                // hmail.logdebug("Got an MX from DNS: " + hmail.todo.domain + " => " + mx.priority + " " + mx.exchange);
                 mxs.push(mx);
             }
-            hmail.found_mx(null, mxs);
+            cb(null, mxs);
         }
         else {
             // return zero if we need to keep trying next option
@@ -606,7 +611,7 @@ HMailItem.prototype.get_mx_respond = function (retval, mx) {
         return 1;
     };
     
-    dns.resolveMx(this.todo.domain, function(err, addresses) {
+    dns.resolveMx(domain, function(err, addresses) {
         if (process_dns(err, addresses)) {
             return;
         }
@@ -615,13 +620,13 @@ HMailItem.prototype.get_mx_respond = function (retval, mx) {
         // wrap_mx() to return same thing as resolveMx() does.
         wrap_mx = function (a) { return {priority:0,exchange:a} };
 
-        dns.resolve(hmail.todo.domain, function(err, addresses) {
+        dns.resolve(domain, function(err, addresses) {
             if (process_dns(err, addresses)) {
                 return;
             }
             var err = new Error("Found nowhere to deliver to");
             err.code = 'NOMX';
-            hmail.found_mx(err);
+            cb(err);
         });
     });
 }
@@ -717,7 +722,7 @@ HMailItem.prototype.try_deliver_host = function (mx) {
     
     var host = this.hostlist.shift();
     var port            = mx.port || 25;
-    var socket          = sock.connect(port, host);
+    var socket          = sock.connect({port: port, host: host, localAddress: mx.bind});
     var self            = this;
     var processing_mail = true;
 
