@@ -41,7 +41,16 @@ exports.Socket = Socket;
 
 // New interface - uses TLS
 exports.connect = function (port, host, cb) {
-    var sock = tls.connect(port, host, cb);
+    var options = {};
+    if (typeof port === 'object') {
+        options = port;
+        cb = host;
+    }
+    else {
+        options.port = port;
+        options.host = host;
+    }
+    var sock = tls.connect(options, cb);
     setup_line_processor(sock);
     return sock;
 }
