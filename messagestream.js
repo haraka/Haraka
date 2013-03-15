@@ -385,11 +385,11 @@ MessageStream.prototype.destroy = function () {
     try {
         if (this.fd) { 
             fs.close(this.fd, function (err) {
-                fs.unlink(self.filename);
+                fs.unlink(self.filename, function () {});
             });
         }
         else {
-            fs.unlink(this.filename);
+            fs.unlink(this.filename, function () {});
         }
     }
     catch (err) {

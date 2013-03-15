@@ -190,7 +190,7 @@ exports.send_trans_email = function (transaction, next) {
     function (err) {
         if (err) {
             for (var i=0,l=ok_paths.length; i<l; i++) {
-                fs.unlink(ok_paths[i]);
+                fs.unlink(ok_paths[i], function () {});
             }
             if (next) next(DENY, err);
             return;
@@ -218,7 +218,7 @@ exports.process_domain = function (ok_paths, todo, hmails, cb) {
         fs.rename(tmp_path, dest_path, function (err) {
             if (err) {
                 plugin.logerror("Unable to rename tmp file!: " + err);
-                fs.unlink(tmp_path);
+                fs.unlink(tmp_path, function () {});
                 cb("Queue error");
             }
             else {
@@ -231,7 +231,7 @@ exports.process_domain = function (ok_paths, todo, hmails, cb) {
     ws.on('error', function (err) {
         plugin.logerror("Unable to write queue file (" + fname + "): " + err);
         ws.destroy();
-        fs.unlink(tmp_path);
+        fs.unlink(tmp_path, function () {});
         cb("Queueing failed");
     });
     plugin.build_todo(todo, ws);
@@ -1023,7 +1023,7 @@ HMailItem.prototype.bounce_respond = function (retval, msg) {
 
 HMailItem.prototype.double_bounce = function (err) {
     this.logerror("Double bounce: " + err);
-    fs.unlink(this.path);
+    fs.unlink(this.path, function () {});
     // TODO: fill this in... ?
     // One strategy is perhaps log to an mbox file. What do other servers do?
     // Another strategy might be delivery "plugins" to cope with this.
@@ -1039,7 +1039,7 @@ HMailItem.prototype.discard = function () {
     this.refcount--;
     if (this.refcount === 0) {
         // Remove the file.
-        fs.unlink(this.path);
+        fs.unlink(this.path, function () {});
     }
 }
 
