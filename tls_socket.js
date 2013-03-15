@@ -238,7 +238,6 @@ function connect(port, host, cb) {
         options.host = host;
     }
 
-    console.log("Connecting: ", options);
     var cryptoSocket = _net_connect(options);
 
     var socket = new pluggableStream(cryptoSocket);
