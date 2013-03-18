@@ -165,7 +165,7 @@ function setup_listeners (listeners, plugins, type, inactivity_timeout) {
         // Fallback from IPv6 to IPv4 if not supported
         // But only if we supplied the default of [::0]:25
         server.on('error', function (e) {
-            if (e.code === 'EAFNOSUPPORT' && /^::0?/.test(hp[1]) && Server.default_host) {
+            if (e.code === 'EAFNOSUPPORT' && /^::0/.test(hp[1]) && Server.default_host) {
                 server.listen(hp[2], '0.0.0.0');
             }
             else {
