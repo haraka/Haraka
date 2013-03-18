@@ -94,10 +94,6 @@ plugins.load_plugin = function(name) {
     return plugin;
 }
 
-// Set in server.js; initialized to empty object
-// to prevent it from blowing up any unit tests.
-plugins.server = {};
-
 plugins._load_and_compile_plugin = function(name) {
     var plugin = new Plugin(name);
     var fp = plugin.full_paths,
@@ -120,8 +116,19 @@ plugins._load_and_compile_plugin = function(name) {
         throw "Loading plugin " + name + " failed: " + last_err;
     }
     var code = '"use strict";' + rf;
+    var custom_require = function _haraka_require (module) {
+        if (!/^\./.test(module)) {
+            return require(module);
+        }
+
+        if (path.existsSync(__dirname + '/' + module + '.js') || path.existsSync(__dirname + '/' + module)) {
+            return require(module);
+        }
+
+        return require(path.dirname(fp[i]) + '/' + module);
+    }
     var sandbox = { 
-        require: require,
+        require: custom_require,
         __filename: fp[i],
         __dirname:  path.dirname(fp[i]),
         exports: plugin,
@@ -132,7 +139,6 @@ plugins._load_and_compile_plugin = function(name) {
         process: process,
         Buffer: Buffer,
         Math: Math,
-        server: plugins.server,
     };
     constants.import(sandbox);
     try {
