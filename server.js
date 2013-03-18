@@ -88,14 +88,15 @@ Server.createServer = function (params) {
         listeners.push('0.0.0.0:25');
     }
 
-    var server_extra = { notes: {} };
+    Server.notes = {};
+    plugins.server = Server;
     plugins.load_plugins();
 
     var inactivity_timeout = (config_data.main.inactivity_timeout || 300) * 1000;
 
     // Cluster
     if (cluster && config_data.main.nodes) {
-        server_extra.cluster = cluster; 
+        Server.cluster = cluster; 
         if (cluster.isMaster) {
             this.daemonize(config_data);
             // Fork workers
@@ -126,16 +127,16 @@ Server.createServer = function (params) {
         }
         else {
             // Workers
-            setup_listeners(listeners, server_extra, plugins, "child");
+            setup_listeners(listeners, plugins, "child", inactivity_timeout);
         }
     }
     else {
         this.daemonize(config_data);
-        setup_listeners(listeners, server_extra, plugins, "master");
+        setup_listeners(listeners, plugins, "master", inactivity_timeout);
     }
 };
 
-function setup_listeners (listeners, server_extra, plugins, type, inactivity_timeout) {
+function setup_listeners (listeners, plugins, type, inactivity_timeout) {
     console.log("About to listen: ", listeners);
     async.each(listeners, function (host_port, cb) {
         var hp = /^(.*):(\d+)$/.exec(host_port);
@@ -148,10 +149,9 @@ function setup_listeners (listeners, server_extra, plugins, type, inactivity_tim
             conn.createConnection(client, server);
         });
 
-        for (var k in server_extra) {
-            server[k] = server_extra[k];
-        }
-        
+        server.notes = Server.notes;
+        if (Server.cluster) server.cluster = Server.cluster;
+
         server.listen(hp[2], hp[1], function () {
             logger.lognotice("Listening on " + host_port);
             cb();
