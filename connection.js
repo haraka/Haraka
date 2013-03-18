@@ -1010,6 +1010,10 @@ Connection.prototype.cmd_mail = function(line) {
     if (!this.hello_host) {
         return this.respond(503, 'Use EHLO/HELO before MAIL');
     }
+    // Require authentication on connections to port 587
+    if (this.local_port === 587 && !this.relaying) {
+        return this.respond(550, 'Authentication required');
+    }
     var results;
     var from;
     try {
