@@ -68,8 +68,10 @@ function setupClient(self) {
     }
   
     var local_addr = self.server.address();
-    self.local_ip = ipaddr.process(local_addr.address).toString();
-    self.local_port = local_addr.port;
+    if (local_addr && local_addr.address) {
+        self.local_ip = ipaddr.process(local_addr.address).toString();
+        self.local_port = local_addr.port;
+    }
     self.remote_ip = ipaddr.process(ip).toString();
     self.remote_port = self.client.remotePort;
     self.lognotice('connect ip=' + self.remote_ip + ' port=' + self.remote_port + 
