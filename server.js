@@ -81,8 +81,11 @@ Server.createServer = function (params) {
     var listeners = (config_data.main.listen || '').split(/\s*,\s*/);
     if (listeners[0] === '') listeners = [];
     if (config_data.main.port) {
-        Server.default_host = true;
-        var host = config_data.main.listen_host || '[::0]';
+        var host = config_data.main.listen_host;
+        if (!host) { 
+            host = '[::0]';
+            Server.default_host = true;
+        }
         listeners.unshift(host + ':' + config_data.main.port);
     }
     if (!listeners.length) {
