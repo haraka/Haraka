@@ -66,10 +66,14 @@ function setupClient(self) {
         self.client.destroy();
         return;
     }
-
+  
+    var local_addr = self.server.address();
+    self.local_ip = ipaddr.process(local_addr.address).toString();
+    self.local_port = local_addr.port;
     self.remote_ip = ipaddr.process(ip).toString();
     self.remote_port = self.client.remotePort;
-    self.lognotice("connect ip=" + self.remote_ip + ' port=' + self.remote_port);
+    self.lognotice('connect ip=' + self.remote_ip + ' port=' + self.remote_port + 
+                   ' local_ip=' + self.local_ip + ' local_port=' + self.local_port);
 
     self.client.on('end', function() {
         if (!self.disconnected) {
@@ -124,6 +128,8 @@ function setupClient(self) {
 function Connection(client, server) {
     this.client = client;
     this.server = server;
+    this.local_ip = null;
+    this.local_port = null;
     this.remote_ip = null;
     this.remote_host = null
     this.remote_port = null;
