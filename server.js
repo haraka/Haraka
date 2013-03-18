@@ -10,6 +10,7 @@ var plugins     = require('./plugins');
 var constants   = require('./constants');
 var os          = require('os');
 var cluster     = require('cluster');
+var async       = require('async');
 
 var daemon;
 try { daemon = require('daemon'); } // npm install daemon
@@ -33,8 +34,6 @@ for (var key in logger) {
 var Server = exports;
 
 var defaults = {
-    port: 25,
-    listen_host: '0.0.0.0',
     inactivity_timeout: 600,
     daemonize: false,
     daemon_log_file: '/var/log/haraka.log',
@@ -79,17 +78,25 @@ Server.createServer = function (params) {
     // config_data defaults
     apply_defaults(config_data.main);
 
-    var server = net.createServer(function (client) {
-        client.setTimeout((config_data.main.inactivity_timeout || 300) * 1000);
-        conn.createConnection(client, server);
-    });
-    server.notes = {};
-    plugins.server = server;
+    var listeners = (config_data.main.listen || '').split(/\s*,\s*/);
+    if (listeners[0] === '') listeners = [];
+    if (config_data.main.port) {
+        var host = config_data.main.listen_host || '0.0.0.0';
+        listeners.unshift(host + ':' + config_data.main.port);
+    }
+    if (!listeners.length) {
+        listeners.push('0.0.0.0:25');
+    }
+
+    Server.notes = {};
+    plugins.server = Server;
     plugins.load_plugins();
+
+    var inactivity_timeout = (config_data.main.inactivity_timeout || 300) * 1000;
 
     // Cluster
     if (cluster && config_data.main.nodes) {
-        server.cluster = cluster;  // Allow plugins to access cluster!  
+        Server.cluster = cluster; 
         if (cluster.isMaster) {
             this.daemonize(config_data);
             // Fork workers
@@ -120,16 +127,44 @@ Server.createServer = function (params) {
         }
         else {
             // Workers
-            server.listen(config_data.main.port, config_data.main.listen_host, listening);
-            plugins.run_hooks('init_child', Server);
+            setup_listeners(listeners, plugins, "child", inactivity_timeout);
         }
     }
     else {
         this.daemonize(config_data);
-        server.listen(config_data.main.port, config_data.main.listen_host, listening);
-        plugins.run_hooks('init_master', Server);
+        setup_listeners(listeners, plugins, "master", inactivity_timeout);
     }
 };
+
+function setup_listeners (listeners, plugins, type, inactivity_timeout) {
+    console.log("About to listen: ", listeners);
+    async.each(listeners, function (host_port, cb) {
+        var hp = /^(.*):(\d+)$/.exec(host_port);
+        if (!hp) {
+            return cb("Invalid format for listen parameter in smtp.ini");
+        }
+        
+        var server = net.createServer(function (client) {
+            client.setTimeout(inactivity_timeout);
+            conn.createConnection(client, server);
+        });
+
+        server.notes = Server.notes;
+        if (Server.cluster) server.cluster = Server.cluster;
+
+        server.listen(hp[2], hp[1], function () {
+            logger.lognotice("Listening on " + host_port);
+            cb();
+        });
+    }, function (err) {
+        if (err) {
+            logger.logerror("Failed to setup listeners: " + err);
+            return process.exit(-1);
+        }
+        listening();
+        plugins.run_hooks('init_' + type, Server);
+    })
+}
 
 Server.init_master_respond = function (retval, msg) {
     Server.ready = 1;
@@ -180,6 +215,5 @@ function listening () {
         Server.lognotice('New uid: ' + process.getuid());
     }
 
-    logger.lognotice("Listening on port " + config_data.main.port);
     Server.ready = 1;
 }
