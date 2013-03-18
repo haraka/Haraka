@@ -81,11 +81,16 @@ Server.createServer = function (params) {
     var listeners = (config_data.main.listen || '').split(/\s*,\s*/);
     if (listeners[0] === '') listeners = [];
     if (config_data.main.port) {
-        var host = config_data.main.listen_host || '0.0.0.0';
+        var host = config_data.main.listen_host;
+        if (!host) { 
+            host = '[::0]';
+            Server.default_host = true;
+        }
         listeners.unshift(host + ':' + config_data.main.port);
     }
     if (!listeners.length) {
-        listeners.push('0.0.0.0:25');
+        Server.default_host = true;
+        listeners.push('[::0]:25');
     }
 
     Server.notes = {};
@@ -137,11 +142,10 @@ Server.createServer = function (params) {
 };
 
 function setup_listeners (listeners, plugins, type, inactivity_timeout) {
-    console.log("About to listen: ", listeners);
     async.each(listeners, function (host_port, cb) {
-        var hp = /^(.*):(\d+)$/.exec(host_port);
+        var hp = /^\[?([^\]]+)\]?:(\d+)$/.exec(host_port);
         if (!hp) {
-            return cb("Invalid format for listen parameter in smtp.ini");
+            return cb(new Error("Invalid format for listen parameter in smtp.ini"));
         }
         
         var server = net.createServer(function (client) {
@@ -152,13 +156,28 @@ function setup_listeners (listeners, plugins, type, inactivity_timeout) {
         server.notes = Server.notes;
         if (Server.cluster) server.cluster = Server.cluster;
 
-        server.listen(hp[2], hp[1], function () {
-            logger.lognotice("Listening on " + host_port);
+        server.on('listening', function () {
+            var addr = this.address();
+            logger.lognotice("Listening on " + addr.address + ':' + addr.port);
             cb();
         });
+
+        // Fallback from IPv6 to IPv4 if not supported
+        // But only if we supplied the default of [::0]:25
+        server.on('error', function (e) {
+            if (e.code === 'EAFNOSUPPORT' && /^::0?/.test(hp[1]) && Server.default_host) {
+                server.listen(hp[2], '0.0.0.0');
+            }
+            else {
+                // Pass error to callback
+                cb(e);
+            }
+        });
+
+        server.listen(hp[2], hp[1]);
     }, function (err) {
         if (err) {
-            logger.logerror("Failed to setup listeners: " + err);
+            logger.logerror("Failed to setup listeners: " + err.message);
             return process.exit(-1);
         }
         listening();
