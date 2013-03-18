@@ -18,6 +18,17 @@ The remote IP address
 
 The rDNS of the remote IP
 
+* connection.local_ip
+
+The bound IP address of the server as reported by the OS
+
+* connection.local_port
+
+The bound port number of the server which is handling the connection.
+If you have specified multiple listen= ports this variable is useful
+if you only want a plugin to run when connections are made to a specific
+port
+
 * connection.greeting
 
 Either 'EHLO' or 'HELO' whichever the remote end used
