@@ -1,16 +1,18 @@
 "use strict";
 // Config file loader
 
-var fs = require('fs');
-var utils = require('./utils');
+var fs     = require('fs');
+var utils  = require('./utils');
+var logger = require('./logger');
 
 // for "ini" type files
 var regex = {
-    section: /^\s*\[\s*([^\]]*)\s*\]\s*$/,
-    param:   /^\s*([\w@\._]+)\s*=\s*(.*)\s*$/,
-    comment: /^\s*[;#].*$/,
-    line:    /^\s*(.*)\s*$/,
-    blank:   /^\s*$/
+    section:        /^\s*\[\s*([^\]]*)\s*\]\s*$/,
+    param:          /^\s*([\w@\._]+)\s*=\s*(.*)\s*$/,
+    comment:        /^\s*[;#].*$/,
+    line:           /^\s*(.*)\s*$/,
+    blank:          /^\s*$/,
+    continuation:   /\\[ \t]*$/,
 };
 
 var cfreader = exports;
@@ -108,6 +110,7 @@ cfreader.load_ini_config = function(name) {
             var data = fs.readFileSync(name, "UTF-8");
             var lines = data.split(/\r\n|\r|\n/);
             var match;
+            var pre = '';
     
             lines.forEach(function(line) {
                 if (regex.comment.test(line)) {
@@ -116,7 +119,17 @@ cfreader.load_ini_config = function(name) {
                 else if (regex.blank.test(line)) {
                     return;
                 }
-                else if (match = regex.param.exec(line)) {
+                else if (match = regex.section.exec(line)) {
+                    current_sect = result[match[1]] = {};
+                    return;
+                }
+                else if (regex.continuation.test(line)) {
+                    pre += line.replace(regex.continuation, '');
+                    return;
+                }
+                line = pre + line;
+                pre = '';
+                if (match = regex.param.exec(line)) {
                     if (/^\d+$/.test(match[2])) {
                         current_sect[match[1]] = parseInt(match[2]);
                     }
@@ -124,11 +137,8 @@ cfreader.load_ini_config = function(name) {
                         current_sect[match[1]] = match[2];
                     }
                 }
-                else if (match = regex.section.exec(line)) {
-                    current_sect = result[match[1]] = {};
-                }
                 else {
-                    // error ?
+                    logger.logerror("Unvalid line in config file '" + name + "': " + line);
                 };
             });
         }
