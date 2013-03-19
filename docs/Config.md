@@ -66,6 +66,9 @@ That produces the following Javascript object:
 The key point there is that items before any [section] marker go in the "main"
 section.
 
+The key=value pairs also support continuation lines using the
+backslash "\" character.
+
 Flat Files
 ----------
 
