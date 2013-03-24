@@ -8,6 +8,7 @@ var generic_pool = require('generic-pool');
 var line_socket = require('./line_socket');
 var logger = require('./logger');
 var uuid = require('./utils').uuid;
+var base64 = require('./plugins/auth/auth_base').base64;
 
 var smtp_regexp = /^([0-9]{3})([ -])(.*)/;
 var STATE_IDLE = 1;
