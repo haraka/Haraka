@@ -53,6 +53,7 @@ exports.hook_queue = function (next, connection) {
             buf[p++] = 0;
         });
         buf[p++] = 0;
+        qmail_queue.stdout.on('error', function (err) {}); // stdout throws an error on close
         qmail_queue.stdout.end(buf);
     });
 };
