@@ -1,6 +1,11 @@
 daemonize
 =========
 
+IMPORTANT NOTE: This plugin should not be used any more and it will 
+throw an error and prevent Haraka from starting.  
+Daemonization is now built into Haraka.  If the 'daemon' module is
+installed you simply set daemonize=true in config/smtp.ini now.
+
 To use this plugin you have to install the 'daemon' module by running 
 'npm install daemon' in your Haraka configuration directory.  
 If daemon is not found then the plugin will log a notice and Haraka will 

@@ -216,10 +216,29 @@ function createServer(cb) {
     return serv;
 }
 
-function connect(port, host, cb) {
-    var cryptoSocket = new net.Socket();
+if (require('semver').gt(process.version, '0.7.0')) {
+    var _net_connect = function (options) {
+        return net.connect(options);
+    }
+}
+else {
+    var _net_connect = function (options) {
+        return net.connect(options.port, options.host);
+    }
+}
 
-    cryptoSocket.connect(port, host);
+function connect(port, host, cb) {
+    var options = {};
+    if (typeof port === 'object') {
+        options = port;
+        cb = host;
+    }
+    else {
+        options.port = port;
+        options.host = host;
+    }
+
+    var cryptoSocket = _net_connect(options);
 
     var socket = new pluggableStream(cryptoSocket);
 

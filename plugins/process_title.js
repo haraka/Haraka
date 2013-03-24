@@ -1,6 +1,6 @@
 // process_title
 
-exports.hook_init_master = function (next, Server) {
+exports.hook_init_master = function (next, server) {
     server.notes.pt_connections = 0;
     server.notes.pt_concurrent = 0;
     server.notes.pt_cps_diff = 0;
@@ -34,11 +34,11 @@ exports.hook_init_master = function (next, Server) {
             cluster.workers[worker.id].on('message', recvMsg);
         });
     }
-    setupInterval(title);
+    setupInterval(title, server);
     return next();
 }
 
-exports.hook_init_child = function (next, Server) {
+exports.hook_init_child = function (next, server) {
     server.notes.pt_connections = 0;
     server.notes.pt_concurrent = 0;
     server.notes.pt_cps_diff = 0;
@@ -48,11 +48,12 @@ exports.hook_init_child = function (next, Server) {
     server.notes.pt_mps_max = 0;
     var title = 'Haraka (worker)';
     process.title = title;
-    setupInterval(title);
+    setupInterval(title, server);
     return next();
 }
 
 exports.hook_lookup_rdns = function (next, connection) {
+    var server = connection.server;
     connection.notes.pt_connect_run = true;
     var title = 'Haraka';  
     if (server.cluster) {
@@ -66,6 +67,7 @@ exports.hook_lookup_rdns = function (next, connection) {
 }
 
 exports.hook_disconnect = function (next, connection) {
+    var server = connection.server;
     // Check that the hook above ran
     // It might not if the disconnection is immediate
     // echo "QUIT" | nc localhost 25 
@@ -88,6 +90,7 @@ exports.hook_disconnect = function (next, connection) {
 }
 
 exports.hook_data = function (next, connection) {
+    var server = connection.server;
     var title = 'Haraka';
     if (server.cluster) {
         title = 'Haraka (worker)';
@@ -99,7 +102,7 @@ exports.hook_data = function (next, connection) {
 }
 
 
-var setupInterval = function (title) {
+var setupInterval = function (title, server) {
     // Set up a timer to update title
     setInterval(function () {
         // Connections per second

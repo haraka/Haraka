@@ -1,5 +1,11 @@
 // daemonize 
 
+// This plugin should not be used any more
+// Daemonization is now built-in to Haraka.
+
+throw new Error('The daemonize plugin should not be used.' +
+               ' See haraka -h CoreConfig for details');
+
 // npm install daemon
 var daemon;
 try { daemon = require('daemon'); }

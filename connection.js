@@ -66,10 +66,16 @@ function setupClient(self) {
         self.client.destroy();
         return;
     }
-
+  
+    var local_addr = self.server.address();
+    if (local_addr && local_addr.address) {
+        self.local_ip = ipaddr.process(local_addr.address).toString();
+        self.local_port = local_addr.port;
+    }
     self.remote_ip = ipaddr.process(ip).toString();
     self.remote_port = self.client.remotePort;
-    self.lognotice("connect ip=" + self.remote_ip + ' port=' + self.remote_port);
+    self.lognotice('connect ip=' + self.remote_ip + ' port=' + self.remote_port + 
+                   ' local_ip=' + self.local_ip + ' local_port=' + self.local_port);
 
     self.client.on('end', function() {
         if (!self.disconnected) {
@@ -96,9 +102,10 @@ function setupClient(self) {
     
     self.client.on('timeout', function () {
         if (!self.disconnected) {
-            self.respond(421, 'timeout');
-            self.fail('client ' + ((self.remote_host) ? self.remote_host + ' ' : '')
-                                + '[' + self.remote_ip + '] connection timed out');
+            self.respond(421, 'timeout', function () {
+                self.fail('client ' + ((self.remote_host) ? self.remote_host + ' ' : '')
+                                    + '[' + self.remote_ip + '] connection timed out');
+            });
         }
     });
     
@@ -110,8 +117,9 @@ function setupClient(self) {
         self.proxy = true;
         // Wait for PROXY command
         self.proxy_timer = setTimeout(function () {
-            self.respond(421, 'PROXY timeout');
-            self.disconnect();
+            self.respond(421, 'PROXY timeout', function () {
+                self.disconnect();
+            });
         }, 30 * 1000);
     }
     else {
@@ -122,6 +130,8 @@ function setupClient(self) {
 function Connection(client, server) {
     this.client = client;
     this.server = server;
+    this.local_ip = null;
+    this.local_port = null;
     this.remote_ip = null;
     this.remote_host = null
     this.remote_port = null;
@@ -1002,6 +1012,10 @@ Connection.prototype.cmd_mail = function(line) {
     if (!this.hello_host) {
         return this.respond(503, 'Use EHLO/HELO before MAIL');
     }
+    // Require authentication on connections to port 587
+    if (this.local_port === 587 && !this.relaying) {
+        return this.respond(550, 'Authentication required');
+    }
     var results;
     var from;
     try {
@@ -1095,10 +1109,11 @@ Connection.prototype.received_line = function() {
     }
     return [
         'from ',
-            // If no rDNS then use an IP literal here
+            this.hello_host, ' (',
+            // If there is no rDNS, then don't display it
             ((!/^(?:DNSERROR|NXDOMAIN)/.test(this.remote_info)) 
-                ? this.remote_info : '[' + this.remote_ip + ']'),
-            ' (', this.hello_host, ' [', this.remote_ip, ']) ', 
+                ? this.remote_info + ' ' : ''),
+            '[', this.remote_ip, '])', 
         "\n\t", 
             'by ', config.get('me'), ' (Haraka/', version, ') with ', smtp, 
             ' id ', this.transaction.uuid, 

@@ -104,7 +104,7 @@ transaction.notes.quarantine = true;
                                     connection.loginfo(plugin, 'Stored copy of message in quarantine: ' + 
                                                    [ base_dir, dir, transaction.uuid ].join('/'));
                                     // Now delete the temporary file
-                                    fs.unlink([ base_dir, 'tmp', transaction.uuid ].join('/'));
+                                    fs.unlink([ base_dir, 'tmp', transaction.uuid ].join('/'), function () {});
                                 }
                                 return next();
                             }
