@@ -32,7 +32,7 @@ process.on('uncaughtException', function (err) {
         });
     }
     else {
-        logger.logcrit('Caught exception: ' + err);
+        logger.logcrit('Caught exception: ' + JSON.stringify(err));
     }
     logger.dump_logs();
     process.exit(1);
