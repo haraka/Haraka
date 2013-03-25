@@ -176,6 +176,7 @@ SMTPClient.prototype.release = function () {
     this.removeAllListeners('data');
     this.removeAllListeners('dot');
     this.removeAllListeners('rset');
+    this.removeAllListeners('auth');
     this.removeAllListeners('client_protocol');
     this.removeAllListeners('server_protocol');
     this.removeAllListeners('error');
