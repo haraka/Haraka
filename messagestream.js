@@ -190,6 +190,9 @@ MessageStream.prototype._write = function (data) {
         return false;
     }
     else {
+        if (this.end_called && (!this.spooling || (this.spooling && !this._queue.length))) {
+            return self._write();
+        }
         return true;
     }
 }
@@ -397,4 +400,42 @@ MessageStream.prototype.destroy = function () {
     }
 }
 
+MessageStream.prototype.get_data = function (cb) { // Or: (options, cb)
+    var options = {};
+    if (arguments.length === 2) {
+        cb = arguments[1];
+        options = arguments[0];
+    }
+    var ws = new GetDataStream(cb);
+    this.pipe(ws, options);
+}
+
 module.exports = MessageStream;
+
+
+function GetDataStream (cb) {
+    this.cb = cb;
+    this.buf = '';
+    this.writable = true;
+}
+
+util.inherits(GetDataStream, Stream);
+
+GetDataStream.prototype.write = function (obj, enc) {
+    this.buf += obj;
+    return true;
+}
+
+GetDataStream.prototype.end = function (obj, enc) {
+    if (obj)
+        this.buf += obj;
+    this.cb(this.buf);
+}
+
+GetDataStream.prototype.destroy = function () {
+    // ignore
+}
+
+GetDataStream.prototype.destroySoon = function () {
+    // ignore
+}
