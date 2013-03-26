@@ -11,10 +11,7 @@ var constants   = require('./constants');
 var os          = require('os');
 var cluster     = require('cluster');
 var async       = require('async');
-
-var daemon;
-try { daemon = require('daemon'); } // npm install daemon
-catch (err) {}
+var daemon      = require('daemon');
 
 // Need these here so we can run hooks
 for (var key in logger) {
@@ -49,20 +46,15 @@ function apply_defaults(obj) {
 
 Server.daemonize = function (config_data) {
     if (/^(?:1|true|yes|enabled|on)$/i.test(config_data.main.daemonize)) {
-        if (!daemon) {
-            logger.logdebug('unable to daemonize; daemon module not installed');
-        }
-        else {
-            daemon.daemonize(config_data.main.daemon_log_file, 
-                config_data.main.daemon_pid_file, 
-                function (err, pid) {
-                    if (err) {
-                        throw err;
-                    }
-                    logger.lognotice('daemon started with pid: ' + pid);
+        daemon.daemonize(config_data.main.daemon_log_file, 
+            config_data.main.daemon_pid_file, 
+            function (err, pid) {
+                if (err) {
+                    throw err;
                 }
-            );
-        }
+                logger.lognotice('daemon started with pid: ' + pid);
+            }
+        );
     }
 }
 
