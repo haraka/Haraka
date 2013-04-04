@@ -46,15 +46,23 @@ function apply_defaults(obj) {
 
 Server.daemonize = function (config_data) {
     if (/^(?:1|true|yes|enabled|on)$/i.test(config_data.main.daemonize)) {
-        daemon.daemonize(config_data.main.daemon_log_file, 
-            config_data.main.daemon_pid_file, 
-            function (err, pid) {
-                if (err) {
-                    throw err;
-                }
-                logger.lognotice('daemon started with pid: ' + pid);
-            }
-        );
+        if (!process.env.__daemon) {
+            // Remove process.on('exit') listeners otherwise
+            // we get a spurious 'Exiting' log entry.
+            process.removeAllListeners('exit');
+            logger.lognotice('Daemonizing...');
+        }
+        var log_fd = require('fs').openSync(config_data.main.daemon_log_file, 'a');
+        daemon({stdout: log_fd});
+        // We are the daemon from here on...
+        var npid = require('npid');
+        try {
+            npid.create(config_data.main.daemon_pid_file);
+        }
+        catch (err) {
+            logger.logerror(err.message);
+            process.exit(1);
+        }
     }
 }
 
