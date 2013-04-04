@@ -44,6 +44,28 @@ Header.prototype.parse = function (lines) {
     }
 };
 
+function try_convert(data, encoding) {
+    try {
+        var converter = new Iconv(encoding, "UTF-8");
+        data = converter.convert(data);
+    }
+    catch (err) {
+        // TODO: raise a flag for this for possible scoring
+        logger.logwarn("initial iconv conversion from " + encoding + " to UTF-8 failed: " + err.message);
+        if (err.code !== 'EINVAL') {
+            try {
+                var converter = new Iconv(encoding, "UTF-8//TRANSLIT//IGNORE");
+                data = converter.convert(data);
+            }
+            catch (e) {
+                logger.logerror("iconv from " + encoding + " to UTF-8 failed: " + e.message);
+            }
+        }
+    }
+
+    return data;
+}
+
 function _decode_header (matched, encoding, cte, data) {
     cte = cte.toUpperCase();
     
@@ -60,35 +82,29 @@ function _decode_header (matched, encoding, cte, data) {
     
     // convert with iconv if encoding != UTF-8
     if (Iconv && !(/UTF-?8/i.test(encoding))) {
-        try {
-            var converter = new Iconv(encoding, "UTF-8");
-            data = converter.convert(data);
-        }
-        catch (err) {
-            // TODO: raise a flag for this for possible scoring
-            logger.logwarn("initial header iconv conversion from " + encoding + " to UTF-8 failed: " + err.message);
-            if (err.code !== 'EINVAL') {
-                try {
-                    var converter = new Iconv(encoding, "UTF-8//TRANSLIT//IGNORE");
-                    data = converter.convert(data);
-                }
-                catch (e) {
-                    logger.logerror("header iconv from " + encoding + " to UTF-8 failed: " + e.message);
-                }
-            }
-        }
+        data = try_convert(data, encoding);
     }
     
     return data.toString();
 }
 
-function decode_header (val) {
+Header.prototype.decode_header = function decode_header (val) {
     // Fold continuations
     val = val.replace(/\n[ \t]+/g, "\n ");
     
     // remove end carriage return
     val = val.replace(/\r?\n$/, '');
     
+    if (Iconv && !/^[\x00-\x7f]*$/.test(val)) {
+        // 8 bit values in the header
+        var matches = /\bcharset\s*=\s*(?:\"|3D|')?([\w_\-]*)(?:\"|3D|')?/.exec(this.get_decoded('content-type'));
+        if (matches && !/UTF-?8/i.test(matches[1])) {
+            var encoding = matches[1];
+            var source = new Buffer(val, 'binary');
+            val = try_convert(source, encoding).toString();
+        }
+    }
+
     if (! (/=\?/.test(val)) ) {
         // no encoded stuff
         return val;
@@ -134,7 +150,7 @@ Header.prototype._add_header = function (key, value, method) {
     this.headers[key] = this.headers[key] || [];
     this.headers[key][method](value);
     this.headers_decoded[key] = this.headers_decoded[key] || [];
-    this.headers_decoded[key][method](decode_header(value));
+    this.headers_decoded[key][method](this.decode_header(value));
 };
 
 Header.prototype.add = function (key, value) {
