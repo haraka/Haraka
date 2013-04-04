@@ -355,7 +355,7 @@ Body.prototype.decode_base64 = function (line) {
 }
 
 Body.prototype.decode_8bit = function (line) {
-    return new Buffer(line);
+    return new Buffer(line, 'binary');
 }
 
 Body.prototype.decode_7bit = Body.prototype.decode_8bit;
