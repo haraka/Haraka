@@ -3,7 +3,7 @@
   "name": "Haraka",
   "description": "An SMTP Server project.",
   "keywords": ["haraka", "smtp", "server", "email"],
-  "version": "2.1.0",
+  "version": "2.1.1",
   "homepage": "https://github.com/baudehlo/Haraka/",
   "repository": {
     "type": "git",
@@ -21,7 +21,7 @@
     "semver"        : ">= 1.0.14",
     "async"         : ">= 0.1.22",
     "daemon"        : ">= 1.1.0",
-    "npid"          : ">= 0.3.1",
+    "npid"          : ">= 0.3.1"
   },
   "optionalDependencies": {
     "node-syslog"   : ">= 1.1.2"
