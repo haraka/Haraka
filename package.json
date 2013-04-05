@@ -20,7 +20,8 @@
     "ipaddr.js"     : ">= 0.1.1",
     "semver"        : ">= 1.0.14",
     "async"         : ">= 0.1.22",
-    "daemon"        : "0.5.0"
+    "daemon"        : ">= 1.1.0",
+    "npid"          : ">= 0.3.1",
   },
   "optionalDependencies": {
     "node-syslog"   : ">= 1.1.2"
