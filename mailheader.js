@@ -19,6 +19,8 @@ exports.Header = Header;
 exports.Iconv  = Iconv;
 
 Header.prototype.parse = function (lines) {
+    var self = this;
+
     for (var i=0,l=lines.length; i < l; i++) {
         var line = lines[i];
         if (line.match(/^[ \t]/)) {
@@ -42,6 +44,13 @@ Header.prototype.parse = function (lines) {
             logger.logerror("Header did not look right: " + this.header_list[i]);
         }
     }
+
+    // Now add decoded versions
+    Object.keys(this.headers).forEach(function (key) {
+        self.headers[key].forEach(function (val) {
+            self._add_header_decode(key, val, "push");
+        })
+    })
 };
 
 function try_convert(data, encoding) {
@@ -97,7 +106,7 @@ Header.prototype.decode_header = function decode_header (val) {
     
     if (Iconv && !/^[\x00-\x7f]*$/.test(val)) {
         // 8 bit values in the header
-        var matches = /\bcharset\s*=\s*(?:\"|3D|')?([\w_\-]*)(?:\"|3D|')?/.exec(this.get_decoded('content-type'));
+        var matches = /\bcharset\s*=\s*["']?([\w_\-]*)/.exec(this.get('content-type'));
         if (matches && !/UTF-?8/i.test(matches[1])) {
             var encoding = matches[1];
             var source = new Buffer(val, 'binary');
@@ -149,19 +158,24 @@ Header.prototype._remove_more = function (key) {
 Header.prototype._add_header = function (key, value, method) {
     this.headers[key] = this.headers[key] || [];
     this.headers[key][method](value);
+};
+
+Header.prototype._add_header_decode = function (key, value, method) {
     this.headers_decoded[key] = this.headers_decoded[key] || [];
     this.headers_decoded[key][method](this.decode_header(value));
-};
+}
 
 Header.prototype.add = function (key, value) {
     value = value.replace(/(\r?\n)*$/, '');
     this._add_header(key.toLowerCase(), value, "unshift");
+    this._add_header_decode(key.toLowerCase(), value, "unshift");
     this.header_list.unshift(key + ': ' + value + '\n');
 };
 
 Header.prototype.add_end = function (key, value) {
     value = value.replace(/(\r?\n)*$/, '');
     this._add_header(key.toLowerCase(), value, "push");
+    this._add_header_decode(key.toLowerCase(), value, "push");
     this.header_list.push(key + ': ' + value + '\n');
 }
 
