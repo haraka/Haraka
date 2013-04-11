@@ -49,7 +49,6 @@ exports.hook_init_master = function (next) {
 
 exports.quarantine = function (next, connection) {
     var transaction = connection.transaction;
-transaction.notes.quarantine = true;
     if ((connection.notes.quarantine || transaction.notes.quarantine)) {
         // Calculate date in YYYYMMDD format
         var d = new Date();
