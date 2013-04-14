@@ -834,9 +834,10 @@ HMailItem.prototype.try_deliver_host = function (mx) {
                         fail_recips.push(last_recip);
                     }
                     else {
+                        var reason = response.join(' ');
                         socket.send_command('QUIT');
                         processing_mail = false;
-                        return self.temp_fail("Upstream error: " + code + " " + response.join(' '));
+                        return self.temp_fail("Upstream error: " + code + " " + reason);
                     }
                 }
                 else if (code.match(/^5/)) {
@@ -844,9 +845,10 @@ HMailItem.prototype.try_deliver_host = function (mx) {
                         bounce_recips.push(last_recip);
                     }
                     else {
+                        var reason = response.join(' ');
                         socket.send_command('QUIT');
                         processing_mail = false;
-                        return self.bounce(response.join(' '));
+                        return self.bounce(reason);
                     }
                 }
                 switch (command) {
@@ -917,8 +919,9 @@ HMailItem.prototype.try_deliver_host = function (mx) {
                         break;
                     case 'dot':
                         processing_mail = false;
+                        var reason = response.join(' ');
                         socket.send_command('QUIT');
-                        self.delivered(response.join(' '));
+                        self.delivered(reason);
                         break;
                     case 'quit':
                         socket.end();
