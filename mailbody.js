@@ -48,7 +48,7 @@ Body.prototype.parse_child = function (line) {
                 child.buf.copy(to_emit, 0, 0, child.buf_fill);
                 child.attachment_stream.emit_data(to_emit);
             }
-            child.attachment_stream.emit('end');
+            child.attachment_stream.emit_end();
         }
 
         if (line.substr(this.boundary.length + 2, 2) === '--') {
