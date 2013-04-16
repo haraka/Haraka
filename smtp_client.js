@@ -29,6 +29,7 @@ function SMTPClient(port, host, connect_timeout) {
     this.command = 'greeting';
     this.response = []
     this.connected = false;
+    this.authenticated = false;
     this.auth_capabilities = [];
     var self = this;
 
@@ -167,7 +168,6 @@ SMTPClient.prototype.release = function () {
         return;
     }
     this.state = STATE_RELEASED;
-    this.authenticated = false;
     this.removeAllListeners('greeting');
     this.removeAllListeners('capabilities');
     this.removeAllListeners('xclient');
