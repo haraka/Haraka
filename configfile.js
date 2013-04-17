@@ -1,10 +1,6 @@
 "use strict";
 // Config file loader
 
-var fs     = require('fs');
-var utils  = require('./utils');
-var logger = require('./logger');
-
 // for "ini" type files
 var regex = {
     section:        /^\s*\[\s*([^\]]*)\s*\]\s*$/,
@@ -211,3 +207,7 @@ cfreader.load_flat_config = function(name, type) {
     }
     return result;
 };
+var fs     = require('fs');
+var utils  = require('./utils');
+var logger = require('./logger');
+
