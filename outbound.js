@@ -91,18 +91,16 @@ exports.load_queue_files = function (cb_name, files) {
         return;
     }
 
-    for (var i=0; i < files.length; i++) {
-        var file = files[0];
+    files.forEach(function (file) {
         if (/^\./.test(file)) {
             // dot-file...
-            this.logwarn("Removing left over dot-file: " + file);
-            fs.unlink(file, function () {});
-            continue;
+            plugin.logwarn("Removing left over dot-file: " + file);
+            return fs.unlink(file, function () {});
         }
 
         var hmail = new HMailItem(file, path.join(queue_dir, file));
-        this[cb_name](hmail);
-    }
+        plugin[cb_name](hmail);
+    });
 }
 
 exports._add_file = function (hmail) {
