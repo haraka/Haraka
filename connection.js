@@ -27,6 +27,7 @@ var STATE_LOOP  = 2;
 var STATE_DATA  = 3;
 var STATE_PAUSE = 4;
 var STATE_PAUSE_SMTP = 5;
+var STATE_PAUSE_DATA = 6;
 
 // copy logger methods into Connection:
 for (var key in logger) {
@@ -141,6 +142,7 @@ function Connection(client, server) {
     this.greeting = null;
     this.hello_host = null;
     this.state = STATE_PAUSE;
+    this.prev_state = null;
     this.loop_code = null;
     this.loop_msg = null;
     this.uuid = uuid();
@@ -188,6 +190,7 @@ exports.createConnection = function(client, server) {
 
 Connection.prototype.process_line = function (line) {
     var self = this;
+    
     if (this.state === STATE_DATA) {
         if (logger.would_log(logger.LOGDATA)) {
             this.logdata("C: " + line);
@@ -274,6 +277,7 @@ Connection.prototype.process_data = function (data) {
 };
 
 Connection.prototype._process_data = function() {
+    var self = this;
     // We *must* detect disconnected connections here as the state 
     // only transitions to STATE_CMD in the respond function below.
     // Otherwise if multiple commands are pipelined and then the 
@@ -282,6 +286,9 @@ Connection.prototype._process_data = function() {
 
     var offset;
     while (this.current_data && ((offset = indexOfLF(this.current_data)) !== -1)) {
+        if (this.state === STATE_PAUSE_DATA) {
+            return;
+        }
         var this_line = this.current_data.slice(0, offset+1);
         // Hack: bypass this code to allow HAProxy's PROXY extension
         if (this.state === STATE_PAUSE && this.proxy && /^PROXY /.test(this_line)) {
@@ -487,6 +494,22 @@ Connection.prototype.loop_respond = function (code, msg) {
     this.loop_code = code;
     this.loop_msg = msg;
     this.respond(code, msg);
+}
+
+Connection.prototype.pause = function () {
+    var self = this;
+    if (self.disconnected) return;
+    self.client.pause();
+    if (self.state != STATE_PAUSE_DATA) self.prev_state = self.state;
+    self.state = STATE_PAUSE_DATA;
+}
+
+Connection.prototype.resume = function () {
+    var self = this;
+    if (self.disconnected) return;
+    self.client.resume();
+    self.state = self.prev_state;
+    process.nextTick(function () { self._process_data() });
 }
 
 /////////////////////////////////////////////////////////////////////////////

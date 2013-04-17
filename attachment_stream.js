@@ -9,6 +9,7 @@ function AttachmentStream () {
     this.encoding = null;
     this.paused = false;
     this.end_emitted = false;
+    this.connection = null;
     this.buffer = [];
 }
 
@@ -30,9 +31,11 @@ AttachmentStream.prototype.emit_data = function (data) {
 
 AttachmentStream.prototype.emit_end = function () {
     if (this.paused) {
+        // console.log("YYY: end emit (cache)");
         this.end_emitted = true;
     }
     else {
+        // console.log("YYY: end emit");
         this.emit('end');
     }
 }
@@ -65,17 +68,17 @@ AttachmentStream.prototype.setEncoding = function (enc) {
 AttachmentStream.prototype.pause = function () {
     // console.log("YYY: PAUSE!!");
     this.paused = true;
-    if (this.connection && this.connection.client && this.connection.client.pause) {
+    if (this.connection) {
         // console.log("YYYY: Backpressure pause");
-        this.connection.client.pause();
+        this.connection.pause();
     }
 }
 
 AttachmentStream.prototype.resume = function () {
     // console.log("YYY: RESUME!!");
-    if (this.connection && this.connection.client && this.connection.client.resume) {
+    if (this.connection) {
         // console.log("YYYY: Backpressure resume");
-        this.connection.client.resume();
+        this.connection.resume();
     }
     this.paused = false;
     if (this.buffer.length) {
@@ -85,6 +88,9 @@ AttachmentStream.prototype.resume = function () {
         if (this.buffer.length === 0 && this.end_emitted) {
             this.emit('end');
         }
+    }
+    else if (this.end_emitted) {
+        this.emit('end');
     }
 }
 
