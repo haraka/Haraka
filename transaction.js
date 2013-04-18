@@ -23,6 +23,7 @@ function Transaction() {
     this.notes = {};
     this.header = new Header();
     this.message_stream = null;
+    this.discard_data = false;
     this.rcpt_count = {
         accept:   0,
         tempfail: 0,
@@ -41,7 +42,7 @@ exports.createTransaction = function(uuid) {
 };
 
 Transaction.prototype.add_data = function(line) {
-    this.message_stream.add_line(line);
+    if (!this.discard_data) this.message_stream.add_line(line);
     if (typeof line !== 'string') {
         line = line.toString('binary');
     }
