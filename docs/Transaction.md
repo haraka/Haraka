@@ -80,9 +80,9 @@ Deletes a header from the email.
 
 The header of the email. See `Header Object`.
 
-* transaction.parse_body
+* transaction.parse_body = true|false [default: false]
 
-Set to 1 to enable parsing of the mail body. Make sure you set this in
+Set to `true` to enable parsing of the mail body. Make sure you set this in
 hook_data or before.
 
 * transaction.body
@@ -137,6 +137,14 @@ the `tmp` library from npm and tells us the size of the file:
             });
         });
     }
+
+* transaction.discard_data = true|false [default: false]
+
+Set this flag to true to discard all data as it arrives and not store in
+memory or on disk (in the message_stream property). You can still access
+the attachments and body if you set parse_body to true. This is useful
+for systems which do not need the full email, just the attachments or
+mail text.
 
 * transaction.set_banner(text, html)
 
