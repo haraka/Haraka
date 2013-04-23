@@ -36,13 +36,15 @@ var delivery_queue = async.queue(function (hmail, cb) { hmail.next_cb = cb; hmai
 
 var queue_count = 0;
 
-exports.list_queue = function () {
-    this._load_cur_queue("_list_file");
+exports.list_queue = function (cb) {
+    this._load_cur_queue("_list_file", cb);
 }
 
-exports.stat_queue = function () {
-    this._load_cur_queue("_stat_file");
-    return this.stats();
+exports.stat_queue = function (cb) {
+    var self = this;
+    this._load_cur_queue("_stat_file", function () {
+        return cb(self.stats());
+    });
 }
 
 exports.load_queue = function () {
@@ -67,7 +69,7 @@ exports.load_queue = function () {
     this._load_cur_queue("_add_file");
 }
 
-exports._load_cur_queue = function (cb_name) {
+exports._load_cur_queue = function (cb_name, cb) {
     var plugin = this;
     plugin.loginfo("Loading outbound queue from ", queue_dir);
     fs.readdir(queue_dir, function (err, files) {
@@ -78,6 +80,8 @@ exports._load_cur_queue = function (cb_name) {
         plugin.cur_time = new Date(); // set this once so we're not calling it a lot
 
         plugin.load_queue_files(cb_name, files);
+
+        if (cb) cb();
     });
 }
 
@@ -86,7 +90,7 @@ exports.load_queue_files = function (cb_name, files) {
     if (files.length === 0) return;
 
     this.loginfo("Loading the queue...");
-    if (config.get('outbound.disabled')) {
+    if (config.get('outbound.disabled') && cb_name === '_add_file') {
         // try again in 1 second if delivery is disabled
         setTimeout(function () {plugin.load_queue_files(cb_name, files)}, 1000);
         return;
@@ -120,7 +124,7 @@ exports._list_file = function (hmail) {
     console.log("Q: " + hmail.filename);
 }
 
-exports._get_stats = function (hmail) {
+exports._stat_file = function (hmail) {
     queue_count++;
 }
 
