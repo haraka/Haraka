@@ -17,6 +17,7 @@ var async       = require('async');
 var Address     = require('./address').Address;
 var date_to_str = utils.date_to_str;
 var existsSync  = utils.existsSync;
+var FsyncWriteStream = require('./fsync_writestream');
 
 var core_consts = require('constants');
 var WRITE_EXCL  = core_consts.O_CREAT | core_consts.O_TRUNC | core_consts.O_WRONLY | core_consts.O_EXCL;
@@ -280,7 +281,8 @@ exports.process_domain = function (ok_paths, todo, hmails, cb) {
     this.loginfo("Processing domain: " + todo.domain);
     var fname = _fname();
     var tmp_path = path.join(queue_dir, '.' + fname);
-    var ws = fs.createWriteStream(tmp_path, { flags: WRITE_EXCL });
+    var ws = new FsyncWriteStream(tmp_path, { flags: WRITE_EXCL });
+    // var ws = fs.createWriteStream(tmp_path, { flags: WRITE_EXCL });
     ws.on('close', function () {
         var dest_path = path.join(queue_dir, fname);
         fs.rename(tmp_path, dest_path, function (err) {
@@ -335,7 +337,8 @@ exports.split_to_new_recipients = function (hmail, recipients, response, cb) {
     var plugin = this;
     var fname = _fname();
     var tmp_path = path.join(queue_dir, '.' + fname);
-    var ws = fs.createWriteStream(tmp_path, { flags: WRITE_EXCL });
+    var ws = new FsyncWriteStream(tmp_path, { flags: WRITE_EXCL });
+    // var ws = fs.createWriteStream(tmp_path, { flags: WRITE_EXCL });
     var err_handler = function (err, location) {
         plugin.logerror("Error while splitting to new recipients (" + location + "): " + err);
         hmail.bounce("Error splitting to new recipients");

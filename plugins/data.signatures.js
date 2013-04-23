@@ -9,6 +9,7 @@ exports.hook_data = function (next, connection) {
 exports.hook_data_post = function (next, connection) {
     var sigs = this.config.get('data.signatures', 'list');
     
+    this.loginfo("Subject: " + connection.transaction.header.get_decoded('subject'));
     if (check_sigs(sigs, connection.transaction.body)) {
         return next(DENY, "Mail matches a known spam signature");
     }
