@@ -9,7 +9,7 @@ Early talker detection is handled internally by Haraka (in connection.js).
 At the DATA command, this plugin checks to see if an early talker was
 detected.
 
-Any plugin can detect early talkers by checking this.early_talker.
+Any plugin can detect early talkers by checking connection.early_talker.
 
 Configuration
 -------------
