@@ -163,7 +163,7 @@ function Connection(client, server) {
     this.hooks_to_run = [];
     this.start_time = Date.now();
     this.last_reject = '';
-    this.max_bytes = null;
+    this.max_bytes = config.get('databytes');
     this.totalbytes = 0;
     this.rcpt_count = {
         accept:   0,
@@ -1202,7 +1202,6 @@ Connection.prototype.data_respond = function(retval, msg) {
         // OK... now we get the data
         self.state = STATE_DATA;
         self.transaction.data_bytes = 0;
-        self.max_bytes = config.get('databytes');
     });
 };
 
@@ -1251,10 +1250,7 @@ Connection.prototype.data_done = function() {
     // Check message size limit
     if (this.max_bytes && this.transaction.data_bytes > this.max_bytes) {
         this.logerror("Incoming message exceeded databytes size of " + this.max_bytes);
-        this.respond(550, "Message too big!", function() {
-            self.reset_transaction();
-        });
-        return;
+        return plugins.run_hooks('max_data_exceeded', this);
     }
 
     // Check max received headers count
@@ -1324,6 +1320,14 @@ Connection.prototype.data_post_respond = function(retval, msg) {
                 }
     }
 };
+
+Connection.prototype.max_data_exceeded_respond = function (retval, msg) {
+    var self = this;
+    // TODO: Maybe figure out what to do with other return codes
+    this.respond(retval === constants.denysoft ? 450 : 550, "Message too big!", function() {
+        self.reset_transaction();
+    });
+}
 
 Connection.prototype.queue_outbound_respond = function(retval, msg) {
     var self = this;
