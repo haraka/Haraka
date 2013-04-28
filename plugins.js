@@ -124,7 +124,7 @@ plugins._load_and_compile_plugin = function(name) {
             return require(module);
         }
 
-        if (utils.existsSync(__dirname + '/' + module + '.js') || path.existsSync(__dirname + '/' + module)) {
+        if (utils.existsSync(__dirname + '/' + module + '.js') || utils.existsSync(__dirname + '/' + module)) {
             return require(module);
         }
 
