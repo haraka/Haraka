@@ -19,9 +19,30 @@ The value of the MAIL FROM command as an `Address` object.
 
 An Array of `Address` objects of recipients from the RCPT TO command.
 
-* transaction.data\_lines
+* transaction.message_stream
 
-An Array of the lines of the email after DATA.
+A node.js Readable Stream object for the message. 
+
+You use it like this:
+
+    transaction.message_stream.pipe(WritableStream, options)
+
+Where WritableStream is a node.js Writable Stream object such as a
+net.socket, fs.writableStream, process.stdout/stderr or custom stream.
+
+The options argument should be an object that overrides the following
+properties:
+
+    * line_endings (default: "\r\n")
+    * dot_stuffing (default: false)
+    * ending_dot   (default: false)
+    * end          (default: true)
+    * buffer_size  (default: 65535)
+    * clamd_style  (default: false)
+
+e.g.
+
+    transaction.message_stream.pipe(socket, { dot_stuffing: true, ending_dot: true });
 
 * transaction.data\_bytes
 
@@ -31,6 +52,12 @@ The number of bytes in the email after DATA.
 
 Adds a line of data to the email. Note this is RAW email - it isn't useful
 for adding banners to the email.
+
+* transaction.add_line_end(cb)
+
+Notifies the message_stream that all the data has been received.
+Supply an optional callback function that will be run once any inflight data
+is finished being written.
 
 * transaction.notes
 
@@ -53,32 +80,71 @@ Deletes a header from the email.
 
 The header of the email. See `Header Object`.
 
-* transaction.parse_body
+* transaction.parse_body = true|false [default: false]
 
-Set to 1 to enable parsing of the mail body. Make sure you set this in
+Set to `true` to enable parsing of the mail body. Make sure you set this in
 hook_data or before.
 
 * transaction.body
 
 The body of the email if you set `parse_body` above. See `Body Object`.
 
-* transaction.attachment_hooks(start, data, end)
+* transaction.attachment_hooks(start)
 
-Sets event emitter hooks for attachments if you set `parse_body` above.
+Sets a callback for when we see an attachment if `parse_body` has been set.
 
-The `start` event will receive `(content_type, filename, body)` as parameters.
+The `start` event will receive `(content_type, filename, body, stream)` as
+parameters.
 
-The `data` event will receive a `Buffer` object containing some of the
-attachment data.
+The stream is a `ReadableStream` - see http://nodejs.org/api/stream.html for
+details on how this works.
 
-The `end` event will be called with no parameters when an attachment ends.
+If you set stream.connection then the stream will apply backpressure to the
+connection, allowing you to process attachments before the connection has
+ended. Here is an example which stores attachments in temporary files using
+the `tmp` library from npm and tells us the size of the file:
 
-Both the `data` and `end` params are optional.
+    exports.hook_data = function (next, connection) {
+        // enable mail body parsing
+        connection.transaction.parse_body = 1;
+        connection.transaction.attachment_hooks(
+            function (ct, fn, body, stream) {
+                start_att(connection, ct, fn, body, stream)
+            }
+        );
+        next();
+    }
 
-Note that in the `start` event, you can set per-attachment events via:
+    function start_att (connection, ct, fn, body, stream) {
+        connection.loginfo("Got attachment: " + ct + ", " + fn + " for user id: " + connection.transaction.notes.hubdoc_user.email);
+        connection.transaction.notes.attachment_count++;
 
-    body.on('attachment_data', cb)
-    body.on('attachment_end', cb)
+        stream.connection = connection; // Allow backpressure
+        stream.pause();
+
+        var tmp = require('tmp');
+
+        tmp.file(function (err, path, fd) {
+            connection.loginfo("Got tempfile: " + path + " (" + fd + ")");
+            var ws = fs.createWriteStream(path);
+            stream.pipe(ws);
+            stream.resume();
+            ws.on('close', function () {
+                connection.loginfo("End of stream reached");
+                fs.fstat(fd, function (err, stats) {
+                    connection.loginfo("Got data of length: " + stats.size);
+                });
+            });
+        });
+    }
+
+* transaction.discard_data = true|false [default: false]
+
+Set this flag to true to discard all data as it arrives and not store in
+memory or on disk (in the message_stream property). You can still access
+the attachments and body if you set parse_body to true. This is useful
+for systems which do not need the full email, just the attachments or
+mail text.
 
 * transaction.set_banner(text, html)
 

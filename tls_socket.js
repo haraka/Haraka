@@ -7,9 +7,9 @@ var tls = require('tls');
 var crypto = require('crypto');
 var util = require('util');
 var net = require('net');
-var events = require('events');
 var stream = require('stream');
 var log = require('./logger');
+var SSL_OP_ALL = require('constants').SSL_OP_ALL;
 
 // provides a common socket for attaching
 // and detaching from either main socket, or crypto socket
@@ -24,14 +24,20 @@ function pluggableStream(socket) {
 }
 
 util.inherits(pluggableStream, stream.Stream);
-util.inherits(pluggableStream, events.EventEmitter);
 
-pluggableStream.prototype.pipe = function    (socket) {
-    this.on('data', function (data) {
-        if (socket.write)
-            socket.write(data);
-    });
-};
+pluggableStream.prototype.pause = function () {
+    if (this.targetsocket.pause) {
+        this.targetsocket.pause();
+        this.readable = false;
+    }
+}
+
+pluggableStream.prototype.resume = function () {
+    if (this.targetsocket.resume) {
+        this.readable = true;
+        this.targetsocket.resume();
+    }
+}
 
 pluggableStream.prototype.attach = function (socket) {
     var self = this;
@@ -54,9 +60,9 @@ pluggableStream.prototype.attach = function (socket) {
         self.writable = self.targetsocket.writable;
         self.emit('end');
     });
-    self.targetsocket.on('close', function () {
+    self.targetsocket.on('close', function (had_error) {
         self.writable = self.targetsocket.writable;
-        self.emit('close');
+        self.emit('close', had_error);
     });
     self.targetsocket.on('drain', function () {
         self.emit('drain');
@@ -71,11 +77,9 @@ pluggableStream.prototype.attach = function (socket) {
     if (self.targetsocket.remotePort) {
         self.remotePort = self.targetsocket.remotePort;
     }
-
     if (self.targetsocket.remoteAddress) {
         self.remoteAddress = self.targetsocket.remoteAddress;
     }
-
 };
 
 pluggableStream.prototype.clean = function (data) {
@@ -88,22 +92,20 @@ pluggableStream.prototype.clean = function (data) {
         this.targetsocket.removeAllListeners('error');
         this.targetsocket.removeAllListeners('drain');
     }
-    ;
     this.targetsocket = {};
-    this.targetsocket.write = function () {
-    };
+    this.targetsocket.write = function () {};
 };
 
-pluggableStream.prototype.write = function (data) {
+pluggableStream.prototype.write = function (data, encoding, callback) {
     if (this.targetsocket.write) {
-        return this.targetsocket.write(data);
+        return this.targetsocket.write(data, encoding, callback);
     }
     return false;
 };
 
-pluggableStream.prototype.end = function () {
+pluggableStream.prototype.end = function (data, encoding) {
     if (this.targetsocket.end) {
-        return this.targetsocket.end();
+        return this.targetsocket.end(data, encoding);
     }
 }
 
@@ -166,9 +168,17 @@ function createServer(cb) {
             
             socket.clean();
             cryptoSocket.removeAllListeners('data');
+
+            // Set SSL_OP_ALL for maximum compatibility with broken clients
+            // See http://www.openssl.org/docs/ssl/SSL_CTX_set_options.html
+            if (!options) options = {};
+            // TODO: bug in Node means we can't do this until it's fixed
+            // options.secureOptions = SSL_OP_ALL;
+            
             var sslcontext = crypto.createCredentials(options);
 
             var pair = tls.createSecurePair(sslcontext, true, true, false);
+
             var cleartext = pipe(pair, cryptoSocket);
 
             pair.on('error', function(exception) {
@@ -186,11 +196,11 @@ function createServer(cb) {
                     cleartext.authorized = true;
                 }
                 var cert = pair.cleartext.getPeerCertificate();
-                // TODO: this is available in 0.8
-                // var cipher = pair.cleartext.getCipher();
-
+                if (pair.cleartext.getCipher) {
+                    var cipher = pair.cleartext.getCipher();
+                }
                 socket.emit('secure');
-                if (cb) cb(cleartext.authorized, verifyError, cert);
+                if (cb) cb(cleartext.authorized, verifyError, cert, cipher);
             });
 
             cleartext._controlReleased = true;
@@ -206,16 +216,42 @@ function createServer(cb) {
     return serv;
 }
 
-function connect(port, host, cb) {
-    var cryptoSocket = new net.Socket();
+if (require('semver').gt(process.version, '0.7.0')) {
+    var _net_connect = function (options) {
+        return net.connect(options);
+    }
+}
+else {
+    var _net_connect = function (options) {
+        return net.connect(options.port, options.host);
+    }
+}
 
-    cryptoSocket.connect(port, host);
+function connect(port, host, cb) {
+    var options = {};
+    if (typeof port === 'object') {
+        options = port;
+        cb = host;
+    }
+    else {
+        options.port = port;
+        options.host = host;
+    }
+
+    var cryptoSocket = _net_connect(options);
 
     var socket = new pluggableStream(cryptoSocket);
 
     socket.upgrade = function (options) {
         socket.clean();
         cryptoSocket.removeAllListeners('data');
+
+        // Set SSL_OP_ALL for maximum compatibility with broken servers
+        // See http://www.openssl.org/docs/ssl/SSL_CTX_set_options.html
+        if (!options) options = {};
+        // TODO: bug in Node means we can't do this until it's fixed
+        // options.secureOptions = SSL_OP_ALL;
+
         var sslcontext = crypto.createCredentials(options);
 
         var pair = tls.createSecurePair(sslcontext, false);

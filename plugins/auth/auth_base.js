@@ -27,7 +27,7 @@ exports.get_plain_passwd = function (user, cb) {
 
 exports.hook_unrecognized_command = function (next, connection, params) {
     if(params[0] === AUTH_COMMAND && params[1]) {
-        return this.select_auth_method(next, connection, params[1]);
+        return this.select_auth_method(next, connection, params.slice(1).join(' '));
     }
     else if (connection.notes.authenticating &&
              connection.notes.auth_method === AUTH_METHOD_CRAM_MD5 &&
@@ -39,6 +39,11 @@ exports.hook_unrecognized_command = function (next, connection, params) {
              connection.notes.auth_method === AUTH_METHOD_LOGIN)
     {
         return this.auth_login(next, connection, params);
+    }
+    else if (connection.notes.authenticating &&
+             connection.notes.auth_method === AUTH_METHOD_PLAIN)
+    {
+        return this.auth_plain(next, connection, params);
     }
     return next();
 }
@@ -73,24 +78,39 @@ exports.check_cram_md5_passwd = function (ticket, user, passwd, cb) {
 }
 
 exports.check_user = function (next, connection, credentials, method) {
+    var self = this;
     connection.notes.authenticating = false;
     if (!(credentials[0] && credentials[1])) {
-        connection.respond(504, "Invalid AUTH string");
-        connection.reset_transaction();
-        return next(OK);
+        connection.respond(504, "Invalid AUTH string", function () {
+            connection.reset_transaction();
+            return next(OK);
+        });
+        return;
     }
 
     var passwd_ok = function (valid) {
         if (valid) {
             connection.relaying = 1;
-            connection.respond(235, "Authentication successful");
-            connection.authheader = "(authenticated bits=0)\n";
+            connection.respond(235, "Authentication successful", function () {
+                connection.authheader = "(authenticated bits=0)\n";
+                connection.notes.auth_user = credentials[0];
+                return next(OK);
+            });
         }
         else {
-            connection.respond(535, "Authentication failed");
-            connection.reset_transaction();
+            if (!connection.notes.auth_fails) {
+                connection.notes.auth_fails = 0;
+            }
+            connection.notes.auth_fails++;
+            var delay = Math.pow(2, connection.notes.auth_fails - 1);
+            connection.lognotice(self, 'delaying response for ' + delay + ' seconds');
+            setTimeout(function () {
+                connection.respond(535, "Authentication failed", function () {
+                    connection.reset_transaction();
+                    return next(OK);
+                });
+            }, delay * 1000);
         }
-        return next(OK);
     }
 
     if (method === AUTH_METHOD_PLAIN || method === AUTH_METHOD_LOGIN) {
@@ -114,7 +134,7 @@ exports.select_auth_method = function(next, connection, method) {
             return this.auth_plain(next, connection, params);
         }
         else if(method === AUTH_METHOD_LOGIN) {
-            return this.auth_login(next, connection);
+            return this.auth_login(next, connection, params);
         }
         else if( method === AUTH_METHOD_CRAM_MD5) {
             return this.auth_cram_md5(next, connection);
@@ -124,18 +144,30 @@ exports.select_auth_method = function(next, connection, method) {
 }
 
 exports.auth_plain = function(next, connection, params) {
-    var credentials = unbase64(params[0]).split(/\0/);
-    credentials.shift();  // Discard authid
-    return this.check_user(next, connection, credentials, AUTH_METHOD_PLAIN);
-    return next();
+    if (!params || (params && !params.length)) {
+        connection.respond(334, ' ', function () {
+            return next(OK);
+        });
+    }
+    else { 
+        var credentials = unbase64(params[0]).split(/\0/);
+        credentials.shift();  // Discard authid
+        return this.check_user(next, connection, credentials, AUTH_METHOD_PLAIN);
+        return next();
+    }
 }
 
 exports.auth_login = function(next, connection, params) {
-    if (connection.notes.auth_login_asked_login && !connection.notes.auth_login_userlogin) {
+    if ((!connection.notes.auth_login_asked_login && params[0]) ||
+        (connection.notes.auth_login_asked_login && !connection.notes.auth_login_userlogin)) 
+    {
         var login = unbase64(params[0]);
-        connection.respond(334, LOGIN_STRING2);
-        connection.notes.auth_login_userlogin = login;
-        return next(OK);
+        connection.respond(334, LOGIN_STRING2, function () {
+            connection.notes.auth_login_userlogin = login;
+            connection.notes.auth_login_asked_login = true;
+            return next(OK);
+        });
+        return;
     }
     else if (connection.notes.auth_login_userlogin) {
         var credentials = [
@@ -145,9 +177,10 @@ exports.auth_login = function(next, connection, params) {
         return this.check_user(next, connection, credentials, AUTH_METHOD_LOGIN);
     }
     
-    connection.respond(334, LOGIN_STRING1);
-    connection.notes.auth_login_asked_login = true;
-    return next(OK);
+    connection.respond(334, LOGIN_STRING1, function () {
+        connection.notes.auth_login_asked_login = true;
+        return next(OK);
+    });
 }
 
 exports.auth_cram_md5 = function(next, connection, params) {
@@ -159,9 +192,10 @@ exports.auth_cram_md5 = function(next, connection, params) {
     var ticket = '<' + hexi(Math.floor(Math.random() * 1000000)) + '.' +
                     hexi(Date.now()) + '@' + this.config.get('me') + '>';
     connection.loginfo(this, "ticket: " + ticket);
-    connection.respond(334, base64(ticket));
-    connection.notes.auth_ticket = ticket;
-    return next(OK);
+    connection.respond(334, base64(ticket), function () {
+        connection.notes.auth_ticket = ticket;
+        return next(OK);
+    });
 }
 
 function hexi (number) {

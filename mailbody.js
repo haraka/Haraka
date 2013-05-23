@@ -6,6 +6,7 @@ var utils  = require('./utils');
 var events = require('events');
 var util   = require('util');
 var Iconv  = require('./mailheader').Iconv;
+var attstr = require('./attachment_stream');
 
 var buf_siz = 65536;
 
@@ -16,6 +17,10 @@ function Body (header, options) {
     this.options = options || {};
     this.bodytext = '';
     this.body_text_encoded = '';
+    this.body_encoding = null;
+    this.boundary = null;
+    this.ct = null;
+    this.decode_function = null;
     this.children = []; // if multipart
     this.state = 'start';
     this.buf = new Buffer(buf_siz);
@@ -41,9 +46,9 @@ Body.prototype.parse_child = function (line) {
                 // see below for why we create a new buffer here.
                 var to_emit = new Buffer(child.buf_fill);
                 child.buf.copy(to_emit, 0, 0, child.buf_fill);
-                this.emit('attachment_data', to_emit);
+                child.attachment_stream.emit_data(to_emit);
             }
-            this.emit('attachment_end');
+            child.attachment_stream.emit_end();
         }
 
         if (line.substr(this.boundary.length + 2, 2) === '--') {
@@ -85,15 +90,19 @@ Body.prototype.parse_start = function (line) {
     if (/text\/html/i.test(ct)) {
         this.is_html = true;
     }
-    
+   
+    enc = enc.toLowerCase().split("\n").pop().trim(); 
     if (!enc.match(/^base64|quoted-printable|[78]bit$/i)) {
         logger.logerror("Invalid CTE on email: " + enc + ", using 8bit");
         enc = '8bit';
     }
     enc = enc.replace(/^quoted-printable$/i, 'qp');
-    enc = enc.toLowerCase().split("\n").pop().trim();
-    
+
     this.decode_function = this["decode_" + enc];
+    if (!this.decode_function) {
+        logger.logerror("No decode function found for: " + enc);
+        this.decode_function = this.decode_8bit;
+    }
     this.ct = ct;
     
     if (/^(?:text|message)\//i.test(ct) && !/^attachment/i.test(cd) ) {
@@ -101,7 +110,7 @@ Body.prototype.parse_start = function (line) {
     }
     else if (/^multipart\//i.test(ct)) {
         var match = ct.match(/boundary\s*=\s*["']?([^"';]+)["']?/i);
-        this.boundary = match[1] || '';
+        this.boundary = match ? match[1] : '';
         this.state = 'multipart_preamble';
     }
     else {
@@ -110,7 +119,8 @@ Body.prototype.parse_start = function (line) {
             match = ct.match(/name\s*=\s*["']?([^'";]+)["']?/i);
         }
         var filename = match ? match[1] : '';
-        this.emit('attachment_start', ct, filename, this);
+        this.attachment_stream = attstr.createStream();
+        this.emit('attachment_start', ct, filename, this, this.attachment_stream);
         this.buf_fill = 0;
         this.state = 'attachment';
     }
@@ -242,9 +252,20 @@ Body.prototype.parse_end = function (line) {
                     this.bodytext = converter.convert(buf).toString();
                 }
                 catch (err) {
-                    logger.logerror("iconv conversion from " + enc + " to UTF-8 failed: " + err);
+                    logger.logwarn("initial iconv conversion from " + enc + " to UTF-8 failed: " + err.message);
                     this.body_encoding = 'broken//' + enc;
-                    this.bodytext = buf.toString();
+                    // EINVAL is returned when the encoding type is not recognised/supported (e.g. ANSI_X3)
+                    if (err.code !== 'EINVAL') {
+                        // Perform the conversion again, but ignore any errors
+                        try { 
+                            var converter = new Iconv(enc, 'UTF-8//TRANSLIT//IGNORE');
+                            this.bodytext = converter.convert(buf).toString();
+                        }
+                        catch (e) {
+                            logger.logerror('iconv conversion from ' + enc + ' to UTF-8 failed: ' + e.message);
+                            this.bodytext = buf.toString();
+                        }
+                    }
                 }
             }
         }
@@ -275,8 +296,6 @@ Body.prototype.parse_multipart_preamble = function (line) {
                 // next section
                 var bod = new Body(new Header(), this.options);
                 this.listeners('attachment_start').forEach(function (cb) { bod.on('attachment_start', cb) });
-                this.listeners('attachment_data' ).forEach(function (cb) { bod.on('attachment_data', cb) });
-                this.listeners('attachment_end'  ).forEach(function (cb) { bod.on('attachment_end', cb) });
                 this.children.push(bod);
                 bod.state = 'headers';
                 this.state = 'child';
@@ -303,9 +322,6 @@ Body.prototype.parse_attachment = function (line) {
     }
 
     var buf = this.decode_function(line);
-    //this.emit('attachment_data', buf);
-    //return;
-
     if ((buf.length + this.buf_fill) > buf_siz) {
         // now we have to create a new buffer, because if we write this out
         // using async code, it will get overwritten under us. Creating a new
@@ -313,11 +329,11 @@ Body.prototype.parse_attachment = function (line) {
         // memcpy())
         var to_emit = new Buffer(this.buf_fill);
         this.buf.copy(to_emit, 0, 0, this.buf_fill);
-        this.emit('attachment_data', to_emit);
+        this.attachment_stream.emit_data(to_emit);
         if (buf.length > buf_siz) {
             // this is an unusual case - the base64/whatever data is larger
             // than our buffer size, so we just emit it and reset the counter.
-            this.emit('attachment_data', buf);
+            this.attachment_stream.emit_data(buf);
             this.buf_fill = 0;
         }
         else {
@@ -339,7 +355,7 @@ Body.prototype.decode_base64 = function (line) {
 }
 
 Body.prototype.decode_8bit = function (line) {
-    return new Buffer(line);
+    return new Buffer(line, 'binary');
 }
 
 Body.prototype.decode_7bit = Body.prototype.decode_8bit;

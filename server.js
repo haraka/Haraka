@@ -9,12 +9,9 @@ var out         = require('./outbound');
 var plugins     = require('./plugins');
 var constants   = require('./constants');
 var os          = require('os');
-
-var cluster;
-try { cluster = require('cluster') } // cluster can be installed with npm
-catch (err) {
-    logger.logdebug("no cluster available, running single-process");
-}
+var cluster     = require('cluster');
+var async       = require('async');
+var daemon      = require('daemon');
 
 // Need these here so we can run hooks
 for (var key in logger) {
@@ -34,15 +31,38 @@ for (var key in logger) {
 var Server = exports;
 
 var defaults = {
-    port: 25,
-    listen_host: '0.0.0.0',
-    inactivity_timeout: 600
+    inactivity_timeout: 600,
+    daemonize: false,
+    daemon_log_file: '/var/log/haraka.log',
+    daemon_pid_file: '/var/run/haraka.pid'
 };
 
 function apply_defaults(obj) {
     var key;
     for (key in defaults) {
         obj[key] = obj[key] || defaults[key];
+    }
+}
+
+Server.daemonize = function (config_data) {
+    if (/^(?:1|true|yes|enabled|on)$/i.test(config_data.main.daemonize)) {
+        if (!process.env.__daemon) {
+            // Remove process.on('exit') listeners otherwise
+            // we get a spurious 'Exiting' log entry.
+            process.removeAllListeners('exit');
+            logger.lognotice('Daemonizing...');
+        }
+        var log_fd = require('fs').openSync(config_data.main.daemon_log_file, 'a');
+        daemon({stdout: log_fd});
+        // We are the daemon from here on...
+        var npid = require('npid');
+        try {
+            npid.create(config_data.main.daemon_pid_file);
+        }
+        catch (err) {
+            logger.logerror(err.message);
+            process.exit(1);
+        }
     }
 }
 
@@ -58,69 +78,123 @@ Server.createServer = function (params) {
     // config_data defaults
     apply_defaults(config_data.main);
 
-    var server = net.createServer(function (client) {
-        client.setTimeout((config_data.main.inactivity_timeout || 300) * 1000);
-        conn.createConnection(client, server);
-    });
-    server.notes = {};
-    plugins.server = server;
+    var listeners = (config_data.main.listen || '').split(/\s*,\s*/);
+    if (listeners[0] === '') listeners = [];
+    if (config_data.main.port) {
+        var host = config_data.main.listen_host;
+        if (!host) { 
+            host = '[::0]';
+            Server.default_host = true;
+        }
+        listeners.unshift(host + ':' + config_data.main.port);
+    }
+    if (!listeners.length) {
+        Server.default_host = true;
+        listeners.push('[::0]:25');
+    }
+
+    Server.notes = {};
+    plugins.server = Server;
     plugins.load_plugins();
 
-    if (cluster && config_data.main.nodes) {
-         
-        var c = cluster(server);
-        var cluster_modules = config.get('cluster_modules', 'list');
-        
-        if (config_data.main.nodes !== 'cpus') {
-            c.set('workers', config_data.main.nodes);
-        }
-        if (config_data.main.user) {
-            c.set('user', config_data.main.user);
-        }
-        
-        for (var i=0,l=cluster_modules.length; i < l; i++) {
-            var matches = /^(\w+)\s*(?::\s*(.*))?$/.exec(cluster_modules[i]);
-            if (!matches) {
-                Server.logerror("cluster_modules in invalid format: " + cluster_modules[i]);
-                continue;
-            }
-            var module = matches[1];
-            var params = matches[2];
-            if (params) {
-                c.use(cluster[module](JSON.parse(params)));
-            }
-            else {
-                c.use(cluster[module]());
-            }
-        }
+    var inactivity_timeout = (config_data.main.inactivity_timeout || 300) * 1000;
 
-        c.set('host', config_data.main.listen_host);
-        c.listen(parseInt(config_data.main.port));
-        c.on('listening', listening);
-        Server.cluster = c;
-        if (c.isMaster) {
+    // Cluster
+    if (cluster && config_data.main.nodes) {
+        Server.cluster = cluster; 
+        if (cluster.isMaster) {
+            this.daemonize(config_data);
+            // Fork workers
+            var workers = (config_data.main.nodes === 'cpus') ? 
+                os.cpus().length : config_data.main.nodes;
+            for (var i=0; i<workers; i++) {
+                cluster.fork({ CLUSTER_MASTER_PID: process.pid });
+            }
+            cluster.on('online', function (worker) {
+                logger.lognotice('worker ' + worker.id + ' started pid=' + worker.process.pid);
+            });
+            cluster.on('listening', function (worker, address) {
+                logger.lognotice('worker ' + worker.id + ' listening on ' + address.address + ':' + address.port);
+            });
+            cluster.on('exit', function (worker, code, signal) {
+                if (signal) {
+                    logger.lognotice('worker ' + worker.id + ' killed by signal ' + signal);
+                }
+                else if (code !== 0) {
+                    logger.lognotice('worker ' + worker.id + ' exited with error code: ' + code);
+                }
+                if (signal || code !== 0) {
+                    // Restart worker
+                    cluster.fork({ CLUSTER_MASTER_PID: process.pid });
+                }
+            });
             plugins.run_hooks('init_master', Server);
         }
-        if (c.isWorker) {
-            plugins.run_hooks('init_child', Server);
+        else {
+            // Workers
+            setup_listeners(listeners, plugins, "child", inactivity_timeout);
         }
     }
     else {
-        server.listen(config_data.main.port, config_data.main.listen_host, listening);
-        
-        plugins.run_hooks('init_master', Server);
+        this.daemonize(config_data);
+        setup_listeners(listeners, plugins, "master", inactivity_timeout);
     }
 };
+
+function setup_listeners (listeners, plugins, type, inactivity_timeout) {
+    async.each(listeners, function (host_port, cb) {
+        var hp = /^\[?([^\]]+)\]?:(\d+)$/.exec(host_port);
+        if (!hp) {
+            return cb(new Error("Invalid format for listen parameter in smtp.ini"));
+        }
+        
+        var server = net.createServer(function (client) {
+            client.setTimeout(inactivity_timeout);
+            conn.createConnection(client, server);
+        });
+
+        server.notes = Server.notes;
+        if (Server.cluster) server.cluster = Server.cluster;
+
+        server.on('listening', function () {
+            var addr = this.address();
+            logger.lognotice("Listening on " + addr.address + ':' + addr.port);
+            cb();
+        });
+
+        // Fallback from IPv6 to IPv4 if not supported
+        // But only if we supplied the default of [::0]:25
+        server.on('error', function (e) {
+            if (e.code === 'EAFNOSUPPORT' && /^::0/.test(hp[1]) && Server.default_host) {
+                server.listen(hp[2], '0.0.0.0');
+            }
+            else {
+                // Pass error to callback
+                cb(e);
+            }
+        });
+
+        server.listen(hp[2], hp[1]);
+    }, function (err) {
+        if (err) {
+            logger.logerror("Failed to setup listeners: " + err.message);
+            return process.exit(-1);
+        }
+        listening();
+        plugins.run_hooks('init_' + type, Server);
+    })
+}
 
 Server.init_master_respond = function (retval, msg) {
     Server.ready = 1;
     switch(retval) {
         case constants.ok:
         case constants.cont:
+                out.load_queue();
                 break;
         default:
-                Server.logerror("init_master stopped startup: " + msg);
-                process.exit();
+                Server.logerror("init_master returned error" + ((msg) ? ': ' + msg : ''));
+                process.exit(1);
     }
 }
 
@@ -130,23 +204,35 @@ Server.init_child_respond = function (retval, msg) {
         case constants.cont:
                 break;
         default:
-                Server.logerror("init_child returned with error. Killing Haraka. " + msg);
-                process.kill(process.env.CLUSTER_MASTER_PID);
+                var pid = process.env.CLUSTER_MASTER_PID;
+                Server.logerror("init_child returned error" + ((msg) ? ': ' + msg : ''));
+                try {
+                    if (pid) { 
+                        process.kill(pid);
+                        Server.logerror('Killing master (pid=' + pid + ')');
+                    }
+                }
+                catch (err) {
+                    Server.logerror('Terminating child');
+                }
+                process.exit(1);
     }
 }
 
 function listening () {
     var config_data = config.get('smtp.ini');
-
+   
+    // Drop privileges
+    if (config_data.main.group) {
+        Server.lognotice('Switching from current gid: ' + process.getgid());
+        process.setgid(config_data.main.group);
+        Server.lognotice('New gid: ' + process.getgid());
+    }
     if (config_data.main.user) {
-        // drop privileges
         Server.lognotice('Switching from current uid: ' + process.getuid());
         process.setuid(config_data.main.user);
         Server.lognotice('New uid: ' + process.getuid());
     }
 
-    logger.lognotice("Listening on port " + config_data.main.port);
     Server.ready = 1;
-   
-    out.load_queue();
 }

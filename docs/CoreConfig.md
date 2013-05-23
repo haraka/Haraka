@@ -27,11 +27,18 @@ different levels available.
     many processes to fork off. Can be the string "cpus" to fork off as many
     children as there are CPUs (default: 0, which disables cluster mode)
   * user - optionally a user to drop privileges to. Can be a string or UID.
+  * group - optionally a group to drop privileges to. Can be a string or GID.
   * ignore_bad_plugins - If a plugin fails to compile by default Haraka will stop at load time.
     If, however, you wish to continue on without that plugin's facilities, then
     set this config option
+  * daemonize - enable this to cause Haraka to fork into the background on start-up (default: 0)
+  * daemon_log_file - (default: /var/log/haraka.log) where to redirect stdout/stderr when daemonized
+  * daemon_pid_file - (default: /var/run/haraka.pid) where to write a PID file to
+  * spool_dir - (default: none) directory to create temporary spool files in
+  * spool_after - (default: -1) if message exceeds this size in bytes, then spool the message to disk
+    specify -1 to disable spooling completely or 0 to force all messages to be spooled to disk.
 
-[1]: http://learnboost.github.com/cluster/
+[1]: http://learnboost.github.com/cluster/ or node version >= 0.8
 
 * me
 
@@ -70,6 +77,9 @@ different levels available.
 
 * cluster\_modules
 
+  NOTE: this is only valid on node.js 0.4 using the LearnBoost cluster module
+  it is not used on node.js 0.6 or later.
+
   A list of cluster modules to load. Use a colon to separate parameters to be
   passed to the module/plugin. Typical example:
 
@@ -103,3 +113,8 @@ different levels available.
   The bounce message should delivery of the mail fail. See the source of. The
   default is normally fine. Bounce messages contain a number of template
   replacement values which are best discovered by looking at the source code.
+
+* haproxy_hosts
+
+  A list of HAProxy hosts that Haraka should enable the PROXY protocol from.
+  See HAProxy.md

@@ -32,12 +32,26 @@ process.on('uncaughtException', function (err) {
         });
     }
     else {
-        logger.logcrit('Caught exception: ' + err);
+        logger.logcrit('Caught exception: ' + JSON.stringify(err));
     }
     logger.dump_logs();
     process.exit(1);
 });
 
-logger.log("INFO", "Starting up Haraka version " + exports.version);
+['SIGTERM', 'SIGINT'].forEach(function (sig) {
+    process.on(sig, function () {
+        process.title = path.basename(process.argv[1], '.js');
+        logger.lognotice(sig + ' received');
+        logger.dump_logs(1);
+    });
+});
+
+process.on('exit', function() {
+    process.title = path.basename(process.argv[1], '.js');
+    logger.lognotice('Shutting down');
+    logger.dump_logs();
+});
+
+logger.log("NOTICE", "Starting up Haraka version " + exports.version);
 
 server.createServer();

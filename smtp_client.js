@@ -8,6 +8,7 @@ var generic_pool = require('generic-pool');
 var line_socket = require('./line_socket');
 var logger = require('./logger');
 var uuid = require('./utils').uuid;
+var base64 = require('./plugins/auth/auth_base').base64;
 
 var smtp_regexp = /^([0-9]{3})([ -])(.*)/;
 var STATE_IDLE = 1;
@@ -16,15 +17,20 @@ var STATE_RELEASED = 3;
 var STATE_DEAD = 4;
 var STATE_DESTROYED = 5;
 
-function SMTPClient(port, host, timeout) {
+var tls_key;
+var tls_cert;
+
+function SMTPClient(port, host, connect_timeout) {
     events.EventEmitter.call(this);
     this.uuid = uuid();
     this.socket = line_socket.connect(port, host);
-    this.socket.setTimeout(timeout * 1000);
+    this.socket.setTimeout(((connect_timeout === undefined) ? 30 : connect_timeout) * 1000);
     this.state = STATE_IDLE;
     this.command = 'greeting';
     this.response = []
     this.connected = false;
+    this.authenticated = false;
+    this.auth_capabilities = [];
     var self = this;
 
     this.socket.on('line', function (line) {
@@ -72,7 +78,9 @@ function SMTPClient(port, host, timeout) {
                 self.emit('xclient', 'EHLO');
                 break;
             case 'starttls':
-                this.upgrade({key: key, cert: cert});
+                if (tls_key && tls_cert) {
+                    this.upgrade({key: tls_key, cert: tls_cert});
+                }
                 break;
             case 'greeting':
                 self.connected = true;
@@ -87,6 +95,7 @@ function SMTPClient(port, host, timeout) {
             case 'data':
             case 'dot':
             case 'rset':
+            case 'auth':
                 self.emit(self.command);
                 break;
             case 'quit':
@@ -98,10 +107,9 @@ function SMTPClient(port, host, timeout) {
         }
     });
 
-    this.socket.on('drain', function () {
-        if (self.command === 'mailbody') {
-            process.nextTick(function () { self.continue_data() });
-        }
+    this.socket.on('connect', function () {
+        // Remove connection timeout
+        self.socket.setTimeout(0);
     });
 
     var closed = function (msg) {
@@ -109,16 +117,17 @@ function SMTPClient(port, host, timeout) {
             if (!error) {
                 error = '';
             }
-            if (self.state == STATE_ACTIVE) {
+            if (self.state === STATE_ACTIVE) {
                 self.emit('error', self.uuid + ': SMTP connection ' + msg + ' ' + error);
                 self.destroy();
             }
             else {
                 logger.logdebug('[smtp_client_pool] ' + self.uuid + ': SMTP connection ' + msg + ' ' + error + ' (state=' + self.state + ')');
-                if (self.state == STATE_IDLE) {
+                if (self.state === STATE_IDLE) {
                     self.state = STATE_DEAD;
+                    self.destroy();
                 }
-                else if (self.state == STATE_RELEASED) {
+                else if (self.state === STATE_RELEASED) {
                     self.destroy();
                 }
             }
@@ -134,7 +143,7 @@ function SMTPClient(port, host, timeout) {
 util.inherits(SMTPClient, events.EventEmitter);
 
 SMTPClient.prototype.send_command = function (command, data) {
-    var line = (command == 'dot') ? '.' : command + (data ? (' ' + data) : '');
+    var line = (command === 'dot') ? '.' : command + (data ? (' ' + data) : '');
     this.emit('client_protocol', line);
     this.command = command.toLowerCase();
     this.response = [];
@@ -142,53 +151,20 @@ SMTPClient.prototype.send_command = function (command, data) {
 };
 
 SMTPClient.prototype.start_data = function (data) {
-    this.command = 'mailbody';
-    if (data instanceof Function) {
-        this.send_data = data;
-    }
-    else if (data instanceof Array) {
-        var data_marker = 0;
-        this.send_data = function () {
-            while (data_marker < data.length) {
-                var line = data[data_marker];
-                data_marker++;
-                if (!this.send_data_line(line)) {
-                    return false;
-                }
-            }
-            return true;
-        };
-    }
-    else {
-        this.send_data = function () {
-            this.socket.write(data);
-            return true;
-        };
-    }
-    this.continue_data();
-};
-
-SMTPClient.prototype.continue_data = function () {
-    if (!this.send_data()) {
-        return;
-    }
-    this.send_command('dot');
-};
-
-SMTPClient.prototype.send_data_line = function (line) {
-    var buf = new Buffer(line.replace(/^\./, '..').replace(/\r?\n/g, '\r\n'), 'binary');
-    return this.socket.write(buf);
+    this.response = [];
+    this.command = 'dot';
+    data.pipe(this.socket, { dot_stuffing: true, ending_dot: true, end: false });
 };
 
 SMTPClient.prototype.release = function () {
-    if (!this.connected || this.command == 'data' || this.command == 'mailbody') {
+    if (!this.connected || this.command === 'data' || this.command === 'mailbody') {
         // Destroy here, we can't reuse a connection that was mid-data.
         this.destroy();
         return;
     }
 
     logger.logdebug('[smtp_client_pool] ' + this.uuid + ' resetting, state=' + this.state);
-    if (this.state == STATE_DESTROYED) {
+    if (this.state === STATE_DESTROYED) {
         return;
     }
     this.state = STATE_RELEASED;
@@ -201,6 +177,7 @@ SMTPClient.prototype.release = function () {
     this.removeAllListeners('data');
     this.removeAllListeners('dot');
     this.removeAllListeners('rset');
+    this.removeAllListeners('auth');
     this.removeAllListeners('client_protocol');
     this.removeAllListeners('server_protocol');
     this.removeAllListeners('error');
@@ -212,7 +189,7 @@ SMTPClient.prototype.release = function () {
 
     this.on('rset', function () {
         logger.logdebug('[smtp_client_pool] ' + this.uuid + ' releasing, state=' + this.state);
-        if (this.state == STATE_DESTROYED) {
+        if (this.state === STATE_DESTROYED) {
             return;
         }
         this.state = STATE_IDLE;
@@ -225,17 +202,18 @@ SMTPClient.prototype.release = function () {
 };
 
 SMTPClient.prototype.destroy = function () {
-    if (this.state != STATE_DESTROYED) {
+    if (this.state !== STATE_DESTROYED) {
         this.pool.destroy(this);
     }
 };
 
 // Separate pools are kept for each set of server attributes.
-exports.get_pool = function (server, port, host, timeout, max) {
+exports.get_pool = function (server, port, host, connect_timeout, pool_timeout, max) {
     var port = port || 25;
     var host = host || 'localhost';
-    var timeout = (timeout == undefined) ? 300 : timeout;
-    var name = port + ':' + host + ':' + timeout;
+    var connect_timeout = (connect_timeout === undefined) ? 30 : connect_timeout;
+    var pool_timeout = (pool_timeout === undefined) ? 300 : pool_timeout;
+    var name = port + ':' + host + ':' + pool_timeout;
     if (!server.notes.pool) {
         server.notes.pool = {};
     }
@@ -243,20 +221,26 @@ exports.get_pool = function (server, port, host, timeout, max) {
         var pool = generic_pool.Pool({
             name: name,
             create: function (callback) {
-                var smtp_client = new SMTPClient(port, host, timeout);
-                logger.logdebug('[smtp_client_pool] ' + smtp_client.uuid + ' created');
+                var smtp_client = new SMTPClient(port, host, connect_timeout);
+                logger.logdebug('[smtp_client_pool] uuid=' + smtp_client.uuid + ' host=' + host 
+                    + ' port=' + port + ' pool_timeout=' + pool_timeout + ' created');
                 callback(null, smtp_client);
             },
             destroy: function(smtp_client) {
                 logger.logdebug('[smtp_client_pool] ' + smtp_client.uuid + ' destroyed, state=' + smtp_client.state);
                 smtp_client.state = STATE_DESTROYED;
                 smtp_client.socket.destroy();
+                // Remove pool object from server notes once empty
+                var size = pool.getPoolSize();
+                if (size === 0) {
+                    delete server.notes.pool[name];
+                }
             },
             max: max || 1000,
-            idleTimeoutMillis: timeout * 1000,
+            idleTimeoutMillis: pool_timeout * 1000,
             log: function (str, level) {
-                level = (level == 'verbose') ? 'debug' : level;
-                logger['log' + level]('[smtp_client_pool] ' + str);
+                level = (level === 'verbose') ? 'debug' : level;
+                logger['log' + level]('[smtp_client_pool] [' + name + '] ' + str);
             }
         });
 
@@ -264,7 +248,7 @@ exports.get_pool = function (server, port, host, timeout, max) {
         pool.acquire = function (callback, priority) {
             var callback_wrapper = function (err, smtp_client) {
                 smtp_client.pool = pool;
-                if (smtp_client.state == STATE_DEAD) {
+                if (smtp_client.state === STATE_DEAD) {
                     smtp_client.destroy();
                     pool.acquire(callback, priority);
                     return;
@@ -280,8 +264,8 @@ exports.get_pool = function (server, port, host, timeout, max) {
 };
 
 // Get a smtp_client for the given attributes.
-exports.get_client = function (server, callback, port, host, timeout, max) {
-    var pool = exports.get_pool(server, port, host, timeout, max);
+exports.get_client = function (server, callback, port, host, connect_timeout, pool_timeout, max) {
+    var pool = exports.get_pool(server, port, host, connect_timeout, pool_timeout, max);
     pool.acquire(callback);
 };
 
@@ -291,7 +275,7 @@ exports.get_client = function (server, callback, port, host, timeout, max) {
 exports.get_client_plugin = function (plugin, connection, config, callback) {
     var enable_tls = /(true|yes|1)/i.exec(config.main.enable_tls) != null;
     var pool = exports.get_pool(connection.server, config.main.port,
-        config.main.host, config.main.timeout, config.main.max_connections);
+        config.main.host, config.main.connect_timeout, config.main.timeout, config.main.max_connections);
     pool.acquire(function (err, smtp_client) {
         connection.logdebug(plugin, 'Got smtp_client: ' + smtp_client.uuid);
         smtp_client.call_next = function (retval, msg) {
@@ -331,9 +315,9 @@ exports.get_client_plugin = function (plugin, connection, config, callback) {
                     }
                 }
                 if (smtp_client.response[line].match(/^STARTTLS/)) {
-                    var key = plugin.config.get('tls_key.pem', 'data').join("\n");
-                    var cert = plugin.config.get('tls_cert.pem', 'data').join("\n");
-                    if (key && cert && enable_tls) {
+                    tls_key = plugin.config.get('tls_key.pem', 'data').join("\n");
+                    tls_cert = plugin.config.get('tls_cert.pem', 'data').join("\n");
+                    if (tls_key && tls_cert && enable_tls) {
                         smtp_client.socket.on('secure', function () {
                             smtp_client.emit('greeting', 'EHLO');
                         });
@@ -341,13 +325,51 @@ exports.get_client_plugin = function (plugin, connection, config, callback) {
                         return;
                     }
                 }
+                
+                var auth_matches;
+                if (auth_matches = smtp_client.response[line].match(/^AUTH (.*)$/)) {
+                    smtp_client.auth_capabilities = [];
+                    auth_matches = auth_matches[1].split(' ');
+                    for (var i = 0; i < auth_matches.length; i++) {
+                        smtp_client.auth_capabilities.push(auth_matches[i].toLowerCase());
+                    }
+                }
+            }
+        });
+        
+        smtp_client.on('helo', function () {
+            if (config.auth && !smtp_client.authenticated) {
+                if (config.auth.type === null || typeof(config.auth.type) === 'undefined') { return; } // Ignore blank
+                var auth_type = config.auth.type.toLowerCase();
+                if (smtp_client.auth_capabilities.indexOf(auth_type) == -1) {
+                    throw new Error("Auth type \"" + auth_type + "\" not supported by server (supports: " + smtp_client.auth_capabilities.join(',') + ")")
+                }
+                switch (auth_type) {
+                    case 'plain':
+                        if (!config.auth.user || !config.auth.pass) {
+                            throw new Error("Must include auth.user and auth.pass for PLAIN auth.");
+                        }
+                        logger.logdebug('[smtp_client_pool] uuid=' + smtp_client.uuid + ' authenticating as "' + config.auth.user + '"');
+                        smtp_client.send_command('AUTH',
+                            'PLAIN ' + base64(config.auth.user + "\0" + config.auth.user + "\0" + config.auth.pass) );
+                        break;
+                    case 'cram-md5':
+                        throw new Error("Not implemented");
+                    default:
+                        throw new Error("Unknown AUTH type: " + auth_type);
+                }
+            }
+            else {
+                smtp_client.send_command('MAIL',
+                    'FROM:' + connection.transaction.mail_from);
             }
         });
 
-        smtp_client.on('helo', function () {
+        smtp_client.on('auth', function () {
+            smtp_client.authenticated = true;
             smtp_client.send_command('MAIL',
                 'FROM:' + connection.transaction.mail_from);
-        });
+        })
 
         smtp_client.on('error', function (msg) {
             connection.logwarn(plugin, msg);

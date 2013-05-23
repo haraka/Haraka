@@ -10,8 +10,9 @@ var defaults = {
 };
 
 exports.hook_data_post = function (next, connection) {
-    var config = this.config.get('spamassassin.ini');
     var plugin = this;
+
+    var config = this.config.get('spamassassin.ini');
     
     for (var key in defaults) {
         config.main[key] = config.main[key] || defaults[key];
@@ -26,7 +27,10 @@ exports.hook_data_post = function (next, connection) {
         }
     );
     
-    if (connection.transaction.data_bytes > config.main.max_size) {
+    if (config.main.max_size > 0 && 
+        connection.transaction.data_bytes > config.main.max_size) 
+    {
+        connection.loginfo(this, 'skipping: message exceeds maximum size');
         return next();
     }
     
@@ -37,7 +41,7 @@ exports.hook_data_post = function (next, connection) {
     }
     else {
         var hostport = config.main.spamd_socket.split(/:/);
-        socket.connect(hostport[1], hostport[0]);
+        socket.connect((hostport[1] || 783), hostport[0]);
     }
     
     socket.setTimeout(300 * 1000);
@@ -46,34 +50,6 @@ exports.hook_data_post = function (next, connection) {
                    connection.transaction.notes.spamd_user ||
                    'default';
     
-    var data_marker = 0;
-    var in_data = false;
-    var end_pending = true;
-    
-    var send_data = function () {
-        in_data = true;
-        var wrote_all = true;
-        while (wrote_all && (data_marker < connection.transaction.data_lines.length)) {
-            var line = connection.transaction.data_lines[data_marker];
-            data_marker++;
-            // dot-stuffing not necessary for spamd
-            wrote_all = socket.write(new Buffer(line, 'binary'));
-            if (!wrote_all) return;
-        }
-        // we get here if wrote_all still true, and we got to end of data_lines
-        if (end_pending) {
-            end_pending = false;
-            socket.end("\r\n");
-        }
-    };
-
-    socket.on('drain', function () {
-        connection.logdebug(plugin, 'drain');
-        if (end_pending && in_data) {
-            process.nextTick(function () { send_data() });
-        }
-    });
-
     socket.on('timeout', function () {
         connection.logerror(plugin, "spamd connection timed out");
         socket.end();
@@ -85,18 +61,19 @@ exports.hook_data_post = function (next, connection) {
         next(); 
     });
     socket.on('connect', function () {
-        socket.write("SYMBOLS SPAMC/1.3\r\n", function () {
-            socket.write("User: " + username + "\r\n\r\n", function () {
-                socket.write("X-Envelope-From: " + 
-                    connection.transaction.mail_from.address()
-                    + "\r\n", function () {
-                        socket.write("X-Haraka-UUID: " + 
-                            connection.transaction.uuid + "\r\n", function () {
-                                send_data();
-                        });
-                });
-            });
-        });
+        var headers = [
+            'SYMBOLS SPAMC/1.3',
+            'User: ' + username,
+            '',
+            'X-Envelope-From: ' + connection.transaction.mail_from.address(),
+            'X-Haraka-UUID: ' + connection.transaction.uuid,
+        ];
+        if (connection.relaying) {
+            headers.push('X-Haraka-Relay: true');
+        }
+
+        socket.write(headers.join("\r\n"));
+        connection.transaction.message_stream.pipe(socket);
     });
     
     var spamd_response = {};
@@ -130,6 +107,9 @@ exports.hook_data_post = function (next, connection) {
     });
     
     socket.on('end', function () {
+        // Abort if the connection or transaction are gone
+        if (!connection || (connection && !connection.transaction)) return next();
+
         // Now we do stuff with the results...
  
         plugin.fixup_old_headers(config.main.old_headers_action, connection.transaction);

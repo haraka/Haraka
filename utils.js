@@ -23,12 +23,7 @@ exports.uuid = function () {
 };
 
 exports.in_array = function (item, array) {
-    for (var i in array) {
-        if (item === array[i]) {
-            return true;
-        }
-    }
-    return false;
+    return (array.indexOf(item) != -1);
 };
 
 exports.sort_keys = function (obj) {
@@ -119,3 +114,15 @@ exports.encode_qp = function (str) {
     return broken_lines + str;
 }
 
+var versions   = process.version.split('.'),
+    version    = Number(versions[0].substring(1)),
+    subversion = Number(versions[1]);
+
+exports.existsSync = require((version > 0 || subversion >= 8) ? 'fs' : 'path').existsSync;
+
+exports.indexOfLF = function (buf) {
+    for (var i=0; i<buf.length; i++) {
+        if (buf[i] === 0x0a) return i;
+    }
+    return -1;
+}
