@@ -67,7 +67,7 @@ function SMTPClient(port, host, connect_timeout) {
             self.command = 'helo';
         }
         else if (code.match(/^[45]/)) {
-            self.emit('bad_code', code, msg);
+            self.emit('bad_code', code, self.response.join(' '));
             if (self.state != STATE_ACTIVE) {
                 return;
             }
