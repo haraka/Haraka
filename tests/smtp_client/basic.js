@@ -1,4 +1,6 @@
-test.expect(24);
+var MessageStream = require('./messagestream');
+
+test.expect(21);
 var server = {notes: {}};
 
 exports.get_pool(server);
@@ -12,6 +14,10 @@ exports.get_client(server, function(err, smtp_client) {
     test.equals(null, err);
     test.equals(1, server.notes.pool[pool_name].getPoolSize());
     test.equals(0, server.notes.pool[pool_name].availableObjectsCount());
+
+    var message_stream = new MessageStream(
+      { main : { spool_after : 1024 } }, "123456789"
+    );
 
     var data = [];
     var reading_body = false;
@@ -52,12 +58,16 @@ exports.get_client(server, function(err, smtp_client) {
 
     smtp_client.on('data', function () {
         test.equals(smtp_client.response[0], 'go ahead');
-        smtp_client.start_data(['Header: test\r\n', '\r\n', 'hi\r\n']);
+        smtp_client.start_data(message_stream);
+        message_stream.on('end', function () {
+          smtp_client.socket.write('.\r\n');
+        });
+        message_stream.add_line('Header: test\r\n');
+        message_stream.add_line('\r\n');
+        message_stream.add_line('hi\r\n');
+        message_stream.add_line_end();
     });
 
-    data.push('Header: test');
-    data.push('');
-    data.push('hi');
     data.push('.');
     data.push('250 message queued');
 

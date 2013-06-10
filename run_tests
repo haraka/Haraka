@@ -17,4 +17,6 @@ catch(e) {
 }
 
 process.chdir(__dirname);
-reporter.run(['tests', 'tests/plugins']);
+reporter.run(['tests', 'tests/plugins'], undefined, function () {
+  process.exit();
+});
