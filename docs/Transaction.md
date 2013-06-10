@@ -53,12 +53,6 @@ The number of bytes in the email after DATA.
 Adds a line of data to the email. Note this is RAW email - it isn't useful
 for adding banners to the email.
 
-* transaction.add_line_end(cb)
-
-Notifies the message_stream that all the data has been received.
-Supply an optional callback function that will be run once any inflight data
-is finished being written.
-
 * transaction.notes
 
 A safe place to store transaction specific values.
