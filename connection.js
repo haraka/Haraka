@@ -373,10 +373,10 @@ Connection.prototype.respond = function(code, msg, func) {
     }
     if (!(Array.isArray(msg))) {
         // msg not an array, make it so:
-        messages = msg.toString().split(/\n/).filter(function (msg) { /\S/.test(msg) });
+        messages = msg.toString().split(/\n/).filter(function (msg) { return /\S/.test(msg) });
     } else {
         // copy
-        messages = msg.slice().filter(function (msg) { /\S/.test(msg) });
+        messages = msg.slice().filter(function (msg) { return /\S/.test(msg) });
     }
 
     if (code >= 400) {
