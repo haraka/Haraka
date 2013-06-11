@@ -338,6 +338,11 @@ exports.build_todo = function (todo, ws) {
 }
 
 exports.split_to_new_recipients = function (hmail, recipients, response, cb) {
+    if (recipients.length === hmail.todo.rcpt_to.length) {
+        // Split to new for no reason - increase refcount and return self
+        hmail.refcount++;
+        return cb(hmail);
+    }
     var plugin = this;
     var fname = _fname();
     var tmp_path = path.join(queue_dir, '.' + fname);
@@ -388,8 +393,10 @@ exports.split_to_new_recipients = function (hmail, recipients, response, cb) {
 
     ws.on('drain', write_more);
 
-    hmail.todo.rcpt_to = recipients;
-    plugin.build_todo(hmail.todo, ws, write_more);
+    var new_todo = JSON.parse(JSON.stringify(hmail.todo));
+    new_todo.rcpt_to = recipients;
+    new_todo.uuid = utils.uuid();
+    plugin.build_todo(new_todo, ws, write_more);
 }
 
 // TODOItem - queue file header data
@@ -406,6 +413,8 @@ function TODOItem (domain, recipients, transaction) {
 /////////////////////////////////////////////////////////////////////////////
 // HMailItem - encapsulates an individual outbound mail item
 
+var dummy_func = function () {}
+
 function HMailItem (filename, path, notes) {
     events.EventEmitter.call(this);
     var matches = filename.match(fn_re);
@@ -418,7 +427,9 @@ function HMailItem (filename, path, notes) {
     this.num_failures = matches[2];
     this.notes        = notes || {};
     this.refcount     = 1;
-    this.next_cb      = null;
+    this.todo         = null;
+    this.file_size    = 0;
+    this.next_cb      = dummy_func;
 
     this.size_file();
 }
