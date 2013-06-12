@@ -9,6 +9,8 @@ var MessageStream = require('./messagestream');
 
 var trans = exports;
 
+var MAX_HEADER_LINES = config.get('max_header_lines') || 1000;
+
 function Transaction() {
     this.uuid = null;
     this.mail_from = null;
@@ -57,7 +59,9 @@ Transaction.prototype.add_data = function(line) {
     }
     else if (this.header_pos === 0) {
         // Build up headers
-        this.header_lines.push(line);
+        if (this.header_lines.length < MAX_HEADER_LINES) {
+            this.header_lines.push(line);
+        }
     }
     else if (this.header_pos && this.parse_body) {
         this.body.parse_more(line);
@@ -65,6 +69,28 @@ Transaction.prototype.add_data = function(line) {
 };
 
 Transaction.prototype.end_data = function() {
+    if (this.header_lines.length && this.header.header_list.length === 0) {
+        // Headers not parsed yet - must be a busted email
+        // Strategy: Find first blank line, parse up to that as headers. Rest as body.
+        var header_pos = 0;
+        for (var i = 0; i < this.header_lines.length; i++) {
+            header_pos = i;
+            if (/^\s*$/.test(this.header_lines[i])) {
+                this.header_lines[i] = '\n';
+                break;
+            }
+        }
+        var body_lines = this.header_lines.splice(header_pos + 1);
+        this.header_lines = this.header_lines.splice(0, header_pos);
+        this.header.parse(this.header_lines);
+        this.header_pos = header_pos;
+        if (this.parse_body) {
+            this.body = this.body || new body.Body(this.header, {"banner": this.banner});
+            for (var i = 0; i < body_lines.length; i++) {
+                this.body.parse_more(body_lines[i]);
+            }
+        }
+    }
     if (this.header_pos && this.parse_body) {
         var data = this.body.parse_end();
     }
