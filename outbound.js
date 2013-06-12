@@ -215,7 +215,7 @@ exports.send_email = function () {
     while (match = re.exec(contents)) {
         var line = match[1];
         line = line.replace(/\n?$/, '\r\n'); // make sure it ends in \r\n
-        transaction.add_data(line);
+        transaction.add_data(new Buffer(line));
         contents = contents.substr(match[1].length);
         if (contents.length === 0) {
             break;

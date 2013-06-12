@@ -1216,9 +1216,7 @@ Connection.prototype.accumulate_data = function(line) {
         line[1] === 0x0d &&
         line[2] === 0x0a)
     {
-        this.transaction.message_stream.add_line_end(function () {
-            self.data_done();
-        });
+        self.data_done();
         return;
     }
 
@@ -1263,13 +1261,13 @@ Connection.prototype.data_done = function() {
         return;
     }
 
-    this.transaction.end_data();
-
-    // Record the start time of this hook as we can't take too long
-    // as the client will typically hang up after 2 to 3 minutes
-    // despite the RFC mandating that 10 minutes should be allowed.
-    this.data_post_start = Date.now();
-    plugins.run_hooks('data_post', this);
+    this.transaction.end_data(function () {
+        // Record the start time of this hook as we can't take too long
+        // as the client will typically hang up after 2 to 3 minutes
+        // despite the RFC mandating that 10 minutes should be allowed.
+        self.data_post_start = Date.now();
+        plugins.run_hooks('data_post', self);
+    });
 };
 
 Connection.prototype.data_post_respond = function(retval, msg) {

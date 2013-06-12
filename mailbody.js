@@ -38,7 +38,7 @@ Body.prototype.parse_child = function (line) {
     // check for MIME boundary
     if (line.substr(0, (this.boundary.length + 2)) === ('--' + this.boundary)) {
 
-        line = this.children[this.children.length -1].parse_end(line);
+        var output = this.children[this.children.length -1].parse_end(line);
 
         if (this.children[this.children.length -1].state === 'attachment') {
             var child = this.children[this.children.length - 1];
@@ -63,7 +63,7 @@ Body.prototype.parse_child = function (line) {
             this.children.push(bod);
             bod.state = 'headers';
         }
-        return line;
+        return output;
     }
     // Pass data into last child
     return this.children[this.children.length - 1].parse_more(line);
@@ -159,6 +159,7 @@ Body.prototype.parse_end = function (line) {
     if (!line) {
         line = '';
     }
+    
     // ignore these lines - but we could store somewhere I guess.
     if (this.body_text_encoded.length && this.bodytext.length === 0) {
         var buf = this.decode_function(this.body_text_encoded);
@@ -200,7 +201,6 @@ Body.prototype.parse_end = function (line) {
             // Now we find where to insert it and combine it with the original buf:
             if (this.is_html) {
                 var insert_pos = _get_html_insert_position(buf);
-
                 // copy start of buf into new_buf
                 buf.copy(new_buf, 0, 0, insert_pos);
 
