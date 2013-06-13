@@ -204,7 +204,7 @@ Body.prototype.parse_end = function (line) {
                 // copy start of buf into new_buf
                 buf.copy(new_buf, 0, 0, insert_pos);
 
-                // add in <p>
+                // add in <P>
                 new_buf[insert_pos++] = 60;
                 new_buf[insert_pos++] = 80;
                 new_buf[insert_pos++] = 62;
@@ -212,6 +212,7 @@ Body.prototype.parse_end = function (line) {
                 // copy all of banner into new_buf
                 banner_buf.copy(new_buf, insert_pos);
                 
+                // add in </P>
                 new_buf[banner_buf.length + insert_pos++] = 60;
                 new_buf[banner_buf.length + insert_pos++] = 47;
                 new_buf[banner_buf.length + insert_pos++] = 80;
@@ -219,7 +220,7 @@ Body.prototype.parse_end = function (line) {
 
                 // copy remainder of buf into new_buf, if there is buf remaining
                 if (buf.length > (insert_pos - 6)) {
-                    buf.copy(new_buf, insert_pos + banner_buf.length, insert_pos - 7);
+                    buf.copy(new_buf, insert_pos + banner_buf.length, insert_pos - 6);
                 }
             }
             else {
