@@ -103,10 +103,8 @@ Transaction.prototype.end_data = function(cb) {
     if (this.header_pos && this.parse_body) {
         var data = this.body.parse_end();
         if (data.length) {
-            data = data.replace(/^\./gm, '..').replace(/\r?\n/gm, '\r\n');
-            var line = new Buffer(data);
-
-            if (!this.discard_data) this.message_stream.add_line(line);
+            data = data.replace(/^\./gm, '..').replace(/\r?\n/gm, '\r\n') + '\r\n.\r\n';
+            if (!this.discard_data) this.message_stream.add_line(data);
         }
     }
 
@@ -140,7 +138,6 @@ Transaction.prototype.attachment_hooks = function (start, data, end) {
 };
 
 Transaction.prototype.set_banner = function (text, html) {
-    // throw "transaction.set_banner is currently non-functional";
     this.parse_body = true;
     if (!html) {
         html = text.replace(/\n/g, '<br/>\n');
