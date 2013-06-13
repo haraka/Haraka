@@ -224,9 +224,9 @@ Body.prototype.parse_end = function (line) {
             }
             else {
                 buf.copy(new_buf);
-                new_buf[buf.length] = 10; // \n
-                banner_buf.copy(new_buf, buf.length + 1);
-                new_buf[buf.length + banner_buf.length + 1] = 10; // \n
+                // new_buf[buf.length - 1] = 10; // \n
+                banner_buf.copy(new_buf, buf.length);
+                new_buf[buf.length + banner_buf.length] = 10; // \n
             }
 
             // Now convert back to base_64 or QP if required:
