@@ -152,7 +152,7 @@ function _get_html_insert_position (buf) {
             }
         }
     }
-    return buf.length - 1; // default is at the end
+    return buf.length; // default is at the end
 }
 
 Body.prototype.parse_end = function (line) {
@@ -196,7 +196,7 @@ Body.prototype.parse_end = function (line) {
             }
 
             // Allocate a new buffer: (6 or 1 is <p>...</p> vs \n...\n - correct that if you change those!)
-            var new_buf = new Buffer(buf.length + banner_buf.length + (this.is_html ? 6 : 1));
+            var new_buf = new Buffer(buf.length + banner_buf.length + (this.is_html ? 7 : 1));
 
             // Now we find where to insert it and combine it with the original buf:
             if (this.is_html) {
@@ -218,7 +218,7 @@ Body.prototype.parse_end = function (line) {
                 new_buf[banner_buf.length + insert_pos++] = 62;
 
                 // copy remainder of buf into new_buf, if there is buf remaining
-                if (buf.length > (insert_pos - 6)) {
+                if (buf.length > (insert_pos - 7)) {
                     buf.copy(new_buf, insert_pos + banner_buf.length, insert_pos - 7);
                 }
             }
