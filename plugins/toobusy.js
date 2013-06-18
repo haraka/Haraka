@@ -1,7 +1,7 @@
 // Stop accepting new connections when we are too busy
 
 var toobusy = require('toobusy');
-var was_busy = 0;
+var was_busy = false;
 
 exports.register = function () {
     var self = this;
@@ -28,8 +28,9 @@ exports.hook_lookup_rdns = function (next, connection) {
             var maxLag = toobusy.maxLag();
             this.logcrit('deferring connections: lag=' + currentLag + ' max=' + maxLag);
         }
+        was_busy = true;
         return next(DENYSOFTDISCONNECT, 'Too much load; please try again later');
     }
-    was_busy = 0;
+    was_busy = false;
     return next();
 }
