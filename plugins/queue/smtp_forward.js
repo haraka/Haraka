@@ -6,6 +6,7 @@
 var smtp_client_mod = require('./smtp_client');
 
 exports.hook_queue = function (next, connection) {
+    var self = this;
     var config = this.config.get('smtp_forward.ini');
     connection.loginfo(this, "forwarding to " + config.main.host + ":" + config.main.port);
     smtp_client_mod.get_client_plugin(this, connection, config, function (err, smtp_client) {
@@ -14,6 +15,9 @@ exports.hook_queue = function (next, connection) {
         var send_rcpt = function () {
             if (!connection.transaction) {
                 // This likely means the sender went away on us, cleanup.
+                connection.logwarn(
+                  self, "transaction went away, releasing smtp_client"
+                );
                 smtp_client.release();
                 return;
             }
