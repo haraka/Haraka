@@ -12,6 +12,12 @@ exports.hook_queue = function (next, connection) {
         smtp_client.next = next;
         var rcpt = 0;
         var send_rcpt = function () {
+            if (!connection.transaction) {
+                // This likely means the sender went away on us, cleanup.
+                smtp_client.release();
+                return;
+            }
+
             if (rcpt < connection.transaction.rcpt_to.length) {
                 smtp_client.send_command('RCPT',
                     'TO:' + connection.transaction.rcpt_to[rcpt]);
