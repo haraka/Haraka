@@ -75,6 +75,7 @@ exports.date_to_str = function (d) {
 }
 
 exports.decode_qp = function (line) {
+    line = line.replace(/\r\n/g,"\n").replace(/[ \t]+\r?\n/g,"\n");
     if (! /=/.test(line)) {
         // this may be a pointless optimisation...
         return new Buffer(line);
@@ -83,7 +84,8 @@ exports.decode_qp = function (line) {
     var buf = new Buffer(line.length);
     var pos = 0;
     for (var i=0,l=line.length; i < l; i++) {
-        if (line[i] === '=') {
+        if (line[i] === '=' &&
+            /=[0-9a-fA-F]{2}/.test(line[i] + line[i+1] + line[i+2])) {
             i++;
             buf[pos] = parseInt(line[i] + line[i+1], 16);
             i++;
@@ -106,7 +108,7 @@ exports.encode_qp = function (str) {
         return _char_to_qp(p1);
     }).replace(/([ \t]+)$/gm, function (orig, p1) {
         return p1.split('').map(_char_to_qp).join('');
-    }).replace(/([\s\S]*?^[^\n]{73}(?:[^=\n]{2}(?![^=\n]{0,1}$)|[^=\n](?![^=\n]{0,2}$)|(?![^=\n]{0,3}$)))/gm,
+    }).replace(/([\s\S]*?[^\n]{73}(?:[^=\n]{2}(?![^=\n]{0,1}$)|[^=\n](?![^=\n]{0,2}$)|(?![^=\n]{0,3}$)))/gm,
         function (orig, p1) {
             broken_lines += p1 + "=\n";
             return '';
