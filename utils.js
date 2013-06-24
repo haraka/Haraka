@@ -101,19 +101,56 @@ exports.decode_qp = function (line) {
 function _char_to_qp (ch) {
     return "=" + _pad(ch.charCodeAt(0).toString(16).toUpperCase(), 2);
 }
+
 // Shameless attempt to copy from Perl's MIME::QuotedPrint::Perl code.
 exports.encode_qp = function (str) {
-    var broken_lines = '';
     str = str.replace(/([^\ \t\n!"#\$%&'()*+,\-.\/0-9:;<>?\@A-Z\[\\\]^_`a-z{|}~])/g, function (orig, p1) {
         return _char_to_qp(p1);
     }).replace(/([ \t]+)$/gm, function (orig, p1) {
         return p1.split('').map(_char_to_qp).join('');
-    }).replace(/([\s\S]*?[^\n]{73}(?:[^=\n]{2}(?![^=\n]{0,1}$)|[^=\n](?![^=\n]{0,2}$)|(?![^=\n]{0,3}$)))/gm,
-        function (orig, p1) {
-            broken_lines += p1 + "=\n";
-            return '';
-        });
-    return broken_lines + str;
+    });
+
+    // Now shorten lines to 76 chars, but don't break =XX encodes.
+    // Method: iterate over to char 73.
+    //   If char 74, 75 or 76 is = we need to break before the =.
+    //   Otherwise break at 76.
+    var cur_length = 0;
+    var out = '';
+    for (var i=0; i<str.length; i++) {
+        if (str[i] === '\n') {
+            out += '\n';
+            cur_length = 0;
+            continue;
+        }
+
+        cur_length++;
+        if (cur_length <= 73) {
+            out += str[i];
+        }
+        else if (cur_length > 73 && cur_length < 76) {
+            if (str[i] === '=') {
+                out += '=\n=';
+                cur_length = 1;
+            }
+            else {
+                out += str[i];
+            }
+        }
+        else {
+            // Otherwise got to char 76
+
+            // Don't insert '=\n' if end of string or next char is already \n:
+            if ((i === (str.length - 1)) || (str[i+1] === '\n')) {
+                out += str[i];
+            }
+            else {
+                out += '=\n' + str[i];
+                cur_length = 1;
+            }
+        }
+    }
+
+    return out;
 }
 
 var versions   = process.version.split('.'),
