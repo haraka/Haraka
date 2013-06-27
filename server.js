@@ -103,32 +103,43 @@ Server.createServer = function (params) {
     if (cluster && config_data.main.nodes) {
         Server.cluster = cluster; 
         if (cluster.isMaster) {
-            this.daemonize(config_data);
-            // Fork workers
-            var workers = (config_data.main.nodes === 'cpus') ? 
-                os.cpus().length : config_data.main.nodes;
-            for (var i=0; i<workers; i++) {
-                cluster.fork({ CLUSTER_MASTER_PID: process.pid });
-            }
-            cluster.on('online', function (worker) {
-                logger.lognotice('worker ' + worker.id + ' started pid=' + worker.process.pid);
-            });
-            cluster.on('listening', function (worker, address) {
-                logger.lognotice('worker ' + worker.id + ' listening on ' + address.address + ':' + address.port);
-            });
-            cluster.on('exit', function (worker, code, signal) {
-                if (signal) {
-                    logger.lognotice('worker ' + worker.id + ' killed by signal ' + signal);
+            out.scan_queue_pids(function (err, pids) {
+                if (err) {
+                    Server.logcrit("Scanning queue failed. Shutting down.");
+                    process.exit(1);
                 }
-                else if (code !== 0) {
-                    logger.lognotice('worker ' + worker.id + ' exited with error code: ' + code);
+                Server.daemonize(config_data);
+                // Fork workers
+                var workers = (config_data.main.nodes === 'cpus') ? 
+                    os.cpus().length : config_data.main.nodes;
+                var new_workers = [];
+                for (var i=0; i<workers; i++) {
+                    new_workers.push(cluster.fork({ CLUSTER_MASTER_PID: process.pid }));
                 }
-                if (signal || code !== 0) {
-                    // Restart worker
-                    cluster.fork({ CLUSTER_MASTER_PID: process.pid });
+                for (var i=0; i<pids.length; i++) {
+                    new_workers[i % new_workers.length].send({event: 'load_pid_queue', data: pids[i]});
                 }
+                cluster.on('online', function (worker) {
+                    logger.lognotice('worker ' + worker.id + ' started pid=' + worker.process.pid);
+                });
+                cluster.on('listening', function (worker, address) {
+                    logger.lognotice('worker ' + worker.id + ' listening on ' + address.address + ':' + address.port);
+                });
+                cluster.on('exit', function (worker, code, signal) {
+                    if (signal) {
+                        logger.lognotice('worker ' + worker.id + ' killed by signal ' + signal);
+                    }
+                    else if (code !== 0) {
+                        logger.lognotice('worker ' + worker.id + ' exited with error code: ' + code);
+                    }
+                    if (signal || code !== 0) {
+                        // Restart worker
+                        var new_worker = cluster.fork({ CLUSTER_MASTER_PID: process.pid });
+                        new_worker.send({event: 'load_pid_queue', data: worker.process.pid});
+                    }
+                });
+                plugins.run_hooks('init_master', Server);
             });
-            plugins.run_hooks('init_master', Server);
         }
         else {
             // Workers
@@ -190,7 +201,10 @@ Server.init_master_respond = function (retval, msg) {
     switch(retval) {
         case constants.ok:
         case constants.cont:
-                out.load_queue();
+                // Load the queue if we're just one process
+                if (!(cluster && config.get('smtp.ini').main.nodes)) {
+                    out.load_queue();
+                }
                 break;
         default:
                 Server.logerror("init_master returned error" + ((msg) ? ': ' + msg : ''));
