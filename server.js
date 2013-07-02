@@ -66,6 +66,17 @@ Server.daemonize = function (config_data) {
     }
 }
 
+Server.flushQueue = function () {
+    if (Server.cluster) {
+        for (var id in cluster.workers) {
+            cluster.workers[id].send({event: 'flush_queue'});
+        }
+    }
+    else {
+        out.flush_queue();
+    }
+}
+
 Server.createServer = function (params) {
     var config_data = config.get('smtp.ini');
     var param_key;
