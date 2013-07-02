@@ -1,5 +1,7 @@
 // process_title
 
+var outbound = require('./outbound');
+
 exports.hook_init_master = function (next, server) {
     server.notes.pt_connections = 0;
     server.notes.pt_concurrent = 0;
@@ -115,10 +117,11 @@ var setupInterval = function (title, server) {
         var mps = server.notes.pt_messages - server.notes.pt_mps_diff;
         if (mps > server.notes.pt_mps_max) server.notes.pt_mps_max = mps;
         server.notes.pt_mps_diff = server.notes.pt_messages;
+        var out = outbound.get_stats();
         // Update title
         process.title = title + ' cn=' + server.notes.pt_connections + 
             ' cc=' + server.notes.pt_concurrent + ' cps=' + cps + '/' + av_cps +
             '/' + server.notes.pt_cps_max + ' mps=' + mps + '/' + av_mps + '/' +
-            server.notes.pt_mps_max;
+            server.notes.pt_mps_max + ' out=' + out + ' ';
     }, 1000);
 }
