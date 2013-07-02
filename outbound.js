@@ -102,10 +102,10 @@ exports.scan_queue_pids = function (cb) {
 }
 
 process.on('message', function (msg) {
-    if (msg.event && msg.event === 'load_pid_queue') {
+    if (msg.event && msg.event === 'outbound.load_pid_queue') {
         exports.load_pid_queue(msg.data);
     }
-    else if (msg.event && msg.event === 'flush_queue') {
+    else if (msg.event && msg.event === 'outbound.flush_queue') {
         exports.flush_queue();
     }
     // otherwise ignore the message
@@ -193,7 +193,18 @@ exports.load_queue_files = function (pid, cb_name, files) {
                     cb();
                 });
             }
+            else if (/^\./.test(file)) {
+                // dot-file...
+                self.logwarn("Removing left over dot-file: " + file);
+                return fs.unlink(queue_dir + "/" + file, function (err) {
+                    if (err) {
+                        self.logerror("Error removing dot-file: " + file + ": " + err);
+                    }
+                    cb();
+                });
+            }
             else {
+                // Do this because otherwise we blow the stack
                 async.setImmediate(cb);
             }
         }, function (err) {

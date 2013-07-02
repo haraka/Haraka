@@ -69,7 +69,7 @@ Server.daemonize = function (config_data) {
 Server.flushQueue = function () {
     if (Server.cluster) {
         for (var id in cluster.workers) {
-            cluster.workers[id].send({event: 'flush_queue'});
+            cluster.workers[id].send({event: 'outbound.flush_queue'});
         }
     }
     else {
@@ -128,7 +128,7 @@ Server.createServer = function (params) {
                     new_workers.push(cluster.fork({ CLUSTER_MASTER_PID: process.pid }));
                 }
                 for (var i=0; i<pids.length; i++) {
-                    new_workers[i % new_workers.length].send({event: 'load_pid_queue', data: pids[i]});
+                    new_workers[i % new_workers.length].send({event: 'outbound.load_pid_queue', data: pids[i]});
                 }
                 cluster.on('online', function (worker) {
                     logger.lognotice('worker ' + worker.id + ' started pid=' + worker.process.pid);
@@ -146,7 +146,7 @@ Server.createServer = function (params) {
                     if (signal || code !== 0) {
                         // Restart worker
                         var new_worker = cluster.fork({ CLUSTER_MASTER_PID: process.pid });
-                        new_worker.send({event: 'load_pid_queue', data: worker.process.pid});
+                        new_worker.send({event: 'outbound.load_pid_queue', data: worker.process.pid});
                     }
                 });
                 plugins.run_hooks('init_master', Server);

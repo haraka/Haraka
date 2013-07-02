@@ -17,14 +17,14 @@ exports.hook_init_master = function (next, server) {
         var cluster = server.cluster;
         var recvMsg = function (msg) {
             switch (msg) {
-                case 'connect':
+                case 'process_title.connect':
                     server.notes.pt_connections++;
                     server.notes.pt_concurrent++;
                     break;
-                case 'disconnect':
+                case 'process_title.disconnect':
                     server.notes.pt_concurrent--;
                     break;
-                case 'message':
+                case 'process_title.message':
                     server.notes.pt_messages++;
                     break;
                 default:
@@ -57,11 +57,9 @@ exports.hook_init_child = function (next, server) {
 exports.hook_lookup_rdns = function (next, connection) {
     var server = connection.server;
     connection.notes.pt_connect_run = true;
-    var title = 'Haraka';  
     if (server.cluster) {
-        title = 'Haraka (worker)';
         var worker = server.cluster.worker;
-        worker.send('connect');
+        worker.send('process_title.connect');
     }
     server.notes.pt_connections++;
     server.notes.pt_concurrent++;
@@ -76,16 +74,14 @@ exports.hook_disconnect = function (next, connection) {
     // will exhibit this behaviour.
     if (!connection.notes.pt_connect_run) {
         if (server.cluster) {
-            server.cluster.worker.send('connect');
+            server.cluster.worker.send('process_title.connect');
         }
         server.notes.pt_connections++;
         server.notes.pt_concurrent++;
     }
-    var title = 'Haraka';
     if (server.cluster) {
-        title = 'Haraka (worker)';
         var worker = server.cluster.worker;
-        worker.send('disconnect');
+        worker.send('process_title.disconnect');
     }
     server.notes.pt_concurrent--;
     return next();
@@ -93,11 +89,9 @@ exports.hook_disconnect = function (next, connection) {
 
 exports.hook_data = function (next, connection) {
     var server = connection.server;
-    var title = 'Haraka';
     if (server.cluster) {
-        title = 'Haraka (worker)';
         var worker = server.cluster.worker;
-        worker.send('message');
+        worker.send('process_title.message');
     }
     server.notes.pt_messages++;
     return next();
