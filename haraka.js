@@ -46,7 +46,7 @@ process.on('uncaughtException', function (err) {
     });
 });
 
-process.on('SIGUSR1', function () {
+process.on('SIGHUP', function () {
     logger.lognotice("Flushing the temp fail queue");
     server.flushQueue();
 })

@@ -15,7 +15,7 @@ For statistics on outbound mail use the `process_title` plugin. See the
 documentation for that plugin for details.
 
 To flush the outbound queue (for temporary failed mails) hit the Haraka master
-process with the SIGUSR1 signal (via the `kill` command line tool).
+process with the SIGHUP signal (via the `kill` command line tool).
 
 Outbound Configuration Files
 ----------------------------
