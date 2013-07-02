@@ -11,6 +11,12 @@ flag to `true` via a plugin. The simplest way of doing that is to use SMTP
 AUTH, and have the client authenticate. For example using the `auth/flat_file`
 plugin. However it is very simple to write a custom plugin to do this.
 
+For statistics on outbound mail use the `process_title` plugin. See the
+documentation for that plugin for details.
+
+To flush the outbound queue (for temporary failed mails) hit the Haraka master
+process with the SIGUSR1 signal (via the `kill` command line tool).
+
 Outbound Configuration Files
 ----------------------------
 
@@ -68,8 +74,9 @@ The MX record is sent via next(OK, mx) and can be one of:
     * ipaddress
     * ipaddress:port
 * An MX object of the form: `{priority: 0, exchange: hostname}` and optionally
-a `port` value to specify an alternate port.
-* A list of MX objects in an array.
+a `port` value to specify an alternate port, and a `bind` value to specify an
+outbound IP address to bind to.
+* A list of MX objects in an array, each in the same format as above.
 
 ### The bounce hook
 
