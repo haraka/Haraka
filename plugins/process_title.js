@@ -29,7 +29,6 @@ exports.hook_init_master = function (next, server) {
                     server.notes.pt_messages++;
                     break;
                 case 'process_title.outbound_stats':
-                    server.loginfo("Outbound stats: " + msg.data);
                     var out_stats = msg.data.split('/');
                     for (var i=0; i<out_stats.length; i++) {
                         server.notes.pt_new_out_stats[i] += parseInt(out_stats[i], 10);
@@ -38,7 +37,6 @@ exports.hook_init_master = function (next, server) {
                     // Check if we got all results back yet
                     if (server.notes.pt_new_out_stats[3] === Object.keys(cluster.workers).length) {
                         server.notes.pt_out_stats = server.notes.pt_new_out_stats.slice(0,3).join('/');
-                        server.loginfo("Got all stats. Setting as pt_out_stats: " + server.notes.pt_out_stats);
                         server.notes.pt_new_out_stats = [0,0,0,0];
                     }
                 default:
