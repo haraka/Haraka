@@ -157,6 +157,7 @@ function Connection(client, server) {
     this.pipelining = 0;
     this.relaying = false;
     this.disconnected = false;
+    this.disconnect_hook_run = false;
     this.esmtp = false;
     this.last_response = null;
     this.remote_close = false;
@@ -428,13 +429,13 @@ Connection.prototype.fail = function (err) {
 }
 
 Connection.prototype.disconnect = function() {
-    if (this.disconnected) return;
+    if (this.disconnected || this.disconnect_hook_run) return;
     this.reset_transaction();
+    this.disconnect_hook_run = true;
     plugins.run_hooks('disconnect', this);
 };
 
 Connection.prototype.disconnect_respond = function () {
-    this.disconnected = true;
     var logdetail = [
         'ip='    + this.remote_ip,
         'rdns="' + ((this.remote_host) ? this.remote_host : '') + '"',
@@ -456,6 +457,7 @@ Connection.prototype.disconnect_respond = function () {
         'time='  + (Date.now() - this.start_time)/1000,
     ];
     this.lognotice('disconnect ' + logdetail.join(' '));
+    this.disconnected = true;
     this.client.end();
 };
 
