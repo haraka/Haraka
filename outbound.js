@@ -227,7 +227,7 @@ exports.load_queue_files = function (pid, cb_name, files) {
                 return fs.unlink(queue_dir + "/" + file, function () {});
             }
 
-            var matches = filename.match(fn_re);
+            var matches = file.match(fn_re);
             if (!matches) {
                 self.logerror("Unrecognised file in queue folder: " + file);
                 return;
