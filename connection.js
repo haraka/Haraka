@@ -179,6 +179,7 @@ function Connection(client, server) {
     this.data_post_start = null;
     this.proxy = false;
     this.proxy_timer = false;
+    this.paused = false;
     setupClient(this);
 }
 
@@ -290,7 +291,13 @@ Connection.prototype._process_data = function() {
         if (this.state === STATE_PAUSE_DATA) {
             return;
         }
+        // Pause the input while we process this buffer
+        if (!this.paused) {
+            this.paused = true;
+            this.client.pause();
+        }
         var this_line = this.current_data.slice(0, offset+1);
+        this.check_input_length(this_line);
         // Hack: bypass this code to allow HAProxy's PROXY extension
         if (this.state === STATE_PAUSE && this.proxy && /^PROXY /.test(this_line)) {
             if (this.proxy_timer) clearTimeout(this.proxy_timer);
@@ -357,7 +364,56 @@ Connection.prototype._process_data = function() {
             this.process_line(this_line);
         }
     }
+
+    if (this.current_data && this.current_data.length) {
+        // If we get here then we have data left over in the buffer
+        // that does not contain a line, so we can check for lines 
+        // that exceed the maximum allowable length as per the RFC
+        this.check_input_length(this.current_data);
+    }
+
+    // Resume the paused buffer now we have processed all the lines
+    if (this.paused) {
+        this.paused = false;
+        this.client.resume();
+    }
 };
+
+Connection.prototype.check_input_length = function(buf) {
+    // Implement RFC limits on line length
+    var self = this;
+    var length = buf.length;
+    // Exclude CR, LF and any dot stuffing from length
+    if (length >= 2) {
+       if (this.state === STATE_DATA || this.state === STATE_PAUSE_DATA) {
+           if (buf[0] === 0x2e && buf[1] === 0x2e) length--;
+       }
+       if (buf[buf.length] === 0x0d || buf[buf.length] === 0x0a) length--;
+       if (buf[buf.length-1] === 0x0a) length--;
+    }
+
+    // Command length (RFC 5321 4.5.3.1.4)
+    // Should not exceed 512 octets including CRLF
+    if (this.state !== STATE_DATA       &&
+        this.state !== STATE_PAUSE_DATA &&
+        length > 510)
+    {
+        this.client.pause();
+        buf = null;
+        this.current_data = null;
+        return this.respond(521, "Command line too long", function () {
+            self.disconnect();
+        });
+    }
+    else {
+        // We must be in STATE_DATA or STATE_PAUSE_DATA
+        // Text line limit (RFC 5321 4.5.3.1.6)
+        // Should not exceed 1000 octets including CRLF but excluding leading dot
+        if (length > 998) {
+            this.logwarn('DATA line length (' + length + ') exceeds 998 octets!');
+        }
+    }    
+}
 
 Connection.prototype.respond = function(code, msg, func) {
     var uuid = '';
