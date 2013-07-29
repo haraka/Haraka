@@ -376,7 +376,7 @@ Connection.prototype._process_data = function() {
         // If we get here then we have data left over in the buffer
         // that does not contain a line, so we can check for lines 
         // that exceed the maximum allowable length as per the RFC
-        this.check_input_length(this.current_data);
+        this.check_input_length();
     }
 
     // Resume the paused buffer now we have processed all the lines
