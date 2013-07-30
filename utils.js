@@ -159,8 +159,9 @@ var versions   = process.version.split('.'),
 
 exports.existsSync = require((version > 0 || subversion >= 8) ? 'fs' : 'path').existsSync;
 
-exports.indexOfLF = function (buf) {
+exports.indexOfLF = function (buf, maxlength) {
     for (var i=0; i<buf.length; i++) {
+        if (maxlength && (i === maxlength)) break;
         if (buf[i] === 0x0a) return i;
     }
     return -1;
