@@ -99,6 +99,23 @@ different levels available.
   The maximum number of "Received" headers allowed in an email. This is a
   simple protection against mail loops. Defaults to 100.
 
+* max_line_length
+
+  The maximum length of lines in SMTP session commands (e.g. RCPT, HELO etc).
+  Defaults to 512 (bytes) which is mandated by RFC 5321 §4.5.3.1.4. Clients
+  exceeding this limit will be immediately disconnected with a "521 Command
+  line too long" error.
+
+* max_data_line_length
+
+  The maximum length of lines in the DATA section of emails. Defaults to 992
+  (bytes) which is the limit set by Sendmail. When this limit is exceeded the
+  three bytes "\r\n " (0x0d 0x0a 0x20) are inserted into the stream to "fix"
+  it. This has the potential to "break" some email, but makes it more likely
+  to be accepted by upstream/downstream services, and is the same behaviour
+  as Sendmail. Also when the data line length limit is exceeded
+  `transaction.notes.data_line_length_exceeded` is set to `true`.
+
 * outbound.concurrency_max
 
   Maximum concurrency to use when delivering mails outbound. Defaults to 100.
