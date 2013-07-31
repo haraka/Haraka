@@ -62,7 +62,7 @@ exports.check_plain_passwd = function (connection, user, passwd, cb) {
 
 exports.check_cram_md5_passwd = function (ticket, user, passwd, cb) {
     this.get_plain_passwd(user, function (plain_pw) {
-        if (plain_pw === null) {
+        if (plain_pw == null) {
             return cb(false);
         }
         
