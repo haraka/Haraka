@@ -285,9 +285,9 @@ Connection.prototype._process_data = function() {
     // connection is dropped; we'll end up in the function forever.
     if (this.disconnected) return;
 
-    var maxlength = 512;
+    var maxlength = config.get('max_line_length') || 512;
     if (this.state === STATE_PAUSE_DATA || this.state === STATE_DATA) {
-        maxlength = 992;
+        maxlength = config.get('max_data_line_length') || 992;
     }
 
     var offset;
