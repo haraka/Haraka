@@ -113,7 +113,8 @@ different levels available.
   three bytes "\r\n " (0x0d 0x0a 0x20) are inserted into the stream to "fix"
   it. This has the potential to "break" some email, but makes it more likely
   to be accepted by upstream/downstream services, and is the same behaviour
-  as Sendmail.
+  as Sendmail. Also when the data line length limit is exceeded
+  `transaction.notes.data_line_length_exceeded` is set to `true`.
 
 * outbound.concurrency_max
 
