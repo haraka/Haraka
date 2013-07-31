@@ -285,13 +285,8 @@ Connection.prototype._process_data = function() {
     // connection is dropped; we'll end up in the function forever.
     if (this.disconnected) return;
 
-    var maxlength = config.get('max_line_length') || 512;
-    if (this.state === STATE_PAUSE_DATA || this.state === STATE_DATA) {
-        maxlength = config.get('max_data_line_length') || 992;
-    }
-
     var offset;
-    while (this.current_data && ((offset = indexOfLF(this.current_data, maxlength)) !== -1)) {
+    while (this.current_data && ((offset = indexOfLF(this.current_data)) !== -1)) {
         if (this.state === STATE_PAUSE_DATA) {
             return;
         }
@@ -360,29 +355,6 @@ Connection.prototype._process_data = function() {
         else {
             this.current_data = this.current_data.slice(this_line.length);
             this.process_line(this_line);
-        }
-    }
-
-    if (this.current_data && (this.current_data.length > maxlength) && (indexOfLF(this.current_data, maxlength) == -1)) {
-        if (this.state !== STATE_DATA       &&
-            this.state !== STATE_PAUSE_DATA)
-        {
-            // In command mode, reject:
-            this.process_data = function () {};
-            return this.respond(521, "Command line too long", function () {
-                self.disconnect();
-            });
-        }
-        else {
-            this.logwarn('DATA line length (' + this.current_data.length + ') exceeds limit of ' + maxlength + ' bytes');
-            this.transaction.notes.data_line_length_exceeded = true;
-            var b = Buffer.concat([
-                this.current_data.slice(0, maxlength - 2),
-                new Buffer("\r\n ", 'utf8'),
-                this.current_data.slice(maxlength - 2)
-            ], this.current_data.length + 3);
-            this.current_data = b;
-            return this._process_data();
         }
     }
 };
@@ -458,9 +430,11 @@ Connection.prototype.fail = function (err) {
 
 Connection.prototype.disconnect = function() {
     if (this.disconnected || this.disconnect_hook_run) return;
-    this.reset_transaction();
-    this.disconnect_hook_run = true;
-    plugins.run_hooks('disconnect', this);
+    var self = this;
+    this.reset_transaction(function () {
+        self.disconnect_hook_run = true;
+        plugins.run_hooks('disconnect', self);
+    });
 };
 
 Connection.prototype.disconnect_respond = function () {
@@ -500,22 +474,34 @@ Connection.prototype.tran_uuid = function () {
     return this.uuid + '.' + this.tran_count;
 }
 
-Connection.prototype.reset_transaction = function() {
+Connection.prototype.reset_transaction = function(cb) {
     if (this.transaction) {
-        this.transaction.message_stream.destroy();
+        plugins.run_hooks('reset_transaction', this, cb);
     }
-    delete this.transaction;
+    else {
+        delete this.transaction;
+        if (cb) cb();
+    }
 };
 
-Connection.prototype.init_transaction = function() {
-    this.transaction = trans.createTransaction(this.tran_uuid());
-    // Catch any errors from the message_stream
-    var self = this;
-    this.transaction.message_stream.on('error', function (err) {
-        self.logcrit('message_stream error: ' + err.message);
-        self.respond('421', 'Internal Server Error', function () {
-            self.disconnect();
-        });
+Connection.prototype.reset_transaction_respond = function (retval, msg, cb) {
+    this.transaction.message_stream.destroy();
+    delete this.transaction;
+    if (cb) cb();
+};
+
+Connection.prototype.init_transaction = function(cb) {
+   var self = this;
+   this.reset_transaction(function () {
+       self.transaction = trans.createTransaction(self.tran_uuid());
+       // Catch any errors from the message_stream
+       self.transaction.message_stream.on('error', function (err) {
+           self.logcrit('message_stream error: ' + err.message);
+           self.respond('421', 'Internal Server Error', function () {
+               self.disconnect();
+           });
+       });
+       if (cb) cb();
     });
 }
 
@@ -1106,9 +1092,11 @@ Connection.prototype.cmd_mail = function(line) {
         }
     } 
     
-    this.init_transaction();
-    this.transaction.mail_from = from
-    plugins.run_hooks('mail', this, [from, params]);
+    var self = this;
+    this.init_transaction(function () {
+        self.transaction.mail_from = from
+        plugins.run_hooks('mail', self, [from, params]);
+    });
 };
 
 Connection.prototype.cmd_rcpt = function(line) {
