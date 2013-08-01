@@ -513,8 +513,10 @@ Connection.prototype.reset_transaction = function(cb) {
 };
 
 Connection.prototype.reset_transaction_respond = function (retval, msg, cb) {
-    this.transaction.message_stream.destroy();
-    delete this.transaction;
+    if (this.transaction) {
+        this.transaction.message_stream.destroy();
+        delete this.transaction;
+    }
     if (cb) cb();
 };
 
