@@ -188,7 +188,11 @@ plugins.run_hooks = function (hook, object, params) {
     if (hook != 'log')
         object.logdebug("running " + hook + " hooks");
     
-    if (hook != 'deny' && hook != 'log' && object.hooks_to_run && object.hooks_to_run.length) {
+    if (hook != 'deny' && hook != 'log' &&
+        hook != 'reset_transaction' &&
+        hook != 'disconnect' && 
+        object.hooks_to_run && object.hooks_to_run.length) 
+    {
         throw new Error("We are already running hooks! Fatal error!");
     }
 
