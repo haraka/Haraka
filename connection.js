@@ -507,7 +507,7 @@ Connection.prototype.reset_transaction = function(cb) {
         plugins.run_hooks('reset_transaction', this, cb);
     }
     else {
-        delete this.transaction;
+        this.transaction = null;
         if (cb) cb();
     }
 };
@@ -515,7 +515,7 @@ Connection.prototype.reset_transaction = function(cb) {
 Connection.prototype.reset_transaction_respond = function (retval, msg, cb) {
     if (this.transaction) {
         this.transaction.message_stream.destroy();
-        delete this.transaction;
+        this.transaction = null;
     }
     if (cb) cb();
 };
