@@ -458,9 +458,11 @@ Connection.prototype.fail = function (err) {
 
 Connection.prototype.disconnect = function() {
     if (this.disconnected || this.disconnect_hook_run) return;
-    this.reset_transaction();
-    this.disconnect_hook_run = true;
-    plugins.run_hooks('disconnect', this);
+    var self = this;
+    this.reset_transaction(function () {
+        self.disconnect_hook_run = true;
+        plugins.run_hooks('disconnect', self);
+    });
 };
 
 Connection.prototype.disconnect_respond = function () {
@@ -500,22 +502,36 @@ Connection.prototype.tran_uuid = function () {
     return this.uuid + '.' + this.tran_count;
 }
 
-Connection.prototype.reset_transaction = function() {
+Connection.prototype.reset_transaction = function(cb) {
     if (this.transaction) {
-        this.transaction.message_stream.destroy();
+        plugins.run_hooks('reset_transaction', this, cb);
     }
-    delete this.transaction;
+    else {
+        this.transaction = null;
+        if (cb) cb();
+    }
 };
 
-Connection.prototype.init_transaction = function() {
-    this.transaction = trans.createTransaction(this.tran_uuid());
-    // Catch any errors from the message_stream
-    var self = this;
-    this.transaction.message_stream.on('error', function (err) {
-        self.logcrit('message_stream error: ' + err.message);
-        self.respond('421', 'Internal Server Error', function () {
-            self.disconnect();
-        });
+Connection.prototype.reset_transaction_respond = function (retval, msg, cb) {
+    if (this.transaction) {
+        this.transaction.message_stream.destroy();
+        this.transaction = null;
+    }
+    if (cb) cb();
+};
+
+Connection.prototype.init_transaction = function(cb) {
+   var self = this;
+   this.reset_transaction(function () {
+       self.transaction = trans.createTransaction(self.tran_uuid());
+       // Catch any errors from the message_stream
+       self.transaction.message_stream.on('error', function (err) {
+           self.logcrit('message_stream error: ' + err.message);
+           self.respond('421', 'Internal Server Error', function () {
+               self.disconnect();
+           });
+       });
+       if (cb) cb();
     });
 }
 
@@ -1106,9 +1122,11 @@ Connection.prototype.cmd_mail = function(line) {
         }
     } 
     
-    this.init_transaction();
-    this.transaction.mail_from = from
-    plugins.run_hooks('mail', this, [from, params]);
+    var self = this;
+    this.init_transaction(function () {
+        self.transaction.mail_from = from
+        plugins.run_hooks('mail', self, [from, params]);
+    });
 };
 
 Connection.prototype.cmd_rcpt = function(line) {
