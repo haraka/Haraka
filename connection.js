@@ -368,6 +368,8 @@ Connection.prototype._process_data = function() {
             this.state !== STATE_PAUSE_DATA)
         {
             // In command mode, reject:
+            this.client.pause();
+            this.current_data = null;
             this.process_data = function () {};
             return this.respond(521, "Command line too long", function () {
                 self.disconnect();
