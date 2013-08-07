@@ -633,7 +633,7 @@ HMailItem.prototype.read_todo = function () {
         // as no filesystem on the planet should be that dumb...
         tl_reader.destroy();
         var todo_len = (buf[0] << 24) + (buf[1] << 16) + (buf[2] << 8) + buf[3];
-        var td_reader = fs.createReadStream(self.path, {encoding: 'utf8', start: 4, end: todo_len + 3});
+        var td_reader = fs.createReadStream(self.path, {encoding: 'binary', start: 4, end: todo_len + 3});
         self.data_start = todo_len + 4;
         var todo = '';
         td_reader.on('data', function (str) {
@@ -646,9 +646,9 @@ HMailItem.prototype.read_todo = function () {
             }
         });
         td_reader.on('end', function () {
-            if (todo.length === todo_len) {
-                self.logerror("Didn't find enough data in todo!");
-                self.emit('error', "Didn't find enough data in todo!");
+            if (todo.length !== todo_len) {
+                self.logerror("Didn't find right amount of data in todo!");
+                self.emit('error', "Didn't find right amount of data in todo!");
             }
         })
     });
