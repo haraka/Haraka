@@ -647,8 +647,13 @@ HMailItem.prototype.read_todo = function () {
         });
         td_reader.on('end', function () {
             if (todo.length !== todo_len) {
-                self.logerror("Didn't find right amount of data in todo!");
-                self.emit('error', "Didn't find right amount of data in todo!");
+                self.logcrit("Didn't find right amount of data in todo!");
+                fs.rename(self.path, path.join(queue_dir, "error." + self.filename), function (err) {
+                    if (err) {
+                        self.logerror("Error creating error file after todo read failure (" + self.filename + "): " + err);
+                    }
+                });
+                self.emit('error', "Didn't find right amount of data in todo!"); // Note nothing picks this up yet
             }
         })
     });
