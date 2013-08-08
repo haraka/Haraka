@@ -953,9 +953,9 @@ Connection.prototype.rcpt_respond = function(retval, msg) {
                 if (retval !== constants.cont) {
                     this.logalert("No plugin determined if relaying was allowed");
                 }
-                this.respond(450, "I cannot deliver mail for " + rcpt.format(), function() {
-                    self.transaction.rcpt_count.tempfail++;
-                    self.rcpt_count.tempfail++;
+                this.respond(550, "I cannot deliver mail for " + rcpt.format(), function() {
+                    self.transaction.rcpt_count.reject++;
+                    self.rcpt_count.reject++;
                     self.transaction.rcpt_to.pop();
                 });
     }
