@@ -461,15 +461,15 @@ exports.build_todo = function (todo, ws) {
                 return value;
         }
     }
-    var todo_str = new Buffer(JSON.stringify(todo, exclude_from_json), 'binary');
+    var todo_str = new Buffer(JSON.stringify(todo, exclude_from_json));
 
     // since JS has no pack() we have to manually write the bytes of a long
     var todo_length = new Buffer(4);
     var todo_l = todo_str.length;
-    todo_length[3] = todo_str.length & 0xff;
-    todo_length[2] = (todo_str.length >> 8) & 0xff;
-    todo_length[1] = (todo_str.length >> 16) & 0xff;
-    todo_length[0] = (todo_str.length >> 24) & 0xff;
+    todo_length[3] =  todo_l        & 0xff;
+    todo_length[2] = (todo_l >>  8) & 0xff;
+    todo_length[1] = (todo_l >> 16) & 0xff;
+    todo_length[0] = (todo_l >> 24) & 0xff;
     
     var buf = Buffer.concat([todo_length, todo_str], todo_str.length + 4);
 
@@ -633,12 +633,12 @@ HMailItem.prototype.read_todo = function () {
         // as no filesystem on the planet should be that dumb...
         tl_reader.destroy();
         var todo_len = (buf[0] << 24) + (buf[1] << 16) + (buf[2] << 8) + buf[3];
-        var td_reader = fs.createReadStream(self.path, {encoding: 'binary', start: 4, end: todo_len + 3});
+        var td_reader = fs.createReadStream(self.path, {encoding: 'utf8', start: 4, end: todo_len + 3});
         self.data_start = todo_len + 4;
         var todo = '';
         td_reader.on('data', function (str) {
             todo += str;
-            if (todo.length === todo_len) {
+            if (Buffer.byteLength(todo) === todo_len) {
                 // we read everything
                 todo = JSON.parse(todo);
                 self.todo = todo;
@@ -646,7 +646,7 @@ HMailItem.prototype.read_todo = function () {
             }
         });
         td_reader.on('end', function () {
-            if (todo.length !== todo_len) {
+            if (Buffer.byteLength(todo) !== todo_len) {
                 self.logcrit("Didn't find right amount of data in todo!");
                 fs.rename(self.path, path.join(queue_dir, "error." + self.filename), function (err) {
                     if (err) {
