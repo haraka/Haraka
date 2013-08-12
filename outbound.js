@@ -640,8 +640,7 @@ HMailItem.prototype.read_todo = function () {
             todo += str;
             if (Buffer.byteLength(todo) === todo_len) {
                 // we read everything
-                todo = JSON.parse(todo);
-                self.todo = todo;
+                self.todo = JSON.parse(todo);
                 self.emit('ready');
             }
         });
