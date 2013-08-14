@@ -284,7 +284,7 @@ else if (parsed.help) {
         }
         var pager = 'less', spawn = require('child_process').spawn;
         if (process.env.PAGER) {
-            var pager_split = process.env.PAGER.split(' ');
+            var pager_split = process.env.PAGER.split(/ +/);
             pager = pager_split.shift(); 
             md_path = pager_split.concat(md_path);
         };
