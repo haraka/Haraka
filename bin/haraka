@@ -274,7 +274,7 @@ else if (parsed.help) {
         for (var i=0, j=md_paths.length; i<j; i++) {
             var _md_path = md_paths[i];
             if(existsSync(_md_path)) {
-                md_path = _md_path;
+                md_path = [_md_path];
                 break;
             }
         }
@@ -282,9 +282,14 @@ else if (parsed.help) {
             warning("No documentation found for: " + parsed.help);
             process.exit();
         }
-        var spawn = require('child_process').spawn;
-        var less  = spawn(process.env.PAGER ? process.env.PAGER : 'less',
-                         [md_path], { customFds: [0, 1, 2] });
+        var pager = 'less', spawn = require('child_process').spawn;
+        if (process.env.PAGER) {
+            var pager_split = process.env.PAGER.split(' ');
+            pager = pager_split.shift(); 
+            md_path = pager_split.concat(md_path);
+        };
+
+        var less  = spawn( pager, md_path, { stdio: 'inherit' } );
         less.on('exit', function() {
             process.exit(0);
         });
