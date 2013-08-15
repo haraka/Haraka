@@ -110,7 +110,6 @@ exports.quarantine = function (next, connection) {
                                 // Using notes.quarantine_action to decide what to do after the message is quarantined.
                                 // Format can be either action = [ code, msg ] or action = code 
                                 var action = (connection.notes.quarantine_action || transaction.notes.quarantine_action); 
-                                connection.lognotice(plugin, 'action: ' + JSON.stringify(action));
                                 if (Array.isArray(action)) {
                                     return next(action[0], action[1]);
                                 }
