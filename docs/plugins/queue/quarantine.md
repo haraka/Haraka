@@ -73,3 +73,20 @@ would save the message to '/var/spool/quarantine/haraka/corpus/YYYYMMDD/UUID'.
 
 Note: you can specify 'corpus/foo' or 'corpus/foo/bar' and the directories will
 be automatically created.  Do not add any leading or trailing slashes.
+
+By default - after the message is quarantined, the plugin will tell Haraka to
+continue to the next plugin.  You can specify a different action like DENY or
+OK and supply an optional message using the following notes:
+
+```javascript
+connection.notes.quarantine_action = [ OK, 'Message quarantined' ];
+connection.transaction.notes.quarantine_action = [ DENY, 'Message rejected' ];
+```
+
+If you don't want to supply a specific message back to the client you can
+also just specify a return code:
+
+```javascript
+connection.notes.quarantine_action = OK;
+connection.transaction.notes.quarantine_action = DENY;
+```
