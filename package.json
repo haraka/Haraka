@@ -37,7 +37,7 @@
     "mail" : "helpme@gmail.com",
     "url" : "https://github.com/baudehlo/Haraka/issues"
   },
-  "bin": { "haraka": "./bin/haraka" },
+  "bin": { "haraka": "./bin/haraka", "spf": "./bin/spf" },
   "scripts": {
     "test": "./run_tests"
   }
