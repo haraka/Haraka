@@ -26,6 +26,7 @@ Current configuration options in [core] are:
         not verified against a CA. Meaning, a "false" allows non-verified.  
 
 Example:
+
     [core]
     server=ldaps://ldap.opoet.com
     timeout=5000
@@ -38,6 +39,7 @@ the first successful bind. The LDAP RFC does not allow for parallel binds on a c
 so it is suggested that the most commonly used DN be placed earlier in the list. 
 
 Example:
+
     [dns]
     dn1=uid=%u,ou=Users,dc=opoet,dc=com
     dn2=uid=%u,ou=people,dc=opoet,dc=com 
