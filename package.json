@@ -24,7 +24,8 @@
     "npid"          : ">= 0.3.1"
   },
   "optionalDependencies": {
-    "node-syslog"   : ">= 1.1.2"
+    "node-syslog"   : ">= 1.1.2",
+    "ldapjs"        : ">= 0.6.3"
   },
   "devDependencies": {
     "nodeunit"      : "https://github.com/godsflaw/nodeunit/tarball/master"
