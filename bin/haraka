@@ -352,6 +352,7 @@ else if (parsed.install) {
     var pa = parsed.install;
     mkDir(parsed.install);
     mkDir(path.join(pa, 'plugins'));
+    mkDir(path.join(pa, 'plugins/auth'));
     mkDir(path.join(pa, 'docs'));
     mkDir(path.join(pa, 'docs/plugins'));
     mkDir(path.join(pa, 'docs/plugins/auth'));
