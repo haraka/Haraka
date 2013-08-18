@@ -21,11 +21,11 @@
     "semver"        : ">= 1.0.14",
     "async"         : ">= 0.1.22",
     "daemon"        : ">= 1.1.0",
-    "npid"          : ">= 0.3.1",
-    "ldapjs"        : ">= 0.6.3"
+    "npid"          : ">= 0.3.1"
   },
   "optionalDependencies": {
-    "node-syslog"   : ">= 1.1.2"
+    "node-syslog"   : ">= 1.1.2",
+    "ldapjs"        : ">= 0.6.3"
   },
   "devDependencies": {
     "nodeunit"      : "https://github.com/godsflaw/nodeunit/tarball/master"
