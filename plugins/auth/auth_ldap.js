@@ -1,9 +1,5 @@
 // auth/auth_ldap
 
-// documentation via: haraka -c /root/haraka -h plugins/auth/auth_ldap
-
-// Put your plugin code here
-// type: `haraka -h Plugins` for documentation on how to create a plugin
 var ldap = require('ldapjs');
 var crypto = require('crypto');
 var async = require('async');
@@ -23,7 +19,7 @@ exports.register = function () {
 }
 
 exports.check_plain_passwd = function (connection, user, passwd, cb) {
-    // Get LDAP servers and dns from the config 
+    // Get LDAP config 
     var config = this.config.get('auth_ldap.ini');
     var ldap_url = 'ldap://127.0.0.1';
     if (config.core.server) {
@@ -31,23 +27,31 @@ exports.check_plain_passwd = function (connection, user, passwd, cb) {
     }
     var rejectUnauthorized = (config.core.rejectUnauthorized != undefined) ?
         config.core.rejectUnauthorized : true;
-  
-    var client = ldap.createClient( { url: ldap_url,
-        timeout: (config.core.timeout != undefined) ? config.core.timeout : 5000,
-        tlsOptions: { rejectUnauthorized: rejectUnauthorized } } );
 
-    config.dns = Object.keys(config.dns).map(function(v) { return config.dns[v]; })
+    var client = ldap.createClient({
+        url: ldap_url,
+        timeout: (config.core.timeout != undefined) ? config.core.timeout : 5000,
+        tlsOptions: {
+            rejectUnauthorized: rejectUnauthorized
+        }
+    });
+
+    config.dns = Object.keys(config.dns).map(function (v) {
+        return config.dns[v];
+    })
     async.detectSeries(config.dns, function (dn, callback) {
-        dn = dn.replace(/%u/g,user);  
-        client.bind(dn, passwd, function(err) {
+        dn = dn.replace(/%u/g, user);
+        client.bind(dn, passwd, function (err) {
             if (err) {
-                connection.loginfo("auth_ldap: ("+dn+") "+err.message); 
+                connection.loginfo("auth_ldap: (" + dn + ") " + err.message);
                 return callback(false);
             } else {
-                client.unbind(); 
+                client.unbind();
                 return callback(true);
             }
-            }) }, function (result) { cb(result); } );
+        })
+    }, function (result) {
+        cb(result);
+    });
 }
-
 
