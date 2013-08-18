@@ -16,7 +16,7 @@ LDAP database are not stored in cleartext (which would allow for CRAM-MD5). Note
 that this means passwords will be sent in the clear to the LDAP server unless
 an `ldaps://` conection is used. 
 
-Current configuration options in [core] are:
+Current configuration options in `[core]` are:
 
     server - the url of the LDAP server (ldap:// or ldaps://)
     timeout - time in miliseconds to wait for the server resonse before giving up
