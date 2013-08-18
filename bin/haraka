@@ -354,6 +354,7 @@ else if (parsed.install) {
     mkDir(path.join(pa, 'plugins'));
     mkDir(path.join(pa, 'docs'));
     mkDir(path.join(pa, 'docs/plugins'));
+    mkDir(path.join(pa, 'docs/plugins/auth'));
     copyDir(path.join(base, 'config'), path.join(pa, 'config'));
     createFile(path.join(pa, 'README'), readme);
     createFile(path.join(pa, 'package.json'), packageJson);
