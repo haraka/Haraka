@@ -555,7 +555,10 @@ Connection.prototype.resume = function () {
     var self = this;
     if (self.disconnected) return;
     self.client.resume();
-    self.state = self.prev_state;
+    if (self.prev_state) {
+        self.state = self.prev_state;
+        self.prev_state = null;
+    }
     process.nextTick(function () { self._process_data() });
 }
 
