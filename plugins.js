@@ -188,6 +188,10 @@ plugins.run_hooks = function (hook, object, params) {
     if (hook != 'log')
         object.logdebug("running " + hook + " hooks");
     
+    if ((hook == 'reset_transaction' || hook == 'disconnect') && object.current_hook) {
+        object.current_hook[2](); // call cancel function
+    }
+    
     if (hook != 'deny' && hook != 'log' &&
         hook != 'reset_transaction' &&
         hook != 'disconnect' && 
@@ -224,12 +228,18 @@ plugins.run_next_hook = function(hook, object, params) {
         object.logdebug('aborting ' + hook + ' hook as client has disconnected');
         return;
     }
-    var called_once = 0;
+    var called_once = false;
     var timeout_id;
     var timed_out = false;
+    var cancelled = false;
+    var cancel = function () { cancelled = true };
     var item;
     var callback = function(retval, msg) {
         if (timeout_id) clearTimeout(timeout_id);
+        object.current_hook = null;
+        if (cancelled) {
+            return; // This hook has been cancelled
+        }
         // Bail if client has disconnected
         if (object.constructor.name === 'Connection' && object.disconnected) {
             object.logdebug('ignoring ' + item[0].name + ' plugin callback as client has disconnected');
@@ -243,7 +253,7 @@ plugins.run_next_hook = function(hook, object, params) {
             }
             return;
         }
-        called_once++;
+        called_once = true;
         if (!retval) retval = constants.cont;
         // Log what is being run
         if (item && hook !== 'log') {
@@ -304,6 +314,7 @@ plugins.run_next_hook = function(hook, object, params) {
     
     // shift the next one off the stack and run it.
     item = object.hooks_to_run.shift();
+    item.push(cancel);
 
     if (item[0].timeout && hook != 'log') {
         timeout_id = setTimeout(function () {
