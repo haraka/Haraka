@@ -196,17 +196,10 @@ plugins.run_hooks = function (hook, object, params) {
         throw new Error("We are already running hooks! Fatal error!");
     }
 
-    var deferred = false;
-
     if (hook === 'deny') {
         // Save the hooks_to_run list so that we can run any remaining 
         // plugins on the previous hook once this hook is complete.
         object.saved_hooks_to_run = object.hooks_to_run;
-    }
-    else if (hook === 'reset_transaction' || hook === 'disconnect' &&
-            object.current_hook)
-    {
-        deferred = true;
     }
     object.hooks_to_run = [];
     
@@ -222,22 +215,21 @@ plugins.run_hooks = function (hook, object, params) {
         }
     }
     
-    plugins.run_next_hook(hook, object, params, deferred);
+    plugins.run_next_hook(hook, object, params);
 };
 
-plugins.run_next_hook = function(hook, object, params, deferred) {
+plugins.run_next_hook = function(hook, object, params) {
     // Bail if client has disconnected
     if (object.constructor.name === 'Connection' && object.disconnected) {
         object.logdebug('aborting ' + hook + ' hook as client has disconnected');
         return;
     }
-    var called_once = false;
+    var called_once = 0;
     var timeout_id;
     var timed_out = false;
     var item;
     var callback = function(retval, msg) {
         if (timeout_id) clearTimeout(timeout_id);
-        object.current_hook = null;
         // Bail if client has disconnected
         if (object.constructor.name === 'Connection' && object.disconnected) {
             object.logdebug('ignoring ' + item[0].name + ' plugin callback as client has disconnected');
@@ -251,7 +243,7 @@ plugins.run_next_hook = function(hook, object, params, deferred) {
             }
             return;
         }
-        called_once = true;
+        called_once++;
         if (!retval) retval = constants.cont;
         // Log what is being run
         if (item && hook !== 'log') {
@@ -309,8 +301,6 @@ plugins.run_next_hook = function(hook, object, params, deferred) {
     }
     
     if (!object.hooks_to_run.length) return callback();
-    
-    if (deferred) return;
     
     // shift the next one off the stack and run it.
     item = object.hooks_to_run.shift();
