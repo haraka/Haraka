@@ -162,7 +162,8 @@ These are just the name of the hook, with any parameter sent to it:
 * deny - called if a plugin returns one of DENY, DENYSOFT or DENYDISCONNECT
 * get_mx (hmail, domain) - called when sending outbound mail to lookup the MX record
 * bounce (hmail, err) - called when sending outbound mail if the mail would bounce
-* delivered (hmail, response) - callen when outbound mail is delivered to the destination
+* delivered (hmail, [host, ip, response, delay]) - callen when outbound mail is 
+delivered to the destination
 * send_email (hmail) - called when outbound is about to be sent
 
 The `rcpt` hook is slightly special. If we have a plugin (prior to rcpt) that
