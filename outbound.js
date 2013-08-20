@@ -540,6 +540,7 @@ exports.split_to_new_recipients = function (hmail, recipients, response, cb) {
 
 // TODOItem - queue file header data
 function TODOItem (domain, recipients, transaction) {
+    this.queue_time = Date.now();
     this.domain = domain;
     this.rcpt_to = recipients;
     this.mail_from = transaction.mail_from;
@@ -1086,7 +1087,7 @@ HMailItem.prototype.try_deliver_host = function (mx) {
                         processing_mail = false;
                         var reason = response.join(' ');
                         socket.send_command('QUIT');
-                        self.delivered(reason);
+                        self.delivered(host, mx.exchange, reason);
                         break;
                     case 'quit':
                         socket.end();
@@ -1201,9 +1202,16 @@ HMailItem.prototype.double_bounce = function (err) {
     // Another strategy might be delivery "plugins" to cope with this.
 }
 
-HMailItem.prototype.delivered = function (response) {
-    this.lognotice("delivered file=" + this.filename + ' response="' + response + '"');
-    plugins.run_hooks("delivered", this, response);
+HMailItem.prototype.delivered = function (ip, host, response) {
+    var delay = (Date.now() - this.todo.queue_time)/1000;
+    this.lognotice("delivered file=" + this.filename + 
+                   ' domain="' + this.todo.domain + '"' +
+                   ' host="' + host + '"' +
+                   ' ip=' + ip + 
+                   ' response="' + response + '"' +
+                   ' delay=' + delay +
+                   ' fails=' + this.num_failures);
+    plugins.run_hooks("delivered", this, [host, ip, response, delay]);
 }
 
 HMailItem.prototype.discard = function () {
