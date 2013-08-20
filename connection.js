@@ -78,13 +78,15 @@ function setupClient(self) {
     self.lognotice('connect ip=' + self.remote_ip + ' port=' + self.remote_port + 
                    ' local_ip=' + self.local_ip + ' local_port=' + self.local_port);
 
-    self.client.on('end', function() {
-        if (!self.disconnected) {
-            self.remote_close = true;
-            self.fail('client ' + ((self.remote_host) ? self.remote_host + ' ' : '') 
-                                + '[' + self.remote_ip + '] closed connection');
-        }
-    });
+    // self.client.on('end', function() {
+    //     if (end_or_close_called) return;
+    //     end_or_close_called = true;
+    //     if (!self.disconnected) {
+    //         self.remote_close = true;
+    //         self.fail('client ' + ((self.remote_host) ? self.remote_host + ' ' : '') 
+    //                             + '[' + self.remote_ip + '] closed connection');
+    //     }
+    // });
 
     self.client.on('close', function(has_error) {
         if (!self.disconnected && !has_error) {
@@ -157,7 +159,6 @@ function Connection(client, server) {
     this.pipelining = 0;
     this.relaying = false;
     this.disconnected = false;
-    this.disconnect_hook_run = false;
     this.esmtp = false;
     this.last_response = null;
     this.remote_close = false;
@@ -393,6 +394,7 @@ Connection.prototype.respond = function(code, msg, func) {
     var messages;
 
     if (this.disconnected) {
+        if (func) func();
         return;
     }
     // Check to see if DSN object was passed in
@@ -458,10 +460,9 @@ Connection.prototype.fail = function (err) {
 }
 
 Connection.prototype.disconnect = function() {
-    if (this.disconnected || this.disconnect_hook_run) return;
+    if (this.disconnected) return;
     var self = this;
     this.reset_transaction(function () {
-        self.disconnect_hook_run = true;
         plugins.run_hooks('disconnect', self);
     });
 };
@@ -1296,7 +1297,9 @@ Connection.prototype.accumulate_data = function(line) {
 
 Connection.prototype.data_done = function() {
     var self = this;
-    this.state = STATE_PAUSE;
+    this.state = STATE_CMD;
+    this.pause();
+    // this.state = STATE_PAUSE;
     this.totalbytes += this.transaction.data_bytes;
 
     // Check message size limit
@@ -1342,7 +1345,7 @@ Connection.prototype.data_post_respond = function(retval, msg) {
         case constants.deny:
                 this.respond(552, msg || "Message denied", function() {
                     self.msg_count.reject++;
-                    self.reset_transaction();
+                    self.reset_transaction(function () { self.resume() });
                 });
                 break;
         case constants.deny_disconnect:
@@ -1354,7 +1357,7 @@ Connection.prototype.data_post_respond = function(retval, msg) {
         case constants.denysoft:
                 this.respond(452, msg || "Message denied temporarily", function() {
                     self.msg_count.tempfail++;
-                    self.reset_transaction();
+                    self.reset_transaction(function () { self.resume() });
                 });
                 break;
         case constants.denysoftdisconnect:
@@ -1393,7 +1396,7 @@ Connection.prototype.queue_outbound_respond = function(retval, msg) {
         case constants.deny:
                 this.respond(552, msg || "Message denied", function() {
                     self.msg_count.reject++;
-                    self.reset_transaction();
+                    self.reset_transaction(function () { self.resume() });
                 });
                 break;
         case constants.denydisconnect:
@@ -1405,7 +1408,7 @@ Connection.prototype.queue_outbound_respond = function(retval, msg) {
         case constants.denysoft:
                 this.respond(452, msg || "Message denied temporarily", function() {
                     self.msg_count.tempfail++;
-                    self.reset_transaction();
+                    self.reset_transaction(function () { self.resume() });
                 });
                 break;
         case constants.denysoftdisconnect:
@@ -1415,23 +1418,22 @@ Connection.prototype.queue_outbound_respond = function(retval, msg) {
                 });
                 break;
         default:
-                var conn = this;
                 outbound.send_email(this.transaction, function(retval, msg) {
                     switch(retval) {
                         case constants.ok:
-                                plugins.run_hooks("queue_ok", conn, msg || 'Message Queued');
+                                plugins.run_hooks("queue_ok", self, msg || 'Message Queued');
                                 break;
                         case constants.deny:
-                                conn.respond(552, msg || "Message denied", function() {
+                                self.respond(552, msg || "Message denied", function() {
                                     self.msg_count.reject++;
-                                    conn.reset_transaction();
+                                    self.reset_transaction(function () { self.resume() });
                                 });
                                 break;
                         default:
-                                conn.logerror("Unrecognised response from outbound layer: " + retval + " : " + msg);
-                                conn.respond(552, msg || "Internal Server Error", function() {
+                                self.logerror("Unrecognised response from outbound layer: " + retval + " : " + msg);
+                                self.respond(552, msg || "Internal Server Error", function() {
                                     self.msg_count.reject++;
-                                    conn.reset_transaction();
+                                    self.reset_transaction(function () { self.resume() });
                                 });
                     }
                 });
@@ -1450,7 +1452,7 @@ Connection.prototype.queue_respond = function(retval, msg) {
         case constants.deny:
                 this.respond(552, msg || "Message denied", function() {
                     self.msg_count.reject++;
-                    self.reset_transaction();
+                    self.reset_transaction(function () { self.resume() });
                 });
                 break;
         case constants.denydisconnect:
@@ -1462,7 +1464,7 @@ Connection.prototype.queue_respond = function(retval, msg) {
         case constants.denysoft:
                 this.respond(452, msg || "Message denied temporarily", function() {
                     self.msg_count.tempfail++;
-                    self.reset_transaction();
+                    self.reset_transaction(function () { self.resume() });
                 });
                 break;
         case constants.denysoftdisconnect:
@@ -1474,7 +1476,7 @@ Connection.prototype.queue_respond = function(retval, msg) {
         default:
                 this.respond(451, msg || "Queuing declined or disabled, try later", function() {
                     self.msg_count.tempfail++;
-                    self.reset_transaction();
+                    self.reset_transaction(function () { self.resume() });
                 });
                 break;
     }
@@ -1485,6 +1487,6 @@ Connection.prototype.queue_ok_respond = function (retval, msg, params) {
     this.lognotice('queue code=' + constants.translate(retval) + ' msg="' + (params || '') + '"');
     this.respond(250, params, function() {
         self.msg_count.accept++;
-        self.reset_transaction();
+        self.reset_transaction(function () { self.resume() });
     });
 };
