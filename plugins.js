@@ -9,6 +9,7 @@ var vm          = require('vm');
 var fs          = require('fs');
 var utils       = require('./utils');
 var util        = require('util');
+var states      = require('./connection').states;
 
 var plugin_paths = [path.join(__dirname, './plugins')];
 if (process.env.HARAKA) { plugin_paths.unshift(path.join(process.env.HARAKA, 'plugins')); }
@@ -178,7 +179,7 @@ plugins._register_plugin = function (plugin) {
 
 plugins.run_hooks = function (hook, object, params) {
     // Bail out if the client has disconnected
-    if (object.constructor.name === 'Connection' && object.disconnected) {
+    if (object.constructor.name === 'Connection' && object.state === states.DISCONNECTED) {
         if (hook != 'log') {
             object.logdebug('aborting ' + hook + ' hook as client has disconnected');
         }
@@ -191,7 +192,7 @@ plugins.run_hooks = function (hook, object, params) {
     if ((hook == 'reset_transaction' || hook == 'disconnect') && object.current_hook) {
         object.current_hook[2](); // call cancel function
     }
-    
+
     if (hook != 'deny' && hook != 'log' &&
         hook != 'reset_transaction' &&
         hook != 'disconnect' && 
@@ -224,7 +225,7 @@ plugins.run_hooks = function (hook, object, params) {
 
 plugins.run_next_hook = function(hook, object, params) {
     // Bail if client has disconnected
-    if (object.constructor.name === 'Connection' && object.disconnected) {
+    if (object.constructor.name === 'Connection' && object.state === states.DISCONNECTED) {
         object.logdebug('aborting ' + hook + ' hook as client has disconnected');
         return;
     }
@@ -241,7 +242,7 @@ plugins.run_next_hook = function(hook, object, params) {
             return; // This hook has been cancelled
         }
         // Bail if client has disconnected
-        if (object.constructor.name === 'Connection' && object.disconnected) {
+        if (object.constructor.name === 'Connection' && object.state === states.DISCONNECTED) {
             object.logdebug('ignoring ' + item[0].name + ' plugin callback as client has disconnected');
             return;
         }

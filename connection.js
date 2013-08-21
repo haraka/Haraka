@@ -22,12 +22,16 @@ var line_regexp = /^([^\n]*\n)/;
 
 var connection = exports;
 
-var STATE_CMD   = 1;
-var STATE_LOOP  = 2;
-var STATE_DATA  = 3;
-var STATE_PAUSE = 4;
-var STATE_PAUSE_SMTP = 5;
-var STATE_PAUSE_DATA = 6;
+var states = exports.states = {
+    STATE_CMD:             1,
+    STATE_LOOP:            2,
+    STATE_DATA:            3,
+    STATE_PAUSE:           4,
+    STATE_PAUSE_SMTP:      5,
+    STATE_PAUSE_DATA:      6,
+    STATE_DISCONNECTING:   99,
+    STATE_DISCONNECTED:    100,
+};
 
 // copy logger methods into Connection:
 for (var key in logger) {
@@ -78,38 +82,32 @@ function setupClient(self) {
     self.lognotice('connect ip=' + self.remote_ip + ' port=' + self.remote_port + 
                    ' local_ip=' + self.local_ip + ' local_port=' + self.local_port);
 
-    // self.client.on('end', function() {
-    //     if (end_or_close_called) return;
-    //     end_or_close_called = true;
-    //     if (!self.disconnected) {
-    //         self.remote_close = true;
-    //         self.fail('client ' + ((self.remote_host) ? self.remote_host + ' ' : '') 
-    //                             + '[' + self.remote_ip + '] closed connection');
-    //     }
-    // });
+    self.client.on('end', function() {
+        if (self.state >= states.STATE_DISCONNECTING) return;
+        self.remote_close = true;
+        self.fail('client ' + ((self.remote_host) ? self.remote_host + ' ' : '') 
+                            + '[' + self.remote_ip + '] closed connection');
+    });
 
     self.client.on('close', function(has_error) {
-        if (!self.disconnected && !has_error) {
-            self.remote_close = true;
-            self.fail('client ' + ((self.remote_host) ? self.remote_host + ' ' : '')
-                                + '[' + self.remote_ip + '] dropped connection');
-        }
+        if (self.state >= states.STATE_DISCONNECTING) return;
+        self.remote_close = true;
+        self.fail('client ' + ((self.remote_host) ? self.remote_host + ' ' : '')
+                            + '[' + self.remote_ip + '] dropped connection');
     });
 
     self.client.on('error', function (err) {
-        if (!self.disconnected) {
-            self.fail('client ' + ((self.remote_host) ? self.remote_host + ' ' : '') 
-                                + '[' + self.remote_ip + '] connection error: ' + err);
-        }
+        if (self.state >= states.STATE_DISCONNECTING) return;
+        self.fail('client ' + ((self.remote_host) ? self.remote_host + ' ' : '') 
+                            + '[' + self.remote_ip + '] connection error: ' + err);
     });
     
     self.client.on('timeout', function () {
-        if (!self.disconnected) {
-            self.respond(421, 'timeout', function () {
-                self.fail('client ' + ((self.remote_host) ? self.remote_host + ' ' : '')
-                                    + '[' + self.remote_ip + '] connection timed out');
-            });
-        }
+        if (self.state >= states.STATE_DISCONNECTING) return;
+        self.respond(421, 'timeout', function () {
+            self.fail('client ' + ((self.remote_host) ? self.remote_host + ' ' : '')
+                                + '[' + self.remote_ip + '] connection timed out');
+        });
     });
     
     self.client.on('data', function (data) {
@@ -143,7 +141,7 @@ function Connection(client, server) {
     this.current_line = null;
     this.greeting = null;
     this.hello_host = null;
-    this.state = STATE_PAUSE;
+    this.state = states.STATE_PAUSE;
     this.prev_state = null;
     this.loop_code = null;
     this.loop_msg = null;
@@ -158,7 +156,6 @@ function Connection(client, server) {
     this.early_talker = 0;
     this.pipelining = 0;
     this.relaying = false;
-    this.disconnected = false;
     this.esmtp = false;
     this.last_response = null;
     this.remote_close = false;
@@ -193,7 +190,7 @@ exports.createConnection = function(client, server) {
 Connection.prototype.process_line = function (line) {
     var self = this;
     
-    if (this.state === STATE_DATA) {
+    if (this.state === states.STATE_DATA) {
         if (logger.would_log(logger.LOGDATA)) {
             this.logdata("C: " + line);
         }
@@ -210,8 +207,8 @@ Connection.prototype.process_line = function (line) {
             return this.respond(501, 'Syntax error (8-bit characters not allowed)');
         }
     }
-    if (this.state === STATE_CMD) {
-        this.state = STATE_PAUSE_SMTP;
+    if (this.state === states.STATE_CMD) {
+        this.state = states.STATE_PAUSE_SMTP;
         var matches = /^([^ ]*)( +(.*))?$/.exec(this.current_line);
         if (!matches) {
             return plugins.run_hooks('unrecognized_command', this, this.current_line);
@@ -243,7 +240,7 @@ Connection.prototype.process_line = function (line) {
             plugins.run_hooks('unrecognized_command', this, matches);
         }
     }
-    else if (this.state === STATE_LOOP) {
+    else if (this.state === states.STATE_LOOP) {
         // Allow QUIT
         if (this.current_line.toUpperCase() === 'QUIT') {
             this.cmd_quit();
@@ -258,7 +255,7 @@ Connection.prototype.process_line = function (line) {
 };
 
 Connection.prototype.process_data = function (data) {
-    if (this.disconnected) {
+    if (this.state >= states.STATE_DISCONNECTING) {
         this.logwarn("data after disconnect from " + this.remote_ip);
         return;
     }
@@ -281,31 +278,31 @@ Connection.prototype.process_data = function (data) {
 Connection.prototype._process_data = function() {
     var self = this;
     // We *must* detect disconnected connections here as the state 
-    // only transitions to STATE_CMD in the respond function below.
+    // only transitions to states.STATE_CMD in the respond function below.
     // Otherwise if multiple commands are pipelined and then the 
     // connection is dropped; we'll end up in the function forever.
-    if (this.disconnected) return;
+    if (this.state >= states.STATE_DISCONNECTING) return;
 
     var maxlength = config.get('max_line_length') || 512;
-    if (this.state === STATE_PAUSE_DATA || this.state === STATE_DATA) {
+    if (this.state === states.STATE_PAUSE_DATA || this.state === states.STATE_DATA) {
         maxlength = config.get('max_data_line_length') || 992;
     }
 
     var offset;
     while (this.current_data && ((offset = indexOfLF(this.current_data, maxlength)) !== -1)) {
-        if (this.state === STATE_PAUSE_DATA) {
+        if (this.state === states.STATE_PAUSE_DATA) {
             return;
         }
         var this_line = this.current_data.slice(0, offset+1);
         // Hack: bypass this code to allow HAProxy's PROXY extension
-        if (this.state === STATE_PAUSE && this.proxy && /^PROXY /.test(this_line)) {
+        if (this.state === states.STATE_PAUSE && this.proxy && /^PROXY /.test(this_line)) {
             if (this.proxy_timer) clearTimeout(this.proxy_timer);
-            this.state = STATE_CMD;
+            this.state = states.STATE_CMD;
             this.current_data = this.current_data.slice(this_line.length);
             this.process_line(this_line);
         }
         // Detect early_talker but allow PIPELINING extension (ESMTP)
-        else if ((this.state === STATE_PAUSE || this.state === STATE_PAUSE_SMTP) && !this.esmtp) {
+        else if ((this.state === states.STATE_PAUSE || this.state === states.STATE_PAUSE_SMTP) && !this.esmtp) {
             if (!this.early_talker) {
                 this_line = this_line.toString().replace(/\r?\n/,'');
                 this.logdebug('[early_talker] state=' + this.state + ' esmtp=' + this.esmtp + ' line="' + this_line + '"');
@@ -316,7 +313,7 @@ Connection.prototype._process_data = function() {
             setTimeout(function() { self._process_data() }, this.early_talker_delay);
             break;
         }
-        else if ((this.state === STATE_PAUSE || this.state === STATE_PAUSE_SMTP) && this.esmtp) {
+        else if ((this.state === states.STATE_PAUSE || this.state === states.STATE_PAUSE_SMTP) && this.esmtp) {
             var valid = true;
             var cmd = this_line.toString('ascii').slice(0,4).toUpperCase();
             switch (cmd) {
@@ -340,7 +337,7 @@ Connection.prototype._process_data = function() {
                 // We *don't want to process this yet otherwise the 
                 // current_data buffer will be lost.  The respond() 
                 // function will call this function again once it
-                // has reset the state back to STATE_CMD and this 
+                // has reset the state back to states.STATE_CMD and this 
                 // ensures that we only process one command at a
                 // time.
                 this.pipelining = 1;
@@ -365,8 +362,8 @@ Connection.prototype._process_data = function() {
     }
 
     if (this.current_data && (this.current_data.length > maxlength) && (indexOfLF(this.current_data, maxlength) == -1)) {
-        if (this.state !== STATE_DATA       &&
-            this.state !== STATE_PAUSE_DATA)
+        if (this.state !== states.STATE_DATA       &&
+            this.state !== states.STATE_PAUSE_DATA)
         {
             // In command mode, reject:
             this.client.pause();
@@ -393,7 +390,7 @@ Connection.prototype.respond = function(code, msg, func) {
     var uuid = '';
     var messages;
 
-    if (this.disconnected) {
+    if (this.state === states.STATE_DISCONNECTED) {
         if (func) func();
         return;
     }
@@ -442,8 +439,8 @@ Connection.prototype.respond = function(code, msg, func) {
     this.last_response = buf;
 
     // Don't change loop state
-    if (this.state !== STATE_LOOP) {
-        this.state = STATE_CMD;
+    if (this.state !== states.STATE_LOOP) {
+        this.state = states.STATE_CMD;
     }
 
     // Run optional closure before handling and further commands
@@ -460,8 +457,9 @@ Connection.prototype.fail = function (err) {
 }
 
 Connection.prototype.disconnect = function() {
-    if (this.disconnected) return;
+    if (this.state >= states.STATE_DISCONNECTING) return;
     var self = this;
+    self.state = states.STATE_DISCONNECTING;
     this.reset_transaction(function () {
         plugins.run_hooks('disconnect', self);
     });
@@ -489,7 +487,7 @@ Connection.prototype.disconnect_respond = function () {
         'time='  + (Date.now() - this.start_time)/1000,
     ];
     this.lognotice('disconnect ' + logdetail.join(' '));
-    this.disconnected = true;
+    this.state = states.STATE_DISCONNECTED;
     this.client.end();
 };
 
@@ -538,7 +536,7 @@ Connection.prototype.init_transaction = function(cb) {
 }
 
 Connection.prototype.loop_respond = function (code, msg) {
-    this.state = STATE_LOOP;
+    this.state = states.STATE_LOOP;
     this.loop_code = code;
     this.loop_msg = msg;
     this.respond(code, msg);
@@ -546,15 +544,15 @@ Connection.prototype.loop_respond = function (code, msg) {
 
 Connection.prototype.pause = function () {
     var self = this;
-    if (self.disconnected) return;
+    if (self.state >= states.STATE_DISCONNECTING) return;
     self.client.pause();
-    if (self.state != STATE_PAUSE_DATA) self.prev_state = self.state;
-    self.state = STATE_PAUSE_DATA;
+    if (self.state != states.STATE_PAUSE_DATA) self.prev_state = self.state;
+    self.state = states.STATE_PAUSE_DATA;
 }
 
 Connection.prototype.resume = function () {
     var self = this;
-    if (self.disconnected) return;
+    if (self.state >= states.STATE_DISCONNECTING) return;
     self.client.resume();
     if (self.prev_state) {
         self.state = self.prev_state;
@@ -1253,7 +1251,7 @@ Connection.prototype.data_respond = function(retval, msg) {
     // We already checked for MAIL/RCPT in cmd_data
     this.respond(354, "go ahead, make my day", function() {
         // OK... now we get the data
-        self.state = STATE_DATA;
+        self.state = states.STATE_DATA;
         self.transaction.data_bytes = 0;
     });
 };
@@ -1297,9 +1295,9 @@ Connection.prototype.accumulate_data = function(line) {
 
 Connection.prototype.data_done = function() {
     var self = this;
-    this.state = STATE_CMD;
+    this.state = states.STATE_CMD;
     this.pause();
-    // this.state = STATE_PAUSE;
+    // this.state = states.STATE_PAUSE;
     this.totalbytes += this.transaction.data_bytes;
 
     // Check message size limit
