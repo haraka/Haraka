@@ -86,7 +86,7 @@ function setupClient(self) {
         if (self.state >= states.STATE_DISCONNECTING) return;
         self.remote_close = true;
         self.fail('client ' + ((self.remote_host) ? self.remote_host + ' ' : '') 
-                            + '[' + self.remote_ip + '] closed connection');
+                            + '[' + self.remote_ip + '] half closed connection');
     });
 
     self.client.on('close', function(has_error) {
@@ -503,7 +503,8 @@ Connection.prototype.tran_uuid = function () {
 }
 
 Connection.prototype.reset_transaction = function(cb) {
-    if (this.transaction) {
+    if (this.transaction && this.transaction.resetting === false) {
+        this.transaction.resetting = true;
         plugins.run_hooks('reset_transaction', this, cb);
     }
     else {
