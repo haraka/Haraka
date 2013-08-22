@@ -8,7 +8,12 @@ exports.register = function() {
 
     if (cfg.main.enable_stats) {
         this.logdebug('stats reporting enabled');
-        this.enable_stats = 1;
+        this.enable_stats = true;
+    }
+
+    if (cfg.main.stats_redis_host) {
+        this.redis_host = cfg.main.stats_redis_host;
+        this.logdebug('set stats redis host to: ' + this.redis_host);
     }
 
     this.zones = [];
