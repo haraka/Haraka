@@ -32,19 +32,19 @@ dnsbl.ini - INI format with options described below:
 * enable_stats
 
     To use this feature you must have installed the 'redis' module and
-    have a redis server running locally on the machine.
-      
+    have a redis server running.
+    
     When enabled, this will record several list statistics to redis.
-      
+    
     It will track the total number of queries (TOTAL) and the average
     response time (AVG_RT) and the return type (e.g. LISTED or ERROR) 
     to a redis hash where the key is 'dns-list-stat:zone' and the hash 
     field is the response type.
-      
+    
     It will also track the positive response overlap between the lists
     in another redis hash where the key is 'dns-list-overlap:zone' and
     the hash field is the other list names.
-
+    
     Example:
     <pre><code>redis 127.0.0.1:6379> hgetall dns-list-stat:zen.spamhaus.org
     1) "TOTAL"
@@ -63,3 +63,8 @@ dnsbl.ini - INI format with options described below:
     5) "TOTAL"
     6) "1"
     </code></pre>
+
+* stats_redis_host
+
+    In the form of `host:port` this option allows you to specify a different
+    host on which redis runs.

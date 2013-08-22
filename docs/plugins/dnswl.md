@@ -37,7 +37,7 @@ dnswl.ini - INI format with options described below:
 * enable_stats
 
     To use this feature you must have installed the 'redis' module and
-    have a redis server running locally on the machine.
+    have a redis server running.
       
     When enabled, this will record several list statistics to redis.
       
@@ -68,3 +68,8 @@ dnswl.ini - INI format with options described below:
     5) "TOTAL"
     6) "1"
     </code></pre>
+
+* stats_redis_host
+
+    In the form of `host:port` this option allows you to specify a different
+    host on which redis runs.
