@@ -9,6 +9,8 @@ exports.redis_host = '127.0.0.1:6379';
 var redis_client;
 
 exports.lookup = function (lookup, zone, cb) {
+    var self = this;
+
     if (!lookup || !zone) return cb();
 
     if (this.enable_stats && !redis_client) {
@@ -22,6 +24,11 @@ exports.lookup = function (lookup, zone, cb) {
             host_port[1] = parseInt(host_port[1], 10);
         }
         redis_client = redis.createClient(host_port[1], host_port[0]);
+        redis_client.on('error', function (err) {
+            self.logerror("Redis error: " + err);
+            redis_client.quit();
+            redis_client = null; // should force a reconnect - not sure if that's the right thing but better than nothing...
+        })
     }
 
     // Reverse lookup if IPv4 address
@@ -42,7 +49,6 @@ exports.lookup = function (lookup, zone, cb) {
         var start = (new Date).getTime();
     }
 
-    var self = this;
     // Build the query, adding the root dot if missing
     var query = [lookup, zone].join('.');
     if (query[query.length-1] !== '.') {
