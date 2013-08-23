@@ -62,6 +62,9 @@ cfreader.load_config = function(name, type) {
     else if (type === 'json' || /\.json$/.test(name)) {
         result = cfreader.load_json_config(name);
     }
+    else if (type === 'binary') {
+        result = cfreader.load_binary_config(name, type);
+    }
     else {
         result = cfreader.load_flat_config(name, type);
         if (result && type !== 'list' && type !== 'data') {
@@ -206,6 +209,27 @@ cfreader.load_flat_config = function(name, type) {
         }
     }
     return result;
+};
+
+cfreader.load_binary_config = function(name, type) {
+    var result = cfreader.empty_config();
+
+    try {
+        if (utils.existsSync(name)) {
+            return fs.readFileSync(name);
+        }
+        return null
+    }
+    catch (err) {
+        if (err.code === 'EBADF') {
+            if (cfreader._config_cache[name]) {
+                return cfreader._config_cache[name];
+            }
+        }
+        else {
+            throw err;
+        }
+    }
 };
 var fs     = require('fs');
 var utils  = require('./utils');
