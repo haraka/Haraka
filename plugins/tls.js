@@ -20,8 +20,8 @@ exports.hook_capabilities = function (next, connection) {
 exports.hook_unrecognized_command = function (next, connection, params) {
     /* Watch for STARTTLS directive from client. */
     if (params[0] === 'STARTTLS') {
-        var key = this.config.get('tls_key.pem', 'data').join("\n");
-        var cert = this.config.get('tls_cert.pem', 'data').join("\n");
+        var key = this.config.get('tls_key.pem', 'binary');
+        var cert = this.config.get('tls_cert.pem', 'binary');
         var options = { key: key, cert: cert, requestCert: true };
 
         /* Respond to STARTTLS command. */
