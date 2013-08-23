@@ -1,8 +1,7 @@
 // Enables TLS. This is built into the server anyway, but enabling this plugin
 // just advertises it.
 
-var utils = require('./utils')
-    , util = require("util");
+var utils = require('./utils');
 
 // To create a key:
 // openssl req -x509 -nodes -days 2190 -newkey rsa:1024 \
