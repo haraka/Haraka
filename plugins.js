@@ -9,6 +9,7 @@ var vm          = require('vm');
 var fs          = require('fs');
 var utils       = require('./utils');
 var util        = require('util');
+var states      = require('./connection').states;
 
 var plugin_paths = [path.join(__dirname, './plugins')];
 if (process.env.HARAKA) { plugin_paths.unshift(path.join(process.env.HARAKA, 'plugins')); }
@@ -178,7 +179,7 @@ plugins._register_plugin = function (plugin) {
 
 plugins.run_hooks = function (hook, object, params) {
     // Bail out if the client has disconnected
-    if (object.constructor.name === 'Connection' && object.disconnected) {
+    if (object.constructor.name === 'Connection' && object.state === states.DISCONNECTED) {
         if (hook != 'log') {
             object.logdebug('aborting ' + hook + ' hook as client has disconnected');
         }
@@ -188,7 +189,15 @@ plugins.run_hooks = function (hook, object, params) {
     if (hook != 'log')
         object.logdebug("running " + hook + " hooks");
     
-    if (hook != 'deny' && hook != 'log' && object.hooks_to_run && object.hooks_to_run.length) {
+    if ((hook == 'reset_transaction' || hook == 'disconnect') && object.current_hook) {
+        object.current_hook[2](); // call cancel function
+    }
+
+    if (hook != 'deny' && hook != 'log' &&
+        hook != 'reset_transaction' &&
+        hook != 'disconnect' && 
+        object.hooks_to_run && object.hooks_to_run.length) 
+    {
         throw new Error("We are already running hooks! Fatal error!");
     }
 
@@ -216,18 +225,24 @@ plugins.run_hooks = function (hook, object, params) {
 
 plugins.run_next_hook = function(hook, object, params) {
     // Bail if client has disconnected
-    if (object.constructor.name === 'Connection' && object.disconnected) {
+    if (object.constructor.name === 'Connection' && object.state === states.DISCONNECTED) {
         object.logdebug('aborting ' + hook + ' hook as client has disconnected');
         return;
     }
-    var called_once = 0;
+    var called_once = false;
     var timeout_id;
     var timed_out = false;
+    var cancelled = false;
+    var cancel = function () { cancelled = true };
     var item;
     var callback = function(retval, msg) {
         if (timeout_id) clearTimeout(timeout_id);
+        object.current_hook = null;
+        if (cancelled) {
+            return; // This hook has been cancelled
+        }
         // Bail if client has disconnected
-        if (object.constructor.name === 'Connection' && object.disconnected) {
+        if (object.constructor.name === 'Connection' && object.state === states.DISCONNECTED) {
             object.logdebug('ignoring ' + item[0].name + ' plugin callback as client has disconnected');
             return;
         }
@@ -239,7 +254,7 @@ plugins.run_next_hook = function(hook, object, params) {
             }
             return;
         }
-        called_once++;
+        called_once = true;
         if (!retval) retval = constants.cont;
         // Log what is being run
         if (item && hook !== 'log') {
@@ -300,6 +315,7 @@ plugins.run_next_hook = function(hook, object, params) {
     
     // shift the next one off the stack and run it.
     item = object.hooks_to_run.shift();
+    item.push(cancel);
 
     if (item[0].timeout && hook != 'log') {
         timeout_id = setTimeout(function () {

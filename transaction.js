@@ -26,6 +26,7 @@ function Transaction() {
     this.header = new Header();
     this.message_stream = null;
     this.discard_data = false;
+    this.resetting = false;
     this.rcpt_count = {
         accept:   0,
         tempfail: 0,

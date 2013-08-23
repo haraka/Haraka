@@ -5,18 +5,31 @@ var is_rfc1918 = require('./net_utils').is_rfc1918;
 
 exports.enable_stats = false;
 exports.disable_allowed = false;
-
-var redis_avail = false;
-// See if redis is available
-try {
-    var redis = require('redis');
-    var client = redis.createClient();
-    redis_avail = true;
-}
-catch (err) {}
+exports.redis_host = '127.0.0.1:6379';
+var redis_client;
 
 exports.lookup = function (lookup, zone, cb) {
+    var self = this;
+
     if (!lookup || !zone) return cb();
+
+    if (this.enable_stats && !redis_client) {
+        var redis = require('redis');
+        var host_port = this.redis_host.split(':');
+        if (!host_port[0]) host_port[0] = '127.0.0.1';
+        if (!host_port[1]) {
+            host_port[1] = 6379;
+        }
+        else {
+            host_port[1] = parseInt(host_port[1], 10);
+        }
+        redis_client = redis.createClient(host_port[1], host_port[0]);
+        redis_client.on('error', function (err) {
+            self.logerror("Redis error: " + err);
+            redis_client.quit();
+            redis_client = null; // should force a reconnect - not sure if that's the right thing but better than nothing...
+        })
+    }
 
     // Reverse lookup if IPv4 address
     if (net.isIPv4(lookup)) {
@@ -32,11 +45,10 @@ exports.lookup = function (lookup, zone, cb) {
         return cb();
     }
 
-    if (redis_avail && this.enable_stats) {
+    if (this.enable_stats) {
         var start = (new Date).getTime();
     }
 
-    var self = this;
     // Build the query, adding the root dot if missing
     var query = [lookup, zone].join('.');
     if (query[query.length-1] !== '.') {
@@ -45,15 +57,15 @@ exports.lookup = function (lookup, zone, cb) {
     this.logdebug('looking up: ' + query);
     dns.resolve(query, 'A', function (err, a) {
         // Statistics
-        if (redis_avail && self.enable_stats) {
+        if (self.enable_stats) {
             var elapsed = (new Date).getTime() - start;
-            client.hincrby('dns-list-stat:' + zone, 'TOTAL', 1);
+            redis_client.hincrby('dns-list-stat:' + zone, 'TOTAL', 1);
             (err) 
-                ? client.hincrby('dns-list-stat:' + zone, err.code, 1)
-                : client.hincrby('dns-list-stat:' + zone, 'LISTED', 1);
-            client.hget('dns-list-stat:' + zone, 'AVG_RT', function (err, rt) {
+                ? redis_client.hincrby('dns-list-stat:' + zone, err.code, 1)
+                : redis_client.hincrby('dns-list-stat:' + zone, 'LISTED', 1);
+            redis_client.hget('dns-list-stat:' + zone, 'AVG_RT', function (err, rt) {
                 if (!err)
-                    client.hset('dns-list-stat:' + zone, 'AVG_RT', 
+                    redis_client.hset('dns-list-stat:' + zone, 'AVG_RT', 
                         (parseInt(rt) ? (parseInt(elapsed) + parseInt(rt))/2 : parseInt(elapsed)));
             });
         }
@@ -85,12 +97,12 @@ exports.multi = function (lookup, zones, cb) {
             // All queries completed?
             if (pending === 0) {
                 // Statistics: check hit overlap
-                if (redis_avail && self.enable_stats && listed.length > 0) {
+                if (self.enable_stats && listed.length > 0) {
                     listed.forEach(function (zone) {
                         for (var i=0; i < listed.length; i++) {
                             (listed[i] === zone)
-                                ? client.hincrby('dns-list-overlap:' + zone, 'TOTAL', 1)
-                                : client.hincrby('dns-list-overlap:' + zone, listed[i], 1);
+                                ? redis_client.hincrby('dns-list-overlap:' + zone, 'TOTAL', 1)
+                                : redis_client.hincrby('dns-list-overlap:' + zone, listed[i], 1);
                         }
                     });
                 }

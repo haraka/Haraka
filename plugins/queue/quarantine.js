@@ -100,12 +100,25 @@ exports.quarantine = function (next, connection) {
                                     connection.logerror(plugin, 'Error writing quarantine file: ' + err);
                                 }
                                 else {
+                                    // Add a note to where we stored the message
+                                    transaction.notes.quarantined = [ base_dir, dir, transaction.uuid ].join('/');
                                     connection.loginfo(plugin, 'Stored copy of message in quarantine: ' + 
                                                    [ base_dir, dir, transaction.uuid ].join('/'));
                                     // Now delete the temporary file
                                     fs.unlink([ base_dir, 'tmp', transaction.uuid ].join('/'), function () {});
                                 }
-                                return next();
+                                // Using notes.quarantine_action to decide what to do after the message is quarantined.
+                                // Format can be either action = [ code, msg ] or action = code 
+                                var action = (connection.notes.quarantine_action || transaction.notes.quarantine_action); 
+                                if (Array.isArray(action)) {
+                                    return next(action[0], action[1]);
+                                }
+                                else if (action) {
+                                    return next(action);
+                                }
+                                else {
+                                    return next();
+                                }
                             }
                     );
                 });

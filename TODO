@@ -9,7 +9,6 @@
   - greylisting
   - karma?
   - virus/*
-  - ldap auth
 
 Outbound improvements
  - Provide better command line tools for manipulating/inspecting the queue

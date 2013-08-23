@@ -227,7 +227,7 @@ exports.load_queue_files = function (pid, cb_name, files) {
                 return fs.unlink(queue_dir + "/" + file, function () {});
             }
 
-            var matches = filename.match(fn_re);
+            var matches = file.match(fn_re);
             if (!matches) {
                 self.logerror("Unrecognised file in queue folder: " + file);
                 return;
@@ -461,15 +461,15 @@ exports.build_todo = function (todo, ws) {
                 return value;
         }
     }
-    var todo_str = new Buffer(JSON.stringify(todo, exclude_from_json), 'binary');
+    var todo_str = new Buffer(JSON.stringify(todo, exclude_from_json));
 
     // since JS has no pack() we have to manually write the bytes of a long
     var todo_length = new Buffer(4);
     var todo_l = todo_str.length;
-    todo_length[3] = todo_str.length & 0xff;
-    todo_length[2] = (todo_str.length >> 8) & 0xff;
-    todo_length[1] = (todo_str.length >> 16) & 0xff;
-    todo_length[0] = (todo_str.length >> 24) & 0xff;
+    todo_length[3] =  todo_l        & 0xff;
+    todo_length[2] = (todo_l >>  8) & 0xff;
+    todo_length[1] = (todo_l >> 16) & 0xff;
+    todo_length[0] = (todo_l >> 24) & 0xff;
     
     var buf = Buffer.concat([todo_length, todo_str], todo_str.length + 4);
 
@@ -540,6 +540,7 @@ exports.split_to_new_recipients = function (hmail, recipients, response, cb) {
 
 // TODOItem - queue file header data
 function TODOItem (domain, recipients, transaction) {
+    this.queue_time = Date.now();
     this.domain = domain;
     this.rcpt_to = recipients;
     this.mail_from = transaction.mail_from;
@@ -638,17 +639,21 @@ HMailItem.prototype.read_todo = function () {
         var todo = '';
         td_reader.on('data', function (str) {
             todo += str;
-            if (todo.length === todo_len) {
+            if (Buffer.byteLength(todo) === todo_len) {
                 // we read everything
-                todo = JSON.parse(todo);
-                self.todo = todo;
+                self.todo = JSON.parse(todo);
                 self.emit('ready');
             }
         });
         td_reader.on('end', function () {
-            if (todo.length === todo_len) {
-                self.logerror("Didn't find enough data in todo!");
-                self.emit('error', "Didn't find enough data in todo!");
+            if (Buffer.byteLength(todo) !== todo_len) {
+                self.logcrit("Didn't find right amount of data in todo!");
+                fs.rename(self.path, path.join(queue_dir, "error." + self.filename), function (err) {
+                    if (err) {
+                        self.logerror("Error creating error file after todo read failure (" + self.filename + "): " + err);
+                    }
+                });
+                self.emit('error', "Didn't find right amount of data in todo!"); // Note nothing picks this up yet
             }
         })
     });
@@ -1082,7 +1087,7 @@ HMailItem.prototype.try_deliver_host = function (mx) {
                         processing_mail = false;
                         var reason = response.join(' ');
                         socket.send_command('QUIT');
-                        self.delivered(reason);
+                        self.delivered(host, mx.exchange, reason);
                         break;
                     case 'quit':
                         socket.end();
@@ -1197,9 +1202,16 @@ HMailItem.prototype.double_bounce = function (err) {
     // Another strategy might be delivery "plugins" to cope with this.
 }
 
-HMailItem.prototype.delivered = function (response) {
-    this.lognotice("delivered file=" + this.filename + ' response="' + response + '"');
-    plugins.run_hooks("delivered", this, response);
+HMailItem.prototype.delivered = function (ip, host, response) {
+    var delay = (Date.now() - this.todo.queue_time)/1000;
+    this.lognotice("delivered file=" + this.filename + 
+                   ' domain="' + this.todo.domain + '"' +
+                   ' host="' + host + '"' +
+                   ' ip=' + ip + 
+                   ' response="' + response + '"' +
+                   ' delay=' + delay +
+                   ' fails=' + this.num_failures);
+    plugins.run_hooks("delivered", this, [host, ip, response, delay]);
 }
 
 HMailItem.prototype.discard = function () {
