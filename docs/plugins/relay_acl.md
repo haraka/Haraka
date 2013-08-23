@@ -21,7 +21,7 @@ Configuration
 
     An example:
 
-    [domains]
+    [domains]  
     test.com = { "action": "continue" }
 
     Please note that this config/relay_dest_domains.ini is shared with
