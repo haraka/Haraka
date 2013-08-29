@@ -28,7 +28,7 @@
     "ldapjs"        : ">= 0.6.3"
   },
   "devDependencies": {
-    "nodeunit"      : "https://github.com/godsflaw/nodeunit/tarball/master"
+    "nodeunit" : "https://github.com/godsflaw/nodeunit/archive/master.tar.gz"
   },
   "licenses": [ {
     "type": "MIT",
