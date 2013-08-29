@@ -15,6 +15,7 @@ var trans       = require('./transaction');
 var plugins     = require('./plugins');
 var async       = require('async');
 var Address     = require('./address').Address;
+var TimerQueue  = require('./timer_queue');
 var date_to_str = utils.date_to_str;
 var existsSync  = utils.existsSync;
 var FsyncWriteStream = require('./fsync_writestream');
@@ -32,22 +33,94 @@ var fn_re = /^(\d+)_(\d+)_/; // I like how this looks like a person
 var queue_dir = path.resolve(config.get('queue_dir') || (process.env.HARAKA + '/queue'));
 var uniq = Math.round(Math.random() * MAX_UNIQ);
 var MAX_CONCURRENCY = config.get('outbound.concurrency_max') || 100;
-var delivery_queue = async.queue(function (hmail, cb) { hmail.next_cb = cb; hmail.send() }, MAX_CONCURRENCY);
+
+var load_queue = async.queue(function (file, cb) {
+    var hmail = new HMailItem(file, path.join(queue_dir, file));
+    exports._add_file(hmail);
+    hmail.once('ready', cb);
+}, MAX_CONCURRENCY);
+
+var in_progress = 0;
+var delivery_queue = async.queue(function (hmail, cb) {
+    in_progress++;
+    hmail.next_cb = function () {
+        in_progress--;
+        cb();
+    }
+    hmail.send()
+}, MAX_CONCURRENCY);
+
+var temp_fail_queue = new TimerQueue();
 
 var queue_count = 0;
 
+exports.get_stats = function () {
+    return in_progress + '/' + delivery_queue.length() + '/' + temp_fail_queue.length();
+}
+
 exports.list_queue = function (cb) {
-    this._load_cur_queue("_list_file", cb);
+    this._load_cur_queue(null, "_list_file", cb);
 }
 
 exports.stat_queue = function (cb) {
     var self = this;
-    this._load_cur_queue("_stat_file", function () {
+    this._load_cur_queue(null, "_stat_file", function () {
         return cb(self.stats());
     });
 }
 
-exports.load_queue = function () {
+exports.scan_queue_pids = function (cb) {
+    var self = this;
+
+    fs.readdir(queue_dir, function (err, files) {
+        if (err) {
+            self.logerror("Failed to load queue directory (" + queue_dir + "): " + err);
+            return cb(err);
+        }
+
+        var pids = {};
+
+        files.forEach(function (file) {
+            if (/^\./.test(file)) {
+                // dot-file...
+                self.logwarn("Removing left over dot-file: " + file);
+                return fs.unlink(file, function () {});
+            }
+
+            // Format: $time_$attempts_$pid_$uniq.$host
+            var match = /^\d+_\d+_(\d+)_\d+\./.exec(file);
+            if (!match) {
+                self.logerror("Unrecognised file in queue directory: " + queue_dir + '/' + file);
+                return;
+            }
+
+            pids[match[1]] = true;
+        });
+
+        return cb(null, Object.keys(pids));
+    });
+}
+
+process.on('message', function (msg) {
+    if (msg.event && msg.event === 'outbound.load_pid_queue') {
+        exports.load_pid_queue(msg.data);
+    }
+    else if (msg.event && msg.event === 'outbound.flush_queue') {
+        exports.flush_queue();
+    }
+    // otherwise ignore the message
+});
+
+exports.flush_queue = function () {
+    temp_fail_queue.drain();
+}
+
+exports.load_pid_queue = function (pid) {
+    this.loginfo("Loading queue for pid: " + pid);
+    this.load_queue(pid);
+}
+
+exports.load_queue = function (pid) {
     // Initialise and load queue
 
     // we create the dir here because this is used when Haraka is running
@@ -61,70 +134,139 @@ exports.load_queue = function () {
         }
         catch (err) {
             if (err.code != 'EEXIST') {
+                logger.logerror("Error creating queue directory: " + err);
                 throw err;
             }
         }
     }
 
-    this._load_cur_queue("_add_file");
+    this._load_cur_queue(pid, "_add_file");
 }
 
-exports._load_cur_queue = function (cb_name, cb) {
-    var plugin = this;
-    plugin.loginfo("Loading outbound queue from ", queue_dir);
+exports._load_cur_queue = function (pid, cb_name, cb) {
+    var self = this;
+    self.loginfo("Loading outbound queue from ", queue_dir);
     fs.readdir(queue_dir, function (err, files) {
         if (err) {
-            return plugin.logerror("Failed to load queue directory (" + queue_dir + "): " + err);
+            return self.logerror("Failed to load queue directory (" + queue_dir + "): " + err);
         }
         
-        plugin.cur_time = new Date(); // set this once so we're not calling it a lot
+        self.cur_time = new Date(); // set this once so we're not calling it a lot
 
-        plugin.load_queue_files(cb_name, files);
+        self.load_queue_files(pid, cb_name, files);
 
         if (cb) cb();
     });
 }
 
-exports.load_queue_files = function (cb_name, files) {
-    var plugin = this;
+exports.load_queue_files = function (pid, cb_name, files) {
+    var self = this;
     if (files.length === 0) return;
 
-    this.loginfo("Loading the queue...");
     if (config.get('outbound.disabled') && cb_name === '_add_file') {
         // try again in 1 second if delivery is disabled
-        setTimeout(function () {plugin.load_queue_files(cb_name, files)}, 1000);
+        setTimeout(function () {self.load_queue_files(pid, cb_name, files)}, 1000);
         return;
     }
 
-    files.forEach(function (file) {
-        if (/^\./.test(file)) {
-            // dot-file...
-            plugin.logwarn("Removing left over dot-file: " + file);
-            return fs.unlink(file, function () {});
-        }
+    if (pid) {
+        // Pre-scan to rename PID files to my PID:
+        this.loginfo("Grabbing queue files for pid: " + pid);
+        async.eachLimit(files, 200, function (file, cb) {
+            var match = /^(\d+)(_\d+_)(\d+)(_\d+\..*)$/.exec(file);
+            if (match && match[3] == pid) {
+                var next_process = match[1];
+                var new_filename = match[1] + match[2] + process.pid + match[4];
+                // self.loginfo("Renaming: " + file + " to " + new_filename);
+                fs.rename(queue_dir + '/' + file, queue_dir + '/' + new_filename, function (err) {
+                    if (err) {
+                        self.logerror("Unable to rename queue file: " + file + " to " + new_filename + " : " + err);
+                        return cb();
+                    }
+                    if (next_process <= self.cur_time) {
+                        load_queue.push(new_filename);
+                    }
+                    else {
+                        temp_fail_queue.add(next_process - self.cur_time, function () { load_queue.push(new_filename) });
+                    }
+                    // self.loginfo("Done");
+                    cb();
+                });
+            }
+            else if (/^\./.test(file)) {
+                // dot-file...
+                self.logwarn("Removing left over dot-file: " + file);
+                return fs.unlink(queue_dir + "/" + file, function (err) {
+                    if (err) {
+                        self.logerror("Error removing dot-file: " + file + ": " + err);
+                    }
+                    cb();
+                });
+            }
+            else {
+                // Do this because otherwise we blow the stack
+                async.setImmediate(cb);
+            }
+        }, function (err) {
+            if (err) {
+                // no error cases yet, but log anyway
+                self.logerror("Error fixing up queue files: " + err);
+            }
+            self.loginfo("Done fixing up old PID queue files");
+            self.loginfo(delivery_queue.length() + " files in my delivery queue");
+            self.loginfo(load_queue.length() + " files in my load queue");
+            self.loginfo(temp_fail_queue.length() + " files in my temp fail queue");
+        });
+    }
+    else {
+        self.loginfo("Loading the queue...");
+        files.forEach(function (file) {
+            if (/^\./.test(file)) {
+                // dot-file...
+                self.logwarn("Removing left over dot-file: " + file);
+                return fs.unlink(queue_dir + "/" + file, function () {});
+            }
 
-        var hmail = new HMailItem(file, path.join(queue_dir, file));
-        plugin[cb_name](hmail);
-    });
+            var matches = file.match(fn_re);
+            if (!matches) {
+                self.logerror("Unrecognised file in queue folder: " + file);
+                return;
+            }
+
+            var next_process = matches[1];
+
+            if (cb_name === '_add_file') {
+                if (next_process <= self.cur_time) {
+                    load_queue.push(file);
+                }
+                else {
+                    temp_fail_queue.add(next_process - self.cur_time, function () { load_queue.push(file) });
+                }
+            }
+            else {
+                self[cb_name](file);
+            }
+        });
+    }
 }
 
 exports._add_file = function (hmail) {
     var self = this;
-    this.loginfo("Adding file: " + hmail.filename);
+    // this.loginfo("Adding file: " + hmail.filename);
     if (hmail.next_process < this.cur_time) {
         delivery_queue.push(hmail);
     }
     else {
-        setTimeout(function () { delivery_queue.push(hmail) }, hmail.next_process - this.cur_time);
+        temp_fail_queue.add(hmail.next_process - this.cur_time, function () { delivery_queue.push(hmail) });
     }
 }
 
-exports._list_file = function (hmail) {
-    // TODO: output more data here
-    console.log("Q: " + hmail.filename);
+exports._list_file = function (file) {
+    // TODO: output more data here?
+    console.log("Q: " + file);
 }
 
-exports._stat_file = function (hmail) {
+exports._stat_file = function () {
     queue_count++;
 }
 
@@ -270,10 +412,7 @@ exports.send_trans_email = function (transaction, next) {
 
         for (var i = 0; i < hmails.length; i++) {
             var hmail = hmails[i];
-            // Ugh should find out why I setTimeout here... Can't recall
-            setTimeout(function (h) {
-                return function () { delivery_queue.push(h) }
-            }(hmail), 0);
+            delivery_queue.push(hmail);
         }
 
         if (next) next(OK, "Mail Queued");
@@ -281,7 +420,7 @@ exports.send_trans_email = function (transaction, next) {
 }
 
 exports.process_domain = function (ok_paths, todo, hmails, cb) {
-    var plugin = this;
+    var self = this;
     this.loginfo("Processing domain: " + todo.domain);
     var fname = _fname();
     var tmp_path = path.join(queue_dir, '.' + fname);
@@ -291,7 +430,7 @@ exports.process_domain = function (ok_paths, todo, hmails, cb) {
         var dest_path = path.join(queue_dir, fname);
         fs.rename(tmp_path, dest_path, function (err) {
             if (err) {
-                plugin.logerror("Unable to rename tmp file!: " + err);
+                self.logerror("Unable to rename tmp file!: " + err);
                 fs.unlink(tmp_path, function () {});
                 cb("Queue error");
             }
@@ -303,12 +442,12 @@ exports.process_domain = function (ok_paths, todo, hmails, cb) {
         });
     });
     ws.on('error', function (err) {
-        plugin.logerror("Unable to write queue file (" + fname + "): " + err);
+        self.logerror("Unable to write queue file (" + fname + "): " + err);
         ws.destroy();
         fs.unlink(tmp_path, function () {});
         cb("Queueing failed");
     });
-    plugin.build_todo(todo, ws);
+    self.build_todo(todo, ws);
     todo.message_stream.pipe(ws, { line_endings: '\r\n', dot_stuffing: true, ending_dot: false });
 }
 
@@ -322,15 +461,15 @@ exports.build_todo = function (todo, ws) {
                 return value;
         }
     }
-    var todo_str = new Buffer(JSON.stringify(todo, exclude_from_json), 'binary');
+    var todo_str = new Buffer(JSON.stringify(todo, exclude_from_json));
 
     // since JS has no pack() we have to manually write the bytes of a long
     var todo_length = new Buffer(4);
     var todo_l = todo_str.length;
-    todo_length[3] = todo_str.length & 0xff;
-    todo_length[2] = (todo_str.length >> 8) & 0xff;
-    todo_length[1] = (todo_str.length >> 16) & 0xff;
-    todo_length[0] = (todo_str.length >> 24) & 0xff;
+    todo_length[3] =  todo_l        & 0xff;
+    todo_length[2] = (todo_l >>  8) & 0xff;
+    todo_length[1] = (todo_l >> 16) & 0xff;
+    todo_length[0] = (todo_l >> 24) & 0xff;
     
     var buf = Buffer.concat([todo_length, todo_str], todo_str.length + 4);
 
@@ -343,14 +482,14 @@ exports.split_to_new_recipients = function (hmail, recipients, response, cb) {
         hmail.refcount++;
         return cb(hmail);
     }
-    var plugin = this;
+    var self = this;
     var fname = _fname();
     var tmp_path = path.join(queue_dir, '.' + fname);
     var ws = new FsyncWriteStream(tmp_path, { flags: WRITE_EXCL });
     // var ws = fs.createWriteStream(tmp_path, { flags: WRITE_EXCL });
     var err_handler = function (err, location) {
-        plugin.logerror("Error while splitting to new recipients (" + location + "): " + err);
-        hmail.bounce("Error splitting to new recipients");
+        self.logerror("Error while splitting to new recipients (" + location + "): " + err);
+        hmail.bounce("Error splitting to new recipients", err);
     }
 
     ws.on('error', function (err) { err_handler(err, "tmp file writer") });
@@ -386,9 +525,9 @@ exports.split_to_new_recipients = function (hmail, recipients, response, cb) {
     }
 
     ws.on('error', function (err) {
-        plugin.logerror("Unable to write queue file (" + fname + "): " + err);
+        self.logerror("Unable to write queue file (" + fname + "): " + err);
         ws.destroy();
-        hmail.bounce("Error re-queueing some recipients");
+        hmail.bounce("Error re-queueing some recipients", err);
     });
 
     ws.on('drain', write_more);
@@ -396,11 +535,12 @@ exports.split_to_new_recipients = function (hmail, recipients, response, cb) {
     var new_todo = JSON.parse(JSON.stringify(hmail.todo));
     new_todo.rcpt_to = recipients;
     new_todo.uuid = utils.uuid();
-    plugin.build_todo(new_todo, ws, write_more);
+    self.build_todo(new_todo, ws, write_more);
 }
 
 // TODOItem - queue file header data
 function TODOItem (domain, recipients, transaction) {
+    this.queue_time = Date.now();
     this.domain = domain;
     this.rcpt_to = recipients;
     this.mail_from = transaction.mail_from;
@@ -430,6 +570,8 @@ function HMailItem (filename, path, notes) {
     this.todo         = null;
     this.file_size    = 0;
     this.next_cb      = dummy_func;
+    this.bounce_error = null;
+    this.bounce_extra = null;
 
     this.size_file();
 }
@@ -470,7 +612,8 @@ HMailItem.prototype.size_file = function () {
     fs.stat(self.path, function (err, stats) {
         if (err) {
             // we are fucked... guess I need somewhere for this to go
-            logger.logerror("Error obtaining file size: " + err);
+            self.logerror("Error obtaining file size: " + err);
+            self.temp_fail("Error obtaining file size");
         }
         else {
             self.file_size = stats.size;
@@ -482,6 +625,10 @@ HMailItem.prototype.size_file = function () {
 HMailItem.prototype.read_todo = function () {
     var self = this;
     var tl_reader = fs.createReadStream(self.path, {start: 0, end: 3});
+    tl_reader.on('error', function (err) {
+        self.logerror("Error reading queue file: " + self.path + ": " + err);
+        return self.temp_fail("Error reading queue file");
+    });
     tl_reader.on('data', function (buf) {
         // I'm making the assumption here we won't ever read less than 4 bytes
         // as no filesystem on the planet should be that dumb...
@@ -492,19 +639,21 @@ HMailItem.prototype.read_todo = function () {
         var todo = '';
         td_reader.on('data', function (str) {
             todo += str;
-            if (todo.length === todo_len) {
+            if (Buffer.byteLength(todo) === todo_len) {
                 // we read everything
-                todo = JSON.parse(todo);
-                self.todo = todo;
+                self.todo = JSON.parse(todo);
                 self.emit('ready');
             }
         });
-        td_reader.on('error', function (err) {
-            logger.logerror("Error reading todo: " + err);
-        })
         td_reader.on('end', function () {
-            if (todo.length === todo_len) {
-                logger.logerror("Didn't find enough data in todo!");
+            if (Buffer.byteLength(todo) !== todo_len) {
+                self.logcrit("Didn't find right amount of data in todo!");
+                fs.rename(self.path, path.join(queue_dir, "error." + self.filename), function (err) {
+                    if (err) {
+                        self.logerror("Error creating error file after todo read failure (" + self.filename + "): " + err);
+                    }
+                });
+                self.emit('error', "Didn't find right amount of data in todo!"); // Note nothing picks this up yet
             }
         })
     });
@@ -532,13 +681,13 @@ HMailItem.prototype._send = function () {
     plugins.run_hooks('send_email', this);
 }
 
-HMailItem.prototype.send_email_respond = function (retval, delaySeconds) {
+HMailItem.prototype.send_email_respond = function (retval, delay_seconds) {
     if (retval === constants.delay) {
         // Try again in 'delay' seconds.
-        this.logdebug("Delivery of this email delayed for " + delaySeconds + " seconds");
+        this.logdebug("Delivery of this email delayed for " + delay_seconds + " seconds");
         var hmail = this;
         hmail.next_cb();
-        setTimeout(function () { delivery_queue.push(hmail) }, delaySeconds*1000);
+        temp_fail_queue.add(delay_seconds * 1000, function () { delivery_queue.push(hmail) });
     }
     else {
         this.logdebug("Sending mail: " + this.filename);
@@ -741,13 +890,15 @@ HMailItem.prototype.try_deliver_host = function (mx) {
     var self            = this;
     var processing_mail = true;
 
-    this.loginfo("Attempting to deliver to: " + host + ":" + port + " (" + delivery_queue.length() + ")");
+    this.loginfo("Attempting to deliver to: " + host + ":" + port + " (" + delivery_queue.length() + ") (" + temp_fail_queue.length() + ")");
 
     socket.on('error', function (err) {
-        self.logerror("Ongoing connection failed: " + err);
-        processing_mail = false;
-        // try the next MX
-        self.try_deliver_host(mx);
+        if (processing_mail) {
+            self.logerror("Ongoing connection failed to " + host + ":" + port + " : " + err);
+            processing_mail = false;
+            // try the next MX
+            self.try_deliver_host(mx);
+        }
     });
 
     socket.on('close', function () {
@@ -825,7 +976,7 @@ HMailItem.prototype.try_deliver_host = function (mx) {
     }
     
     socket.on('timeout', function () {
-        self.logerror("Outbound connection timed out");
+        self.logerror("Outbound connection timed out to " + host + ":" + port);
         processing_mail = false;
         socket.end();
         self.try_deliver_host(mx);
@@ -936,7 +1087,7 @@ HMailItem.prototype.try_deliver_host = function (mx) {
                         processing_mail = false;
                         var reason = response.join(' ');
                         socket.send_command('QUIT');
-                        self.delivered(reason);
+                        self.delivered(host, mx.exchange, reason);
                         break;
                     case 'quit':
                         socket.end();
@@ -987,19 +1138,22 @@ function populate_bounce_message (from, to, reason, hmail, cb) {
     })
 }
 
-HMailItem.prototype.bounce = function (err) {
+HMailItem.prototype.bounce = function (err, extra) {
     this.loginfo("bouncing mail: " + err);
     if (!this.todo) {
         // haven't finished reading the todo, delay here...
         var self = this;
-        self.once('ready', function () { self._bounce(err) });
+        self.once('ready', function () { self._bounce(err, extra) });
         return;
     }
-    this._bounce(err);
+    this._bounce(err, extra);
 }
 
-HMailItem.prototype._bounce = function (err) {
+HMailItem.prototype._bounce = function (err, extra) {
     this.bounce_error = err;
+    if (extra) {
+        this.bounce_extra = extra;
+    }
     plugins.run_hooks("bounce", this, err);
 }
 
@@ -1007,9 +1161,11 @@ HMailItem.prototype.bounce_respond = function (retval, msg) {
     if (retval != constants.cont) {
         this.loginfo("plugin responded with: " + retval + ". Not sending bounce.");
         if (retval === constants.stop) {
-            this.discard();
+            this.discard(); // calls next_cb
         }
-        return this.next_cb();
+        else {
+            return this.next_cb();
+        }
     }
 
     var self = this;
@@ -1046,9 +1202,16 @@ HMailItem.prototype.double_bounce = function (err) {
     // Another strategy might be delivery "plugins" to cope with this.
 }
 
-HMailItem.prototype.delivered = function (response) {
-    this.lognotice("delivered file=" + this.filename + ' response="' + response + '"');
-    plugins.run_hooks("delivered", this, response);
+HMailItem.prototype.delivered = function (ip, host, response) {
+    var delay = (Date.now() - this.todo.queue_time)/1000;
+    this.lognotice("delivered file=" + this.filename + 
+                   ' domain="' + this.todo.domain + '"' +
+                   ' host="' + host + '"' +
+                   ' ip=' + ip + 
+                   ' response="' + response + '"' +
+                   ' delay=' + delay +
+                   ' fails=' + this.num_failures);
+    plugins.run_hooks("delivered", this, [host, ip, response, delay]);
 }
 
 HMailItem.prototype.discard = function () {
@@ -1060,12 +1223,12 @@ HMailItem.prototype.discard = function () {
     }
 }
 
-HMailItem.prototype.temp_fail = function (err) {
+HMailItem.prototype.temp_fail = function (err, extra) {
     this.num_failures++;
     
     // Test for max failures which is configurable.
     if (this.num_failures >= (config.get('outbound.maxTempFailures') || 13)) {
-        return this.bounce("Too many failures (" + err + ")");
+        return this.bounce("Too many failures (" + err + ")", extra);
     }
 
     // basic strategy is we exponentially grow the delay to the power
@@ -1077,7 +1240,7 @@ HMailItem.prototype.temp_fail = function (err) {
     // this is good enough for now.
     
     var delay = (Math.pow(2, (this.num_failures + 5)) * 1000);
-    var until = new Date().getTime() + delay;
+    var until = Date.now() + delay;
     
     this.loginfo("Temp failing " + this.filename + " for " + (delay/1000) + " seconds: " + err);
     
@@ -1086,13 +1249,15 @@ HMailItem.prototype.temp_fail = function (err) {
     var hmail = this;
     fs.rename(this.path, path.join(queue_dir, new_filename), function (err) {
         if (err) {
-            return hmail.bounce("Error re-queueing email: " + err);
+            return hmail.bounce("Error re-queueing email", err);
         }
         
         hmail.path = path.join(queue_dir, new_filename);
         hmail.filename = new_filename;
 
-        setTimeout(function () {delivery_queue.push(hmail)}, delay);
+        hmail.next_cb();
+
+        temp_fail_queue.add(delay, function () { delivery_queue.push(hmail) });
     });
 }
 

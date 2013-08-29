@@ -10,8 +10,14 @@ var utils = require('./utils');
 exports.hook_capabilities = function (next, connection) {
     /* Caution: We cannot advertise STARTTLS if the upgrade has already been done. */
     if (connection.notes.tls_enabled !== 1) {
-        connection.capabilities.push('STARTTLS');
-        connection.notes.tls_enabled = 1;
+        var key = this.config.get('tls_key.pem', 'binary');
+        if (key) {
+            connection.capabilities.push('STARTTLS');
+            connection.notes.tls_enabled = 1;
+        }
+        else {
+            connection.logcrit("TLS plugin enabled but no key found. Please see plugin docs.");
+        }
     }
     /* Let the plugin chain continue. */
     next();
@@ -19,9 +25,9 @@ exports.hook_capabilities = function (next, connection) {
 
 exports.hook_unrecognized_command = function (next, connection, params) {
     /* Watch for STARTTLS directive from client. */
-    if (params[0] === 'STARTTLS') {
-        var key = this.config.get('tls_key.pem', 'data').join("\n");
-        var cert = this.config.get('tls_cert.pem', 'data').join("\n");
+    if (connection.notes.tls_enabled && params[0] === 'STARTTLS') {
+        var key = this.config.get('tls_key.pem', 'binary');
+        var cert = this.config.get('tls_cert.pem', 'binary');
         var options = { key: key, cert: cert, requestCert: true };
 
         /* Respond to STARTTLS command. */

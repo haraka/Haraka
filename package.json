@@ -3,7 +3,7 @@
   "name": "Haraka",
   "description": "An SMTP Server project.",
   "keywords": ["haraka", "smtp", "server", "email"],
-  "version": "2.1.4",
+  "version": "2.2.0",
   "homepage": "https://github.com/baudehlo/Haraka/",
   "repository": {
     "type": "git",
@@ -24,7 +24,8 @@
     "npid"          : ">= 0.3.1"
   },
   "optionalDependencies": {
-    "node-syslog" : ">= 1.1.2"
+    "node-syslog"   : ">= 1.1.2",
+    "ldapjs"        : ">= 0.6.3"
   },
   "devDependencies": {
     "nodeunit" : "https://github.com/godsflaw/nodeunit/archive/master.tar.gz"
@@ -37,7 +38,7 @@
     "mail" : "helpme@gmail.com",
     "url" : "https://github.com/baudehlo/Haraka/issues"
   },
-  "bin": { "haraka": "./bin/haraka" },
+  "bin": { "haraka": "./bin/haraka", "spf": "./bin/spf" },
   "scripts": {
     "test": "./run_tests"
   }

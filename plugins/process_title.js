@@ -1,5 +1,7 @@
 // process_title
 
+var outbound = require('./outbound');
+
 exports.hook_init_master = function (next, server) {
     server.notes.pt_connections = 0;
     server.notes.pt_concurrent = 0;
@@ -12,19 +14,31 @@ exports.hook_init_master = function (next, server) {
     if (server.cluster) {
         title = 'Haraka (master)';
         process.title = title;
+        server.notes.pt_new_out_stats = [0,0,0,0];
         var cluster = server.cluster;
         var recvMsg = function (msg) {
-            switch (msg) {
-                case 'connect':
+            switch (msg.event) {
+                case 'process_title.connect':
                     server.notes.pt_connections++;
                     server.notes.pt_concurrent++;
                     break;
-                case 'disconnect':
+                case 'process_title.disconnect':
                     server.notes.pt_concurrent--;
                     break;
-                case 'message':
+                case 'process_title.message':
                     server.notes.pt_messages++;
                     break;
+                case 'process_title.outbound_stats':
+                    var out_stats = msg.data.split('/');
+                    for (var i=0; i<out_stats.length; i++) {
+                        server.notes.pt_new_out_stats[i] += parseInt(out_stats[i], 10);
+                    }
+                    server.notes.pt_new_out_stats[3]++;
+                    // Check if we got all results back yet
+                    if (server.notes.pt_new_out_stats[3] === Object.keys(cluster.workers).length) {
+                        server.notes.pt_out_stats = server.notes.pt_new_out_stats.slice(0,3).join('/');
+                        server.notes.pt_new_out_stats = [0,0,0,0];
+                    }
                 default:
                     // Unknown message
             }
@@ -55,11 +69,9 @@ exports.hook_init_child = function (next, server) {
 exports.hook_lookup_rdns = function (next, connection) {
     var server = connection.server;
     connection.notes.pt_connect_run = true;
-    var title = 'Haraka';  
     if (server.cluster) {
-        title = 'Haraka (worker)';
         var worker = server.cluster.worker;
-        worker.send('connect');
+        worker.send({event: 'process_title.connect'});
     }
     server.notes.pt_connections++;
     server.notes.pt_concurrent++;
@@ -74,16 +86,14 @@ exports.hook_disconnect = function (next, connection) {
     // will exhibit this behaviour.
     if (!connection.notes.pt_connect_run) {
         if (server.cluster) {
-            server.cluster.worker.send('connect');
+            server.cluster.worker.send({event: 'process_title.connect'});
         }
         server.notes.pt_connections++;
         server.notes.pt_concurrent++;
     }
-    var title = 'Haraka';
     if (server.cluster) {
-        title = 'Haraka (worker)';
         var worker = server.cluster.worker;
-        worker.send('disconnect');
+        worker.send({event: 'process_title.disconnect'});
     }
     server.notes.pt_concurrent--;
     return next();
@@ -91,11 +101,9 @@ exports.hook_disconnect = function (next, connection) {
 
 exports.hook_data = function (next, connection) {
     var server = connection.server;
-    var title = 'Haraka';
     if (server.cluster) {
-        title = 'Haraka (worker)';
         var worker = server.cluster.worker;
-        worker.send('message');
+        worker.send({event: 'process_title.message'});
     }
     server.notes.pt_messages++;
     return next();
@@ -115,10 +123,14 @@ var setupInterval = function (title, server) {
         var mps = server.notes.pt_messages - server.notes.pt_mps_diff;
         if (mps > server.notes.pt_mps_max) server.notes.pt_mps_max = mps;
         server.notes.pt_mps_diff = server.notes.pt_messages;
+        var out = server.notes.pt_out_stats || outbound.get_stats();
+        if (/\(worker\)/.test(title)) {
+            process.send({event: 'process_title.outbound_stats', data: out});
+        }
         // Update title
         process.title = title + ' cn=' + server.notes.pt_connections + 
             ' cc=' + server.notes.pt_concurrent + ' cps=' + cps + '/' + av_cps +
             '/' + server.notes.pt_cps_max + ' mps=' + mps + '/' + av_mps + '/' +
-            server.notes.pt_mps_max;
+            server.notes.pt_mps_max + ' out=' + out + ' ';
     }, 1000);
 }

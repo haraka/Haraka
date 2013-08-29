@@ -11,6 +11,12 @@ flag to `true` via a plugin. The simplest way of doing that is to use SMTP
 AUTH, and have the client authenticate. For example using the `auth/flat_file`
 plugin. However it is very simple to write a custom plugin to do this.
 
+For statistics on outbound mail use the `process_title` plugin. See the
+documentation for that plugin for details.
+
+To flush the outbound queue (for temporary failed mails) hit the Haraka master
+process with the SIGHUP signal (via the `kill` command line tool).
+
 Outbound Configuration Files
 ----------------------------
 
@@ -68,8 +74,9 @@ The MX record is sent via next(OK, mx) and can be one of:
     * ipaddress
     * ipaddress:port
 * An MX object of the form: `{priority: 0, exchange: hostname}` and optionally
-a `port` value to specify an alternate port.
-* A list of MX objects in an array.
+a `port` value to specify an alternate port, and a `bind` value to specify an
+outbound IP address to bind to.
+* A list of MX objects in an array, each in the same format as above.
 
 ### The bounce hook
 
@@ -84,9 +91,13 @@ can return `OK` from this hook to stop it from sending a bounce message.
 When mails are successfully delivered to the remote end then the `delivered`
 hook is called. The return codes from this hook have no effect, so it is only
 useful for logging the fact that a successful delivery occurred.
-This hook is called with `(hmail, response)` as parameters, the `response`
-variable contains the SMTP response text returned by the host that received
-the message and will typically contain the remote queue ID.
+This hook is called with `(hmail, [host, ip, response, delay)` as parameters, 
+`host` is the hostname of the MX that the message was delivered to,
+`ip` is the IP address of the host that the message was delivered to,
+`response` variable contains the SMTP response text returned by the host 
+that received the message and will typically contain the remote queue ID and
+`delay` is the time taken between the queue file being created and the 
+message being delivered.
 
 Bounce Messages
 ---------------

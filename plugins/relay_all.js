@@ -7,6 +7,6 @@ exports.register = function() {
 exports.confirm_all = function(next, connection, params) {
     var recipient = params.shift();
     connection.loginfo(this, "confirming recipient " + recipient);
-    connection.relaying = 1;
+    connection.relaying = true;
     next(OK);
 };

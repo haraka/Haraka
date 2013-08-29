@@ -26,7 +26,7 @@ exports.get_plain_passwd = function (user, cb) {
 }
 
 exports.hook_unrecognized_command = function (next, connection, params) {
-    if(params[0] === AUTH_COMMAND && params[1]) {
+    if(params[0].toUpperCase() === AUTH_COMMAND && params[1]) {
         return this.select_auth_method(next, connection, params.slice(1).join(' '));
     }
     else if (connection.notes.authenticating &&
@@ -62,7 +62,7 @@ exports.check_plain_passwd = function (connection, user, passwd, cb) {
 
 exports.check_cram_md5_passwd = function (ticket, user, passwd, cb) {
     this.get_plain_passwd(user, function (plain_pw) {
-        if (plain_pw === null) {
+        if (plain_pw == null) {
             return cb(false);
         }
         
@@ -123,7 +123,7 @@ exports.check_user = function (next, connection, credentials, method) {
 
 exports.select_auth_method = function(next, connection, method) {
     var split = method.split(/\s+/);
-    method = split.shift();
+    method = split.shift().toUpperCase();
     var params = split;
     if(connection.notes.allowed_auth_methods &&
        connection.notes.allowed_auth_methods.indexOf(method) !== -1)

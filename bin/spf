@@ -1,0 +1,47 @@
+#!/usr/bin/env node
+
+// SPF test tool
+
+var nopt = require('nopt');
+var path = require('path');
+var base_path = path.join(__dirname, '..');
+var SPF = require(base_path + '/spf').SPF;
+var spf = new SPF();
+
+var parsed = nopt({ 'debug': Boolean, 'ip': String, 'helo': String, 'domain': String  });
+
+function print_usage() {
+    console.log('Usage: spf [--debug] --ip <ip> --helo <helo> --domain <domain>');
+    process.exit(1);
+}
+
+if (!parsed.ip || (parsed.ip && (!parsed.domain && !parsed.helo))) {
+    print_usage();
+}
+
+if (!parsed.debug) {
+    SPF.prototype.log_debug = function (str) {}
+}
+
+if (parsed.domain) {
+    var domain;       
+    if (domain = /\@(.+)$/.exec(parsed.domain)) {
+        domain = domain[1];
+    }
+    else {
+        domain = parsed.domain;
+    }
+}
+
+spf.check_host(parsed.ip, (domain ? domain : parsed.helo), null, function (err, result) {
+    if (err) {
+        console.log('Error: ' + err.message);
+        process.exit(1);
+    }
+    console.log([
+        'ip=' + parsed.ip,
+        'helo="' + (parsed.helo ? parsed.helo : '') + '"',
+        'domain="' + (domain ? domain : '') + '"',
+        'result=' + spf.result(result)
+    ].join(' '));
+});

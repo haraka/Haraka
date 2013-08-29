@@ -3,6 +3,12 @@
 - Ability to modify the body of email (e.g add a banner)
 - Create a config file for each of the core shipping configs, so people have something as a baseline
 - IMAP server (long shot for now)
+- Plugins to copy from Qpsmtpd:
+  - bogus_bounce (checks bounces have one recipient and no return-path)
+  - dspam
+  - greylisting
+  - karma?
+  - virus/*
 
 Outbound improvements
  - Provide better command line tools for manipulating/inspecting the queue
