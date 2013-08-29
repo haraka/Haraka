@@ -16,6 +16,7 @@ var SSL_OP_ALL = require('constants').SSL_OP_ALL;
 function pluggableStream(socket) {
     stream.Stream.call(this);
     this.readable = this.writable = true;
+    this._timeout = 0;
     this._writeState = true;
     this._pending = [];
     this._pendingCallbacks = [];
@@ -128,6 +129,7 @@ pluggableStream.prototype.setNoDelay = function (/* true||false */) {
 };
 
 pluggableStream.prototype.setTimeout = function (timeout) {
+    this._timeout = timeout;
     return this.targetsocket.setTimeout(timeout);
 };
 
@@ -206,6 +208,10 @@ function createServer(cb) {
             cleartext._controlReleased = true;
 
             socket.cleartext = cleartext;
+            
+            if (socket._timeout) {
+                cleartext.setTimeout(socket._timeout);
+            }
 
             socket.attach(socket.cleartext);
         };
@@ -282,6 +288,11 @@ function connect(port, host, cb) {
 
         cleartext._controlReleased = true;
         socket.cleartext = cleartext;
+        
+        if (socket._timeout) {
+            cleartext.setTimeout(socket._timeout);
+        }
+
         socket.attach(socket.cleartext);
 
         log.logdebug("client TLS upgrade in progress, awaiting secured.");
