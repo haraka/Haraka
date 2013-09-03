@@ -190,6 +190,14 @@ exports.createConnection = function(client, server) {
 Connection.prototype.process_line = function (line) {
     var self = this;
     
+    if (this.state >= states.STATE_DISCONNECTING) {
+        if (logger.would_log(logger.LOGPROTOCOL)) {
+            this.logprotocol("C: (after-disconnect): " + this.current_line + ' state=' + this.state);
+        }
+        this.logwarn("data after disconnect from " + this.remote_ip);
+        return;
+    }
+
     if (this.state === states.STATE_DATA) {
         if (logger.would_log(logger.LOGDATA)) {
             this.logdata("C: " + line);
@@ -197,16 +205,17 @@ Connection.prototype.process_line = function (line) {
         this.accumulate_data(line);
         return;
     }
-    else {
-        this.current_line = line.toString('binary').replace(/\r?\n/, '');
-        if (logger.would_log(logger.LOGPROTOCOL)) {
-            this.logprotocol("C: " + this.current_line + ' state=' + this.state);
-        }
-        // Check for non-ASCII characters
-        if (/[^\x00-\x7F]/.test(this.current_line)) {
-            return this.respond(501, 'Syntax error (8-bit characters not allowed)');
-        }
+
+    this.current_line = line.toString('binary').replace(/\r?\n/, '');
+    if (logger.would_log(logger.LOGPROTOCOL)) {
+        this.logprotocol("C: " + this.current_line + ' state=' + this.state);
     }
+
+    // Check for non-ASCII characters
+    if (/[^\x00-\x7F]/.test(this.current_line)) {
+        return this.respond(501, 'Syntax error (8-bit characters not allowed)');
+    }
+
     if (this.state === states.STATE_CMD) {
         this.state = states.STATE_PAUSE_SMTP;
         var matches = /^([^ ]*)( +(.*))?$/.exec(this.current_line);
