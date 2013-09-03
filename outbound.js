@@ -1184,11 +1184,11 @@ HMailItem.prototype.bounce_respond = function (retval, msg) {
         }
 
         exports.send_email(from, recip, data_lines.join(''), function (code, msg) {
-            self.discard();
             if (code === DENY) {
                 // failed to even queue the mail
                 return self.double_bounce("Unable to queue the bounce message. Not sending bounce!");
             }
+            self.discard();
         });
     });
 }
