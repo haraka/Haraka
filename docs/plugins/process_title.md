@@ -20,8 +20,10 @@ where:
 * cn = Total number of connections
 * cc = Total number of concurrent connections
 * cps = Number of connections in the last second / average / maximum
+* msgs = Total number of messages
 * mps = Number of messages in the last second / average / maximum
 * out = Mails being processed / Mails waiting to be processed / Mails in temp fail state
+* respawn = Number of worker processes respawned (only under cluster)
 
 If 'cluster' is used then the master process will show the total
 across all workers, with the exception of outbound stats.
