@@ -1007,6 +1007,10 @@ HMailItem.prototype.try_deliver_host = function (mx) {
                     }
                 }
                 else if (code.match(/^5/)) {
+                    if (command === 'ehlo') {
+                        // EHLO command was rejected; fall-back to HELO
+                        return socket.send_command('HELO', config.get('me'));
+                    }
                     if (/^rcpt/.test(command)) {
                         bounce_recips.push(last_recip);
                     }
