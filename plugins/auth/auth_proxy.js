@@ -105,8 +105,8 @@ exports.try_auth_proxy = function (connection, hosts, user, passwd, cb) {
                     var i;
                     for (i in response) {
                         if (response[i].match(/^STARTTLS/)) {
-                            var key = self.config.get('tls_key.pem', 'data').join("\n");
-                            var cert = self.config.get('tls_cert.pem', 'data').join("\n");
+                            var key = self.config.get('tls_key.pem', 'binary');
+                            var cert = self.config.get('tls_cert.pem', 'binary');
                             // Use TLS opportunistically if we found the key and certificate
                             if (key && cert) {
                                 this.on('secure', function () {
