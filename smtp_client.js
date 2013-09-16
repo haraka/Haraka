@@ -20,11 +20,12 @@ var STATE_DESTROYED = 5;
 var tls_key;
 var tls_cert;
 
-function SMTPClient(port, host, connect_timeout) {
+function SMTPClient(port, host, connect_timeout, idle_timeout) {
     events.EventEmitter.call(this);
     this.uuid = uuid();
     this.socket = line_socket.connect(port, host);
     this.socket.setTimeout(((connect_timeout === undefined) ? 30 : connect_timeout) * 1000);
+    this.socket.setKeepAlive(true);
     this.state = STATE_IDLE;
     this.command = 'greeting';
     this.response = []
@@ -108,8 +109,8 @@ function SMTPClient(port, host, connect_timeout) {
     });
 
     this.socket.on('connect', function () {
-        // Remove connection timeout
-        self.socket.setTimeout(0);
+        // Remove connection timeout and set idle timeout
+        self.socket.setTimeout(((idle_timeout) ? idle_timeout : 300) * 1000);
     });
 
     var closed = function (msg) {
@@ -315,8 +316,8 @@ exports.get_client_plugin = function (plugin, connection, config, callback) {
                     }
                 }
                 if (smtp_client.response[line].match(/^STARTTLS/)) {
-                    tls_key = plugin.config.get('tls_key.pem', 'data').join("\n");
-                    tls_cert = plugin.config.get('tls_cert.pem', 'data').join("\n");
+                    tls_key = plugin.config.get('tls_key.pem', 'binary');
+                    tls_cert = plugin.config.get('tls_cert.pem', 'binary');
                     if (tls_key && tls_cert && enable_tls) {
                         smtp_client.socket.on('secure', function () {
                             smtp_client.emit('greeting', 'EHLO');
