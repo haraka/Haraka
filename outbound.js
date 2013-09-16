@@ -1029,8 +1029,8 @@ HMailItem.prototype.try_deliver_host = function (mx) {
                         socket.process_ehlo_data();
                         break;
                     case 'starttls':
-                        var key = config.get('tls_key.pem', 'data').join("\n");
-                        var cert = config.get('tls_cert.pem', 'data').join("\n");
+                        var key = config.get('tls_key.pem', 'binary');
+                        var cert = config.get('tls_cert.pem', 'binary');
                         var tls_options = { key: key, cert: cert };
 
                         smtp_properties = {};
