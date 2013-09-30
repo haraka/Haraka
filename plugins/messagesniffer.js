@@ -267,7 +267,11 @@ exports.hook_data_post = function (next, connection) {
                     }
                     else {
                         // Default with no configuration
-                        if (code > 1) {
+                        if (code === 40) {
+                            // GBUdb caution; proceed anyway by default
+                            return next();
+                        }
+                        else if (code > 1) {
                             return next(DENY, 'Spam detected by MessageSniffer' +
                                               ' (code=' + code + ' group=' + group + ')');
                         }
@@ -318,7 +322,8 @@ exports.hook_disconnect = function (next, connection) {
     var cfg = this.config.get('messagesniffer.ini');
 
     if (cfg.main.gbudb_report_deny && !connection.notes.snf_run && 
-        (connection.last_reject && connection.last_reject.charAt(0) == '5' )) 
+        (connection.last_reject && connection.last_reject.charAt(0) == '5' &&
+         connection.last_reject !== '503 RCPT required first')) 
     {
         SNFClient("<snf><xci><gbudb><bad ip='" + connection.remote_ip + "'/></gbudb></xci></snf>", function (err, result) {
             if (err) {
