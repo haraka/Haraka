@@ -152,7 +152,7 @@ function Connection(client, server) {
     this.capabilities = null;
     this.early_talker_delay = config.get('early_talker_delay') || 1000;
     this.banner_includes_uuid = config.get('banner_includes_uuid') ? true : false;
-    this.deny_includes_uuid = config.get('deny_includes_uuid') ? true : false;
+    this.deny_includes_uuid = config.get('deny_includes_uuid') || null;
     this.early_talker = 0;
     this.pipelining = 0;
     this.relaying = false;
