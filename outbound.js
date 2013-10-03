@@ -1165,7 +1165,7 @@ HMailItem.prototype.bounce_respond = function (retval, msg) {
     if (retval != constants.cont) {
         this.loginfo("plugin responded with: " + retval + ". Not sending bounce.");
         if (retval === constants.stop) {
-            this.discard(); // calls next_cb
+            return this.discard(); // calls next_cb
         }
         else {
             return this.next_cb();
