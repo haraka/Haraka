@@ -987,6 +987,10 @@ HMailItem.prototype.try_deliver_host = function (mx) {
 
     socket.on('line', function (line) {
         var matches;
+        if (!processing_mail) {
+            self.logprotocol("Received data after stopping processing: " + line);
+            return;
+        }
         self.logprotocol("S: " + line);
         if (matches = smtp_regexp.exec(line)) {
             var code = matches[1],
