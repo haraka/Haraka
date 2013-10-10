@@ -837,7 +837,7 @@ Connection.prototype.rset_respond = function(retval, msg) {
 }
 
 Connection.prototype.mail_respond = function(retval, msg) {
-    if (this.state >= states.STATE_DISCONNECTING) {
+    if (this.state === states.STATE_DISCONNECTED) {
         return;
     }
     var self = this;
@@ -874,7 +874,7 @@ Connection.prototype.mail_respond = function(retval, msg) {
 };
 
 Connection.prototype.rcpt_ok_respond = function (retval, msg) {
-    if (this.state >= states.STATE_DISCONNECTING) {
+    if (this.state === states.STATE_DISCONNECTED) {
         return;
     }
     var self = this;
@@ -922,7 +922,7 @@ Connection.prototype.rcpt_ok_respond = function (retval, msg) {
 }
 
 Connection.prototype.rcpt_respond = function(retval, msg) {
-    if (this.state >= states.STATE_DISCONNECTING) {
+    if (this.state === states.STATE_DISCONNECTED) {
         return;
     }
 
@@ -1346,7 +1346,7 @@ Connection.prototype.data_done = function() {
 };
 
 Connection.prototype.data_post_respond = function(retval, msg) {
-    if (this.state >= states.STATE_DISCONNECTING) {
+    if (this.state === states.STATE_DISCONNECTED) {
         return;
     }
 
@@ -1407,7 +1407,7 @@ Connection.prototype.max_data_exceeded_respond = function (retval, msg) {
 }
 
 Connection.prototype.queue_outbound_respond = function(retval, msg) {
-    if (this.state >= states.STATE_DISCONNECTING) {
+    if (this.state === states.STATE_DISCONNECTED) {
         return;
     }
 
@@ -1467,7 +1467,7 @@ Connection.prototype.queue_outbound_respond = function(retval, msg) {
 }
 
 Connection.prototype.queue_respond = function(retval, msg) {
-    if (this.state >= states.STATE_DISCONNECTING) {
+    if (this.state === states.STATE_DISCONNECTED) {
         return;
     }
 
