@@ -1455,7 +1455,7 @@ Connection.prototype.queue_respond = function(retval, msg) {
     }
     switch (retval) {
         case constants.ok:
-                plugins.run_hooks("queue_ok", this, msg || 'Message Queued (' + self.transasction.uuid + ')');
+                plugins.run_hooks("queue_ok", this, msg || 'Message Queued (' + self.transaction.uuid + ')');
                 break;
         case constants.deny:
                 this.respond(552, msg || "Message denied", function() {
