@@ -9,6 +9,7 @@ function Socket(port, host) {
     this.port = port;
     this.host = host;
     this.setTimeout = stub();
+    this.setKeepAlive = stub();
     this.destroy = stub();
 }
 
