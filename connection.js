@@ -1399,7 +1399,7 @@ Connection.prototype.queue_outbound_respond = function(retval, msg) {
     }
     switch(retval) {
         case constants.ok:
-                plugins.run_hooks("queue_ok", this, msg || 'Message Queued');
+                plugins.run_hooks("queue_ok", this, msg || 'Message Queued (' + self.transasction.uuid + ')');
                 break;
         case constants.deny:
                 this.respond(552, msg || "Message denied", function() {
@@ -1429,7 +1429,7 @@ Connection.prototype.queue_outbound_respond = function(retval, msg) {
                 outbound.send_email(this.transaction, function(retval, msg) {
                     switch(retval) {
                         case constants.ok:
-                                plugins.run_hooks("queue_ok", self, msg || 'Message Queued');
+                                plugins.run_hooks("queue_ok", self, msg || 'Message Queued (' + self.transasction.uuid + ')');
                                 break;
                         case constants.deny:
                                 self.respond(552, msg || "Message denied", function() {
@@ -1455,7 +1455,7 @@ Connection.prototype.queue_respond = function(retval, msg) {
     }
     switch (retval) {
         case constants.ok:
-                plugins.run_hooks("queue_ok", this, msg || 'Message Queued');
+                plugins.run_hooks("queue_ok", this, msg || 'Message Queued (' + self.transasction.uuid + ')');
                 break;
         case constants.deny:
                 this.respond(552, msg || "Message denied", function() {
