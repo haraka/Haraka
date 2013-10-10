@@ -837,9 +837,6 @@ Connection.prototype.rset_respond = function(retval, msg) {
 }
 
 Connection.prototype.mail_respond = function(retval, msg) {
-    if (this.state === states.STATE_DISCONNECTED) {
-        return;
-    }
     var self = this;
     var sender = this.transaction.mail_from;
     var dmsg   = "sender " + sender.format();
@@ -874,9 +871,6 @@ Connection.prototype.mail_respond = function(retval, msg) {
 };
 
 Connection.prototype.rcpt_ok_respond = function (retval, msg) {
-    if (this.state === states.STATE_DISCONNECTED) {
-        return;
-    }
     var self = this;
     var rcpt = this.transaction.rcpt_to[this.transaction.rcpt_to.length - 1];
     var dmsg = "recipient " + rcpt.format();
@@ -922,10 +916,6 @@ Connection.prototype.rcpt_ok_respond = function (retval, msg) {
 }
 
 Connection.prototype.rcpt_respond = function(retval, msg) {
-    if (this.state === states.STATE_DISCONNECTED) {
-        return;
-    }
-
     if (retval === constants.cont && this.relaying) {
         retval = constants.ok;
     }
@@ -1346,10 +1336,6 @@ Connection.prototype.data_done = function() {
 };
 
 Connection.prototype.data_post_respond = function(retval, msg) {
-    if (this.state === states.STATE_DISCONNECTED) {
-        return;
-    }
-
     var mid = this.transaction.header.get('Message-ID') || '';
     this.lognotice([
         'message',
@@ -1407,10 +1393,6 @@ Connection.prototype.max_data_exceeded_respond = function (retval, msg) {
 }
 
 Connection.prototype.queue_outbound_respond = function(retval, msg) {
-    if (this.state === states.STATE_DISCONNECTED) {
-        return;
-    }
-
     var self = this;
     if (retval !== constants.ok) {
         this.lognotice('queue code=' + constants.translate(retval) + ' msg="' + (msg || '') + '"');
@@ -1467,10 +1449,6 @@ Connection.prototype.queue_outbound_respond = function(retval, msg) {
 }
 
 Connection.prototype.queue_respond = function(retval, msg) {
-    if (this.state === states.STATE_DISCONNECTED) {
-        return;
-    }
-
     var self = this;
     if (retval !== constants.ok) {
         this.lognotice('queue code=' + constants.translate(retval) + ' msg="' + (msg || '') + '"');
