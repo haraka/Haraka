@@ -17,6 +17,7 @@ to this:
 ```
 
 where:
+
 * cn = Total number of connections
 * cc = Total number of concurrent connections
 * cps = Number of connections in the last second / average / maximum
