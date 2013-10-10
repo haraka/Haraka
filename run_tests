@@ -19,10 +19,13 @@ catch(e) {
 process.chdir(__dirname);
 
 if (process.argv[2]) {
-    reporter.run(process.argv.slice(2, process.argv.length));
+    console.log("Running tests: ", process.argv.slice(2));
+    reporter.run(process.argv.slice(2), undefined, function () {
+        process.exit();
+    });
 }
 else {
-  reporter.run(['tests', 'tests/plugins'], undefined, function () {
-      process.exit();
-  });
+    reporter.run(['tests', 'tests/plugins'], undefined, function () {
+        process.exit();
+    });
 }
