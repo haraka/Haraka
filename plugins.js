@@ -179,7 +179,7 @@ plugins._register_plugin = function (plugin) {
 
 plugins.run_hooks = function (hook, object, params) {
     // Bail out if the client has disconnected
-    if (object.constructor.name === 'Connection' && object.state === states.DISCONNECTED) {
+    if (object.constructor.name === 'Connection' && object.state >= states.DISCONNECTING) {
         if (hook != 'log') {
             object.logdebug('aborting ' + hook + ' hook as client has disconnected');
         }
@@ -225,7 +225,7 @@ plugins.run_hooks = function (hook, object, params) {
 
 plugins.run_next_hook = function(hook, object, params) {
     // Bail if client has disconnected
-    if (object.constructor.name === 'Connection' && object.state === states.DISCONNECTED) {
+    if (object.constructor.name === 'Connection' && object.state >= states.DISCONNECTING) {
         object.logdebug('aborting ' + hook + ' hook as client has disconnected');
         return;
     }
@@ -242,7 +242,7 @@ plugins.run_next_hook = function(hook, object, params) {
             return; // This hook has been cancelled
         }
         // Bail if client has disconnected
-        if (object.constructor.name === 'Connection' && object.state === states.DISCONNECTED) {
+        if (object.constructor.name === 'Connection' && object.state >= states.DISCONNECTING) {
             object.logdebug('ignoring ' + item[0].name + ' plugin callback as client has disconnected');
             return;
         }
