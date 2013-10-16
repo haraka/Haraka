@@ -921,7 +921,7 @@ HMailItem.prototype.try_deliver_host = function (mx) {
     var ok_recips = 0;
     var fail_recips = [];
     var bounce_recips = [];
-    var secured = 0;
+    var secured = false;
     var smtp_properties = {
         "tls": false,
         "max_size": 0,
@@ -969,7 +969,7 @@ HMailItem.prototype.try_deliver_host = function (mx) {
             this.on('secure', function () {
                 // Set this flag so we don't try STARTTLS again if it
                 // is incorrectly offered at EHLO once we are secured.
-                secured = 1;
+                secured = true;
                 socket.send_command('EHLO', config.get('me'));
             });
             this.send_command('STARTTLS');
