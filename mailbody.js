@@ -3,12 +3,13 @@
 var logger = require('./logger');
 var Header = require('./mailheader').Header;
 var utils  = require('./utils');
+var config = require('./config');
 var events = require('events');
 var util   = require('util');
 var Iconv  = require('./mailheader').Iconv;
 var attstr = require('./attachment_stream');
 
-var buf_siz = 65536;
+var buf_siz = config.get('mailparser.bufsize') || 65536;
 
 function Body (header, options) {
     this.header = header || new Header();
@@ -39,17 +40,6 @@ Body.prototype.parse_child = function (line) {
     if (line.substr(0, (this.boundary.length + 2)) === ('--' + this.boundary)) {
 
         line = this.children[this.children.length -1].parse_end(line);
-
-        if (this.children[this.children.length -1].state === 'attachment') {
-            var child = this.children[this.children.length - 1];
-            if (child.buf_fill > 0) {
-                // see below for why we create a new buffer here.
-                var to_emit = new Buffer(child.buf_fill);
-                child.buf.copy(to_emit, 0, 0, child.buf_fill);
-                child.attachment_stream.emit_data(to_emit);
-            }
-            child.attachment_stream.emit_end();
-        }
 
         if (line.substr(this.boundary.length + 2, 2) === '--') {
             // end
@@ -159,6 +149,17 @@ Body.prototype.parse_end = function (line) {
     if (!line) {
         line = '';
     }
+    
+    if (this.state === 'attachment') {
+        if (this.buf_fill > 0) {
+            // see below for why we create a new buffer here.
+            var to_emit = new Buffer(this.buf_fill);
+            this.buf.copy(to_emit, 0, 0, this.buf_fill);
+            this.attachment_stream.emit_data(to_emit);
+        }
+        this.attachment_stream.emit_end();
+    }
+
     // ignore these lines - but we could store somewhere I guess.
     if (this.body_text_encoded.length && this.bodytext.length === 0) {
         var buf = this.decode_function(this.body_text_encoded);
