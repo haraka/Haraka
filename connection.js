@@ -152,7 +152,7 @@ function Connection(client, server) {
     this.capabilities = null;
     this.early_talker_delay = config.get('early_talker_delay') || 1000;
     this.banner_includes_uuid = config.get('banner_includes_uuid') ? true : false;
-    this.deny_includes_uuid = config.get('deny_includes_uuid') ? true : false;
+    this.deny_includes_uuid = config.get('deny_includes_uuid') || null;
     this.early_talker = 0;
     this.pipelining = 0;
     this.relaying = false;
@@ -190,6 +190,14 @@ exports.createConnection = function(client, server) {
 Connection.prototype.process_line = function (line) {
     var self = this;
     
+    if (this.state >= states.STATE_DISCONNECTING) {
+        if (logger.would_log(logger.LOGPROTOCOL)) {
+            this.logprotocol("C: (after-disconnect): " + this.current_line + ' state=' + this.state);
+        }
+        this.logwarn("data after disconnect from " + this.remote_ip);
+        return;
+    }
+
     if (this.state === states.STATE_DATA) {
         if (logger.would_log(logger.LOGDATA)) {
             this.logdata("C: " + line);
@@ -197,16 +205,17 @@ Connection.prototype.process_line = function (line) {
         this.accumulate_data(line);
         return;
     }
-    else {
-        this.current_line = line.toString('binary').replace(/\r?\n/, '');
-        if (logger.would_log(logger.LOGPROTOCOL)) {
-            this.logprotocol("C: " + this.current_line + ' state=' + this.state);
-        }
-        // Check for non-ASCII characters
-        if (/[^\x00-\x7F]/.test(this.current_line)) {
-            return this.respond(501, 'Syntax error (8-bit characters not allowed)');
-        }
+
+    this.current_line = line.toString('binary').replace(/\r?\n/, '');
+    if (logger.would_log(logger.LOGPROTOCOL)) {
+        this.logprotocol("C: " + this.current_line + ' state=' + this.state);
     }
+
+    // Check for non-ASCII characters
+    if (/[^\x00-\x7F]/.test(this.current_line)) {
+        return this.respond(501, 'Syntax error (8-bit characters not allowed)');
+    }
+
     if (this.state === states.STATE_CMD) {
         this.state = states.STATE_PAUSE_SMTP;
         var matches = /^([^ ]*)( +(.*))?$/.exec(this.current_line);
@@ -1390,7 +1399,7 @@ Connection.prototype.queue_outbound_respond = function(retval, msg) {
     }
     switch(retval) {
         case constants.ok:
-                plugins.run_hooks("queue_ok", this, msg || 'Message Queued');
+                plugins.run_hooks("queue_ok", this, msg || 'Message Queued (' + self.transaction.uuid + ')');
                 break;
         case constants.deny:
                 this.respond(552, msg || "Message denied", function() {
@@ -1420,7 +1429,7 @@ Connection.prototype.queue_outbound_respond = function(retval, msg) {
                 outbound.send_email(this.transaction, function(retval, msg) {
                     switch(retval) {
                         case constants.ok:
-                                plugins.run_hooks("queue_ok", self, msg || 'Message Queued');
+                                plugins.run_hooks("queue_ok", self, msg || 'Message Queued (' + self.transaction.uuid + ')');
                                 break;
                         case constants.deny:
                                 self.respond(552, msg || "Message denied", function() {
@@ -1446,7 +1455,7 @@ Connection.prototype.queue_respond = function(retval, msg) {
     }
     switch (retval) {
         case constants.ok:
-                plugins.run_hooks("queue_ok", this, msg || 'Message Queued');
+                plugins.run_hooks("queue_ok", this, msg || 'Message Queued (' + self.transaction.uuid + ')');
                 break;
         case constants.deny:
                 this.respond(552, msg || "Message denied", function() {

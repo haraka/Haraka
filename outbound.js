@@ -380,7 +380,7 @@ exports.send_trans_email = function (transaction, next) {
         transaction.add_header('Date', date_to_str(new Date()));
     }
 
-    transaction.add_leading_header('Received', 'via haraka outbound.js at ' + date_to_str(new Date()));
+    transaction.add_leading_header('Received', '(Haraka outbound); ' + date_to_str(new Date()));
     
     // First get each domain
     var recips = {};
@@ -415,7 +415,7 @@ exports.send_trans_email = function (transaction, next) {
             delivery_queue.push(hmail);
         }
 
-        if (next) next(OK, "Mail Queued");
+        if (next) next(OK, "Message Queued (" + transaction.uuid + ")");
     })
 }
 
@@ -921,6 +921,7 @@ HMailItem.prototype.try_deliver_host = function (mx) {
     var ok_recips = 0;
     var fail_recips = [];
     var bounce_recips = [];
+    var secured = false;
     var smtp_properties = {
         "tls": false,
         "max_size": 0,
@@ -964,8 +965,11 @@ HMailItem.prototype.try_deliver_host = function (mx) {
             }
         }
 
-        if (smtp_properties.tls && config.get('outbound.enable_tls')) {
+        if (smtp_properties.tls && config.get('outbound.enable_tls') && !secured) {
             this.on('secure', function () {
+                // Set this flag so we don't try STARTTLS again if it
+                // is incorrectly offered at EHLO once we are secured.
+                secured = true;
                 socket.send_command('EHLO', config.get('me'));
             });
             this.send_command('STARTTLS');
@@ -987,6 +991,10 @@ HMailItem.prototype.try_deliver_host = function (mx) {
 
     socket.on('line', function (line) {
         var matches;
+        if (!processing_mail) {
+            self.logprotocol("Received data after stopping processing: " + line);
+            return;
+        }
         self.logprotocol("S: " + line);
         if (matches = smtp_regexp.exec(line)) {
             var code = matches[1],
@@ -1007,6 +1015,10 @@ HMailItem.prototype.try_deliver_host = function (mx) {
                     }
                 }
                 else if (code.match(/^5/)) {
+                    if (command === 'ehlo') {
+                        // EHLO command was rejected; fall-back to HELO
+                        return socket.send_command('HELO', config.get('me'));
+                    }
                     if (/^rcpt/.test(command)) {
                         bounce_recips.push(last_recip);
                     }
@@ -1025,8 +1037,8 @@ HMailItem.prototype.try_deliver_host = function (mx) {
                         socket.process_ehlo_data();
                         break;
                     case 'starttls':
-                        var key = config.get('tls_key.pem', 'data').join("\n");
-                        var cert = config.get('tls_cert.pem', 'data').join("\n");
+                        var key = config.get('tls_key.pem', 'binary');
+                        var cert = config.get('tls_cert.pem', 'binary');
                         var tls_options = { key: key, cert: cert };
 
                         smtp_properties = {};
@@ -1161,7 +1173,7 @@ HMailItem.prototype.bounce_respond = function (retval, msg) {
     if (retval != constants.cont) {
         this.loginfo("plugin responded with: " + retval + ". Not sending bounce.");
         if (retval === constants.stop) {
-            this.discard(); // calls next_cb
+            return this.discard(); // calls next_cb
         }
         else {
             return this.next_cb();
@@ -1184,11 +1196,11 @@ HMailItem.prototype.bounce_respond = function (retval, msg) {
         }
 
         exports.send_email(from, recip, data_lines.join(''), function (code, msg) {
-            self.discard();
             if (code === DENY) {
                 // failed to even queue the mail
                 return self.double_bounce("Unable to queue the bounce message. Not sending bounce!");
             }
+            self.discard();
         });
     });
 }

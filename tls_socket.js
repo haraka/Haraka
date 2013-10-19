@@ -17,6 +17,7 @@ function pluggableStream(socket) {
     stream.Stream.call(this);
     this.readable = this.writable = true;
     this._timeout = 0;
+    this._keepalive = false;
     this._writeState = true;
     this._pending = [];
     this._pendingCallbacks = [];
@@ -122,7 +123,9 @@ pluggableStream.prototype.destroy = function () {
     }
 }
 
-pluggableStream.prototype.setKeepAlive = function (/* true||false, timeout */) {
+pluggableStream.prototype.setKeepAlive = function (bool) {
+    this._keepalive = bool;
+    return this.targetsocket.setKeepAlive(bool);
 };
 
 pluggableStream.prototype.setNoDelay = function (/* true||false */) {
@@ -213,6 +216,8 @@ function createServer(cb) {
                 cleartext.setTimeout(socket._timeout);
             }
 
+            cleartext.setKeepAlive(socket._keepalive);
+
             socket.attach(socket.cleartext);
         };
 
@@ -292,6 +297,8 @@ function connect(port, host, cb) {
         if (socket._timeout) {
             cleartext.setTimeout(socket._timeout);
         }
+
+        cleartext.setKeepAlive(socket._keepalive);
 
         socket.attach(socket.cleartext);
 
