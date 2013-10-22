@@ -9,7 +9,7 @@ var utils = require('./utils');
 
 exports.hook_capabilities = function (next, connection) {
     /* Caution: We cannot advertise STARTTLS if the upgrade has already been done. */
-    if (connection.notes.tls_enabled !== 1) {
+    if (!connection.using_tls) {
         var key = this.config.get('tls_key.pem', 'binary');
         if (key) {
             connection.capabilities.push('STARTTLS');
@@ -35,25 +35,26 @@ exports.hook_unrecognized_command = function (next, connection, params) {
         /* Upgrade the connection to TLS. */
         var self = this;
         connection.client.upgrade(options, function (authorized, verifyError, cert, cipher) {
-            connection.reset_transaction();
-            connection.hello_host = undefined;
-            connection.using_tls = true;
-            connection.notes.tls = { 
-                authorized: authorized,
-                authorizationError: verifyError,
-                peerCertificate: cert,
-                cipher: cipher
-            };
-            connection.loginfo(self, 'secured:' +
-                ((cipher) ? ' cipher=' + cipher.name + ' version=' + cipher.version : '') + 
-                ' verified=' + authorized +
-                ((verifyError) ? ' error="' + verifyError + '"' : '' ) +
-                ((cert && cert.subject) ? ' cn="' + cert.subject.CN + '"' + 
-                ' organization="' + cert.subject.O + '"' : '') +
-                ((cert && cert.issuer) ? ' issuer="' + cert.issuer.O + '"' : '') +
-                ((cert && cert.valid_to) ? ' expires="' + cert.valid_to + '"' : '') +
-                ((cert && cert.fingerprint) ? ' fingerprint=' + cert.fingerprint : ''));
-            return next(OK);  // Return OK as we responded to the client
+            connection.reset_transaction(function () {
+                connection.hello_host = undefined;
+                connection.using_tls = true;
+                connection.notes.tls = { 
+                    authorized: authorized,
+                    authorizationError: verifyError,
+                    peerCertificate: cert,
+                    cipher: cipher
+                };
+                connection.loginfo(self, 'secured:' +
+                    ((cipher) ? ' cipher=' + cipher.name + ' version=' + cipher.version : '') + 
+                    ' verified=' + authorized +
+                    ((verifyError) ? ' error="' + verifyError + '"' : '' ) +
+                    ((cert && cert.subject) ? ' cn="' + cert.subject.CN + '"' + 
+                    ' organization="' + cert.subject.O + '"' : '') +
+                    ((cert && cert.issuer) ? ' issuer="' + cert.issuer.O + '"' : '') +
+                    ((cert && cert.valid_to) ? ' expires="' + cert.valid_to + '"' : '') +
+                    ((cert && cert.fingerprint) ? ' fingerprint=' + cert.fingerprint : ''));
+                return next(OK);  // Return OK as we responded to the client
+            });
         });
     }
     else {
