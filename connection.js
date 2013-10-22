@@ -141,6 +141,7 @@ function Connection(client, server) {
     this.current_line = null;
     this.greeting = null;
     this.hello_host = null;
+    this.using_tls = false;
     this.state = states.STATE_PAUSE;
     this.prev_state = null;
     this.loop_code = null;
@@ -1026,37 +1027,39 @@ Connection.prototype.cmd_proxy = function (line) {
 // SMTP Commands
 
 Connection.prototype.cmd_helo = function(line) {
+    var self = this;
     var results = (new String(line)).split(/ +/);
     var host = results[0];
     if (!host) {
         return this.respond(501, "HELO requires domain/address - see RFC-2821 4.1.1.1");
     }
-    
-    if (this.hello_host) {
-        return this.respond(503, "You already said HELO");
-    }
-    
-    this.greeting   = 'HELO';
-    this.hello_host = host;
 
-    plugins.run_hooks('helo', this, host);
+    // We could check this.hello_host === host here
+    // But this is probably best done in a plugin.
+ 
+    this.reset_transaction(function () {
+        self.greeting = 'HELO';
+        self.hello_host = host;
+        plugins.run_hooks('helo', self, host);
+    });
 };
 
 Connection.prototype.cmd_ehlo = function(line) {
+    var self = this;
     var results = (new String(line)).split(/ +/);
     var host = results[0];
     if (!host) {
         return this.respond(501, "EHLO requires domain/address - see RFC-2821 4.1.1.1");
     }
-    
-    if (this.hello_host) {
-        return this.respond(503, "You already said EHLO");
-    }
-    
-    this.greeting   = 'EHLO';
-    this.hello_host = host;
 
-    plugins.run_hooks('ehlo', this, host);
+    // We could check this.hello_host === host here
+    // But this is probably best done in a plugin.
+
+    this.reset_transaction(function () {
+        self.greeting = 'EHLO';
+        self.hello_host = host;
+        plugins.run_hooks('ehlo', self, host);
+    });
 };
 
 Connection.prototype.cmd_quit = function(args) {
