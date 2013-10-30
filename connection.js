@@ -547,6 +547,7 @@ Connection.prototype.init_transaction = function(cb) {
 }
 
 Connection.prototype.loop_respond = function (code, msg) {
+    if (this.state >= states.STATE_DISCONNECTING) return;
     this.state = states.STATE_LOOP;
     this.loop_code = code;
     this.loop_msg = msg;
