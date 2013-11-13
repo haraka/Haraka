@@ -21,14 +21,14 @@
 
 var chew_regexp = /\s+([A-Za-z0-9][A-Za-z0-9\-]*(?:=[^= \x00-\x1f]+)?)$/;
 
-exports.parse = function(type, line) {
+exports.parse = function(type, line, strict) {
     var params = [];
     line = (new String(line)).replace(/\s*$/, '');
     if (type === "mail") {
-        line = line.replace(/from:\s*/i, "");
+        line = line.replace(strict ? /from:/i : /from:\s*/i, "");
     }
     else {
-        line = line.replace(/to:\s*/i, "");
+        line = line.replace(strict ? /to:/i : /to:\s*/i, "");
     }
     
     while (1) {
@@ -58,11 +58,15 @@ exports.parse = function(type, line) {
         }
         
         params.unshift(line);
-        
-        return params;
     }
 
     line = params.shift() || '';
+    if (strict) {
+        if (!line.match(/^<.*>$/)) {
+            throw new Error("Invalid format of " + type + " command: " + line);
+        }
+    }
+
     if (type === "mail") {
         if (!line.length) {
             return ["<>"]; // 'MAIL FROM:' --> 'MAIL FROM:<>'
