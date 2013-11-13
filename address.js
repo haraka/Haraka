@@ -85,7 +85,7 @@ Address.prototype.parse = function (addr) {
     var matches;
     
     if (!(matches = user_host_re.exec(addr))) {
-        throw new Error("Failed to parse address: " + addr);
+        throw new Error("Invalid domain in address: " + addr);
     }
     
     var localpart  = matches[1];
@@ -107,7 +107,7 @@ Address.prototype.parse = function (addr) {
         return;
     }
     else {
-        throw new Error("Failed to parse address: " + addr);
+        throw new Error("Invalid local part in address: " + addr);
     }
 }
 

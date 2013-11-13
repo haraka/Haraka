@@ -1115,7 +1115,7 @@ Connection.prototype.cmd_mail = function(line) {
         else {
             this.logerror(err);
         }
-        return this.respond(501, "Command parsing failed");
+        return this.respond(501, ["Command parsing failed", err]);
     }
    
     // Get rest of key=value pairs
@@ -1164,7 +1164,7 @@ Connection.prototype.cmd_rcpt = function(line) {
         else {
             this.logerror(err);
         }
-        return this.respond(501, "Command parsing failed");
+        return this.respond(501, ["Command parsing failed", err]);
     }
     
     // Get rest of key=value pairs

@@ -46,5 +46,15 @@ exports.bad = {
             test.ok(true);
         }
         test.done();
+    },
+    '<user@example.com>.': function (test) {
+        test.expect(1);
+        try {
+            var address = new Address('<user@example.com.>');
+        }
+        catch (e) {
+            test.ok(true);
+        }
+        test.done();
     }
 };
