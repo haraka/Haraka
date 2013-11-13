@@ -1105,7 +1105,7 @@ Connection.prototype.cmd_mail = function(line) {
     var results;
     var from;
     try {
-        results = rfc1869.parse("mail", line);
+        results = rfc1869.parse("mail", line, config.get('strict_rfc1869') && !this.relaying);
         from    = new Address (results.shift());
     }
     catch (err) {
@@ -1154,7 +1154,7 @@ Connection.prototype.cmd_rcpt = function(line) {
     var results;
     var recip;
     try {
-        results = rfc1869.parse("rcpt", line);
+        results = rfc1869.parse("rcpt", line, config.get('strict_rfc1869') && !this.relaying);
         recip   = new Address(results.shift());
     }
     catch (err) {
