@@ -88,8 +88,8 @@ exports.hook_data_post = function (next, connection) {
                                     break;
                                 case '403':  // 403 File 'eicar.com' infected: 'Virus identified EICAR_Test'
                                     // Virus found
-                                    do_next(DENY, response.join(' '));
-                                    return socket.send_command('QUIT');
+                                    socket.send_command('QUIT');
+                                    return do_next(DENY, response.join(' '));
                                     break;
                                 default:  
                                     // Any other result is an error
