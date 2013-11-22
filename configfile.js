@@ -18,13 +18,13 @@ cfreader._config_cache = {};
 
 cfreader.read_config = function(name, type, cb) {
     // Check cache first
-    if (cfreader._config_cache[name]) {
+    if (name in cfreader._config_cache) {
         return cfreader._config_cache[name];
     }
 
     // load config file
     var result = cfreader.load_config(name, type);
-
+    
     if (cfreader.watch_files) {
         fs.unwatchFile(name);
         fs.watchFile(name, function (curr, prev) {
