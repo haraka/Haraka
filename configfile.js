@@ -25,7 +25,7 @@ cfreader.read_config = function(name, type, cb) {
     // load config file
     var result = cfreader.load_config(name, type);
 
-    if (cfreader.watch_files) {
+    if (result != null && cfreader.watch_files) {
         fs.unwatchFile(name);
         fs.watchFile(name, function (curr, prev) {
             // file has changed, or files has been removed
