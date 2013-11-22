@@ -15,6 +15,7 @@ var cfreader = exports;
 
 cfreader.watch_files = true;
 cfreader._config_cache = {};
+cfreader._watchers = {};
 
 cfreader.read_config = function(name, type, cb) {
     // Check cache first
@@ -26,16 +27,18 @@ cfreader.read_config = function(name, type, cb) {
     var result = cfreader.load_config(name, type);
     
     if (cfreader.watch_files) {
-        fs.unwatchFile(name);
-        fs.watchFile(name, function (curr, prev) {
-            // file has changed, or files has been removed
-            if (curr.mtime.getTime() !== prev.mtime.getTime() ||
-                curr.nlink !== prev.nlink)
-            {
+        if (name in cfreader._watchers) cfreader._watchers[name].close();
+        try {
+            cfreader._watchers[name] = fs.watch(name, {persistent: false}, function (event, filename) {
                 cfreader.load_config(name, type);
                 if (typeof cb === 'function') cb();
+            });
+        }
+        catch (e) {
+            if (e.code != 'ENOENT') { // ignore error when ENOENT
+                logger.logerror("Error watching config file: " + name + " : " + e);
             }
-        });
+        }
     }
 
     return result;
