@@ -27,7 +27,7 @@ cfreader.read_config = function(name, type, cb) {
     var result = cfreader.load_config(name, type);
     
     if (cfreader.watch_files) {
-        if (name in cfreader._watchers) cfreader._watchers[name].close();
+        if (name in cfreader._watchers) return result;
         try {
             cfreader._watchers[name] = fs.watch(name, {persistent: false}, function (event, filename) {
                 cfreader.load_config(name, type);
