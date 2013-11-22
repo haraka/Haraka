@@ -1,0 +1,22 @@
+#
+# systemd service file for Haraka
+#
+# Put this file in /usr/lib/systemd/system, modify the paths to suit
+# then run: 
+# sudo systemctl enable haraka
+# sudo systemctl start haraka
+#
+
+[Unit]
+Description=Haraka MTA
+After=syslog.target network.target remote-fs.target nss-lookup.target
+ 
+[Service]
+Type=forking
+PIDFile=/var/run/haraka.pid
+ExecStart=/usr/bin/haraka -c /path/to/your/config
+KillMode=process
+PrivateTmp=true
+ 
+[Install]
+WantedBy=multi-user.target
