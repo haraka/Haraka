@@ -178,6 +178,8 @@ function Connection(client, server) {
     this.data_post_start = null;
     this.proxy = false;
     this.proxy_timer = false;
+    this.max_line_length = config.get('max_line_length') || 512;
+    this.max_data_line_length = config.get('max_data_line_length') || 992;
     setupClient(this);
 }
 
@@ -293,9 +295,12 @@ Connection.prototype._process_data = function() {
     // connection is dropped; we'll end up in the function forever.
     if (this.state >= states.STATE_DISCONNECTING) return;
 
-    var maxlength = config.get('max_line_length') || 512;
+    var maxlength;
     if (this.state === states.STATE_PAUSE_DATA || this.state === states.STATE_DATA) {
-        maxlength = config.get('max_data_line_length') || 992;
+        maxlength = this.max_data_line_length;
+    }
+    else {
+        maxlength = this.max_line_length;
     }
 
     var offset;
