@@ -18,7 +18,7 @@ cfreader._config_cache = {};
 
 cfreader.read_config = function(name, type, cb) {
     // Check cache first
-    if (cfreader._config_cache[name]) {
+    if (name in cfreader._config_cache) {
         return cfreader._config_cache[name];
     }
 
