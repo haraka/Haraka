@@ -286,6 +286,8 @@ MessageStream.prototype.process_buf = function (buf) {
         if (this.line_endings === '\n' && line.length >= 2 &&
             line[line.length-1] === 0x0a && line[line.length-2] === 0x0d)
         {
+            // We copy the line to a new buffer before modifying the copy
+            line = new Buffer(line);
             line[line.length-2] = 0x0a;
             line = line.slice(0, line.length-1);
         }
