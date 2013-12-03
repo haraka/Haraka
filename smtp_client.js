@@ -279,6 +279,9 @@ exports.get_client_plugin = function (plugin, connection, config, callback) {
         config.main.host, config.main.connect_timeout, config.main.timeout, config.main.max_connections);
     pool.acquire(function (err, smtp_client) {
         connection.logdebug(plugin, 'Got smtp_client: ' + smtp_client.uuid);
+        
+        var secured = false;
+
         smtp_client.call_next = function (retval, msg) {
             if (this.next) {
                 var next = this.next;
@@ -315,11 +318,12 @@ exports.get_client_plugin = function (plugin, connection, config, callback) {
                         return;
                     }
                 }
-                if (smtp_client.response[line].match(/^STARTTLS/)) {
+                if (smtp_client.response[line].match(/^STARTTLS/) && !secured) {
                     tls_key = plugin.config.get('tls_key.pem', 'binary');
                     tls_cert = plugin.config.get('tls_cert.pem', 'binary');
                     if (tls_key && tls_cert && enable_tls) {
                         smtp_client.socket.on('secure', function () {
+                            secured = true;
                             smtp_client.emit('greeting', 'EHLO');
                         });
                         smtp_client.send_command('STARTTLS');
