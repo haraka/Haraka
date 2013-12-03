@@ -148,7 +148,7 @@ plugins._load_and_compile_plugin = function(name) {
     };
     constants.import(sandbox);
     try {
-        vm.runInNewContext(code, sandbox, name);
+        vm.runInNewContext(code, sandbox, fp[i]);
     }
     catch (err) {
         logger.logcrit("Compiling plugin: " + name + " failed");
