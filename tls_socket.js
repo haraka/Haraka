@@ -184,6 +184,12 @@ function createServer(cb) {
 
             var pair = tls.createSecurePair(sslcontext, true, true, false);
 
+            setInterval(function () {
+                if (pair.ssl.receivedShutdown()) {
+                    log.logdebug("Received Shutdown!");
+                }
+            }, 1000);
+
             var cleartext = pipe(pair, cryptoSocket);
 
             pair.on('error', function(exception) {
