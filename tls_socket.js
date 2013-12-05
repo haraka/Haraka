@@ -184,9 +184,11 @@ function createServer(cb) {
 
             var pair = tls.createSecurePair(sslcontext, true, true, false);
 
-            setInterval(function () {
-                if (pair.ssl.receivedShutdown()) {
+            var interval_timer = setInterval(function () {
+                if (pair.ssl.receivedShutdown) {
                     log.logdebug("Received Shutdown!");
+                    clearInterval(interval_timer);
+                    socket.end();
                 }
             }, 1000);
 
@@ -194,10 +196,21 @@ function createServer(cb) {
 
             pair.on('error', function(exception) {
                 socket.emit('error', exception);
+                clearInterval(interval_timer);
+            });
+
+            pair.on('end', function () {
+                clearInterval(interval_timer);
+            });
+
+            pair.on('close', function () {
+                clearInterval(interval_timer);
             });
 
             pair.on('secure', function() {
                 var verifyError = (pair.ssl || pair._ssl).verifyError();
+
+                console.log("Pair: ", pair.ssl.prototype);
 
                 log.logdebug("TLS secured.");
                 if (verifyError) {
