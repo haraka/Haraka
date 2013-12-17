@@ -877,7 +877,11 @@ HMailItem.prototype.try_deliver = function () {
     });
 }
 
-var smtp_regexp = /^([0-9]{3})([ -])(.*)/;
+var smtp_regexp = /^(\d{3})([ -])(?:(\d\.\d\.\d)\s)?(.*)/;
+
+function map_recips(item) {
+    return Object.keys(item)[0];
+}
 
 HMailItem.prototype.try_deliver_host = function (mx) {
     if (this.hostlist.length === 0) {
@@ -999,19 +1003,26 @@ HMailItem.prototype.try_deliver_host = function (mx) {
         if (matches = smtp_regexp.exec(line)) {
             var code = matches[1],
                 cont = matches[2],
-                rest = matches[3];
+                extc = matches[3],
+                rest = matches[4];
             response.push(rest);
             if (cont === ' ') {
                 if (code.match(/^4/)) {
                     if (/^rcpt/.test(command)) {
                         // this recipient was rejected
-                        fail_recips.push(last_recip);
+                        self.lognotice('recipient ' + last_recip + ' deferred: ' + 
+                                       code + ' ' + ((extc) ? extc + ' ' : '') + response.join(' '));
+                        (function () {
+                            var o = {};
+                            o[last_recip] = code + ' ' + ((extc) ? extc + ' ' : '') + response.join(' ');
+                            fail_recips.push(o);
+                        })();
                     }
                     else {
                         var reason = response.join(' ');
                         socket.send_command('QUIT');
                         processing_mail = false;
-                        return self.temp_fail("Upstream error: " + code + " " + reason);
+                        return self.temp_fail("Upstream error: " + code + " " + ((extc) ? extc + ' ' : '') + reason);
                     }
                 }
                 else if (code.match(/^5/)) {
@@ -1020,7 +1031,13 @@ HMailItem.prototype.try_deliver_host = function (mx) {
                         return socket.send_command('HELO', config.get('me'));
                     }
                     if (/^rcpt/.test(command)) {
-                        bounce_recips.push(last_recip);
+                        self.lognotice('recipient ' + last_recip + ' rejected: ' + 
+                                       code + ' ' + ((extc) ? extc + ' ' : '') + response.join(' '));
+                        (function() {
+                            var o = {};
+                            o[last_recip] = code + ' ' + ((extc) ? extc + ' ' : '') + response.join(' '); 
+                            bounce_recips.push(o);
+                        })();
                     }
                     else {
                         var reason = response.join(' ');
@@ -1056,16 +1073,16 @@ HMailItem.prototype.try_deliver_host = function (mx) {
                         if (!recipients.length) {
                             if (fail_recips.length) {
                                 self.refcount++;
-                                exports.split_to_new_recipients(self, fail_recips, "Some recipients temporarily failed", function (hmail) {
+                                exports.split_to_new_recipients(self, fail_recips.map(map_recips), "Some recipients temporarily failed", function (hmail) {
                                     self.discard();
-                                    hmail.temp_fail("Some recipients temp failed: " + fail_recips.join(', '));
+                                    hmail.temp_fail("Some recipients temp failed: " + fail_recips.map(map_recips).join(', '), fail_recips);
                                 });
                             }
                             if (bounce_recips.length) {
                                 self.refcount++;
-                                exports.split_to_new_recipients(self, bounce_recips, "Some recipients rejected", function (hmail) {
+                                exports.split_to_new_recipients(self, bounce_recips.map(map_recips), "Some recipients rejected", function (hmail) {
                                     self.discard();
-                                    hmail.bounce("Some recipients failed: " + bounce_recips.join(', '));
+                                    hmail.bounce("Some recipients failed: " + bounce_recips.map(map_recips).join(', '), bounce_recips);
                                 });
                             }
                             if (ok_recips) {
