@@ -90,9 +90,8 @@ And it will run.
 However the big thing you want to do next is to edit the `config/plugins`
 file. This determines what plugins run in Haraka, and controls the overall
 behaviour of the server. By default the server is setup to receive mails for
-domains in `host_list` and deliver them via `qmail-queue`. Queueing to
-qmail is likely not what you need unless you have qmail installed, so this is
-likely the first thing you want to change.
+domains in `host_list` and deliver them via `smtp-forward`. Configure the
+destination in `config/smtp_forward.ini`.
 
 Each plugin has documentation available via `haraka -h plugins/<name>`.
 Look there for information about how each plugin is configured, edit your
