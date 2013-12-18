@@ -86,6 +86,10 @@ parameter is the error message received from the remote end. If you do not wish
 to have a bounce message sent to the originating sender of the email then you
 can return `OK` from this hook to stop it from sending a bounce message.
 
+The variable hmail.bounce_extra can be accessed from this hook.  This is an 
+Object which contains each recipient as the key and the value is the code 
+and response received from the upstream server for that recipient.
+
 ### The delivered hook
 
 When mails are successfully delivered to the remote end then the `delivered`
