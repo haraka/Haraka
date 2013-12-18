@@ -344,6 +344,26 @@ else if (parsed.qempty) {
 }
 else if (parsed.configs) {
     var haraka_path = path.join(base, 'haraka.js');
+
+    var base_dir = process.argv[3];
+    var err_msg = "Did you install a Haraka config? (haraka -i " + base_dir +")";
+    if ( !fs.existsSync(base_dir) )
+        fail( "No such directory: " + base_dir + "\n" + err_msg );
+    if ( ! fs.statSync(base_dir).isDirectory() )
+        fail( "Not a directory at: " + base_dir + "\n" + err_msg );
+
+    var config_dir = path.join(base_dir,'config');
+    if ( !fs.existsSync( path.join(config_dir) ) )
+        fail( "No config directory in: " + base_dir );
+    if ( !fs.statSync( config_dir ).isDirectory() )
+        fail( "Not a directory at: " + config_dir );
+
+    var smtp_ini = path.join(config_dir, 'smtp.ini');
+    if ( !fs.existsSync( smtp_ini ) )
+        fail( "No smtp.ini in: " + config_dir );
+    if ( !fs.statSync( smtp_ini ).isFile() )
+        fail( "Not a file at: " + smtp_ini );
+
     process.argv[1] = haraka_path;
     process.env.HARAKA = parsed.configs;
     require(haraka_path);
