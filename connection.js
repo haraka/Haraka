@@ -240,7 +240,7 @@ Connection.prototype.process_line = function (line) {
                 else {
                     this.logerror(method + " failed: " + err);
                 }
-                this.respond(500, "Internal Server Error", function() {
+                this.respond(421, "Internal Server Error", function() {
                     self.disconnect();
                 });
             }
@@ -884,6 +884,7 @@ Connection.prototype.rcpt_ok_respond = function (retval, msg) {
     this.lognotice(dmsg + ' ' + [ 
         'code=' + constants.translate(retval),
         'msg="' + (msg || '') + '"',
+        'sender="' + this.transaction.mail_from.address() + '"',
     ].join(' '));
     switch (retval) {
         case constants.deny:
@@ -934,6 +935,7 @@ Connection.prototype.rcpt_respond = function(retval, msg) {
         this.lognotice(dmsg + ' ' + [
             'code=' + constants.translate(retval),
             'msg="' + (msg || '') + '"',
+            'sender="' + this.transaction.mail_from.address() + '"',
         ].join(' '));
     }
     switch (retval) {
@@ -1120,7 +1122,13 @@ Connection.prototype.cmd_mail = function(line) {
         else {
             this.logerror(err);
         }
-        return this.respond(501, ["Command parsing failed", err]);
+        // Explicitly handle out-of-disk space errors
+        if (err.code === 'ENOSPC') {
+            return this.respond(452, 'Internal Server Error');
+        }
+        else {
+            return this.respond(501, ["Command parsing failed", err]);
+        }
     }
    
     // Get rest of key=value pairs
@@ -1169,7 +1177,13 @@ Connection.prototype.cmd_rcpt = function(line) {
         else {
             this.logerror(err);
         }
-        return this.respond(501, ["Command parsing failed", err]);
+        // Explicitly handle out-of-disk space errors
+        if (err.code === 'ENOSPC') {
+            return this.respond(452, 'Internal Server Error');
+        } 
+        else {
+            return this.respond(501, ["Command parsing failed", err]);
+        }
     }
     
     // Get rest of key=value pairs
