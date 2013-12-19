@@ -1,6 +1,5 @@
 // Check MAIL FROM domain is resolvable to an MX
 var dns = require('dns');
-var re_bogus_ip = /^(?:0\.0\.0\.0|255\.255\.255\.255|127\.)/;
 
 exports.hook_mail = function(next, connection, params) {
     var mail_from    = params[0];
@@ -14,6 +13,7 @@ exports.hook_mail = function(next, connection, params) {
     var plugin       = this;
     var domain       = mail_from.host;
     var config       = this.config.get('mail_from.is_resolvable.ini');
+    var re_bogus_ip  = new RegExp(config.main.re_bogus_ip);
 
     // Just in case DNS never comes back (UDP), we should DENYSOFT.
     var timeout_id = setTimeout(function () {
