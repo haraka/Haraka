@@ -16,10 +16,10 @@ Configuration is stored in `config/auth_flat_file.ini` and uses the INI
 style formatting. 
 
 Authentification methods are listed in the `[core]` section under `methods`
-parameter. You can list few authentification methods comma separated. Currently
-are only two methods supported : `CRAM-MD5` and `LOGIN`. Be aware, the LOGIN
-method is highly unsecure and can be used normaly only for local communication.
-We stronly recommend only `CRAM-MD5` to be used.
+parameter. You can list a few authentification methods comma separated. Currently
+only two methods are supported : `CRAM-MD5` and `LOGIN`. Be aware, the LOGIN
+method is highly unsecure and should be used only for local communication.
+We strongly recommend only `CRAM-MD5`.
 
 Example:
     [core]
