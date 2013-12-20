@@ -40,22 +40,23 @@ exports.try_auth_vpopmaild = function (connection, user, passwd, cb) {
         connection.logerror(plugin, "vpopmaild connection failed: " + err);
     });
     socket.on('connect', function () {
-       socket.write("login " + user + ' ' + passwd + "\n\r");
+        socket.write("login " + user + ' ' + passwd + "\n\r");
     });
     socket.on('line', function (line) {
         connection.logprotocol(plugin, 'C:' + line);
         if (line.match(/^\+OK/)) {
-	    auth_success = true;
+            auth_success = true;
         }
-        if ( line.match(/^\./) )
+        if ( line.match(/^\./) ) {
             socket.end();
+        }
     });
     socket.on('close', function () {
         connection.loginfo(plugin, 'AUTH user="' + user + '" success=' + auth_success);
         return cb(auth_success);
     });
     socket.on('end', function () {
-//      return cb(auth_success);
+        //      return cb(auth_success);
     });
 };
 
