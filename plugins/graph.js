@@ -1,27 +1,27 @@
 // log our denys
 
-var sqlite3 = require('sqlite3').verbose();
-// var db = new sqlite3.Database(':memory:', createTable);
-var db = new sqlite3.Database('graphlog.db', createTable);
+var http  = require('http');
+var urlp  = require('url');
+var utils = require('./utils');
 
+var sqlite3 = require('sqlite3').verbose();
+
+var db;
 var select = "SELECT COUNT(*) AS hits, plugin FROM graphdata WHERE timestamp >= ? AND timestamp < ? GROUP BY plugin";
-var insert = db.prepare( "INSERT INTO graphdata VALUES (?,?)" );
+var insert;
+var plugins = {};
+var config;
+
+var width = 800;
 
 function createTable() {
     db.exec( "CREATE TABLE IF NOT EXISTS graphdata (timestamp INTEGER NOT NULL, plugin TEXT NOT NULL)")
       .exec( "CREATE INDEX IF NOT EXISTS graphdata_idx ON graphdata (timestamp)");
 }
 
-var plugins = {};
-
-var http  = require('http');
-var urlp  = require('url');
-var utils = require('./utils');
-var width = 800;
-
 exports.register = function () {
-    var plugin = this;
-    var ignore_re = this.config.get('grapher.ignore_re') || 'queue|graph|relay';
+    config  = this.config.get('graph.ini');
+    var ignore_re = config.main.ignore_re || this.config.get('grapher.ignore_re') || 'queue|graph|relay';
     ignore_re = new RegExp(ignore_re);
     
     plugins = {accepted: 0, disconnect_early: 0};
@@ -33,11 +33,16 @@ exports.register = function () {
             }
         }
     );
+
+    var db_name = config.main.db_file || 'graphlog.db';
+    db = new sqlite3.Database(db_name, createTable);
+    insert = db.prepare( "INSERT INTO graphdata VALUES (?,?)" );
 };
 
 exports.hook_init_master = function (next) {
     var plugin = this;
-    var port = this.config.get('grapher.http_port') || 8080;
+    var port   = config.main.http_port || this.config.get('grapher.http_port') || 8080;
+    var addr   = config.main.http_addr || '127.0.0.1';
     var server = http.createServer(
         function (req, res) {
             plugin.handle_http_request(req, res);
@@ -48,8 +53,8 @@ exports.hook_init_master = function (next) {
         next(DENY);
     });
 
-    server.listen(port, "127.0.0.1", function () {
-        plugin.loginfo("http server running on port " + port);
+    server.listen(port, addr, function () {
+        plugin.loginfo("http server running on " + addr + ':' port);
         next();
     });
 }
