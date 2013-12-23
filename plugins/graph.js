@@ -54,7 +54,7 @@ exports.hook_init_master = function (next) {
     });
 
     server.listen(port, addr, function () {
-        plugin.loginfo("http server running on " + addr + ':' port);
+        plugin.loginfo("http server running on " + addr + ':' + port);
         next();
     });
 }
