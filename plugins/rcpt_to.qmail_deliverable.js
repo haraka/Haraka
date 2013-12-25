@@ -37,8 +37,8 @@ function get_qmd_response(next,plugin,connection,email) {
     var req = http.get(options, function(res) {
         plugin.logprotocol('STATUS: ' + res.statusCode);
         plugin.logprotocol('HEADERS: ' + JSON.stringify(res.headers));
+        res.setEncoding('utf8');
         res.on('data', function (chunk) {
-            res.setEncoding('utf8');
             plugin.logprotocol('BODY: ' + chunk);
             var hexnum = new Number(chunk).toString(16);
             return check_qmd_reponse(next,plugin,connection,hexnum);
