@@ -3,6 +3,7 @@
 
 var crypto = require('crypto');
 var Stream = require('stream').Stream;
+var fs     = require('fs');
 var indexOfLF = require('./utils').indexOfLF;
 var util = require('util');
 
@@ -135,17 +136,19 @@ exports.hook_queue_outbound = function (next, connection) {
 
     var private_key;
     var headers_to_sign = [];
-    var domain;
+    var domain = transaction.mail_from.host;
     var selector;
+    var config = this.config.get('dkim_sign.ini');
+    var keydir = get_keydir( domain );
 
-    var keydir = get_keydir( "config/dkim/" + domain );
-    if ( -d keydir ) {
-        domain = connection.transaction.mail_from.host();
-        private_key = this.config.get(keydir+'private', 'data').join("\n");
-        selector    = this.config.get(keydir+'selector','data').join("\n");
+    connection.logdebug(this, 'dkim_keydir: '+keydir);
+
+    if ( fs.existsSync(keydir) ) {
+        private_key = this.config.get('dkim/'+domain+'/private', 'data').join("\n");
+        selector    = this.config.get('dkim/'+domain+'/selector','data').join("\n");
     }
     else {
-        var config = this.config.get('dkim_sign.ini');
+        domain = config.main.domain;
         private_key = this.config.get('dkim.private.key','data').join("\n");
         selector = config.main.selector;
     };
@@ -163,10 +166,14 @@ exports.hook_queue_outbound = function (next, connection) {
         connection.logerror(this, 'skipped: missing selector');
         return next();
     }
-    if (!config.main.domain) {
+    if (!domain) {
         connection.logerror(this, 'skipped: missing domain');
         return next();
     }
+
+    connection.logprotocol(this, 'private_key: '+private_key);
+    connection.logprotocol(this, 'selector: '+selector);
+
     if (config.main.headers_to_sign) {
         headers_to_sign = config.main.headers_to_sign
                           .toLowerCase()
@@ -196,3 +203,10 @@ exports.hook_queue_outbound = function (next, connection) {
     });
     transaction.message_stream.pipe(dkim_sign);
 }
+
+function get_keydir(domain) {
+    // TODO: check for existence of keydir
+    // If it doesn't exist, break the domain into labels and check for
+    // a higher level match (ie, match example.com for mail.example.com).
+    return "config/dkim/" + domain;
+};
