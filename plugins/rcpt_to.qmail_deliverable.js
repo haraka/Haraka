@@ -1,6 +1,7 @@
 // validate an email address is local, using qmail-deliverabled
 
 var http = require('http');
+var querystring = require('querystring');
 
 var options = {
     method: 'get',
@@ -31,7 +32,7 @@ exports.rcpt_to_qmd = function(next, connection, params) {
 }
 
 function get_qmd_response(next,plugin,connection,email) {
-    options.path = '/qd1/deliverable?' + email;
+    options.path = '/qd1/deliverable?' + querystring.escape(email);
     plugin.logprotocol('PATH: ' + options.path);
     var req = http.get(options, function(res) {
         plugin.logprotocol('STATUS: ' + res.statusCode);
