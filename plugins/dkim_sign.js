@@ -87,7 +87,7 @@ DKIMSignStream.prototype.end = function (buf) {
         this.buffer = { ar: [], len: 0 };
     }
 
-    var bodyhash = this.hash.digest('base64');    
+    var bodyhash = this.hash.digest('base64');
 
     /*
     ** HEADERS (relaxed canonicaliztion)
@@ -132,20 +132,34 @@ exports.DKIMSignStream = DKIMSignStream;
 exports.hook_queue_outbound = function (next, connection) {
     var self = this;
     var transaction = connection.transaction;
-    var config = this.config.get('dkim_sign.ini');
-    var private_key = this.config.get('dkim.private.key','data').join("\n");
+
+    var private_key;
     var headers_to_sign = [];
+    var domain;
+    var selector;
+
+    var keydir = get_keydir( "config/dkim/" + domain );
+    if ( -d keydir ) {
+        domain = connection.transaction.mail_from.host();
+        private_key = this.config.get(keydir+'private', 'data').join("\n");
+        selector    = this.config.get(keydir+'selector','data').join("\n");
+    }
+    else {
+        var config = this.config.get('dkim_sign.ini');
+        private_key = this.config.get('dkim.private.key','data').join("\n");
+        selector = config.main.selector;
+    };
 
     // Make sure we have all the relevant configuration
     if (!private_key) {
-        connection.logerror(this, 'skipped: missing dkim.private.key');
+        connection.logerror(this, 'skipped: missing dkim private key');
         return next();
     }
     if (config.main.disabled && /(?:1|true|y[es])/i.test(config.main.disabled)) {
         connection.logerror(this, 'skipped: disabled');
         return next();
     }
-    if (!config.main.selector) {
+    if (!selector) {
         connection.logerror(this, 'skipped: missing selector');
         return next();
     }
@@ -164,12 +178,12 @@ exports.hook_queue_outbound = function (next, connection) {
         headers_to_sign.push('from');
     }
 
-    var dkim_sign = new DKIMSignStream(config.main.selector, 
-                                       config.main.domain, 
-                                       private_key, 
-                                       headers_to_sign, 
-                                       transaction.header, 
-                                       function (err, dkim_header) 
+    var dkim_sign = new DKIMSignStream(selector,
+                                       domain,
+                                       private_key,
+                                       headers_to_sign,
+                                       transaction.header,
+                                       function (err, dkim_header)
     {
         if (err) {
             connection.logerror(self, err.message);
@@ -179,6 +193,6 @@ exports.hook_queue_outbound = function (next, connection) {
             transaction.add_header('DKIM-Signature', dkim_header);
         }
         return next();
-    }); 
+    });
     transaction.message_stream.pipe(dkim_sign);
 }
