@@ -67,7 +67,7 @@ checked for updates on every run.
 
     Set this to disable DKIM signing
 
-- headers_to_sign = list, of; headers      (REQUIRED)
+- headers_to_sign = list, of; headers       (REQUIRED)
 
     Set this to the list of headers that should be signed
     separated by either a comma, colon or semi-colon.
@@ -79,20 +79,18 @@ checked for updates on every run.
 Single Domain Configuration
 --------------------
 
-To sign all messages with a single DKIM key, use these config settings.
+To sign all messages with a single DKIM key, these two config settings
+are required.
 
 - selector = name
 
     Set this to the selector name published in DNS under the
     _domainkey sub-domain of the domain referenced below.
 
-- domain = name                             (OPTIONAL)
+- domain = name
 
     Set this to the domain name that will be used to sign messages
     which don't match a per-domain DKIM key.  The DNS TXT entry for:
 
         <selector>._domainkey.<domain>
-
-    MUST be present, otherwise remote systems will not be able
-    to validate the signature applied to the message.
 
