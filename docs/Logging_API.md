@@ -1,5 +1,5 @@
 
-Logging
+Logging API
 ==================
 
 Logging conventions within Haraka
