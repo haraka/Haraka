@@ -136,10 +136,11 @@ exports.hook_queue_outbound = function (next, connection) {
 
     var private_key;
     var headers_to_sign = [];
-    var domain = transaction.mail_from.host;
     var selector;
     var config = this.config.get('dkim_sign.ini');
-    var keydir = get_keydir( domain );
+    var stuff = get_keydir(self, connection);
+    var domain = stuff[0];
+    var keydir = stuff[1];
 
     connection.logdebug(this, 'dkim_keydir: '+keydir);
 
@@ -204,9 +205,36 @@ exports.hook_queue_outbound = function (next, connection) {
     transaction.message_stream.pipe(dkim_sign);
 }
 
-function get_keydir(domain) {
-    // TODO: check for existence of keydir
-    // If it doesn't exist, break the domain into labels and check for
-    // a higher level match (ie, match example.com for mail.example.com).
-    return "config/dkim/" + domain;
+function get_keydir(plugin, conn) {
+
+    // is there a better way to find this?
+    var haraka_dir = process.argv[3];
+
+    // TODO: the DKIM signing key should be aligned with the domain
+    // in the From header, so we *should* parse the domain from there.
+    // However, the From header can contain multiple addresses and should be
+    // parsed as described in RFC 2822 3.6.2. If From has multiple-addresses,
+    // then we must parse and use the domain in the Sender header.
+    // var domain = self.header.get('from').host;
+
+    // In all cases I have seen, but likely not all cases, this suffices
+    var domain = conn.transaction.mail_from.host;
+
+    // split the domain name into labels
+    var labels = domain.split('.');
+
+    // find the most specific match (ex: mail.example.com, example.com, com)
+    for ( var i=0; i<labels.length; i++ ) {
+        var hld = labels.slice(i).join('.');
+        plugin.logdebug(conn, "checking for key in: "+hld);
+        var keydir = haraka_dir + "/config/dkim/"+hld;
+        if ( fs.existsSync(keydir) ) {
+            plugin.loginfo(conn, "found key dir: "+keydir);
+            return [hld,keydir];
+        };
+        plugin.logdebug(conn, "missing key dir: "+keydir);
+    }
+
+    plugin.loginfo(conn, "no key dir for "+domain+" found");
+    return [domain, haraka_dir+"/config/dkim/"+domain];
 };
