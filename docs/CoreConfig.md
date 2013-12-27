@@ -135,3 +135,13 @@ different levels available.
 
   A list of HAProxy hosts that Haraka should enable the PROXY protocol from.
   See HAProxy.md
+
+* strict_rfc1869
+
+  When enabled, this setting requires senders to conform to RFC 1869 and
+  RFC 821 when sending the MAIL FROM and RCPT TO commands. In particular,
+  the inclusion of spurious spaces or missing angle brackets will be rejected.
+
+  to enable:   echo '1' > /path/to/haraka/config/strict_rfc1869
+  to disable:  echo '0' > /path/to/haraka/config/strict_rfc1869
+
