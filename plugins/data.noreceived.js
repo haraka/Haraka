@@ -4,7 +4,7 @@
 //     for inbounds too, so use with caution.
 
 exports.register = function () {
-    this.logwarn("NOTICE: plugin deprecated, use 'headers' instead!");
+    this.logwarn("NOTICE: plugin deprecated, use 'data.headers' instead!");
 }
 
 exports.hook_data_post = function (next, connection) {
