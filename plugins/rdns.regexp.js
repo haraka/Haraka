@@ -5,6 +5,9 @@
 // to using the new connect.rdns_access plugin, as this plugin is now deprecated
 // and may be removed in a future version of Haraka.
 
+exports.register = function () {
+    this.logwarn("NOTICE: deprecated, use 'connect.rdns_access' instead!");
+}
 
 exports.hook_connect = function (next, connection) {
     var deny_list = this.config.get('rdns.deny_regexps', 'list');
