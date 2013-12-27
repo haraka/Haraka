@@ -24,7 +24,7 @@ create and format the DKIM public key. Within the config/dkim/example.org
     % ls config/dkim/example.org/
     dns private public selector
 
-The`_private` and `public` files contain the DKIM keys, the selector is
+The`private` and `public` files contain the DKIM keys, the selector is
 in the `selector` file and the `dns` file contains a formatted record of
 the public key, as well as suggestions for DKIM, SPF, and DMARC policy
 records. The records in `dns` are ready to be copy/pasted into the DNS
@@ -47,7 +47,7 @@ And the values in the address have the following meaning:
 What to sign
 ------------
 
-The DKIM signing key for messages from example.org _should_ be signed with
+The DKIM signing key for messages from example.org *should* be signed with
  a DKIM key for example.org. Failing to do so will result in messages not
 having an *aligned* DKIM signature. For DMARC enabled domains, this will
 likely result in deliverability problems.
