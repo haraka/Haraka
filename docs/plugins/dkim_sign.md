@@ -12,57 +12,60 @@ DKIM signatures.
 Getting Started
 ---------------
 
-First, generate an RSA key pair in your Haraka config directory by 
-running the following commands:
+Generate DKIM selector and keys:
 
-    cd /path/to/haraka/config
-    openssl genrsa -out dkim.private.key 1024
-    openssl rsa -in dkim.private.key -pubout > dkim.public.key
+    cd /path/to/haraka/config/dkim
+    ./dkim_key_gen.sh example.org
 
-A selector is used to identify the keys used to attach a token to a 
-piece of email. It does appear in the header of the email sent, but 
-isn’t otherwise visible or meaningful to the final recipient. Any time 
-you generate a new key pair you need to choose a new selector.
+Peek into the dkim_key_gen.sh shell script to see the commands used to
+create and format the DKIM public key. Within the config/dkim/example.org
+ directory will be 4 files:
 
-A selector is a string of no more than 63 lower-case alphanumeric 
-characters (a-z or 0-9) followed by a period “.”, followed by another 
-string of no more than 63 lower-case alphanumeric characters.
+    % ls config/dkim/example.org/
+    dns private public selector
 
-Next you have to publish the public key as a DNS TXT record for your
-domain by concatenating the selector, the literal string ._domainkey.
-and your domain name.  e.g. mail._domainkey.example.com
+The`_private` and `public` files contain the DKIM keys, the selector is
+in the `selector` file and the `dns` file contains a formatted record of
+the public key, as well as suggestions for DKIM, SPF, and DMARC policy
+records. The records in `dns` are ready to be copy/pasted into the DNS
+zone for example.org.
 
-The content of the TXT record can be created by concatenating the 
-literal string “v=DKIM1;t=s;n=core;p=” and the public key excluding
-the ---BEGIN and ---END lines and wrapping the key into a single line.
+The DKIM DNS record will look like this:
 
-See the key wizard at http://dkimtools.org/tools
+    may2013._domainkey TXT "v=DKIM1;p=[public key stripped of whitespace];"
 
-Configuation
+And the values in the address have the following meaning:
+
+    hash: h=[ sha1 | sha256 ]
+    test; t=[ s | s:y ]
+    granularity: g=[ ]
+    notes: n=[ ]
+    services: s=[email]
+    keytypes: [ rsa ]
+
+
+What to sign
 ------------
+
+The DKIM signing key for messages from example.org _should_ be signed with
+ a DKIM key for example.org. Failing to do so will result in messages not
+having an *aligned* DKIM signature. For DMARC enabled domains, this will
+likely result in deliverability problems.
+
+For correct alignment, Haraka signs each message with that domains DKIM key.
+For an alternative, see the legacy Single Domain Configuration below.
+
+
+Configuration
+-------------
 
 This plugin uses the configuration dkim_sign.ini in INI format.
 All configuration should appear within the 'main' block and is
 checked for updates on every run.
 
 - disabled = [ 1 | true | yes ]             (OPTIONAL)
-    
+
     Set this to disable DKIM signing
-
-- selector = name                           (REQUIRED)
-
-    Set this to the selector name published in DNS under the
-    _domainkey sub-domain of the domain referenced below.
-
-- domain = name                             (REQUIRED)
-
-    Set this to the domain name that will be used to sign the
-    message.  The DNS TXT entry for:
-        
-        <selector>._domainkey.<domain>
-
-    MUST be present, otherwise remote systems will not be able
-    to validate the signature applied to the message.
 
 - headers_to_sign = list, of; headers      (REQUIRED)
 
@@ -71,3 +74,25 @@ checked for updates on every run.
     This is to prevent any tampering of the specified headers.
     The 'From' header is required to be present by the RFC and
     will be added if it is missing.
+
+
+Single Domain Configuration
+--------------------
+
+To sign all messages with a single DKIM key, use these config settings.
+
+- selector = name
+
+    Set this to the selector name published in DNS under the
+    _domainkey sub-domain of the domain referenced below.
+
+- domain = name                             (OPTIONAL)
+
+    Set this to the domain name that will be used to sign messages
+    which don't match a per-domain DKIM key.  The DNS TXT entry for:
+
+        <selector>._domainkey.<domain>
+
+    MUST be present, otherwise remote systems will not be able
+    to validate the signature applied to the message.
+
