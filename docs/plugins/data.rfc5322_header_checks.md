@@ -1,6 +1,8 @@
 data.rfc5322_header_checks
 ==========================
 
+NOTICE: this plugin is deprecated. Use data.headers instead.
+
 This plugin enforces RFC 5322 Section 3.6 which states that:
 
 All messages MUST have a 'Date' and 'From' header and a message may not contain
