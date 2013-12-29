@@ -135,7 +135,7 @@ exports.hook_queue_outbound = function (next, connection) {
     var plugin = this;
     if ( !isEnabled(plugin) ) return next();
 
-    getKeyDirAsync(plugin,connection,function(keydir) {
+    getKeyDir(plugin,connection,function(keydir) {
         var domain, selector, private_key;
         var dkconf = plugin.config.get('dkim_sign.ini');
         if ( ! keydir ) {
@@ -175,58 +175,12 @@ exports.hook_queue_outbound = function (next, connection) {
         transaction.message_stream.pipe(dkim_sign);
     });
 };
-/*
-exports.hook_queue_outbound = function (next, connection) {
-    var plugin = this;
-    if ( !isEnabled(plugin) ) return next();
 
-    var keydir = get_keydir(plugin, connection);
-    connection.logdebug(this, 'dkim_keydir: '+keydir);
+function getKeyDir(plugin, conn, cb) {
 
-    var domain, selector, private_key;
-    var dkconf = plugin.config.get('dkim_sign.ini');
-
-    if ( keydir === false ) {
-        domain = dkconf.main.domain;
-        private_key = this.config.get('dkim.private.key','data').join("\n");
-        selector = dkconf.main.selector;
-    }
-    else {
-        domain = keydir.split('/').pop();
-        connection.logdebug(this, 'dkim_domain: '+domain);
-        private_key = this.config.get('dkim/'+domain+'/private', 'data').join("\n");
-        selector    = this.config.get('dkim/'+domain+'/selector','data').join("\n");
-    };
-
-    if ( ! hasKeyData(plugin,connection,domain,selector,private_key) ) {
-        return next();
-    };
-
-    var headers_to_sign = getHeadersToSign(dkconf);
-    var transaction = connection.transaction;
-    var dkim_sign = new DKIMSignStream(selector,
-                                       domain,
-                                       private_key,
-                                       headers_to_sign,
-                                       transaction.header,
-                                       function (err, dkim_header)
-    {
-        if (err) {
-            connection.logerror(plugin, err.message);
-        }
-        else {
-            connection.loginfo(plugin, dkim_header);
-            transaction.add_header('DKIM-Signature', dkim_header);
-        }
-        return next();
-    });
-    transaction.message_stream.pipe(dkim_sign);
-}
-*/
-function get_keydir(plugin, conn) {
     var haraka_dir = process.env.HARAKA;
 
-    // TODO: the DKIM signing key should be aligned with the domain
+    // the DKIM signing key should be aligned with the domain
     // in the From header, so we *should* parse the domain from there.
     // However, the From header can contain multiple addresses and should be
     // parsed as described in RFC 2822 3.6.2. If From has multiple-addresses,
@@ -237,28 +191,6 @@ function get_keydir(plugin, conn) {
     var domain = conn.transaction.mail_from.host;
 
     // split the domain name into labels
-    var labels = domain.split('.');
-
-    // find the most specific match (ex: mail.example.com, example.com, com)
-    for ( var i=0; i<labels.length; i++ ) {
-        var hld = labels.slice(i).join('.');
-        plugin.logdebug(conn, "checking for key in: "+hld);
-        var keydir = haraka_dir + "/config/dkim/"+hld;
-        if ( fs.existsSync(keydir) ) {
-            plugin.loginfo(conn, "found key dir: "+keydir);
-            return keydir;
-        };
-        plugin.logdebug(conn, "missing key dir: "+keydir);
-    }
-
-    plugin.loginfo(conn, "no key dir for "+domain+" found");
-    return false;
-}
-
-function getKeyDirAsync(plugin, conn, cb) {
-
-    var haraka_dir = process.env.HARAKA;
-    var domain = conn.transaction.mail_from.host;
     var labels = domain.split('.');
 
     // list possible matches (ex: mail.example.com, example.com, com)
@@ -290,7 +222,7 @@ function isEnabled(plugin) {
     return true;
 };
 
-function hasKeyData(plugin,conn,domain,selector,private_key) {
+function hasKeyData(plugin, conn, domain, selector, private_key) {
 
     // Make sure we have all the relevant configuration
     if (!private_key) {
