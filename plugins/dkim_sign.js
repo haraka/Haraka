@@ -262,7 +262,7 @@ function getKeyDirAsync(plugin, conn, cb) {
     var labels = domain.split('.');
 
     // list possible matches (ex: mail.example.com, example.com, com)
-    var dom_hier = new Array;
+    var dom_hier = [];
     for ( var i=0; i<labels.length; i++ ) {
         var dom = labels.slice(i).join('.');
         dom_hier[i] = haraka_dir + "/config/dkim/"+dom;
