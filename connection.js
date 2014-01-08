@@ -142,7 +142,6 @@ function Connection(client, server) {
     this.greeting = null;
     this.hello_host = null;
     this.using_tls = false;
-    this.auth = 'none';
     this.state = states.STATE_PAUSE;
     this.prev_state = null;
     this.loop_code = null;
@@ -1233,11 +1232,16 @@ Connection.prototype.received_line = function() {
     ].join('');
 };
 
-Connection.prototype.auth_results = function() {
+Connection.prototype.auth_results = function(message) {
     // Implement RFC5451
-    return [ config.get('me'), 'auth=' + this.auth,
-    (this.notes.authentication_results ? this.notes.authentication_results : ''),
-    ].join('; ');
+    if ( ! this.notes.authentication_results ) {
+        this.notes.authentication_results = [ config.get('me') ];
+    };
+    if ( message ) {
+        this.notes.authentication_results.push(message);
+    };
+    this.logdebug(this.notes.authentication_results);
+    return this.notes.authentication_results.join('; ');
 };
 
 Connection.prototype.cmd_data = function(args) {

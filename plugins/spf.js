@@ -52,8 +52,10 @@ exports.hook_mail = function (next, connection, params) {
     var mfrom = params[0].address();
     var host = params[0].host;
     var spf = new SPF();
+    var auth_result;
 
     if (connection.notes.spf_helo) {
+        auth_result = spf.result(connection.notes.spf_helo).toLowerCase;
         // Add a trace header
         txn.add_leading_header('Received-SPF', 
             spf.result(connection.notes.spf_helo) +
@@ -72,6 +74,7 @@ exports.hook_mail = function (next, connection, params) {
                 case spf.SPF_NONE:
                 case spf.SPF_NEUTRAL:
                 case spf.SPF_PASS:
+                    connection.auth_results( "spf="+auth_result+" smtp.helo="+connection.hello_host);
                     return next();
                 case spf.SPF_SOFTFAIL:
                     if (cfg.main.helo_softfail_reject) {
@@ -100,6 +103,7 @@ exports.hook_mail = function (next, connection, params) {
                 default:
                     // Unknown result
                     connection.logerror(self, 'unknown result code=' + result);
+                    connection.auth_results( "spf="+auth_result+" smtp.helo="+connection.hello_host);
                     return next();
             }
         }
@@ -141,12 +145,14 @@ exports.hook_mail = function (next, connection, params) {
                 'helo=' + connection.hello_host,
                 'envelope-from=<' + mfrom + '>',
             ].join('; '));
+        auth_result = spf.result(result).toLowerCase();
         txn.notes.spf_mail_result = spf.result(result);
         txn.notes.spf_mail_record = spf.spf_record;
         switch (result) {
             case spf.SPF_NONE:
             case spf.SPF_NEUTRAL:
             case spf.SPF_PASS:
+                connection.auth_results( "spf="+auth_result+" smtp.mailfrom="+host);
                 return next();
             case spf.SPF_SOFTFAIL:
                 if (cfg.main.mail_softfail_reject) {
@@ -171,6 +177,7 @@ exports.hook_mail = function (next, connection, params) {
             default:
                 // Unknown result
                 connection.logerror(self, 'unknown result code=' + result);
+                connection.auth_results( "spf="+auth_result+" smtp.mailfrom="+host);
                 return next();
         }
     });

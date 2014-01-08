@@ -93,7 +93,7 @@ exports.check_user = function (next, connection, credentials, method) {
             connection.relaying = 1;
             connection.respond(235, "Authentication successful", function () {
                 connection.authheader = "(authenticated bits=0)\n";
-                connection.auth = 'pass';
+                connection.auth_results('auth=pass');
                 connection.notes.auth_user = credentials[0];
                 return next(OK);
             });
@@ -105,7 +105,7 @@ exports.check_user = function (next, connection, credentials, method) {
             connection.notes.auth_fails++;
             var delay = Math.pow(2, connection.notes.auth_fails - 1);
             connection.lognotice(self, 'delaying response for ' + delay + ' seconds');
-            connection.auth = 'fail';
+            connection.auth_results('auth=fail');
             setTimeout(function () {
                 connection.respond(535, "Authentication failed", function () {
                     connection.reset_transaction();
