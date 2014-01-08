@@ -142,6 +142,7 @@ function Connection(client, server) {
     this.greeting = null;
     this.hello_host = null;
     this.using_tls = false;
+    this.auth = 'none';
     this.state = states.STATE_PAUSE;
     this.prev_state = null;
     this.loop_code = null;
@@ -1232,6 +1233,13 @@ Connection.prototype.received_line = function() {
     ].join('');
 };
 
+Connection.prototype.auth_results = function() {
+    // Implement RFC5451
+    return [ config.get('me'), 'auth=' + this.auth,
+    (this.notes.authentication_results ? this.notes.authentication_results : ''),
+    ].join('; ');
+};
+
 Connection.prototype.cmd_data = function(args) {
     // RFC 5321 Section 4.3.2
     // DATA does not accept arguments
@@ -1246,6 +1254,7 @@ Connection.prototype.cmd_data = function(args) {
     }
 
     this.accumulate_data('Received: ' + this.received_line() + "\r\n");
+    this.accumulate_data('Authentication-Results: ' + this.auth_results() + "\r\n");
     plugins.run_hooks('data', this);
 };
 
