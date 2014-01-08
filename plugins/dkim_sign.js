@@ -203,12 +203,6 @@ function getKeyDir(plugin, conn, cb) {
 
     async.filter(dom_hier, fs.exists, function(results) {
         plugin.logdebug(conn, results);
-        if ( !results ) {
-            cb(false);
-        };
-        if ( typeof results === 'string' ) {
-            cb(results);
-        };
         cb(results[0]);
     });
 };
