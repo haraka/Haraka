@@ -1233,15 +1233,37 @@ Connection.prototype.received_line = function() {
 };
 
 Connection.prototype.auth_results = function(message) {
-    // Implement RFC5451
+    // http://tools.ietf.org/search/rfc7001
+    var in_transaction = this.transaction && this.transaction.notes ? true : false;
+
+    // initialize connection note
     if ( ! this.notes.authentication_results ) {
         this.notes.authentication_results = [ config.get('me') ];
-    };
+    }
+
+    // initialize transaction note, if possible
+    if ( in_transaction === true && !this.transaction.notes.authentication_results ) {
+        this.transaction.notes.authentication_results = [];
+    }
+
+    // if message, store it in the appropriate note
     if ( message ) {
-        this.notes.authentication_results.push(message);
+        if ( in_transaction === true ) {
+            this.transaction.notes.authentication_results.push(message);
+            this.logdebug("ar_tran: " + this.transaction.notes.authentication_results);
+        }
+        else {
+            this.notes.authentication_results.push(message);
+            this.logdebug("ar_conn: " + this.notes.authentication_results);
+        }
     };
-    this.logdebug(this.notes.authentication_results);
-    return this.notes.authentication_results.join('; ');
+
+    // return the formatted header
+    var header = [ this.notes.authentication_results.join('; '),
+        (in_transaction === true ? this.transaction.notes.authentication_results.join('; ') : '')
+         ].join('; ');
+    this.logdebug("ar_header: " + header);
+    return header;
 };
 
 Connection.prototype.cmd_data = function(args) {
@@ -1258,7 +1280,7 @@ Connection.prototype.cmd_data = function(args) {
     }
 
     this.accumulate_data('Received: ' + this.received_line() + "\r\n");
-    this.accumulate_data('Authentication-Results: ' + this.auth_results() + "\r\n");
+    this.transaction.add_header('Authentication-Results', this.auth_results() );
     plugins.run_hooks('data', this);
 };
 
