@@ -1266,6 +1266,18 @@ Connection.prototype.auth_results = function(message) {
     return header;
 };
 
+Connection.prototype.auth_results_clean = function(conn) {
+    // http://tools.ietf.org/html/draft-kucherawy-original-authres-00.html
+    var ars = conn.transaction.header.get_all('Authentication-Results');
+    if ( ars.length === 0 ) { return; };
+
+    for (var i=0; i < ars.length; i++) {
+        conn.transaction.header.remove_header( ars[i] );
+        conn.transaction.header.add_header('Original-Authentication-Results', ars[i] );
+    }
+    conn.loginfo("Authentication-Results moved to Original-Authentication-Results" );
+};
+
 Connection.prototype.cmd_data = function(args) {
     // RFC 5321 Section 4.3.2
     // DATA does not accept arguments
@@ -1280,6 +1292,7 @@ Connection.prototype.cmd_data = function(args) {
     }
 
     this.accumulate_data('Received: ' + this.received_line() + "\r\n");
+    this.auth_results_clean(this);
     this.transaction.add_header('Authentication-Results', this.auth_results() );
     plugins.run_hooks('data', this);
 };
