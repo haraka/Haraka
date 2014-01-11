@@ -162,10 +162,10 @@ exports.hook_data = function (next, connection) {
     // Add a header showing all pre-DATA rejections
     var fails = [];
     if (connection.notes.delay_deny_pre_fail) {
-        fails = fails.concat(Object.keys(connection.notes.delay_deny_pre_fail));
+        fails.push.apply(Object.keys(connection.notes.delay_deny_pre_fail));
     }
     if (transaction.notes.delay_deny_pre_fail) {
-        fails = fails.concat(Object.keys(transaction.notes.delay_deny_pre_fail));
+        fails.push.apply(Object.keys(transaction.notes.delay_deny_pre_fail));
     }
     if (fails.length) transaction.add_header('X-Haraka-Fail-Pre', fails.join(' '));
 
