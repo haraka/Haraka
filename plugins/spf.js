@@ -70,11 +70,11 @@ exports.hook_mail = function (next, connection, params) {
             ].join('; '));
         // Use the result from HELO if the return-path is null
         if (!host) {
+            connection.auth_results( "spf="+auth_result+" smtp.helo="+connection.hello_host);
             switch (connection.notes.spf_helo) {
                 case spf.SPF_NONE:
                 case spf.SPF_NEUTRAL:
                 case spf.SPF_PASS:
-                    connection.auth_results( "spf="+auth_result+" smtp.helo="+connection.hello_host);
                     return next();
                 case spf.SPF_SOFTFAIL:
                     if (cfg.main.helo_softfail_reject) {
@@ -103,7 +103,6 @@ exports.hook_mail = function (next, connection, params) {
                 default:
                     // Unknown result
                     connection.logerror(self, 'unknown result code=' + result);
-                    connection.auth_results( "spf="+auth_result+" smtp.helo="+connection.hello_host);
                     return next();
             }
         }
@@ -146,13 +145,13 @@ exports.hook_mail = function (next, connection, params) {
                 'envelope-from=<' + mfrom + '>',
             ].join('; '));
         auth_result = spf.result(result).toLowerCase();
+        connection.auth_results( "spf="+auth_result+" smtp.mailfrom="+host);
         txn.notes.spf_mail_result = spf.result(result);
         txn.notes.spf_mail_record = spf.spf_record;
         switch (result) {
             case spf.SPF_NONE:
             case spf.SPF_NEUTRAL:
             case spf.SPF_PASS:
-                connection.auth_results( "spf="+auth_result+" smtp.mailfrom="+host);
                 return next();
             case spf.SPF_SOFTFAIL:
                 if (cfg.main.mail_softfail_reject) {
@@ -177,7 +176,6 @@ exports.hook_mail = function (next, connection, params) {
             default:
                 // Unknown result
                 connection.logerror(self, 'unknown result code=' + result);
-                connection.auth_results( "spf="+auth_result+" smtp.mailfrom="+host);
                 return next();
         }
     });
