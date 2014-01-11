@@ -1234,39 +1234,38 @@ Connection.prototype.received_line = function() {
 
 Connection.prototype.auth_results = function(message) {
     // http://tools.ietf.org/search/rfc7001
-    var in_transaction = this.transaction && this.transaction.notes ? true : false;
+    var has_conn = this.notes.authentication_results ? true : false;
+    var has_tran = (this.transaction && this.transaction.notes) ? true : false;
 
     // initialize connection note
-    if ( ! this.notes.authentication_results ) {
-        this.notes.authentication_results = [ config.get('me') ];
-    }
+    if ( has_conn === false) { this.notes.authentication_results = []; };
 
     // initialize transaction note, if possible
-    if ( in_transaction === true && !this.transaction.notes.authentication_results ) {
+    if ( has_tran === true && !this.transaction.notes.authentication_results ) {
         this.transaction.notes.authentication_results = [];
     }
 
     // if message, store it in the appropriate note
     if ( message ) {
-        if ( in_transaction === true ) {
+        if ( has_tran === true ) {
             this.transaction.notes.authentication_results.push(message);
-            this.logdebug("ar_tran: " + this.transaction.notes.authentication_results);
         }
         else {
             this.notes.authentication_results.push(message);
-            this.logdebug("ar_conn: " + this.notes.authentication_results);
         }
     };
 
-    // return the formatted header
-    var header = [ this.notes.authentication_results.join('; '),
-        (in_transaction === true ? this.transaction.notes.authentication_results.join('; ') : '')
+    // format the new header
+    var header = [
+        config.get('me'),
+        (has_conn === true ? this.notes.authentication_results.join('; ') : ''),
+        (has_tran === true ? this.transaction.notes.authentication_results.join('; ') : '')
          ].join('; ');
-    this.logdebug("ar_header: " + header);
     return header;
 };
 
 Connection.prototype.auth_results_clean = function(conn) {
+    // move any existing Auth-Res headers to Original-Auth-Res headers
     // http://tools.ietf.org/html/draft-kucherawy-original-authres-00.html
     var ars = conn.transaction.header.get_all('Authentication-Results');
     if ( ars.length === 0 ) { return; };
