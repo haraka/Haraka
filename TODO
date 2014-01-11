@@ -26,6 +26,7 @@ Remove the following deprecated plugins
  - daemonize
 
 Rename the following plugins
+ - attachment   -> data.attachment
  - avg          -> data.avg
  - clamd        -> data.clamd
  - spamassassin -> data.spamassassin
