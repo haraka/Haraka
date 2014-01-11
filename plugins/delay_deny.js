@@ -27,7 +27,10 @@ exports.hook_deny = function (next, connection, params) {
 
     // Load config
     var cfg = this.config.get('delay_deny.ini');
-    var skip = cfg.main.excluded_plugins.split(/[;, ]+/);
+    var skip;
+    if ( cfg.main.excluded_plugins ) {
+        skip = cfg.main.excluded_plugins.split(/[;, ]+/);
+    };
 
     // See if we should skip this delay
     if (skip && skip.length) {
