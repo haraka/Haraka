@@ -8,7 +8,8 @@ var date_future_days = 2;
 var date_past_days   = 15;
 
 exports.hook_data_post = function (next, connection) {
-    refreshConfig(this);
+    var plugin = this;
+    refreshConfig(plugin);
 
     var header = connection.transaction.header;
 
@@ -27,31 +28,45 @@ exports.hook_data_post = function (next, connection) {
              return next(DENY, "Only one " + singular_headers[i] +
                 " header allowed. See RFC 5322, Section 3.6");
         }
-    }
-
-    var msg_date = header.get_all('Date');
-    if ( msg_date.length > 0 ) {
-        this.logdebug(connection, "message date: " + msg_date);
-        var msg_secs = Date.parse(msg_date);
-        this.logdebug(connection, "parsed date: " + msg_secs);
-        var now_secs = Date.now();
-        this.logdebug(connection, "now seconds: " + now_secs);
-        
-        if ( date_future_days > 0 && msg_secs > (now_secs + (date_future_days * 24 * 3600)) ) {
-            this.loginfo(connection, "date too far in the future: " + msg_date );
-            return next(DENY, "The Date header is too far in the future");
-        }
-        if ( date_past_days > 0 && msg_secs < (now_secs - ( date_past_days * 24 * 3600 )) ) {
-            this.loginfo(connection, "date too old: " + msg_date );
-            return next(DENY, "The Date header is too old");
-        };
     };
+
+    var errmsg = checkDateValid(plugin,connection);
+    if (errmsg) return next(DENY, errmsg);
 
     return next();
 }
 
+function checkDateValid (plugin,connection) {
+
+    var msg_date = connection.transaction.header.get_all('Date');
+    if (!msg_date || msg_date.length === 0) return;
+
+    connection.logdebug(plugin, "message date: " + msg_date);
+    msg_date = Date.parse(msg_date);
+
+    if ( date_future_days > 0 ) {
+        var too_future = new Date;
+        too_future.setHours(too_future.getHours() + 24 * date_future_days);
+        // connection.logdebug(plugin, "too future: " + too_future);
+        if ( msg_date > too_future ) {
+            connection.loginfo(plugin, "date is newer than: " + too_future );
+            return "The Date header is too far in the future";
+        };
+    }
+    if ( date_past_days > 0 ) {
+        var too_old = new Date;
+        too_old.setHours(too_old.getHours() - 24 * date_past_days);
+        // connection.logdebug(plugin, "too old: " + too_old);
+        if ( msg_date < too_old ) {
+            connection.loginfo(plugin, "date is older than: " + too_old);
+            return "The Date header is too old";
+        };
+    };
+    return;
+};
+
 function refreshConfig(plugin) {
-    var config   = plugin.config.get('data.headers.ini');
+    var config = plugin.config.get('data.headers.ini');
 
     if ( config.main.required !== 'undefined' ) {
         required_headers = config.main.required.split(',');
