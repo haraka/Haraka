@@ -91,6 +91,7 @@ exports.hook_lookup_rdns = function (next, connection) {
             if (!called_next) {
                 called_next++;
                 clearTimeout(timeout_id);
+                connection.auth_results("iprev=permerror");
 
                 if (_in_whitelist(connection, plugin, connection.remote_ip)) {
                     next(OK, connection.remote_ip);
@@ -124,6 +125,7 @@ exports.hook_lookup_rdns = function (next, connection) {
                             if (_in_whitelist(connection, plugin, rdns)) {
                                 next(OK, rdns);
                             } else {
+                                connection.auth_results("iprev=fail");
                                 _dns_error(connection, next, err, rdns, plugin,
                                     fwd_nxdomain, fwd_dnserror);
                             }
@@ -135,6 +137,7 @@ exports.hook_lookup_rdns = function (next, connection) {
                                 if (!called_next) {
                                     called_next++;
                                     clearTimeout(timeout_id);
+                                    connection.auth_results("iprev=pass");
                                     return next(OK, rdns);
                                 }
                             }

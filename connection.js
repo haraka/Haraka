@@ -1232,6 +1232,51 @@ Connection.prototype.received_line = function() {
     ].join('');
 };
 
+Connection.prototype.auth_results = function(message) {
+    // http://tools.ietf.org/search/rfc7001
+    var has_conn = this.notes.authentication_results ? true : false;
+    var has_tran = (this.transaction && this.transaction.notes) ? true : false;
+
+    // initialize connection note
+    if ( has_conn === false) { this.notes.authentication_results = []; };
+
+    // initialize transaction note, if possible
+    if ( has_tran === true && !this.transaction.notes.authentication_results ) {
+        this.transaction.notes.authentication_results = [];
+    }
+
+    // if message, store it in the appropriate note
+    if ( message ) {
+        if ( has_tran === true ) {
+            this.transaction.notes.authentication_results.push(message);
+        }
+        else {
+            this.notes.authentication_results.push(message);
+        }
+    };
+
+    // format the new header
+    var header = [
+        config.get('me'),
+        (has_conn === true ? this.notes.authentication_results.join('; ') : ''),
+        (has_tran === true ? this.transaction.notes.authentication_results.join('; ') : '')
+         ].join('; ');
+    return header;
+};
+
+Connection.prototype.auth_results_clean = function(conn) {
+    // move any existing Auth-Res headers to Original-Auth-Res headers
+    // http://tools.ietf.org/html/draft-kucherawy-original-authres-00.html
+    var ars = conn.transaction.header.get_all('Authentication-Results');
+    if ( ars.length === 0 ) { return; };
+
+    for (var i=0; i < ars.length; i++) {
+        conn.transaction.header.remove_header( ars[i] );
+        conn.transaction.header.add_header('Original-Authentication-Results', ars[i] );
+    }
+    conn.loginfo("Authentication-Results moved to Original-Authentication-Results" );
+};
+
 Connection.prototype.cmd_data = function(args) {
     // RFC 5321 Section 4.3.2
     // DATA does not accept arguments
@@ -1246,6 +1291,8 @@ Connection.prototype.cmd_data = function(args) {
     }
 
     this.accumulate_data('Received: ' + this.received_line() + "\r\n");
+    this.auth_results_clean(this);
+    this.transaction.add_header('Authentication-Results', this.auth_results() );
     plugins.run_hooks('data', this);
 };
 

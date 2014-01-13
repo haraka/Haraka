@@ -93,6 +93,7 @@ exports.check_user = function (next, connection, credentials, method) {
             connection.relaying = 1;
             connection.respond(235, "Authentication successful", function () {
                 connection.authheader = "(authenticated bits=0)\n";
+                connection.auth_results('auth=pass ('+method.toLowerCase()+')' );
                 connection.notes.auth_user = credentials[0];
                 return next(OK);
             });
@@ -104,6 +105,8 @@ exports.check_user = function (next, connection, credentials, method) {
             connection.notes.auth_fails++;
             var delay = Math.pow(2, connection.notes.auth_fails - 1);
             connection.lognotice(self, 'delaying response for ' + delay + ' seconds');
+            // here we include the username, as shown in RFC 5451 example
+            connection.auth_results('auth=fail ('+method.toLowerCase()+') smtp.auth='+ credentials[0]);
             setTimeout(function () {
                 connection.respond(535, "Authentication failed", function () {
                     connection.reset_transaction();
