@@ -17,3 +17,21 @@ Outbound improvements
  - Limit concurrency by domain
  - Disable deliveries for a domain
  - Pool connections by domain/MX
+
+Remove the following deprecated plugins
+ - rdns.regexp
+ - data.nomsgid
+ - data.noreceived
+ - data.rfc5322_header_checks
+ - daemonize
+
+Rename the following plugins
+ - toobusy      -> connect.toobusy
+ - attachment   -> data.attachment
+ - avg          -> data.avg
+ - clamd        -> data.clamd
+ - spamassassin -> data.spamassassin
+ - spf          -> mail_from.spf
+
+Move the following plugins:
+ - test_queue   -> queue/test_queue
