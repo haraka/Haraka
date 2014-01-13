@@ -22,6 +22,9 @@ exports.check_acl = function (next, connection, params) {
 };
 
 exports.check_relay_domains = function (next, connection, params) {
+    // Skip this if the host is already allowed to relay
+    if (connection.relaying) return next();
+ 
     this.dest_domains_ini = this.config.get('relay_dest_domains.ini', 'ini');
     var dest_domain = params[0].host;
 
