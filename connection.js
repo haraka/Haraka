@@ -1154,7 +1154,8 @@ Connection.prototype.cmd_mail = function(line) {
     
     var self = this;
     this.init_transaction(function () {
-        self.transaction.mail_from = from
+        self.transaction.mail_from = from;
+        self.transaction.mail_from_raw = line;
         plugins.run_hooks('mail', self, [from, params]);
     });
 };
@@ -1200,6 +1201,7 @@ Connection.prototype.cmd_rcpt = function(line) {
     }
 
     this.transaction.rcpt_to.push(recip);
+    this.transaction.rcpt_to_raw = line;
     plugins.run_hooks('rcpt', this, [recip, params]);
 };
 
