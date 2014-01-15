@@ -7,7 +7,6 @@
   - bogus_bounce (checks bounces have one recipient and no return-path)
   - dspam
   - greylisting
-  - karma?
   - virus/*
 
 Outbound improvements
