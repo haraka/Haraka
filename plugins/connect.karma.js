@@ -4,9 +4,6 @@ var ipaddr = require('ipaddr.js');
 var redis = require('redis');
 var db;
 
-var penalty_days = 1;
-var spammy_tlds = [];
-
 exports.register = function () {
     var plugin = this;
 
@@ -21,22 +18,6 @@ exports.register = function () {
 
 exports.karma_onInit = function (next,server) {
     var config     = this.config.get('connect.karma.ini');
-
-    if ( config.main.penalty_days ) penalty_days = config.main.penalty_days;
-
-    if ( ! config.spammy_tlds ) {
-        spammy_tlds = {
-            'info':-3, 'pw' :-3, 'tw':-3, 'biz':-3,
-            'cl'  :-2, 'br' :-2, 'fr':-2, 'be':-2, 'jp':-2, 'no':-2, 'se':-2, 'sg':-2,
-        };
-    }
-    else {
-        // TODO: test parsing spammy_tlds from .ini
-        for (var i=0; config.main.spammy_tlds.length(); i++) {
-            spammy_tlds[i] = config.main.spammy_tlds[i];
-        };
-    };
-
     var redis_ip  = '127.0.0.1';
     var redis_port = '6379';
     if ( config.redis ) {
@@ -45,87 +26,95 @@ exports.karma_onInit = function (next,server) {
     };
     db = redis.createClient(redis_port, redis_ip);
     return next();
-}
+};
 
 exports.karma_onConnect = function (next, connection) {
     var plugin = this;
+    var config = this.config.get('connect.karma.ini');
 
-    connection.notes.karma = 0;          // defaults
-    connection.notes.karma_history = 0;
+    connection.notes.karma = new Number();          // defaults
+    connection.notes.karma_history = new Number();
 
     var key = 'karma|'+connection.remote_ip;
+    var con_key = 'concurrent|'+connection.remote_ip;
 
-    db.hgetall(key, function redisResults (err,obj) {
-        if (err) {
-            connection.logdebug(plugin,"err: "+err);
-            return next();
-        };
+    function initRemoteIP () {
+        db.multi()
+            .hmset(key, {'penalty_start_ts': 0, 'naughty': 0, 'nice': 0, 'connections': 1})
+            .expire(key, 86400 * 60)   // expire after 60 days
+            .exec();
+        connection.logdebug(plugin,"first connect");
+    };
 
-        if (obj === null) {                // first connection by this IP
-            db.hmset(key, {'penalty_start_ts': 0, 'naughty': 0, 'nice': 0, 'concurrent':1, 'connections': 1});
-            db.expire(key, 86400 * 60);    // expire after 60 days
-            connection.logdebug(plugin,"no results");
-            return next();
-        };
-
-        db.hincrby(key, 'concurrent', 1);
-        db.hincrby(key, 'connections', 1); // total connections
-        db.expire(key, 86400 * 60);        // extend expiration date
-
-        var history = (obj.nice || 0) - (obj.naughty || 0);
-        connection.notes.karma_history = history;
-
-        var summary = obj.naughty+" naughty, "+obj.nice+" nice, "+obj.connections+" connects, "+history+" history";
-
-        if ( config.concurrency ) {
-            var reject=0;
-            obj.concurrent++;  // add this connection
-            if (history < 0 && obj.concurrent > config.concurrency.naughty) reject++;
-            if (history > 0 && obj.concurrent > config.concurrency.nice) reject++;
-            if (history ==0 && obj.concurrent > config.concurrency.neutral) reject++;
-            if (reject) {
-                connection.loginfo(plugin, "too many concurrent connections ("+summary+")");
-                return next(DENY, "too many connections: "+obj.concurrent);
+    db.multi()
+        .get(con_key)
+        .hgetall(key)
+        .exec( function redisResults (err,replies) {
+            if (err) {
+                connection.logdebug(plugin,"err: "+err);
+                return next();
             };
-        };
 
-        if (obj.penalty_start_ts === '0') {
-            connection.loginfo(plugin, "no penalty ("+summary+")");
-            return next();
-        }
+            if (replies[1] === null) { initRemoteIP(); return next(); };
 
-        var days_old = (Date.now() - Date.parse(obj.penalty_start_ts)) / 86.4;
-        if (days_old >= penalty_days) {
-            connection.loginfo(plugin, "penalty expired ("+summary+")");
-            return next();
-        }
+            db.hincrby(key, 'connections', 1); // total connections
+            db.expire(key, 86400 * 60);        // extend expiration date
 
-        var left = +( penalty_days - days_old ).toFixed(2);
-        var mess = "Bad karma, you can try again in "+left+" more days.";
+            var kobj = replies[1];
+            var history = (kobj.nice || 0) - (kobj.naughty || 0);
+            connection.notes.karma_history = history;
 
-        return next(DENY, mess);
-    });
+            var summary = kobj.naughty+" naughty, "+kobj.nice+" nice, "+kobj.connections+" connects, "+history+" history";
+
+            var too_many = checkConcurrency(plugin, con_key, replies[0], history);
+            if ( too_many ) {
+                connection.loginfo(plugin, too_many + ", ("+summary+")");
+                return next(DENYSOFT, too_many);
+            };
+
+            if (kobj.penalty_start_ts === '0') {
+                connection.loginfo(plugin, "no penalty ("+summary+")");
+                return next();
+            }
+
+            var days_old = (Date.now() - Date.parse(kobj.penalty_start_ts)) / 86.4;
+            var penalty_days = config.main.penalty_days;
+            if (days_old >= penalty_days) {
+                connection.loginfo(plugin, "penalty expired ("+summary+")");
+                return next();
+            }
+
+            var left = +( penalty_days - days_old ).toFixed(2);
+            var mess = "Bad karma, you can try again in "+left+" more days.";
+
+            return next(DENY, mess);
+        });
 };
 
 exports.karma_onMailFrom = function (next, connection, params) {
     var plugin = this;
+    var config = this.config.get('connect.karma.ini');
+
     var mail_from = params[0];
     var from_tld  = mail_from.host.split('.').pop();
-    // connection.logdebug(plugin, "from_tld: "+from_tld);
+    connection.logdebug(plugin, "from_tld: "+from_tld);
 
-    var karma_penalty = spammy_tlds[from_tld] || 0;
-    if (karma_penalty) {
-        connection.logdebug(plugin, "spammy TLD award: "+karma_penalty);
-        connection.notes.karma -= karma_penalty;
+    if ( config.spammy_tlds ) {
+        var tld_penalty = (config.spammy_tlds[from_tld] || 0) * 1; // force numeric
+
+        if (tld_penalty !== 0) {
+            connection.loginfo(plugin, "spammy TLD award: "+tld_penalty);
+            connection.notes.karma += tld_penalty;
+        };
     };
 
-    var full_from = connection.transaction.mail_from_raw;
-    connection.logdebug(plugin, "mail_from raw: "+full_from);
+    var full_from = connection.current_line;
+    connection.logdebug(plugin, "mail_from: "+full_from);
 
 // test if sender has placed an illegal RFC (2)821 space in envelope from
-    if ( full_from.toUpperCase().substring(0,6) !== 'FROM:<' ) {
+    if ( full_from.toUpperCase().substring(0,11) !== 'MAIL FROM:<' ) {
         connection.loginfo(plugin, "illegal envelope address format: "+full_from );
-        connection.notes.karma -= karma_penalty;
+        connection.notes.karma.value--;
     };
 
     connection.loginfo(plugin, "karma score: "+ connection.notes.karma );
@@ -136,12 +125,12 @@ exports.karma_onRcptTo = function (next, connection, params) {
     var plugin = this;
 
     var rcpt = params[0];
-    var full_rcpt = connection.transaction.rcpt_to_raw;
+    var full_rcpt = connection.current_line;
 
     // check for an illegal RFC (2)821 space in envelope recipient
-    if ( full_rcpt.toUpperCase().substring(0,4) !== 'TO:<' ) {
+    if ( full_rcpt.toUpperCase().substring(0,9) !== 'RCPT TO:<' ) {
         connection.loginfo(plugin, "illegal envelope address format: "+full_rcpt );
-        connection.notes.karma -= karma_penalty;
+        connection.notes.karma--;
     };
 
     var count = connection.rcpt_count.accept + connection.rcpt_count.tempfail + connection.rcpt_count.reject + 1;
@@ -169,7 +158,7 @@ exports.karma_onRcptTo = function (next, connection, params) {
 
 exports.karma_onData = function (next, connection) {
 // cut off naughty senders at DATA to prevent receiving the message
-    var karma = connection.notes.karma;
+    var karma = connection.notes.karma * 1;
     if ( karma <= -4 ) {
         return next(DENY, "very bad karma: "+karma);
     };
@@ -178,9 +167,11 @@ exports.karma_onData = function (next, connection) {
 
 exports.karma_onDisconnect = function (next, connection) {
     var plugin = this;
+    var config = this.config.get('connect.karma.ini');
 
     var key = 'karma|'+connection.remote_ip;
-    db.hincrby(key, 'concurrent', -1);
+
+    if ( config.concurrency ) db.incrby('concurrent|'+connection.remote_ip, -1);
 
     var karma = connection.notes.karma;
     var history = connection.notes.karma_history;
@@ -190,7 +181,6 @@ exports.karma_onDisconnect = function (next, connection) {
         return next();
     };
 
-    var config = this.config.get('connect.karma.ini');
     var pos_lim = config.connection_limit.positive || 2;
 
     if (karma > pos_lim) {
@@ -227,3 +217,20 @@ function addDays(date, days) {
     return result;
 }
 
+function checkConcurrency(plugin, con_key, val, history) {
+    var config = plugin.config.get('connect.karma.ini');
+
+    if ( !config.concurrency ) return;
+
+    var count = val || 0;    // add this connection
+    count++;
+    db.incr(con_key);        // increment Redis, (creates if needed)
+    db.expire(con_key, 4 * 60);     // expire after 4 min
+
+    var reject=0;
+    if (history <  0 && count > config.concurrency.naughty) reject++;
+    if (history >  0 && count > config.concurrency.nice)    reject++;
+    if (history == 0 && count > config.concurrency.neutral) reject++;
+    if (reject) return "too many connections for you: "+count;
+    return;
+};
