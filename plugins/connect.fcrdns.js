@@ -3,10 +3,14 @@ var net = require('net');
 var utils = require('./utils');
 var net_utils = require('./net_utils.js');
 
-exports.hook_lookup_rdns = function (next, connection) {
-    var cfg = this.config.get('rdns.ini');
+// TODO: use white/blacklist results from connect.rdns_access
+//       deprecate lookup_rdns_strict
+//   if no strict fcrdns match, do octet checks and see if they're "close"
 
-    connection.notes.rdns = {
+exports.hook_lookup_rdns = function (next, connection) {
+    var cfg = this.config.get('connect.fcrdns.ini');
+
+    connection.notes.fcrdns = {
         name: [],
         rdns_name_to_ip: {},    // Array of all rDNS names and their IP addresses
         fcrdns: [],             // Array of rDNS names that verify to this IP
@@ -22,17 +26,16 @@ exports.hook_lookup_rdns = function (next, connection) {
     var called_next = 0;
     var timer;
     var do_next = function (code, msg) {
-        if (!called_next) {
-            called_next++;
-            clearTimeout(timer);
-            return next(code, msg);
-        }
+        if (called_next) return;
+        called_next++;
+        clearTimeout(timer);
+        return next(code, msg);
     }
 
     // Set-up timer
     timer = setTimeout(function () {
         connection.logwarn(plugin, 'timeout');
-        connection.notes.rdns.timeout = true;
+        connection.notes.fcrdns.timeout = true;
         if (cfg.main.reject_no_rdns) {
             return do_next(DENYSOFT, 'client [' + connection.remote_ip + '] rDNS lookup timeout');
         }
@@ -46,7 +49,7 @@ exports.hook_lookup_rdns = function (next, connection) {
                 case 'ENOTFOUND':
                 case dns.NOTFOUND:
                 case dns.NXDOMAIN:
-                    connection.notes.rdns.no_rdns = true;
+                    connection.notes.fcrdns.no_rdns = true;
                     connection.loginfo(plugin, 'no rDNS found (' + err.code + ')');
                     if (cfg.main.reject_no_rdns) {
                         return do_next(DENY, 'client [' + connection.remote_ip + '] rejected; no rDNS entry found');
@@ -55,100 +58,131 @@ exports.hook_lookup_rdns = function (next, connection) {
                     break;
                 default:
                     connection.logerror(plugin, 'error: ' + err);
-                    connection.notes.rdns.error = true;
+                    connection.notes.fcrdns.error = true;
                     if (cfg.main.reject_no_rdns) {
                         return do_next(DENYSOFT, 'client [' + connection.remote_ip + '] rDNS lookup error (' + err + ')');
                     }
                     return do_next();
             }
         }
-        connection.notes.rdns.name = domains;
+        connection.notes.fcrdns.name = domains;
         // Fetch all A records for any PTR records returned
         var pending_queries = 0;
         var queries_run = false;
         var results = {};
         for (var i=0; i<domains.length; i++) {
-            var rdns = domains[i].toLowerCase();
-            results[rdns] = [];
+            var domain = domains[i].toLowerCase();
+            results[domain] = [];
             // Make sure we have a valid TLD
-            var tld = rdns.match(/\.([^.]+)$/);
+            var tld = domain.match(/\.([^.]+)$/);
             if (!tld || (tld && !net_utils.top_level_tlds[tld[1]])) {
-                connection.logdebug(plugin, 'found invalid TLD: ' + rdns);
-                connection.notes.rdns.invalid_tlds.push(rdns);
+                connection.logdebug(plugin, 'found invalid TLD: ' + domain);
+                connection.notes.fcrdns.invalid_tlds.push(domain);
                 if (cfg.main.reject_invalid_tld && !net_utils.is_rfc1918(connection.remote_ip)) {
-                    return do_next(DENY, 'client [' + connection.remote_ip + '] rejected; invalid TLD in rDNS (' + rdns + ')');
+                    return do_next(DENY, 'client [' + connection.remote_ip + '] rejected; invalid TLD in rDNS (' + domain + ')');
                 }
             }
             else {
                 queries_run = true;
-                connection.logdebug(plugin, 'rdns: ' + rdns + ' tld=' + tld[1]);
+                connection.logdebug(plugin, 'domain: ' + domain + ' tld=' + tld[1]);
                 pending_queries++;
-                (function (rdns) {  /* BEGIN BLOCK SCOPE */
-                dns.resolve(rdns, function(err, addresses) {
+                (function (domain) {  /* BEGIN BLOCK SCOPE */
+                dns.resolve(domain, function(err, ips_from_fwd) {
                     pending_queries--;
                     if (err) {
-                        connection.logdebug(plugin, rdns + ' => ' + err); 
+                        connection.logdebug(plugin, domain + ' => ' + err);
                     }
                     else {
-                        connection.logdebug(plugin, rdns + ' => ' + addresses);
-                        results[rdns] = addresses;
+                        connection.logdebug(plugin, domain + ' => ' + ips_from_fwd);
+                        results[domain] = ips_from_fwd;
                     }
                     if (pending_queries === 0) {
                         // Got all results
-                        var keys = Object.keys(results);
+                        var found_doms = Object.keys(results);
                         var other_ips = {};
-                        connection.notes.rdns.rdns_name_to_ip = results;
-                        for (var i=0; i<keys.length; i++) {
+                        connection.notes.fcrdns.rdns_name_to_ip = results;
+                        for (var i=0; i<found_doms.length; i++) {
+                            var fdom = found_doms[i];
                             // Multiple domains?
-                            if (last_domain && last_domain !== net_utils.split_hostname(keys[i])[1]) {
-                                connection.notes.rdns.ptr_multidomain = true;
+                            if (last_domain && last_domain !== net_utils.split_hostname(fdom)[1]) {
+                                connection.notes.fcrdns.ptr_multidomain = true;
                             }
                             else {
-                                var last_domain = net_utils.split_hostname(keys[i])[1];
+                                var last_domain = net_utils.split_hostname(fdom)[1];
                             }
-                            // FCrDNS? A => PTR => A
-                            if (results[keys[i]].indexOf(connection.remote_ip) >= 0) {
-                                connection.notes.rdns.fcrdns.push(keys[i]);
+                            // FCrDNS? PTR -> (A | AAAA) 3. PTR comparison
+                            if (results[fdom].indexOf(connection.remote_ip) >= 0) {
+                                connection.notes.fcrdns.fcrdns.push(fdom);
                             } else {
-                                for (var j=0; j<results[keys[i]].length; j++) {
-                                    other_ips[results[keys[i][j]]] = 1;
+                                for (var j=0; j<results[fdom].length; j++) {
+                                    other_ips[results[fdom[j]]] = 1;
                                 }
                             }
-                            // IP in rDNS? (Generic rDNS)
-                            if (net_utils.is_ip_in_str(connection.remote_ip, keys[i])) {
-                                connection.notes.rdns.ip_in_rdns = true;
-                                if (cfg.main.reject_generic_rdns) {
-                                    var host_part = net_utils.split_hostname(keys[i])[0];
-                                    if (/(?:static|business)/.test(host_part)) {
-                                        // Allow some obvious generic but static ranges
-                                        // EHLO/HELO checks will still catch out hosts that use generic rDNS there
-                                        connection.loginfo(plugin, 'allowing generic static rDNS');
-                                    }
-                                    else {
-                                        return do_next(DENY, 'client ' + keys[i] + ' [' + connection.remote_ip +
-                                         '] rejected; generic rDNS,' +
-                                         ' please use your ISPs SMTP relay service to send mail here');
-                                    }
-                                }
-                            }
+
+                            var reject = isGeneric_rDNS(fdom);
+                            if (reject) return do_next(DENY, reject);
                         }
-                        connection.notes.rdns.other_ips = Object.keys(other_ips);
-                        connection.loginfo(plugin, 
-                            ['ip=' + connection.remote_ip,
-                             'rdns="' + ((connection.notes.rdns.name.length > 2) ? connection.notes.rdns.name.slice(0,2).join(',') + '...' : connection.notes.rdns.name.join(',')) + '"',
-                             'rdns_len=' + connection.notes.rdns.name.length,
-                             'fcrdns="' + ((connection.notes.rdns.fcrdns.length > 2) ? connection.notes.rdns.fcrdns.slice(0,2).join(',') + '...' : connection.notes.rdns.fcrdns.join(',')) + '"',
-                             'fcrdns_len=' + connection.notes.rdns.fcrdns.length,
-                             'other_ips_len=' + connection.notes.rdns.other_ips.length,
-                             'invalid_tlds=' + connection.notes.rdns.invalid_tlds.length,
-                             'generic_rdns=' + ((connection.notes.rdns.ip_in_rdns) ? 'true' : 'false'),
-                            ].join(' '));
+
+                        resultsToNote(other_ips);
                         return do_next();
-                    }   
+                    }
                 });
-                })(rdns); /* END BLOCK SCOPE */
+                })(domain); /* END BLOCK SCOPE */
             }
         }
+
+        function resultsToAuthResults() {
+            var note = connection.notes.fcrdns;
+            if (note.fcrdns.length()) {
+                connection.auth_results("iprev=pass");
+                return;
+            };
+            if (note.no_rdns) {
+                connection.auth_results("iprev=permerror");
+                return;
+            };
+            if (note.timeout) {
+                connection.auth_results("iprev=temperror");
+                return;
+            };
+            connection.auth_results("iprev=fail");
+        };
+
+        function resultsToNote(other_ips) {
+            var note = connection.notes.fcrdns;
+
+            connection.notes.fcrdns.other_ips = Object.keys(other_ips);
+            connection.loginfo(plugin,
+                ['ip=' + connection.remote_ip,
+                    'rdns="' + ((note.name.length > 2) ? note.name.slice(0,2).join(',') + '...' : note.name.join(',')) + '"',
+                    'rdns_len=' + note.name.length,
+                    'fcrdns="' + ((note.fcrdns.length > 2) ? note.fcrdns.slice(0,2).join(',') + '...' : note.fcrdns.join(',')) + '"',
+                    'fcrdns_len=' + note.fcrdns.length,
+                    'other_ips_len=' + note.other_ips.length,
+                    'invalid_tlds=' + note.invalid_tlds.length,
+                    'generic_rdns=' + ((note.ip_in_rdns) ? 'true' : 'false'),
+                ].join(' '));
+        };
+
+        function isGeneric_rDNS (domain) {
+            // IP in rDNS? (Generic rDNS)
+            if (!net_utils.is_ip_in_str(connection.remote_ip, domain)) return;
+
+            connection.notes.fcrdns.ip_in_rdns = true;
+            if (!cfg.main.reject_generic_rdns) return;
+
+            var host_part = net_utils.split_hostname(domain)[0];
+            if (/(?:static|business)/.test(host_part)) {
+                // Allow some obvious generic but static ranges
+                // EHLO/HELO checks will still catch out hosts that use generic rDNS there
+                connection.loginfo(plugin, 'allowing generic static rDNS');
+                return;
+            }
+
+            return 'client ' + domain + ' [' + connection.remote_ip +
+                '] rejected; generic rDNS, please use your ISPs SMTP relay';
+        };
+
         // No valid PTR
         if (!queries_run || (queries_run && pending_queries === 0)) {
             return do_next();
@@ -162,16 +196,20 @@ exports.hook_data_post = function (next, connection) {
     transaction.remove_header('X-Haraka-FCrDNS');
     transaction.remove_header('X-Haraka-rDNS-OtherIPs');
     transaction.remove_header('X-Haraka-HostID');
-    if (connection.notes.rdns && !connection.notes.rdns.error) {
-        if (connection.notes.rdns.name && connection.notes.rdns.name.length) {
-            transaction.add_header('X-Haraka-rDNS', connection.notes.rdns.name.join(' '));
-        }
-        if (connection.notes.rdns.fcrdns && connection.notes.rdns.fcrdns.length) {
-            transaction.add_header('X-Haraka-FCrDNS', connection.notes.rdns.fcrdns.join(' '));
-        }
-        if (connection.notes.rdns.other_ips && connection.notes.rdns.other_ips.length) {
-            transaction.add_header('X-Haraka-rDNS-OtherIPs', connection.notes.rdns.other_ips.join(' '));
-        }
+
+    if (!connection.notes.fcrdns) return next();
+
+    var note = connection.notes.fcrdns;
+    if (note.error) return next();
+
+    if (note.name && note.name.length) {
+        transaction.add_header('X-Haraka-rDNS', note.name.join(' '));
+    }
+    if (note.fcrdns && note.fcrdns.length) {
+        transaction.add_header('X-Haraka-FCrDNS', note.fcrdns.join(' '));
+    }
+    if (note.other_ips && note.other_ips.length) {
+        transaction.add_header('X-Haraka-rDNS-OtherIPs', note.other_ips.join(' '));
     }
     return next();
 }
