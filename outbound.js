@@ -447,11 +447,12 @@ exports.process_domain = function (ok_paths, todo, hmails, cb) {
         fs.unlink(tmp_path, function () {});
         cb("Queueing failed");
     });
-    self.build_todo(todo, ws);
-    todo.message_stream.pipe(ws, { line_endings: '\r\n', dot_stuffing: true, ending_dot: false });
+    self.build_todo(todo, ws, function () {
+        todo.message_stream.pipe(ws, { line_endings: '\r\n', dot_stuffing: true, ending_dot: false });
+    });
 }
 
-exports.build_todo = function (todo, ws) {
+exports.build_todo = function (todo, ws, write_more) {
     // Replacer function to exclude items from the queue file header
     function exclude_from_json(key, value) {
         switch (key) {
@@ -473,16 +474,18 @@ exports.build_todo = function (todo, ws) {
     
     var buf = Buffer.concat([todo_length, todo_str], todo_str.length + 4);
 
-    ws.write(buf);
+    var continue_writing = ws.write(buf);
+    if (continue_writing) return write_more();
+    ws.once('drain', write_more);
 }
 
 exports.split_to_new_recipients = function (hmail, recipients, response, cb) {
+    var self = this;
     if (recipients.length === hmail.todo.rcpt_to.length) {
         // Split to new for no reason - increase refcount and return self
         hmail.refcount++;
         return cb(hmail);
     }
-    var self = this;
     var fname = _fname();
     var tmp_path = path.join(queue_dir, '.' + fname);
     var ws = new FsyncWriteStream(tmp_path, { flags: WRITE_EXCL });
@@ -529,8 +532,6 @@ exports.split_to_new_recipients = function (hmail, recipients, response, cb) {
         ws.destroy();
         hmail.bounce("Error re-queueing some recipients", err);
     });
-
-    ws.on('drain', write_more);
 
     var new_todo = JSON.parse(JSON.stringify(hmail.todo));
     new_todo.rcpt_to = recipients;
