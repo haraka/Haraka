@@ -53,7 +53,7 @@ exports.check_relay_domains = function (next, connection, params) {
 function dest_domain_action(connection, plugin, domains_ini, dest_domain) {
     if (dest_domain in domains_ini) {
         var config = JSON.parse(domains_ini[dest_domain]);
-        connection.logdebug(plugin, 'found config for' + dest_domain + ': ' + domains_ini['action']);
+        connection.logdebug(plugin, 'found config for ' + dest_domain + ': ' + domains_ini['action']);
         return config['action'];
     }
     return 'deny';
