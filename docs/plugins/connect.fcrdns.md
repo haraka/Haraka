@@ -14,6 +14,10 @@ CONFIGURATION
 --------------------------
 Edit config/connect.fcrdns.ini
 
+You can also override the connection blocking settings with the rdns_access
+plugin. Make sure it's enabled in config/plugins and listed *before* this
+fcrdns plugin.
+
 
 WHY IT WORKS
 --------------------------

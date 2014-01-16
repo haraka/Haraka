@@ -3,9 +3,6 @@ var net = require('net');
 var utils = require('./utils');
 var net_utils = require('./net_utils.js');
 
-// TODO: use white/blacklist results from connect.rdns_access
-//       deprecate lookup_rdns_strict plugin
-
 exports.hook_lookup_rdns = function (next, connection) {
     var cfg = this.config.get('connect.fcrdns.ini');
 
@@ -21,6 +18,15 @@ exports.hook_lookup_rdns = function (next, connection) {
         timeout: false,         // Timeout during lookups
         error: false,           // DNS error during rDNS lookup
     };
+    var reject_no_rdns = cfg.main.reject_no_rdns || 0;
+    var reject_invalid_tld = cfg.main.reject_invalid_tld || 0;
+    var reject_generic_rdns = cfg.main.reject_generic_rdns || 0;
+    // allow rdns_acccess whitelist to override
+    if ( connection.notes.rdns_access && connection.notes.rdns_access === 'white' ) {
+        reject_no_rdns = 0;
+        reject_invalid_tld = 0;
+        reject_generic_rdns = 0;
+    };
     var plugin = this;
     var called_next = 0;
     var timer;
@@ -35,7 +41,7 @@ exports.hook_lookup_rdns = function (next, connection) {
     timer = setTimeout(function () {
         connection.logwarn(plugin, 'timeout');
         connection.notes.fcrdns.timeout = true;
-        if (cfg.main.reject_no_rdns) {
+        if (reject_no_rdns) {
             return do_next(DENYSOFT, 'client [' + connection.remote_ip + '] rDNS lookup timeout');
         }
         return do_next();
@@ -50,7 +56,7 @@ exports.hook_lookup_rdns = function (next, connection) {
                 case dns.NXDOMAIN:
                     connection.notes.fcrdns.no_rdns = true;
                     connection.loginfo(plugin, 'no rDNS found (' + err.code + ')');
-                    if (cfg.main.reject_no_rdns) {
+                    if (reject_no_rdns) {
                         return do_next(DENY, 'client [' + connection.remote_ip + '] rejected; no rDNS entry found');
                     }
                     return do_next();
@@ -58,7 +64,7 @@ exports.hook_lookup_rdns = function (next, connection) {
                 default:
                     connection.logerror(plugin, 'error: ' + err);
                     connection.notes.fcrdns.error = true;
-                    if (cfg.main.reject_no_rdns) {
+                    if (reject_no_rdns) {
                         return do_next(DENYSOFT, 'client [' + connection.remote_ip + '] rDNS lookup error (' + err + ')');
                     }
                     return do_next();
@@ -76,7 +82,7 @@ exports.hook_lookup_rdns = function (next, connection) {
             if ( !net_utils.getOrganizationalDomain(domain) ) {
                 connection.logdebug(plugin, 'invalid TLD in hostname ' + domain);
                 connection.notes.fcrdns.invalid_tlds.push(domain);
-                if (cfg.main.reject_invalid_tld && !net_utils.is_rfc1918(connection.remote_ip)) {
+                if (reject_invalid_tld && !net_utils.is_rfc1918(connection.remote_ip)) {
                     return do_next(DENY, 'client [' + connection.remote_ip + '] rejected; invalid TLD in rDNS (' + domain + ')');
                 }
             }
@@ -174,7 +180,7 @@ exports.hook_lookup_rdns = function (next, connection) {
             if (!net_utils.is_ip_in_str(connection.remote_ip, domain)) return;
 
             connection.notes.fcrdns.ip_in_rdns = true;
-            if (!cfg.main.reject_generic_rdns) return;
+            if (!reject_generic_rdns) return;
 
             var orgDom = net_utils.getOrganizationalDomain(name);
             var host_part = domain.slice(0,orgDom.split('.').length);
