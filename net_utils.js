@@ -2,6 +2,7 @@
 var logger = require('./logger');
 var config = require('./config');
 var isIPv4 = require('net').isIPv4;
+var punycode = require('punycode');
 
 // Regexp to match private IPv4 ranges
 var re_private_ipv4 = /^(?:10|127|169\.254|172\.(?:1[6-9]|2[0-9]|3[01])|192\.168)\..*/;
@@ -11,7 +12,6 @@ loadPublicSuffixList();
 
 exports.checkPublicSuffix = function(name, expected) {
     var orgDom = this.getOrganizationalDomain(name);
-    // TODO: detect punycoded domain name and convert
     if (orgDom === expected) {
         console.log('ok '+name);
     }
@@ -32,6 +32,10 @@ exports.isPublicSuffix = function (host) {
         if ( public_suffix_list['!'+host] ) return false; // on exception list
         return true;           // matched a wildcard, ex: *.uk
     };
+
+    try { var puny = punycode.toUnicode(host); }
+    catch(e) {};
+    if ( puny && public_suffix_list[puny] ) return true;
 
     return false;
 };
