@@ -198,6 +198,20 @@ exports.is_rfc1918 = function (ip) {
     return (isIPv4(ip) && re_private_ipv4.test(ip));
 }
 
+exports.sameNetwork = function ( ip, ipList ) {
+    if (!ipList || !ipList.length) {
+        logger.logerror('No ip list passed to sameNetwork!');
+    };
+
+    var first3 = ip.split('.').slice(0,3).join('.');
+
+    for ( var i=0; i < ipList.length; i++) {
+        if ( first3 === ipList[i].split('.').slice(0,3).join('.') )
+            return true;
+    };
+    return false;
+};
+
 function load_tld_files () {
     config.get('top-level-tlds','list').forEach(function (tld) {
         top_level_tlds[tld.toLowerCase()] = 1;

@@ -4,8 +4,7 @@ var utils = require('./utils');
 var net_utils = require('./net_utils.js');
 
 // TODO: use white/blacklist results from connect.rdns_access
-//       deprecate lookup_rdns_strict
-//   if no strict fcrdns match, do octet checks and see if they're "close"
+//       deprecate lookup_rdns_strict plugin
 
 exports.hook_lookup_rdns = function (next, connection) {
     var cfg = this.config.get('connect.fcrdns.ini');
@@ -73,10 +72,9 @@ exports.hook_lookup_rdns = function (next, connection) {
         for (var i=0; i<domains.length; i++) {
             var domain = domains[i].toLowerCase();
             results[domain] = [];
-            // Make sure we have a valid TLD
-            var tld = domain.match(/\.([^.]+)$/);
-            if (!tld || (tld && !net_utils.top_level_tlds[tld[1]])) {
-                connection.logdebug(plugin, 'found invalid TLD: ' + domain);
+            // Make sure TLD is valid
+            if ( !net_utils.getOrganizationalDomain(domain) ) {
+                connection.logdebug(plugin, 'invalid TLD in hostname ' + domain);
                 connection.notes.fcrdns.invalid_tlds.push(domain);
                 if (cfg.main.reject_invalid_tld && !net_utils.is_rfc1918(connection.remote_ip)) {
                     return do_next(DENY, 'client [' + connection.remote_ip + '] rejected; invalid TLD in rDNS (' + domain + ')');
@@ -84,7 +82,7 @@ exports.hook_lookup_rdns = function (next, connection) {
             }
             else {
                 queries_run = true;
-                connection.logdebug(plugin, 'domain: ' + domain + ' tld=' + tld[1]);
+                connection.logdebug(plugin, 'domain: ' + domain);
                 pending_queries++;
                 (function (domain) {  /* BEGIN BLOCK SCOPE */
                 dns.resolve(domain, function(err, ips_from_fwd) {
@@ -102,18 +100,24 @@ exports.hook_lookup_rdns = function (next, connection) {
                         var other_ips = {};
                         connection.notes.fcrdns.rdns_name_to_ip = results;
                         for (var i=0; i<found_doms.length; i++) {
-                            var fdom = found_doms[i];
+                            var fdom = found_doms[i];       // mail.example.com
+                            var org_domain = net_utils.getOrganizationalDomain(fdom); // example.com
+
                             // Multiple domains?
-                            if (last_domain && last_domain !== net_utils.split_hostname(fdom)[1]) {
+                            if (last_domain && last_domain !== org_domain) {
                                 connection.notes.fcrdns.ptr_multidomain = true;
                             }
                             else {
-                                var last_domain = net_utils.split_hostname(fdom)[1];
+                                var last_domain = org_domain;
                             }
                             // FCrDNS? PTR -> (A | AAAA) 3. PTR comparison
                             if (results[fdom].indexOf(connection.remote_ip) >= 0) {
                                 connection.notes.fcrdns.fcrdns.push(fdom);
-                            } else {
+                            }
+                            else if ( net_utils.sameNetwork(connection.remote_ip, results[fdom]) ) {
+                                connection.notes.fcrdns.fcrdns.push(fdom);
+                            }
+                            else {
                                 for (var j=0; j<results[fdom].length; j++) {
                                     other_ips[results[fdom[j]]] = 1;
                                 }
@@ -123,7 +127,8 @@ exports.hook_lookup_rdns = function (next, connection) {
                             if (reject) return do_next(DENY, reject);
                         }
 
-                        resultsToNote(other_ips);
+                        toConnectionNote(other_ips);
+                        toAuthResults();
                         return do_next();
                     }
                 });
@@ -131,9 +136,9 @@ exports.hook_lookup_rdns = function (next, connection) {
             }
         }
 
-        function resultsToAuthResults() {
+        function toAuthResults() {
             var note = connection.notes.fcrdns;
-            if (note.fcrdns.length()) {
+            if (note.fcrdns.length) {
                 connection.auth_results("iprev=pass");
                 return;
             };
@@ -148,7 +153,7 @@ exports.hook_lookup_rdns = function (next, connection) {
             connection.auth_results("iprev=fail");
         };
 
-        function resultsToNote(other_ips) {
+        function toConnectionNote(other_ips) {
             var note = connection.notes.fcrdns;
 
             connection.notes.fcrdns.other_ips = Object.keys(other_ips);
@@ -171,7 +176,8 @@ exports.hook_lookup_rdns = function (next, connection) {
             connection.notes.fcrdns.ip_in_rdns = true;
             if (!cfg.main.reject_generic_rdns) return;
 
-            var host_part = net_utils.split_hostname(domain)[0];
+            var orgDom = net_utils.getOrganizationalDomain(name);
+            var host_part = domain.slice(0,orgDom.split('.').length);
             if (/(?:static|business)/.test(host_part)) {
                 // Allow some obvious generic but static ranges
                 // EHLO/HELO checks will still catch out hosts that use generic rDNS there
