@@ -42,6 +42,7 @@ From WikiPedia: [Forward Confirmed Reverse DNS](http://en.wikipedia.org/wiki/FcR
 
 iprev
 --------------------------
+The iprev results are added to the Authentication-Results header.
 
 [RFC 1912](http://www.ietf.org/rfc/rfc1912.txt)
 [RFC 5451](http://www.ietf.org/rfc/rfc5451.txt)
