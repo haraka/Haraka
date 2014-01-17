@@ -90,6 +90,8 @@ exports.karma_onConnect = function (next, connection) {
 
             return next(DENY, mess);
         });
+
+    checkAwards (config, connection, plugin);
 };
 
 function initConnectionNote(connection, config) {
@@ -99,7 +101,7 @@ function initConnectionNote(connection, config) {
         history: 0,
         awards: [],
         penalties: [ ],
-        todo: getTodo(config, connection),
+        todo: populateTodo(config, connection),
     };
 };
 
@@ -125,6 +127,7 @@ exports.karma_onDeny = function (next, connection, params) {
 
     connection.loginfo(plugin, 'deny, '+karmaSummary(connection));
 
+    checkAwards (config, connection, plugin);
     return next();
 };
 
@@ -155,13 +158,13 @@ exports.karma_onMailFrom = function (next, connection, params) {
         connection.notes.karma.penalties.push('rfc5321.MailFrom');
     };
 
+    checkAwards (config, connection, plugin);
     connection.loginfo(plugin, karmaSummary(connection));
     return next();
 };
 
 exports.karma_onRcptTo = function (next, connection, params) {
     var plugin = this;
-
     var rcpt = params[0];
     var full_rcpt = connection.current_line;
 
@@ -189,6 +192,9 @@ exports.karma_onRcptTo = function (next, connection, params) {
         return next();
     };
 
+    var config = this.config.get('karma.ini');
+    checkAwards (config, connection, plugin);
+
     connection.loginfo(plugin, karmaSummary(connection));
 
     // limit recipients if host has negative or unknown karma
@@ -205,6 +211,7 @@ exports.karma_onData = function (next, connection) {
         return next(DENY, "very bad karma: "+karma);
     }
 
+    checkAwards (config, connection, this);
     return next();
 }
 
@@ -212,6 +219,8 @@ exports.karma_onDataPost = function (next, connection) {
     connection.transaction.add_header('X-Haraka-Karma',
         karmaSummary(connection)
     );
+    var config = this.config.get('karma.ini');
+    checkAwards (config, connection, this);
     return next();
 }
 
@@ -264,6 +273,7 @@ exports.karma_onDisconnect = function (next, connection) {
             }
         }
     };
+    checkAwards (config, connection, plugin);
     connection.loginfo(plugin, "no action, "+karmaSummary(connection));
     next();
 };
@@ -274,6 +284,7 @@ function karmaSummary(c) {
         'conn:'+k.connection+
         ', hist: '+k.history+
         ', penalties: '+k.penalties+
+        ', awards: '+k.awards+
         ')';
 }
 
@@ -301,34 +312,71 @@ function checkConcurrency(plugin, con_key, val, history) {
     return;
 };
 
-function getTodo(config, connection) {
+function populateTodo(config, connection) {
     var plugin = connection;
     var awards = config.awards;
 
-    connection.logdebug(plugin, "awards: "+awards);
+// toDo is a list of connection notes to 'watch' for.
+// When discovered, we award their karma points and remove
+// them from the ToDo list.
+
     var result = {};
 
     if ( awards ) {
-        result['awards'] = awards;
-
-//        for( var i=0; i < awards.keys; i++) {
-//            result['awards'][i] = awards[i];
-//        };
+        Object.keys(awards).forEach(function(key) {
+            connection.logdebug(plugin, "key: "+key+", award: "+awards[key]);
+            result[key] = awards[key];
+        });
     };
 
     return result;
-
-    var penalties = config.penalties;
 };
 
-function checkAwards ( ) {
-/*
-[awards]
-connection.notes.auth_user=3
-connection.notes.fcrdns.fcrdns.length=1
+function assembleNoteObj(prefix,key) {
+    var note = prefix;
+    var parts = key.split('.');
+    while(parts.length > 0) {
+        note = note[parts.shift()];
+        if (note == null) break;
+    }
+    return note;
+};
 
-[penalties]
-connection.notes.fcrdns.no_rdns=-2
-connection.notes.fcrdns.ip_in_rdns=-1
-*/
+function checkAwards (config, connection, plugin) {
+    if (!connection.notes.karma) return;
+    if (!connection.notes.karma.todo) return;
+
+    if (!plugin) { plugin = connection };
+    var awards = config.awards;
+
+    Object.keys(connection.notes.karma.todo).forEach(function(key) {
+
+        // assemble the object path using the note name
+        var note = assembleNoteObj(connection, key);
+        if (note == null || note === false) {
+            // connection.logdebug(plugin, "no connection note: "+key);
+            if (!connection.transaction) return;
+            var txn_note = assembleNoteObj(connection.transaction, key);
+            if (txn_note == null || txn_note === false) {
+                // connection.logdebug(plugin, "no transaction note: "+key);
+                return;
+            }
+        };
+
+        var karma_to_apply = connection.notes.karma.todo[key];
+
+        if ( karma_to_apply && Number(karma_to_apply) !== 'NaN' ) {
+            connection.notes.karma.connection += karma_to_apply;
+
+            if ( karma_to_apply > 0 ) {
+                connection.notes.karma.awards.push(key);
+            }
+            else if ( karma_to_apply < 0 ) {
+                connection.notes.karma.penalties.push(key);
+            };
+
+            connection.loginfo(plugin, "applied karma: "+karma_to_apply);
+            delete connection.notes.karma.todo[key];
+        };
+    });
 }
