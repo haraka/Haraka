@@ -25,12 +25,13 @@ Remove the following deprecated plugins
  - daemonize
 
 Rename the following plugins
- - toobusy      -> connect.toobusy
- - attachment   -> data.attachment
- - avg          -> data.avg
- - clamd        -> data.clamd
- - spamassassin -> data.spamassassin
- - spf          -> mail_from.spf
+ - toobusy        -> connect.toobusy
+ - attachment     -> data.attachment
+ - avg            -> data.avg
+ - clamd          -> data.clamd
+ - spamassassin   -> data.spamassassin
+ - spf            -> mail_from.spf
+ - messagesniffer -> data.messagesniffer
 
 Move the following plugins:
  - test_queue   -> queue/test_queue
