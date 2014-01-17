@@ -13,6 +13,7 @@ exports.register = function () {
     this.register_hook('mail',         'karma_onMailFrom');
     this.register_hook('rcpt',         'karma_onRcptTo');
     this.register_hook('data',         'karma_onData');
+    this.register_hook('data_post',    'karma_onDataPost');
     this.register_hook('disconnect',   'karma_onDisconnect');
 };
 
@@ -32,8 +33,11 @@ exports.karma_onConnect = function (next, connection) {
     var plugin = this;
     var config = this.config.get('connect.karma.ini');
 
-    connection.notes.karma = new Number();          // defaults
-    connection.notes.karma_history = new Number();
+    connection.notes.karma = {
+        connection: 0,
+        history: 0,
+        penalties: [ ],
+    };
 
     var key = 'karma|'+connection.remote_ip;
     var con_key = 'concurrent|'+connection.remote_ip;
@@ -62,7 +66,7 @@ exports.karma_onConnect = function (next, connection) {
 
             var kobj = replies[1];
             var history = (kobj.nice || 0) - (kobj.naughty || 0);
-            connection.notes.karma_history = history;
+            connection.notes.karma.history = history;
 
             var summary = kobj.naughty+" naughty, "+kobj.nice+" nice, "+kobj.connections+" connects, "+history+" history";
 
@@ -73,14 +77,14 @@ exports.karma_onConnect = function (next, connection) {
             };
 
             if (kobj.penalty_start_ts === '0') {
-                connection.loginfo(plugin, "no penalty ("+summary+")");
+                connection.loginfo(plugin, "no penalty "+karmaSummary(connection));
                 return next();
             }
 
             var days_old = (Date.now() - Date.parse(kobj.penalty_start_ts)) / 86.4;
             var penalty_days = config.main.penalty_days;
             if (days_old >= penalty_days) {
-                connection.loginfo(plugin, "penalty expired ("+summary+")");
+                connection.loginfo(plugin, "penalty expired "+karmaSummary(connection));
                 return next();
             }
 
@@ -89,6 +93,28 @@ exports.karma_onConnect = function (next, connection) {
 
             return next(DENY, mess);
         });
+};
+
+exports.karma_onDeny = function (next, connection, params) {
+    /* params
+    ** [0] = plugin return value (constants.deny or constants.denysoft)
+    ** [1] = plugin return message
+    */
+
+    var pi_name     = params[2];
+    var pi_function = params[3];
+    var pi_params   = params[4];
+    var pi_hook     = params[5];
+
+    var plugin = this;
+    var transaction = connection.transaction;
+
+    connection.notes.karma.connection--;
+    connection.notes.karma.penalties.push(pi_plugin);
+
+    connection.loginfo(plugin, 'deny, '+karmaSummary(connection));
+
+    return next();
 };
 
 exports.karma_onMailFrom = function (next, connection, params) {
@@ -104,20 +130,21 @@ exports.karma_onMailFrom = function (next, connection, params) {
 
         if (tld_penalty !== 0) {
             connection.loginfo(plugin, "spammy TLD award: "+tld_penalty);
-            connection.notes.karma += tld_penalty;
+            connection.notes.karma.connection += tld_penalty;
         };
     };
 
     var full_from = connection.current_line;
     connection.logdebug(plugin, "mail_from: "+full_from);
 
-// test if sender has placed an illegal RFC (2)821 space in envelope from
+// test if sender has placed an illegal (RFC 5321,2821,821) space in envelope from
     if ( full_from.toUpperCase().substring(0,11) !== 'MAIL FROM:<' ) {
         connection.loginfo(plugin, "illegal envelope address format: "+full_from );
-        connection.notes.karma.value--;
+        connection.notes.karma.connection--;
+        connection.notes.karma.penalties.push('rfc5321.MailFrom');
     };
 
-    connection.loginfo(plugin, "karma score: "+ connection.notes.karma );
+    connection.loginfo(plugin, karmaSummary(connection));
     return next();
 };
 
@@ -130,7 +157,8 @@ exports.karma_onRcptTo = function (next, connection, params) {
     // check for an illegal RFC (2)821 space in envelope recipient
     if ( full_rcpt.toUpperCase().substring(0,9) !== 'RCPT TO:<' ) {
         connection.loginfo(plugin, "illegal envelope address format: "+full_rcpt );
-        connection.notes.karma--;
+        connection.notes.karma.connection--;
+        connection.notes.karma.penalties.push('rfc5321.RcptTo');
     };
 
     var count = connection.rcpt_count.accept + connection.rcpt_count.tempfail + connection.rcpt_count.reject + 1;
@@ -138,32 +166,43 @@ exports.karma_onRcptTo = function (next, connection, params) {
 
     connection.loginfo(plugin, "recipient count: "+count );
 
-    var history = connection.notes.karma_history;
+    var history = connection.notes.karma.history;
     if ( history > 0 ) {
         connection.loginfo(plugin, "good history");
         return next();
     };
 
-    var karma = connection.notes.karma;
+    var karma = connection.notes.karma.connection;
     if ( karma > 0 ) {
         connection.loginfo(plugin, "good connection");
         return next();
     };
 
-    connection.loginfo(plugin, "karma score: "+ karma );
+    connection.loginfo(plugin, karmaSummary(connection));
 
     // limit recipients if host has negative or unknown karma
-    return next(DENY, "too many recipients for karma "+karma+" (h: "+history+")");
+    return next(DENY, "too many recipients for poor karma: "+karmaSummary(connection));
 }
 
 exports.karma_onData = function (next, connection) {
 // cut off naughty senders at DATA to prevent receiving the message
+    var config = this.config.get('connect.karma.ini');
+    var negative_limit = config.threshhold.negative || -5;
     var karma = connection.notes.karma * 1;
-    if ( karma <= -4 ) {
+
+    if ( karma.connection <= negative_limit ) {
         return next(DENY, "very bad karma: "+karma);
-    };
+    }
+
     return next();
-};
+}
+
+exports.karma_onDataPost = function (next, connection) {
+    connection.transaction.add_header('X-Haraka-Karma',
+        karmaSummary(connection)
+    );
+    return next();
+}
 
 exports.karma_onDisconnect = function (next, connection) {
     var plugin = this;
@@ -173,43 +212,57 @@ exports.karma_onDisconnect = function (next, connection) {
 
     if ( config.concurrency ) db.incrby('concurrent|'+connection.remote_ip, -1);
 
-    var karma = connection.notes.karma;
-    var history = connection.notes.karma_history;
+    var k = connection.notes.karma;
+    if ( !k ) {
+        connection.loginfo(plugin, "error: karma note missing!");
+        return next();
+    };
+    var history = k.history;
 
-    if ( !karma ) {
-        connection.loginfo(plugin, "neutral, (msg: "+karma+", history: "+history+")");
+    if ( !k.connection ) {
+        connection.loginfo(plugin, "neutral: "+karmaSummary(connection));
         return next();
     };
 
-    var pos_lim = config.connection_limit.positive || 2;
+    var pos_lim = config.threshhold.positive || 2;
 
-    if (karma > pos_lim) {
+    if (k.connection > pos_lim) {
         db.hincrby(key, 'nice', 1);
-        connection.loginfo(plugin, "positive, (msg: "+karma+", history: "+history+")");
+        connection.loginfo(plugin, "positive: "+karmaSummary(connection));
         return next();
     };
 
-    var negative_limit = config.connection_limit.negative || -3;
-    if (karma < negative_limit) {
+    var negative_limit = config.threshhold.negative || -3;
+    if (k.connection < negative_limit) {
         db.hincrby(key, 'naughty', 1);
+        // connection.notes.karma.penalties.push('history');
         history--;
 
-        if (history <= config.connection_limit.history_negative) {
+        if (history <= config.threshhold.history_negative) {
             if (history < -5) {
-                connection.loginfo(plugin, "penalty box bonus! (msg: "+karma+", history: "+history+")");
+                connection.loginfo(plugin, "penalty box bonus! "+karmaSummary(connection));
                 log_mess = ", penalty box bonus!";
                 db.hset(key, 'penalty_start_ts', addDays(Date(), history * -1 ) );
             }
             else {
                 db.hset(key, 'penalty_start_ts', Date());
             }
-            connection.loginfo(plugin, "penalty box! (msg: "+karma+", history: "+history+")");
+            connection.loginfo(plugin, "penalty box! "+karmaSummary(connection));
             next();
         }
     }
-    connection.loginfo(plugin, "no action, msg: "+karma+", history: "+history+")");
+    connection.loginfo(plugin, "no action, "+karmaSummary(connection));
     next();
 };
+
+function karmaSummary(c) {
+    var k = c.notes.karma;
+    return '('+
+        'conn:'+k.connection+
+        ', hist: '+k.history+
+        ', penalties: '+k.penalties+
+        ')';
+}
 
 function addDays(date, days) {
     var result = new Date(date);
