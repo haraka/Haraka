@@ -9,6 +9,7 @@ exports.register = function () {
 
     this.register_hook('init_master',  'karma_onInit');
     this.register_hook('init_child',   'karma_onInit');
+    this.register_hook('deny',         'karma_onDeny');
     this.register_hook('lookup_rdns',  'karma_onConnect');
     this.register_hook('mail',         'karma_onMailFrom');
     this.register_hook('rcpt',         'karma_onRcptTo');
@@ -18,7 +19,7 @@ exports.register = function () {
 };
 
 exports.karma_onInit = function (next,server) {
-    var config     = this.config.get('connect.karma.ini');
+    var config     = this.config.get('karma.ini');
     var redis_ip  = '127.0.0.1';
     var redis_port = '6379';
     if ( config.redis ) {
@@ -31,16 +32,12 @@ exports.karma_onInit = function (next,server) {
 
 exports.karma_onConnect = function (next, connection) {
     var plugin = this;
-    var config = this.config.get('connect.karma.ini');
+    var config = this.config.get('karma.ini');
 
-    connection.notes.karma = {
-        connection: 0,
-        history: 0,
-        penalties: [ ],
-    };
+    initConnectionNote(connection, config);
 
-    var key = 'karma|'+connection.remote_ip;
-    var con_key = 'concurrent|'+connection.remote_ip;
+    var r_ip = connection.remote_ip;
+    var key = 'karma|'+r_ip;
 
     function initRemoteIP () {
         db.multi()
@@ -51,7 +48,7 @@ exports.karma_onConnect = function (next, connection) {
     };
 
     db.multi()
-        .get(con_key)
+        .get('concurrent|'+r_ip)
         .hgetall(key)
         .exec( function redisResults (err,replies) {
             if (err) {
@@ -70,7 +67,7 @@ exports.karma_onConnect = function (next, connection) {
 
             var summary = kobj.naughty+" naughty, "+kobj.nice+" nice, "+kobj.connections+" connects, "+history+" history";
 
-            var too_many = checkConcurrency(plugin, con_key, replies[0], history);
+            var too_many = checkConcurrency(plugin, 'concurrent|'+r_ip, replies[0], history);
             if ( too_many ) {
                 connection.loginfo(plugin, too_many + ", ("+summary+")");
                 return next(DENYSOFT, too_many);
@@ -95,6 +92,17 @@ exports.karma_onConnect = function (next, connection) {
         });
 };
 
+function initConnectionNote(connection, config) {
+    if (connection.notes.karma) return;
+    connection.notes.karma = {
+        connection: 0,
+        history: 0,
+        awards: [],
+        penalties: [ ],
+        todo: getTodo(config, connection),
+    };
+};
+
 exports.karma_onDeny = function (next, connection, params) {
     /* params
     ** [0] = plugin return value (constants.deny or constants.denysoft)
@@ -109,8 +117,11 @@ exports.karma_onDeny = function (next, connection, params) {
     var plugin = this;
     var transaction = connection.transaction;
 
+    var config = this.config.get('karma.ini');
+    initConnectionNote(connection, config);
+
     connection.notes.karma.connection--;
-    connection.notes.karma.penalties.push(pi_plugin);
+    connection.notes.karma.penalties.push(pi_name);
 
     connection.loginfo(plugin, 'deny, '+karmaSummary(connection));
 
@@ -119,7 +130,7 @@ exports.karma_onDeny = function (next, connection, params) {
 
 exports.karma_onMailFrom = function (next, connection, params) {
     var plugin = this;
-    var config = this.config.get('connect.karma.ini');
+    var config = this.config.get('karma.ini');
 
     var mail_from = params[0];
     var from_tld  = mail_from.host.split('.').pop();
@@ -186,7 +197,7 @@ exports.karma_onRcptTo = function (next, connection, params) {
 
 exports.karma_onData = function (next, connection) {
 // cut off naughty senders at DATA to prevent receiving the message
-    var config = this.config.get('connect.karma.ini');
+    var config = this.config.get('karma.ini');
     var negative_limit = config.threshhold.negative || -5;
     var karma = connection.notes.karma * 1;
 
@@ -206,7 +217,7 @@ exports.karma_onDataPost = function (next, connection) {
 
 exports.karma_onDisconnect = function (next, connection) {
     var plugin = this;
-    var config = this.config.get('connect.karma.ini');
+    var config = this.config.get('karma.ini');
 
     var key = 'karma|'+connection.remote_ip;
 
@@ -224,33 +235,35 @@ exports.karma_onDisconnect = function (next, connection) {
         return next();
     };
 
-    var pos_lim = config.threshhold.positive || 2;
+    if (config.threshhold) {
+        var pos_lim = config.threshhold.positive || 2;
 
-    if (k.connection > pos_lim) {
-        db.hincrby(key, 'nice', 1);
-        connection.loginfo(plugin, "positive: "+karmaSummary(connection));
-        return next();
-    };
+        if (k.connection > pos_lim) {
+            db.hincrby(key, 'nice', 1);
+            connection.loginfo(plugin, "positive: "+karmaSummary(connection));
+            return next();
+        };
 
-    var negative_limit = config.threshhold.negative || -3;
-    if (k.connection < negative_limit) {
-        db.hincrby(key, 'naughty', 1);
-        // connection.notes.karma.penalties.push('history');
-        history--;
+        var negative_limit = config.threshhold.negative || -3;
+        if (k.connection < negative_limit) {
+            db.hincrby(key, 'naughty', 1);
+            // connection.notes.karma.penalties.push('history');
+            history--;
 
-        if (history <= config.threshhold.history_negative) {
-            if (history < -5) {
-                connection.loginfo(plugin, "penalty box bonus! "+karmaSummary(connection));
-                log_mess = ", penalty box bonus!";
-                db.hset(key, 'penalty_start_ts', addDays(Date(), history * -1 ) );
+            if (history <= config.threshhold.history_negative) {
+                if (history < -5) {
+                    connection.loginfo(plugin, "penalty box bonus! "+karmaSummary(connection));
+                    log_mess = ", penalty box bonus!";
+                    db.hset(key, 'penalty_start_ts', addDays(Date(), history * -1 ) );
+                }
+                else {
+                    db.hset(key, 'penalty_start_ts', Date());
+                }
+                connection.loginfo(plugin, "penalty box! "+karmaSummary(connection));
+                next();
             }
-            else {
-                db.hset(key, 'penalty_start_ts', Date());
-            }
-            connection.loginfo(plugin, "penalty box! "+karmaSummary(connection));
-            next();
         }
-    }
+    };
     connection.loginfo(plugin, "no action, "+karmaSummary(connection));
     next();
 };
@@ -271,7 +284,7 @@ function addDays(date, days) {
 }
 
 function checkConcurrency(plugin, con_key, val, history) {
-    var config = plugin.config.get('connect.karma.ini');
+    var config = plugin.config.get('karma.ini');
 
     if ( !config.concurrency ) return;
 
@@ -287,3 +300,35 @@ function checkConcurrency(plugin, con_key, val, history) {
     if (reject) return "too many connections for you: "+count;
     return;
 };
+
+function getTodo(config, connection) {
+    var plugin = connection;
+    var awards = config.awards;
+
+    connection.logdebug(plugin, "awards: "+awards);
+    var result = {};
+
+    if ( awards ) {
+        result['awards'] = awards;
+
+//        for( var i=0; i < awards.keys; i++) {
+//            result['awards'][i] = awards[i];
+//        };
+    };
+
+    return result;
+
+    var penalties = config.penalties;
+};
+
+function checkAwards ( ) {
+/*
+[awards]
+connection.notes.auth_user=3
+connection.notes.fcrdns.fcrdns.length=1
+
+[penalties]
+connection.notes.fcrdns.no_rdns=-2
+connection.notes.fcrdns.ip_in_rdns=-1
+*/
+}
