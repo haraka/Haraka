@@ -182,7 +182,7 @@ exports.hook_lookup_rdns = function (next, connection) {
             connection.notes.fcrdns.ip_in_rdns = true;
             if (!reject_generic_rdns) return;
 
-            var orgDom = net_utils.getOrganizationalDomain(name);
+            var orgDom = net_utils.getOrganizationalDomain(domain);
             var host_part = domain.slice(0,orgDom.split('.').length);
             if (/(?:static|business)/.test(host_part)) {
                 // Allow some obvious generic but static ranges
