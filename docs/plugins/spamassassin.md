@@ -33,7 +33,7 @@ spamassassin.ini
     Maximum size of messages (in bytes) to send to spamd.
     Messages over this size will be skipped.
 
-- reject_thresold = N   *optional*
+- reject_threshold = N   *optional*
 
     Default: none (do not reject any mail)
 
@@ -83,5 +83,5 @@ A SpamAssassin plugin can be found in the `contrib` directory.
 The `Haraka.\[pm|cf\]` files should be placed in the SpamAssassin local 
 site rules directory (/etc/mail/spamassassin on Linux), spamd should be 
 restarted and the plugin will make spamd output the Haraka UUID as part 
-of it's log output to aid debugging when searching the mail logs.
+of its log output to aid debugging when searching the mail logs.
 
