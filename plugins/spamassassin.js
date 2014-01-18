@@ -11,14 +11,13 @@ var defaults = {
 
 exports.hook_data_post = function (next, connection) {
     var plugin = this;
-
     var config = this.config.get('spamassassin.ini');
-    
+
     for (var key in defaults) {
         config.main[key] = config.main[key] || defaults[key];
     }
-    
-    ['reject_threshold', 'relay_reject_threshold', 
+
+    ['reject_threshold', 'relay_reject_threshold',
      'munge_subject_threshold', 'max_size'].forEach(
         function (item) {
             if (config.main[item]) {
@@ -26,30 +25,31 @@ exports.hook_data_post = function (next, connection) {
             }
         }
     );
-    
-    if (config.main.max_size > 0 && 
-        connection.transaction.data_bytes > config.main.max_size) 
-    {
-        connection.loginfo(this, 'skipping: message exceeds maximum size');
-        return next();
-    }
-    
+
+    if (config.main.max_size) {
+        var bytes = connection.transaction.data_bytes / (1024*1024); // to MB
+        var max   = config.main.max_size / (1024 * 1024);
+        if (bytes > max) {
+            connection.loginfo(plugin, 'skipping, size ('+bytes+'MB) exceeds max: '+max);
+            return next();
+        }
+    };
+
     var socket = new sock.Socket();
-    if (config.main.spamd_socket.match(/\//)) {
-        // assume unix socket
+    if (config.main.spamd_socket.match(/\//)) {    // assume unix socket
         socket.connect(config.main.spamd_socket);
     }
     else {
         var hostport = config.main.spamd_socket.split(/:/);
         socket.connect((hostport[1] || 783), hostport[0]);
     }
-    
+
     socket.setTimeout(300 * 1000);
-    
-    var username = config.main.spamd_user || 
+
+    var username = config.main.spamd_user ||
                    connection.transaction.notes.spamd_user ||
                    'default';
-    
+
     socket.on('timeout', function () {
         connection.logerror(plugin, "spamd connection timed out");
         socket.end();
@@ -58,7 +58,7 @@ exports.hook_data_post = function (next, connection) {
     socket.on('error', function (err) {
         connection.logerror(plugin, "spamd connection failed: " + err);
         // we don't deny on error - maybe another plugin can deliver
-        next(); 
+        next();
     });
     socket.on('connect', function () {
         var headers = [
@@ -75,10 +75,10 @@ exports.hook_data_post = function (next, connection) {
         socket.write(headers.join("\r\n"));
         connection.transaction.message_stream.pipe(socket);
     });
-    
+
     var spamd_response = {};
     var state = 'line0';
-    
+
     socket.on('line', function (line) {
         connection.logprotocol(plugin, "Spamd C: " + line);
         line = line.replace(/\r?\n/, '');
@@ -105,16 +105,16 @@ exports.hook_data_post = function (next, connection) {
             socket.end();
         }
     });
-    
+
     socket.on('end', function () {
         // Abort if the connection or transaction are gone
         if (!connection || (connection && !connection.transaction)) return next();
 
         // Now we do stuff with the results...
- 
+
         plugin.fixup_old_headers(config.main.old_headers_action, connection.transaction);
 
-        if (spamd_response.flag === 'Yes') { 
+        if (spamd_response.flag === 'Yes') {
             connection.transaction.add_header('X-Spam-Flag', 'YES');
             connection.transaction.remove_header('precedence');
             connection.transaction.add_header('Precedence', 'junk');
@@ -122,7 +122,7 @@ exports.hook_data_post = function (next, connection) {
         connection.transaction.add_header('X-Spam-Status', spamd_response.flag +
             ', hits=' + spamd_response.hits + ' required=' + spamd_response.reqd +
             "\n\ttests=" + spamd_response.tests);
-        
+
         var stars = Math.floor(spamd_response.hits);
         if (stars < 1) stars = 1;
         if (stars > 50) stars = 50;
@@ -131,14 +131,14 @@ exports.hook_data_post = function (next, connection) {
             stars_string += '*';
         }
         connection.transaction.add_header('X-Spam-Level', stars_string);
-        
+
         connection.loginfo(plugin, "status=" + spamd_response.flag + ', hits=' +
             spamd_response.hits + ', required=' + spamd_response.reqd +
-            ", reject=" + ((connection.relaying) ? (config.main.relay_reject_threshold || config.main.reject_threshold) : 
-                           config.main.reject_threshold) + 
+            ", reject=" + ((connection.relaying) ? (config.main.relay_reject_threshold || config.main.reject_threshold) :
+                           config.main.reject_threshold) +
             ", tests=\"" + spamd_response.tests + "\"");
-        
-        if ((connection.relaying && config.main.relay_reject_threshold && (spamd_response.hits >= config.main.relay_reject_threshold)) 
+
+        if ((connection.relaying && config.main.relay_reject_threshold && (spamd_response.hits >= config.main.relay_reject_threshold))
            || (config.main.reject_threshold && (spamd_response.hits >= config.main.reject_threshold))) {
             return next(DENY, "spam score exceeded threshold");
         }
