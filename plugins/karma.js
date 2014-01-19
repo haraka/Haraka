@@ -273,8 +273,9 @@ function checkAwards (config, connection, plugin) {
         connection.loginfo(plugin, "applied "+key+" karma: "+karma_to_apply);
         delete connection.notes.karma.todo[key];
 
-        if ( karma_to_apply > 0 ) { connection.notes.karma.awards.push(key); };
-        if ( karma_to_apply < 0 ) { connection.notes.karma.penalties.push(key); };
+        var trimmed = key.substring(0,5) === 'notes' ? key.substring(6) : key;
+        if ( karma_to_apply > 0 ) { connection.notes.karma.awards.push(trimmed); };
+        if ( karma_to_apply < 0 ) { connection.notes.karma.penalties.push(trimmed); };
     });
 }
 
