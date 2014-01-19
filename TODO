@@ -1,4 +1,3 @@
-- Rate Limiting for outbound mail (there's a branch for this but it's incomplete)
 - Milter support
 - Ability to modify the body of email (e.g add a banner)
 - Create a config file for each of the core shipping configs, so people have something as a baseline
@@ -11,6 +10,7 @@
   - virus/*
 
 Outbound improvements
+ - Rate Limiting (there's a branch for this but it's incomplete)
  - Provide better command line tools for manipulating/inspecting the queue
  - Add the ability to force a run on a specific queue file or destination domain
  - Make retry times configurable (handle RFC requirements for 5 days and DSN queued warnings)
