@@ -3,58 +3,103 @@ var net = require('net');
 
 exports.hook_connect = function (next, connection) {
     connection.notes.geoip = geoip.lookup(connection.remote_ip);
-    if (connection.notes.geoip) {
-        connection.loginfo(this, 'country: ' + connection.notes.geoip.country);
-    }
+
+    if (!connection.notes.geoip) return next();
+
+    var cfg = this.config.get('connect.geoip.ini');
+    connection.loginfo(this, get_results(connection, cfg));
+
     return next();
 }
+
+function get_results(connection, cfg) {
+    var r = connection.notes.geoip;
+    if (!r) return '';
+
+    // geoip.lookup results look like this:
+    // range: [ 3479299040, 3479299071 ],
+    //    country: 'US',
+    //    region: 'CA',
+    //    city: 'San Francisco',
+    //    ll: [37.7484, -122.4156]
+
+    var show = [ r.country ];
+    if ( r.region && cfg.main.show_region) show.push(r.region);
+    if ( r.city   && cfg.main.show_city  ) show.push(r.city);
+
+    return show.join(', ');
+};
 
 exports.hook_data_post = function (next, connection) {
     var txn = connection.transaction;
     txn.remove_header('X-Haraka-GeoIP');
     txn.remove_header('X-Haraka-GeoIP-Received');
     if (connection.notes.geoip) {
-        txn.add_header('X-Haraka-GeoIP', connection.notes.geoip.country);
+        var cfg = this.config.get('connect.geoip.ini');
+        txn.add_header('X-Haraka-GeoIP', get_results(connection, cfg));
     }
 
-    var results = [];
-    var received = txn.header.get_all('received');
+    var received = [];
+
+    var rh = received_headers(connection, this);
+    if (rh) received.push(rh);
+    if (!rh) user_agent(connection, this); // No received headers.
+
+    var oh = originating_headers(connection, this);
+    if (oh) received.push(oh);
+
+    // Add any received results to a trace header
     if (received.length) {
-        // Try and parse each received header
-        for (var i=0; i < received.length; i++) {
-            var match = /\[(\d+\.\d+\.\d+\.\d+)\]/.exec(received[i]);
-            if (match && net.isIPv4(match[1])) {
-                var gi = geoip.lookup(match[1]);
-                connection.loginfo(this, 'received=' + match[1] + ' country=' + ((gi) ? gi.country : 'UNKNOWN'));
-                results.push(match[1] + ':' + ((gi) ? gi.country : 'UNKNOWN'));
-            }
-        }
+        txn.add_header('X-Haraka-GeoIP-Received', received.join(' '));
     }
-    else {
-        // No received headers.
-        // Check for User-Agent
-        var ua = txn.header.get('user-agent');
-        var xm = txn.header.get('x-mailer');
-        var xmu = txn.header.get('x-mua');
-        if (ua || xm || xmu) {
-            connection.loginfo(this, 'direct-to-mx?');
-        }
+    return next();
+};
+
+function user_agent(connection, plugin) {
+    // Check for User-Agent
+    var ua = connection.transaction.header.get('user-agent');
+    var xm = connection.transaction.header.get('x-mailer');
+    var xmu = connection.transaction.header.get('x-mua');
+    if (ua || xm || xmu) {
+        connection.loginfo(plugin, 'direct-to-mx?');
     }
-    // Try and parse any originating IP headers
-    var orig = txn.header.get('x-originating-ip') || 
-               txn.header.get('x-ip') ||
-               txn.header.get('x-remote-ip');
-    if (orig) {
-        var match = /(\d+\.\d+\.\d+\.\d+)/.exec(orig);
+};
+
+function received_headers(connection, plugin) {
+    var txn = connection.transaction;
+    var received = txn.header.get_all('received');
+    if (!received.length) return;
+
+    var results = [];
+
+    // Try and parse each received header
+    for (var i=0; i < received.length; i++) {
+        var match = /\[(\d+\.\d+\.\d+\.\d+)\]/.exec(received[i]);
         if (match && net.isIPv4(match[1])) {
             var gi = geoip.lookup(match[1]);
-            connection.loginfo(this, 'originating=' + match[1] + ' country=' + ((gi) ? gi.country : 'UNKNOWN'));
+            connection.loginfo(plugin, 'received=' + match[1] + ' country=' + ((gi) ? gi.country : 'UNKNOWN'));
             results.push(match[1] + ':' + ((gi) ? gi.country : 'UNKNOWN'));
         }
     }
-    // Add any results to a trace header
-    if (results.length) {
-        txn.add_header('X-Haraka-GeoIP-Received', results.join(' '));
-    }
-    return next();
+    return results;
+};
+
+function originating_headers(connection, plugin) {
+    var txn = connection.transaction;
+
+    // Try and parse any originating IP headers
+    var orig = txn.header.get('x-originating-ip') ||
+               txn.header.get('x-ip') ||
+               txn.header.get('x-remote-ip');
+
+    if (!orig) return;
+
+    var match = /(\d+\.\d+\.\d+\.\d+)/.exec(orig);
+    if (!match) return;
+    var found_ip = match[1];
+    if (!net.isIPv4(found_ip)) return;
+
+    var gi = geoip.lookup(found_ip);
+    connection.loginfo(plugin, 'originating=' + found_ip + ' country=' + ((gi) ? gi.country : 'UNKNOWN'));
+    return found_ip + ':' + ((gi) ? gi.country : 'UNKNOWN');
 }
