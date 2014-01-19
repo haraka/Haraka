@@ -325,8 +325,9 @@ function checkMaxRecipients(connection, plugin, config) {
 
 function checkSpammyTLD(mail_from, config, connection, plugin) {
     if (!config.spammy_tlds) return;
+    if (mail_from.isNull()) return;    // null sender (bounce)
 
-    var from_tld  = mail_from.host.split('.').pop();
+    var from_tld = mail_from.host.split('.').pop();
     // connection.logdebug(plugin, "from_tld: "+from_tld);
 
     var tld_penalty = (config.spammy_tlds[from_tld] || 0) * 1; // force numeric
