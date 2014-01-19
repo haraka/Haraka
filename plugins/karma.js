@@ -240,29 +240,36 @@ function addDays(date, days) {
 function checkAwards (config, connection, plugin) {
     if (!connection.notes.karma) return;
     if (!connection.notes.karma.todo) return;
-
-    if (!plugin) { plugin = connection };
+    if (!plugin) plugin = connection;
     var awards = config.awards;
 
     Object.keys(connection.notes.karma.todo).forEach(function(key) {
+        var e = key.split('@').slice(0,2);
+        var suffix = e[0];
+        var wants = e[1];
 
         // assemble the object path using the note name
-        var note = assembleNoteObj(connection, key);
+        var note = assembleNoteObj(connection, suffix);
         if (note == null || note === false) {
             // connection.logdebug(plugin, "no connection note: "+key);
             if (!connection.transaction) return;
-            var txn_note = assembleNoteObj(connection.transaction, key);
-            if (txn_note == null || txn_note === false) {
+            note = assembleNoteObj(connection.transaction, suffix);
+            if (note == null || note === false) {
                 // connection.logdebug(plugin, "no transaction note: "+key);
                 return;
             }
+        };
+
+        if (wants && note && (wants !== note)) {
+            connection.logdebug(plugin, "key "+suffix+" wants: "+wants+" but got: "+note);
+            return;
         };
 
         var karma_to_apply = connection.notes.karma.todo[key];
         if (!karma_to_apply) return;
         if ( Number(karma_to_apply) === 'NaN' ) return;  // garbage in config
 
-        connection.notes.karma.connection += karma_to_apply;
+        connection.notes.karma.connection += karma_to_apply * 1;
         connection.loginfo(plugin, "applied "+key+" karma: "+karma_to_apply);
         delete connection.notes.karma.todo[key];
 
@@ -372,7 +379,7 @@ function initConnectionNote(connection, config) {
     });
 };
 
-function assembleNoteObj(prefix,key) {
+function assembleNoteObj(prefix, key) {
     var note = prefix;
     var parts = key.split('.');
     while(parts.length > 0) {
