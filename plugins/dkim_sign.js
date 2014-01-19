@@ -187,6 +187,8 @@ function getKeyDir(plugin, conn, cb) {
     // then we must parse and use the domain in the Sender header.
     // var domain = self.header.get('from').host;
 
+    if (conn.transaction.mail_from.isNull()) return cb();   // null sender
+
     // In all cases I have seen, but likely not all cases, this suffices
     var domain = conn.transaction.mail_from.host;
 
