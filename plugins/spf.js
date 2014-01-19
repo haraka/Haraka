@@ -55,7 +55,7 @@ exports.hook_mail = function (next, connection, params) {
     var auth_result;
 
     if (connection.notes.spf_helo) {
-        auth_result = spf.result(connection.notes.spf_helo).toLowerCase;
+        auth_result = spf.result(connection.notes.spf_helo).toLowerCase();
         // Add a trace header
         txn.add_leading_header('Received-SPF', 
             spf.result(connection.notes.spf_helo) +
