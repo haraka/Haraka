@@ -41,6 +41,7 @@ function has_empty_return_path(connection, plugin) {
     var rp = connection.transaction.header.get('Return-Path');
     if (!rp) return;
     if (rp === '<>') return;
+    connection.transaction.notes.bounce='invalid';
     connection.loginfo(plugin, "bounce messages must not have a Return-Path");
     return "a bounce return path must be empty (RFC 3834)";
 };
@@ -51,6 +52,7 @@ function has_single_recipient(connection, plugin) {
     connection.loginfo(plugin, "bogus bounce to: " + 
         connection.transaction.rcpt_to.join(','));
 
+    connection.transaction.notes.bounce='invalid';
     return "this bounce message does not have 1 recipient";
 };
 
