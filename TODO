@@ -3,7 +3,6 @@
 - Create a config file for each of the core shipping configs, so people have something as a baseline
 - IMAP server (long shot for now)
 - Plugins to copy from Qpsmtpd:
-  - bogus_bounce (checks bounces have one recipient and no return-path)
   - dspam
   - greylisting
   - virus/*
@@ -23,6 +22,7 @@ Remove the following deprecated plugins
  - data.noreceived
  - data.rfc5322_header_checks
  - daemonize
+ - mail_from.nobounces
 
 Rename the following plugins
  - toobusy      -> connect.toobusy
