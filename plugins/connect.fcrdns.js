@@ -38,6 +38,7 @@ exports.hook_lookup_rdns = function (next, connection) {
     }
 
     // Set-up timer
+    var timeout = config.main.disconnect_timeout || 30;
     timer = setTimeout(function () {
         connection.logwarn(plugin, 'timeout');
         connection.notes.fcrdns.timeout = true;
@@ -45,7 +46,7 @@ exports.hook_lookup_rdns = function (next, connection) {
             return do_next(DENYSOFT, 'client [' + connection.remote_ip + '] rDNS lookup timeout');
         }
         return do_next();
-    }, 30 * 1000);
+    }, timeout * 1000);
 
     dns.reverse(connection.remote_ip, function (err, domains) {
         connection.logdebug(plugin, 'lookup: ' + connection.remote_ip);
@@ -129,12 +130,12 @@ exports.hook_lookup_rdns = function (next, connection) {
                                 }
                             }
 
-                            var reject = isGeneric_rDNS(fdom);
+                            var reject = is_generic_rdns(fdom);
                             if (reject) return do_next(DENY, reject);
                         }
 
-                        toConnectionNote(other_ips);
-                        toAuthResults();
+                        store_in_connection_note(other_ips);
+                        store_in_auth_results();
                         return do_next();
                     }
                 });
@@ -142,7 +143,7 @@ exports.hook_lookup_rdns = function (next, connection) {
             }
         }
 
-        function toAuthResults() {
+        function store_in_auth_results() {
             var note = connection.notes.fcrdns;
             if (note.fcrdns.length) {
                 connection.auth_results("iprev=pass");
@@ -159,7 +160,7 @@ exports.hook_lookup_rdns = function (next, connection) {
             connection.auth_results("iprev=fail");
         };
 
-        function toConnectionNote(other_ips) {
+        function store_in_connection_note(other_ips) {
             var note = connection.notes.fcrdns;
 
             connection.notes.fcrdns.other_ips = Object.keys(other_ips);
@@ -175,7 +176,7 @@ exports.hook_lookup_rdns = function (next, connection) {
                 ].join(' '));
         };
 
-        function isGeneric_rDNS (domain) {
+        function is_generic_rdns (domain) {
             // IP in rDNS? (Generic rDNS)
             if (!net_utils.is_ip_in_str(connection.remote_ip, domain)) return;
 
