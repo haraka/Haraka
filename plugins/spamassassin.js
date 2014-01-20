@@ -111,7 +111,7 @@ exports.fixup_old_headers = function (action, transaction) {
 function munge_subject(connection, config, hits) {
     var munge = config.main.munge_subject_threshold;
     if (!munge) return;
-    if (hits < munge) return;
+    if (parseFloat(hits) < parsefloat(munge)) return;
 
     var subj = connection.transaction.header.get('Subject');
     var subject_re = new RegExp('^' + config.main.subject_prefix);
@@ -127,13 +127,10 @@ function setup_defaults(config) {
     }
 
     ['reject_threshold', 'relay_reject_threshold',
-     'munge_subject_threshold', 'max_size'].forEach(
-        function (item) {
-            if (config.main[item]) {
-                config.main[item] = new Number(config.main[item]);
-            }
-        }
-    );
+     'munge_subject_threshold', 'max_size'].forEach(function (item) {
+        if (!config.main[item]) return;
+        config.main[item] = Number(config.main[item]);
+    });
 };
 
 function do_header_updates(connection, spamd_response) {
