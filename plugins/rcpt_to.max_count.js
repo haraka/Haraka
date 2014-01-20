@@ -2,6 +2,9 @@
 // this helps guard against some spammers who send RCPT TO a gazillion times
 // as a way of probing for a working address
 
+// Consider using the karma plugin. It supports limiting the number
+// of recipients based on past behavior (good, bad, unknown)
+
 exports.hook_rcpt = function (next, connection) {
     if (connection.transaction.notes.rcpt_to_count) {
         connection.transaction.notes.rcpt_to_count++;

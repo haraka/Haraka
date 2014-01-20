@@ -1154,7 +1154,7 @@ Connection.prototype.cmd_mail = function(line) {
     
     var self = this;
     this.init_transaction(function () {
-        self.transaction.mail_from = from
+        self.transaction.mail_from = from;
         plugins.run_hooks('mail', self, [from, params]);
     });
 };
