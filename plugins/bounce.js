@@ -7,7 +7,7 @@ exports.register = function () {
 
 exports.bounce_mail = function (next, connection, params) {
     var mail_from = params[0];
-    if (!mail_from.isNull()) return next();    // not a bounce
+    if (!has_null_sender(mail_from)) return next();    // not a bounce
     var cfg = this.config.get('bounce.ini');
     if (cfg.main.reject_all) return next(DENY, "No bounces accepted here");
     return next();
@@ -16,7 +16,7 @@ exports.bounce_mail = function (next, connection, params) {
 exports.bounce_data = function(next, connection) {
     var plugin = connection;
 
-    if (!has_null_sender(connection)) return next(); // not a bounce.
+    if (!has_null_sender(connection.transaction.mail_from)) return next();
 
     var cfg = this.config.get('bounce.ini');
     var rej = cfg.main.reject_invalid;
@@ -38,6 +38,11 @@ function has_single_recipient(connection, plugin) {
     return "this bounce message does not have 1 recipient";
 };
 
-function has_null_sender(connection) {
-    return connection.transaction.mail_from.isNull() ? true : false;
+function has_null_sender(mail_from) {
+    // bounces have a null sender.
+    return mail_from.isNull() ? true : false;
+
+    // this could also be tested with.
+    // mail_from.user ? false : true
+    // Why would isNull() exist if it wasn't the right way to test this?
 };
