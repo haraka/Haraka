@@ -50,7 +50,7 @@ exports.karma_onConnect = function (next, connection) {
     initConnectionNote(connection, config);
 
     var r_ip = connection.remote_ip;
-    var dbkey = 'karma|'+r_ip;
+    var dbkey = 'karma|' + r_ip;
     var expire = (config.main.expire_days || 60) * 86400; // convert to days
 
     function initRemoteIP () {
@@ -62,11 +62,11 @@ exports.karma_onConnect = function (next, connection) {
     };
 
     db.multi()
-        .get('concurrent|'+r_ip)
+        .get('concurrent|' + r_ip)
         .hgetall(dbkey)
-        .exec( function redisResults (err,replies) {
+        .exec(function redisResults (err,replies) {
             if (err) {
-                connection.logdebug(plugin,"err: "+err);
+                connection.logdebug(plugin,"err: " + err);
                 return next();
             };
 
@@ -79,29 +79,29 @@ exports.karma_onConnect = function (next, connection) {
             var history = (dbr.good || 0) - (dbr.bad || 0);
             connection.notes.karma.history = history;
 
-            var summary = dbr.bad+" bad, "+dbr.good+" good, "
-                         +dbr.connections+" connects, "+history+" history";
+            var summary = dbr.bad + " bad, " + dbr.good + " good, "
+                         + dbr.connections + " connects, " + history + " history";
 
-            var too_many = checkConcurrency(plugin, 'concurrent|'+r_ip, replies[0], history);
+            var too_many = checkConcurrency(plugin, 'concurrent|' + r_ip, replies[0], history);
             if (too_many) {
-                connection.loginfo(plugin, too_many + ", ("+summary+")");
+                connection.loginfo(plugin, too_many + ", (" + summary + ")");
                 return next(DENYSOFT, too_many);
             };
 
             if (dbr.penalty_start_ts === '0') {
-                connection.loginfo(plugin, "no penalty, "+karmaSummary(connection));
+                connection.loginfo(plugin, "no penalty, " + karmaSummary(connection));
                 return next();
             }
 
             var days_old = (Date.now() - Date.parse(dbr.penalty_start_ts)) / 86.4;
             var penalty_days = config.main.penalty_days;
             if (days_old >= penalty_days) {
-                connection.loginfo(plugin, "penalty expired, "+karmaSummary(connection));
+                connection.loginfo(plugin, "penalty expired, " + karmaSummary(connection));
                 return next();
             }
 
-            var left = +( penalty_days - days_old ).toFixed(2);
-            var mess = "Bad karma, you can try again in "+left+" more days.";
+            var left = +(penalty_days - days_old).toFixed(2);
+            var mess = "Bad karma, you can try again in " + left + " more days.";
 
             return next(DENY, mess);
         });
@@ -126,11 +126,11 @@ exports.karma_onDeny = function (next, connection, params) {
     var config = this.config.get('karma.ini');
     initConnectionNote(connection, config);
 
-// TO CONSIDER: decrement karma two points for a 5XX deny?
+    // CONSIDER: decrement karma two points for a 5XX deny?
     connection.notes.karma.connection--;
     connection.notes.karma.penalties.push(pi_name);
 
-    connection.loginfo(plugin, 'deny, '+karmaSummary(connection));
+    connection.loginfo(plugin, 'deny, ' + karmaSummary(connection));
 
     checkAwards(config, connection, plugin);
     return next();
@@ -169,7 +169,7 @@ exports.karma_onData = function (next, connection) {
     var karma = connection.notes.karma * 1;
 
     if (karma.connection <= negative_limit) {
-        return next(DENY, "very bad karma score: "+karma);
+        return next(DENY, "very bad karma score: " + karma);
     }
 
     checkAwards(config, connection, this);
@@ -190,17 +190,17 @@ exports.karma_onDisconnect = function (next, connection) {
     var config = this.config.get('karma.ini');
 
     initRedisConnection(this);
-    if (config.concurrency) db.incrby('concurrent|'+connection.remote_ip, -1);
+    if (config.concurrency) db.incrby('concurrent|' + connection.remote_ip, -1);
 
     var k = connection.notes.karma;
     if (!k) { connection.logerror(plugin, "karma note missing!"); return next(); };
 
     if (!k.connection) {
-        connection.loginfo(plugin, "neutral: "+karmaSummary(connection));
+        connection.loginfo(plugin, "neutral: " + karmaSummary(connection));
         return next();
     };
 
-    var key = 'karma|'+connection.remote_ip;
+    var key = 'karma|' + connection.remote_ip;
     var history = k.history;
 
     if (config.threshold) {
@@ -208,7 +208,7 @@ exports.karma_onDisconnect = function (next, connection) {
 
         if (k.connection > pos_lim) {
             db.hincrby(key, 'good', 1);
-            connection.loginfo(plugin, "positive: "+karmaSummary(connection));
+            connection.loginfo(plugin, "positive: " + karmaSummary(connection));
             return next();
         };
 
@@ -220,29 +220,29 @@ exports.karma_onDisconnect = function (next, connection) {
             if (history <= config.thresholds.history_negative) {
                 if (history < -5) {
                     db.hset(key, 'penalty_start_ts', addDays(Date(), history * -1));
-                    connection.loginfo(plugin, "penalty box bonus!: "+karmaSummary(connection));
+                    connection.loginfo(plugin, "penalty box bonus!: " + karmaSummary(connection));
                 }
                 else {
                     db.hset(key, 'penalty_start_ts', Date());
-                    connection.loginfo(plugin, "penalty box: "+karmaSummary(connection));
+                    connection.loginfo(plugin, "penalty box: " + karmaSummary(connection));
                 }
                 return next();
             }
         }
     };
     checkAwards(config, connection, plugin);
-    connection.loginfo(plugin, "no action, "+karmaSummary(connection));
+    connection.loginfo(plugin, "no action, " + karmaSummary(connection));
     return next();
 };
 
 function karmaSummary(c) {
     var k = c.notes.karma;
     return '('
-        +'conn:'+k.connection
-        +', hist: '+k.history
-        +(k.penalties.length ? ', penalties: '+k.penalties : '')
-        +(k.awards.length    ? ', awards: '   +k.awards    : '')
-        +')';
+        + 'conn:' + k.connection
+        + ', hist: ' + k.history
+        + (k.penalties.length ? ', penalties: '+ k.penalties : '')
+        + (k.awards.length    ? ', awards: '   + k.awards    : '')
+        + ')';
 }
 
 function addDays(date, days) {
@@ -265,17 +265,17 @@ function checkAwards (config, connection, plugin) {
         // assemble the object path using the note name
         var note = assembleNoteObj(connection, suffix);
         if (note == null || note === false) {
-            // connection.logdebug(plugin, "no connection note: "+key);
+            // connection.logdebug(plugin, "no connection note: " + key);
             if (!connection.transaction) return;
             note = assembleNoteObj(connection.transaction, suffix);
             if (note == null || note === false) {
-                // connection.logdebug(plugin, "no transaction note: "+key);
+                // connection.logdebug(plugin, "no transaction note: " + key);
                 return;
             }
         };
 
         if (wants && note && (wants !== note)) {
-            connection.logdebug(plugin, "key "+suffix+" wants: "+wants+" but got: "+note);
+            connection.logdebug(plugin, "key " + suffix + " wants: " + wants + " but got: " + note);
             return;
         };
 
@@ -284,7 +284,7 @@ function checkAwards (config, connection, plugin) {
         if (Number(karma_to_apply) === 'NaN') return;  // garbage in config
 
         connection.notes.karma.connection += karma_to_apply * 1;
-        connection.loginfo(plugin, "applied "+key+" karma: "+karma_to_apply);
+        connection.loginfo(plugin, "applied " + key + " karma: " + karma_to_apply);
         delete connection.notes.karma.todo[key];
 
         var trimmed = key.substring(0,5) === 'notes' ? key.substring(6) : key;
@@ -307,7 +307,7 @@ function checkConcurrency(plugin, con_key, val, history) {
     if (history <  0 && count > config.concurrency.bad) reject++;
     if (history >  0 && count > config.concurrency.good)    reject++;
     if (history == 0 && count > config.concurrency.neutral) reject++;
-    if (reject) return "too many connections for you: "+count;
+    if (reject) return "too many connections for you: " + count;
     return;
 };
 
@@ -317,7 +317,7 @@ function checkMaxRecipients(connection, plugin, config) {
     var count = c.accept + c.tempfail + c.reject + 1;
     if (count <= 1) return;           // everybody is allowed one
 
-    connection.logdebug(plugin, "recipient count: "+count );
+    connection.logdebug(plugin, "recipient count: " + count );
 
     var desc = history > 3 ? 'good' : history >= 0 ? 'neutral' : 'bad';
 
@@ -335,7 +335,7 @@ function checkMaxRecipients(connection, plugin, config) {
     if (karma >  3 && count <= cr.good) return;
     if (karma >= 0 && count <= cr.neutral) return;
 
-    return 'too many recipients ('+count+') for '+desc+' karma';
+    return 'too many recipients (' + count + ') for ' + desc + ' karma';
 }
 
 function checkSpammyTLD(mail_from, config, connection, plugin) {
@@ -343,24 +343,24 @@ function checkSpammyTLD(mail_from, config, connection, plugin) {
     if (mail_from.isNull()) return;    // null sender (bounce)
 
     var from_tld = mail_from.host.split('.').pop();
-    // connection.logdebug(plugin, "from_tld: "+from_tld);
+    // connection.logdebug(plugin, "from_tld: " + from_tld);
 
     var tld_penalty = (config.spammy_tlds[from_tld] || 0) * 1; // force numeric
     if (tld_penalty === 0) return;
 
-    connection.loginfo(plugin, "spammy TLD: "+tld_penalty);
+    connection.loginfo(plugin, "spammy TLD: " + tld_penalty);
     connection.notes.karma.connection += tld_penalty;
     connection.notes.karma.penalties.push('spammy.TLD');
 };
 
 function checkSyntaxMailFrom(connection, plugin) {
     var full_from = connection.current_line;
-    // connection.logdebug(plugin, "mail_from: "+full_from);
+    // connection.logdebug(plugin, "mail_from: " + full_from);
 
 // look for an illegal (RFC 5321,2821,821) space in envelope from
     if (full_from.toUpperCase().substring(0,11) === 'MAIL FROM:<') return;
 
-    connection.loginfo(plugin, "illegal envelope address format: "+full_from );
+    connection.loginfo(plugin, "illegal envelope address format: " + full_from );
     connection.notes.karma.connection--;
     connection.notes.karma.penalties.push('rfc5321.MailFrom');
 };
@@ -370,7 +370,7 @@ function checkSyntaxRcptTo(connection, plugin) {
     var full_rcpt = connection.current_line;
     if (full_rcpt.toUpperCase().substring(0,9) === 'RCPT TO:<') return;
 
-    connection.loginfo(plugin, "illegal envelope address format: "+full_rcpt );
+    connection.loginfo(plugin, "illegal envelope address format: " + full_rcpt );
     connection.notes.karma.connection--;
     connection.notes.karma.penalties.push('rfc5321.RcptTo');
 };
