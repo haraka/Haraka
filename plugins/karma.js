@@ -29,7 +29,7 @@ function initRedisConnection(self) {
     var config     = self.config.get('karma.ini');
     var redis_ip  = '127.0.0.1';
     var redis_port = '6379';
-    if ( config.redis ) {
+    if (config.redis) {
         redis_ip = config.redis.server_ip || '127.0.0.1';
         redis_port = config.redis.server_port || '6379';
     };
@@ -83,7 +83,7 @@ exports.karma_onConnect = function (next, connection) {
                          +dbr.connections+" connects, "+history+" history";
 
             var too_many = checkConcurrency(plugin, 'concurrent|'+r_ip, replies[0], history);
-            if ( too_many ) {
+            if (too_many) {
                 connection.loginfo(plugin, too_many + ", ("+summary+")");
                 return next(DENYSOFT, too_many);
             };
@@ -165,7 +165,7 @@ exports.karma_onRcptTo = function (next, connection, params) {
 exports.karma_onData = function (next, connection) {
 // cut off bad senders at DATA to prevent transferring the message
     var config = this.config.get('karma.ini');
-    var negative_limit = config.threshhold.negative || -5;
+    var negative_limit = config.thresholds.negative || -5;
     var karma = connection.notes.karma * 1;
 
     if (karma.connection <= negative_limit) {
@@ -190,7 +190,7 @@ exports.karma_onDisconnect = function (next, connection) {
     var config = this.config.get('karma.ini');
 
     initRedisConnection(this);
-    if ( config.concurrency ) db.incrby('concurrent|'+connection.remote_ip, -1);
+    if (config.concurrency) db.incrby('concurrent|'+connection.remote_ip, -1);
 
     var k = connection.notes.karma;
     if (!k) { connection.logerror(plugin, "karma note missing!"); return next(); };
@@ -203,8 +203,8 @@ exports.karma_onDisconnect = function (next, connection) {
     var key = 'karma|'+connection.remote_ip;
     var history = k.history;
 
-    if (config.threshhold) {
-        var pos_lim = config.threshhold.positive || 2;
+    if (config.threshold) {
+        var pos_lim = config.thresholds.positive || 2;
 
         if (k.connection > pos_lim) {
             db.hincrby(key, 'good', 1);
@@ -212,14 +212,14 @@ exports.karma_onDisconnect = function (next, connection) {
             return next();
         };
 
-        var bad_limit = config.threshhold.negative || -3;
+        var bad_limit = config.thresholds.negative || -3;
         if (k.connection < bad_limit) {
             db.hincrby(key, 'bad', 1);
             history--;
 
-            if (history <= config.threshhold.history_negative) {
+            if (history <= config.thresholds.history_negative) {
                 if (history < -5) {
-                    db.hset(key, 'penalty_start_ts', addDays(Date(), history * -1 ) );
+                    db.hset(key, 'penalty_start_ts', addDays(Date(), history * -1));
                     connection.loginfo(plugin, "penalty box bonus!: "+karmaSummary(connection));
                 }
                 else {
@@ -281,22 +281,22 @@ function checkAwards (config, connection, plugin) {
 
         var karma_to_apply = connection.notes.karma.todo[key];
         if (!karma_to_apply) return;
-        if ( Number(karma_to_apply) === 'NaN' ) return;  // garbage in config
+        if (Number(karma_to_apply) === 'NaN') return;  // garbage in config
 
         connection.notes.karma.connection += karma_to_apply * 1;
         connection.loginfo(plugin, "applied "+key+" karma: "+karma_to_apply);
         delete connection.notes.karma.todo[key];
 
         var trimmed = key.substring(0,5) === 'notes' ? key.substring(6) : key;
-        if ( karma_to_apply > 0 ) { connection.notes.karma.awards.push(trimmed); };
-        if ( karma_to_apply < 0 ) { connection.notes.karma.penalties.push(trimmed); };
+        if (karma_to_apply > 0) { connection.notes.karma.awards.push(trimmed); };
+        if (karma_to_apply < 0) { connection.notes.karma.penalties.push(trimmed); };
     });
 }
 
 function checkConcurrency(plugin, con_key, val, history) {
     var config = plugin.config.get('karma.ini');
 
-    if ( !config.concurrency ) return;
+    if (!config.concurrency) return;
 
     var count = val || 0;    // add this connection
     count++;
@@ -315,7 +315,7 @@ function checkMaxRecipients(connection, plugin, config) {
     if (!config.recipients) return;     // disabled in config file
     var c = connection.rcpt_count;
     var count = c.accept + c.tempfail + c.reject + 1;
-    if ( count <= 1 ) return;           // everybody is allowed one
+    if (count <= 1) return;           // everybody is allowed one
 
     connection.logdebug(plugin, "recipient count: "+count );
 
@@ -325,15 +325,15 @@ function checkMaxRecipients(connection, plugin, config) {
 
     // the deeds of their past shall not go unnoticed!
     var history = connection.notes.karma.history;
-    if ( history > 3 && count <= cr.good) return;
-    if ( history > -1 && count <= cr.neutral) return;
+    if (history > 3 && count <= cr.good) return;
+    if (history > -1 && count <= cr.neutral) return;
 
     // this is *more* strict than history, b/c they have fewer opportunity
     // to score positive karma this early in the connection. senders with
     // good history will rarely see these limits.
     var karma = connection.notes.karma.connection;
-    if ( karma >  3 && count <= cr.good) return;
-    if ( karma >= 0 && count <= cr.neutral) return;
+    if (karma >  3 && count <= cr.good) return;
+    if (karma >= 0 && count <= cr.neutral) return;
 
     return 'too many recipients ('+count+') for '+desc+' karma';
 }
@@ -358,7 +358,7 @@ function checkSyntaxMailFrom(connection, plugin) {
     // connection.logdebug(plugin, "mail_from: "+full_from);
 
 // look for an illegal (RFC 5321,2821,821) space in envelope from
-    if (full_from.toUpperCase().substring(0,11) === 'MAIL FROM:<' ) return;
+    if (full_from.toUpperCase().substring(0,11) === 'MAIL FROM:<') return;
 
     connection.loginfo(plugin, "illegal envelope address format: "+full_from );
     connection.notes.karma.connection--;
@@ -368,7 +368,7 @@ function checkSyntaxMailFrom(connection, plugin) {
 function checkSyntaxRcptTo(connection, plugin) {
     // check for an illegal RFC (2)821 space in envelope recipient
     var full_rcpt = connection.current_line;
-    if ( full_rcpt.toUpperCase().substring(0,9) === 'RCPT TO:<' ) return;
+    if (full_rcpt.toUpperCase().substring(0,9) === 'RCPT TO:<') return;
 
     connection.loginfo(plugin, "illegal envelope address format: "+full_rcpt );
     connection.notes.karma.connection--;
