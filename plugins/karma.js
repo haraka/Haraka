@@ -18,22 +18,35 @@ exports.register = function () {
     this.register_hook('disconnect',   'karma_onDisconnect');
 };
 
-exports.karma_onInit = function (next,server) {
-    var config     = this.config.get('karma.ini');
+exports.karma_onInit = function (next, server) {
+    initRedisConnection(this);
+    return next();
+};
+
+function initRedisConnection(self) {
+    if (db && db.ping()) return;   // connection is good
+
+    var config     = self.config.get('karma.ini');
     var redis_ip  = '127.0.0.1';
     var redis_port = '6379';
     if ( config.redis ) {
         redis_ip = config.redis.server_ip || '127.0.0.1';
         redis_port = config.redis.server_port || '6379';
     };
+
     db = redis.createClient(redis_port, redis_ip);
-    return next();
+    db.on('error', function (error) {
+        self.logerror('Redis error: ' + error.message);
+        db.end();
+        db = null;
+    });
 };
 
 exports.karma_onConnect = function (next, connection) {
     var plugin = this;
     var config = this.config.get('karma.ini');
 
+    initRedisConnection(this);
     initConnectionNote(connection, config);
 
     var r_ip = connection.remote_ip;
@@ -176,6 +189,7 @@ exports.karma_onDisconnect = function (next, connection) {
     var plugin = this;
     var config = this.config.get('karma.ini');
 
+    initRedisConnection(this);
     if ( config.concurrency ) db.incrby('concurrent|'+connection.remote_ip, -1);
 
     var k = connection.notes.karma;
