@@ -274,8 +274,8 @@ function checkAwards (config, connection, plugin) {
             }
         };
 
-        if (wants && note && (wants !== note)) {
-            connection.logdebug(plugin, "key " + suffix + " wants: " + wants + " but got: " + note);
+        if (wants && note && (!note.toString().match(new RegExp(wants, 'i')))) {
+            // connection.logdebug(plugin, "key " + suffix + " wants: " + wants + " but saw: " + note);
             return;
         };
 
