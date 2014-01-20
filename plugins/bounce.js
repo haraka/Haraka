@@ -1,30 +1,26 @@
 // bounce tests
 
 exports.register = function () {
-    var plugin = this;
-
     this.register_hook('mail',         'bounce_mail');
-    // this.register_hook('rcpt',         'bounce_rcpt');
-    // this.register_hook('data',         'bounce_data');
-    this.register_hook('data_post',    'bounce_data_post');
+    this.register_hook('data',         'bounce_data');
 };
 
 exports.bounce_mail = function (next, connection, params) {
     var mail_from = params[0];
     if (!mail_from.isNull()) return next();    // not a bounce
     var cfg = this.config.get('bounce.ini');
-    if (cfg.reject_all)
+    if (cfg.main.reject_all)
         return next(DENY, "No bounces accepted here");
     return next();
 }
 
-exports.bounce_data_post = function(next, connection) {
+exports.bounce_data = function(next, connection) {
     var plugin = connection;
 
     if (!has_null_sender(connection)) return next(); // not a bounce.
 
     var cfg = this.config.get('bounce.ini');
-    var rej = cfg.reject_invalid;
+    var rej = cfg.main.reject_invalid;
 
     // Valid bounces have a single recipient
     var err = has_single_recipient(connection, plugin);
