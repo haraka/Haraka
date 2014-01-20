@@ -85,7 +85,10 @@ exports.karma_onConnect = function (next, connection) {
             var too_many = checkConcurrency(plugin, 'concurrent|' + r_ip, replies[0], history);
             if (too_many) {
                 connection.loginfo(plugin, too_many + ", (" + summary + ")");
-                return next(DENYSOFT, too_many);
+                var delay = config.concurrency.disconnect_delay || 10;
+                setTimeout(function () {
+                    return next(DENYSOFTDISCONNECT, too_many);
+                }, delay * 1000);
             };
 
             if (dbr.penalty_start_ts === '0') {
