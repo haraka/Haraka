@@ -9,8 +9,7 @@ exports.bounce_mail = function (next, connection, params) {
     var mail_from = params[0];
     if (!mail_from.isNull()) return next();    // not a bounce
     var cfg = this.config.get('bounce.ini');
-    if (cfg.main.reject_all)
-        return next(DENY, "No bounces accepted here");
+    if (cfg.main.reject_all) return next(DENY, "No bounces accepted here");
     return next();
 }
 
@@ -22,29 +21,16 @@ exports.bounce_data = function(next, connection) {
     var cfg = this.config.get('bounce.ini');
     var rej = cfg.main.reject_invalid;
 
-    // Valid bounces have a single recipient
     var err = has_single_recipient(connection, plugin);
-    if (err && rej) return next(DENY, err);
-
-    // validate that Return-Path is empty, RFC 3834
-    err = has_empty_return_path(connection, plugin);
     if (err && rej) return next(DENY, err);
 
     return next();
 };
 
-function has_empty_return_path(connection, plugin) {
-    var rp = connection.transaction.header.get('Return-Path');
-    if (!rp) return;
-    if (rp === '<>') return;
-    connection.transaction.notes.bounce='invalid';
-    connection.loginfo(plugin, "bounce messages must not have a Return-Path");
-    return "a bounce return path must be empty (RFC 3834)";
-};
-
 function has_single_recipient(connection, plugin) {
     if (connection.transaction.rcpt_to.length === 1) return;
 
+    // Valid bounces have a single recipient
     connection.loginfo(plugin, "bogus bounce to: " + 
         connection.transaction.rcpt_to.join(','));
 
