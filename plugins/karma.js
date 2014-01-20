@@ -166,7 +166,7 @@ exports.karma_onRcptTo = function (next, connection, params) {
 };
 
 exports.karma_onData = function (next, connection) {
-// cut off bad senders at DATA to prevent transferring the message
+    // cut off bad senders at DATA to prevent transferring the message
     var config = this.config.get('karma.ini');
     var negative_limit = config.thresholds.negative || -5;
     var karma = connection.notes.karma * 1;
@@ -268,17 +268,17 @@ function check_awards (config, connection, plugin) {
         // assemble the object path using the note name
         var note = assemble_note_obj(connection, suffix);
         if (note == null || note === false) {
-            // connection.logdebug(plugin, "no connection note: " + key);
+            connection.logdebug(plugin, "no connection note: " + key);
             if (!connection.transaction) return;
             note = assemble_note_obj(connection.transaction, suffix);
             if (note == null || note === false) {
-                // connection.logdebug(plugin, "no transaction note: " + key);
+                connection.logdebug(plugin, "no transaction note: " + key);
                 return;
             }
         };
 
         if (wants && note && (!note.toString().match(new RegExp(wants, 'i')))) {
-            // connection.logdebug(plugin, "key " + suffix + " wants: " + wants + " but saw: " + note);
+            connection.logdebug(plugin, "key " + suffix + " wants: " + wants + " but saw: " + note);
             return;
         };
 
@@ -360,7 +360,7 @@ function check_syntax_mailfrom(connection, plugin) {
     var full_from = connection.current_line;
     // connection.logdebug(plugin, "mail_from: " + full_from);
 
-// look for an illegal (RFC 5321,2821,821) space in envelope from
+    // look for an illegal (RFC 5321,2821,821) space in envelope from
     if (full_from.toUpperCase().substring(0,11) === 'MAIL FROM:<') return;
 
     connection.loginfo(plugin, "illegal envelope address format: " + full_from );
