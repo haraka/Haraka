@@ -155,7 +155,7 @@ exports.karma_onRcptTo = function (next, connection, params) {
 
     checkSyntaxRcptTo(connection, plugin);
     var too_many = checkMaxRecipients(connection, plugin, config);
-    if (too_many) return next(DENY, too_many);
+    if (too_many) return next(DENYSOFT, too_many);
 
     checkAwards(config, connection, plugin);
     connection.loginfo(plugin, karmaSummary(connection));
