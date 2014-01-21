@@ -49,10 +49,7 @@ function calculate_distance(plugin, connection, cfg) {
     if (!local_ip) { local_ip = connection.local_ip; };
     if (!local_ip) return;
 
-    if (!local_geoip) {
-        local_geoip = geoip.lookup(local_ip)
-        connection.loginfo(plugin, "local_geoip set: "+local_geoip);
-    };
+    if (!local_geoip) { local_geoip = geoip.lookup(local_ip) };
     if (!local_geoip) return;
 
     var gcd = haversine(local_geoip.ll[0], local_geoip.ll[1],
