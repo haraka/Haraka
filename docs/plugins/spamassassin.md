@@ -9,13 +9,13 @@ Configuration
 
 spamassassin.ini
 
-- spamd_socket = \[host:port | /path/to/socket\]  *optional*
+- spamd\_socket = \[host:port | /path/to/socket\]  *optional*
 
     Default: localhost:783
 
     Host or path to socket where spamd is running.
 
-- spamd_user = \[user\]   *optional*
+- spamd\_user = \[user\]   *optional*
 
     Default: default
 
@@ -26,20 +26,20 @@ spamassassin.ini
 
     `connection.transaction.notes.spamd_user`
 
-- max_size = N  *optional*
+- max\_size = N  *optional*
 
     Default: 500000
 
     Maximum size of messages (in bytes) to send to spamd.
     Messages over this size will be skipped.
 
-- reject_threshold = N   *optional*
+- reject\_threshold = N   *optional*
 
     Default: none (do not reject any mail)
 
     SpamAssassin score at which the mail should be rejected.
 
-- relay_reject_threshold = N  *optional*
+- relay\_reject\_threshold = N  *optional*
 
     Default: none
 
@@ -50,19 +50,19 @@ spamassassin.ini
 
     If this is not set, then the `reject_thresold` value is used.
 
-- munge_subject_threshold = N  *optional*
+- munge\_subject\_threshold = N  *optional*
 
     Default: none (do not munge the subject)
 
     Score at which the subject should be munged (prefixed).
 
-- subject_prefix = \[prefix\]   *optional*
+- subject\_prefix = \[prefix\]   *optional*
 
     Default: *** SPAM ***
 
     Prefix to use when munging the subject.
 
-- old_headers_action = \[rename | drop | keep\]   *optional*
+- old\_headers\_action = \[rename | drop | keep\]   *optional*
 
     Default: rename
 

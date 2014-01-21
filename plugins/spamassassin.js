@@ -76,7 +76,7 @@ exports.hook_data_post = function (next, connection) {
         connection.transaction.notes.spamassassin = spamd_response;
 
         plugin.fixup_old_headers(config.main.old_headers_action, connection.transaction);
-        do_header_updates(connection, spamd_response);
+        do_header_updates(connection, spamd_response, config);
         log_results(connection, plugin, spamd_response, config);
 
         var exceeds_err = hits_too_high(config, connection, spamd_response);
@@ -133,7 +133,7 @@ function setup_defaults(config) {
     });
 };
 
-function do_header_updates(connection, spamd_response) {
+function do_header_updates(connection, spamd_response, config) {
 
     if (spamd_response.flag === 'Yes') {
         connection.transaction.add_header('X-Spam-Flag', 'YES');
@@ -142,7 +142,15 @@ function do_header_updates(connection, spamd_response) {
     }
 
     Object.keys(spamd_response.headers).forEach(function(key) {
-        connection.transaction.add_header('X-Spam-'+key, spamd_response.headers[key]);
+        var modern = config.main.modern_status_syntax;
+        // connection.logdebug("modern: "+modern);
+
+        if (key === 'Status' && (!modern || modern === undefined)) {
+            var legacy = spamd_response.headers[key].replace(/score/,'hits');
+            connection.transaction.add_header('X-Spam-Status', legacy + ' tests=' + spamd_response.tests);
+            return;
+        };
+        connection.transaction.add_header('X-Spam-' + key, spamd_response.headers[key]);
     });
 };
 
@@ -217,10 +225,10 @@ function get_spamd_socket(config, next, connection, plugin) {
 function msg_too_big(config, connection, plugin) {
     if (!config.main.max_size) return false;
 
-    var bytes = connection.transaction.data_bytes / (1024 * 1024); // to MB
-    var max   = config.main.max_size / (1024 * 1024);
-    if (bytes > max) {
-        connection.loginfo(plugin, 'skipping, size ('+bytes+'MB) exceeds max: '+max);
+    var msg_mb = connection.transaction.data_bytes / (1024 * 1024); // to MB
+    var max_mb= config.main.max_size / (1024 * 1024);
+    if (msg_mb > max_mb) {
+        connection.loginfo(plugin, 'skipping, size (' + bytes.toFixed(2) + 'MB) exceeds max: ' + max);
         return true;
     }
     return false;
