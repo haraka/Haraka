@@ -44,20 +44,20 @@ function checkDateValid (plugin,connection) {
     connection.logdebug(plugin, "message date: " + msg_date);
     msg_date = Date.parse(msg_date);
 
-    if ( date_future_days > 0 ) {
+    if (date_future_days > 0) {
         var too_future = new Date;
         too_future.setHours(too_future.getHours() + 24 * date_future_days);
         // connection.logdebug(plugin, "too future: " + too_future);
-        if ( msg_date > too_future ) {
+        if (msg_date > too_future) {
             connection.loginfo(plugin, "date is newer than: " + too_future );
             return "The Date header is too far in the future";
         };
     }
-    if ( date_past_days > 0 ) {
+    if (date_past_days > 0) {
         var too_old = new Date;
         too_old.setHours(too_old.getHours() - 24 * date_past_days);
         // connection.logdebug(plugin, "too old: " + too_old);
-        if ( msg_date < too_old ) {
+        if (msg_date < too_old) {
             connection.loginfo(plugin, "date is older than: " + too_old);
             return "The Date header is too old";
         };
@@ -68,17 +68,17 @@ function checkDateValid (plugin,connection) {
 function refreshConfig(plugin) {
     var config = plugin.config.get('data.headers.ini');
 
-    if ( config.main.required !== 'undefined' ) {
+    if (config.main.required !== 'undefined') {
         required_headers = config.main.required.split(',');
     };
-    if ( config.main.singular !== 'undefined' ) {
+    if (config.main.singular !== 'undefined') {
         singular_headers = config.main.singular.split(',');
     };
 
-    if ( config.main.date_future_days !== 'undefined' ) {
+    if (config.main.date_future_days !== 'undefined') {
         date_future_days = config.main.date_future_days;
     }
-    if ( config.main.date_past_days !== 'undefined' ) {
+    if (config.main.date_past_days !== 'undefined') {
         date_past_days = config.main.date_past_days;
     }
 }
