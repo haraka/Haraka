@@ -59,11 +59,19 @@ function has_invalid_header(plugin, connection) {
     //   already contains a Return-path header field.
 
     // Return-Path, aka Reverse-PATH, Envelope FROM, RFC5321.MailFrom
-    if (connection.relaying) {      // On messages we originate
-        var rp = connection.transaction.header.get('Return-Path');
-        if (rp) {
+    var rp = connection.transaction.header.get('Return-Path');
+    if (rp) {
+        if (connection.relaying) {      // On messages we originate
             connection.loginfo(plugin, "invalid Return-Path!");
             return "outgoing mail must not have a Return-Path header (RFC 5321)";
+        }
+        else {
+            // generally, messages from the internet shouldn't have a
+            // Return-Path, except for when they can. Read RFC 5321, it's
+            // complicated. In most cases, The Right Thing to do here is to
+            // strip the Return-Path header.
+            connection.transaction.remove_header('Return-Path');
+            // unless it was added by Haraka. Which at present, doesn't.
         };
     };
 
