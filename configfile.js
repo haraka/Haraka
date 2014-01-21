@@ -11,6 +11,7 @@ var regex = {
     continuation:   /\\[ \t]*$/,
     is_integer:     /^-?\d+$/,
     is_float:       /^-?\d+\.\d+$/,
+    is_truth:       /^(?:true|yes|ok|enabled|on|1)$/i,
 };
 
 var cfreader = exports;
@@ -19,20 +20,20 @@ cfreader.watch_files = true;
 cfreader._config_cache = {};
 cfreader._watchers = {};
 
-cfreader.read_config = function(name, type, cb) {
+cfreader.read_config = function(name, type, cb, options) {
     // Check cache first
     if (name in cfreader._config_cache) {
         return cfreader._config_cache[name];
     }
 
     // load config file
-    var result = cfreader.load_config(name, type);
+    var result = cfreader.load_config(name, type, options);
     
     if (cfreader.watch_files) {
         if (name in cfreader._watchers) return result;
         try {
             cfreader._watchers[name] = fs.watch(name, {persistent: false}, function (event, filename) {
-                cfreader.load_config(name, type);
+                cfreader.load_config(name, type, options);
                 if (typeof cb === 'function') cb();
             });
         }
@@ -58,11 +59,11 @@ cfreader.empty_config = function(type) {
     }
 };
 
-cfreader.load_config = function(name, type) {
+cfreader.load_config = function(name, type, options) {
     var result;
 
     if (type === 'ini' || /\.ini$/.test(name)) {
-        result = cfreader.load_ini_config(name);
+        result = cfreader.load_ini_config(name, options);
     }
     else if (type === 'json' || /\.json$/.test(name)) {
         result = cfreader.load_json_config(name);
@@ -71,10 +72,13 @@ cfreader.load_config = function(name, type) {
         result = cfreader.load_binary_config(name, type);
     }
     else {
-        result = cfreader.load_flat_config(name, type);
+        result = cfreader.load_flat_config(name, type, options);
         if (result && type !== 'list' && type !== 'data') {
             result = result[0];
-            if (regex.is_integer.test(result)) {
+            if (Array.isArray(options) && options['boolean'] === true) {
+                result = is_truth.test(result);
+            }
+            else if (regex.is_integer.test(result)) {
                 result = parseInt(result, 10);
             }
             else if (regex.is_float.test(result)) {
@@ -108,9 +112,21 @@ cfreader.load_json_config = function(name) {
     return result;
 }
 
-cfreader.load_ini_config = function(name) {
+cfreader.load_ini_config = function(name, options) {
     var result       = cfreader.empty_config('ini');
     var current_sect = result.main;
+    var current_sect_name = 'main';
+
+    // Initialize any booleans to false
+    if (options && Array.isArray(options.booleans)) {
+        for (var i=0; i<options.booleans.length; i++) {
+            var m;
+            if (m = /^([^\. ]+)\.(.+)/.exec(options.booleans[i])) {
+                if (!result[m[1]]) result[m[1]] = {};
+                result[m[1]][m[2]] = false;
+            }
+        }
+    }
 
     try {    
         if (utils.existsSync(name)) {
@@ -128,6 +144,7 @@ cfreader.load_ini_config = function(name) {
                 }
                 else if (match = regex.section.exec(line)) {
                     current_sect = result[match[1]] = {};
+                    current_sect_name = match[1];
                     return;
                 }
                 else if (regex.continuation.test(line)) {
@@ -137,7 +154,14 @@ cfreader.load_ini_config = function(name) {
                 line = pre + line;
                 pre = '';
                 if (match = regex.param.exec(line)) {
-                    if (regex.is_integer.test(match[2])) {
+                    if (options && Array.isArray(options.booleans) &&
+                        options.booleans.indexOf(current_sect_name + '.' + match[1] !== -1))
+                    {
+                        current_sect[match[1]] = regex.is_truth.test(match[2]);
+                        logger.loginfo('Returning boolean ' + current_sect[match[1]] +
+                                       ' for ' + current_sect_name + '.' + match[1] + '=' + match[2]);
+                    }
+                    else if (regex.is_integer.test(match[2])) {
                         current_sect[match[1]] = parseInt(match[2], 10);
                     }
                     else if (regex.is_float.test(match[2])) {
@@ -148,7 +172,7 @@ cfreader.load_ini_config = function(name) {
                     }
                 }
                 else {
-                    logger.logerror("Unvalid line in config file '" + name + "': " + line);
+                    logger.logerror("Invalid line in config file '" + name + "': " + line);
                 };
             });
         }
