@@ -55,6 +55,9 @@ function calculate_distance(plugin, connection, cfg) {
     var gcd = haversine(local_geoip.ll[0], local_geoip.ll[1],
         connection.notes.geoip.ll[0], connection.notes.geoip.ll[1]);
 
+    if (cfg.main.too_far && (ParseFloat(cfg.main.too_far) < parseFloat(gcd))) {
+        connection.notes.geoip.too_far=1;
+    };
     connection.notes.geoip.distance = gcd;
 };
 
