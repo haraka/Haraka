@@ -74,8 +74,11 @@ cfreader.load_config = function(name, type) {
         result = cfreader.load_flat_config(name, type);
         if (result && type !== 'list' && type !== 'data') {
             result = result[0];
-            if (/^\d+$/.test(result)) {
-                result = parseInt(result);
+            if (regex.is_integer.test(result)) {
+                result = parseInt(result, 10);
+            }
+            else if (regex.is_float.test(result)) {
+                result = parseFloat(result);
             }
         }
     }
@@ -135,7 +138,7 @@ cfreader.load_ini_config = function(name) {
                 pre = '';
                 if (match = regex.param.exec(line)) {
                     if (regex.is_integer.test(match[2])) {
-                        current_sect[match[1]] = parseInt(match[2]);
+                        current_sect[match[1]] = parseInt(match[2], 10);
                     }
                     else if (regex.is_float.test(match[2])) {
                         current_sect[match[1]] = parseFloat(match[2]);
