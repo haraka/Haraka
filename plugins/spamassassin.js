@@ -52,8 +52,8 @@ exports.hook_data_post = function (next, connection) {
             }
         }
         else if (state === 'headers') {
-            var m;
-            if (m = line.match(/^X-Spam-(\S*?):\s(.*)/)) {
+            var m;   // printable ASCII: [ -~]
+            if (m = line.match(/^X-Spam-([ -~]+):\s(.*)/)) {
                 last_header = m[1];
                 spamd_response.headers[m[1]] = m[2];
                 if (m[1] === 'Tests') spamd_response.tests = m[2];
