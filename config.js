@@ -27,5 +27,5 @@ config.get = function(name, type, cb) {
 };
 
 config.is_enabled = function(value) {
-    return enabled.match(value);
+    return enabled.test(value);
 }
