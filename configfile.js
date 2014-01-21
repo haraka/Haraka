@@ -9,6 +9,8 @@ var regex = {
     line:           /^\s*(.*)\s*$/,
     blank:          /^\s*$/,
     continuation:   /\\[ \t]*$/,
+    is_integer:     /^-?\d+$/,
+    is_float:       /^-?\d+\.\d+$/,
 };
 
 var cfreader = exports;
@@ -132,8 +134,11 @@ cfreader.load_ini_config = function(name) {
                 line = pre + line;
                 pre = '';
                 if (match = regex.param.exec(line)) {
-                    if (/^\d+$/.test(match[2])) {
+                    if (regex.is_integer.test(match[2])) {
                         current_sect[match[1]] = parseInt(match[2]);
+                    }
+                    else if (regex.is_float.test(match[2])) {
+                        current_sect[match[1]] = parseFloat(match[2]);
                     }
                     else {
                         current_sect[match[1]] = match[2];

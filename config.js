@@ -6,6 +6,7 @@ var logger       = require('./logger');
 var config = exports;
 
 var config_path = process.env.HARAKA ? path.join(process.env.HARAKA, 'config') : path.join(__dirname, './config');
+var enabled = new RegExp('^(?:yes|true|enabled|ok|on|1)$', 'i');
 
 config.get = function(name, type, cb) {
     if (type === 'nolog') {
@@ -24,3 +25,7 @@ config.get = function(name, type, cb) {
         return results;
     }
 };
+
+config.is_enabled = function(value) {
+    return enabled.match(value);
+}
