@@ -42,6 +42,13 @@ crow flies" from the remote mail server.
 The IP address to calculate the distance from. This will typically be
 the public IP of your mail server.
 
+- show_city
+
+show city data in logs and headers. City data is less accurate than country.
+
+- show_region in logs and headers. Regional data are US states, Canadian
+  provinces and such.
+
 
 # LIMITATIONS
 
