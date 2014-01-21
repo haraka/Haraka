@@ -111,7 +111,7 @@ exports.fixup_old_headers = function (action, transaction) {
 function munge_subject(connection, config, hits) {
     var munge = config.main.munge_subject_threshold;
     if (!munge) return;
-    if (parseFloat(hits) < parsefloat(munge)) return;
+    if (parseFloat(hits) < parseFloat(munge)) return;
 
     var subj = connection.transaction.header.get('Subject');
     var subject_re = new RegExp('^' + config.main.subject_prefix);
