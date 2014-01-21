@@ -112,7 +112,7 @@ var configfile = require('./configfile');
 var cfg = configfile.read_config('/path/to/file', type);
 ```
 
-read_config() handles the caching for you and will return cached values
+`read_config()` handles the caching for you and will return cached values
 if there have been no updates since the file was read.
 
 You can also optionally pass in a callback that is run if the file is 

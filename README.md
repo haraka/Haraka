@@ -49,7 +49,7 @@ code in Haraka, or maybe someone has already written this plugin.
 
 Plugins are already provided for running mail through SpamAssassin, checking
 for known bad HELO patterns, checking DNS Blocklists, and watching for
-violators of the SMTP protocol via the "early_talker" plugin.
+violators of the SMTP protocol via the "early\_talker" plugin.
 
 Furthermore Haraka comes with a simple plugin called "graph" which shows you
 real-time charts of which plugins rejected the most mail, allowing you to

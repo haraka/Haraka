@@ -1,5 +1,4 @@
-
-qmail_deliverable
+qmail\_deliverable
 ============
 
 This plugin implements a client for checking the deliverability of an email
@@ -11,5 +10,5 @@ Configuration
 -------------
 
 You can modify the host/port that qmail-deliverabled is listening on by
-altering the contents of config/rcpt_to.qmail_deliverable.ini
+altering the contents of config/rcpt\_to.qmail\_deliverable.ini
 

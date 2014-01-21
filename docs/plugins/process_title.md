@@ -1,4 +1,4 @@
-process_title
+process\_title
 =============
 
 This plugin causes the process title seen by the UNIX 'ps' command to

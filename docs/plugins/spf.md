@@ -16,54 +16,54 @@ Configuration
 
 This plugin uses spf.ini for configuration and each option is documented below:
 
-- helo_softfail_reject
+- helo\_softfail\_reject
 
     Default: false
 
     Return DENY if the SPF HELO check returns SoftFail.
     This option should only be enabled in exceptional circumstances.
 
-- helo_fail_reject
+- helo\_fail\_reject
 
     Default: false
 
     Return DENYSOFT if the SPF HELO check returns Fail.
 
-- helo_temperror_defer
+- helo\_temperror\_defer
 
     Default: false
 
     Return DENYSOFT if the SPF HELO check returns TempError.
     This can cause excessive delays if a domain has a broken SPF record or any issues with their DNS configuration.
 
-- helo_permerror_reject
+- helo\_permerror\_reject
 
     Default: false
 
     Return DENY if the SPF HELO check returns Fail.
     This can cause false-positives if a domain has any syntax errors in their SPF record.
 
-- mail_softfail_reject
+- mail\_softfail\_reject
 
     Default: false
 
     Return DENYSOFT if the SPF MAIL check returns SoftFail.
     This option should only be used in exceptional circumstances.
 
-- mail_fail_reject
+- mail\_fail\_reject
 
     Default: false
 
     Return DENY if the SPF MAIL check returns Fail.
 
-- mail_temperror_defer
+- mail\_temperror\_defer
 
     Default: false
 
     Return DENYSOFT if the SPF MAIL check returns TempError.
     This can cause excessive delays if a domain has a broken SPF record or any issues with their DNS configuration.
 
-- mail_permerror_reject
+- mail\_permerror\_reject
 
     Default: false
 

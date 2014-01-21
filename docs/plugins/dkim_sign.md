@@ -1,4 +1,4 @@
-dkim_sign
+dkim\_sign
 =========
 
 This plugin implements the DKIM Core specification found at dkimcore.org
@@ -17,7 +17,7 @@ Generate DKIM selector and keys:
     cd /path/to/haraka/config/dkim
     ./dkim_key_gen.sh example.org
 
-Peek into the dkim_key_gen.sh shell script to see the commands used to
+Peek into the dkim\_key\_gen.sh shell script to see the commands used to
 create and format the DKIM public key. Within the config/dkim/example.org
  directory will be 4 files:
 
@@ -59,7 +59,7 @@ For an alternative, see the legacy Single Domain Configuration below.
 Configuration
 -------------
 
-This plugin uses the configuration dkim_sign.ini in INI format.
+This plugin uses the configuration dkim\_sign.ini in INI format.
 All configuration should appear within the 'main' block and is
 checked for updates on every run.
 
@@ -67,7 +67,7 @@ checked for updates on every run.
 
     Set this to disable DKIM signing
 
-- headers_to_sign = list, of; headers       (REQUIRED)
+- headers\_to\_sign = list, of; headers       (REQUIRED)
 
     Set this to the list of headers that should be signed
     separated by either a comma, colon or semi-colon.
@@ -85,7 +85,7 @@ are required.
 - selector = name
 
     Set this to the selector name published in DNS under the
-    _domainkey sub-domain of the domain referenced below.
+    \_domainkey sub-domain of the domain referenced below.
 
 - domain = name
 

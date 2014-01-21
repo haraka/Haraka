@@ -1,4 +1,4 @@
-auth/flat_file
+auth/flat\_file
 ==============
 
 The `auth/flat_file` plugin allows you to create a file containing username

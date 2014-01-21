@@ -1,4 +1,4 @@
-relay_acl
+relay\_acl
 ========
 
 This plugin makes it possible to relay outbound mails using IP based ACLs
@@ -24,6 +24,6 @@ Configuration
     [domains]  
     test.com = { "action": "continue" }
 
-    Please note that this config/relay_dest_domains.ini is shared with
-    plugins/relay_force_routing.js, which uses additional fields.
+    Please note that this config/relay\_dest\_domains.ini is shared with
+    plugins/relay\_force\_routing.js, which uses additional fields.
 

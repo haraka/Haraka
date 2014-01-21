@@ -1,4 +1,4 @@
-relay_force_routing.js
+relay\_force\_routing.js
 ========
 
 This plugin allows you to force the next hop for the configured domains.
@@ -8,10 +8,10 @@ Configuration
 -------------
 
 * `config/relay_dest_domains.ini`
-    This config file is shared with relay_acl.js, for the basics see the
-    documentation provided by plugins/relay_acl.js.
+    This config file is shared with relay\_acl.js, for the basics see the
+    documentation provided by plugins/relay\_acl.js.
 
-    relay_force_routing.js adds the field "nexthop": in the JSON value
+    relay\_force\_routing.js adds the field "nexthop": in the JSON value
     of the domain. The value of "nexthop": can be hostname or IP optionally
     follow by :port.
 

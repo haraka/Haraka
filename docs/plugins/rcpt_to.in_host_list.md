@@ -1,4 +1,4 @@
-rcpt_to.in_host_list
+rcpt\_to.in\_host\_list
 ====================
 
 This plugin is the mainstay of an inbound Haraka server. It should list the
@@ -9,11 +9,11 @@ rejected.
 Configuration
 -------------
 
-* host_list
+* host\_list
   
   Specifies the list of hosts that are local to this server.
 
-* host_list_regex
+* host\_list\_regex
   
   Specifies the list of regexes that are local to this server.  Note
   all these regexes are anchored with ^regex$. One can not choose not to

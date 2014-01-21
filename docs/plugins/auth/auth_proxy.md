@@ -1,4 +1,4 @@
-auth/auth_proxy
+auth/auth\_proxy
 ===============
 
 This plugin allows you to authenticate users by domain to remote SMTP servers
