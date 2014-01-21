@@ -150,7 +150,7 @@ function hits_too_high(config, connection, spamd_response) {
     var hits = spamd_response.hits;
     if (connection.relaying) {
         var rmax = config.main.relay_reject_threshold;
-        if ( rmax && (hits >= rmax)) {
+        if (rmax && (hits >= rmax)) {
             return "spam score exceeded relay threshold";
         }
     };
@@ -183,7 +183,7 @@ function get_spamd_username(config, connection) {
                connection.transaction.notes.spamd_user ||
               'default';
 
-    if ( user === 'vpopmail' ) {    // for per-user SA prefs
+    if (user === 'vpopmail') {    // for per-user SA prefs
         return connection.transaction.rcpt_to[0].address();
     };
     return user;
