@@ -1,25 +1,16 @@
 // validate message headers and some fields
 
-exports.hook_data_post = function (next, connection) {
+exports.register = function () {
     var plugin = this;
-    var config = plugin.config.get('data.headers.ini');
 
-    var errmsg = has_missing_header(plugin, connection, config);
-    if (errmsg) return next(DENY, errmsg);
+    this.register_hook('data_post', 'duplicate_singular');
+    this.register_hook('data_post', 'missing_required');
+    this.register_hook('data_post', 'invalid_date');
+    this.register_hook('data_post', 'invalid');
+};
 
-    errmsg = has_duplicate_singular(plugin, connection, config);
-    if (errmsg) return next(DENY, errmsg);
-
-    errmsg = has_invalid_date(plugin, connection, config);
-    if (errmsg) return next(DENY, errmsg);
-
-    errmsg = has_invalid_header(plugin, connection);
-    if (errmsg) return next(DENY, errmsg);
-
-    return next();
-}
-
-function has_duplicate_singular(plugin, connection, config) {
+exports.duplicate_singular = function(next, connection) {
+    var config = this.config.get('data.headers.ini');
 
     // RFC 5322 Section 3.6, Headers that MUST be unique if present
     var singular = config.main.singular !== 'undefined'
@@ -30,13 +21,16 @@ function has_duplicate_singular(plugin, connection, config) {
 
     for (var i=0, l=singular.length; i < l; i++) {
         if (connection.transaction.header.get_all(singular[i]).length > 1) {
-             return "Only one " + singular[i] + " header allowed. See RFC 5322, Section 3.6";
+             return next(DENY, "Only one " + singular[i]
+                 + " header allowed. See RFC 5322, Section 3.6");
         }
     };
-    return;
+
+    return next();
 };
 
-function has_missing_header(plugin, connection, config) {
+exports.missing_required = function(next, connection) {
+    var config = this.config.get('data.headers.ini');
 
     // Enforce RFC 5322 Section 3.6, Headers that MUST be present
     var required = config.main.required !== 'undefined'
@@ -45,13 +39,14 @@ function has_missing_header(plugin, connection, config) {
 
     for (var i=0, l=required.length; i < l; i++) {
         if (connection.transaction.header.get_all(required[i]).length === 0) {
-            return "Required header '" + required[i] + "' missing";
+            return next(DENY, "Required header '" + required[i] + "' missing");
         }
     }
-    return;
+
+    return next();
 };
 
-function has_invalid_header(plugin, connection) {
+exports.invalid = function(next, connection) {
     // This tests for headers that shouldn't be present
 
     // RFC 5321#section-4.4 Trace Information
@@ -60,10 +55,11 @@ function has_invalid_header(plugin, connection) {
 
     // Return-Path, aka Reverse-PATH, Envelope FROM, RFC5321.MailFrom
     var rp = connection.transaction.header.get('Return-Path');
+    var plugin = this;
     if (rp) {
         if (connection.relaying) {      // On messages we originate
             connection.loginfo(plugin, "invalid Return-Path!");
-            return "outgoing mail must not have a Return-Path header (RFC 5321)";
+            return next(DENY, "outgoing mail must not have a Return-Path header (RFC 5321)");
         }
         else {
             // generally, messages from the internet shouldn't have a
@@ -75,15 +71,17 @@ function has_invalid_header(plugin, connection) {
         };
     };
 
-    // other tests here...
-    return;
+    // other invalid tests here...
+    return next();
 };
 
-function has_invalid_date (plugin, connection, config) {
+exports.invalid_date = function (next, connection) {
+    var plugin = this;
     // Assure Date header value is [somewhat] sane
 
+    var config = this.config.get('data.headers.ini');
     var msg_date = connection.transaction.header.get_all('Date');
-    if (!msg_date || msg_date.length === 0) return;
+    if (!msg_date || msg_date.length === 0) return next();
 
     connection.logdebug(plugin, "message date: " + msg_date);
     msg_date = Date.parse(msg_date);
@@ -98,7 +96,7 @@ function has_invalid_date (plugin, connection, config) {
         // connection.logdebug(plugin, "too future: " + too_future);
         if (msg_date > too_future) {
             connection.loginfo(plugin, "date is newer than: " + too_future );
-            return "The Date header is too far in the future";
+            return next(DENY, "The Date header is too far in the future");
         };
     }
 
@@ -112,9 +110,9 @@ function has_invalid_date (plugin, connection, config) {
         // connection.logdebug(plugin, "too old: " + too_old);
         if (msg_date < too_old) {
             connection.loginfo(plugin, "date is older than: " + too_old);
-            return "The Date header is too old";
+            return next(DENY, "The Date header is too old");
         };
     };
 
-    return;
+    return next();
 };
