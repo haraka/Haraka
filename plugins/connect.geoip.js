@@ -55,12 +55,6 @@ function calculate_distance(plugin, connection, cfg) {
     };
     if (!local_geoip) return;
 
-//  two formulas for calculating Great Circle Distance. Perhaps worth
-//  benchmarking them?
-
-//  var gcd = geodatasource(local_geoip.ll[0], local_geoip.ll[1],
-//      connection.notes.geoip.ll[0], connection.notes.geoip.ll[1]);
-
     var gcd = haversine(local_geoip.ll[0], local_geoip.ll[1],
         connection.notes.geoip.ll[0], connection.notes.geoip.ll[1]);
 
@@ -68,6 +62,8 @@ function calculate_distance(plugin, connection, cfg) {
 };
 
 function haversine(lat1, lon1, lat2, lon2) {
+    // calculate the great circle distance using the haversine formula
+    // found here: http://www.movable-type.co.uk/scripts/latlong.html
     var R = 6371; // km
     function toRad(v) { return v * Math.PI / 180; };
     var dLat = toRad(lat2-lat1);
@@ -82,38 +78,6 @@ function haversine(lat1, lon1, lat2, lon2) {
     return d.toFixed(0);
 }
 
-function geodatasource(lat1, lon1, lat2, lon2) {
-//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-//:::  From: http://www.geodatasource.com/developers/javascript
-//:::                                                                         :::
-//:::  This routine calculates the distance between two points (given the     :::
-//:::  latitude/longitude of those points).
-//:::                                                                         :::
-//:::  Definitions:                                                           :::
-//:::    South latitudes are negative, east longitudes are positive           :::
-//:::                                                                         :::
-//:::  Passed to function:                                                    :::
-//:::    lat1, lon1 = Latitude and Longitude of point 1 (in decimal degrees)  :::
-//:::    lat2, lon2 = Latitude and Longitude of point 2 (in decimal degrees)  :::
-//:::                                                                         :::
-//:::               GeoDataSource.com (C) All Rights Reserved 2014            :::
-//:::                                                                         :::
-//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-
-    var radlat1 = Math.PI * lat1/180;
-    var radlat2 = Math.PI * lat2/180;
-    var radlon1 = Math.PI * lon1/180;
-    var radlon2 = Math.PI * lon2/180;
-    var theta = lon1-lon2;
-    var radtheta = Math.PI * theta/180;
-    var dist = Math.sin(radlat1) * Math.sin(radlat2) + Math.cos(radlat1) * Math.cos(radlat2) * Math.cos(radtheta);
-    dist = Math.acos(dist);
-    dist = dist * 180/Math.PI;
-    dist = dist * 60 * 1.1515;
-    dist = dist * 1.609344;
-    return dist.toFixed(0);
-}
-
 function get_results(connection, cfg) {
     var r = connection.notes.geoip;
     if (!r) return '';
@@ -126,9 +90,9 @@ function get_results(connection, cfg) {
     //    ll: [37.7484, -122.4156]
 
     var show = [ r.country ];
-    if ( r.region && cfg.main.show_region) show.push(r.region);
-    if ( r.city   && cfg.main.show_city  ) show.push(r.city);
-    if ( r.distance && cfg.main.calc_distance ) show.push(r.distance+'km');
+    if (r.region   && cfg.main.show_region  ) show.push(r.region);
+    if (r.city     && cfg.main.show_city    ) show.push(r.city);
+    if (r.distance && cfg.main.calc_distance) show.push(r.distance+'km');
 
     return show.join(', ');
 };
