@@ -18,7 +18,7 @@ Karma can be used to craft custom connection policies such as these examples:
 DESCRIPTION
 -----------------------
 Karma records the number of good, bad, and total connections. When a sender
-has more bad than good connections, they are penalized for *penalty_days*.
+has more bad than good connections, they are penalized for *penalty\_days*.
 Connections from senders in the penalty box are rejected until the penalty
 expires.
 
@@ -55,13 +55,13 @@ KARMA
 ------------------------
 When the connection ends, B<karma> records the result. Mail servers whose
 bad connections exceed good ones are sent to the penalty box. Servers in
-the penalty box are tersely disconnected for *penalty_days*. Here is
+the penalty box are tersely disconnected for *penalty\_days*. Here is
 an example connection from an IP in the penalty box:
 
 If only negative karma is set, desirable mailers will be penalized. For
 example, a Yahoo user sends an egregious spam to a user on our server.
 Now nobody on our server can receive email from that Yahoo server for
-*penalty_days*. This will happen approximately 0% of the time if we also
+*penalty\_days*. This will happen approximately 0% of the time if we also
 set positive karma.
 
 
