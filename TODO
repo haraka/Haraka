@@ -38,6 +38,8 @@ Rename the following plugins
  - clamd        -> data.clamd
  - spamassassin -> data.spamassassin
  - spf          -> mail_from.spf
+ - bounce         -> data.bounce
+ - dnsbl          -> connect.dnsbl
 
 Move the following plugins:
  - test_queue   -> queue/test_queue
