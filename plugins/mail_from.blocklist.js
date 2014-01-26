@@ -1,6 +1,10 @@
 // Block mail from matching anything in the list
 var utils = require('./utils');
 
+exports.register = function () {
+    this.logwarn("NOTICE: plugin deprecated, use 'mail_from.access' instead!");
+}
+
 exports.hook_mail = function (next, connection, params) {
     var mail_from = params[0].address();
     var list = this.config.get('mail_from.blocklist', 'list');
