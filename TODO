@@ -28,6 +28,8 @@ Remove the following deprecated plugins
  - data.rfc5322_header_checks
  - daemonize
  - mail_from.nobounces
+ - mail_from.blocklist
+ - rcpt_to.blocklist
 
 Rename the following plugins
  - toobusy      -> connect.toobusy
