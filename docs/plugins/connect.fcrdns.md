@@ -36,7 +36,7 @@ From WikiPedia: [Forward Confirmed Reverse DNS](http://en.wikipedia.org/wiki/FcR
 2. For each domain name returned in the PTR query results, a regular
    'forward' DNS lookup (type A or AAAA query) is then performed.
 
-3. Any A or AAAA record returned by the second query is then compared
+3. Any A or AAAA records returned by the second query are then compared
    against the original IP address. If there is a match, FCrDNS passes.
 
 
