@@ -26,6 +26,10 @@ spamassassin.ini
 
     `connection.transaction.notes.spamd_user`
 
+    If the value is set to _vpopmail_, then the spamd_user will get set
+    to the first recipient of the message. See the get\_spamd\_user method
+    in the plugin for more details.
+
 - max\_size = N  *optional*
 
     Default: 500000

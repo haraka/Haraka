@@ -193,6 +193,14 @@ function get_spamd_username(config, connection) {
 
     if (user === 'vpopmail') {    // for per-user SA prefs
         return connection.transaction.rcpt_to[0].address();
+
+        // the alternative to choosing the first recipient is passing the
+        // message through SA for each recipient, and then applying the least
+        // strict result to the connection. That is occassionally useful when
+        // one user blacklists a sender that another user wants to get mail
+        // from, and the sender isn't courteous enough to unsubscribe the
+        // first recipient from his penny stock newsletter. If this is
+        // something you care about, fork this and submit a pull request.
     };
     return user;
 };
