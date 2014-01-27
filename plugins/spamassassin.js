@@ -1,6 +1,7 @@
 // Call spamassassin via spamd
 
 var sock = require('./line_socket');
+var prettySize = require('./utils').prettySize;
 
 var defaults = {
     spamd_socket: 'localhost:783',
@@ -17,11 +18,18 @@ exports.hook_data_post = function (next, connection) {
 
     if (msg_too_big(config, connection, plugin)) return next();
 
-    var username = get_spamd_username(config, connection);
-    var headers  = get_spamd_headers(connection, username);
-    var socket   = get_spamd_socket(config, next, connection, plugin);
+    var username =      config.main.spamd_user ||
+                        connection.transaction.notes.spamd_user ||
+                        'default';
+    var headers         = get_spamd_headers(connection, username);
+    var socket          = get_spamd_socket(config, next, connection, plugin);
+    socket.is_connected = false;
+    var results_timeout = parseInt(config.main.results_timeout) || 300;
 
     socket.on('connect', function () {
+        this.is_connected = true;
+        // Reset timeout
+        this.setTimeout(results_timeout * 1000);
         socket.write(headers.join("\r\n"));
         connection.transaction.message_stream.pipe(socket);
     });
@@ -42,7 +50,8 @@ exports.hook_data_post = function (next, connection) {
                 var matches;
                 if (matches = line.match(/Spam: (True|False) ; (-?\d+\.\d) \/ (-?\d+\.\d)/)) {
                     spamd_response.flag = matches[1];
-                    spamd_response.hits = matches[2];
+                    spamd_response.score = matches[2];
+                    spamd_response.hits = matches[2];  // backwards compat
                     spamd_response.reqd = matches[3];
                     spamd_response.flag = spamd_response.flag === 'True' ? 'Yes' : 'No'
                 }
@@ -56,12 +65,11 @@ exports.hook_data_post = function (next, connection) {
             if (m = line.match(/^X-Spam-([ -~]+):\s(.*)/)) {
                 last_header = m[1];
                 spamd_response.headers[m[1]] = m[2];
-                if (m[1] === 'Tests') spamd_response.tests = m[2];
                 return;
             };
             var fold;
             if (last_header && (fold = line.match(/^(\s+.*)/))) {
-                spamd_response.headers[last_header] += fold[1];
+                spamd_response.headers[last_header] += "\r\n" + fold[1];
                 return;
             };
             last_header = '';
@@ -69,8 +77,14 @@ exports.hook_data_post = function (next, connection) {
     });
 
     socket.on('end', function () {
-        // Abort if the connection or transaction are gone
-        if (!connection || (connection && !connection.transaction)) return next();
+        // Abort if the transaction is gone
+        if (!connection.transaction) return next();
+
+        // We have to strip the tests hit from the X-Spam-Status header
+        var tests;
+        if (tests = /tests=([^ ]+)/.exec(spamd_response.headers['Status'].replace(/\r?\n\t/g,''))) {
+            spamd_response.tests = tests[1];
+        }
 
         // do stuff with the results...
         connection.transaction.notes.spamassassin = spamd_response;
@@ -79,39 +93,45 @@ exports.hook_data_post = function (next, connection) {
         do_header_updates(connection, spamd_response, config);
         log_results(connection, plugin, spamd_response, config);
 
-        var exceeds_err = hits_too_high(config, connection, spamd_response);
+        var exceeds_err = score_too_high(config, connection, spamd_response);
         if (exceeds_err) return next(DENY, exceeds_err);
 
-        munge_subject(connection, config, spamd_response.hits);
+        munge_subject(connection, config, spamd_response.score);
 
         return next();
     });
 };
 
 exports.fixup_old_headers = function (action, transaction) {
-    var headers = ['X-Spam-Flag', 'X-Spam-Status', 'X-Spam-Level'];
+    var headers = transaction.notes.spamassassin.headers;
 
     switch (action) {
-        case "keep": return;
-        case "drop": for (var key in headers) { transaction.remove_header(key) }
-                     break;
+        case "keep":
+            return;
+        case "drop":
+            for (var key in headers) {
+                key = 'X-Spam-' + key;
+                transaction.remove_header(key)
+            }
+            break;
         case "rename":
         default:
-                     for (var key in headers) {
-                         var old_val = transaction.header.get(key);
-                         if (old_val) {
-                             transaction.header.remove_header(key);
-                             transaction.header.add_header(key.replace(/X-/, 'X-Old-'), old_val);
-                         }
-                     }
-                     break;
+            for (var key in headers) {
+                var key = 'X-Spam-' + key;
+                var old_val = transaction.header.get(key);
+                if (old_val) {
+                    transaction.header.remove_header(key);
+                    transaction.header.add_header(key.replace(/^X-/, 'X-Old-'), old_val);
+                }
+            }
+            break;
     }
 }
 
-function munge_subject(connection, config, hits) {
+function munge_subject(connection, config, score) {
     var munge = config.main.munge_subject_threshold;
     if (!munge) return;
-    if (parseFloat(hits) < parseFloat(munge)) return;
+    if (parseFloat(score) < parseFloat(munge)) return;
 
     var subj = connection.transaction.header.get('Subject');
     var subject_re = new RegExp('^' + config.main.subject_prefix);
@@ -134,37 +154,34 @@ function setup_defaults(config) {
 };
 
 function do_header_updates(connection, spamd_response, config) {
-
     if (spamd_response.flag === 'Yes') {
-        connection.transaction.add_header('X-Spam-Flag', 'YES');
+        // X-Spam-Flag is added by SpamAssassin
         connection.transaction.remove_header('precedence');
         connection.transaction.add_header('Precedence', 'junk');
     }
 
     Object.keys(spamd_response.headers).forEach(function(key) {
         var modern = config.main.modern_status_syntax;
-        // connection.logdebug("modern: "+modern);
-
-        if (key === 'Status' && (!modern || modern === undefined)) {
-            var legacy = spamd_response.headers[key].replace(/score/,'hits');
-            connection.transaction.add_header('X-Spam-Status', legacy + ' tests=' + spamd_response.tests);
+        if (key === 'Status' && !modern) {
+            var legacy = spamd_response.headers[key].replace(/ score=/,' hits=');
+            connection.transaction.add_header('X-Spam-Status', legacy);
             return;
         };
         connection.transaction.add_header('X-Spam-' + key, spamd_response.headers[key]);
     });
 };
 
-function hits_too_high(config, connection, spamd_response) {
-    var hits = spamd_response.hits;
+function score_too_high(config, connection, spamd_response) {
+    var score = spamd_response.score;
     if (connection.relaying) {
         var rmax = config.main.relay_reject_threshold;
-        if (rmax && (hits >= rmax)) {
+        if (rmax && (score >= rmax)) {
             return "spam score exceeded relay threshold";
         }
     };
 
     var max = config.main.reject_threshold;
-    if (max && (hits >= max)) {
+    if (max && (score >= max)) {
         return "spam score exceeded threshold";
     }
 
@@ -186,26 +203,8 @@ function get_spamd_headers(connection, username) {
     return headers;
 };
 
-function get_spamd_username(config, connection) {
-     var user = config.main.spamd_user ||
-               connection.transaction.notes.spamd_user ||
-              'default';
-
-    if (user === 'vpopmail') {    // for per-user SA prefs
-        return connection.transaction.rcpt_to[0].address();
-
-        // the alternative to choosing the first recipient is passing the
-        // message through SA for each recipient, and then applying the least
-        // strict result to the connection. That is occassionally useful when
-        // one user blacklists a sender that another user wants to get mail
-        // from, and the sender isn't courteous enough to unsubscribe the
-        // first recipient from his penny stock newsletter. If this is
-        // something you care about, fork this and submit a pull request.
-    };
-    return user;
-};
-
 function get_spamd_socket(config, next, connection, plugin) {
+    // TODO: support multiple spamd backends
     var socket = new sock.Socket();
     if (config.main.spamd_socket.match(/\//)) {    // assume unix socket
         socket.connect(config.main.spamd_socket);
@@ -215,16 +214,23 @@ function get_spamd_socket(config, next, connection, plugin) {
         socket.connect((hostport[1] || 783), hostport[0]);
     }
 
-    socket.setTimeout(300 * 1000);
+    var connect_timeout = parseInt(config.main.connect_timeout) || 30;
+    socket.setTimeout(connect_timeout * 1000);
 
     socket.on('timeout', function () {
-        connection.logerror(plugin, "spamd connection timed out");
+        if (!this.is_connected) {
+            connection.logerror(plugin, 'connection timed out');
+        }
+        else {
+            connection.logerror(plugin, 'timeout waiting for results');
+        }
         socket.end();
         return next();
     });
     socket.on('error', function (err) {
-        connection.logerror(plugin, "spamd connection failed: " + err);
-        // don't deny on error - maybe another plugin can deliver
+        connection.logerror(plugin, 'connection failed: ' + err);
+        // TODO: optionally DENYSOFT
+        // TODO: add a transaction note
         return next();
     });
     return socket;
@@ -233,10 +239,10 @@ function get_spamd_socket(config, next, connection, plugin) {
 function msg_too_big(config, connection, plugin) {
     if (!config.main.max_size) return false;
 
-    var msg_mb = connection.transaction.data_bytes / (1024 * 1024); // to MB
-    var max_mb= config.main.max_size / (1024 * 1024);
-    if (msg_mb > max_mb) {
-        connection.loginfo(plugin, 'skipping, size (' + bytes.toFixed(2) + 'MB) exceeds max: ' + max);
+    var size = connection.transaction.data_bytes;
+    var max = config.main.max_size;
+    if (size > max) {
+        connection.loginfo(plugin, 'skipping, size ' + prettySize(size) + ' exceeds max: ' + prettySize(max));
         return true;
     }
     return false;
@@ -244,7 +250,7 @@ function msg_too_big(config, connection, plugin) {
 
 function log_results(connection, plugin, spamd_response, config) {
     connection.loginfo(plugin, "status=" + spamd_response.flag
-        + ', hits=' + spamd_response.hits
+        + ', score=' + spamd_response.score
         + ', required=' + spamd_response.reqd
         + ', reject=' + ((connection.relaying)
              ? (config.main.relay_reject_threshold || config.main.reject_threshold)
