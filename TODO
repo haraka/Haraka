@@ -16,6 +16,11 @@ Outbound improvements
  - Disable deliveries for a domain
  - Pool connections by domain/MX
 
+Plugin behavior changes
+ - in SpamAssassin plugin, change default behavior of 'legacy' status header.
+   Presently, when undefined, legacy is used. Legacy support should be changed to
+   only when requested, with a sunset date.
+
 Remove the following deprecated plugins
  - rdns.regexp
  - data.nomsgid
