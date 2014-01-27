@@ -120,8 +120,8 @@ exports.fixup_old_headers = function (action, transaction) {
                 var key = 'X-Spam-' + key;
                 var old_val = transaction.header.get(key);
                 if (old_val) {
-                    transaction.header.remove_header(key);
-                    transaction.header.add_header(key.replace(/^X-/, 'X-Old-'), old_val);
+                    transaction.remove_header(key);
+                    transaction.add_header(key.replace(/^X-/, 'X-Old-'), old_val);
                 }
             }
             break;
