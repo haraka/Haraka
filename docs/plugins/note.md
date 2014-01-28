@@ -120,11 +120,11 @@ after each update.
 
 The default location is:
 
-    connection.note.plugin_name
+    connection.notes.plugin_name
 
 When the txn=true setting is used, the note is stored at:
 
-    connection.transaction.note.plugin_name
+    connection.transaction.notes.plugin_name
 
 The location of the note can be altered by setting plugin.note\_name before
 initializing the note.
