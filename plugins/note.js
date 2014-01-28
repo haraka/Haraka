@@ -1,6 +1,11 @@
 // note.js
 
 // see docs in docs/plugin/note.md
+var append_lists = ['msg','pass','fail','skip','err'];
+var overwrite_lists = ['hide','order'];
+var log_opts     = ['human','emit'];
+var init_opts    = ['conn','txn','plugin'];
+var all_opts     = append_lists.concat(overwrite_lists, log_opts, init_opts);
 
 exports.note = function (obj) {
     if (!validate_obj(obj)) throw("invalid obj!");
@@ -11,21 +16,20 @@ exports.note = function (obj) {
     var note = find_note(conn, name);
 
     // these are arrays each invocation appends to
-    ['pass','fail','msg','skip','err'].forEach(function(key) {
-        if (obj[key]) {
-            note[key].push(obj[key]);
-        }
+    append_lists.forEach(function(key) {
+        if (!obj[key]) return;
+        note[key].push(obj[key]);
     });
 
     // these arrays are overwritten when passed
-    ['hide','order'].forEach(function(key) {
-        if (obj[key]) note[key] = obj[key];
+    overwrite_lists.forEach(function(key) {
+        if (!obj[key]) return;
+        note[key] = obj[key];
     });
 
     // anything else is an arbitrary key/val to store
-    var internal = ['conn','txn','plugin','pass','fail','skip','msg','err','hide','order','human','emit'];
     Object.keys(obj).forEach(function (key) {
-        if (internal.indexOf(key) !== -1) return; // weed out 'notes' keys
+        if (all_opts.indexOf(key) !== -1) return; // weed out 'notes' keys
         // conn.logdebug(pi, 'setting ' + key + ' to ' + obj[key]);
         note[key] = obj[key];            // save the rest
     });
@@ -46,15 +50,14 @@ exports.note_collate = function (note) {
     var r = [];
 
     // anything not predefined in the note was purposeful, show it first
-    var internal = ['pass','fail','skip','err','msg','hide','order','human','txn','emit'];
     Object.keys(note).forEach(function (key) {
-        if (internal.indexOf(key) !== -1) return;
+        if (all_opts.indexOf(key) !== -1) return;
         if (note.hide && note.hide.length && note.hide.indexOf(key) !== -1) return;
         r.push(key + ': ' + note[key]);
     });
 
     // and then supporting information
-    var array = ['msg','pass','fail','skip','err'];
+    var array = append_lists;
     if (note.order && note.order.length) { array = note.order; }
     array.forEach(function (key) {
         if (!note[key] || note[key] === undefined) return; // overrode note_init
@@ -94,7 +97,7 @@ exports.note_init = function (obj) {
 };
 
 function get_note_name(plugin) {
-    // todo, allow overrides
+    // allows custom note name setting plugin.note_name in caller
     if (plugin.note_name !== undefined) return plugin.note_name;
     return plugin.name;
 }
