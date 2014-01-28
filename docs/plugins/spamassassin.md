@@ -24,7 +24,13 @@ spamassassin.ini
 
     You can also pass this value in dynamically by setting:
 
-    `connection.transaction.notes.spamd_user` in another plugin.
+    1. `connection.transaction.notes.spamd_user` in another plugin.
+
+    2. The special username: _first-recipient_. The first envelope recipient
+       will be used as the username.
+
+    3. the special username _all-recipients_ may eventually be supported. See
+       the get_spamd_username function in the plugin.
 
 - max\_size = N  *optional*
 

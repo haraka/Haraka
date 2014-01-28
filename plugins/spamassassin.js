@@ -18,9 +18,7 @@ exports.hook_data_post = function (next, connection) {
 
     if (msg_too_big(config, connection, plugin)) return next();
 
-    var username =      config.main.spamd_user ||
-                        connection.transaction.notes.spamd_user ||
-                        'default';
+    var username        = get_spamd_username(config, connection);
     var headers         = get_spamd_headers(connection, username);
     var socket          = get_spamd_socket(config, next, connection, plugin);
     socket.is_connected = false;
@@ -188,6 +186,27 @@ function score_too_high(config, connection, spamd_response) {
     return;
 }
 
+function get_spamd_username(config, connection) {
+    
+    var user = connection.transaction.notes.spamd_user;  // 1st priority
+    if (user && user !== undefined) return user;
+
+    if (!config.main.spamd_user) return 'default';   // when not defined
+    user = config.main.spamd_user;
+
+    // Enable per-user SA prefs
+    if (user === 'first-recipient') {                // special cases
+        return connection.transaction.rcpt_to[0].address();
+    }
+    if (user === 'all-recipients') {
+        // TODO: pass the message through SA for each recipient. Then apply
+        // the least strict result to the connection. That is useful when
+        // one user blacklists a sender that another user wants to get mail
+        // from. If this is something you care about, this is the spot.
+    }
+    return user;
+}
+
 function get_spamd_headers(connection, username) {
     // http://svn.apache.org/repos/asf/spamassassin/trunk/spamd/PROTOCOL
     var headers = [
@@ -201,7 +220,7 @@ function get_spamd_headers(connection, username) {
         headers.push('X-Haraka-Relay: true');
     }
     return headers;
-};
+}
 
 function get_spamd_socket(config, next, connection, plugin) {
     // TODO: support multiple spamd backends
