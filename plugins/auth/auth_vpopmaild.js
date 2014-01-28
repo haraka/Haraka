@@ -56,11 +56,12 @@ exports.try_auth_vpopmaild = function (connection, user, passwd, cb) {
             }
         }
         if (line.match(/^\-ERR/)) {   // auth failed
-            // socket.write("quit\n\r"); // DANGER! This returns '+OK'
-            socket.end();
+            // DANGER, do not say 'goodbye' to the server with "quit\n\r". The
+            // server will respond '+OK', which could be mis-interpreted as an
+            // auth response.
+            socket.end();             // disconnect
         }
     });
-    // socket.on('close', function () { });
     socket.on('end', function () {
         connection.loginfo(plugin, 'AUTH user="' + user + '" success=' + auth_success);
         return cb(auth_success);
