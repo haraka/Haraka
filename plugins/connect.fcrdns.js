@@ -9,6 +9,7 @@ var reject_invalid_tld = 0;
 var reject_generic_rdns = 0;
 
 exports.register = function() {
+    this.note_name = 'fcrdns';
     this.inherits('note');
 };
 
@@ -29,21 +30,23 @@ function apply_config (cfg, connection) {
 }
 
 exports.hook_lookup_rdns = function (next, connection) {
-    this.note_init({conn: connection, plugin: this});
-    connection.notes.fcrdns.fcrdns = []; // rDNS names that verify to this IP
-    connection.notes.fcrdns.invalid_tlds = []; // rDNS names with invalid TLDs
-    connection.notes.fcrdns.other_ips = []; // IPs from names that didn't match
+    this.note_init({conn: connection, plugin: this, hide: ['ptr_name_to_ip']});
+    connection.notes.fcrdns.fcrdns = [];
+    connection.notes.fcrdns.invalid_tlds = [];
+    connection.notes.fcrdns.other_ips = [];
 
-/*
-    connection.notes.fcrdns = {
+/*  connection.notes.fcrdns = {
+        fcrdns: []               // PTR host names that resolve to this IP
+        invalid_tlds: []         // rDNS names with invalid TLDs
+        other_ips: []            // IPs from names that didn't match
         ptr_names: [],           // Array of host names from PTR query
         ptr_name_to_ip: {},      // host names and their IP addresses
         has_rdns: false,         // does IP have PTR records?
         ptr_name_has_ips: false, // PTR host has IP address(es)
         ptr_multidomain: false,  // Multiple host names in different domains
         err: [],                 // errors encountered (including timeouts)
-    };
-*/
+    }; */
+
     var cfg = this.config.get('connect.fcrdns.ini');
     apply_config(cfg, connection);
 
@@ -58,7 +61,7 @@ exports.hook_lookup_rdns = function (next, connection) {
     };
 
     // Set-up timer
-    var timeout = config.main.disconnect_timeout || 30;
+    var timeout = cfg.main.disconnect_timeout || 30;
     timer = setTimeout(function () {
         plugin.note({conn: connection, err: 'timeout', emit: true});
         if (reject_no_rdns) {
@@ -68,8 +71,8 @@ exports.hook_lookup_rdns = function (next, connection) {
     }, timeout * 1000);
 
     dns.reverse(connection.remote_ip, function (err, ptr_names) {
-        connection.logdebug(plugin, 'lookup: ' + connection.remote_ip);
-        if (err) return plugin.handle_ptr_error(err, do_next);
+        connection.logdebug(plugin, 'rdns lookup: ' + connection.remote_ip);
+        if (err) return plugin.handle_ptr_error(connection, err, do_next);
 
         plugin.note({conn: connection, ptr_names: ptr_names});
 
@@ -150,18 +153,18 @@ exports.hook_data_post = function (next, connection) {
     return next();
 };
 
-exports.handle_ptr_error = function(err, do_next) {
+exports.handle_ptr_error = function(connection, err, do_next) {
     switch (err.code) {
         case 'ENOTFOUND':
         case dns.NOTFOUND:
         case dns.NXDOMAIN:
-            plugin.note({conn: connection, fail: 'has_rdns', msg: err.code, emit: true});
+            this.note({conn: connection, fail: 'has_rdns', msg: err.code, emit: true});
             if (reject_no_rdns) {
                 return do_next(DENY, 'client [' + connection.remote_ip + '] rejected; no rDNS entry found');
             }
             return do_next();
         default:
-            plugin.note({conn: connection, err: err, emit: true});
+            this.note({conn: connection, err: err, emit: true});
             if (reject_no_rdns) {
                 return do_next(DENYSOFT, 'client [' + connection.remote_ip + '] rDNS lookup error (' + err + ')');
             }
@@ -262,8 +265,8 @@ exports.log_summary = function (connection) {
 
     connection.loginfo(this,
         ['ip=' + connection.remote_ip,
-        'rdns="' + ((note.name.length > 2) ? note.name.slice(0,2).join(',') + '...' : note.name.join(',')) + '"',
-        'rdns_len=' + note.name.length,
+        'rdns="' + ((note.ptr_names.length > 2) ? note.ptr_names.slice(0,2).join(',') + '...' : note.ptr_names.join(',')) + '"',
+        'rdns_len=' + note.ptr_names.length,
         'fcrdns="' + ((note.fcrdns.length > 2) ? note.fcrdns.slice(0,2).join(',') + '...' : note.fcrdns.join(',')) + '"',
         'fcrdns_len=' + note.fcrdns.length,
         'other_ips_len=' + note.other_ips.length,
