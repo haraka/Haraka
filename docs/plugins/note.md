@@ -114,3 +114,17 @@ A note must be passed in.
 Formats the contents of the note object, saves them to the 'human' note
 property and returns them. This method is called internally by *note*
 after each update.
+
+
+## Where is the note stored?
+
+The default location is:
+
+    connection.note.plugin_name
+
+When the txn=true setting is used, the note is stored at:
+
+    connection.transaction.note.plugin_name
+
+The location of the note can be altered by setting plugin.note\_name before
+initializing the note.
