@@ -3,7 +3,6 @@
 - Create a config file for each of the core shipping configs, so people have something as a baseline
 - IMAP server (long shot for now)
 - Plugins to copy from Qpsmtpd:
-  - bogus_bounce (checks bounces have one recipient and no return-path)
   - dspam
   - greylisting
   - virus/*
@@ -17,12 +16,18 @@ Outbound improvements
  - Disable deliveries for a domain
  - Pool connections by domain/MX
 
+Plugin behavior changes
+ - in SpamAssassin plugin, change default behavior of 'legacy' status header.
+   Presently, when undefined, legacy is used. Legacy support should be changed to
+   only when requested, with a sunset date.
+
 Remove the following deprecated plugins
  - rdns.regexp
  - data.nomsgid
  - data.noreceived
  - data.rfc5322_header_checks
  - daemonize
+ - mail_from.nobounces
 
 Rename the following plugins
  - toobusy      -> connect.toobusy

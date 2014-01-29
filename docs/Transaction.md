@@ -19,7 +19,7 @@ The value of the MAIL FROM command as an `Address` object.
 
 An Array of `Address` objects of recipients from the RCPT TO command.
 
-* transaction.message_stream
+* transaction.message\_stream
 
 A node.js Readable Stream object for the message. 
 
@@ -48,7 +48,7 @@ e.g.
 
 The number of bytes in the email after DATA.
 
-* transaction.add_data(line)
+* transaction.add\_data(line)
 
 Adds a line of data to the email. Note this is RAW email - it isn't useful
 for adding banners to the email.
@@ -57,16 +57,16 @@ for adding banners to the email.
 
 A safe place to store transaction specific values.
 
-* transaction.add_leading_header(key, value)
+* transaction.add\_leading\_header(key, value)
 
 Adds a header to the top of the header list.  This should only be used in
-very specific cases.  Most people will want to use add_header() instead.
+very specific cases.  Most people will want to use `add_header()` instead.
 
-* transaction.add_header(key, value)
+* transaction.add\_header(key, value)
 
 Adds a header to the email.
 
-* transaction.remove_header(key)
+* transaction.remove\_header(key)
 
 Deletes a header from the email.
 
@@ -74,16 +74,16 @@ Deletes a header from the email.
 
 The header of the email. See `Header Object`.
 
-* transaction.parse_body = true|false [default: false]
+* transaction.parse\_body = true|false [default: false]
 
 Set to `true` to enable parsing of the mail body. Make sure you set this in
-hook_data or before.
+hook\_data or before.
 
 * transaction.body
 
 The body of the email if you set `parse_body` above. See `Body Object`.
 
-* transaction.attachment_hooks(start)
+* transaction.attachment\_hooks(start)
 
 Sets a callback for when we see an attachment if `parse_body` has been set.
 
@@ -132,15 +132,15 @@ the `tmp` library from npm and tells us the size of the file:
         });
     }
 
-* transaction.discard_data = true|false [default: false]
+* transaction.discard\_data = true|false [default: false]
 
 Set this flag to true to discard all data as it arrives and not store in
-memory or on disk (in the message_stream property). You can still access
-the attachments and body if you set parse_body to true. This is useful
+memory or on disk (in the message\_stream property). You can still access
+the attachments and body if you set parse\_body to true. This is useful
 for systems which do not need the full email, just the attachments or
 mail text.
 
-* transaction.set_banner(text, html)
+* transaction.set\_banner(text, html)
 
 Sets a banner to be added to the end of the email. If the html part is not
 given (optional) then the text part will have each line ending replaced with

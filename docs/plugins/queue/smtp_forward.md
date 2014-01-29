@@ -1,4 +1,4 @@
-queue/smtp_forward
+queue/smtp\_forward
 ==================
 
 This plugin delivers to another mail server. This is a common setup when you
@@ -14,7 +14,7 @@ filtering that the ongoing mail server may provide.
 Configuration
 -------------
 
-* smtp_forward.ini
+* smtp\_forward.ini
   
   Configuration is stored in this file in the following keys:
   
@@ -26,7 +26,7 @@ Configuration
     
     The port to connect to.
  
-  * connect_timeout=SECONDS
+  * connect\_timeout=SECONDS
 
     The maximum amount of time to wait when creating a new connection
     to the host.  Default if unspecified is 30 seconds.
@@ -37,11 +37,11 @@ Configuration
     connection pool.  This should always be less than the global plugin
     timeout, which should in turn be less than the connection timeout.
 
-  * max_connections=NUMBER
+  * max\_connections=NUMBER
    
     Maximum number of connections to create at any given time.
 
-  * enable_tls=[true|yes|1]
+  * enable\_tls=[true|yes|1]
 
     Enable TLS with the forward host (if supported)
 

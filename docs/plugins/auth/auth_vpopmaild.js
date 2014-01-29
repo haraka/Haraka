@@ -1,4 +1,4 @@
-auth/auth_vpopmaild
+auth/auth\_vpopmaild
 ==============
 
 The `auth/vpopmaild` plugin allows you to authenticate against a vpopmaild

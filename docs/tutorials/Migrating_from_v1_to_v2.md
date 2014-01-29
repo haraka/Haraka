@@ -28,7 +28,7 @@ Secondly, if you parse the mail body, attachments are now provided as a
 stream, rather than custom start/data/end events. To find if this is relevant
 for you, look for instances of `attachment_hooks` in your plugins.
 
-Fixing data_lines plugins
+Fixing data\_lines plugins
 -------------------------
 
 Any plugins now working on each line of data will need to change to using a
@@ -81,7 +81,7 @@ your own writable stream and then pipe the message to the stream and then
 extract the lines from the stream of data.  See `plugins/dkim_sign.js` for 
 an example. 
 
-Fixing attachment_hooks plugins
+Fixing attachment\_hooks plugins
 -------------------------------
 
 For v1.x you passed in functions to `transaction.attachment_hooks()` as

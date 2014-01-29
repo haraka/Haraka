@@ -123,10 +123,10 @@ on the deny hook will override the result to CONT.
   Once a plugin calls next(OK) no further plugins on the same hook will 
 run after it.
 
-* HOOK_NEXT
+* HOOK\_NEXT
 
   This is a special return value that is currently only available on the
-unrecognized_command hook.  It instructs Haraka to run a different plugin
+`unrecognized_command` hook.  It instructs Haraka to run a different plugin
 hook instead of responding normally.  The `msg` argument is required and
 must be set to the name of the hook that is to be run.
 
@@ -136,12 +136,12 @@ Available Hooks
 
 These are just the name of the hook, with any parameter sent to it:
 
-* init_master - called when the main (master) process is started
-* init_child - called whenever a child process is started when using multiple "nodes"
-* lookup_rdns - called to look up the rDNS - return the rDNS via `next(OK, rdns)`
+* init\_master - called when the main (master) process is started
+* init\_child - called whenever a child process is started when using multiple "nodes"
+* lookup\_rdns - called to look up the rDNS - return the rDNS via `next(OK, rdns)`
 * connect - called after we got rDNS
 * capabilities - called to get the ESMTP capabilities (such as STARTTLS)
-* unrecognized_command - called when the remote end sends a command we don't recognise
+* unrecognized\_command - called when the remote end sends a command we don't recognise
 * disconnect - called upon disconnect
 * helo (hostname)
 * ehlo (hostname)
@@ -151,20 +151,20 @@ These are just the name of the hook, with any parameter sent to it:
 * rset
 * mail ([from, esmtp\_params])
 * rcpt ([to,   esmtp\_params])
-* rcpt_ok (to)
+* rcpt\_ok (to)
 * data - called at the DATA command
-* data_post - called at the end-of-data marker
-* max_data_exceeded - called if the message is bigger than connection.max_bytes
+* data\_post - called at the end-of-data marker
+* max\_data\_exceeded - called if the message is bigger than connection.max\_bytes
 * queue - called to queue the mail
-* queue_outbound - called to queue the mail when connection.relaying is set
-* queue_ok - called when a mail has been queued successfully
-* reset_transaction - called before the transaction is reset (via RSET, or MAIL)
+* queue\_outbound - called to queue the mail when connection.relaying is set
+* queue\_ok - called when a mail has been queued successfully
+* reset\_transaction - called before the transaction is reset (via RSET, or MAIL)
 * deny - called if a plugin returns one of DENY, DENYSOFT or DENYDISCONNECT
-* get_mx (hmail, domain) - called when sending outbound mail to lookup the MX record
+* get\_mx (hmail, domain) - called when sending outbound mail to lookup the MX record
 * bounce (hmail, err) - called when sending outbound mail if the mail would bounce
 * delivered (hmail, [host, ip, response, delay]) - callen when outbound mail is 
 delivered to the destination
-* send_email (hmail) - called when outbound is about to be sent
+* send\_email (hmail) - called when outbound is about to be sent
 
 The `rcpt` hook is slightly special. If we have a plugin (prior to rcpt) that
 sets the `connection.relaying = true` flag, then we do not need any rcpt
@@ -176,7 +176,7 @@ obvious choice for this activity is the `rcpt_to.in_host_list` plugin, which
 lists the domains for which you wish to receive email.
 
 If a rcpt plugin DOES call `next(OK)` then the `rcpt_ok` hook is run. This
-is primarily used by the queue/smtp_proxy plugin which needs to run after
+is primarily used by the `queue/smtp_proxy` plugin which needs to run after
 all rcpt hooks.
 
 Sharing State
@@ -204,7 +204,7 @@ plugins.  This is done using `notes` - there are three types available:
 * connection.transaction.notes
 
   Available on any hook that passes 'connection' as a function parameter
-  between hook_mail and hook_data_post.
+  between hook\_mail and hook\_data\_post.
   This is shared amongst all plugins for this transaction (e.g. MAIL FROM
   through until a message is received or the connection is reset).
   Typical uses for notes at this level would be to store information

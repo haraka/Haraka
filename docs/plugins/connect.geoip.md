@@ -37,16 +37,16 @@ be the IP that Haraka is bound to, but if not you'll need to supply it.
 Perform the geodesic distance calculations. Calculates the distance "as the
 crow flies" from the remote mail server.
 
-- public_ip: <IP Address>
+- public\_ip: <IP Address>
 
 The IP address to calculate the distance from. This will typically be
 the public IP of your mail server.
 
-- show_city
+- show\_city
 
 show city data in logs and headers. City data is less accurate than country.
 
-- show_region in logs and headers. Regional data are US states, Canadian
+- show\_region in logs and headers. Regional data are US states, Canadian
   provinces and such.
 
 

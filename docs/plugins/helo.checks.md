@@ -19,32 +19,32 @@ Configuration
 
   INI file which controls enabling of certain checks:
 
-    * check_no_dot=1
+    * check\_no\_dot=1
     
       Checks that the HELO has at least one '.' in it.
     
-    * check_raw_ip=1
+    * check\_raw\_ip=1
     
       Checks for HELO <IP> where the IP is not surrounded by square brackets.
       This is an RFC violation so should always be enabled.
    
-    * check_dynamic=1
+    * check\_dynamic=1
 
       Checks to see if all or part the connecting IP address appears within 
       the HELO argument to indicate that the client has a dynamic IP address.
     
-    * check_literal_mismatch=1|2
+    * check\_literal\_mismatch=1|2
 
       Checks to see if the IP literal used matches the connecting IP address.
       If set to 1, the full IP must match.  If set to 2, the /24 must match.
 
-    * require_valid_tld=1
+    * require\_valid\_tld=1
 
       Requires the HELO argument ends in a valid TLD if it is not an IP literal.
 
-    * skip_private_ip=1
+    * skip\_private\_ip=1
 
-      Bypasses check_no_dot, check_raw_ip, check_dynamic and require_valid_tld 
+      Bypasses check\_no\_dot, check\_raw\_ip, check\_dynamic and require\_valid\_tld 
       for clients within RFC1918, Loopback or APIPA IP address ranges.
 
     * [bigco]

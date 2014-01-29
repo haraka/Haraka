@@ -166,3 +166,10 @@ exports.indexOfLF = function (buf, maxlength) {
     }
     return -1;
 }
+
+exports.prettySize = function (size) {
+    if (size === 0 || !size) return 0;
+    var i = Math.floor(Math.log(size)/Math.log(1024));
+    var units = ['B', 'kB', 'MB', 'GB', 'TB'];
+    return (size/Math.pow(1024,i)).toFixed(2) * 1 + '' + units[i];
+}

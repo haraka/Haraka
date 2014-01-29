@@ -13,7 +13,7 @@ Configuration
 
 ### clamd.ini
 
-* clamd_socket                                  (default: localhost:3310)
+* clamd\_socket                                  (default: localhost:3310)
 
   ip.ip.ip.ip:port, [ipv6::literal]:port, host:port or /path/to/socket of
   the clamd daemon to send the message to for scanning.
@@ -27,13 +27,13 @@ Configuration
   a temporary failure.
 
 
-* randomize_host_order                          (default: false)
+* randomize\_host\_order                          (default: false)
 
   If this is set then the list of hosts with be randomized before a 
   connection is attempted.
 
 
-* only_with_attachment                          (default: 0)
+* only\_with\_attachment                          (default: 0)
 
   Set this option to only scan messages that contain non-textual 
   attachments.  This is a performance optimization, however it will
@@ -41,7 +41,7 @@ Configuration
   or HTML messages.
 
 
-* connect_timout                                (default: 10)
+* connect\_timout                                (default: 10)
 
   Timeout connection to host after this many seconds.  A timeout will
   cause the next host in the list to be tried.  Once all hosts have 
@@ -55,7 +55,7 @@ Configuration
   with a tempoary failure.
 
 
-* max_size                                      (default: 26214400)
+* max\_size                                      (default: 26214400)
 
   The maximum size of message that should be sent to clamd in bytes.
   This option should not be larger than the StreamMaxLength value in

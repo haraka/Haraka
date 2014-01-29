@@ -33,7 +33,7 @@ Configuration
 
 This plugin looks for 'quarantine.ini' in the config directory.  
 
-* quarantine_path                   (default: /var/spool/haraka/quarantine)
+* quarantine\_path                   (default: /var/spool/haraka/quarantine)
 
   The default base path to save the quarantine files to.  It will be created
   if it does not already exist.

@@ -14,12 +14,12 @@ Returns the header with the name `key`. If there are multiple headers with
 the given name (as is usually the case with "Received" for example) they will
 be concatenated together with "\n".
 
-* header.get_all(key)
+* header.get\_all(key)
 
 Returns the headers with the name `key` as an array. Multi-valued headers
 will have multiple entries in the array.
 
-* header.get_decoded(key)
+* header.get\_decoded(key)
 
 Works like `get(key)`, only it gives you headers decoded from any MIME encoding
 they may have used.

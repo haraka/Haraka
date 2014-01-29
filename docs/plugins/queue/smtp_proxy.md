@@ -1,4 +1,4 @@
-queue/smtp_proxy
+queue/smtp\_proxy
 ================
 
 This plugin delivers to another mail server. This is a common setup when you
@@ -15,7 +15,7 @@ have as many connections to your ongoing SMTP server as you have to Haraka.
 Configuration
 -------------
 
-* smtp_proxy.ini
+* smtp\_proxy.ini
   
   Configuration is stored in this file in the following keys:
   
@@ -27,7 +27,7 @@ Configuration
     
     The port to connect to.
 
-  * connect_timeout=SECONDS
+  * connect\_timeout=SECONDS
 
     The maximum amount of time to wait when creating a new connection
     to the host.  Default if unspecified is 30 seconds.
@@ -38,11 +38,11 @@ Configuration
     proxy pool.  This should always be less than the global plugin timeout,
     which should in turn be less than the connection timeout.
 
-  * max_connections=NUMBER
+  * max\_connections=NUMBER
     
     Maximum number of connections to create at any given time.
 
-  * enable_tls=[true|yes|1]
+  * enable\_tls=[true|yes|1]
  
     Enable TLS with the forward host (if supported)
 

@@ -20,13 +20,13 @@ process with the SIGHUP signal (via the `kill` command line tool).
 Outbound Configuration Files
 ----------------------------
 
-### outbound.concurrency_max
+### outbound.concurrency\_max
 
 Default: 100. Specifies the maximum concurrent connections to make. Note that
 if using cluster (multiple CPUs) then this will be multiplied by the number
 of CPUs that you have.
 
-### outbound.enable_tls
+### outbound.enable\_tls
 
 Default: 0. Put a "1" in this file to enable TLS for outbound mail when the
 remote end is capable of receiving TLS connections.
@@ -35,7 +35,7 @@ This uses the same `tls_key.pem` and `tls_cert.pem` files that the `tls`
 plugin uses. See the plugin documentation for information on generating those
 files.
 
-### outbound.bounce_message
+### outbound.bounce\_message
 
 See "Bounce Messages" below for details.
 
@@ -48,7 +48,7 @@ how Haraka watches for config file changes.
 Outbound Mail Hooks
 -------------------
 
-### The queue_outbound hook
+### The queue\_outbound hook
 
 The first hook that is called prior to queueing an outbound mail is the
 `queue_outbound` hook. Only if all these hooks return `CONT` (or if there are
@@ -57,7 +57,7 @@ indicate that the mail has been queued in some custom manner for outbound
 delivery. Any of the `DENY` return codes will cause the message to be
 appropriately rejected.
 
-### The get_mx hook
+### The get\_mx hook
 
 Upon starting delivery the `get_mx` hook is called, with the parameter set to
 the domain in question (for example a mail to `user@example.com` will call the
@@ -86,7 +86,7 @@ parameter is the error message received from the remote end. If you do not wish
 to have a bounce message sent to the originating sender of the email then you
 can return `OK` from this hook to stop it from sending a bounce message.
 
-The variable hmail.bounce_extra can be accessed from this hook.  This is an 
+The variable `hmail.bounce_extra` can be accessed from this hook.  This is an 
 Object which contains each recipient as the key and the value is the code 
 and response received from the upstream server for that recipient.
 

@@ -1,4 +1,4 @@
-auth/auth_ldap
+auth/auth\_ldap
 ==============
 
 The `auth/auth_ldap` plugin uses an LDAP bind to authenticate a user. Currently

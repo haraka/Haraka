@@ -1,4 +1,4 @@
-reseed_rng
+reseed\_rng
 ==========
 
 The V8 that ships with node 0.4.x uses an unsophisticated method of
@@ -12,7 +12,7 @@ problems like UUID collisions. When using the 'cluster' module, it's
 quite easy to observe this behavior. 
 
 This plugin uses David Bao's reseed.js (see http://davidbau.com/archives/2010/01/30/random_seeds_coded_hints_and_quintillions.html)
-to provide a reseedable Math.random(), and hooks the init_child event
+to provide a reseedable Math.random(), and hooks the init\_child event
 to reseed the RNG with a sligtly better seed at spawned-process startup
 time. 
 

@@ -20,12 +20,12 @@ Configuration
 This plugin looks for daemonize.ini in your configuration directory and the 
 following options can be set:
 
-- log_file  (default: /var/log/haraka.log)
+- log\_file  (default: /var/log/haraka.log)
 
     The file that STDOUT should be redirected to.  It is recommended that 
     you use this plugin with the log.syslog plugin instead.
 
-- pid_file  (default: /var/run/haraka.pid)
+- pid\_file  (default: /var/run/haraka.pid)
 
     File where the master process PID should be written to.  If this file 
     cannot be locked then start-up will fail.
@@ -51,7 +51,7 @@ If this is not the case on your system, then you should create the file
 
     The path to the Haraka smtp.ini configuration script
 
-- max_open_files  (default: 65535)
+- max\_open\_files  (default: 65535)
 
     The maximum number of open files allowed per process.  If you are 
     running Haraka using the 'cluster' module, then this is the per-child 

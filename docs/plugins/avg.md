@@ -26,14 +26,14 @@ This plugin uses avg.ini for configuration.  The available options are listed be
     AVG TCPD requires that the message be written to disk and scanned.  This setting configures where any temporary files
     are written to.   Once the scan is complete the temporary files are automatically removed.
     
-- connect_timeout
+- connect\_timeout
 
     Default: 10
     
     Maximum number of seconds to wait for the socket to become connected before failing.   Any connections taking longer than
     this will cause a temporary failure to be sent to the connected client.
     
-- session_timeout
+- session\_timeout
 
     Maximum number of seconds to wait for a reply to a command before failing.  Any timeout will cause a temporary failure to
     be sent to the connected client.

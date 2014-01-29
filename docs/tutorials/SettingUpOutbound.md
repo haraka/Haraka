@@ -51,7 +51,7 @@ and password:
 
     vi config/auth_flat_file.ini
 
-See the documentation in docs/plugins/auth/flat_file.md for information about
+See the documentation in docs/plugins/auth/flat\_file.md for information about
 what can go in that file.
 
 Now you can start Haraka. That's all the configuration you need.
