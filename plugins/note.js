@@ -3,7 +3,7 @@
 // see docs in docs/plugin/note.md
 var append_lists = ['msg','pass','fail','skip','err'];
 var overwrite_lists = ['hide','order'];
-var log_opts     = ['human','emit'];
+var log_opts     = ['emit','human','human_html'];
 var init_opts    = ['conn','txn','plugin'];
 var all_opts     = append_lists.concat(overwrite_lists, log_opts, init_opts);
 
@@ -67,6 +67,7 @@ exports.note_collate = function (note) {
     });
 
     note.human = r.join(',  ');
+    note.human_html = r.join(',  &#10;'); // #10 = newline within HTML title
     return r.join(',  ');
 };
 
