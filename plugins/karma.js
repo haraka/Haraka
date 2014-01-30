@@ -6,202 +6,263 @@ var db;
 
 exports.register = function () {
     var plugin = this;
+    this.inherits('note');
 
-    this.register_hook('init_master',  'karma_onInit');
-    this.register_hook('init_child',   'karma_onInit');
+    this.register_hook('init_master',  'karma_init');
+    this.register_hook('init_child',   'karma_init');
     this.register_hook('deny',         'karma_onDeny');
     this.register_hook('lookup_rdns',  'karma_onConnect');
     this.register_hook('mail',         'karma_onMailFrom');
-    this.register_hook('rcpt',         'karma_onRcptTo');
+    this.register_hook('rcpt',         'karma_onRcpt');
     this.register_hook('data',         'karma_onData');
     this.register_hook('data_post',    'karma_onDataPost');
     this.register_hook('disconnect',   'karma_onDisconnect');
 };
 
-exports.karma_onInit = function (next, server) {
+exports.karma_init = function (next, server) {
     init_redis_connection(this);
     return next();
 };
 
-function init_redis_connection(self) {
+function init_redis_connection(plugin) {
     if (db && db.ping()) return;   // connection is good
 
-    var config     = self.config.get('karma.ini');
+    var config     = plugin.config.get('karma.ini');
     var redis_ip  = '127.0.0.1';
     var redis_port = '6379';
     if (config.redis) {
         redis_ip = config.redis.server_ip || '127.0.0.1';
         redis_port = config.redis.server_port || '6379';
-    };
+    }
 
     db = redis.createClient(redis_port, redis_ip);
     db.on('error', function (error) {
-        self.logerror('Redis error: ' + error.message);
+        plugin.logerror('Redis error: ' + error.message);
         db.end();
         db = null;
     });
-};
+}
+
+function note_init (connection, config, obj) {
+    if (connection.notes.karma) return; // init once per connection
+    connection.notes.karma = {
+        pass: [],
+        fail: [],
+        msg: [],
+        err: [],
+        skip: [],
+        hide: (obj && obj.hide) ? obj.hide : [ 'todo' ],
+        order: (obj && obj.order) ? obj.order : [],
+
+        connect: 0,       // score on this connection
+        history: 0,       // score of past connections (good minus bad)
+        total_connects: 0,
+        todo: [],         // internal 'todo' list, for awards
+    };
+
+    // todo is a list of connection/transaction notes to 'watch' for.
+    // When discovered, award their karma points to the connection
+    // and remove them from todo.
+    if (!config.awards) return;
+    Object.keys(config.awards).forEach(function(key) {
+        var award = config.awards[key].toString();
+        server.logprotocol(this, "key: " + key + ' award: ' + award);
+        connection.notes.karma.todo.push(key+'|'+award);
+    });
+}
 
 exports.karma_onConnect = function (next, connection) {
     var plugin = this;
-    var config = this.config.get('karma.ini');
+    var config = plugin.config.get('karma.ini');
 
-    init_redis_connection(this);
-    init_connection_note(connection, config);
+    init_redis_connection(plugin);
+    note_init(connection, config);
 
-    var r_ip = connection.remote_ip;
-    var dbkey = 'karma|' + r_ip;
+    var rip = connection.remote_ip;
+    var dbkey = 'karma|' + rip;
+    var cckey = 'concurrent|' + rip;
     var expire = (config.main.expire_days || 60) * 86400; // convert to days
 
-    function initRemoteIP () {
+    function init_ip () {
         db.multi()
             .hmset(dbkey, {'penalty_start_ts': 0, 'bad': 0, 'good': 0, 'connections': 1})
             .expire(dbkey, expire)
+            .set(cckey, 1)
+            .expire(cckey, 4 * 60)        // expire after 4 min
             .exec();
-        connection.logdebug(plugin,"first connect");
-    };
+    }
 
     db.multi()
-        .get('concurrent|' + r_ip)
+        .get(cckey)
         .hgetall(dbkey)
         .exec(function redisResults (err,replies) {
             if (err) {
-                connection.logdebug(plugin,"err: " + err);
+                plugin.note({conn: connection, err: err, emit: true});
                 return next();
-            };
+            }
 
-            if (replies[1] === null) { initRemoteIP(); return next(); };
+            var dbr = replies[1];   // 2nd pos. of redis reply is karma object
+            if (dbr === null) { init_ip(); return next(); }
 
-            db.hincrby(dbkey, 'connections', 1); // increment total connections
-            db.expire(dbkey, expire);            // extend expiration date
+            db.multi()
+                .hincrby(dbkey, 'connections', 1)  // increment total connections
+                .expire(dbkey, expire)             // extend expiration date
+                .incr(cckey)                       // increment concurrent connections
+                .exec(function (err,replies) {
+                    if (err) plugin.note({conn: connection, err: err, emit: true});
+                });
 
-            var dbr = replies[1]; // 2nd element of DB reply is our karma object
             var history = (dbr.good || 0) - (dbr.bad || 0);
-            connection.notes.karma.history = history;
 
-            var summary = dbr.bad + " bad, " + dbr.good + " good, "
-                         + dbr.connections + " connects, " + history + " history";
+            plugin.note({conn: connection, history: history, total_connects: dbr.connections});
 
-            var too_many = check_concurrency(plugin, 'concurrent|' + r_ip, replies[0], history);
+            var too_many = plugin.check_concurrency(cckey, replies[0], history);
             if (too_many) {
-                connection.loginfo(plugin, too_many + ", (" + summary + ")");
+                plugin.note({conn: connection, fail: 'too_many_connects'});
                 var delay = config.concurrency.disconnect_delay || 10;
-                setTimeout(function () {
+                setTimeout(function ccr_max_to () {
                     return next(DENYSOFTDISCONNECT, too_many);
                 }, delay * 1000);
-            };
+            }
 
             if (dbr.penalty_start_ts === '0') {
-                connection.loginfo(plugin, "no penalty, " + karma_summary(connection));
+                plugin.note({conn: connection, skip: 'penalty'});
                 return next();
             }
 
             var days_old = (Date.now() - Date.parse(dbr.penalty_start_ts)) / 86.4;
             var penalty_days = config.main.penalty_days;
             if (days_old >= penalty_days) {
-                connection.loginfo(plugin, "penalty expired, " + karma_summary(connection));
+                plugin.note({conn: connection, msg: 'penalty expired'});
                 return next();
             }
 
+            plugin.note({conn: connection, fail: 'penalty'});
+
             var left = +(penalty_days - days_old).toFixed(2);
             var mess = "Bad karma, you can try again in " + left + " more days.";
-
             return next(DENY, mess);
         });
 
-    check_awards(config, connection, plugin);
+    plugin.check_awards(connection);
 };
 
 exports.karma_onDeny = function (next, connection, params) {
-    /* params
-    ** [0] = plugin return value (constants.deny or constants.denysoft)
-    ** [1] = plugin return message
-    */
-
+    var plugin = this;
+    var pi_deny     = params[0];  // (constants.deny, denysoft, ok)
+    var pi_message  = params[1];
     var pi_name     = params[2];
     var pi_function = params[3];
     var pi_params   = params[4];
     var pi_hook     = params[5];
 
-    var plugin = this;
-    var transaction = connection.transaction;
+    var config = plugin.config.get('karma.ini');
+    note_init(connection, config); // deny may get called b4 connect
 
-    var config = this.config.get('karma.ini');
-    init_connection_note(connection, config);
+    if (pi_deny === DENY || pi_deny === DENYDISCONNECT || pi_deny === DISCONNECT) {
+        plugin.tweak(connection, -2);
+    }
+    else {
+        plugin.tweak(connection, -1);
+    }
+    plugin.note({conn: connection, fail: 'deny:' + pi_name});
 
-    // CONSIDER: decrement karma two points for a 5XX deny?
-    connection.notes.karma.connection--;
-    connection.notes.karma.penalties.push(pi_name);
-
-    connection.loginfo(plugin, 'deny, ' + karma_summary(connection));
-
-    check_awards(config, connection, plugin);
+    plugin.check_awards(connection);
     return next();
 };
 
 exports.karma_onMailFrom = function (next, connection, params) {
     var plugin = this;
-    var config = this.config.get('karma.ini');
 
-    check_spammy_tld(params[0], config, connection, plugin);
-    check_syntax_mailfrom(connection, plugin);
+    plugin.check_spammy_tld(params[0], connection);
+    plugin.check_syntax_mailfrom(connection);
 
-    check_awards(config, connection, plugin);
-    connection.loginfo(plugin, karma_summary(connection));
+    plugin.check_awards(connection);
+    plugin.note({conn: connection, emit: 1});
     return next();
 };
 
-exports.karma_onRcptTo = function (next, connection, params) {
+exports.karma_onRcpt = function (next, connection, params) {
     var plugin = this;
     var rcpt = params[0];
-    var config = this.config.get('karma.ini');
 
-    check_syntax_RcptTo(connection, plugin);
-    var too_many = max_recipients(connection, plugin, config);
-    if (too_many) return next(DENYSOFT, too_many);
+    plugin.check_syntax_RcptTo(connection);
+    var too_many = plugin.max_recipients(connection);
+    if (too_many) {
+        plugin.note({conn: connection, fail: 'too_many_rcpt'});
+        return next(DENYSOFT, too_many);
+    }
 
-    check_awards(config, connection, plugin);
-    connection.loginfo(plugin, karma_summary(connection));
+    plugin.check_awards(connection);
+    return next();
+};
+
+exports.hook_rcpt_ok = function (next, connection, rcpt) {
+    var plugin = this;
+
+    plugin.check_syntax_RcptTo(connection);
+    var too_many = plugin.max_recipients(connection);
+    if (too_many) {
+        plugin.note({conn: connection, fail: 'too_many_rcpt'});
+        return next(DENYSOFT, too_many);
+    }
+
+    plugin.check_awards(connection);
     return next();
 };
 
 exports.karma_onData = function (next, connection) {
-    // cut off bad senders at DATA to prevent transferring the message
-    var config = this.config.get('karma.ini');
-    var negative_limit = config.thresholds.negative || -5;
-    var karma = connection.notes.karma * 1;
+    // goal: cut off bad senders before message transmission
 
-    if (karma.connection <= negative_limit) {
-        return next(DENY, "very bad karma score: " + karma);
+    var config = this.config.get('karma.ini');
+    this.check_awards(connection);
+
+    var negative_limit = parseFloat(config.thresholds.negative) || -5;
+    var score = parseFloat(connection.notes.karma.connect);
+
+    if (score <= negative_limit) {
+        return next(DENY, "very bad karma score: " + score);
     }
 
-    check_awards(config, connection, this);
     return next();
-}
+};
 
 exports.karma_onDataPost = function (next, connection) {
+    // goal: prevent delivery of spam
+    var plugin = this;
+    var config = plugin.config.get('karma.ini');
+    plugin.check_awards(connection);
+
+    var negative_limit = parseFloat(config.thresholds.negative) || -5;
+    var score = parseFloat(connection.notes.karma.connect);
+    if (score <= negative_limit) {
+        return next(DENY, "very bad karma score: " + score);
+    }
+
     connection.transaction.add_header('X-Haraka-Karma',
-        karma_summary(connection)
+        plugin.note_collate(connection.notes.karma)
     );
-    var config = this.config.get('karma.ini');
-    check_awards(config, connection, this);
+
     return next();
-}
+};
 
 exports.karma_onDisconnect = function (next, connection) {
     var plugin = this;
-    var config = this.config.get('karma.ini');
+    var config = plugin.config.get('karma.ini');
 
-    init_redis_connection(this);
+    init_redis_connection(plugin);
     if (config.concurrency) db.incrby('concurrent|' + connection.remote_ip, -1);
 
     var k = connection.notes.karma;
-    if (!k) { connection.logerror(plugin, "karma note missing!"); return next(); };
-
-    if (!k.connection) {
-        connection.loginfo(plugin, "neutral: " + karma_summary(connection));
+    if (!k) {
+        plugin.note({conn: connection, err: 'karma note missing!', emit: true });
         return next();
-    };
+    }
+
+    if (!k.connect) {
+        plugin.note({conn: connection, msg: 'neutral', emit: true });
+        return next();
+    }
 
     var key = 'karma|' + connection.remote_ip;
     var history = k.history;
@@ -209,44 +270,159 @@ exports.karma_onDisconnect = function (next, connection) {
     if (config.thresholds) {
         var pos_lim = config.thresholds.positive || 2;
 
-        if (k.connection > pos_lim) {
-            db.hincrby(key, 'good', 1);
-            connection.loginfo(plugin, "positive: " + karma_summary(connection));
-            return next();
-        };
+    var pos_lim = config.thresholds.positive || 2;
 
-        var bad_limit = config.thresholds.negative || -3;
-        if (k.connection < bad_limit) {
-            db.hincrby(key, 'bad', 1);
-            history--;
+    if (k.connect > pos_lim) {
+        db.hincrby(key, 'good', 1);
+        plugin.note({conn: connection, msg: 'positive', emit: true });
+        return next();
+    }
 
-            if (history <= config.thresholds.history_negative) {
-                if (history < -5) {
-                    db.hset(key, 'penalty_start_ts', add_days(Date(), history * -1));
-                    connection.loginfo(plugin, "penalty box bonus!: " + karma_summary(connection));
-                }
-                else {
-                    db.hset(key, 'penalty_start_ts', Date());
-                    connection.loginfo(plugin, "penalty box: " + karma_summary(connection));
-                }
-                return next();
-            }
-        }
-    };
-    check_awards(config, connection, plugin);
-    connection.loginfo(plugin, "no action, " + karma_summary(connection));
+    var bad_limit = config.thresholds.negative || -3;
+    if (k.connect > bad_limit) return next();
+
+    db.hincrby(key, 'bad', 1);
+    history--;
+
+    if (history > config.thresholds.history_negative) {
+        plugin.note({conn: connection, msg: 'good enough hist', emit: true });
+        return next();
+    }
+
+    if (history < -5) {
+        db.hset(key, 'penalty_start_ts', add_days(Date(), history * -1));
+        plugin.note({conn: connection, msg: 'penalty box bonus!', emit: true });
+    }
+    else {
+        db.hset(key, 'penalty_start_ts', Date());
+        plugin.note({conn: connection, msg: 'penalty box', emit: true });
+    }
     return next();
 };
 
-function karma_summary(c) {
-    var k = c.notes.karma;
-    return '('
-        + 'conn:' + k.connection
-        + ', hist: ' + k.history
-        + (k.penalties.length ? ', penalties: '+ k.penalties : '')
-        + (k.awards.length    ? ', awards: '   + k.awards    : '')
-        + ')';
-}
+exports.tweak = function (connection, qty) {
+    if (isNaN(qty)) {
+        connection.logerror(this, "invalid argument to tweak: " + qty);
+        return;
+    }
+    var k = connection.notes.karma;
+    k.connect = +(k.connect + qty);
+};
+
+exports.check_awards = function (connection) {
+    var plugin = this;
+    if (!connection.notes.karma) return;
+    if (!connection.notes.karma.todo) return;
+    if (!plugin) plugin = connection;
+
+    var todo = connection.notes.karma.todo;
+    for (var i=0; i < todo.length; i++) {
+        // note_location [@wants] | award [conditions]
+        if (todo[i] === undefined) continue;  // already deleted
+
+        var bits = todo[i].split('|');
+        var note_location = bits[0];
+        var note_terms = bits[1];
+
+            bits = note_location.split('@');
+        var wants;
+        if (bits.length === 2) {  // optional value to match
+            note_location = bits[0];  // remove @... suffix from note
+            wants = bits[1];
+        }
+
+        // locate the object in the requested note location
+        var note = assemble_note_obj(connection, note_location);
+        if (note === undefined) {
+            connection.logprotocol(plugin, "no conn note: " + note_location);
+            if (!connection.transaction) continue;
+            note = assemble_note_obj(connection.transaction, note_location);
+            if (note === undefined) {
+                connection.logprotocol(plugin, "no txn  note: " + note_location);
+                continue;
+            }
+        }
+
+        // test the desired condition
+        bits = note_terms.split(/\s+/);
+        connection.logprotocol(plugin, "bits, " + bits);
+        var award = parseFloat(bits[0]);
+        var condition = bits[2];
+
+        if (!bits[1] || bits[1] !== 'if') {      // no if conditions
+            if (!note) continue;                 // failed truth test
+            if (!wants || wants === undefined) { // no wants, truth matches
+                plugin.apply_award(connection, note_location, award);
+                delete connection.notes.karma.todo[i];
+                continue;
+            }
+            if (note !== wants) continue;        // didn't match
+        }
+
+        if (condition.match(/^(equals|gt|lt|match)$/)) {
+            if (bits[3] && bits[3] !== undefined) wants = bits[3];
+            connection.logdebug(plugin, "matched "+condition+" to wants: " + wants+" from "+note);
+        }
+
+        // the matching logic is inverted here, weeding out anything that
+        // doesn't match. Matches fall through to the apply_award below.
+        switch (condition) {
+            case 'equals':
+                if (wants !== note) continue;
+                break;
+            case 'gt':
+                if (parseFloat(note) <= parseFloat(wants)) continue;
+                break;
+            case 'lt':
+                if (parseFloat(note) >= parseFloat(wants)) continue;
+                break;
+            case 'match':
+                if (!note.toString().match(new RegExp(wants, 'i'))) continue;
+                break;
+            case 'length':
+                var operator = bits[3];
+                var length   = note.length;
+                if (bits[4] && bits[4] !== undefined) wants = bits[4];
+                switch (operator) {
+                    case 'gt':
+                        if (note.length <= parseFloat(wants)) continue;
+                        break;
+                    case 'lt':
+                        if (note.length >= parseFloat(wants)) continue;
+                        break;
+                    case 'equals':
+                        if (note.length !== parseFloat(wants)) continue;
+                        break;
+                    default:
+                        connection.logerror(plugin, 'length operator "' + operator + '" not supported.');
+                        continue;   // not supported!
+                }
+                break;
+            case 'element':
+                continue;  // not supported, yet.
+            default:
+                continue;
+        }
+        plugin.apply_award(connection, note_location, award);
+        delete connection.notes.karma.todo[i];
+    }
+};
+
+exports.apply_award = function (connection, nl, award) {
+    var plugin = this;
+    if (!award) return;
+    if (isNaN(award)) {
+        connection.loginfo(plugin, "non-numeric award from: " + nl + ':' + award);
+        return;  // garbage in config
+    }
+
+    plugin.tweak(connection, award);
+    connection.loginfo(plugin, "applied " + nl + ':' + award);
+
+    var trimmed = nl.substring(0,5) === 'notes' ? nl.substring(6) : nl;
+    if (award > 0) { connection.notes.karma.pass.push(trimmed); }
+    if (award < 0) { connection.notes.karma.fail.push(trimmed); }
+};
 
 function add_days(date, days) {
     var result = new Date(date);
@@ -254,109 +430,67 @@ function add_days(date, days) {
     return result;
 }
 
-function check_awards (config, connection, plugin) {
-    if (!connection.notes.karma) return;
-    if (!connection.notes.karma.todo) return;
-    if (!plugin) plugin = connection;
-    var awards = config.awards;
-
-    Object.keys(connection.notes.karma.todo).forEach(function(key) {
-        var e = key.split('@').slice(0,2);
-        var suffix = e[0];
-        var wants = e[1];
-
-        // assemble the object path using the note name
-        var note = assemble_note_obj(connection, suffix);
-        if (note == null || note === false) {
-            connection.logdebug(plugin, "no connection note: " + key);
-            if (!connection.transaction) return;
-            note = assemble_note_obj(connection.transaction, suffix);
-            if (note == null || note === false) {
-                connection.logdebug(plugin, "no transaction note: " + key);
-                return;
-            }
-        };
-
-        if (wants && note && (!note.toString().match(new RegExp(wants, 'i')))) {
-            connection.logdebug(plugin, "key " + suffix + " wants: " + wants + " but saw: " + note);
-            return;
-        };
-
-        var karma_to_apply = connection.notes.karma.todo[key];
-        if (!karma_to_apply) return;
-        if (Number(karma_to_apply) === 'NaN') return;  // garbage in config
-
-        connection.notes.karma.connection += karma_to_apply * 1;
-        connection.loginfo(plugin, "applied " + key + " karma: " + karma_to_apply);
-        delete connection.notes.karma.todo[key];
-
-        var trimmed = key.substring(0,5) === 'notes' ? key.substring(6) : key;
-        if (karma_to_apply > 0) { connection.notes.karma.awards.push(trimmed); };
-        if (karma_to_apply < 0) { connection.notes.karma.penalties.push(trimmed); };
-    });
-}
-
-function check_concurrency(plugin, con_key, val, history) {
-    var config = plugin.config.get('karma.ini');
+exports.check_concurrency = function (con_key, val, history) {
+    var config = this.config.get('karma.ini');
 
     if (!config.concurrency) return;
 
-    var count = val || 0;    // add this connection
-    count++;
-    db.incr(con_key);        // increment Redis, (creates if needed)
-    db.expire(con_key, 4 * 60);     // expire after 4 min
+    var count = val || 0;
+    count++;                 // add this connection
 
     var reject=0;
     if (history <  0 && count > config.concurrency.bad) reject++;
-    if (history >  0 && count > config.concurrency.good)    reject++;
-    if (history == 0 && count > config.concurrency.neutral) reject++;
+    if (history >  0 && count > config.concurrency.good) reject++;
+    if (history === 0 && count > config.concurrency.neutral) reject++;
     if (reject) return "too many connections for you: " + count;
     return;
 };
 
-function max_recipients(connection, plugin, config) {
-    if (!config.recipients) return;     // disabled in config file
+exports.max_recipients = function (connection) {
+    var plugin = this;
+    var cr = plugin.config.get('karma.ini').recipients;
+    if (!cr) return;           // disabled in config file
     var c = connection.rcpt_count;
     var count = c.accept + c.tempfail + c.reject + 1;
-    if (count <= 1) return;           // everybody is allowed one
+    if (count < 2) return;           // everybody is allowed one
 
     connection.logdebug(plugin, "recipient count: " + count );
 
     var desc = history > 3 ? 'good' : history >= 0 ? 'neutral' : 'bad';
-
-    var cr = config.recipients;
 
     // the deeds of their past shall not go unnoticed!
     var history = connection.notes.karma.history;
     if (history > 3 && count <= cr.good) return;
     if (history > -1 && count <= cr.neutral) return;
 
-    // this is *more* strict than history, b/c they have fewer opportunity
+    // this is *more* strict than history, b/c they have fewer opportunities
     // to score positive karma this early in the connection. senders with
     // good history will rarely see these limits.
-    var karma = connection.notes.karma.connection;
+    var karma = connection.notes.karma.connect;
     if (karma >  3 && count <= cr.good) return;
     if (karma >= 0 && count <= cr.neutral) return;
 
     return 'too many recipients (' + count + ') for ' + desc + ' karma';
-}
-
-function check_spammy_tld(mail_from, config, connection, plugin) {
-    if (!config.spammy_tlds) return;
-    if (mail_from.isNull()) return;    // null sender (bounce)
-
-    var from_tld = mail_from.host.split('.').pop();
-    // connection.logdebug(plugin, "from_tld: " + from_tld);
-
-    var tld_penalty = (config.spammy_tlds[from_tld] || 0) * 1; // force numeric
-    if (tld_penalty === 0) return;
-
-    connection.loginfo(plugin, "spammy TLD: " + tld_penalty);
-    connection.notes.karma.connection += tld_penalty;
-    connection.notes.karma.penalties.push('spammy.TLD');
 };
 
-function check_syntax_mailfrom(connection, plugin) {
+exports.check_spammy_tld = function (mail_from, connection) {
+    var plugin = this;
+    var stlds = plugin.config.get('karma.ini').spammy_tlds;
+    if (!stlds) return;
+    if (mail_from.isNull()) return;              // null sender (bounce)
+
+    var from_tld = mail_from.host.split('.').pop();
+    connection.logprotocol(plugin, "from_tld: " + from_tld);
+
+    var tld_penalty = parseFloat(stlds[from_tld] || 0); // force numeric
+    if (tld_penalty === 0) return;
+
+    plugin.tweak(connection, tld_penalty);
+    plugin.note({conn: connection, fail: 'spammy.TLD', emit: true});
+};
+
+exports.check_syntax_mailfrom = function (connection) {
+    var plugin = this;
     var full_from = connection.current_line;
     // connection.logdebug(plugin, "mail_from: " + full_from);
 
@@ -364,38 +498,20 @@ function check_syntax_mailfrom(connection, plugin) {
     if (full_from.toUpperCase().substring(0,11) === 'MAIL FROM:<') return;
 
     connection.loginfo(plugin, "illegal envelope address format: " + full_from );
-    connection.notes.karma.connection--;
-    connection.notes.karma.penalties.push('rfc5321.MailFrom');
+    plugin.tweak(connection, -1);
+    plugin.note({conn: connection, fail: 'rfc5321.MailFrom'});
 };
 
-function check_syntax_RcptTo(connection, plugin) {
+exports.check_syntax_RcptTo = function (connection) {
+    var plugin = this;
+
     // check for an illegal RFC (2)821 space in envelope recipient
     var full_rcpt = connection.current_line;
     if (full_rcpt.toUpperCase().substring(0,9) === 'RCPT TO:<') return;
 
     connection.loginfo(plugin, "illegal envelope address format: " + full_rcpt );
-    connection.notes.karma.connection--;
-    connection.notes.karma.penalties.push('rfc5321.RcptTo');
-};
-
-function init_connection_note(connection, config) {
-    if (connection.notes.karma) return; // init once per connection
-    connection.notes.karma = {
-        connection: 0,
-        history: 0,
-        awards: [],
-        penalties: [ ],
-        todo: {},
-    };
-
-    // todo is a list of connection/transaction notes to 'watch' for.
-    // When discovered, award their karma points to the connection
-    // and remove them from todo.
-    var awards = config.awards;
-    if (!awards) return;
-    Object.keys(awards).forEach(function(key) {
-        connection.notes.karma.todo[key] = awards[key];
-    });
+    plugin.tweak(connection, -1);
+    plugin.note({conn: connection, fail: 'rfc5321.RcptTo'});
 };
 
 function assemble_note_obj(prefix, key) {
