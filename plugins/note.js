@@ -1,4 +1,5 @@
 // note.js
+var util = require('util');
 
 // see docs in docs/plugin/note.md
 var append_lists = ['msg','pass','fail','skip','err'];
@@ -27,10 +28,12 @@ exports.note = function (obj) {
         note[key] = obj[key];
     });
 
+    // TODO: counter (de|in)crementing?
+
     // anything else is an arbitrary key/val to store
     Object.keys(obj).forEach(function (key) {
-        if (all_opts.indexOf(key) !== -1) return; // weed out 'notes' keys
-        // conn.logdebug(pi, 'setting ' + key + ' to ' + obj[key]);
+        if (all_opts.indexOf(key) !== -1) return; // weed out our keys
+        conn.logprotocol(pi, 'setting ' + key + ' to ' + obj[key]);
         note[key] = obj[key];            // save the rest
     });
 
@@ -53,6 +56,7 @@ exports.note_collate = function (note) {
     Object.keys(note).forEach(function (key) {
         if (all_opts.indexOf(key) !== -1) return;
         if (note.hide && note.hide.length && note.hide.indexOf(key) !== -1) return;
+        if (util.isArray(note[key]) && note[key].length === 0) return;
         r.push(key + ': ' + note[key]);
     });
 
