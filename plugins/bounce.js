@@ -1,6 +1,7 @@
 // bounce tests
 
 exports.register = function () {
+    this.inherits('note');
     this.register_hook('mail',         'bounce_mail');
     this.register_hook('data',         'bounce_data');
 //  this.register_hook('data_post',    'bounce_data_post');
@@ -8,15 +9,23 @@ exports.register = function () {
 
 exports.bounce_mail = function (next, connection, params) {
     var mail_from = params[0];
-    if (!has_null_sender(mail_from)) return next();    // not a bounce
+    this.note_init({conn: connection, txn: true, plugin: this });
+
+    if (!this.has_null_sender(connection, mail_from)) {
+        return next(); // bounce messages are from null senders
+    }
+
     var cfg = this.config.get('bounce.ini');
-    if (cfg.main.reject_all) return next(DENY, "No bounces accepted here");
+    if (cfg.main.reject_all) {
+        this.note({conn: connection, fail: 'bounces_accepted', emit: 1 });
+        return next(DENY, "No bounces accepted here");
+    }
     return next();
-}
+};
 
 exports.bounce_data = function(next, connection) {
     var plugin = connection;
-    if (!has_null_sender(connection.transaction.mail_from)) return next();
+    if (!this.has_null_sender(connection)) return next();
 
     var cfg = this.config.get('bounce.ini');
     var rej = cfg.main.reject_invalid;
@@ -28,7 +37,6 @@ exports.bounce_data = function(next, connection) {
 };
 
 exports.bounce_data_post = function(next, connection) {
-    return next();
 
     // Bounce messages generally do not have a Return-Path set. This checks
     // for that. But whether it should is worth questioning...
@@ -50,26 +58,36 @@ exports.bounce_data_post = function(next, connection) {
     if (rp && rp !== '<>') {
         connection.loginfo(plugin, "bounce with non-empty Return-Path");
         return next(DENY, "bounce with non-empty Return-Path (RFC 3834)");
-    };
+    }
     return next();
 };
 
 function has_single_recipient(connection, plugin) {
-    if (connection.transaction.rcpt_to.length === 1) return;
+    if (connection.transaction.rcpt_to.length === 1) {
+        this.note({conn: connection, pass: 'has_single_recipient', emit: true });
+        return;
+    }
 
     // Valid bounces have a single recipient
-    connection.loginfo(plugin, "bounce with too many recipients to: "
-        + connection.transaction.rcpt_to.join(','));
+    connection.loginfo(plugin, "bounce with too many recipients to: " +
+        connection.transaction.rcpt_to.join(','));
 
-    connection.transaction.notes.bounce='invalid';
+    this.note({conn: connection, fail: 'has_single_recipient', emit: true });
     return "this bounce message does not have 1 recipient";
-};
+}
 
-function has_null_sender(mail_from) {
+exports.has_null_sender = function (connection, mail_from) {
+    if (!mail_from) mail_from = connection.transaction.mail_from;
+
     // bounces have a null sender.
-    return mail_from.isNull() ? true : false;
-
-    // this could also be tested with.
-    // mail_from.user ? false : true
+    // null sender could also be tested with mail_from.user
     // Why would isNull() exist if it wasn't the right way to test this?
+
+    if (mail_from.isNull()) {
+        this.note({conn: connection, isa: 'yes' });
+        return true;
+    }
+
+    this.note({conn: connection, isa: 'no', emit: true });
+    return false;
 };
