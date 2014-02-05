@@ -10,7 +10,7 @@ var net = require('net');
 // - Well known HELOs that must match rdns
 // - IP literal that doesn't match connecting IP
 
-var reject=1;
+var reject=true;
 
 exports.register = function () {
     var plugin = this;
@@ -33,11 +33,10 @@ exports.hook_connect = function (next, connection) {
     this.note_init({conn: connection, plugin: this});
 
     var config = this.config.get('helo.checks.ini');
-    reject = config.main.reject;
-    if (reject === undefined) reject = 1;  // default
+    if (cfg.main.reject !== 'undefined') reject = cfg.main.reject;
 
     return next();
-}
+};
 
 exports.helo_no_dot = function (next, connection, helo) {
     var config = this.config.get('helo.checks.ini');
