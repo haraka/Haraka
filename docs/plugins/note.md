@@ -6,12 +6,13 @@ Save, log, retrieve, and share the results of plugin tests.
 
 Potential reasons to use *note* in your plugin:
 
-* So your plugin results appear in *watch* output, in your web browser.
+* To have plugin results appear in
+  [watch](http://haraka.github.io/manual/plugins/watch.html) output, in your web browser.
 
 * To store results and emit log entries in one line of code.
 
 * To do all your plugins processing, have the results stored for you and
-  then have a single LOGINFO message summarize the results.
+  then emit a single LOGINFO message to summarize the results.
 
 Towards those goals, **Note** provides some help. Here's how:
 
