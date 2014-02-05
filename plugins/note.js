@@ -17,16 +17,18 @@ exports.note = function (obj) {
     var note = find_note(conn, name);
 
     // these are arrays each invocation appends to
-    append_lists.forEach(function(key) {
-        if (!obj[key]) return;
+    for (var i=0; i < append_lists.length; i++) {
+        var key = append_lists[i];
+        if (!obj[key]) continue;
         note[key].push(obj[key]);
-    });
+    }
 
     // these arrays are overwritten when passed
-    overwrite_lists.forEach(function(key) {
-        if (!obj[key]) return;
+    for (var j=0; j < overwrite_lists.length; j++) {
+        var key = overwrite_lists[j];
+        if (!obj[key]) continue;
         note[key] = obj[key];
-    });
+    }
 
     // TODO: counter (de|in)crementing?
 
