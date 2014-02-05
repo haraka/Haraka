@@ -28,7 +28,7 @@ exports.hook_deny = function (next, connection, params) {
     var skip;
     if (cfg.main.excluded_plugins) {
         skip = cfg.main.excluded_plugins.split(/[;, ]+/);
-    };
+    }
 
     // See if we should skip this delay
     if (skip && skip.length) {
@@ -66,7 +66,6 @@ exports.hook_deny = function (next, connection, params) {
             }
             connection.notes.delay_deny_pre_fail[pi_name] = 1;
             return next(OK);
-            break;
         // Pre-DATA transaction delays
         case 'mail':
         case 'rcpt':
@@ -80,7 +79,6 @@ exports.hook_deny = function (next, connection, params) {
             }
             transaction.notes.delay_deny_pre_fail[pi_name] = 1;
             return next(OK);
-            break;
         // Post-DATA delays 
         case 'data':
         case 'data_post':
@@ -100,7 +98,7 @@ exports.hook_deny = function (next, connection, params) {
             // No delays
             return next();
     }
-}
+};
 
 exports.hook_rcpt_ok = function (next, connection, rcpt) {
     var plugin = this;
@@ -114,9 +112,7 @@ exports.hook_rcpt_ok = function (next, connection, rcpt) {
 
     // Apply any delayed rejections
     // Check connection level pre-DATA rejections first
-    if (connection.notes.delay_deny_pre &&
-        connection.notes.delay_deny_pre.length > 0)
-    {
+    if (connection.notes.delay_deny_pre) {
         for (var i=0; i<connection.notes.delay_deny_pre.length; i++) {
             var params = connection.notes.delay_deny_pre[i];
             // Implement client-is-mx here
@@ -130,10 +126,9 @@ exports.hook_rcpt_ok = function (next, connection, rcpt) {
             return next(params[0], params[1]);
         }
     }
+
     // Then check transaction level pre-DATA
-    if (transaction.notes.delay_deny_pre && 
-        transaction.notes.delay_deny_pre.length > 0) 
-    {
+    if (transaction.notes.delay_deny_pre) {
         for (var i=0; i<transaction.notes.delay_deny_pre.length; i++) {
             var params = transaction.notes.delay_deny_pre[i];
 
@@ -152,7 +147,7 @@ exports.hook_rcpt_ok = function (next, connection, rcpt) {
         }
     }
     return next();
-}
+};
 
 exports.hook_data = function (next, connection) {
     var transaction = connection.transaction;

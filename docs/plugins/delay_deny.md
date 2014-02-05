@@ -1,14 +1,16 @@
-# delay_deny
+# delay\_deny
 
 Delays all pre-DATA 'deny' results until the recipients are sent
-and all post-DATA commands until all hook_data_post plugins have run.
+and all post-DATA commands until all hook\_data\_post plugins have run.
 This allows relays and authenticated users to bypass pre-DATA rejections.
 
 ## Configuration
 
-Configuration options are in config/delay_deny.ini.
+Configuration options are in config/delay\_deny.ini.
 
 ### excluded plugins
 
-a list of denials that are to be excluded (ie, all the immediate rejection)
+A comma or semicolon separated list of denials that are to be excluded.
+Excluded plugins that are not bypassed and can still immediately reject
+connections.
 
