@@ -108,13 +108,12 @@ display can be suppressed with the **hide** option to note or note\_init.
 
 #### note\_collate
 
-A note must be passed in.
+A connection must be passed in.
 
-    var summary = this.note_collate(connection.notes.my_plugin);
+    var summary = this.note_collate({conn: connection});
 
-Formats the contents of the note object, saves them to the 'human' note
-property and returns them. This method is called internally by *note*
-after each update.
+Formats the contents of the note object and returns them. This function is
+called internally by *note* after each update.
 
 
 ## Where is the note stored?
