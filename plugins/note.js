@@ -43,7 +43,7 @@ exports.note = function (obj) {
     var human_msg = obj.human;
     if (obj.human) note.human = obj.human;  // override
     if (!human_msg || human_msg === undefined) {
-        human_msg = pi.private_note_collate(note);
+        human_msg = private_note_collate(note);
     }
 
     if ( obj.emit) conn.loginfo(pi, human_msg);
