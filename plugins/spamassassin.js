@@ -199,6 +199,7 @@ function get_spamd_username(config, connection) {
         return connection.transaction.rcpt_to[0].address();
     }
     if (user === 'all-recipients') {
+        throw "Unimplemented";
         // TODO: pass the message through SA for each recipient. Then apply
         // the least strict result to the connection. That is useful when
         // one user blacklists a sender that another user wants to get mail
