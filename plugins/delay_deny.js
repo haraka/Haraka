@@ -6,11 +6,9 @@
 ** This allows relays and authenticated users to bypass pre-DATA rejections.
 */
 
-var constants = require('./constants');
-
 exports.hook_deny = function (next, connection, params) {
     /* params
-    ** [0] = plugin return value (constants.deny or constants.denysoft)
+    ** [0] = plugin return value (DENY or DENYSOFT)
     ** [1] = plugin return message
     */
 
@@ -145,7 +143,7 @@ exports.hook_rcpt_ok = function (next, connection, rcpt) {
             }
 
             // Bypass SPF temporary failures for sender_auth
-            if (transaction.notes.sender_auth && params[0] === constants.denysoft && params[2] === 'spf') {
+            if (transaction.notes.sender_auth && params[0] === DENYSOFT && params[2] === 'spf') {
                 connection.loginfo(plugin, 'bypassing SPF temporary failure for authorized sender');
                 continue;
             }
