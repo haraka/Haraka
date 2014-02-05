@@ -57,7 +57,7 @@ exports.hook_deny = function (next, connection, params) {
         case 'connect':
         case 'ehlo':
         case 'helo':
-            if (!connection.notes.delay_deny) {
+            if (!connection.notes.delay_deny_pre) {
                 connection.notes.delay_deny_pre = [];
             }
             connection.notes.delay_deny_pre.push(params);
