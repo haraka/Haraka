@@ -6,6 +6,7 @@
 var smtp_client_mod = require('./smtp_client');
 
 exports.hook_mail = function (next, connection, params) {
+    var plugin = this;
     var config = this.config.get('smtp_proxy.ini');
     connection.loginfo(this, "proxying to " + config.main.host + ":" + config.main.port);
     var self = this;
@@ -18,6 +19,11 @@ exports.hook_mail = function (next, connection, params) {
         smtp_client.on('data', smtp_client.call_next);
 
         smtp_client.on('dot', function () {
+            if (smtp_client.is_dead_sender(plugin, connection)) {
+                delete connection.notes.smtp_client;
+                return;
+            }
+
             smtp_client.call_next(OK, smtp_client.response + ' (' + connection.transaction.uuid + ')');
             smtp_client.release();
             delete connection.notes.smtp_client;
@@ -61,6 +67,10 @@ exports.hook_queue = function (next, connection) {
     var smtp_client = connection.notes.smtp_client;
     if (!smtp_client) return next();
     smtp_client.next = next;
+    if (smtp_client.is_dead_sender(plugin, connection)) {
+        delete connection.notes.smtp_client;
+        return;
+    }
     smtp_client.start_data(connection.transaction.message_stream);
 };
 
