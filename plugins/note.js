@@ -33,11 +33,11 @@ exports.note = function (obj) {
     // TODO: counter (de|in)crementing?
 
     // anything else is an arbitrary key/val to store
-    Object.keys(obj).forEach(function (key) {
-        if (all_opts.indexOf(key) !== -1) return; // weed out our keys
+    for (var key in obj) {
+        if (all_opts.indexOf(key) !== -1) continue; // weed out our keys
         conn.logprotocol(pi, 'setting ' + key + ' to ' + obj[key]);
         note[key] = obj[key];            // save the rest
-    });
+    }
 
     // collate results, log, and return
     var human_msg = obj.human;
