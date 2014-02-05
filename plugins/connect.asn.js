@@ -1,61 +1,64 @@
 // determine the ASN of the connecting IP
 
 var dns = require('dns');
-// var net = require('net');
-// var ipaddr = require('ipaddr.js');
 
 exports.register = function () {
-    this.register_hook('lookup_rdns',  'on_connection');
+    this.inherits('note');
 };
 
-exports.on_connection = function (next, connection) {
+exports.hook_lookup_rdns = function (next, connection) {
     var plugin = this;
+    plugin.note_init({conn: connection, plugin: this});
     var ip = connection.remote_ip;
 
     var zones = ['origin.asn.cymru.com'
+        // TODO: test after 3/1/2014 and see if bug is fixed
         // 'asn.routeviews.org'   // broken due to TXT handling bug in node.js
         ].forEach(function(zone) {
-        connection.logdebug(plugin, "zone: " + zone);
+        connection.logprotocol(plugin, "zone: " + zone);
 
         var query = ip.split('.').reverse().join('.') + '.' + zone;
-        connection.logdebug(plugin, "query: " + query);
+        connection.logprotocol(plugin, "query: " + query);
 
-        // dns.resolve(query, 'TXT', function (err, addrs) {
         dns.resolveTxt(query, function (err, addrs) {
             if (err) {
-                connection.logerror(plugin, "error: " + err);
+                connection.logerror(plugin, "error: " + err + ' running: '+query);
                 return;
-            };
+            }
 
             for (var i=0; i < addrs.length; i++) {
-                connection.loginfo(plugin, zone + " answer: " + addrs[i]);
+                connection.logdebug(plugin, zone + " answer: " + addrs[i]);
+                var asn;
                 if (zone === 'origin.asn.cymru.com') {
-                    var asn = parse_cymru(addrs[i]);
+                    plugin.parse_cymru(addrs[i], connection);
                 }
                 else if (zone === 'asn.routeviews.org') {
-                    var asn = parse_routeviews(addrs[i], connection);
-                };
-                connection.loginfo(plugin, zone + " asn: " + asn);
-            };
+                    plugin.parse_routeviews(addrs[i], connection);
+                }
+            }
         });
     });
 
     return next();
-}
+};
 
-function parse_routeviews(str, connection) {
-    // var r = str.split(/[^ -~]/);
-    // var r = str.split(/\s/);
+exports.parse_routeviews = function (str, connection) {
     var r = str.split(/ /);
     if ( r.length !== 3 ) {
         connection.loginfo("result length not 3: " + r.length + ",string length: " + str.length);
-    };
-    connection.loginfo("r0: " + r[0]);
-    connection.loginfo("r1: " + r[1]);
+        return '';
+    }
+    this.note({conn: connection, asn: { asn: r[0], net: r[1] }, emit: true});
     return r[0];
 };
 
-function parse_cymru(str) {
+exports.parse_cymru = function (str, connection) {
     var r = str.split(/\s+\|\s+/);
+    //  99.177.75.208.origin.asn.cymru.com. 14350 IN TXT "40431 | 208.75.176.0/21 | US | arin | 2007-03-02"
+    if ( r.length !== 5 ) {
+        connection.loginfo("result length not 3: " + r.length + ",string length: " + str.length);
+        return '';
+    }
+    this.note({conn: connection, asn: r[0], net: r[1], country: r[2], authority: r[3], emit: true});
     return r[0];
 };
