@@ -86,7 +86,7 @@ function private_note_collate (note) {
 };
 
 exports.note_init = function (obj) {
-    if (!validate_obj(obj)) throw("invalid obj!")
+    if (!validate_obj(obj)) throw("invalid obj!");
     if (!obj.plugin) throw "plugin is required during init!";
     var conn = obj.conn;
     var pi   = obj.plugin || this;
@@ -94,7 +94,7 @@ exports.note_init = function (obj) {
     var note = obj.txn ? conn.transaction.notes[name] : conn.notes[name];
     if (note && note !== undefined) return; // init once per connection
 
-    var obj = {
+    note = {
         txn: obj.txn,
         pass: [],
         fail: [],
@@ -105,10 +105,10 @@ exports.note_init = function (obj) {
         order: (obj && obj.order) ? obj.order : [],
     };
     if (obj.txn) {
-        conn.transaction.notes[name] = obj;
+        conn.transaction.notes[name] = note;
         return;
     }
-    conn.notes[name] = obj;
+    conn.notes[name] = note;
 };
 
 function get_note_name(plugin) {
