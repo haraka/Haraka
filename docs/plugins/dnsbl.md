@@ -31,7 +31,7 @@ dnsbl.ini - INI format with options described below:
 
 * reject  (default: true)
 
-    Set reject=0 to disable rejections based on DNSBL. Results are still
+    Set reject=false to disable rejections based on DNSBL. Results are still
     logged and saved in the connection note at connection.notes.dnsbl.
 
 * enable\_stats
