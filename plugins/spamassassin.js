@@ -51,7 +51,7 @@ exports.hook_data_post = function (next, connection) {
                     spamd_response.score = matches[2];
                     spamd_response.hits = matches[2];  // backwards compat
                     spamd_response.reqd = matches[3];
-                    spamd_response.flag = spamd_response.flag === 'True' ? 'Yes' : 'No'
+                    spamd_response.flag = spamd_response.flag === 'True' ? 'Yes' : 'No';
                 }
             }
             else {
@@ -60,17 +60,18 @@ exports.hook_data_post = function (next, connection) {
         }
         else if (state === 'headers') {
             var m;   // printable ASCII: [ -~]
-            if (m = line.match(/^X-Spam-([ -~]+):\s(.*)/)) {
+            if (m = line.match(/^X-Spam-([ -~]+):(.*)/)) {
+                connection.logprotocol(plugin, "header: " + line);
                 last_header = m[1];
                 spamd_response.headers[m[1]] = m[2];
                 return;
-            };
+            }
             var fold;
             if (last_header && (fold = line.match(/^(\s+.*)/))) {
                 spamd_response.headers[last_header] += "\r\n" + fold[1];
                 return;
-            };
-            last_header = '';
+            }
+            last_header = false;
         }
     });
 
@@ -78,17 +79,22 @@ exports.hook_data_post = function (next, connection) {
         // Abort if the transaction is gone
         if (!connection.transaction) return next();
 
-        // We have to strip the tests hit from the X-Spam-Status header
-        var tests;
-        if (tests = /tests=([^ ]+)/.exec(spamd_response.headers['Status'].replace(/\r?\n\t/g,''))) {
-            spamd_response.tests = tests[1];
+        if (spamd_response.headers['Tests']) {
+            spamd_response.tests = spamd_response.headers['Tests'];
+        }
+        if (spamd_response.tests === undefined) {
+            // strip the 'tests' from the X-Spam-Status header
+            var tests;
+            if (tests = /tests=([^ ]+)/.exec(spamd_response.headers['Status'].replace(/\r?\n\t/g,''))) {
+                spamd_response.tests = tests[1];
+            }
         }
 
         // do stuff with the results...
         connection.transaction.notes.spamassassin = spamd_response;
 
         plugin.fixup_old_headers(config.main.old_headers_action, connection.transaction);
-        do_header_updates(connection, spamd_response, config);
+        plugin.do_header_updates(connection, spamd_response, config);
         log_results(connection, plugin, spamd_response, config);
 
         var exceeds_err = score_too_high(config, connection, spamd_response);
@@ -101,30 +107,36 @@ exports.hook_data_post = function (next, connection) {
 };
 
 exports.fixup_old_headers = function (action, transaction) {
+    var plugin = this;
     var headers = transaction.notes.spamassassin.headers;
 
     switch (action) {
         case "keep":
-            return;
+            break;
         case "drop":
             for (var key in headers) {
-                key = 'X-Spam-' + key;
-                transaction.remove_header(key)
+                transaction.remove_header('X-Spam-' + key);
             }
             break;
         case "rename":
         default:
             for (var key in headers) {
-                var key = 'X-Spam-' + key;
+                key = 'X-Spam-' + key;
                 var old_val = transaction.header.get(key);
                 if (old_val) {
+                    plugin.logdebug(plugin, "header: " + key + ', ' + old_val);
                     transaction.remove_header(key);
-                    transaction.add_header(key.replace(/^X-/, 'X-Old-'), old_val);
+                    if (key !== 'X-Spam-Status') {
+                        // if the old Status header is folded, Haraka reinserts
+                        // it with a stray CR or LF, resulting in a blank line
+                        // in the headers.
+                        transaction.add_header(key.replace(/^X-/, 'X-Old-'), old_val);
+                    }
                 }
             }
             break;
     }
-}
+};
 
 function munge_subject(connection, config, score) {
     var munge = config.main.munge_subject_threshold;
@@ -151,22 +163,25 @@ function setup_defaults(config) {
     });
 };
 
-function do_header_updates(connection, spamd_response, config) {
+exports.do_header_updates = function (connection, spamd_response, config) {
+    var plugin = this;
     if (spamd_response.flag === 'Yes') {
         // X-Spam-Flag is added by SpamAssassin
         connection.transaction.remove_header('precedence');
         connection.transaction.add_header('Precedence', 'junk');
     }
 
-    Object.keys(spamd_response.headers).forEach(function(key) {
-        var modern = config.main.modern_status_syntax;
+    var modern = config.main.modern_status_syntax;
+    for (var key in spamd_response.headers) {
         if (key === 'Status' && !modern) {
             var legacy = spamd_response.headers[key].replace(/ score=/,' hits=');
             connection.transaction.add_header('X-Spam-Status', legacy);
             return;
-        };
-        connection.transaction.add_header('X-Spam-' + key, spamd_response.headers[key]);
-    });
+        }
+        var val = spamd_response.headers[key];
+        if (val === undefined) { val = ''; }
+        connection.transaction.add_header('X-Spam-' + key, val);
+    }
 };
 
 function score_too_high(config, connection, spamd_response) {
@@ -187,7 +202,7 @@ function score_too_high(config, connection, spamd_response) {
 }
 
 function get_spamd_username(config, connection) {
-    
+
     var user = connection.transaction.notes.spamd_user;  // 1st priority
     if (user && user !== undefined) return user;
 
@@ -269,11 +284,11 @@ function msg_too_big(config, connection, plugin) {
 };
 
 function log_results(connection, plugin, spamd_response, config) {
-    connection.loginfo(plugin, "status=" + spamd_response.flag
-        + ', score=' + spamd_response.score
-        + ', required=' + spamd_response.reqd
-        + ', reject=' + ((connection.relaying)
-             ? (config.main.relay_reject_threshold || config.main.reject_threshold)
-             : config.main.reject_threshold)
-        + ', tests="' + spamd_response.tests + '"');
+    connection.loginfo(plugin, "status=" + spamd_response.flag +
+          ', score=' + spamd_response.score +
+          ', required=' + spamd_response.reqd +
+          ', reject=' + ((connection.relaying) ?
+             (config.main.relay_reject_threshold || config.main.reject_threshold) :
+             config.main.reject_threshold) +
+          ', tests="' + spamd_response.tests + '"');
 };
