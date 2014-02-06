@@ -71,7 +71,7 @@ exports.hook_data_post = function (next, connection) {
                 spamd_response.headers[last_header] += "\r\n" + fold[1];
                 return;
             }
-            last_header = false;
+            last_header = '';
         }
     });
 
@@ -123,9 +123,9 @@ exports.fixup_old_headers = function (action, transaction) {
             for (var key in headers) {
                 key = 'X-Spam-' + key;
                 var old_val = transaction.header.get(key);
+                transaction.remove_header(key);
                 if (old_val) {
                     plugin.logdebug(plugin, "header: " + key + ', ' + old_val);
-                    transaction.remove_header(key);
                     if (key !== 'X-Spam-Status') {
                         // if the old Status header is folded, Haraka reinserts
                         // it with a stray CR or LF, resulting in a blank line
