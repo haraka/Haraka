@@ -71,6 +71,49 @@ function note_init (connection, config, obj) {
     });
 }
 
+function init_ip (dbkey, cckey, expire) {
+    db.multi()
+        .hmset(dbkey, {'penalty_start_ts': 0, 'bad': 0, 'good': 0, 'connections': 1})
+        .expire(dbkey, expire)
+        .set(cckey, 1)
+        .expire(cckey, 4 * 60)        // expire after 4 min
+        .exec();
+}
+
+function init_asn (asnkey, expire) {
+    db.multi()
+        .hmset(asnkey, {'bad': 0, 'good': 0, 'connections': 1})
+        .expire(asnkey, expire * 2)    // keep ASN longer
+        .exec();
+}
+
+exports.check_asn_neighborhood = function (connection, asnkey, expire) {
+    var plugin = this;
+    db.hgetall(asnkey, function (err, res) {
+        if (err) {
+            plugin.note({conn: connection, err: err, emit: true});
+            return;
+        }
+
+        if (res === null) {
+            init_asn(asnkey, expire);
+            return;
+        }
+
+        db.hincrby(asnkey, 'connections', 1);
+        var neighbors = parseFloat(res.good || 0) - (res.bad || 0);
+        if (!neighbors) return;
+
+        if (neighbors > 3) {
+            plugin.note({conn: connection, pass: 'neighborhood', emit: true});
+            return;
+        }
+        if (neighbors < -3) {
+            plugin.note({conn: connection, fail: 'neighborhood', emit: true});
+        }
+    });
+};
+
 exports.karma_onConnect = function (next, connection) {
     var plugin = this;
     var config = plugin.config.get('karma.ini');
@@ -78,18 +121,15 @@ exports.karma_onConnect = function (next, connection) {
     init_redis_connection(plugin);
     note_init(connection, config);
 
-    var rip = connection.remote_ip;
+    var expire = (config.main.expire_days || 60) * 86400; // convert to days
+    var rip   = connection.remote_ip;
     var dbkey = 'karma|' + rip;
     var cckey = 'concurrent|' + rip;
-    var expire = (config.main.expire_days || 60) * 86400; // convert to days
-
-    function init_ip () {
-        db.multi()
-            .hmset(dbkey, {'penalty_start_ts': 0, 'bad': 0, 'good': 0, 'connections': 1})
-            .expire(dbkey, expire)
-            .set(cckey, 1)
-            .expire(cckey, 4 * 60)        // expire after 4 min
-            .exec();
+    var asnkey;
+    if (config.main.enable_asn && connection.notes['connect.asn']) {
+        asnkey = connection.notes['connect.asn'].asn;
+        if (isNaN(asnkey)) asnkey = undefined;
+        if (asnkey) plugin.check_asn_neighborhood(connection, asnkey, expire);
     }
 
     db.multi()
@@ -102,7 +142,7 @@ exports.karma_onConnect = function (next, connection) {
             }
 
             var dbr = replies[1];   // 2nd pos. of redis reply is karma object
-            if (dbr === null) { init_ip(); return next(); }
+            if (dbr === null) { init_ip(dbkey, cckey, expire); return next(); }
 
             db.multi()
                 .hincrby(dbkey, 'connections', 1)  // increment total connections
@@ -114,15 +154,18 @@ exports.karma_onConnect = function (next, connection) {
 
             var history = (dbr.good || 0) - (dbr.bad || 0);
 
-            plugin.note({conn: connection, history: history, total_connects: dbr.connections});
+//          plugin.note({conn: connection, history: history, total_connects: dbr.connections});
 
             var too_many = plugin.check_concurrency(cckey, replies[0], history);
             if (too_many) {
                 plugin.note({conn: connection, fail: 'too_many_connects'});
+                return next(DENYSOFTDISCONNECT, too_many);
+/*  This causes "karma plugin ran callback multiple times" errors
                 var delay = config.concurrency.disconnect_delay || 10;
                 setTimeout(function ccr_max_to () {
                     return next(DENYSOFTDISCONNECT, too_many);
                 }, delay * 1000);
+*/
             }
 
             if (dbr.penalty_start_ts === '0') {
@@ -130,7 +173,8 @@ exports.karma_onConnect = function (next, connection) {
                 return next();
             }
 
-            var days_old = (Date.now() - Date.parse(dbr.penalty_start_ts)) / 86.4;
+            var days_old = (Date.now() - Date.parse(dbr.penalty_start_ts)) / 86400;
+            plugin.note({conn: connection, msg: 'days_old: ' + days_old});
             var penalty_days = config.main.penalty_days;
             if (days_old >= penalty_days) {
                 plugin.note({conn: connection, msg: 'penalty expired'});
@@ -141,7 +185,8 @@ exports.karma_onConnect = function (next, connection) {
 
             var left = +(penalty_days - days_old).toFixed(2);
             var mess = "Bad karma, you can try again in " + left + " more days.";
-            return next(DENY, mess);
+            // return next(DENY, mess);
+            return next();
         });
 
     plugin.check_awards(connection);
@@ -240,8 +285,22 @@ exports.karma_onDataPost = function (next, connection) {
     }
 
     connection.transaction.add_header('X-Haraka-Karma',
-        plugin.note_collate(connection.notes.karma)
+        plugin.note_collate({conn: connection})
     );
+
+    return next();
+};
+
+exports.hook_queue = function (next, connection) {
+    var config = this.config.get('karma.ini');
+    this.check_awards(connection);
+
+    var negative_limit = parseFloat(config.thresholds.negative) || -5;
+    var score = parseFloat(connection.notes.karma.connect);
+
+    if (score <= negative_limit) {
+        return next(DENY, "bad karma score: " + score);
+    }
 
     return next();
 };
@@ -252,6 +311,12 @@ exports.karma_onDisconnect = function (next, connection) {
 
     init_redis_connection(plugin);
     if (config.concurrency) db.incrby('concurrent|' + connection.remote_ip, -1);
+
+    var asnkey;
+    if (config.main.enable_asn && connection.notes['connect.asn']) {
+        asnkey = connection.notes['connect.asn'].asn;
+        if (isNaN(asnkey)) asnkey = undefined;
+    }
 
     var k = connection.notes.karma;
     if (!k) {
@@ -274,6 +339,7 @@ exports.karma_onDisconnect = function (next, connection) {
 
     if (k.connect > pos_lim) {
         db.hincrby(key, 'good', 1);
+        if (asnkey) db.hincrby(asnkey, 'good', 1);
         plugin.note({conn: connection, msg: 'positive', emit: true });
         return next();
     }
@@ -282,6 +348,7 @@ exports.karma_onDisconnect = function (next, connection) {
     if (k.connect > bad_limit) return next();
 
     db.hincrby(key, 'bad', 1);
+    if (asnkey) db.hincrby(asnkey, 'bad', 1);
     history--;
 
     if (history > config.thresholds.history_negative) {
@@ -290,7 +357,7 @@ exports.karma_onDisconnect = function (next, connection) {
     }
 
     if (history < -5) {
-        db.hset(key, 'penalty_start_ts', add_days(Date(), history * -1));
+        db.hset(key, 'penalty_start_ts', add_days(history * -1));
         plugin.note({conn: connection, msg: 'penalty box bonus!', emit: true });
     }
     else {
@@ -361,7 +428,7 @@ exports.check_awards = function (connection) {
 
         if (condition.match(/^(equals|gt|lt|match)$/)) {
             if (bits[3] && bits[3] !== undefined) wants = bits[3];
-            connection.logdebug(plugin, "matched "+condition+" to wants: " + wants+" from "+note);
+            connection.logprotocol(plugin, "matched "+condition+" to wants: " + wants+" from "+note);
         }
 
         // the matching logic is inverted here, weeding out anything that
@@ -424,10 +491,11 @@ exports.apply_award = function (connection, nl, award) {
     if (award < 0) { connection.notes.karma.fail.push(trimmed); }
 };
 
-function add_days(date, days) {
-    var result = new Date(date);
-    result.setDate(date.getDate() + days);
-    return result;
+function add_days(days) {
+    var now = new Date();
+    var target = new Date();
+    target.setDate(now.getDate() + days);
+    return target;
 }
 
 exports.check_concurrency = function (con_key, val, history) {
@@ -439,8 +507,8 @@ exports.check_concurrency = function (con_key, val, history) {
     count++;                 // add this connection
 
     var reject=0;
-    if (history <  0 && count > config.concurrency.bad) reject++;
-    if (history >  0 && count > config.concurrency.good) reject++;
+    if (history  <  0 && count > config.concurrency.bad) reject++;
+    if (history  >  0 && count > config.concurrency.good) reject++;
     if (history === 0 && count > config.concurrency.neutral) reject++;
     if (reject) return "too many connections for you: " + count;
     return;
