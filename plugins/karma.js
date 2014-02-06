@@ -154,7 +154,7 @@ exports.karma_onConnect = function (next, connection) {
 
             var history = (dbr.good || 0) - (dbr.bad || 0);
 
-//          plugin.note({conn: connection, history: history, total_connects: dbr.connections});
+            plugin.note({conn: connection, history: history, total_connects: dbr.connections});
 
             var too_many = plugin.check_concurrency(cckey, replies[0], history);
             if (too_many) {
@@ -173,8 +173,10 @@ exports.karma_onConnect = function (next, connection) {
                 return next();
             }
 
-            var days_old = (Date.now() - Date.parse(dbr.penalty_start_ts)) / 86400;
+            var ms_old = (Date.now() - Date.parse(dbr.penalty_start_ts));
+            var days_old = ms_old / 86400 / 1000;
             plugin.note({conn: connection, msg: 'days_old: ' + days_old});
+
             var penalty_days = config.main.penalty_days;
             if (days_old >= penalty_days) {
                 plugin.note({conn: connection, msg: 'penalty expired'});
