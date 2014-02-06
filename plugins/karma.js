@@ -3,6 +3,7 @@
 var ipaddr = require('ipaddr.js');
 var redis = require('redis');
 var db;
+var phase_prefixes = ['connect','helo','mail_from','rcpt_to','data'];
 
 exports.register = function () {
     var plugin = this;
@@ -101,16 +102,9 @@ exports.check_asn_neighborhood = function (connection, asnkey, expire) {
         }
 
         db.hincrby(asnkey, 'connections', 1);
-        var neighbors = parseFloat(res.good || 0) - (res.bad || 0);
-        if (!neighbors) return;
-
-        if (neighbors > 3) {
-            plugin.note({conn: connection, pass: 'neighborhood', emit: true});
-            return;
-        }
-        if (neighbors < -3) {
-            plugin.note({conn: connection, fail: 'neighborhood', emit: true});
-        }
+        var net_score = parseFloat(res.good || 0) - (res.bad || 0);
+        plugin.note({conn: connection, neighborhood: net_score, emit: true});
+        return;
     });
 };
 
@@ -174,7 +168,7 @@ exports.karma_onConnect = function (next, connection) {
             }
 
             var ms_old = (Date.now() - Date.parse(dbr.penalty_start_ts));
-            var days_old = ms_old / 86400 / 1000;
+            var days_old = (ms_old / 86400 / 1000).toFixed(2);
             plugin.note({conn: connection, msg: 'days_old: ' + days_old});
 
             var penalty_days = config.main.penalty_days;
@@ -187,8 +181,7 @@ exports.karma_onConnect = function (next, connection) {
 
             var left = +(penalty_days - days_old).toFixed(2);
             var mess = "Bad karma, you can try again in " + left + " more days.";
-            // return next(DENY, mess);
-            return next();
+            return next(DENYDISCONNECT, mess);
         });
 
     plugin.check_awards(connection);
@@ -268,7 +261,7 @@ exports.karma_onData = function (next, connection) {
     var score = parseFloat(connection.notes.karma.connect);
 
     if (score <= negative_limit) {
-        return next(DENY, "very bad karma score: " + score);
+        return next(DENYDISCONNECT, "very bad karma score: " + score);
     }
 
     return next();
@@ -588,8 +581,12 @@ function assemble_note_obj(prefix, key) {
     var note = prefix;
     var parts = key.split('.');
     while(parts.length > 0) {
-        note = note[parts.shift()];
+        var next = parts.shift();
+        if (phase_prefixes.indexOf(next) !== -1) {
+            next = next + '.' + parts.shift();
+        }
+        note = note[next];
         if (note == null) break;
     }
     return note;
-};
+}
