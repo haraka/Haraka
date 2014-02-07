@@ -447,11 +447,12 @@ exports.process_domain = function (ok_paths, todo, hmails, cb) {
         fs.unlink(tmp_path, function () {});
         cb("Queueing failed");
     });
-    self.build_todo(todo, ws);
-    todo.message_stream.pipe(ws, { line_endings: '\r\n', dot_stuffing: true, ending_dot: false });
+    self.build_todo(todo, ws, function () {
+        todo.message_stream.pipe(ws, { line_endings: '\r\n', dot_stuffing: true, ending_dot: false });
+    });
 }
 
-exports.build_todo = function (todo, ws) {
+exports.build_todo = function (todo, ws, write_more) {
     // Replacer function to exclude items from the queue file header
     function exclude_from_json(key, value) {
         switch (key) {
@@ -473,16 +474,18 @@ exports.build_todo = function (todo, ws) {
     
     var buf = Buffer.concat([todo_length, todo_str], todo_str.length + 4);
 
-    ws.write(buf);
+    var continue_writing = ws.write(buf);
+    if (continue_writing) return write_more();
+    ws.once('drain', write_more);
 }
 
 exports.split_to_new_recipients = function (hmail, recipients, response, cb) {
+    var self = this;
     if (recipients.length === hmail.todo.rcpt_to.length) {
         // Split to new for no reason - increase refcount and return self
         hmail.refcount++;
         return cb(hmail);
     }
-    var self = this;
     var fname = _fname();
     var tmp_path = path.join(queue_dir, '.' + fname);
     var ws = new FsyncWriteStream(tmp_path, { flags: WRITE_EXCL });
@@ -529,8 +532,6 @@ exports.split_to_new_recipients = function (hmail, recipients, response, cb) {
         ws.destroy();
         hmail.bounce("Error re-queueing some recipients", err);
     });
-
-    ws.on('drain', write_more);
 
     var new_todo = JSON.parse(JSON.stringify(hmail.todo));
     new_todo.rcpt_to = recipients;
@@ -877,7 +878,11 @@ HMailItem.prototype.try_deliver = function () {
     });
 }
 
-var smtp_regexp = /^([0-9]{3})([ -])(.*)/;
+var smtp_regexp = /^(\d{3})([ -])(?:(\d\.\d\.\d)\s)?(.*)/;
+
+function map_recips(item) {
+    return Object.keys(item)[0];
+}
 
 HMailItem.prototype.try_deliver_host = function (mx) {
     if (this.hostlist.length === 0) {
@@ -999,19 +1004,26 @@ HMailItem.prototype.try_deliver_host = function (mx) {
         if (matches = smtp_regexp.exec(line)) {
             var code = matches[1],
                 cont = matches[2],
-                rest = matches[3];
+                extc = matches[3],
+                rest = matches[4];
             response.push(rest);
             if (cont === ' ') {
                 if (code.match(/^4/)) {
                     if (/^rcpt/.test(command)) {
                         // this recipient was rejected
-                        fail_recips.push(last_recip);
+                        self.lognotice('recipient ' + last_recip + ' deferred: ' + 
+                                       code + ' ' + ((extc) ? extc + ' ' : '') + response.join(' '));
+                        (function () {
+                            var o = {};
+                            o[last_recip] = code + ' ' + ((extc) ? extc + ' ' : '') + response.join(' ');
+                            fail_recips.push(o);
+                        })();
                     }
                     else {
                         var reason = response.join(' ');
                         socket.send_command('QUIT');
                         processing_mail = false;
-                        return self.temp_fail("Upstream error: " + code + " " + reason);
+                        return self.temp_fail("Upstream error: " + code + " " + ((extc) ? extc + ' ' : '') + reason);
                     }
                 }
                 else if (code.match(/^5/)) {
@@ -1020,7 +1032,13 @@ HMailItem.prototype.try_deliver_host = function (mx) {
                         return socket.send_command('HELO', config.get('me'));
                     }
                     if (/^rcpt/.test(command)) {
-                        bounce_recips.push(last_recip);
+                        self.lognotice('recipient ' + last_recip + ' rejected: ' + 
+                                       code + ' ' + ((extc) ? extc + ' ' : '') + response.join(' '));
+                        (function() {
+                            var o = {};
+                            o[last_recip] = code + ' ' + ((extc) ? extc + ' ' : '') + response.join(' '); 
+                            bounce_recips.push(o);
+                        })();
                     }
                     else {
                         var reason = response.join(' ');
@@ -1056,16 +1074,16 @@ HMailItem.prototype.try_deliver_host = function (mx) {
                         if (!recipients.length) {
                             if (fail_recips.length) {
                                 self.refcount++;
-                                exports.split_to_new_recipients(self, fail_recips, "Some recipients temporarily failed", function (hmail) {
+                                exports.split_to_new_recipients(self, fail_recips.map(map_recips), "Some recipients temporarily failed", function (hmail) {
                                     self.discard();
-                                    hmail.temp_fail("Some recipients temp failed: " + fail_recips.join(', '));
+                                    hmail.temp_fail("Some recipients temp failed: " + fail_recips.map(map_recips).join(', '), fail_recips);
                                 });
                             }
                             if (bounce_recips.length) {
                                 self.refcount++;
-                                exports.split_to_new_recipients(self, bounce_recips, "Some recipients rejected", function (hmail) {
+                                exports.split_to_new_recipients(self, bounce_recips.map(map_recips), "Some recipients rejected", function (hmail) {
                                     self.discard();
-                                    hmail.bounce("Some recipients failed: " + bounce_recips.join(', '));
+                                    hmail.bounce("Some recipients failed: " + bounce_recips.map(map_recips).join(', '), bounce_recips);
                                 });
                             }
                             if (ok_recips) {

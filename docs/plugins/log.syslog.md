@@ -63,7 +63,7 @@ chosen for you.
     logging the message.
 
 
-* log.syslog.general.always_ok (default: false)
+* log.syslog.general.always\_ok (default: false)
 
     If false, then this plugin will return with just next() allowing other
     plugins that have registered for the log hook to run.  To speed things up,

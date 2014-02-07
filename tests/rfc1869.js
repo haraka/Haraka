@@ -46,5 +46,13 @@ exports.basic = {
     'RCPT TO ugly': function (test) {
         _check(test, 'RCPT TO: 0@mailblog.biz 0=9 1=9',
             ['<0@mailblog.biz>', '0=9', '1=9']);
-    }
+    },
+    'RCPT TO:<r86x-ray@emailitin.com> state=1': function (test) {
+        _check(test, 'RCPT TO:<r86x-ray@emailitin.com> state=1',
+            ['<r86x-ray@emailitin.com>', 'state=1']);
+    },
+    'RCPT TO:<user=name@domain.com> foo=bar': function (test) {
+        _check(test, 'RCPT TO:<user=name@domain.com> foo=bar',
+            ['<user=name@domain.com>', 'foo=bar']);
+    }, 
 };

@@ -22,6 +22,9 @@ exports.check_acl = function (next, connection, params) {
 };
 
 exports.check_relay_domains = function (next, connection, params) {
+    // Skip this if the host is already allowed to relay
+    if (connection.relaying) return next();
+ 
     this.dest_domains_ini = this.config.get('relay_dest_domains.ini', 'ini');
     var dest_domain = params[0].host;
 
@@ -50,7 +53,7 @@ exports.check_relay_domains = function (next, connection, params) {
 function dest_domain_action(connection, plugin, domains_ini, dest_domain) {
     if (dest_domain in domains_ini) {
         var config = JSON.parse(domains_ini[dest_domain]);
-        connection.logdebug(plugin, 'found config for' + dest_domain + ': ' + domains_ini['action']);
+        connection.logdebug(plugin, 'found config for ' + dest_domain + ': ' + domains_ini['action']);
         return config['action'];
     }
     return 'deny';

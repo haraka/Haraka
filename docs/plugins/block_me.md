@@ -1,4 +1,4 @@
-block_me
+block\_me
 ========
 
 This plugin allows you to configure an address which mail sent to will be

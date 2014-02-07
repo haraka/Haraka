@@ -7,7 +7,7 @@ of configuration files.
 The API is fairly simple:
 
     // From within a plugin:
-    var config_item = this.config.get(name, [type='value'], [callback]);
+    var config_item = this.config.get(name, [type='value'], [callback], [options]);
 
 Where type can be one of:
 
@@ -30,6 +30,8 @@ respectively then the `type` parameter can be left off.
 
 You can optionally pass in a callback function which will be called whenever
 an update is detected on the file.
+
+For ini files, an `options` object is allowed.
 
 File Formats
 ============
@@ -66,8 +68,23 @@ That produces the following Javascript object:
 The key point there is that items before any [section] marker go in the "main"
 section.
 
+Note that there is some auto-conversion of values on the right hand side of
+the equals: integers are converted to integers, floats are converted to
+floats.
+
 The key=value pairs also support continuation lines using the
 backslash "\" character.
+
+The `options` object allows you to specify which keys are boolean:
+
+    { booleans: ['reject','some_true_value'] }
+
+This ensures these values are converted to true Javascript booleans when parsed,
+and supports the following options for boolean values:
+
+    true, yes, ok, enabled, on, 1
+
+Anything else is treated as false.
 
 Flat Files
 ----------
@@ -112,7 +129,7 @@ var configfile = require('./configfile');
 var cfg = configfile.read_config('/path/to/file', type);
 ```
 
-read_config() handles the caching for you and will return cached values
+`read_config()` handles the caching for you and will return cached values
 if there have been no updates since the file was read.
 
 You can also optionally pass in a callback that is run if the file is 

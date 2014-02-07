@@ -3,7 +3,7 @@ dnswl
 
 This plugin looks up the connecting IP address in an IP whitelist.
 If the host is listed, then the plugin will return OK for all hooks
-up to hook_data.
+up to hook\_data.
 
 IMPORTANT!  The order of plugins in config/plugins is important when
 this plugin is used.  It should be listed *before* any plugins that
@@ -23,7 +23,7 @@ dnswl.ini - INI format with options described below:
     A comma or semi-colon list of zones to query.  It will be merged with
     any lists in dnswl.zones.
 
-* periodic_checks  
+* periodic\_checks  
 
     If enabled, this will check all the zones every n minutes.
     The minimum value that will be accepted here is 5.  Any value less
@@ -34,7 +34,7 @@ dnswl.ini - INI format with options described below:
     disabled and will be re-checked on the next test.  If a zone 
     subsequently starts working correctly then it will be re-enabled.
 
-* enable_stats
+* enable\_stats
 
     To use this feature you must have installed the 'redis' module and
     have a redis server running.
@@ -42,7 +42,7 @@ dnswl.ini - INI format with options described below:
     When enabled, this will record several list statistics to redis.
       
     It will track the total number of queries (TOTAL) and the average
-    response time (AVG_RT) and the return type (e.g. LISTED or ERROR) 
+    response time (AVG\_RT) and the return type (e.g. LISTED or ERROR) 
     to a redis hash where the key is 'dns-list-stat:zone' and the hash 
     field is the response type.
       
@@ -69,7 +69,7 @@ dnswl.ini - INI format with options described below:
     6) "1"
     </code></pre>
 
-* stats_redis_host
+* stats\_redis\_host
 
     In the form of `host:port` this option allows you to specify a different
     host on which redis runs.

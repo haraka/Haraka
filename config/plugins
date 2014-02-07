@@ -7,7 +7,7 @@
 dnsbl
 
 # Check mail headers are valid
-data.rfc5322_header_checks
+data.headers
 
 # block mail from some known bad HELOs - see config/helo.checks.ini for configuration
 helo.checks

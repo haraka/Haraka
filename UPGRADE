@@ -1,0 +1,9 @@
+
+2013.12.27
+
+new plugin: data.headers
+   
+   deprecates data.rfc5322_header_checks.js
+   deprecates data.noreceived.js
+   deprecates data.nomsgid.js
+

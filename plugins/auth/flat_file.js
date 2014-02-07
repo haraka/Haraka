@@ -5,6 +5,8 @@ exports.register = function () {
 }
 
 exports.hook_capabilities = function (next, connection) {
+    // don't allow AUTH unless private IP or encrypted
+    if (!net_utils.is_rfc1918(connection.remote_ip) && !connection.using_tls) return next();
     var config = this.config.get('auth_flat_file.ini');
     var methods = (config.core && config.core.methods ) ? config.core.methods.split(',') : null;
     if(methods && methods.length > 0) {

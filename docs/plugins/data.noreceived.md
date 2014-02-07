@@ -1,6 +1,8 @@
 data.noreceived
 ===============
 
+NOTICE: this plugin is deprecated. Use data.headers instead.
+
 This plugin very simply blocks any mail arriving at your system that has no
 `Received` headers.
 

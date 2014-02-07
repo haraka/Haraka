@@ -1,4 +1,4 @@
-relay_all
+relay\_all
 =========
 
 This plugin is useful in spamtraps to accept mail to any host, and to allow

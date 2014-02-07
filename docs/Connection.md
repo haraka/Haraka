@@ -10,19 +10,19 @@ API
 
 A unique UUID for this connection.
 
-* connection.remote_ip
+* connection.remote\_ip
 
 The remote IP address
 
-* connection.remote_host
+* connection.remote\_host
 
 The rDNS of the remote IP
 
-* connection.local_ip
+* connection.local\_ip
 
 The bound IP address of the server as reported by the OS
 
-* connection.local_port
+* connection.local\_port
 
 The bound port number of the server which is handling the connection.
 If you have specified multiple listen= ports this variable is useful
@@ -33,7 +33,7 @@ port
 
 Either 'EHLO' or 'HELO' whichever the remote end used
 
-* connection.hello_host
+* connection.hello\_host
 
 The hostname given to HELO or EHLO
 
@@ -53,15 +53,15 @@ A boolean flag to say whether this connection is allowed to relay mails (i.e.
 deliver mails outbound). This is normally set by SMTP AUTH, or sometimes via
 an IP address check.
 
-* connection.current_line
+* connection.current\_line
 
 For low level use. Contains the current line sent from the remote end,
 verbatim as it was sent. Can be useful in certain botnet detection techniques.
 
-* connection.last_response
+* connection.last\_response
 
 Contains the last SMTP response sent to the client.
 
-* connection.remote_close
+* connection.remote\_close
 
 For low level use.  This value is set when the remote host drops the connection.

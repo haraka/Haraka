@@ -1,4 +1,4 @@
-max_unrecognized_commands
+max\_unrecognized\_commands
 =========================
 
 This plugin places a maximum limit on the number of unrecognized commands
@@ -10,7 +10,7 @@ immediately (and rudely - technically an RFC violation) disconnected.
 Configuration
 -------------
 
-* max_unrecognized_commands
+* max\_unrecognized\_commands
 
   Specifies the number of unrecognised commands to allow before disconnecting.
   Default: 10.

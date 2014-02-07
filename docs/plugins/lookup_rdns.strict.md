@@ -1,4 +1,4 @@
-lookup_rdns.strict
+lookup\_rdns.strict
 ===========
 
 This plugin checks the reverse-DNS and compares the resulting addresses
@@ -6,60 +6,60 @@ against forward DNS for a match.  If there is no match it sends a
 DENYDISCONNECT, otherwise if it matches it sends an OK.  DENYDISCONNECT
 messages are configurable.
 
-Configuration lookup_rdns.strict.ini
+Configuration lookup\_rdns.strict.ini
 --------------------------------------------
 
 This is the general configuration file for the plugin.  In it you can find
 ways to customize user messages, specify timeouts, and some whitelist
 parsing options.
 
-* lookup_rdns.strict.general.nomatch
+* lookup\_rdns.strict.general.nomatch
 
   Text to send the user if there is no reverse to forward match (text).
 
 
-* lookup_rdns.strict.general.timeout
+* lookup\_rdns.strict.general.timeout
 
   How long we should give this plugin before we time it out (seconds).
 
 
-* lookup_rdns.strict.general.timeout_msg
+* lookup\_rdns.strict.general.timeout\_msg
 
   Text to send when plugin reaches timeout (text).
 
 
-* lookup_rdns.strict.forward.nxdomain
+* lookup\_rdns.strict.forward.nxdomain
 
   Text to send the user if there is no forward match (text).
 
 
-* lookup_rdns.strict.forward.dnserror
+* lookup\_rdns.strict.forward.dnserror
 
   Text to send the user if there is some other error with the forward
   lookup (text).
 
 
-* lookup_rdns.strict.reverse.nxdomain
+* lookup\_rdns.strict.reverse.nxdomain
 
   Text to send the user if there is no reverse match (text).
 
 
-* lookup_rdns.strict.reverse.dnserror
+* lookup\_rdns.strict.reverse.dnserror
 
   Text to send the user if there is some other error with the reverse
   lookup (text).
 
 
-Configuration lookup_rdns.strict.timeout
+Configuration lookup\_rdns.strict.timeout
 ------------------------------------------------
 
 This is how we specify to Haraka that our plugin should have a certain timeout.
 If you specify 0 here, then the plugin will never timeout while the connection
 is active.  This is also required for this plugin, which needs to handle its
 own timeouts.  To actually specify the timeout for this plugin, please see
-the general config in lookup_rdns.strict.ini.
+the general config in lookup\_rdns.strict.ini.
 
-Configuration lookup_rdns.strict.whitelist
+Configuration lookup\_rdns.strict.whitelist
 --------------------------------------------------
 
 No matter how much you believe in checking that DNS and rDNS match, it is not
@@ -70,7 +70,7 @@ providing a whitelist.
 This file will match exactly what you put on each line.
 
 
-Configuration lookup_rdns.strict.whitelist_regex
+Configuration lookup\_rdns.strict.whitelist\_regex
 --------------------------------------------------------
 
 Does the same thing as the whitelist file, but each line is a regex.

@@ -1,4 +1,4 @@
-rate_limit
+rate\_limit
 ==========
 
 This pluign enforces limits on connection concurrency, connection rate and 
@@ -19,7 +19,7 @@ hiredis and ipaddr.js packages installed via:
 Configuration
 -------------
 
-This plugin uses the configuration file rate_limit.ini which is checked for 
+This plugin uses the configuration file rate\_limit.ini which is checked for 
 updates before each hook, so changes to this file will never require a restart 
 and will take effect immediately after the changes are saved.
 
@@ -27,14 +27,14 @@ The configuration options for each heading are detailed below:
 
 ### [main]
 
-- redis_server = \<ip | host\>[:port] *(optional)*
+- redis\_server = \<ip | host\>[:port] *(optional)*
 
     If port is missing then it defaults to 6379.  
     If this setting is missing entirely then it defaults to 127.0.0.1:6379.
     
     Note that Redis does not currently support IPv6.
 
-- tarpit_delay = seconds *(optional)*
+- tarpit\_delay = seconds *(optional)*
 
     Set this to the length in seconds that you want to delay every SMTP 
     response to a remote client that has exceeded the rate limits.  For this 
@@ -117,35 +117,35 @@ per-child if you use the cluster module.
 IP and rDNS names are looked up by this test.  This section does *not* accept an 
 interval.  It's a hard limit on the number of connections and not based on time.
 
-### [rate_conn]
+### [rate\_conn]
 
 This section limits the number of connections per interval from a given host 
 or set of hosts.
 
 IP and rDNS names are looked up by this test.
 
-### [rate_rcpt_host]
+### [rate\_rcpt\_host]
 
 This section limits the number of recipients per interval from a given host or 
 set of hosts. 
 
 IP and rDNS names are looked up by this test.
 
-### [rate_rcpt_sender]
+### [rate\_rcpt\_sender]
 
 This section limits the number of recipients per interval from a sender or 
 sender domain.
 
 The sender is looked up by this test.
 
-### [rate_rcpt]
+### [rate\_rcpt]
 
 This section limits the rate which a recipient or recipient domain can 
 receive messages over an interval.
 
 Each recipient is looked up by this test.
 
-### [rate_rcpt_null]
+### [rate\_rcpt\_null]
 
 This section limits the rate at which a recipient can receive messages from 
 a null sender (e.g. DSN, MDN etc.) over an interval.

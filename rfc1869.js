@@ -76,7 +76,7 @@ exports.parse = function(type, line, strict) {
         }
     }
     else {
-        console.log("Looking at " + line);
+        // console.log("Looking at " + line);
         if (line.match(/\@.*\s/)) {
             throw new Error("Syntax error in parameters");
         } 
@@ -84,8 +84,10 @@ exports.parse = function(type, line, strict) {
             if (line.match(/\s/)) {
                 throw new Error("Syntax error in parameters");
             }
-            else if (line.match(/\@/) && !line.match(/^<.*>$/)) {
-                line = '<' + line + '>';
+            else if (line.match(/\@/)) {
+                if (!line.match(/^<.*>$/)) {
+                    line = '<' + line + '>';
+                }
             }
             else if (!line.match(/^(postmaster|abuse)$/i)) {
                 throw new Error("Syntax error in address");

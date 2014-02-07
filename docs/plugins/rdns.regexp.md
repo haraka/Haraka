@@ -2,8 +2,8 @@ rdns.regexp
 ===========
 
 WARNING: The services offered by this plugin, and much more, are now provided
-more efficiently with the connect.rdns_access plugin.  Please transition over
-to using the new connect.rdns_access plugin, as this plugin is now deprecated
+more efficiently with the connect.rdns\_access plugin.  Please transition over
+to using the new connect.rdns\_access plugin, as this plugin is now deprecated
 and may be removed in a future version of Haraka.
 
 This plugin checks the reverse-DNS against a list of regular expressions. Any
@@ -21,12 +21,12 @@ superseded by the allow rule for generaldynamics.com.
 Configuration
 -------------
 
-* rdns.deny_regexps
+* rdns.deny\_regexps
 
   The list of regular expressions to deny.  Over broad regexes in this list
   can be corrected by using the allow list. 
 
-* rdns.allow_regexps
+* rdns.allow\_regexps
 
   The list of regular expressions to allow.  This list is always processed
   in favor of rules in the deny file.

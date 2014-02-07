@@ -1,4 +1,4 @@
-Net_Utils
+Net\_Utils
 =========
 
 This module provides network utility functions.

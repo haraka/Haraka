@@ -240,7 +240,7 @@ Connection.prototype.process_line = function (line) {
                 else {
                     this.logerror(method + " failed: " + err);
                 }
-                this.respond(500, "Internal Server Error", function() {
+                this.respond(421, "Internal Server Error", function() {
                     self.disconnect();
                 });
             }
@@ -884,6 +884,7 @@ Connection.prototype.rcpt_ok_respond = function (retval, msg) {
     this.lognotice(dmsg + ' ' + [ 
         'code=' + constants.translate(retval),
         'msg="' + (msg || '') + '"',
+        'sender="' + this.transaction.mail_from.address() + '"',
     ].join(' '));
     switch (retval) {
         case constants.deny:
@@ -934,6 +935,7 @@ Connection.prototype.rcpt_respond = function(retval, msg) {
         this.lognotice(dmsg + ' ' + [
             'code=' + constants.translate(retval),
             'msg="' + (msg || '') + '"',
+            'sender="' + this.transaction.mail_from.address() + '"',
         ].join(' '));
     }
     switch (retval) {
@@ -1120,7 +1122,13 @@ Connection.prototype.cmd_mail = function(line) {
         else {
             this.logerror(err);
         }
-        return this.respond(501, ["Command parsing failed", err]);
+        // Explicitly handle out-of-disk space errors
+        if (err.code === 'ENOSPC') {
+            return this.respond(452, 'Internal Server Error');
+        }
+        else {
+            return this.respond(501, ["Command parsing failed", err]);
+        }
     }
    
     // Get rest of key=value pairs
@@ -1146,7 +1154,7 @@ Connection.prototype.cmd_mail = function(line) {
     
     var self = this;
     this.init_transaction(function () {
-        self.transaction.mail_from = from
+        self.transaction.mail_from = from;
         plugins.run_hooks('mail', self, [from, params]);
     });
 };
@@ -1169,7 +1177,13 @@ Connection.prototype.cmd_rcpt = function(line) {
         else {
             this.logerror(err);
         }
-        return this.respond(501, ["Command parsing failed", err]);
+        // Explicitly handle out-of-disk space errors
+        if (err.code === 'ENOSPC') {
+            return this.respond(452, 'Internal Server Error');
+        } 
+        else {
+            return this.respond(501, ["Command parsing failed", err]);
+        }
     }
     
     // Get rest of key=value pairs
@@ -1218,6 +1232,50 @@ Connection.prototype.received_line = function() {
     ].join('');
 };
 
+Connection.prototype.auth_results = function(message) {
+    // http://tools.ietf.org/search/rfc7001
+    var has_conn = this.notes.authentication_results ? true : false;
+    var has_tran = (this.transaction && this.transaction.notes) ? true : false;
+
+    // initialize connection note
+    if (has_conn === false) { this.notes.authentication_results = []; }
+
+    // initialize transaction note, if possible
+    if (has_tran === true && !this.transaction.notes.authentication_results) {
+        this.transaction.notes.authentication_results = [];
+    }
+
+    // if message, store it in the appropriate note
+    if (message) {
+        if (has_tran === true) {
+            this.transaction.notes.authentication_results.push(message);
+        }
+        else {
+            this.notes.authentication_results.push(message);
+        }
+    }
+
+    // assemble the new header
+    var header = [ config.get('me') ];
+    if (has_conn === true) header.push(this.notes.authentication_results.join('; '));
+    if (has_tran === true) header.push(this.transaction.notes.authentication_results.join('; '));
+    if (header.length === 1) return '';  // no results
+    return header.join('; ');
+};
+
+Connection.prototype.auth_results_clean = function() {
+    // move any existing Auth-Res headers to Original-Auth-Res headers
+    // http://tools.ietf.org/html/draft-kucherawy-original-authres-00.html
+    var ars = this.transaction.header.get_all('Authentication-Results');
+    if (ars.length === 0) return;
+
+    for (var i=0; i < ars.length; i++) {
+        this.transaction.header.remove_header( ars[i] );
+        this.transaction.header.add_header('Original-Authentication-Results', ars[i]);
+    }
+    this.logdebug("Authentication-Results moved to Original-Authentication-Results");
+};
+
 Connection.prototype.cmd_data = function(args) {
     // RFC 5321 Section 4.3.2
     // DATA does not accept arguments
@@ -1232,6 +1290,9 @@ Connection.prototype.cmd_data = function(args) {
     }
 
     this.accumulate_data('Received: ' + this.received_line() + "\r\n");
+    this.auth_results_clean();   // rename old A-R headers
+    var ar_field = this.auth_results();  // assemble new one
+    if (ar_field) this.transaction.add_header('Authentication-Results', ar_field);
     plugins.run_hooks('data', this);
 };
 

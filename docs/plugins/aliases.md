@@ -7,7 +7,7 @@ a JSON formatted configuration file, and must have at very least an action.
 Any syntax error found in the JSON format config file will stop the server
 from running.
 
-WARNING: DO NOT USE THIS PLUGIN WITH queue/smtp_proxy.
+WARNING: DO NOT USE THIS PLUGIN WITH queue/smtp\_proxy.
 
 Configuration
 -------------

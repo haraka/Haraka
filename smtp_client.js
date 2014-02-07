@@ -208,6 +208,19 @@ SMTPClient.prototype.destroy = function () {
     }
 };
 
+SMTPClient.prototype.is_dead_sender = function (plugin, connection) {
+    if (!connection.transaction) {
+        // This likely means the sender went away on us, cleanup.
+        connection.logwarn(
+          plugin, "transaction went away, releasing smtp_client"
+        );
+        this.release();
+        return true;
+    }
+
+    return false;
+};
+
 // Separate pools are kept for each set of server attributes.
 exports.get_pool = function (server, port, host, connect_timeout, pool_timeout, max) {
     var port = port || 25;
@@ -279,6 +292,9 @@ exports.get_client_plugin = function (plugin, connection, config, callback) {
         config.main.host, config.main.connect_timeout, config.main.timeout, config.main.max_connections);
     pool.acquire(function (err, smtp_client) {
         connection.logdebug(plugin, 'Got smtp_client: ' + smtp_client.uuid);
+        
+        var secured = false;
+
         smtp_client.call_next = function (retval, msg) {
             if (this.next) {
                 var next = this.next;
@@ -315,11 +331,12 @@ exports.get_client_plugin = function (plugin, connection, config, callback) {
                         return;
                     }
                 }
-                if (smtp_client.response[line].match(/^STARTTLS/)) {
+                if (smtp_client.response[line].match(/^STARTTLS/) && !secured) {
                     tls_key = plugin.config.get('tls_key.pem', 'binary');
                     tls_cert = plugin.config.get('tls_cert.pem', 'binary');
                     if (tls_key && tls_cert && enable_tls) {
                         smtp_client.socket.on('secure', function () {
+                            secured = true;
                             smtp_client.emit('greeting', 'EHLO');
                         });
                         smtp_client.send_command('STARTTLS');
@@ -361,16 +378,22 @@ exports.get_client_plugin = function (plugin, connection, config, callback) {
                 }
             }
             else {
+                if (smtp_client.is_dead_sender(plugin, connection)) {
+                  return;
+                }
                 smtp_client.send_command('MAIL',
                     'FROM:' + connection.transaction.mail_from);
             }
         });
 
         smtp_client.on('auth', function () {
+            if (smtp_client.is_dead_sender(plugin, connection)) {
+              return;
+            }
             smtp_client.authenticated = true;
             smtp_client.send_command('MAIL',
                 'FROM:' + connection.transaction.mail_from);
-        })
+        });
 
         smtp_client.on('error', function (msg) {
             connection.logwarn(plugin, msg);

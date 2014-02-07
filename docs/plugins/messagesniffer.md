@@ -48,7 +48,7 @@ connection and the `[message]` section is used to specify the action to be taken
     Temporary directory used to write temporary message files to that are read by the SNFServer daemon.
     This directory and the files within need to be readable by the user that SNFServer is running as.
 
-- gbudb_report_deny = [ true | false | 0 | 1 ]
+- gbudb\_report\_deny = [ true | false | 0 | 1 ]
 
     Default: false
     This is an experimental option that will record a GBUdb 'bad' encounter for a connected IP address when a client 
@@ -56,7 +56,7 @@ connection and the `[message]` section is used to specify the action to be taken
     some point during the session.  The idea behind this option is that it allows other Haraka plugins rejections influence 
     GBUdb IP reputation where MessageSniffer isn't seeing the actual message because it is being rejected pre-DATA.
 
-- tag_string
+- tag\_string
 
     Default: [SPAM]
     String to prepend to the Subject line if the 'tag' action is applied.
@@ -90,7 +90,7 @@ connection and the `[message]` section is used to specify the action to be taken
     Default: continue
     Action to take when MessageSniffer reports a 'white' result (result code: 0).
 
-- local_white = [ accept | allow | continue | retry | tempfail | reject | quarantine | tag ]
+- local\_white = [ accept | allow | continue | retry | tempfail | reject | quarantine | tag ]
 
     Default: accept
     Action to take when MessageSniffer reports a local whitelist result (result code: 1).
@@ -117,7 +117,7 @@ connection and the `[message]` section is used to specify the action to be taken
     NOTE: GBUdb IP lookups during the data phase can be different than the connecting IP address if you have configured 
     Source and DrillDown options in the Training section of SNFServer.xml.
 
-- code_NN = [ accept | allow | continue | retry | tempfail | reject | quarantine | tag ]
+- code\_NN = [ accept | allow | continue | retry | tempfail | reject | quarantine | tag ]
 
     NOTE: replace NN with the numeric MessageSniffer [result code](http://armresearch.com/support/articles/software/snfServer/core.jsp)
     Action to take when MessageSniffer reports a result code other than those explicitly defined above.
@@ -126,7 +126,7 @@ connection and the `[message]` section is used to specify the action to be taken
 
     Defalt: reject
     Action to take for any non-zero result code other than those explicity defined above.  This is a catch-all result that 
-    is checked last after all other settings have been checked so you can define a code_NN value to prevent this action from 
+    is checked last after all other settings have been checked so you can define a code\_NN value to prevent this action from 
     being taken.
 
 Actions
@@ -158,6 +158,6 @@ Actions
 
 * tag
 
-    Tag the subject with the default 'tag_string' defined in the `main` section above, this will also set X-Spam-Flag: YES in 
+    Tag the subject with the default 'tag\_string' defined in the `main` section above, this will also set X-Spam-Flag: YES in 
     the message headers.   Once tagged, processing will continue to the next plugin.
     

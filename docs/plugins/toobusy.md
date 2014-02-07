@@ -10,7 +10,7 @@ To use this plugin you have to install the 'toobusy' module by running
 'npm install toobusy' in your Haraka configuration directory.
 
 This plugin should be listed at the top of your config/plugins file so that 
-it runs before any other plugin that hooks lookup_rdns.
+it runs before any other plugin that hooks lookup\_rdns.
 
 Configuration
 -------------

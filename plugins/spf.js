@@ -52,8 +52,10 @@ exports.hook_mail = function (next, connection, params) {
     var mfrom = params[0].address();
     var host = params[0].host;
     var spf = new SPF();
+    var auth_result;
 
     if (connection.notes.spf_helo) {
+        auth_result = spf.result(connection.notes.spf_helo).toLowerCase();
         // Add a trace header
         txn.add_leading_header('Received-SPF', 
             spf.result(connection.notes.spf_helo) +
@@ -68,6 +70,7 @@ exports.hook_mail = function (next, connection, params) {
             ].join('; '));
         // Use the result from HELO if the return-path is null
         if (!host) {
+            connection.auth_results( "spf="+auth_result+" smtp.helo="+connection.hello_host);
             switch (connection.notes.spf_helo) {
                 case spf.SPF_NONE:
                 case spf.SPF_NEUTRAL:
@@ -141,6 +144,8 @@ exports.hook_mail = function (next, connection, params) {
                 'helo=' + connection.hello_host,
                 'envelope-from=<' + mfrom + '>',
             ].join('; '));
+        auth_result = spf.result(result).toLowerCase();
+        connection.auth_results( "spf="+auth_result+" smtp.mailfrom="+host);
         txn.notes.spf_mail_result = spf.result(result);
         txn.notes.spf_mail_record = spf.spf_record;
         switch (result) {

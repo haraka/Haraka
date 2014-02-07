@@ -28,14 +28,14 @@ different levels available.
     children as there are CPUs (default: 0, which disables cluster mode)
   * user - optionally a user to drop privileges to. Can be a string or UID.
   * group - optionally a group to drop privileges to. Can be a string or GID.
-  * ignore_bad_plugins - If a plugin fails to compile by default Haraka will stop at load time.
+  * ignore\_bad\_plugins - If a plugin fails to compile by default Haraka will stop at load time.
     If, however, you wish to continue on without that plugin's facilities, then
     set this config option
   * daemonize - enable this to cause Haraka to fork into the background on start-up (default: 0)
-  * daemon_log_file - (default: /var/log/haraka.log) where to redirect stdout/stderr when daemonized
-  * daemon_pid_file - (default: /var/run/haraka.pid) where to write a PID file to
-  * spool_dir - (default: none) directory to create temporary spool files in
-  * spool_after - (default: -1) if message exceeds this size in bytes, then spool the message to disk
+  * daemon\_log\_file - (default: /var/log/haraka.log) where to redirect stdout/stderr when daemonized
+  * daemon\_pid\_file - (default: /var/run/haraka.pid) where to write a PID file to
+  * spool\_dir - (default: none) directory to create temporary spool files in
+  * spool\_after - (default: -1) if message exceeds this size in bytes, then spool the message to disk
     specify -1 to disable spooling completely or 0 to force all messages to be spooled to disk.
 
 [1]: http://learnboost.github.com/cluster/ or node version >= 0.8
@@ -45,7 +45,7 @@ different levels available.
   A name to use for this server. Used in received lines and elsewhere. Setup
   by default to be your hostname.
 
-* deny_includes_uuid
+* deny\_includes\_uuid
 
   Each connection and mail in Haraka includes a UUID which is also in most log
   messages. If you put a `1` in this file then every denied mail (either via
@@ -57,7 +57,7 @@ different levels available.
   file, it will be truncated to that length. We recommend a 6 as a good
   balance of finding in the logs and not making lines too long.
 
-* banner_include_uuid
+* banner\_include\_uuid
 
   This will add the full UUID to the first line of the SMTP greeting banner.
 
@@ -94,19 +94,19 @@ different levels available.
   if required (this may cause some connecting machines to fail - though
   usually only spam-bots).
 
-* max_received_count
+* max\_received\_count
 
   The maximum number of "Received" headers allowed in an email. This is a
   simple protection against mail loops. Defaults to 100.
 
-* max_line_length
+* max\_line\_length
 
   The maximum length of lines in SMTP session commands (e.g. RCPT, HELO etc).
   Defaults to 512 (bytes) which is mandated by RFC 5321 §4.5.3.1.4. Clients
   exceeding this limit will be immediately disconnected with a "521 Command
   line too long" error.
 
-* max_data_line_length
+* max\_data\_line\_length
 
   The maximum length of lines in the DATA section of emails. Defaults to 992
   (bytes) which is the limit set by Sendmail. When this limit is exceeded the
@@ -116,7 +116,7 @@ different levels available.
   as Sendmail. Also when the data line length limit is exceeded
   `transaction.notes.data_line_length_exceeded` is set to `true`.
 
-* outbound.concurrency_max
+* outbound.concurrency\_max
 
   Maximum concurrency to use when delivering mails outbound. Defaults to 100.
 
@@ -125,13 +125,23 @@ different levels available.
   Put a `1` in this file to temporarily disable outbound delivery. Useful to
   do while you're figuring out network issues, or just testing things.
 
-* outbound.bounce_message
+* outbound.bounce\_message
 
   The bounce message should delivery of the mail fail. See the source of. The
   default is normally fine. Bounce messages contain a number of template
   replacement values which are best discovered by looking at the source code.
 
-* haproxy_hosts
+* haproxy\_hosts
 
   A list of HAProxy hosts that Haraka should enable the PROXY protocol from.
   See HAProxy.md
+
+* strict\_rfc1869
+
+  When enabled, this setting requires senders to conform to RFC 1869 and
+  RFC 821 when sending the MAIL FROM and RCPT TO commands. In particular,
+  the inclusion of spurious spaces or missing angle brackets will be rejected.
+
+  to enable:   `echo 1 > /path/to/haraka/config/strict_rfc1869`
+  to disable:  `echo 0 > /path/to/haraka/config/strict_rfc1869`
+

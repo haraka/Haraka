@@ -28,7 +28,7 @@ The main section can contain the following options:
   lookups that takes longer than this will be aborted and the session
   will continue.
 
-* max_uris_per_list                                     
+* max\_uris\_per\_list                                     
 
   Default: 20
 
@@ -73,7 +73,7 @@ the blacklist.
 
 The following are optional for each list:
 
-* custom_msg
+* custom\_msg
 
   A custom rejection message that will be returned to the SMTP client
   if the list returns a positive result.  If found within the string 
@@ -94,12 +94,12 @@ The following are optional for each list:
   combine multiple lists into a single zone.  Using this you may specify
   which lists within the zone you want use.
 
-* no_ip_lookups = 1 | true | yes | on | enabled
+* no\_ip\_lookups = 1 | true | yes | on | enabled
 
   Specifies that no IP addresses should ever be check against this list.
   This is required for lists list dbl.spamhaus.org.
 
-* strip_to_domain= 1 | true | yes | on | enabled
+* strip\_to\_domain= 1 | true | yes | on | enabled
 
   Specifies that the list requires hostnames be stripped down to the
   domain boundaries prior to querying the list.  This is required for
