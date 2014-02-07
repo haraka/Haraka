@@ -206,7 +206,7 @@ exports.karma_onDisconnect = function (next, connection) {
     var key = 'karma|' + connection.remote_ip;
     var history = k.history;
 
-    if (config.threshold) {
+    if (config.thresholds) {
         var pos_lim = config.thresholds.positive || 2;
 
         if (k.connection > pos_lim) {
