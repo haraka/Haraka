@@ -13,7 +13,7 @@ exports.hook_queue = function (next, connection) {
         smtp_client.next = next;
         var rcpt = 0;
         var send_rcpt = function () {
-            if (_is_dead_sender(plugin, connection, smtp_client)) {
+            if (smtp_client.is_dead_sender(plugin, connection)) {
                 return;
             }
             else if (rcpt < connection.transaction.rcpt_to.length) {
@@ -34,14 +34,14 @@ exports.hook_queue = function (next, connection) {
         }
 
         smtp_client.on('data', function () {
-            if (_is_dead_sender(plugin, connection, smtp_client)) {
+            if (smtp_client.is_dead_sender(plugin, connection)) {
                 return;
             }
             smtp_client.start_data(connection.transaction.message_stream);
         });
 
         smtp_client.on('dot', function () {
-            if (_is_dead_sender(plugin, connection, smtp_client)) {
+            if (smtp_client.is_dead_sender(plugin, connection)) {
                 return;
             }
             else if (rcpt < connection.transaction.rcpt_to.length) {
@@ -54,7 +54,7 @@ exports.hook_queue = function (next, connection) {
         });
 
         smtp_client.on('rset', function () {
-            if (_is_dead_sender(plugin, connection, smtp_client)) {
+            if (smtp_client.is_dead_sender(plugin, connection)) {
                 return;
             }
             smtp_client.send_command('MAIL',
@@ -62,7 +62,7 @@ exports.hook_queue = function (next, connection) {
         });
 
         smtp_client.on('bad_code', function (code, msg) {
-            if (_is_dead_sender(plugin, connection, smtp_client)) {
+            if (smtp_client.is_dead_sender(plugin, connection)) {
                 return;
             }
             smtp_client.call_next(((code && code[0] === '5') ? DENY : DENYSOFT), 
@@ -71,18 +71,5 @@ exports.hook_queue = function (next, connection) {
         });
     });
 };
-
-function _is_dead_sender(plugin, connection, smtp_client) {
-    if (!connection.transaction) {
-        // This likely means the sender went away on us, cleanup.
-        connection.logwarn(
-          plugin,"transaction went away, releasing smtp_client"
-        );
-        smtp_client.release();
-        return true;
-    }
-
-    return false;
-}
 
 exports.hook_queue_outbound = exports.hook_queue;

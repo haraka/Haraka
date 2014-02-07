@@ -208,6 +208,19 @@ SMTPClient.prototype.destroy = function () {
     }
 };
 
+SMTPClient.prototype.is_dead_sender = function (plugin, connection) {
+    if (!connection.transaction) {
+        // This likely means the sender went away on us, cleanup.
+        connection.logwarn(
+          plugin, "transaction went away, releasing smtp_client"
+        );
+        this.release();
+        return true;
+    }
+
+    return false;
+};
+
 // Separate pools are kept for each set of server attributes.
 exports.get_pool = function (server, port, host, connect_timeout, pool_timeout, max) {
     var port = port || 25;
@@ -365,16 +378,22 @@ exports.get_client_plugin = function (plugin, connection, config, callback) {
                 }
             }
             else {
+                if (smtp_client.is_dead_sender(plugin, connection)) {
+                  return;
+                }
                 smtp_client.send_command('MAIL',
                     'FROM:' + connection.transaction.mail_from);
             }
         });
 
         smtp_client.on('auth', function () {
+            if (smtp_client.is_dead_sender(plugin, connection)) {
+              return;
+            }
             smtp_client.authenticated = true;
             smtp_client.send_command('MAIL',
                 'FROM:' + connection.transaction.mail_from);
-        })
+        });
 
         smtp_client.on('error', function (msg) {
             connection.logwarn(plugin, msg);

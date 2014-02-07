@@ -27,6 +27,7 @@ exports.try_auth_vpopmaild = function (connection, user, passwd, cb) {
 
     var auth_success = false;
     var result = "";
+    var ok_count = 0;
 
     var socket = new sock.Socket();
     socket.connect( ( config.main.port || 89), (config.main.host || '127.0.0.1') );
@@ -38,25 +39,32 @@ exports.try_auth_vpopmaild = function (connection, user, passwd, cb) {
     });
     socket.on('error', function (err) {
         connection.logerror(plugin, "vpopmaild connection failed: " + err);
+        socket.end();
     });
     socket.on('connect', function () {
-        socket.write("login " + user + ' ' + passwd + "\n\r");
+        // wait for server to send us +OK vvvvv
     });
     socket.on('line', function (line) {
-        connection.logprotocol(plugin, 'C:' + line);
-        if (line.match(/^\+OK/)) {
-            auth_success = true;
+        if (line.match(/^\+OK/)) {    // default server response: +OK
+            ok_count++;
+            if (ok_count === 1) {     // first OK is just a 'ready'
+                socket.write("slogin " + user + ' ' + passwd + "\n\r");
+            }
+            if (ok_count === 2) {     // second OK is response to slogin
+                auth_success = true;
+                socket.write("quit\n\r");
+            }
         }
-        if ( line.match(/^\./) ) {
-            socket.end();
+        if (line.match(/^\-ERR/)) {   // auth failed
+            // DANGER, do not say 'goodbye' to the server with "quit\n\r". The
+            // server will respond '+OK', which could be mis-interpreted as an
+            // auth response.
+            socket.end();             // disconnect
         }
-    });
-    socket.on('close', function () {
-        connection.loginfo(plugin, 'AUTH user="' + user + '" success=' + auth_success);
-        return cb(auth_success);
     });
     socket.on('end', function () {
-        //      return cb(auth_success);
+        connection.loginfo(plugin, 'AUTH user="' + user + '" success=' + auth_success);
+        return cb(auth_success);
     });
 };
 
