@@ -1,5 +1,6 @@
 // Check various bits of the HELO string
 var net_utils = require('./net_utils');
+var net = require('net');
 
 // Checks to implement:
 // - HELO has no "dot"
@@ -9,7 +10,7 @@ var net_utils = require('./net_utils');
 // - Well known HELOs that must match rdns
 // - IP literal that doesn't match connecting IP
 
-var reject=true;
+var reject=1;
 
 exports.register = function () {
     var plugin = this;
@@ -17,6 +18,7 @@ exports.register = function () {
 
     ['helo_no_dot',
      'helo_match_re',
+     'helo_match_rdns',
      'helo_raw_ip',
      'helo_is_dynamic',
      'helo_big_company',
@@ -31,10 +33,11 @@ exports.hook_connect = function (next, connection) {
     this.note_init({conn: connection, plugin: this});
 
     var config = this.config.get('helo.checks.ini');
-    if (cfg.main.reject !== 'undefined') reject = cfg.main.reject;
+    reject = config.main.reject;
+    if (reject === undefined) reject = 1;  // default
 
     return next();
-};
+}
 
 exports.helo_no_dot = function (next, connection, helo) {
     var config = this.config.get('helo.checks.ini');
@@ -82,6 +85,40 @@ exports.helo_match_re = function (next, connection, helo) {
     }
     if (fail && reject) return next(DENY, "BAD HELO");
     if (!fail) this.note({conn: connection, pass: 'match_re'});
+    return next();
+};
+
+exports.helo_match_rdns = function (next, connection, helo) {
+    var config = this.config.get('helo.checks.ini');
+    if (!config.main.check_rdns_match ) {
+        this.note({conn: connection, skip: 'check_rdns_match(config)'});
+        return next();
+    }
+    if (!helo) {
+        this.note({conn: connection, fail: 'check_rdns_match(empty)'});
+        return next();
+    }
+    var r_host = connection.remote_host;
+    if (helo && r_host && helo === r_host) {
+        this.note({conn: connection, pass: 'check_rdns_match'});
+        return next();
+    }
+    if (helo.match(/^\[(?:[0-9\.]+)\]$/)) {
+        this.note({conn: connection, fail: 'check_rdns_match(literal)'});
+        return next();
+    }
+    var r_host_bits = r_host.split('.');
+    var helo_bits = helo.split('.');
+    if (r_host_bits.length > 2 && helo_bits.length > 2) {
+        var r_domain = r_host_bits.slice(r_host_bits.length -2, 5).join('.');
+        var h_domain =   helo_bits.slice(       helo.length -2, 5).join('.');
+        if (r_domain === h_domain) {
+            this.note({conn: connection, pass: 'check_rdns_match(domain)'});
+            return next();
+        }
+    }
+
+    this.note({conn: connection, fail: 'check_rdns_match'});
     return next();
 };
 
