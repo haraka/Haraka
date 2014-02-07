@@ -115,14 +115,6 @@ exports.hook_rcpt_ok = function (next, connection, rcpt) {
     if (connection.notes.delay_deny_pre) {
         for (var i=0; i<connection.notes.delay_deny_pre.length; i++) {
             var params = connection.notes.delay_deny_pre[i];
-            // Implement client-is-mx here
-            // TODO: make this less hacky
-            if (transaction.notes.sender_auth) {
-                if (params[2] === 'rdns' || params[2] === 'helo.checks') {
-                    connection.loginfo(plugin, 'bypassing rDNS/HELO rejection for authorized sender');
-                    continue;
-                }
-            }
             return next(params[0], params[1]);
         }
     }
@@ -135,12 +127,6 @@ exports.hook_rcpt_ok = function (next, connection, rcpt) {
             // Remove rejection from the array if it was on the rcpt hooks
             if (params[5] === 'rcpt' || params[5] === 'rcpt_ok') {
                 transaction.notes.delay_deny_pre.splice(i, 1);
-            }
-
-            // Bypass SPF temporary failures for sender_auth
-            if (transaction.notes.sender_auth && params[0] === DENYSOFT && params[2] === 'spf') {
-                connection.loginfo(plugin, 'bypassing SPF temporary failure for authorized sender');
-                continue;
             }
 
             return next(params[0], params[1]);
