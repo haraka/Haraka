@@ -103,7 +103,17 @@ exports.check_asn_neighborhood = function (connection, asnkey, expire) {
 
         db.hincrby(asnkey, 'connections', 1);
         var net_score = parseFloat(res.good || 0) - (res.bad || 0);
-        plugin.note({conn: connection, neighborhood: net_score, emit: true});
+        if (!net_score) return;
+        plugin.note({conn: connection, neighbors: net_score, emit: true});
+
+        if (!plugin.config.get('karma.ini').asn_awards) return;
+        if (net_score < -5) {
+            plugin.note({conn: connection, fail: 'neighbors(asn)'});
+            return;
+        }
+        if (net_score > 5) {
+            plugin.note({conn: connection, pass: 'neighbors(asn)'});
+        }
         return;
     });
 };
@@ -120,7 +130,7 @@ exports.karma_onConnect = function (next, connection) {
     var dbkey = 'karma|' + rip;
     var cckey = 'concurrent|' + rip;
     var asnkey;
-    if (config.main.enable_asn && connection.notes['connect.asn']) {
+    if (config.main.asn_enable && connection.notes['connect.asn']) {
         asnkey = connection.notes['connect.asn'].asn;
         if (isNaN(asnkey)) asnkey = undefined;
         if (asnkey) plugin.check_asn_neighborhood(connection, asnkey, expire);
@@ -147,19 +157,16 @@ exports.karma_onConnect = function (next, connection) {
                 });
 
             var history = (dbr.good || 0) - (dbr.bad || 0);
-
             plugin.note({conn: connection, history: history, total_connects: dbr.connections});
 
             var too_many = plugin.check_concurrency(cckey, replies[0], history);
             if (too_many) {
                 plugin.note({conn: connection, fail: 'too_many_connects'});
-                return next(DENYSOFTDISCONNECT, too_many);
-/*  This causes "karma plugin ran callback multiple times" errors
                 var delay = config.concurrency.disconnect_delay || 10;
                 setTimeout(function ccr_max_to () {
                     return next(DENYSOFTDISCONNECT, too_many);
                 }, delay * 1000);
-*/
+                return;
             }
 
             if (dbr.penalty_start_ts === '0') {
@@ -180,8 +187,16 @@ exports.karma_onConnect = function (next, connection) {
             plugin.note({conn: connection, fail: 'penalty'});
 
             var left = +(penalty_days - days_old).toFixed(2);
-            var mess = "Bad karma, you can try again in " + left + " more days.";
-            return next(DENYDISCONNECT, mess);
+            var taunt = config.main.taunt;
+            if (!taunt || taunt === undefined) {
+                taunt = "Bad karma, you can try again in " + left + " more days.";
+            }
+            var delay = config.main.penalty_disconnect_delay || 5;
+            setTimeout(function penalty_disconnect () {
+                return next(DENYDISCONNECT, taunt);
+            }, delay * 1000);
+            return;
+            // return next(DENY, taunt);
         });
 
     plugin.check_awards(connection);
@@ -261,7 +276,7 @@ exports.karma_onData = function (next, connection) {
     var score = parseFloat(connection.notes.karma.connect);
 
     if (score <= negative_limit) {
-        return next(DENYDISCONNECT, "very bad karma score: " + score);
+        return next(DENY, "very bad karma score: " + score);
     }
 
     return next();
@@ -308,7 +323,7 @@ exports.karma_onDisconnect = function (next, connection) {
     if (config.concurrency) db.incrby('concurrent|' + connection.remote_ip, -1);
 
     var asnkey;
-    if (config.main.enable_asn && connection.notes['connect.asn']) {
+    if (config.main.asn_enable && connection.notes['connect.asn']) {
         asnkey = connection.notes['connect.asn'].asn;
         if (isNaN(asnkey)) asnkey = undefined;
     }
@@ -330,7 +345,7 @@ exports.karma_onDisconnect = function (next, connection) {
     if (config.thresholds) {
         var pos_lim = config.thresholds.positive || 2;
 
-    var pos_lim = config.thresholds.positive || 2;
+    var pos_lim = config.thresholds.positive || 3;
 
     if (k.connect > pos_lim) {
         db.hincrby(key, 'good', 1);
@@ -339,7 +354,7 @@ exports.karma_onDisconnect = function (next, connection) {
         return next();
     }
 
-    var bad_limit = config.thresholds.negative || -3;
+    var bad_limit = config.thresholds.negative || -5;
     if (k.connect > bad_limit) return next();
 
     db.hincrby(key, 'bad', 1);
