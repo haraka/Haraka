@@ -42,5 +42,9 @@ exports.basic = {
     'MAIL FROM:<user@domain> somekey other=foo': function (test) {
         _check(test, 'MAIL FROM:<user@domain> somekey other=foo',
             ['<user@domain>', 'somekey', 'other=foo']);
+    },
+    'RCPT TO ugly': function (test) {
+        _check(test, 'RCPT TO: 0@mailblog.biz 0=9 1=9',
+            ['<0@mailblog.biz>', '0=9', '1=9']);
     }
 };
