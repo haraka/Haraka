@@ -10,11 +10,11 @@ var all_opts     = append_lists.concat(overwrite_lists, log_opts, init_opts);
 
 exports.note = function (obj) {
     if (!validate_obj(obj)) throw("invalid obj!");
-
     var conn = obj.conn;
     var pi   = obj.plugin || this;
-    var name = get_note_name(pi);
-    var note = find_note(conn, name);
+    var name = pi.get_note_name();
+    var note = pi.find_note(conn, name);
+    if (!note) return;
 
     // these are arrays each invocation appends to
     for (var i=0; i < append_lists.length; i++) {
@@ -55,8 +55,9 @@ exports.note_collate = function (obj) {
     if (!validate_obj(obj)) throw("invalid request obj!");
     var conn = obj.conn;
     var pi   = obj.plugin || this;
-    var name = get_note_name(pi);
-    var note = find_note(conn, name);
+    var name = pi.get_note_name();
+    var note = pi.find_note(conn, name);
+    if (!note) return;
     return private_note_collate(note);
 };
 
@@ -83,16 +84,16 @@ function private_note_collate (note) {
     });
 
     note.human = r.join(',  ');
-    note.human_html = r.join(',  &#10;'); // #10 = newline within HTML title
+    note.human_html = r.join(', \t'); // #10 = newline within HTML title
     return r.join(',  ');
-};
+}
 
 exports.note_init = function (obj) {
     if (!validate_obj(obj)) throw("invalid obj!");
-    if (!obj.plugin) throw "plugin is required during init!";
+    // if (!obj.plugin) throw "plugin is required during init!";
     var conn = obj.conn;
     var pi   = obj.plugin || this;
-    var name = get_note_name(pi);
+    var name = pi.get_note_name();
     var note = obj.txn ? conn.transaction.notes[name] : conn.notes[name];
     if (note && note !== undefined) return; // init once per connection
 
@@ -113,21 +114,23 @@ exports.note_init = function (obj) {
     conn.notes[name] = note;
 };
 
-function get_note_name(plugin) {
-    // allows custom note name setting plugin.note_name in caller
-    if (plugin.note_name !== undefined) return plugin.note_name;
-    return plugin.name;
-}
-
-function find_note (conn, name) {
+exports.find_note = function (conn, name) {
     if (conn.transaction &&
         conn.transaction.notes[name] &&
         conn.transaction.notes[name].txn) {
             return conn.transaction.notes[name];
     }
     if (conn.notes[name]) return conn.notes[name];
-    throw "initialized note not found!";
-}
+    conn.logerror(this, "initialized note for " + name + " not found!");
+    return false;
+};
+
+exports.get_note_name = function () {
+    var plugin = this;
+    // allows custom note name setting plugin.note_name in caller
+    if (plugin.note_name !== undefined) return plugin.note_name;
+    return plugin.name;
+};
 
 function validate_obj (obj) {
     if (!obj) throw "obj required!";
