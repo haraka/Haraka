@@ -59,7 +59,7 @@ exports.bounce_data_post = function(next, connection) {
     return next();
 };
 
-function has_single_recipient(connection, plugin) {
+function has_single_recipient(connection) {
     if (connection.transaction.rcpt_to.length === 1) {
         plugin.note({conn: connection, pass: 'has_single_recipient', emit: true });
         return;
