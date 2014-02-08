@@ -1,4 +1,5 @@
 // Auth against a flat file
+var net_utils = require('./net_utils');
 
 exports.register = function () {
     this.inherits('auth/auth_base');
