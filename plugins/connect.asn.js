@@ -1,9 +1,20 @@
 // determine the ASN of the connecting IP
 
 var dns = require('dns');
+var providers = [];
 
 exports.register = function () {
     this.inherits('note');
+    var config = this.config.get('connect.asn.ini');
+    if (config.main.providers) {
+        providers = config.main.providers.split(/[\s,;]+/);
+    }
+    else {
+        providers = [ 'origin.asn.cymru.com' ];
+        // TODO: test after 3/1/2014 and see if bug is fixed
+        // providers.push('asn.routeviews.org');
+        // broken due to TXT handling bug in node.js
+    }
 };
 
 exports.hook_lookup_rdns = function (next, connection) {
@@ -11,10 +22,8 @@ exports.hook_lookup_rdns = function (next, connection) {
     plugin.note_init({conn: connection, plugin: this});
     var ip = connection.remote_ip;
 
-    var zones = ['origin.asn.cymru.com'
-        // TODO: test after 3/1/2014 and see if bug is fixed
-        // 'asn.routeviews.org'   // broken due to TXT handling bug in node.js
-        ].forEach(function(zone) {
+    for (var i=0; i < providers.length; i++) {
+        var zone = providers[i];
         connection.logprotocol(plugin, "zone: " + zone);
 
         var query = ip.split('.').reverse().join('.') + '.' + zone;
@@ -35,9 +44,12 @@ exports.hook_lookup_rdns = function (next, connection) {
                 else if (zone === 'asn.routeviews.org') {
                     plugin.parse_routeviews(addrs[i], connection);
                 }
+                else {
+                    throw "unrecognized ASN provider: " + zone;
+                }
             }
         });
-    });
+    }
 
     return next();
 };
