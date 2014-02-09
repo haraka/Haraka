@@ -19,7 +19,6 @@ var TimerQueue  = require('./timer_queue');
 var date_to_str = utils.date_to_str;
 var existsSync  = utils.existsSync;
 var FsyncWriteStream = require('./fsync_writestream');
-var rfc1869 = require('./rfc1869');
 
 var core_consts = require('constants');
 var WRITE_EXCL  = core_consts.O_CREAT | core_consts.O_TRUNC | core_consts.O_WRONLY | core_consts.O_EXCL;
@@ -891,9 +890,9 @@ HMailItem.prototype.try_deliver_host = function (mx) {
     }
     
     var host = this.hostlist.shift();
-    var port = mx.port || 25;
-    var socket = sock.connect({port: port, host: host, localAddress: mx.bind});
-    var self = this;
+    var port            = mx.port || 25;
+    var socket          = sock.connect({port: port, host: host, localAddress: mx.bind});
+    var self            = this;
     var processing_mail = true;
     if (mx.isLMTP) this.loginfo('LMTP detected');
 
@@ -987,20 +986,23 @@ HMailItem.prototype.try_deliver_host = function (mx) {
         }
     }
 
-    socket.rcpt_done = function (address_string) {
-        var rcpt_address = new Address(address_string);
+    function get_done_rcpt(rest) {
+        //unfortunately rfc1869 would fail here for some cases
+        var parsed = rest.trim().split(' ');
+        return new Address(parsed[0]);
+    }
+
+    socket.rcpt_done = function (rcpt_address) {
         self.loginfo('confirmed rcpt_address: ' + rcpt_address.format());
         for(var i=0, j=verified_rcpts.length; i<j; i++) {
             self.loginfo('checking against: ' + verified_rcpts[i].format());
             if (rcpt_address.format() === verified_rcpts[i].format()) {
                 self.loginfo('equal');
                 verified_rcpts.splice(i,1);
-                i--;
-                j--;
                 if (!verified_rcpts.length) {
                     socket.all_rcpts_done();
-                    return;
                 }
+                return;
             }
         }
         //TODO: how to handle confirmed but unknown receiver?
@@ -1055,10 +1057,7 @@ HMailItem.prototype.try_deliver_host = function (mx) {
                 if (code.match(/^4/)) {
                     if (/^rcpt/.test(command) || (command === 'dot' && mx.isLMTP)) {
                         // this recipient was rejected
-                        if(command === 'dot' && mx.isLMTP) {
-                            var parsed = rest.match(/<.*>/);//rfc1869.parse('lmtp', rest);
-                            if (parsed) last_recip = parsed[0];
-                        }
+                        if(command === 'dot' && mx.isLMTP) last_recip = get_done_rcpt(rest);
                         self.lognotice('recipient ' + last_recip + ' deferred: ' +
                              code + ' ' + ((extc) ? extc + ' ' : '') + response.join(' '));
                         (function () {
@@ -1081,10 +1080,7 @@ HMailItem.prototype.try_deliver_host = function (mx) {
                         return socket.send_command('HELO', config.get('me'));
                     }
                     if (/^rcpt/.test(command) || (command === 'dot' && mx.isLMTP)) {
-                        if(command === 'dot' && mx.isLMTP) {
-                            var parsed = rest.match(/<.*>/);//rfc1869.parse('lmtp', rest);
-                            if (parsed) last_recip = parsed[0];
-                        }
+                        if(command === 'dot' && mx.isLMTP) last_recip = get_done_rcpt(rest);
                         self.lognotice('recipient ' + last_recip + ' rejected: ' +
                             code + ' ' + ((extc) ? extc + ' ' : '') + response.join(' '));
                         (function() {
@@ -1116,7 +1112,7 @@ HMailItem.prototype.try_deliver_host = function (mx) {
                         var key = config.get('tls_key.pem', 'binary');
                         var cert = config.get('tls_cert.pem', 'binary');
                         var tls_options = { key: key, cert: cert };
-  
+
                         smtp_properties = {};
                         socket.upgrade(tls_options);
                         break;
@@ -1134,7 +1130,7 @@ HMailItem.prototype.try_deliver_host = function (mx) {
                             if (mx.isLMTP) verified_rcpts.push(last_recip);
                         }
                         if (!recipients.length) {
-                              if (fail_recips.length) {
+                            if (fail_recips.length) {
                                 self.refcount++;
                                 exports.split_to_new_recipients(self, fail_recips.map(map_recips), "Some recipients temporarily failed", function (hmail) {
                                     self.discard();
@@ -1180,8 +1176,7 @@ HMailItem.prototype.try_deliver_host = function (mx) {
                             socket.all_rcpts_done();
                         }
                         else {
-                            var parsed = rest.match(/<.*>/);//rfc1869.parse('lmtp', rest);
-                            if (code.match(/^250/) && parsed) socket.rcpt_done(parsed[0]);
+                            if (code.match(/^250/)) socket.rcpt_done(get_done_rcpt(rest));
                         }
                         break;
                     case 'quit':
