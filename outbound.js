@@ -880,8 +880,14 @@ HMailItem.prototype.try_deliver = function () {
 
 var smtp_regexp = /^(\d{3})([ -])(?:(\d\.\d\.\d)\s)?(.*)/;
 
-function map_recips(item) {
+function map_recips (item) {
     return Object.keys(item)[0];
+}
+
+function get_done_rcpt (rest) {
+    //unfortunately rfc1869 would fail here for some cases
+    var parsed = rest.trim().split(' ');
+    return new Address(parsed[0]);
 }
 
 HMailItem.prototype.try_deliver_host = function (mx) {
@@ -895,7 +901,7 @@ HMailItem.prototype.try_deliver_host = function (mx) {
     var self            = this;
     var processing_mail = true;
 
-    this.loginfo("Attempting to deliver to: " + host + ":" + port + (mx.isLMTP ? "using LMTP " : "") + " (" + delivery_queue.length() + ") (" + temp_fail_queue.length() + ")");
+    this.loginfo("Attempting to deliver to: " + host + ":" + port + (mx.using_lmtp ? "using LMTP " : "") + " (" + delivery_queue.length() + ") (" + temp_fail_queue.length() + ")");
 
     socket.on('error', function (err) {
         if (processing_mail) {
@@ -914,7 +920,7 @@ HMailItem.prototype.try_deliver_host = function (mx) {
 
     socket.setTimeout(300 * 1000); // TODO: make this configurable
 
-    var command = mx.isLMTP ? 'connectlmtp' : 'connect';
+    var command = mx.using_lmtp ? 'connectlmtp' : 'connect';
     var response = [];
     
     var recipients = this.todo.rcpt_to.map(function (a) { return new Address (a.original) });
@@ -935,8 +941,8 @@ HMailItem.prototype.try_deliver_host = function (mx) {
         "enh_status_codes": false,
     };
     
-    socket.send_command = function (cmd, data) {
-        if (!this.writable) {
+    var send_command = function (cmd, data) {
+        if (!socket.writable) {
             self.logerror("Socket writability went away");
             return self.try_deliver_host(mx);
         }
@@ -945,12 +951,12 @@ HMailItem.prototype.try_deliver_host = function (mx) {
             line = '.';
         }
         self.logprotocol("C: " + line);
-        this.write(line + "\r\n");
+        socket.write(line + "\r\n");
         command = cmd.toLowerCase();
         response = [];
     };
 
-    socket.process_ehlo_data = function () {
+    var process_ehlo_data = function () {
         for (var i=0,l=response.length; i < l; i++) {
             var r = response[i];
             if (r.toUpperCase() === '8BITMIME') {
@@ -972,39 +978,32 @@ HMailItem.prototype.try_deliver_host = function (mx) {
         }
 
         if (smtp_properties.tls && config.get('outbound.enable_tls') && !secured) {
-            this.on('secure', function () {
+            socket.on('secure', function () {
                 // Set this flag so we don't try STARTTLS again if it
                 // is incorrectly offered at EHLO once we are secured.
                 secured = true;
-                socket.send_command(mx.isLMTP ? 'LHLO' : 'EHLO', config.get('me'));
+                send_command(mx.using_lmtp ? 'LHLO' : 'EHLO', config.get('me'));
             });
-            this.send_command('STARTTLS');
+            send_command('STARTTLS');
         }
         else {
-            this.send_command('MAIL', 'FROM:' + mail_from);
+            send_command('MAIL', 'FROM:' + mail_from);
         }
     }
 
-    function get_done_rcpt(rest) {
-        //unfortunately rfc1869 would fail here for some cases
-        var parsed = rest.trim().split(' ');
-        return new Address(parsed[0]);
-    }
-
-    socket.rcpt_done = function (rcpt_address) {
-        for(var i=0, j=verified_rcpts.length; i<j; i++) {
-            if (rcpt_address.format() === verified_rcpts[i].format()) {
-                verified_rcpts.splice(i,1);
-                if (!verified_rcpts.length) {
-                    socket.all_rcpts_done(true);
-                }
-                return;
-            }
+    var rcpt_done = function (rcpt_address) {
+        var i = verified_rcpts.indexOf(rcpt_address.format());
+        if (i == -1) {
+            //TODO: how to handle confirmed but unknown receiver?
+            return;            
         }
-        //TODO: how to handle confirmed but unknown receiver?
+        verified_rcpts.splice(i, 1); // remove it from the list
+        if (!verified_rcpts.length) {
+            all_rcpts_done(true);
+        }
     }
 
-    socket.all_rcpts_done = function (success) {
+    var all_rcpts_done = function (success) {
         if (fail_recips.length) {
             self.refcount++;
             exports.split_to_new_recipients(self, fail_recips.map(map_recips), "Some recipients temporarily failed", function (hmail) {
@@ -1021,8 +1020,8 @@ HMailItem.prototype.try_deliver_host = function (mx) {
         }   
         processing_mail = false;
         var reason = response.join(' ');
-        socket.send_command('QUIT');
-        if(success) {
+        send_command('QUIT');
+        if (success) {
             self.delivered(host, mx.exchange, reason);
         }
         else {
@@ -1055,9 +1054,9 @@ HMailItem.prototype.try_deliver_host = function (mx) {
             response.push(rest);
             if (cont === ' ') {
                 if (code.match(/^4/)) {
-                    if (/^rcpt/.test(command) || (command === 'dot' && mx.isLMTP)) {
+                    if (/^rcpt/.test(command) || (command === 'dot' && mx.using_lmtp)) {
                         // this recipient was rejected
-                        if(command === 'dot' && mx.isLMTP) last_recip = get_done_rcpt(rest);
+                        if (command === 'dot' && mx.using_lmtp) last_recip = get_done_rcpt(rest);
                         self.lognotice('recipient ' + last_recip + ' deferred: ' +
                              code + ' ' + ((extc) ? extc + ' ' : '') + response.join(' '));
                         (function () {
@@ -1065,11 +1064,11 @@ HMailItem.prototype.try_deliver_host = function (mx) {
                             o[last_recip] = code + ' ' + ((extc) ? extc + ' ' : '') + response.join(' ');
                             fail_recips.push(o);
                         })();
-                        if(command === 'dot' && mx.isLMTP) socket.rcpt_done(last_recip);
+                        if (command === 'dot' && mx.using_lmtp) rcpt_done(last_recip);
                     }
                     else {
                         var reason = response.join(' ');
-                        socket.send_command('QUIT');
+                        send_command('QUIT');
                         processing_mail = false;
                         return self.temp_fail("Upstream error: " + code + " " + ((extc) ? extc + ' ' : '') + reason);
                     }
@@ -1077,10 +1076,10 @@ HMailItem.prototype.try_deliver_host = function (mx) {
                 else if (code.match(/^5/)) {
                     if (command === 'ehlo') {
                         // EHLO command was rejected; fall-back to HELO
-                        return socket.send_command('HELO', config.get('me'));
+                        return send_command('HELO', config.get('me'));
                     }
-                    if (/^rcpt/.test(command) || (command === 'dot' && mx.isLMTP)) {
-                        if(command === 'dot' && mx.isLMTP) last_recip = get_done_rcpt(rest);
+                    if (/^rcpt/.test(command) || (command === 'dot' && mx.using_lmtp)) {
+                        if (command === 'dot' && mx.using_lmtp) last_recip = get_done_rcpt(rest);
                         self.lognotice('recipient ' + last_recip + ' rejected: ' +
                             code + ' ' + ((extc) ? extc + ' ' : '') + response.join(' '));
                         (function() {
@@ -1088,25 +1087,25 @@ HMailItem.prototype.try_deliver_host = function (mx) {
                             o[last_recip] = code + ' ' + ((extc) ? extc + ' ' : '') + response.join(' '); 
                             bounce_recips.push(o);
                         })();
-                        if (command === 'dot' && mx.isLMTP) socket.rcpt_done(last_recip);
+                        if (command === 'dot' && mx.using_lmtp) rcpt_done(last_recip);
                     }
                     else {
                         var reason = response.join(' ');
-                        socket.send_command('QUIT');
+                        send_command('QUIT');
                         processing_mail = false;
                         return self.bounce(reason);
                     }
                 }
                 switch (command) {
                     case 'connect':
-                        socket.send_command('EHLO', config.get('me'));
+                        send_command('EHLO', config.get('me'));
                         break;
                     case 'connectlmtp':
-                        socket.send_command('LHLO', config.get('me'));
+                        send_command('LHLO', config.get('me'));
                         break;
                     case 'lhlo':
                     case 'ehlo':
-                        socket.process_ehlo_data();
+                        process_ehlo_data();
                         break;
                     case 'starttls':
                         var key = config.get('tls_key.pem', 'binary');
@@ -1117,29 +1116,28 @@ HMailItem.prototype.try_deliver_host = function (mx) {
                         socket.upgrade(tls_options);
                         break;
                     case 'helo':
-                        socket.send_command('MAIL', 'FROM:' + mail_from);
+                        send_command('MAIL', 'FROM:' + mail_from);
                         break;
                     case 'mail':
                         last_recip = recipients.shift();
-                        socket.send_command('RCPT', 'TO:' + last_recip.format());
+                        send_command('RCPT', 'TO:' + last_recip.format());
                         break;
                     case 'rcpt':
-                        if (last_recip && code.match(/^250/)) 
-                        {
+                        if (last_recip && code.match(/^250/)) {
                             ok_recips++;
-                            if (mx.isLMTP) verified_rcpts.push(last_recip);
+                            if (mx.using_lmtp) verified_rcpts.push(last_recip.format());
                         }
                         if (!recipients.length) {
                             if (ok_recips) {
-                                socket.send_command('DATA');
+                                send_command('DATA');
                             }
                             else {
-                                socket.all_rcpt_done(false);
+                                all_rcpts_done(false);
                             }
                         }
                         else {
                             last_recip = recipients.shift();
-                            socket.send_command('RCPT', 'TO:' + last_recip.format());
+                            send_command('RCPT', 'TO:' + last_recip.format());
                         }
                         break;
                     case 'data':
@@ -1151,16 +1149,16 @@ HMailItem.prototype.try_deliver_host = function (mx) {
                             self.logerror("Reading from the data stream failed: " + err);
                         });
                         data_stream.on('end', function () {
-                            socket.send_command('dot');
+                            send_command('dot');
                         });
                         data_stream.pipe(socket, {end: false});
                         break;
                     case 'dot':
                         if (!verified_rcpts.length) {
-                            socket.all_rcpts_done(true);
+                            all_rcpts_done(true);
                         }
                         else {
-                            if (code.match(/^250/)) socket.rcpt_done(get_done_rcpt(rest));
+                            if (code.match(/^250/)) rcpt_done(get_done_rcpt(rest));
                         }
                         break;
                     case 'quit':

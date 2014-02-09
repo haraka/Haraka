@@ -12,7 +12,7 @@ exports.hook_get_mx = function (next, hmail, domain) {
         priority: 0,
         exchange: section.host || '127.0.0.1',
         port: section.port || 24,
-        isLMTP: true
+        using_lmtp: true
     };
     return next(OK, mx);
 }
