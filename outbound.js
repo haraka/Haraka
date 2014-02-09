@@ -889,7 +889,7 @@ HMailItem.prototype.try_deliver_host = function (mx) {
     if (this.hostlist.length === 0) {
         return this.try_deliver(); // try next MX
     }
-      
+    
     var host = this.hostlist.shift();
     var port = mx.port || 25;
     var socket = sock.connect({port: port, host: host, localAddress: mx.bind});
@@ -918,11 +918,11 @@ HMailItem.prototype.try_deliver_host = function (mx) {
 
     var command = mx.isLMTP ? 'connectlmtp' : 'connect';
     var response = [];
-
+    
     var recipients = this.todo.rcpt_to.map(function (a) { return new Address (a.original) });
     var verified_rcpts = [];
 
-    var mail_from = new Address (this.todo.mail_from.original);
+    var mail_from  = new Address (this.todo.mail_from.original);
 
     var data_marker = 0;
     var last_recip = null;
@@ -936,7 +936,7 @@ HMailItem.prototype.try_deliver_host = function (mx) {
         "eightbitmime": false,
         "enh_status_codes": false,
     };
-
+    
     socket.send_command = function (cmd, data) {
         if (!this.writable) {
             self.logerror("Socket writability went away");
@@ -1034,7 +1034,7 @@ HMailItem.prototype.try_deliver_host = function (mx) {
         socket.end();
         self.try_deliver_host(mx);
     });
-
+    
     socket.on('connect', function () {
     });
 
@@ -1047,9 +1047,9 @@ HMailItem.prototype.try_deliver_host = function (mx) {
         self.logprotocol("S: " + line);
         if (matches = smtp_regexp.exec(line)) {
             var code = matches[1],
-            cont = matches[2],
-            extc = matches[3],
-            rest = matches[4];
+                cont = matches[2],
+                extc = matches[3],
+                rest = matches[4];
             response.push(rest);
             if (cont === ' ') {
                 if (code.match(/^4/)) {
@@ -1089,7 +1089,7 @@ HMailItem.prototype.try_deliver_host = function (mx) {
                             code + ' ' + ((extc) ? extc + ' ' : '') + response.join(' '));
                         (function() {
                             var o = {};
-                            o[last_recip] = code + ' ' + ((extc) ? extc + ' ' : '') + response.join(' ');
+                            o[last_recip] = code + ' ' + ((extc) ? extc + ' ' : '') + response.join(' '); 
                             bounce_recips.push(o);
                         })();
                         if (command === 'dot' && mx.isLMTP) socket.rcpt_done(last_recip);
