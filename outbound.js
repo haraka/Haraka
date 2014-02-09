@@ -892,13 +892,9 @@ HMailItem.prototype.try_deliver_host = function (mx) {
     var host = this.hostlist.shift();
     var port            = mx.port || 25;
     var socket          = sock.connect({port: port, host: host, localAddress: mx.bind});
-<<<<<<< HEAD
     var self            = this;
     var processing_mail = true;
-=======
-    var self            = this;    var processing_mail = true;
->>>>>>> a843b773192a0e5a283981f5a4450ab02937b98f
-    if (mx.isLMTP) this.loginfo('LMTP detected');
+    if (mx.isLMTP) this.loginfo('Using LMTP for host ' + mx.exchange);
 
     this.loginfo("Attempting to deliver to: " + host + ":" + port + " (" + delivery_queue.length() + ") (" + temp_fail_queue.length() + ")");
 
