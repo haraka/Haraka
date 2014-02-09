@@ -1000,7 +1000,7 @@ HMailItem.prototype.try_deliver_host = function (mx) {
                 self.loginfo('equal');
                 verified_rcpts.splice(i,1);
                 if (!verified_rcpts.length) {
-                    socket.all_rcpts_done();
+                    socket.all_rcpts_done(true);
                 }
                 return;
             }
@@ -1008,8 +1008,8 @@ HMailItem.prototype.try_deliver_host = function (mx) {
         //TODO: how to handle confirmed but unknown receiver?
     }
 
-    socket.all_rcpts_done = function () {
-        self.loginfo('All rcpts verified');
+    socket.all_rcpts_done = function (success) {
+        if(success) self.loginfo('All rcpts verified');
         if (fail_recips.length) {
             self.refcount++;
             exports.split_to_new_recipients(self, fail_recips.map(map_recips), "Some recipients temporarily failed", function (hmail) {
@@ -1027,7 +1027,12 @@ HMailItem.prototype.try_deliver_host = function (mx) {
         processing_mail = false;
         var reason = response.join(' ');
         socket.send_command('QUIT');
-        self.delivered(host, mx.exchange, reason);
+        if(success) {
+            self.delivered(host, mx.exchange, reason);
+        }
+        else {
+            self.discard();
+        }
     } 
 
     socket.on('timeout', function () {
@@ -1130,27 +1135,11 @@ HMailItem.prototype.try_deliver_host = function (mx) {
                             if (mx.isLMTP) verified_rcpts.push(last_recip);
                         }
                         if (!recipients.length) {
-                            if (fail_recips.length) {
-                                self.refcount++;
-                                exports.split_to_new_recipients(self, fail_recips.map(map_recips), "Some recipients temporarily failed", function (hmail) {
-                                    self.discard();
-                                    hmail.temp_fail("Some recipients temp failed: " + fail_recips.map(map_recips).join(', '), fail_recips);
-                                });
-                            }
-                            if (bounce_recips.length) {
-                                self.refcount++;
-                                exports.split_to_new_recipients(self, bounce_recips.map(map_recips), "Some recipients rejected", function (hmail) {
-                                    self.discard();
-                                    hmail.bounce("Some recipients failed: " + bounce_recips.map(map_recips).join(', '), bounce_recips);
-                                });
-                            }
                             if (ok_recips) {
                                 socket.send_command('DATA');
                             }
                             else {
-                                processing_mail = false;
-                                socket.send_command('QUIT');
-                                self.discard();
+                                socket.all_rcpt_done(false);
                             }
                         }
                         else {
@@ -1173,7 +1162,7 @@ HMailItem.prototype.try_deliver_host = function (mx) {
                         break;
                     case 'dot':
                         if (!verified_rcpts.length) {
-                            socket.all_rcpts_done();
+                            socket.all_rcpts_done(true);
                         }
                         else {
                             if (code.match(/^250/)) socket.rcpt_done(get_done_rcpt(rest));
