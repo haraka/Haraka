@@ -1,2 +1,4 @@
 node_modules
 outbound.js~
+docs/plugins/queue/lmtp.md~
+plugins/queue/lmtp.js~
