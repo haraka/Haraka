@@ -4,18 +4,19 @@
 
 var outbound = require('./outbound');
 
-//get_mx hook
 exports.hook_get_mx = function (next, hmail, domain) {
-    //TODO: allow arrays of mx objects; currently only one mx object per domain
-    var domains_ini = this.config.get('delivery_domains.ini', 'ini');
-    if (domain in domains_ini) {
-        next(OK, domains_ini[domain]);
-    }
-    else {
-        next(CONT);
-    }
+    if (!hmail.todo.notes.using_lmtp) return next();
+    var config = this.config.get('lmtp.ini', 'ini');
+    var section = config[domain] || config.main;
+    var mx = {
+        priority: 0,
+        exchange: section.host || '127.0.0.1',
+        port: section.port || 24,
+    };
+    return next(OK, mx);
 }
 
 exports.hook_queue = function (next, connection) {
+    connection.transaction.notes.using_lmtp = true;
     outbound.send_email(connection.transaction, next);
 }
