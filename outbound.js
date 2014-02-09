@@ -894,9 +894,8 @@ HMailItem.prototype.try_deliver_host = function (mx) {
     var socket          = sock.connect({port: port, host: host, localAddress: mx.bind});
     var self            = this;
     var processing_mail = true;
-    if (this.notes.using_lmtp) this.loginfo('Using LMTP for host ' + mx.exchange);
 
-    this.loginfo("Attempting to deliver to: " + host + ":" + port + " (" + delivery_queue.length() + ") (" + temp_fail_queue.length() + ")");
+    this.loginfo("Attempting to deliver to: " + host + ":" + port + (mx.isLMTP ? "using LMTP " : "") + " (" + delivery_queue.length() + ") (" + temp_fail_queue.length() + ")");
 
     socket.on('error', function (err) {
         if (processing_mail) {
@@ -915,7 +914,7 @@ HMailItem.prototype.try_deliver_host = function (mx) {
 
     socket.setTimeout(300 * 1000); // TODO: make this configurable
 
-    var command = this.notes.using_lmtp ? 'connectlmtp' : 'connect';
+    var command = mx.isLMTP ? 'connectlmtp' : 'connect';
     var response = [];
     
     var recipients = this.todo.rcpt_to.map(function (a) { return new Address (a.original) });
@@ -977,7 +976,7 @@ HMailItem.prototype.try_deliver_host = function (mx) {
                 // Set this flag so we don't try STARTTLS again if it
                 // is incorrectly offered at EHLO once we are secured.
                 secured = true;
-                socket.send_command(self.notes.using_lmtp ? 'LHLO' : 'EHLO', config.get('me'));
+                socket.send_command(mx.isLMTP ? 'LHLO' : 'EHLO', config.get('me'));
             });
             this.send_command('STARTTLS');
         }
@@ -1058,7 +1057,7 @@ HMailItem.prototype.try_deliver_host = function (mx) {
                 if (code.match(/^4/)) {
                     if (/^rcpt/.test(command) || (command === 'dot' && mx.isLMTP)) {
                         // this recipient was rejected
-                        if(command === 'dot' && self.notes.using_lmtp) last_recip = get_done_rcpt(rest);
+                        if(command === 'dot' && mx.isLMTP) last_recip = get_done_rcpt(rest);
                         self.lognotice('recipient ' + last_recip + ' deferred: ' +
                              code + ' ' + ((extc) ? extc + ' ' : '') + response.join(' '));
                         (function () {
@@ -1066,7 +1065,7 @@ HMailItem.prototype.try_deliver_host = function (mx) {
                             o[last_recip] = code + ' ' + ((extc) ? extc + ' ' : '') + response.join(' ');
                             fail_recips.push(o);
                         })();
-                        if(command === 'dot' && self.notes.using_lmtp) socket.rcpt_done(last_recip);
+                        if(command === 'dot' && mx.isLMTP) socket.rcpt_done(last_recip);
                     }
                     else {
                         var reason = response.join(' ');
@@ -1080,8 +1079,8 @@ HMailItem.prototype.try_deliver_host = function (mx) {
                         // EHLO command was rejected; fall-back to HELO
                         return socket.send_command('HELO', config.get('me'));
                     }
-                    if (/^rcpt/.test(command) || (command === 'dot' && self.notes.using_lmtp)) {
-                        if(command === 'dot' && self.notes.using_lmtp) last_recip = get_done_rcpt(rest);
+                    if (/^rcpt/.test(command) || (command === 'dot' && mx.isLMTP)) {
+                        if(command === 'dot' && mx.isLMTP) last_recip = get_done_rcpt(rest);
                         self.lognotice('recipient ' + last_recip + ' rejected: ' +
                             code + ' ' + ((extc) ? extc + ' ' : '') + response.join(' '));
                         (function() {
@@ -1089,7 +1088,7 @@ HMailItem.prototype.try_deliver_host = function (mx) {
                             o[last_recip] = code + ' ' + ((extc) ? extc + ' ' : '') + response.join(' '); 
                             bounce_recips.push(o);
                         })();
-                        if (command === 'dot' && self.notes.using_lmtp) socket.rcpt_done(last_recip);
+                        if (command === 'dot' && mx.isLMTP) socket.rcpt_done(last_recip);
                     }
                     else {
                         var reason = response.join(' ');
@@ -1128,7 +1127,7 @@ HMailItem.prototype.try_deliver_host = function (mx) {
                         if (last_recip && code.match(/^250/)) 
                         {
                             ok_recips++;
-                            if (self.notes.using_lmtp) verified_rcpts.push(last_recip);
+                            if (mx.isLMTP) verified_rcpts.push(last_recip);
                         }
                         if (!recipients.length) {
                             if (ok_recips) {
