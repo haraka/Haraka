@@ -998,7 +998,7 @@ HMailItem.prototype.try_deliver_host = function (mx) {
         processing_mail = false;
         if (success) {
             var reason = response.join(' ');
-            self.delivered(host, mx.exchange, reason);
+            self.delivered(host, port, (mx.using_lmtp ? 'LMTP' : 'SMTP'), mx.exchange, reason);
         }
         else {
             self.discard();
@@ -1255,16 +1255,18 @@ HMailItem.prototype.double_bounce = function (err) {
     // Another strategy might be delivery "plugins" to cope with this.
 }
 
-HMailItem.prototype.delivered = function (ip, host, response) {
+HMailItem.prototype.delivered = function (ip, port, mode, host, response) {
     var delay = (Date.now() - this.todo.queue_time)/1000;
     this.lognotice("delivered file=" + this.filename + 
                    ' domain="' + this.todo.domain + '"' +
                    ' host="' + host + '"' +
-                   ' ip=' + ip + 
+                   ' ip=' + ip +
+                   ' port=' + port +
+                   ' mode=' + mode + 
                    ' response="' + response + '"' +
                    ' delay=' + delay +
                    ' fails=' + this.num_failures);
-    plugins.run_hooks("delivered", this, [host, ip, response, delay]);
+    plugins.run_hooks("delivered", this, [host, ip, port, mode, response, delay]);
 }
 
 HMailItem.prototype.discard = function () {
