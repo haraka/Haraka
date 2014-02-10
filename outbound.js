@@ -924,13 +924,12 @@ HMailItem.prototype.try_deliver_host = function (mx) {
     var response = [];
     
     var recipients = this.todo.rcpt_to.map(function (a) { return new Address (a.original) });
-    var verified_rcpts = [];
 
     var mail_from  = new Address (this.todo.mail_from.original);
 
     var data_marker = 0;
     var last_recip = null;
-    var ok_recips = 0;
+    var ok_recips = [];
     var fail_recips = [];
     var bounce_recips = [];
     var secured = false;
@@ -947,7 +946,7 @@ HMailItem.prototype.try_deliver_host = function (mx) {
             return self.try_deliver_host(mx);
         }
         var line = cmd + (data ? (' ' + data) : '');
-        if (cmd === 'dot') {
+        if (cmd === 'dot' || cmd === 'dot_lmtp') {
             line = '.';
         }
         self.logprotocol("C: " + line);
@@ -991,19 +990,7 @@ HMailItem.prototype.try_deliver_host = function (mx) {
         }
     }
 
-    var rcpt_done = function (rcpt_address) {
-        var i = verified_rcpts.indexOf(rcpt_address.format());
-        if (i == -1) {
-            //TODO: how to handle confirmed but unknown receiver?
-            return;            
-        }
-        verified_rcpts.splice(i, 1); // remove it from the list
-        if (!verified_rcpts.length) {
-            all_rcpts_done(true);
-        }
-    }
-
-    var all_rcpts_done = function (success) {
+    var finish_processing_mail = function (success) {
         if (fail_recips.length) {
             self.refcount++;
             exports.split_to_new_recipients(self, fail_recips.map(map_recips), "Some recipients temporarily failed", function (hmail) {
@@ -1017,17 +1004,17 @@ HMailItem.prototype.try_deliver_host = function (mx) {
                 self.discard();
                 hmail.bounce("Some recipients failed: " + bounce_recips.map(map_recips).join(', '), bounce_recips);
             });
-        }   
+        }
         processing_mail = false;
-        var reason = response.join(' ');
         send_command('QUIT');
         if (success) {
+            var reason = response.join(' ');
             self.delivered(host, mx.exchange, reason);
         }
         else {
             self.discard();
         }
-    } 
+    }
 
     socket.on('timeout', function () {
         self.logerror("Outbound connection timed out to " + host + ":" + port);
@@ -1042,7 +1029,7 @@ HMailItem.prototype.try_deliver_host = function (mx) {
     socket.on('line', function (line) {
         var matches;
         if (!processing_mail) {
-            self.logprotocol("Received data after stopping processing: " + line);
+            if (command != 'quit') self.logprotocol("Received data after stopping processing: " + line);
             return;
         }
         self.logprotocol("S: " + line);
@@ -1054,9 +1041,9 @@ HMailItem.prototype.try_deliver_host = function (mx) {
             response.push(rest);
             if (cont === ' ') {
                 if (code.match(/^4/)) {
-                    if (/^rcpt/.test(command) || (command === 'dot' && mx.using_lmtp)) {
+                    if (/^rcpt/.test(command) || command === 'dot_lmtp') {
+                        if (command === 'dot_lmtp') last_recip = ok_recips.shift();
                         // this recipient was rejected
-                        if (command === 'dot' && mx.using_lmtp) last_recip = get_done_rcpt(rest);
                         self.lognotice('recipient ' + last_recip + ' deferred: ' +
                              code + ' ' + ((extc) ? extc + ' ' : '') + response.join(' '));
                         (function () {
@@ -1064,7 +1051,9 @@ HMailItem.prototype.try_deliver_host = function (mx) {
                             o[last_recip] = code + ' ' + ((extc) ? extc + ' ' : '') + response.join(' ');
                             fail_recips.push(o);
                         })();
-                        if (command === 'dot' && mx.using_lmtp) rcpt_done(last_recip);
+                        if (command == 'dot_lmtp' && ok_recips.length === 0) {
+                            finish_processing_mail(true);
+                        }
                     }
                     else {
                         var reason = response.join(' ');
@@ -1078,8 +1067,8 @@ HMailItem.prototype.try_deliver_host = function (mx) {
                         // EHLO command was rejected; fall-back to HELO
                         return send_command('HELO', config.get('me'));
                     }
-                    if (/^rcpt/.test(command) || (command === 'dot' && mx.using_lmtp)) {
-                        if (command === 'dot' && mx.using_lmtp) last_recip = get_done_rcpt(rest);
+                    if (/^rcpt/.test(command) || command === 'dot_lmtp') {
+                        if (command === 'dot_lmtp') last_recip = ok_recips.shift();
                         self.lognotice('recipient ' + last_recip + ' rejected: ' +
                             code + ' ' + ((extc) ? extc + ' ' : '') + response.join(' '));
                         (function() {
@@ -1087,7 +1076,9 @@ HMailItem.prototype.try_deliver_host = function (mx) {
                             o[last_recip] = code + ' ' + ((extc) ? extc + ' ' : '') + response.join(' '); 
                             bounce_recips.push(o);
                         })();
-                        if (command === 'dot' && mx.using_lmtp) rcpt_done(last_recip);
+                        if (command == 'dot_lmtp' && ok_recips.length === 0) {
+                            finish_processing_mail(true);
+                        }
                     }
                     else {
                         var reason = response.join(' ');
@@ -1124,15 +1115,14 @@ HMailItem.prototype.try_deliver_host = function (mx) {
                         break;
                     case 'rcpt':
                         if (last_recip && code.match(/^250/)) {
-                            ok_recips++;
-                            if (mx.using_lmtp) verified_rcpts.push(last_recip.format());
+                            ok_recips.push(last_recip);
                         }
-                        if (!recipients.length) {
-                            if (ok_recips) {
+                        if (!recipients.length) { // End of RCPT TOs
+                            if (ok_recips.length > 0) {
                                 send_command('DATA');
                             }
                             else {
-                                all_rcpts_done(false);
+                                finish_processing_mail(false);
                             }
                         }
                         else {
@@ -1149,16 +1139,17 @@ HMailItem.prototype.try_deliver_host = function (mx) {
                             self.logerror("Reading from the data stream failed: " + err);
                         });
                         data_stream.on('end', function () {
-                            send_command('dot');
+                            send_command(mx.using_lmtp ? 'dot_lmtp' : 'dot');
                         });
                         data_stream.pipe(socket, {end: false});
                         break;
                     case 'dot':
-                        if (!verified_rcpts.length) {
-                            all_rcpts_done(true);
-                        }
-                        else {
-                            if (code.match(/^250/)) rcpt_done(get_done_rcpt(rest));
+                        finish_processing_mail(true);
+                        break;
+                    case 'dot_lmtp':
+                        last_recip = ok_recips.shift();
+                        if (ok_recips.length === 0) {
+                            finish_processing_mail(true);
                         }
                         break;
                     case 'quit':
