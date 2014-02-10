@@ -1138,7 +1138,7 @@ HMailItem.prototype.try_deliver_host = function (mx) {
                         finish_processing_mail(true);
                         break;
                     case 'dot_lmtp':
-                        if (code.match(/^2/) last_recip = ok_recips.shift();
+                        if (code.match(/^2/)) last_recip = ok_recips.shift();
                         if (ok_recips.length === 0) {
                             finish_processing_mail(true);
                         }
