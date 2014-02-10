@@ -1043,7 +1043,7 @@ HMailItem.prototype.try_deliver_host = function (mx) {
                             fail_recips.push(o);
                         })();
                         if (command == 'dot_lmtp' && ok_recips.length === 0) {
-                            finish_processing_mail(true);
+                            return finish_processing_mail(true);
                         }
                     }
                     else {
@@ -1068,7 +1068,7 @@ HMailItem.prototype.try_deliver_host = function (mx) {
                             bounce_recips.push(o);
                         })();
                         if (command == 'dot_lmtp' && ok_recips.length === 0) {
-                            finish_processing_mail(true);
+                            return finish_processing_mail(true);
                         }
                     }
                     else {
@@ -1138,7 +1138,7 @@ HMailItem.prototype.try_deliver_host = function (mx) {
                         finish_processing_mail(true);
                         break;
                     case 'dot_lmtp':
-                        last_recip = ok_recips.shift();
+                        if (code.match(/^2/) last_recip = ok_recips.shift();
                         if (ok_recips.length === 0) {
                             finish_processing_mail(true);
                         }
