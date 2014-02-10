@@ -1,21 +1,20 @@
 // bounce tests
 
-exports.register = function () {
-    this.inherits('note');
-};
+var Note = require('./note');
 
 exports.hook_mail = function (next, connection, params) {
     var plugin = this;
     var mail_from = params[0];
-    plugin.note_init({conn: connection, txn: true, plugin: this});
+
+    plugin.note = new Note(connection, plugin, {txn: true});
 
     if (!plugin.has_null_sender(connection, mail_from)) {
         return next(); // bounce messages are from null senders
     }
 
-    var cfg = this.config.get('bounce.ini');
+    var cfg = plugin.config.get('bounce.ini');
     if (cfg.main.reject_all) {
-        this.note({conn: connection, fail: 'bounces_accepted', emit: 1 });
+        plugin.note.save({fail: 'bounces_accepted', emit: 1 });
         return next(DENY, "No bounces accepted here");
     }
     return next();
@@ -23,6 +22,8 @@ exports.hook_mail = function (next, connection, params) {
 
 exports.hook_data = function(next, connection) {
     var plugin = this;
+    plugin.note = new Note(connection, plugin, {txn: true});
+
     if (!plugin.has_null_sender(connection)) return next();
 
     var cfg = this.config.get('bounce.ini');
@@ -61,7 +62,7 @@ exports.bounce_data_post = function(next, connection) {
 
 function has_single_recipient(connection) {
     if (connection.transaction.rcpt_to.length === 1) {
-        plugin.note({conn: connection, pass: 'has_single_recipient', emit: true });
+        this.note.save({pass: 'has_single_recipient', emit: true });
         return;
     }
 
@@ -69,12 +70,11 @@ function has_single_recipient(connection) {
     connection.loginfo(plugin, "bounce with too many recipients to: " +
         connection.transaction.rcpt_to.join(','));
 
-    plugin.note({conn: connection, fail: 'has_single_recipient', emit: true });
+    this.save({fail: 'has_single_recipient', emit: true });
     return "this bounce message does not have 1 recipient";
 }
 
 exports.has_null_sender = function (connection, mail_from) {
-    var plugin = this;
     if (!mail_from) mail_from = connection.transaction.mail_from;
 
     // bounces have a null sender.
@@ -82,10 +82,10 @@ exports.has_null_sender = function (connection, mail_from) {
     // Why would isNull() exist if it wasn't the right way to test this?
 
     if (mail_from.isNull()) {
-        plugin.note({conn: connection, isa: 'yes' });
+        this.note.save({isa: 'yes'});
         return true;
     }
 
-    plugin.note({conn: connection, isa: 'no', emit: true });
+    this.note.save({isa: 'no', emit: true});
     return false;
 };

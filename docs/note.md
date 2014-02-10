@@ -35,47 +35,44 @@ Towards those goals, **Note** provides some help. Here's how:
 
 Use this plugin in yours:
 
-    exports.register = function () {
-        this.inherits('note');
-    };
+    var Note = require('note');
 
-    exports.my_great_hook = function(next, connection) {
-        this.note_init({conn: connection, plugin: this});
+    exports.my_first_hook = function(next, connection) {
+        var plugin = this;
+        plugin.note = new Note(connection, plugin);
 
         // run a test
         ......
 
         // store the results
-        this.note({conn: connection, pass: 'my great test' });
+        plugin.note.save({pass: 'my great test' });
 
         // run another test
         .....
 
         // store the results
-        this.note({conn: connection, fail: 'gotcha!', msg: 'show this'});
+        plugin.note.save({fail: 'gotcha!', msg: 'show this'});
     }
 
 Store the note in the transaction (vs connection):
 
-    this.note_init({conn: connection, plugin: this, txn: true});
+        plugin.note = new Note(connection, plugin, {txn: true});
 
+
+### Required arguments for a new Note:
+
+* connection object (required)
+* plugin object     (sometimes, default: this)
+
+#### Optional Arguments
+
+* txn    - store note in transaction? (default: false)
+* hide   - note properties to hide from collated results (see collate)
+* order  - custom ordering of the collated summary (see collate)
 
 ### Exported functions
 
-There are three functions exported by note: note\_init, note, and
-note\_collate.
-
-#### note\_init
-
-Initialize a connection note. The options are:
-
-* conn   - connection object (required)
-* plugin - plugin object     (mostly required, default: this)
-* txn    - store note in transaction? (default: false)
-* hide   - note properties to hide from collated results (see note\_collate)
-* order  - custom ordering of the collated summary (see note\_collate)
-
-#### note
+#### save
 
 Store some information. Most calls to note will append data to the lists
 in the connection note. The following lists are available:
@@ -91,29 +88,29 @@ in the connection note. The following lists are available:
 
 Examples:
 
-    this.note({conn: connection, pass: 'null_sender'});
-    this.note({conn: connection, fail: 'single_recipient'});
-    this.note({conn: connection, skip: 'valid_bounce'};
-    this.note({conn: connection, err: 'timed out looking in couch cushions'});
-    this.note({conn: connection, msg: 'I found a nickel!', emit: true});
+    note.save({pass: 'null_sender'});
+    note.save({fail: 'single_recipient'});
+    note.save({skip: 'valid_bounce'};
+    note.save({err: 'timed out looking in couch cushions'});
+    note.save({msg: 'I found a nickel!', emit: true});
 
 In addition to appending values to the predefined lists, arbitrary results
 can be stored in the note:
 
-    this.note({conn: connection, my_result: 'anything I want'});
+    note.save({my_result: 'anything I want'});
 
-When arbirary values are stored, they are prepended to the log output. Their
-display can be suppressed with the **hide** option to note or note\_init.
+When arbirary values are stored, they are listed first in the log output. Their
+display can be suppressed with the **hide** option to _save_ or _init_.
 
 
-#### note\_collate
+#### collate
 
 A connection must be passed in.
 
-    var summary = this.note_collate({conn: connection});
+    var summary = note.collate();
 
 Formats the contents of the note object and returns them. This function is
-called internally by *note* after each update.
+called internally by *save* after each update.
 
 
 ## Where is the note stored?
@@ -126,5 +123,5 @@ When the txn=true setting is used, the note is stored at:
 
     connection.transaction.notes.plugin_name
 
-The location of the note can be altered by setting plugin.note\_name before
+The plugin\_name can be overridden by setting plugin.note\_name before
 initializing the note.
