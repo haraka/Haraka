@@ -908,7 +908,11 @@ HMailItem.prototype.try_deliver_host = function (mx) {
         }
     });
 
-    socket.setTimeout(300 * 1000); // TODO: make this configurable
+    socket.setTimeout(30 * 1000); // TODO: make this configurable
+
+    socket.on('connect', function () {
+        socket.setTimeout(300 * 1000); // TODO: make this configurable
+    });
 
     var command = mx.using_lmtp ? 'connectlmtp' : 'connect';
     var response = [];
@@ -1013,9 +1017,6 @@ HMailItem.prototype.try_deliver_host = function (mx) {
         self.try_deliver_host(mx);
     });
     
-    socket.on('connect', function () {
-    });
-
     socket.on('line', function (line) {
         var matches;
         if (!processing_mail) {
