@@ -1,7 +1,8 @@
 // mail_from.access plugin
 
+var Note = require('./note');
+
 exports.register = function() {
-    this.inherits('note');
     var i;
     var config = this.config.get('mail_from.access.ini');
     this.wl = this.config.get('mail_from.access.whitelist', 'list');
@@ -26,11 +27,11 @@ exports.register = function() {
 
 exports.mail_from_access = function(next, connection, params) {
     var plugin = this;
-    plugin.note_init({conn: connection, plugin: this, txn: true});
+    plugin.note = new Note(connection, plugin, {txn: true});
     var mail_from = params[0].address();
 
     if (!mail_from) {
-        this.note({conn: connection, skip: 'null sender'});
+        plugin.note.save({skip: 'null sender', emit: true});
         return next();
     }
 
@@ -40,7 +41,7 @@ exports.mail_from_access = function(next, connection, params) {
 
     if (_in_whitelist(connection, plugin, mail_from)) {
         // connection.logdebug(plugin, "Allowing " + mail_from);
-        this.note({conn: connection, pass: 'whitelisted', emit: true});
+        plugin.note.save({pass: 'whitelisted', emit: true});
         return next();
     }
 
@@ -50,11 +51,11 @@ exports.mail_from_access = function(next, connection, params) {
 
     if (_in_blacklist(connection, plugin, mail_from)) {
         // connection.logdebug(plugin, "Rejecting, matched: " + mail_from);
-        this.note({conn: connection, fail: 'blacklisted', emit: true});
+        plugin.note.save({fail: 'blacklisted', emit: true});
         return next(DENY, mail_from + ' ' + plugin.deny_msg);
     }
 
-    this.note({conn: connection, pass: 'unlisted', emit: true});
+    plugin.note.save({pass: 'unlisted', emit: true});
     return next();
 }
 

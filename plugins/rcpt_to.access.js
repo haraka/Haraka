@@ -1,7 +1,7 @@
 // rcpt_to.access plugin
+var Note = require('./note');
 
 exports.register = function() {
-    this.inherits('note');
     var i;
     var config = this.config.get('rcpt_to.access.ini');
     this.wl = this.config.get('rcpt_to.access.whitelist', 'list');
@@ -27,11 +27,11 @@ exports.register = function() {
 exports.rcpt_to_access = function(next, connection, params) {
     var plugin = this;
     var rcpt_to = params[0].address();
-    plugin.note_init({conn: connection, plugin: this, txn: true});
+    plugin.note = new Note(connection, plugin, {txn: true});
 
     // address whitelist checks
     if (!rcpt_to) {
-        plugin.note({conn: connection, skip: 'null rcpt'});
+        plugin.note.save({skip: 'null rcpt', emit: true});
         return next();
     }
 
@@ -40,7 +40,7 @@ exports.rcpt_to_access = function(next, connection, params) {
 
     if (_in_whitelist(connection, plugin, rcpt_to)) {
         connection.logdebug(plugin, "Allowing " + rcpt_to);
-        plugin.note({conn: connection, pass: 'whitelisted'});
+        plugin.note.save({pass: 'whitelisted', emit: true});
         return next();
     }
 
@@ -50,13 +50,13 @@ exports.rcpt_to_access = function(next, connection, params) {
 
     if (_in_blacklist(connection, plugin, rcpt_to)) {
         connection.logdebug(plugin, "Rejecting, matched: " + rcpt_to);
-        plugin.note({conn: connection, pass: 'blacklisted'});
+        plugin.note.save({fail: 'blacklisted', emit: true});
         return next(DENY, rcpt_to + ' ' + plugin.deny_msg);
     }
 
-    plugin.note({conn: connection, pass: 'unlisted'});
+    plugin.note.save({pass: 'unlisted', emit: true});
     return next();
-}
+};
 
 function _in_whitelist(connection, plugin, address) {
     var i;

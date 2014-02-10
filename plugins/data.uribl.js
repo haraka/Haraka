@@ -2,7 +2,8 @@
 var url       = require('url');
 var dns       = require('dns');
 var isIPv4    = require('net').isIPv4;
-var net_utils = require('./net_utils.js');
+var net_utils = require('./net_utils');
+var Note      = require('./note');
 
 // Default regexps to extract the URIs from the message
 var numeric_ip = /\w{3,16}:\/+(\S+@)?(\d+|0[xX][0-9A-Fa-f]+)\.(\d+|0[xX][0-9A-Fa-f]+)\.(\d+|0[xX][0-9A-Fa-f]+)\.(\d+|0[xX][0-9A-Fa-f]+)/gi;
@@ -18,7 +19,7 @@ function check_excludes_list(host) {
     for (var i=0; i < host.length; i++) {
         if (i === 0) {
             var check = host[i];
-        } 
+        }
         else {
             check = [ host[i], check ].join('.');
         }
@@ -30,7 +31,6 @@ function check_excludes_list(host) {
 }
 
 exports.register = function() {
-    this.inherits('note');
     // Override regexps if top_level_tlds file is present
     if (net_utils.top_level_tlds && Object.keys(net_utils.top_level_tlds).length) {
         this.logdebug('Building new regexps from TLD file');
@@ -68,9 +68,9 @@ exports.do_lookups = function (connection, next, hosts, type) {
     }
     if (!hosts || !hosts.length) {
         connection.logdebug(plugin, '(' + type + ') no items found for lookup');
-        plugin.note({conn: connection, skip: type });
+        plugin.note.save({skip: type });
         return next();
-    } 
+    }
     connection.logdebug(plugin, '(' + type + ') found ' + hosts.length + ' items for lookup');
 
     var queries = {};
@@ -83,7 +83,7 @@ exports.do_lookups = function (connection, next, hosts, type) {
         }
         // Check the exclusion list
         if (check_excludes_list(host)) {
-            plugin.note({conn: connection, skip: 'excluded domain:' + host });
+            plugin.note.save({skip: 'excluded domain:' + host });
             continue;
         }
         // Loop through the zones
@@ -91,7 +91,7 @@ exports.do_lookups = function (connection, next, hosts, type) {
             var zone = zones[j];
             if (zone === 'main') continue;  // skip config
             if (!lists[zone] || (lists[zone] && !/^(?:1|true|yes|enabled|on)$/i.test(lists[zone][type]))) {
-                plugin.note({conn: connection, skip: type + ' unsupported for ' + zone });
+                plugin.note.save({skip: type + ' unsupported for ' + zone });
                 continue;
             }
             // Convert in-addr.arpa into bare IPv4 lookup
@@ -104,12 +104,12 @@ exports.do_lookups = function (connection, next, hosts, type) {
             // Handle zones that do not allow IP queries (e.g. Spamhaus DBL)
             if (isIPv4(host)) {
                 if (/^(?:1|true|yes|enabled|on)$/i.test(lists[zone].no_ip_lookups)) {
-                    plugin.note({conn: connection, skip: 'IP (' + host + ') not supported for ' + zone });
+                    plugin.note.save({skip: 'IP (' + host + ') not supported for ' + zone });
                     continue;
                 }
                 // Skip any private IPs
                 if (net_utils.is_rfc1918(host)) {
-                    plugin.note({conn: connection, skip: 'private IP' });
+                    plugin.note.save({skip: 'private IP' });
                     continue;
                 }
                 // Reverse IP for lookup
@@ -128,7 +128,7 @@ exports.do_lookups = function (connection, next, hosts, type) {
             if (Object.keys(queries[zone]).length > lists.main.max_uris_per_list) {
                 connection.logwarn(plugin, 'discarding lookup ' + lookup + ' for zone ' +
                               zone + ' maximum query limit reached');
-                plugin.note({conn: connection, skip: 'max query limit for ' + zone });
+                plugin.note.save({skip: 'max query limit for ' + zone });
                 continue;
             }
             queries[zone][lookup] = 1;
@@ -147,7 +147,7 @@ exports.do_lookups = function (connection, next, hosts, type) {
     queries_to_run.sort(Math.round(Math.random())-0.25);
 
     if(!queries_to_run.length) {
-        plugin.note({conn: connection, skip: type + ' (no queries)' });
+        plugin.note.save({skip: type + ' (no queries)' });
         return next();
     }
 
@@ -160,10 +160,10 @@ exports.do_lookups = function (connection, next, hosts, type) {
         connection.logdebug(plugin, 'timeout');
         if (!called_next) {
             called_next = true;
-            plugin.note({conn: connection, err: type + ' timeout' });
+            plugin.note.save({err: type + ' timeout' });
             return next();
         }
-    }, ((lists.main && lists.main.timeout) ? 
+    }, ((lists.main && lists.main.timeout) ?
         lists.main.timeout : 30) * 1000);
 
     queries_to_run.forEach(function (query) {
@@ -189,7 +189,7 @@ exports.do_lookups = function (connection, next, hosts, type) {
                         }
                         clearTimeout(timer);
                         called_next = true;
-                        plugin.note({conn: connection, fail: type });
+                        plugin.note.save({fail: type });
                         return next(DENY, msg);
                     }
                 }
@@ -197,7 +197,7 @@ exports.do_lookups = function (connection, next, hosts, type) {
                 if (lists[query[1]] && lists[query[1]].validate) {
                     var re = new RegExp(lists[query[1]].validate);
                     if (!re.test(addrs[0])) {
-                        connection.logdebug(plugin, 'ignoring result (' + addrs[0] + ') for: ' + 
+                        connection.logdebug(plugin, 'ignoring result (' + addrs[0] + ') for: ' +
                                 lookup + ' as it did not match validation rule');
                         var skip = true;
                     }
@@ -213,38 +213,38 @@ exports.do_lookups = function (connection, next, hosts, type) {
                             ' (' + addrs.join(',') + '; bitmask=' + bitmask + ')');
                         do_reject();
                     } else {
-                        connection.logdebug(plugin, 'ignoring result (' + addrs[0] + ') for: ' + 
+                        connection.logdebug(plugin, 'ignoring result (' + addrs[0] + ') for: ' +
                                 lookup + ' as the bitmask did not match');
                         var skip = true;
                     }
                 }
                 else {
-                    connection.loginfo(plugin, 'found ' + query[0] + ' in zone ' + query[1] + 
+                    connection.loginfo(plugin, 'found ' + query[0] + ' in zone ' + query[1] +
                         ' (' + addrs.join(',') + ')');
                     do_reject();
                 }
             }
             if (!called_next && pending_queries === 0) {
                 clearTimeout(timer);
-                plugin.note({conn: connection, pass: type});
+                plugin.note.save({pass: type});
                 return next();
             }
         });
     });
 
     if (pending_queries === 0) {
-        plugin.note({conn: connection, pass: type});
+        plugin.note.save({pass: type});
         return next();
     }
 }
 
 exports.hook_lookup_rdns = function (next, connection) {
-    this.note_init({ conn: connection, plugin: this, hide: ['skip'] });
+    this.note = new Note(connection, this, { hide: ['skip'] });
     this.load_uri_config(next);
     var plugin = this;
     dns.reverse(connection.remote_ip, function (err, rdns) {
         if (err) {
-            plugin.note({conn: connection, err: err });
+            plugin.note.save({err: err });
             return next();
         }
         plugin.do_lookups(connection, next, rdns, 'rdns');
@@ -344,11 +344,11 @@ function extract_urls (urls, body, connection, self) {
             urls[uri.hostname] = uri;
         }
         catch (error) {
-            connection.logerror(self, 'parse error: ' + match[0] + 
+            connection.logerror(self, 'parse error: ' + match[0] +
                                       ' ' + error.message);
-        }            
+        }
     }
-    
+
     // match plain hostname.tld
     while (match = schemeless.exec(body.bodytext)) {
         var uri;
@@ -361,7 +361,7 @@ function extract_urls (urls, body, connection, self) {
                                       ' ' + error.message);
         }
     }
-    
+
     // match scheme:// URI
     while (match = schemed.exec(body.bodytext)) {
         var uri;
@@ -374,9 +374,9 @@ function extract_urls (urls, body, connection, self) {
                                       ' ' + error.message);
         }
     }
-    
+
     // TODO: URIHASH
-    // TODO: MAILHASH 
+    // TODO: MAILHASH
 
     for (var i=0,l=body.children.length; i < l; i++) {
         extract_urls(urls, body.children[i], connection, self);

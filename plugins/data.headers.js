@@ -1,23 +1,19 @@
 // validate message headers and some fields
 
+var Note = require('./note');
+
 exports.register = function () {
     var plugin = this;
-    this.inherits('note');
 
-    this.register_hook('data',      'init');
     this.register_hook('data_post', 'duplicate_singular');
     this.register_hook('data_post', 'missing_required');
     this.register_hook('data_post', 'invalid_date');
     this.register_hook('data_post', 'invalid');
 };
 
-exports.init = function(next, connection) {
-    this.note_init({conn: connection, plugin: this, txn: true });
-    return next();
-};
-
 exports.duplicate_singular = function(next, connection) {
     var config = this.config.get('data.headers.ini');
+    this.note = new Note(connection, this, {txn: true});
 
     // RFC 5322 Section 3.6, Headers that MUST be unique if present
     var singular = config.main.singular !== 'undefined' ?
@@ -30,7 +26,7 @@ exports.duplicate_singular = function(next, connection) {
     for (var i=0, l=singular.length; i < l; i++) {
         if (connection.transaction.header.get_all(singular[i]).length > 1) {
             var name = singular[i];
-            this.note({conn: connection, fail: 'duplicate_singular:'+name});
+            this.note.save({fail: 'duplicate_singular:'+name});
             failures.push(name);
         }
     }
@@ -40,12 +36,13 @@ exports.duplicate_singular = function(next, connection) {
             " header allowed. See RFC 5322, Section 3.6");
     }
 
-    this.note({conn: connection, pass: 'duplicate_singular'});
+    this.note.save({pass: 'duplicate_singular'});
     return next();
 };
 
 exports.missing_required = function(next, connection) {
     var config = this.config.get('data.headers.ini');
+    this.note = new Note(connection, this, {txn: true});
 
     // Enforce RFC 5322 Section 3.6, Headers that MUST be present
     var required = config.main.required !== 'undefined' ?
@@ -56,7 +53,7 @@ exports.missing_required = function(next, connection) {
     for (var i=0; i < required.length; i++) {
         var h = required[i];
         if (connection.transaction.header.get_all(h).length === 0) {
-            this.note({conn: connection, fail: 'missing_required:'+h});
+            this.note.save({fail: 'missing_required:'+h});
             failures.push(h);
         }
     }
@@ -64,12 +61,13 @@ exports.missing_required = function(next, connection) {
         return next(DENY, "Required header '" + failures[0] + "' missing");
     }
 
-    this.note({conn: connection, pass: 'missing_required'});
+    this.note.save({pass: 'missing_required'});
     return next();
 };
 
 exports.invalid = function(next, connection) {
     // This tests for headers that shouldn't be present
+    this.note = new Note(connection, this, {txn: true});
 
     // RFC 5321#section-4.4 Trace Information
     //   A message-originating SMTP system SHOULD NOT send a message that
@@ -81,7 +79,7 @@ exports.invalid = function(next, connection) {
     if (rp) {
         if (connection.relaying) {      // On messages we originate
             connection.loginfo(plugin, "invalid Return-Path!");
-            this.note({conn: connection, fail: 'invalid'});
+            this.note.save({fail: 'invalid'});
             return next(DENY, "outgoing mail must not have a Return-Path header (RFC 5321)");
         }
         else {
@@ -95,12 +93,13 @@ exports.invalid = function(next, connection) {
     }
 
     // other invalid tests here...
-    this.note({conn: connection, pass: 'invalid'});
+    this.note.save({pass: 'invalid'});
     return next();
 };
 
 exports.invalid_date = function (next, connection) {
     var plugin = this;
+    plugin.note = new Note(connection, plugin, {txn: true});
     // Assure Date header value is [somewhat] sane
 
     var config = this.config.get('data.headers.ini');
@@ -119,7 +118,7 @@ exports.invalid_date = function (next, connection) {
         too_future.setHours(too_future.getHours() + 24 * date_future_days);
         // connection.logdebug(plugin, "too future: " + too_future);
         if (msg_date > too_future) {
-            this.note({conn: connection, fail: 'invalid_date(future)'});
+            plugin.note.save({fail: 'invalid_date(future)'});
             return next(DENY, "The Date header is too far in the future");
         }
     }
@@ -134,11 +133,11 @@ exports.invalid_date = function (next, connection) {
         // connection.logdebug(plugin, "too old: " + too_old);
         if (msg_date < too_old) {
             connection.loginfo(plugin, "date is older than: " + too_old);
-            this.note({conn: connection, fail: 'invalid_date(past)'});
+            plugin.note.save({fail: 'invalid_date(past)'});
             return next(DENY, "The Date header is too old");
         }
     }
 
-    this.note({conn: connection, pass: 'invalid_date'});
+    this.note.save({pass: 'invalid_date'});
     return next();
 };

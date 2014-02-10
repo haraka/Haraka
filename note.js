@@ -19,24 +19,27 @@ function Note(connection, plugin, args) {
     this.args = args;
 
     var name = this.get_note_name();
-    connection.logdebug(plugin, "note.Note, name for " + plugin.name + ": " + name);
+    connection.logprotocol(plugin, "note.Note, name for " + plugin.name + ": " + name);
 
-    var note = args.txn ? connection.transaction.notes[name] : 
-                          connection.notes[name];
+    var note = (args && args.txn) ? connection.transaction.notes[name] :
+                                    connection.notes[name];
     if (note && note !== undefined) {
-        connection.logdebug(plugin, "note.Note, found existing note");
+        connection.logprotocol(plugin, "note.Note, found existing note");
         return; // init once per connection
     }
 
-    connection.logdebug(plugin, "note.Note initializing new note");
+    connection.logprotocol(plugin, "note.Note initializing new note");
     var new_note = {
         pass: [],
         fail: [],
         msg: [],
         err: [],
         skip: [],
+        hide: (args && args.hide) ? args.hide : [],
+        order: (args && args.order) ? args.order : [],
+
     };
-    if (args.txn) {
+    if (args && args.txn) {
         connection.transaction.notes[name] = new_note;
         return;
     }
@@ -46,11 +49,11 @@ function Note(connection, plugin, args) {
 Note.prototype.save = function (obj) {
     if (!obj) throw("save argument must be an obj, see docs/note.md");
     var name = this.get_note_name();
-    this.connection.logdebug(this.plugin, "note.save, name for " + this.plugin.name + ": " + name);
+    this.connection.logprotocol(this.plugin, "note.save, name for " + this.plugin.name + ": " + name);
 
     var note = this.find_note(name);
     if (!note) {
-        this.connection.logdebug(this.plugin, "note.save, didn't find note");
+        this.connection.logprotocol(this.plugin, "note.save, didn't find note");
         return;
     }
 
@@ -113,7 +116,7 @@ function private_note_collate (note) {
     var array = append_lists;
     if (note.order && note.order.length) { array = note.order; }
     array.forEach(function (key) {
-        if (!note[key] || note[key] === undefined) return; // overrode note_init
+        if (!note[key] || note[key] === undefined) return;
         if (note[key] && !note[key].length) return;
         if (note.hide && note.hide.length && note.hide.indexOf(key) !== -1) return;
         r.push( key + ':' + note[key].join(', '));
@@ -140,7 +143,7 @@ Note.prototype.find_note = function (name) {
 
 Note.prototype.get_note_name = function () {
     // allows custom note name setting plugin.note_name in caller
-    this.connection.logdebug(this.plugin, "get_note_name being called");
+    this.connection.logprotocol(this.plugin, "get_note_name being called");
     if (this.plugin.note_name !== undefined)
         return this.plugin.note_name;
     return this.plugin.name;

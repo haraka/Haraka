@@ -1,6 +1,7 @@
 // clamd
 
 var sock = require('./line_socket');
+var Note = require('./note');
 
 var defaults = {
     clamd_socket: 'localhost:3310',
@@ -17,7 +18,6 @@ exports.wildcard_to_regexp = function (str) {
 }
 
 exports.register = function () {
-    this.inherits('note');
     var self = this;
     function loadExcludes() {
         self.loginfo('Loading excludes file');
@@ -79,7 +79,7 @@ exports.register = function () {
 
 exports.hook_data = function (next, connection) {
     var plugin = this;
-    this.note_init({conn: connection, plugin: this, txn: true});
+    plugin.note = new Note(connection, plugin, {txn: true});
     // Load config
     var config = this.config.get('clamd.ini');
     for (var key in defaults) {
@@ -90,7 +90,7 @@ exports.hook_data = function (next, connection) {
         transaction.parse_body = 1;
         transaction.attachment_hooks(function (ctype, filename, body) {
             connection.logdebug(plugin, 'found ctype=' + ctype + ', filename=' + filename);
-            plugin.note({conn: connection, attachment: 1});
+            plugin.note.save({attachment: 1});
         });
     }
     return next();
@@ -98,6 +98,7 @@ exports.hook_data = function (next, connection) {
 
 exports.hook_data_post = function (next, connection) {
     var plugin = this;
+    plugin.note = new Note(connection, plugin, {txn: true});
     var transaction = connection.transaction;
 
     // Config
@@ -110,13 +111,13 @@ exports.hook_data_post = function (next, connection) {
     if (config.main['only_with_attachments'] &&
         !transaction.notes.clamd.attachment)
     {
-        plugin.note({conn: connection, skip: 'no attachments', emit: true});
+        plugin.note.save({skip: 'no attachments', emit: true});
         return next();
     }
 
     // Limit message size
     if (transaction.data_bytes > config.main.max_size) {
-        plugin.note({conn: connection, skip: 'too big', emit: true});
+        plugin.note.save({skip: 'too big', emit: true});
         return next();
     }
 
@@ -131,7 +132,7 @@ exports.hook_data_post = function (next, connection) {
         var socket;
         var connected = false;
         if (!hosts.length) {
-            plugin.note({conn: connection, err: 'connecting', emit: true});
+            plugin.note.save({err: 'connecting', emit: true});
             return next(DENYSOFT, 'Error connecting to virus scanner');
         }
         var host = hosts.shift();
@@ -141,7 +142,7 @@ exports.hook_data_post = function (next, connection) {
         socket.on('timeout', function () {
             socket.destroy();
             if (connected) {
-                plugin.note({conn: connection, err: 'timed out', emit: true});
+                plugin.note.save({err: 'timed out', emit: true});
                 return next(DENYSOFT, 'Virus scanner timed out');
             }
             else {
@@ -157,7 +158,7 @@ exports.hook_data_post = function (next, connection) {
                 try_next_host();
             }
             else {
-                plugin.note({conn: connection, err: err, emit: true});
+                plugin.note.save({err: err, emit: true});
                 return next(DENYSOFT, 'Virus scanner error');
             }
         });
@@ -185,11 +186,11 @@ exports.hook_data_post = function (next, connection) {
             var m;
             if (/^stream: OK/.test(result)) {
                 // OK
-                plugin.note({conn: connection, pass: 'clean', emit: true});
+                plugin.note.save({pass: 'clean', emit: true});
                 return next();
             }
             else if ((m = /^stream: (\S+) FOUND/.exec(result))) {
-                plugin.note({conn: connection, fail: 'virus', emit: true});
+                plugin.note.save({fail: 'virus', emit: true});
                 // Virus found
                 if (m && m[1]) {
                     var virus = m[1];
@@ -212,7 +213,7 @@ exports.hook_data_post = function (next, connection) {
                 return next(DENY, 'Message is infected with ' + (virus || 'UNKNOWN'));
             }
             else if (/size limit exceeded/.test(result)) {
-                plugin.note({conn: connection, skip: 'size limit exceeded', emit: true});
+                plugin.note.save({skip: 'size limit exceeded', emit: true});
                 connection.logerror(plugin, 'INSTREAM size limit exceeded. ' +
                                             'Check StreamMaxLength in clamd.conf');
                 // Continue as StreamMaxLength default is 25Mb
@@ -220,7 +221,7 @@ exports.hook_data_post = function (next, connection) {
             }
             else {
                 // Unknown result
-                plugin.note({conn: connection, err: 'unknown result: ' + result, emit: true});
+                plugin.note.save({err: 'unknown result: ' + result, emit: true});
                 return next(DENYSOFT, 'Error running virus scanner');
             }
             return next();

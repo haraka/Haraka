@@ -1,31 +1,28 @@
 // Check MAIL FROM domain is resolvable to an MX
 var dns = require('dns');
-
-exports.register = function () {
-    this.inherits('note');
-};
+var Note = require('./note');
 
 exports.hook_mail = function(next, connection, params) {
-    var mail_from    = params[0];
-    this.note_init({conn: connection, plugin: this, txn: true});
+    var plugin    = this;
+    var mail_from = params[0];
+    plugin.note   = new Note(connection, plugin, {txn: true});
 
     // Check for MAIL FROM without an @ first - ignore those here
     if (!mail_from.host) {
-        this.note({conn: connection, skip: 'null host'});
+        plugin.note.save({skip: 'null host'});
         return next();
     }
 
     var called_next  = 0;
-    var plugin       = this;
     var domain       = mail_from.host;
-    var config       = this.config.get('mail_from.is_resolvable.ini');
+    var config       = plugin.config.get('mail_from.is_resolvable.ini');
     var re_bogus_ip  = new RegExp(config.main.re_bogus_ip || '^(?:0\.0\.0\.0|255\.255\.255\.255|127\.)' );
 
     // Just in case DNS never comes back (UDP), we should DENYSOFT.
     var timeout_id = setTimeout(function () {
         connection.loginfo(plugin, 'timed out when looking up MX for ' + domain);
         called_next++;
-        plugin.note({conn: connection, err: 'timeout(' + domain + ')'});
+        plugin.note.save({err: 'timeout(' + domain + ')'});
         return next(DENYSOFT, 'Temporary resolver error (timeout)');
     }, ((config.main.timeout) ? config.main.timeout : 30) * 1000);
 
@@ -39,7 +36,7 @@ exports.hook_mail = function(next, connection, params) {
 
     dns.resolveMx(domain, function(err, addresses) {
         if (err) {
-            plugin.note({conn: connection, err: err.message});
+            plugin.note.save({err: err.message});
             connection.logdebug(plugin, domain + ': MX => ' + err.message);
             switch (err.code) {
                 case dns.NXDOMAIN:
@@ -62,10 +59,10 @@ exports.hook_mail = function(next, connection, params) {
                 a_records = Object.keys(a_records);
                 if (a_records && a_records.length) {
                     connection.logdebug(plugin, domain + ': ' + a_records);
-                    plugin.note({conn: connection, pass: 'has_a_records'});
+                    plugin.note.save({pass: 'has_a_records'});
                     return cb();
                 }
-                plugin.note({conn: connection, fail: 'has_a_records'});
+                plugin.note.save({fail: 'has_a_records'});
                 return cb(((config.main.reject_no_mx) ? DENY : DENYSOFT),
                             'No MX for your FROM address');
             }
@@ -84,7 +81,7 @@ exports.hook_mail = function(next, connection, params) {
                 dns.resolve(addr.exchange, function(err, addresses) {
                     pending_queries--;
                     if (err) {
-                        plugin.note({conn: connection, err: err.message});
+                        plugin.note.save({err: err.message});
                         connection.logdebug(plugin, domain + ': MX ' + addr.priority + ' ' 
                                         + addr.exchange + ' => ' + err.message);
                     }
@@ -114,7 +111,7 @@ exports.hook_mail = function(next, connection, params) {
             // Check for implicit MX 0 record
             dns.resolve(domain, function(err, addresses) {
                 if (err) {
-                    plugin.note({conn: connection, err: domain + ':A:' + err.message});
+                    plugin.note.save({err: domain + ':A:' + err.message});
                     connection.logdebug(plugin, domain + ': A => ' + err.message);
                     switch (err.code) {
                         case dns.NXDOMAIN:
@@ -141,11 +138,11 @@ exports.hook_mail = function(next, connection, params) {
                     }
                     a_records = Object.keys(a_records);
                     if (a_records && a_records.length) {
-                        plugin.note({conn: connection, pass: 'has_a_records'});
+                        plugin.note.save({pass: 'has_a_records'});
                         return cb();
                     }
                 } 
-                plugin.note({conn: connection, fail: 'has_a_records'});
+                plugin.note.save({fail: 'has_a_records'});
                 return cb(((config.main.reject_no_mx) ? DENY : DENYSOFT), 
                             'No MX for your FROM address');
             });

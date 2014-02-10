@@ -1,12 +1,12 @@
 // dnsbl plugin
 
+var Note = require('./note');
 var cfg;
 var reject=true;
 
 exports.register = function() {
     cfg = this.config.get('dnsbl.ini');
     this.inherits('dns_list_base');
-    this.inherits('note');
 
     if (cfg.main.enable_stats) {
         this.logdebug('stats reporting enabled');
@@ -45,31 +45,31 @@ exports.register = function() {
 
 exports.connect_first = function(next, connection) {
     var plugin = this;
-    this.note_init({conn: connection, plugin: this});
+    plugin.note = new Note(connection, plugin);
 
     this.first(connection.remote_ip, this.zones, function (err, zone, a) {
         if (a) {
-            plugin.note({ conn: connection, fail: zone, emit: true });
+            plugin.note.save({ fail: zone, emit: true });
             if (reject) {
                 return next(DENY, 'host [' + connection.remote_ip + '] is blacklisted by ' + zone);
             }
             return next();
         }
-        plugin.note({ conn: connection, pass: zone, emit: true });
+        plugin.note.save({ pass: zone, emit: true });
         return next();
     });
 };
 
 exports.connect_multi = function(next, connection) {
     var plugin = this;
-    plugin.note_init({conn: connection, plugin: this});
+    plugin.note = new Note(connection, plugin);
 
     this.multi(connection.remote_ip, this.zones, function (err, zone, a, pending) {
-        if ( a) plugin.note({conn: connection, fail: zone});
-        if (!a) plugin.note({conn: connection, pass: zone});
+        if ( a) plugin.note.save({fail: zone});
+        if (!a) plugin.note.save({pass: zone});
 
         if (pending > 0) return;
-        plugin.note({conn: connection, emit: true});
+        plugin.note.save({emit: true});
 
         if (!a) return next();
         if (reject) {
