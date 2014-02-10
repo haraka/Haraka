@@ -880,16 +880,6 @@ HMailItem.prototype.try_deliver = function () {
 
 var smtp_regexp = /^(\d{3})([ -])(?:(\d\.\d\.\d)\s)?(.*)/;
 
-function map_recips (item) {
-    return Object.keys(item)[0];
-}
-
-function get_done_rcpt (rest) {
-    //unfortunately rfc1869 would fail here for some cases
-    var parsed = rest.trim().split(' ');
-    return new Address(parsed[0]);
-}
-
 HMailItem.prototype.try_deliver_host = function (mx) {
     if (this.hostlist.length === 0) {
         return this.try_deliver(); // try next MX
@@ -901,7 +891,7 @@ HMailItem.prototype.try_deliver_host = function (mx) {
     var self            = this;
     var processing_mail = true;
 
-    this.loginfo("Attempting to deliver to: " + host + ":" + port + (mx.using_lmtp ? "using LMTP " : "") + " (" + delivery_queue.length() + ") (" + temp_fail_queue.length() + ")");
+    this.loginfo("Attempting to deliver to: " + host + ":" + port + (mx.using_lmtp ? " using LMTP" : "") + " (" + delivery_queue.length() + ") (" + temp_fail_queue.length() + ")");
 
     socket.on('error', function (err) {
         if (processing_mail) {
@@ -993,20 +983,19 @@ HMailItem.prototype.try_deliver_host = function (mx) {
     var finish_processing_mail = function (success) {
         if (fail_recips.length) {
             self.refcount++;
-            exports.split_to_new_recipients(self, fail_recips.map(map_recips), "Some recipients temporarily failed", function (hmail) {
+            exports.split_to_new_recipients(self, fail_recips, "Some recipients temporarily failed", function (hmail) {
                 self.discard();
-                hmail.temp_fail("Some recipients temp failed: " + fail_recips.map(map_recips).join(', '), fail_recips);
+                hmail.temp_fail("Some recipients temp failed: " + fail_recips.map(function (a) { return a.original }).join(', '), fail_recips);
             });
         }
         if (bounce_recips.length) {
             self.refcount++;
-            exports.split_to_new_recipients(self, bounce_recips.map(map_recips), "Some recipients rejected", function (hmail) {
+            exports.split_to_new_recipients(self, bounce_recips, "Some recipients rejected", function (hmail) {
                 self.discard();
-                hmail.bounce("Some recipients failed: " + bounce_recips.map(map_recips).join(', '), bounce_recips);
+                hmail.bounce("Some recipients failed: " + bounce_recips.map(function (a) { return a.original }).join(', '), bounce_recips);
             });
         }
         processing_mail = false;
-        send_command('QUIT');
         if (success) {
             var reason = response.join(' ');
             self.delivered(host, mx.exchange, reason);
@@ -1014,6 +1003,7 @@ HMailItem.prototype.try_deliver_host = function (mx) {
         else {
             self.discard();
         }
+        send_command('QUIT');
     }
 
     socket.on('timeout', function () {
