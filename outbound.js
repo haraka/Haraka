@@ -917,9 +917,9 @@ HMailItem.prototype.try_deliver_host = function (mx) {
     var command = mx.using_lmtp ? 'connectlmtp' : 'connect';
     var response = [];
     
-    var recipients = this.todo.rcpt_to.map(function (a) { return new Address (a.original) });
+    var recipients = this.todo.rcpt_to.map(function (a) { return new Address (a) });
 
-    var mail_from  = new Address (this.todo.mail_from.original);
+    var mail_from  = new Address (this.todo.mail_from);
 
     var data_marker = 0;
     var last_recip = null;

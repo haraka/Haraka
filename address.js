@@ -11,6 +11,13 @@
 var qchar = /([^a-zA-Z0-9!#\$\%\&\x27\*\+\x2D\/=\?\^_`{\|}~.])/;
 
 function Address (user, host) {
+    if (typeof user == 'object' && user.original) {
+        // Assume reconstructing from JSON parse
+        for (var k in user) {
+            this[k] = user[k];
+        }
+        return this;
+    }
     var match = /^<(.*)>$/.exec(user);
     if (match) {
         this.original = user;
