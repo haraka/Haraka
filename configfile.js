@@ -216,7 +216,7 @@ cfreader.load_flat_config = function(name, type) {
                     return;
                 }
                 else if (line_data = regex.line.exec(line)) {
-                    result.push(line_data[1]);
+                    result.push(line_data[1].trim());
                 }
             });
         }

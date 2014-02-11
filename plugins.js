@@ -85,7 +85,6 @@ plugins.load_plugins = function () {
 };
 
 plugins.load_plugin = function(name) {
-    name = name.trim();
     logger.loginfo("Loading plugin: " + name);
 
     var plugin = plugins._load_and_compile_plugin(name);
