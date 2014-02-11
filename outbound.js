@@ -643,6 +643,8 @@ HMailItem.prototype.read_todo = function () {
             if (Buffer.byteLength(todo) === todo_len) {
                 // we read everything
                 self.todo = JSON.parse(todo);
+                self.todo.rcpt_to = self.todo.rcpt_to.map(function (a) { return new Address (a) });
+                self.todo.mail_from = new Address (self.todo.mail_from);
                 self.emit('ready');
             }
         });
@@ -917,9 +919,8 @@ HMailItem.prototype.try_deliver_host = function (mx) {
     var command = mx.using_lmtp ? 'connectlmtp' : 'connect';
     var response = [];
     
-    var recipients = this.todo.rcpt_to.map(function (a) { return new Address (a) });
-
-    var mail_from  = new Address (this.todo.mail_from);
+    var recip_index = 0;
+    var recipients = this.todo.rcpt_to;
 
     var data_marker = 0;
     var last_recip = null;
@@ -980,7 +981,7 @@ HMailItem.prototype.try_deliver_host = function (mx) {
             send_command('STARTTLS');
         }
         else {
-            send_command('MAIL', 'FROM:' + mail_from);
+            send_command('MAIL', 'FROM:' + self.todo.mail_from);
         }
     }
 
@@ -1092,17 +1093,18 @@ HMailItem.prototype.try_deliver_host = function (mx) {
                         socket.upgrade(tls_options);
                         break;
                     case 'helo':
-                        send_command('MAIL', 'FROM:' + mail_from);
+                        send_command('MAIL', 'FROM:' + self.todo.mail_from);
                         break;
                     case 'mail':
-                        last_recip = recipients.shift();
+                        last_recip = recipients[recip_index];
+                        recip_index++;
                         send_command('RCPT', 'TO:' + last_recip.format());
                         break;
                     case 'rcpt':
                         if (last_recip && code.match(/^250/)) {
                             ok_recips.push(last_recip);
                         }
-                        if (!recipients.length) { // End of RCPT TOs
+                        if (recip_index === recipients.length) { // End of RCPT TOs
                             if (ok_recips.length > 0) {
                                 send_command('DATA');
                             }
@@ -1111,7 +1113,8 @@ HMailItem.prototype.try_deliver_host = function (mx) {
                             }
                         }
                         else {
-                            last_recip = recipients.shift();
+                            last_recip = recipients[recip_index];
+                            recip_index++;
                             send_command('RCPT', 'TO:' + last_recip.format());
                         }
                         break;
