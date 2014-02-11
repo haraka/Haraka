@@ -115,23 +115,20 @@ exports.fixup_old_headers = function (action, transaction) {
             break;
         case "drop":
             for (var key in headers) {
+                if (!key) continue;
                 transaction.remove_header('X-Spam-' + key);
             }
             break;
         case "rename":
         default:
             for (var key in headers) {
+                if (!key) continue;
                 key = 'X-Spam-' + key;
                 var old_val = transaction.header.get(key);
                 transaction.remove_header(key);
                 if (old_val) {
                     plugin.logdebug(plugin, "header: " + key + ', ' + old_val);
-                    if (key !== 'X-Spam-Status') {
-                        // if the old Status header is folded, Haraka reinserts
-                        // it with a stray CR or LF, resulting in a blank line
-                        // in the headers.
-                        transaction.add_header(key.replace(/^X-/, 'X-Old-'), old_val);
-                    }
+                    transaction.add_header(key.replace(/^X-/, 'X-Old-'), old_val);
                 }
             }
             break;
@@ -173,13 +170,15 @@ exports.do_header_updates = function (connection, spamd_response, config) {
 
     var modern = config.main.modern_status_syntax;
     for (var key in spamd_response.headers) {
+        if (!key || key === '' || key === undefined) continue;
+        var val = spamd_response.headers[key];
+        if (val === undefined) { val = ''; }
+
         if (key === 'Status' && !modern) {
             var legacy = spamd_response.headers[key].replace(/ score=/,' hits=');
             connection.transaction.add_header('X-Spam-Status', legacy);
-            return;
+            continue;
         }
-        var val = spamd_response.headers[key];
-        if (val === undefined) { val = ''; }
         connection.transaction.add_header('X-Spam-' + key, val);
     }
 };
