@@ -86,22 +86,24 @@ parameter is the error message received from the remote end. If you do not wish
 to have a bounce message sent to the originating sender of the email then you
 can return `OK` from this hook to stop it from sending a bounce message.
 
-The variable `hmail.bounce_extra` can be accessed from this hook.  This is an 
-Object which contains each recipient as the key and the value is the code 
-and response received from the upstream server for that recipient.
-
 ### The delivered hook
 
 When mails are successfully delivered to the remote end then the `delivered`
 hook is called. The return codes from this hook have no effect, so it is only
 useful for logging the fact that a successful delivery occurred.
-This hook is called with `(hmail, [host, ip, response, delay)` as parameters, 
+This hook is called with `(hmail, [host, ip, response, delay, port, mode, recipients])` 
+as parameters:
+ 
 `host` is the hostname of the MX that the message was delivered to,
 `ip` is the IP address of the host that the message was delivered to,
 `response` variable contains the SMTP response text returned by the host 
 that received the message and will typically contain the remote queue ID and
 `delay` is the time taken between the queue file being created and the 
 message being delivered.
+`port` is the port that the message was delivered to.
+`mode` shows whether SMTP or LMTP was used to deliver the mail.
+`recipients` is an Address array containing all of the recipients that were
+successfully delivered to.
 
 Bounce Messages
 ---------------
