@@ -1,4 +1,4 @@
-// note.js - programmatic handling of plugin notes
+// result_store.js - programmatic handling of plugin results
 
 "use strict"
 
@@ -16,15 +16,8 @@ function ResultStore(conn) {
     this.store = {};
 }
 
-function get_note_name = function (plugin) {
-    // allows custom note name setting plugin.note_name in caller
-    if (plugin.note_name !== undefined)
-        return plugin.note_name;
-    return plugin.name;
-};
-
 ResultStore.prototype.add = function (plugin, obj) {
-    var name = get_note_name(plugin);
+    var name = plugin.name;
 
     var config = config.get('results_store', 'ini');
 
@@ -83,7 +76,7 @@ ResultStore.prototype.add = function (plugin, obj) {
 };
 
 ResultStore.prototype.collate = function (plugin) {
-    var name = get_note_name(plugin);
+    var name = plugin.name;
     var note = this.store[name];
     if (!note) return;
     return private_note_collate(note);
