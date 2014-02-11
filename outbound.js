@@ -492,7 +492,7 @@ exports.split_to_new_recipients = function (hmail, recipients, response, cb) {
     // var ws = fs.createWriteStream(tmp_path, { flags: WRITE_EXCL });
     var err_handler = function (err, location) {
         self.logerror("Error while splitting to new recipients (" + location + "): " + err);
-        hmail.bounce("Error splitting to new recipients", err);
+        hmail.bounce("Error splitting to new recipients: " + err);
     }
 
     ws.on('error', function (err) { err_handler(err, "tmp file writer") });
@@ -530,7 +530,7 @@ exports.split_to_new_recipients = function (hmail, recipients, response, cb) {
     ws.on('error', function (err) {
         self.logerror("Unable to write queue file (" + fname + "): " + err);
         ws.destroy();
-        hmail.bounce("Error re-queueing some recipients", err);
+        hmail.bounce("Error re-queueing some recipients: " + err);
     });
 
     var new_todo = JSON.parse(JSON.stringify(hmail.todo));
@@ -989,14 +989,14 @@ HMailItem.prototype.try_deliver_host = function (mx) {
             self.refcount++;
             exports.split_to_new_recipients(self, fail_recips, "Some recipients temporarily failed", function (hmail) {
                 self.discard();
-                hmail.temp_fail("Some recipients temp failed: " + fail_recips.map(function (a) { return a.original }).join(', '), fail_recips);
+                hmail.temp_fail("Some recipients temp failed: " + fail_recips.join(', '), fail_recips);
             });
         }
         if (bounce_recips.length) {
             self.refcount++;
             exports.split_to_new_recipients(self, bounce_recips, "Some recipients rejected", function (hmail) {
                 self.discard();
-                hmail.bounce("Some recipients failed: " + bounce_recips.map(function (a) { return a.original }).join(', '), bounce_recips);
+                hmail.bounce("Some recipients failed: " + bounce_recips.join(', '), bounce_recips);
             });
         }
         processing_mail = false;
@@ -1035,13 +1035,10 @@ HMailItem.prototype.try_deliver_host = function (mx) {
                     if (/^rcpt/.test(command) || command === 'dot_lmtp') {
                         if (command === 'dot_lmtp') last_recip = ok_recips.shift();
                         // this recipient was rejected
-                        self.lognotice('recipient ' + last_recip + ' deferred: ' +
-                             code + ' ' + ((extc) ? extc + ' ' : '') + response.join(' '));
-                        (function () {
-                            var o = {};
-                            o[last_recip] = code + ' ' + ((extc) ? extc + ' ' : '') + response.join(' ');
-                            fail_recips.push(o);
-                        })();
+                        var reason = code + ' ' + ((extc) ? extc + ' ' : '') + response.join(' ');
+                        self.lognotice('recipient ' + last_recip + ' deferred: ' + reason);
+                        last_recip.reason = reason;
+                        fail_recips.push(last_recip);
                         if (command == 'dot_lmtp' && ok_recips.length === 0) {
                             return finish_processing_mail(true);
                         }
@@ -1060,13 +1057,10 @@ HMailItem.prototype.try_deliver_host = function (mx) {
                     }
                     if (/^rcpt/.test(command) || command === 'dot_lmtp') {
                         if (command === 'dot_lmtp') last_recip = ok_recips.shift();
-                        self.lognotice('recipient ' + last_recip + ' rejected: ' +
-                            code + ' ' + ((extc) ? extc + ' ' : '') + response.join(' '));
-                        (function() {
-                            var o = {};
-                            o[last_recip] = code + ' ' + ((extc) ? extc + ' ' : '') + response.join(' '); 
-                            bounce_recips.push(o);
-                        })();
+                        var reason = code + ' ' + ((extc) ? extc + ' ' : '') + response.join(' ');
+                        self.lognotice('recipient ' + last_recip + ' rejected: ' + reason);
+                        last_recip.reason - reason;
+                        bounce_recips.push(last_recip);
                         if (command == 'dot_lmtp' && ok_recips.length === 0) {
                             return finish_processing_mail(true);
                         }
@@ -1192,21 +1186,27 @@ function populate_bounce_message (from, to, reason, hmail, cb) {
     })
 }
 
-HMailItem.prototype.bounce = function (err, extra) {
+HMailItem.prototype.bounce = function (err, recips) {
     this.loginfo("bouncing mail: " + err);
+    var recip_map = {};
+    if (recips) {
+        for (var i=0; i<recips.length; i++) {
+            recip_map[recips[i].original] = recips[i].reason;
+        }
+    }
     if (!this.todo) {
         // haven't finished reading the todo, delay here...
         var self = this;
-        self.once('ready', function () { self._bounce(err, extra) });
+        self.once('ready', function () { self._bounce(err, recip_map) });
         return;
     }
-    this._bounce(err, extra);
+    this._bounce(err, recip_map);
 }
 
-HMailItem.prototype._bounce = function (err, extra) {
+HMailItem.prototype._bounce = function (err, recip_map) {
     this.bounce_error = err;
-    if (extra) {
-        this.bounce_extra = extra;
+    if (recip_map) {
+        this.bounce_extra = recip_map;
     }
     plugins.run_hooks("bounce", this, err);
 }
@@ -1305,7 +1305,7 @@ HMailItem.prototype.temp_fail = function (err, extra) {
     var hmail = this;
     fs.rename(this.path, path.join(queue_dir, new_filename), function (err) {
         if (err) {
-            return hmail.bounce("Error re-queueing email", err);
+            return hmail.bounce("Error re-queueing email: " + err);
         }
         
         hmail.path = path.join(queue_dir, new_filename);
