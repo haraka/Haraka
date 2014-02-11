@@ -1059,7 +1059,7 @@ HMailItem.prototype.try_deliver_host = function (mx) {
                         if (command === 'dot_lmtp') last_recip = ok_recips.shift();
                         var reason = code + ' ' + ((extc) ? extc + ' ' : '') + response.join(' ');
                         self.lognotice('recipient ' + last_recip + ' rejected: ' + reason);
-                        last_recip.reason - reason;
+                        last_recip.reason = reason;
                         bounce_recips.push(last_recip);
                         if (command == 'dot_lmtp' && ok_recips.length === 0) {
                             return finish_processing_mail(true);
