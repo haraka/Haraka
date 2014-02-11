@@ -23,6 +23,7 @@ var fs   = require('fs'),
         "qlist":   Boolean,
         "qstat":   Boolean,
         "qempty":  Boolean,
+        "order":   Boolean,
     },
     shortHands = {
         "v": ["--version"],
@@ -32,6 +33,7 @@ var fs   = require('fs'),
         "l": ["--list"],
         "p": ["--plugin"],
         "f": ["--force"],
+        "o": ["--order"],
     },
     parsed = nopt(knownOpts, shortHands, process.argv, 2),
     existsSync = require(base+'/utils').existsSync;
@@ -50,6 +52,7 @@ var usage = [
     "\t-f, --force   \t\tForce overwriting of old files",
     "\t--qlist       \t\tList the outbound queue",
     "\t--qstat       \t\tGet statistics on the outbound queue",
+    "\t-o, --order   \t\tShow all registered plugins and their run order",
 ].join('\n');
 
 
@@ -342,6 +345,52 @@ else if (parsed.qempty) {
     }
     fail("qempty is unimplemented");
 }
+else if (parsed.order) {
+    if (!parsed.configs) {
+        fail("order option requires config path");
+    }
+    process.env.HARAKA = parsed.configs;
+    try {
+        require.paths.push(path.join(process.env.HARAKA, 'node_modules'));
+    }
+    catch(e) {
+        process.env.NODE_PATH = process.env.NODE_PATH ?
+                (process.env.NODE_PATH + ':' + path.join(process.env.HARAKA, 'node_modules'))
+                :
+                (path.join(process.env.HARAKA, 'node_modules'));
+        require('module')._initPaths(); // Horrible hack
+    }
+    var logger = require(path.join(base, "logger"));
+    if (!parsed.verbose)
+        logger.log = function () {} // disable logging for this
+    var plugins = require(path.join(base, "plugins"));
+    plugins.load_plugins();
+    var hooks = ['init_master', 'init_child', 'lookup_rdns', 'connect', 'helo', 'ehlo', 
+                 'capabilities', 'unrecognized_command', 'mail', 'rcpt', 'rcpt_ok', 'data', 
+                 'max_data_exceeded', 'data_post', 'queue', 'queue_outbound','queue_ok', 
+                 'quit', 'disconnect', 'vrfy', 'noop', 'rset', 'reset_transaction', 'deny',
+                 'get_mx', 'bounce', 'delivered', 'send_email'];
+    console.log('');
+    for (var h = 0; h < hooks.length; h++) {
+        var hook = hooks[h];
+        console.log(hook + '\n----------------------');
+        for (var i = 0; i < plugins.plugin_list.length; i++) {
+            var plugin = plugins.plugin_list[i];
+            if (plugin && plugin.hooks[hook]) {
+                var j;
+                for (j = 0; j < plugin.hooks[hook].length; j++) {
+                    var hook_code_name = plugin.hooks[hook][j];
+                    (hook_code_name === 'hook_' + hook) ?
+                        console.log(plugin.name) :
+                        console.log(plugin.name + ' => ' + hook_code_name);
+                }
+            }
+        }
+        console.log('');
+    }
+    process.exit();
+}
+
 else if (parsed.configs) {
     var haraka_path = path.join(base, 'haraka.js');
 
