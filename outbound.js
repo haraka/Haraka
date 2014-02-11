@@ -535,7 +535,6 @@ exports.split_to_new_recipients = function (hmail, recipients, response, cb) {
 
     var new_todo = JSON.parse(JSON.stringify(hmail.todo));
     new_todo.rcpt_to = recipients;
-    new_todo.uuid = utils.uuid();
     self.build_todo(new_todo, ws, write_more);
 }
 
@@ -572,7 +571,6 @@ function HMailItem (filename, path, notes) {
     this.file_size    = 0;
     this.next_cb      = dummy_func;
     this.bounce_error = null;
-    this.bounce_extra = null;
 
     this.size_file();
 }
@@ -916,11 +914,12 @@ HMailItem.prototype.try_deliver_host = function (mx) {
         socket.setTimeout(300 * 1000); // TODO: make this configurable
     });
 
-    var command = mx.using_lmtp ? 'connectlmtp' : 'connect';
+    var command = mx.using_lmtp ? 'connect_lmtp' : 'connect';
     var response = [];
     
     var recip_index = 0;
     var recipients = this.todo.rcpt_to;
+    var lmtp_rcpt_idx = 0;
 
     var data_marker = 0;
     var last_recip = null;
@@ -997,13 +996,14 @@ HMailItem.prototype.try_deliver_host = function (mx) {
             self.refcount++;
             exports.split_to_new_recipients(self, bounce_recips, "Some recipients rejected", function (hmail) {
                 self.discard();
-                hmail.bounce("Some recipients failed: " + bounce_recips.join(', '), bounce_recips);
+                hmail.bounce("Some recipients failed: " + bounce_recips.join(', '));
             });
         }
         processing_mail = false;
         if (success) {
             var reason = response.join(' ');
-            self.delivered(host, port, (mx.using_lmtp ? 'LMTP' : 'SMTP'), mx.exchange, reason);
+            self.delivered(host, port, (mx.using_lmtp ? 'LMTP' : 'SMTP'), mx.exchange, 
+                           reason, ok_recips, fail_recips, bounce_recips);
         }
         else {
             self.discard();
@@ -1040,8 +1040,11 @@ HMailItem.prototype.try_deliver_host = function (mx) {
                         self.lognotice('recipient ' + last_recip + ' deferred: ' + reason);
                         last_recip.reason = reason;
                         fail_recips.push(last_recip);
-                        if (command == 'dot_lmtp' && ok_recips.length === 0) {
-                            return finish_processing_mail(true);
+                        if (command == 'dot_lmtp') {
+                            response = [];
+                            if (ok_recips.length === 0) {
+                                return finish_processing_mail(true);
+                            }
                         }
                     }
                     else {
@@ -1062,8 +1065,11 @@ HMailItem.prototype.try_deliver_host = function (mx) {
                         self.lognotice('recipient ' + last_recip + ' rejected: ' + reason);
                         last_recip.reason = reason;
                         bounce_recips.push(last_recip);
-                        if (command == 'dot_lmtp' && ok_recips.length === 0) {
-                            return finish_processing_mail(true);
+                        if (command == 'dot_lmtp') {
+                            response = [];
+                            if (ok_recips.length === 0) {
+                                return finish_processing_mail(true);
+                            }
                         }
                     }
                     else {
@@ -1077,7 +1083,7 @@ HMailItem.prototype.try_deliver_host = function (mx) {
                     case 'connect':
                         send_command('EHLO', config.get('me'));
                         break;
-                    case 'connectlmtp':
+                    case 'connect_lmtp':
                         send_command('LHLO', config.get('me'));
                         break;
                     case 'lhlo':
@@ -1135,8 +1141,8 @@ HMailItem.prototype.try_deliver_host = function (mx) {
                         finish_processing_mail(true);
                         break;
                     case 'dot_lmtp':
-                        if (code.match(/^2/)) last_recip = ok_recips.shift();
-                        if (ok_recips.length === 0) {
+                        if (code.match(/^2/)) lmtp_rcpt_idx++;
+                        if (lmtp_rcpt_idx === ok_recips.length) {
                             finish_processing_mail(true);
                         }
                         break;
@@ -1189,28 +1195,19 @@ function populate_bounce_message (from, to, reason, hmail, cb) {
     })
 }
 
-HMailItem.prototype.bounce = function (err, recips) {
+HMailItem.prototype.bounce = function (err) {
     this.loginfo("bouncing mail: " + err);
-    var recip_map = {};
-    if (recips) {
-        for (var i=0; i<recips.length; i++) {
-            recip_map[recips[i].original] = recips[i].reason;
-        }
-    }
     if (!this.todo) {
         // haven't finished reading the todo, delay here...
         var self = this;
-        self.once('ready', function () { self._bounce(err, recip_map) });
+        self.once('ready', function () { self._bounce(err) });
         return;
     }
-    this._bounce(err, recip_map);
+    this._bounce(err);
 }
 
-HMailItem.prototype._bounce = function (err, recip_map) {
+HMailItem.prototype._bounce = function (err) {
     this.bounce_error = err;
-    if (recip_map) {
-        this.bounce_extra = recip_map;
-    }
     plugins.run_hooks("bounce", this, err);
 }
 
@@ -1259,7 +1256,7 @@ HMailItem.prototype.double_bounce = function (err) {
     // Another strategy might be delivery "plugins" to cope with this.
 }
 
-HMailItem.prototype.delivered = function (ip, port, mode, host, response) {
+HMailItem.prototype.delivered = function (ip, port, mode, host, response, ok_recips, fail_recips, bounce_recips) {
     var delay = (Date.now() - this.todo.queue_time)/1000;
     this.lognotice("delivered file=" + this.filename + 
                    ' domain="' + this.todo.domain + '"' +
@@ -1269,8 +1266,9 @@ HMailItem.prototype.delivered = function (ip, port, mode, host, response) {
                    ' mode=' + mode + 
                    ' response="' + response + '"' +
                    ' delay=' + delay +
-                   ' fails=' + this.num_failures);
-    plugins.run_hooks("delivered", this, [host, ip, port, mode, response, delay]);
+                   ' fails=' + this.num_failures + 
+                   ' rcpts=' + ok_recips.length + '/' + fail_recips.length + '/' + bounce_recips.length);
+    plugins.run_hooks("delivered", this, [host, ip, response, delay, port, mode, ok_recips]);
 }
 
 HMailItem.prototype.discard = function () {
