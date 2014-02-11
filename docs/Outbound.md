@@ -75,7 +75,8 @@ The MX record is sent via next(OK, mx) and can be one of:
     * ipaddress:port
 * An MX object of the form: `{priority: 0, exchange: hostname}` and optionally
 a `port` value to specify an alternate port, and a `bind` value to specify an
-outbound IP address to bind to.
+outbound IP address to bind to and a `using_lmtp` boolean to specify that
+delivery should be attempted using LMTP instead of SMTP.
 * A list of MX objects in an array, each in the same format as above.
 
 ### The bounce hook
@@ -94,15 +95,15 @@ useful for logging the fact that a successful delivery occurred.
 This hook is called with `(hmail, [host, ip, response, delay, port, mode, recipients])` 
 as parameters:
  
-`host` is the hostname of the MX that the message was delivered to,
-`ip` is the IP address of the host that the message was delivered to,
-`response` variable contains the SMTP response text returned by the host 
+* `host` - Hostname of the MX that the message was delivered to,
+* `ip` - IP address of the host that the message was delivered to,
+* `response` - Variable contains the SMTP response text returned by the host 
 that received the message and will typically contain the remote queue ID and
-`delay` is the time taken between the queue file being created and the 
+* `delay` - Time taken between the queue file being created and the 
 message being delivered.
-`port` is the port that the message was delivered to.
-`mode` shows whether SMTP or LMTP was used to deliver the mail.
-`recipients` is an Address array containing all of the recipients that were
+* `port` - Port number that the message was delivered to.
+* `mode` - Shows whether SMTP or LMTP was used to deliver the mail.
+* `recipients` - an Address array containing all of the recipients that were
 successfully delivered to.
 
 Bounce Messages
