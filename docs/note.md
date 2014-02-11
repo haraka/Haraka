@@ -22,20 +22,17 @@ Towards those goals, **Note** provides some help. Here's how:
 
 * Each call to note logs a summary when loglevel is DEBUG or PROTOCOL.
 
-* At any time, summary results can be fetched with *note_collate*.
+* At any time, summary results can be fetched with *collate*.
 
 * The *hide* option can suppress unwanted results from the summary.
 
 * The order of display can be set with the *order* value.
 
-* If the summary results don't suit your fancy, overload *note_collate*.
-
-
 ## Usage
 
 Use this plugin in yours:
 
-    var Note = require('note');
+    var Note = require('./note');
 
     exports.my_first_hook = function(next, connection) {
         var plugin = this;
@@ -58,6 +55,9 @@ Store the note in the transaction (vs connection):
 
         plugin.note = new Note(connection, plugin, {txn: true});
 
+Don't show skip messages
+
+        plugin.note = new Note(connection, plugin, {hide: ['skip']});
 
 ### Required arguments for a new Note:
 
@@ -83,7 +83,7 @@ in the connection note. The following lists are available:
     err   - error messages encountered during processing
     msg   - arbitratry messages
 
-    human - a custom summary to return (bypass note_collate)
+    human - a custom summary to return (bypass collate)
     emit  - log an INFO summary
 
 Examples:
