@@ -75,7 +75,8 @@ The MX record is sent via next(OK, mx) and can be one of:
     * ipaddress:port
 * An MX object of the form: `{priority: 0, exchange: hostname}` and optionally
 a `port` value to specify an alternate port, and a `bind` value to specify an
-outbound IP address to bind to.
+outbound IP address to bind to and a `using_lmtp` boolean to specify that
+delivery should be attempted using LMTP instead of SMTP.
 * A list of MX objects in an array, each in the same format as above.
 
 ### The bounce hook
@@ -86,22 +87,24 @@ parameter is the error message received from the remote end. If you do not wish
 to have a bounce message sent to the originating sender of the email then you
 can return `OK` from this hook to stop it from sending a bounce message.
 
-The variable `hmail.bounce_extra` can be accessed from this hook.  This is an 
-Object which contains each recipient as the key and the value is the code 
-and response received from the upstream server for that recipient.
-
 ### The delivered hook
 
 When mails are successfully delivered to the remote end then the `delivered`
 hook is called. The return codes from this hook have no effect, so it is only
 useful for logging the fact that a successful delivery occurred.
-This hook is called with `(hmail, [host, ip, response, delay)` as parameters, 
-`host` is the hostname of the MX that the message was delivered to,
-`ip` is the IP address of the host that the message was delivered to,
-`response` variable contains the SMTP response text returned by the host 
+This hook is called with `(hmail, [host, ip, response, delay, port, mode, recipients])` 
+as parameters:
+ 
+* `host` - Hostname of the MX that the message was delivered to,
+* `ip` - IP address of the host that the message was delivered to,
+* `response` - Variable contains the SMTP response text returned by the host 
 that received the message and will typically contain the remote queue ID and
-`delay` is the time taken between the queue file being created and the 
+* `delay` - Time taken between the queue file being created and the 
 message being delivered.
+* `port` - Port number that the message was delivered to.
+* `mode` - Shows whether SMTP or LMTP was used to deliver the mail.
+* `recipients` - an Address array containing all of the recipients that were
+successfully delivered to.
 
 Bounce Messages
 ---------------
