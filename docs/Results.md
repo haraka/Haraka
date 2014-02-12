@@ -111,7 +111,7 @@ Retrieve the stored results as an object. The only argument is the name of the
 plugin whose results are desired.
 
     var geoip = connection.results.get('connect.geoip');
-    if (geoip.distance && geoip.distance > 2000) {
+    if (geoip && geoip.distance && geoip.distance > 2000) {
         ....
     }
 

@@ -47,7 +47,7 @@ ResultStore.prototype.add = function (plugin, obj) {
 
     // collate results
     result.human = obj.human;
-    if (!result.human || result.human === undefined) {
+    if (!result.human) {
         var r = this.private_collate(result, name);
         result.human = r.join(', ');
         result.human_html = r.join(', \t ');
@@ -108,21 +108,21 @@ ResultStore.prototype.private_collate = function (result, name) {
         if (hide.length && hide.indexOf(key) !== -1) continue;
         if (util.isArray(result[key]) && result[key].length === 0) continue;
         r.push(key + ': ' + result[key]);
-    };
+    }
 
     // and then supporting information
     var array = append_lists;
     if (result.order && result.order.length) { array = result.order; }
     for (var i=0; i < array.length; i++) {
         var key = array[i];
-        if (!result[key] || result[key] === undefined) continue;
-        if (result[key] && !result[key].length) continue;
+        if (!result[key]) continue;
+        if (!result[key].length) continue;
         if (hide && hide.length && hide.indexOf(key) !== -1) continue;
         r.push( key + ':' + result[key].join(', '));
-    };
+    }
 
     return r;
-}
+};
 
 module.exports = ResultStore;
 
