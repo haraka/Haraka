@@ -13,7 +13,7 @@ exports.duplicate_singular = function(next, connection) {
     var config = this.config.get('data.headers.ini');
 
     // RFC 5322 Section 3.6, Headers that MUST be unique if present
-    var singular = config.main.singular !== 'undefined'
+    var singular = config.main.singular !== undefined
                  ? config.main.singular.split(',')
                  : ['Date', 'From', 'Sender', 'Reply-To', 'To', 'Cc',
                     'Bcc', 'Message-Id', 'In-Reply-To', 'References',
@@ -33,7 +33,7 @@ exports.missing_required = function(next, connection) {
     var config = this.config.get('data.headers.ini');
 
     // Enforce RFC 5322 Section 3.6, Headers that MUST be present
-    var required = config.main.required !== 'undefined'
+    var required = config.main.required !== undefined
                  ? config.main.required.split(',')
                  : ['Date', 'From'];
 
