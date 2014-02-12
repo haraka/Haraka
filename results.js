@@ -45,7 +45,7 @@ Results.prototype.add = function (plugin, obj) {
         result[key] = obj[key];            // save the rest
     }
 
-    // collate results, log, and return
+    // collate results
     result.human = obj.human;
     if (!result.human || result.human === undefined) {
         var r = this.private_collate(result, name);
@@ -53,16 +53,15 @@ Results.prototype.add = function (plugin, obj) {
         result.human_html = r.join(', \t ');
     }
 
-    if (obj.emit) this.conn.loginfo(plugin, result.human);
-    if (obj.err)  this.conn.logerror(plugin, obj.err);
+    // logging results
+    if (obj.emit) this.conn.loginfo(plugin, result.human);  // by request
+    if (obj.err)  this.conn.logerror(plugin, obj.err);      // by default
+    if (!obj.emit && !obj.err) {                            // by config
+        var pic = config.get('results.ini')[name];
+        if (pic && pic.debug) this.conn.logdebug(plugin, result.human);
+    }
 
-    var cfg = config.get('results.ini', 'ini');
-    // TODO, make this work
-//  if (cfg[name]['loglevel']) {
-//      var loglevel = cfg[name]['loglevel'];
-//      this.conn[loglevel](plugin, this.human);
-//  }
-    return this.human;
+    return result.human;
 };
 
 Results.prototype.incr = function (plugin, obj) {
@@ -94,9 +93,9 @@ Results.prototype.get = function (plugin_name) {
 
 Results.prototype.private_collate = function (result, name) {
 
-    var r = []; var order = []; var hide = ['todo','ll','range'];
+    var r = []; var order = []; var hide = [];
 
-    var cfg = config.get('results', 'ini');
+    var cfg = config.get('results.ini');
     if (cfg[name] && cfg[name].hide) {
         hide = cfg[name].hide.trim().split(/[,; ]+/);
     }

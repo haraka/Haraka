@@ -74,9 +74,40 @@ When arbirary values are stored, they are listed first in the log output. Their
 display can be suppressed with the **hide** option in results.ini.
 
 
+#### incr
+
+Increment counters. The argument to incr is an object with counter names and
+increment values. Examples:
+
+    var c = connection;
+    c.results.incr(plugin, {unrecognized_commands: 1});
+
+    c.results.incr(plugin, {karma: -1});
+    c.results.incr(plugin, {karma:  2});
+
+
 #### collate
 
     var summary = connection.results.collate(plugin);
 
 Formats the contents of the result cache and returns them. This function is
 called internally by `add()` after each update.
+
+
+#### get
+
+Retrieve the stored results as an object. The only argument is the name of the
+plugin whose results are desired.
+
+    var geoip = connection.results.get('connect.geoip');
+    if (geoip.distance && geoip.distance > 2000) {
+        ....
+    }
+
+Keep in mind that plugins also store results in the transaction. Example:
+
+    var sa = connection.transaction.results.get('spamassassin');
+    if (sa && sa.score > 5) {
+        ....
+    }
+
