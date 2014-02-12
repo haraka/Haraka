@@ -1,10 +1,10 @@
-# Result Store
+# Results
 
 Add, log, retrieve, and share the results of plugin tests.
 
 ## Synopsis
 
-Result Store is a structured way of storing results from plugins across a
+Results is a structured way of storing results from plugins across a
 session, allowing those results to be retrieved later or by other plugins.
 
 ## Usage
@@ -33,9 +33,9 @@ Store the results in the transaction (vs connection):
 
 Don't show skip messages
 
-        ;put this in config/result_store.ini
+        ;put this in config/results.ini
         [plugin_name]
-        hide=skip
+        hide=skip,ignore
 
 ### Results Functions
 
@@ -68,7 +68,7 @@ can be stored in the cache:
     results.add(plugin, {my_result: 'anything I want'});
 
 When arbirary values are stored, they are listed first in the log output. Their
-display can be suppressed with the **hide** option to `add()`.
+display can be suppressed with the **hide** option in results.ini.
 
 
 #### collate
