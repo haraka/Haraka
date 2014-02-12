@@ -2,7 +2,6 @@
 
 var ipaddr = require('ipaddr.js');
 var redis  = require('redis');
-var Note   = require('./note');
 var db;
 var phase_prefixes = ['connect','helo','mail_from','rcpt_to','data'];
 
@@ -39,27 +38,26 @@ exports.init_redis_connection = function () {
     });
 };
 
-exports.note_init = function (connection, config) {
+exports.note_init = function (connection) {
     var plugin = this;
+    var config = plugin.config.get('karma.ini');
     if (connection.notes.karma) return; // init once per connection
 
-    plugin.note = new Note(connection, plugin, { hide:['todo'] });
-
-    var k = connection.notes.karma;
-    k.connect=0;         // score on this connection
-    k.history = 0;       // score of past connections (good minus bad)
-    k.total_connects = 0;
+    // connect: score on this connection
+    // history: score of past connections (good minus bad)
+    connection.results.add(plugin, {connect:0, history:0, total_connects:0});
 
     // todo is a list of connection/transaction notes to 'watch' for.
     // When discovered, award their karma points to the connection
     // and remove them from todo.
-    k.todo = [];
     if (!config.awards) return;
+    var todo = {};
     Object.keys(config.awards).forEach(function(key) {
         var award = config.awards[key].toString();
         server.logprotocol(this, "key: " + key + ' award: ' + award);
-        k.todo.push(key+'|'+award);
+        todo[key] = award;
     });
+    connection.results.add(plugin, {todo: todo});
 };
 
 function init_ip (dbkey, cckey, expire) {
@@ -78,11 +76,15 @@ function init_asn (asnkey, expire) {
         .exec();
 }
 
+function karma_result( ) {
+
+}
+
 exports.check_asn_neighborhood = function (connection, asnkey, expire) {
     var plugin = this;
     db.hgetall(asnkey, function (err, res) {
         if (err) {
-            plugin.note.save({err: err, emit: true});
+            connection.results.add(plugin, {err: err});
             return;
         }
 
@@ -94,15 +96,15 @@ exports.check_asn_neighborhood = function (connection, asnkey, expire) {
         db.hincrby(asnkey, 'connections', 1);
         var net_score = parseFloat(res.good || 0) - (res.bad || 0);
         if (!net_score) return;
-        plugin.note.save({neighbors: net_score, emit: true});
+        connection.results.add(plugin, {neighbors: net_score, emit: true});
 
         if (!plugin.config.get('karma.ini').asn_awards) return;
         if (net_score < -5) {
-            plugin.note.save({fail: 'neighbors(asn)'});
+            connection.results.add(plugin, {fail: 'neighbors(asn)'});
             return;
         }
         if (net_score > 5) {
-            plugin.note.save({pass: 'neighbors(asn)'});
+            connection.results.add(plugin, {pass: 'neighbors(asn)'});
         }
         return;
     });
@@ -110,18 +112,18 @@ exports.check_asn_neighborhood = function (connection, asnkey, expire) {
 
 exports.hook_lookup_rdns = function (next, connection) {
     var plugin = this;
-    var config = plugin.config.get('karma.ini');
 
     plugin.init_redis_connection();
-    plugin.note_init(connection, config);
+    plugin.note_init(connection);
 
+    var config = plugin.config.get('karma.ini');
     var expire = (config.main.expire_days || 60) * 86400; // convert to days
-    var rip   = connection.remote_ip;
-    var dbkey = 'karma|' + rip;
-    var cckey = 'concurrent|' + rip;
+    var rip    = connection.remote_ip;
+    var dbkey  = 'karma|' + rip;
+    var cckey  = 'concurrent|' + rip;
     var asnkey;
-    if (config.main.asn_enable && connection.notes['connect.asn']) {
-        asnkey = connection.notes['connect.asn'].asn;
+    if (config.main.asn_enable && connection.results.get('connect.asn')) {
+        asnkey = connection.results.get('connect.asn').asn;
         if (isNaN(asnkey)) asnkey = undefined;
         if (asnkey) plugin.check_asn_neighborhood(connection, asnkey, expire);
     }
@@ -131,7 +133,7 @@ exports.hook_lookup_rdns = function (next, connection) {
         .hgetall(dbkey)
         .exec(function redisResults (err,replies) {
             if (err) {
-                plugin.note.save({err: err, emit: true});
+                connection.results.add(plugin, {err: err});
                 return next();
             }
 
@@ -143,15 +145,15 @@ exports.hook_lookup_rdns = function (next, connection) {
                 .expire(dbkey, expire)             // extend expiration date
                 .incr(cckey)                       // increment concurrent connections
                 .exec(function (err,replies) {
-                    if (err) plugin.note.save({err: err, emit: true});
+                    if (err) connection.results.add(plugin, {err: err});
                 });
 
             var history = (dbr.good || 0) - (dbr.bad || 0);
-            plugin.note.save({history: history, total_connects: dbr.connections});
+            connection.results.add(plugin, {history: history, total_connects: dbr.connections});
 
             var too_many = plugin.check_concurrency(cckey, replies[0], history);
             if (too_many) {
-                plugin.note.save({fail: 'too_many_connects'});
+                connection.results.add(plugin, {fail: 'too_many_connects'});
                 var delay = config.concurrency.disconnect_delay || 10;
                 setTimeout(function ccr_max_to () {
                     return next(DENYSOFTDISCONNECT, too_many);
@@ -160,21 +162,21 @@ exports.hook_lookup_rdns = function (next, connection) {
             }
 
             if (dbr.penalty_start_ts === '0') {
-                plugin.note.save({skip: 'penalty'});
+                connection.results.add(plugin, {skip: 'penalty'});
                 return next();
             }
 
             var ms_old = (Date.now() - Date.parse(dbr.penalty_start_ts));
             var days_old = (ms_old / 86400 / 1000).toFixed(2);
-            plugin.note.save({msg: 'days_old: ' + days_old});
+            connection.results.add(plugin, {msg: 'days_old: ' + days_old});
 
             var penalty_days = config.main.penalty_days;
             if (days_old >= penalty_days) {
-                plugin.note.save({msg: 'penalty expired'});
+                connection.results.add(plugin, {msg: 'penalty expired'});
                 return next();
             }
 
-            plugin.note.save({fail: 'penalty'});
+            connection.results.add(plugin, {fail: 'penalty'});
 
             var left = +(penalty_days - days_old).toFixed(2);
             var taunt = config.main.taunt;
@@ -202,15 +204,14 @@ exports.karma_onDeny = function (next, connection, params) {
     var pi_hook     = params[5];
 
     var config = plugin.config.get('karma.ini');
-    plugin.note_init(connection, config); // deny may get called b4 connect
 
     if (pi_deny === DENY || pi_deny === DENYDISCONNECT || pi_deny === DISCONNECT) {
-        plugin.tweak(connection, -2);
+        connection.results.incr(plugin, {connect: -2});
     }
     else {
-        plugin.tweak(connection, -1);
+        connection.results.incr(plugin, {connect: -1});
     }
-    plugin.note.save({fail: 'deny:' + pi_name});
+    connection.results.add(plugin, {fail: 'deny:' + pi_name});
 
     plugin.check_awards(connection);
     return next();
@@ -218,22 +219,30 @@ exports.karma_onDeny = function (next, connection, params) {
 
 exports.karma_onMailFrom = function (next, connection, params) {
     var plugin = this;
-    plugin.note = new Note(connection, plugin);
 
     plugin.check_spammy_tld(params[0], connection);
     plugin.check_syntax_mailfrom(connection);
 
     plugin.check_awards(connection);
-    plugin.note.save({emit: 1});
+    connection.results.add(plugin, {emit: 1});
     return next();
 };
 
 exports.hook_unrecognized_command = function(next, connection, cmd) {
     var plugin = this;
-    plugin.note = new Note(connection, plugin);
 
-    plugin.tweak(connection, -1);
-    plugin.note.save({ fail: 'cmd:('+cmd+')' });
+    connection.results.incr(plugin, {connect: -1});
+    connection.results.add(plugin, { fail: 'cmd:('+cmd+')' });
+
+    plugin.check_awards(connection);
+
+    var config = plugin.config.get('karma.ini');
+    var negative_limit = parseFloat(config.thresholds.negative) || -5;
+    var score = parseFloat( connection.results.get('karma').connect );
+
+    if (score <= negative_limit) {
+        return next(DENY, "very bad karma score: " + score);
+    }
 
     connection.notes.tarpit = 2;
 
@@ -243,12 +252,11 @@ exports.hook_unrecognized_command = function(next, connection, cmd) {
 exports.karma_onRcpt = function (next, connection, params) {
     var plugin = this;
     var rcpt = params[0];
-    plugin.note = new Note(connection, plugin);
 
     plugin.check_syntax_RcptTo(connection);
     var too_many = plugin.max_recipients(connection);
     if (too_many) {
-        plugin.note.save({fail: 'too_many_rcpt'});
+        connection.results.add(plugin, {fail: 'too_many_rcpt'});
         return next(DENYSOFT, too_many);
     }
 
@@ -258,12 +266,11 @@ exports.karma_onRcpt = function (next, connection, params) {
 
 exports.hook_rcpt_ok = function (next, connection, rcpt) {
     var plugin = this;
-    plugin.note = new Note(connection, plugin);
 
     plugin.check_syntax_RcptTo(connection);
     var too_many = plugin.max_recipients(connection);
     if (too_many) {
-        plugin.note.save({fail: 'too_many_rcpt'});
+        connection.results.add(plugin, {fail: 'too_many_rcpt'});
         return next(DENYSOFT, too_many);
     }
 
@@ -274,11 +281,11 @@ exports.hook_rcpt_ok = function (next, connection, rcpt) {
 exports.hook_data = function (next, connection) {
     // goal: cut off bad senders before message transmission
 
-    var config = this.config.get('karma.ini');
     this.check_awards(connection);
 
+    var config = this.config.get('karma.ini');
     var negative_limit = parseFloat(config.thresholds.negative) || -5;
-    var score = parseFloat(connection.notes.karma.connect);
+    var score = parseFloat( connection.results.get('karma').connect );
 
     if (score <= negative_limit) {
         return next(DENY, "very bad karma score: " + score);
@@ -290,17 +297,18 @@ exports.hook_data = function (next, connection) {
 exports.hook_data_post = function (next, connection) {
     // goal: prevent delivery of spam
     var plugin = this;
-    plugin.note = new Note(connection, plugin);
     var config = plugin.config.get('karma.ini');
     plugin.check_awards(connection);
 
     var negative_limit = parseFloat(config.thresholds.negative) || -5;
-    var score = parseFloat(connection.notes.karma.connect);
+    var score = parseFloat( connection.results.get('karma').connect );
     if (score <= negative_limit) {
         return next(DENY, "very bad karma score: " + score);
     }
 
-    connection.transaction.add_header('X-Haraka-Karma', plugin.note.collate());
+    var results = connection.results.collate(plugin);
+    connection.loginfo("adding header: " + results);
+    connection.transaction.add_header('X-Haraka-Karma', results);
     return next();
 };
 
@@ -309,7 +317,7 @@ exports.hook_queue = function (next, connection) {
     this.check_awards(connection);
 
     var negative_limit = parseFloat(config.thresholds.negative) || -5;
-    var score = parseFloat(connection.notes.karma.connect);
+    var score = parseFloat( connection.results.get('karma').connect );
 
     if (score <= negative_limit) {
         return next(DENY, "bad karma score: " + score);
@@ -320,26 +328,25 @@ exports.hook_queue = function (next, connection) {
 
 exports.hook_disconnect = function (next, connection) {
     var plugin = this;
-    plugin.note = new Note(connection, plugin);
     var config = plugin.config.get('karma.ini');
 
     plugin.init_redis_connection();
     if (config.concurrency) db.incrby('concurrent|' + connection.remote_ip, -1);
 
     var asnkey;
-    if (config.main.asn_enable && connection.notes['connect.asn']) {
-        asnkey = connection.notes['connect.asn'].asn;
+    if (config.main.asn_enable && connection.results.get('connect.asn')) {
+        asnkey = connection.results.get('connect.asn').asn;
         if (isNaN(asnkey)) asnkey = undefined;
     }
 
-    var k = connection.notes.karma;
+    var k = connection.results.get('karma');
     if (!k) {
-        plugin.note.save({err: 'karma note missing!', emit: true });
+        connection.results.add(plugin, {err: 'karma note missing!'});
         return next();
     }
 
     if (!k.connect) {
-        plugin.note.save({msg: 'neutral', emit: true });
+        connection.results.add(plugin, {msg: 'neutral', emit: true});
         return next();
     }
 
@@ -348,7 +355,7 @@ exports.hook_disconnect = function (next, connection) {
 
     if (!config.thresholds) {
         plugin.check_awards(connection);
-        plugin.note.save({msg: 'no action', emit: true });
+        connection.results.add(plugin, {msg: 'no action', emit: true });
         return next();
     }
 
@@ -357,7 +364,7 @@ exports.hook_disconnect = function (next, connection) {
     if (k.connect > pos_lim) {
         db.hincrby(key, 'good', 1);
         if (asnkey) db.hincrby(asnkey, 'good', 1);
-        plugin.note.save({msg: 'positive', emit: true });
+        connection.results.add(plugin, {msg: 'positive', emit: true });
         return next();
     }
 
@@ -369,46 +376,32 @@ exports.hook_disconnect = function (next, connection) {
     history--;
 
     if (history > config.thresholds.history_negative) {
-        plugin.note.save({msg: 'good enough hist', emit: true });
+        connection.results.add(plugin, {msg: 'good enough hist', emit: true });
         return next();
     }
 
     if (history < -5) {
         db.hset(key, 'penalty_start_ts', add_days(history * -1));
-        plugin.note.save({msg: 'penalty box bonus!', emit: true });
+        connection.results.add(plugin, {msg: 'penalty box bonus!', emit: true});
     }
     else {
         db.hset(key, 'penalty_start_ts', Date());
-        plugin.note.save({msg: 'penalty box', emit: true });
+        connection.results.add(plugin, {msg: 'penalty box', emit: true });
     }
     return next();
 };
 
-exports.tweak = function (connection, qty) {
-    if (isNaN(qty)) {
-        connection.logerror(this, "invalid argument to tweak: " + qty);
-        return;
-    }
-    var k = connection.notes.karma;
-    k.connect = +(k.connect + qty);
-};
-
 exports.check_awards = function (connection) {
     var plugin = this;
-    if (!connection.notes.karma) return;
-    if (!connection.notes.karma.todo) return;
-    if (!plugin) plugin = connection;
+    var todo = connection.results.get('karma').todo;
+    if (!todo) return;
 
-    var todo = connection.notes.karma.todo;
-    for (var i=0; i < todo.length; i++) {
-        // note_location [@wants] | award [conditions]
-        if (todo[i] === undefined) continue;  // already deleted
+    for (var note_location in todo) {
+        // note_location [@wants] = award [conditions]
 
-        var bits = todo[i].split('|');
-        var note_location = bits[0];
-        var note_terms = bits[1];
+        var note_terms = todo[note_location];
 
-            bits = note_location.split('@');
+        var bits = note_location.split('@');
         var wants;
         if (bits.length === 2) {  // optional value to match
             note_location = bits[0];  // remove @... suffix from note
@@ -437,7 +430,7 @@ exports.check_awards = function (connection) {
             if (!note) continue;                 // failed truth test
             if (!wants || wants === undefined) { // no wants, truth matches
                 plugin.apply_award(connection, note_location, award);
-                delete connection.notes.karma.todo[i];
+                delete todo[note_location];
                 continue;
             }
             if (note !== wants) continue;        // didn't match
@@ -488,7 +481,7 @@ exports.check_awards = function (connection) {
                 continue;
         }
         plugin.apply_award(connection, note_location, award);
-        delete connection.notes.karma.todo[i];
+        delete todo[note_location];
     }
 };
 
@@ -500,12 +493,12 @@ exports.apply_award = function (connection, nl, award) {
         return;  // garbage in config
     }
 
-    plugin.tweak(connection, award);
+    connection.results.incr(plugin, {connect: award});
     connection.loginfo(plugin, "applied " + nl + ':' + award);
 
     var trimmed = nl.substring(0,5) === 'notes' ? nl.substring(6) : nl;
-    if (award > 0) { connection.notes.karma.pass.push(trimmed); }
-    if (award < 0) { connection.notes.karma.fail.push(trimmed); }
+    if (award > 0) { connection.results.add(plugin, {pass: trimmed}); }
+    if (award < 0) { connection.results.add(plugin, {fail: trimmed}); }
 };
 
 function add_days(days) {
@@ -544,16 +537,16 @@ exports.max_recipients = function (connection) {
     var desc = history > 3 ? 'good' : history >= 0 ? 'neutral' : 'bad';
 
     // the deeds of their past shall not go unnoticed!
-    var history = connection.notes.karma.history;
+    var history = connection.results.get('karma').history;
     if (history > 3 && count <= cr.good) return;
     if (history > -1 && count <= cr.neutral) return;
 
     // this is *more* strict than history, b/c they have fewer opportunities
     // to score positive karma this early in the connection. senders with
     // good history will rarely see these limits.
-    var karma = connection.notes.karma.connect;
-    if (karma >  3 && count <= cr.good) return;
-    if (karma >= 0 && count <= cr.neutral) return;
+    var score = connection.results.get('karma').connect;
+    if (score >  3 && count <= cr.good) return;
+    if (score >= 0 && count <= cr.neutral) return;
 
     return 'too many recipients (' + count + ') for ' + desc + ' karma';
 };
@@ -570,8 +563,8 @@ exports.check_spammy_tld = function (mail_from, connection) {
     var tld_penalty = parseFloat(stlds[from_tld] || 0); // force numeric
     if (tld_penalty === 0) return;
 
-    plugin.tweak(connection, tld_penalty);
-    plugin.note.save({fail: 'spammy.TLD', emit: true});
+    connection.results.incr(plugin, {connect: tld_penalty});
+    connection.results.add(plugin, {fail: 'spammy.TLD', emit: true});
 };
 
 exports.check_syntax_mailfrom = function (connection) {
@@ -583,8 +576,8 @@ exports.check_syntax_mailfrom = function (connection) {
     if (full_from.toUpperCase().substring(0,11) === 'MAIL FROM:<') return;
 
     connection.loginfo(plugin, "illegal envelope address format: " + full_from );
-    plugin.tweak(connection, -1);
-    plugin.note.save({fail: 'rfc5321.MailFrom'});
+    connection.results.incr(plugin, {connect: -1});
+    connection.results.add(plugin, {fail: 'rfc5321.MailFrom'});
 };
 
 exports.check_syntax_RcptTo = function (connection) {
@@ -595,8 +588,8 @@ exports.check_syntax_RcptTo = function (connection) {
     if (full_rcpt.toUpperCase().substring(0,9) === 'RCPT TO:<') return;
 
     connection.loginfo(plugin, "illegal envelope address format: " + full_rcpt );
-    plugin.tweak(connection, -1);
-    plugin.note.save({fail: 'rfc5321.RcptTo'});
+    connection.results.incr(plugin, {connect: -1});
+    connection.results.add(plugin, {fail: 'rfc5321.RcptTo'});
 };
 
 function assemble_note_obj(prefix, key) {
