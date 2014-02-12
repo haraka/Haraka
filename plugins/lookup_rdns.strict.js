@@ -73,7 +73,7 @@ exports.hook_lookup_rdns = function (next, connection) {
 
     if (_in_whitelist(connection, plugin, connection.remote_ip)) {
         called_next++;
-        next(OK, connection.remote_ip);
+        return next(OK, connection.remote_ip);
     }
 
     timeout_id = setTimeout(function () {
@@ -108,7 +108,7 @@ exports.hook_lookup_rdns = function (next, connection) {
                 if (_in_whitelist(connection, plugin, domains[i])) {
                     called_next++;
                     clearTimeout(timeout_id);
-                    next(OK, domains[i]);
+                    return next(OK, domains[i]);
                 }
             }
 
