@@ -15,7 +15,7 @@ var outbound    = require('./outbound');
 var date_to_str = require('./utils').date_to_str;
 var indexOfLF   = require('./utils').indexOfLF;
 var ipaddr      = require('ipaddr.js');
-var Results     = require('./results');
+var ResultStore = require('./result_store');
 
 var version  = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'))).version;
 
@@ -181,7 +181,7 @@ function Connection(client, server) {
     this.proxy_timer = false;
     this.max_line_length = config.get('max_line_length') || 512;
     this.max_data_line_length = config.get('max_data_line_length') || 992;
-    this.results = new Results(this);
+    this.results = new ResultStore(this);
     setupClient(this);
 }
 
@@ -549,7 +549,7 @@ Connection.prototype.init_transaction = function(cb) {
                self.disconnect();
            });
        });
-       self.transaction.results = new Results(self);
+       self.transaction.results = new ResultStore(self);
        if (cb) cb();
     });
 }

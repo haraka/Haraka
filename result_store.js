@@ -11,12 +11,12 @@ var overwrite_lists = ['hide','order'];
 var log_opts     = ['emit','human','human_html'];
 var all_opts     = append_lists.concat(overwrite_lists, log_opts);
 
-function Results(conn) {
+function ResultStore(conn) {
     this.conn = conn;
     this.store = {};
 }
 
-Results.prototype.add = function (plugin, obj) {
+ResultStore.prototype.add = function (plugin, obj) {
     var name = plugin.name;
 
     var result = this.store[name];
@@ -60,11 +60,10 @@ Results.prototype.add = function (plugin, obj) {
         var pic = config.get('results.ini')[name];
         if (pic && pic.debug) this.conn.logdebug(plugin, result.human);
     }
-
-    return result.human;
+    return this.human;
 };
 
-Results.prototype.incr = function (plugin, obj) {
+ResultStore.prototype.incr = function (plugin, obj) {
     var name = plugin.name;
     var result = this.store[name];
 
@@ -78,20 +77,20 @@ Results.prototype.incr = function (plugin, obj) {
     }
 };
 
-Results.prototype.collate = function (plugin) {
+ResultStore.prototype.collate = function (plugin) {
     var name = plugin.name;
     var result = this.store[name];
     if (!result) return;
     return this.private_collate(result, name).join(', ');
 };
 
-Results.prototype.get = function (plugin_name) {
+ResultStore.prototype.get = function (plugin_name) {
     var result = this.store[plugin_name];
     if (!result) return;
     return result;
 };
 
-Results.prototype.private_collate = function (result, name) {
+ResultStore.prototype.private_collate = function (result, name) {
 
     var r = []; var order = []; var hide = [];
 
@@ -125,5 +124,5 @@ Results.prototype.private_collate = function (result, name) {
     return r;
 }
 
-module.exports = Results;
+module.exports = ResultStore;
 
