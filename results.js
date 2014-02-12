@@ -39,8 +39,6 @@ Results.prototype.add = function (plugin, obj) {
         result[key] = obj[key];
     }
 
-    // TODO: counter (de|in)crementing?
-
     // anything else is an arbitrary key/val to store
     for (var key in obj) {
         if (all_opts.indexOf(key) !== -1) continue; // weed out our keys
