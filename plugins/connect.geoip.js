@@ -1,39 +1,55 @@
 var geoip = require('geoip-lite');
 var net = require('net');
+var net_utils = require('./net_utils');
 
 var local_ip, local_geoip;
 
 exports.hook_connect = function (next, connection) {
     var plugin = this;
-    connection.notes.geoip = geoip.lookup(connection.remote_ip);
 
-    if (!connection.notes.geoip) return next();
+    // geoip.lookup results look like this:
+    // range: [ 3479299040, 3479299071 ],
+    //    country: 'US',
+    //    region: 'CA',
+    //    city: 'San Francisco',
+    //    ll: [37.7484, -122.4156]
 
-    var cfg = this.config.get('connect.geoip.ini');
-    calculate_distance(plugin, connection, cfg);
+    var r = geoip.lookup(connection.remote_ip);
+    if (!r) return next();
 
-    connection.notes.geoip.human = get_results(connection, cfg);
-    connection.loginfo(plugin, connection.notes.geoip.human);
+    connection.results.add(plugin, r);
+
+    var cfg = plugin.config.get('connect.geoip.ini');
+    if (cfg.main.calc_distance) plugin.calculate_distance(connection, r);
+
+    var show = [ r.country ];
+    if (r.region   && cfg.main.show_region  ) show.push(r.region);
+    if (r.city     && cfg.main.show_city    ) show.push(r.city);
+    if (r.distance && cfg.main.calc_distance) show.push(r.distance+'km');
+
+    connection.results.add(plugin, {human: show.join(', '), emit:true});
 
     return next();
 };
 
 exports.hook_data_post = function (next, connection) {
+    var plugin = this;
     var txn = connection.transaction;
+    if (!txn) return;
     txn.remove_header('X-Haraka-GeoIP');
     txn.remove_header('X-Haraka-GeoIP-Received');
-    if (connection.notes.geoip) {
-        var cfg = this.config.get('connect.geoip.ini');
-        txn.add_header('X-Haraka-GeoIP', get_results(connection, cfg));
+    var geoip = connection.results.get('connect.geoip');
+    if (geoip) {
+        txn.add_header('X-Haraka-GeoIP', geoip.human);
     }
 
     var received = [];
 
-    var rh = received_headers(connection, this);
+    var rh = plugin.received_headers(connection);
     if (rh) received.push(rh);
-    if (!rh) user_agent(connection, this); // No received headers.
+    if (!rh) plugin.user_agent(connection); // No received headers.
 
-    var oh = originating_headers(connection, this);
+    var oh = plugin.originating_headers(connection);
     if (oh) received.push(oh);
 
     // Add any received results to a trace header
@@ -43,24 +59,31 @@ exports.hook_data_post = function (next, connection) {
     return next();
 };
 
-function calculate_distance(plugin, connection, cfg) {
-    if (!cfg.main.calc_distance) return;
+exports.calculate_distance = function (connection, r_geoip) {
+    var plugin = this;
+    var cfg = plugin.config.get('connect.geoip.ini');
 
     if (!local_ip) { local_ip = cfg.main.public_ip; }
     if (!local_ip) { local_ip = connection.local_ip; }
-    if (!local_ip) return;
+    if (!local_ip) {
+        connection.logerror(plugin, "can't calculate distance without local IP!");
+        return;
+    }
 
     if (!local_geoip) { local_geoip = geoip.lookup(local_ip); }
-    if (!local_geoip) return;
+    if (!local_geoip) {
+        connection.logerror(plugin, "no GeoIP results for local_ip!");
+        return;
+    }
 
-    var gcd = haversine(local_geoip.ll[0], local_geoip.ll[1],
-        connection.notes.geoip.ll[0], connection.notes.geoip.ll[1]);
+    var gcd = haversine(local_geoip.ll[0], local_geoip.ll[1], r_geoip.ll[0], r_geoip.ll[1]);
+
+    connection.results.add(plugin, {distance: gcd});
 
     if (cfg.main.too_far && (parseFloat(cfg.main.too_far) < parseFloat(gcd))) {
-        connection.notes.geoip.too_far=true;
+        connection.results.add(plugin, {too_far: true});
     }
-    connection.notes.geoip.distance = gcd;
-}
+};
 
 function haversine(lat1, lon1, lat2, lon2) {
     // calculate the great circle distance using the haversine formula
@@ -79,36 +102,8 @@ function haversine(lat1, lon1, lat2, lon2) {
     return d.toFixed(0);
 }
 
-function get_results(connection, cfg) {
-    var r = connection.notes.geoip;
-    if (!r) return '';
-
-    // geoip.lookup results look like this:
-    // range: [ 3479299040, 3479299071 ],
-    //    country: 'US',
-    //    region: 'CA',
-    //    city: 'San Francisco',
-    //    ll: [37.7484, -122.4156]
-
-    var show = [ r.country ];
-    if (r.region   && cfg.main.show_region  ) show.push(r.region);
-    if (r.city     && cfg.main.show_city    ) show.push(r.city);
-    if (r.distance && cfg.main.calc_distance) show.push(r.distance+'km');
-
-    return show.join(', ');
-};
-
-function user_agent(connection, plugin) {
-    // Check for User-Agent
-    var ua = connection.transaction.header.get('user-agent');
-    var xm = connection.transaction.header.get('x-mailer');
-    var xmu = connection.transaction.header.get('x-mua');
-    if (ua || xm || xmu) {
-        connection.loginfo(plugin, 'direct-to-mx?');
-    }
-};
-
-function received_headers(connection, plugin) {
+exports.received_headers = function (connection) {
+    var plugin = this;
     var txn = connection.transaction;
     var received = txn.header.get_all('received');
     if (!received.length) return;
@@ -118,16 +113,19 @@ function received_headers(connection, plugin) {
     // Try and parse each received header
     for (var i=0; i < received.length; i++) {
         var match = /\[(\d+\.\d+\.\d+\.\d+)\]/.exec(received[i]);
-        if (match && net.isIPv4(match[1])) {
-            var gi = geoip.lookup(match[1]);
-            connection.loginfo(plugin, 'received=' + match[1] + ' country=' + ((gi) ? gi.country : 'UNKNOWN'));
-            results.push(match[1] + ':' + ((gi) ? gi.country : 'UNKNOWN'));
-        }
+        if (!match) continue;
+        if (!net.isIPv4(match[1])) continue;  // TODO: support IPv6
+        if (net_utils.is_rfc1918(match[1])) continue;  // exclude private IP
+
+        var gi = geoip.lookup(match[1]);
+        connection.loginfo(plugin, 'received=' + match[1] + ' country=' + ((gi) ? gi.country : 'UNKNOWN'));
+        results.push(match[1] + ':' + ((gi) ? gi.country : 'UNKNOWN'));
     }
     return results;
 };
 
-function originating_headers(connection, plugin) {
+exports.originating_headers = function (connection) {
+    var plugin = this;
     var txn = connection.transaction;
 
     // Try and parse any originating IP headers
@@ -141,8 +139,9 @@ function originating_headers(connection, plugin) {
     if (!match) return;
     var found_ip = match[1];
     if (!net.isIPv4(found_ip)) return;
+    if (net_utils.is_rfc1918(found_ip)) return;
 
     var gi = geoip.lookup(found_ip);
     connection.loginfo(plugin, 'originating=' + found_ip + ' country=' + ((gi) ? gi.country : 'UNKNOWN'));
     return found_ip + ':' + ((gi) ? gi.country : 'UNKNOWN');
-}
+};
