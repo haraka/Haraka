@@ -31,11 +31,22 @@ Store the results in the transaction (vs connection):
 
         connection.transaction.results.add(plugin, {...});
 
-Don't show skip messages
 
-        ;put this in config/results.ini
-        [plugin_name]
-        hide=skip,ignore
+### Config options
+
+Each plugin can have custom settings in results.ini to control results logging.
+There are three options available: hide, order, and debug.
+
+* hide - a comma separated list of results to hide from the output
+* order - a comman separated list, specifing the order of items in the output
+* debug - log debug messages every time results are called
+
+    ;put this in config/results.ini
+    [plugin_name]
+    hide=skip
+    order=msg,pass,fail
+    debug=0
+
 
 ### Results Functions
 
