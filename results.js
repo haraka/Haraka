@@ -17,26 +17,11 @@ function Results(conn) {
 }
 
 Results.prototype.add = function (plugin, obj) {
-    var name   = plugin.name;
-    var config = config.get('results', 'ini');
+    var name = plugin.name;
 
     var result = this.store[name];
     if (!result) {
-        result = {
-            pass: [],
-            fail: [],
-            msg: [],
-            err: [],
-            skip: [],
-            hide: [],
-            order: [],
-        };
-        if (config[name] && config[name].hide) {
-            result.hide = config[name].hide.trim().split(/[,; ]+/);
-        }
-        if (config[name] && config[name].order) {
-            result.order = config[name].order.trim().split(/[,; ]+/);
-        }
+        result = { pass: [], fail: [], msg: [], err: [], skip: [] };
         this.store[name] = result;
     }
 
@@ -63,53 +48,84 @@ Results.prototype.add = function (plugin, obj) {
     }
 
     // collate results, log, and return
-    var human_msg = obj.human;
-    if (obj.human) result.human = obj.human;  // override
-    if (!human_msg || human_msg === undefined) {
-        human_msg = _results_collate(result);
+    result.human = obj.human;
+    if (!result.human || result.human === undefined) {
+        var r = this.private_collate(result, name);
+        result.human = r.join(', ');
+        result.human_html = r.join(', \t ');
     }
 
-    if (obj.emit) this.conn.loginfo(plugin, human_msg);
+    if (obj.emit) this.conn.loginfo(plugin, result.human);
+    if (obj.err)  this.conn.logerror(plugin, obj.err);
+
+    var cfg = config.get('results.ini', 'ini');
     // TODO, make this work
-//  if (config[name]['loglevel']) {
-//      var loglevel = config[name]['loglevel'];
-//      this.conn[loglevel](plugin, human_msg);
+//  if (cfg[name]['loglevel']) {
+//      var loglevel = cfg[name]['loglevel'];
+//      this.conn[loglevel](plugin, this.human);
 //  }
-    return human_msg;
+    return this.human;
+};
+
+Results.prototype.incr = function (plugin, obj) {
+    var name = plugin.name;
+    var result = this.store[name];
+
+    if (!result) {
+        result = { pass: [], fail: [], msg: [], err: [], skip: [] };
+    }
+    for (var key in obj) {
+        var val = obj[key];
+        if (isNaN(val)) throw("invalid argument to incr: " + val);
+        result[key] = +(result[key] + val);
+    }
 };
 
 Results.prototype.collate = function (plugin) {
     var name = plugin.name;
     var result = this.store[name];
     if (!result) return;
-    return _results_collate(result);
+    return this.private_collate(result, name).join(', ');
 };
 
-function _results_collate (result) {
+Results.prototype.get = function (plugin_name) {
+    var result = this.store[plugin_name];
+    if (!result) return;
+    return result;
+};
 
-    var r = [];
+Results.prototype.private_collate = function (result, name) {
+
+    var r = []; var order = []; var hide = ['todo','ll','range'];
+
+    var cfg = config.get('results', 'ini');
+    if (cfg[name] && cfg[name].hide) {
+        hide = cfg[name].hide.trim().split(/[,; ]+/);
+    }
+    if (cfg[name] && cfg[name].order) {
+        order = cfg[name].order.trim().split(/[,; ]+/);
+    }
 
     // anything not predefined in the result was purposeful, show it first
-    Object.keys(result).forEach(function (key) {
-        if (all_opts.indexOf(key) !== -1) return;
-        if (result.hide && result.hide.length && result.hide.indexOf(key) !== -1) return;
-        if (util.isArray(result[key]) && result[key].length === 0) return;
+    for (var key in result) {
+        if (all_opts.indexOf(key) !== -1) continue;
+        if (hide.length && hide.indexOf(key) !== -1) continue;
+        if (util.isArray(result[key]) && result[key].length === 0) continue;
         r.push(key + ': ' + result[key]);
-    });
+    };
 
     // and then supporting information
     var array = append_lists;
     if (result.order && result.order.length) { array = result.order; }
-    array.forEach(function (key) {
-        if (!result[key] || result[key] === undefined) return;
-        if (result[key] && !result[key].length) return;
-        if (result.hide && result.hide.length && result.hide.indexOf(key) !== -1) return;
+    for (var i=0; i < array.length; i++) {
+        var key = array[i];
+        if (!result[key] || result[key] === undefined) continue;
+        if (result[key] && !result[key].length) continue;
+        if (hide && hide.length && hide.indexOf(key) !== -1) continue;
         r.push( key + ':' + result[key].join(', '));
-    });
+    };
 
-    result.human = r.join(',  ');
-    result.human_html = r.join(', \t'); // #10 = newline within HTML title
-    return r.join(',  ');
+    return r;
 }
 
 module.exports = Results;
