@@ -53,6 +53,9 @@ in the connection. The following lists are available:
     human - a custom summary to return (bypass collate)
     emit  - log an INFO summary
 
+When err results are received, a logerror is automatically emitted, saving the
+need to specify {emit: true} with the request.
+
 Examples:
     
     var c = connection;
