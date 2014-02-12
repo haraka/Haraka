@@ -1,34 +1,41 @@
 // bounce tests
 
-exports.register = function () {
-    this.register_hook('mail',         'bounce_mail');
-    this.register_hook('data',         'bounce_data');
-//  this.register_hook('data_post',    'bounce_data_post');
+var Note = require('./note');
+
+exports.hook_mail = function (next, connection, params) {
+    var plugin = this;
+    var mail_from = params[0];
+
+    plugin.note = new Note(connection, plugin, {txn: true});
+
+    if (!plugin.has_null_sender(connection, mail_from)) {
+        return next(); // bounce messages are from null senders
+    }
+
+    var cfg = plugin.config.get('bounce.ini');
+    if (cfg.main.reject_all) {
+        plugin.note.save({fail: 'bounces_accepted', emit: 1 });
+        return next(DENY, "No bounces accepted here");
+    }
+    return next();
 };
 
-exports.bounce_mail = function (next, connection, params) {
-    var mail_from = params[0];
-    if (!has_null_sender(mail_from)) return next();    // not a bounce
-    var cfg = this.config.get('bounce.ini');
-    if (cfg.main.reject_all) return next(DENY, "No bounces accepted here");
-    return next();
-}
+exports.hook_data = function(next, connection) {
+    var plugin = this;
+    plugin.note = new Note(connection, plugin, {txn: true});
 
-exports.bounce_data = function(next, connection) {
-    var plugin = connection;
-    if (!has_null_sender(connection.transaction.mail_from)) return next();
+    if (!plugin.has_null_sender(connection)) return next();
 
     var cfg = this.config.get('bounce.ini');
     var rej = cfg.main.reject_invalid;
 
-    var err = has_single_recipient(connection, plugin);
+    var err = plugin.has_single_recipient(connection);
     if (err && rej) return next(DENY, err);
 
     return next();
 };
 
 exports.bounce_data_post = function(next, connection) {
-    return next();
 
     // Bounce messages generally do not have a Return-Path set. This checks
     // for that. But whether it should is worth questioning...
@@ -43,33 +50,42 @@ exports.bounce_data_post = function(next, connection) {
 
     // Return-Path, aka Reverse-PATH, Envelope FROM, RFC5321.MailFrom
     // validate that the Return-Path header is empty, RFC 3834
-
-    if (!has_null_sender(connection.transaction.mail_from)) return next();
-    var plugin = connection;
+    var plugin = this;
+    if (!plugin.has_null_sender(connection.transaction.mail_from)) return next();
     var rp = connection.transaction.header.get('Return-Path');
     if (rp && rp !== '<>') {
         connection.loginfo(plugin, "bounce with non-empty Return-Path");
         return next(DENY, "bounce with non-empty Return-Path (RFC 3834)");
-    };
+    }
     return next();
 };
 
-function has_single_recipient(connection, plugin) {
-    if (connection.transaction.rcpt_to.length === 1) return;
+function has_single_recipient(connection) {
+    if (connection.transaction.rcpt_to.length === 1) {
+        this.note.save({pass: 'has_single_recipient', emit: true });
+        return;
+    }
 
     // Valid bounces have a single recipient
-    connection.loginfo(plugin, "bounce with too many recipients to: "
-        + connection.transaction.rcpt_to.join(','));
+    connection.loginfo(plugin, "bounce with too many recipients to: " +
+        connection.transaction.rcpt_to.join(','));
 
-    connection.transaction.notes.bounce='invalid';
+    this.save({fail: 'has_single_recipient', emit: true });
     return "this bounce message does not have 1 recipient";
-};
+}
 
-function has_null_sender(mail_from) {
+exports.has_null_sender = function (connection, mail_from) {
+    if (!mail_from) mail_from = connection.transaction.mail_from;
+
     // bounces have a null sender.
-    return mail_from.isNull() ? true : false;
-
-    // this could also be tested with.
-    // mail_from.user ? false : true
+    // null sender could also be tested with mail_from.user
     // Why would isNull() exist if it wasn't the right way to test this?
+
+    if (mail_from.isNull()) {
+        this.note.save({isa: 'yes'});
+        return true;
+    }
+
+    this.note.save({isa: 'no', emit: true});
+    return false;
 };

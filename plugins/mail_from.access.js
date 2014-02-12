@@ -1,5 +1,7 @@
 // mail_from.access plugin
 
+var Note = require('./note');
+
 exports.register = function() {
     var i;
     var config = this.config.get('mail_from.access.ini');
@@ -25,30 +27,35 @@ exports.register = function() {
 
 exports.mail_from_access = function(next, connection, params) {
     var plugin = this;
+    plugin.note = new Note(connection, plugin, {txn: true});
     var mail_from = params[0].address();
 
-    // address whitelist checks
-    if (mail_from) {
-        connection.logdebug(plugin, 'checking ' + mail_from +
-            ' against mail_from.access.whitelist');
+    if (!mail_from) {
+        plugin.note.save({skip: 'null sender', emit: true});
+        return next();
+    }
 
-        if (_in_whitelist(connection, plugin, mail_from)) {
-            connection.logdebug(plugin, "Allowing " + mail_from);
-            return next();
-        }
+    // address whitelist checks
+    connection.logdebug(plugin, 'checking ' + mail_from +
+        ' against mail_from.access.whitelist');
+
+    if (_in_whitelist(connection, plugin, mail_from)) {
+        // connection.logdebug(plugin, "Allowing " + mail_from);
+        plugin.note.save({pass: 'whitelisted', emit: true});
+        return next();
     }
 
     // address blacklist checks
-    if (mail_from) {
-        connection.logdebug(plugin, 'checking ' + mail_from +
-            ' against mail_from.access.blacklist');
+    connection.logdebug(plugin, 'checking ' + mail_from +
+        ' against mail_from.access.blacklist');
 
-        if (_in_blacklist(connection, plugin, mail_from)) {
-            connection.logdebug(plugin, "Rejecting, matched: " + mail_from);
-            return next(DENY, mail_from + ' ' + plugin.deny_msg);
-        }
+    if (_in_blacklist(connection, plugin, mail_from)) {
+        // connection.logdebug(plugin, "Rejecting, matched: " + mail_from);
+        plugin.note.save({fail: 'blacklisted', emit: true});
+        return next(DENY, mail_from + ' ' + plugin.deny_msg);
     }
 
+    plugin.note.save({pass: 'unlisted', emit: true});
     return next();
 }
 
@@ -59,7 +66,7 @@ function _in_whitelist(connection, plugin, address) {
             plugin.wl[i]);
 
         if (plugin.wl[i] === address) {
-            return 1;
+            return true;
         }
     }
 
@@ -68,11 +75,11 @@ function _in_whitelist(connection, plugin, address) {
             plugin.wlregex.source);
 
         if (address.match(plugin.wlregex)) {
-            return 1;
+            return true;
         }
     }
 
-    return 0;
+    return false;
 }
 
 function _in_blacklist(connection, plugin, address) {
@@ -82,7 +89,7 @@ function _in_blacklist(connection, plugin, address) {
             plugin.bl[i]);
 
         if (plugin.bl[i] === address) {
-            return 1;
+            return true;
         }
     }
 
@@ -91,9 +98,9 @@ function _in_blacklist(connection, plugin, address) {
             plugin.blregex.source);
 
         if (address.match(plugin.blregex)) {
-            return 1;
+            return true;
         }
     }
 
-    return 0;
+    return false;
 }

@@ -12,10 +12,11 @@ exports.hook_connect = function (next, connection) {
     var cfg = this.config.get('connect.geoip.ini');
     calculate_distance(plugin, connection, cfg);
 
-    connection.loginfo(plugin, get_results(connection, cfg));
+    connection.notes.geoip.human = get_results(connection, cfg);
+    connection.loginfo(plugin, connection.notes.geoip.human);
 
     return next();
-}
+};
 
 exports.hook_data_post = function (next, connection) {
     var txn = connection.transaction;
@@ -45,11 +46,11 @@ exports.hook_data_post = function (next, connection) {
 function calculate_distance(plugin, connection, cfg) {
     if (!cfg.main.calc_distance) return;
 
-    if (!local_ip) { local_ip = cfg.main.public_ip; };
-    if (!local_ip) { local_ip = connection.local_ip; };
+    if (!local_ip) { local_ip = cfg.main.public_ip; }
+    if (!local_ip) { local_ip = connection.local_ip; }
     if (!local_ip) return;
 
-    if (!local_geoip) { local_geoip = geoip.lookup(local_ip) };
+    if (!local_geoip) { local_geoip = geoip.lookup(local_ip); }
     if (!local_geoip) return;
 
     var gcd = haversine(local_geoip.ll[0], local_geoip.ll[1],
@@ -57,9 +58,9 @@ function calculate_distance(plugin, connection, cfg) {
 
     if (cfg.main.too_far && (parseFloat(cfg.main.too_far) < parseFloat(gcd))) {
         connection.notes.geoip.too_far=true;
-    };
+    }
     connection.notes.geoip.distance = gcd;
-};
+}
 
 function haversine(lat1, lon1, lat2, lon2) {
     // calculate the great circle distance using the haversine formula

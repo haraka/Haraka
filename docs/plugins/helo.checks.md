@@ -58,3 +58,7 @@ Configuration
             yahoo.com=yahoo.com,yahoo.co.jp
             aol.com=aol.com
        
+    * reject (default: true)
+
+      reject=false. Disable rejections. Results are still logged and saved to the
+      connection note at connection.notes['helo.checks'].
