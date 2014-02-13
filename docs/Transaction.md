@@ -145,3 +145,7 @@ mail text.
 Sets a banner to be added to the end of the email. If the html part is not
 given (optional) then the text part will have each line ending replaced with
 `<br/>` when being inserted into HTML parts.
+
+* transaction.results
+
+Store results of processing in a structured format. See [docs/Results](http://haraka.github.io/manual/Results.html)

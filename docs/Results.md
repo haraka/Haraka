@@ -1,10 +1,10 @@
-# Result Store
+# Results
 
 Add, log, retrieve, and share the results of plugin tests.
 
 ## Synopsis
 
-Result Store is a structured way of storing results from plugins across a
+Results is a structured way of storing results from plugins across a
 session, allowing those results to be retrieved later or by other plugins.
 
 ## Usage
@@ -31,11 +31,22 @@ Store the results in the transaction (vs connection):
 
         connection.transaction.results.add(plugin, {...});
 
-Don't show skip messages
 
-        ;put this in config/result_store.ini
-        [plugin_name]
-        hide=skip
+### Config options
+
+Each plugin can have custom settings in results.ini to control results logging.
+There are three options available: hide, order, and debug.
+
+* hide - a comma separated list of results to hide from the output
+* order - a comman separated list, specifing the order of items in the output
+* debug - log debug messages every time results are called
+
+    ;put this in config/results.ini
+    [plugin_name]
+    hide=skip
+    order=msg,pass,fail
+    debug=0
+
 
 ### Results Functions
 
@@ -53,6 +64,9 @@ in the connection. The following lists are available:
     human - a custom summary to return (bypass collate)
     emit  - log an INFO summary
 
+When err results are received, a logerror is automatically emitted, saving the
+need to specify {emit: true} with the request.
+
 Examples:
     
     var c = connection;
@@ -68,7 +82,29 @@ can be stored in the cache:
     results.add(plugin, {my_result: 'anything I want'});
 
 When arbirary values are stored, they are listed first in the log output. Their
-display can be suppressed with the **hide** option to `add()`.
+display can be suppressed with the **hide** option in results.ini.
+
+
+#### incr
+
+Increment counters. The argument to incr is an object with counter names and
+increment values. Examples:
+
+    var c = connection;
+    c.results.incr(plugin, {unrecognized_commands: 1});
+
+    c.results.incr(plugin, {karma: -1});
+    c.results.incr(plugin, {karma:  2});
+
+
+#### push
+
+Append items onto arrays. The argument to push is an object with array names and
+the new value to be appended to the array. Examples:
+
+    var c = connection;
+    c.results.push(plugin, {dns_recs: 'name1'});
+    c.results.push(plugin, {dns_recs: 'name2'});
 
 
 #### collate
@@ -77,3 +113,22 @@ display can be suppressed with the **hide** option to `add()`.
 
 Formats the contents of the result cache and returns them. This function is
 called internally by `add()` after each update.
+
+
+#### get
+
+Retrieve the stored results as an object. The only argument is the name of the
+plugin whose results are desired.
+
+    var geoip = connection.results.get('connect.geoip');
+    if (geoip && geoip.distance && geoip.distance > 2000) {
+        ....
+    }
+
+Keep in mind that plugins also store results in the transaction. Example:
+
+    var sa = connection.transaction.results.get('spamassassin');
+    if (sa && sa.score > 5) {
+        ....
+    }
+

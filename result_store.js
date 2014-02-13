@@ -1,11 +1,11 @@
-// result_store.js - programmatic handling of plugin results
+// results.js - programmatic handling of plugin results
 
 "use strict"
 
 var util = require('util');
 var config = require('./config');
 
-// see docs in docs/note.md
+// see docs in docs/Results.md
 var append_lists = ['msg','pass','fail','skip','err'];
 var overwrite_lists = ['hide','order'];
 var log_opts     = ['emit','human','human_html'];
@@ -16,98 +16,124 @@ function ResultStore(conn) {
     this.store = {};
 }
 
+function default_result () {
+    return { pass: [], fail: [], msg: [], err: [], skip: [] };
+}
+
 ResultStore.prototype.add = function (plugin, obj) {
     var name = plugin.name;
 
-    var config = config.get('results_store', 'ini');
-
-    var note = this.store[name];
-    if (!note) {
-        note = {
-            pass: [],
-            fail: [],
-            msg: [],
-            err: [],
-            skip: [],
-            hide: [],
-            order: [],
-        };
-        if (config[name] && config[name].hide) {
-            note.hide = config[name].hide.trim().split(/[,; ]+/);
-        }
-        if (config[name] && config[name].order) {
-            note.order = config[name].order.trim().split(/[,; ]+/);
-        }
-        this.store[name] = note;
+    var result = this.store[name];
+    if (!result) {
+        result = default_result();
+        this.store[name] = result;
     }
 
     // these are arrays each invocation appends to
     for (var i=0; i < append_lists.length; i++) {
         var key = append_lists[i];
         if (!obj[key]) continue;
-        note[key].push(obj[key]);
+        result[key].push(obj[key]);
     }
 
     // these arrays are overwritten when passed
     for (var j=0; j < overwrite_lists.length; j++) {
         var key = overwrite_lists[j];
         if (!obj[key]) continue;
-        note[key] = obj[key];
+        result[key] = obj[key];
     }
-
-    // TODO: counter (de|in)crementing?
 
     // anything else is an arbitrary key/val to store
     for (var key in obj) {
         if (all_opts.indexOf(key) !== -1) continue; // weed out our keys
-        note[key] = obj[key];            // save the rest
+        result[key] = obj[key];            // save the rest
     }
 
-    // collate results, log, and return
-    var human_msg = obj.human;
-    if (obj.human) note.human = obj.human;  // override
-    if (!human_msg || human_msg === undefined) {
-        human_msg = private_note_collate(note);
+    // collate results
+    result.human = obj.human;
+    if (!result.human) {
+        var r = this.private_collate(result, name);
+        result.human = r.join(', ');
+        result.human_html = r.join(', \t ');
     }
 
-    if ( obj.emit) this.conn.loginfo(plugin, human_msg);
-    // if (!obj.emit) conn.logdebug(this.plugin, human_msg);
-    return human_msg;
+    // logging results
+    if (obj.emit) this.conn.loginfo(plugin, result.human);  // by request
+    if (obj.err)  this.conn.logerror(plugin, obj.err);      // by default
+    if (!obj.emit && !obj.err) {                            // by config
+        var pic = config.get('results.ini')[name];
+        if (pic && pic.debug) this.conn.logdebug(plugin, result.human);
+    }
+    return this.human;
+};
+
+ResultStore.prototype.incr = function (plugin, obj) {
+    var result = this.store[plugin.name];
+    if (!result) result = default_result();
+
+    for (var key in obj) {
+        var val = obj[key];
+        if (isNaN(val)) throw("invalid argument to incr: " + val);
+        result[key] = +(result[key] + val);
+    }
+};
+
+ResultStore.prototype.push = function (plugin, obj) {
+    var result = this.store[plugin.name];
+    if (!result) result = default_result();
+
+    for (var key in obj) {
+        if (!result[key]) result[key] = [];
+        result[key].push( obj[key] );
+    }
 };
 
 ResultStore.prototype.collate = function (plugin) {
     var name = plugin.name;
-    var note = this.store[name];
-    if (!note) return;
-    return private_note_collate(note);
+    var result = this.store[name];
+    if (!result) return;
+    return this.private_collate(result, name).join(', ');
 };
 
-function private_note_collate (note) {
+ResultStore.prototype.get = function (plugin_name) {
+    var result = this.store[plugin_name];
+    if (!result) return;
+    return result;
+};
 
-    var r = [];
+ResultStore.prototype.private_collate = function (result, name) {
 
-    // anything not predefined in the note was purposeful, show it first
-    Object.keys(note).forEach(function (key) {
-        if (all_opts.indexOf(key) !== -1) return;
-        if (note.hide && note.hide.length && note.hide.indexOf(key) !== -1) return;
-        if (util.isArray(note[key]) && note[key].length === 0) return;
-        r.push(key + ': ' + note[key]);
-    });
+    var r = []; var order = []; var hide = [];
+
+    var cfg = config.get('results.ini');
+    if (cfg[name] && cfg[name].hide) {
+        hide = cfg[name].hide.trim().split(/[,; ]+/);
+    }
+    if (cfg[name] && cfg[name].order) {
+        order = cfg[name].order.trim().split(/[,; ]+/);
+    }
+
+    // anything not predefined in the result was purposeful, show it first
+    for (var key in result) {
+        if (all_opts.indexOf(key) !== -1) continue;
+        if (hide.length && hide.indexOf(key) !== -1) continue;
+        if (util.isArray(result[key]) && result[key].length === 0) continue;
+        r.push(key + ': ' + result[key]);
+    }
 
     // and then supporting information
     var array = append_lists;
-    if (note.order && note.order.length) { array = note.order; }
-    array.forEach(function (key) {
-        if (!note[key] || note[key] === undefined) return;
-        if (note[key] && !note[key].length) return;
-        if (note.hide && note.hide.length && note.hide.indexOf(key) !== -1) return;
-        r.push( key + ':' + note[key].join(', '));
-    });
+    if (result.order && result.order.length) { array = result.order; }
+    for (var i=0; i < array.length; i++) {
+        key = array[i];
+        if (!result[key]) continue;
+        if (!result[key].length) continue;
+        if (hide && hide.length && hide.indexOf(key) !== -1) continue;
+        r.push( key + ':' + result[key].join(', '));
+    }
 
-    note.human = r.join(',  ');
-    note.human_html = r.join(', \t'); // #10 = newline within HTML title
-    return r.join(',  ');
-}
+    return r;
+};
 
 module.exports = ResultStore;
 
