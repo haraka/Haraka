@@ -166,6 +166,7 @@ Header.prototype._add_header_decode = function (key, value, method) {
 }
 
 Header.prototype.add = function (key, value) {
+    if (!key) key = 'X-Haraka-Blank';
     value = value.replace(/(\r?\n)*$/, '');
     this._add_header(key.toLowerCase(), value, "unshift");
     this._add_header_decode(key.toLowerCase(), value, "unshift");
@@ -173,6 +174,7 @@ Header.prototype.add = function (key, value) {
 };
 
 Header.prototype.add_end = function (key, value) {
+    if (!key) key = 'X-Haraka-Blank';
     value = value.replace(/(\r?\n)*$/, '');
     this._add_header(key.toLowerCase(), value, "push");
     this._add_header_decode(key.toLowerCase(), value, "push");
