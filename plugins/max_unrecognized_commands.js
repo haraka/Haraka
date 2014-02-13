@@ -1,23 +1,25 @@
 // Don't let the remote end spew us with unrecognized commands
 // Defaults to 10 max unrecognized commands
-var Note = require('./note');
 
 exports.hook_connect = function(next, connection) {
-    connection.notes.unrecognized_command_max = this.config.get('max_unrecognized_commands') || 10;
-    connection.notes.unrecognized_command_count = 0;
-    next();
+    var plugin = this;
+    connection.results.add(plugin, {
+        max: plugin.config.get('max_unrecognized_commands') || 10,
+        count: 0,
+    });
+    return next();
 };
 
 exports.hook_unrecognized_command = function(next, connection, cmd) {
     var plugin = this;
-    plugin.note = new Note(connection, plugin);
 
-    connection.notes.max_unrecognized_commands={ fail: "Unrecognized command: " + cmd, emit: true };
-    connection.notes.unrecognized_command_count++;
+    connection.results.add(plugin, {fail: "Unrecognized command: " + cmd, emit: true});
+    connection.results.incr(plugin, {count: 1});
 
-    if (connection.notes.unrecognized_command_count >= connection.notes.unrecognized_command_max) {
+    var uc = connection.results.get('max_unrecognized_commands');
+    if (uc.count >= uc.max) {
         connection.loginfo(plugin, "Closing connection. Too many bad commands.");
         return next(DENYDISCONNECT, "Too many bad commands");
     }
-    next();
+    return next();
 };
