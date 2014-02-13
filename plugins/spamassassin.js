@@ -61,7 +61,7 @@ exports.hook_data_post = function (next, connection) {
         else if (state === 'headers') {
             var m;   // printable ASCII: [ -~]
             if (m = line.match(/^X-Spam-([ -~]+):(.*)/)) {
-                connection.logprotocol(plugin, "header: " + line);
+                // connection.logdebug(plugin, "header: " + line);
                 last_header = m[1];
                 spamd_response.headers[m[1]] = m[2];
                 return;
@@ -127,7 +127,7 @@ exports.fixup_old_headers = function (action, transaction) {
                 var old_val = transaction.header.get(key);
                 transaction.remove_header(key);
                 if (old_val) {
-                    plugin.logdebug(plugin, "header: " + key + ', ' + old_val);
+                    // plugin.logdebug(plugin, "header: " + key + ', ' + old_val);
                     transaction.add_header(key.replace(/^X-/, 'X-Old-'), old_val);
                 }
             }
