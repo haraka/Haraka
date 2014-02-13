@@ -97,6 +97,16 @@ increment values. Examples:
     c.results.incr(plugin, {karma:  2});
 
 
+#### push
+
+Append items onto arrays. The argument to push is an object with array names and
+the new value to be appended to the array. Examples:
+
+    var c = connection;
+    c.results.push(plugin, {dns_recs: 'name1'});
+    c.results.push(plugin, {dns_recs: 'name2'});
+
+
 #### collate
 
     var summary = connection.results.collate(plugin);

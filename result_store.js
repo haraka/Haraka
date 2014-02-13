@@ -16,12 +16,16 @@ function ResultStore(conn) {
     this.store = {};
 }
 
+function default_result () {
+    return { pass: [], fail: [], msg: [], err: [], skip: [] };
+}
+
 ResultStore.prototype.add = function (plugin, obj) {
     var name = plugin.name;
 
     var result = this.store[name];
     if (!result) {
-        result = { pass: [], fail: [], msg: [], err: [], skip: [] };
+        result = default_result();
         this.store[name] = result;
     }
 
@@ -64,16 +68,23 @@ ResultStore.prototype.add = function (plugin, obj) {
 };
 
 ResultStore.prototype.incr = function (plugin, obj) {
-    var name = plugin.name;
-    var result = this.store[name];
+    var result = this.store[plugin.name];
+    if (!result) result = default_result();
 
-    if (!result) {
-        result = { pass: [], fail: [], msg: [], err: [], skip: [] };
-    }
     for (var key in obj) {
         var val = obj[key];
         if (isNaN(val)) throw("invalid argument to incr: " + val);
         result[key] = +(result[key] + val);
+    }
+};
+
+ResultStore.prototype.push = function (plugin, obj) {
+    var result = this.store[plugin.name];
+    if (!result) result = default_result();
+
+    for (var key in obj) {
+        if (!result[key]) result[key] = [];
+        result[key].push( obj[key] );
     }
 };
 
@@ -114,7 +125,7 @@ ResultStore.prototype.private_collate = function (result, name) {
     var array = append_lists;
     if (result.order && result.order.length) { array = result.order; }
     for (var i=0; i < array.length; i++) {
-        var key = array[i];
+        key = array[i];
         if (!result[key]) continue;
         if (!result[key].length) continue;
         if (hide && hide.length && hide.indexOf(key) !== -1) continue;
