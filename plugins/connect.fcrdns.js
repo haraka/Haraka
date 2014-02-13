@@ -1,17 +1,12 @@
 var dns = require('dns');
 var net = require('net');
 var utils = require('./utils');
-var net_utils = require('./net_utils.js');
+var net_utils = require('./net_utils');
 
 var reject_no_rdns = 0;
 var reject_no_fcrdns = 0;
 var reject_invalid_tld = 0;
 var reject_generic_rdns = 0;
-
-exports.register = function() {
-    this.note_name = 'fcrdns';
-    this.inherits('note');
-};
 
 function apply_config (cfg, connection) {
     if (!cfg) return;
@@ -30,16 +25,16 @@ function apply_config (cfg, connection) {
 }
 
 exports.hook_lookup_rdns = function (next, connection) {
-    this.note_init({conn: connection, plugin: this, hide: ['ptr_name_to_ip']});
-    connection.notes.fcrdns.fcrdns = [];
-    connection.notes.fcrdns.invalid_tlds = [];
-    connection.notes.fcrdns.other_ips = [];
+    var plugin = this;
+
+    connection.results.add(plugin, {
+        fcrdns: [],               // PTR host names that resolve to this IP
+        invalid_tlds: [],         // rDNS names with invalid TLDs
+        other_ips: [],            // IPs from names that didn't match
+        ptr_names: [],            // Array of host names from PTR query
+    });
 
 /*  connection.notes.fcrdns = {
-        fcrdns: []               // PTR host names that resolve to this IP
-        invalid_tlds: []         // rDNS names with invalid TLDs
-        other_ips: []            // IPs from names that didn't match
-        ptr_names: [],           // Array of host names from PTR query
         ptr_name_to_ip: {},      // host names and their IP addresses
         has_rdns: false,         // does IP have PTR records?
         ptr_name_has_ips: false, // PTR host has IP address(es)
@@ -50,7 +45,6 @@ exports.hook_lookup_rdns = function (next, connection) {
     var cfg = this.config.get('connect.fcrdns.ini');
     apply_config(cfg, connection);
 
-    var plugin = this;
     var called_next = 0;
     var timer;
     var do_next = function (code, msg) {
@@ -63,7 +57,7 @@ exports.hook_lookup_rdns = function (next, connection) {
     // Set-up timer
     var timeout = cfg.main.disconnect_timeout || 30;
     timer = setTimeout(function () {
-        plugin.note({conn: connection, err: 'timeout', emit: true});
+        connection.results.add(plugin, {err: 'timeout', emit: true});
         if (reject_no_rdns) {
             return do_next(DENYSOFT, 'client [' + connection.remote_ip + '] rDNS lookup timeout');
         }
@@ -74,7 +68,7 @@ exports.hook_lookup_rdns = function (next, connection) {
         connection.logdebug(plugin, 'rdns lookup: ' + connection.remote_ip);
         if (err) return plugin.handle_ptr_error(connection, err, do_next);
 
-        plugin.note({conn: connection, ptr_names: ptr_names});
+        connection.results.add(plugin, {ptr_names: ptr_names});
 
         // Fetch A records for each PTR host name
         var pending_queries = 0;
@@ -86,7 +80,7 @@ exports.hook_lookup_rdns = function (next, connection) {
 
             // Make sure TLD is valid
             if (!net_utils.getOrganizationalDomain(ptr_domain)) {
-                plugin.note({conn: connection, fail: 'valid_tld(' + ptr_domain +')'});
+                connection.results.add(plugin, {fail: 'valid_tld(' + ptr_domain +')'});
                 if (reject_invalid_tld && !net_utils.is_rfc1918(connection.remote_ip)) {
                     return do_next(DENY, 'client [' + connection.remote_ip +
                         '] rejected; invalid TLD in rDNS (' + ptr_domain + ')');
@@ -101,7 +95,7 @@ exports.hook_lookup_rdns = function (next, connection) {
             dns.resolve(ptr_domain, function(err, ips_from_fwd) {
                 pending_queries--;
                 if (err) {
-                    plugin.note({conn: connection, err: ptr_domain + '(' + err + ')'});
+                    connection.results.add(plugin, {err: ptr_domain + '(' + err + ')'});
                 }
                 else {
                     connection.logdebug(plugin, ptr_domain + ' => ' + ips_from_fwd);
@@ -110,7 +104,7 @@ exports.hook_lookup_rdns = function (next, connection) {
                 if (pending_queries > 0) return;
 
                 // Got all DNS results
-                plugin.note({conn: connection, ptr_name_to_ip: results});
+                connection.results.add(plugin, {ptr_name_to_ip: results});
                 return plugin.check_fcrdns(connection, results, do_next);
             });
             })(ptr_domain); /* END BLOCK SCOPE */
@@ -124,47 +118,49 @@ exports.hook_lookup_rdns = function (next, connection) {
 };
 
 exports.hook_data_post = function (next, connection) {
+    var plugin = this;
     var txn = connection.transaction;
     txn.remove_header('X-Haraka-rDNS');
     txn.remove_header('X-Haraka-FCrDNS');
     txn.remove_header('X-Haraka-rDNS-OtherIPs');
     txn.remove_header('X-Haraka-HostID');
 
-    if (!connection.notes.fcrdns) {
-        connection.logerror(this, "no fcrnds connection note!?");
+    var fcrdns = connection.results.get('fcrdns');
+    if (!fcrdns) {
+        connection.results.add(plugin, {err: "no fcrnds results!?"});
         return next();
     }
 
-    var note = connection.notes.fcrdns;
-    if (note.err.length) {
+    if (fcrdns.err.length) {
         // TODO: this is probably not the right test to use
         return next();
     }
 
-    if (note.name && note.name.length) {
-        txn.add_header('X-Haraka-rDNS', note.name.join(' '));
+    if (fcrdns.name && fcrdns.name.length) {
+        txn.add_header('X-Haraka-rDNS', fcrdns.name.join(' '));
     }
-    if (note.fcrdns && note.fcrdns.length) {
-        txn.add_header('X-Haraka-FCrDNS', note.fcrdns.join(' '));
+    if (fcrdns.fcrdns && fcrdns.fcrdns.length) {
+        txn.add_header('X-Haraka-FCrDNS', fcrdns.fcrdns.join(' '));
     }
-    if (note.other_ips && note.other_ips.length) {
-        txn.add_header('X-Haraka-rDNS-OtherIPs', note.other_ips.join(' '));
+    if (fcrdns.other_ips && fcrdns.other_ips.length) {
+        txn.add_header('X-Haraka-rDNS-OtherIPs', fcrdns.other_ips.join(' '));
     }
     return next();
 };
 
 exports.handle_ptr_error = function(connection, err, do_next) {
+    var plugin = this;
     switch (err.code) {
         case 'ENOTFOUND':
         case dns.NOTFOUND:
         case dns.NXDOMAIN:
-            this.note({conn: connection, fail: 'has_rdns', msg: err.code, emit: true});
+            connection.results.add(plugin, {fail: 'has_rdns', msg: err.code, emit: true});
             if (reject_no_rdns) {
                 return do_next(DENY, 'client [' + connection.remote_ip + '] rejected; no rDNS entry found');
             }
             return do_next();
         default:
-            this.note({conn: connection, err: err, emit: true});
+            connection.results.add(plugin, {err: err});
             if (reject_no_rdns) {
                 return do_next(DENYSOFT, 'client [' + connection.remote_ip + '] rDNS lookup error (' + err + ')');
             }
@@ -176,7 +172,6 @@ exports.check_fcrdns = function(connection, results, do_next) {
     var plugin = this;
 
     var found_doms = Object.keys(results);
-    var other_ips = {};
 
     for (var i=0; i<found_doms.length; i++) {
         var fdom = found_doms[i];       // mail.example.com
@@ -184,28 +179,31 @@ exports.check_fcrdns = function(connection, results, do_next) {
 
         // Multiple domains?
         if (last_domain && last_domain !== org_domain) {
-            plugin.note({conn: connection, ptr_multidomain: true});
+            connection.results.add(plugin, {ptr_multidomain: true});
         }
         else {
             var last_domain = org_domain;
         }
 
         // FCrDNS? PTR -> (A | AAAA) 3. PTR comparison
-        if (results[fdom].indexOf(connection.remote_ip) !== -1) {
-            plugin.note({conn: connection, pass: 'fcrdns' });
-            connection.notes.fcrdns.fcrdns.push(fdom);
-        }
-        else if ( net_utils.same_ipv4_network(connection.remote_ip, results[fdom]) ) {
-            plugin.note({conn: connection, pass: 'fcrdns(same net)' });
-            connection.notes.fcrdns.fcrdns.push(fdom);
-        }
-        else {
-            for (var j=0; j<results[fdom].length; j++) {
-                connection.notes.fcrdns.other_ips.push(results[fdom[j]]);
+        var ip_list = results[fdom];
+        if (ip_list.length) {
+            if (ip_list.indexOf(connection.remote_ip) !== -1) {
+                connection.results.add(plugin, {pass: 'fcrdns' });
+                connection.results.push(plugin, {fcrdns: fdom});
+            }
+            else if ( net_utils.same_ipv4_network(connection.remote_ip, ip_list) ) {
+                connection.results.add(plugin, {pass: 'fcrdns(same net)' });
+                connection.results.push(plugin, {fcrdns: fdom});
+            }
+            else {
+                for (var j=0; j<ip_list.length; j++) {
+                    connection.results.push(plugin, {other_ips: ip_list[j]});
+                }
             }
         }
 
-        connection.notes.fcrdns.ptr_name_has_ips = true;
+        connection.results.add(plugin, {ptr_name_has_ips: true});
 
         var reject = plugin.is_generic_rdns(connection, fdom);
         if (reject) return do_next(DENY, reject);
@@ -214,23 +212,24 @@ exports.check_fcrdns = function(connection, results, do_next) {
     plugin.log_summary(connection);
     plugin.save_auth_results(connection);
 
-    if (!connection.notes.fcrdns.fcrdns.length && reject_no_fcrdns) {
+    var r = connection.results.get('connect.fcrdns');
+    if (!r.fcrdns.length && reject_no_fcrdns) {
         return do_next(DENY, 'Sorry, no FCrDNS match found');
     }
     return do_next();
 };
 
 exports.save_auth_results = function (connection) {
-    var note = connection.notes.fcrdns;
-    if (note.fcrdns.length) {
+    var r = connection.results.get('connect.fcrdns');
+    if (r.fcrdns.length) {
         connection.auth_results('iprev=pass');
         return;
     }
-    if (!note.has_rdns) {
+    if (!r.has_rdns) {
         connection.auth_results('iprev=permerror');
         return;
     }
-    if (note.err.length) {
+    if (r.err.length) {
         connection.auth_results('iprev=temperror');
         return;
     }
@@ -238,13 +237,14 @@ exports.save_auth_results = function (connection) {
 };
 
 exports.is_generic_rdns = function (connection, domain) {
+    var plugin = this;
     // IP in rDNS? (Generic rDNS)
     if (!net_utils.is_ip_in_str(connection.remote_ip, domain)) {
-        this.note({conn: connection, pass: 'is_generic_rdns'});
+        connection.results.add(plugin, {pass: 'is_generic_rdns'});
         return false;
     }
 
-    this.note({conn: connection, fail: 'is_generic_rdns'});
+    connection.results.add(plugin, {fail: 'is_generic_rdns'});
     if (!reject_generic_rdns) return false;
 
     var orgDom = net_utils.getOrganizationalDomain(domain);
@@ -261,7 +261,9 @@ exports.is_generic_rdns = function (connection, domain) {
 };
 
 exports.log_summary = function (connection) {
-    var note = connection.notes.fcrdns;
+    if (!connection) return;   // connection went away
+    var note = connection.results.get('connect.fcrdns');
+    if (!note) return;
 
     connection.loginfo(this,
         ['ip=' + connection.remote_ip,
