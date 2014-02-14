@@ -12,6 +12,9 @@ data.headers
 # block mail from some known bad HELOs - see config/helo.checks.ini for configuration
 helo.checks
 
+# see 'haraka -h tls' for config instructions before enabling!
+# tls
+
 # control which "MAIL FROM" addresses you accept. See docs.
 mail_from.access
 
