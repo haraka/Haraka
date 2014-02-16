@@ -15,7 +15,7 @@ exports.karma_init = function (next, server) {
     return next();
 };
 
-exports.note_init = function (connection) {
+exports.results_init = function (connection) {
     var plugin = this;
     var config = plugin.config.get('karma.ini');
     if (connection.results.get('karma')) return; // init once per connection
@@ -53,11 +53,11 @@ exports.should_we_deny = function (connection) {
 exports.hook_deny = function (next, connection, params) {
     var plugin = this;
     var pi_deny     = params[0];  // (constants.deny, denysoft, ok)
-    var pi_message  = params[1];
+//  var pi_message  = params[1];
     var pi_name     = params[2];
-    var pi_function = params[3];
-    var pi_params   = params[4];
-    var pi_hook     = params[5];
+//  var pi_function = params[3];
+//  var pi_params   = params[4];
+//  var pi_hook     = params[5];
 
     var config = plugin.config.get('karma.ini');
 
@@ -88,7 +88,7 @@ exports.hook_lookup_rdns = function (next, connection) {
     var plugin = this;
 
     plugin.init_redis_connection();
-    plugin.note_init(connection);
+    plugin.results_init(connection);
 
     var config = plugin.config.get('karma.ini');
     var expire = (config.main.expire_days || 60) * 86400; // convert to days
@@ -97,7 +97,8 @@ exports.hook_lookup_rdns = function (next, connection) {
     var cckey  = 'concurrent|' + rip;
     var asnkey;
     if (config.main.asn_enable && connection.results.get('connect.asn')) {
-        asnkey = connection.results.get('connect.asn').asn;
+        var asn = connection.results.get('connect.asn');
+        if (asn) asnkey = asn.asn;
         if (isNaN(asnkey)) asnkey = undefined;
         if (asnkey) plugin.check_asn_neighborhood(connection, asnkey, expire);
     }
@@ -105,20 +106,20 @@ exports.hook_lookup_rdns = function (next, connection) {
     db.multi()
         .get(cckey)
         .hgetall(dbkey)
-        .exec(function redisResults (err,replies) {
+        .exec(function redisResults (err, replies) {
             if (err) {
                 connection.results.add(plugin, {err: err});
                 return next();
             }
 
-            var dbr = replies[1];   // 2nd pos. of redis reply is karma object
+            var dbr = replies[1];   // 2nd pos. of multi reply is karma object
             if (dbr === null) { init_ip(dbkey, cckey, expire); return next(); }
 
             db.multi()
                 .hincrby(dbkey, 'connections', 1)  // increment total connections
                 .expire(dbkey, expire)             // extend expiration date
                 .incr(cckey)                       // increment concurrent connections
-                .exec(function (err,replies) {
+                .exec(function (err, replies) {
                     if (err) connection.results.add(plugin, {err: err});
                 });
 
@@ -264,7 +265,7 @@ exports.hook_disconnect = function (next, connection) {
 
     var k = connection.results.get('karma');
     if (!k) {
-        connection.results.add(plugin, {err: 'karma note missing!'});
+        connection.results.add(plugin, {err: 'karma results absent!'});
         return next();
     }
 
@@ -349,18 +350,20 @@ exports.get_award_location = function (connection, award_key) {
             obj = connection.transaction.results.get(pi_name);
         }
         if (!obj) {
-            // connection.loginfo(plugin, "no txn results: " + pi_name);
+            // connection.logdebug(plugin, "no txn results: " + pi_name);
             obj = connection.results.get(pi_name);
         }
         if (!obj) {
-            // connection.loginfo(plugin, "no conn results: " + pi_name);
+            // connection.logdebug(plugin, "no conn results: " + pi_name);
             return;
         }
 
-        // connection.loginfo(plugin, "found results for " + pi_name + ', ' + notekey);
+        // connection.logdebug(plugin, "found results for " + pi_name + ', ' + notekey);
         if (notekey) return obj[notekey];
         return obj;
     }
+
+    connection.logdebug(plugin, "unknown location for " + award_key);
 };
 
 exports.get_award_condition = function (note_key, note_val) {
@@ -370,24 +373,26 @@ exports.get_award_condition = function (note_key, note_val) {
 
     var valbits = note_val.split(/\s+/);
     if (!valbits[1]) return wants;
-    if (valbits[1] !== 'if') return wants;   // no if conditions
+    if (valbits[1] !== 'if') return wants;   // no if condition
 
     if (valbits[2].match(/^(equals|gt|lt|match)$/)) {
         if (valbits[3] !== undefined) wants = valbits[3];
-        return wants;
     }
+    return wants;
 };
 
 exports.check_awards = function (connection) {
     var plugin = this;
-    var todo = connection.results.get('karma').todo;
+    var karma  = connection.results.get('karma');
+    if (!karma) return;
+    var todo   = karma.todo;
     if (!todo) return;
 
     for (var key in todo) {
-        //     loc                      =     terms
-        // note_location [@wants]       = award [conditions]
-        // results.geoip.too_far        = -1
-        // results.geoip.distance@4000  = -1 if gt 4000
+        //     loc                     =     terms
+        // note_location [@wants]      = award [conditions]
+        // results.geoip.too_far       = -1
+        // results.geoip.distance@4000 = -1 if gt 4000
 
         var award_terms = todo[key];
 
@@ -411,8 +416,8 @@ exports.check_awards = function (connection) {
 
         // connection.loginfo(plugin, "check_awards, case matching for: " + wants);
 
-        // the matching logic is inverted here, weeding out anything that
-        // doesn't match. Matches fall through to the apply_award below.
+        // the matching logic is inverted here, weeding out non-matches
+        // Matches fall through to the apply_award below.
         var condition = bits[2];
         switch (condition) {
             case 'equals':
@@ -460,7 +465,7 @@ exports.apply_award = function (connection, nl, award) {
     var plugin = this;
     if (!award) return;
     if (isNaN(award)) {    // garbage in config
-        connection.loginfo(plugin, "non-numeric award from: " + nl + ':' + award);
+        connection.logerror(plugin, "non-numeric award from: " + nl + ':' + award);
         return;
     }
 
@@ -485,10 +490,9 @@ function add_days(days) {
 
 exports.check_concurrency = function (con_key, val, history) {
     var config = this.config.get('karma.ini');
-
     if (!config.concurrency) return;
 
-    var count = val || 0;
+    var count = parseFloat(val) || 0;
     count++;                 // add this connection
 
     var reject=0;
@@ -511,9 +515,9 @@ exports.max_recipients = function (connection) {
 
     var desc = history > 3 ? 'good' : history >= 0 ? 'neutral' : 'bad';
 
-    // the deeds of their past shall not go unnoticed!
+    // the deeds of their past shall be considered
     var history = connection.results.get('karma').history;
-    if (history > 3 && count <= cr.good) return;
+    if (history >  3 && count <= cr.good) return;
     if (history > -1 && count <= cr.neutral) return;
 
     // this is *more* strict than history, b/c they have fewer opportunities
@@ -581,7 +585,6 @@ function assemble_note_obj(prefix, key) {
     return note;
 }
 
-
 exports.check_asn_neighborhood = function (connection, asnkey, expire) {
     var plugin = this;
     db.hgetall(asnkey, function (err, res) {
@@ -600,13 +603,16 @@ exports.check_asn_neighborhood = function (connection, asnkey, expire) {
         if (!net_score) return;
         connection.results.add(plugin, {neighbors: net_score, emit: true});
 
-        if (!plugin.config.get('karma.ini').asn_awards) return;
+        var award = plugin.config.get('karma.ini').asn_awards;
+        if (!award) return;
         if (net_score < -5) {
-            connection.results.add(plugin, {fail: 'neighbors(asn)'});
+            connection.results.init(plugin, {connect: (award * -1)});
+            connection.results.add(plugin, {fail: 'neighbors('+net_score+')'});
             return;
         }
         if (net_score > 5) {
-            connection.results.add(plugin, {pass: 'neighbors(asn)'});
+            connection.results.init(plugin, {connect: award});
+            connection.results.add(plugin, {pass: 'neighbors('+net_score+')'});
         }
         return;
     });
