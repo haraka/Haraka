@@ -1,6 +1,7 @@
 // dnsbl plugin
 
 var cfg;
+var reject=true;
 
 exports.register = function() {
     cfg = this.config.get('dnsbl.ini');
@@ -15,6 +16,8 @@ exports.register = function() {
         this.redis_host = cfg.main.stats_redis_host;
         this.logdebug('set stats redis host to: ' + this.redis_host);
     }
+
+    if (cfg.main.reject !== 'undefined') reject = cfg.main.reject;
 
     this.zones = [];
     // Compatibility with old-plugin
@@ -36,7 +39,10 @@ exports.hook_connect = function(next, connection) {
     var self = this;
     this.first(connection.remote_ip, this.zones, function (err, zone, a) {
         if (a) {
-            return next(DENY, 'host [' + connection.remote_ip + '] is blacklisted by ' + zone);
+            if (reject) {
+                return next(DENY, 'host [' + connection.remote_ip + '] is blacklisted by ' + zone);
+            }
+            return next();
         }
         return next();
     });

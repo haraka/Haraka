@@ -68,3 +68,11 @@ dnsbl.ini - INI format with options described below:
 
     In the form of `host:port` this option allows you to specify a different
     host on which redis runs.
+
+* reject (default: true)
+
+   Reject connections from IPs that are blacklisted. Setting this to false may
+   be done to delay the denial [delay\_deny](/manual/plugins/delay_deny.html)
+   allowing remotes to authenticate (and clear the denial), or in combination
+   with plugins like [karma](/manual/plugins/karma.html), that permit valid
+   mail to be delivered despite a temporarily listing by a DNSBL.
