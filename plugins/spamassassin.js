@@ -85,7 +85,9 @@ exports.hook_data_post = function (next, connection) {
         if (spamd_response.tests === undefined) {
             // strip the 'tests' from the X-Spam-Status header
             var tests;
-            if (tests = /tests=([^ ]+)/.exec(spamd_response.headers['Status'].replace(/\r?\n\t/g,''))) {
+            if (spamd_response.headers['Status'] && 
+                tests = /tests=([^ ]+)/.exec(spamd_response.headers['Status'].replace(/\r?\n\t/g,''))) 
+            {
                 spamd_response.tests = tests[1];
             }
         }
