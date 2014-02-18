@@ -1,6 +1,8 @@
 // determine the ASN of the connecting IP
 
 var dns = require('dns');
+var is_rfc1918 = require('./net_utils').is_rfc1918;
+
 var providers = [];
 
 exports.register = function () {
@@ -19,6 +21,7 @@ exports.register = function () {
 exports.hook_lookup_rdns = function (next, connection) {
     var plugin = this;
     var ip = connection.remote_ip;
+    if (is_rfc1918(ip)) return next();
     var pending = 0;
 
     for (var i=0; i < providers.length; i++) {
@@ -69,7 +72,7 @@ exports.parse_routeviews = function (str, connection) {
 
 exports.parse_cymru = function (str, connection) {
     var plugin = this;
-    var r = str.split(/\s+\|\s+/);
+    var r = str.split(/\s+\|\s*/);
     // 99.177.75.208.origin.asn.cymru.com. 14350 IN TXT "40431 | 208.75.176.0/21 | US | arin | 2007-03-02"
     // handle this: cymru: result length not 5: 4 string="10290 | 12.129.48.0/24 | US | arin |"
     if (r.length < 4) {
