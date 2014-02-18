@@ -7,12 +7,26 @@ that represents the bailiwick or sphere of control of a network operator.
 
 # Usage
 
-    var asn = connection.results.get('connect.asn');
-    if (asn && asn.asn) {
-        connection.loginfo(plugin, "hey look, it's ASN: " + asn.asn);
+This plugin will add the following headers:
+
+X-Haraka-ASN-Cymru:
+X-Haraka-ASN-Routeviews:
+
+You can also access the ASN number for other plugins that run after this plugin like so:
+
+`````
+if (connection.notes.asn) {
+    // Cymru results
+    if (connection.notes.asn.cymru) {
+        var cymru_asn = connection.notes.asn.cymru.asn;
     }
-
-
+    // Routeviews results
+    if (connection.notes.asn.routeviews) {
+        var routeviews_asn = connection.notes.asn.routeviews.asn;
+    }
+}
+`````
+    
 # Theory
 
 An ASN is a very good approximation of all of the IP space under the control
