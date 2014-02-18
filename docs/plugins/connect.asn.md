@@ -24,7 +24,23 @@ Not-so-good network operators are likely to emit a greater number of abusive
 connections, and should be handled with increased scrutiny.
 
 
+# Research
+
+http://www.cc.gatech.edu/~feamster/papers/snare-usenix09.pdf
+
+"Performance based on AS number only...The classifier gets a false positive
+rate of 0.76% [and] a 70% detection rate"
+
+"AS numbers are more persistently associated with a sender's
+identity than the IP address, for two reasons: (1) The spamming mail server
+might be set up within specific ASes without the network administrator
+shutting it down. (2) Bots tend to aggregate within ASes, since the machines
+in the same ASes are likely to have the same vulnerability. It is not easy for
+spammers to move mail servers or the bot armies to a different AS; therefore,
+AS numbers are robust to indicate malicious hosts."
+
+
 # Consumers
 
-The [karma](/manual/plugins/karma.html) plugin uses the ASN lookup to maintain
-its network neighborhood reputation. 
+The [karma](/manual/plugins/karma.html) plugin uses the ASN to maintain
+its network neighborhood reputation.
