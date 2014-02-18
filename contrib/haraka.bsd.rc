@@ -1,0 +1,48 @@
+#!/bin/sh
+# USAGE: rename this as 'haraka' and drop it in /usr/local/etc/rc.d
+#        tested on FreeBSD. Should work on NetBSD and Dragonfly
+
+# PROVIDE: haraka
+# REQUIRE: networking syslog 
+
+. /etc/rc.subr
+
+name="haraka"
+rcvar="haraka_enable"
+
+command="/usr/local/bin/haraka"
+pidfile="/var/run/${name}.pid"
+
+status_cmd="status"
+stop_cmd="stop"
+
+load_rc_config $name
+
+status()
+{
+   if [ -f $pidfile ];
+   then
+       LPID=`cat $pidfile`
+       LPROC=`/bin/ps | grep '^$PID'`
+       if [ -n $LPROC ];
+       then
+           echo "$name is running as $LPID"
+       else
+           echo "$name is not running"
+       fi
+    else
+        echo "$name is not running"
+    fi 
+}
+
+stop()
+{
+   if [ -f $pidfile ];
+   then
+       kill `cat $pidfile`
+   else
+       echo "no PID file!"
+   fi
+}
+
+run_rc_command "$1"
