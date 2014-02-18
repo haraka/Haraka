@@ -44,3 +44,9 @@ AS numbers are robust to indicate malicious hosts."
 
 The [karma](/manual/plugins/karma.html) plugin uses the ASN to maintain
 its network neighborhood reputation.
+
+
+# TODO
+
+Keep an eye on node-geoip. If/when it adds support for ASN lookups, note
+that as an alternative data source.
