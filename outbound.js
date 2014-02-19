@@ -1298,8 +1298,8 @@ HMailItem.prototype.temp_fail = function (err, extra) {
     
     var delay = (Math.pow(2, (this.num_failures + 5)) * 1000);
     var until = Date.now() + delay;
-    
-    this.loginfo("Temp failing " + this.filename + " for " + (delay/1000) + " seconds: " + err);
+
+    plugins.run_hooks('deferred', this, {delay: delay/1000, err: err});
     
     var new_filename = this.filename.replace(/^(\d+)_(\d+)_/, until + '_' + this.num_failures + '_');
     
@@ -1317,6 +1317,10 @@ HMailItem.prototype.temp_fail = function (err, extra) {
         temp_fail_queue.add(delay, function () { delivery_queue.push(hmail) });
     });
 }
+
+HMailItem.prototype.deferred_respond = function (retval, msg, params) {
+    this.loginfo("Temp failing " + this.filename + " for " + (params.delay/1000) + " seconds: " + params.err);
+};
 
 // The following handler has an impact on outgoing mail. It does remove the queue file.
 HMailItem.prototype.delivered_respond = function (retval, msg) {
