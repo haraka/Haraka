@@ -32,16 +32,18 @@ exports.register = function() {
 }
 
 exports.hook_connect = function(next, connection) {
-    if (!this.zones || !this.zones.length) {
-        connection.logerror(this, "no zones");
+    var plugin = this;
+    if (!plugin.zones || !plugin.zones.length) {
+        connection.logerror(plugin, "no zones");
         return next();
     }
-    var self = this;
-    this.first(connection.remote_ip, this.zones, function (err, zone, a) {
+    plugin.first(connection.remote_ip, plugin.zones, function (err, zone, a) {
         if (a) {
+            var msg = 'host [' + connection.remote_ip + '] is blacklisted by ' + zone;
             if (reject) {
-                return next(DENY, 'host [' + connection.remote_ip + '] is blacklisted by ' + zone);
+                return next(DENY, msg);
             }
+            connection.loginfo(plugin, msg);
             return next();
         }
         return next();
