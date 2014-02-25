@@ -98,7 +98,7 @@ function check_qmd_reponse(next,plugin,conn,hexnum) {
             return [ DENYSOFT, "SHOULD NOT HAPPEN" ];
         case 'ff':
             return [ DENY, "address not local" ];
-        case '00':
+        case '0':
             return [ DENY, "not deliverable" ];
         default:
             return [ undefined, "unknown rv(" + hexnum + ")" ];
