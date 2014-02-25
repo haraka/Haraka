@@ -125,9 +125,9 @@ exports.hook_data_post = function (next, connection) {
     txn.remove_header('X-Haraka-rDNS-OtherIPs');
     txn.remove_header('X-Haraka-HostID');
 
-    var fcrdns = connection.results.get('fcrdns');
+    var fcrdns = connection.results.get('connect.fcrdns');
     if (!fcrdns) {
-        connection.results.add(plugin, {err: "no fcrnds results!?"});
+        connection.results.add(plugin, {err: "no fcrdns results!?"});
         return next();
     }
 
