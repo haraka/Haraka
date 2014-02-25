@@ -20,12 +20,14 @@ exports.hook_connect = function (next, connection) {
     connection.results.add(plugin, r);
 
     var cfg = plugin.config.get('connect.geoip.ini');
-    if (cfg.main.calc_distance) plugin.calculate_distance(connection, r);
+    if (cfg.main.calc_distance) {
+        r.distance = plugin.calculate_distance(connection, r);
+    }
 
     var show = [ r.country ];
-    if (r.region   && cfg.main.show_region  ) show.push(r.region);
-    if (r.city     && cfg.main.show_city    ) show.push(r.city);
-    if (r.distance && cfg.main.calc_distance) show.push(r.distance+'km');
+    if (r.region   && cfg.main.show_region) show.push(r.region);
+    if (r.city     && cfg.main.show_city  ) show.push(r.city);
+    if (r.distance                        ) show.push(r.distance+'km');
 
     connection.results.add(plugin, {human: show.join(', '), emit:true});
 
@@ -83,6 +85,7 @@ exports.calculate_distance = function (connection, r_geoip) {
     if (cfg.main.too_far && (parseFloat(cfg.main.too_far) < parseFloat(gcd))) {
         connection.results.add(plugin, {too_far: true});
     }
+    return gcd;
 };
 
 function haversine(lat1, lon1, lat2, lon2) {
