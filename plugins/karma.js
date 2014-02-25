@@ -603,15 +603,15 @@ exports.check_asn_neighborhood = function (connection, asnkey, expire) {
         if (!net_score) return;
         connection.results.add(plugin, {neighbors: net_score, emit: true});
 
-        var award = plugin.config.get('karma.ini').asn_awards;
+        var award = plugin.config.get('karma.ini').asn_award;
         if (!award) return;
         if (net_score < -5) {
-            connection.results.init(plugin, {connect: (award * -1)});
+            connection.results.incr(plugin, {connect: (award * -1)});
             connection.results.add(plugin, {fail: 'neighbors('+net_score+')'});
             return;
         }
         if (net_score > 5) {
-            connection.results.init(plugin, {connect: award});
+            connection.results.incr(plugin, {connect: award});
             connection.results.add(plugin, {pass: 'neighbors('+net_score+')'});
         }
         return;
@@ -644,7 +644,7 @@ function init_ip (dbkey, cckey, expire) {
         .hmset(dbkey, {'penalty_start_ts': 0, 'bad': 0, 'good': 0, 'connections': 1})
         .expire(dbkey, expire)
         .set(cckey, 1)
-        .expire(cckey, 4 * 60)        // expire after 4 min
+        .expire(cckey, 2 * 60)        // expire after 2 min
         .exec();
 }
 
