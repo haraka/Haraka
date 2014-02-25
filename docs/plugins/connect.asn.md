@@ -7,32 +7,27 @@ that represents the bailiwick or sphere of control of a network operator.
 
 # Usage
 
-This plugin will add the following headers:
-
-X-Haraka-ASN-Cymru:
-X-Haraka-ASN-Routeviews:
-
 You can also access the ASN number for other plugins that run after this plugin like so:
 
-`````
-if (connection.notes.asn) {
-    // Cymru results
-    if (connection.notes.asn.cymru) {
-        var cymru_asn = connection.notes.asn.cymru.asn;
+    var asn = connection.results.get('connect.asn');
+    if (asn && asn.asn) {
+        connection.loginfo(plugin, "hey look, it's ASN: " + asn.asn);
     }
-    // Routeviews results
-    if (connection.notes.asn.routeviews) {
-        var routeviews_asn = connection.notes.asn.routeviews.asn;
-    }
-}
-`````
-    
+
+# Headers
+
+Optionally add headers to messages with ASN info. See config/connect.asn.ini.
+
+* add\_header - add X-Haraka-ASN header with the ASN and if available, netmask.
+* provider\_header - add X-Haraka-ASN-[provider] headers with lookup results
+
+
 # Theory
 
-An ASN is a very good approximation of all of the IP space under the control
+An ASN is a very good approximation of the IP space under the control
 of a network operator. The theory behind ASN tracking is that good network
 operators police their networks, proactively limit abuse, and are less likely
-to be emitting abusive connections.
+to be emitting abusive.
 
 Not-so-good network operators are likely to emit a greater number of abusive
 connections, and should be handled with increased scrutiny.
