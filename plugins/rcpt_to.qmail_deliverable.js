@@ -7,11 +7,7 @@ var options = {
     method: 'get',
 };
 
-exports.register = function() {
-    this.register_hook('rcpt', 'rcpt_to_qmd');
-};
-
-exports.rcpt_to_qmd = function(next, connection, params) {
+exports.hook_rcpt = function(next, connection, params) {
     var plugin = this;
     var config = plugin.config.get('rcpt_to.qmail_deliverable.ini');
 
@@ -30,20 +26,20 @@ exports.rcpt_to_qmd = function(next, connection, params) {
     return plugin.get_qmd_response(next, connection, email);
 }
 
-exports.get_qmd_response = function (next, conn, email) {
+exports.get_qmd_response = function (next, connection, email) {
     var plugin = this;
-    var results = conn.transaction.results;
+    var results = connection.transaction.results;
     options.path = '/qd1/deliverable?' + querystring.escape(email);
-    plugin.logprotocol(conn, 'PATH: ' + options.path);
+    connection.logprotocol(plugin, 'PATH: ' + options.path);
     var req = http.get(options, function(res) {
-        plugin.logprotocol(conn, 'STATUS: ' + res.statusCode);
-        plugin.logprotocol(conn, 'HEADERS: ' + JSON.stringify(res.headers));
+        connection.logprotocol(plugin, 'STATUS: ' + res.statusCode);
+        connection.logprotocol(plugin, 'HEADERS: ' + JSON.stringify(res.headers));
         res.setEncoding('utf8');
         res.on('data', function (chunk) {
-            plugin.logprotocol(conn, 'BODY: ' + chunk);
+            connection.logprotocol(plugin, 'BODY: ' + chunk);
             var hexnum = new Number(chunk).toString(16);
-            var arr = check_qmd_reponse(next,plugin,conn,hexnum);
-            conn.loginfo(plugin, arr[1]);
+            var arr = plugin.check_qmd_reponse(next, connection, hexnum);
+            connection.loginfo(plugin, arr[1]);
             if (arr[0] === undefined) {
                 results.add(plugin, {err: arr[1]});
                 return next();
@@ -51,6 +47,10 @@ exports.get_qmd_response = function (next, conn, email) {
             if (arr[0] === OK) {
                 results.add(plugin, {pass: arr[1]});
                 return next(OK);
+            }
+            if (connection.relaying) {
+                results.add(plugin, {skip: "relaying("+arr[1]+')'});
+                return next(OK, arr[1]);
             }
             results.add(plugin, {fail: arr[1]});
             return next(arr[0], arr[1]);
@@ -60,8 +60,9 @@ exports.get_qmd_response = function (next, conn, email) {
     });
 };
 
-function check_qmd_reponse(next,plugin,conn,hexnum) {
-    plugin.logprotocol(conn,"HEXRV: " + hexnum );
+exports.check_qmd_reponse = function (next, connection, hexnum) {
+    var plugin = this;
+    connection.logprotocol(plugin,"HEXRV: " + hexnum );
 
     switch(hexnum) {
         case '11':
@@ -71,7 +72,7 @@ function check_qmd_reponse(next,plugin,conn,hexnum) {
         case '13':
             return [ OK, "bouncesaying with program"];
         case '14':
-            var from = conn.transaction.mail_from.address();
+            var from = connection.transaction.mail_from.address();
             if ( ! from || from === '<>') {
                 return [ DENY, "mailing lists do not accept null senders" ];
             }
