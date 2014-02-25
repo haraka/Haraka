@@ -5,14 +5,15 @@ var querystring = require('querystring');
 
 var options = {
     method: 'get',
-}
+};
 
 exports.register = function() {
     this.register_hook('rcpt', 'rcpt_to_qmd');
 };
 
 exports.rcpt_to_qmd = function(next, connection, params) {
-    var config = this.config.get('rcpt_to.qmail_deliverable.ini');
+    var plugin = this;
+    var config = plugin.config.get('rcpt_to.qmail_deliverable.ini');
 
     options.host = config.main.host || '127.0.0.1';
     options.port = config.main.port || 8998;
@@ -22,15 +23,16 @@ exports.rcpt_to_qmd = function(next, connection, params) {
     var rcpt = params[0];
     var email = rcpt.address();
 
-    // TODO: this is a good place to validate email
     // Qmail::Deliverable::Client does a rfc2822 "atext" test
-    // but Haraka might have done this for us, at this point?
+    // but Haraka has already validated for us by this point
 
-    this.logdebug(connection, "checking " + email );
-    return get_qmd_response(next,this,connection,email);
+    connection.logdebug(plugin, "checking " + email );
+    return plugin.get_qmd_response(next, connection, email);
 }
 
-function get_qmd_response(next,plugin,conn,email) {
+exports.get_qmd_response = function (next, conn, email) {
+    var plugin = this;
+    var results = conn.transaction.results;
     options.path = '/qd1/deliverable?' + querystring.escape(email);
     plugin.logprotocol(conn, 'PATH: ' + options.path);
     var req = http.get(options, function(res) {
@@ -40,10 +42,21 @@ function get_qmd_response(next,plugin,conn,email) {
         res.on('data', function (chunk) {
             plugin.logprotocol(conn, 'BODY: ' + chunk);
             var hexnum = new Number(chunk).toString(16);
-            return check_qmd_reponse(next,plugin,conn,hexnum);
+            var arr = check_qmd_reponse(next,plugin,conn,hexnum);
+            conn.loginfo(plugin, arr[1]);
+            if (arr[0] === undefined) {
+                results.add(plugin, {err: arr[1]});
+                return next();
+            }
+            if (arr[0] === OK) {
+                results.add(plugin, {pass: arr[1]});
+                return next(OK);
+            }
+            results.add(plugin, {fail: arr[1]});
+            return next(arr[0], arr[1]);
         });
     }).on('error', function(e) {
-        plugin.loginfo(conn, "Got error: " + e.message);
+        results.add(plugin, {err: e.message});
     });
 };
 
@@ -52,56 +65,42 @@ function check_qmd_reponse(next,plugin,conn,hexnum) {
 
     switch(hexnum) {
         case '11':
-            plugin.loginfo(conn, "error, permission failure");
-            return next();
+            return [ DENYSOFT, "permission failure" ];
         case '12':
-            plugin.loginfo(conn, "pass, qmail-command in dot-qmail");
-            return next(OK);
+            return [ OK, "qmail-command in dot-qmail"];
         case '13':
-            plugin.loginfo(conn, "pass, bouncesaying with program");
-            return next(OK);
+            return [ OK, "bouncesaying with program"];
         case '14':
             var from = conn.transaction.mail_from.address();
             if ( ! from || from === '<>') {
-                return next(DENY, "fail, mailing lists do not accept null senders");
+                return [ DENY, "mailing lists do not accept null senders" ];
             }
-            plugin.loginfo(conn, "pass, ezmlm list");
-            return next(OK);
+            return [ OK, "ezmlm list" ];
         case '21':
-            plugin.loginfo(conn, "Temporarily undeliverable: group/world writable");
-            return next();
+            return [ DENYSOFT, "Temporarily undeliverable: group/world writable" ];
         case '22':
-            plugin.loginfo(conn, "Temporarily undeliverable: sticky home directory");
-            return next();
+            return [ DENYSOFT, "Temporarily undeliverable: sticky home directory" ];
         case '2f':
-            plugin.loginfo(conn, "error communicating with qmail-deliverabled.");
-            return next();
+            return [ DENYSOFT, "error communicating with qmail-deliverabled." ];
         case 'f1':
-            plugin.loginfo(conn, "pass, normal delivery");
-            return next(OK);
+            return [ OK, "normal delivery" ];
         case 'f2':
-            plugin.loginfo(conn, "pass, vpopmail dir");
-            return next(OK);
+            return [ OK, "vpopmail dir" ];
         case 'f3':
-            plugin.loginfo(conn, "pass, vpopmail alias");
-            return next(OK);
+            return [ OK, "vpopmail alias" ];
         case 'f4':
-            plugin.loginfo(conn, "pass, vpopmail catchall");
-            return next(OK);
+            return [ OK, "vpopmail catchall" ];
         case 'f5':
-            plugin.loginfo(conn, "pass, vpopmail vuser");
-            return next(OK);
+            return [ OK, "vpopmail vuser" ];
         case 'f6':
-            plugin.loginfo(conn, "pass, vpopmail qmail-ext");
-            return next(OK);
+            return [ OK, "vpopmail qmail-ext" ];
         case 'fe':
-            plugin.loginfo(conn, "error, SHOULD NOT HAPPEN");
-            return next();
+            return [ DENYSOFT, "SHOULD NOT HAPPEN" ];
         case 'ff':
-            plugin.loginfo(conn, "fail, address not local");
-            return next();
+            return [ DENY, "address not local" ];
+        case '00':
+            return [ DENY, "not deliverable" ];
         default:
-            plugin.loginfo(conn, "error, unknown rv: " + hexnum);
-            return next();
+            return [ undefined, "unknown rv(" + hexnum + ")" ];
     }
-};
+}
