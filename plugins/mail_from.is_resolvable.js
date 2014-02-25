@@ -2,23 +2,26 @@
 var dns = require('dns');
 
 exports.hook_mail = function(next, connection, params) {
-    var mail_from    = params[0];
+    var plugin    = this;
+    var mail_from = params[0];
+    var results   = connection.transaction.results;
 
     // Check for MAIL FROM without an @ first - ignore those here
     if (!mail_from.host) {
+        results.add(plugin, {skip: 'null host'});
         return next();
     }
 
     var called_next  = 0;
-    var plugin       = this;
     var domain       = mail_from.host;
-    var config       = this.config.get('mail_from.is_resolvable.ini');
+    var config       = plugin.config.get('mail_from.is_resolvable.ini');
     var re_bogus_ip  = new RegExp(config.main.re_bogus_ip || '^(?:0\.0\.0\.0|255\.255\.255\.255|127\.)' );
 
     // Just in case DNS never comes back (UDP), we should DENYSOFT.
     var timeout_id = setTimeout(function () {
         connection.loginfo(plugin, 'timed out when looking up MX for ' + domain);
         called_next++;
+        results.add(plugin, {err: 'timeout(' + domain + ')'});
         return next(DENYSOFT, 'Temporary resolver error (timeout)');
     }, ((config.main.timeout) ? config.main.timeout : 30) * 1000);
 
@@ -28,10 +31,11 @@ exports.hook_mail = function(next, connection, params) {
             called_next++;
             next(code, reply);
         }
-    }
+    };
 
     dns.resolveMx(domain, function(err, addresses) {
         if (err) {
+            results.add(plugin, {err: err.message});
             connection.logdebug(plugin, domain + ': MX => ' + err.message);
             switch (err.code) {
                 case dns.NXDOMAIN:
@@ -41,9 +45,8 @@ exports.hook_mail = function(next, connection, params) {
                     // In this case we need to look up the implicit MX
                     break;
                 default:
-                    return cb(DENYSOFT, 'Temporary resolver error ('
-                                        + err.code + ')');
-                    break;
+                    return cb(DENYSOFT, 'Temporary resolver error (' +
+                                          err.code + ')');
             }
         }
         if (addresses && addresses.length) {
@@ -54,11 +57,13 @@ exports.hook_mail = function(next, connection, params) {
                 a_records = Object.keys(a_records);
                 if (a_records && a_records.length) {
                     connection.logdebug(plugin, domain + ': ' + a_records);
+                    results.add(plugin, {pass: 'has_a_records'});
                     return cb();
                 }
+                results.add(plugin, {fail: 'has_a_records'});
                 return cb(((config.main.reject_no_mx) ? DENY : DENYSOFT),
                             'No MX for your FROM address');
-            }
+            };
 
             addresses.forEach(function (addr) {
                 // Handle MX records that are IP addresses
@@ -74,12 +79,13 @@ exports.hook_mail = function(next, connection, params) {
                 dns.resolve(addr.exchange, function(err, addresses) {
                     pending_queries--;
                     if (err) {
-                        connection.logdebug(plugin, domain + ': MX ' + addr.priority + ' ' 
-                                        + addr.exchange + ' => ' + err.message);
+                        results.add(plugin, {err: err.message});
+                        connection.logdebug(plugin, domain + ': MX ' + addr.priority + ' ' +
+                                        addr.exchange + ' => ' + err.message);
                     }
                     else {
-                        connection.logdebug(plugin, domain + ': MX ' + addr.priority + ' '
-                                        + addr.exchange + ' => ' + addresses);
+                        connection.logdebug(plugin, domain + ': MX ' + addr.priority + ' ' +
+                                        addr.exchange + ' => ' + addresses);
                         for (var i=0; i < addresses.length; i++) {
                             // Ignore anything obviously bogus
                             if (re_bogus_ip.test(addresses[i])) {
@@ -103,6 +109,7 @@ exports.hook_mail = function(next, connection, params) {
             // Check for implicit MX 0 record
             dns.resolve(domain, function(err, addresses) {
                 if (err) {
+                    results.add(plugin, {err: domain + ':A:' + err.message});
                     connection.logdebug(plugin, domain + ': A => ' + err.message);
                     switch (err.code) {
                         case dns.NXDOMAIN:
@@ -111,9 +118,8 @@ exports.hook_mail = function(next, connection, params) {
                             // Ignore
                             break;
                         default:
-                            return cb(DENYSOFT, 'Temporary resolver error ('
-                                                      + err.code + ')');
-                            break;
+                            return cb(DENYSOFT, 'Temporary resolver error (' +
+                                                        err.code + ')');
                     }
                 }
                 if (addresses && addresses.length) {
@@ -129,12 +135,14 @@ exports.hook_mail = function(next, connection, params) {
                     }
                     a_records = Object.keys(a_records);
                     if (a_records && a_records.length) {
+                        results.add(plugin, {pass: 'has_a_records'});
                         return cb();
                     }
                 } 
+                results.add(plugin, {fail: 'has_a_records'});
                 return cb(((config.main.reject_no_mx) ? DENY : DENYSOFT), 
                             'No MX for your FROM address');
             });
         }
     });
-}
+};
