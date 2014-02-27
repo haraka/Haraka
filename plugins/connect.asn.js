@@ -53,6 +53,9 @@ exports.get_dns_results = function (zone, ip, cb) {
             else if (zone === 'asn.routeviews.org') {
                 return cb(zone, plugin.parse_routeviews(addrs[i]));
             }
+            else if (zone === 'origin.asn.spameatingmonkey.net') {
+                return cb(zone, plugin.parse_monkey(addrs[i]));
+            }
             else {
                 plugin.logerror(plugin, "unrecognized ASN provider: " + zone);
                 return cb(zone, '');
@@ -72,19 +75,18 @@ exports.hook_lookup_rdns = function (next, connection) {
         if (!r && pending === 0) return next();
 
         // store asn & net from any source
-        if (r[0]) connection.results.add(plugin, {asn: r[0]});
-        if (r[1]) connection.results.add(plugin, {net: r[1]});
+        if (r.asn) connection.results.add(plugin, {asn: r.asn});
+        if (r.net) connection.results.add(plugin, {net: r.net});
 
         // store provider specific results
         if (zone === 'origin.asn.cymru.com') {
-            connection.results.add(plugin, { emit: true,
-                cymru: {asn: r[0], net: r[1], country: r[2], authority: r[3]},
-            });
+            connection.results.add(plugin, { emit: true, cymru: r});
         }
         else if (zone === 'asn.routeviews.org') {
-            connection.results.add(plugin, { emit: true,
-                routeviews: {asn: r[0], net: r[1] },
-            });
+            connection.results.add(plugin, { emit: true, routeviews: r });
+        }
+        else if (zone === 'origin.asn.spameatingmonkey.net') {
+            connection.results.add(plugin, { emit: true, monkey: r });
         }
         if (pending === 0) return next();
     };
@@ -103,11 +105,12 @@ exports.hook_lookup_rdns = function (next, connection) {
 exports.parse_routeviews = function (str) {
     var plugin = this;
     var r = str.split(/ /);
+    //  "15169" "74.125.0.0" "16"
     if (r.length !== 3) {
         plugin.logerror(plugin, "result length not 3: " + r.length + ' string="' + str + '"');
         return '';
     }
-    return r;
+    return { asn: r[0], net: r[1], mask: r[2] };
 };
 
 exports.parse_cymru = function (str) {
@@ -119,7 +122,19 @@ exports.parse_cymru = function (str) {
         plugin.logerror(plugin, "cymru: bad result length " + r.length + ' string="' + str + '"');
         return '';
     }
-    return r;
+    return { asn: r[0], net: r[1], country: r[2], assignor: r[3], date: r[4] };
+};
+
+exports.parse_monkey = function (str) {
+    var plugin = this;
+    var r = str.split(/\s+\|\s+/);
+    // "74.125.44.0/23 | AS15169 | Google Inc. | 2000-03-30"
+    // "74.125.0.0/16 | AS15169 | Google Inc. | 2000-03-30 | US"
+    if (r.length < 3) {
+        plugin.logerror(plugin, "monkey: bad result length " + r.length + ' string="' + str + '"');
+        return '';
+    }
+    return { asn: r[1].substring(2), net: r[0], org: r[2], date: r[3], country: r[4] };
 };
 
 exports.hook_data_post = function (next, connection) {
@@ -141,7 +156,7 @@ exports.hook_data_post = function (next, connection) {
     if (config.main.provider_header) {
         for (var p in asn) {
             if (!asn[p].asn) {   // ignore non-object results
-                connection.loginfo(plugin, p + ", " + asn[p]);
+                // connection.logdebug(plugin, p + ", " + asn[p]);
                 continue;
             }
             var name = 'X-Haraka-ASN-' + p.toUpperCase();
