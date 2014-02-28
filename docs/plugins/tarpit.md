@@ -23,17 +23,17 @@ or
 
 Configuration
 --------------
-config/tarpit.timeout - How long Haraka lets the plugin do nothing before it times out.
+config/tarpit.timeout (Default: 0)
 
-If *seconds to delay* is longer than tarpit.timeout (default: 1s), you'll get errors like this in your log files:
+How long Haraka lets the plugin do nothing before it times out. When zero,
+there is no timeout. When non-zero and *seconds to delay* is longer than
+tarpit.timeout (default: 1s), you'll get errors like this in your log files:
 
     [core] Plugin tarpit timed out on hook rcpt - make sure it calls the callback
     [core] Plugin tarpit timed out on hook quit - make sure it calls the callback
 
-The solution is to set the tarpit plugin timeout to **seconds to delay** + 1.
-Example for use with a 5 second tarpit delay:
-
-    echo '6' > config/tarpit.timeout
+The solution is to set the contents of config/tarpit.timeout to zero or
+**seconds to delay** + 1.
 
 
 Logging
