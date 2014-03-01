@@ -26,6 +26,10 @@ function apply_config (cfg, connection) {
 
 exports.hook_lookup_rdns = function (next, connection) {
     var plugin = this;
+    if (net_utils.is_rfc1918(connection.remote_ip)) {
+        connection.results.add(plugin, {skip: "private IP"});
+        return next();
+    }
 
     connection.results.add(plugin, {
         fcrdns: [],               // PTR host names that resolve to this IP
