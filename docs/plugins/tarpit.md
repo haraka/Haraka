@@ -23,9 +23,24 @@ or
 
 Configuration
 --------------
+
+The configuration file for tarpit is config/tarpit.ini.
+
+* hooks\_to\_delay - a list of hooks to delay at. This setting can be used to
+  override the default list in the plugin. For example, if you notice that
+  malware is disconnecting after delaying rcpt\_ok, you can remove just that
+  hook from the list:
+
+hooks\_to\_delay=connect,helo,ehlo,mail,rcpt,data,data\_post,queue,unrecognized\_command,vrfy,noop,rset,quit
+
+
+Plugin Timeout
+--------------
+
 config/tarpit.timeout (Default: 0)
 
-How long Haraka lets the plugin do nothing before it times out. When zero,
+All Haraka plugins can configure a *name*.timeout file. The timeout specifies
+how long Haraka lets the plugin do nothing before it times out. When zero,
 there is no timeout. When non-zero and *seconds to delay* is longer than
 tarpit.timeout (default: 1s), you'll get errors like this in your log files:
 
