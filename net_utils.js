@@ -1,7 +1,7 @@
 "use strict";
 var logger = require('./logger');
 var config = require('./config');
-var isIPv4 = require('net').isIPv4;
+var net    = require('net');
 var punycode = require('punycode');
 
 // Regexp to match private IPv4 ranges
@@ -21,21 +21,21 @@ exports.checkPublicSuffix = function(name, expected) {
 };
 
 exports.isPublicSuffix = function (host) {
-    if ( !host ) return false;
-    if ( public_suffix_list[host] ) return true;
+    if (!host) return false;
+    if (public_suffix_list[host]) return true;
 
     var up_one_level = host.split('.').slice(1).join('.'); // co.uk -> uk
-    if ( !up_one_level ) return false;   // no dot?
+    if (!up_one_level) return false;   // no dot?
 
     var wildHost = '*.' + up_one_level;
-    if ( public_suffix_list[wildHost] ) {
-        if ( public_suffix_list['!'+host] ) return false; // on exception list
+    if (public_suffix_list[wildHost]) {
+        if (public_suffix_list['!'+host]) return false; // on exception list
         return true;           // matched a wildcard, ex: *.uk
-    };
+    }
 
     try { var puny = punycode.toUnicode(host); }
-    catch(e) {};
-    if ( puny && public_suffix_list[puny] ) return true;
+    catch(e) {}
+    if (puny && public_suffix_list[puny]) return true;
 
     return false;
 };
@@ -54,23 +54,23 @@ exports.getOrganizationalDomain = function (host) {
     // 4.3 Search the public suffix list for the name that matches the
     //     largest number of labels found in the subject DNS domain.
     var greatest = 0;
-    for ( var i = 1; i <= labels.length; i++ ) {
+    for (var i = 1; i <= labels.length; i++) {
         if (!labels[i-1]) return null;                   // dot w/o label
         var tld = labels.slice(0,i).reverse().join('.');
-        if ( this.isPublicSuffix(tld) ) {
+        if (this.isPublicSuffix(tld)) {
             greatest = +(i + 1);
         }
-        else if ( public_suffix_list['!'+tld] ) {
+        else if (public_suffix_list['!'+tld]) {
             greatest = i;
-        };
+        }
     }
 
     // 4.4 Construct a new DNS domain name using the name that matched
     //     from the public suffix list and prefixing to it the "x+1"th
     //     label from the subject domain.
-    if ( greatest === 0 ) return null;     // no valid TLD
-    if ( greatest > labels.length ) return null;  // not enough labels
-    if ( greatest === labels.length ) return host; // same
+    if (greatest === 0) return null;             // no valid TLD
+    if (greatest  >  labels.length) return null; // not enough labels
+    if (greatest === labels.length) return host; // same
 
     var orgName = labels.slice(0,greatest).reverse().join('.');
     return orgName;
@@ -128,7 +128,7 @@ exports.hex_to_dec = function (h) {
 }
 
 exports.ip_to_long = function (ip) {
-    if (!isIPv4(ip)) {
+    if (!net.isIPv4(ip)) {
         return false;
     }
     else {
@@ -139,7 +139,7 @@ exports.ip_to_long = function (ip) {
 
 exports.is_ip_in_str = function(ip, str) {
     // Only IPv4 for now
-    if (isIPv4(ip)) {
+    if (net.isIPv4(ip)) {
         var host_part = (this.split_hostname(str,1))[0].toString();
         var ip_split = ip.split('.');
         // See if the 3rd and 4th octets appear in the string
@@ -195,20 +195,29 @@ exports.is_ip_in_str = function(ip, str) {
 }
 
 exports.is_rfc1918 = function (ip) {
-    return (isIPv4(ip) && re_private_ipv4.test(ip));
+    return (net.isIPv4(ip) && re_private_ipv4.test(ip));
 }
 
-exports.same_ipv4_network = function ( ip, ipList ) {
+exports.same_ipv4_network = function (ip, ipList) {
     if (!ipList || !ipList.length) {
-        logger.logerror('No ip list passed to same_ipv4_network!');
-    };
+        logger.logerror('same_ipv4_network, no ip list!');
+        return false;
+    }
+    if (!net.isIPv4(ip)) {
+        logger.logerror('same_ipv4_network, IP is not IPv4!');
+        return false;
+    }
 
     var first3 = ip.split('.').slice(0,3).join('.');
 
-    for ( var i=0; i < ipList.length; i++) {
-        if ( first3 === ipList[i].split('.').slice(0,3).join('.') )
+    for (var i=0; i < ipList.length; i++) {
+        if (!net.isIPv4(ipList[i])) {
+            logger.logerror('same_ipv4_network, IP in list is not IPv4!');
+            continue;
+        }
+        if (first3 === ipList[i].split('.').slice(0,3).join('.'))
             return true;
-    };
+    }
     return false;
 };
 
@@ -240,7 +249,7 @@ function load_tld_files () {
     ' 2=' + Object.keys(two_level_tlds).length +
     ' 3=' + Object.keys(three_level_tlds).length
     );
-};
+}
 
 function loadPublicSuffixList() {
     config.get('public_suffix_list','list').forEach(function (entry) {
@@ -250,27 +259,27 @@ function loadPublicSuffixList() {
 
         // Each line which is not entirely whitespace or begins with a comment contains a rule.
         if (!suffix) return;                            // empty string
-        if ('/' === suffix.substring(0,1) ) return;     // comment
+        if ('/' === suffix.substring(0,1)) return;      // comment
 
         // A rule may begin with a "!" (exclamation mark). If it does, it is
         // labelled as a "exception rule" and then treated as if the exclamation
         // mark is not present.
-        if ( '!' === suffix.substring(0,1) ) {
+        if ('!' === suffix.substring(0,1)) {
             var eName = suffix.substring(1);   // remove ! prefix
             var up_one = suffix.split('.').slice(1).join('.'); // bbc.co.uk -> co.uk
-            if ( public_suffix_list[up_one] ) {
-                public_suffix_list[up_one].push( eName );
+            if (public_suffix_list[up_one]) {
+                public_suffix_list[up_one].push(eName);
             }
-            else if ( public_suffix_list['*.'+up_one] ) {
-                public_suffix_list['*.'+up_one].push( eName );
+            else if (public_suffix_list['*.'+up_one]) {
+                public_suffix_list['*.'+up_one].push(eName);
             }
             else {
-                throw Error("unable to find parent for exception: "+eName);
-            };
-        };
+                logger.logerror("unable to find parent for exception: "+eName);
+            }
+        }
 
         public_suffix_list[suffix] = [];
     });
     var entries = Object.keys(public_suffix_list).length;
     logger.loginfo('loaded '+ entries +' Public Suffixes');
-};
+}
