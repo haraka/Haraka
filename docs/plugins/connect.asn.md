@@ -27,7 +27,7 @@ Optionally add headers to messages with ASN info. See config/connect.asn.ini.
 An ASN is a very good approximation of the IP space under the control
 of a network operator. The theory behind ASN tracking is that good network
 operators police their networks, proactively limit abuse, and are less likely
-to be emitting abusive.
+to be emitting abuse.
 
 Not-so-good network operators are likely to emit a greater number of abusive
 connections, and should be handled with increased scrutiny.

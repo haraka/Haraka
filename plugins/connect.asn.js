@@ -104,12 +104,28 @@ exports.hook_lookup_rdns = function (next, connection) {
 
 exports.parse_routeviews = function (str) {
     var plugin = this;
+    plugin.logerror(plugin, str);
     var r = str.split(/ /);
-    //  "15169" "74.125.0.0" "16"
+
+    // this is a correct result
+    // 99.177.75.208.asn.routeviews.org. IN TXT "40431" "208.75.176.0" "21"
+
+    // TODO: check node 0.11 from whence the 0.10.26 change was backported
+    // and see if the dns resolver exposes the rest of the TXT result.
+
+    // this is what node 0.10.26 returns:
+    // 99.177.75.208.asn.routeviews.org. IN TXT "40431"
+    if (r.length === 1 && str.match(/^[\d]+$/)) {
+        return { asn: str };
+    }
+
+    // this is what node (< 0.10.26) returns
+    // 99.177.75.208.asn.routeviews.org. IN TXT "40431208.75.176.021"
     if (r.length !== 3) {
         plugin.logerror(plugin, "result length not 3: " + r.length + ' string="' + str + '"');
         return '';
     }
+
     return { asn: r[0], net: r[1], mask: r[2] };
 };
 
@@ -168,19 +184,4 @@ exports.hook_data_post = function (next, connection) {
         }
     }
     return next();
-};
-
-exports.hook_data_post = function (next, connection) {
-    var txn = connection.transaction;
-    if (!connection.notes.asn) return next();
-    for (var l in connection.notes.asn) {
-       var name = l[0].toUpperCase() + l.slice(1);
-       name = 'X-Haraka-ASN-' + name;
-       var values = [];
-       for (var k in connection.notes.asn[l]) {
-           values.push(k + '=' + connection.notes.asn[l][k]);
-       }
-       txn.add_header(name, values.join(' '));
-   }
-   return next();
 };
