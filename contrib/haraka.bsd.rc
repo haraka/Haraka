@@ -13,10 +13,16 @@ rcvar="haraka_enable"
 command="/usr/local/bin/haraka"
 pidfile="/var/run/${name}.pid"
 
+start_cmd="start"
 status_cmd="status"
 stop_cmd="stop"
 
 load_rc_config $name
+
+start()
+{
+    /usr/local/bin/node /usr/local/bin/haraka $haraka_flags
+}
 
 status()
 {
