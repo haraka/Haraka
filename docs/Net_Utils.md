@@ -72,11 +72,11 @@ Usage
     // 'example.com' === net_utils.get_organizational_domain('mail.example.com');
     // 
     // usage example:
-    var env_dom = net_utils.get_organizational_domain(connection.transaction.mail_from.host);
-    var msg_from = connection.transaction.header.get('From').extract_email();
-    var msg_dom = net_utils.get_organizational_domain(msg_from.replace(/^.*@/,''));
-    if (env_dom == msg_dom) {
-        // the envelope sender domain matches the From header in the message
+    var from_dom = net_utils.get_organizational_domain(connection.transaction.mail_from.host);
+    var tog_dom = net_utils.get_organizational_domain(connection.transaction.rcpt_to.host);
+    if (from_dom == to_dom) {
+        // the envelope sender domain matches the envelope receiver domain
+        // eg: root@mail.example.com would match sysadmin@example.com
     }
 
 
