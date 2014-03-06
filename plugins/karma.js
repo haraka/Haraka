@@ -53,7 +53,10 @@ exports.should_we_deny = function (next, connection, hook) {
 
     if (score < 0 && config.tarpit) {
         // the worse the connection, the slower it goes...
-        connection.notes.tarpit = score * -1;
+        var delay = score * -1;
+        var max = config.tarpit.max || 5;
+        if (delay > max) { delay = max; };
+        connection.notes.tarpit = delay;
     }
 
     if (score > negative_limit)          { return next(); }
@@ -71,6 +74,7 @@ exports.hook_deny = function (next, connection, params) {
 //  var pi_params   = params[4];
 //  var pi_hook     = params[5];
 
+    if (pi_name === 'karma') return next();
     var config = plugin.config.get('karma.ini');
 
     if (pi_deny === DENY || pi_deny === DENYDISCONNECT || pi_deny === DISCONNECT) {
@@ -79,9 +83,9 @@ exports.hook_deny = function (next, connection, params) {
     else {
         connection.results.incr(plugin, {connect: -1});
     }
-    connection.results.add(plugin, {fail: 'deny:' + pi_name});
 
-    return next();
+    connection.results.add(plugin, {fail: 'deny:' + pi_name});
+    return next(OK);
 };
 
 exports.hook_unrecognized_command = function(next, connection, cmd) {
@@ -100,7 +104,7 @@ exports.hook_lookup_rdns = function (next, connection) {
     plugin.init_redis_connection();
     plugin.results_init(connection);
 
-    if (config.tarpit) { connection.notes.tarpit = config.tarpit.delay || 1; }
+    if (config.tarpit) { connection.notes.tarpit = config.tarpit.delay || 0; }
 
     var expire = (config.redis.expire_days || 60) * 86400; // convert to days
     var rip    = connection.remote_ip;
@@ -223,14 +227,17 @@ exports.hook_rcpt = function (next, connection, params) {
     var plugin = this;
     var rcpt = params[0];
 
+    // odds of being ham: < 1%
+    if (rcpt.user === connection.transaction.mail_from.user) {
+        connection.results.add(plugin, {fail: 'env_user_match'});
+        connection.results.incr(plugin, {connect: -1});
+    }
+
     plugin.check_syntax_RcptTo(connection);
     var too_many = plugin.max_recipients(connection);
     if (too_many) {
         connection.results.add(plugin, {fail: 'too_many_rcpt'});
-        setTimeout(function () {
-            if (connection) return next(DENYSOFT, too_many);
-        }, (config.penalty.disconnect_delay || 5) * 1000);
-        return;
+        return next(DENYSOFT, too_many);
     }
 
     return plugin.should_we_deny(next, connection, 'rcpt');
@@ -238,6 +245,11 @@ exports.hook_rcpt = function (next, connection, params) {
 
 exports.hook_rcpt_ok = function (next, connection, rcpt) {
     var plugin = this;
+
+    if (rcpt.user === connection.transaction.mail_from.user) {
+        connection.results.add(plugin, {fail: 'env_user_match'});
+        connection.results.incr(plugin, {connect: -1});
+    }
 
     plugin.check_syntax_RcptTo(connection);
     var too_many = plugin.max_recipients(connection);
@@ -247,6 +259,7 @@ exports.hook_rcpt_ok = function (next, connection, rcpt) {
     }
 
     return next();
+    // return next(OK);
 };
 
 exports.hook_data = function (next, connection) {
@@ -325,14 +338,8 @@ exports.hook_disconnect = function (next, connection) {
         return next();
     }
 
-    if (history < -5) {
-        db.hset(key, 'penalty_start_ts', add_days(history * -1));
-        connection.results.add(plugin, {msg: 'penalty box bonus!', emit: true});
-    }
-    else {
-        db.hset(key, 'penalty_start_ts', Date());
-        connection.results.add(plugin, {msg: 'penalty box', emit: true });
-    }
+    db.hset(key, 'penalty_start_ts', Date());
+    connection.results.add(plugin, {msg: 'penalty box', emit: true });
     return next();
 };
 
@@ -359,9 +366,10 @@ exports.get_award_location = function (connection, award_key) {
         return;
     }
 
+    var pi_name = loc_bits[1];
+    var notekey = loc_bits[2];
+
     if (loc_bits[0] === 'results') {   // ex: results.connect.geoip.distance
-        var pi_name = loc_bits[1];
-        var notekey = loc_bits[2];
         if (phase_prefixes.indexOf(pi_name) !== -1) {
             pi_name = loc_bits[1] + '.' + loc_bits[2];
             notekey = loc_bits[3];
@@ -380,6 +388,21 @@ exports.get_award_location = function (connection, award_key) {
         }
 
         // connection.logdebug(plugin, "found results for " + pi_name + ', ' + notekey);
+        if (notekey) return obj[notekey];
+        return obj;
+    }
+
+    if (loc_bits[0] === 'transaction' && loc_bits[1] === 'results') { // ex: transaction.results.spf
+        pi_name = loc_bits[2];
+        notekey = loc_bits[3];
+        if (phase_prefixes.indexOf(pi_name) !== -1) {
+            pi_name = loc_bits[2] + '.' + loc_bits[3];
+            notekey = loc_bits[4];
+        }
+
+        if (!connection.transaction) return;
+        obj = connection.transaction.results.get(pi_name);
+        if (!obj) return;
         if (notekey) return obj[notekey];
         return obj;
     }

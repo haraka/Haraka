@@ -21,7 +21,8 @@ Connection data that karma considers:
 * envelope addresses are malformed
 * unrecognized SMTP commands are sent
 * too many recipients are attempted
-* too many concurrent connections are attempted
+* too many concurrent connections for class (unknown, good, bad)
+* env from user matches env to user name (rare in ham, frequent in spam)
 
 The data from these tests are helpful but the real power of karma is scoring
 the results of other plugins. See karma.ini for a rich set of examples.
