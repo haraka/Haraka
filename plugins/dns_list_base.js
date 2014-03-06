@@ -11,7 +11,7 @@ var redis_client;
 exports.lookup = function (lookup, zone, cb) {
     var self = this;
 
-    if (!lookup || !zone) return cb();
+    if (!lookup || !zone) return cb("missing data");
 
     if (this.enable_stats && !redis_client) {
         var redis = require('redis');
@@ -36,13 +36,13 @@ exports.lookup = function (lookup, zone, cb) {
         // Don't query private addresses
         if (is_rfc1918(lookup) && lookup.split('.')[0] !== '127') {
             this.logdebug('skipping private IP: ' + lookup);
-            return cb();
+            return cb("RFC 1918 private IP");
         }
         lookup = lookup.split('.').reverse().join('.');
     }
     // TODO: IPv6 not supported
     else if (net.isIPv6(lookup)) {
-        return cb();
+        return cb("IPv6 not supported");
     }
 
     if (this.enable_stats) {
@@ -74,7 +74,7 @@ exports.lookup = function (lookup, zone, cb) {
         if (a && (a[0] === '127.0.0.1' || (a[0].split('.'))[0] !== '127')) {
             self.disable_zone(zone, a);
             // Return a null A record instead
-            return cb(err, zone, null);
+            return cb(err, null);
         }
         // Disable list if it starts timing out
         if (err && err.code === 'ETIMEOUT') self.disable_zone(zone, err.code);
@@ -87,9 +87,8 @@ exports.multi = function (lookup, zones, cb) {
     if (typeof zones === 'string') zones = [ '' + zones ];
     var self = this;
     var listed = [];
-    var pending = 0;
+    var pending = zones.length;
     zones.forEach(function (zone) {
-        pending++;
         self.lookup(lookup, zone, function (err, a) {
             pending--;
             if (a) listed.push(zone);

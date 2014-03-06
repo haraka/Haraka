@@ -32,20 +32,18 @@ exports.register = function() {
 }
 
 exports.hook_connect = function(next, connection) {
-    var plugin = this;
-    if (!plugin.zones || !plugin.zones.length) {
-        connection.logerror(plugin, "no zones");
+    if (!this.zones || !this.zones.length) {
+        connection.logerror(this, "no zones");
         return next();
     }
-    plugin.first(connection.remote_ip, plugin.zones, function (err, zone, a) {
-        if (a) {
-            var msg = 'host [' + connection.remote_ip + '] is blacklisted by ' + zone;
-            if (reject) {
-                return next(DENY, msg);
-            }
-            connection.loginfo(plugin, msg);
-            return next();
-        }
+    var plugin = this;
+    this.first(connection.remote_ip, this.zones, function (err, zone, a) {
+        if (!a) return next();
+
+        var msg = 'host [' + connection.remote_ip + '] is blacklisted by ' + zone;
+        if (reject) return next(DENY, msg);
+
+        connection.loginfo(plugin, msg);
         return next();
     });
 }
