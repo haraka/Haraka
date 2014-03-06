@@ -19,9 +19,7 @@ exports.hook_rcpt = function(next, connection, params) {
 
         // normal matches
         if (host_list[i].toLowerCase() === domain) {
-            if (connection.transaction.results) {
-                connection.transaction.results(plugin, {pass: 'in_host_list'});
-            }
+            connection.transaction.results.add(this, {pass: 'in_host_list'});
             return next(OK);
         }
     }
@@ -33,16 +31,11 @@ exports.hook_rcpt = function(next, connection, params) {
 
         // regex matches
         if (domain.match(regex)) {
-            if (connection.transaction.results) {
-                connection.transaction.results(plugin, {pass: 'in_host_list'});
-            }
+            connection.transaction.results.add(this, {pass: 'in_host_list'});
             return next(OK);
         }
     }
 
-    if (connection.transaction.results) {
-        connection.transaction.results(plugin, {fail: 'in_host_list'});
-    }
-
-    next();
+    connection.transaction.results.add(this, {fail: 'in_host_list'});
+    return next();
 }
