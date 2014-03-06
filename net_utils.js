@@ -10,16 +10,6 @@ var re_private_ipv4 = /^(?:10|127|169\.254|172\.(?:1[6-9]|2[0-9]|3[01])|192\.168
 var public_suffix_list = {};
 load_public_suffix_list();
 
-exports.check_public_suffix = function(name, expected) {
-    var orgDom = this.get_organizational_domain(name);
-    if (orgDom === expected) {
-        console.log('ok '+name);
-    }
-    else {
-        console.log('oops    '+name+'     expected: '+expected+'      got: '+orgDom);
-    }
-};
-
 exports.is_public_suffix = function (host) {
     if (!host) return false;
     if (public_suffix_list[host]) return true;
