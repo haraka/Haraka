@@ -78,6 +78,9 @@ exports.lookup = function (lookup, zone, cb) {
         }
         // Disable list if it starts timing out
         if (err && err.code === 'ETIMEOUT') self.disable_zone(zone, err.code);
+        if (err && err.code === 'ENOTFOUND') {
+            return cb('', a);  // Not an error for a DNSBL
+        }
         return cb(err, a);
     });
 }
