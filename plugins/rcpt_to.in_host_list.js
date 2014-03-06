@@ -6,9 +6,9 @@ exports.hook_rcpt = function(next, connection, params) {
     if (!rcpt.host) {
         return next();
     }
-    
+
     connection.logdebug(this, "Checking if " + rcpt + " host is in host_lists");
-    
+
     var domain          = rcpt.host.toLowerCase();
     var host_list       = this.config.get('host_list', 'list');
     var host_list_regex = this.config.get('host_list_regex', 'list');
@@ -19,7 +19,9 @@ exports.hook_rcpt = function(next, connection, params) {
 
         // normal matches
         if (host_list[i].toLowerCase() === domain) {
-            connection.logdebug(this, "Allowing " + domain);
+            if (connection.transaction.results) {
+                connection.transaction.results(plugin, {pass: 'in_host_list'});
+            }
             return next(OK);
         }
     }
@@ -31,10 +33,16 @@ exports.hook_rcpt = function(next, connection, params) {
 
         // regex matches
         if (domain.match(regex)) {
-            connection.logdebug(this, "Allowing " + domain);
+            if (connection.transaction.results) {
+                connection.transaction.results(plugin, {pass: 'in_host_list'});
+            }
             return next(OK);
         }
     }
-    
+
+    if (connection.transaction.results) {
+        connection.transaction.results(plugin, {fail: 'in_host_list'});
+    }
+
     next();
 }
