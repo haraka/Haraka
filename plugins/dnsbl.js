@@ -38,6 +38,10 @@ exports.hook_connect = function(next, connection) {
     }
     var plugin = this;
     this.first(connection.remote_ip, this.zones, function (err, zone, a) {
+        if (err) {
+            connection.logerror(plugin, err);
+            return next();
+        }
         if (!a) return next();
 
         var msg = 'host [' + connection.remote_ip + '] is blacklisted by ' + zone;
