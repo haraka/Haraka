@@ -8,10 +8,10 @@ var punycode = require('punycode');
 var re_private_ipv4 = /^(?:10|127|169\.254|172\.(?:1[6-9]|2[0-9]|3[01])|192\.168)\..*/;
 
 var public_suffix_list = {};
-loadPublicSuffixList();
+load_public_suffix_list();
 
-exports.checkPublicSuffix = function(name, expected) {
-    var orgDom = this.getOrganizationalDomain(name);
+exports.check_public_suffix = function(name, expected) {
+    var orgDom = this.get_organizational_domain(name);
     if (orgDom === expected) {
         console.log('ok '+name);
     }
@@ -20,7 +20,7 @@ exports.checkPublicSuffix = function(name, expected) {
     }
 };
 
-exports.isPublicSuffix = function (host) {
+exports.is_public_suffix = function (host) {
     if (!host) return false;
     if (public_suffix_list[host]) return true;
 
@@ -40,7 +40,7 @@ exports.isPublicSuffix = function (host) {
     return false;
 };
 
-exports.getOrganizationalDomain = function (host) {
+exports.get_organizational_domain = function (host) {
     // the domain that was registered with a domain name registrar
     // See https://datatracker.ietf.org/doc/draft-kucherawy-dmarc-base/?include_text=1
     //   section 3.2
@@ -57,7 +57,7 @@ exports.getOrganizationalDomain = function (host) {
     for (var i = 1; i <= labels.length; i++) {
         if (!labels[i-1]) return null;                   // dot w/o label
         var tld = labels.slice(0,i).reverse().join('.');
-        if (this.isPublicSuffix(tld)) {
+        if (this.is_public_suffix(tld)) {
             greatest = +(i + 1);
         }
         else if (public_suffix_list['!'+tld]) {
@@ -251,8 +251,8 @@ function load_tld_files () {
     );
 }
 
-function loadPublicSuffixList() {
-    config.get('public_suffix_list','list').forEach(function (entry) {
+function load_public_suffix_list() {
+    config.get('public-suffix-list','list').forEach(function (entry) {
         // Parsing rules: http://publicsuffix.org/list/
         // Each line is only read up to the first whitespace
         var suffix = entry.split(/\s/).shift().toLowerCase();
