@@ -28,14 +28,23 @@ exports.register = function() {
 
     if (cfg.main.periodic_checks) {
         this.check_zones(cfg.main.periodic_checks);
-    } 
+    }
+
+    if (cfg.main.search && cfg.main.search === 'all') {
+        this.register_hook('connect',  'connect_multi');
+    }
+    else {
+        this.register_hook('connect',  'connect_first');
+    }
 }
 
-exports.hook_connect = function(next, connection) {
+exports.connect_first = function(next, connection) {
+
     if (!this.zones || !this.zones.length) {
         connection.logerror(this, "no zones");
         return next();
     }
+
     var plugin = this;
     this.first(connection.remote_ip, this.zones, function (err, zone, a) {
         if (err) {
@@ -51,3 +60,33 @@ exports.hook_connect = function(next, connection) {
         return next();
     });
 }
+
+exports.connect_multi = function(next, connection) {
+    var plugin = this;
+    var hits = [];
+
+    plugin.multi(connection.remote_ip, plugin.zones, function (err, zone, a, pending) {
+        if (err) {
+            if (connection.results) connection.results.add(plugin, {err: err});
+            if (pending > 0) return;
+            if (reject && hits.length) return next(DENY,
+                'host [' + connection.remote_ip + '] is blacklisted by ' + hits.join(', '));
+            return next();
+        }
+
+        if (a) {
+            hits.push(zone);
+            if (connection.results) connection.results.add(plugin, {fail: zone});
+        }
+        else {
+            if (connection.results) connection.results.add(plugin, {pass: zone});
+        }
+
+        if (pending > 0) return;
+        if (connection.results) connection.results.add(plugin, {emit: true});
+
+        if (reject && hits.length) return next(DENY,
+            'host [' + connection.remote_ip + '] is blacklisted by ' + hits.join(', '));
+        return next();
+    });
+};
