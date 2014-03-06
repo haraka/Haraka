@@ -227,7 +227,7 @@ exports.hook_rcpt = function (next, connection, params) {
     var plugin = this;
     var rcpt = params[0];
 
-    // odds of being ham: < 1%
+    // odds of from_user=rcpt_user in ham: < 1%, in spam > 40%
     if (rcpt.user === connection.transaction.mail_from.user) {
         connection.results.add(plugin, {fail: 'env_user_match'});
         connection.results.incr(plugin, {connect: -1});
