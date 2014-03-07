@@ -28,26 +28,33 @@ exports.register = function() {
 };
 
 exports.refresh_config = function () {
-    var cfg = this.config.get('dnsbl.ini');
+    var cfg = this.config.get('dnsbl.ini', {
+        booleans: ['reject', 'main.reject', 'enable_stats', 'main.enable_stats'],
+    });
 
     this.logdebug('reject: ' + reject);
 
-    if (cfg.main.reject && !reject) {
-        this.loginfo('reject enabled: ' + cfg.main.reject);
-        reject = true;
-    }
-    if (!cfg.main.reject && reject) {
-        this.loginfo('reject disabled: ' + cfg.main.reject);
-        reject = false;
+    if (cfg.main.reject !== undefined) {
+        this.logdebug('config.main.reject is: ' + cfg.main.reject);
+        if (cfg.main.reject && !reject) {
+            this.loginfo('reject enabled per config: ' + cfg.main.reject);
+            reject = true;
+        }
+        if (!cfg.main.reject && reject) {
+            this.loginfo('reject disabled per config: ' + cfg.main.reject);
+            reject = false;
+        }
     }
 
-    if (cfg.main.enable_stats && !this.enable_stats) {
-        this.loginfo('stats reporting enabled');
-        this.enable_stats = true;
-    }
-    if (!cfg.main.enable_stats && this.enable_stats) {
-        this.loginfo('stats reporting disabled');
-        this.enable_stats = false;
+    if (cfg.main.enable_stats !== undefined) {
+        if (cfg.main.enable_stats && !this.enable_stats) {
+            this.loginfo('stats reporting enabled');
+            this.enable_stats = true;
+        }
+        if (!cfg.main.enable_stats && this.enable_stats) {
+            this.loginfo('stats reporting disabled');
+            this.enable_stats = false;
+        }
     }
 
     if (cfg.main.stats_redis_host && cfg.main.stats_redis_host !== this.redis_host) {
