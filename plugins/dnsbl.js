@@ -1,23 +1,12 @@
 // dnsbl plugin
 
-var cfg;
 var reject=true;
 
 exports.register = function() {
-    cfg = this.config.get('dnsbl.ini');
+    var cfg = this.config.get('dnsbl.ini');
     this.inherits('dns_list_base');
 
-    if (cfg.main.enable_stats) {
-        this.logdebug('stats reporting enabled');
-        this.enable_stats = true;
-    }
-
-    if (cfg.main.stats_redis_host) {
-        this.redis_host = cfg.main.stats_redis_host;
-        this.logdebug('set stats redis host to: ' + this.redis_host);
-    }
-
-    if (cfg.main.reject !== 'undefined') reject = cfg.main.reject;
+    this.refresh_config();
 
     this.zones = [];
     // Compatibility with old-plugin
@@ -36,7 +25,36 @@ exports.register = function() {
     else {
         this.register_hook('connect',  'connect_first');
     }
-}
+};
+
+exports.refresh_config = function () {
+    var cfg = this.config.get('dnsbl.ini');
+
+    this.logdebug('reject: ' + reject);
+
+    if (cfg.main.reject && !reject) {
+        this.loginfo('reject enabled: ' + cfg.main.reject);
+        reject = true;
+    }
+    if (!cfg.main.reject && reject) {
+        this.loginfo('reject disabled: ' + cfg.main.reject);
+        reject = false;
+    }
+
+    if (cfg.main.enable_stats && !this.enable_stats) {
+        this.loginfo('stats reporting enabled');
+        this.enable_stats = true;
+    }
+    if (!cfg.main.enable_stats && this.enable_stats) {
+        this.loginfo('stats reporting disabled');
+        this.enable_stats = false;
+    }
+
+    if (cfg.main.stats_redis_host && cfg.main.stats_redis_host !== this.redis_host) {
+        this.redis_host = cfg.main.stats_redis_host;
+        this.loginfo('set stats redis host to: ' + this.redis_host);
+    }
+};
 
 exports.connect_first = function(next, connection) {
 
@@ -44,6 +62,8 @@ exports.connect_first = function(next, connection) {
         connection.logerror(this, "no zones");
         return next();
     }
+
+    this.refresh_config();
 
     var plugin = this;
     this.first(connection.remote_ip, this.zones, function (err, zone, a) {
@@ -59,11 +79,13 @@ exports.connect_first = function(next, connection) {
         connection.loginfo(plugin, msg);
         return next();
     });
-}
+};
 
 exports.connect_multi = function(next, connection) {
     var plugin = this;
     var hits = [];
+
+    plugin.refresh_config();
 
     plugin.multi(connection.remote_ip, plugin.zones, function (err, zone, a, pending) {
         if (err) {
