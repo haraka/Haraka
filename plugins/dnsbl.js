@@ -3,7 +3,9 @@
 var reject=true;
 
 exports.register = function() {
-    var cfg = this.config.get('dnsbl.ini');
+    var cfg = this.config.get('dnsbl.ini', {
+        booleans: ['reject', 'enable_stats'],
+    });
     this.inherits('dns_list_base');
 
     this.refresh_config();
@@ -29,13 +31,15 @@ exports.register = function() {
 
 exports.refresh_config = function () {
     var cfg = this.config.get('dnsbl.ini', {
-        booleans: ['reject', 'main.reject', 'enable_stats', 'main.enable_stats'],
+        booleans: ['reject', 'enable_stats'],
     });
 
-    this.logdebug('reject: ' + reject);
-
     if (cfg.main.reject !== undefined) {
-        this.logdebug('config.main.reject is: ' + cfg.main.reject);
+
+        if (cfg.main.reject !== true && cfg.main.reject !== false) {
+            this.logerror('reject not JS boolean: ' + cfg.main.reject);
+        }
+
         if (cfg.main.reject && !reject) {
             this.loginfo('reject enabled per config: ' + cfg.main.reject);
             reject = true;
@@ -90,10 +94,15 @@ exports.connect_first = function(next, connection) {
 
 exports.connect_multi = function(next, connection) {
     var plugin = this;
-    var hits = [];
+
+    if (!plugin.zones || !plugin.zones.length) {
+        connection.logerror(plugin, "no enabled zones");
+        return next();
+    }
 
     plugin.refresh_config();
 
+    var hits = [];
     plugin.multi(connection.remote_ip, plugin.zones, function (err, zone, a, pending) {
         if (err) {
             if (connection.results) connection.results.add(plugin, {err: err});
