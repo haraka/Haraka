@@ -72,7 +72,7 @@ exports.hook_deny = function (next, connection, params) {
     var pi_name     = params[2];
 //  var pi_function = params[3];
 //  var pi_params   = params[4];
-//  var pi_hook     = params[5];
+    var pi_hook     = params[5];
 
     if (pi_name === 'karma') return next();
     var config = plugin.config.get('karma.ini');
@@ -84,6 +84,10 @@ exports.hook_deny = function (next, connection, params) {
         connection.results.incr(plugin, {connect: -1});
     }
 
+    // the queue hook returns a DENY(SOFT), let it pass through
+    if (pi_hook === 'queue') { return next(); }
+
+    // intercept any other denials, and let the connection continue
     connection.results.add(plugin, {fail: 'deny:' + pi_name});
     return next(OK);
 };
@@ -460,8 +464,8 @@ exports.check_awards = function (connection) {
 
         // connection.loginfo(plugin, "check_awards, case matching for: " + wants);
 
-        // the matching logic is inverted here, weeding out non-matches
-        // Matches fall through to the apply_award below.
+        // the matching logic here is inverted, weeding out misses (continue)
+        // Matches fall through (break) to the apply_award below.
         var condition = bits[2];
         switch (condition) {
             case 'equals':
@@ -478,8 +482,7 @@ exports.check_awards = function (connection) {
                 break;
             case 'length':
                 var operator = bits[3];
-                var length   = note.length;
-                if (bits[4] && bits[4] !== undefined) wants = bits[4];
+                if (bits[4]) wants = bits[4];
                 switch (operator) {
                     case 'gt':
                         if (note.length <= parseFloat(wants)) continue;
@@ -495,8 +498,13 @@ exports.check_awards = function (connection) {
                         continue;   // not supported!
                 }
                 break;
-            case 'element':
-                continue;  // not supported, yet.
+            case 'in':              // if in pass whitelisted
+                var list = bits[3];
+                if (bits[4]) wants = bits[4];
+                if (!Array.isArray(list)) continue;
+                if (!wants) continue;
+                if (list.indexOf(wants) !== -1) break;  // found!
+                continue;
             default:
                 continue;
         }
