@@ -11,6 +11,8 @@ var config_path = process.env.HARAKA ? path.join(process.env.HARAKA, 'config') :
 config.get('thing');
 config.get('thing', type);
 config.get('thing', cb);
+config.get('thing', cb, options);
+config.get('thing', options);
 config.get('thing', type, cb);
 config.get('thing', type, options);
 config.get('thing', type, cb, options);
@@ -19,9 +21,13 @@ config.get = function(name, type, cb, options) {
     if (typeof type == 'function') {
         options = cb;
         cb = type;
-        type = 'value';
+        type = null;
     }
-    if (typeof cb != 'function') {
+    if (typeof type == 'object') {
+        options = type;
+        type = null;
+    }
+    if (typeof cb != 'function' && typeof type != 'object') {
         options = cb;
         cb = null;
     }
