@@ -195,8 +195,8 @@ Body.prototype.parse_end = function (line) {
                 banner_buf = new Buffer(banner_str);
             }
 
-            // Allocate a new buffer: (7 or 1 is <P>...</P> vs \n...\n - correct that if you change those!)
-            var new_buf = new Buffer(buf.length + banner_buf.length + (this.is_html ? 7 : 1));
+            // Allocate a new buffer: (7 or 2 is <P>...</P> vs \n...\n - correct that if you change those!)
+            var new_buf = new Buffer(buf.length + banner_buf.length + (this.is_html ? 7 : 2));
 
             // Now we find where to insert it and combine it with the original buf:
             if (this.is_html) {
