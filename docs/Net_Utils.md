@@ -6,7 +6,14 @@ This module provides network utility functions.
 Files
 -----
 
-This module depends on the following files to function:
+Portions of this module depend on the following files to function:
+
+* public-suffix-list
+
+  Contains a list of all Public Suffixes (the parts of a domain name exactly
+  one level below the registrar). Includes punycoded international domains, is
+  maintained by the Mozilla project, and accomplishes roughly the same task
+  as the \*-tlds files.
 
 * top-level-tlds
 
@@ -33,6 +40,7 @@ This module depends on the following files to function:
   for the URIBL hosters.txt that can be updated from:
   http://rss.uribl.com/hosters/hosters.txt
 
+
 Usage
 -----
 
@@ -46,6 +54,31 @@ Usage
     if (net_utils.top_level_tlds['com']) {
         // true 
     }
+    if (net_utils.is_public_suffix('com')) {
+        // true
+    }
+    if (net_utils.is_public_suffix('wikipedia.org')) {
+        // false
+    }
+
+    // reduces a hostname to an Organizational Domain
+    // The O.D. is the portion of a domain name immediately delegated by a registrar
+    //   and the portion that is no longer 'Public'
+    //
+    // com               <-- TLD (or Public Suffix)
+    // example.com       <-- Organizational Domain
+    // mail.example.com  <-- hostmame
+    //
+    // 'example.com' === net_utils.get_organizational_domain('mail.example.com');
+    // 
+    // usage example:
+    var from_dom = net_utils.get_organizational_domain(connection.transaction.mail_from.host);
+    var tog_dom = net_utils.get_organizational_domain(connection.transaction.rcpt_to.host);
+    if (from_dom == to_dom) {
+        // the envelope sender domain matches the envelope receiver domain
+        // eg: root@mail.example.com would match sysadmin@example.com
+    }
+
 
     // Split FQDN to host and domain
     var split = net_utils.split_hostname('host.sub1.sub2.domain.com');
