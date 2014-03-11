@@ -12,6 +12,7 @@ exports.register = function () {
     if (cfg.penalty.hooks) {
         deny_hooks = cfg.penalty.hooks.split(/[\s,;]+/);
     }
+
     plugin.register_hook('init_master',  'karma_init');
     plugin.register_hook('init_child',   'karma_init');
     plugin.register_hook('ehlo',         'hook_helo');
@@ -113,17 +114,13 @@ exports.hook_lookup_rdns = function (next, connection) {
     var expire = (config.redis.expire_days || 60) * 86400; // convert to days
     var rip    = connection.remote_ip;
     var dbkey  = 'karma|' + rip;
-    var cckey  = 'concurrent|' + rip;
-    var asnkey;
-    if (config.asn.enable && connection.results.get('connect.asn')) {
-        var asn = connection.results.get('connect.asn');
-        if (asn) asnkey = asn.asn;
-        if (isNaN(asnkey)) asnkey = undefined;
-        if (asnkey) plugin.check_asn_neighborhood(connection, asnkey, expire);
+    var asnkey = get_asn_key(connection, config);
+    if (asnkey) {
+        plugin.check_asn_neighborhood(connection, asnkey, expire);
     }
 
     db.multi()
-        .get(cckey)
+        .hget('concurrent', rip)
         .hgetall(dbkey)
         .exec(function redisResults (err, replies) {
             if (err) {
@@ -132,12 +129,12 @@ exports.hook_lookup_rdns = function (next, connection) {
             }
 
             var dbr = replies[1];   // 2nd pos. of multi reply is karma object
-            if (dbr === null) { init_ip(dbkey, cckey, expire); return next(); }
+            if (dbr === null) { init_ip(dbkey, rip, expire); return next(); }
 
             db.multi()
                 .hincrby(dbkey, 'connections', 1)  // increment total connections
                 .expire(dbkey, expire)             // extend expiration date
-                .incr(cckey)                       // increment concurrent connections
+                .hincrby('concurrent', rip, 1)     // increment concurrent connections
                 .exec(function (err, replies) {
                     if (err) connection.results.add(plugin, {err: err});
                 });
@@ -145,7 +142,7 @@ exports.hook_lookup_rdns = function (next, connection) {
             var history = (dbr.good || 0) - (dbr.bad || 0);
             connection.results.add(plugin, {history: history, total_connects: dbr.connections});
 
-            if ( plugin.check_concurrency(cckey, replies[0], history) ) {
+            if (plugin.check_concurrency(replies[0], history)) {
                 connection.results.add(plugin, {fail: 'max_concurrent'});
                 return next();
             }
@@ -293,13 +290,9 @@ exports.hook_disconnect = function (next, connection) {
     var config = plugin.config.get('karma.ini');
 
     plugin.init_redis_connection();
-    if (config.concurrency) db.incrby('concurrent|' + connection.remote_ip, -1);
+    if (config.concurrency) db.hincrby('concurrent', connection.remote_ip, -1);
 
-    var asnkey;
-    if (config.asn.enable && connection.results.get('connect.asn')) {
-        asnkey = connection.results.get('connect.asn').asn;
-        if (isNaN(asnkey)) asnkey = undefined;
-    }
+    var asnkey = get_asn_key(connection, config);
 
     var k = connection.results.get('karma');
     if (!k) {
@@ -542,7 +535,7 @@ function add_days(days) {
     return target;
 }
 
-exports.check_concurrency = function (con_key, val, history) {
+exports.check_concurrency = function (val, history) {
     var config = this.config.get('karma.ini');
     if (!config.concurrency) return;
 
@@ -550,9 +543,9 @@ exports.check_concurrency = function (con_key, val, history) {
     count++;                 // add this connection
 
     var reject=0;
-    if (history  <  0 && count > config.concurrency.bad) reject++;
-    if (history  >  0 && count > config.concurrency.good) reject++;
-    if (history === 0 && count > config.concurrency.neutral) reject++;
+    if (history  <  0 && count > (config.concurrency.bad || 2)) reject++;
+    if (history === 0 && count > (config.concurrency.neutral || 3)) reject++;
+    if (history  >  0 && count > (config.concurrency.good || 9)) reject++;
     if (reject) return true;
     return false;
 };
@@ -691,15 +684,30 @@ exports.init_redis_connection = function () {
         plugin.logerror(plugin, 'Redis error: ' + error.message);
         db = null;
     });
+
+    var reset = parseFloat(config.concurrency.reset) || 10;
+    plugin.loginfo('clearing concurrency every ' + reset + ' minutes');
+    plugin._interval = setInterval(function () {
+        plugin.loginfo('clearing concurrency');
+        db.del('concurrent');
+    }, (reset * 60) * 1000);
 };
 
-function init_ip (dbkey, cckey, expire) {
+function init_ip (dbkey, rip, expire) {
     db.multi()
         .hmset(dbkey, {'penalty_start_ts': 0, 'bad': 0, 'good': 0, 'connections': 1})
         .expire(dbkey, expire)
-        .set(cckey, 1)
-        .expire(cckey, 2 * 60)        // expire after 2 min
+        .hset('concurrent', rip, 1)
         .exec();
+}
+
+function get_asn_key(connection, config) {
+    if (!config.asn.enable) return;
+    var asn = connection.results.get('connect.asn');
+    if (!asn) return;
+    if (!asn.asn) return;
+    if (isNaN(asn.asn)) return;
+    return 'as' + asn.asn;
 }
 
 function init_asn (asnkey, expire) {
