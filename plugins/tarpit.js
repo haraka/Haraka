@@ -1,33 +1,36 @@
 // tarpit
 
+var hooks_to_delay = ['connect', 'helo', 'ehlo', 'mail', 'rcpt', 'rcpt_ok', 'data',
+   'data_post', 'queue', 'unrecognized_command', 'vrfy', 'noop', 'rset', 'quit'];
+
 exports.register = function () {
     // Register tarpit function last
-    var self = this;
-    ['connect', 'helo', 'ehlo', 'mail', 'rcpt', 'rcpt_ok', 'data',
-     'data_post', 'queue', 'unrecognized_command', 'vrfy', 'noop', 
-     'rset', 'quit'].forEach(function (hook) {
-        self.register_hook(hook, 'tarpit');
-    });
-}
+    var plugin = this;
+
+    var cfg = plugin.config.get('tarpit.ini');
+    if (cfg && cfg.main.hooks_to_delay) {
+        hooks_to_delay = cfg.main.hooks_to_delay.split(/[\s,;]+/);
+    }
+
+    for (var i=0; i < hooks_to_delay.length; i++) {
+        var hook = hooks_to_delay[i];
+        plugin.register_hook(hook, 'tarpit');
+    }
+};
 
 exports.tarpit = function (next, connection) {
-    var transaction = connection.transaction;
-    var conn_delay, trans_delay;
-    if (transaction && transaction.notes) {
-        trans_delay = transaction.notes.tarpit;
+    var plugin = this;
+
+    var delay = connection.notes.tarpit;
+
+    if (!delay && connection.transaction) {
+        delay = connection.transaction.notes.tarpit;
     }
-    if (connection && connection.notes) {
-        conn_delay = connection.notes.tarpit;
-    }
-    var delay = trans_delay || conn_delay;
-    if (delay) {
-        connection.loginfo(this, 'tarpitting response for ' + delay + 's');
-        setTimeout(function () {
-            // Only return if we still have a connection...
-            if (connection) return next();
-        }, (delay*1000));
-    }
-    else {
+
+    if (!delay) return next();
+
+    connection.loginfo(plugin, 'tarpitting response for ' + delay + 's');
+    setTimeout(function () {
         return next();
-    }
-}
+    },  delay * 1000);
+};

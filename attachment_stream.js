@@ -3,9 +3,10 @@
 var Stream = require('stream');
 var util   = require('util');
 
-function AttachmentStream () {
+function AttachmentStream (header) {
     var self = this;
     Stream.call(this);
+    this.header = header;
     this.encoding = null;
     this.paused = false;
     this.end_emitted = false;
@@ -98,6 +99,6 @@ AttachmentStream.prototype.destroy = function () {
     // console.log("YYYY: Stream destroyed");
 }
 
-exports.createStream = function () {
-    return new AttachmentStream ();
+exports.createStream = function (header) {
+    return new AttachmentStream (header);
 }
