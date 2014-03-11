@@ -308,3 +308,26 @@ exports.get_organizational_domain = {
         _org_domain(test, 'xn--fiqs8s', null);
     },
 };
+
+function _same_ipv4_network(test, addr, addrList, expected) {
+    test.expect(1);
+    test.equals(expected, net_utils.same_ipv4_network(addr, addrList));
+    test.done();
+}
+
+exports.same_ipv4_network = {
+    '199.176.179.3 <-> [199.176.179.4]': function (test) {
+        _same_ipv4_network(test, '199.176.179.3', ['199.176.179.4'], true);
+    },
+    '199.176.179.3 <-> [199.177.179.4': function (test) {
+        _same_ipv4_network(test, '199.176.179.3', ['199.177.179.4'], false);
+    },
+
+    '199.176.179 <-> [199.176.179.4] (missing octet)': function (test) {
+        _same_ipv4_network(test, '199.176.179', ['199.176.179.4'], false);
+    },
+    '199.176.179.3.5 <-> [199.176.179.4] (extra octet)': function (test) {
+        _same_ipv4_network(test, '199.176.179.3.5', ['199.176.179.4'], false);
+    },
+};
+
