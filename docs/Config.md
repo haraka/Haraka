@@ -79,6 +79,9 @@ The `options` object allows you to specify which keys are boolean:
 
     { booleans: ['reject','some_true_value'] }
 
+The key names should be in the format section.key, if the key name does not
+specify a section name then it will be presumed to be 'main'.
+
 This ensures these values are converted to true Javascript booleans when parsed,
 and supports the following options for boolean values:
 
