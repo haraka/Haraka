@@ -70,7 +70,10 @@ exports.hook_lookup_rdns = function (next, connection) {
 
     dns.reverse(connection.remote_ip, function (err, ptr_names) {
         connection.logdebug(plugin, 'rdns lookup: ' + connection.remote_ip);
-        if (err) return plugin.handle_ptr_error(connection, err, do_next);
+        if (err) {
+            connection.results.add(plugin, {fail: 'rDNS lookup('+err+')'});
+            return plugin.handle_ptr_error(connection, err, do_next);
+        }
 
         connection.results.add(plugin, {ptr_names: ptr_names});
 

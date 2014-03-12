@@ -2,7 +2,7 @@
 
 // NOTICE: the functionality of this plugin is duplicated by the
 //         FCrDNS plugin. Consider using it instead. This plugin
-//         my be deprecated in the future.
+//         may be deprecated in the future.
 //
 //         To achieve the same results using FCrDNS (in addition to
 //         the additional features), set reject_no_rdns=1 in

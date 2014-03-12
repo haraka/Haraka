@@ -1,34 +1,50 @@
 Forward Confirmed RDNS
 ================================
 
-http://en.wikipedia.org/wiki/FCrDNS
-
 DESCRIPTION
 --------------------------
 Determine if the SMTP sender has matching forward and reverse DNS.
 
-Sets the connection note fcrdns.
+See [FCrDNS at wikipedia](http://en.wikipedia.org/wiki/FCrDNS)
+
+
+USAGE
+--------------------------
+
+Other plugins can use FCrDNS results like this:
+
+    var fcrdns = connection.results.get('connect.fcrdns');
+    if (fcrdns) {
+        if (fcrdns.fcrdns) {
+            // they passed, reward them
+        }
+
+        var fails = fcrdns.fail;
+        if (fails && Array.isArray(fails) && fails.indexOf('is_generic_dns') !== -1) {
+            // their IP is in their hostname, unlikely to be MX, penalize
+        }
+    }
 
 
 CONFIGURATION
 --------------------------
 Edit config/connect.fcrdns.ini
 
-You can also override the connection blocking settings with the rdns_access
-plugin. Make sure it's enabled in config/plugins and listed *before* this
-fcrdns plugin.
+This plugin honors the whitelisting of IPs as set by the rdns\_access plugin.
+Make sure rdns\_access is enabled in config/plugins and listed *before* this
+plugin.
 
 
-WHY IT WORKS
+ANTI-SPAM EFFECTS
 --------------------------
-The reverse DNS of zombie PCs is out of the spam operators control. Their
-only way to pass this test is to limit themselves to hosts with matching
-forward and reverse DNS. This presents a significant hurdle.
+The reverse DNS of zombie PCs in bot nets is out of the bot operators control.
+This presents a significant hurdle for a large portion of the hosts that
+attempt spam delivery.
 
 
-HOW IT'S DONE
+HOW IT WORKS
 ------------------
-From WikiPedia: [Forward Confirmed Reverse DNS](http://en.wikipedia.org/wiki/FcRDNS)
+From Wikipedia: [Forward Confirmed Reverse DNS](http://en.wikipedia.org/wiki/FcRDNS)
 
 1. First a reverse DNS lookup (PTR query) is performed on the IP address,
    which returns a list of zero or more PTR records.
