@@ -28,7 +28,7 @@ cfreader.read_config = function(name, type, cb, options) {
 
     // load config file
     var result = cfreader.load_config(name, type, options);
-    
+
     if (cfreader.watch_files) {
         if (name in cfreader._watchers) return result;
         try {
@@ -39,7 +39,7 @@ cfreader.read_config = function(name, type, cb, options) {
         }
         catch (e) {
             if (e.code != 'ENOENT') { // ignore error when ENOENT
-                logger.logerror("Error watching config file: " + name + " : " + e);
+                // logger.logerror("Error watching config file: " + name + " : " + e);
             }
         }
     }
@@ -86,9 +86,9 @@ cfreader.load_config = function(name, type, options) {
             }
         }
     }
-    
+
     cfreader._config_cache[name] = result;
-    
+
     return result;
 };
 
@@ -129,13 +129,13 @@ cfreader.load_ini_config = function(name, options) {
         }
     }
 
-    try {    
+    try {
         if (utils.existsSync(name)) {
             var data = fs.readFileSync(name, "UTF-8");
             var lines = data.split(/\r\n|\r|\n/);
             var match;
             var pre = '';
-    
+
             lines.forEach(function(line) {
                 if (regex.comment.test(line)) {
                     return;
@@ -159,8 +159,8 @@ cfreader.load_ini_config = function(name, options) {
                         options.booleans.indexOf(current_sect_name + '.' + match[1] !== -1))
                     {
                         current_sect[match[1]] = regex.is_truth.test(match[2]);
-                        logger.loginfo('Returning boolean ' + current_sect[match[1]] +
-                                       ' for ' + current_sect_name + '.' + match[1] + '=' + match[2]);
+                        // logger.loginfo('Returning boolean ' + current_sect[match[1]] +
+                        //             ' for ' + current_sect_name + '.' + match[1] + '=' + match[2]);
                     }
                     else if (regex.is_integer.test(match[2])) {
                         current_sect[match[1]] = parseInt(match[2], 10);
@@ -173,7 +173,7 @@ cfreader.load_ini_config = function(name, options) {
                     }
                 }
                 else {
-                    logger.logerror("Invalid line in config file '" + name + "': " + line);
+                    // logger.logerror("Invalid line in config file '" + name + "': " + line);
                 };
             });
         }
@@ -188,7 +188,7 @@ cfreader.load_ini_config = function(name, options) {
             throw err;
         }
     }
- 
+
     return result;
 };
 
@@ -207,7 +207,7 @@ cfreader.load_flat_config = function(name, type) {
                 return result;
             }
             var lines  = data.split(/\r\n|\r|\n/);
-    
+
             lines.forEach( function(line) {
                 var line_data;
                 if (regex.comment.test(line)) {
@@ -238,7 +238,7 @@ cfreader.load_flat_config = function(name, type) {
         return [ require('os').hostname() ];
     }
 
-    // For value types with no result  
+    // For value types with no result
     if (!(type && (type === 'list' || type === 'data'))) {
         if (!(result && result.length)) {
             return null;
@@ -269,5 +269,5 @@ cfreader.load_binary_config = function(name, type) {
 };
 var fs     = require('fs');
 var utils  = require('./utils');
-var logger = require('./logger');
+// var logger = require('./logger');
 
