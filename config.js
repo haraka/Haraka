@@ -6,9 +6,8 @@ var path         = require('path');
 
 var config = exports;
 
-config.get = function(scrambled_args) {
-    var args = this.arrange_args(scrambled_args);
-    // args = [name, type, cb, options]
+config.get = function(name, type, cb, options) {
+    var args = this.arrange_args([name, type, cb, options]);
     if (!args[1]) args[1] = 'value';
 
     var config_path = process.env.HARAKA
@@ -52,6 +51,7 @@ config.arrange_args = function (args) {
     var cb, options;
 
     for (var a=0; a < args.length; a++) {
+        if (args[a] === undefined) continue;
         var what_is_it = args[a];
         if (typeof what_is_it == 'function') {
             cb = what_is_it;
@@ -61,7 +61,15 @@ config.arrange_args = function (args) {
             options = what_is_it;
             continue;
         }
-        // logger.logerror('unknown arg:' + what_is_it);
+        if (typeof what_is_it == 'string') {
+            if (what_is_it.match(/^(ini|value|list|data|json|binary)$/)) {
+                fs_type = what_is_it;
+                continue;
+            }
+            console.log('not recognized string:' + what_is_it);
+            continue;
+        }
+        console.log('unknown arg:' + what_is_it + ', typeof: ' + typeof what_is_it);
     }
 
     if (!fs_type && fs_name.match(/\.ini$/)) {
