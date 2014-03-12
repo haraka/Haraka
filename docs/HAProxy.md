@@ -13,10 +13,8 @@ DENYSOFT is used to prevent configuration errors from rejecting valid mail.
 
 To enable support for PROXY you must create a `haproxy_hosts` configuration
 file which should contain a list of IP addresses of the HAProxy hosts
-that should be allowed to send the PROXY command. Alternatively, you can
-use a `*` to indicate that any servers may be allowed to send the PROXY
-command. This is useful in an environment where the IP address(es) of
-the load balancers isn't known (such as AWS EC2).
+that should be allowed to send the PROXY command. A range of IP
+addresses can be specified by it's CIDR network address.
 
 When a host connects to Haraka that matches an IP address present in the
 `haproxy_hosts` file - a banner is not sent, instead Haraka waits for the
