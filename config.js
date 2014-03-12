@@ -41,11 +41,6 @@ config.get('thing', type, cb, options);
 */
 
 config.arrange_args = function (args) {
-    // logger.loginfo('args: ' + args);
-    // if (!args) args = loglevel;
-    // console.log('aa this: ' + this);
-    // console.log('aa args: ' + args);
-
     var fs_name = args.shift();
     var fs_type = null;
     var cb, options;

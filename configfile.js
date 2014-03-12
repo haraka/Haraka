@@ -39,7 +39,7 @@ cfreader.read_config = function(name, type, cb, options) {
         }
         catch (e) {
             if (e.code != 'ENOENT') { // ignore error when ENOENT
-                // logger.logerror("Error watching config file: " + name + " : " + e);
+                logger.logerror("Error watching config file: " + name + " : " + e);
             }
         }
     }
@@ -159,8 +159,8 @@ cfreader.load_ini_config = function(name, options) {
                         options.booleans.indexOf(current_sect_name + '.' + match[1] !== -1))
                     {
                         current_sect[match[1]] = regex.is_truth.test(match[2]);
-                        // logger.loginfo('Returning boolean ' + current_sect[match[1]] +
-                        //             ' for ' + current_sect_name + '.' + match[1] + '=' + match[2]);
+                        logger.loginfo('Returning boolean ' + current_sect[match[1]] +
+                                       ' for ' + current_sect_name + '.' + match[1] + '=' + match[2]);
                     }
                     else if (regex.is_integer.test(match[2])) {
                         current_sect[match[1]] = parseInt(match[2], 10);
@@ -173,7 +173,7 @@ cfreader.load_ini_config = function(name, options) {
                     }
                 }
                 else {
-                    // logger.logerror("Invalid line in config file '" + name + "': " + line);
+                    logger.logerror("Invalid line in config file '" + name + "': " + line);
                 };
             });
         }
@@ -269,5 +269,5 @@ cfreader.load_binary_config = function(name, type) {
 };
 var fs     = require('fs');
 var utils  = require('./utils');
-// var logger = require('./logger');
+var logger = require('./logger');
 
