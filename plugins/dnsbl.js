@@ -105,7 +105,7 @@ exports.connect_multi = function(next, connection) {
     var hits = [];
     plugin.multi(connection.remote_ip, plugin.zones, function (err, zone, a, pending) {
         if (err) {
-            if (connection.results) connection.results.add(plugin, {err: err});
+            connection.results.add(plugin, {err: err});
             if (pending > 0) return;
             if (reject && hits.length) return next(DENY,
                 'host [' + connection.remote_ip + '] is blacklisted by ' + hits.join(', '));
@@ -114,14 +114,14 @@ exports.connect_multi = function(next, connection) {
 
         if (a) {
             hits.push(zone);
-            if (connection.results) connection.results.add(plugin, {fail: zone});
+            connection.results.add(plugin, {fail: zone});
         }
         else {
-            if (connection.results) connection.results.add(plugin, {pass: zone});
+            connection.results.add(plugin, {pass: zone});
         }
 
         if (pending > 0) return;
-        if (connection.results) connection.results.add(plugin, {emit: true});
+        connection.results.add(plugin, {emit: true});
 
         if (reject && hits.length) return next(DENY,
             'host [' + connection.remote_ip + '] is blacklisted by ' + hits.join(', '));
