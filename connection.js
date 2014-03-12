@@ -56,9 +56,10 @@ function loadHAProxyHosts() {
     var hosts = config.get('haproxy_hosts', 'list', function () {
         loadHAProxyHosts();
     });
-    var new_host_list = {};
+    var new_host_list = [];
     for (var i=0; i<hosts.length; i++) {
-        new_host_list[hosts[i]] = 1;
+        var host = hosts[i].split(/\//)
+        new_host_list[i] = [ipaddr.IPv4.parse(host[0]), parseInt(host[1] || 32)];
     }
     haproxy_hosts = new_host_list;
 }
@@ -114,7 +115,9 @@ function setupClient(self) {
         self.process_data(data);
     });
 
-    if (haproxy_hosts['*'] || haproxy_hosts[self.remote_ip]) {
+    if (haproxy_hosts.some(function (element, index, array) {
+        return self.remote_ip.match(element[0], element[1]);
+    })) {
         self.proxy = true;
         // Wait for PROXY command
         self.proxy_timer = setTimeout(function () {
