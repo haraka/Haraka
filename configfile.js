@@ -156,7 +156,7 @@ cfreader.load_ini_config = function(name, options) {
                 pre = '';
                 if (match = regex.param.exec(line)) {
                     if (options && Array.isArray(options.booleans) &&
-                        options.booleans.indexOf(current_sect_name + '.' + match[1] !== -1))
+                        options.booleans.indexOf(current_sect_name + '.' + match[1]) !== -1)
                     {
                         current_sect[match[1]] = regex.is_truth.test(match[2]);
                         logger.loginfo('Returning boolean ' + current_sect[match[1]] +
