@@ -117,7 +117,7 @@ function setupClient(self) {
     });
 
     if (haproxy_hosts.some(function (element, index, array) {
-        return self.remote_ip.match(element[0], element[1]);
+        return ipaddr.IPv4.parse(self.remote_ip).match(element[0], element[1]);
     })) {
         self.proxy = true;
         // Wait for PROXY command
