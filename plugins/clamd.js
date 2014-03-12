@@ -109,18 +109,13 @@ exports.hook_data_post = function (next, connection) {
         !transaction.notes.clamd_found_attachment)
     {
         connection.logdebug(plugin, 'skipping: no attachments found');
-        if (connection.results) connection.results.add(plugin, {skip: 'no attachments'});
+        connection.results.add(plugin, {skip: 'no attachments'});
         return next();
     }
 
     // Limit message size
     if (transaction.data_bytes > config.main.max_size) {
-        if (connection.results) {
-            connection.results.add(plugin, {skip: 'too big', emit: true});
-        }
-        else {
-            connection.loginfo(plugin, 'skipping: message exceeds maximum size');
-        }
+        connection.results.add(plugin, {skip: 'exceeds max size', emit: true});
         return next();
     }
 
@@ -135,7 +130,7 @@ exports.hook_data_post = function (next, connection) {
         var socket;
         var connected = false;
         if (!hosts.length) {
-            if (connection.results) connection.results.add(plugin, {err: 'connecting', emit: true});
+            connection.results.add(plugin, {err: 'connecting', emit: true});
             return next(DENYSOFT, 'Error connecting to virus scanner');
         }
         var host = hosts.shift();
@@ -145,12 +140,7 @@ exports.hook_data_post = function (next, connection) {
         socket.on('timeout', function () {
             socket.destroy();
             if (connected) {
-                if (connection.results) {
-                    connection.results.add(plugin, {err: 'clamd timed out', emit: true});
-                }
-                else {
-                    connection.logerror(plugin, 'Virus scanner timed out');
-                }
+                connection.results.add(plugin, {err: 'clamd timed out', emit: true});
                 return next(DENYSOFT, 'Virus scanner timed out');
             }
             else {
@@ -166,12 +156,7 @@ exports.hook_data_post = function (next, connection) {
                 try_next_host();
             }
             else {
-                if (connection.results) {
-                    connection.results.add(plugin, {err: err, emit: true});
-                }
-                else {
-                    connection.logerror(plugin, err);
-                }
+                connection.results.add(plugin, {err: err, emit: true});
                 return next(DENYSOFT, 'Virus scanner error');
             }
         });
@@ -199,15 +184,11 @@ exports.hook_data_post = function (next, connection) {
             var m;
             if (/^stream: OK/.test(result)) {
                 // OK
-                if (connection.results) {
-                    connection.results.add(plugin, {pass: 'clean', emit: true});
-                }
+                connection.results.add(plugin, {pass: 'clean', emit: true});
                 return next();
             }
             else if ((m = /^stream: (\S+) FOUND/.exec(result))) {
-                if (connection.results) {
-                    connection.results.add(plugin, {fail: 'virus', emit: true});
-                }
+                connection.results.add(plugin, {fail: 'virus', emit: true});
                 // Virus found
                 if (m && m[1]) {
                     var virus = m[1];
@@ -231,23 +212,13 @@ exports.hook_data_post = function (next, connection) {
             }
             else if (/size limit exceeded/.test(result)) {
                 var errmsg = 'INSTREAM size limit exceeded. Check StreamMaxLength in clamd.conf';
-                if (connection.results) {
-                    connection.results.add(plugin, {err: errmsg, emit: true});
-                }
-                else {
-                    connection.logerror(plugin, errmsg);
-                }
+                connection.results.add(plugin, {err: errmsg, emit: true});
                 // Continue as StreamMaxLength default is 25Mb
                 return next();
             }
             else {
                 // Unknown result
-                if (connection.results) {
-                    connection.results.add(plugin, {err: 'unknown result: ' + result, emit: true});
-                }
-                else {
-                    connection.logerror(plugin, 'unknown result: ' + result);
-                }
+                connection.results.add(plugin, {err: 'unknown result: ' + result, emit: true});
                 return next(DENYSOFT, 'Error running virus scanner');
             }
             return next();
