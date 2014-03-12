@@ -3,12 +3,9 @@
 var reject=true;
 
 exports.register = function() {
-    var cfg = this.config.get('dnsbl.ini', {
-        booleans: ['reject', 'enable_stats'],
-    });
     this.inherits('dns_list_base');
 
-    this.refresh_config();
+    var cfg = this.refresh_config();
 
     this.zones = [];
     // Compatibility with old-plugin
@@ -31,13 +28,13 @@ exports.register = function() {
 
 exports.refresh_config = function () {
     var cfg = this.config.get('dnsbl.ini', {
-        booleans: ['reject', 'enable_stats'],
+        booleans: ['main.reject', 'main.enable_stats'],
     });
 
     if (cfg.main.reject !== undefined) {
 
         if (cfg.main.reject !== true && cfg.main.reject !== false) {
-            this.logerror('reject not JS boolean: ' + cfg.main.reject);
+            this.logerror('main.reject not JS boolean: ' + cfg.main.reject);
         }
 
         if (cfg.main.reject && !reject) {
@@ -65,6 +62,8 @@ exports.refresh_config = function () {
         this.redis_host = cfg.main.stats_redis_host;
         this.loginfo('set stats redis host to: ' + this.redis_host);
     }
+
+    return cfg;
 };
 
 exports.connect_first = function(next, connection) {
