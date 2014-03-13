@@ -5,6 +5,7 @@ var querystring = require('querystring');
 
 var options = {
     method: 'get',
+    reject: true,
 };
 
 exports.hook_rcpt = function(next, connection, params) {
@@ -13,6 +14,9 @@ exports.hook_rcpt = function(next, connection, params) {
 
     options.host = config.main.host || '127.0.0.1';
     options.port = config.main.port || 8998;
+    if (config.main.reject !== undefined) {
+        options.reject = config.main.reject;
+    }
     this.logdebug(connection, "host: " + options.host );
     this.logdebug(connection, "port: " + options.port );
 
