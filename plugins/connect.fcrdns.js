@@ -8,26 +8,10 @@ var reject_no_fcrdns = 0;
 var reject_invalid_tld = 0;
 var reject_generic_rdns = 0;
 
-function apply_config (cfg, connection) {
-    if (!cfg) return;
-    if (!cfg.main) return;
-    if (cfg.main.reject_no_rdns !== undefined) reject_no_rdns = cfg.main.reject_no_rdns;
-    if (cfg.main.reject_no_fcrdns !== undefined) reject_no_fcrdns = cfg.main.reject_no_fcrdns;
-    if (cfg.main.reject_invalid_tld !== undefined) reject_invalid_tld = cfg.main.reject_invalid_tld;
-    if (cfg.main.reject_generic_rdns !== undefined) reject_generic_rdns = cfg.main.reject_generic_rdns;
-
-    // allow rdns_acccess whitelist to override
-    if (connection.notes.rdns_access && connection.notes.rdns_access === 'white') {
-        reject_no_rdns = 0;
-        reject_invalid_tld = 0;
-        reject_generic_rdns = 0;
-    }
-}
-
 exports.hook_lookup_rdns = function (next, connection) {
     var plugin = this;
     if (net_utils.is_rfc1918(connection.remote_ip)) {
-        connection.results.add(plugin, {skip: "private IP"});
+        connection.results.add(plugin, {skip: "private_ip"});
         return next();
     }
 
@@ -47,7 +31,7 @@ exports.hook_lookup_rdns = function (next, connection) {
     }; */
 
     var cfg = this.config.get('connect.fcrdns.ini');
-    apply_config(cfg, connection);
+    _refresh_config(cfg, connection);
 
     var called_next = 0;
     var timer;
@@ -86,7 +70,7 @@ exports.hook_lookup_rdns = function (next, connection) {
             results[ptr_domain] = [];
 
             // Make sure TLD is valid
-            if (!net_utils.getOrganizationalDomain(ptr_domain)) {
+            if (!net_utils.get_organizational_domain(ptr_domain)) {
                 connection.results.add(plugin, {fail: 'valid_tld(' + ptr_domain +')'});
                 if (reject_invalid_tld && !net_utils.is_rfc1918(connection.remote_ip)) {
                     return do_next(DENY, 'client [' + connection.remote_ip +
@@ -182,7 +166,7 @@ exports.check_fcrdns = function(connection, results, do_next) {
 
     for (var i=0; i<found_doms.length; i++) {
         var fdom = found_doms[i];       // mail.example.com
-        var org_domain = net_utils.getOrganizationalDomain(fdom); // example.com
+        var org_domain = net_utils.get_organizational_domain(fdom); // example.com
 
         // Multiple domains?
         if (last_domain && last_domain !== org_domain) {
@@ -254,7 +238,7 @@ exports.is_generic_rdns = function (connection, domain) {
     connection.results.add(plugin, {fail: 'is_generic_rdns'});
     if (!reject_generic_rdns) return false;
 
-    var orgDom = net_utils.getOrganizationalDomain(domain);
+    var orgDom = net_utils.get_organizational_domain(domain);
     var host_part = domain.slice(0,orgDom.split('.').length);
     if (/(?:static|business)/.test(host_part)) {
         // Allow some obvious generic but static ranges
@@ -283,4 +267,20 @@ exports.log_summary = function (connection) {
         'generic_rdns=' + ((note.ptr_name_has_ips) ? 'true' : 'false'),
         ].join(' '));
 };
+
+function _refresh_config (cfg, connection) {
+    if (!cfg) return;
+    if (!cfg.main) return;
+    if (cfg.main.reject_no_rdns !== undefined) reject_no_rdns = cfg.main.reject_no_rdns;
+    if (cfg.main.reject_no_fcrdns !== undefined) reject_no_fcrdns = cfg.main.reject_no_fcrdns;
+    if (cfg.main.reject_invalid_tld !== undefined) reject_invalid_tld = cfg.main.reject_invalid_tld;
+    if (cfg.main.reject_generic_rdns !== undefined) reject_generic_rdns = cfg.main.reject_generic_rdns;
+
+    // allow rdns_acccess whitelist to override
+    if (connection.notes.rdns_access && connection.notes.rdns_access === 'white') {
+        reject_no_rdns = 0;
+        reject_invalid_tld = 0;
+        reject_generic_rdns = 0;
+    }
+}
 
