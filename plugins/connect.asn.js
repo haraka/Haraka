@@ -19,13 +19,13 @@ exports.register = function () {
 
     // add working providers to the provider list
     var result_cb = function (zone, res) {
-        if (res) {
-            plugin.loginfo(plugin, zone + " succeeded");
-            providers.push(zone);
-        }
-        else {
+        if (!res) {
             plugin.logerror(plugin, zone + " failed");
+            return;
         }
+
+        plugin.loginfo(plugin, zone + " succeeded");
+        if (providers.indexOf(zone) === -1) providers.push(zone);
     };
 
     // test each provider
@@ -42,26 +42,28 @@ exports.get_dns_results = function (zone, ip, cb) {
     dns.resolveTxt(query, function (err, addrs) {
         if (err) {
             plugin.logerror(plugin, "error: " + err + ' running: '+query);
-            return cb(zone, false);
+            return cb(zone, '');
         }
 
-        for (var i=0; i < addrs.length; i++) {
-            plugin.logdebug(plugin, zone + " answer: " + addrs[i]);
-            if (zone === 'origin.asn.cymru.com') {
-                return cb(zone, plugin.parse_cymru(addrs[i]));
-            }
-            else if (zone === 'asn.routeviews.org') {
-                return cb(zone, plugin.parse_routeviews(addrs[i]));
-            }
-            else if (zone === 'origin.asn.spameatingmonkey.net') {
-                return cb(zone, plugin.parse_monkey(addrs[i]));
-            }
-            else {
-                plugin.logerror(plugin, "unrecognized ASN provider: " + zone);
-                return cb(zone, '');
-            }
+        plugin.logdebug(plugin, zone + " answers: " + addrs);
+        var result = '';
+
+        if (zone === 'origin.asn.cymru.com') {
+            result = plugin.parse_cymru(addrs[0]);
         }
+        else if (zone === 'asn.routeviews.org') {
+            result = plugin.parse_routeviews(addrs);
+        }
+        else if (zone === 'origin.asn.spameatingmonkey.net') {
+            result = plugin.parse_monkey(addrs[0]);
+        }
+        else {
+            plugin.logerror(plugin, "unrecognized ASN provider: " + zone);
+        }
+
+        return cb(zone, result);
     });
+    return true;
 };
 
 exports.hook_lookup_rdns = function (next, connection) {
@@ -69,7 +71,7 @@ exports.hook_lookup_rdns = function (next, connection) {
     var ip = connection.remote_ip;
     if (net_utils.is_rfc1918(ip)) return next();
 
-    var pending = 0;
+    var pending = providers.length;
     var result_cb = function (zone, r) {
         pending--;
         if (!r && pending === 0) return next();
@@ -94,44 +96,38 @@ exports.hook_lookup_rdns = function (next, connection) {
     for (var i=0; i < providers.length; i++) {
         var zone = providers[i];
         connection.logdebug(plugin, "zone: " + zone);
-
-        pending++;
         plugin.get_dns_results(zone, ip, result_cb);
     }
 
     if (pending === 0) return next();
 };
 
-exports.parse_routeviews = function (str) {
+exports.parse_routeviews = function (thing) {
     var plugin = this;
-    plugin.logerror(plugin, str);
-    var r = str.split(/ /);
+    var bits;
 
-    // this is a correct result
+    // this is a correct result (node >= 0.10.26)
     // 99.177.75.208.asn.routeviews.org. IN TXT "40431" "208.75.176.0" "21"
-
-    // TODO: check node 0.11 from whence the 0.10.26 change was backported
-    // and see if the dns resolver exposes the rest of the TXT result.
-
-    // this is what node 0.10.26 returns:
-    // 99.177.75.208.asn.routeviews.org. IN TXT "40431"
-    if (r.length === 1 && str.match(/^[\d]+$/)) {
-        return { asn: str };
+    if (Array.isArray(thing)) {
+        bits = thing;
+    }
+    else {
+        // this is what node (< 0.10.26) returns
+        // 99.177.75.208.asn.routeviews.org. IN TXT "40431208.75.176.021"
+        bits = thing.split(/ /);
     }
 
-    // this is what node (< 0.10.26) returns
-    // 99.177.75.208.asn.routeviews.org. IN TXT "40431208.75.176.021"
-    if (r.length !== 3) {
+    if (bits.length !== 3) {
         plugin.logerror(plugin, "result length not 3: " + r.length + ' string="' + str + '"');
         return '';
     }
 
-    return { asn: r[0], net: r[1], mask: r[2] };
+    return { asn: bits[0], net: bits[1] + '/' + bits[2] };
 };
 
 exports.parse_cymru = function (str) {
     var plugin = this;
-    var r = str.split(/\s+\|\s+/);
+    var r = str.split(/\s+\|\s*/);
     //  99.177.75.208.origin.asn.cymru.com. 14350 IN TXT "40431 | 208.75.176.0/21 | US | arin | 2007-03-02"
     // handle this: cymru: result 4:              string="10290 | 12.129.48.0/24 | US | arin |"
     if (r.length < 4) {
