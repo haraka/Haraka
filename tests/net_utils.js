@@ -331,3 +331,35 @@ exports.same_ipv4_network = {
     },
 };
 
+function _is_public_suffix(test, label, expected) {
+    test.expect(1);
+    test.equals(expected, net_utils.is_public_suffix(label));
+    test.done();
+};
+
+exports.is_public_suffix = {
+    'com': function (test) {
+        _is_public_suffix(test, 'com', true);
+    },
+    'COM (uc)': function (test) {
+        _is_public_suffix(test, 'COM', true);
+    },
+    'net': function (test) {
+        _is_public_suffix(test, 'net', true);
+    },
+    'co.uk': function (test) {
+        _is_public_suffix(test, 'co.uk', true);
+    },
+    'org': function (test) {
+        _is_public_suffix(test, 'org', true);
+    },
+    'edu': function (test) {
+        _is_public_suffix(test, 'edu', true);
+    },
+    'gov': function (test) {
+        _is_public_suffix(test, 'gov', true);
+    },
+    'org': function (test) {
+        _is_public_suffix(test, 'org', true);
+    },
+}
