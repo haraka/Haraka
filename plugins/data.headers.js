@@ -254,8 +254,8 @@ exports.from_match = function (next, connection) {
         return next();
     }
 
-    var env_dom = net_utils.getOrganizationalDomain(connection.transaction.mail_from.host);
-    var msg_dom = net_utils.getOrganizationalDomain(msg_from.replace(/^.*@/,''));
+    var env_dom = net_utils.get_organizational_domain(connection.transaction.mail_from.host);
+    var msg_dom = net_utils.get_organizational_domain(msg_from.replace(/^.*@/,''));
     if (env_dom.toLowerCase() == msg_dom.toLowerCase()) {
         connection.transaction.results.add(plugin, {pass: 'from_match(domain)'});
         return next();
