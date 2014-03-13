@@ -6,6 +6,21 @@ This plugin performs a number of checks on the HELO string.
 HELO strings are very often forged or dubious in spam and so this can be a
 highly effective and false-positive free anti-spam measure.
 
+
+Usage
+-------------
+
+helo.checks results can be accessed by subsequent plugins:
+
+    var h = connection.results.get('helo.checks');
+    if (h.pass && h.pass.length > 5) {
+        // nice job, you passed 6+ tests
+    }
+    if (h.fail && h.fail.length > 3) {
+        // yikes, you failed 4+ tests!
+    }
+
+
 Configuration
 -------------
 
@@ -46,6 +61,10 @@ Configuration
 
       Bypasses check\_no\_dot, check\_raw\_ip, check\_dynamic and require\_valid\_tld 
       for clients within RFC1918, Loopback or APIPA IP address ranges.
+
+    * reject=true
+
+      Disable rejections when tests fail.
 
     * [bigco]
     
