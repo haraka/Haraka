@@ -9,7 +9,7 @@ exports.register = function () {
     this.register_hook('data_post', 'invalid_return_path');
     this.register_hook('data_post', 'user_agent');
     this.register_hook('data_post', 'direct_to_mx');
-    this.register_hook('data_post', 'from_matches');
+    this.register_hook('data_post', 'from_match');
 };
 
 exports.hook_data = function(next, connection) {
@@ -222,8 +222,10 @@ exports.direct_to_mx = function (next, connection) {
     return next();
 };
 
-exports.from_matches = function (next, connection) {
+exports.from_match = function (next, connection) {
     var plugin = this;
+    // see if the header From matches the envelope FROM. there are many legit
+    // reasons to not match, but a match is much more hammy than spammy
     if (!connection) return next();
     if (!connection.transaction) return next();
 
