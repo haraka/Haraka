@@ -341,6 +341,9 @@ exports.is_public_suffix = {
     'com': function (test) {
         _is_public_suffix(test, 'com', true);
     },
+    'COM (uc)': function (test) {
+        _is_public_suffix(test, 'COM', true);
+    },
     'net': function (test) {
         _is_public_suffix(test, 'net', true);
     },

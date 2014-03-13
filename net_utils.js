@@ -12,6 +12,7 @@ load_public_suffix_list();
 
 exports.is_public_suffix = function (host) {
     if (!host) return false;
+    host = host.toLowerCase();
     if (public_suffix_list[host]) return true;
 
     var up_one_level = host.split('.').slice(1).join('.'); // co.uk -> uk
