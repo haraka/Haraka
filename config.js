@@ -2,7 +2,7 @@
 
 var configloader = require('./configfile');
 var path         = require('path');
-// var logger       = require('./logger');
+var logger       = require('./logger');
 
 var config = exports;
 
@@ -13,10 +13,8 @@ config.get = function(name, type, cb, options) {
     var config_path = process.env.HARAKA
                     ? path.join(process.env.HARAKA, 'config')
                     : path.join(__dirname, './config');
-    // console.log('config_path: ' + config_path);
 
     var full_path = path.resolve(config_path, args[0]);
-    // console.log('full_path: ' + full_path);
 
     var results = configloader.read_config(full_path, args[1], args[2], args[3]);
 

@@ -270,4 +270,3 @@ cfreader.load_binary_config = function(name, type) {
 var fs     = require('fs');
 var utils  = require('./utils');
 var logger = require('./logger');
-
