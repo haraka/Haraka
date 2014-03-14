@@ -8,11 +8,22 @@ exports.register = function() {
     var cfg = this.refresh_config();
 
     this.zones = [];
+    var unique_zones = {};
+
     // Compatibility with old-plugin
-    this.zones = this.zones.concat(this.config.get('dnsbl.zones', 'list'));
-    if (cfg.main.zones) {
-        this.zones = this.zones.concat(cfg.main.zones.replace(/\s+/g,'').split(/[;,]/));
+    var legacy_zones = this.config.get('dnsbl.zones', 'list');
+    for (var i=0; i < legacy_zones.length; i++) {
+        unique_zones[legacy_zones[i]] = true;
     }
+
+    if (cfg.main.zones) {
+        var new_zones = cfg.main.zones.split(/[\s,;]+/);
+        for (var h=0; h < new_zones.length; h++) {
+            unique_zones[new_zones[h]] = true;
+        }
+    }
+
+    for (var key in unique_zones) { this.zones.push(key); }
 
     if (cfg.main.periodic_checks) {
         this.check_zones(cfg.main.periodic_checks);
