@@ -43,11 +43,6 @@ exports.refresh_config = function () {
     });
 
     if (cfg.main.reject !== undefined) {
-
-        if (cfg.main.reject !== true && cfg.main.reject !== false) {
-            this.logerror('main.reject not JS boolean: ' + cfg.main.reject);
-        }
-
         if (cfg.main.reject && !reject) {
             this.loginfo('reject enabled per config: ' + cfg.main.reject);
             reject = true;
