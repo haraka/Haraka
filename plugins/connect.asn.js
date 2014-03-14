@@ -118,7 +118,7 @@ exports.parse_routeviews = function (thing) {
     }
 
     if (bits.length !== 3) {
-        plugin.logerror(plugin, "result length not 3: " + r.length + ' string="' + str + '"');
+        plugin.logerror(plugin, "result length not 3: " + bits.length + ' string="' + thing + '"');
         return '';
     }
 

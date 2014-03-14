@@ -17,6 +17,7 @@ function _set_up(callback) {
     // stub out functions
     this.connection.loginfo = stub();
     this.plugin.logdebug = stub();
+    this.plugin.logerror = stub();
 
     // going to need these in multiple tests
 //    this.plugin.register();
@@ -53,19 +54,27 @@ exports.parse_routeviews = {
     setUp : _set_up,
     tearDown : _tear_down,
 
-    '40431 (ideal)': function (test) {
+    '40431 string, asn-only': function (test) {
         test.expect(1);
         test.deepEqual(
-                {asn: '40431', net: '208.75.176.0', mask: '21'},
+                '',
+                this.plugin.parse_routeviews('40431')
+                );
+        test.done();
+    },
+    '40431 string': function (test) {
+        test.expect(1);
+        test.deepEqual(
+                {asn: '40431', net: '208.75.176.0/21'},
                 this.plugin.parse_routeviews('40431 208.75.176.0 21')
                 );
         test.done();
     },
-    '40431 (node DNS TXT bug partly fixed)': function (test) {
+    '40431 array': function (test) {
         test.expect(1);
         test.deepEqual(
-                {asn: '40431', net: '', mask: ''},
-                this.plugin.parse_routeviews('40431')
+                {asn: '40431', net: '208.75.176.0/21' },
+                this.plugin.parse_routeviews(['40431','208.75.176.0','21'])
                 );
         test.done();
     },
