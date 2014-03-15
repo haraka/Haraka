@@ -1,5 +1,12 @@
 // bounce tests
 
+exports.register = function () {
+    var plugin = this;
+    plugin.register_hook('data',       'reject_invalid');
+    plugin.register_hook('data_post',  'with_return_path');
+    plugin.register_hook('data_post',  'bad_bounce_to');
+};
+
 exports.hook_mail = function (next, connection, params) {
     var plugin = this;
     var mail_from = params[0];
@@ -8,28 +15,32 @@ exports.hook_mail = function (next, connection, params) {
         return next(); // bounce messages are from null senders
     }
 
-    var cfg = plugin.config.get('bounce.ini');
-    if (cfg.main.reject_all) {
+    plugin.cfg = plugin.config.get('bounce.ini',
+        { booleans: ['main.reject_all', 'main.reject_invalid'] }
+    );
+
+    if (plugin.cfg.main.reject_all) {
         connection.results.add(plugin, {fail: 'bounces_accepted', emit: 1 });
         return next(DENY, "No bounces accepted here");
     }
     return next();
 };
 
-exports.hook_data = function(next, connection) {
+exports.reject_invalid = function(next, connection) {
     var plugin = this;
     if (!plugin.has_null_sender(connection)) return next();
 
-    var cfg = plugin.config.get('bounce.ini');
-    var rej = cfg.main.reject_invalid;
+    var err = plugin.multiple_recipients(connection);
+    if (!err) return next();
 
-    var err = plugin.has_single_recipient(connection);
-    if (err && rej) return next(DENY, err);
+    if (!plugin.cfg.main.reject_invalid) return next();
 
-    return next();
+    return next(DENY, err);
 };
 
-exports.bounce_data_post = function(next, connection) {
+exports.with_return_path = function(next, connection) {
+    var plugin = this;
+    if (!plugin.has_null_sender(connection)) return next();
 
     // Bounce messages generally do not have a Return-Path set. This checks
     // for that. But whether it should is worth questioning...
@@ -44,28 +55,44 @@ exports.bounce_data_post = function(next, connection) {
 
     // Return-Path, aka Reverse-PATH, Envelope FROM, RFC5321.MailFrom
     // validate that the Return-Path header is empty, RFC 3834
-    var plugin = this;
-    if (!plugin.has_null_sender(connection.transaction.mail_from)) return next();
+
     var rp = connection.transaction.header.get('Return-Path');
     if (rp && rp !== '<>') {
-        connection.loginfo(plugin, "bounce with non-empty Return-Path");
+        connection.results.add(plugin, {fail: 'with_return_path', emit: 1 });
         return next(DENY, "bounce with non-empty Return-Path (RFC 3834)");
     }
+
+    connection.results.add(plugin, {pass: 'with_return_path' });
     return next();
 };
 
-exports.has_single_recipient = function (connection) {
+exports.bad_bounce_to = function(next, connection) {
+    var plugin = this;
+    if (!plugin.has_null_sender(connection)) return next();
+    if (!plugin.cfg.invalid_addrs) return next();
+    for (var i=0; i < connection.transaction.rcpt_to.length; i++) {
+        var rcpt = connection.transaction.rcpt_to[i].address();
+        if (!plugin.cfg.invalid_addrs[rcpt]) continue;
+        connection.results.add(plugin, {fail: 'bad_bounce_to', emit: 1 });
+        return next(DENY, "That recipient does not accept bounces");
+    }
+
+    connection.results.add(plugin, {pass: 'bad_bounce_to'});
+    return next();
+};
+
+exports.multiple_recipients = function (connection) {
     var plugin = this;
     if (connection.transaction.rcpt_to.length === 1) {
-        connection.results.add(plugin, {pass: 'has_single_recipient', emit: true });
-        return;
+        connection.results.add(plugin, {pass: 'multiple_recipients', emit: true });
+        return false;
     }
 
     // Valid bounces have a single recipient
     connection.loginfo(plugin, "bounce with too many recipients to: " +
         connection.transaction.rcpt_to.join(','));
 
-    connection.results.add(plugin, {fail: 'has_single_recipient', emit: true });
+    connection.results.add(plugin, {fail: 'multiple_recipients', emit: true });
     return "this bounce message does not have 1 recipient";
 };
 

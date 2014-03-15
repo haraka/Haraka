@@ -3,10 +3,9 @@ bounce
 This plugin provides options for bounce processing.
 
 
-Configuration
--------------------
+# Configuration
 
-- reject\_all
+## - reject\_all (default: false)
 
 Blocks all bounce messages using the simple rule of checking
 for `MAIL FROM:<>`.
@@ -16,8 +15,15 @@ much but very few legitimate users. It is potentially bad to block all
 bounce messages, but unfortunately for some hosts, sometimes necessary.
 
 
-- reject\_invalid
---------------------
-This option tries to assure the message really is a bounce. It makes
-sure the message has a single recipient and that the return path is
-empty.
+## - reject\_invalid (default: true)
+
+Assure that the message really is a bounce by enforcing that any bounce
+(message with an empty return path) is addressed to a single recipient.
+
+
+## - invalid\_addrs
+
+Include email addresses in this section that should *never* receive bounce
+messages. Examples of email addresses that should be listed here are:
+autoresponders, do-not-reply@example.com, dmarc-feedback@example.com, and
+any other email addresses used solely for machine generated messages.
