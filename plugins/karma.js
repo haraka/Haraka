@@ -51,6 +51,7 @@ exports.should_we_deny = function (next, connection, hook) {
     var config         = plugin.config.get('karma.ini');
     var negative_limit = parseFloat(config.thresholds.negative) || -5;
     var score          = parseFloat(connection.results.get('karma').connect);
+    if (isNaN(score))  return next();
 
     if (score < 0 && config.tarpit) {
         // the worse the connection, the slower it goes...
@@ -87,6 +88,9 @@ exports.hook_deny = function (next, connection, params) {
 
     // the queue hook returns a DENY(SOFT), let it pass through
     if (pi_hook === 'queue') { return next(); }
+
+    // a plugin temperror, let it pass through
+    if (pi_deny === DENYSOFT) return next;
 
     // intercept any other denials, and let the connection continue
     connection.results.add(plugin, {fail: 'deny:' + pi_name});
@@ -471,6 +475,9 @@ exports.check_awards = function (connection) {
                 if (parseFloat(note) >= parseFloat(wants)) continue;
                 break;
             case 'match':
+                if (Array.isArray(note)) {
+                    if (!note.test(new RegExp(wants, 'i'))) continue;
+                }
                 if (!note.toString().match(new RegExp(wants, 'i'))) continue;
                 break;
             case 'length':
