@@ -7,6 +7,7 @@ var stub         = require('../fixtures/stub'),
     ResultStore  = require('../../result_store'),
     dns          = require('dns');
 
+
 constants.import(global);
 
 function _set_up(callback) {
@@ -19,8 +20,11 @@ function _set_up(callback) {
     this.plugin.logerror = stub();
 
     this.connection = Connection.createConnection();
-    this.connection.results = new ResultStore(this.plugin);
+    this.connection.results = new ResultStore(this.connection);
     this.connection.notes = {};
+    this.connection.loginfo = stub();
+    this.connection.logerror = stub();
+    this.connection.auth_results = stub();
 
     callback();
 }
@@ -129,6 +133,84 @@ exports.handle_ptr_error = {
             test.equal(DENYSOFT, arguments[0]);
         };
         this.plugin.handle_ptr_error(this.connection, err, cb);
+        test.done();
+    },
+};
+
+exports.is_generic_rdns = {
+    setUp : _set_up,
+    tearDown : _tear_down,
+    'mail.theartfarm.com': function (test) {
+        test.expect(1);
+        this.connection.remote_ip='208.75.177.101';
+        test.equal(false, this.plugin.is_generic_rdns(this.connection, 'mail.theartfarm.com'));
+        test.done();
+    },
+    'dsl-188-34-255-136.asretelecom.net': function (test) {
+        test.expect(1);
+        this.connection.remote_ip='188.34.255.136';
+        test.equal(false, this.plugin.is_generic_rdns(this.connection, 'dsl-188-34-255-136.asretelecom.net'));
+        test.done();
+    },
+    'dsl-188-34-255-136.asretelecom.net': function (test) {
+        test.expect(1);
+        this.connection.remote_ip='188.34.255.136';
+        test.ok(this.plugin.is_generic_rdns(this.connection, 'dsl-188-34-255-136.asretelecom.net'));
+        test.done();
+    },
+    'c-76-121-96-159.hsd1.wa.comcast.net': function (test) {
+        test.expect(1);
+        this.connection.remote_ip='76.121.96.159';
+        test.ok(this.plugin.is_generic_rdns(this.connection, 'c-76-121-96-159.hsd1.wa.comcast.net'));
+        test.done();
+    },
+    'c-76-121-96-159.business.wa.comcast.net': function (test) {
+        test.expect(1);
+        this.connection.remote_ip='76.121.96.159';
+        test.equal(false, this.plugin.is_generic_rdns(this.connection, 'c-76-121-96-159.business.wa.comcast.net'));
+        test.done();
+    },
+};
+
+exports.save_auth_results = {
+    setUp : _set_up,
+    tearDown : _tear_down,
+    'fcrdns fail': function (test) {
+        test.expect(1);
+        this.connection.results.add(this.plugin, { pass: 'fcrdns' });
+        test.equal(false, this.plugin.save_auth_results(this.connection));
+        test.done();
+    },
+    'fcrdns pass': function (test) {
+        test.expect(1);
+        this.connection.results.push(this.plugin, {fcrdns: 'example.com'});
+        test.equal(true, this.plugin.save_auth_results(this.connection));
+        test.done();
+    },
+};
+
+exports.ptr_compare = {
+    setUp : _set_up,
+    tearDown : _tear_down,
+    'fail': function (test) {
+        test.expect(1);
+        this.connection.remote_ip = '10.1.1.1';
+        var iplist = ['10.0.1.1'];
+        test.equal(false, this.plugin.ptr_compare(iplist, this.connection, 'foo.example.com'));
+        test.done();
+    },
+    'pass exact': function (test) {
+        test.expect(1);
+        this.connection.remote_ip = '10.1.1.1';
+        var iplist = ['10.1.1.1'];
+        test.equal(true, this.plugin.ptr_compare(iplist, this.connection, 'foo.example.com'));
+        test.done();
+    },
+    'pass net': function (test) {
+        test.expect(1);
+        this.connection.remote_ip = '10.1.1.1';
+        var iplist = ['10.1.1.2'];
+        test.equal(true, this.plugin.ptr_compare(iplist, this.connection, 'foo.example.com'));
         test.done();
     },
 };
