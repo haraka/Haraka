@@ -69,7 +69,10 @@ ResultStore.prototype.add = function (plugin, obj) {
 
 ResultStore.prototype.incr = function (plugin, obj) {
     var result = this.store[plugin.name];
-    if (!result) result = default_result();
+    if (!result) {
+        result = default_result();
+        this.store[plugin.name] = result;
+    }
 
     for (var key in obj) {
         var val = obj[key];
@@ -80,7 +83,10 @@ ResultStore.prototype.incr = function (plugin, obj) {
 
 ResultStore.prototype.push = function (plugin, obj) {
     var result = this.store[plugin.name];
-    if (!result) result = default_result();
+    if (!result) {
+        result = default_result();
+        this.store[plugin.name] = result;
+    }
 
     for (var key in obj) {
         if (!result[key]) result[key] = [];
