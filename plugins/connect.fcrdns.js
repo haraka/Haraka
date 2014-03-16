@@ -1,12 +1,7 @@
-var dns = require('dns');
-var net = require('net');
-var utils = require('./utils');
-var net_utils = require('./net_utils');
-
-var reject_no_rdns = 0;
-var reject_no_fcrdns = 0;
-var reject_invalid_tld = 0;
-var reject_generic_rdns = 0;
+var dns       = require('dns'),
+    net       = require('net'),
+    utils     = require('./utils'),
+    net_utils = require('./net_utils');
 
 exports.hook_lookup_rdns = function (next, connection) {
     var plugin = this;
@@ -30,8 +25,7 @@ exports.hook_lookup_rdns = function (next, connection) {
         err: [],                 // errors encountered (including timeouts)
     }; */
 
-    var cfg = this.config.get('connect.fcrdns.ini');
-    _refresh_config(cfg, connection);
+    var cfg = plugin.refresh_config(connection);
 
     var called_next = 0;
     var timer;
@@ -46,7 +40,7 @@ exports.hook_lookup_rdns = function (next, connection) {
     var timeout = cfg.main.disconnect_timeout || 30;
     timer = setTimeout(function () {
         connection.results.add(plugin, {err: 'timeout', emit: true});
-        if (reject_no_rdns) {
+        if (reject.no_rdns) {
             return do_next(DENYSOFT, 'client [' + connection.remote_ip + '] rDNS lookup timeout');
         }
         return do_next();
@@ -72,7 +66,7 @@ exports.hook_lookup_rdns = function (next, connection) {
             // Make sure TLD is valid
             if (!net_utils.get_organizational_domain(ptr_domain)) {
                 connection.results.add(plugin, {fail: 'valid_tld(' + ptr_domain +')'});
-                if (reject_invalid_tld && !net_utils.is_rfc1918(connection.remote_ip)) {
+                if (reject.invalid_tld && !net_utils.is_rfc1918(connection.remote_ip)) {
                     return do_next(DENY, 'client [' + connection.remote_ip +
                         '] rejected; invalid TLD in rDNS (' + ptr_domain + ')');
                 }
@@ -146,13 +140,13 @@ exports.handle_ptr_error = function(connection, err, do_next) {
         case dns.NOTFOUND:
         case dns.NXDOMAIN:
             connection.results.add(plugin, {fail: 'has_rdns', msg: err.code, emit: true});
-            if (reject_no_rdns) {
+            if (plugin.cfg.reject.no_rdns) {
                 return do_next(DENY, 'client [' + connection.remote_ip + '] rejected; no rDNS entry found');
             }
             return do_next();
         default:
             connection.results.add(plugin, {err: err});
-            if (reject_no_rdns) {
+            if (plugin.cfg.reject.no_rdns) {
                 return do_next(DENYSOFT, 'client [' + connection.remote_ip + '] rDNS lookup error (' + err + ')');
             }
             return do_next();
@@ -204,7 +198,7 @@ exports.check_fcrdns = function(connection, results, do_next) {
     plugin.save_auth_results(connection);
 
     var r = connection.results.get('connect.fcrdns');
-    if (!r.fcrdns.length && reject_no_fcrdns) {
+    if (!r.fcrdns.length && reject.no_fcrdns) {
         return do_next(DENY, 'Sorry, no FCrDNS match found');
     }
     return do_next();
@@ -236,7 +230,7 @@ exports.is_generic_rdns = function (connection, domain) {
     }
 
     connection.results.add(plugin, {fail: 'is_generic_rdns'});
-    if (!reject_generic_rdns) return false;
+    if (!reject.generic_rdns) return false;
 
     var orgDom = net_utils.get_organizational_domain(domain);
     var host_part = domain.slice(0,orgDom.split('.').length);
@@ -268,19 +262,39 @@ exports.log_summary = function (connection) {
         ].join(' '));
 };
 
-function _refresh_config (cfg, connection) {
-    if (!cfg) return;
-    if (!cfg.main) return;
-    if (cfg.main.reject_no_rdns !== undefined) reject_no_rdns = cfg.main.reject_no_rdns;
-    if (cfg.main.reject_no_fcrdns !== undefined) reject_no_fcrdns = cfg.main.reject_no_fcrdns;
-    if (cfg.main.reject_invalid_tld !== undefined) reject_invalid_tld = cfg.main.reject_invalid_tld;
-    if (cfg.main.reject_generic_rdns !== undefined) reject_generic_rdns = cfg.main.reject_generic_rdns;
+exports.refresh_config = function (connection) {
+    var plugin = this;
+    plugin.cfg = plugin.config.get('connect.fcrdns.ini', {
+        booleans: [
+            'reject.no_rdns',
+            'reject.no_fcrdns',
+            'reject.invalid_tld',
+            'reject.generic_rdns',
+        ]
+    });
+
+    var defaults = {
+        disconnect_timeout: 10,
+        reject: {
+            no_rdns     : 0,
+            no_fcrdns   : 0,
+            invalid_tld : 0,
+            generic_rdns: 0,
+        }
+    };
+
+    for (var key in defaults.reject) {
+        if (plugin.cfg.reject[key] === undefined) {
+            plugin.cfg.reject[key] = defaults.reject[key];
+        }
+    }
 
     // allow rdns_acccess whitelist to override
     if (connection.notes.rdns_access && connection.notes.rdns_access === 'white') {
-        reject_no_rdns = 0;
-        reject_invalid_tld = 0;
-        reject_generic_rdns = 0;
+        plugin.cfg.reject.no_rdns = 0;
+        plugin.cfg.reject.invalid_tld = 0;
+        plugin.cfg.reject.generic_rdns = 0;
     }
-}
 
+    return plugin.cfg;
+};
