@@ -1,6 +1,6 @@
-var geoip = require('geoip-lite');
-var net = require('net');
-var net_utils = require('./net_utils');
+var geoip     = require('geoip-lite'),
+    net       = require('net'),
+    net_utils = require('./net_utils');
 
 var local_ip, local_geoip;
 
