@@ -5,25 +5,8 @@ var reject=true;
 exports.register = function() {
     this.inherits('dns_list_base');
 
-    var cfg = this.refresh_config();
-
-    this.zones = [];
-    var unique_zones = {};
-
-    // Compatibility with old-plugin
-    var legacy_zones = this.config.get('dnsbl.zones', 'list');
-    for (var i=0; i < legacy_zones.length; i++) {
-        unique_zones[legacy_zones[i]] = true;
-    }
-
-    if (cfg.main.zones) {
-        var new_zones = cfg.main.zones.split(/[\s,;]+/);
-        for (var h=0; h < new_zones.length; h++) {
-            unique_zones[new_zones[h]] = true;
-        }
-    }
-
-    for (var key in unique_zones) { this.zones.push(key); }
+    var cfg = this.refresh_config();  // every connection
+    this.get_uniq_zones();            // only once
 
     if (cfg.main.periodic_checks) {
         this.check_zones(cfg.main.periodic_checks);
@@ -69,7 +52,33 @@ exports.refresh_config = function () {
         this.loginfo('set stats redis host to: ' + this.redis_host);
     }
 
+    this.cfg = cfg;
     return cfg;
+};
+
+exports.get_uniq_zones = function () {
+    var plugin = this;
+    plugin.zones = [];
+
+    var unique_zones = {};
+
+    // Compatibility with old-plugin
+    var legacy_zones = this.config.get('dnsbl.zones', 'list');
+    for (var i=0; i < legacy_zones.length; i++) {
+        unique_zones[legacy_zones[i]] = true;
+    }
+
+    if (!plugin.cfg) plugin.refresh_config();
+
+    if (plugin.cfg.main.zones) {
+        var new_zones = plugin.cfg.main.zones.split(/[\s,;]+/);
+        for (var h=0; h < new_zones.length; h++) {
+            unique_zones[new_zones[h]] = true;
+        }
+    }
+
+    for (var key in unique_zones) { this.zones.push(key); }
+    return this.zones;
 };
 
 exports.connect_first = function(next, connection) {
