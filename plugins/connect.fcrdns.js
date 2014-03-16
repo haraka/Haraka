@@ -5,7 +5,8 @@ var dns       = require('dns'),
 
 exports.hook_lookup_rdns = function (next, connection) {
     var plugin = this;
-    if (net_utils.is_rfc1918(connection.remote_ip)) {
+    var rip = connection.remote_ip;
+    if (net_utils.is_rfc1918(rip)) {
         connection.results.add(plugin, {skip: "private_ip"});
         return next();
     }
@@ -37,20 +38,17 @@ exports.hook_lookup_rdns = function (next, connection) {
     timer = setTimeout(function () {
         connection.results.add(plugin, {err: 'timeout', emit: true});
         if (plugin.cfg.reject.no_rdns) {
-            return do_next(DENYSOFT, 'client [' + connection.remote_ip + '] rDNS lookup timeout');
+            return do_next(DENYSOFT, 'client [' + rip + '] rDNS lookup timeout');
         }
         return do_next();
     }, timeout * 1000);
 
-    dns.reverse(connection.remote_ip, function (err, ptr_names) {
-        connection.logdebug(plugin, 'rdns lookup: ' + connection.remote_ip);
-        if (err) {
-            connection.results.add(plugin, {fail: 'rDNS lookup('+err+')'});
-            return plugin.handle_ptr_error(connection, err, do_next);
-        }
+    dns.reverse(rip, function (err, ptr_names) {
+        connection.logdebug(plugin, 'rdns lookup: ' + rip);
+        if (err) return plugin.handle_ptr_error(connection, err, do_next);
 
         connection.results.add(plugin, {ptr_names: ptr_names});
-        connection.results.add(plugin, {has_rdns: true};
+        connection.results.add(plugin, {has_rdns: true});
 
         // Fetch A records for each PTR host name
         var pending_queries = 0;
@@ -64,8 +62,8 @@ exports.hook_lookup_rdns = function (next, connection) {
             if (!net_utils.get_organizational_domain(ptr_domain)) {
                 connection.results.add(plugin, {fail: 'valid_tld(' + ptr_domain +')'});
                 if (!plugin.cfg.reject.invalid_tld) continue;
-                if (net_utils.is_rfc1918(connection.remote_ip)) continue;
-                return do_next(DENY, 'client [' + connection.remote_ip +
+                if (net_utils.is_rfc1918(rip)) continue;
+                return do_next(DENY, 'client [' + rip +
                         '] rejected; invalid TLD in rDNS (' + ptr_domain + ')');
             }
 
@@ -76,7 +74,7 @@ exports.hook_lookup_rdns = function (next, connection) {
             dns.resolve(ptr_domain, function(err, ips_from_fwd) {
                 pending_queries--;
                 if (err) {
-                    connection.results.add(plugin, {err: ptr_domain + '(' + err + ')'});
+                    plugin.handle_a_error(connection, err, ptr_domain);
                 }
                 else {
                     connection.logdebug(plugin, ptr_domain + ' => ' + ips_from_fwd);
@@ -129,21 +127,37 @@ exports.hook_data_post = function (next, connection) {
     return next();
 };
 
-exports.handle_ptr_error = function(connection, err, do_next) {
+exports.handle_a_error = function(connection, err, domain) {
     var plugin = this;
+
     switch (err.code) {
         case 'ENOTFOUND':
         case dns.NOTFOUND:
         case dns.NXDOMAIN:
-            connection.results.add(plugin, {fail: 'has_rdns', msg: err.code, emit: true});
+            connection.results.add(plugin, {fail: 'ptr_valid('+domain+')' });
+            break;
+        default:
+            connection.results.add(plugin, {err: err});
+    }
+};
+
+exports.handle_ptr_error = function(connection, err, do_next) {
+    var plugin = this;
+    var rip = connection.remote_ip;
+
+    switch (err.code) {
+        case 'ENOTFOUND':
+        case dns.NOTFOUND:
+        case dns.NXDOMAIN:
+            connection.results.add(plugin, {fail: 'has_rdns', emit: true});
             if (plugin.cfg.reject.no_rdns) {
-                return do_next(DENY, 'client [' + connection.remote_ip + '] rejected; no rDNS entry found');
+                return do_next(DENY, 'client [' + rip + '] rejected; no rDNS');
             }
             return do_next();
         default:
-            connection.results.add(plugin, {err: err});
+            connection.results.add(plugin, {err: err.code});
             if (plugin.cfg.reject.no_rdns) {
-                return do_next(DENYSOFT, 'client [' + connection.remote_ip + '] rDNS lookup error (' + err + ')');
+                return do_next(DENYSOFT, 'client [' + rip + '] rDNS lookup error (' + err + ')');
             }
             return do_next();
     }
@@ -164,8 +178,7 @@ exports.check_fcrdns = function(connection, results, do_next) {
         }
 
         // FCrDNS? PTR -> (A | AAAA) 3. PTR comparison
-        var ip_list = results[fdom];
-        plugin.ptr_compare(ip_list, connection, fdom);
+        plugin.ptr_compare(results[fdom], connection, fdom);
 
         connection.results.add(plugin, {ptr_name_has_ips: true});
 
