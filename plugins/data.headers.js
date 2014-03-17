@@ -1,6 +1,5 @@
 // validate message headers and some fields
 var net_utils = require('./net_utils');
-var reject;
 
 exports.register = function () {
     this.register_hook('data',      'refresh_config');
@@ -15,19 +14,23 @@ exports.register = function () {
 };
 
 exports.refresh_config = function(next, connection) {
-    this.cfg = this.config.get('data.headers.ini', {
-        booleans: ['main.reject'],
-    });
+    var bools = [];
 
-    if (this.cfg.main.reject !== undefined) {
-        reject = this.cfg.main.reject;
+    var checks = [ 'duplicate_singular', 'missing_required', 'invalid_return_path',
+        'invalid_date', 'user_agent', 'direct_to_mx', 'from_match', 'mailing_list'];
+
+    for (var i=0; i < checks.length; i++) {
+        bools.push('check.' + checks[i]);
+        bools.push('reject.' + checks[i]);
     }
 
+    this.cfg = this.config.get('data.headers.ini', { booleans: bools });
     return next();
-}
+};
 
 exports.duplicate_singular = function(next, connection) {
     var plugin = this;
+    if (!plugin.cfg.check.duplicate_singular) return next();
 
     // RFC 5322 Section 3.6, Headers that MUST be unique if present
     var singular = plugin.cfg.main.singular !== undefined ?
@@ -46,7 +49,7 @@ exports.duplicate_singular = function(next, connection) {
     }
 
     if (failures.length) {
-        if (reject) {
+        if (plugin.cfg.reject.duplicate_singular) {
             return next(DENY, "Only one " + failures[0] +
                 " header allowed. See RFC 5322, Section 3.6");
         }
@@ -59,6 +62,7 @@ exports.duplicate_singular = function(next, connection) {
 
 exports.missing_required = function(next, connection) {
     var plugin = this;
+    if (!plugin.cfg.check.missing_required) return next();
 
     // Enforce RFC 5322 Section 3.6, Headers that MUST be present
     var required = plugin.cfg.main.required !== undefined ?
@@ -75,7 +79,7 @@ exports.missing_required = function(next, connection) {
     }
 
     if (failures.length) {
-        if (reject) {
+        if (plugin.cfg.reject.missing_required) {
             return next(DENY, "Required header '" + failures[0] + "' missing");
         }
         return next();
@@ -86,7 +90,10 @@ exports.missing_required = function(next, connection) {
 };
 
 exports.invalid_return_path = function(next, connection) {
-    // This tests for headers that shouldn't be present
+    var plugin = this;
+    if (!plugin.cfg.check.invalid_return_path) return next();
+
+    // Tests for Return-Path headers that shouldn't be present
 
     // RFC 5321#section-4.4 Trace Information
     //   A message-originating SMTP system SHOULD NOT send a message that
@@ -94,11 +101,10 @@ exports.invalid_return_path = function(next, connection) {
 
     // Return-Path, aka Reverse-PATH, Envelope FROM, RFC5321.MailFrom
     var rp = connection.transaction.header.get('Return-Path');
-    var plugin = this;
     if (rp) {
         if (connection.relaying) {      // On messages we originate
             connection.transaction.results.add(plugin, {fail: 'Return-Path', emit: true});
-            if (reject) {
+            if (plugin.cfg.reject.invalid_return_path) {
                 return next(DENY, "outgoing mail must not have a Return-Path header (RFC 5321)");
             }
             return next();
@@ -119,8 +125,9 @@ exports.invalid_return_path = function(next, connection) {
 
 exports.invalid_date = function (next, connection) {
     var plugin = this;
-    // Assure Date header value is [somewhat] sane
+    if (!plugin.cfg.check.invalid_date) return next();
 
+    // Assure Date header value is [somewhat] sane
     var msg_date = connection.transaction.header.get_all('Date');
     if (!msg_date || msg_date.length === 0) return next();
 
@@ -137,7 +144,7 @@ exports.invalid_date = function (next, connection) {
         // connection.logdebug(plugin, "too future: " + too_future);
         if (msg_date > too_future) {
             connection.transaction.results.add(plugin, {fail: 'invalid_date(future)'});
-            if (reject) {
+            if (plugin.cfg.reject.invalid_date) {
                 return next(DENY, "The Date header is too far in the future");
             }
             return next();
@@ -155,7 +162,7 @@ exports.invalid_date = function (next, connection) {
         if (msg_date < too_old) {
             connection.loginfo(plugin, "date is older than: " + too_old);
             connection.transaction.results.add(plugin, {fail: 'invalid_date(past)'});
-            if (reject) {
+            if (plugin.cfg.reject.invalid_date) {
                 return next(DENY, "The Date header is too old");
             }
             return next();
@@ -168,6 +175,8 @@ exports.invalid_date = function (next, connection) {
 
 exports.user_agent = function (next, connection) {
     var plugin = this;
+    if (!plugin.cfg.check.user_agent) return next();
+
     if (!connection.transaction) return next();
     var h = connection.transaction.header;
 
@@ -193,6 +202,8 @@ exports.user_agent = function (next, connection) {
 
 exports.direct_to_mx = function (next, connection) {
     var plugin = this;
+    if (!plugin.cfg.check.direct_to_mx) return next();
+
     if (!connection.transaction) return next();
 
     // Legit messages normally have at least 2 hops (Received headers)
@@ -223,6 +234,8 @@ exports.direct_to_mx = function (next, connection) {
 
 exports.from_match = function (next, connection) {
     var plugin = this;
+    if (!plugin.cfg.check.from_match) return next();
+
     // see if the header From matches the envelope FROM. there are many legit
     // reasons to not match, but a match is much more hammy than spammy
     if (!connection.transaction) return next();
@@ -267,6 +280,8 @@ exports.from_match = function (next, connection) {
 
 exports.mailing_list = function (next, connection) {
     var plugin = this;
+    if (!plugin.cfg.check.mailing_list) return next();
+
     if (!connection.transaction) return next();
 
     var h = connection.transaction.header;
