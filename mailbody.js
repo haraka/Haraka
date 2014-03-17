@@ -195,8 +195,8 @@ Body.prototype.parse_end = function (line) {
                 banner_buf = new Buffer(banner_str);
             }
 
-            // Allocate a new buffer: (6 or 1 is <p>...</p> vs \n...\n - correct that if you change those!)
-            var new_buf = new Buffer(buf.length + banner_buf.length + (this.is_html ? 6 : 1));
+            // Allocate a new buffer: (7 or 2 is <P>...</P> vs \n...\n - correct that if you change those!)
+            var new_buf = new Buffer(buf.length + banner_buf.length + (this.is_html ? 7 : 2));
 
             // Now we find where to insert it and combine it with the original buf:
             if (this.is_html) {
@@ -205,7 +205,7 @@ Body.prototype.parse_end = function (line) {
                 // copy start of buf into new_buf
                 buf.copy(new_buf, 0, 0, insert_pos);
 
-                // add in <p>
+                // add in <P>
                 new_buf[insert_pos++] = 60;
                 new_buf[insert_pos++] = 80;
                 new_buf[insert_pos++] = 62;
@@ -213,13 +213,14 @@ Body.prototype.parse_end = function (line) {
                 // copy all of banner into new_buf
                 banner_buf.copy(new_buf, insert_pos);
                 
+                // add in </P>
                 new_buf[banner_buf.length + insert_pos++] = 60;
                 new_buf[banner_buf.length + insert_pos++] = 47;
                 new_buf[banner_buf.length + insert_pos++] = 80;
                 new_buf[banner_buf.length + insert_pos++] = 62;
 
                 // copy remainder of buf into new_buf, if there is buf remaining
-                if (buf.length > (insert_pos - 6)) {
+                if (buf.length > (insert_pos - 7)) {
                     buf.copy(new_buf, insert_pos + banner_buf.length, insert_pos - 7);
                 }
             }
