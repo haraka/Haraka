@@ -28,6 +28,8 @@ Remove the following deprecated plugins
  - data.rfc5322_header_checks
  - daemonize
  - mail_from.nobounces
+ - mail_from.blocklist
+ - rcpt_to.blocklist
 
 Rename the following plugins
  - toobusy      -> connect.toobusy
@@ -39,3 +41,10 @@ Rename the following plugins
 
 Move the following plugins:
  - test_queue   -> queue/test_queue
+
+Built-in HTTP server
+- instead of each plugin bringing their own, and getting relegated to some
+  god-forsaken port number:
+- a dispatch mechanism, so each plugin gets their own URL space
+- uses the same TLS/SSL certs as smtpd
+- auth against SMTP-AUTH provider
