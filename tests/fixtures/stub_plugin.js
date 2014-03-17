@@ -12,6 +12,7 @@ function Plugin(name) {
         return new Plugin(name);
     }
 
+    this.name = name;
     this.inherits = stub();
     this.register_hook = stub();
     this.config = stub();
