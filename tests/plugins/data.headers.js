@@ -194,3 +194,73 @@ exports.from_match = {
     },
 };
 
+exports.mailing_list = {
+    setUp : _set_up,
+    tearDown : _tear_down,
+    'ezmlm': function (test) {
+        test.expect(1);
+        var outer = this;
+        outer.connection.transaction.header.add_end('Mailing-List', "blah blah: run by ezmlm");
+        var next_cb = function() {
+            var r = outer.connection.transaction.results.get('data.headers');
+            test.equal(true, /ezmlm/.test(r.pass));
+        };
+        outer.plugin.mailing_list(next_cb, outer.connection);
+        test.done();
+    },
+    'yahoogroups': function (test) {
+        test.expect(1);
+        var outer = this;
+        outer.connection.transaction.header.add_end('Mailing-List', "blah blah such-and-such@yahoogroups.com email list");
+        var next_cb = function() {
+            var r = outer.connection.transaction.results.get('data.headers');
+            test.equal(true, /yahoogroups/.test(r.pass));
+        };
+        outer.plugin.mailing_list(next_cb, outer.connection);
+        test.done();
+    },
+    'majordomo': function (test) {
+        test.expect(1);
+        var outer = this;
+        outer.connection.transaction.header.add_end('Sender', "owner-blah-blah whatcha");
+        var next_cb = function() {
+            var r = outer.connection.transaction.results.get('data.headers');
+            test.equal(true, /majordomo/.test(r.pass));
+        };
+        outer.plugin.mailing_list(next_cb, outer.connection);
+        test.done();
+    },
+    'mailman': function (test) {
+        test.expect(1);
+        var outer = this;
+        outer.connection.transaction.header.add_end('X-Mailman-Version', "owner-blah-blah whatcha");
+        var next_cb = function() {
+            var r = outer.connection.transaction.results.get('data.headers');
+            test.equal(true, /mailman/.test(r.pass));
+        };
+        outer.plugin.mailing_list(next_cb, outer.connection);
+        test.done();
+    },
+    'majordomo v': function (test) {
+        test.expect(1);
+        var outer = this;
+        outer.connection.transaction.header.add_end('X-Majordomo-Version', "owner-blah-blah whatcha");
+        var next_cb = function() {
+            var r = outer.connection.transaction.results.get('data.headers');
+            test.equal(true, /majordomo/.test(r.pass));
+        };
+        outer.plugin.mailing_list(next_cb, outer.connection);
+        test.done();
+    },
+    'google groups': function (test) {
+        test.expect(1);
+        var outer = this;
+        outer.connection.transaction.header.add_end('X-Google-Loop', "blah-blah whatcha");
+        var next_cb = function() {
+            var r = outer.connection.transaction.results.get('data.headers');
+            test.equal(true, /googlegroups/.test(r.pass));
+        };
+        outer.plugin.mailing_list(next_cb, outer.connection);
+        test.done();
+    },
+};

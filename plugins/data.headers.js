@@ -11,6 +11,7 @@ exports.register = function () {
     this.register_hook('data_post', 'user_agent');
     this.register_hook('data_post', 'direct_to_mx');
     this.register_hook('data_post', 'from_match');
+    this.register_hook('data_post', 'mailing_list');
 };
 
 exports.refresh_config = function(next, connection) {
@@ -224,10 +225,7 @@ exports.from_match = function (next, connection) {
     var plugin = this;
     // see if the header From matches the envelope FROM. there are many legit
     // reasons to not match, but a match is much more hammy than spammy
-    if (!connection.transaction) {
-        connection.logerror(plugin, "transaction is gone");
-        return next();
-    }
+    if (!connection.transaction) return next();
 
     var env_from = connection.transaction.mail_from.address();
     var hdr_from = connection.transaction.header.get('From');
@@ -264,5 +262,74 @@ exports.from_match = function (next, connection) {
     connection.transaction.results.add(plugin, {emit: true,
         fail: 'from_match(' + env_dom + ' / ' + msg_dom + ')'
     });
+    return next();
+};
+
+exports.mailing_list = function (next, connection) {
+    var plugin = this;
+    if (!connection.transaction) return next();
+
+    var h = connection.transaction.header;
+    var found_mlm = 0;
+
+    var mlms = {
+        'Mailing-List'       : [
+            { mlm: 'ezmlm',       end: 'ezmlm' },
+            { mlm: 'yahoogroups', match: 'yahoogroups' },
+        ],
+        'Sender'             : [
+            { mlm: 'majordomo',   start: 'owner-' },
+        ],
+        'X-Mailman-Version'  : [ { mlm: 'mailman'   }, ],
+        'X-Majordomo-Version': [ { mlm: 'majordomo' }, ],
+        'X-Google-Loop'      : [ { mlm: 'googlegroups' } ],
+    };
+
+    for (var name in mlms) {
+        var header = connection.transaction.header.get(name);
+        if (!header) continue;   // header not present
+        for (var i=0; i < mlms[name].length; i++) {
+            var j = mlms[name][i];
+            if (j.end) {
+                if (j.end === header.substring(header.length - j.end.length)) {
+                    connection.transaction.results.add(plugin, {pass: 'MLM('+j.mlm+')'});
+                    found_mlm++;
+                    continue;
+                }
+            }
+            if (j.start) {
+                if (header.substring(0,j.start.length) === j.start) {
+                    connection.transaction.results.add(plugin, {pass: 'MLM('+j.mlm+')'});
+                    found_mlm++;
+                    continue;
+                }
+            }
+            if (j.match) {
+                if (header.match(new RegExp(j.match,'i'))) {
+                    connection.transaction.results.add(plugin, {pass: 'MLM('+j.mlm+')'});
+                    found_mlm++;
+                    continue;
+                }
+            }
+            if (name === 'X-Mailman-Version') {
+                connection.transaction.results.add(plugin, {pass: 'MLM('+j.mlm+')'});
+                found_mlm++;
+                continue;
+            }
+            if (name === 'X-Majordomo-Version') {
+                connection.transaction.results.add(plugin, {pass: 'MLM('+j.mlm+')'});
+                found_mlm++;
+                continue;
+            }
+            if (name === 'X-Google-Loop') {
+                connection.transaction.results.add(plugin, {pass: 'MLM('+j.mlm+')'});
+                found_mlm++;
+                continue;
+            }
+        }
+    }
+    if (found_mlm) return next();
+
+    connection.transaction.results.add(plugin, {fail: 'MLM'});
     return next();
 };
