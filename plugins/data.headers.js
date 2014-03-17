@@ -167,7 +167,6 @@ exports.invalid_date = function (next, connection) {
 
 exports.user_agent = function (next, connection) {
     var plugin = this;
-    if (!connection) return next();
     if (!connection.transaction) return next();
     var h = connection.transaction.header;
 
@@ -193,7 +192,6 @@ exports.user_agent = function (next, connection) {
 
 exports.direct_to_mx = function (next, connection) {
     var plugin = this;
-    if (!connection) return next();
     if (!connection.transaction) return next();
 
     // Legit messages normally have at least 2 hops (Received headers)
