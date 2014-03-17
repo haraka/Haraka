@@ -3,6 +3,7 @@ var net_utils = require('./net_utils');
 var reject;
 
 exports.register = function () {
+    this.register_hook('data',      'refresh_config');
     this.register_hook('data_post', 'duplicate_singular');
     this.register_hook('data_post', 'missing_required');
     this.register_hook('data_post', 'invalid_date');
@@ -12,8 +13,7 @@ exports.register = function () {
     this.register_hook('data_post', 'from_match');
 };
 
-exports.hook_data = function(next, connection) {
-    // refresh when a connection makes it to data
+exports.refresh_config = function(next, connection) {
     this.cfg = this.config.get('data.headers.ini', {
         booleans: ['main.reject'],
     });
@@ -226,8 +226,10 @@ exports.from_match = function (next, connection) {
     var plugin = this;
     // see if the header From matches the envelope FROM. there are many legit
     // reasons to not match, but a match is much more hammy than spammy
-    if (!connection) return next();
-    if (!connection.transaction) return next();
+    if (!connection.transaction) {
+        connection.logerror(plugin, "transaction is gone");
+        return next();
+    }
 
     var env_from = connection.transaction.mail_from.address();
     var hdr_from = connection.transaction.header.get('From');
@@ -256,17 +258,13 @@ exports.from_match = function (next, connection) {
 
     var env_dom = net_utils.get_organizational_domain(connection.transaction.mail_from.host);
     var msg_dom = net_utils.get_organizational_domain(msg_from.replace(/^.*@/,''));
-    if (env_dom.toLowerCase() == msg_dom.toLowerCase()) {
+    if (env_dom && msg_dom && env_dom.toLowerCase() === msg_dom.toLowerCase()) {
         connection.transaction.results.add(plugin, {pass: 'from_match(domain)'});
         return next();
     }
-/*
-    connection.logdebug(plugin, 'raw from: ' + connection.transaction.mail_from.address());
-    connection.logdebug(plugin, 'header from: .' + hdr_from + '.');
-    connection.logdebug(plugin, 'msg    from: .' + msg_from + '.');
-*/
+
     connection.transaction.results.add(plugin, {emit: true,
         fail: 'from_match(' + env_dom + ' / ' + msg_dom + ')'
     });
     return next();
-}
+};
