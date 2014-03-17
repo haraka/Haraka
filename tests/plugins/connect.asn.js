@@ -1,11 +1,7 @@
 
 var stub             = require('../fixtures/stub'),
-    constants        = require('../../constants'),
     Connection       = require('../fixtures/stub_connection'),
     Plugin           = require('../fixtures/stub_plugin');
-
-// huge hack here, but plugin tests need constants
-constants.import(global);
 
 function _set_up(callback) {
     this.backup = {};
@@ -13,14 +9,6 @@ function _set_up(callback) {
     // needed for tests
     this.plugin = Plugin('connect.asn');
     this.connection = Connection.createConnection();
-
-    // stub out functions
-    this.connection.loginfo = stub();
-    this.plugin.logdebug = stub();
-    this.plugin.logerror = stub();
-
-    // going to need these in multiple tests
-//    this.plugin.register();
 
     callback();
 }
@@ -131,7 +119,6 @@ exports.get_dns_results = {
     },
     'origin.asn.spameatingmonkey.net': function (test) {
         var cb = function () {
-            // console.log(arguments);
             test.equal('origin.asn.spameatingmonkey.net', arguments[0]);
             test.equal('40431', arguments[1].asn);
             test.equal('US', arguments[1].country);
