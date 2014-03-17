@@ -17,7 +17,7 @@ function Plugin(name) {
     this.register_hook = stub();
     this.config = stub();
 
-    var levels = [ 'data', 'protocol', 'debug', 'info', 'notice', 'warn', 'error', 'crit', 'aler  t', 'emerg' ];
+    var levels = [ 'data', 'protocol', 'debug', 'info', 'notice', 'warn', 'error', 'crit', 'alert', 'emerg' ];
     for (var i=0; i < levels.length; i++) {
         this['log' + levels[i]] = stub();
     }
