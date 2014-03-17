@@ -13,7 +13,7 @@ exports.check_acl = function (next, connection, params) {
     this.acl_allow = this.config.get('relay_acl_allow', 'list');
 
     connection.logdebug(this, 'checking ' + connection.remote_ip + ' in check_acl_allow');
-    if (is_acl_allowed(connection, this, connection.remote_ip)) {
+    if (this.is_acl_allowed(connection)) {
         connection.relaying = 1;
         next(OK);
     } else {
@@ -62,15 +62,19 @@ function dest_domain_action(connection, plugin, domains_ini, dest_domain) {
 /**
  * @return bool}
  */
-function is_acl_allowed(connection, plugin, ip) {
+exports.is_acl_allowed = function (connection) {
+    var plugin = this;
+    var ip = connection.remote_ip;
     var i = 0;
     for (i in plugin.acl_allow) {
-        connection.logdebug(plugin, 'checking if ' + ip + ' is in ' + plugin.acl_allow[i]);
+        var item = plugin.acl_allow[i];
+        connection.logdebug(plugin, 'checking if ' + ip + ' is in ' + item);
         var cidr = plugin.acl_allow[i].split("/");
+        if (!cidr[1]) cidr[1] = 32;
         if (ipaddr.parse(ip).match(ipaddr.parse(cidr[0]), cidr[1])) {
-            connection.logdebug(plugin, 'checking if ' + ip + ' is in ' + plugin.acl_allow[i] + ": yes");
+            connection.logdebug(plugin, 'checking if ' + ip + ' is in ' + item + ": yes");
             return true;
         }
     }
     return false;
-}
+};
