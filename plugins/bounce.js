@@ -33,12 +33,8 @@ exports.reject_all = function (next, connection, params) {
         return next(); // bounce messages are from null senders
     }
 
-    if (plugin.cfg.reject.all) {
-        connection.results.add(plugin, {fail: 'bounces_accepted', emit: 1 });
-        return next(DENY, "No bounces accepted here");
-    }
-
-    return next();
+    connection.results.add(plugin, {fail: 'bounces_accepted', emit: 1 });
+    return next(DENY, "No bounces accepted here");
 };
 
 exports.single_recipient = function(next, connection) {
