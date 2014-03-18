@@ -15,6 +15,7 @@ function _set_up(callback) {
 
     // needed for tests
     this.plugin = Plugin('bounce');
+    this.plugin.config = config;
     this.plugin.cfg = {
         main: { },
         checks: {
@@ -24,7 +25,6 @@ function _set_up(callback) {
             bad_rcpt: true,
         },
         reject: {
-            all:false,
             single_recipient:true,
             empty_return_path:true,
         },
@@ -44,6 +44,70 @@ function _set_up(callback) {
 function _tear_down(callback) {
     callback();
 }
+
+exports.refresh_config = {
+    setUp : _set_up,
+    tearDown : _tear_down,
+    'yes': function (test) {
+        test.expect(3);
+        var plugin = this.plugin;
+        var cb = function () {
+            test.ok(plugin.cfg.main);
+            test.ok(plugin.cfg.checks);
+            test.ok(plugin.cfg.reject);
+        };
+        this.plugin.refresh_config(cb);
+        test.done();
+    },
+    // TODO: write a bounce.ini, w/o settings, make sure defaults apply
+};
+
+exports.reject_all = {
+    setUp : _set_up,
+    tearDown : _tear_down,
+    'disabled': function (test) {
+        test.expect(1);
+        this.connection.transaction = {
+            mail_from: new Address.Address('<matt@example.com>'),
+            rcpt_to: [ new Address.Address('test@any.com') ],
+            header: new Header(),
+        };
+        var cb = function () {
+            test.equal(undefined, arguments[0]);
+        };
+        this.plugin.cfg.checks.reject_all=false;
+        this.plugin.reject_all(cb, this.connection, new Address.Address('<matt@example.com>'));
+        test.done();
+    },
+    'not bounce ok': function (test) {
+        test.expect(1);
+        this.connection.transaction = {
+            mail_from: new Address.Address('<matt@example.com>'),
+            rcpt_to: [ new Address.Address('test@any.com') ],
+            header: new Header(),
+        };
+        var cb = function () {
+            test.equal(undefined, arguments[0]);
+        };
+        this.plugin.cfg.checks.reject_all=true;
+        this.plugin.reject_all(cb, this.connection, new Address.Address('<matt@example.com>'));
+        test.done();
+    },
+    'bounce rejected': function (test) {
+        test.expect(1);
+        this.connection.transaction = {
+            mail_from: new Address.Address('<>'),
+            rcpt_to: [ new Address.Address('test@any.com') ],
+            header: new Header(),
+        };
+        var cb = function () {
+            test.equal(DENY, arguments[0]);
+        };
+        this.plugin.cfg.checks.reject_all=true;
+        this.plugin.reject_all(cb, this.connection, new Address.Address('<>'));
+        test.done();
+    },
+};
 
 exports.empty_return_path = {
     setUp : _set_up,
