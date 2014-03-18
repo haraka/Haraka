@@ -23,6 +23,9 @@ exports.hook_mail = function (next, connection, params) {
         connection.results.add(plugin, {fail: 'bounces_accepted', emit: 1 });
         return next(DENY, "No bounces accepted here");
     }
+
+    plugin.cfg.invalid_addrs = plugin.config.get('bounce_badto', 'list');
+
     return next();
 };
 
