@@ -136,6 +136,22 @@ exports.load_ini_config = {
                 );
         test.done();
     },
+    'non-exist.ini boolean true default' : function (test) {
+        test.expect(1);
+        test.deepEqual(
+                configfile.load_ini_config('non-exist.ini', { booleans: ['+reject']}),
+                { main: { reject: true } }
+                );
+        test.done();
+    },
+    'non-exist.ini boolean false default' : function (test) {
+        test.expect(1);
+        test.deepEqual(
+                configfile.load_ini_config('non-exist.ini', { booleans: ['-reject']}),
+                { main: { reject: false } }
+                );
+        test.done();
+    },
     'test.ini, no opts' : function (test) {
         test.expect(4);
         var r = configfile.load_ini_config('tests/test.ini');

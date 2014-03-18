@@ -59,10 +59,10 @@ config.arrange_args = function (args) {
                 fs_type = what_is_it;
                 continue;
             }
-            console.log('not recognized string:' + what_is_it);
+            // console.log('not recognized string:' + what_is_it);
             continue;
         }
-        console.log('unknown arg:' + what_is_it + ', typeof: ' + typeof what_is_it);
+        // console.log('unknown arg:' + what_is_it + ', typeof: ' + typeof what_is_it);
     }
 
     if (!fs_type && fs_name.match(/\.ini$/)) {
