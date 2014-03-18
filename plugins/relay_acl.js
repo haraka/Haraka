@@ -5,30 +5,31 @@
 var ipaddr = require('ipaddr.js');
 
 exports.register = function() {
-    this.register_hook('connect', 'check_acl');
-    this.register_hook('rcpt', 'check_relay_domains');
+    this.register_hook('connect', 'relay_acl');
+    this.register_hook('rcpt',    'relay_dest_domains');
 };
 
-exports.check_acl = function (next, connection, params) {
+exports.relay_acl = function (next, connection, params) {
     this.acl_allow = this.config.get('relay_acl_allow', 'list');
 
-    connection.logdebug(this, 'checking ' + connection.remote_ip + ' in check_acl_allow');
+    connection.logdebug(this, 'checking ' + connection.remote_ip + ' in relay_acl_allow');
     if (this.is_acl_allowed(connection)) {
-        connection.relaying = 1;
-        next(OK);
-    } else {
-        next(CONT);
+        connection.relaying = true;
+        return next(OK);
     }
+    return next();
 };
 
-exports.check_relay_domains = function (next, connection, params) {
+exports.relay_dest_domains = function (next, connection, params) {
     // Skip this if the host is already allowed to relay
     if (connection.relaying) return next();
  
     this.dest_domains_ini = this.config.get('relay_dest_domains.ini', 'ini');
-    var dest_domain = params[0].host;
+    if (!this.dest_domains_ini.domains) return next();
 
+    var dest_domain = params[0].host;
     connection.logdebug(this, 'dest_domain = ' + dest_domain);
+
     switch(dest_domain_action(connection, this, this.dest_domains_ini['domains'], dest_domain)) {
         case "accept":
             connection.relaying = true;
@@ -62,11 +63,10 @@ function dest_domain_action(connection, plugin, domains_ini, dest_domain) {
 /**
  * @return bool}
  */
-exports.is_acl_allowed = function (connection) {
+exports.is_acl_allowed = function (connection, ip) {
     var plugin = this;
-    var ip = connection.remote_ip;
-    var i = 0;
-    for (i in plugin.acl_allow) {
+    if (!ip) ip = connection.remote_ip;
+    for (var i in plugin.acl_allow) {
         var item = plugin.acl_allow[i];
         connection.logdebug(plugin, 'checking if ' + ip + ' is in ' + item);
         var cidr = plugin.acl_allow[i].split("/");
