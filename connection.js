@@ -930,12 +930,23 @@ Connection.prototype.rcpt_ok_respond = function (retval, msg) {
 }
 
 Connection.prototype.rcpt_respond = function(retval, msg) {
+    var rcpt = this.transaction.rcpt_to[this.transaction.rcpt_to.length - 1];
+
+    if (retval === constants.ok) {
+        // Recipient was accepted by a plugin; we note each domain accepted
+        // so plugins know which domains are considered 'inbound'.
+        if (!this.transaction.notes.ok_domains) {
+            this.transaction.notes.ok_domains = {};
+        }
+        this.transaction.notes.ok_domains[rcpt.host.toLowerCase()] = true;
+    }
+
     if (retval === constants.cont && this.relaying) {
+        // Connection is allowed to relay; accept the recipient
         retval = constants.ok;
     }
 
     var self = this;
-    var rcpt = this.transaction.rcpt_to[this.transaction.rcpt_to.length - 1];
     var dmsg = "recipient " + rcpt.format();
     if (retval !== constants.ok) {
         this.lognotice(dmsg + ' ' + [
