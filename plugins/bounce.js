@@ -24,46 +24,27 @@ exports.refresh_config = function (next, connection) {
     };
 
     var bools = [];
-    for (var cd in check_defaults ) { bools.push('checks.'+cd); }
-    for (var rd in reject_defaults) { bools.push('reject.'+rd); }
+    for (var cd in check_defaults) {
+        bools.push('checks.' + (check_defaults[cd] ? '+' : '-') + cd);
+    }
+    for (var rd in reject_defaults) {
+        bools.push('reject.' + (reject_defaults[rd] ? '+' : '-') + rd);
+    }
 
     plugin.cfg = plugin.config.get('bounce.ini', { booleans: bools });
     if (!plugin.cfg.checks) plugin.cfg.checks={};
     if (!plugin.cfg.reject) plugin.cfg.reject={};
 
     // Legacy config handling
-    if (undefined === plugin.cfg.checks.single_recipient && plugin.cfg.main.reject_invalid) {
+    if (plugin.cfg.main.reject_invalid) {
         connection.logerror(plugin, "bounce.ini is out of date, please update!");
         plugin.cfg.checks.single_recipient=true;
         plugin.cfg.reject.single_recipient=true;
     }
 
-    if (undefined === plugin.cfg.checks.reject_all && plugin.cfg.main.reject_all) {
+    if (plugin.cfg.main.reject_all) {
         connection.logerror(plugin, "bounce.ini is out of date, please update!");
         plugin.cfg.checks.reject_all=true;
-    }
-
-    // apply defaults
-    if (plugin.cfg.checks) {
-        for (var cd in check_defaults) {
-            if (undefined === plugin.cfg.checks[cd]) {
-                plugin.cfg.checks[cd] = check_defaults[cd];
-            }
-        }
-    }
-    else {
-        plugin.cfg.checks = check_defaults;
-    }
-
-    if (plugin.cfg.reject) {
-        for (var rd in reject_defaults) {
-            if (undefined === plugin.cfg.reject[rd]) {
-                plugin.cfg.reject[rd] = reject_defaults[rd];
-            }
-        }
-    }
-    else {
-        plugin.cfg.reject = reject_defaults;
     }
 
     plugin.cfg.invalid_addrs = plugin.config.get('bounce_bad_rcpt', 'list');
