@@ -117,14 +117,24 @@ cfreader.load_ini_config = function(name, options) {
     var current_sect = result.main;
     var current_sect_name = 'main';
 
-    // Initialize any booleans to false
+    // Initialize any booleans
     if (options && Array.isArray(options.booleans)) {
         for (var i=0; i<options.booleans.length; i++) {
             var m;
             if (m = /^(?:([^\. ]+)\.)?(.+)/.exec(options.booleans[i])) {
                 if (!m[1]) m[1] = 'main';
                 if (!result[m[1]]) result[m[1]] = {};
-                result[m[1]][m[2]] = false;
+                if (m[2][0] === '+') {
+                    m[2] = m[2].substr(1);
+                    result[m[1]][m[2]] = true;
+                }
+                else if (m[2][0] === '-') {
+                    m[2] = m[2].substr(1);
+                    result[m[1]][m[2]] = false;
+                }
+                else {
+                    result[m[1]][m[2]] = false;
+                }
             }
         }
     }
@@ -159,7 +169,7 @@ cfreader.load_ini_config = function(name, options) {
                         options.booleans.indexOf(current_sect_name + '.' + match[1]) !== -1)
                     {
                         current_sect[match[1]] = regex.is_truth.test(match[2]);
-                        logger.loginfo('Returning boolean ' + current_sect[match[1]] +
+                        logger.logdebug('Returning boolean ' + current_sect[match[1]] +
                                        ' for ' + current_sect_name + '.' + match[1] + '=' + match[2]);
                     }
                     else if (regex.is_integer.test(match[2])) {

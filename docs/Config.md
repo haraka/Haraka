@@ -89,6 +89,15 @@ and supports the following options for boolean values:
 
 Anything else is treated as false.
 
+If you wish to default the boolean to true (e.g. when the key is undefined or
+the config file is missing) then prefix the key with +:
+
+    { booleans: [ '+reject' ] }
+
+For completeness the inverse is also allowed:
+
+    { booleans: [ '-reject' ] }
+
 Flat Files
 ----------
 
