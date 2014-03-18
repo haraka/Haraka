@@ -204,15 +204,29 @@ exports.from_match = {
 exports.mailing_list = {
     setUp : _set_up,
     tearDown : _tear_down,
-    'ezmlm': function (test) {
-        test.expect(1);
+    'ezmlm true': function (test) {
+        test.expect(2);
         var outer = this;
         var next_cb = function() {
             var r = outer.connection.transaction.results.get('data.headers');
             test.equal(true, /ezmlm/.test(r.pass));
+            test.equal(0, r.fail.length);
         };
         this.plugin.cfg.check.mailing_list=true;
         this.connection.transaction.header.add_end('Mailing-List', "blah blah: run by ezmlm");
+        this.plugin.mailing_list(next_cb, this.connection);
+        test.done();
+    },
+    'ezmlm false': function (test) {
+        test.expect(2);
+        var outer = this;
+        var next_cb = function() {
+            var r = outer.connection.transaction.results.get('data.headers');
+            test.ok(r.fail.length);
+            test.equal(false, /ezmlm/.test(r.pass));
+        };
+        this.plugin.cfg.check.mailing_list=true;
+        this.connection.transaction.header.add_end('Mailing-List', "blah blah random header tokens");
         this.plugin.mailing_list(next_cb, this.connection);
         test.done();
     },

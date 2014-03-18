@@ -128,6 +128,7 @@ exports.invalid_date = function (next, connection) {
     if (!plugin.cfg.check.invalid_date) return next();
 
     // Assure Date header value is [somewhat] sane
+
     var msg_date = connection.transaction.header.get_all('Date');
     if (!msg_date || msg_date.length === 0) return next();
 
@@ -289,7 +290,7 @@ exports.mailing_list = function (next, connection) {
 
     var mlms = {
         'Mailing-List'       : [
-            { mlm: 'ezmlm',       end: 'ezmlm' },
+            { mlm: 'ezmlm',       match: 'ezmlm' },
             { mlm: 'yahoogroups', match: 'yahoogroups' },
         ],
         'Sender'             : [
@@ -305,19 +306,13 @@ exports.mailing_list = function (next, connection) {
         if (!header) continue;   // header not present
         for (var i=0; i < mlms[name].length; i++) {
             var j = mlms[name][i];
-            if (j.end) {
-                if (j.end === header.substring(header.length - j.end.length)) {
-                    connection.transaction.results.add(plugin, {pass: 'MLM('+j.mlm+')'});
-                    found_mlm++;
-                    continue;
-                }
-            }
             if (j.start) {
                 if (header.substring(0,j.start.length) === j.start) {
                     connection.transaction.results.add(plugin, {pass: 'MLM('+j.mlm+')'});
                     found_mlm++;
                     continue;
                 }
+                connection.logerror(plugin, "mlm start miss: " + name + ': ' + header);
             }
             if (j.match) {
                 if (header.match(new RegExp(j.match,'i'))) {
@@ -325,6 +320,7 @@ exports.mailing_list = function (next, connection) {
                     found_mlm++;
                     continue;
                 }
+                connection.logerror(plugin, "mlm match miss: " + name + ': ' + header);
             }
             if (name === 'X-Mailman-Version') {
                 connection.transaction.results.add(plugin, {pass: 'MLM('+j.mlm+')'});
