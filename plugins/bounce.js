@@ -2,11 +2,11 @@
 
 exports.register = function () {
     var plugin = this;
-    plugin.register_hook('mail',       'refresh_config');
-    plugin.register_hook('mail',       'reject_all');
-    plugin.register_hook('data',       'single_recipient');
-    plugin.register_hook('data_post',  'empty_return_path');
-    plugin.register_hook('data_post',  'bad_rcpt');
+    plugin.register_hook('mail',      'refresh_config');
+    plugin.register_hook('mail',      'reject_all');
+    plugin.register_hook('data',      'single_recipient');
+    plugin.register_hook('data',      'bad_rcpt');
+    plugin.register_hook('data_post', 'empty_return_path');
 };
 
 exports.refresh_config = function (next, connection) {
@@ -32,8 +32,6 @@ exports.refresh_config = function (next, connection) {
     }
 
     plugin.cfg = plugin.config.get('bounce.ini', { booleans: bools });
-    if (!plugin.cfg.checks) plugin.cfg.checks={};
-    if (!plugin.cfg.reject) plugin.cfg.reject={};
 
     // Legacy config handling
     if (plugin.cfg.main.reject_invalid) {
