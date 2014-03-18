@@ -308,3 +308,58 @@ exports.get_organizational_domain = {
         _org_domain(test, 'xn--fiqs8s', null);
     },
 };
+
+function _same_ipv4_network(test, addr, addrList, expected) {
+    test.expect(1);
+    test.equals(expected, net_utils.same_ipv4_network(addr, addrList));
+    test.done();
+}
+
+exports.same_ipv4_network = {
+    '199.176.179.3 <-> [199.176.179.4]': function (test) {
+        _same_ipv4_network(test, '199.176.179.3', ['199.176.179.4'], true);
+    },
+    '199.176.179.3 <-> [199.177.179.4': function (test) {
+        _same_ipv4_network(test, '199.176.179.3', ['199.177.179.4'], false);
+    },
+
+    '199.176.179 <-> [199.176.179.4] (missing octet)': function (test) {
+        _same_ipv4_network(test, '199.176.179', ['199.176.179.4'], false);
+    },
+    '199.176.179.3.5 <-> [199.176.179.4] (extra octet)': function (test) {
+        _same_ipv4_network(test, '199.176.179.3.5', ['199.176.179.4'], false);
+    },
+};
+
+function _is_public_suffix(test, label, expected) {
+    test.expect(1);
+    test.equals(expected, net_utils.is_public_suffix(label));
+    test.done();
+};
+
+exports.is_public_suffix = {
+    'com': function (test) {
+        _is_public_suffix(test, 'com', true);
+    },
+    'COM (uc)': function (test) {
+        _is_public_suffix(test, 'COM', true);
+    },
+    'net': function (test) {
+        _is_public_suffix(test, 'net', true);
+    },
+    'co.uk': function (test) {
+        _is_public_suffix(test, 'co.uk', true);
+    },
+    'org': function (test) {
+        _is_public_suffix(test, 'org', true);
+    },
+    'edu': function (test) {
+        _is_public_suffix(test, 'edu', true);
+    },
+    'gov': function (test) {
+        _is_public_suffix(test, 'gov', true);
+    },
+    'org': function (test) {
+        _is_public_suffix(test, 'org', true);
+    },
+}

@@ -12,9 +12,15 @@ function Plugin(name) {
         return new Plugin(name);
     }
 
+    this.name = name;
     this.inherits = stub();
     this.register_hook = stub();
     this.config = stub();
+
+    var levels = [ 'data', 'protocol', 'debug', 'info', 'notice', 'warn', 'error', 'crit', 'alert', 'emerg' ];
+    for (var i=0; i < levels.length; i++) {
+        this['log' + levels[i]] = stub();
+    }
 
     return this.load_plugin(name);
 }
