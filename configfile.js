@@ -124,7 +124,7 @@ cfreader.load_ini_config = function(name, options) {
             if (m = /^(?:([^\. ]+)\.)?(.+)/.exec(options.booleans[i])) {
                 if (!m[1]) m[1] = 'main';
                 if (!result[m[1]]) result[m[1]] = {};
-                result[m[1]][m[2]] = false;
+                result[m[1]][m[2]] = undefined;
             }
         }
     }

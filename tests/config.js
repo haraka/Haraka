@@ -132,7 +132,7 @@ exports.load_ini_config = {
         test.expect(1);
         test.deepEqual(
                 configfile.load_ini_config('non-exist.ini', { booleans: ['reject']}),
-                { main: { reject: false } }
+                { main: { reject: undefined } }
                 );
         test.done();
     },
