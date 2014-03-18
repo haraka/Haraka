@@ -23,6 +23,20 @@ function _tear_down(callback) {
     callback();
 }
 
+exports.relay_dest_domains = {
+    setUp : _set_up,
+    tearDown : _tear_down,
+    'relaying' : function (test) {
+        test.expect(1);
+        var next = function() {
+            test.equal(undefined, arguments[0]);
+            test.done();
+        };
+        this.connection.relaying=true;
+        this.plugin.relay_dest_domains(next, this.connection, [{host:'foo'}]);
+    },
+};
+
 exports.is_acl_allowed = {
     setUp : _set_up,
     tearDown : _tear_down,

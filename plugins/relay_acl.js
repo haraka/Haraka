@@ -63,9 +63,9 @@ function dest_domain_action(connection, plugin, domains_ini, dest_domain) {
 /**
  * @return bool}
  */
-exports.is_acl_allowed = function (connection) {
+exports.is_acl_allowed = function (connection, ip) {
     var plugin = this;
-    var ip = connection.remote_ip;
+    if (!ip) ip = connection.remote_ip;
     for (var i in plugin.acl_allow) {
         var item = plugin.acl_allow[i];
         connection.logdebug(plugin, 'checking if ' + ip + ' is in ' + item);
