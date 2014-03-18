@@ -12,13 +12,43 @@ exports.register = function () {
 exports.refresh_config = function (next, connection) {
     var plugin = this;
 
-    var checks = ['reject_all','single_recipient','empty_return_path','bad_rcpt'];
-    var rejects = ['all','single_recipient','empty_return_path'];
+    var check_defaults = {
+        reject_all        : false,
+        single_recipient  : true,
+        empty_return_path : false,
+        bad_rcpt          : true,
+    };
+    var reject_defaults = {
+        single_recipient : true,
+        empty_return_path: false,
+    };
+
     var bools = [];
-    for (var i=0; i<checks.length;  i++) { push.bools('checks.'+checks[i]); }
-    for (    i=0; i<rejects.length; i++) { push.bools('rejects.'+rejects[i]); }
+    for (var cd in check_defaults ) { bools.push('checks.'+cd); }
+    for (var rd in reject_defaults) { bools.push('reject.'+rd); }
 
     plugin.cfg = plugin.config.get('bounce.ini', { booleans: bools });
+
+    if (plugin.cfg.checks) {
+        for (var cd in check_defaults) {
+            if (undefined === plugin.cfg.checks[cd]) {
+                plugin.cfg.checks[cd] = check_defaults[cd];
+            }
+        }
+    }
+    else {
+        plugin.cfg.checks = check_defaults;
+    }
+    if (plugin.cfg.reject) {
+        for (var rd in reject_defaults) {
+            if (undefined === plugin.cfg.reject[rd]) {
+                plugin.cfg.reject[rd] = reject_defaults[rd];
+            }
+        }
+    }
+    else {
+        plugin.cfg.reject = reject_defaults;
+    }
 
     plugin.cfg.invalid_addrs = plugin.config.get('bounce_bad_rcpt', 'list');
     return next();
