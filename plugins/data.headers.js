@@ -14,14 +14,29 @@ exports.register = function () {
 };
 
 exports.refresh_config = function(next, connection) {
+    var check_defaults = {
+        duplicate_singular: true,
+        missing_required: true,
+        invalid_return_path: true,
+        invalid_date: true,
+        user_agent: false,
+        direct_to_mx: false,
+        from_match: false,
+        mailing_list: false,
+    };
+    var reject_defaults = {
+        duplicate_singular: false,
+        missing_required: false,
+        invalid_return_path: false,
+        invalid_date: false,
+    };
+
     var bools = [];
-
-    var checks = [ 'duplicate_singular', 'missing_required', 'invalid_return_path',
-        'invalid_date', 'user_agent', 'direct_to_mx', 'from_match', 'mailing_list'];
-
-    for (var i=0; i < checks.length; i++) {
-        bools.push('check.' + checks[i]);
-        bools.push('reject.' + checks[i]);
+    for (var cd in check_defaults) {
+        bools.push('check.' + (check_defaults[cd] ? '+' : '-') + cd);
+    }
+    for (var rd in reject_defaults) {
+        bools.push('reject.' + (reject_defaults[rd] ? '+' : '-') + rd);
     }
 
     this.cfg = this.config.get('data.headers.ini', { booleans: bools });
