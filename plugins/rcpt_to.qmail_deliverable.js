@@ -11,7 +11,7 @@ var options = {
 
 exports.hook_rcpt = function(next, connection, params) {
     var plugin = this;
-    var cfg = plugin.config.get(plugin.name + '.ini');
+    var cfg = plugin.config.get('rcpt_to.qmail_deliverable.ini');
 
     var rcpt = params[0];
     var domain = rcpt.host.toLowerCase();
@@ -39,15 +39,15 @@ exports.get_qmd_response = function (next, connection, email) {
     connection.logdebug(plugin, "checking " + email);
     var results = connection.transaction.results;
     options.path = '/qd1/deliverable?' + querystring.escape(email);
-    connection.logprotocol(plugin, 'PATH: ' + options.path);
-    var req = http.get(options, function(res) {
+    // connection.logdebug(plugin, 'PATH: ' + options.path);
+    http.get(options, function(res) {
         connection.logprotocol(plugin, 'STATUS: ' + res.statusCode);
         connection.logprotocol(plugin, 'HEADERS: ' + JSON.stringify(res.headers));
         res.setEncoding('utf8');
         res.on('data', function (chunk) {
             connection.logprotocol(plugin, 'BODY: ' + chunk);
             var hexnum = new Number(chunk).toString(16);
-            var arr = plugin.check_qmd_reponse(next, connection, hexnum);
+            var arr = plugin.check_qmd_reponse(connection, hexnum);
             connection.loginfo(plugin, arr[1]);
             if (arr[0] === undefined) {
                 results.add(plugin, {err: arr[1]});
@@ -69,7 +69,7 @@ exports.get_qmd_response = function (next, connection, email) {
     });
 };
 
-exports.check_qmd_reponse = function (next, connection, hexnum) {
+exports.check_qmd_reponse = function (connection, hexnum) {
     var plugin = this;
     connection.logprotocol(plugin,"HEXRV: " + hexnum );
 
