@@ -23,7 +23,7 @@ exports.check_plain_passwd = function (connection, user, passwd, cb) {
 
 exports.try_auth_vpopmaild = function (connection, user, passwd, cb) {
     var plugin = this;
-    cfg = plugin.config.get(plugin.name + '.ini');
+    cfg = plugin.config.get('auth_vpopmaild.ini');
 
     var auth_success = false;
     var result = "";
@@ -33,15 +33,18 @@ exports.try_auth_vpopmaild = function (connection, user, passwd, cb) {
 
     var domain = (user.split('@'))[1];
     if (domain && cfg[domain]) {
-	if (cfg[domain].port) port = cfg[domain].port;
-	if (cfg[domain].host) host = cfg[domain].host;
+        if (cfg[domain].port) port = cfg[domain].port;
+        if (cfg[domain].host) host = cfg[domain].host;
     }
     else {
-	if (cfg.main.port) port = cfg.main.port;
-	if (cfg.main.host) host = cfg.main.host;
+        if (cfg.main.port) port = cfg.main.port;
+        if (cfg.main.host) host = cfg.main.host;
     }
+    connection.logdebug(plugin, 'sock: ' + host + ':' + port);
 
-    var socket = new sock.Socket().connect(port, host).setTimeout(300 * 1000);
+    var socket = new sock.Socket();
+    socket.connect(port, host);
+    socket.setTimeout(300 * 1000);
 
     socket.on('timeout', function () {
         connection.logerror(plugin, "vpopmaild connection timed out");
