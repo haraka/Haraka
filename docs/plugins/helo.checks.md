@@ -1,5 +1,4 @@
-helo.checks
-===========
+# helo.checks
 
 This plugin performs a number of checks on the HELO string.
 
@@ -7,8 +6,7 @@ HELO strings are very often forged or dubious in spam and so this can be a
 highly effective and false-positive free anti-spam measure.
 
 
-Usage
--------------
+## Usage
 
 helo.checks results can be accessed by subsequent plugins:
 
@@ -21,8 +19,7 @@ helo.checks results can be accessed by subsequent plugins:
     }
 
 
-Configuration
--------------
+## Configuration
 
 * helo.checks.regexps
 
@@ -34,40 +31,40 @@ Configuration
 
   INI file which controls enabling of certain checks:
 
-    * check\_no\_dot=1
+    * skip\_private\_ip=true
+
+      Bypasses checks for clients within RFC1918, Loopback or APIPA IP address ranges.
+
+### [check]
+
+    * no\_dot=true
     
       Checks that the HELO has at least one '.' in it.
     
-    * check\_raw\_ip=1
+    * bare\_ip=true
     
       Checks for HELO <IP> where the IP is not surrounded by square brackets.
       This is an RFC violation so should always be enabled.
    
-    * check\_dynamic=1
+    * dynamic=true
 
       Checks to see if all or part the connecting IP address appears within 
       the HELO argument to indicate that the client has a dynamic IP address.
     
-    * check\_literal\_mismatch=1|2
+    * literal\_mismatch=1|2
 
       Checks to see if the IP literal used matches the connecting IP address.
       If set to 1, the full IP must match.  If set to 2, the /24 must match.
 
-    * require\_valid\_tld=1
+    * require\_valid\_tld=true
 
       Requires the HELO argument ends in a valid TLD if it is not an IP literal.
 
-    * skip\_private\_ip=1
+### [reject]
 
-      Bypasses check\_no\_dot, check\_raw\_ip, check\_dynamic and require\_valid\_tld 
-      for clients within RFC1918, Loopback or APIPA IP address ranges.
 
-    * reject=true
+### [bigco]
 
-      Disable rejections when tests fail.
-
-    * [bigco]
-    
       A list of <helo>=<rdns>[,<rdns>...] to match against. If the HELO matches
       what's on the left hand side, the reverse-DNS must match one of the
       entries on the right hand side or the mail is blocked.
@@ -76,4 +73,3 @@ Configuration
       
             yahoo.com=yahoo.com,yahoo.co.jp
             aol.com=aol.com
-       
