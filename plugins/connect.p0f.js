@@ -4,76 +4,77 @@ var net = require('net');
 var ipaddr = require('ipaddr.js');
 
 function p0f_client(path) {
-    var self = this;
+    var pfc = this;
 
-    this.sock = null;
-    this.send_queue = [];
-    this.receive_queue = [];
-    this.connected = false;
-    this.ready = false;
-    this.socket_has_error = false;
-    this.restart_interval = false;
+    pfc.sock = null;
+    pfc.send_queue = [];
+    pfc.receive_queue = [];
+    pfc.connected = false;
+    pfc.ready = false;
+    pfc.socket_has_error = false;
+    pfc.restart_interval = false;
 
-    self.sock = net.createConnection(path);
+    pfc.sock = net.createConnection(path);
 
-    self.sock.setTimeout(5 * 1000);
+    pfc.sock.setTimeout(5 * 1000);
 
-    self.sock.on('connect', function () {
-        self.sock.setTimeout(30 * 1000);
-        self.connected = true;
-        self.socket_has_error = false;
-        self.ready = true;
-        if (self.restart_interval) clearInterval(self.restart_interval);
-        self.process_send_queue();
+    pfc.sock.on('connect', function () {
+        pfc.sock.setTimeout(30 * 1000);
+        pfc.connected = true;
+        pfc.socket_has_error = false;
+        pfc.ready = true;
+        if (pfc.restart_interval) clearInterval(pfc.restart_interval);
+        pfc.process_send_queue();
     });
 
-    self.sock.on('data', function (data) {
+    pfc.sock.on('data', function (data) {
         for (var i=0; i<data.length/232; i++) {
-            self.decode_response(data.slice(((i) ? 232*i : 0), 232*(i+1)));
+            pfc.decode_response(data.slice(((i) ? 232*i : 0), 232*(i+1)));
         }
     });
 
-    self.sock.on('drain', function () {
-        self.ready = true;
-        self.process_send_queue();
+    pfc.sock.on('drain', function () {
+        pfc.ready = true;
+        pfc.process_send_queue();
     });
 
-    self.sock.on('error', function (error) {
-        self.connected = false;
+    pfc.sock.on('error', function (error) {
+        pfc.connected = false;
         error.message = error.message + ' (socket: ' + path + ')';
-        self.socket_has_error = error;
-        self.sock.destroy();
+        pfc.socket_has_error = error;
+        pfc.sock.destroy();
         // Try and reconnect
-        if (!self.restart_interval) {
-            self.restart_interval = setInterval(function () {
+        if (!pfc.restart_interval) {
+            pfc.restart_interval = setInterval(function () {
                 connect();
             }, 5 * 1000);
         }
         // Clear the receive queue
-        for (var i=0; i<self.receive_queue.length; i++) {
-            var item = self.receive_queue.shift();
-            item.cb(self.socket_has_error);
+        for (var i=0; i<pfc.receive_queue.length; i++) {
+            var item = pfc.receive_queue.shift();
+            item.cb(pfc.socket_has_error);
             continue;
         }
-        self.process_send_queue();
+        pfc.process_send_queue();
     });
-};
+}
 
 p0f_client.prototype.decode_response = function (data) {
+    var pfc = this;
     var decode_string = function (data, start, end) {
-        var str = ''
+        var str = '';
         for (var a=start; a<end; a++) {
             var b = data.readUInt8(a);
             if (b === 0x0) break;
             str = str + String.fromCharCode(b);
         }
         return str;
-    }
+    };
 
-    if (!this.receive_queue.length > 0) {
+    if (!pfc.receive_queue.length > 0) {
         throw new Error('unexpected data received');
     }
-    var item = this.receive_queue.shift();
+    var item = pfc.receive_queue.shift();
 
     ///////////////////
     // Decode packet //
@@ -88,7 +89,6 @@ p0f_client.prototype.decode_response = function (data) {
     switch (st) {
         case (0x00):
             return item.cb(new Error('bad query'));
-            break;
         case (0x10):
             var p0f = {
                 query:       item.ip,
@@ -108,22 +108,21 @@ p0f_client.prototype.decode_response = function (data) {
                 http_flavor: decode_string(data, 136, 168),
                 link_type:   decode_string(data, 168, 200),
                 language:    decode_string(data, 200, 232),
-            }
+            };
             return item.cb(null, p0f);
-            break;
         case (0x20):
             return item.cb(null, null);
-            break;
         default:
             throw new Error('unknown status: ' + st);
     }
-}
+};
 
 p0f_client.prototype.query = function (ip, cb) {
-    if (this.socket_has_error) {
-        return cb(this.socket_has_error);
+    var pfc = this;
+    if (pfc.socket_has_error) {
+        return cb(pfc.socket_has_error);
     }
-    if (!this.connected) {
+    if (!pfc.connected) {
         return cb(new Error('socket not connected'));
     }
     var addr = ipaddr.parse(ip);
@@ -134,17 +133,17 @@ p0f_client.prototype.query = function (ip, cb) {
     for (var i=0; i < bytes.length; i++) {
         buf.writeUInt8(bytes[i], 5 + i);
     }
-    if (!this.ready) {
-        this.send_queue.push({ip: ip, cb: cb, buf: buf});
+    if (!pfc.ready) {
+        pfc.send_queue.push({ip: ip, cb: cb, buf: buf});
     }
     else {
-        this.receive_queue.push({ip: ip, cb: cb});
-        if (!this.sock.write(buf)) this.ready = false;
+        pfc.receive_queue.push({ip: ip, cb: cb});
+        if (!pfc.sock.write(buf)) pfc.ready = false;
     }
-}
+};
 
 p0f_client.prototype.process_send_queue = function () {
-    if (this.send_queue.length === 0) { return; };
+    if (this.send_queue.length === 0) { return; }
 
     for (var i=0; i<this.send_queue.length; i++) {
         if (this.socket_has_error) {
@@ -159,7 +158,7 @@ p0f_client.prototype.process_send_queue = function () {
             this.ready = false;
         }
     }
-}
+};
 
 exports.p0f_client = p0f_client;
 
@@ -168,7 +167,7 @@ exports.hook_init_master = function (next) {
     // Start p0f process?
     server.notes.p0f_client = new p0f_client(cfg.main.socket_path);
     return next();
-}
+};
 
 exports.hook_init_child = function (next) {
     var cfg = this.config.get('connect.p0f.ini');
@@ -177,27 +176,25 @@ exports.hook_init_child = function (next) {
 }
 
 exports.hook_lookup_rdns = function onLookup(next, connection) {
-    if (!server.notes.p0f_client) return next();
     var plugin = this;
     var p0f_client = server.notes.p0f_client;
+    if (!p0f_client) return next();
     p0f_client.query(connection.remote_ip, function onResults(err, result) {
         if (err) {
-            connection.logerror(plugin, 'error: ' + err.message);
+            connection.results.add(plugin, {err: err.message});
             return next();
-        };
+        }
 
         if (!result) {
-            connection.logdebug(plugin, 'error, no p0f results' );
+            connection.results.add(plugin, {err: 'no p0f results'});
             return next();
-        };
+        }
 
+        connection.results.add(plugin, result);
         connection.loginfo(plugin, format_results(result));
-
-        // Store p0f results for other plugins
-        connection.notes.p0f = result;
         return next();
     });
-}
+};
 
 function format_results(result) {
     return [
@@ -207,37 +204,26 @@ function format_results(result) {
         'total_conn=' + result.total_conn,
         'shared_ip=' + ((result.last_nat === 0) ? 'N' : 'Y'),
     ].join(' ');
-};
+}
 
 exports.hook_data_post = function onDataPostP0F(next, connection) {
     var plugin = this;
-    var cfg = this.config.get('connect.p0f.ini');
+    var cfg = plugin.config.get('connect.p0f.ini');
     var header_name = cfg.main.add_header;
     if (!header_name) {
         connection.logdebug(plugin, 'header disabled in ini' );
         return next();
-    };
+    }
 
     connection.transaction.remove_header(header_name);
-    var result = connection.notes.p0f;
+    var result = connection.results.get('connect.p0f');
     if (!result) {
-        connection.logdebug(plugin, 'no p0f note' );
+        connection.results.add(plugin, {err: 'no p0f note'});
         return next();
-    };
+    }
 
     connection.logdebug(plugin, 'adding header' );
     connection.transaction.add_header(header_name, format_results(result));
 
     return next();
-}
-
-/*
-// Redundant, was already logged in the query callback
-exports.hook_disconnect = function (next, connection) {
-    if (!connection.notes.p0f) { return next(); };
-    var plugin = this;
-    var result = connection.notes.p0f;
-    connection.loginfo(plugin, format_results(result));
-    return next();
-}
-*/
+};
