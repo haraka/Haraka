@@ -4,63 +4,63 @@ var net = require('net');
 var ipaddr = require('ipaddr.js');
 
 function p0f_client(path) {
-    var plugin = this;
+    var pfc = this;
 
-    plugin.sock = null;
-    plugin.send_queue = [];
-    plugin.receive_queue = [];
-    plugin.connected = false;
-    plugin.ready = false;
-    plugin.socket_has_error = false;
-    plugin.restart_interval = false;
+    pfc.sock = null;
+    pfc.send_queue = [];
+    pfc.receive_queue = [];
+    pfc.connected = false;
+    pfc.ready = false;
+    pfc.socket_has_error = false;
+    pfc.restart_interval = false;
 
-    plugin.sock = net.createConnection(path);
+    pfc.sock = net.createConnection(path);
 
-    plugin.sock.setTimeout(5 * 1000);
+    pfc.sock.setTimeout(5 * 1000);
 
-    plugin.sock.on('connect', function () {
-        plugin.sock.setTimeout(30 * 1000);
-        plugin.connected = true;
-        plugin.socket_has_error = false;
-        plugin.ready = true;
-        if (plugin.restart_interval) clearInterval(plugin.restart_interval);
-        plugin.process_send_queue();
+    pfc.sock.on('connect', function () {
+        pfc.sock.setTimeout(30 * 1000);
+        pfc.connected = true;
+        pfc.socket_has_error = false;
+        pfc.ready = true;
+        if (pfc.restart_interval) clearInterval(pfc.restart_interval);
+        pfc.process_send_queue();
     });
 
-    plugin.sock.on('data', function (data) {
+    pfc.sock.on('data', function (data) {
         for (var i=0; i<data.length/232; i++) {
-            plugin.decode_response(data.slice(((i) ? 232*i : 0), 232*(i+1)));
+            pfc.decode_response(data.slice(((i) ? 232*i : 0), 232*(i+1)));
         }
     });
 
-    plugin.sock.on('drain', function () {
-        plugin.ready = true;
-        plugin.process_send_queue();
+    pfc.sock.on('drain', function () {
+        pfc.ready = true;
+        pfc.process_send_queue();
     });
 
-    plugin.sock.on('error', function (error) {
-        plugin.connected = false;
+    pfc.sock.on('error', function (error) {
+        pfc.connected = false;
         error.message = error.message + ' (socket: ' + path + ')';
-        plugin.socket_has_error = error;
-        plugin.sock.destroy();
+        pfc.socket_has_error = error;
+        pfc.sock.destroy();
         // Try and reconnect
-        if (!plugin.restart_interval) {
-            plugin.restart_interval = setInterval(function () {
+        if (!pfc.restart_interval) {
+            pfc.restart_interval = setInterval(function () {
                 connect();
             }, 5 * 1000);
         }
         // Clear the receive queue
-        for (var i=0; i<plugin.receive_queue.length; i++) {
-            var item = plugin.receive_queue.shift();
-            item.cb(plugin.socket_has_error);
+        for (var i=0; i<pfc.receive_queue.length; i++) {
+            var item = pfc.receive_queue.shift();
+            item.cb(pfc.socket_has_error);
             continue;
         }
-        plugin.process_send_queue();
+        pfc.process_send_queue();
     });
 }
 
 p0f_client.prototype.decode_response = function (data) {
-    var plugin = this;
+    var pfc = this;
     var decode_string = function (data, start, end) {
         var str = '';
         for (var a=start; a<end; a++) {
@@ -71,10 +71,10 @@ p0f_client.prototype.decode_response = function (data) {
         return str;
     };
 
-    if (!plugin.receive_queue.length > 0) {
+    if (!pfc.receive_queue.length > 0) {
         throw new Error('unexpected data received');
     }
-    var item = plugin.receive_queue.shift();
+    var item = pfc.receive_queue.shift();
 
     ///////////////////
     // Decode packet //
@@ -118,11 +118,11 @@ p0f_client.prototype.decode_response = function (data) {
 };
 
 p0f_client.prototype.query = function (ip, cb) {
-    var plugin = this;
-    if (plugin.socket_has_error) {
-        return cb(plugin.socket_has_error);
+    var pfc = this;
+    if (pfc.socket_has_error) {
+        return cb(pfc.socket_has_error);
     }
-    if (!plugin.connected) {
+    if (!pfc.connected) {
         return cb(new Error('socket not connected'));
     }
     var addr = ipaddr.parse(ip);
@@ -133,12 +133,12 @@ p0f_client.prototype.query = function (ip, cb) {
     for (var i=0; i < bytes.length; i++) {
         buf.writeUInt8(bytes[i], 5 + i);
     }
-    if (!plugin.ready) {
-        plugin.send_queue.push({ip: ip, cb: cb, buf: buf});
+    if (!pfc.ready) {
+        pfc.send_queue.push({ip: ip, cb: cb, buf: buf});
     }
     else {
-        plugin.receive_queue.push({ip: ip, cb: cb});
-        if (!plugin.sock.write(buf)) plugin.ready = false;
+        pfc.receive_queue.push({ip: ip, cb: cb});
+        if (!pfc.sock.write(buf)) pfc.ready = false;
     }
 };
 
