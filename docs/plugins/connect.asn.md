@@ -2,10 +2,10 @@
 
 Inserts a result object with the ASN of the connecting IP address. The ASN is
 the [Autonomous System Number](http://en.wikipedia.org/wiki/Autonomous_System_(Internet))
-that represents the bailiwick or sphere of control of a network operator. 
+that represents the bailiwick or sphere of control of a network operator.
 
 
-# Usage
+## Usage
 
 You can also access the ASN number for other plugins that run after this plugin like so:
 
@@ -14,15 +14,38 @@ You can also access the ASN number for other plugins that run after this plugin 
         connection.loginfo(plugin, "hey look, it's ASN: " + asn.asn);
     }
 
-# Headers
+## Configuration
 
-Optionally add headers to messages with ASN info. See config/connect.asn.ini.
+The following settings can be set in config/connect.asn.ini.
 
-* add\_header - add X-Haraka-ASN header with the ASN and if available, netmask.
-* provider\_header - add X-Haraka-ASN-[provider] headers with lookup results
+* providers: comma separated list of DNS zones that provide IP to ASN lookups
+
+Supported providers: origin.asn.cymru.com, origin.asn.spameatingmonkey.net
+and asn.routeviews.org
+
+* test\_ip: (Default:
+
+An IP address that maps to an ASN (any valid public IP should work)
+
+* timeout (in seconds): (Default: 4)
+
+How long to wait for DNS results to return.
 
 
-# Theory
+## Headers
+
+Optionally add headers to messages with ASN info.
+
+* asn\_header (Default: false)
+
+add X-Haraka-ASN header with the ASN and if available, netmask.
+
+* provider\_header (Default: false)
+
+Add X-Haraka-ASN-[provider] header for each provider that returned results.
+
+
+## Theory
 
 An ASN is a very good approximation of the IP space under the control
 of a network operator. The theory behind ASN tracking is that good network
@@ -33,7 +56,7 @@ Not-so-good network operators are likely to emit a greater number of abusive
 connections, and should be handled with increased scrutiny.
 
 
-# Research
+## Research
 
 http://www.cc.gatech.edu/~feamster/papers/snare-usenix09.pdf
 
@@ -49,13 +72,13 @@ spammers to move mail servers or the bot armies to a different AS; therefore,
 AS numbers are robust to indicate malicious hosts."
 
 
-# Consumers
+## Consumers
 
 The [karma](/manual/plugins/karma.html) plugin uses the ASN to maintain
 its network neighborhood reputation.
 
 
-# TODO
+## TODO
 
 Keep an eye on node-geoip. If/when it adds support for ASN lookups, note
 that as an alternative data source.

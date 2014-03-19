@@ -6,16 +6,17 @@ var net_utils = require('./net_utils');
 var test_ip = '208.75.177.99';
 var providers = [];
 var conf_providers = [ 'origin.asn.cymru.com', 'asn.routeviews.org' ];
+var cfg;
 
 exports.register = function () {
     var plugin = this;
 
     // get settings from the config file
-    var config = plugin.config.get('connect.asn.ini');
-    if (config.main.providers) {
-        conf_providers = config.main.providers.split(/[\s,;]+/);
+    cfg = plugin.config.get('connect.asn.ini');
+    if (cfg.main.providers) {
+        conf_providers = cfg.main.providers.split(/[\s,;]+/);
     }
-    if (config.main.test_ip) { test_ip = config.main.test_ip; }
+    if (cfg.main.test_ip) { test_ip = cfg.main.test_ip; }
 
     // add working providers to the provider list
     var result_cb = function (zone, res) {
@@ -37,9 +38,15 @@ exports.register = function () {
 exports.get_dns_results = function (zone, ip, cb) {
     var plugin = this;
     var query = ip.split('.').reverse().join('.') + '.' + zone;
-    plugin.logdebug(plugin, "query: " + query);
+    // plugin.logdebug(plugin, "query: " + query);
+
+    var timer = setTimeout(function () {
+        plugin.logerror(plugin, 'timeout: ' + zone);
+        return cb(zone, '');
+    }, (cfg.main.timeout || 4) * 1000);
 
     dns.resolveTxt(query, function (err, addrs) {
+        clearTimeout(timer);
         if (err) {
             plugin.logerror(plugin, "error: " + err + ' running: '+query);
             return cb(zone, '');
@@ -154,9 +161,9 @@ exports.hook_data_post = function (next, connection) {
     var asn = connection.results.get('connect.asn');
     if (!asn) return next();
     var txn = connection.transaction;
-    var config = plugin.config.get('connect.asn.ini');
+    var cfg = plugin.config.get('connect.asn.ini');
 
-    if (asn.asn && config.main.asn_header) {
+    if (asn.asn && cfg.main.asn_header) {
         if (asn.net) {
             txn.add_header('X-Haraka-ASN', asn.asn + ' ' + asn.net);
         }
@@ -165,7 +172,7 @@ exports.hook_data_post = function (next, connection) {
         }
     }
 
-    if (config.main.provider_header) {
+    if (cfg.main.provider_header) {
         for (var p in asn) {
             if (!asn[p].asn) {   // ignore non-object results
                 // connection.logdebug(plugin, p + ", " + asn[p]);
