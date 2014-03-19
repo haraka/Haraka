@@ -5,33 +5,38 @@ var querystring = require('querystring');
 
 var options = {
     method: 'get',
-    reject: true,
+    host: '127.0.0.1',
+    port: 8898,
 };
 
 exports.hook_rcpt = function(next, connection, params) {
     var plugin = this;
-    var config = plugin.config.get('rcpt_to.qmail_deliverable.ini');
-
-    options.host = config.main.host || '127.0.0.1';
-    options.port = config.main.port || 8998;
-    if (config.main.reject !== undefined) {
-        options.reject = config.main.reject;
-    }
-    this.logdebug(connection, "host: " + options.host );
-    this.logdebug(connection, "port: " + options.port );
+    var cfg = plugin.config.get(plugin.name + '.ini');
 
     var rcpt = params[0];
-    var email = rcpt.address();
+    var domain = rcpt.host.toLowerCase();
+
+    if (cfg[domain]) {
+        if (cfg[domain].host) options.host = cfg[domain].host;
+        if (cfg[domain].port) options.host = cfg[domain].port;
+    }
+    else {
+        if (cfg.main.host) options.host = cfg.main.host;
+        if (cfg.main.port) options.port = cfg.main.port;
+    }
+
+    connection.transaction.results.add(plugin, {
+        msg: "sock: " + options.host + ':' + options.port
+    });
 
     // Qmail::Deliverable::Client does a rfc2822 "atext" test
     // but Haraka has already validated for us by this point
-
-    connection.logdebug(plugin, "checking " + email );
-    return plugin.get_qmd_response(next, connection, email);
-}
+    return plugin.get_qmd_response(next, connection, rcpt.address());
+};
 
 exports.get_qmd_response = function (next, connection, email) {
     var plugin = this;
+    connection.logdebug(plugin, "checking " + email);
     var results = connection.transaction.results;
     options.path = '/qd1/deliverable?' + querystring.escape(email);
     connection.logprotocol(plugin, 'PATH: ' + options.path);
@@ -108,4 +113,4 @@ exports.check_qmd_reponse = function (next, connection, hexnum) {
         default:
             return [ undefined, "unknown rv(" + hexnum + ")" ];
     }
-}
+};
