@@ -14,11 +14,11 @@ altering the contents of config/rcpt\_to.qmail\_deliverable.ini
 
 * port (Default: 8998)
 
-## Per-domain routing
+## Per-domain Configuration
 
-Additionally, domains can each have their own routing instructions for
-connecting to qmail-deliverabled. The defaults are the same, so only the
-differences needs to be declared. Example:
+Additionally, domains can each have their own configuration for connecting
+to qmail-deliverabled. The defaults are the same, so only the differences
+needs to be declared. Example:
 
     [example.com]
     host=192.168.0.1
