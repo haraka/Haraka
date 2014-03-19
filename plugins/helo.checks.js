@@ -2,23 +2,22 @@
 var net_utils = require('./net_utils');
 
 var checks = [
-    'helo_init',             // config loading, multiplicity detection
-    'helo_no_dot',           // HELO has no "dot" in hostname
-    'helo_match_re',         // List of regexps
-    'helo_raw_ip',           // HELO raw IP
-    'helo_is_dynamic',       // HELO looks dynamic
-    'helo_big_company',      // Well known HELOs that must match rdns
-    'helo_literal_mismatch', // IP literal that doesn't match remote IP
-    'helo_valid_tld',        // hostname has a valid TLD
-    'helo_match_rdns',       // hostname matches rDNS
-    'helo_mismatch',         // hostname differs between invocations
+    'init',               // config loading, multiplicity detection
+    'no_dot',             // HELO has no "dot" in hostname
+    'match_re',           // List of regexps
+    'raw_ip',             // HELO raw IP
+    'is_dynamic',         // HELO looks dynamic
+    'big_company',        // Well known HELOs that must match rdns
+    'literal_mismatch',   // IP literal that doesn't match remote IP
+    'valid_tld',          // hostname has a valid TLD
+    'match_rdns',         // hostname matches rDNS
+    'mismatch',           // hostname differs between invocations
 ];
-
-var cfg;
-var reject = true;
 
 exports.register = function () {
     var plugin = this;
+
+    plugin.cfg = this.config.get('helo.checks.ini', { booleans: [], });
 
     for (var i=0; i < checks.length; i++) {
         var hook = checks[i];
@@ -28,12 +27,11 @@ exports.register = function () {
 };
 
 exports.hook_connect = function (next, connection) {
-    cfg = this.config.get('helo.checks.ini'); // { booleans: ['main.reject'], });
-    if (cfg.main.reject !== undefined) reject = cfg.main.reject;
+    this.cfg = this.config.get('helo.checks.ini', { booleans: [], });
     return next();
 };
 
-exports.helo_init = function (next, connection, helo) {
+exports.init = function (next, connection, helo) {
     var plugin = this;
 
     var hc = connection.results.get('helo.checks');
@@ -48,7 +46,7 @@ exports.helo_init = function (next, connection, helo) {
     return next();
 };
 
-exports.helo_mismatch = function (next, connection, helo) {
+exports.mismatch = function (next, connection, helo) {
     var plugin = this;
 
     var hc = connection.results.get('helo.checks');
@@ -69,14 +67,14 @@ exports.helo_mismatch = function (next, connection, helo) {
     return next();
 };
 
-exports.helo_no_dot = function (next, connection, helo) {
+exports.no_dot = function (next, connection, helo) {
     var plugin = this;
 
     var hc = connection.results.get('helo.checks');
     if (hc && hc.multi) return next();
 
-    if (!cfg.main.check_no_dot      ||
-        (cfg.main.skip_private_ip   &&
+    if (!plugin.cfg.main.check_no_dot      ||
+        (plugin.cfg.main.skip_private_ip   &&
         net_utils.is_rfc1918(connection.remote_ip)))
     {
         connection.results.add(plugin, {skip: 'no_dot'});
@@ -85,7 +83,7 @@ exports.helo_no_dot = function (next, connection, helo) {
 
     if (!/\./.test(helo)) {
         connection.results.add(plugin, {fail: 'no_dot'});
-        if (reject) return next(DENY, 'HELO must have a dot');
+        if (plugin.cfg.reject.no_dot) return next(DENY, 'HELO must have a dot');
     }
     else {
         connection.results.add(plugin, {pass: 'no_dot'});
@@ -94,7 +92,7 @@ exports.helo_no_dot = function (next, connection, helo) {
     return next();
 };
 
-exports.helo_match_re = function (next, connection, helo) {
+exports.match_re = function (next, connection, helo) {
     var plugin = this;
 
     var hc = connection.results.get('helo.checks');
@@ -110,18 +108,18 @@ exports.helo_match_re = function (next, connection, helo) {
             fail++;
         }
     }
-    if (fail && reject) return next(DENY, "BAD HELO");
+    if (fail && plugin.cfg.reject.match_re) return next(DENY, "BAD HELO");
     if (!fail) connection.results.add(plugin, {pass: 'match_re'});
     return next();
 };
 
-exports.helo_match_rdns = function (next, connection, helo) {
+exports.match_rdns = function (next, connection, helo) {
     var plugin = this;
 
     var hc = connection.results.get('helo.checks');
     if (hc && hc.multi) return next();
 
-    if (!cfg.main.check_rdns_match) {
+    if (!plugin.cfg.main.check_rdns_match) {
         connection.results.add(plugin, {skip: 'rdns_match(config)'});
         return next();
     }
@@ -152,17 +150,17 @@ exports.helo_match_rdns = function (next, connection, helo) {
     return next();
 };
 
-exports.helo_raw_ip = function (next, connection, helo) {
+exports.raw_ip = function (next, connection, helo) {
     var plugin = this;
 
     var hc = connection.results.get('helo.checks');
     if (hc && hc.multi) return next();
 
-    if (!cfg.main.check_raw_ip) {
+    if (!plugin.cfg.main.check_raw_ip) {
         connection.results.add(plugin, {skip: 'raw_ip(config)'});
         return next();
     }
-    if (cfg.main.skip_private_ip && net_utils.is_rfc1918(connection.remote_ip)) {
+    if (plugin.cfg.main.skip_private_ip && net_utils.is_rfc1918(connection.remote_ip)) {
         connection.results.add(plugin, {skip: 'raw_ip(private)'});
         return next();
     }
@@ -171,7 +169,7 @@ exports.helo_raw_ip = function (next, connection, helo) {
     // RAW IPs must be formatted: "[1.2.3.4]" not "1.2.3.4" in HELO
     if(/^\d+\.\d+\.\d+\.\d+$/.test(helo)) {
         connection.results.add(plugin, {fail: 'raw_ip(invalid literal)'});
-        if (reject) return next(DENY, "Invalid address format in HELO");
+        if (plugin.cfg.reject.raw_ip) return next(DENY, "Invalid address format in HELO");
         return next();
     }
 
@@ -179,17 +177,17 @@ exports.helo_raw_ip = function (next, connection, helo) {
     return next();
 };
 
-exports.helo_is_dynamic = function (next, connection, helo) {
+exports.is_dynamic = function (next, connection, helo) {
     var plugin = this;
 
     var hc = connection.results.get('helo.checks');
     if (hc && hc.multi) return next();
 
-    if (!cfg.main.check_dynamic) {
+    if (!plugin.cfg.main.check_dynamic) {
         connection.results.add(plugin, {skip: 'dynamic(config)'});
         return next();
     }
-    if (cfg.main.skip_private_ip && net_utils.is_rfc1918(connection.remote_ip)) {
+    if (plugin.cfg.main.skip_private_ip && net_utils.is_rfc1918(connection.remote_ip)) {
         connection.results.add(plugin, {skip: 'dynamic(private)'});
         return next();
     }
@@ -207,7 +205,7 @@ exports.helo_is_dynamic = function (next, connection, helo) {
 
     if (net_utils.is_ip_in_str(connection.remote_ip, helo)) {
         connection.results.add(plugin, {fail: 'dynamic'});
-        if (reject) return next(DENY, 'HELO is dynamic');
+        if (plugin.cfg.reject.is_dynamic) return next(DENY, 'HELO is dynamic');
         return next();
     }
 
@@ -215,7 +213,7 @@ exports.helo_is_dynamic = function (next, connection, helo) {
     return next();
 };
 
-exports.helo_big_company = function (next, connection, helo) {
+exports.big_company = function (next, connection, helo) {
     var plugin = this;
 
     var hc = connection.results.get('helo.checks');
@@ -223,16 +221,16 @@ exports.helo_big_company = function (next, connection, helo) {
 
     var rdns = connection.remote_host;
 
-    if (!cfg.bigco) {
+    if (!plugin.cfg.bigco) {
         connection.results.add(plugin, {err: 'big_co(config missing)'});
         return next();
     }
-    if (!cfg.bigco[helo]) {
+    if (!plugin.cfg.bigco[helo]) {
         connection.results.add(plugin, {skip: 'big_co(config)'});
         return next();
     }
 
-    var allowed_rdns = cfg.bigco[helo].split(/,/);
+    var allowed_rdns = plugin.cfg.bigco[helo].split(/,/);
     for (var i=0; i < allowed_rdns.length; i++) {
         var re = new RegExp(allowed_rdns[i].replace(/\./g, '\\.') + '$');
         if (re.test(rdns)) {
@@ -242,21 +240,21 @@ exports.helo_big_company = function (next, connection, helo) {
     }
 
     connection.results.add(plugin, {fail: 'big_co'});
-    if (reject) return next(DENY, "You are not who you say you are");
+    if (plugin.cfg.reject.big_company) return next(DENY, "You are not who you say you are");
     return next();
 };
 
-exports.helo_literal_mismatch = function (next, connection, helo) {
+exports.literal_mismatch = function (next, connection, helo) {
     var plugin = this;
 
     var hc = connection.results.get('helo.checks');
     if (hc && hc.multi) return next();
 
-    if (!cfg.main.check_literal_mismatch) {
+    if (!plugin.cfg.main.check_literal_mismatch) {
         connection.results.add(plugin, {skip: 'literal_mismatch(config)'});
         return next();
     }
-    if (cfg.main.skip_private_ip && net_utils.is_rfc1918(connection.remote_ip)) {
+    if (plugin.cfg.main.skip_private_ip && net_utils.is_rfc1918(connection.remote_ip)) {
         connection.results.add(plugin, {skip: 'literal_mismatch(private)'});
         return next();
     }
@@ -267,13 +265,13 @@ exports.helo_literal_mismatch = function (next, connection, helo) {
         return next();
     }
 
-    if (parseInt(cfg.main.check_literal_mismatch) === 2) {
+    if (parseInt(plugin.cfg.main.check_literal_mismatch) === 2) {
         // Only match the /24
         if (literal[1].split(/\./).splice(0,3).join('.') !==
             connection.remote_ip.split(/\./).splice(0,3).join('.'))
         {
             connection.results.add(plugin, {fail: 'literal_mismatch'});
-            if (reject) return next(DENY, 'HELO IP literal not in the same /24 as your IP address');
+            if (plugin.cfg.reject.literal_mismatch) return next(DENY, 'HELO IP literal not in the same /24 as your IP address');
             return next();
         }
         connection.results.add(plugin, {pass: 'literal_mismatch'});
@@ -282,7 +280,7 @@ exports.helo_literal_mismatch = function (next, connection, helo) {
 
     if (literal[1] !== connection.remote_ip) {
         connection.results.add(plugin, {pass: 'literal_mismatch'});
-        if (reject) return next(DENY, 'HELO IP literal does not match your IP address');
+        if (plugin.cfg.reject.literal_mismatch) return next(DENY, 'HELO IP literal does not match your IP address');
         return next();
     }
 
@@ -290,17 +288,17 @@ exports.helo_literal_mismatch = function (next, connection, helo) {
     return next();
 };
 
-exports.helo_valid_tld = function (next, connection, helo) {
+exports.valid_tld = function (next, connection, helo) {
     var plugin = this;
 
     var hc = connection.results.get('helo.checks');
     if (hc && hc.multi) return next();
 
-    if (!cfg.main.require_valid_tld) {
+    if (!plugin.cfg.main.require_valid_tld) {
         connection.results.add(plugin, {skip: 'valid_tld(config)'});
         return next();
     }
-    if (cfg.main.skip_private_ip && net_utils.is_rfc1918(connection.remote_ip)) {
+    if (plugin.cfg.main.skip_private_ip && net_utils.is_rfc1918(connection.remote_ip)) {
         connection.results.add(plugin, {skip: 'valid_tld(private)'});
         return next();
     }
@@ -317,6 +315,6 @@ exports.helo_valid_tld = function (next, connection, helo) {
     }
 
     connection.results.add(plugin, {fail: 'valid_tld('+tld+')'});
-    if (reject) return next(DENY, "HELO must have a valid TLD");
+    if (plugin.cfg.reject.valid_tld) return next(DENY, "HELO must have a valid TLD");
     return next();
 };
