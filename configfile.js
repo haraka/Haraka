@@ -122,19 +122,18 @@ cfreader.load_ini_config = function(name, options) {
         for (var i=0; i<options.booleans.length; i++) {
             var m;
             if (m = /^(?:([^\. ]+)\.)?(.+)/.exec(options.booleans[i])) {
-                if (!m[1]) m[1] = 'main';
-                if (!result[m[1]]) result[m[1]] = {};
-                if (m[2][0] === '+') {
-                    m[2] = m[2].substr(1);
-                    result[m[1]][m[2]] = true;
-                }
-                else if (m[2][0] === '-') {
-                    m[2] = m[2].substr(1);
-                    result[m[1]][m[2]] = false;
-                }
-                else {
-                    result[m[1]][m[2]] = false;
-                }
+                var section = m[1] || 'main';
+                var key     = m[2];
+
+                var bool_default = section[0] === '+' ? true
+                                 :     key[0] === '+' ? true
+                                 : false;
+
+                if (section.match(/^(\-|\+)/)) section = section.substr(1);
+                if (    key.match(/^(\-|\+)/)) key     =     key.substr(1);
+
+                if (!result[section]) result[section] = {};
+                result[section][key] = bool_default;
             }
         }
     }
