@@ -137,17 +137,33 @@ exports.load_ini_config = {
         test.done();
     },
     'non-exist.ini boolean true default' : function (test) {
-        test.expect(1);
+        test.expect(3);
         test.deepEqual(
                 configfile.load_ini_config('non-exist.ini', { booleans: ['+reject']}),
+                { main: { reject: true } }
+                );
+        test.deepEqual(
+                configfile.load_ini_config('non-exist.ini', { booleans: ['+main.reject']}),
+                { main: { reject: true } }
+                );
+        test.deepEqual(
+                configfile.load_ini_config('non-exist.ini', { booleans: ['main.+reject']}),
                 { main: { reject: true } }
                 );
         test.done();
     },
     'non-exist.ini boolean false default' : function (test) {
-        test.expect(1);
+        test.expect(3);
         test.deepEqual(
                 configfile.load_ini_config('non-exist.ini', { booleans: ['-reject']}),
+                { main: { reject: false } }
+                );
+        test.deepEqual(
+                configfile.load_ini_config('non-exist.ini', { booleans: ['-main.reject']}),
+                { main: { reject: false } }
+                );
+        test.deepEqual(
+                configfile.load_ini_config('non-exist.ini', { booleans: ['main.-reject']}),
                 { main: { reject: false } }
                 );
         test.done();
