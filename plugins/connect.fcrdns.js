@@ -22,7 +22,7 @@ exports.hook_lookup_rdns = function (next, connection) {
         ptr_name_to_ip: {},       // host names and their IP addresses
     });
 
-    var cfg = plugin.refresh_config(connection);
+    plugin.refresh_config(connection);
 
     var called_next = 0;
     var timer;
@@ -34,14 +34,13 @@ exports.hook_lookup_rdns = function (next, connection) {
     };
 
     // Set-up timer
-    var timeout = cfg.main.disconnect_timeout || 30;
     timer = setTimeout(function () {
         connection.results.add(plugin, {err: 'timeout', emit: true});
         if (plugin.cfg.reject.no_rdns) {
             return do_next(DENYSOFT, 'client [' + rip + '] rDNS lookup timeout');
         }
         return do_next();
-    }, timeout * 1000);
+    }, (plugin.cfg.main.disconnect_timeout || 30) * 1000);
 
     dns.reverse(rip, function (err, ptr_names) {
         connection.logdebug(plugin, 'rdns lookup: ' + rip);
@@ -107,11 +106,6 @@ exports.hook_data_post = function (next, connection) {
     var fcrdns = connection.results.get('connect.fcrdns');
     if (!fcrdns) {
         connection.results.add(plugin, {err: "no fcrdns results!?"});
-        return next();
-    }
-
-    if (fcrdns.err.length) {
-        // TODO: this is probably not the right test to use
         return next();
     }
 
@@ -281,28 +275,16 @@ exports.refresh_config = function (connection) {
     var plugin = this;
     plugin.cfg = plugin.config.get('connect.fcrdns.ini', {
         booleans: [
-            'reject.no_rdns',
-            'reject.no_fcrdns',
-            'reject.invalid_tld',
-            'reject.generic_rdns',
+            'reject.-no_rdns',
+            'reject.-no_fcrdns',
+            'reject.-invalid_tld',
+            'reject.-generic_rdns',
         ]
     });
 
     var defaults = {
         disconnect_timeout: 10,
-        reject: {
-            no_rdns     : 0,
-            no_fcrdns   : 0,
-            invalid_tld : 0,
-            generic_rdns: 0,
-        }
     };
-
-    for (var key in defaults.reject) {
-        if (plugin.cfg.reject[key] === undefined) {
-            plugin.cfg.reject[key] = defaults.reject[key];
-        }
-    }
 
     // allow rdns_acccess whitelist to override
     if (connection.notes.rdns_access && connection.notes.rdns_access === 'white') {
