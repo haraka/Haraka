@@ -28,29 +28,33 @@ exports.rcpt_to_access = function(next, connection, params) {
     var rcpt_to = params[0].address();
 
     // address whitelist checks
-    if (rcpt_to) {
-        connection.logdebug(plugin, 'checking ' + rcpt_to +
-            ' against rcpt_to.access.whitelist');
+    if (!rcpt_to) {
+        connection.transaction.results.add(plugin, {skip: 'null rcpt', emit: true});
+        return next();
+    }
 
-        if (_in_whitelist(connection, plugin, rcpt_to)) {
-            connection.logdebug(plugin, "Allowing " + rcpt_to);
-            return next();
-        }
+    connection.logdebug(plugin, 'checking ' + rcpt_to +
+        ' against rcpt_to.access.whitelist');
+
+    if (_in_whitelist(connection, plugin, rcpt_to)) {
+        connection.logdebug(plugin, "Allowing " + rcpt_to);
+        connection.transaction.results.add(plugin, {pass: 'whitelisted', emit: true});
+        return next();
     }
 
     // address blacklist checks
-    if (rcpt_to) {
-        connection.logdebug(plugin, 'checking ' + rcpt_to +
-            ' against rcpt_to.access.blacklist');
+    connection.logdebug(plugin, 'checking ' + rcpt_to +
+        ' against rcpt_to.access.blacklist');
 
-        if (_in_blacklist(connection, plugin, rcpt_to)) {
-            connection.logdebug(plugin, "Rejecting, matched: " + rcpt_to);
-            return next(DENY, rcpt_to + ' ' + plugin.deny_msg);
-        }
+    if (_in_blacklist(connection, plugin, rcpt_to)) {
+        connection.logdebug(plugin, "Rejecting, matched: " + rcpt_to);
+        connection.transaction.results.add(plugin, {fail: 'blacklisted', emit: true});
+        return next(DENY, rcpt_to + ' ' + plugin.deny_msg);
     }
 
+    connection.transaction.results.add(plugin, {pass: 'unlisted', emit: true});
     return next();
-}
+};
 
 function _in_whitelist(connection, plugin, address) {
     var i;
@@ -59,7 +63,7 @@ function _in_whitelist(connection, plugin, address) {
             plugin.wl[i]);
 
         if (plugin.wl[i] === address) {
-            return 1;
+            return true;
         }
     }
 
@@ -68,11 +72,11 @@ function _in_whitelist(connection, plugin, address) {
             plugin.wlregex.source);
 
         if (address.match(plugin.wlregex)) {
-            return 1;
+            return true;
         }
     }
 
-    return 0;
+    return false;
 }
 
 function _in_blacklist(connection, plugin, address) {
@@ -82,7 +86,7 @@ function _in_blacklist(connection, plugin, address) {
             plugin.bl[i]);
 
         if (plugin.bl[i] === address) {
-            return 1;
+            return true;
         }
     }
 
@@ -91,9 +95,9 @@ function _in_blacklist(connection, plugin, address) {
             plugin.blregex.source);
 
         if (address.match(plugin.blregex)) {
-            return 1;
+            return true;
         }
     }
 
-    return 0;
+    return false;
 }
