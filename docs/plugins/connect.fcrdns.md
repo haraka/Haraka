@@ -34,6 +34,28 @@ This plugin honors the whitelisting of IPs as set by the rdns\_access plugin.
 Make sure rdns\_access is enabled in config/plugins and listed *before* this
 plugin.
 
+* disconnect\_timeout=10
+
+When disconnection, delay the disconnect for this many seconds.
+
+The following settings permit control of which test will block connections. To
+mimic the lookup\_rdns.strict plugin, set no\_rdns=true.
+
+    [reject]
+    ; reject if the IP address has no PTR record
+    no_rdns=0
+
+    ; reject if the FCrDNS test fails
+    no_fcrdns=0
+
+    ; reject if the PTR points to a hostname without a valid TLD
+    invalid_tld=0
+
+    ; reject if the rDNS is generic, examples:
+    ; 1.2.3.4.in.addr.arpa
+    ; c-67-171-0-90.hsd1.wa.comcast.net
+    generic_rdns=0
+
 
 ANTI-SPAM EFFECTS
 --------------------------
