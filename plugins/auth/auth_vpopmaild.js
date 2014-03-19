@@ -1,37 +1,47 @@
 // Auth against vpopmaild
 
 var sock = require('./line_socket');
+var cfg;
 
 exports.register = function () {
     this.inherits('auth/auth_base');
-}
+};
 
 exports.hook_capabilities = function (next, connection) {
-    var config = this.config.get('auth_vpopmaild.ini');
-    if (connection.using_tls) {
-        var methods = [ 'PLAIN', 'LOGIN' ];
-        connection.capabilities.push('AUTH ' + methods.join(' '));
-        connection.notes.allowed_auth_methods = methods;
-    }
-    next();
+    if (!connection.using_tls) return next();
+
+    var methods = [ 'PLAIN', 'LOGIN' ];
+    connection.capabilities.push('AUTH ' + methods.join(' '));
+    connection.notes.allowed_auth_methods = methods;
+
+    return next();
 };
 
 exports.check_plain_passwd = function (connection, user, passwd, cb) {
     this.try_auth_vpopmaild(connection, user, passwd, cb);
-}
+};
 
 exports.try_auth_vpopmaild = function (connection, user, passwd, cb) {
-
     var plugin = this;
-    var config = this.config.get('auth_vpopmaild.ini');
+    cfg = plugin.config.get(plugin.name + '.ini');
 
     var auth_success = false;
     var result = "";
     var ok_count = 0;
+    var port = 89;
+    var host = '127.0.0.1';
 
-    var socket = new sock.Socket();
-    socket.connect( ( config.main.port || 89), (config.main.host || '127.0.0.1') );
-    socket.setTimeout(300 * 1000);
+    var domain = (user.split('@'))[1];
+    if (domain && cfg[domain]) {
+	if (cfg[domain].port) port = cfg[domain].port;
+	if (cfg[domain].host) host = cfg[domain].host;
+    }
+    else {
+	if (cfg.main.port) port = cfg.main.port;
+	if (cfg.main.host) host = cfg.main.host;
+    }
+
+    var socket = new sock.Socket().connect(port, host).setTimeout(300 * 1000);
 
     socket.on('timeout', function () {
         connection.logerror(plugin, "vpopmaild connection timed out");
