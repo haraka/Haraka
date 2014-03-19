@@ -10,10 +10,12 @@ var append_lists = ['msg','pass','fail','skip','err'];
 var overwrite_lists = ['hide','order'];
 var log_opts     = ['emit','human','human_html'];
 var all_opts     = append_lists.concat(overwrite_lists, log_opts);
+var cfg;
 
 function ResultStore(conn) {
     this.conn = conn;
     this.store = {};
+    cfg = config.get('results.ini');
 }
 
 function default_result () {
@@ -61,7 +63,7 @@ ResultStore.prototype.add = function (plugin, obj) {
     if (obj.emit) this.conn.loginfo(plugin, result.human);  // by request
     if (obj.err)  this.conn.logerror(plugin, obj.err);      // by default
     if (!obj.emit && !obj.err) {                            // by config
-        var pic = config.get('results.ini')[name];
+        var pic = cfg[name];
         if (pic && pic.debug) this.conn.logdebug(plugin, result.human);
     }
     return this.human;
@@ -109,14 +111,11 @@ ResultStore.prototype.get = function (plugin_name) {
 
 ResultStore.prototype.private_collate = function (result, name) {
 
-    var r = []; var order = []; var hide = [];
+    var r = [], order = [], hide = [];
 
-    var cfg = config.get('results.ini');
-    if (cfg[name] && cfg[name].hide) {
-        hide = cfg[name].hide.trim().split(/[,; ]+/);
-    }
-    if (cfg[name] && cfg[name].order) {
-        order = cfg[name].order.trim().split(/[,; ]+/);
+    if (cfg[name]) {
+        if (cfg[name].hide)  hide  = cfg[name].hide.trim().split(/[,; ]+/);
+        if (cfg[name].order) order = cfg[name].order.trim().split(/[,; ]+/);
     }
 
     // anything not predefined in the result was purposeful, show it first
@@ -128,8 +127,10 @@ ResultStore.prototype.private_collate = function (result, name) {
     }
 
     // and then supporting information
-    var array = append_lists;
-    if (result.order && result.order.length) { array = result.order; }
+    var array = append_lists;                   // default
+    if (order && order.length) array = order;   // config file
+    if (result.order && result.order.length) array = result.order; // caller
+
     for (var i=0; i < array.length; i++) {
         key = array[i];
         if (!result[key]) continue;
@@ -142,4 +143,3 @@ ResultStore.prototype.private_collate = function (result, name) {
 };
 
 module.exports = ResultStore;
-
