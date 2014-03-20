@@ -31,36 +31,85 @@ helo.checks results can be accessed by subsequent plugins:
 
   INI file which controls enabling of certain checks:
 
-    * skip\_private\_ip=true
+    * dns\_timeout=5
 
-      Bypasses checks for clients within RFC1918, Loopback or APIPA IP address ranges.
+      How many seconds to wait for DNS queries to timeout.
+
 
 ### [check]
 
-    * no\_dot=true
-    
-      Checks that the HELO has at least one '.' in it.
-    
+
+    * valid\_hostname=true
+
+      Checks that the HELO has at least one '.' in it and the organizational
+      name is possible (ie, a host within a Public Suffix).
+
     * bare\_ip=true
-    
+
       Checks for HELO <IP> where the IP is not surrounded by square brackets.
       This is an RFC violation so should always be enabled.
-   
+
     * dynamic=true
 
-      Checks to see if all or part the connecting IP address appears within 
+      Checks to see if all or part the connecting IP address appears within
       the HELO argument to indicate that the client has a dynamic IP address.
-    
-    * literal\_mismatch=1|2
+
+    * literal\_mismatch=1|2|3
 
       Checks to see if the IP literal used matches the connecting IP address.
       If set to 1, the full IP must match.  If set to 2, the /24 must match.
+      If set to 3, the /24 may match, or the IP can be private (RFC 1918).
 
-    * require\_valid\_tld=true
+    * match\_re=true
 
-      Requires the HELO argument ends in a valid TLD if it is not an IP literal.
+      See above. This is merely an on/off toggle.
+
+    * big\_company=true
+
+      See below. This is merely an on/off toggle.
+
+    * forward\_dns=true
+
+      Perform a DNS lookup of the HELO hostname and validate that the IP of
+      the remote is included in the IP(s) of the HELO hostname.
+
+    * rdns\_match=true
+
+      Sees if the HELO hostname (or at least the domain) match the rDNS
+      hostname(s).
+
+    * mismatch=true
+
+      If HELO is called multiple times, checks if the hostname differs between
+      EHLO invocations.
 
 ### [reject]
+
+    For all of the checks included above, a matching key in the reject section
+    controls whether messages that fail the test are rejected.
+
+    Defaults shown:
+
+    [reject]
+    mismatch=false
+    rdns_match=false
+    dynamic=false
+    bare_ip=false
+    literal_mismatch=false
+    valid_hostname=false
+    forward_dns=false
+    big_company=false
+
+### [skip]
+
+    * private\_ip=true
+
+      Bypasses checks for clients within RFC1918, Loopback or APIPA IP address ranges.
+
+    * relaying
+
+      Bypass checks for clients who have relaying privileges (whitelisted IP,
+      SMTP-AUTH, etc).
 
 
 ### [bigco]
@@ -68,8 +117,9 @@ helo.checks results can be accessed by subsequent plugins:
       A list of <helo>=<rdns>[,<rdns>...] to match against. If the HELO matches
       what's on the left hand side, the reverse-DNS must match one of the
       entries on the right hand side or the mail is blocked.
-      
+
       Example:
-      
+
             yahoo.com=yahoo.com,yahoo.co.jp
             aol.com=aol.com
+            gmail.com=google.com

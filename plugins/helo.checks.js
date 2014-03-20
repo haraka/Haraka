@@ -1,6 +1,6 @@
 // Check various bits of the HELO string
+var dns       = require('dns');
 var net_utils = require('./net_utils');
-var dns_utils = require('./dns_utils');
 
 var checks = [
     'init',               // config loading, multiplicity detection
@@ -153,14 +153,6 @@ exports.valid_hostname = function (next, connection, helo) {
         return next();
     }
 
-    if (!dns_utils.valid_hostname(helo)) {
-        connection.results.add(plugin, {fail: 'valid_hostname(chars)'});
-        if (plugin.cfg.reject.valid_hostname) {
-            return next(DENY, 'Invalid HELO hostname. See RFC 1035.');
-        }
-        return next();
-    }
-
     // this will fail if TLD is invalid or hostname is a public suffix
     if (!net_utils.get_organizational_domain(helo)) {
         connection.results.add(plugin, {fail: 'valid_hostname'});
@@ -281,15 +273,6 @@ exports.big_company = function (next, connection, helo) {
         return next();
     }
 
-    var rdns = connection.remote_host;
-    if (!rdns || rdns === 'Unknown' || rdns === 'DNSERROR') {
-        connection.results.add(plugin, {fail: 'big_co(rDNS)'});
-        if (plugin.cfg.reject.big_company) {
-            return next(DENY, "Big company w/o rDNS? Unlikely.");
-        }
-        return next();
-    }
-
     if (!plugin.cfg.bigco) {
         connection.results.add(plugin, {err: 'big_co(config missing)'});
         return next();
@@ -297,6 +280,15 @@ exports.big_company = function (next, connection, helo) {
 
     if (!plugin.cfg.bigco[helo]) {
         connection.results.add(plugin, {pass: 'big_co(not)'});
+        return next();
+    }
+
+    var rdns = connection.remote_host;
+    if (!rdns || rdns === 'Unknown' || rdns === 'DNSERROR') {
+        connection.results.add(plugin, {fail: 'big_co(rDNS)'});
+        if (plugin.cfg.reject.big_company) {
+            return next(DENY, "Big company w/o rDNS? Unlikely.");
+        }
         return next();
     }
 
@@ -397,7 +389,7 @@ exports.forward_dns = function (next, connection, helo) {
         return next();
     };
 
-    dns_utils.get_a(plugin, helo, cb);
+    plugin.get_a_records(helo, cb);
 };
 
 exports.emit_log = function (next, connection, helo) {
@@ -420,4 +412,37 @@ exports.emit_log = function (next, connection, helo) {
     // [UUID] [helo.checks] fail:dynamic
     connection.loginfo(plugin, connection.results.collate(plugin));
     return next();
+};
+
+exports.get_a_records = function (host, cb) {
+    var plugin = this;
+
+    if (!/\./.test(host)) {
+        // a single label is not a host name
+        var e = new Error("invalid hostname");
+        e.code = 'ENOTFOUND';
+        return cb(e);
+    }
+
+// Set-up timer
+    var timer = setTimeout(function () {
+        logger.logerror('timeout!');
+        return cb(new Error('timeout'));
+    }, (plugin.cfg.main.dns_timeout || 5) * 1000);
+
+// do the queries
+    if (!/\.$/.test(host)) { host = host + '.'; } // fully qualify
+    dns.resolve(host, function(err, ips) {
+        if (timer) clearTimeout(timer);
+        if (err) {
+            // console.log(host + ' err: ' + err);
+            // logger.logerror(plugin, host + ' err: ' + err);
+            return cb(err, ips);
+        }
+
+        logger.loginfo(plugin, host + ' => ' + ips);
+
+        // Got all DNS results
+        return cb(null, ips);
+    });
 };
