@@ -58,7 +58,7 @@ exports.reject_all = function (next, connection, params) {
         return next(); // bounce messages are from null senders
     }
 
-    connection.results.add(plugin, {fail: 'bounces_accepted', emit: 1 });
+    connection.results.add(plugin, {fail: 'bounces_accepted', emit: true });
     return next(DENY, "No bounces accepted here");
 };
 
@@ -113,7 +113,7 @@ exports.empty_return_path = function(next, connection) {
         return next();
     }
 
-    connection.results.add(plugin, {fail: 'empty_return_path', emit: 1 });
+    connection.results.add(plugin, {fail: 'empty_return_path', emit: true });
     return next(DENY, "bounce with non-empty Return-Path (RFC 3834)");
 };
 
@@ -126,7 +126,7 @@ exports.bad_rcpt = function (next, connection) {
     for (var i=0; i < connection.transaction.rcpt_to.length; i++) {
         var rcpt = connection.transaction.rcpt_to[i].address();
         if (plugin.cfg.invalid_addrs.indexOf(rcpt) === -1) continue;
-        connection.results.add(plugin, {fail: 'bad_rcpt', emit: 1 });
+        connection.results.add(plugin, {fail: 'bad_rcpt', emit: true });
         return next(DENY, "That recipient does not accept bounces");
     }
 
