@@ -38,11 +38,12 @@ exports.hook_connect = function (next, connection) {
             '+check.mismatch',
 
             '+reject.no_dot',
+            '+reject.match_re',
             '+reject.bare_ip',
             '+reject.dynamic',
             '+reject.big_company',
-            '-reject.literal_mismatch',
             '-reject.valid_tld',
+            '-reject.literal_mismatch',
             '-reject.rdns_match',
             '-reject.mismatch',
 
@@ -260,7 +261,7 @@ exports.big_company = function (next, connection, helo) {
         return next();
     }
     if (!plugin.cfg.bigco[helo]) {
-        connection.results.add(plugin, {skip: 'big_co(config)'});
+        connection.results.add(plugin, {skip: 'big_co(not)'});
         return next();
     }
 
