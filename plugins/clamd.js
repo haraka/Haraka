@@ -107,10 +107,10 @@ exports.hook_data = function (next, connection) {
     if (!this.cfg.main.only_with_attachments) return next();
 
     var transaction = connection.transaction;
-    transaction.parse_body = 1;
+    transaction.parse_body = true;
     transaction.attachment_hooks(function (ctype, filename, body) {
         connection.logdebug(plugin, 'found ctype=' + ctype + ', filename=' + filename);
-        transaction.notes.clamd_found_attachment = 1;
+        transaction.notes.clamd_found_attachment = true;
     });
 
     return next();
