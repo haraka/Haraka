@@ -3,7 +3,7 @@
 var net = require('net');
 var ipaddr = require('ipaddr.js');
 
-function p0f_client(path) {
+function P0FClient(path) {
     var self = this;
 
     this.sock = null;
@@ -14,52 +14,54 @@ function p0f_client(path) {
     this.socket_has_error = false;
     this.restart_interval = false;
 
-    self.sock = net.createConnection(path);
+    var connect = function () {    
+        self.sock = net.createConnection(path);
+        self.sock.setTimeout(5 * 1000);
 
-    self.sock.setTimeout(5 * 1000);
+        self.sock.on('connect', function () {
+            self.sock.setTimeout(30 * 1000);
+            self.connected = true;
+            self.socket_has_error = false;
+            self.ready = true;
+            if (self.restart_interval) clearInterval(self.restart_interval);
+            self.process_send_queue();
+        });
 
-    self.sock.on('connect', function () {
-        self.sock.setTimeout(30 * 1000);
-        self.connected = true;
-        self.socket_has_error = false;
-        self.ready = true;
-        if (self.restart_interval) clearInterval(self.restart_interval);
-        self.process_send_queue();
-    });
+        self.sock.on('data', function (data) {
+            for (var i=0; i<data.length/232; i++) {
+                self.decode_response(data.slice(((i) ? 232*i : 0), 232*(i+1)));
+            }
+        });
 
-    self.sock.on('data', function (data) {
-        for (var i=0; i<data.length/232; i++) {
-            self.decode_response(data.slice(((i) ? 232*i : 0), 232*(i+1)));
-        }
-    });
+        self.sock.on('drain', function () {
+            self.ready = true;
+            self.process_send_queue();
+        });
 
-    self.sock.on('drain', function () {
-        self.ready = true;
-        self.process_send_queue();
-    });
-
-    self.sock.on('error', function (error) {
-        self.connected = false;
-        error.message = error.message + ' (socket: ' + path + ')';
-        self.socket_has_error = error;
-        self.sock.destroy();
-        // Try and reconnect
-        if (!self.restart_interval) {
-            self.restart_interval = setInterval(function () {
-                connect();
-            }, 5 * 1000);
-        }
-        // Clear the receive queue
-        for (var i=0; i<self.receive_queue.length; i++) {
-            var item = self.receive_queue.shift();
-            item.cb(self.socket_has_error);
-            continue;
-        }
-        self.process_send_queue();
-    });
+        self.sock.on('error', function (error) {
+            self.connected = false;
+            error.message = error.message + ' (socket: ' + path + ')';
+            self.socket_has_error = error;
+            self.sock.destroy();
+            // Try and reconnect
+            if (!self.restart_interval) {
+                self.restart_interval = setInterval(function () {
+                    connect();
+                }, 5 * 1000);
+            }
+            // Clear the receive queue
+            for (var i=0; i<self.receive_queue.length; i++) {
+                var item = self.receive_queue.shift();
+                item.cb(self.socket_has_error);
+                continue;
+            }
+            self.process_send_queue();
+        });
+    }
+    connect();
 };
 
-p0f_client.prototype.decode_response = function (data) {
+P0FClient.prototype.decode_response = function (data) {
     var decode_string = function (data, start, end) {
         var str = ''
         for (var a=start; a<end; a++) {
@@ -119,7 +121,7 @@ p0f_client.prototype.decode_response = function (data) {
     }
 }
 
-p0f_client.prototype.query = function (ip, cb) {
+P0FClient.prototype.query = function (ip, cb) {
     if (this.socket_has_error) {
         return cb(this.socket_has_error);
     }
@@ -143,7 +145,7 @@ p0f_client.prototype.query = function (ip, cb) {
     }
 }
 
-p0f_client.prototype.process_send_queue = function () {
+P0FClient.prototype.process_send_queue = function () {
     if (this.send_queue.length === 0) { return; };
 
     for (var i=0; i<this.send_queue.length; i++) {
@@ -161,18 +163,20 @@ p0f_client.prototype.process_send_queue = function () {
     }
 }
 
-exports.p0f_client = p0f_client;
+exports.P0FClient = P0FClient;
 
 exports.hook_init_master = function (next) {
     var cfg = this.config.get('connect.p0f.ini');
+    if (!cfg.main.socket_path) return next();
     // Start p0f process?
-    server.notes.p0f_client = new p0f_client(cfg.main.socket_path);
+    server.notes.p0f_client = new P0FClient(cfg.main.socket_path);
     return next();
 }
 
 exports.hook_init_child = function (next) {
     var cfg = this.config.get('connect.p0f.ini');
-    server.notes.p0f_client = new p0f_client(cfg.main.socket_path);
+    if (!cfg.main.socket_path) return next();
+    server.notes.p0f_client = new P0FClient(cfg.main.socket_path);
     return next();
 }
 
@@ -180,21 +184,19 @@ exports.hook_lookup_rdns = function onLookup(next, connection) {
     if (!server.notes.p0f_client) return next();
     var plugin = this;
     var p0f_client = server.notes.p0f_client;
-    p0f_client.query(connection.remote_ip, function onResults(err, result) {
+    p0f_client.query(connection.remote_ip, function (err, result) {
         if (err) {
-            connection.logerror(plugin, 'error: ' + err.message);
+            connection.results.add(plugin, {err: err.message});
             return next();
         };
 
         if (!result) {
-            connection.logdebug(plugin, 'error, no p0f results' );
+            connection.results.add(plugin, {err: 'no p0f results'});
             return next();
         };
 
         connection.loginfo(plugin, format_results(result));
-
-        // Store p0f results for other plugins
-        connection.notes.p0f = result;
+        connection.results.add(plugin, result);
         return next();
     });
 }
@@ -209,7 +211,7 @@ function format_results(result) {
     ].join(' ');
 };
 
-exports.hook_data_post = function onDataPostP0F(next, connection) {
+exports.hook_data_post = function (next, connection) {
     var plugin = this;
     var cfg = this.config.get('connect.p0f.ini');
     var header_name = cfg.main.add_header;
@@ -219,25 +221,14 @@ exports.hook_data_post = function onDataPostP0F(next, connection) {
     };
 
     connection.transaction.remove_header(header_name);
-    var result = connection.notes.p0f;
+    var result = connection.results.get('connect.p0f');
     if (!result) {
-        connection.logdebug(plugin, 'no p0f note' );
+        connection.results.add(plugin, {err: 'no p0f note'});
         return next();
     };
 
-    connection.logdebug(plugin, 'adding header' );
+    connection.logdebug(plugin, 'adding header');
     connection.transaction.add_header(header_name, format_results(result));
 
     return next();
 }
-
-/*
-// Redundant, was already logged in the query callback
-exports.hook_disconnect = function (next, connection) {
-    if (!connection.notes.p0f) { return next(); };
-    var plugin = this;
-    var result = connection.notes.p0f;
-    connection.loginfo(plugin, format_results(result));
-    return next();
-}
-*/
