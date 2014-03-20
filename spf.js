@@ -534,6 +534,9 @@ SPF.prototype.mech_mx = function (qualifier, args, cb) {
                 return cb(null, self.SPF_NONE);
             }
         }
+        if (pending === 0) {
+            return cb(null, self.SPF_NONE);
+        }
     });
 }
 
@@ -573,8 +576,11 @@ SPF.prototype.mech_ptr = function (qualifier, args, cb) {
                     else {
                         for (var a=0; a<addrs.length; a++) {
                             if (addrs[a] === self.ip) {
-                                self.log_debug('mech_ptr: ' + self.ip + ' => ' + ptr + ' => ' + addrs[a]);
+                                self.log_debug('mech_ptr: ' + self.ip + ' => ' + ptr + ' => ' + addrs[a] + ': MATCH!');
                                 names.push(ptr.toLowerCase());
+                            }
+                            else {
+                                self.log_debug('mech_ptr: ' + self.ip + ' => ' + ptr + ' => ' + addrs[a] + ': NO MATCH');
                             }
                         }
                     }
