@@ -12,6 +12,7 @@ var checks = [
     'valid_tld',          // hostname has a valid TLD
     'rdns_match',         // hostname matches rDNS
     'mismatch',           // hostname differs between invocations
+    'emit_log',           // emit a loginfo summary
 ];
 
 exports.register = function () {
@@ -260,8 +261,9 @@ exports.big_company = function (next, connection, helo) {
         connection.results.add(plugin, {err: 'big_co(config missing)'});
         return next();
     }
+
     if (!plugin.cfg.bigco[helo]) {
-        connection.results.add(plugin, {skip: 'big_co(not)'});
+        connection.results.add(plugin, {pass: 'big_co(not)'});
         return next();
     }
 
@@ -337,5 +339,27 @@ exports.valid_tld = function (next, connection, helo) {
     if (plugin.cfg.reject.valid_tld) {
         return next(DENY, "HELO must have a valid TLD");
     }
+    return next();
+};
+
+exports.emit_log = function (next, connection, helo) {
+    var plugin = this;
+    // Spits out an INFO log entry. Default looks like this:
+    // [helo.checks] helo_host: [182.212.17.35], fail:big_co(rDNS) rdns_match(literal), pass:no_dot, match_re, bare_ip, literal_mismatch, mismatch, skip:dynamic(literal), valid_tld(literal)
+    //
+    // Although sometimes useful, that's a bit verbose. I find that I'm rarely
+    // interested in the passes, the helo_host is already logged elsewhere,
+    // and so I set this in config/results.ini:
+    //
+    // [helo.checks]
+    // order=fail,pass,msg,err,skip
+    // hide=helo_host,multi,pass
+    //
+    // Thus set, my log entries look like this:
+    //
+    // [UUID] [helo.checks] fail:rdns_match
+    // [UUID] [helo.checks]
+    // [UUID] [helo.checks] fail:dynamic
+    connection.loginfo(plugin, connection.results.collate(plugin));
     return next();
 };
