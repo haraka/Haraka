@@ -161,11 +161,11 @@ exports.valid_hostname = function (next, connection, helo) {
         return next();
     }
 
-    var tld = (helo.split(/\./).reverse())[0];
-    if (!net_utils.is_public_suffix(tld)) {
-        connection.results.add(plugin, {fail: 'valid_hostname(tld:'+tld+')'});
+    // this will fail if TLD is invalid or hostname is a public suffix
+    if (!net_utils.get_organizational_domain(helo)) {
+        connection.results.add(plugin, {fail: 'valid_hostname'});
         if (plugin.cfg.reject.valid_hostname) {
-            return next(DENY, "HELO must have a valid TLD");
+            return next(DENY, "HELO host name invalid");
         }
         return next();
     }
@@ -276,6 +276,11 @@ exports.big_company = function (next, connection, helo) {
 
     if (plugin.should_skip(connection, 'big_company')) return next();
 
+    if (plugin.is_ipv4_literal(helo)) {
+        connection.results.add(plugin, {skip: 'big_co(literal)'});
+        return next();
+    }
+
     var rdns = connection.remote_host;
     if (!rdns || rdns === 'Unknown' || rdns === 'DNSERROR') {
         connection.results.add(plugin, {fail: 'big_co(rDNS)'});
@@ -359,15 +364,18 @@ exports.forward_dns = function (next, connection, helo) {
 
     if (plugin.should_skip(connection, 'forward_dns')) return next();
 
-    var literal = /^\[(\d+\.\d+\.\d+\.\d+)\]$/.exec(helo);
-    if (literal) {
+    if (plugin.is_ipv4_literal(helo)) {
         connection.results.add(plugin, {skip: 'forward_dns(literal)'});
         return next();
     }
 
     var cb = function (err, ips) {
         if (err) {
-            connection.results.add(plugin, {err: 'forward_dns('+err.code+')'});
+            if (err.code === 'ENOTFOUND') {
+                connection.results.add(plugin, {fail: 'forward_dns('+err.code+')'});
+                return next();
+            }
+            connection.results.add(plugin, {err: 'forward_dns('+err+')'});
             return next();
         }
 
@@ -389,7 +397,7 @@ exports.forward_dns = function (next, connection, helo) {
         return next();
     };
 
-    dns_utils.get_a_records(plugin, helo, cb);
+    dns_utils.get_a(plugin, helo, cb);
 };
 
 exports.emit_log = function (next, connection, helo) {
