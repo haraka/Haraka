@@ -81,7 +81,7 @@ exports.refresh_config = function() {
 
     var defaults = {
         clamd_socket: 'localhost:3310',
-        timeout: 60,
+        timeout: 30,
         connect_timeout: 10,
         max_size: 26214400,
         only_with_attachments: false,
@@ -177,7 +177,7 @@ exports.hook_data_post = function (next, connection) {
 
         socket.on('connect', function () {
             connected = true;
-            socket.setTimeout((plugin.cfg.main.timeout || 60) * 1000);
+            socket.setTimeout((plugin.cfg.main.timeout || 30) * 1000);
             var hp = socket.address(),
               addressInfo = hp === null ? '' : ' ' + hp.address + ':' + hp.port;
             connection.logdebug(plugin, 'connected to host' + addressInfo);

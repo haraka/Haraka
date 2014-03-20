@@ -48,7 +48,7 @@ Configuration
   been tried then a temporary failure will be returned.
 
 
-* timeout                                       (default: 60)
+* timeout                                       (default: 30)
 
   Post-connection timeout if there is no activity on the socket after
   this many seconds.  A timeout will cause the message to be rejected
