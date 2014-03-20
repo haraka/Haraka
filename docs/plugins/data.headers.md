@@ -1,6 +1,6 @@
 # data.headers
 
-This plugin performs a variety of mail header inspection checks.
+This plugin performs a variety of mail header inspections.
 
 
 ## RFC 5322 Section 3.6:
@@ -9,9 +9,6 @@ This plugin performs a variety of mail header inspection checks.
 > more than one 'Date', 'From', 'Sender', 'Reply-To', 'To', 'Cc', 'Bcc',
 > 'Message-Id', 'In-Reply-To', 'References' or 'Subject' header.
 
-The list of required and singular headers can be customized in
-config/data.headers.ini.
-
 The next two tests encompass the RFC 5322 checks:
 
 ## duplicate\_singular
@@ -19,7 +16,7 @@ The next two tests encompass the RFC 5322 checks:
 Assure that all the singular headers are present only once. The list of
 headers can be adjusted in config/data.headers.ini:
 
-    singular=Date,From,Sender,Reply-To,To,Cc,Bcc,Message-Id,In-Reply-To,References,Subject
+    * singular=Date,From,Sender,Reply-To,To,Cc,Bcc,Message-Id,In-Reply-To,References,Subject
 
 ## missing\_required
 
