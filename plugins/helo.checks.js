@@ -28,22 +28,27 @@ exports.hook_connect = function (next, connection) {
     var plugin = this;
     plugin.cfg = plugin.config.get('helo.checks.ini', {
         booleans: [
-            '+check.mismatch',
-            '+check.rdns_match',
             '+check.no_dot',
-            '+check.dynamic',
+            '+check.match_re',
             '+check.bare_ip',
-            '+check.valid_tld',
+            '+check.dynamic',
             '+check.big_company',
+            '+check.valid_tld',
+            '+check.rdns_match',
+            '+check.mismatch',
 
             '+reject.no_dot',
-            '-reject.rdns_match',
-            '-reject.no_dot',
-            '+reject.dynamic',
             '+reject.bare_ip',
+            '+reject.dynamic',
+            '+reject.big_company',
             '-reject.literal_mismatch',
             '-reject.valid_tld',
-            '+reject.big_company',
+            '-reject.rdns_match',
+            '-reject.mismatch',
+
+            '+skip.private_ip',
+            '+skip.whitelist',
+            '+skip.relaying',
         ],
     });
 
@@ -76,18 +81,36 @@ exports.init = function (next, connection, helo) {
     return next();
 };
 
-exports.mismatch = function (next, connection, helo) {
+exports.should_skip = function (connection, test_name) {
     var plugin = this;
 
     var hc = connection.results.get('helo.checks');
-    if (hc && hc.multi) return next();
+    if (hc && hc.multi && test_name !== 'mismatch') return true;
 
-    if (!plugin.cfg.check.mismatch) {
-        connection.results.add(plugin, {skip: 'mismatch(config)'});
-        return next();
+    if (!plugin.cfg.check[test_name]) {
+        connection.results.add(plugin, {skip: test_name + '(config)'});
+        return true;
     }
 
-    var prev_helo = hc.helo_host;
+    if (plugin.cfg.skip.relaying && connection.relaying) {
+        connection.results.add(plugin, {skip: test_name + '(relay)'});
+        return true;
+    }
+
+    if (plugin.cfg.skip.private_ip && net_utils.is_rfc1918(connection.remote_ip)) {
+        connection.results.add(plugin, {skip: test_name + '(private)'});
+        return true;
+    }
+
+    return false;
+};
+
+exports.mismatch = function (next, connection, helo) {
+    var plugin = this;
+
+    if (plugin.should_skip(connection, 'mismatch')) return next();
+
+    var prev_helo = connection.results.get('helo.checks').helo_host;
     if (!prev_helo) {
         connection.results.add(plugin, {skip: 'mismatch(1st)'});
         return next();
@@ -108,18 +131,7 @@ exports.mismatch = function (next, connection, helo) {
 exports.no_dot = function (next, connection, helo) {
     var plugin = this;
 
-    var hc = connection.results.get('helo.checks');
-    if (hc && hc.multi) return next();
-
-    if (!plugin.cfg.check.no_dot) {
-        connection.results.add(plugin, {skip: 'no_dot(config)'});
-        return next();
-    }
-
-    if (plugin.cfg.main.skip_private_ip && net_utils.is_rfc1918(connection.remote_ip)) {
-        connection.results.add(plugin, {skip: 'no_dot(private)'});
-        return next();
-    }
+    if (plugin.should_skip(connection, 'no_dot')) return next();
 
     if (!/\./.test(helo)) {
         connection.results.add(plugin, {fail: 'no_dot'});
@@ -135,8 +147,7 @@ exports.no_dot = function (next, connection, helo) {
 exports.match_re = function (next, connection, helo) {
     var plugin = this;
 
-    var hc = connection.results.get('helo.checks');
-    if (hc && hc.multi) return next();
+    if (plugin.should_skip(connection, 'match_re')) return next();
 
     var regexps = plugin.config.get('helo.checks.regexps', 'list');
 
@@ -156,13 +167,7 @@ exports.match_re = function (next, connection, helo) {
 exports.rdns_match = function (next, connection, helo) {
     var plugin = this;
 
-    var hc = connection.results.get('helo.checks');
-    if (hc && hc.multi) return next();
-
-    if (!plugin.cfg.check.rdns_match) {
-        connection.results.add(plugin, {skip: 'rdns_match(config)'});
-        return next();
-    }
+    if (plugin.should_skip(connection, 'rdns_match')) return next();
 
     if (!helo) {
         connection.results.add(plugin, {fail: 'rdns_match(empty)'});
@@ -196,17 +201,7 @@ exports.rdns_match = function (next, connection, helo) {
 exports.bare_ip = function (next, connection, helo) {
     var plugin = this;
 
-    var hc = connection.results.get('helo.checks');
-    if (hc && hc.multi) return next();
-
-    if (!plugin.cfg.check.bare_ip) {
-        connection.results.add(plugin, {skip: 'bare_ip(config)'});
-        return next();
-    }
-    if (plugin.cfg.main.skip_private_ip && net_utils.is_rfc1918(connection.remote_ip)) {
-        connection.results.add(plugin, {skip: 'bare_ip(private)'});
-        return next();
-    }
+    if (plugin.should_skip(connection, 'bare_ip')) return next();
 
     // RFC 2821, 4.1.1.1  Address literals must be in brackets
     // RAW IPs must be formatted: "[1.2.3.4]" not "1.2.3.4" in HELO
@@ -223,17 +218,7 @@ exports.bare_ip = function (next, connection, helo) {
 exports.dynamic = function (next, connection, helo) {
     var plugin = this;
 
-    var hc = connection.results.get('helo.checks');
-    if (hc && hc.multi) return next();
-
-    if (!plugin.cfg.check.dynamic) {
-        connection.results.add(plugin, {skip: 'dynamic(config)'});
-        return next();
-    }
-    if (plugin.cfg.main.skip_private_ip && net_utils.is_rfc1918(connection.remote_ip)) {
-        connection.results.add(plugin, {skip: 'dynamic(private)'});
-        return next();
-    }
+    if (plugin.should_skip(connection, 'dynamic')) return next();
 
     // Skip if no dots or an IP literal or address
     if (!/\./.test(helo)) {
@@ -259,13 +244,7 @@ exports.dynamic = function (next, connection, helo) {
 exports.big_company = function (next, connection, helo) {
     var plugin = this;
 
-    var hc = connection.results.get('helo.checks');
-    if (hc && hc.multi) return next();
-
-    if (!plugin.cfg.check.big_company) {
-        connection.results.add(plugin, {skip: 'big_co(config)'});
-        return next();
-    }
+    if (plugin.should_skip(connection, 'big_company')) return next();
 
     var rdns = connection.remote_host;
     if (!rdns || rdns === 'Unknown' || rdns === 'DNSERROR') {
@@ -304,18 +283,7 @@ exports.big_company = function (next, connection, helo) {
 exports.literal_mismatch = function (next, connection, helo) {
     var plugin = this;
 
-    var hc = connection.results.get('helo.checks');
-    if (hc && hc.multi) return next();
-
-    if (!plugin.cfg.check.literal_mismatch) {
-        connection.results.add(plugin, {skip: 'literal_mismatch(config)'});
-        return next();
-    }
-
-    if (plugin.cfg.main.skip_private_ip && net_utils.is_rfc1918(connection.remote_ip)) {
-        connection.results.add(plugin, {skip: 'literal_mismatch(private)'});
-        return next();
-    }
+    if (plugin.should_skip(connection, 'literal_mismatch')) return next();
 
     var literal = /^\[(\d+\.\d+\.\d+\.\d+)\]$/.exec(helo);
     if (!literal) {
@@ -351,17 +319,7 @@ exports.literal_mismatch = function (next, connection, helo) {
 exports.valid_tld = function (next, connection, helo) {
     var plugin = this;
 
-    var hc = connection.results.get('helo.checks');
-    if (hc && hc.multi) return next();
-
-    if (!plugin.cfg.check.valid_tld) {
-        connection.results.add(plugin, {skip: 'valid_tld(config)'});
-        return next();
-    }
-    if (plugin.cfg.main.skip_private_ip && net_utils.is_rfc1918(connection.remote_ip)) {
-        connection.results.add(plugin, {skip: 'valid_tld(private)'});
-        return next();
-    }
+    if (plugin.should_skip(connection, 'valid_tld')) return next();
 
     if (/^\[\d+\.\d+\.\d+\.\d+\]$/.test(helo)) {
         connection.results.add(plugin, {skip: 'valid_tld(literal)'});
