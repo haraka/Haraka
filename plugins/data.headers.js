@@ -1,5 +1,6 @@
 // validate message headers and some fields
-var net_utils = require('./net_utils');
+var net_utils  = require('./net_utils');
+var addrparser = require('address-rfc2822');
 
 exports.register = function () {
     this.register_hook('data',      'refresh_config');
@@ -249,33 +250,22 @@ exports.from_match = function (next, connection) {
     // likely to be spam than ham. This test is useful for heuristics.
     if (!connection.transaction) return next();
 
-    var env_from = connection.transaction.mail_from.address();
+    var env_addr = connection.transaction.mail_from;
     var hdr_from = connection.transaction.header.get('From');
     if (!hdr_from) {
         connection.transaction.results.add(plugin, {fail: 'from_match(missing)'});
         return next();
     }
 
-    // From: "Typical User" <user@example.com>
-    var hdr_part = hdr_from.match(/<([\S]+)@([\S]+)>/);
-    if (!hdr_part) {
-        // From: staff@hotmail.com
-        hdr_part = hdr_from.match(/[\s]*([\S]+)@([\S]+)[\s\r\n]*$/);
-        if (!hdr_part) {
-            connection.transaction.results.add(plugin, {fail: 'from_match(regex miss ('+hdr_from+'))'});
-            return next();
-        }
-    }
+    var hdr_addr = (addrparser.parse(hdr_from))[0];
 
-    var msg_from = hdr_part[1] + '@' + hdr_part[2];
-
-    if (env_from.toLowerCase() == msg_from.toLowerCase()) {
+    if (env_addr.address().toLowerCase() == hdr_addr.address.toLowerCase()) {
         connection.transaction.results.add(plugin, {pass: 'from_match'});
         return next();
     }
 
-    var env_dom = net_utils.get_organizational_domain(connection.transaction.mail_from.host);
-    var msg_dom = net_utils.get_organizational_domain(msg_from.replace(/^.*@/,''));
+    var env_dom = net_utils.get_organizational_domain(env_addr.host);
+    var msg_dom = net_utils.get_organizational_domain(hdr_addr.host());
     if (env_dom && msg_dom && env_dom.toLowerCase() === msg_dom.toLowerCase()) {
         connection.transaction.results.add(plugin, {pass: 'from_match(domain)'});
         return next();

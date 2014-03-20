@@ -21,7 +21,8 @@
     "semver"        : ">= 1.0.14",
     "async"         : ">= 0.1.22",
     "daemon"        : ">= 1.1.0",
-    "npid"          : ">= 0.3.1"
+    "npid"          : ">= 0.3.1",
+    "address-rfc2822":">= 0.0.2"
   },
   "optionalDependencies": {
     "node-syslog"   : ">= 1.1.2",
