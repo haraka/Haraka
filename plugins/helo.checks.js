@@ -1,16 +1,17 @@
 // Check various bits of the HELO string
 var net_utils = require('./net_utils');
+var dns_utils = require('./dns_utils');
 
 var checks = [
     'init',               // config loading, multiplicity detection
-    'no_dot',             // HELO has no "dot" in hostname
     'match_re',           // List of regexps
     'bare_ip',            // HELO is bare IP (vs required Address Literal)
-    'dynamic',            // HELO looks dynamic (dsl|dialup|etc...)
+    'dynamic',            // HELO hostname looks dynamic (dsl|dialup|etc...)
     'big_company',        // Well known HELOs that must match rdns
     'literal_mismatch',   // IP literal that doesn't match remote IP
-    'valid_tld',          // hostname has a valid TLD
-    'rdns_match',         // hostname matches rDNS
+    'valid_hostname',     // HELO hostname is a legal DNS name
+    'forward_dns',        // HELO hostname resolves to the connecting IP
+    'rdns_match',         // HELO hostname matches rDNS
     'mismatch',           // hostname differs between invocations
     'emit_log',           // emit a loginfo summary
 ];
@@ -29,21 +30,21 @@ exports.hook_connect = function (next, connection) {
     var plugin = this;
     plugin.cfg = plugin.config.get('helo.checks.ini', {
         booleans: [
-            '+check.no_dot',
             '+check.match_re',
             '+check.bare_ip',
             '+check.dynamic',
             '+check.big_company',
-            '+check.valid_tld',
+            '+check.valid_hostname',
+            '+check.forward_dns',
             '+check.rdns_match',
             '+check.mismatch',
 
-            '+reject.no_dot',
+            '+reject.valid_hostname',
             '+reject.match_re',
             '+reject.bare_ip',
             '+reject.dynamic',
             '+reject.big_company',
-            '-reject.valid_tld',
+            '-reject.forward_dns',
             '-reject.literal_mismatch',
             '-reject.rdns_match',
             '-reject.mismatch',
@@ -56,7 +57,7 @@ exports.hook_connect = function (next, connection) {
 
     // backwards compatible with old config file
     if (plugin.cfg.check_no_dot !== undefined) {
-        plugin.cfg.check.no_dot = plugin.cfg.check_no_dot ? true : false;
+        plugin.cfg.check.valid_hostname = plugin.cfg.check_no_dot ? true : false;
     }
     if (plugin.cfg.check_dynamic !== undefined) {
         plugin.cfg.check.dynamic = plugin.cfg.check_dynamic ? true : false;
@@ -107,6 +108,10 @@ exports.should_skip = function (connection, test_name) {
     return false;
 };
 
+exports.is_ipv4_literal = function (host) {
+    return /^\[(\d{1,3}\.){3}\d{1,3}\]$/.test(host) ? true : false;
+};
+
 exports.mismatch = function (next, connection, helo) {
     var plugin = this;
 
@@ -130,19 +135,42 @@ exports.mismatch = function (next, connection, helo) {
     return next();
 };
 
-exports.no_dot = function (next, connection, helo) {
+exports.valid_hostname = function (next, connection, helo) {
     var plugin = this;
 
-    if (plugin.should_skip(connection, 'no_dot')) return next();
+    if (plugin.should_skip(connection, 'valid_hostname')) return next();
+
+    if (plugin.is_ipv4_literal(helo)) {
+        connection.results.add(plugin, {skip: 'valid_hostname(literal)'});
+        return next();
+    }
 
     if (!/\./.test(helo)) {
-        connection.results.add(plugin, {fail: 'no_dot'});
-        if (plugin.cfg.reject.no_dot) return next(DENY, 'HELO must have a dot');
-    }
-    else {
-        connection.results.add(plugin, {pass: 'no_dot'});
+        connection.results.add(plugin, {fail: 'valid_hostname(no_dot)'});
+        if (plugin.cfg.reject.valid_hostname) {
+            return next(DENY, 'Host names have more than one DNS label');
+        }
+        return next();
     }
 
+    if (!dns_utils.valid_hostname(helo)) {
+        connection.results.add(plugin, {fail: 'valid_hostname(chars)'});
+        if (plugin.cfg.reject.valid_hostname) {
+            return next(DENY, 'Invalid HELO hostname. See RFC 1035.');
+        }
+        return next();
+    }
+
+    var tld = (helo.split(/\./).reverse())[0];
+    if (!net_utils.is_public_suffix(tld)) {
+        connection.results.add(plugin, {fail: 'valid_hostname(tld:'+tld+')'});
+        if (plugin.cfg.reject.valid_hostname) {
+            return next(DENY, "HELO must have a valid TLD");
+        }
+        return next();
+    }
+
+    connection.results.add(plugin, {pass: 'valid_hostname'});
     return next();
 };
 
@@ -294,58 +322,80 @@ exports.literal_mismatch = function (next, connection, helo) {
         return next();
     }
 
-    if (parseInt(plugin.cfg.check.literal_mismatch) === 2) {
-        // Only match the /24
-        if (literal[1].split(/\./).splice(0,3).join('.') !==
-            connection.remote_ip.split(/\./).splice(0,3).join('.'))
-        {
-            connection.results.add(plugin, {fail: 'literal_mismatch'});
-            if (plugin.cfg.reject.literal_mismatch) {
-                return next(DENY, 'HELO IP literal not in the same /24 as your IP address');
-            }
+    var lmm_mode = parseInt(plugin.cfg.check.literal_mismatch);
+    var helo_ip = literal[1];
+    if (lmm_mode > 2 && net_utils.is_rfc1918(helo_ip)) {
+        connection.results.add(plugin, {pass: 'literal_mismatch(private)'});
+        return next();
+    }
+
+    if (lmm_mode > 1) {
+        if (net_utils.same_ipv4_network(connection.remote_ip, [helo_ip])) {
+            connection.results.add(plugin, {pass: 'literal_mismatch'});
             return next();
         }
+
+        connection.results.add(plugin, {fail: 'literal_mismatch'});
+        if (plugin.cfg.reject.literal_mismatch) {
+            return next(DENY, 'HELO IP literal not in the same /24 as your IP address');
+        }
+        return next();
+    }
+
+    if (helo_ip === connection.remote_ip) {
         connection.results.add(plugin, {pass: 'literal_mismatch'});
         return next();
     }
 
-    if (literal[1] !== connection.remote_ip) {
-        connection.results.add(plugin, {pass: 'literal_mismatch'});
-        if (plugin.cfg.reject.literal_mismatch) return next(DENY, 'HELO IP literal does not match your IP address');
-        return next();
+    connection.results.add(plugin, {fail: 'literal_mismatch'});
+    if (plugin.cfg.reject.literal_mismatch) {
+        return next(DENY, 'HELO IP literal does not match your IP address');
     }
-
-    connection.results.add(plugin, {pass: 'literal_mismatch'});
     return next();
 };
 
-exports.valid_tld = function (next, connection, helo) {
+exports.forward_dns = function (next, connection, helo) {
     var plugin = this;
 
-    if (plugin.should_skip(connection, 'valid_tld')) return next();
+    if (plugin.should_skip(connection, 'forward_dns')) return next();
 
-    if (/^\[\d+\.\d+\.\d+\.\d+\]$/.test(helo)) {
-        connection.results.add(plugin, {skip: 'valid_tld(literal)'});
+    var literal = /^\[(\d+\.\d+\.\d+\.\d+)\]$/.exec(helo);
+    if (literal) {
+        connection.results.add(plugin, {skip: 'forward_dns(literal)'});
         return next();
     }
 
-    var tld = (helo.split(/\./).reverse())[0];
-    if (net_utils.is_public_suffix(tld)) {
-        connection.results.add(plugin, {pass: 'valid_tld'});
-        return next();
-    }
+    var cb = function (err, ips) {
+        if (err) {
+            connection.results.add(plugin, {err: 'forward_dns('+err.code+')'});
+            return next();
+        }
 
-    connection.results.add(plugin, {fail: 'valid_tld('+tld+')'});
-    if (plugin.cfg.reject.valid_tld) {
-        return next(DENY, "HELO must have a valid TLD");
-    }
-    return next();
+        if (!ips) {
+            connection.results.add(plugin, {err: 'forward_dns, no ips!'});
+            return next();
+        }
+        connection.results.add(plugin, {ips: ips});
+
+        if (ips.indexOf(connection.remote_ip) !== -1) {
+            connection.results.add(plugin, {pass: 'forward_dns'});
+            return next();
+        }
+
+        connection.results.add(plugin, {fail: 'forward_dns(no IP match)'});
+        if (plugin.cfg.reject.forward_dns) {
+            return next(DENY, "HELO host has no forward DNS match");
+        }
+        return next();
+    };
+
+    dns_utils.get_a_records(plugin, helo, cb);
 };
 
 exports.emit_log = function (next, connection, helo) {
     var plugin = this;
     // Spits out an INFO log entry. Default looks like this:
-    // [helo.checks] helo_host: [182.212.17.35], fail:big_co(rDNS) rdns_match(literal), pass:no_dot, match_re, bare_ip, literal_mismatch, mismatch, skip:dynamic(literal), valid_tld(literal)
+    // [helo.checks] helo_host: [182.212.17.35], fail:big_co(rDNS) rdns_match(literal), pass:valid_hostname, match_re, bare_ip, literal_mismatch, mismatch, skip:dynamic(literal), valid_hostname(literal)
     //
     // Although sometimes useful, that's a bit verbose. I find that I'm rarely
     // interested in the passes, the helo_host is already logged elsewhere,
