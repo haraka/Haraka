@@ -33,9 +33,8 @@ exports.hook_connect = function (next, connection) {
             '+check.no_dot',
             '+check.dynamic',
             '+check.bare_ip',
-            '+check.literal_mismatch',
             '+check.valid_tld',
-            '+check.big_co',
+            '+check.big_company',
 
             '+reject.no_dot',
             '-reject.rdns_match',
@@ -44,6 +43,7 @@ exports.hook_connect = function (next, connection) {
             '+reject.bare_ip',
             '-reject.literal_mismatch',
             '-reject.valid_tld',
+            '+reject.big_company',
         ],
     });
 
@@ -78,14 +78,18 @@ exports.init = function (next, connection, helo) {
 
 exports.mismatch = function (next, connection, helo) {
     var plugin = this;
-    if (!plugin.cfg.check.mismatch) return next();
 
     var hc = connection.results.get('helo.checks');
     if (hc && hc.multi) return next();
 
+    if (!plugin.cfg.check.mismatch) {
+        connection.results.add(plugin, {skip: 'mismatch(config)'});
+        return next();
+    }
+
     var prev_helo = hc.helo_host;
     if (!prev_helo) {
-        connection.results.add(plugin, {skip: 'mismatch'});
+        connection.results.add(plugin, {skip: 'mismatch(1st)'});
         return next();
     }
 
@@ -94,7 +98,10 @@ exports.mismatch = function (next, connection, helo) {
         return next();
     }
 
-    connection.results.add(plugin, {fail: 'mismatch(' + prev_helo + ' / ' + helo + ')'});
+    var msg = 'mismatch(' + prev_helo + ' / ' + helo + ')';
+    connection.results.add(plugin, {fail: msg});
+    if (plugin.cfg.reject.mismatch) return next(DENY, 'HELO host ' + msg);
+
     return next();
 };
 
@@ -180,6 +187,9 @@ exports.rdns_match = function (next, connection, helo) {
     }
 
     connection.results.add(plugin, {fail: 'rdns_match'});
+    if (plugin.cfg.reject.rdns_match) {
+        return next(DENY, 'HELO host does not match rDNS');
+    }
     return next();
 };
 
@@ -248,12 +258,23 @@ exports.dynamic = function (next, connection, helo) {
 
 exports.big_company = function (next, connection, helo) {
     var plugin = this;
-    if (!plugin.cfg.check.big_co) return next();
 
     var hc = connection.results.get('helo.checks');
     if (hc && hc.multi) return next();
 
+    if (!plugin.cfg.check.big_company) {
+        connection.results.add(plugin, {skip: 'big_co(config)'});
+        return next();
+    }
+
     var rdns = connection.remote_host;
+    if (!rdns || rdns === 'Unknown' || rdns === 'DNSERROR') {
+        connection.results.add(plugin, {fail: 'big_co(rDNS)'});
+        if (plugin.cfg.reject.big_company) {
+            return next(DENY, "Big company w/o rDNS? Unlikely.");
+        }
+        return next();
+    }
 
     if (!plugin.cfg.bigco) {
         connection.results.add(plugin, {err: 'big_co(config missing)'});
@@ -274,13 +295,14 @@ exports.big_company = function (next, connection, helo) {
     }
 
     connection.results.add(plugin, {fail: 'big_co'});
-    if (plugin.cfg.reject.big_company) return next(DENY, "You are not who you say you are");
+    if (plugin.cfg.reject.big_company) {
+        return next(DENY, "You are not who you say you are");
+    }
     return next();
 };
 
 exports.literal_mismatch = function (next, connection, helo) {
     var plugin = this;
-    if (!plugin.cfg.check.literal_mismatch) return next();
 
     var hc = connection.results.get('helo.checks');
     if (hc && hc.multi) return next();
@@ -289,6 +311,7 @@ exports.literal_mismatch = function (next, connection, helo) {
         connection.results.add(plugin, {skip: 'literal_mismatch(config)'});
         return next();
     }
+
     if (plugin.cfg.main.skip_private_ip && net_utils.is_rfc1918(connection.remote_ip)) {
         connection.results.add(plugin, {skip: 'literal_mismatch(private)'});
         return next();
