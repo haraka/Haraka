@@ -73,9 +73,8 @@ exports.register = function () {
 exports.refresh_config = function() {
     this.cfg = this.config.get('clamd.ini', {
         booleans: [
-            'main.randomize_host_order',
-            'main.only_with_attachment',
-            'main.only_with_attachments',
+            '-main.randomize_host_order',
+            '-main.only_with_attachments',
         ],
     });
 
@@ -84,8 +83,6 @@ exports.refresh_config = function() {
         timeout: 30,
         connect_timeout: 10,
         max_size: 26214400,
-        only_with_attachments: false,
-        randomize_host_order: false,
     };
 
     for (var key in defaults) {
@@ -93,9 +90,8 @@ exports.refresh_config = function() {
     }
 
     // resolve mismatch between docs (...attachment) and code (...attachments)
-    if (this.cfg.main.only_with_attachment  !== undefined &&
-        this.cfg.main.only_with_attachments === undefined ) {
-        this.cfg.main.only_with_attachments = this.cfg.main.only_with_attachment;
+    if (this.cfg.main.only_with_attachment !== undefined) {
+        this.cfg.main.only_with_attachments = this.cfg.main.only_with_attachment ? true : false;
     }
 
     return this.cfg;
@@ -202,16 +198,16 @@ exports.hook_data_post = function (next, connection) {
                 return next();
             }
             else if ((m = /^stream: (\S+) FOUND/.exec(result))) {
-                connection.results.add(plugin, {fail: 'virus', emit: true});
                 var virus;
                 // Virus found
                 if (m && m[1]) {
                     virus = m[1];
                 }
+                connection.results.add(plugin, {fail: 'virus' + (virus ? ('(' + virus + ')') : ''), emit: true});
                 // Check skip list exclusions
                 for (var i=0; i < skip_list_exclude.length; i++) {
                     if (skip_list_exclude[i].test(virus)) {
-                        return next(DENY, 'Message is infected with ' + (virus || 'UNKONWN'));
+                        return next(DENY, 'Message is infected with ' + (virus || 'UNKNOWN'));
                     }
                 }
                 // Check skip list
