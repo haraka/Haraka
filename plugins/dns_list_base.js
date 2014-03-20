@@ -11,7 +11,7 @@ var redis_client;
 exports.lookup = function (lookup, zone, cb) {
     var self = this;
 
-    if (!lookup || !zone) return cb("missing data");
+    if (!lookup || !zone) return cb(new Error("missing data"));
 
     if (this.enable_stats && !redis_client) {
         var redis = require('redis');
@@ -28,7 +28,7 @@ exports.lookup = function (lookup, zone, cb) {
             self.logerror("Redis error: " + err);
             redis_client.quit();
             redis_client = null; // should force a reconnect - not sure if that's the right thing but better than nothing...
-        })
+        });
     }
 
     // Reverse lookup if IPv4 address
@@ -36,13 +36,13 @@ exports.lookup = function (lookup, zone, cb) {
         // Don't query private addresses
         if (is_rfc1918(lookup) && lookup.split('.')[0] !== '127') {
             this.logdebug('skipping private IP: ' + lookup);
-            return cb("RFC 1918 private IP");
+            return cb(new Error("RFC 1918 private IP"));
         }
         lookup = lookup.split('.').reverse().join('.');
     }
     // TODO: IPv6 not supported
     else if (net.isIPv6(lookup)) {
-        return cb("IPv6 not supported");
+        return cb(new Error("IPv6 not supported"));
     }
 
     if (this.enable_stats) {
@@ -79,11 +79,11 @@ exports.lookup = function (lookup, zone, cb) {
         // Disable list if it starts timing out
         if (err && err.code === 'ETIMEOUT') self.disable_zone(zone, err.code);
         if (err && err.code === 'ENOTFOUND') {
-            return cb('', a);  // Not an error for a DNSBL
+            return cb(null, a);  // Not an error for a DNSBL
         }
         return cb(err, a);
     });
-}
+};
 
 exports.multi = function (lookup, zones, cb) {
     if (!lookup || !zones) return cb();
