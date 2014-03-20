@@ -516,7 +516,6 @@ exports.forward_dns = {
         var outer = this;
         var test_helo = 'great.domain.non-existent-tld';
         var cb = function () {
-            // console.log(outer.connection.results.get('helo.checks'));
             test.equal(undefined, arguments[0]);
             test.ok(outer.connection.results.get('helo.checks').skip.length);
             test.done();
@@ -531,7 +530,6 @@ exports.forward_dns = {
         var outer = this;
         var test_helo = 'matt.simerson.net';
         var cb = function () {
-            // console.log(outer.connection.results.get('helo.checks'));
             test.equal(undefined, arguments[0]);
             test.ok(outer.connection.results.get('helo.checks').pass.length);
             test.done();

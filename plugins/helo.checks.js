@@ -424,25 +424,21 @@ exports.get_a_records = function (host, cb) {
         return cb(e);
     }
 
-// Set-up timer
+    // Set-up timer
     var timer = setTimeout(function () {
-        logger.logerror('timeout!');
+        plugin.logerror('timeout!');
         return cb(new Error('timeout'));
     }, (plugin.cfg.main.dns_timeout || 5) * 1000);
 
-// do the queries
-    if (!/\.$/.test(host)) { host = host + '.'; } // fully qualify
+    // fully qualify, to ignore any search options in /etc/resolv.conf
+    if (!/\.$/.test(host)) { host = host + '.'; }
+
+    // do the queries
     dns.resolve(host, function(err, ips) {
         if (timer) clearTimeout(timer);
-        if (err) {
-            // console.log(host + ' err: ' + err);
-            // logger.logerror(plugin, host + ' err: ' + err);
-            return cb(err, ips);
-        }
-
-        logger.loginfo(plugin, host + ' => ' + ips);
-
-        // Got all DNS results
+        if (err) return cb(err, ips);
+        // plugin.logdebug(plugin, host + ' => ' + ips);
+        // return the DNS results
         return cb(null, ips);
     });
 };
