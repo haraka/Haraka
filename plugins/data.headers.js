@@ -14,32 +14,24 @@ exports.register = function () {
 };
 
 exports.refresh_config = function(next, connection) {
-    var check_defaults = {
-        duplicate_singular: true,
-        missing_required: true,
-        invalid_return_path: true,
-        invalid_date: true,
-        user_agent: false,
-        direct_to_mx: false,
-        from_match: false,
-        mailing_list: false,
-    };
-    var reject_defaults = {
-        duplicate_singular: false,
-        missing_required: false,
-        invalid_return_path: false,
-        invalid_date: false,
-    };
 
-    var bools = [];
-    for (var cd in check_defaults) {
-        bools.push('check.' + (check_defaults[cd] ? '+' : '-') + cd);
-    }
-    for (var rd in reject_defaults) {
-        bools.push('reject.' + (reject_defaults[rd] ? '+' : '-') + rd);
-    }
+    this.cfg = this.config.get('data.headers.ini', {
+        booleans: [
+            '+check.duplicate_singular',
+            '+check.missing_required',
+            '+check.invalid_return_path',
+            '+check.invalid_date',
+            '+check.user_agent',
+            '+check.direct_to_mx',
+            '+check.from_match',
+            '+check.mailing_list',
 
-    this.cfg = this.config.get('data.headers.ini', { booleans: bools });
+            '-reject.duplicate_singular',
+            '-reject.missing_required',
+            '-reject.invalid_return_path',
+            '-reject.invalid_date',
+        ],
+    });
     return next();
 };
 
@@ -252,8 +244,9 @@ exports.from_match = function (next, connection) {
     var plugin = this;
     if (!plugin.cfg.check.from_match) return next();
 
-    // see if the header From matches the envelope FROM. there are many legit
-    // reasons to not match, but a match is much more hammy than spammy
+    // see if the header From matches the envelope FROM. There are valid
+    // cases to not match (~10% of ham) but a not matching is much more
+    // likely to be spam than ham. This test is useful for heuristics.
     if (!connection.transaction) return next();
 
     var env_from = connection.transaction.mail_from.address();

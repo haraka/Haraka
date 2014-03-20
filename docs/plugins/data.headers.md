@@ -3,7 +3,7 @@
 This plugin performs a variety of mail header inspection checks.
 
 
-### RFC 5322 Section 3.6:
+## RFC 5322 Section 3.6:
 
 > All messages MUST have a 'Date' and 'From' header and a message may not contain
 > more than one 'Date', 'From', 'Sender', 'Reply-To', 'To', 'Cc', 'Bcc',
@@ -63,20 +63,38 @@ legit reasons to not match, but matching domains are far more frequent in ham.
 ## mailing\_list
 
 Attempt to determine if this message was sent via an email list. This is very
-rudimentary at present and only detects the most common email lists..
+rudimentary at present and only detects the most common email lists.
 
+Forwarders, of which email lists are a special type, constitutes the majority
+of the minority (~10%) of ham which fails SPF and DKIM tests. This MLM
+detector is a building block in the ability to detect mail from forwarders
+and assess their reputability.
 
 # Configuration
 
-The data.headers.ini file can contain [check] and [reject] sections that
-enable/disable each check, as well as enable/disable rejections for each
-check. To turn on User Agent detection and turn off Mailing List detection:
+The data.headers.ini file can contain [check] and [reject] sections.
+
+## [check]
+
+To turn on User Agent detection and turn off Mailing List detection:
+Each key is the test/check name and a boolean value that enables or disables the check.
 
     [check]
+    duplicate_singular=true
+    missing_required=true
+    invalid_return_path=true
+    invalid_date=true
     user_agent=true
-    mailing_list=false
+    direct_to_mx=true
+    from_match=true
+    mailing_list=true
 
-To prevent a missing header from causing the messages to be rejected:
+
+## [reject]
+
+Turning off reject for a check lets it be enabled (for data collection)
+without interrupting mail flow. To prevent a missing header from causing
+messages to be rejected:
 
     [reject]
     missing_required=false
