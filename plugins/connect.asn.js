@@ -6,17 +6,16 @@ var net_utils = require('./net_utils');
 var test_ip = '208.75.177.99';
 var providers = [];
 var conf_providers = [ 'origin.asn.cymru.com', 'asn.routeviews.org' ];
-var cfg;
 
 exports.register = function () {
     var plugin = this;
 
     // get settings from the config file
-    cfg = plugin.config.get('connect.asn.ini');
-    if (cfg.main.providers) {
-        conf_providers = cfg.main.providers.split(/[\s,;]+/);
+    plugin.cfg = plugin.config.get('connect.asn.ini');
+    if (plugin.cfg.main.providers) {
+        conf_providers = plugin.cfg.main.providers.split(/[\s,;]+/);
     }
-    if (cfg.main.test_ip) { test_ip = cfg.main.test_ip; }
+    if (plugin.cfg.main.test_ip) { test_ip = plugin.cfg.main.test_ip; }
 
     // add working providers to the provider list
     var result_cb = function (zone, res) {
@@ -43,7 +42,7 @@ exports.get_dns_results = function (zone, ip, cb) {
     var timer = setTimeout(function () {
         plugin.logerror(plugin, 'timeout: ' + zone);
         return cb(zone, '');
-    }, (cfg.main.timeout || 4) * 1000);
+    }, (plugin.cfg.main.timeout || 4) * 1000);
 
     dns.resolveTxt(query, function (err, addrs) {
         clearTimeout(timer);
@@ -161,9 +160,9 @@ exports.hook_data_post = function (next, connection) {
     var asn = connection.results.get('connect.asn');
     if (!asn) return next();
     var txn = connection.transaction;
-    var cfg = plugin.config.get('connect.asn.ini');
+    plugin.cfg = plugin.config.get('connect.asn.ini');
 
-    if (asn.asn && cfg.main.asn_header) {
+    if (asn.asn && plugin.cfg.main.asn_header) {
         if (asn.net) {
             txn.add_header('X-Haraka-ASN', asn.asn + ' ' + asn.net);
         }
@@ -172,7 +171,7 @@ exports.hook_data_post = function (next, connection) {
         }
     }
 
-    if (cfg.main.provider_header) {
+    if (plugin.cfg.main.provider_header) {
         for (var p in asn) {
             if (!asn[p].asn) {   // ignore non-object results
                 // connection.logdebug(plugin, p + ", " + asn[p]);
