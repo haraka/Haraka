@@ -31,14 +31,16 @@ exports.relay_acl = function (next, connection, params) {
 
 exports.relay_dest_domains = function (next, connection, params) {
     var plugin = this;
+    var transaction = connection.transaction;
+
     // Skip this if the host is already allowed to relay
     if (connection.relaying) {
-        connection.results.add(plugin, {skip: 'relay_dest_domain(relay)'});
+        transaction.results.add(plugin, {skip: 'relay_dest_domain(relay)'});
         return next();
     }
  
     if (!plugin.cfg.domains) {
-        connection.results.add(plugin, {skip: 'relay_dest_domain(config)'});
+        transaction.results.add(plugin, {skip: 'relay_dest_domain(config)'});
         return next();
     }
 
@@ -47,7 +49,7 @@ exports.relay_dest_domains = function (next, connection, params) {
 
     var dst_cfg = plugin.cfg.domains[dest_domain];
     if (!dst_cfg) {
-        connection.results.add(plugin, {fail: 'relay_dest_domain'});
+        transaction.results.add(plugin, {fail: 'relay_dest_domain'});
         return next(DENY, "You are not allowed to relay");
     }
 
@@ -57,18 +59,18 @@ exports.relay_dest_domains = function (next, connection, params) {
     switch(action) {
         case "accept":
             connection.relaying = true;
-            connection.results.add(plugin, {pass: 'relay_dest_domain'});
+            transaction.results.add(plugin, {pass: 'relay_dest_domain'});
             return next(OK);
         case "continue":
             connection.relaying = true;
-            connection.results.add(plugin, {pass: 'relay_dest_domain'});
+            transaction.results.add(plugin, {pass: 'relay_dest_domain'});
             return next(CONT);
         case "deny":
-            connection.results.add(plugin, {fail: 'relay_dest_domain'});
+            transaction.results.add(plugin, {fail: 'relay_dest_domain'});
             return next(DENY, "You are not allowed to relay");
     }
 
-    connection.results.add(plugin, {fail: 'relay_dest_domain'});
+    transaction.results.add(plugin, {fail: 'relay_dest_domain'});
     return next(DENY, "This is not an open relay");
 };
 

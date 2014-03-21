@@ -62,12 +62,18 @@ exports.load_uri_config = function (next) {
 exports.do_lookups = function (connection, next, hosts, type) {
     var plugin = this;
 
+    // Store the results in the correct place based on the lookup type
+    var results = connection.transaction.results;
+    if (type === 'rdns' || type === 'helo') {
+        results = connection.results;
+    }
+
     if (typeof hosts === 'string') {
         hosts = [ hosts ];
     }
     if (!hosts || !hosts.length) {
         connection.logdebug(plugin, '(' + type + ') no items found for lookup');
-        connection.results.add(plugin, {skip: type});
+        results.add(plugin, {skip: type});
         return next();
     }
     connection.logdebug(plugin, '(' + type + ') found ' + hosts.length + ' items for lookup');
@@ -82,7 +88,7 @@ exports.do_lookups = function (connection, next, hosts, type) {
         }
         // Check the exclusion list
         if (check_excludes_list(host)) {
-            connection.results.add(plugin, {skip: 'excluded domain:' + host });
+            results.add(plugin, {skip: 'excluded domain:' + host });
             continue;
         }
         // Loop through the zones
@@ -90,7 +96,7 @@ exports.do_lookups = function (connection, next, hosts, type) {
             var zone = zones[j];
             if (zone === 'main') continue;  // skip config
             if (!lists[zone] || (lists[zone] && !/^(?:1|true|yes|enabled|on)$/i.test(lists[zone][type]))) {
-                connection.results.add(plugin, {skip: type + ' unsupported for ' + zone });
+                results.add(plugin, {skip: type + ' unsupported for ' + zone });
                 continue;
             }
             // Convert in-addr.arpa into bare IPv4 lookup
@@ -103,12 +109,12 @@ exports.do_lookups = function (connection, next, hosts, type) {
             // Handle zones that do not allow IP queries (e.g. Spamhaus DBL)
             if (isIPv4(host)) {
                 if (/^(?:1|true|yes|enabled|on)$/i.test(lists[zone].no_ip_lookups)) {
-                    connection.results.add(plugin, {skip: 'IP (' + host + ') not supported for ' + zone });
+                    results.add(plugin, {skip: 'IP (' + host + ') not supported for ' + zone });
                     continue;
                 }
                 // Skip any private IPs
                 if (net_utils.is_rfc1918(host)) {
-                    connection.results.add(plugin, {skip: 'private IP' });
+                    results.add(plugin, {skip: 'private IP' });
                     continue;
                 }
                 // Reverse IP for lookup
@@ -127,7 +133,7 @@ exports.do_lookups = function (connection, next, hosts, type) {
             if (Object.keys(queries[zone]).length > lists.main.max_uris_per_list) {
                 connection.logwarn(plugin, 'discarding lookup ' + lookup + ' for zone ' +
                               zone + ' maximum query limit reached');
-                connection.results.add(plugin, {skip: 'max query limit for ' + zone });
+                results.add(plugin, {skip: 'max query limit for ' + zone });
                 continue;
             }
             queries[zone][lookup] = 1;
@@ -146,7 +152,7 @@ exports.do_lookups = function (connection, next, hosts, type) {
     queries_to_run.sort(Math.round(Math.random())-0.25);
 
     if(!queries_to_run.length) {
-        connection.results.add(plugin, {skip: type + ' (no queries)' });
+        results.add(plugin, {skip: type + ' (no queries)' });
         return next();
     }
 
@@ -159,7 +165,7 @@ exports.do_lookups = function (connection, next, hosts, type) {
         connection.logdebug(plugin, 'timeout');
         if (!called_next) {
             called_next = true;
-            connection.results.add(plugin, {err: type + ' timeout' });
+            results.add(plugin, {err: type + ' timeout' });
             return next();
         }
     }, ((lists.main && lists.main.timeout) ?
@@ -188,7 +194,7 @@ exports.do_lookups = function (connection, next, hosts, type) {
                         }
                         clearTimeout(timer);
                         called_next = true;
-                        connection.results.add(plugin, {fail: type });
+                        results.add(plugin, {fail: type });
                         return next(DENY, msg);
                     }
                 }
@@ -225,14 +231,14 @@ exports.do_lookups = function (connection, next, hosts, type) {
             }
             if (!called_next && pending_queries === 0) {
                 clearTimeout(timer);
-                connection.results.add(plugin, {pass: type});
+                results.add(plugin, {pass: type});
                 return next();
             }
         });
     });
 
     if (pending_queries === 0) {
-        connection.results.add(plugin, {pass: type});
+        results.add(plugin, {pass: type});
         return next();
     }
 };
