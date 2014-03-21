@@ -11,7 +11,11 @@ var redis_client;
 exports.lookup = function (lookup, zone, cb) {
     var self = this;
 
-    if (!lookup || !zone) return cb(new Error("missing data"));
+    if (!lookup || !zone) {
+        process.nextTick(function () {
+            return cb(new Error("missing data"));
+        });
+    }
 
     if (this.enable_stats && !redis_client) {
         var redis = require('redis');
@@ -36,13 +40,17 @@ exports.lookup = function (lookup, zone, cb) {
         // Don't query private addresses
         if (is_rfc1918(lookup) && lookup.split('.')[0] !== '127') {
             this.logdebug('skipping private IP: ' + lookup);
-            return cb(new Error("RFC 1918 private IP"));
+            process.nextTick(function () {
+                return cb(new Error("RFC 1918 private IP"));
+            });
         }
         lookup = lookup.split('.').reverse().join('.');
     }
     // TODO: IPv6 not supported
     else if (net.isIPv6(lookup)) {
-        return cb(new Error("IPv6 not supported"));
+        process.nextTick(function () {
+            return cb(new Error("IPv6 not supported"));
+        });
     }
 
     if (this.enable_stats) {
@@ -90,8 +98,9 @@ exports.multi = function (lookup, zones, cb) {
     if (typeof zones === 'string') zones = [ '' + zones ];
     var self = this;
     var listed = [];
-    var pending = zones.length;
+    var pending = 0;
     zones.forEach(function (zone) {
+        pending++;
         self.lookup(lookup, zone, function (err, a) {
             pending--;
             if (a) listed.push(zone);
