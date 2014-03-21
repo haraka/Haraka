@@ -2,7 +2,8 @@
 
 // documentation via: haraka -h plugins/relay_acl
 
-var ipaddr = require('ipaddr.js');
+var ipaddr = require('ipaddr.js'),
+    net    = require('net');
 
 exports.register = function() {
     this.register_hook('lookup_rdns', 'refresh_config');
@@ -76,13 +77,22 @@ exports.relay_dest_domains = function (next, connection, params) {
  */
 exports.is_acl_allowed = function (connection) {
     var plugin = this;
+    if (!plugin.acl_allow) return false;
+    if (!plugin.acl_allow.length) return false;
+
     var ip = connection.remote_ip;
+
     for (var i=0; i < plugin.acl_allow.length; i++) {
         var item = plugin.acl_allow[i];
         connection.logdebug(plugin, 'checking if ' + ip + ' is in ' + item);
         var cidr = plugin.acl_allow[i].split("/");
-        if (!cidr[1]) cidr[1] = 32;
-        if (ipaddr.parse(ip).match(ipaddr.parse(cidr[0]), cidr[1])) {
+        var c_net  = cidr[0];
+        var c_mask = cidr[1] || 32;
+
+        if (net.isIPv4(ip) && net.isIPv6(c_net)) continue;
+        if (net.isIPv6(ip) && net.isIPv4(c_net)) continue;
+
+        if (ipaddr.parse(ip).match(ipaddr.parse(c_net), c_mask)) {
             connection.logdebug(plugin, 'checking if ' + ip + ' is in ' + item + ": yes");
             return true;
         }
