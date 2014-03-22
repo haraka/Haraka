@@ -11,6 +11,19 @@ SPF.prototype.log_debug = function (str) {
 
 exports.hook_helo = exports.hook_ehlo = function (next, connection, helo) {
     var plugin = this;
+    plugin.cfg = plugin.config.get('spf.ini', {
+        booleans: [
+            '-main.helo_softfail_reject',
+            '-main.helo_fail_reject',
+            '-main.helo_temperror_defer',
+            '-main.helo_permerror_reject',
+
+            '-main.mail_softfail_reject',
+            '-main.mail_fail_reject',
+            '-main.mail_temperror_defer',
+            '-main.mail_permerror_reject',
+        ]
+    });
     // Bypass private IPs
     if (net_utils.is_rfc1918(connection.remote_ip)) return next();
     var timeout = false;
@@ -36,6 +49,7 @@ exports.hook_helo = exports.hook_ehlo = function (next, connection, helo) {
             scope: 'helo',
             result: spf.result(result),
             domain: host,
+            emit: true,
         });
         return next();
     });
@@ -48,8 +62,6 @@ exports.hook_mail = function (next, connection, params) {
 
     var txn = connection.transaction;
     if (!txn) return next();
-
-    var cfg = this.config.get('spf.ini');
 
     var mfrom = params[0].address();
     var host = params[0].host;
@@ -93,14 +105,12 @@ exports.hook_mail = function (next, connection, params) {
 
         txn.notes.spf_mail_result = spf.result(result);
         txn.notes.spf_mail_record = spf.spf_record;
-        var spf_note = {
+        txn.results.add(plugin, {
             scope: 'mfrom',
             result: spf.result(result),
             domain: host,
-        };
-        if (connection.transaction) {
-            connection.transaction.results.add(plugin, spf_note);
-        }
+            emit: true,
+        });
         return plugin.return_results(next, connection, spf, 'mail', result, '<'+mfrom+'>');
     });
 };
@@ -116,7 +126,7 @@ exports.log_result = function (connection, scope, host, mfrom, result) {
 };
 
 exports.return_results = function(next, connection, spf, scope, result, sender) {
-    var cfg = this.config.get('spf.ini');
+    var plugin = this;
     var msgpre = 'sender ' + sender;
 
     switch (result) {
@@ -125,28 +135,28 @@ exports.return_results = function(next, connection, spf, scope, result, sender) 
         case spf.SPF_PASS:
             return next();
         case spf.SPF_SOFTFAIL:
-            if (cfg.main[scope + '_softfail_reject']) {
+            if (plugin.cfg.main[scope + '_softfail_reject']) {
                 return next(DENY, msgpre + ' SPF SoftFail');
             }
             return next();
         case spf.SPF_FAIL:
-            if (cfg.main[scope + '_fail_reject']) {
+            if (plugin.cfg.main[scope + '_fail_reject']) {
                 return next(DENY, msgpre + ' SPF Fail');
             }
             return next();
         case spf.SPF_TEMPERROR:
-            if (cfg.main[scope + '_temperror_defer']) {
+            if (plugin.cfg.main[scope + '_temperror_defer']) {
                 return next(DENYSOFT, msgpre + ' SPF Temporary Error');
             }
             return next();
         case spf.SPF_PERMERROR:
-            if (cfg.main[scope + '_permerror_reject']) {
+            if (plugin.cfg.main[scope + '_permerror_reject']) {
                 return next(DENY, msgpre + ' SPF Permanent Error');
             }
             return next();
         default:
             // Unknown result
-            connection.logerror(self, 'unknown result code=' + result);
+            connection.logerror(plugin, 'unknown result code=' + result);
             return next();
     }
 };
