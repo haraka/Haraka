@@ -45,7 +45,7 @@ cfreader.read_config = function(name, type, cb, options) {
     }
 
     return result;
-}
+};
 
 cfreader.empty_config = function(type) {
     if (type === 'ini') {
@@ -110,12 +110,14 @@ cfreader.load_json_config = function(name) {
         }
     }
     return result;
-}
+};
 
 cfreader.load_ini_config = function(name, options) {
     var result       = cfreader.empty_config('ini');
     var current_sect = result.main;
     var current_sect_name = 'main';
+    var bool_matches = [];
+    if (options && options.booleans) bool_matches = options.booleans.slice();
 
     // Initialize any booleans
     if (options && Array.isArray(options.booleans)) {
@@ -131,6 +133,11 @@ cfreader.load_ini_config = function(name, options) {
 
                 if (section.match(/^(\-|\+)/)) section = section.substr(1);
                 if (    key.match(/^(\-|\+)/)) key     =     key.substr(1);
+
+                // so the boolean detection in the next section will match
+                if (options.booleans.indexOf(section+'.'+key) === -1) {
+                    bool_matches.push(section+'.'+key);
+                }
 
                 if (!result[section]) result[section] = {};
                 result[section][key] = bool_default;
@@ -165,7 +172,7 @@ cfreader.load_ini_config = function(name, options) {
                 pre = '';
                 if (match = regex.param.exec(line)) {
                     if (options && Array.isArray(options.booleans) &&
-                        options.booleans.indexOf(current_sect_name + '.' + match[1]) !== -1)
+                        bool_matches.indexOf(current_sect_name + '.' + match[1]) !== -1)
                     {
                         current_sect[match[1]] = regex.is_truth.test(match[2]);
                         logger.logdebug('Returning boolean ' + current_sect[match[1]] +
@@ -183,7 +190,7 @@ cfreader.load_ini_config = function(name, options) {
                 }
                 else {
                     logger.logerror("Invalid line in config file '" + name + "': " + line);
-                };
+                }
             });
         }
     }
