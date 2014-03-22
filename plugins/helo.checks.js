@@ -398,7 +398,7 @@ exports.forward_dns = function (next, connection, helo) {
         if (connection.results.has('helo.checks', 'pass', /^rdns_match/)) {
             var helo_od = net_utils.get_organizational_domain(helo);
             var rdns_od = net_utils.get_organizational_domain(connection.remote_host);
-            if (helo_od === rdns_od) {
+            if (helo_od && helo_od === rdns_od) {
                 connection.results.add(plugin, {pass: 'forward_dns(domain)'});
                 return next();
             }

@@ -17,6 +17,9 @@ helo.checks results can be accessed by subsequent plugins:
     if (h.fail && h.fail.length > 3) {
         // yikes, you failed 4+ tests!
     }
+    if (connection.results.has('helo.checks','pass', /^forward_dns/) {
+        // the HELO hostname is valid
+    }
 
 
 ## Configuration
