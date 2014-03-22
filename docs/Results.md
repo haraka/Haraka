@@ -52,7 +52,7 @@ There are three options available: hide, order, and debug.
 
 #### add
 
-Store some information. Most calls to `results` will append data to the lists
+Store information. Most calls to `results` will append data to the lists
 in the connection. The following lists are available:
 
     pass  - names of tests that passed
@@ -68,7 +68,7 @@ When err results are received, a logerror is automatically emitted, saving the
 need to specify {emit: true} with the request.
 
 Examples:
-    
+
     var c = connection;
     c.results.add(plugin, {pass: 'null_sender'});
     c.results.add(plugin, {fail: 'single_recipient'});
@@ -132,3 +132,42 @@ Keep in mind that plugins also store results in the transaction. Example:
         ....
     }
 
+#### has
+
+Check result contents for string or pattern matches.
+
+Syntax:
+    results.has('plugin_name', 'result_name', 'search_term');
+
+* result\_name: the name of an array or string in the result object
+
+* search\_term: a string or RegExp object
+
+Store Results:
+
+    var r = connection.results;
+    r.add(plugin, {pass: 'some_test'});
+    r.add(plugin, {pass: 'some_test(with reason)'});
+
+Retrieve exact match with **get**:
+
+    if (r.get('plugin_name').pass.indexOf('some_test') !== -1) {
+        // some_test passed (1x)
+    };
+
+Same thing with **has** (retrieve a string match):
+
+    if (r.has('plugin_name', 'pass', 'some_test')) {
+        // some_test passed (1x)
+    }
+
+So the syntax for using **has** is a little more pleasant.
+
+Both options require one to check for each reason which is unpleasant when
+and all we really want to know is if some\_test passed or not.
+
+Retrieve a matching pattern:
+
+    if (r.has('plugin_name', 'pass', /^some_test/)) {
+        // some_test passed (2x)
+    }
