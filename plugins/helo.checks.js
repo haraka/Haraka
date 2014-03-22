@@ -354,7 +354,17 @@ exports.literal_mismatch = function (next, connection, helo) {
 exports.forward_dns = function (next, connection, helo) {
     var plugin = this;
 
+  connection.loginfo(plugin, "plugin.cfg.reject.forward_dns: " + plugin.cfg.reject.forward_dns);
+
     if (plugin.should_skip(connection, 'forward_dns')) return next();
+    if (!plugin.cfg.check.valid_hostname) {
+        connection.results.add(plugin, {err: 'forward_dns(valid_hostname disabled)'});
+    }
+
+    var hc = connection.results.get('helo.checks');
+    if (!/^valid_hostname/.test(hc.pass)) {
+        connection.results.add(plugin, {fail: 'forward_dns(invalid_hostname)'});
+    }
 
     if (plugin.is_ipv4_literal(helo)) {
         connection.results.add(plugin, {skip: 'forward_dns(literal)'});
