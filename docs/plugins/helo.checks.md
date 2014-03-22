@@ -73,6 +73,8 @@ helo.checks results can be accessed by subsequent plugins:
       Perform a DNS lookup of the HELO hostname and validate that the IP of
       the remote is included in the IP(s) of the HELO hostname.
 
+      This test requires that the valid\_hostname check is also enabled.
+
     * rdns\_match=true
 
       Sees if the HELO hostname (or at least the domain) match the rDNS

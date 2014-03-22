@@ -10,8 +10,8 @@ var checks = [
     'big_company',        // Well known HELOs that must match rdns
     'literal_mismatch',   // IP literal that doesn't match remote IP
     'valid_hostname',     // HELO hostname is a legal DNS name
-    'forward_dns',        // HELO hostname resolves to the connecting IP
     'rdns_match',         // HELO hostname matches rDNS
+    'forward_dns',        // HELO hostname resolves to the connecting IP
     'mismatch',           // hostname differs between invocations
     'emit_log',           // emit a loginfo summary
 ];
@@ -196,14 +196,14 @@ exports.rdns_match = function (next, connection, helo) {
         return next();
     }
 
-    if (helo.match(/^\[(?:[0-9\.]+)\]$/)) {
+    if (plugin.is_ipv4_literal(helo)) {
         connection.results.add(plugin, {fail: 'rdns_match(literal)'});
         return next();
     }
 
     var r_host = connection.remote_host;
     if (r_host && helo === r_host) {
-        connection.results.add(plugin, {pass: 'rdns_match(exact)'});
+        connection.results.add(plugin, {pass: 'rdns_match'});
         return next();
     }
 
@@ -354,16 +354,15 @@ exports.literal_mismatch = function (next, connection, helo) {
 exports.forward_dns = function (next, connection, helo) {
     var plugin = this;
 
-  connection.loginfo(plugin, "plugin.cfg.reject.forward_dns: " + plugin.cfg.reject.forward_dns);
-
     if (plugin.should_skip(connection, 'forward_dns')) return next();
     if (!plugin.cfg.check.valid_hostname) {
         connection.results.add(plugin, {err: 'forward_dns(valid_hostname disabled)'});
+        return next();
     }
 
-    var hc = connection.results.get('helo.checks');
-    if (!/^valid_hostname/.test(hc.pass)) {
+    if (!connection.results.has('helo.checks', 'pass', /^valid_hostname/)) {
         connection.results.add(plugin, {fail: 'forward_dns(invalid_hostname)'});
+        return next();
     }
 
     if (plugin.is_ipv4_literal(helo)) {
@@ -373,7 +372,7 @@ exports.forward_dns = function (next, connection, helo) {
 
     var cb = function (err, ips) {
         if (err) {
-            if (err.code === 'ENOTFOUND') {
+            if (err.code === 'ENOTFOUND' || err.code === 'ENODATA') {
                 connection.results.add(plugin, {fail: 'forward_dns('+err.code+')'});
                 return next();
             }
@@ -390,6 +389,20 @@ exports.forward_dns = function (next, connection, helo) {
         if (ips.indexOf(connection.remote_ip) !== -1) {
             connection.results.add(plugin, {pass: 'forward_dns'});
             return next();
+        }
+
+        // some valid hosts (facebook.com, hotmail.com, ) use a generic HELO
+        // hostname that resolves but doesn't contain the IP that is
+        // connecting. If their rDNS passed, and their HELO hostname is in
+        // the same domain, consider it close enough.
+        if (connection.results.has('helo.checks', 'pass', /^rdns_match/)) {
+            var helo_od = net_utils.get_organizational_domain(helo);
+            var rdns_od = net_utils.get_organizational_domain(connection.remote_host);
+            if (helo_od === rdns_od) {
+                connection.results.add(plugin, {pass: 'forward_dns(domain)'});
+                return next();
+            }
+            connection.results.add(plugin, {msg: "od miss: " + helo_od + ', ' + rdns_od});
         }
 
         connection.results.add(plugin, {fail: 'forward_dns(no IP match)'});
