@@ -376,6 +376,10 @@ exports.forward_dns = function (next, connection, helo) {
                 connection.results.add(plugin, {fail: 'forward_dns('+err.code+')'});
                 return next();
             }
+            if (err.code === 'ETIMEOUT' && plugin.cfg.reject.forward_dns) {
+                connection.results.add(plugin, {fail: 'forward_dns('+err.code+')'});
+                return next(DENYSOFT, "DNS timeout resolving your HELO hostname");
+            }
             connection.results.add(plugin, {err: 'forward_dns('+err+')'});
             return next();
         }
@@ -450,7 +454,9 @@ exports.get_a_records = function (host, cb) {
     // Set-up timer
     var timer = setTimeout(function () {
         plugin.logerror('timeout!');
-        return cb(new Error('timeout'));
+        var e = new Error('timeout');
+        e.code = 'ETIMEOUT';
+        return cb(e);
     }, (plugin.cfg.main.dns_timeout || 5) * 1000);
 
     // fully qualify, to ignore any search options in /etc/resolv.conf
