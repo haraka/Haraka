@@ -12,37 +12,28 @@ exports.register = function () {
 exports.refresh_config = function (next, connection) {
     var plugin = this;
 
-    var check_defaults = {
-        reject_all        : false,
-        single_recipient  : true,
-        empty_return_path : false,
-        bad_rcpt          : true,
-    };
-    var reject_defaults = {
-        single_recipient : true,
-        empty_return_path: false,
-    };
+    plugin.cfg = plugin.config.get('bounce.ini', {
+        booleans: [
+            '-check.reject_all',
+            '+check.single_recipient',
+            '-check.empty_return_path',
+            '+check.bad_rcpt',
 
-    var bools = [];
-    for (var cd in check_defaults) {
-        bools.push('checks.' + (check_defaults[cd] ? '+' : '-') + cd);
-    }
-    for (var rd in reject_defaults) {
-        bools.push('reject.' + (reject_defaults[rd] ? '+' : '-') + rd);
-    }
-
-    plugin.cfg = plugin.config.get('bounce.ini', { booleans: bools });
+            '+reject.single_recipient',
+            '-reject.empty_return_path',
+        ],
+    });
 
     // Legacy config handling
     if (plugin.cfg.main.reject_invalid) {
         connection.logerror(plugin, "bounce.ini is out of date, please update!");
-        plugin.cfg.checks.single_recipient=true;
+        plugin.cfg.check.single_recipient=true;
         plugin.cfg.reject.single_recipient=true;
     }
 
     if (plugin.cfg.main.reject_all) {
         connection.logerror(plugin, "bounce.ini is out of date, please update!");
-        plugin.cfg.checks.reject_all=true;
+        plugin.cfg.check.reject_all=true;
     }
 
     plugin.cfg.invalid_addrs = plugin.config.get('bounce_bad_rcpt', 'list');
@@ -53,7 +44,7 @@ exports.reject_all = function (next, connection, params) {
     var plugin = this;
     var transaction = connection.transaction;
 
-    if (!plugin.cfg.checks.reject_all) return next();
+    if (!plugin.cfg.check.reject_all) return next();
     var mail_from = params[0];
 
     if (!plugin.has_null_sender(connection, mail_from)) {
@@ -68,7 +59,7 @@ exports.single_recipient = function(next, connection) {
     var plugin = this;
     var transaction = connection.transaction;
 
-    if (!plugin.cfg.checks.single_recipient) return next();
+    if (!plugin.cfg.check.single_recipient) return next();
     if (!plugin.has_null_sender(connection)) return next();
 
     // Valid bounces have a single recipient
@@ -91,7 +82,7 @@ exports.empty_return_path = function(next, connection) {
     var plugin = this;
     var transaction = connection.transaction;
 
-    if (!plugin.cfg.checks.empty_return_path) return next();
+    if (!plugin.cfg.check.empty_return_path) return next();
     if (!plugin.has_null_sender(connection)) return next();
 
     // Bounce messages generally do not have a Return-Path set. This checks
@@ -127,7 +118,7 @@ exports.bad_rcpt = function (next, connection) {
     var plugin = this;
     var transaction = connection.transaction;
 
-    if (!plugin.cfg.checks.bad_rcpt) return next();
+    if (!plugin.cfg.check.bad_rcpt) return next();
     if (!plugin.has_null_sender(connection)) return next();
     if (!plugin.cfg.invalid_addrs) return next();
 
