@@ -142,7 +142,10 @@ exports.any = function (next, connection, params) {
         connection.logerror(plugin, "oops: " + e);
         return next();
     }
-    if (!domain) return next();
+    if (!domain) {
+        connection.logerror(plugin, "any found no domain!");
+        return next();
+    }
     var org_domain = net_utils.get_organizational_domain(domain);
 
     // step 2: check for whitelist
@@ -171,6 +174,7 @@ exports.any = function (next, connection, params) {
         return next(DENY, "You are not welcome here.");
     }
 
+    connection.results.add(plugin, {pass: 'any', emit: true});
     return next();
 };
 
