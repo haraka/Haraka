@@ -34,7 +34,7 @@ helo.checks results can be accessed by subsequent plugins:
 
   INI file which controls enabling of certain checks:
 
-    * dns\_timeout=5
+    * dns\_timeout=30
 
       How many seconds to wait for DNS queries to timeout.
 
