@@ -1,15 +1,13 @@
-Forward Confirmed RDNS
-================================
+# Forward Confirmed Reverse DNS
 
-DESCRIPTION
---------------------------
+## DESCRIPTION
+
 Determine if the SMTP sender has matching forward and reverse DNS.
 
 See [FCrDNS at wikipedia](http://en.wikipedia.org/wiki/FCrDNS)
 
 
-USAGE
---------------------------
+## USAGE
 
 Other plugins can use FCrDNS results like this:
 
@@ -20,23 +18,23 @@ Other plugins can use FCrDNS results like this:
         }
 
         var fails = fcrdns.fail;
-        if (fails && Array.isArray(fails) && fails.indexOf('is_generic_dns') !== -1) {
+        if (connection.results.has('connect.fcrdns', 'fail', /^is_generic/) {
             // their IP is in their hostname, unlikely to be MX, penalize
         }
     }
 
 
-CONFIGURATION
---------------------------
+## CONFIGURATION
+
 Edit config/connect.fcrdns.ini
 
 This plugin honors the whitelisting of IPs as set by the rdns\_access plugin.
-Make sure rdns\_access is enabled in config/plugins and listed *before* this
-plugin.
+For that to work, rdns\_access needs to be listed *before* this plugin in
+config/plugins.
 
 * disconnect\_timeout=10
 
-When disconnection, delay the disconnect for this many seconds.
+When disconnecting, delay for this many seconds.
 
 The following settings permit control of which test will block connections. To
 mimic the lookup\_rdns.strict plugin, set no\_rdns=true.
@@ -57,16 +55,16 @@ mimic the lookup\_rdns.strict plugin, set no\_rdns=true.
     generic_rdns=0
 
 
-ANTI-SPAM EFFECTS
---------------------------
+## ANTI-SPAM EFFECTS
+
 The reverse DNS of zombie PCs in bot nets is out of the bot operators control.
 This presents a significant hurdle for a large portion of the hosts that
 attempt spam delivery.
 
 
-HOW IT WORKS
-------------------
-From Wikipedia: [Forward Confirmed Reverse DNS](http://en.wikipedia.org/wiki/FcRDNS)
+## HOW IT WORKS
+
+From Wikipedia: [Forward Confirmed Reverse DNS](http://en.wikipedia.org/wiki/FCrDNS)
 
 1. First a reverse DNS lookup (PTR query) is performed on the IP address,
    which returns a list of zero or more PTR records.
@@ -78,8 +76,8 @@ From Wikipedia: [Forward Confirmed Reverse DNS](http://en.wikipedia.org/wiki/FcR
    against the original IP address. If there is a match, FCrDNS passes.
 
 
-iprev
---------------------------
+## iprev
+
 The iprev results are added to the Authentication-Results header.
 
 [RFC 1912](http://www.ietf.org/rfc/rfc1912.txt)
