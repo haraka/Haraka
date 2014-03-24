@@ -22,6 +22,25 @@ function default_result () {
     return { pass: [], fail: [], msg: [], err: [], skip: [] };
 }
 
+ResultStore.prototype.has = function (plugin_name, list, search) {
+    var result = this.store[plugin_name];
+    if (!result) return false;
+    if (!result[list]) return false;
+    if (typeof result[list] === 'string') {
+        if (typeof search === 'string' && search === result[list]) return true;
+        if (typeof search === 'object' && result[list].match(search)) return true;
+        return false;
+    }
+    if (Array.isArray(result[list])) {
+        for (var i=0; i<result[list].length; i++) {
+            var item = result[list][i];
+            if (typeof search === 'string' && search === item) return true;
+            if (typeof search === 'object' && item.match(search)) return true;
+        }
+    }
+    return false;
+};
+
 ResultStore.prototype.add = function (plugin, obj) {
     var name = plugin.name;
 
@@ -77,9 +96,10 @@ ResultStore.prototype.incr = function (plugin, obj) {
     }
 
     for (var key in obj) {
-        var val = obj[key];
-        if (isNaN(val)) throw("invalid argument to incr: " + val);
-        result[key] = +(result[key] + val);
+        var val = parseFloat(obj[key]) || 0;
+        if (isNaN(val)) val = 0;
+        if (isNaN(result[key])) result[key] = 0;
+        result[key] = parseFloat(result[key]) + parseFloat(val);
     }
 };
 
