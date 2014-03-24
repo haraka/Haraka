@@ -182,7 +182,7 @@ exports.load_re_file = {
     tearDown : _tear_down,
     'whitelist': function (test) {
         test.expect(3);
-        this.plugin.cfg = { re: { white: { mail: 'mail_from.access.whitelist_regex' }}};
+        this.plugin.init_config();
         this.plugin.load_re_file('white', 'mail');
         test.ok(this.plugin.list_re);
         // console.log(this.plugin.temp);
@@ -297,10 +297,12 @@ exports.helo_access = {
         this.plugin.init_lists();
         var outer = this;
         var cb = function () {
+            // console.log(outer.connection.results.get('access'));
             test.equal(undefined, arguments[0]);
             test.ok(outer.connection.results.get('access').pass.length);
             test.done();
         };
+        this.plugin.cfg.check.helo=true;
         this.plugin.helo_access(cb, this.connection, 'host.example.com');
     },
     'blacklisted regex': function (test) {
