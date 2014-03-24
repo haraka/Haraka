@@ -55,9 +55,23 @@ help avoid overly permissive rules.
 To enable the **access** plugin, add an entry (access) to config/plugins. Then
 add entries to the config files for the addresses or patterns to block.
 
+## Upgrading
+
 When upgrading from the rdns\_access, mail\_from.access, and rcpt\_to.access
-plugins, be sure to remove them from config/plugins, upon pain of wasted CPU
-cycles.
+plugins, be sure to remove the plugins from config/plugins, upon pain of
+wasted CPU cycles.
+
+There is no need to modify your black/white lists in any way.
+
+If you just want the new plugin to work exactly like the old trio it replaces,
+add this section to _config/access.ini_:
+
+    [check]
+    any=false
+    conn=true
+    helo=false
+    mail=true
+    rcpt=true
 
 ### Checking ACL results
 
