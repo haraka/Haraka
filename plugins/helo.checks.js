@@ -457,7 +457,7 @@ exports.get_a_records = function (host, cb) {
         var e = new Error('timeout');
         e.code = 'ETIMEOUT';
         return cb(e);
-    }, (plugin.cfg.main.dns_timeout || 5) * 1000);
+    }, (plugin.cfg.main.dns_timeout || 30) * 1000);
 
     // fully qualify, to ignore any search options in /etc/resolv.conf
     if (!/\.$/.test(host)) { host = host + '.'; }
