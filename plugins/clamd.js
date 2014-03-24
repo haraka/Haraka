@@ -140,7 +140,9 @@ exports.hook_data_post = function (next, connection) {
     var try_next_host = function () {
         var connected = false;
         if (!hosts.length) {
-            transaction.results.add(plugin, {err: 'connecting', emit: true});
+            if (transaction) {
+                transaction.results.add(plugin, {err: 'connecting', emit: true});
+            }
             return next(DENYSOFT, 'Error connecting to virus scanner');
         }
         var host = hosts.shift();
@@ -150,7 +152,9 @@ exports.hook_data_post = function (next, connection) {
         socket.on('timeout', function () {
             socket.destroy();
             if (connected) {
-                transaction.results.add(plugin, {err: 'clamd timed out', emit: true});
+                if (transaction) {
+                    transaction.results.add(plugin, {err: 'clamd timed out', emit: true});
+                }
                 return next(DENYSOFT, 'Virus scanner timed out');
             }
             else {
@@ -166,7 +170,9 @@ exports.hook_data_post = function (next, connection) {
                 try_next_host();
             }
             else {
-                transaction.results.add(plugin, {err: err, emit: true});
+                if (transaction) {
+                    transaction.results.add(plugin, {err: err, emit: true});
+                }
                 return next(DENYSOFT, 'Virus scanner error');
             }
         });
@@ -194,7 +200,9 @@ exports.hook_data_post = function (next, connection) {
             var m;
             if (/^stream: OK/.test(result)) {
                 // OK
-                transaction.results.add(plugin, {pass: 'clean', emit: true});
+                if (transaction)
+                    transaction.results.add(plugin, {pass: 'clean', emit: true});
+                }
                 return next();
             }
             else if ((m = /^stream: (\S+) FOUND/.exec(result))) {
@@ -203,7 +211,9 @@ exports.hook_data_post = function (next, connection) {
                 if (m && m[1]) {
                     virus = m[1];
                 }
-                transaction.results.add(plugin, {fail: 'virus' + (virus ? ('(' + virus + ')') : ''), emit: true});
+                if (transaction) {
+                    transaction.results.add(plugin, {fail: 'virus' + (virus ? ('(' + virus + ')') : ''), emit: true});
+                }
                 // Check skip list exclusions
                 for (var i=0; i < skip_list_exclude.length; i++) {
                     if (skip_list_exclude[i].test(virus)) {
@@ -223,13 +233,17 @@ exports.hook_data_post = function (next, connection) {
             }
             else if (/size limit exceeded/.test(result)) {
                 var errmsg = 'INSTREAM size limit exceeded. Check StreamMaxLength in clamd.conf';
-                transaction.results.add(plugin, {err: errmsg, emit: true});
+                if (transaction) {
+                    transaction.results.add(plugin, {err: errmsg, emit: true});
+                }
                 // Continue as StreamMaxLength default is 25Mb
                 return next();
             }
             else {
                 // Unknown result
-                transaction.results.add(plugin, {err: 'unknown result: ' + result, emit: true});
+                if (transaction) {
+                    transaction.results.add(plugin, {err: 'unknown result: ' + result, emit: true});
+                }
                 return next(DENYSOFT, 'Error running virus scanner');
             }
             return next();
