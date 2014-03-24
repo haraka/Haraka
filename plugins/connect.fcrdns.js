@@ -275,10 +275,10 @@ exports.refresh_config = function (connection) {
     var plugin = this;
     plugin.cfg = plugin.config.get('connect.fcrdns.ini', {
         booleans: [
-            'reject.-no_rdns',
-            'reject.-no_fcrdns',
-            'reject.-invalid_tld',
-            'reject.-generic_rdns',
+            '-reject.no_rdns',
+            '-reject.no_fcrdns',
+            '-reject.invalid_tld',
+            '-reject.generic_rdns',
         ]
     });
 
