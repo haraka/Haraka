@@ -1,5 +1,12 @@
+## DEPRECATION NOTICE
+
+See the [access](http://haraka.github.io/manual/plugins/access.html) plugin
+for upgrade instructions.
+
+
 connect.rdns\_access
 ===================
+
 
 This plugin will evaluate the remote IP address and the remote rDNS hostname
 against a set of white and black lists.  The lists are applied in the following

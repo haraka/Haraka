@@ -1,3 +1,9 @@
+## DEPRECATION NOTICE
+
+See the [access](http://haraka.github.io/manual/plugins/access.html) plugin
+for upgrade instructions.
+
+
 rcpt\_to.access
 ===================
 
