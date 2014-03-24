@@ -5,7 +5,7 @@ var stub         = require('../fixtures/stub'),
     Address      = require('../../address'),
     configfile   = require('../../configfile'),
     config       = require('../../config'),
-    Header       = require('../../mailheader').Header;
+    Header       = require('../../mailheader').Header,
     ResultStore  = require("../../result_store");
 
 function _set_up(callback) {
