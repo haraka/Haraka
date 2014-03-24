@@ -1,4 +1,5 @@
 // access plugin
+var net_utils = require('./net_utils');
 
 exports.register = function() {
     var plugin = this;
@@ -7,24 +8,29 @@ exports.register = function() {
     plugin.init_lists();
 
     var phase;
-    plugin.load_file('domain', 'any');
     for (phase in plugin.cfg.white)    plugin.load_file('white', phase);
     for (phase in plugin.cfg.black)    plugin.load_file('black', phase);
     for (phase in plugin.cfg.re.white) plugin.load_re_file('white', phase);
     for (phase in plugin.cfg.re.black) plugin.load_re_file('black', phase);
 
-    // var mf_cfg = plugin.config.get('mail_from.access.ini');
-    // if (mf_cfg.general && mf_cfg.general.deny_msg) plugin.deny_msg = mf_cfg.general.deny_msg;
-    // var rcpt_cfg = plugin.config.get('rcpt_to.access.ini');
-    // plugin.rcpt_msg = rcpt_cfg.general && (rcpt_cfg.general['deny_msg'] || 'Connection rejected.');
-    // var config = this.config.get('connect.rdns_access.ini');
-    // plugin.deny_msg = 'Connection rejected.';
+    if (plugin.cfg.check.conn) {
+        plugin.register_hook('connect', 'rdns_access');
+    }
+    if (plugin.cfg.check.helo) {
+        plugin.register_hook('helo',    'helo_access');
+        plugin.register_hook('ehlo',    'helo_access');
+    }
+    if (plugin.cfg.check.mail) plugin.register_hook('mail', 'mail_from_access');
+    if (plugin.cfg.check.rcpt) plugin.register_hook('rcpt', 'rcpt_to_access');
 
-    plugin.register_hook('connect', 'rdns_access');
-    plugin.register_hook('helo',    'helo_access');
-    plugin.register_hook('ehlo',    'helo_access');
-    plugin.register_hook('mail',    'mail_from_access');
-    plugin.register_hook('rcpt',    'rcpt_to_access');
+    if (plugin.cfg.check.any) {
+        plugin.load_domain_file('domain', 'any');
+        plugin.register_hook('connect', 'any');
+        plugin.register_hook('helo',    'any');
+        plugin.register_hook('ehlo',    'any');
+        plugin.register_hook('mail',    'any');
+        plugin.register_hook('rcpt',    'any');
+    }
 };
 
 exports.init_config = function() {
@@ -67,18 +73,27 @@ exports.init_config = function() {
 
     var cfg = plugin.config.get('access.ini', {
         booleans: [
+            '+check.any',
             '+check.conn',
             '-check.helo',
             '+check.mail',
             '+check.rcpt',
         ],
     });
+
     plugin.cfg.check = cfg.check;
     if (cfg.deny_msg) {
         for (var p in plugin.cfg.deny_msg) {
             if (cfg.deny_msg[p]) plugin.cfg.deny_msg[p] = cfg.deny_msg[p];
         }
     }
+
+    // var mf_cfg = plugin.config.get('mail_from.access.ini');
+    // if (mf_cfg.general && mf_cfg.general.deny_msg) plugin.deny_msg = mf_cfg.general.deny_msg;
+    // var rcpt_cfg = plugin.config.get('rcpt_to.access.ini');
+    // plugin.rcpt_msg = rcpt_cfg.general && (rcpt_cfg.general['deny_msg'] || 'Connection rejected.');
+    // var config = this.config.get('connect.rdns_access.ini');
+    // plugin.deny_msg = 'Connection rejected.';
 };
 
 exports.init_lists = function () {
@@ -94,9 +109,66 @@ exports.init_lists = function () {
     };
 };
 
+exports.any = function (next, connection, params) {
+    var plugin = this;
+    if (!plugin.cfg.check.any) return next();
+
+    // step 1: get a domain name from whatever info is available
+    var domain;
+    var email;
+    try {
+        if (params === undefined) {              // connect
+            var h = connection.remote_host;
+            if (!h) return next();
+            if (h === 'DNSERROR' || h === 'Unknown') return next();
+            domain = h;
+        }
+        else if (typeof params === 'string') {   // HELO/EHLO
+            domain = params;
+        }
+        else if (Array.isArray(params)) {        // MAIL FROM / RCPT TO
+            email = params[0].address();
+            domain = params[0].host;
+        }
+    }
+    catch (e) {
+        connection.logerror(plugin, "oops: " + e);
+        return next();
+    }
+    if (!domain) return next();
+    var org_domain = net_utils.get_organizational_domain(domain);
+
+    // step 2: check for whitelist
+    var file = plugin.cfg.domain.any;
+    if (plugin.in_list('domain', 'any', '!'+org_domain)) {
+        connection.results.add(plugin, {pass: file, whitelist: true, emit: true});
+        return next();
+    }
+    if (email) {
+        if (plugin.in_list('domain', 'any', '!'+email)) {
+            connection.results.add(plugin, {pass: file, whitelist: true, emit: true});
+            return next();
+        }
+    }
+    else {
+        if (plugin.in_list('domain', 'any', '!'+domain)) {
+            connection.results.add(plugin, {pass: file, whitelist: true, emit: true});
+            return next();
+        }
+    }
+
+    // step 3: check for blacklist
+    file = plugin.cfg.domain.any;
+    if (plugin.in_list('domain', 'any', org_domain)) {
+        connection.results.add(plugin, {fail: file, blacklist: true, emit: true});
+        return next(DENY, "You are not welcome here.");
+    }
+
+    return next();
+};
+
 exports.rdns_access = function(next, connection) {
     var plugin = this;
-
     if (!plugin.cfg.check.conn) return next();
 
     // TODO: can this really happen?
@@ -155,7 +227,6 @@ exports.rdns_access = function(next, connection) {
 
 exports.helo_access = function(next, connection, helo) {
     var plugin = this;
-
     if (!plugin.cfg.check.helo) return next();
 
     var file = plugin.cfg.re.black.helo;
@@ -300,37 +371,86 @@ exports.in_re_file = function (file_name, address) {
 
 exports.load_file = function (type, phase) {
     var plugin = this;
-    var file_name = plugin.cfg[type][phase];
-    plugin.loginfo(plugin, "loading " + file_name);
-
-    var cb = plugin.load_file; // self referential callback
-    var list = plugin.config.get(file_name, 'list', cb);
-
-    // convert list items to LC at load, so we don't have to a run time
-    for (var i=0; i<list.length; i++) {
-        if (list[i] !== list[i].toLowerCase()) list[i] = list[i].toLowerCase();
+    if (!plugin.cfg.check[phase]) {
+        plugin.loginfo(plugin, "skipping " + plugin.cfg[type][phase]);
+        return;
     }
+    function load_em_high () {
+        var file_name = plugin.cfg[type][phase];
+        plugin.loginfo(plugin, "loading " + file_name);
 
-    // init the list store, type is white or black
-    if (!plugin.list) plugin.list = {};
-    if (!plugin.list[type]) plugin.list[type] = {};
+        // load config with a self-referential callback
+        var list = plugin.config.get(file_name, 'list', function () {
+            load_em_high();
+        });
 
-    plugin.list[type][phase] = list;
+        // convert list items to LC at load, so we don't have to a run time
+        for (var i=0; i<list.length; i++) {
+            if (list[i] !== list[i].toLowerCase()) list[i] = list[i].toLowerCase();
+        }
+
+        // init the list store, type is white or black
+        if (!plugin.list) plugin.list = {};
+        if (!plugin.list[type]) plugin.list[type] = {};
+
+        plugin.list[type][phase] = list;
+    }
+    load_em_high();
 };
 
 exports.load_re_file = function (type, phase) {
     var plugin = this;
-    var file_name = plugin.cfg.re[type][phase];
-    plugin.loginfo(plugin, "loading " + file_name);
+    if (!plugin.cfg.check[phase]) {
+        plugin.loginfo(plugin, "skipping " + plugin.cfg.re[type][phase]);
+        return;
+    }
+    function load_re () {
+        var file_name = plugin.cfg.re[type][phase];
+        plugin.loginfo(plugin, "loading " + file_name);
 
-    var cb = plugin.load_re_file;
-    var regex_list = plugin.valid_regexes(plugin.config.get(file_name, 'list', cb));
+        var regex_list = plugin.valid_regexes(
+                plugin.config.get(file_name, 'list', function () {
+                    load_re(); }));
 
-    // initialize the list store
-    if (!plugin.list_re) plugin.list_re = {};
-    if (!plugin.list_re[type]) plugin.list_re[type] = {};
+        // initialize the list store
+        if (!plugin.list_re) plugin.list_re = {};
+        if (!plugin.list_re[type]) plugin.list_re[type] = {};
 
-    // compile the regexes at the designated location
-    plugin.list_re[type][phase] = new RegExp('^(' + regex_list.join('|') + ')$', 'i');
+        // compile the regexes at the designated location
+        plugin.list_re[type][phase] = new RegExp('^(' + regex_list.join('|') + ')$', 'i');
+    }
+    load_re();
 };
 
+exports.load_domain_file = function (type, phase) {
+    var plugin = this;
+    if (!plugin.cfg.check[phase]) {
+        plugin.loginfo(plugin, "skipping " + plugin.cfg[type][phase]);
+        return;
+    }
+    function load_domains () {
+        var file_name = plugin.cfg[type][phase];
+        plugin.loginfo(plugin, "loading " + file_name);
+
+        var list = plugin.config.get(file_name, 'list', function() {
+            load_domains();
+        });
+
+        // init the list store, if needed
+        if (!plugin.list) plugin.list = {};
+        if (!plugin.list[type]) plugin.list[type] = {};
+
+        // convert list items to LC at load, so we don't have to at run time
+        for (var i=0; i<list.length; i++) {
+            if (list[i][0] === '!') {  // whitelist entry
+                plugin.list[type][phase].push(list[i].toLowerCase());
+                continue;
+            }
+
+            var d = net_utils.get_organizational_domain(list[i]);
+            if (!d) continue;
+            plugin.list[type][phase].push(d.toLowerCase());
+        }
+    }
+    load_domains();
+};
