@@ -200,7 +200,7 @@ exports.hook_data_post = function (next, connection) {
             var m;
             if (/^stream: OK/.test(result)) {
                 // OK
-                if (transaction)
+                if (transaction) {
                     transaction.results.add(plugin, {pass: 'clean', emit: true});
                 }
                 return next();
