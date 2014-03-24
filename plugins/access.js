@@ -7,7 +7,7 @@ exports.register = function() {
     plugin.init_lists();
 
     var phase;
-    // for (phase in plugin.cfg.any)      plugin.load_file('any', phase);
+    plugin.load_file('domain', 'any');
     for (phase in plugin.cfg.white)    plugin.load_file('white', phase);
     for (phase in plugin.cfg.black)    plugin.load_file('black', phase);
     for (phase in plugin.cfg.re.white) plugin.load_re_file('white', phase);
@@ -22,6 +22,7 @@ exports.register = function() {
 
     plugin.register_hook('connect', 'rdns_access');
     plugin.register_hook('helo',    'helo_access');
+    plugin.register_hook('ehlo',    'helo_access');
     plugin.register_hook('mail',    'mail_from_access');
     plugin.register_hook('rcpt',    'rcpt_to_access');
 };
@@ -36,11 +37,8 @@ exports.init_config = function() {
             mail: 'That sender cannot send mail here',
             rcpt: 'That recipient is not allowed',
         },
-        any: {
-            conn: 'connect.access',
-            mail: 'mail_from.access',
-            rcpt: 'rcpt_to.access',
-            helo: 'helo.access',
+        domain: {
+            any:  'access.domains',
         },
         white: {
             conn: 'connect.rdns_access.whitelist',
@@ -67,7 +65,15 @@ exports.init_config = function() {
         },
     };
 
-    var cfg = plugin.config.get('access.ini');
+    var cfg = plugin.config.get('access.ini', {
+        booleans: [
+            '+check.conn',
+            '-check.helo',
+            '+check.mail',
+            '+check.rcpt',
+        ],
+    });
+    plugin.cfg.check = cfg.check;
     if (cfg.deny_msg) {
         for (var p in plugin.cfg.deny_msg) {
             if (cfg.deny_msg[p]) plugin.cfg.deny_msg[p] = cfg.deny_msg[p];
@@ -80,6 +86,7 @@ exports.init_lists = function () {
     plugin.list = {
         black: { conn: [], helo: [], mail: [], rcpt: [] },
         white: { conn: [], helo: [], mail: [], rcpt: [] },
+        domain: { any: [] },
     };
     plugin.list_re = {
         black: {},
@@ -89,6 +96,8 @@ exports.init_lists = function () {
 
 exports.rdns_access = function(next, connection) {
     var plugin = this;
+
+    if (!plugin.cfg.check.conn) return next();
 
     // TODO: can this really happen?
     if (!connection.remote_ip) {
@@ -108,14 +117,14 @@ exports.rdns_access = function(next, connection) {
         var file = plugin.cfg.white.conn;
         connection.logdebug(plugin, 'checking ' + addr + ' against ' + file);
         if (plugin.in_list('white', 'conn', addr)) {
-            connection.results.add(plugin, {pass: file, emit: true});
+            connection.results.add(plugin, {pass: file, whitelist: true, emit: true});
             return next();
         }
 
         file = plugin.cfg.re.white.conn;
         connection.logdebug(plugin, 'checking ' + addr + ' against ' + file);
         if (plugin.in_re_list('white', 'conn', addr)) {
-            connection.results.add(plugin, {pass: file, emit: true});
+            connection.results.add(plugin, {pass: file, whitelist: true, emit: true});
             return next();
         }
     }
@@ -140,12 +149,14 @@ exports.rdns_access = function(next, connection) {
         }
     }
 
-    connection.results.add(plugin, {pass: 'unlisted', emit: true});
+    connection.results.add(plugin, {pass: 'unlisted(conn)', emit: true});
     return next();
 };
 
 exports.helo_access = function(next, connection, helo) {
     var plugin = this;
+
+    if (!plugin.cfg.check.helo) return next();
 
     var file = plugin.cfg.re.black.helo;
     if (plugin.in_re_list('black', 'helo', helo)) {
@@ -153,14 +164,15 @@ exports.helo_access = function(next, connection, helo) {
         return next(DENY, helo + ' ' + plugin.cfg.deny_msg.helo);
     }
 
-    connection.results.add(plugin, {pass: 'unlisted', emit: true});
+    connection.results.add(plugin, {pass: 'unlisted(helo)', emit: true});
     return next();
 };
 
 exports.mail_from_access = function(next, connection, params) {
     var plugin = this;
-    var mail_from = params[0].address();
+    if (!plugin.cfg.check.mail) return next();
 
+    var mail_from = params[0].address();
     if (!mail_from) {
         connection.transaction.results.add(plugin, {skip: 'null sender', emit: true});
         return next();
@@ -195,12 +207,14 @@ exports.mail_from_access = function(next, connection, params) {
         return next(DENY, mail_from + ' ' + plugin.cfg.deny_msg.mail);
     }
 
-    connection.transaction.results.add(plugin, {pass: 'unlisted', emit: true});
+    connection.transaction.results.add(plugin, {pass: 'unlisted(mail)', emit: true});
     return next();
 };
 
 exports.rcpt_to_access = function(next, connection, params) {
     var plugin = this;
+    if (!plugin.cfg.check.rcpt) return next();
+
     var rcpt_to = params[0].address();
 
     // address whitelist checks
@@ -234,7 +248,7 @@ exports.rcpt_to_access = function(next, connection, params) {
         return next(DENY, rcpt_to + ' ' + plugin.cfg.deny_msg.rcpt);
     }
 
-    connection.transaction.results.add(plugin, {pass: 'unlisted', emit: true});
+    connection.transaction.results.add(plugin, {pass: 'unlisted(rcpt)', emit: true});
     return next();
 };
 
