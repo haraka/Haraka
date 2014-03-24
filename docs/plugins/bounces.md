@@ -11,6 +11,20 @@ This is useful to enable if you have a mail server that gets spoofed too
 much but very few legitimate users. It is potentially bad to block all
 bounce messages, but unfortunately for some hosts, sometimes necessary.
 
+
+# Configuration
+
+## [check]
+
+Each feature can be enabled/disabled with a true/false toggle in the [check]
+section of config/bounce.ini:
+
+    [check]
+    reject_all=false
+    single_recipient=true
+    empty_return_path=true
+    bad_rcpt=true
+
 * single\_recipient
 
 Valid bounces have a single recipient. Assure that the message really is a
@@ -30,23 +44,10 @@ messages. Examples of email addresses that should be listed are:
 autoresponders, do-not-reply@example.com, dmarc-feedback@example.com, and
 any other email addresses used solely for machine generated messages.
 
-# Configuration
-
-## [checks]
-
-Each feature can be enabled/disabled with a true/false toggle in the [checks]
-section of config/bounce.ini:
-
-    reject_all=false
-    single_recipient=true
-    empty_return_path=true
-    bad_rcpt=true
-
-
 ## [reject]
 
 config/bounce.ini can have a [reject] section that toggles rejections on or
-off for each check where it makes sense.
+off for the following checks:
 
     single_recipient=true
     empty_return_path=true

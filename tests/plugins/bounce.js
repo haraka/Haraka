@@ -18,7 +18,7 @@ function _set_up(callback) {
     this.plugin.config = config;
     this.plugin.cfg = {
         main: { },
-        checks: {
+        check: {
             reject_all: false,
             single_recipient: true,
             empty_return_path: true,
@@ -53,7 +53,7 @@ exports.refresh_config = {
         var plugin = this.plugin;
         var cb = function () {
             test.ok(plugin.cfg.main);
-            test.ok(plugin.cfg.checks);
+            test.ok(plugin.cfg.check);
             test.ok(plugin.cfg.reject);
         };
         this.plugin.refresh_config(cb);
@@ -75,7 +75,7 @@ exports.reject_all = {
         var cb = function () {
             test.equal(undefined, arguments[0]);
         };
-        this.plugin.cfg.checks.reject_all=false;
+        this.plugin.cfg.check.reject_all=false;
         this.plugin.reject_all(cb, this.connection, new Address.Address('<matt@example.com>'));
         test.done();
     },
@@ -89,7 +89,7 @@ exports.reject_all = {
         var cb = function () {
             test.equal(undefined, arguments[0]);
         };
-        this.plugin.cfg.checks.reject_all=true;
+        this.plugin.cfg.check.reject_all=true;
         this.plugin.reject_all(cb, this.connection, new Address.Address('<matt@example.com>'));
         test.done();
     },
@@ -103,7 +103,7 @@ exports.reject_all = {
         var cb = function () {
             test.equal(DENY, arguments[0]);
         };
-        this.plugin.cfg.checks.reject_all=true;
+        this.plugin.cfg.check.reject_all=true;
         this.plugin.reject_all(cb, this.connection, new Address.Address('<>'));
         test.done();
     },
