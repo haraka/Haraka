@@ -88,12 +88,19 @@ exports.init_config = function() {
         }
     }
 
-    // var mf_cfg = plugin.config.get('mail_from.access.ini');
-    // if (mf_cfg.general && mf_cfg.general.deny_msg) plugin.deny_msg = mf_cfg.general.deny_msg;
-    // var rcpt_cfg = plugin.config.get('rcpt_to.access.ini');
-    // plugin.rcpt_msg = rcpt_cfg.general && (rcpt_cfg.general['deny_msg'] || 'Connection rejected.');
-    // var config = this.config.get('connect.rdns_access.ini');
-    // plugin.deny_msg = 'Connection rejected.';
+    // backwards compatibility
+    var mf_cfg = plugin.config.get('mail_from.access.ini');
+    if (mf_cfg && mf_cfg.general && mf_cfg.general.deny_msg) {
+        plugin.cfg.deny_msg.mail = mf_cfg.general.deny_msg;
+    }
+    var rcpt_cfg = plugin.config.get('rcpt_to.access.ini');
+    if (rcpt_cfg && rcpt_cfg.general && rcpt_cfg.general.deny_msg) {
+        plugin.cfg.deny_msg.rcpt = rcpt_cfg.general.deny_msg;
+    }
+    var rdns_cfg = this.config.get('connect.rdns_access.ini');
+    if (rdns_cfg && rdns_cfg.general && rdns_cfg.general.deny_msg) {
+        plugin.cfg.deny_msg.conn = rdns_cfg.general.deny_msg;
+    }
 };
 
 exports.init_lists = function () {
