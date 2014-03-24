@@ -1,11 +1,48 @@
 # access
 
-This plugin applies access lists during the connect, helo, mail, and rcpt
-phases of the SMTP conversation. This modules provides an ACL for each phase.
+This plugin applies Access Control Lists during the connect, helo, mail, and
+rcpt phases of the SMTP conversation. It has a split personality, supporting
+two somewhat different modes, **any** -vs- **precise**.
 
-The ACLs share a common file format and apply their tests in the same order:
-if whitelisted, stop processing, and then apply the blacklist. The whitelist
-is primarily to counter blacklist entries that match too much.
+## ANY
+
+The **any** check is based on the idea that I want to block an offending domain
+name no matter where in the SMTP conversation it appears. That's possible using
+several regex lists in the **precise** checks, but it's also much slower.
+
+With **any**, just drop the offending domain name into the _access.domain_ file
+and it gets blocked for the rDNS hostname, the HELO hostname, the MAIL FROM
+domain name, and the RCPT TO domain name.
+
+The **any** blacklist matches only on the [Organizational Domain](#Organizational Domain) name (see NOTES below). Entries placed in the _access.domain_ file are automatically reduced to the OD. Examples:
+
+           ENTRY                  O.D.
+    mail.spam-central.com  -> spam-central.com
+    mail151.wayn.net       -> wayn.net
+
+In case the O.D. match is too broad, whitelist entries are placed in the same
+_access.domain_ file with a ! prefix. Whitelist entries can be email addresses
+(for the MAIL FROM and RCPT TO tests) or hostnames for the rDNS and HELO
+hostnames. To block anything from example.com but not special.example.com:
+
+    example.com
+    !special.example.com
+
+To block everything (supposedly) from aol.com, except messages from that one
+person you know that still uses it:
+
+    aol.com
+    !friend@aol.com
+
+## PRECISE
+
+The precise ACLs share a common file format with each phase having a set of
+4 files (whitelist, whitelist\_regex, blacklist, and blacklist\_regex) which
+are simple lists.
+
+The ACLs for each phase apply their tests in the order listed. The whitelist
+is primarily to counter blacklist entries that match too much, so the the flow
+of control is: if whitelisted, stop processing. Then apply the blacklist. 
 
 Entries in ACL files are one per line.
 
@@ -13,10 +50,14 @@ Regex entries are anchored, meaning '^' + regex + '$' are added automatically.
 To bypass that, use a '.\*' at the start or the end of the regex. This should
 help avoid overly permissive rules.
 
-## Usage
+# Usage
 
-To enable **access**, add an entry (access) to config/plugins. Then add
-entries to the config files for the addresses or patterns to block.
+To enable the **access** plugin, add an entry (access) to config/plugins. Then
+add entries to the config files for the addresses or patterns to block.
+
+When upgrading from the rdns\_access, mail\_from.access, and rcpt\_to.access
+plugins, be sure to remove them from config/plugins, upon pain of wasted CPU
+cycles.
 
 ### Checking ACL results
 
@@ -40,7 +81,7 @@ of the pass/fail elements in the result object.
 
 ### access.ini
 
-Each check can be enabled or disabled in the [check] section:
+Each check can be enabled or disabled in the [check] section of access.ini:
 
     [check]
     any=true    (see below)
@@ -58,6 +99,8 @@ A custom deny message can be configured for each SMTP phase:
     rcpt=That recipient is not allowed
 
 
+## PRECISE ACLs
+
 ### Connect
 
 The connect ACLs are evaluated against the IP address **and** the rDNS
@@ -67,10 +110,6 @@ hostname (if any) of the remote.
 * connect.rdns\_access.whitelist\_regex   (pass)
 * connect.rdns\_access.blacklist          (block)
 * connect.rdns\_access.blacklist\_regex   (block)
-
-### HELO/EHLO
-
-* helo.checks.regexps                     (block)
 
 ### MAIL FROM
 
@@ -86,35 +125,49 @@ hostname (if any) of the remote.
 * connect.rcpt\_to.blacklist           (block)
 * connect.rcpt\_to.blacklist\_regex    (block)
 
-#### ANY
 
-The **any** test is very different than the others. The any blacklist matches
-only on the domain name and it applies to the rDNS hostname, the HELO
-hostname, the MAIL FROM domain name, and the RCPT TO domain name.
+## NOTES
 
-**Any** is based on the idea that I want to block the offending domain name
-no matter where in the SMTP conversation it appears. That's possible using
-several regex lists in the per-phase checks, but it's much slower.
+### ANY performance
 
-How much slower? First I tested indexOf -vs- precompiled regex. In
-a list of 3, where the matches are at the front of the list, regex
+I did some performance testing of indexOf -vs- precompiled regex. In
+a list of 3 items, where the matches were at the front of the list, regex
 matches are 2x as slow. When the list grows to 30 entries, the regex
 matches are 3x times as slow. When the matches are moved to the end of the
 30 member list, the regex searches are over 100x slower than indexOf.
 
-Rather than putting a regex in several files to block it everywhere, with
-**any** we just drop the domain name into the access.domain file and it
-gets checked everywhere.
+Based on this observation, reducing the domain name and doing an indexOf
+search of an (even much longer) blacklist is *much* faster than adding lists
+of .\*domain.com entries to the \*\_regex files.
 
-The whitelist enries are in the same file. They are prepended with an
-exclamation mark (!). To block anything from example.com but not
-special.example.com:
+### Organizational Domain
 
-    example.com
-    !special.example.com
+The OD is a term that describes the highest level portion of domain name that
+is under the control of a private organization. I'll explain, but first, lets
+clarify a few terms:
 
-To block everything from aol.com, except messages from that one person you
-know that still uses AOL:
+#### TLD
 
-    aol.com
-    !friend@aol.com
+Top Level Domains. Domain labels at the apex of a domain name.
+
+    com
+    net
+    org
+    co
+    us
+    uk
+
+#### Public Suffix
+
+The portion of a domain name that is operated by a registry. These are often
+synonymous with TLDs but frequently also include second and third level
+domains as well:
+
+    com
+    co.uk
+
+The Organizational Domain is the next level higher than the Public Suffix. So
+if a hostname is *mail.example.com*, and *com* is the Public Suffix, the OD is
+*example.com*. If the hostname is *www.bbc.co.uk*, the PS is *co.uk* and the
+OD is *bbc.co.uk*.
+
