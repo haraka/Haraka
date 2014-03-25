@@ -1,6 +1,8 @@
 Haraka - a Node.js Mail Server
 ------------------------------
 
+[![Build Status](https://travis-ci.org/baudehlo/Haraka.svg?branch=master)](https://travis-ci.org/baudehlo/Haraka)
+
 Haraka is an SMTP server which uses a plugin architecture to implement most
 of its functionality. It uses a highly scalable event model to be able to
 cope with thousands of concurrent connections. Plugins are written in
@@ -138,4 +140,3 @@ Javascript).
 [1]: http://nodejs.org/
 [2]: http://youtu.be/6twKXMAsPsw
 
-.
