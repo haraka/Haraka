@@ -362,6 +362,9 @@ exports.forward_dns = function (next, connection, helo) {
 
     if (!connection.results.has('helo.checks', 'pass', /^valid_hostname/)) {
         connection.results.add(plugin, {fail: 'forward_dns(invalid_hostname)'});
+        if (plugin.cfg.reject.forward_dns) {
+            return next(DENY, "Invalid HELO host cannot achieve forward DNS match");
+        }
         return next();
     }
 

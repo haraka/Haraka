@@ -11,9 +11,10 @@ exports.register = function() {
     this.register_hook('rcpt',        'relay_dest_domains');
 };
 
-exports.refresh_config = function() {
+exports.refresh_config = function(next, connection) {
     this.cfg = this.config.get('relay_dest_domains.ini', 'ini');
     this.acl_allow = this.config.get('relay_acl_allow', 'list');
+    return next();
 };
 
 exports.relay_acl = function (next, connection, params) {

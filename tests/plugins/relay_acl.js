@@ -14,10 +14,14 @@ function _set_up(callback) {
 
     // needed for tests
     this.plugin = Plugin('relay_acl');
+    this.plugin.config = config;
     this.plugin.cfg = {};
 
     this.connection = Connection.createConnection();
     this.connection.results = new ResultStore(this.connection);
+    this.connection.transaction = {
+        results: new ResultStore(this.connection),
+    };
 
     // going to need these in multiple tests
     // this.plugin.register();
@@ -78,8 +82,10 @@ exports.relay_dest_domains = {
         test.expect(2);
         var outer = this;
         var next = function() {
+            // console.log(outer.connection.results.get('relay_acl'));
+            // console.log(outer.connection.transaction.results.get('relay_acl'));
             test.equal(undefined, arguments[0]);
-            test.equal(1, outer.connection.results.get('relay_acl').skip.length);
+            test.equal(1, outer.connection.transaction.results.get('relay_acl').skip.length);
             test.done();
         };
         this.connection.relaying=true;
@@ -90,7 +96,7 @@ exports.relay_dest_domains = {
         var outer = this;
         var next = function() {
             test.equal(undefined, arguments[0]);
-            test.equal(1, outer.connection.results.get('relay_acl').skip.length);
+            test.equal(1, outer.connection.transaction.results.get('relay_acl').skip.length);
             test.done();
         };
         this.plugin.relay_dest_domains(next, this.connection, [{host:'foo'}]);
@@ -100,7 +106,7 @@ exports.relay_dest_domains = {
         var outer = this;
         var next = function() {
             test.equal(DENY, arguments[0]);
-            test.equal(1, outer.connection.results.get('relay_acl').fail.length);
+            test.equal(1, outer.connection.transaction.results.get('relay_acl').fail.length);
             test.done();
         };
         this.plugin.cfg.domains = { foo: '{"action":"dunno"}', };
@@ -111,7 +117,7 @@ exports.relay_dest_domains = {
         var outer = this;
         var next = function() {
             test.equal(DENY, arguments[0]);
-            test.equal(1, outer.connection.results.get('relay_acl').fail.length);
+            test.equal(1, outer.connection.transaction.results.get('relay_acl').fail.length);
             test.done();
         };
         this.plugin.cfg.domains = { foo: '{"action":"deny"}', };
@@ -122,7 +128,7 @@ exports.relay_dest_domains = {
         var outer = this;
         var next = function() {
             test.equal(CONT, arguments[0]);
-            test.equal(1, outer.connection.results.get('relay_acl').pass.length);
+            test.equal(1, outer.connection.transaction.results.get('relay_acl').pass.length);
             test.done();
         };
         this.plugin.cfg.domains = { foo: '{"action":"continue"}', };
@@ -133,7 +139,7 @@ exports.relay_dest_domains = {
         var outer = this;
         var next = function() {
             test.equal(CONT, arguments[0]);
-            test.equal(1, outer.connection.results.get('relay_acl').pass.length);
+            test.equal(1, outer.connection.transaction.results.get('relay_acl').pass.length);
             test.done();
         };
         this.plugin.cfg.domains = { foo: '{"action":"continue"}', };
@@ -141,3 +147,16 @@ exports.relay_dest_domains = {
     },
 };
 
+exports.refresh_config = {
+    setUp : _set_up,
+    tearDown : _tear_down,
+    'callback' : function (test) {
+        test.expect(1);
+        var outer = this;
+        var next = function() {
+            test.equal(undefined, arguments[0]);
+            test.done();
+        };
+        this.plugin.refresh_config(next, this.connection);
+    },
+};
