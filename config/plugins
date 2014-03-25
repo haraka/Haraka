@@ -3,6 +3,10 @@
 # Log to syslog (disabled by default, see docs)
 # log.syslog
 
+# control which IPs, rDNS hostnames, HELO hostnames, MAIL FROM addresses, and
+# RCPT TO address you accept mail from. See 'haraka -h access'.
+access
+
 # block mails from known bad hosts (see config/dnsbl.zones for the DNS zones queried)
 dnsbl
 
@@ -15,17 +19,11 @@ helo.checks
 # see 'haraka -h tls' for config instructions before enabling!
 # tls
 
-# control which "MAIL FROM" addresses you accept. See docs.
-mail_from.access
-
 # Only accept mail where the MAIL FROM domain is resolvable to an MX record
 mail_from.is_resolvable
 
 # Disconnect client if they spew bad SMTP commands at us
 max_unrecognized_commands
-
-# control which "RCPT TO" addresses you reject. See docs.
-rcpt_to.access
 
 # Only accept mail for your personal list of hosts. Edit config/host_list
 # NOTE: THIS IS REQUIRED for inbound email.

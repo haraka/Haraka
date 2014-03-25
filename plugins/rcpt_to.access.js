@@ -20,6 +20,7 @@ exports.register = function() {
         this.blregex = new RegExp('^(?:' + black_regex.join('|') + ')$', 'i');
     }
 
+    this.logerror(this, "plugin deprecated. see 'haraka -h access' for upgrade instructions");
     this.register_hook('rcpt', 'rcpt_to_access');
 }
 
