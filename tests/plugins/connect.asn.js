@@ -8,6 +8,7 @@ function _set_up(callback) {
 
     // needed for tests
     this.plugin = Plugin('connect.asn');
+    this.plugin.cfg = { main: {} };
     this.connection = Connection.createConnection();
 
     callback();

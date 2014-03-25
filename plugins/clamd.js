@@ -2,19 +2,12 @@
 
 var sock = require('./line_socket');
 
-var defaults = {
-    clamd_socket: 'localhost:3310',
-    timeout: 60,
-    max_size: 26214400,
-    only_with_attachments: 0,
-};
-
 var skip_list_exclude = [];
 var skip_list = [];
 
 exports.wildcard_to_regexp = function (str) {
     return str.replace(/[-\[\]\/{}()*+?.,\\^$|#\s]/g, "\\$&").replace(/\\\*/g, '.*').replace(/\\\?/g, '.') + '$';
-}
+};
 
 exports.register = function () {
     var self = this;
@@ -26,11 +19,12 @@ exports.register = function () {
         var new_skip_list_exclude = [];
         var new_skip_list = [];
         for (var i=0; i < list.length; i++) {
+            var re;
             if (list[i][0] === '!') {
                 if (list[i][1] === '/') {
                     // Regexp exclude
                     try {
-                        var re = new RegExp(list[i].substr(2, list[i].length-2),'i');
+                        re = new RegExp(list[i].substr(2, list[i].length-2),'i');
                         new_skip_list_exclude.push(re);
                     }
                     catch (e) {
@@ -40,7 +34,7 @@ exports.register = function () {
                 else {
                     // Wildcard exclude
                     try {
-                        var re = new RegExp(self.wildcard_to_regexp(list[i].substr(1)),'i');
+                        re = new RegExp(self.wildcard_to_regexp(list[i].substr(1)),'i');
                         new_skip_list_exclude.push(re);
                     }
                     catch (e) {
@@ -51,7 +45,7 @@ exports.register = function () {
             else if (list[i][0] === '/') {
                 // Regexp skip
                 try {
-                    var re = new RegExp(list[i].substr(1, list[i].length-2),'i');
+                    re = new RegExp(list[i].substr(1, list[i].length-2),'i');
                     new_skip_list.push(re);
                 }
                 catch (e) {
@@ -61,7 +55,7 @@ exports.register = function () {
             else {
                 // Wildcard skip
                 try {
-                    var re = new RegExp(self.wildcard_to_regexp(list[i]),'i');
+                    re = new RegExp(self.wildcard_to_regexp(list[i]),'i');
                     new_skip_list.push(re);
                 }
                 catch (e) {
@@ -72,64 +66,83 @@ exports.register = function () {
         // Make the new lists visible
         skip_list_exclude = new_skip_list_exclude;
         skip_list = new_skip_list;
-    };
+    }
     loadExcludes();
-}
+};
 
+exports.refresh_config = function() {
+    this.cfg = this.config.get('clamd.ini', {
+        booleans: [
+            '-main.randomize_host_order',
+            '-main.only_with_attachments',
+        ],
+    });
+
+    var defaults = {
+        clamd_socket: 'localhost:3310',
+        timeout: 30,
+        connect_timeout: 10,
+        max_size: 26214400,
+    };
+
+    for (var key in defaults) {
+        if (this.cfg.main[key] === undefined) this.cfg.main[key] = defaults[key];
+    }
+
+    // resolve mismatch between docs (...attachment) and code (...attachments)
+    if (this.cfg.main.only_with_attachment !== undefined) {
+        this.cfg.main.only_with_attachments = this.cfg.main.only_with_attachment ? true : false;
+    }
+
+    return this.cfg;
+};
 
 exports.hook_data = function (next, connection) {
     var plugin = this;
-    // Load config
-    var config = this.config.get('clamd.ini');
-    for (var key in defaults) {
-        config.main[key] = config.main[key] || defaults[key];
-    }
-    if (config.main['only_with_attachments']) {
-        var transaction = connection.transaction;
-        transaction.parse_body = 1;
-        transaction.attachment_hooks(function (ctype, filename, body) {
-            connection.logdebug(plugin, 'found ctype=' + ctype + ', filename=' + filename);
-            transaction.notes.clamd_found_attachment = 1;
-        });
-    }
+    this.refresh_config();
+    if (!this.cfg.main.only_with_attachments) return next();
+
+    var transaction = connection.transaction;
+    transaction.parse_body = true;
+    transaction.attachment_hooks(function (ctype, filename, body) {
+        connection.logdebug(plugin, 'found ctype=' + ctype + ', filename=' + filename);
+        transaction.notes.clamd_found_attachment = true;
+    });
+
     return next();
-}   
+};
 
 exports.hook_data_post = function (next, connection) {
     var plugin = this;
     var transaction = connection.transaction;
 
-    // Config
-    var config = this.config.get('clamd.ini');
-    for (var key in defaults) {
-        config.main[key] = config.main[key] || defaults[key];
-    }
-
     // Do we need to run?
-    if (config.main['only_with_attachments'] &&
+    if (plugin.cfg.main.only_with_attachments &&
         !transaction.notes.clamd_found_attachment)
     {
         connection.logdebug(plugin, 'skipping: no attachments found');
+        transaction.results.add(plugin, {skip: 'no attachments'});
         return next();
     }
 
     // Limit message size
-    if (transaction.data_bytes > config.main.max_size) {
-        connection.loginfo(plugin, 'skipping: message exceeds maximum size');
+    if (transaction.data_bytes > plugin.cfg.main.max_size) {
+        transaction.results.add(plugin, {skip: 'exceeds max size', emit: true});
         return next();
     }
 
-    var hosts = config.main.clamd_socket.split(/[,; ]+/);
+    var hosts = plugin.cfg.main.clamd_socket.split(/[,; ]+/);
 
-    var randomize = (/(?:true|yes|ok|enabled|1)/.test(config.main.randomize_host_order) ? true : false);
-    if (randomize) {
-        hosts.sort(function() {return 0.5 - Math.random()});
+    if (plugin.cfg.main.randomize_host_order) {
+        hosts.sort(function() {return 0.5 - Math.random();});
     }
- 
+
     var try_next_host = function () {
-        var socket;
         var connected = false;
         if (!hosts.length) {
+            if (transaction) {
+                transaction.results.add(plugin, {err: 'connecting', emit: true});
+            }
             return next(DENYSOFT, 'Error connecting to virus scanner');
         }
         var host = hosts.shift();
@@ -139,7 +152,9 @@ exports.hook_data_post = function (next, connection) {
         socket.on('timeout', function () {
             socket.destroy();
             if (connected) {
-                connection.logerror(plugin, 'Virus scanner timed out');
+                if (transaction) {
+                    transaction.results.add(plugin, {err: 'clamd timed out', emit: true});
+                }
                 return next(DENYSOFT, 'Virus scanner timed out');
             }
             else {
@@ -155,14 +170,16 @@ exports.hook_data_post = function (next, connection) {
                 try_next_host();
             }
             else {
-                connection.logerror(plugin, err);
+                if (transaction) {
+                    transaction.results.add(plugin, {err: err, emit: true});
+                }
                 return next(DENYSOFT, 'Virus scanner error');
             }
         });
 
         socket.on('connect', function () {
             connected = true;
-            socket.setTimeout((config.main.timeout * 1000) || 30 * 1000);
+            socket.setTimeout((plugin.cfg.main.timeout || 30) * 1000);
             var hp = socket.address(),
               addressInfo = hp === null ? '' : ' ' + hp.address + ':' + hp.port;
             connection.logdebug(plugin, 'connected to host' + addressInfo);
@@ -177,23 +194,30 @@ exports.hook_data_post = function (next, connection) {
             result = line.replace(/\r?\n/, '');
         });
 
-        socket.setTimeout((config.main.connect_timeout * 1000) || 10 * 1000);
+        socket.setTimeout((plugin.cfg.main.connect_timeout || 10) * 1000);
 
         socket.on('end', function () {
             var m;
             if (/^stream: OK/.test(result)) {
                 // OK
+                if (transaction) {
+                    transaction.results.add(plugin, {pass: 'clean', emit: true});
+                }
                 return next();
             }
             else if ((m = /^stream: (\S+) FOUND/.exec(result))) {
+                var virus;
                 // Virus found
                 if (m && m[1]) {
-                    var virus = m[1];
+                    virus = m[1];
+                }
+                if (transaction) {
+                    transaction.results.add(plugin, {fail: 'virus' + (virus ? ('(' + virus + ')') : ''), emit: true});
                 }
                 // Check skip list exclusions
                 for (var i=0; i < skip_list_exclude.length; i++) {
                     if (skip_list_exclude[i].test(virus)) {
-                        return next(DENY, 'Message is infected with ' + (virus || 'UNKONWN'));
+                        return next(DENY, 'Message is infected with ' + (virus || 'UNKNOWN'));
                     }
                 }
                 // Check skip list
@@ -208,14 +232,18 @@ exports.hook_data_post = function (next, connection) {
                 return next(DENY, 'Message is infected with ' + (virus || 'UNKNOWN'));
             }
             else if (/size limit exceeded/.test(result)) {
-                connection.logerror(plugin, 'INSTREAM size limit exceeded. ' +
-                                            'Check StreamMaxLength in clamd.conf');
+                var errmsg = 'INSTREAM size limit exceeded. Check StreamMaxLength in clamd.conf';
+                if (transaction) {
+                    transaction.results.add(plugin, {err: errmsg, emit: true});
+                }
                 // Continue as StreamMaxLength default is 25Mb
                 return next();
-            } 
+            }
             else {
                 // Unknown result
-                connection.logerror(plugin, 'unknown result: ' + result);
+                if (transaction) {
+                    transaction.results.add(plugin, {err: 'unknown result: ' + result, emit: true});
+                }
                 return next(DENYSOFT, 'Error running virus scanner');
             }
             return next();
@@ -235,7 +263,7 @@ exports.hook_data_post = function (next, connection) {
             var hostport = host.split(/:/);
             socket.connect((hostport[1] || 3310), hostport[0]);
         }
-    }
+    };
 
     // Start the process
     try_next_host();

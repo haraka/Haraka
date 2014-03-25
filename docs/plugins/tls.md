@@ -1,19 +1,18 @@
-tls
-====
+# tls
 
 This plugin enables the use of TLS (via `STARTTLS`) in Haraka.
 
 For this plugin to work you must have SSL certificates installed correctly.
 
-Purchased Certificate
-----
+## Purchased Certificate
 
 If you have a purchased certificate, install the key as config/tls\_key.pem and the
 certificate (appended with any intermediate/chained/ca-cert files) as
 config/tls\_cert.pem.
 
-Self Issued (unsigned) Certificate
-----
+See also [Setting Up TLS](https://github.com/baudehlo/Haraka/wiki/Setting-up-TLS-with-CA-certificates)
+
+## Self Issued (unsigned) Certificate
 
 Create a certificate and key file in the config directory with the following
 command:

@@ -33,7 +33,7 @@ Configuration
   connection is attempted.
 
 
-* only\_with\_attachment                          (default: 0)
+* only\_with\_attachments                         (default: false)
 
   Set this option to only scan messages that contain non-textual 
   attachments.  This is a performance optimization, however it will
@@ -41,14 +41,14 @@ Configuration
   or HTML messages.
 
 
-* connect\_timout                                (default: 10)
+* connect\_timeout                               (default: 10)
 
   Timeout connection to host after this many seconds.  A timeout will
   cause the next host in the list to be tried.  Once all hosts have 
   been tried then a temporary failure will be returned.
 
 
-* timeout                                       (default: 60)
+* timeout                                       (default: 30)
 
   Post-connection timeout if there is no activity on the socket after
   this many seconds.  A timeout will cause the message to be rejected
