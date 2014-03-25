@@ -40,7 +40,7 @@ exports.hook_lookup_rdns = function (next, connection) {
             return do_next(DENYSOFT, 'client [' + rip + '] rDNS lookup timeout');
         }
         return do_next();
-    }, (plugin.cfg.main.disconnect_timeout || 30) * 1000);
+    }, (plugin.cfg.main.timeout || 30) * 1000);
 
     dns.reverse(rip, function (err, ptr_names) {
         connection.logdebug(plugin, 'rdns lookup: ' + rip);
@@ -283,7 +283,7 @@ exports.refresh_config = function (connection) {
     });
 
     var defaults = {
-        disconnect_timeout: 10,
+        timeout: 30,
     };
 
     // allow rdns_acccess whitelist to override
