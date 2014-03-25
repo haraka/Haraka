@@ -530,6 +530,8 @@ exports.forward_dns = {
         var outer = this;
         var test_helo = 'matt.simerson.net';
         var cb = function () {
+            // console.log(arguments);
+            // console.log(outer.connection.results.get('helo.checks'));
             test.equal(undefined, arguments[0]);
             test.ok(outer.connection.results.get('helo.checks').pass.length);
             test.done();
@@ -538,6 +540,7 @@ exports.forward_dns = {
         this.plugin.init(stub, this.connection, test_helo);
         this.plugin.cfg.check.forward_dns=true;
         this.plugin.cfg.reject.forward_dns=true;
+        this.connection.results.add(this.plugin, {pass: 'valid_hostname'});
         this.plugin.forward_dns(cb, this.connection, test_helo);
     },
     'enabled, fail, reject=false' : function (test) {
@@ -561,6 +564,7 @@ exports.forward_dns = {
         var outer = this;
         var test_helo = 'www.google.com';
         var cb = function () {
+            // console.log(arguments);
             // console.log(outer.connection.results.get('helo.checks'));
             test.equal(DENY, arguments[0]);
             test.ok(outer.connection.results.get('helo.checks').fail.length);

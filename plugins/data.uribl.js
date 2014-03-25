@@ -63,9 +63,9 @@ exports.do_lookups = function (connection, next, hosts, type) {
     var plugin = this;
 
     // Store the results in the correct place based on the lookup type
-    var results = connection.transaction.results;
-    if (type === 'rdns' || type === 'helo') {
-        results = connection.results;
+    var results = connection.results;
+    if (connection.transaction) {
+        results = connection.transaction.results;
     }
 
     if (typeof hosts === 'string') {
