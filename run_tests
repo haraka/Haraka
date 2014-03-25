@@ -20,12 +20,12 @@ process.chdir(__dirname);
 
 if (process.argv[2]) {
     console.log("Running tests: ", process.argv.slice(2));
-    reporter.run(process.argv.slice(2), undefined, function () {
-        process.exit();
+    reporter.run(process.argv.slice(2), undefined, function (err) {
+        process.exit(((err) ? 1 : 0));
     });
 }
 else {
-    reporter.run(['tests', 'tests/plugins'], undefined, function () {
-        process.exit();
+    reporter.run(['tests', 'tests/plugins'], undefined, function (err) {
+        process.exit(((err) ? 1 : 0));
     });
 }
