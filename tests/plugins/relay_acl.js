@@ -14,6 +14,7 @@ function _set_up(callback) {
 
     // needed for tests
     this.plugin = Plugin('relay_acl');
+    this.plugin.config = config;
     this.plugin.cfg = {};
 
     this.connection = Connection.createConnection();
@@ -146,3 +147,16 @@ exports.relay_dest_domains = {
     },
 };
 
+exports.refresh_config = {
+    setUp : _set_up,
+    tearDown : _tear_down,
+    'callback' : function (test) {
+        test.expect(1);
+        var outer = this;
+        var next = function() {
+            test.equal(undefined, arguments[0]);
+            test.done();
+        };
+        this.plugin.refresh_config(next, this.connection);
+    },
+};
