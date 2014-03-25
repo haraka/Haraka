@@ -1,5 +1,16 @@
 // check rdns against forward
 
+// NOTICE: the functionality of this plugin is duplicated by the
+//         FCrDNS plugin. Consider using it instead. This plugin
+//         may be deprecated in the future.
+//
+//         To achieve the same results using FCrDNS (in addition to
+//         the additional features), set [reject] no_rdns=true in
+//         connect.fcrdns.ini. 
+//
+//         The FCrDNS plugin uses the white/blacklist functionality in the
+//         connect.rdns_access plugin.
+
 var dns = require('dns');
 
 // _dns_error handles err from node.dns callbacks.  It will always call next()

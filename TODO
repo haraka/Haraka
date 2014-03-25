@@ -30,6 +30,7 @@ Remove the following deprecated plugins
  - mail_from.nobounces
  - mail_from.blocklist
  - rcpt_to.blocklist
+ - lookup_rdns_strict
 
 Rename the following plugins
  - toobusy      -> connect.toobusy
