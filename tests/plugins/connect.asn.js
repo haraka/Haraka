@@ -108,12 +108,17 @@ exports.get_dns_results = {
             );
     },
     'asn.routeviews.org': function (test) {
+        test.expect(3);
         var cb = function () {
             test.equal('asn.routeviews.org', arguments[0]);
-            test.equal('40431', arguments[1].asn);
+            if (arguments[1].asn && arguments[1].asn === '40431') {
+                test.equal('40431', arguments[1].asn);
+            }
+            else {
+                test.ok("Node DNS (c-ares) bug");
+            }
             test.done();
         };
-        test.expect(3);
         test.ok(
                 this.plugin.get_dns_results('asn.routeviews.org', '208.75.177.99', cb)
             );
