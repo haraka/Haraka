@@ -1,18 +1,26 @@
-# qmail\_deliverable
+# `qmail_deliverable`
 
-This plugin implements a client for checking the deliverability of an email
-address against the qmail-deliverabled daemon. 
-See http://search.cpan.org/dist/Qmail-Deliverable/
+A client for checking the deliverability of an email
+address against the [qmail-deliverabled](http://search.cpan.org/dist/Qmail-Deliverable/) daemon.
 
+On incoming messages (relaying=false), the RCPT TO address is validated.
+
+On outgoing messages (relaying=true) the MAIL FROM address is validated when
+the `check\_outbound` option is enabled.
 
 ## Configuration
 
-You can modify the host/port that qmail-deliverabled is listening on by
-altering the contents of config/rcpt\_to.qmail\_deliverable.ini
+The host and port that qmail-deliverabled is listening on can be set by
+altering the contents of `config/rcpt_to.qmail_deliverable.ini`
 
-* host (Default: localhost)
+* `host` (Default: localhost)
 
-* port (Default: 8998)
+* `port` (Default: 8998)
+
+* `check_outbound`=true
+
+When `check_outbound` is enabled, and a connection has relay privileges, the
+MAIL FROM address is validated as deliverable.
 
 ## Per-domain Configuration
 
