@@ -24,8 +24,17 @@ exports.hook_helo = exports.hook_ehlo = function (next, connection, helo) {
             '-main.mail_permerror_reject',
         ]
     });
+
     // Bypass private IPs
     if (net_utils.is_rfc1918(connection.remote_ip)) return next();
+
+    // RFC 4408, 2.1: "SPF clients must be prepared for the "HELO"
+    //           identity to be malformed or an IP address literal.
+    if (net_utils.is_ipv4_literal(helo)) {
+        connection.results.add(plugin, {skip: 'ipv4_literal'});
+        return next();
+    }
+
     var timeout = false;
     var spf = new SPF();
     var timer = setTimeout(function () {
@@ -90,7 +99,9 @@ exports.hook_mail = function (next, connection, params) {
     }, 30 * 1000);
 
     spf.helo = connection.hello_host;
-    spf.check_host(connection.remote_ip, host, mfrom, function (err, result) {
+    var sender_ip = plugin.get_sender_ip(connection);
+
+    spf.check_host(sender_ip, host, mfrom, function (err, result) {
         if (timer) clearTimeout(timer);
         if (timeout) return;
         if (err) {
@@ -113,6 +124,27 @@ exports.hook_mail = function (next, connection, params) {
         });
         return plugin.return_results(next, connection, spf, 'mail', result, '<'+mfrom+'>');
     });
+};
+
+exports.get_sender_ip = function (connection, helo) {
+    // default case
+    if (!connection.relaying) return connection.remote_ip;
+
+    // we gave them permission to relay, check if (we/us/this server) has
+    // permission to send on behalf of the MAIL FROM domain.
+
+    // manually specified in the config file
+    if (plugin.config.get('smtp.ini').main.public_ip) {
+        return plugin.config.get('smtp.ini').main.public_ip;
+    }
+
+    if (!net_utils.is_rfc1918(connection.local_ip)) {
+        // we're bound to a public IP, use it
+        return connection.local_ip;
+    }
+
+    connection.logerror(plugin, "set public_ip in config/smtp.ini");
+    return connection.remote_ip;
 };
 
 exports.log_result = function (connection, scope, host, mfrom, result) {

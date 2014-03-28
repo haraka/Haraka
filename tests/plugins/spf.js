@@ -137,6 +137,36 @@ exports.return_results = {
     },
 };
 
+exports.hook_helo = {
+    setUp : _set_up,
+    tearDown : _tear_down,
+    'rfc1918': function (test) {
+        var completed = 0;
+        var next = function (rc) {
+            completed++;
+            test.equal(undefined, rc);
+            if (completed >= 3) test.done();
+        };
+        test.expect(3);
+        this.connection.remote_ip='192.168.1.1';
+        this.plugin.hook_helo(next, this.connection);
+        this.connection.remote_ip='10.0.1.1';
+        this.plugin.hook_helo(next, this.connection);
+        this.connection.remote_ip='127.0.0.1';
+        this.plugin.hook_helo(next, this.connection, 'helo.sender.com');
+    },
+    'IPv4 literal': function (test) {
+        var next = function (rc) {
+            test.equal(undefined, rc);
+            test.done();
+        };
+        test.expect(1);
+        this.connection.remote_ip='190.168.1.1';
+        this.plugin.hook_helo(next, this.connection, '[190.168.1.1]' );
+    },
+
+};
+
 exports.hook_mail = {
     setUp : _set_up,
     tearDown : _tear_down,
@@ -178,3 +208,4 @@ exports.hook_mail = {
         this.plugin.hook_mail(next, this.connection, [new Address('<test@example.com>')]);
     },
 };
+
