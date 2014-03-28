@@ -362,7 +362,7 @@ exports.is_public_suffix = {
     'org': function (test) {
         _is_public_suffix(test, 'org', true);
     },
-}
+};
 
 exports.is_ipv4_literal = {
     '3 ways ': function (test) {
@@ -373,3 +373,47 @@ exports.is_ipv4_literal = {
         test.done();
     },
 };
+
+exports.get_public_ip = {
+    setUp: function (callback) {
+        this.net_utils = require("../net_utils");
+        callback();
+    },
+    'cached': function (test) {
+        test.expect(2);
+        this.net_utils.public_ip='1.1.1.1';
+        var cb = function get_pip(err, ip) {
+            test.equal(null, err);
+            test.equal('1.1.1.1', ip);
+            test.done();
+        };
+        net_utils.get_public_ip(cb);
+    },
+    'normal': function (test) {
+        var cb = function get_pip(err, ip) {
+            // console.log('ip: ' + ip);
+            // console.log('err: ' + err);
+            if (has_stun) {
+                test.expect(2);
+                test.equal(null, err);
+                test.ok(ip, ip);
+            }
+            else {
+                test.expect(0);
+            }
+            test.done();
+        };
+        net_utils.public_ip=undefined;
+        net_utils.get_public_ip(cb);
+    },
+};
+
+function has_stun () {
+    try {
+        require('stun');
+    }
+    catch (e) {
+        return false;
+    }
+    return true;
+}
