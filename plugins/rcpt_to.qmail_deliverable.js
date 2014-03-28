@@ -13,18 +13,16 @@ exports.hook_mail = function(next, connection, params) {
     var plugin = this;
     plugin.cfg = plugin.config.get('rcpt_to.qmail_deliverable.ini');
 
+    if (!plugin.cfg.main.check_outbound) { return next(); }
     if (!connection.relaying) { return next(); }
 
-    // GOAL: make sure the MAIL FROM domain is local
+    // GOAL: assure the MAIL FROM domain is local
     var results = connection.transaction.results;
 
     var email = params[0].address();
-    if (!email) {
-        if (connection.notes.auth_user) {
-            results.add(plugin, {fail: 'null sender auth', emit: true});
-            return next(DENY, "An authenticated null sender? Sorry, no.");
-        }
-        return next();   // likely an IP with relaying permission
+    if (!email) {     // likely an IP with relaying permission
+        results.add(plugin, {pass: 'null sender', emit: true});
+        return next();
     }
 
     var domain = params[0].host.toLowerCase();
