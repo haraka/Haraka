@@ -45,7 +45,7 @@ exports.hook_mail = function(next, connection, params) {
         return next(qmd_r[0], qmd_r[1]);
     };
 
-    plugin.get_qmd_response(cb, connection, domain, email);
+    plugin.get_qmd_response(connection, domain, email, cb);
 };
 
 exports.hook_rcpt = function(next, connection, params) {
@@ -83,10 +83,10 @@ exports.hook_rcpt = function(next, connection, params) {
 
     // Qmail::Deliverable::Client does a rfc2822 "atext" test
     // but Haraka has already validated for us by this point
-    plugin.get_qmd_response(cb, connection, domain, rcpt.address());
+    plugin.get_qmd_response(connection, domain, rcpt.address(), cb);
 };
 
-exports.get_qmd_response = function (cb, connection, domain, email) {
+exports.get_qmd_response = function (connection, domain, email, cb) {
     var plugin = this;
 
     if (plugin.cfg[domain]) {
