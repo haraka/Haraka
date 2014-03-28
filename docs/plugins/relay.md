@@ -1,50 +1,69 @@
 # relay
 
-[MTAs](http://en.wikipedia.org/wiki/Mail_transfer_agent) generally only accept mail for domains they
-know they can deliver to. These domains are considered _local_. In Haraka,
-`rcpt_to.*` plugins control which domains and/or email addresses are
-considered deliverable.
+[MTAs](http://en.wikipedia.org/wiki/Mail_transfer_agent) generally only accept mail for _local_ domains they know they can deliver to. In Haraka, is usually the `rcpt_to.*` plugins that decide which domains and/or email addresses are deliverable. By default, everything else is rejected.
 
-*Relaying* is permitting others to send email to a MTA that is destined
-elsewhere. Back in the day (1980s), nearly all SMTP mail servers permitted
-open relaying. Soon spammers abused the open relays (1990s) and spoiled
-the party. Now nearly all MTAs have relaying disabled and
-[MUAs](http://en.wikipedia.org/wiki/Mail_user_agent) are required
-to use a [MSA](http://en.wikipedia.org/wiki/Message_submission_agent) for relaying. Most popular MTAs have MSA features baked in.
+*Relaying* is when a MTA accepts mail that is destined elsewhere. Back in the day (1980s), most MTAs permitted open relaying. Soon spammers abused our open relays (1990s) and spoiled the party. Now nearly all MTAs have relaying disabled and [MUAs](http://en.wikipedia.org/wiki/Mail_user_agent) are required to use a [MSA](http://en.wikipedia.org/wiki/Message_submission_agent) to relay. Most MTAs (including Haraka) have MSA features and can serve both purposes.
 
-This plugin provides Haraka with relay management options.
+This **relay** plugin provides Haraka with management options for relaying.
 
 ## Authentication
 
-One way to enable relaying is [authentication](http://haraka.github.io/manual.html)
-via the auth plugins. Successful authentication enables relaying during that
-SMTP connection. To securely offer SMTP AUTH,
-[tls](http://haraka.github.io/manual/plugins/tls.html) must first be enabled, and
-then the AUTH SMTP extension will be advertised to SMTP clients.
+One way to enable relaying is [authentication](http://haraka.github.io/manual.html) via the auth plugins. Successful authentication enables relaying during _that_ SMTP connection. To securely offer SMTP AUTH, the [tls](http://haraka.github.io/manual/plugins/tls.html) plugin and an auth plugin be enabled. When both are configured correctly, the AUTH SMTP extension will be advertised to SMTP clients.
+
+    % nc mail.example.com 587
+    220 mail.example.com ESMTP Haraka 2.4.0 ready
+    ehlo client.example.com
+    250-mail.example.com Hello client.example.com [192.168.0.1], Haraka is at your service.
+    250-PIPELINING
+    250-8BITMIME
+    250-SIZE 10000000
+    250 STARTTLS
+    quit
+    221 mail.example.com closing connection. Have a jolly good day.
+
+Notice that there's no AUTH advertised. We only permit authentication when the
+connection is secured with TLS:
+
+    % openssl s_client -connect mail.example.com:587 -starttls smtp
+    CONNECTED(00000003)
+    <snip long SSL certificate details>
+    ---
+    250 STARTTLS
+    ehlo client.example.com
+    250-mail.example.com Hello client.example.com [192.168.1.1], Haraka is at your service.
+    250-PIPELINING
+    250-8BITMIME
+    250-SIZE 10000000
+    250 AUTH PLAIN LOGIN
+    quit
+    221 mail.example.com closing connection. Have a jolly good day.
+    closed
 
 To avoid port 25 restrictions, in 1998 we developed [SMTP submission](http://tools.ietf.org/html/rfc2476) on port 587. For optimal security and reliability, [MUAs](http://en.wikipedia.org/wiki/Mail_user_agent) should be configured to send mail to port 587 with TLS/SSL and AUTH enabled.
 
 ## ACL (Access Control List)
 
+With the Access Control List feature, relaying can be enabled for IPv4 and
+IPv6 networks. IP ranges listed in the ACL file are allowed to send mails
+without furthur checks.
+
 * `config/relay_acl_allow`
 
     Allowed IP ranges in CIDR notation, one per line.
-    Listed IPs are allowed to send mails without furthur checks.
 
-Relaying can be enabled by IP or network address. This was common at ISPs in
-the 1990s. They just enabled all of their IP space to relay. That turned out
-to be problematic for users who took their laptops and mobile phones and then
-couldn't send mail when they weren't at home. For end users therefore,
-use SMTP AUTH. See above. If you reside somewhere technology evolves more
-slowly, you'd add your IP allocations to `relay_acl_allow` like so:
+Back in the day, ISPs enabled all of their IP space to relay. That proved
+problematic for users who took their laptops and mobile phones elsewhere and
+then couldn't send mail. For end users therefore, use SMTP AUTH described
+above. If you reside somewhere technology evolves more slowly, you can still
+add IP allocations to `relay_acl_allow` like so:
 
     echo 'N.N.N.N/24' >> /path/to/haraka/config/relay_acl_allow
 
 A common use case for IP based relaying is to relay messages on behalf of
-another mail server. If your organization has an Exchange server behind the
-corporate firewall, you might use Haraka to filter the inbound messages and
-also to relay (and DKIM sign) the outbound messages on their way to the
-internet. For such cases, you would make sure 'acl=true' (the default) is set
+another mail server. If your organization has an Exchange server, using Haraka
+to filter inbound messages is a great choice. You might also want to relay
+outbound messages via Haraka as well, so they can be DKIM signed on their way
+to the internet. For such a use case, you would set 'acl=true' (the default)
 in the [relay] section of `access.ini` and then add the external IP address
 of the corporate firewall to `config/relay_acl_allow`:
 
@@ -53,7 +72,7 @@ of the corporate firewall to `config/relay_acl_allow`:
 
 ## Force Route / Dest[ination] Domains
 
-These two features share a config file:
+These two features share a common config file:
 
 * `config/relay_dest_domains.ini`
 
@@ -64,11 +83,9 @@ The format is ini and entries are within the [domains] section. The key for each
 
 ### Force Route
 
-Think of force route as the equivalent of the transport map in
-Postfix or the smtproutes file in Qmail. Rather than looking up the MX for a
-host, the *nexthop* value from the entry in the config file is used.
+Think of force route as the equivalent of the transport map in Postfix or the smtproutes file in Qmail. Rather than looking up the MX for a host, the *nexthop* value from the entry in the config file is used.
 
-The value of "nexthop": can be a hostname or IP, optionally follow by :port.
+The value of "nexthop": can be a hostname or an IP, optionally follow by :port.
 
     Example:
 
@@ -78,11 +95,8 @@ The value of "nexthop": can be a hostname or IP, optionally follow by :port.
 ### Destination Domains
 
 Allowed destination/recipient domains. The field within the JSON value used
-by Dest Domains is "action": and the possible values are below.
-
-Caution: enabling this option will reject mail to any domains that are not
-specifically configured with an action of *continue* or *accept* in the
-`config/relay_dest_domains.ini` configuration file.
+by Dest Domains is "action": and the possible values are accept, continue, or
+deny.
 
     * accept   (accept the mail without further checks)
 
@@ -91,49 +105,24 @@ Example:
     [domains]
     test.com = { "action": "accept" }
 
-I think of the *accept* option as the equivalent of qmail's *rcpthosts*, or
-a misplaced Haraka `rcpt_to.*` plugin. The accept mechanism is just another
-way to tell Haraka that a particular domain is one we accept mail for.
+I think of *accept* as the equivalent of qmail's *rcpthosts*, or a misplaced Haraka `rcpt_to.*` plugin. The *accept* mechanism is another way to tell Haraka that a particular domain is one we accept mail for. The difference between this and and the [rcpt_to.in_host_list.html](http://haraka.github.io/manual/plugins/rcpt_to.in_host_list.html) plugin is that this one also enables relaying.
 
     * continue (mails are subject to further checks)
-
-Because the default behavior of the Dest Routes option is to reject, the
-*continue* option provides an escape, permitting another Haraka plugin to
-validate the recipients of that domain.
 
     Example:
 
     [domains]
     test.com = { "action": "continue" }
 
-POSTSCRIPT: the default deny behavior of this option baffles me.
-The default behavior of Haraka is to reject emails for which some recipient
-validation plugin hasn't vouched. Adding a additional default reject behavior
-here necessitates the continue option for **every** other domain that will
-receive mail. If the default behavior was to exit with the default next()
-behavior), then this feature would play nicely with other recipient plugins
-and require only one option of 'accept'.
+Because the default behavior of Dest Routes is to deny, the *continue* option provides an escape, permitting another Haraka plugin to validate the recipient. Like the *accept* option, it too enables relaying. 
 
-Illustration: I have 3 domains, matt.com, matt.net, and matt.org. matt.com is
-local and is delivered by qmail. matt.org is an alias of matt.com and the
-`rcpt_to.qmail_deliverable` plugin will validate recipients for both
-domains. Mails will get delivered as expected.
+    * deny    (mails are rejected)
 
-matt.net is running on a postfix server in another data center, so I enable
-Force Route and Dest Domains and add this entry to `relay_dest_domains.ini`:
+This deny option baffles me. The default behavior of Haraka is to reject emails for
+which a recipient validation plugin hasn't vouched. Adding it here prevents
+any subsequent recipient validation plugin from getting a chance. It also
+necessitates the continue option.
 
-    [domains]
-    matt.net = { "action": "accept", "nexthop": "208.N.N.N" }
-
-Mail now gets routed properly for matt.net, but mail for matt.com and matt.org
-is now broken until I add entries for them:
-
-    [domains]
-    matt.net = { "action": "accept", "nexthop": "208.N.N.N" }
-    matt.com = { "action": "continue" }
-    matt.org = { "action": "continue" }
-
-Ick.
 
 ## all
 
