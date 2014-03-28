@@ -363,3 +363,13 @@ exports.is_public_suffix = {
         _is_public_suffix(test, 'org', true);
     },
 }
+
+exports.is_ipv4_literal = {
+    '3 ways ': function (test) {
+        test.expect(3);
+        test.equal(true,  net_utils.is_ipv4_literal('[127.0.0.1]'));
+        test.equal(false, net_utils.is_ipv4_literal('127.0.0.1'));
+        test.equal(false, net_utils.is_ipv4_literal('test.host'));
+        test.done();
+    },
+};

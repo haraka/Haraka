@@ -108,10 +108,6 @@ exports.should_skip = function (connection, test_name) {
     return false;
 };
 
-exports.is_ipv4_literal = function (host) {
-    return /^\[(\d{1,3}\.){3}\d{1,3}\]$/.test(host) ? true : false;
-};
-
 exports.mismatch = function (next, connection, helo) {
     var plugin = this;
 
@@ -140,7 +136,7 @@ exports.valid_hostname = function (next, connection, helo) {
 
     if (plugin.should_skip(connection, 'valid_hostname')) return next();
 
-    if (plugin.is_ipv4_literal(helo)) {
+    if (net_utils.is_ipv4_literal(helo)) {
         connection.results.add(plugin, {skip: 'valid_hostname(literal)'});
         return next();
     }
@@ -196,7 +192,7 @@ exports.rdns_match = function (next, connection, helo) {
         return next();
     }
 
-    if (plugin.is_ipv4_literal(helo)) {
+    if (net_utils.is_ipv4_literal(helo)) {
         connection.results.add(plugin, {fail: 'rdns_match(literal)'});
         return next();
     }
@@ -268,7 +264,7 @@ exports.big_company = function (next, connection, helo) {
 
     if (plugin.should_skip(connection, 'big_company')) return next();
 
-    if (plugin.is_ipv4_literal(helo)) {
+    if (net_utils.is_ipv4_literal(helo)) {
         connection.results.add(plugin, {skip: 'big_co(literal)'});
         return next();
     }
@@ -368,7 +364,7 @@ exports.forward_dns = function (next, connection, helo) {
         return next();
     }
 
-    if (plugin.is_ipv4_literal(helo)) {
+    if (net_utils.is_ipv4_literal(helo)) {
         connection.results.add(plugin, {skip: 'forward_dns(literal)'});
         return next();
     }

@@ -189,6 +189,10 @@ exports.is_rfc1918 = function (ip) {
     return (net.isIPv4(ip) && re_private_ipv4.test(ip));
 }
 
+exports.is_ipv4_literal = function (host) {
+    return /^\[(\d{1,3}\.){3}\d{1,3}\]$/.test(host) ? true : false;
+};
+
 exports.same_ipv4_network = function (ip, ipList) {
     if (!ipList || !ipList.length) {
         logger.logerror('same_ipv4_network, no ip list!');

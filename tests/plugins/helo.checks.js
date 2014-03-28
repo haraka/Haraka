@@ -496,18 +496,6 @@ exports.valid_hostname = {
     },
 };
 
-exports.is_ipv4_literal = {
-    setUp : _set_up,
-    tearDown : _tear_down,
-    '3 ways ': function (test) {
-        test.expect(3);
-        test.equal(true,  this.plugin.is_ipv4_literal('[127.0.0.1]'));
-        test.equal(false, this.plugin.is_ipv4_literal('127.0.0.1'));
-        test.equal(false, this.plugin.is_ipv4_literal('test.host'));
-        test.done();
-    },
-};
-
 exports.forward_dns = {
     setUp : _set_up,
     tearDown : _tear_down,
