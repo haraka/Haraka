@@ -9,35 +9,98 @@ var options = {
     port: 8898,
 };
 
+exports.hook_mail = function(next, connection, params) {
+    var plugin = this;
+    plugin.cfg = plugin.config.get('rcpt_to.qmail_deliverable.ini');
+
+    if (!connection.relaying) { return next(); }
+
+    // GOAL: make sure the MAIL FROM domain is local
+    var results = connection.transaction.results;
+
+    var email = params[0].address();
+    if (!email) {
+        if (connection.notes.auth_user) {
+            results.add(plugin, {fail: 'null sender auth', emit: true});
+            return next(DENY, "An authenticated null sender? Sorry, no.");
+        }
+        return next();   // likely an IP with relaying permission
+    }
+
+    var domain = params[0].host.toLowerCase();
+
+    var cb = function (err, qmd_r) {
+        if (err) {
+            results.add(plugin, {err: err});
+            return next(DENYSOFT, err);
+        }
+
+        if (qmd_r[0] === undefined) {
+            results.add(plugin, {err: qmd_r[1]});
+            return next();
+        }
+        if (qmd_r[0] === OK) {
+            results.add(plugin, {pass: qmd_r[1]});
+            return next();
+        }
+        results.add(plugin, {fail: qmd_r[1]});
+        return next(qmd_r[0], qmd_r[1]);
+    };
+
+    plugin.get_qmd_response(cb, connection, domain, email);
+};
+
 exports.hook_rcpt = function(next, connection, params) {
     var plugin = this;
-    var cfg = plugin.config.get('rcpt_to.qmail_deliverable.ini');
+    var results = connection.transaction.results;
+
+    if (connection.relaying) {
+        results.add(plugin, {skip: "relay"});
+        return next();
+    }
 
     var rcpt = params[0];
     var domain = rcpt.host.toLowerCase();
-
-    if (cfg[domain]) {
-        if (cfg[domain].host) options.host = cfg[domain].host;
-        if (cfg[domain].port) options.host = cfg[domain].port;
-    }
-    else {
-        if (cfg.main.host) options.host = cfg.main.host;
-        if (cfg.main.port) options.port = cfg.main.port;
-    }
 
     connection.transaction.results.add(plugin, {
         msg: "sock: " + options.host + ':' + options.port
     });
 
+    var cb = function (err, qmd_r) {
+        if (err) {
+            results.add(plugin, {err: e.message});
+            return next(DENYSOFT, "error validating email address");
+        }
+        if (qmd_r[0] === undefined) {
+            results.add(plugin, {err: qmd_r[1]});
+            return next();
+        }
+        if (qmd_r[0] === OK) {
+            results.add(plugin, {pass: qmd_r[1]});
+            return next(OK);
+        }
+        results.add(plugin, {fail: qmd_r[1]});
+        return next(qmd_r[0], qmd_r[1]);
+    };
+
     // Qmail::Deliverable::Client does a rfc2822 "atext" test
     // but Haraka has already validated for us by this point
-    return plugin.get_qmd_response(next, connection, rcpt.address());
+    plugin.get_qmd_response(cb, connection, domain, rcpt.address());
 };
 
-exports.get_qmd_response = function (next, connection, email) {
+exports.get_qmd_response = function (cb, connection, domain, email) {
     var plugin = this;
+
+    if (plugin.cfg[domain]) {
+        if (plugin.cfg[domain].host) options.host = plugin.cfg[domain].host;
+        if (plugin.cfg[domain].port) options.host = plugin.cfg[domain].port;
+    }
+    else {
+        if (plugin.cfg.main.host) options.host = plugin.cfg.main.host;
+        if (plugin.cfg.main.port) options.port = plugin.cfg.main.port;
+    }
+
     connection.logdebug(plugin, "checking " + email);
-    var results = connection.transaction.results;
     options.path = '/qd1/deliverable?' + querystring.escape(email);
     // connection.logdebug(plugin, 'PATH: ' + options.path);
     http.get(options, function(res) {
@@ -49,23 +112,11 @@ exports.get_qmd_response = function (next, connection, email) {
             var hexnum = new Number(chunk).toString(16);
             var arr = plugin.check_qmd_reponse(connection, hexnum);
             connection.loginfo(plugin, arr[1]);
-            if (arr[0] === undefined) {
-                results.add(plugin, {err: arr[1]});
-                return next();
-            }
-            if (arr[0] === OK) {
-                results.add(plugin, {pass: arr[1]});
-                return next(OK);
-            }
-            if (connection.relaying) {
-                results.add(plugin, {skip: "relaying("+arr[1]+')'});
-                return next(OK, arr[1]);
-            }
-            results.add(plugin, {fail: arr[1]});
-            return next(arr[0], arr[1]);
+            cb(undefined, arr);
+
         });
     }).on('error', function(e) {
-        results.add(plugin, {err: e.message});
+        return cb(e);
     });
 };
 
