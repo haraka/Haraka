@@ -26,7 +26,8 @@
   },
   "optionalDependencies": {
     "node-syslog"   : ">= 1.1.2",
-    "ldapjs"        : ">= 0.6.3"
+    "ldapjs"        : ">= 0.6.3",
+    "stun"          : ">= 0.0.2"
   },
   "devDependencies": {
     "nodeunit" : "https://github.com/godsflaw/nodeunit/archive/master.tar.gz"

@@ -5,6 +5,7 @@ var net    = require('net');
 var punycode = require('punycode');
 
 // Regexp to match private IPv4 ranges
+var public_ip;
 var re_private_ipv4 = /^(?:10|127|169\.254|172\.(?:1[6-9]|2[0-9]|3[01])|192\.168)\..*/;
 
 var public_suffix_list = {};
@@ -363,4 +364,65 @@ function loadPublicSuffixList() {
     });
     var entries = Object.keys(public_suffix_list).length;
     logger.loginfo('loaded '+ entries +' Public Suffixes');
+}
+
+exports.get_public_ip = function (cb) {
+    var nu = this;
+    if (nu.public_ip) {
+        return cb(null, nu.public_ip);  // cache
+    }
+
+    // manual config override, for the cases where we can't figure it out
+    if (config.get('smtp.ini').public_ip) {
+        nu.public_ip = config.get('smtp.ini').public_ip;
+        return cb(null, nu.public_ip);
+    }
+
+    var stun;
+    try {
+        stun = require('stun');
+    }
+    catch (e) {
+        e.install = 'Please install stun: "npm install -g stun"';
+        logger.logerror(e.msg + "\n" + e.install);
+        return cb(e);
+    }
+
+    var port = 19302;
+    var timeout = 10;
+    var timer;
+
+    // Connect to STUN Server
+    var client = stun.connect(port, get_stun_server());
+
+    client.on('error', function (err) {
+        client.close();
+        return cb(new Error('STUN error: ' + err));
+    });
+
+    client.on('response', function (packet) {
+        if (timer) clearTimeout(timer);
+        client.close();
+        nu.public_ip = packet.attrs[stun.attribute.MAPPED_ADDRESS].address;
+        return cb(null, nu.public_ip);
+    });
+
+    client.request(function () {
+        timer = setTimeout(function () {
+            client.close();
+            return cb(new Error('STUN timeout'));
+        }, (timeout || 10) * 1000);
+    });
+};
+
+function get_stun_server () {
+    // STUN servers by Google
+    var servers = [
+        'stun.l.google.com',
+        'stun1.l.google.com',
+        'stun2.l.google.com',
+        'stun3.l.google.com',
+        'stun4.l.google.com',
+    ];
+    return servers[Math.floor(Math.random()*servers.length)];
 }
