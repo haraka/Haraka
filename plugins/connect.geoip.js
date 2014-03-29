@@ -67,28 +67,33 @@ exports.hook_data_post = function (next, connection) {
 exports.calculate_distance = function (connection, r_geoip) {
     var plugin = this;
 
-    if (!plugin.local_ip) { plugin.local_ip = net_utils.get_local_ip(); };
-    if (!plugin.local_ip) { plugin.local_ip = plugin.cfg.main.public_ip; }
-    if (!plugin.local_ip) {
-        connection.logerror(plugin, "can't calculate distance, set public_ip in smtp.ini");
-        return;
-    }
+    var cb = function (err, l_ip) {
+        if (!plugin.local_ip) { plugin.local_ip = l_ip; }
+        if (!plugin.local_ip) { plugin.local_ip = plugin.cfg.main.public_ip; }
+        if (!plugin.local_ip) {
+            connection.logerror(plugin, "can't calculate distance, set public_ip in smtp.ini");
+            return;
+        }
 
-    if (!plugin.local_geoip) { plugin.local_geoip = geoip.lookup(plugin.local_ip); }
-    if (!plugin.local_geoip) {
-        connection.logerror(plugin, "no GeoIP results for local_ip!");
-        return;
-    }
+        if (!plugin.local_geoip) { plugin.local_geoip = geoip.lookup(plugin.local_ip); }
+        if (!plugin.local_geoip) {
+            connection.logerror(plugin, "no GeoIP results for local_ip!");
+            return;
+        }
 
-    var gcd = plugins.haversine(plugin.local_geoip.ll[0], plugin.local_geoip.ll[1],
-                                r_geoip.ll[0], r_geoip.ll[1]);
+        var gcd = plugin.haversine(plugin.local_geoip.ll[0], plugin.local_geoip.ll[1],
+                                    r_geoip.ll[0], r_geoip.ll[1]);
 
-    connection.results.add(plugin, {distance: gcd});
+        connection.results.add(plugin, {distance: gcd});
 
-    if (plugin.cfg.main.too_far && (parseFloat(plugin.cfg.main.too_far) < parseFloat(gcd))) {
-        connection.results.add(plugin, {too_far: true});
-    }
-    return gcd;
+        if (plugin.cfg.main.too_far && (parseFloat(plugin.cfg.main.too_far) < parseFloat(gcd))) {
+            connection.results.add(plugin, {too_far: true});
+        }
+        return gcd;
+    };
+
+    if (plugin.local_ip) return cb(undefined, plugin.local_ip);
+    net_utils.get_public_ip(cb);
 };
 
 exports.haversine = function (lat1, lon1, lat2, lon2) {
