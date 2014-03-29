@@ -14,6 +14,14 @@ function _set_up(callback) {
     this.plugin.config = config;
     this.plugin.cfg = { main: {} };
 
+    this.plugin.has_geoip=true;
+    try {
+        require('geoip-lite');
+    }
+    catch (e) {
+        this.plugin.has_geoip=false;
+    }
+
     this.connection = Connection.createConnection();
     this.connection.results = new ResultStore(this.plugin);
 
@@ -44,12 +52,15 @@ exports.hook_connect = {
     tearDown : _tear_down,
 
     'seattle: ': function (test) {
-        test.expect(2);
         var cb = function (rc) {
+            test.expect(1);
             test.equal(undefined, rc);
-            var r = this.connection.results.get('connect.geoip');
-            // console.log(r);
-            test.ok(r);
+            if (this.plugin.has_geoip) {
+                test.expect(2);
+                var r = this.connection.results.get('connect.geoip');
+                // console.log(r);
+                test.ok(r);
+            }
             test.done();
         }.bind(this);
         this.connection.remote_ip='192.48.85.146';
@@ -58,10 +69,14 @@ exports.hook_connect = {
     'michigan: ': function (test) {
         test.expect(2);
         var cb = function (rc) {
+            test.expect(1);
             test.equal(undefined, rc);
-            var r = this.connection.results.get('connect.geoip');
-            // console.log(r);
-            test.ok(r);
+            if (this.plugin.has_geoip) {
+                test.expect(2);
+                var r = this.connection.results.get('connect.geoip');
+                // console.log(r);
+                test.ok(r);
+            }
             test.done();
         }.bind(this);
         this.connection.remote_ip='199.176.179.3';

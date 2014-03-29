@@ -80,7 +80,8 @@ exports.calculate_distance = function (connection, r_geoip) {
         return;
     }
 
-    var gcd = haversine(plugin.local_geoip.ll[0], plugin.local_geoip.ll[1], r_geoip.ll[0], r_geoip.ll[1]);
+    var gcd = plugins.haversine(plugin.local_geoip.ll[0], plugin.local_geoip.ll[1],
+                                r_geoip.ll[0], r_geoip.ll[1]);
 
     connection.results.add(plugin, {distance: gcd});
 
