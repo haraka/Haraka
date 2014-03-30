@@ -21,7 +21,7 @@ exports.hook_mail = function(next, connection, params) {
 
     var email = params[0].address();
     if (!email) {     // likely an IP with relaying permission
-        results.add(plugin, {pass: 'null sender', emit: true});
+        results.add(plugin, {skip: 'null sender', emit: true});
         return next();
     }
 
@@ -66,7 +66,7 @@ exports.hook_rcpt = function(next, connection, params) {
 
     var cb = function (err, qmd_r) {
         if (err) {
-            results.add(plugin, {err: e.message});
+            results.add(plugin, {err: err});
             return next(DENYSOFT, "error validating email address");
         }
         if (qmd_r[0] === undefined) {
