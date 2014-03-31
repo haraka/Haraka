@@ -37,10 +37,10 @@ be the IP that Haraka is bound to, but if not you'll need to supply it.
 Perform the geodesic distance calculations. Calculates the distance "as the
 crow flies" from the remote mail server.
 
-- public\_ip: <IP Address>
-
-The IP address to calculate the distance from. This will typically be
-the public IP of your mail server.
+This calculation requires a 'from' IP address. This will typically be the
+public IP of your mail server. If Haraka is bound to a private IP, net\_utils
+will attempt to determine your public IP. If that doesn't work, edit
+config/smtp.ini and set `public_ip`.
 
 - show\_city
 

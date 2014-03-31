@@ -2,8 +2,6 @@ var geoip     = require('geoip-lite'),
     net       = require('net'),
     net_utils = require('./net_utils');
 
-var local_ip, local_geoip;
-
 exports.hook_connect = function (next, connection) {
     var plugin = this;
 
@@ -19,18 +17,23 @@ exports.hook_connect = function (next, connection) {
 
     connection.results.add(plugin, r);
 
-    var cfg = plugin.config.get('connect.geoip.ini');
-    if (cfg.main.calc_distance) {
+    plugin.cfg = plugin.config.get('connect.geoip.ini', {
+        booleans: [
+            '+main.show_city',
+            '+main.show_region',
+            '-main.calc_distance',
+        ],
+    });
+    if (plugin.cfg.main.calc_distance) {
         r.distance = plugin.calculate_distance(connection, r);
     }
 
     var show = [ r.country ];
-    if (r.region   && cfg.main.show_region) show.push(r.region);
-    if (r.city     && cfg.main.show_city  ) show.push(r.city);
-    if (r.distance                        ) show.push(r.distance+'km');
+    if (r.region   && plugin.cfg.main.show_region) show.push(r.region);
+    if (r.city     && plugin.cfg.main.show_city  ) show.push(r.city);
+    if (r.distance                               ) show.push(r.distance+'km');
 
     connection.results.add(plugin, {human: show.join(', '), emit:true});
-
     return next();
 };
 
@@ -63,32 +66,37 @@ exports.hook_data_post = function (next, connection) {
 
 exports.calculate_distance = function (connection, r_geoip) {
     var plugin = this;
-    var cfg = plugin.config.get('connect.geoip.ini');
 
-    if (!local_ip) { local_ip = cfg.main.public_ip; }
-    if (!local_ip) { local_ip = connection.local_ip; }
-    if (!local_ip) {
-        connection.logerror(plugin, "can't calculate distance without local IP!");
-        return;
-    }
+    var cb = function (err, l_ip) {
+        if (!plugin.local_ip) { plugin.local_ip = l_ip; }
+        if (!plugin.local_ip) { plugin.local_ip = plugin.cfg.main.public_ip; }
+        if (!plugin.local_ip) {
+            connection.logerror(plugin, "can't calculate distance, set public_ip in smtp.ini");
+            return;
+        }
 
-    if (!local_geoip) { local_geoip = geoip.lookup(local_ip); }
-    if (!local_geoip) {
-        connection.logerror(plugin, "no GeoIP results for local_ip!");
-        return;
-    }
+        if (!plugin.local_geoip) { plugin.local_geoip = geoip.lookup(plugin.local_ip); }
+        if (!plugin.local_geoip) {
+            connection.logerror(plugin, "no GeoIP results for local_ip!");
+            return;
+        }
 
-    var gcd = haversine(local_geoip.ll[0], local_geoip.ll[1], r_geoip.ll[0], r_geoip.ll[1]);
+        var gcd = plugin.haversine(plugin.local_geoip.ll[0], plugin.local_geoip.ll[1],
+                                    r_geoip.ll[0], r_geoip.ll[1]);
 
-    connection.results.add(plugin, {distance: gcd});
+        connection.results.add(plugin, {distance: gcd});
 
-    if (cfg.main.too_far && (parseFloat(cfg.main.too_far) < parseFloat(gcd))) {
-        connection.results.add(plugin, {too_far: true});
-    }
-    return gcd;
+        if (plugin.cfg.main.too_far && (parseFloat(plugin.cfg.main.too_far) < parseFloat(gcd))) {
+            connection.results.add(plugin, {too_far: true});
+        }
+        return gcd;
+    };
+
+    if (plugin.local_ip) return cb(undefined, plugin.local_ip);
+    net_utils.get_public_ip(cb);
 };
 
-function haversine(lat1, lon1, lat2, lon2) {
+exports.haversine = function (lat1, lon1, lat2, lon2) {
     // calculate the great circle distance using the haversine formula
     // found here: http://www.movable-type.co.uk/scripts/latlong.html
     var R = 6371; // km
