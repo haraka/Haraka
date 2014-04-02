@@ -8,22 +8,22 @@ var ipaddr = require('ipaddr.js'),
 exports.register = function() {
     var plugin = this;
     plugin.refresh_config();
-    plugin.register_hook('connect',  'acl');
-    plugin.register_hook('rcpt',     'dest_domains');
-    plugin.register_hook('rcpt',     'all');
-    plugin.register_hook('get_mx',   'force_routing');
+    if (plugin.cfg.relay.acl          ) { plugin.register_hook('connect',  'acl'   ); }
+    if (plugin.cfg.relay.dest_domains ) { plugin.register_hook('rcpt',     'dest_domains'); }
+    if (plugin.cfg.relay.all          ) { plugin.register_hook('rcpt',     'all'   ); }
+    if (plugin.cfg.relay.force_routing) { plugin.register_hook('get_mx',   'force_routing'); }
 };
 
-exports.refresh_config = function(next, connection) {
+exports.refresh_config = function() {
     var plugin = this;
 
     var load_relay_ini = function () {
         plugin.cfg = plugin.config.get('relay.ini', {
             booleans: [
-                '-relay.any',
                 '+relay.acl',
-                '-relay.dest_domains',
                 '+relay.force_routing',
+                '-relay.all',
+                '-relay.dest_domains',
             ],
         }, function () {
             load_relay_ini();
@@ -32,7 +32,6 @@ exports.refresh_config = function(next, connection) {
 
     var load_dest_domains = function () {
         plugin.loginfo(plugin, "loading relay_dest_domain.ini");
-        // TODO: validate the entries
         plugin.dest = plugin.config.get('relay_dest_domains.ini', 'ini', function() {
             load_dest_domains();
         });
@@ -42,13 +41,21 @@ exports.refresh_config = function(next, connection) {
         var file_name = 'relay_acl_allow';
         plugin.loginfo(plugin, "loading " + file_name);
 
-        // TODO: validate the IPs in the list. Make sure
-        // they're IPv4 or IPv6. Make sure they have a netmask.
-
         // load with a self-referential callback
         plugin.acl_allow = plugin.config.get(file_name, 'list', function () {
             load_acls();
         });
+
+        for (var i=0; i<plugin.acl_allow.length; i++) {
+            var cidr = plugin.acl_allow[i].split('/');
+            if (!net.isIP(cidr[0])) {
+                plugin.logerror(plugin, "invalid entry in " + file_name + ": " + cidr[0]);
+            }
+            if (!cidr[1]) {
+                plugin.logerror(plugin, "appending missing CIDR suffix in: " + file_name);
+                plugin.acl_allow[i] = cidr[0] + '/32';
+            }
+        }
     };
 
     load_relay_ini();             // plugin.cfg = { }
@@ -88,10 +95,11 @@ exports.is_acl_allowed = function (connection) {
     for (var i=0; i < plugin.acl_allow.length; i++) {
         var item = plugin.acl_allow[i];
         connection.logdebug(plugin, 'checking if ' + ip + ' is in ' + item);
-        var cidr = plugin.acl_allow[i].split("/");
+        var cidr = plugin.acl_allow[i].split('/');
         var c_net  = cidr[0];
         var c_mask = cidr[1] || 32;
 
+        if (!net.isIP(c_net)) continue;  // bad config entry
         if (net.isIPv4(ip) && net.isIPv6(c_net)) continue;
         if (net.isIPv6(ip) && net.isIPv4(c_net)) continue;
 
@@ -149,6 +157,9 @@ exports.dest_domains = function (next, connection, params) {
             connection.relaying = true;
             transaction.results.add(plugin, {pass: 'relay_dest_domain'});
             return next(CONT);  // same as next()
+        case "deny":
+            transaction.results.add(plugin, {fail: 'relay_dest_domain'});
+            return next(DENY, "You are not allowed to relay");
     }
 
     transaction.results.add(plugin, {fail: 'relay_dest_domain'});
@@ -180,8 +191,11 @@ exports.force_routing = function (next, hmail, domain) {
 
 exports.all = function(next, connection, params) {
 // relay everything - could be useful for a spamtrap
+    var plugin = this;
+    if (!plugin.cfg.relay.all) { return next(); }
+// TODO: This looks like a bug (shortening the recipient array)
     var recipient = params.shift();
-    connection.loginfo(this, "confirming recipient " + recipient);
+    connection.loginfo(plugin, "confirming recipient " + recipient);
     connection.relaying = true;
     next(OK);
 };

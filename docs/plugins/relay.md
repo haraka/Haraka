@@ -2,7 +2,7 @@
 
 [MTAs](http://en.wikipedia.org/wiki/Mail_transfer_agent) generally only accept mail for _local_ domains they can deliver to. In Haraka, the `rcpt_to.*` plugins usually decide which domains and/or email addresses are deliverable. By default, everything else is rejected.
 
-*Relaying* is when a MTA accepts mail that is destined elsewhere. Back in the day (1980s), most MTAs permitted open relaying. Soon spammers abused our open relays (1990s) and spoiled the party. Now nearly all MTAs have relaying disabled and [MUAs](http://en.wikipedia.org/wiki/Mail_user_agent) are required to use a [MSA](http://en.wikipedia.org/wiki/Message_submission_agent) to relay. Most MTAs (including Haraka) have MSA features and can serve both purposes.
+**Relaying** is when a MTA accepts mail that is destined elsewhere. Back in the day (1980s), most MTAs permitted open relaying. Soon spammers abused our open relays (1990s) and left us with soiled mail queues. Now nearly all MTAs have relaying disabled and [MUAs](http://en.wikipedia.org/wiki/Mail_user_agent) are required to use a [MSA](http://en.wikipedia.org/wiki/Message_submission_agent) to relay. Most MTAs (including Haraka) have MSA features and can serve both purposes.
 
 This **relay** plugin provides Haraka with options for managing relay permissions.
 
@@ -100,16 +100,12 @@ Think of force route as the equivalent of the transport map in Postfix or the sm
 
 The value of "nexthop": can be a hostname or an IP, optionally follow by :port.
 
-    Example:
+Example:
 
     [domains]
     test.com = { "action": "continue", "nexthop": "127.0.0.1:2525" }
 
 ### Destination Domains
-
-CAUTION: Do Not Use. This is provided solely for backwards compatibility. The
-enabling of relaying (a connection property) when a rcpt domain matches is a
-significant bug that permits bad senders to gain inappropriate privileges.
 
 Allowed destination/recipient domains. The field within the JSON value used
 by Dest Domains is "action": and the possible values are accept, continue, or
@@ -126,7 +122,7 @@ I think of *accept* as the equivalent of qmail's *rcpthosts*, or a misplaced Har
 
     * continue (mails are subject to further checks)
 
-    Example:
+Example:
 
     [domains]
     test.com = { "action": "continue" }
@@ -143,11 +139,11 @@ necessitates the continue option.
 
 ## all
 
-Relay all is enabled by setting any=true in the [relay] section of
+Relay all is enabled by setting all=true in the [relay] section of
 relay.ini:
 
     [relay]
-    any=true     (default: false)
+    all=true     (default: false)
 
 Relay all is useful for spamtraps to accept all mail.
 

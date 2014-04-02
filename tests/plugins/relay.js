@@ -320,6 +320,8 @@ exports.all = {
         test.isNotNull(this.plugin.all);
         test.isFunction(this.plugin.all);
         this.plugin.register();
+        this.plugin.cfg.relay.all = true;
+        this.plugin.register_hook('rcpt', 'all');  // register() doesn't b/c config is disabled
         // console.log(this.plugin.register_hook.args);
         test.equals(this.plugin.register_hook.args[2][1], 'all');
         test.done();
@@ -330,6 +332,7 @@ exports.all = {
             test.equals(action, constants.ok);
             test.done();
         };
+        this.plugin.cfg.relay = { all: true };
         this.plugin.all(next, this.connection, ['foo@bar.com']);
     },
     'all hook always sets connection.relaying to 1' : function (test) {
@@ -339,6 +342,7 @@ exports.all = {
             test.done();
         }.bind(this);
 
+        this.plugin.cfg.relay = { all: true };
         this.plugin.all(next, this.connection, ['foo@bar.com']);
     }
 };
