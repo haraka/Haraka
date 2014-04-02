@@ -9,24 +9,61 @@ SPF.prototype.log_debug = function (str) {
     return plugin.logdebug(str);
 };
 
-exports.hook_helo = exports.hook_ehlo = function (next, connection, helo) {
+exports.refresh_config = function () {
     var plugin = this;
     plugin.cfg = plugin.config.get('spf.ini', {
         booleans: [
-            '-main.helo_softfail_reject',
-            '-main.helo_fail_reject',
-            '-main.helo_temperror_defer',
-            '-main.helo_permerror_reject',
+            '-defer.helo_temperror',
+            '-defer.mfrom_temperror',
 
-            '-main.mail_softfail_reject',
-            '-main.mail_fail_reject',
-            '-main.mail_temperror_defer',
-            '-main.mail_permerror_reject',
+            '-defer_relay.helo_temperror',
+            '-defer_relay.mfrom_temperror',
+
+            '-deny.helo_softfail',
+            '-deny.helo_fail',
+            '-deny.helo_permerror',
+
+            '-deny.mfrom_softfail',
+            '-deny.mfrom_fail',
+            '-deny.mfrom_permerror',
+
+            '-deny_relay.helo_softfail',
+            '-deny_relay.helo_fail',
+            '-deny_relay.helo_permerror',
+
+            '-deny_relay.mfrom_softfail',
+            '-deny_relay.mfrom_fail',
+            '-deny_relay.mfrom_permerror',
         ]
     });
 
+    // when set, preserve legacy config settings
+    ['helo','mail'].forEach(function (phase) {
+        if (plugin.cfg.main[phase + '_softfail_reject']) {
+            plugin.cfg.deny[phase + '_softfail'] = true;
+        }
+        if (plugin.cfg.main[phase + '_fail_reject']) {
+            plugin.cfg.deny[phase + '_fail'] = true;
+        }
+        if (plugin.cfg.main[phase + '_temperror_defer']) {
+            plugin.cfg.defer[phase + '_temperror'] = true;
+        }
+        if (plugin.cfg.main[phase + '_permerror_reject']) {
+            plugin.cfg.deny[phase + '_permerror'] = true;
+        }
+    });
+
+    if (!plugin.cfg.relay) {
+        plugin.cfg.relay = { context: 'sender' };  // default/legacy
+    }
+};
+
+exports.hook_helo = exports.hook_ehlo = function (next, connection, helo) {
+    var plugin = this;
+    plugin.refresh_config();
+
     // Bypass private IPs
-    if (net_utils.is_rfc1918(connection.remote_ip)) return next();
+    if (net_utils.is_rfc1918(connection.remote_ip)) { return next(); }
 
     // RFC 4408, 2.1: "SPF clients must be prepared for the "HELO"
     //           identity to be malformed or an IP address literal.
@@ -66,8 +103,9 @@ exports.hook_helo = exports.hook_ehlo = function (next, connection, helo) {
 
 exports.hook_mail = function (next, connection, params) {
     var plugin = this;
-    // Bypass private IPs
-    if (net_utils.is_rfc1918(connection.remote_ip)) return next();
+
+    // For inbound message from a private IP, skip MAIL FROM check
+    if (!connection.relaying && net_utils.is_rfc1918(connection.remote_ip)) return next();
 
     var txn = connection.transaction;
     if (!txn) return next();
@@ -99,9 +137,8 @@ exports.hook_mail = function (next, connection, params) {
     }, 30 * 1000);
 
     spf.helo = connection.hello_host;
-    var sender_ip = plugin.get_sender_ip(connection);
 
-    spf.check_host(sender_ip, host, mfrom, function (err, result) {
+    var ch_cb = function (err, result) {
         if (timer) clearTimeout(timer);
         if (timeout) return;
         if (err) {
@@ -123,28 +160,31 @@ exports.hook_mail = function (next, connection, params) {
             emit: true,
         });
         return plugin.return_results(next, connection, spf, 'mail', result, '<'+mfrom+'>');
+    };
+
+    // typical inbound (!relay)
+    if (!connection.relaying) {
+        return spf.check_host(connection.remote_ip, host, mfrom, ch_cb);
+    }
+
+    // outbound (relaying), context=sender
+    if (plugin.cfg.relay.context === 'sender') {
+        return spf.check_host(connection.remote_ip, host, mfrom, ch_cb);
+    }
+
+    // outbound (relaying), context=myself, private IP
+    if (net_utils.is_rfc1918(connection.remote_ip)) return next();
+
+    // outbound (relaying), context=myself
+    net_utils.get_public_ip(function(e, sender_ip) {
+        if (e) {
+            return ch_cb(e);
+        }
+        if (!sender_ip) {
+            return ch_cb(new Error("failed to discover public IP"));
+        }
+        return spf.check_host(sender_ip, host, mfrom, ch_cb);
     });
-};
-
-exports.get_sender_ip = function (connection, helo) {
-    // default case
-    if (!connection.relaying) return connection.remote_ip;
-
-    // we gave them permission to relay, check if (we/us/this server) has
-    // permission to send on behalf of the MAIL FROM domain.
-
-    // manually specified in the config file
-    if (plugin.config.get('smtp.ini').main.public_ip) {
-        return plugin.config.get('smtp.ini').main.public_ip;
-    }
-
-    if (!net_utils.is_rfc1918(connection.local_ip)) {
-        // we're bound to a public IP, use it
-        return connection.local_ip;
-    }
-
-    connection.logerror(plugin, "set public_ip in config/smtp.ini");
-    return connection.remote_ip;
 };
 
 exports.log_result = function (connection, scope, host, mfrom, result) {
@@ -160,6 +200,8 @@ exports.log_result = function (connection, scope, host, mfrom, result) {
 exports.return_results = function(next, connection, spf, scope, result, sender) {
     var plugin = this;
     var msgpre = 'sender ' + sender;
+    var deny = connection.relaying ? 'deny_relay' : 'deny';
+    var defer = connection.relaying ? 'defer_relay' : 'defer';
 
     switch (result) {
         case spf.SPF_NONE:
@@ -167,22 +209,22 @@ exports.return_results = function(next, connection, spf, scope, result, sender) 
         case spf.SPF_PASS:
             return next();
         case spf.SPF_SOFTFAIL:
-            if (plugin.cfg.main[scope + '_softfail_reject']) {
+            if (plugin.cfg[deny][scope + '_softfail']) {
                 return next(DENY, msgpre + ' SPF SoftFail');
             }
             return next();
         case spf.SPF_FAIL:
-            if (plugin.cfg.main[scope + '_fail_reject']) {
+            if (plugin.cfg[deny][scope + '_fail']) {
                 return next(DENY, msgpre + ' SPF Fail');
             }
             return next();
         case spf.SPF_TEMPERROR:
-            if (plugin.cfg.main[scope + '_temperror_defer']) {
+            if (plugin.cfg[defer][scope + '_temperror']) {
                 return next(DENYSOFT, msgpre + ' SPF Temporary Error');
             }
             return next();
         case spf.SPF_PERMERROR:
-            if (plugin.cfg.main[scope + '_permerror_reject']) {
+            if (plugin.cfg[deny][scope + '_permerror']) {
                 return next(DENY, msgpre + ' SPF Permanent Error');
             }
             return next();
