@@ -43,6 +43,12 @@ To avoid port 25 restrictions, in 1998 we developed [SMTP submission](http://too
 
 ## ACL (Access Control List)
 
+ACL processing is enabled by setting acl=true in the [relay] section of
+relay.ini:
+
+    [relay]
+    acl=true
+
 With the Access Control List feature, relaying can be enabled for IPv4 and
 IPv6 networks. IP ranges listed in the ACL file are allowed to send mails
 without furthur checks.
@@ -72,7 +78,14 @@ of the corporate firewall to `config/relay_acl_allow`:
 
 ## Force Route / Dest[ination] Domains
 
-These two features share a common config file:
+Force routes and Destination Domains are enabled by setting in the [relay]
+section of relay.ini:
+
+    [relay]
+    force_routing=false  (default: false)
+    dest_domains=false   (default: false)
+
+These two features share another common config file:
 
 * `config/relay_dest_domains.ini`
 
@@ -129,6 +142,12 @@ necessitates the continue option.
 
 
 ## all
+
+Relay all is enabled by setting any=true in the [relay] section of
+relay.ini:
+
+    [relay]
+    any=true     (default: false)
 
 Relay all is useful for spamtraps to accept all mail.
 
