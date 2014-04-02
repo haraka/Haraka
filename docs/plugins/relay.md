@@ -1,14 +1,14 @@
 # relay
 
-[MTAs](http://en.wikipedia.org/wiki/Mail_transfer_agent) generally only accept mail for _local_ domains they know they can deliver to. In Haraka, is usually the `rcpt_to.*` plugins that decide which domains and/or email addresses are deliverable. By default, everything else is rejected.
+[MTAs](http://en.wikipedia.org/wiki/Mail_transfer_agent) generally only accept mail for _local_ domains they can deliver to. In Haraka, the `rcpt_to.*` plugins usually decide which domains and/or email addresses are deliverable. By default, everything else is rejected.
 
 *Relaying* is when a MTA accepts mail that is destined elsewhere. Back in the day (1980s), most MTAs permitted open relaying. Soon spammers abused our open relays (1990s) and spoiled the party. Now nearly all MTAs have relaying disabled and [MUAs](http://en.wikipedia.org/wiki/Mail_user_agent) are required to use a [MSA](http://en.wikipedia.org/wiki/Message_submission_agent) to relay. Most MTAs (including Haraka) have MSA features and can serve both purposes.
 
-This **relay** plugin provides Haraka with management options for relaying.
+This **relay** plugin provides Haraka with options for managing relay permissions.
 
 ## Authentication
 
-One way to enable relaying is [authentication](http://haraka.github.io/manual.html) via the auth plugins. Successful authentication enables relaying during _that_ SMTP connection. To securely offer SMTP AUTH, the [tls](http://haraka.github.io/manual/plugins/tls.html) plugin and an auth plugin be enabled. When both are configured correctly, the AUTH SMTP extension will be advertised to SMTP clients.
+One way to enable relaying is [authentication](http://haraka.github.io/manual.html) via the auth plugins. Successful authentication enables relaying during _that_ SMTP connection. To securely offer SMTP AUTH, the [tls](http://haraka.github.io/manual/plugins/tls.html) plugin and at least one auth plugin must be enabled and properly configured. When that requirement is met, the AUTH SMTP extension will be advertised to SMTP clients.
 
     % nc mail.example.com 587
     220 mail.example.com ESMTP Haraka 2.4.0 ready
@@ -94,6 +94,10 @@ The value of "nexthop": can be a hostname or an IP, optionally follow by :port.
 
 ### Destination Domains
 
+CAUTION: Do Not Use. This is provided solely for backwards compatibility. The
+enabling of relaying (a connection property) when a rcpt domain matches is a
+significant bug that permits bad senders to gain inappropriate privileges.
+
 Allowed destination/recipient domains. The field within the JSON value used
 by Dest Domains is "action": and the possible values are accept, continue, or
 deny.
@@ -105,7 +109,7 @@ Example:
     [domains]
     test.com = { "action": "accept" }
 
-I think of *accept* as the equivalent of qmail's *rcpthosts*, or a misplaced Haraka `rcpt_to.*` plugin. The *accept* mechanism is another way to tell Haraka that a particular domain is one we accept mail for. The difference between this and and the [rcpt_to.in_host_list.html](http://haraka.github.io/manual/plugins/rcpt_to.in_host_list.html) plugin is that this one also enables relaying.
+I think of *accept* as the equivalent of qmail's *rcpthosts*, or a misplaced Haraka `rcpt_to.*` plugin. The *accept* mechanism is another way to tell Haraka that a particular domain is one we accept mail for. The difference between this and and the [rcpt_to.in_host_list](http://haraka.github.io/manual/plugins/rcpt_to.in_host_list.html) plugin is that this one also enables relaying.
 
     * continue (mails are subject to further checks)
 
@@ -114,7 +118,7 @@ I think of *accept* as the equivalent of qmail's *rcpthosts*, or a misplaced Har
     [domains]
     test.com = { "action": "continue" }
 
-Because the default behavior of Dest Routes is to deny, the *continue* option provides an escape, permitting another Haraka plugin to validate the recipient. Like the *accept* option, it too enables relaying. 
+Because the default behavior of Dest Routes is to deny, the *continue* option provides an escape, permitting another Haraka plugin to validate the recipient. Like the *accept* option, it too enables relaying.
 
     * deny    (mails are rejected)
 
