@@ -34,6 +34,9 @@ Remove the following deprecated plugins
  - mail_from.access     (replaced by access.js)
  - rcpt_to.access                 ""
  - connect.rdns_access            ""
+ - relay_acl
+ - relay_all
+ - relay_force_routing
 
 Rename the following plugins
  - toobusy      -> connect.toobusy
