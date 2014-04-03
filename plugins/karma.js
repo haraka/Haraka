@@ -113,6 +113,13 @@ exports.hook_deny = function (next, connection, params) {
     return next(OK);
 };
 
+exports.hook_reset_transaction = function (next, connection) {
+    var plugin = this;
+    // collect any transaction results before they disappear
+    plugin.check_awards(connection);
+    return next();
+};
+
 exports.hook_unrecognized_command = function(next, connection, cmd) {
     var plugin = this;
 
