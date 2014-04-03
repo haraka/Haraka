@@ -4,14 +4,24 @@ var ipaddr = require('ipaddr.js');
 var redis  = require('redis');
 var db;
 var phase_prefixes = ['connect','helo','mail_from','rcpt_to','data'];
-var deny_hooks = ['unrecognized_command','helo','ehlo','mail','rcpt','data','data_post'];
 
 exports.register = function () {
     var plugin = this;
-    var cfg = plugin.config.get('karma.ini');
-    if (cfg.penalty.hooks) {
-        deny_hooks = cfg.penalty.hooks.split(/[\s,;]+/);
-    }
+    plugin.deny_hooks = ['unrecognized_command','helo','ehlo','mail','rcpt','data','data_post'];
+
+    var load_config = function () {
+        plugin.cfg = plugin.config.get('karma.ini', {
+            booleans: [
+                '+asn.enable',
+                '+asn.award',
+            ],
+        }, load_config);
+
+        if (plugin.cfg.penalty.hooks) {
+            plugin.deny_hooks = plugin.cfg.penalty.hooks.split(/[\s,;]+/);
+        }
+    };
+    load_config();
 
     plugin.register_hook('init_master',  'karma_init');
     plugin.register_hook('init_child',   'karma_init');
@@ -25,7 +35,6 @@ exports.karma_init = function (next, server) {
 
 exports.results_init = function (connection) {
     var plugin = this;
-    var config = plugin.config.get('karma.ini');
     if (connection.results.get('karma')) return; // init once per connection
 
     // connect: score on this connection
@@ -35,10 +44,10 @@ exports.results_init = function (connection) {
     // todo is a list of connection/transaction notes to 'watch' for.
     // When discovered, award their karma points to the connection
     // and remove them from todo.
-    if (!config.awards) return;
+    if (!plugin.cfg.awards) return;
     var todo = {};
-    for (var key in config.awards) {
-        var award = config.awards[key].toString();
+    for (var key in plugin.cfg.awards) {
+        var award = plugin.cfg.awards[key].toString();
         todo[key] = award;
     }
     connection.results.add(plugin, {todo: todo});
@@ -48,21 +57,28 @@ exports.should_we_deny = function (next, connection, hook) {
     var plugin = this;
     plugin.check_awards(connection);  // update awards first
 
-    var config         = plugin.config.get('karma.ini');
-    var negative_limit = parseFloat(config.thresholds.negative) || -5;
-    var score          = parseFloat(connection.results.get('karma').connect);
-    if (isNaN(score))  return next();
+    if (hook === 'helo' || hook === 'ehlo') {
+        // give roaming users a chance to auth before tarpitting
+        return next();
+    }
 
-    if (score < 0 && config.tarpit) {
+    var negative_limit = parseFloat(plugin.cfg.thresholds.negative) || -5;
+    var score          = parseFloat(connection.results.get('karma').connect);
+    if (isNaN(score))  {
+        connection.results.add(plugin, {connect:0});
+        return next();
+    }
+
+    if (score < 0 && plugin.cfg.tarpit) {
         // the worse the connection, the slower it goes...
         var delay = score * -1;
-        var max = config.tarpit.max || 5;
-        if (delay > max) { delay = max; };
+        var max = plugin.cfg.tarpit.max || 5;
+        if (delay > max) delay = max;
         connection.notes.tarpit = delay;
     }
 
-    if (score > negative_limit)          { return next(); }
-    if (deny_hooks.indexOf(hook) === -1) { return next(); }
+    if (score > negative_limit)                 { return next(); }
+    if (plugin.deny_hooks.indexOf(hook) === -1) { return next(); }
 
     return next(DENY, "very bad karma score: " + score);
 };
@@ -76,8 +92,11 @@ exports.hook_deny = function (next, connection, params) {
 //  var pi_params   = params[4];
     var pi_hook     = params[5];
 
-    if (pi_name === 'karma') return next();
-    var config = plugin.config.get('karma.ini');
+    // exceptions, whose 'DENY' should not be captured
+    if (pi_name === 'karma') return next();    // myself
+    if (pi_name === 'access') return next();   // ACLs
+    if (pi_hook === 'rcpt_to') return next();  // RCPT hooks are special
+    if (pi_hook === 'queue') return next();
 
     if (pi_deny === DENY || pi_deny === DENYDISCONNECT || pi_deny === DISCONNECT) {
         connection.results.incr(plugin, {connect: -2});
@@ -86,11 +105,8 @@ exports.hook_deny = function (next, connection, params) {
         connection.results.incr(plugin, {connect: -1});
     }
 
-    // the queue hook returns a DENY(SOFT), let it pass through
-    if (pi_hook === 'queue') { return next(); }
-
-    // a plugin temperror, let it pass through
-    if (pi_deny === DENYSOFT) return next;
+    // let temporary errors pass through
+    if (pi_deny === DENYSOFT) return next();
 
     // intercept any other denials, and let the connection continue
     connection.results.add(plugin, {fail: 'deny:' + pi_name});
@@ -108,17 +124,17 @@ exports.hook_unrecognized_command = function(next, connection, cmd) {
 
 exports.hook_lookup_rdns = function (next, connection) {
     var plugin = this;
-    var config = plugin.config.get('karma.ini');
 
     plugin.init_redis_connection();
     plugin.results_init(connection);
 
-    if (config.tarpit) { connection.notes.tarpit = config.tarpit.delay || 0; }
+    if (plugin.cfg.tarpit) { connection.notes.tarpit = plugin.cfg.tarpit.delay || 0; }
+    if (connection.relaying) connection.results.incr(plugin, {connect: 3});
 
-    var expire = (config.redis.expire_days || 60) * 86400; // convert to days
+    var expire = (plugin.cfg.redis.expire_days || 60) * 86400; // convert to days
     var rip    = connection.remote_ip;
     var dbkey  = 'karma|' + rip;
-    var asnkey = get_asn_key(connection, config);
+    var asnkey = plugin.get_asn_key(connection);
     if (asnkey) {
         plugin.check_asn_neighborhood(connection, asnkey, expire);
     }
@@ -160,7 +176,7 @@ exports.hook_lookup_rdns = function (next, connection) {
             var days_old = (ms_old / 86400 / 1000).toFixed(2);
             connection.results.add(plugin, {msg: 'days_old: ' + days_old});
 
-            var penalty_days = config.penalty.days || config.main.penalty_days || 1;
+            var penalty_days = plugin.cfg.penalty.days || plugin.cfg.main.penalty_days || 1;
             if (days_old >= penalty_days) {
                 connection.results.add(plugin, {msg: 'penalty expired'});
                 return next();
@@ -179,13 +195,11 @@ exports.hook_connect = function (next, connection) {
     var failures = connection.results.get('karma').fail;
     if (!failures) return next();
 
-    var config = plugin.config.get('karma.ini');
-
     if (failures.indexOf('max_concurrent') !== -1) {
-        if (deny_hooks.indexOf('connect') !== -1) {
+        if (plugin.deny_hooks.indexOf('connect') !== -1) {
             setTimeout(function () {
                 return next(DENYSOFTDISCONNECT, "too many concurrent connections for you");
-            }, (config.concurrency.disconnect_delay || 10) * 1000);
+            }, (plugin.cfg.concurrency.disconnect_delay || 10) * 1000);
         }
         else {
             // so a subsequent hook will score and reject
@@ -196,11 +210,11 @@ exports.hook_connect = function (next, connection) {
     }
 
     if (failures.indexOf('penalty') !== -1) {
-        if (deny_hooks.indexOf('connect') !== -1) {
-            var taunt = config.penalty.taunt || "karma penalty";
+        if (plugin.deny_hooks.indexOf('connect') !== -1) {
+            var taunt = plugin.cfg.penalty.taunt || "karma penalty";
             setTimeout(function () {
                 return next(DENYDISCONNECT, taunt);
-            }, (config.concurrency.disconnect_delay || 10) * 1000);
+            }, (plugin.cfg.concurrency.disconnect_delay || 10) * 1000);
         }
         else {
             connection.results.incr(plugin, {connect: -10});
@@ -291,12 +305,11 @@ exports.hook_queue = function (next, connection) {
 
 exports.hook_disconnect = function (next, connection) {
     var plugin = this;
-    var config = plugin.config.get('karma.ini');
 
     plugin.init_redis_connection();
-    if (config.concurrency) db.hincrby('concurrent', connection.remote_ip, -1);
+    if (plugin.cfg.concurrency) db.hincrby('concurrent', connection.remote_ip, -1);
 
-    var asnkey = get_asn_key(connection, config);
+    var asnkey = plugin.get_asn_key(connection);
 
     var k = connection.results.get('karma');
     if (!k) {
@@ -312,13 +325,13 @@ exports.hook_disconnect = function (next, connection) {
     var key = 'karma|' + connection.remote_ip;
     var history = k.history;
 
-    if (!config.thresholds) {
+    if (!plugin.cfg.thresholds) {
         plugin.check_awards(connection);
         connection.results.add(plugin, {msg: 'no action', emit: true });
         return next();
     }
 
-    var pos_lim = config.thresholds.positive || 3;
+    var pos_lim = plugin.cfg.thresholds.positive || 3;
 
     if (k.connect > pos_lim) {
         db.hincrby(key, 'good', 1);
@@ -327,19 +340,19 @@ exports.hook_disconnect = function (next, connection) {
         return next();
     }
 
-    var bad_limit = config.thresholds.negative || -5;
+    var bad_limit = plugin.cfg.thresholds.negative || -5;
     if (k.connect > bad_limit) return next();
 
     db.hincrby(key, 'bad', 1);
     if (asnkey) db.hincrby(asnkey, 'bad', 1);
     history--;
 
-    if (history > config.thresholds.history_negative) {
+    if (history > plugin.cfg.thresholds.history_negative) {
         connection.results.add(plugin, {msg: 'good enough hist', emit: true });
         return next();
     }
 
-    db.hset(key, 'penalty_start_ts', Date());
+    // db.hset(key, 'penalty_start_ts', Date());
     connection.results.add(plugin, {msg: 'penalty box', emit: true });
     return next();
 };
@@ -476,10 +489,11 @@ exports.check_awards = function (connection) {
                 break;
             case 'match':
                 if (Array.isArray(note)) {
-                    if (!note.test(new RegExp(wants, 'i'))) continue;
+                    // connection.logerror(plugin, "matching an array");
+                    if (new RegExp(wants, 'i').test(note)) break;
                 }
-                if (!note.toString().match(new RegExp(wants, 'i'))) continue;
-                break;
+                if (note.toString().match(new RegExp(wants, 'i'))) break;
+                continue;
             case 'length':
                 var operator = bits[3];
                 if (bits[4]) wants = bits[4];
@@ -543,24 +557,25 @@ function add_days(days) {
 }
 
 exports.check_concurrency = function (val, history) {
-    var config = this.config.get('karma.ini');
-    if (!config.concurrency) return;
+    var plugin = this;
+    if (!plugin.cfg.concurrency) return;
 
     var count = parseFloat(val) || 0;
     count++;                 // add this connection
 
     var reject=0;
-    if (history  <  0 && count > (config.concurrency.bad || 2)) reject++;
-    if (history === 0 && count > (config.concurrency.neutral || 3)) reject++;
-    if (history  >  0 && count > (config.concurrency.good || 9)) reject++;
+    if (history  <  0 && count > (plugin.cfg.concurrency.bad || 2)) reject++;
+    if (history === 0 && count > (plugin.cfg.concurrency.neutral || 3)) reject++;
+    if (history  >  0 && count > (plugin.cfg.concurrency.good || 9)) reject++;
     if (reject) return true;
     return false;
 };
 
 exports.max_recipients = function (connection) {
     var plugin = this;
-    var cr = plugin.config.get('karma.ini').recipients;
-    if (!cr) return;           // disabled in config file
+    if (connection.relaying) return;
+    if (!plugin.cfg.recipients) return;    // disabled in config
+
     var c = connection.rcpt_count;
     var count = c.accept + c.tempfail + c.reject + 1;
     if (count < 2) return;           // everybody is allowed one
@@ -571,29 +586,28 @@ exports.max_recipients = function (connection) {
 
     // the deeds of their past shall be considered
     var history = connection.results.get('karma').history;
-    if (history >  3 && count <= cr.good) return;
-    if (history > -1 && count <= cr.neutral) return;
+    if (history >  3 && count <= plugin.cfg.recipients.good) return;
+    if (history > -1 && count <= plugin.cfg.recipients.neutral) return;
 
     // this is *more* strict than history, b/c they have fewer opportunities
     // to score positive karma this early in the connection. senders with
     // good history will rarely see these limits.
     var score = connection.results.get('karma').connect;
-    if (score >  3 && count <= cr.good) return;
-    if (score >= 0 && count <= cr.neutral) return;
+    if (score >  3 && count <= plugin.cfg.recipients.good) return;
+    if (score >= 0 && count <= plugin.cfg.recipients.neutral) return;
 
     return 'too many recipients (' + count + ') for ' + desc + ' karma';
 };
 
 exports.check_spammy_tld = function (mail_from, connection) {
     var plugin = this;
-    var stlds = plugin.config.get('karma.ini').spammy_tlds;
-    if (!stlds) return;
+    if (!plugin.cfg.spammy_tlds) return;
     if (mail_from.isNull()) return;              // null sender (bounce)
 
     var from_tld = mail_from.host.split('.').pop();
     connection.logprotocol(plugin, "from_tld: " + from_tld);
 
-    var tld_penalty = parseFloat(stlds[from_tld] || 0); // force numeric
+    var tld_penalty = parseFloat(plugin.cfg.spammy_tlds[from_tld] || 0);
     if (tld_penalty === 0) return;
 
     connection.results.incr(plugin, {connect: tld_penalty});
@@ -657,7 +671,7 @@ exports.check_asn_neighborhood = function (connection, asnkey, expire) {
         if (!net_score) return;
         connection.results.add(plugin, {neighbors: net_score, emit: true});
 
-        var award = plugin.config.get('karma.ini').asn.award;
+        var award = plugin.cfg.asn.award;
         if (!award) return;
         if (net_score < -5) {
             connection.results.incr(plugin, {connect: (award * -1)});
@@ -678,12 +692,11 @@ exports.init_redis_connection = function () {
     // this is called during init, lookup_rdns, and disconnect
     if (db && db.ping()) return;   // connection is good
 
-    var config     = plugin.config.get('karma.ini');
     var redis_ip  = '127.0.0.1';
     var redis_port = '6379';
-    if (config.redis) {
-        redis_ip = config.redis.server_ip || '127.0.0.1';
-        redis_port = config.redis.server_port || '6379';
+    if (plugin.cfg.redis) {
+        redis_ip = plugin.cfg.redis.server_ip || '127.0.0.1';
+        redis_port = plugin.cfg.redis.server_port || '6379';
     }
 
     db = redis.createClient(redis_port, redis_ip);
@@ -692,7 +705,7 @@ exports.init_redis_connection = function () {
         db = null;
     });
 
-    var reset = parseFloat(config.concurrency.reset) || 10;
+    var reset = parseFloat(plugin.cfg.concurrency.reset) || 10;
     plugin.loginfo('clearing concurrency every ' + reset + ' minutes');
     plugin._interval = setInterval(function () {
         plugin.loginfo('clearing concurrency');
@@ -708,14 +721,15 @@ function init_ip (dbkey, rip, expire) {
         .exec();
 }
 
-function get_asn_key(connection, config) {
-    if (!config.asn.enable) return;
+exports.get_asn_key = function (connection) {
+    var plugin = this;
+    if (!plugin.cfg.asn.enable) return;
     var asn = connection.results.get('connect.asn');
     if (!asn) return;
     if (!asn.asn) return;
     if (isNaN(asn.asn)) return;
     return 'as' + asn.asn;
-}
+};
 
 function init_asn (asnkey, expire) {
     db.multi()
