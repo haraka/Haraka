@@ -2,6 +2,7 @@
 
 exports.register = function() {
     var plugin = this;
+    plugin.cfg = {};
 
     var load_config = function () {
         plugin.cfg.host_list = plugin.config.get('host_list', 'list', load_config);
