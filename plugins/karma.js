@@ -332,7 +332,8 @@ exports.hook_rcpt = function (next, connection, params) {
     var rcpt = params[0];
 
     // odds of from_user=rcpt_user in ham: < 1%, in spam > 40%
-    if (rcpt.user === connection.transaction.mail_from.user) {
+    var txn = connection.transaction;
+    if (txn && txn.mail_from && txn.mail_from.user === rcpt.user) {
         connection.results.add(plugin, {fail: 'env_user_match'});
         connection.results.incr(plugin, {connect: -1});
     }
@@ -351,7 +352,8 @@ exports.hook_rcpt = function (next, connection, params) {
 exports.hook_rcpt_ok = function (next, connection, rcpt) {
     var plugin = this;
 
-    if (rcpt.user === connection.transaction.mail_from.user) {
+    var txn = connection.transaction;
+    if (txn && txn.mail_from && txn.mail_from.user === rcpt.user) {
         connection.results.add(plugin, {fail: 'env_user_match'});
         connection.results.incr(plugin, {connect: -1});
     }
