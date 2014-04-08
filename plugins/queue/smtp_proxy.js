@@ -64,6 +64,7 @@ exports.hook_data = function (next, connection) {
 };
 
 exports.hook_queue = function (next, connection) {
+    var plugin = this;
     var smtp_client = connection.notes.smtp_client;
     if (!smtp_client) return next();
     smtp_client.next = next;
