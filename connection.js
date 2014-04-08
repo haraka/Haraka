@@ -851,6 +851,10 @@ Connection.prototype.rset_respond = function(retval, msg) {
 
 Connection.prototype.mail_respond = function(retval, msg) {
     var self = this;
+    if (!this.transaction) {
+        this.logerror("mail_respond found no transaction!");
+        return;
+    }
     var sender = this.transaction.mail_from;
     var dmsg   = "sender " + sender.format();
     this.lognotice(dmsg + ' ' + [
@@ -885,6 +889,10 @@ Connection.prototype.mail_respond = function(retval, msg) {
 
 Connection.prototype.rcpt_ok_respond = function (retval, msg) {
     var self = this;
+    if (!this.transaction) {
+        this.logerror("rcpt_ok_respond found no transaction!");
+        return;
+    }
     var rcpt = this.transaction.rcpt_to[this.transaction.rcpt_to.length - 1];
     var dmsg = "recipient " + rcpt.format();
     this.lognotice(dmsg + ' ' + [
@@ -935,6 +943,10 @@ Connection.prototype.rcpt_respond = function(retval, msg) {
     }
 
     var self = this;
+    if (!this.transaction) {
+        this.logerror("rcpt_respond found no transaction!");
+        return;
+    }
     var rcpt = this.transaction.rcpt_to[this.transaction.rcpt_to.length - 1];
     var dmsg = "recipient " + rcpt.format();
     if (retval !== constants.ok) {
