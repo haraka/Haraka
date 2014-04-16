@@ -3,6 +3,7 @@ var logger = require('./logger');
 var config = require('./config');
 var net    = require('net');
 var punycode = require('punycode');
+var dgram  = require('dgram');
 
 // Regexp to match private IPv4 ranges
 var re_private_ipv4 = /^(?:10|127|169\.254|172\.(?:1[6-9]|2[0-9]|3[01])|192\.168)\..*/;
@@ -377,15 +378,13 @@ exports.get_public_ip = function (cb) {
         return cb(null, nu.public_ip);
     }
 
-    if (!nu.stun) {
-        try {
-            nu.stun = require('stun');
-        }
-        catch (e) {
-            e.install = 'Please install stun: "npm install -g stun"';
-            logger.logerror(e.msg + "\n" + e.install);
-            return cb(e);
-        }
+    try {
+        nu.stun = require('stun');
+    }
+    catch (e) {
+        e.install = 'Please install stun: "npm install -g stun"';
+        logger.logerror(e.msg + "\n" + e.install);
+        return cb(e);
     }
 
     var port = 19302;
@@ -400,14 +399,19 @@ exports.get_public_ip = function (cb) {
         return cb(new Error('STUN error: ' + err));
     });
 
+    client.on('message', function(msg, rinfo){
+        console.log('Received UDP message:', msg);
+    });
+
     client.on('response', function (packet) {
         if (timer) clearTimeout(timer);
         client.close();
-        if (packet.attrs[nu.stun.attribute.MAPPED_ADDRESS]) {
-            nu.public_ip = packet.attrs[nu.stun.attribute.MAPPED_ADDRESS].address;
+        var attr = nu.stun.attribute.MAPPED_ADDRESS;
+        if (packet.attrs[attr]) {
+            nu.public_ip = packet.attrs[attr].address;
             return cb(null, nu.public_ip);
         }
-        return cb(new Error("STUN failed"));
+        return cb(new Error("unknown STUN failure"));
     });
 
     client.request(function () {

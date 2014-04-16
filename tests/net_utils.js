@@ -394,7 +394,7 @@ exports.get_public_ip = {
         var cb = function (err, ip) {
             // console.log('ip: ' + ip);
             // console.log('err: ' + err);
-            if (has_stun) {
+            if (has_stun()) {
                 if (err) {
                     console.log(err);
                     test.expect(0);
@@ -407,6 +407,7 @@ exports.get_public_ip = {
                 }
             }
             else {
+                console.log("stun skipped");
                 test.expect(0);
             }
             test.done();
@@ -424,4 +425,3 @@ function has_stun () {
     }
     return true;
 }
-
