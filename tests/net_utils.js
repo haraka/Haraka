@@ -377,40 +377,51 @@ exports.is_ipv4_literal = {
 exports.get_public_ip = {
     setUp: function (callback) {
         this.net_utils = require("../net_utils");
-        try {
-            this.stun = require("stun");
-        }
-        catch (e) {
-            console.log("failed to load stun");
-        }
         callback();
     },
     'cached': function (test) {
         test.expect(2);
         this.net_utils.public_ip='1.1.1.1';
-        var cb = function get_pip(err, ip) {
+        var cb = function (err, ip) {
             test.equal(null, err);
             test.equal('1.1.1.1', ip);
             test.done();
         };
-        net_utils.get_public_ip(cb);
+        this.net_utils.get_public_ip(cb);
     },
     'normal': function (test) {
-        var cb = function get_pip(err, ip) {
+        this.net_utils.public_ip=undefined;
+        var cb = function (err, ip) {
             // console.log('ip: ' + ip);
             // console.log('err: ' + err);
-            if (this.stun) {
-                test.expect(2);
-                test.equal(null, err);
-                test.ok(ip, ip);
+            if (has_stun()) {
+                if (err) {
+                    console.log(err);
+                    test.expect(0);
+                }
+                else {
+                    console.log("stun success: " + ip);
+                    test.expect(2);
+                    test.equal(null, err);
+                    test.ok(ip, ip);
+                }
             }
             else {
+                console.log("stun skipped");
                 test.expect(0);
             }
             test.done();
         };
-        net_utils.public_ip=undefined;
-        net_utils.get_public_ip(cb);
+        this.net_utils.get_public_ip(cb);
     },
 };
 
+function has_stun () {
+    try {
+        require('stun');
+    }
+    catch (e) {
+        return false;
+    }
+    return true;
+}
