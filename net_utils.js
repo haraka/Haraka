@@ -378,9 +378,8 @@ exports.get_public_ip = function (cb) {
         return cb(null, nu.public_ip);
     }
 
-    var stun;
     try {
-        stun = require('stun');
+        plugin.stun = require('stun');
     }
     catch (e) {
         e.install = 'Please install stun: "npm install -g stun"';
@@ -393,7 +392,7 @@ exports.get_public_ip = function (cb) {
     var timer;
 
     // Connect to STUN Server
-    var client = stun.connect(port, get_stun_server());
+    var client = plugin.stun.connect(port, get_stun_server());
 
     client.on('error', function (err) {
         client.close();
@@ -403,7 +402,7 @@ exports.get_public_ip = function (cb) {
     client.on('response', function (packet) {
         if (timer) clearTimeout(timer);
         client.close();
-        nu.public_ip = packet.attrs[stun.attribute.MAPPED_ADDRESS].address;
+        nu.public_ip = packet.attrs[plugin.stun.attribute.MAPPED_ADDRESS].address;
         return cb(null, nu.public_ip);
     });
 
