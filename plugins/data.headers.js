@@ -1,11 +1,10 @@
 // validate message headers and some fields
 var net_utils  = require('./net_utils');
-var addrparser;
 
 exports.register = function () {
     var plugin = this;
     try {
-        addrparser = require('address-rfc2822');
+        plugin.addrparser = require('address-rfc2822');
     }
     catch (e) {
         plugin.logerror("unable to load address-rfc2822, try\n\n\t'npm install -g address-rfc2822'\n\n");
@@ -18,7 +17,7 @@ exports.register = function () {
     this.register_hook('data_post', 'invalid_return_path');
     this.register_hook('data_post', 'user_agent');
     this.register_hook('data_post', 'direct_to_mx');
-    if (addrparser) {
+    if (plugin.addrparser) {
         this.register_hook('data_post', 'from_match');
     }
     this.register_hook('data_post', 'mailing_list');
@@ -267,7 +266,7 @@ exports.from_match = function (next, connection) {
         return next();
     }
 
-    var hdr_addr = (addrparser.parse(hdr_from))[0];
+    var hdr_addr = (plugin.addrparser.parse(hdr_from))[0];
 
     if (env_addr.address().toLowerCase() == hdr_addr.address.toLowerCase()) {
         connection.transaction.results.add(plugin, {pass: 'from_match'});
