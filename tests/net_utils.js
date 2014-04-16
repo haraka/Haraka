@@ -377,6 +377,12 @@ exports.is_ipv4_literal = {
 exports.get_public_ip = {
     setUp: function (callback) {
         this.net_utils = require("../net_utils");
+        try {
+            this.stun = require("stun");
+        }
+        catch (e) {
+            console.log("failed to load stun");
+        }
         callback();
     },
     'cached': function (test) {
@@ -393,7 +399,7 @@ exports.get_public_ip = {
         var cb = function get_pip(err, ip) {
             // console.log('ip: ' + ip);
             // console.log('err: ' + err);
-            if (has_stun) {
+            if (this.stun) {
                 test.expect(2);
                 test.equal(null, err);
                 test.ok(ip, ip);
@@ -408,12 +414,3 @@ exports.get_public_ip = {
     },
 };
 
-function has_stun () {
-    try {
-        require('stun');
-    }
-    catch (e) {
-        return false;
-    }
-    return true;
-}
