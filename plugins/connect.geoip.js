@@ -4,7 +4,7 @@ var net       = require('net'),
 exports.register = function () {
     var plugin = this;
     try {
-        require('geoip-lite');
+        plugin.geoip = require('geoip-lite');
     }
     catch (e) {
         plugin.logerror("unable to load geoip-lite, try\n\n\t'npm install -g geoip-lite'\n\n");
@@ -24,7 +24,7 @@ exports.geoip_lookup = function (next, connection) {
     //    city: 'San Francisco',
     //    ll: [37.7484, -122.4156]
 
-    var r = geoip.lookup(connection.remote_ip);
+    var r = plugin.geoip.lookup(connection.remote_ip);
     if (!r) return next();
 
     connection.results.add(plugin, r);
@@ -87,7 +87,7 @@ exports.calculate_distance = function (connection, r_geoip) {
             return;
         }
 
-        if (!plugin.local_geoip) { plugin.local_geoip = geoip.lookup(plugin.local_ip); }
+        if (!plugin.local_geoip) { plugin.local_geoip = plugin.geoip.lookup(plugin.local_ip); }
         if (!plugin.local_geoip) {
             connection.logerror(plugin, "no GeoIP results for local_ip!");
             return;
@@ -140,7 +140,7 @@ exports.received_headers = function (connection) {
         if (!net.isIPv4(match[1])) continue;  // TODO: support IPv6
         if (net_utils.is_rfc1918(match[1])) continue;  // exclude private IP
 
-        var gi = geoip.lookup(match[1]);
+        var gi = plugin.geoip.lookup(match[1]);
         connection.loginfo(plugin, 'received=' + match[1] + ' country=' + ((gi) ? gi.country : 'UNKNOWN'));
         results.push(match[1] + ':' + ((gi) ? gi.country : 'UNKNOWN'));
     }
@@ -164,7 +164,7 @@ exports.originating_headers = function (connection) {
     if (!net.isIPv4(found_ip)) return;
     if (net_utils.is_rfc1918(found_ip)) return;
 
-    var gi = geoip.lookup(found_ip);
+    var gi = plugin.geoip.lookup(found_ip);
     connection.loginfo(plugin, 'originating=' + found_ip + ' country=' + ((gi) ? gi.country : 'UNKNOWN'));
     return found_ip + ':' + ((gi) ? gi.country : 'UNKNOWN');
 };
