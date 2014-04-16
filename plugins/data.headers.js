@@ -1,8 +1,16 @@
 // validate message headers and some fields
 var net_utils  = require('./net_utils');
-var addrparser = require('address-rfc2822');
+var addrparser;
 
 exports.register = function () {
+    var plugin = this;
+    try {
+        addrparser = require('address-rfc2822');
+    }
+    catch (e) {
+        plugin.logerror("unable to load address-rfc2822, try\n\n\t'npm install -g address-rfc2822'\n\n");
+    }
+
     this.register_hook('data',      'refresh_config');
     this.register_hook('data_post', 'duplicate_singular');
     this.register_hook('data_post', 'missing_required');
@@ -10,7 +18,9 @@ exports.register = function () {
     this.register_hook('data_post', 'invalid_return_path');
     this.register_hook('data_post', 'user_agent');
     this.register_hook('data_post', 'direct_to_mx');
-    this.register_hook('data_post', 'from_match');
+    if (addrparser) {
+        this.register_hook('data_post', 'from_match');
+    }
     this.register_hook('data_post', 'mailing_list');
 };
 
