@@ -10,8 +10,8 @@ exports.register = function () {
         plugin.logerror("unable to load geoip-lite, try\n\n\t'npm install -g geoip-lite'\n\n");
         return;
     }
-    this.register_hook('connect',     'geoip_lookup');
-    this.register_hook('data_post',   'geoip_headers');
+    plugin.register_hook('connect',     'geoip_lookup');
+    plugin.register_hook('data_post',   'geoip_headers');
 };
 
 exports.geoip_lookup = function (next, connection) {
