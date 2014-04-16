@@ -1,8 +1,20 @@
-var geoip     = require('geoip-lite'),
-    net       = require('net'),
+var net       = require('net'),
     net_utils = require('./net_utils');
 
-exports.hook_connect = function (next, connection) {
+exports.register = function () {
+    var plugin = this;
+    try {
+        require('geoip-lite');
+    }
+    catch (e) {
+        plugin.logerror("unable to load geoip-lite, try\n\n\t'npm install -g geoip-lite'\n\n");
+        return;
+    }
+    this.register_hook('connect',     'geoip_lookup');
+    this.register_hook('data_post',   'geoip_headers');
+};
+
+exports.geoip_lookup = function (next, connection) {
     var plugin = this;
 
     // geoip.lookup results look like this:
@@ -37,7 +49,7 @@ exports.hook_connect = function (next, connection) {
     return next();
 };
 
-exports.hook_data_post = function (next, connection) {
+exports.geoip_headers = function (next, connection) {
     var plugin = this;
     var txn = connection.transaction;
     if (!txn) return;
