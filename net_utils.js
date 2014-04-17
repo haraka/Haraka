@@ -379,7 +379,7 @@ exports.get_public_ip = function (cb) {
     }
 
     try {
-        nu.stun = require('stun');
+        nu.stun = require('vs-stun');
     }
     catch (e) {
         e.install = 'Please install stun: "npm install -g stun"';
@@ -387,39 +387,31 @@ exports.get_public_ip = function (cb) {
         return cb(e);
     }
 
-    var port = 19302;
     var timeout = 10;
     var timer;
 
-    // Connect to STUN Server
-    var client = nu.stun.connect(port, get_stun_server());
-
-    client.on('error', function (err) {
-        client.close();
-        return cb(new Error('STUN error: ' + err));
-    });
-
-    client.on('message', function(msg, rinfo){
-        console.log('Received UDP message:', msg);
-    });
-
-    client.on('response', function (packet) {
+    var st_cb = function (error, socket) {
         if (timer) clearTimeout(timer);
-        client.close();
-        var attr = nu.stun.attribute.MAPPED_ADDRESS;
-        if (packet.attrs[attr]) {
-            nu.public_ip = packet.attrs[attr].address;
-            return cb(null, nu.public_ip);
-        }
-        return cb(new Error("unknown STUN failure"));
-    });
+        if (error) {
+            return cb(error);
+        };
+        socket.close();
+        /*          sample socket.stun response
+         *
+         *  { local: { host: '127.0.0.30', port: 26163 },
+         *  public: { host: '50.115.0.94', port: 57345, family: 'IPv4' },
+         *  type: 'Full Cone NAT'
+         *  }
+        */
+        return cb(null, socket.stun.public.host);
+    };
 
-    client.request(function () {
-        timer = setTimeout(function () {
-            client.close();
-            return cb(new Error('STUN timeout'));
-        }, (timeout || 10) * 1000);
-    });
+    // Connect to STUN Server
+    nu.stun.connect({ host: get_stun_server(), port: 19302 }, st_cb);
+
+    timer = setTimeout(function () {
+        return cb(new Error('STUN timeout'));
+    }, (timeout || 10) * 1000);
 };
 
 function get_stun_server () {

@@ -27,7 +27,7 @@
   "optionalDependencies": {
     "node-syslog"   : ">= 1.1.2",
     "ldapjs"        : ">= 0.6.3",
-    "stun"          : ">= 0.0.2",
+    "vs-stun"       : ">= 0.0.7",
     "geoip-lite"    : ">= 1.0.7",
     "redis"         : ">= 0.10.0"
   },
