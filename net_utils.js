@@ -3,9 +3,9 @@ var logger = require('./logger');
 var config = require('./config');
 var net    = require('net');
 var punycode = require('punycode');
+var dgram  = require('dgram');
 
 // Regexp to match private IPv4 ranges
-var public_ip;
 var re_private_ipv4 = /^(?:10|127|169\.254|172\.(?:1[6-9]|2[0-9]|3[01])|192\.168)\..*/;
 
 var public_suffix_list = {};
@@ -378,9 +378,8 @@ exports.get_public_ip = function (cb) {
         return cb(null, nu.public_ip);
     }
 
-    var stun;
     try {
-        stun = require('stun');
+        nu.stun = require('vs-stun');
     }
     catch (e) {
         e.install = 'Please install stun: "npm install -g stun"';
@@ -388,31 +387,31 @@ exports.get_public_ip = function (cb) {
         return cb(e);
     }
 
-    var port = 19302;
     var timeout = 10;
     var timer;
 
-    // Connect to STUN Server
-    var client = stun.connect(port, get_stun_server());
-
-    client.on('error', function (err) {
-        client.close();
-        return cb(new Error('STUN error: ' + err));
-    });
-
-    client.on('response', function (packet) {
+    var st_cb = function (error, socket) {
         if (timer) clearTimeout(timer);
-        client.close();
-        nu.public_ip = packet.attrs[stun.attribute.MAPPED_ADDRESS].address;
-        return cb(null, nu.public_ip);
-    });
+        if (error) {
+            return cb(error);
+        };
+        socket.close();
+        /*          sample socket.stun response
+         *
+         *  { local: { host: '127.0.0.30', port: 26163 },
+         *  public: { host: '50.115.0.94', port: 57345, family: 'IPv4' },
+         *  type: 'Full Cone NAT'
+         *  }
+        */
+        return cb(null, socket.stun.public.host);
+    };
 
-    client.request(function () {
-        timer = setTimeout(function () {
-            client.close();
-            return cb(new Error('STUN timeout'));
-        }, (timeout || 10) * 1000);
-    });
+    // Connect to STUN Server
+    nu.stun.connect({ host: get_stun_server(), port: 19302 }, st_cb);
+
+    timer = setTimeout(function () {
+        return cb(new Error('STUN timeout'));
+    }, (timeout || 10) * 1000);
 };
 
 function get_stun_server () {
