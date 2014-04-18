@@ -170,6 +170,11 @@ function setup_listeners (listeners, plugins, type, inactivity_timeout) {
             return cb(new Error("Invalid format for listen parameter in smtp.ini"));
         }
         
+        var conn_cb = function (client) {
+            client.setTimeout(inactivity_timeout);
+            conn.createConnection(client, server);
+        };
+
         var server;
         if (hp[2] == 465) {
             var options = {
@@ -183,17 +188,11 @@ function setup_listeners (listeners, plugins, type, inactivity_timeout) {
                 return cb(new Error("Missing tls_cert.pem for port 465"));
             }
             logger.lognotice("Creating TLS server on " + host_port);
-            server = require('tls').createServer(options, function (client) {
-                client.setTimeout(inactivity_timeout);
-                conn.createConnection(client, server);
-            });
+            server = require('tls').createServer(options, conn_cb);
             server.has_tls=true;
         }
         else {
-            server = net.createServer(function (client) {
-                client.setTimeout(inactivity_timeout);
-                conn.createConnection(client, server);
-            });
+            server = net.createServer(conn_cb);
         }
 
         server.notes = Server.notes;
