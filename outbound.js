@@ -1185,7 +1185,7 @@ function populate_bounce_message (from, to, reason, hmail, cb) {
     
     var data_stream = hmail.data_stream();
     data_stream.on('data', function (data) {
-        bounce_msg.push(data.toString());
+        bounce_msg.push(data.toString().replace(/\r?\n/g, "\n"));
     });
     data_stream.on('end', function () {
         cb(null, bounce_msg);
