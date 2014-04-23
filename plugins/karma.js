@@ -58,6 +58,10 @@ exports.apply_tarpit = function (connection, hook, score, next) {
     var plugin = this;
     if (!plugin.cfg.tarpit) return next(); // tarpit disabled in config
 
+    // If tarpit is enabled on the reset_transaction hook, Haraka doesn't
+    // wait. Then bad things happen, like a Haraka crash.
+    if (hook === 'reset_transaction') return next();
+
     // no delay for senders with good karma
     var k = connection.results.get('karma');
     if (score === undefined) {
@@ -74,8 +78,11 @@ exports.apply_tarpit = function (connection, hook, score, next) {
         connection.logdebug(plugin, "static tarpit: " + delay);
     }
 
-    // roaming users
-    if (connection.local_port === '587' && /^(ehlo|connect)$/.test(hook)) {
+    var max = plugin.cfg.tarpit.max || 5;
+
+    // be less punitive for roaming users
+    if (([587,465].indexOf(connection.local_port) !== -1) && /^(ehlo|connect)$/.test(hook)) {
+        max = 2;
         // Reduce penalty for good history
         if (k.history > 0) {
             delay = parseFloat(delay - 2);
@@ -89,7 +96,6 @@ exports.apply_tarpit = function (connection, hook, score, next) {
         }
     }
 
-    var max = plugin.cfg.tarpit.max || 5;
     if (delay > max) {
         delay = max;
         connection.logdebug(plugin, "tarpit reduced to max: " + delay);
@@ -97,8 +103,8 @@ exports.apply_tarpit = function (connection, hook, score, next) {
 
     connection.loginfo(plugin, 'tarpitting '+hook+' for ' + delay + 's');
     setTimeout(function () {
-        connection.logdebug(plugin, 'tarpit end');
-        return next();
+        connection.loginfo(plugin, 'tarpit '+hook+' end');
+        next();
     }, delay * 1000);
 };
 
@@ -107,7 +113,7 @@ exports.should_we_deny = function (next, connection, hook) {
 
     if (connection.early_talker) {
         return plugin.apply_tarpit(connection, hook, -10, function () {
-            next(DENYDISCONNECT, "You talk too soon");  // never seen a FP
+            next(DENY, "You talk too soon");  // never seen a FP
         });
     }
 
