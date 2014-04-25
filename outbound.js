@@ -1012,10 +1012,12 @@ HMailItem.prototype.try_deliver_host = function (mx) {
     }
 
     socket.on('timeout', function () {
-        self.logerror("Outbound connection timed out to " + host + ":" + port);
-        processing_mail = false;
-        socket.end();
-        self.try_deliver_host(mx);
+        if (processing_mail) {
+            self.logerror("Outbound connection timed out to " + host + ":" + port);
+            processing_mail = false;
+            socket.end();
+            self.try_deliver_host(mx);
+        }
     });
     
     socket.on('line', function (line) {
