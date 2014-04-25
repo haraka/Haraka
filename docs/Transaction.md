@@ -127,6 +127,8 @@ the `tmp` library from npm and tells us the size of the file:
                 connection.loginfo("End of stream reached");
                 fs.fstat(fd, function (err, stats) {
                     connection.loginfo("Got data of length: " + stats.size);
+                    // Close the tmp file descriptor
+                    fs.close(fd, function(){});
                 });
             });
         });
