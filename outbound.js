@@ -1168,7 +1168,7 @@ HMailItem.prototype.try_deliver_host = function (mx) {
 
 function populate_bounce_message (from, to, reason, hmail, cb) {
     var values = {
-        date: new Date().toString(),
+        date: utils.date_to_str(new Date()),
         me:   config.get('me'),
         from: from,
         to:   to,
