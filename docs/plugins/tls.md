@@ -17,7 +17,7 @@ See also [Setting Up TLS](https://github.com/baudehlo/Haraka/wiki/Setting-up-TLS
 Create a certificate and key file in the config directory with the following
 command:
 
-    openssl req -x509 -nodes -days 2190 -newkey rsa:1024 \
+    openssl req -x509 -nodes -days 2190 -newkey rsa:2048 \
             -keyout config/tls_key.pem -out config/tls_cert.pem
 
 You will be prompted to provide details of your organization. Make sure the
