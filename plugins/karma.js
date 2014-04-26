@@ -80,8 +80,8 @@ exports.apply_tarpit = function (connection, hook, score, next) {
 
     var max = plugin.cfg.tarpit.max || 5;
 
-    // be less punitive for roaming users
-    if (([587,465].indexOf(connection.local_port) !== -1) && /^(ehlo|connect)$/.test(hook)) {
+    // be less punitive to roaming users
+    if (([587,465].indexOf(connection.local_port) !== -1) && /^(ehlo|connect|quit)$/.test(hook)) {
         max = 2;
         // Reduce penalty for good history
         if (k.history > 0) {
