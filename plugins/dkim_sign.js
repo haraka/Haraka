@@ -75,7 +75,7 @@ DKIMSignStream.prototype.write = function (buf) {
         this.buffer.ar.push(buf);
         this.buffer.len += buf.length;
     }
-}
+};
 
 DKIMSignStream.prototype.end = function (buf) {
     this.writable = false;
@@ -96,7 +96,7 @@ DKIMSignStream.prototype.end = function (buf) {
     */
 
     var headers = [];
-    for (var i=0; i < this.headers_to_sign.length; i++ ) {
+    for (var i=0; i < this.headers_to_sign.length; i++) {
         var head = this.header.get(this.headers_to_sign[i]);
         if (head) {
             head = head.replace(/\r?\n/gm, '');
@@ -105,7 +105,7 @@ DKIMSignStream.prototype.end = function (buf) {
             this.signer.update(this.headers_to_sign[i] + ':' + head + "\r\n");
             headers.push(this.headers_to_sign[i]);
         }
-    };
+    }
 
     // Create DKIM header
     var dkim_header = 'v=1;a=rsa-sha256;bh=' + bodyhash +
@@ -119,7 +119,7 @@ DKIMSignStream.prototype.end = function (buf) {
 
     if (this.end_callback) this.end_callback(null, dkim_header);
     this.end_callback = null;
-}
+};
 
 DKIMSignStream.prototype.destroy = function () {
     this.writable = false;
@@ -127,18 +127,18 @@ DKIMSignStream.prototype.destroy = function () {
     if (this.end_callback) {
         this.end_callback(new Error('Stream destroyed'));
     }
-}
+};
 
 exports.DKIMSignStream = DKIMSignStream;
 
 exports.hook_queue_outbound = function (next, connection) {
     var plugin = this;
-    if ( !isEnabled(plugin) ) return next();
+    if (!plugin.is_enabled()) return next();
 
-    getKeyDir(plugin,connection,function(keydir) {
+    get_key_dir(plugin, connection, function(keydir) {
         var domain, selector, private_key;
         var dkconf = plugin.config.get('dkim_sign.ini');
-        if ( ! keydir ) {
+        if (!keydir) {
             domain = dkconf.main.domain;
             private_key = plugin.config.get('dkim.private.key','data').join("\n");
             selector = dkconf.main.selector;
@@ -150,11 +150,11 @@ exports.hook_queue_outbound = function (next, connection) {
             selector    = plugin.config.get('dkim/'+domain+'/selector','data').join("\n");
         }
 
-        if ( ! hasKeyData(plugin,connection,domain,selector,private_key) ) {
+        if (!plugin.has_key_data(connection,domain,selector,private_key)) {
             return next();
-        };
+        }
 
-        var headers_to_sign = getHeadersToSign(dkconf);
+        var headers_to_sign = get_headers_to_sign(dkconf);
         var transaction = connection.transaction;
         var dkim_sign = new DKIMSignStream(selector,
                                         domain,
@@ -176,7 +176,7 @@ exports.hook_queue_outbound = function (next, connection) {
     });
 };
 
-function getKeyDir(plugin, conn, cb) {
+function get_key_dir(plugin, conn, cb) {
 
     var haraka_dir = process.env.HARAKA;
 
@@ -197,10 +197,10 @@ function getKeyDir(plugin, conn, cb) {
 
     // list possible matches (ex: mail.example.com, example.com, com)
     var dom_hier = [];
-    for ( var i=0; i<labels.length; i++ ) {
+    for (var i=0; i<labels.length; i++) {
         var dom = labels.slice(i).join('.');
         dom_hier[i] = haraka_dir + "/config/dkim/"+dom;
-    };
+    }
     plugin.logdebug(conn, dom_hier);
 
     async.filter(dom_hier, fs.exists, function(results) {
@@ -209,8 +209,8 @@ function getKeyDir(plugin, conn, cb) {
     });
 };
 
-function isEnabled(plugin) {
-    var dkconf = plugin.config.get('dkim_sign.ini');
+exports.is_enabled = function () {
+    var plugin = this; var dkconf = plugin.config.get('dkim_sign.ini');
     if (dkconf.main.disabled && /(?:1|true|y[es])/i.test(dkconf.main.disabled)) {
         conn.logerror(plugin, 'skipped: disabled');
         return false;
@@ -218,7 +218,7 @@ function isEnabled(plugin) {
     return true;
 };
 
-function hasKeyData(plugin, conn, domain, selector, private_key) {
+exports.has_key_data = function (conn, domain, selector, private_key) {
 
     // Make sure we have all the relevant configuration
     if (!private_key) {
@@ -239,14 +239,16 @@ function hasKeyData(plugin, conn, domain, selector, private_key) {
     return true;
 };
 
-function getHeadersToSign(dkconf) {
-    var headers;
-    if (dkconf.main.headers_to_sign) {
-        headers = dkconf.main.headers_to_sign
-                        .toLowerCase()
-                        .replace(/\s+/g,'')
-                        .split(/[,;:]/);
+function get_headers_to_sign(dkconf) {
+    var headers = [];
+    if (!dkconf.main.headers_to_sign) {
+        return headers;
     }
+
+    headers = dkconf.main.headers_to_sign
+                    .toLowerCase()
+                    .replace(/\s+/g,'')
+                    .split(/[,;:]/);
 
     // From MUST be present
     if (headers.indexOf('from') === -1) {
