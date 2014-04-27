@@ -135,7 +135,7 @@ exports.hook_queue_outbound = function (next, connection) {
     var plugin = this;
     if (!plugin.is_enabled()) return next();
 
-    get_key_dir(plugin, connection, function(keydir) {
+    plugin.get_key_dir(connection, function(keydir) {
         var domain, selector, private_key;
         var dkconf = plugin.config.get('dkim_sign.ini');
         if (!keydir) {
@@ -154,7 +154,7 @@ exports.hook_queue_outbound = function (next, connection) {
             return next();
         }
 
-        var headers_to_sign = get_headers_to_sign(dkconf);
+        var headers_to_sign = plugin.get_headers_to_sign(dkconf);
         var transaction = connection.transaction;
         var dkim_sign = new DKIMSignStream(selector,
                                         domain,
@@ -176,7 +176,8 @@ exports.hook_queue_outbound = function (next, connection) {
     });
 };
 
-function get_key_dir(plugin, conn, cb) {
+exports.get_key_dir = function (conn, cb) {
+    var plugin = this;
 
     var haraka_dir = process.env.HARAKA;
 
@@ -187,6 +188,7 @@ function get_key_dir(plugin, conn, cb) {
     // then we must parse and use the domain in the Sender header.
     // var domain = self.header.get('from').host;
 
+    if (!conn.transaction) return cb();
     if (conn.transaction.mail_from.isNull()) return cb();   // null sender
 
     // In all cases I have seen, but likely not all cases, this suffices
@@ -239,7 +241,7 @@ exports.has_key_data = function (conn, domain, selector, private_key) {
     return true;
 };
 
-function get_headers_to_sign(dkconf) {
+exports.get_headers_to_sign = function (dkconf) {
     var headers = [];
     if (!dkconf.main.headers_to_sign) {
         return headers;
@@ -255,4 +257,4 @@ function get_headers_to_sign(dkconf) {
         headers.push('from');
     }
     return headers;
-}
+};
