@@ -98,7 +98,7 @@ exports.init_rabbitmq_server = function() {
 
     //Create connection to the rabbitmq server
     logger.logdebug("About to Create connection with server");
-    rabbitqueue = amqp.createConnection({ host: rabbitmq_ip });
+    rabbitqueue = amqp.createConnection({ host: rabbitmq_ip , port : rabbitmq_port });
 
 
     //Declaring listerner on error on connection.
