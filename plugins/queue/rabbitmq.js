@@ -69,7 +69,7 @@ exports.init_rabbitmq_server = function() {
     var config     = plugin.config.get('rabbitmq.ini');
     //Just putting the defaults
     var rabbitmq_ip  = '127.0.0.1';
-    var rabbitmq_port = '6379';
+    var rabbitmq_port = '5672';
     var confirm = true;
     var durable = true;
     var autoDelete = false;
@@ -78,7 +78,7 @@ exports.init_rabbitmq_server = function() {
     //Getting the values from config file rabbitmq.ini
     if (config.rabbitmq) {
         rabbitmq_ip = config.rabbitmq.server_ip || '127.0.0.1';
-        rabbitmq_port = config.rabbitmq.server_port || '6379';
+        rabbitmq_port = config.rabbitmq.server_port || '5672';
         exchangeName = config.rabbitmq.exchangeName || 'emailMessages';
         exchangeType = config.rabbitmq.exchangeType || 'direct';
         confirm = config.rabbitmq.confirm === 'true'|| true;
