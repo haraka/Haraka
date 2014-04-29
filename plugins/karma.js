@@ -607,9 +607,9 @@ exports.check_awards = function (connection) {
             case 'in':              // if in pass whitelisted
                 var list = bits[3];
                 if (bits[4]) wants = bits[4];
-                if (!Array.isArray(list)) continue;
+                if (!Array.isArray(note)) continue;
                 if (!wants) continue;
-                if (list.indexOf(wants) !== -1) break;  // found!
+                if (note.indexOf(wants) !== -1) break;  // found!
                 continue;
             default:
                 continue;
