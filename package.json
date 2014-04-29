@@ -22,13 +22,15 @@
     "async"         : ">= 0.1.22",
     "daemon"        : ">= 1.1.0",
     "npid"          : ">= 0.3.1",
-    "address-rfc2822":">= 0.0.2"
+    "address-rfc2822":">= 0.0.2",
+    "amqp":">= 0.2.0"
   },
   "optionalDependencies": {
     "node-syslog"   : ">= 1.1.2",
     "ldapjs"        : ">= 0.6.3",
     "stun"          : ">= 0.0.2",
-    "geoip-lite"    : ">= 1.0.7"
+    "geoip-lite"    : ">= 1.0.7",
+    "cli-color"         : ">= 0.3.2"
   },
   "devDependencies": {
     "nodeunit" : "https://github.com/godsflaw/nodeunit/archive/master.tar.gz"
