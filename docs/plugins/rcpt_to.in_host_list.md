@@ -3,7 +3,7 @@
 This plugin is the mainstay of an inbound Haraka server. It should list the
 domains that are local to the host. Mails that have RCPT TO not matching
 a host in the given list will be passed onto other rcpt hooks. If no rcpt
-hooks accept the connection, it will be rejected.
+hook accepts the connection, it will be rejected.
 
 ## Configuration
 
@@ -20,7 +20,8 @@ hooks accept the connection, it will be rejected.
 
 ## Relaying
 
-When connection.relaying is set (haraka -h relay), this plugin will
-validate the sender against the host list and vouch for any recipient.
-This limits relaying users to sending from domains that you accept mail for,
-which is almost always The Right Thing[TM] to do.
+This plugin checks to see if the MAIL FROM domain is local. When
+connection.relaying is detected (haraka -h relay) and the MAIL FROM domain is
+local, this plugin will vouch for any RCPT. This limits relaying users to
+sending from local domains, which is much safer than letting relay clients
+send from any domain.
