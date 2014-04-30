@@ -7,6 +7,7 @@ var connection;
 var outbound;
 var constants = require('./constants');
 var util      = require('util');
+var tty = require('tty')
 
 var logger = exports;
 
@@ -53,7 +54,7 @@ logger.dump_logs = function (exit) {
         if (color_functions) {
             color = color_functions[log_item.level];
         }
-        if (color) {
+        if (color && tty.isatty(process.stdout.fd)) {
             console.log(colorize(color,log_item.data));
         }
         else {
@@ -97,7 +98,7 @@ logger.log_respond = function (retval, msg, data) {
         if (color_functions) {
             color = color_functions[data.level]
         }
-        if (color) {
+        if (color && tty.isatty(process.stdout.fd)) {
             return console.log(colorize(color,data.data));
         }
         else {
