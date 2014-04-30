@@ -14,14 +14,13 @@ exports.hook_mail = function(next, connection, params) {
     plugin.cfg = plugin.config.get('rcpt_to.qmail_deliverable.ini');
 
     if (!plugin.cfg.main.check_outbound) { return next(); }
-    if (!connection.relaying) { return next(); }
 
-    // GOAL: assure the MAIL FROM domain is local
-    var results = connection.transaction.results;
+    // determine if MAIL FROM domain is local
+    var txn = connection.transaction;
 
     var email = params[0].address();
     if (!email) {     // likely an IP with relaying permission
-        results.add(plugin, {skip: 'null sender', emit: true});
+        txn.results.add(plugin, {skip: 'mail_from.null', emit: true});
         return next();
     }
 
@@ -29,20 +28,24 @@ exports.hook_mail = function(next, connection, params) {
 
     var cb = function (err, qmd_r) {
         if (err) {
-            results.add(plugin, {err: err});
+            txn.results.add(plugin, {err: err});
             return next(DENYSOFT, err);
         }
 
-        if (qmd_r[0] === undefined) {
-            results.add(plugin, {err: qmd_r[1]});
-            return next();
-        }
+        // the MAIL FROM sender is verified as a local address
         if (qmd_r[0] === OK) {
-            results.add(plugin, {pass: qmd_r[1]});
+            txn.results.add(plugin, {pass: "mail_from." + qmd_r[1]});
+            txn.notes.local_sender=true;
             return next();
         }
-        results.add(plugin, {fail: qmd_r[1]});
-        return next(qmd_r[0], qmd_r[1]);
+
+        if (qmd_r[0] === undefined) {
+            txn.results.add(plugin, {err: "mail_from." + qmd_r[1]});
+            return next();
+        }
+
+        txn.results.add(plugin, {msg: "mail_from." + qmd_r[1]});
+        return next(CONT, "mail_from." + qmd_r[1]);
     };
 
     plugin.get_qmd_response(connection, domain, email, cb);
@@ -50,35 +53,42 @@ exports.hook_mail = function(next, connection, params) {
 
 exports.hook_rcpt = function(next, connection, params) {
     var plugin = this;
-    var results = connection.transaction.results;
-
-    if (connection.relaying) {
-        results.add(plugin, {skip: "relay"});
-        return next();
-    }
+    var txn = connection.transaction;
 
     var rcpt = params[0];
     var domain = rcpt.host.toLowerCase();
 
-    connection.transaction.results.add(plugin, {
+    txn.results.add(plugin, {
         msg: "sock: " + options.host + ':' + options.port
     });
 
     var cb = function (err, qmd_r) {
         if (err) {
-            results.add(plugin, {err: err});
+            txn.results.add(plugin, {err: err});
             return next(DENYSOFT, "error validating email address");
         }
-        if (qmd_r[0] === undefined) {
-            results.add(plugin, {err: qmd_r[1]});
-            return next();
-        }
+
         if (qmd_r[0] === OK) {
-            results.add(plugin, {pass: qmd_r[1]});
+            txn.results.add(plugin, {pass: "rcpt." + qmd_r[1]});
             return next(OK);
         }
-        results.add(plugin, {fail: qmd_r[1]});
-        return next(qmd_r[0], qmd_r[1]);
+
+        // a client with relaying privileges is sending from a local domain.
+        // Any RCPT is acceptable.
+        if (connection.relaying && txn.notes.local_sender) {
+            txn.results.add(plugin, {pass: "relaying local_sender"});
+            return next(OK);
+        }
+
+        if (qmd_r[0] === undefined) {
+            txn.results.add(plugin, {err: "rcpt." + qmd_r[1]});
+            return next();
+        }
+
+        // no need to DENY[SOFT] for invalid addresses. If no rcpt_to.* plugin
+        // returns OK, then the address is not accepted.
+        txn.results.add(plugin, {msg: "rcpt." + qmd_r[1]});
+        return next(CONT, qmd_r[1]);
     };
 
     // Qmail::Deliverable::Client does a rfc2822 "atext" test
@@ -156,7 +166,7 @@ exports.check_qmd_reponse = function (connection, hexnum) {
         case 'fe':
             return [ DENYSOFT, "SHOULD NOT HAPPEN" ];
         case 'ff':
-            return [ DENY, "address not local" ];
+            return [ DENY, "not local" ];
         case '0':
             return [ DENY, "not deliverable" ];
         default:
