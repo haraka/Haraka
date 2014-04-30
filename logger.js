@@ -22,25 +22,24 @@ logger.LOGALERT     = 1;
 logger.LOGEMERG     = 0;
 
 
-var color_functions;
-try {
-    var colors = require('cli-color');
-    color_functions = {
-          "DATA" : colors.grey,
-      "PROTOCOL" : colors.grey,
-      "DEBUG" : colors.xterm(41),
-      "INFO" : colors.xterm(13),
-      "info" : colors.green,
-      "NOTICE" : colors.xterm(250).bgXterm(17),
-      "WARN" : colors.xterm(10).bgXterm(125),
-      "ERROR" : colors.xterm(10).bgXterm(125),
-      "CRIT" : colors.xterm(10).bgXterm(125),
-      "ALERT" : colors.xterm(10).bgXterm(125),
-      "EMERG" : colors.xterm(10).bgXterm(125)
-    };
-}
-catch (err) {
-    console.log(" Error while loading colors: "+err);
+var color_functions = {
+    "DATA" : "green",
+    "PROTOCOL" : "green",
+    "DEBUG" : "grey",
+    "INFO" : "cyan",
+    "info" : "cyan",
+    "NOTICE" : "blue",
+    "WARN" : "red",
+    "ERROR" : "red",
+    "CRIT" : "red",
+    "ALERT" : "red",
+    "EMERG" : "red"
+};
+
+function colorize (color, str) {
+    if (!util.inspect.colors[color]) return str;
+    return '\u001b[' + util.inspect.colors[color][0] + 'm' + str +
+              '\u001b[' + util.inspect.colors[color][1] + 'm';
 }
 
 var loglevel = logger.LOGWARN;
@@ -55,7 +54,7 @@ logger.dump_logs = function (exit) {
             color = color_functions[log_item.level];
         }
         if (color) {
-            console.log(color(log_item.data));
+            console.log(colorize(color,log_item.data));
         }
         else {
             console.log(log_item.data);
@@ -99,7 +98,7 @@ logger.log_respond = function (retval, msg, data) {
             color = color_functions[data.level]
         }
         if (color) {
-            return console.log(color(data.data));
+            return console.log(colorize(color,data.data));
         }
         else {
             return console.log(data.data);
