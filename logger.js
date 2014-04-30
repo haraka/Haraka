@@ -6,7 +6,6 @@ var plugins;
 var connection;
 var outbound;
 var constants = require('./constants');
-var colors = require('cli-color');
 var util      = require('util');
 
 var logger = exports;
@@ -22,19 +21,27 @@ logger.LOGCRIT      = 2;
 logger.LOGALERT     = 1;
 logger.LOGEMERG     = 0;
 
-var color_functions = {
-  "DATA" : colors.grey,
-  "PROTOCOL" : colors.grey,
-  "DEBUG" : colors.xterm(41),
-  "INFO" : colors.xterm(13),
-  "info" : colors.green,
-  "NOTICE" : colors.xterm(250).bgXterm(17),
-  "WARN" : colors.xterm(250).bgXterm(10),
-  "ERROR" : colors.xterm(250).bgXterm(10),
-  "CRIT" : colors.xterm(250).bgXterm(10),
-  "ALERT" : colors.xterm(250).bgXterm(10),
-  "EMERG" : colors.xterm(250).bgXterm(10)
-};
+
+var color_functions;
+try {
+    var colors = require('cli-color');
+    color_functions = {
+          "DATA" : colors.grey,
+      "PROTOCOL" : colors.grey,
+      "DEBUG" : colors.xterm(41),
+      "INFO" : colors.xterm(13),
+      "info" : colors.green,
+      "NOTICE" : colors.xterm(250).bgXterm(17),
+      "WARN" : colors.xterm(10).bgXterm(125),
+      "ERROR" : colors.xterm(10).bgXterm(125),
+      "CRIT" : colors.xterm(10).bgXterm(125),
+      "ALERT" : colors.xterm(10).bgXterm(125),
+      "EMERG" : colors.xterm(10).bgXterm(125)
+    };
+}
+catch (err) {
+    console.log(" Error while loading colors: "+err);
+}
 
 var loglevel = logger.LOGWARN;
 
@@ -43,7 +50,10 @@ var deferred_logs = [];
 logger.dump_logs = function (exit) {
     while (deferred_logs.length > 0) {
         var log_item = deferred_logs.shift();
-        var color = color_functions[log_item.level];
+        var color;
+        if (color_functions) {
+            color = color_functions[log_item.level];
+        }
         if (color) {
             console.log(color(log_item.data));
         }
@@ -84,7 +94,10 @@ logger.log = function (level, data) {
 logger.log_respond = function (retval, msg, data) {
     // any other return code is irrelevant
     if (retval === constants.cont) {
-        var color = color_functions[data.level]
+        var color;
+        if (color_functions) {
+            color = color_functions[data.level]
+        }
         if (color) {
             return console.log(color(data.data));
         }
