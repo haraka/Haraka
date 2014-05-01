@@ -22,8 +22,7 @@
     "async"         : ">= 0.1.22",
     "daemon"        : ">= 1.1.0",
     "npid"          : ">= 0.3.1",
-    "address-rfc2822":">= 0.0.2",
-    "amqp":">= 0.2.0"
+    "address-rfc2822":">= 0.0.2"
   },
   "optionalDependencies": {
     "node-syslog"   : ">= 1.1.2",
