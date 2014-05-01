@@ -65,7 +65,10 @@ exports.hook_rcpt = function(next, connection, params) {
 
     var rcpt = params[0];
     // Check for RCPT TO without an @ first - ignore those here
-    if (!rcpt.host) { return next(); }
+    if (!rcpt.host) {
+        txn.results.add(plugin, {fail: 'rcpt!domain'});
+        return next();
+    }
 
     connection.logdebug(plugin, "Checking if " + rcpt + " host is in host_list");
 
@@ -112,9 +115,8 @@ exports.in_host_regex = function (domain) {
     if (!plugin.host_list_regex) return false;
     if (!plugin.host_list_regex.length) return false;
 
-    connection.logdebug(plugin, "checking " + domain + " against regexp " + plugin.hl_re.source);
-    if (plugin.hl_re.test(domain)) {
-        return true;
-    }
-    return false;
+    plugin.logdebug("checking " + domain + " against regexp " + plugin.hl_re.source);
+
+    if (!plugin.hl_re.test(domain)) { return false; }
+    return true;
 };
