@@ -173,24 +173,25 @@ exports.hook_queue_outbound = function (next, connection) {
         }
 
         var headers_to_sign = plugin.get_headers_to_sign();
-        var transaction = connection.transaction;
+        var txn = connection.transaction;
         var dkim_sign = new DKIMSignStream(selector,
                                         domain,
                                         private_key,
                                         headers_to_sign,
-                                        transaction.header,
+                                        txn.header,
                                         function (err, dkim_header)
         {
             if (err) {
-                connection.logerror(plugin, err.message);
+                txn.results.add(plugin, {err: err.message});
             }
             else {
-                connection.loginfo(plugin, dkim_header);
-                transaction.add_header('DKIM-Signature', dkim_header);
+                connection.loginfo(plugin, 'signed for ' + domain);
+                txn.results.add(plugin, {pass: dkim_header});
+                txn.add_header('DKIM-Signature', dkim_header);
             }
             return next();
         });
-        transaction.message_stream.pipe(dkim_sign);
+        txn.message_stream.pipe(dkim_sign);
     });
 };
 
@@ -219,6 +220,7 @@ exports.get_key_dir = function (connection, cb) {
 };
 
 exports.has_key_data = function (conn, domain, selector, private_key) {
+    var plugin = this;
 
     // Make sure we have all the relevant configuration
     if (!private_key) {
