@@ -29,8 +29,7 @@
     "node-syslog"   : ">= 1.1.2",
     "ldapjs"        : ">= 0.6.3",
     "stun"          : ">= 0.0.2",
-    "geoip-lite"    : ">= 1.0.7",
-    "cli-color"         : ">= 0.3.2"
+    "geoip-lite"    : ">= 1.0.7"
   },
   "devDependencies": {
     "nodeunit" : "https://github.com/godsflaw/nodeunit/archive/master.tar.gz"
