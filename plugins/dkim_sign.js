@@ -210,10 +210,10 @@ exports.get_key_dir = function (connection, cb) {
         var dom = labels.slice(i).join('.');
         dom_hier[i] = haraka_dir + "/config/dkim/"+dom;
     }
-    plugin.logdebug(connection, dom_hier);
+    connection.logdebug(plugin, dom_hier);
 
     async.filter(dom_hier, fs.exists, function(results) {
-        plugin.logdebug(connection, results);
+        connection.logdebug(plugin, results);
         cb(results[0]);
     });
 };
