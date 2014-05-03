@@ -9,9 +9,16 @@ var options = {
     port: 8898,
 };
 
+exports.register = function () {
+    var plugin = this;
+    var load_config = function () {
+        plugin.cfg = plugin.config.get('rcpt_to.qmail_deliverable.ini', load_config);
+    };
+    load_config();
+};
+
 exports.hook_mail = function(next, connection, params) {
     var plugin = this;
-    plugin.cfg = plugin.config.get('rcpt_to.qmail_deliverable.ini');
 
     if (!plugin.cfg.main.check_outbound) { return next(); }
 
