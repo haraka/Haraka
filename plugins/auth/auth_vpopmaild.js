@@ -4,13 +4,19 @@ var net    = require('net'),
     crypto = require('crypto');
 
 exports.register = function () {
-    this.inherits('auth/auth_base');
+    var plugin = this;
+    plugin.inherits('auth/auth_base');
+
+    var load_config = function () {
+        plugin.loginfo("loading auth_vpopmaild.ini");
+        plugin.cfg = plugin.config.get('auth_vpopmaild.ini', load_config);
+    };
+    load_config();
 };
 
 exports.hook_capabilities = function (next, connection) {
     if (!connection.using_tls) { return next(); }
     var plugin = this;
-    plugin.load_config();
 
     var methods = [ 'PLAIN', 'LOGIN' ];
     if (plugin.cfg.main.sysadmin) { methods.push('CRAM-MD5'); }
@@ -23,7 +29,6 @@ exports.hook_capabilities = function (next, connection) {
 
 exports.check_plain_passwd = function (connection, user, passwd, cb) {
     var plugin = this;
-    plugin.load_config();
 
     var chunk_count = 0;
     var auth_success = false;
@@ -53,17 +58,6 @@ exports.check_plain_passwd = function (connection, user, passwd, cb) {
     });
 };
 
-exports.load_config = function () {
-    var plugin = this;
-    if (plugin.cfg) { return; }  // already loaded
-
-    var lc = function () {
-        plugin.loginfo("loading auth_vpopmaild.ini");
-        plugin.cfg = plugin.config.get('auth_vpopmaild.ini', lc);
-    };
-    lc();
-};
-
 exports.get_sock_opts = function (user) {
     var plugin = this;
 
@@ -89,7 +83,6 @@ exports.get_sock_opts = function (user) {
 
 exports.get_vpopmaild_socket = function (user) {
     var plugin = this;
-    plugin.load_config();
     plugin.get_sock_opts(user);
 
     var socket = new net.Socket();
@@ -113,7 +106,6 @@ exports.get_vpopmaild_socket = function (user) {
 
 exports.get_plain_passwd = function (user, cb) {
     var plugin = this;
-    plugin.load_config();
 
     var socket = plugin.get_vpopmaild_socket(user);
     if (!plugin.sock_opts.sysadmin) {

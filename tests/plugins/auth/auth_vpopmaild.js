@@ -11,7 +11,7 @@ function _set_up(callback) {
     this.plugin = Plugin('auth/auth_vpopmaild');
     this.plugin.inherits('auth/auth_base');
     this.plugin.config = config;
-    this.plugin.cfg = undefined;
+    this.plugin.cfg = config.get('auth_vpopmaild.ini');
 
     // stub out functions
     this.connection = Connection.createConnection();
@@ -63,8 +63,6 @@ exports.hook_capabilities = {
         }.bind(this);
         this.connection.using_tls=true;
         this.connection.capabilities=[];
-        this.plugin.cfg = this.plugin.config.get('auth_vpopmaild.ini');
-        // this.plugin.cfg.main.sysadmin='test@example.com';
         this.plugin.hook_capabilities(cb, this.connection);
     },
 };
@@ -91,7 +89,6 @@ exports.get_plain_passwd = {
             test.ok(pass);
             test.done();
         };
-        this.plugin.cfg = this.plugin.config.get('auth_vpopmaild.ini');
         if (this.plugin.cfg['example.com'].sysadmin) {
             this.plugin.get_plain_passwd('matt@example.com', cb);
         }
