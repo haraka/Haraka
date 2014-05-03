@@ -34,6 +34,7 @@ exports.check_plain_passwd = function (connection, user, passwd, cb) {
     var auth_success = false;
 
     var socket = plugin.get_vpopmaild_socket(user);
+    socket.setEncoding('utf8');
 
     socket.on('data', function (chunk) {
         chunk_count++;
