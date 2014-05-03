@@ -135,17 +135,14 @@ exports.DKIMSignStream = DKIMSignStream;
 exports.register = function () {
     var plugin = this;
     function load_config () {
-        plugin.loginfo("loading dkim_sign.ini");
         plugin.cfg = plugin.config.get('dkim_sign.ini', {
                 booleans: [
                     '+disabled',
                 ]
             },
-            function () { load_config(); }
+            load_config
         );
-        plugin.private_key = plugin.config.get('dkim.private.key', 'data',
-            function() { load_config(); }
-        ).join("\n");
+        plugin.private_key = plugin.config.get('dkim.private.key', 'data', load_config).join("\n");
     }
     load_config();
 };
