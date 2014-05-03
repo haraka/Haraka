@@ -394,8 +394,6 @@ exports.hook_disconnect = function (next, connection) {
         plugin.db.hincrby('concurrent', connection.remote_ip, -1);
     }
 
-    var asnkey = plugin.get_asn_key(connection);
-
     var k = connection.results.get('karma');
     if (!k) {
         connection.results.add(plugin, {err: 'karma results absent!'});
@@ -416,6 +414,7 @@ exports.hook_disconnect = function (next, connection) {
     }
 
     var pos_lim = plugin.cfg.thresholds.positive || 3;
+    var asnkey = plugin.get_asn_key(connection);
 
     if (k.connect > pos_lim) {
         plugin.db.hincrby(key, 'good', 1);
@@ -756,13 +755,11 @@ exports.check_asn_neighborhood = function (connection, asnkey, expire) {
         // less than +/- 5 either way is not enough history
         if (net_score < -5) {
             connection.results.incr(plugin, {connect: (award * -1)});
-            connection.results.add(plugin, {fail: 'neighbors('+net_score+')', emit: true});
-            return;
+            connection.results.add(plugin, {fail: 'neighbors'});
         }
         if (net_score > 5) {
             connection.results.incr(plugin, {connect: award});
-            connection.results.add(plugin, {pass: 'neighbors('+net_score+')', emit: true});
-            return;
+            connection.results.add(plugin, {pass: 'neighbors'});
         }
         connection.results.add(plugin, {neighbors: net_score, emit: true});
     });
