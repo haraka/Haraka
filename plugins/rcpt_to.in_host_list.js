@@ -13,17 +13,13 @@ exports.register = function() {
 
     var load_host_list = function () {
         plugin.loginfo(plugin, "loading host_list");
-        plugin.host_list = plugin.config.get('host_list', 'list', function() {
-            load_host_list();
-        });
+        plugin.host_list = plugin.config.get('host_list', 'list', load_host_list);
     };
     load_host_list();
 
     var load_host_list_regex = function () {
         plugin.loginfo(plugin, "loading host_list_regex");
-        plugin.host_list_regex = plugin.config.get('host_list_regex', 'list', function() {
-            load_host_list_regex();
-        });
+        plugin.host_list_regex = plugin.config.get('host_list_regex', 'list', load_host_list_regex);
         plugin.hl_re = new RegExp ('^(?:' + plugin.host_list_regex.join('|') + ')$', 'i');
     };
     load_host_list_regex();
