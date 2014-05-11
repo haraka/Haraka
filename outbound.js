@@ -1216,12 +1216,7 @@ HMailItem.prototype._bounce = function (err) {
 HMailItem.prototype.bounce_respond = function (retval, msg) {
     if (retval != constants.cont) {
         this.loginfo("plugin responded with: " + retval + ". Not sending bounce.");
-        if (retval === constants.stop) {
-            return this.discard(); // calls next_cb
-        }
-        else {
-            return this.next_cb();
-        }
+        return this.discard(); // calls next_cb
     }
 
     var self = this;
@@ -1298,11 +1293,27 @@ HMailItem.prototype.temp_fail = function (err, extra) {
     // 6 hours (configurable) and the expire time is also configurable... But
     // this is good enough for now.
     
-    var delay = (Math.pow(2, (this.num_failures + 5)) * 1000);
+    var delay = Math.pow(2, (this.num_failures + 5));
+
+    plugins.run_hooks('deferred', this, {delay: delay, err: err});
+}
+
+HMailItem.prototype.deferred_respond = function (retval, msg, params) {
+    if (retval != constants.cont && retval != constants.denysoft) {
+        this.loginfo("plugin responded with: " + retval + ". Not deferring. Deleting mail.");
+        return this.discard(); // calls next_cb
+    }
+    
+    var delay = params.delay * 1000;
+    
+    if (retval == constants.denysoft) {
+        delay = parseInt(msg, 10) * 1000;
+    }
+
     var until = Date.now() + delay;
 
-    plugins.run_hooks('deferred', this, {delay: delay/1000, err: err});
-    
+    this.loginfo("Temp failing " + this.filename + " for " + (delay/1000) + " seconds: " + params.err);
+
     var new_filename = this.filename.replace(/^(\d+)_(\d+)_/, until + '_' + this.num_failures + '_');
     
     var hmail = this;
@@ -1318,10 +1329,6 @@ HMailItem.prototype.temp_fail = function (err, extra) {
 
         temp_fail_queue.add(delay, function () { delivery_queue.push(hmail) });
     });
-}
-
-HMailItem.prototype.deferred_respond = function (retval, msg, params) {
-    this.loginfo("Temp failing " + this.filename + " for " + (params.delay/1000) + " seconds: " + params.err);
 };
 
 // The following handler has an impact on outgoing mail. It does remove the queue file.

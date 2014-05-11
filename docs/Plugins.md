@@ -222,4 +222,6 @@ Further Reading
 
 Now you want to read about the Connection object.
 
+Outbound hooks are documented in Outbound.md.
+
 
