@@ -369,7 +369,7 @@ else if (parsed.order) {
                  'capabilities', 'unrecognized_command', 'mail', 'rcpt', 'rcpt_ok', 'data', 
                  'max_data_exceeded', 'data_post', 'queue', 'queue_outbound','queue_ok', 
                  'quit', 'disconnect', 'vrfy', 'noop', 'rset', 'reset_transaction', 'deny',
-                 'get_mx', 'bounce', 'delivered', 'send_email'];
+                 'get_mx', 'bounce', 'delivered', 'send_email','deferred'];
     console.log('');
     for (var h = 0; h < hooks.length; h++) {
         var hook = hooks[h];
