@@ -161,6 +161,7 @@ These are just the name of the hook, with any parameter sent to it:
 * reset\_transaction - called before the transaction is reset (via RSET, or MAIL)
 * deny - called if a plugin returns one of DENY, DENYSOFT or DENYDISCONNECT
 * get\_mx (hmail, domain) - called when sending outbound mail to lookup the MX record
+* deferred (hmail, params) - called when sending outbound mail if the mail was deferred
 * bounce (hmail, err) - called when sending outbound mail if the mail would bounce
 * delivered (hmail, [host, ip, response, delay, port, mode, recipients]) - called
 when outbound mail is delivered to the destination
