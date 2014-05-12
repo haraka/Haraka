@@ -40,13 +40,13 @@ exports.hook_mail = function(next, connection, params) {
 
     if (plugin.in_host_list(domain)) {
         txn.results.add(plugin, {pass: 'mail_from'});
-        txn.notes.local_sender=true;
+        txn.notes.local_sender = true;
         return next();
     }
 
     if (plugin.in_host_regex(domain)) {
         txn.results.add(plugin, {pass: 'mail_from'});
-        txn.notes.local_sender=true;
+        txn.notes.local_sender = true;
         return next();
     }
 
