@@ -155,7 +155,7 @@ function Connection(client, server) {
     this.transaction = null;
     this.tran_count = 0;
     this.capabilities = null;
-    this.early_talker_delay = config.get('early_talker_delay') || 1000;
+    this.early_talker_delay = config.get('early_talker.pause') || config.get('early_talker_delay') || 1000;
     this.banner_includes_uuid = config.get('banner_includes_uuid') ? true : false;
     this.deny_includes_uuid = config.get('deny_includes_uuid') || null;
     this.early_talker = 0;
@@ -1288,8 +1288,8 @@ Connection.prototype.auth_results_clean = function() {
     if (ars.length === 0) return;
 
     for (var i=0; i < ars.length; i++) {
-        this.transaction.header.remove_header( ars[i] );
-        this.transaction.header.add_header('Original-Authentication-Results', ars[i]);
+        this.transaction.remove_header( ars[i] );
+        this.transaction.add_header('Original-Authentication-Results', ars[i]);
     }
     this.logdebug("Authentication-Results moved to Original-Authentication-Results");
 };
