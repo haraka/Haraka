@@ -4,7 +4,7 @@
 var utils = require('./utils');
 
 // To create a key:
-// openssl req -x509 -nodes -days 2190 -newkey rsa:1024 \
+// openssl req -x509 -nodes -days 2190 -newkey rsa:2048 \
 //         -keyout config/tls_key.pem -out config/tls_cert.pem
 
 exports.hook_capabilities = function (next, connection) {
