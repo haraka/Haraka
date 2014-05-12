@@ -1288,8 +1288,8 @@ Connection.prototype.auth_results_clean = function() {
     if (ars.length === 0) return;
 
     for (var i=0; i < ars.length; i++) {
-        this.transaction.header.remove_header( ars[i] );
-        this.transaction.header.add_header('Original-Authentication-Results', ars[i]);
+        this.transaction.remove_header( ars[i] );
+        this.transaction.add_header('Original-Authentication-Results', ars[i]);
     }
     this.logdebug("Authentication-Results moved to Original-Authentication-Results");
 };
