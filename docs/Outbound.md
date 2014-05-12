@@ -45,6 +45,11 @@ Allows you to temporarily disable outbound delivery, while still able to
 receive and queue emails. This can be done while Haraka is running due to
 how Haraka watches for config file changes.
 
+### outbound.ipv6_enabled
+
+When this has a "true" value inside (usually a `1`), it defaults to an 'AAAA'
+lookup first for each MX record, and uses those hosts to send email via.
+
 Outbound Mail Hooks
 -------------------
 
