@@ -2,7 +2,7 @@
 2.N.N - May NN, 2014
 
 * added automated build testing via Travis-CI.org
-* fixed dkim_sign crash issue #560 
+* fixed dkim_sign crash issue #560
 * geoip can discover external IP via net_utils.get_public_ip
 * geoip: skip private IPs
 * qmd: when relaying, validate MAIL FROM against QMD, add per-domain
@@ -14,13 +14,13 @@
 * access: new plugin that merges rdns_access, mail_from.access, and
   rcpt_to.access.
 * connect.fcrdns: new plugin (Forward Confirmed Reverse DNS)
-* bounce: new plugin (merges 
+* bounce: new plugin (merges
 * data.headers: new plugin added direct_to_mx, check & reject settings, added MLM detection,
   tests.
 * helo.checks: refactored, better config handling, new tests (match_rdns,
   mismatch, results), reject option.
 * results_store: store processing results in data structures (vs notes)
-* spf: refactored, added outbound checks when relaying, added 15 tests, 
+* spf: refactored, added outbound checks when relaying, added 15 tests,
 * dnsbl: return errors as Error objects, reduce list to unique zones, added
   tests, added search=multi option, handle ENOTFOUND error, added reject=false option.
 * dns_list_base: bug fixes (race condition, returning invalid results)
@@ -28,14 +28,14 @@
   added bad_bounce_to
 * clamav: add virus name to results, better config parsing, typo fixes
 * uribl:
-* mf_resolvable: 
+* mf_resolvable:
 * tls: add link to wiki article on TLS setup
 * relay_acl: fix issue #428, refactored, don't crash when relay_dest_domains.ini
   missing, added tests
 * fix mx mechanism when no records are returned
 * vpopmaild: added per-domain feature
 * karma: added whitelist award, pass through temp (DENYSOFT) errors, made
-  tarpit variable, configurable reject hooks, doc rewrite, ASN awards, fix penalty days calculation, new DSL for karma awards, 
+  tarpit variable, configurable reject hooks, doc rewrite, ASN awards, fix penalty days calculation, new DSL for karma awards,
 * bannering fixes
 * added log* stubs to test/fixtures/[plugin|connection]
 * tests/fixtures/stub_plugin: set name property
@@ -48,7 +48,7 @@
 * Record accepted domains at hook_rcpt and improve queue/lmtp
 * return after next() in the whitelist checks
 * Add new -o option to bin/haraka
- 
+
 2.4.0 - Feb 12, 2014
 
 * Trim whitespace when reading "list" type config files (such as config/plugins)
@@ -113,4 +113,4 @@
 * Throw exception with set_banner as it is now non-functional. Will be returned in a future version.
 * Small fixes to data.uribl
 
-1.4.0 - 
+1.4.0 -
