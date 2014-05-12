@@ -138,14 +138,14 @@ function Connection(client, server) {
     this.local_ip = null;
     this.local_port = null;
     this.remote_ip = null;
-    this.remote_host = null
+    this.remote_host = null;
     this.remote_port = null;
     this.remote_info = null;
     this.current_data = null;
     this.current_line = null;
     this.greeting = null;
     this.hello_host = null;
-    this.using_tls = false;
+    this.using_tls = server.has_tls ? true : false;
     this.state = states.STATE_PAUSE;
     this.prev_state = null;
     this.loop_code = null;
@@ -1123,8 +1123,8 @@ Connection.prototype.cmd_mail = function(line) {
     if (!this.hello_host) {
         return this.respond(503, 'Use EHLO/HELO before MAIL');
     }
-    // Require authentication on connections to port 587
-    if (this.local_port === 587 && !this.relaying) {
+    // Require authentication on connections to port 587 & 465
+    if (!this.relaying && [587,465].indexOf(this.local_port) !== -1) {
         return this.respond(550, 'Authentication required');
     }
     var results;
