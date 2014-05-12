@@ -33,6 +33,7 @@ var fn_re = /^(\d+)_(\d+)_/; // I like how this looks like a person
 var queue_dir = path.resolve(config.get('queue_dir') || (process.env.HARAKA + '/queue'));
 var uniq = Math.round(Math.random() * MAX_UNIQ);
 var MAX_CONCURRENCY = config.get('outbound.concurrency_max') || 100;
+var IPV6_ENABLED    = config.get('outbound.ipv6_enabled') || 0;
 
 var load_queue = async.queue(function (file, cb) {
     var hmail = new HMailItem(file, path.join(queue_dir, file));
@@ -817,6 +818,21 @@ HMailItem.prototype.found_mx = function (err, mxs) {
     else {
         // got MXs
         var mxlist = sort_mx(mxs);
+        // duplicate each MX for each ip address family
+        this.mxlist = [];
+        for (var mx in mxlist) {
+            if (IPV6_ENABLED) {
+                this.mxlist.push(
+                    { exchange: mxlist[mx].exchange, priority: mxlist[mx].priority, port: mxlist[mx].port, family: 'AAAA' },
+                    { exchange: mxlist[mx].exchange, priority: mxlist[mx].priority, port: mxlist[mx].port, family: 'A' }
+                );
+            }
+            else {
+                mxlist[mx].family = 'A';
+                this.mxlist.push(mxlist[mx]);
+            }
+        }
+
         this.mxlist = mxlist;
         this.try_deliver();
     }
@@ -859,11 +875,14 @@ HMailItem.prototype.try_deliver = function () {
         return self.try_deliver_host(mx);
     }
 
-    this.loginfo("Looking up A records for: " + host);
+    var host   = mx.exchange;
+    var family = mx.family;
+
+    this.loginfo("Looking up " + family + " records for: " + host);
  
     // now we have a host, we have to lookup the addresses for that host
     // and try each one in order they appear
-    dns.resolve(host, function (err, addresses) {
+    dns.resolve(host, family, function (err, addresses) {
         if (err) {
             self.logerror("DNS lookup of " + host + " failed: " + err);
             return self.try_deliver(); // try next MX
