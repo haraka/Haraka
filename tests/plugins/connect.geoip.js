@@ -14,12 +14,10 @@ function _set_up(callback) {
     this.plugin.config = config;
     this.plugin.cfg = { main: {} };
 
-    this.plugin.has_geoip=true;
     try {
-        require('geoip-lite');
+        this.plugin.geoip = require('geoip-lite');
     }
     catch (e) {
-        this.plugin.has_geoip=false;
     }
 
     this.connection = Connection.createConnection();
@@ -47,7 +45,7 @@ exports.haversine = {
     }
 };
 
-exports.hook_connect = {
+exports.geoip_lookup = {
     setUp : _set_up,
     tearDown : _tear_down,
 
@@ -55,7 +53,7 @@ exports.hook_connect = {
         var cb = function (rc) {
             test.expect(1);
             test.equal(undefined, rc);
-            if (this.plugin.has_geoip) {
+            if (this.plugin.geoip) {
                 test.expect(2);
                 var r = this.connection.results.get('connect.geoip');
                 // console.log(r);
@@ -64,14 +62,14 @@ exports.hook_connect = {
             test.done();
         }.bind(this);
         this.connection.remote_ip='192.48.85.146';
-        this.plugin.hook_connect(cb, this.connection);
+        this.plugin.geoip_lookup(cb, this.connection);
     },
     'michigan: ': function (test) {
         test.expect(2);
         var cb = function (rc) {
             test.expect(1);
             test.equal(undefined, rc);
-            if (this.plugin.has_geoip) {
+            if (this.plugin.geoip) {
                 test.expect(2);
                 var r = this.connection.results.get('connect.geoip');
                 // console.log(r);
@@ -80,6 +78,6 @@ exports.hook_connect = {
             test.done();
         }.bind(this);
         this.connection.remote_ip='199.176.179.3';
-        this.plugin.hook_connect(cb, this.connection);
+        this.plugin.geoip_lookup(cb, this.connection);
     },
 };

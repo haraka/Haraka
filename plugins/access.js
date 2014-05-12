@@ -25,11 +25,9 @@ exports.register = function() {
 
     if (plugin.cfg.check.any) {
         plugin.load_domain_file('domain', 'any');
-        plugin.register_hook('connect', 'any');
-        plugin.register_hook('helo',    'any');
-        plugin.register_hook('ehlo',    'any');
-        plugin.register_hook('mail',    'any');
-        plugin.register_hook('rcpt',    'any');
+        ['connect','helo','ehlo','mail','rcpt'].forEach(function (hook) {
+            plugin.register_hook(hook, 'any');
+        });
     }
 };
 
@@ -132,6 +130,7 @@ exports.any = function (next, connection, params) {
         }
         else if (typeof params === 'string') {   // HELO/EHLO
             domain = params;
+            if (net_utils.is_ipv4_literal(domain)) { return next(); }
         }
         else if (Array.isArray(params)) {        // MAIL FROM / RCPT TO
             email = params[0].address();
@@ -143,10 +142,14 @@ exports.any = function (next, connection, params) {
         return next();
     }
     if (!domain) {
-        connection.logerror(plugin, "any found no domain!");
+        connection.logerror(plugin, "no domain!");
         return next();
     }
     var org_domain = net_utils.get_organizational_domain(domain);
+    if (!org_domain) {
+        connection.logerror(plugin, "no org domain from domain " + domain);
+        return next();
+    }
 
     // step 2: check for whitelist
     var file = plugin.cfg.domain.any;
@@ -170,7 +173,7 @@ exports.any = function (next, connection, params) {
     // step 3: check for blacklist
     file = plugin.cfg.domain.any;
     if (plugin.in_list('domain', 'any', org_domain)) {
-        connection.results.add(plugin, {fail: file, blacklist: true, emit: true});
+        connection.results.add(plugin, {fail: file+'('+org_domain+')', blacklist: true, emit: true});
         return next(DENY, "You are not welcome here.");
     }
 

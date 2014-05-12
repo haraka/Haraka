@@ -138,14 +138,14 @@ function Connection(client, server) {
     this.local_ip = null;
     this.local_port = null;
     this.remote_ip = null;
-    this.remote_host = null
+    this.remote_host = null;
     this.remote_port = null;
     this.remote_info = null;
     this.current_data = null;
     this.current_line = null;
     this.greeting = null;
     this.hello_host = null;
-    this.using_tls = false;
+    this.using_tls = server.has_tls ? true : false;
     this.state = states.STATE_PAUSE;
     this.prev_state = null;
     this.loop_code = null;
@@ -155,7 +155,7 @@ function Connection(client, server) {
     this.transaction = null;
     this.tran_count = 0;
     this.capabilities = null;
-    this.early_talker_delay = config.get('early_talker_delay') || 1000;
+    this.early_talker_delay = config.get('early_talker.pause') || config.get('early_talker_delay') || 1000;
     this.banner_includes_uuid = config.get('banner_includes_uuid') ? true : false;
     this.deny_includes_uuid = config.get('deny_includes_uuid') || null;
     this.early_talker = 0;
@@ -1123,8 +1123,8 @@ Connection.prototype.cmd_mail = function(line) {
     if (!this.hello_host) {
         return this.respond(503, 'Use EHLO/HELO before MAIL');
     }
-    // Require authentication on connections to port 587
-    if (this.local_port === 587 && !this.relaying) {
+    // Require authentication on connections to port 587 & 465
+    if (!this.relaying && [587,465].indexOf(this.local_port) !== -1) {
         return this.respond(550, 'Authentication required');
     }
     var results;
@@ -1288,8 +1288,8 @@ Connection.prototype.auth_results_clean = function() {
     if (ars.length === 0) return;
 
     for (var i=0; i < ars.length; i++) {
-        this.transaction.header.remove_header( ars[i] );
-        this.transaction.header.add_header('Original-Authentication-Results', ars[i]);
+        this.transaction.remove_header( ars[i] );
+        this.transaction.add_header('Original-Authentication-Results', ars[i]);
     }
     this.logdebug("Authentication-Results moved to Original-Authentication-Results");
 };
