@@ -23,7 +23,7 @@ logger.LOGALERT     = 1;
 logger.LOGEMERG     = 0;
 
 
-var color_functions = {
+logger.colors = { // Makes me cringe spelling it this way...
     "DATA" : "green",
     "PROTOCOL" : "green",
     "DEBUG" : "grey",
@@ -36,6 +36,8 @@ var color_functions = {
     "ALERT" : "red",
     "EMERG" : "red"
 };
+
+var stdout_is_tty = tty.isatty(process.stdout.fd);
 
 function colorize (color, str) {
     if (!util.inspect.colors[color]) return str;
@@ -50,11 +52,8 @@ var deferred_logs = [];
 logger.dump_logs = function (exit) {
     while (deferred_logs.length > 0) {
         var log_item = deferred_logs.shift();
-        var color;
-        if (color_functions) {
-            color = color_functions[log_item.level];
-        }
-        if (color && tty.isatty(process.stdout.fd)) {
+        var color = logger.colors[log_item.level];
+        if (color && stdout_is_tty) {
             console.log(colorize(color,log_item.data));
         }
         else {
@@ -94,11 +93,8 @@ logger.log = function (level, data) {
 logger.log_respond = function (retval, msg, data) {
     // any other return code is irrelevant
     if (retval === constants.cont) {
-        var color;
-        if (color_functions) {
-            color = color_functions[data.level]
-        }
-        if (color && tty.isatty(process.stdout.fd)) {
+        var color = logger.colors[data.level];
+        if (color && stdout_is_tty) {
             return console.log(colorize(color,data.data));
         }
         else {
