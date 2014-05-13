@@ -927,6 +927,7 @@ HMailItem.prototype.try_deliver_host = function (mx) {
 
     socket.on('close', function () {
         if (processing_mail) {
+            processing_mail = false;
             return self.try_deliver_host(mx);
         }
     });
@@ -960,7 +961,11 @@ HMailItem.prototype.try_deliver_host = function (mx) {
     var send_command = function (cmd, data) {
         if (!socket.writable) {
             self.logerror("Socket writability went away");
-            return self.try_deliver_host(mx);
+            if (processing_mail) {
+                processing_mail = false;
+                return self.try_deliver_host(mx);
+            }
+            return;
         }
         var line = cmd + (data ? (' ' + data) : '');
         if (cmd === 'dot' || cmd === 'dot_lmtp') {
