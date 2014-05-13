@@ -110,7 +110,8 @@ exports.get = {
     'test.ini, no opts' : function (test) {
         _test_get(test, '../tests/test.ini', null, null, null, {
             main: { bool_true: 'true', bool_false: 'false', str_true: 'true', str_false: 'false' },
-            sect1: { bool_true: 'true', bool_false: 'false', str_true: 'true', str_false: 'false' }
+            sect1: { bool_true: 'true', bool_false: 'false', str_true: 'true', str_false: 'false' },
+            whitespace: { str_no_trail: 'true', str_trail: 'true' }
         });
     },
     // CACHE BUG
