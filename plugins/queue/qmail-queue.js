@@ -33,6 +33,10 @@ exports.hook_queue = function (next, connection) {
     connection.transaction.message_stream.pipe(qmail_queue.stdin);
 
     qmail_queue.stdin.on('close', function () {
+        if (!connection.transaction) {
+            plugin.logerror("Transaction went away while delivering mail to qmail-queue");
+            qmail_queue.stdout.end();
+        }
         plugin.loginfo("Message Stream sent to qmail. Now sending envelope");
         // now send envelope
         // Hope this will be big enough...
