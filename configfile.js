@@ -23,6 +23,7 @@ cfreader._watchers = {};
 cfreader.read_config = function(name, type, cb, options) {
     // Check cache first
     if (name in cfreader._config_cache) {
+        // logger.logdebug("Returning cached file: " + name);
         return cfreader._config_cache[name];
     }
 
@@ -32,7 +33,8 @@ cfreader.read_config = function(name, type, cb, options) {
     if (cfreader.watch_files) {
         if (name in cfreader._watchers) return result;
         try {
-            cfreader._watchers[name] = fs.watch(name, {persistent: false}, function (event, filename) {
+            cfreader._watchers[name] = fs.watch(name, {persistent: false}, function (fse, filename) {
+                logger.loginfo("Detected " + fse + ", reloading " + name);
                 cfreader.load_config(name, type, options);
                 if (typeof cb === 'function') cb();
             });

@@ -6,6 +6,7 @@ var ipaddr = require('ipaddr.js'),
     net    = require('net');
 
 exports.register = function() {
+    this.logerror(this, "deprecated. see 'haraka -h relay'");
     this.register_hook('lookup_rdns', 'refresh_config');
     this.register_hook('connect',     'relay_acl');
     this.register_hook('rcpt',        'relay_dest_domains');

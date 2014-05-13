@@ -1278,6 +1278,8 @@ Connection.prototype.auth_results = function(message) {
     if (has_conn === true) header.push(this.notes.authentication_results.join('; '));
     if (has_tran === true) header.push(this.transaction.notes.authentication_results.join('; '));
     if (header.length === 1) return '';  // no results
+    if (this.notes.authentication_results_added === header.length) return ''; // no change
+    this.notes.authentication_results_added = header.length;
     return header.join('; ');
 };
 
@@ -1436,6 +1438,11 @@ Connection.prototype.data_post_respond = function(retval, msg) {
         'code='  + constants.translate(retval),
         'msg="'  + (msg || '') + '"',
     ].join(' '));
+    var ar_field = this.auth_results();  // assemble A-R header
+    if (ar_field) {
+        this.transaction.remove_header('Authentication-Results');
+        this.transaction.add_leading_header('Authentication-Results', ar_field);
+    }
     var self = this;
     switch (retval) {
         case constants.deny:

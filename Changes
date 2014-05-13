@@ -1,0 +1,116 @@
+
+2.N.N - May NN, 2014
+
+* added automated build testing via Travis-CI.org
+* fixed dkim_sign crash issue #560
+* geoip can discover external IP via net_utils.get_public_ip
+* geoip: skip private IPs
+* qmd: when relaying, validate MAIL FROM against QMD, add per-domain
+  configurations, added reject option, added tests and bug fixes.
+* net_utils: added is_ipv4_literal, is_public_suffix, get_public_ip, added
+  tests, shed some CamelCase.
+* asn: looksup up ASN of connection, uses 3 providers, tests providers, saves
+  results, optionally adds headers. Includes tests.
+* access: new plugin that merges rdns_access, mail_from.access, and
+  rcpt_to.access.
+* connect.fcrdns: new plugin (Forward Confirmed Reverse DNS)
+* bounce: new plugin (merges
+* data.headers: new plugin added direct_to_mx, check & reject settings, added MLM detection,
+  tests.
+* helo.checks: refactored, better config handling, new tests (match_rdns,
+  mismatch, results), reject option.
+* results_store: store processing results in data structures (vs notes)
+* spf: refactored, added outbound checks when relaying, added 15 tests,
+* dnsbl: return errors as Error objects, reduce list to unique zones, added
+  tests, added search=multi option, handle ENOTFOUND error, added reject=false option.
+* dns_list_base: bug fixes (race condition, returning invalid results)
+* bounce: refactored, each check has enable and reject switches, added tests,
+  added bad_bounce_to
+* clamav: add virus name to results, better config parsing, typo fixes
+* uribl:
+* mf_resolvable:
+* tls: add link to wiki article on TLS setup
+* relay_acl: fix issue #428, refactored, don't crash when relay_dest_domains.ini
+  missing, added tests
+* fix mx mechanism when no records are returned
+* vpopmaild: added per-domain feature
+* karma: added whitelist award, pass through temp (DENYSOFT) errors, made
+  tarpit variable, configurable reject hooks, doc rewrite, ASN awards, fix penalty days calculation, new DSL for karma awards,
+* bannering fixes
+* added log* stubs to test/fixtures/[plugin|connection]
+* tests/fixtures/stub_plugin: set name property
+* config: corrected handling of config.arg gets, fix caching bug, fix boolean
+  handling, added missing 'type' handling.
+* Adding the option of using CIDR ranges in the haproxy_hosts file
+* tarpit: added config option hooks_to_delay, added docs
+* contrib/haraka.bsd.rc: startup file for *BSD
+* Store attachment headers on stream
+* Record accepted domains at hook_rcpt and improve queue/lmtp
+* return after next() in the whitelist checks
+* Add new -o option to bin/haraka
+
+2.4.0 - Feb 12, 2014
+
+* Trim whitespace when reading "list" type config files (such as config/plugins)
+* Added LMTP via queue/lmtp plugin
+* Fixed bug in outbound when temp failing some of the recipients that would prevent delivery working to those recipients for future delivery attempts
+* Add additional details/parameters to delivered hook for outbound mail
+* Removed the hmail.bounce_extra object as that information now stored with the rcpt_to list
+* Store the RCPT TO rejection reason on the address object
+
+
+2.3.0 - Feb 07, 2014
+
+* Fix memory leak when watching config files for changes
+* Support for badly formatted MAIL FROM/RCPT TO lines
+* Fix a memory corruption when fixing line endings
+* Fix breakpoints in plugins when using node inspector
+* Reload config in relay_force_routing without restart
+* Don't re-attempt TLS upgrade if upgraded already and STARTTLS is re-advertised
+* Improved outbound logging
+* Pass failed recipients to bounce hook in outbound processing
+* Added startup checks to ensure Haraka has been installed correctly
+* Handle case of Haraka server running out of disk space better
+* In mail_from.is_resolvable: move re_bogus_ip into config
+* Added auth/auth_vpopmaild plugin - SMTP AUTH against a vpopmaild server
+* Fixed graph plugin to work with sqlite3
+* Added rcpt_to.qmail_deliverable plugin - Authenticate inbound RCPT TOs against Qmail::Deliverable daemon
+* Added data.headers plugin which merges header checks into one place.
+  Deprecates data.noreceived, data.rfc5322_header_checks, and data.nomsgid.
+* Added documentation for logging system
+* Added DKIM per-domain signing support
+* Added p0f plugin
+* In relay_acl, if host is allowed by acl, don't deny the recipient because the domain isn't in the allow list
+* Add Authentication-Results header (RFC 5451) to all emails
+* Fixed writing the todo file in outbound for newer Node versions
+* Added Karma plugin to support penalizing consistently evil senders
+* Added GeoIP plugin including distance calculation from your mail server
+* Added bounce plugin for handling incoming bounce messages in various ways
+* Fix underscores in documentation so web version doesn't look so weird
+* By default prevent SMTP AUTH unless on a private IP or using TLS WARNING: May break some uses of Haraka, but is worth it for security
+* In lookup_rdns.strict, check whitelist before looking up IP
+* Big rewrite of the SpamAssassin plugin for simplicity and mainly to pass through X-Spam-* headers provided
+* Added delay_deny plugin allowing more flexibility on when to reject mail
+* Improvements to ini file parsing allowing floats and negative integers, and specifying boolean keys
+* Fix issue causing a CRIT/crash with lost transaction/connection while sending inbound to ongoing SMTP server
+* Allow setting of spamd_user for spamassassin plugin
+
+
+2.0.0 - Nov 28, 2012
+
+* Various fixes to SMTP AUTH code, including providing SMTP AUTH to inbound
+  mail forwarders.
+* Updates to process_title plugin to show more details
+* Changed transaction.data_lines to a Stream (this will break all code which
+  uses transaction.data_lines currently - see the migration guide)
+* Changed attachments to be a Stream (this will break some code which uses
+  transaction.attachment_hooks - see the migration guide)
+* Capture and log signals sent to Haraka
+* Various performance improvements
+* Fixed a memory leak in connection pool
+* Improvements to TLS compatibility
+* RFC compliance improvements with greeting, EHLO/HELO, QUIT, and dot stuffing
+* Throw exception with set_banner as it is now non-functional. Will be returned in a future version.
+* Small fixes to data.uribl
+
+1.4.0 -
