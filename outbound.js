@@ -627,7 +627,7 @@ HMailItem.prototype.read_todo = function () {
     var tl_reader = fs.createReadStream(self.path, {start: 0, end: 3});
     tl_reader.on('error', function (err) {
         self.logerror("Error reading queue file: " + self.path + ": " + err);
-        return self.temp_fail("Error reading queue file");
+        return self.temp_fail("Error reading queue file: " + err);
     });
     tl_reader.on('data', function (buf) {
         // I'm making the assumption here we won't ever read less than 4 bytes
@@ -1008,14 +1008,14 @@ HMailItem.prototype.try_deliver_host = function (mx) {
             self.refcount++;
             exports.split_to_new_recipients(self, fail_recips, "Some recipients temporarily failed", function (hmail) {
                 self.discard();
-                hmail.temp_fail("Some recipients temp failed: " + fail_recips.join(', '), fail_recips);
+                hmail.temp_fail("Some recipients temp failed: " + fail_recips.join(', '), { rcpt: fail_recips, mx: mx });
             });
         }
         if (bounce_recips.length) {
             self.refcount++;
             exports.split_to_new_recipients(self, bounce_recips, "Some recipients rejected", function (hmail) {
                 self.discard();
-                hmail.bounce("Some recipients failed: " + bounce_recips.join(', '));
+                hmail.bounce("Some recipients failed: " + bounce_recips.join(', '), { rcpt: bounce_recips, mx: mx });
             });
         }
         processing_mail = false;
@@ -1097,7 +1097,7 @@ HMailItem.prototype.try_deliver_host = function (mx) {
                         var reason = response.join(' ');
                         send_command('QUIT');
                         processing_mail = false;
-                        return self.bounce(reason);
+                        return self.bounce(reason, { mx: mx });
                     }
                 }
                 switch (command) {
@@ -1182,7 +1182,7 @@ HMailItem.prototype.try_deliver_host = function (mx) {
             self.logerror("Unrecognised response from upstream server: " + line);
             processing_mail = false;
             socket.end();
-            return self.bounce("Unrecognised response from upstream server: " + line);
+            return self.bounce("Unrecognised response from upstream server: " + line, {mx: mx});
         }
     });
 }
@@ -1216,7 +1216,7 @@ function populate_bounce_message (from, to, reason, hmail, cb) {
     })
 }
 
-HMailItem.prototype.bounce = function (err) {
+HMailItem.prototype.bounce = function (err, opts) {
     this.loginfo("bouncing mail: " + err);
     if (!this.todo) {
         // haven't finished reading the todo, delay here...
@@ -1224,10 +1224,14 @@ HMailItem.prototype.bounce = function (err) {
         self.once('ready', function () { self._bounce(err) });
         return;
     }
-    this._bounce(err);
+    this._bounce(err, opts);
 }
 
-HMailItem.prototype._bounce = function (err) {
+HMailItem.prototype._bounce = function (err, opts) {
+    err = new Error(err);
+    err.mx = opts.mx;
+    err.deferred_rcpt = opts.fail_recips;
+    err.bounced_rcpt = opts.bounce_recips;
     this.bounce_error = err;
     plugins.run_hooks("bounce", this, err);
 }

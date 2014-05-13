@@ -115,9 +115,15 @@ Parameters: `next, hmail, error`
 
 If the mail completely bounces then the `bounce` hook is called. This is *not*
 called if the mail is issued a temporary failure (a 4xx error code). The hook
-parameter is the error message received from the remote end. If you do not wish
-to have a bounce message sent to the originating sender of the email then you
-can return `OK` from this hook to stop it from sending a bounce message.
+parameter is the error message received from the remote end as an `Error` object.
+The object may also have the following properties:
+
+* mx - the MX object that caused the bounce
+* deferred_rcpt - the deferred recipients that eventually bounced
+* bounced_rcpt - the bounced recipients
+
+If you do not wish to have a bounce message sent to the originating sender of the
+email then you can return `OK` from this hook to stop it from sending a bounce message.
 
 ### The delivered hook
 
