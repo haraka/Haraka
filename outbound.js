@@ -1194,6 +1194,10 @@ function populate_bounce_message (from, to, reason, hmail, cb) {
         from: from,
         to:   to,
         reason: reason,
+        extended_reason: hmail.todo.rcpt_to.map(function (recip) {
+            if (recip.reason)
+                return recip.original + ': ' + recip.reason
+        }).join('\n'),
         pid: process.pid,
         msgid: '<' + utils.uuid() + '@' + config.get('me') + '>',
     };
