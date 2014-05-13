@@ -1193,6 +1193,7 @@ function populate_bounce_message (from, to, reason, hmail, cb) {
         me:   config.get('me'),
         from: from,
         to:   to,
+        recipients: hmail.todo.rcpt_to.join(', '),
         reason: reason,
         extended_reason: hmail.todo.rcpt_to.map(function (recip) {
             if (recip.reason)

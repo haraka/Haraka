@@ -9,7 +9,8 @@ Hi. This is the Haraka Mailer program at {me}.
 I'm afraid I wasn't able to deliver your message to the following addresses.
 This is a permanent error; I've given up. Sorry it didn't work out.
 
-{to}: {reason}
+Intended Recipients: {recipients}
+Failure Reason: {reason}
 
 --- Below this line is a copy of the message.
 
