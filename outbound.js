@@ -33,6 +33,7 @@ var fn_re = /^(\d+)_(\d+)_/; // I like how this looks like a person
 var queue_dir = path.resolve(config.get('queue_dir') || (process.env.HARAKA + '/queue'));
 var uniq = Math.round(Math.random() * MAX_UNIQ);
 var MAX_CONCURRENCY = config.get('outbound.concurrency_max') || 100;
+var IPV6_ENABLED    = config.get('outbound.ipv6_enabled') || 0;
 
 var load_queue = async.queue(function (file, cb) {
     var hmail = new HMailItem(file, path.join(queue_dir, file));
@@ -397,8 +398,12 @@ exports.send_trans_email = function (transaction, next) {
     var hmails = [];
     var ok_paths = [];
 
+    var todo_index = 1;
+
     async.forEachSeries(Object.keys(recips), function (domain, cb) {
         var todo = new TODOItem(domain, recips[domain], transaction);
+        todo.uuid = todo.uuid + '.' + todo_index;
+        todo_index++;
         self.process_domain(ok_paths, todo, hmails, cb);
     }, 
     function (err) {
@@ -626,7 +631,7 @@ HMailItem.prototype.read_todo = function () {
     var tl_reader = fs.createReadStream(self.path, {start: 0, end: 3});
     tl_reader.on('error', function (err) {
         self.logerror("Error reading queue file: " + self.path + ": " + err);
-        return self.temp_fail("Error reading queue file");
+        return self.temp_fail("Error reading queue file: " + err);
     });
     tl_reader.on('data', function (buf) {
         // I'm making the assumption here we won't ever read less than 4 bytes
@@ -817,6 +822,21 @@ HMailItem.prototype.found_mx = function (err, mxs) {
     else {
         // got MXs
         var mxlist = sort_mx(mxs);
+        // duplicate each MX for each ip address family
+        this.mxlist = [];
+        for (var mx in mxlist) {
+            if (IPV6_ENABLED) {
+                this.mxlist.push(
+                    { exchange: mxlist[mx].exchange, priority: mxlist[mx].priority, port: mxlist[mx].port, family: 'AAAA' },
+                    { exchange: mxlist[mx].exchange, priority: mxlist[mx].priority, port: mxlist[mx].port, family: 'A' }
+                );
+            }
+            else {
+                mxlist[mx].family = 'A';
+                this.mxlist.push(mxlist[mx]);
+            }
+        }
+
         this.mxlist = mxlist;
         this.try_deliver();
     }
@@ -859,11 +879,14 @@ HMailItem.prototype.try_deliver = function () {
         return self.try_deliver_host(mx);
     }
 
-    this.loginfo("Looking up A records for: " + host);
+    var host   = mx.exchange;
+    var family = mx.family;
+
+    this.loginfo("Looking up " + family + " records for: " + host);
  
     // now we have a host, we have to lookup the addresses for that host
     // and try each one in order they appear
-    dns.resolve(host, function (err, addresses) {
+    dns.resolve(host, family, function (err, addresses) {
         if (err) {
             self.logerror("DNS lookup of " + host + " failed: " + err);
             return self.try_deliver(); // try next MX
@@ -904,6 +927,7 @@ HMailItem.prototype.try_deliver_host = function (mx) {
 
     socket.on('close', function () {
         if (processing_mail) {
+            processing_mail = false;
             return self.try_deliver_host(mx);
         }
     });
@@ -937,7 +961,11 @@ HMailItem.prototype.try_deliver_host = function (mx) {
     var send_command = function (cmd, data) {
         if (!socket.writable) {
             self.logerror("Socket writability went away");
-            return self.try_deliver_host(mx);
+            if (processing_mail) {
+                processing_mail = false;
+                return self.try_deliver_host(mx);
+            }
+            return;
         }
         var line = cmd + (data ? (' ' + data) : '');
         if (cmd === 'dot' || cmd === 'dot_lmtp') {
@@ -989,14 +1017,14 @@ HMailItem.prototype.try_deliver_host = function (mx) {
             self.refcount++;
             exports.split_to_new_recipients(self, fail_recips, "Some recipients temporarily failed", function (hmail) {
                 self.discard();
-                hmail.temp_fail("Some recipients temp failed: " + fail_recips.join(', '), fail_recips);
+                hmail.temp_fail("Some recipients temp failed: " + fail_recips.join(', '), { rcpt: fail_recips, mx: mx });
             });
         }
         if (bounce_recips.length) {
             self.refcount++;
             exports.split_to_new_recipients(self, bounce_recips, "Some recipients rejected", function (hmail) {
                 self.discard();
-                hmail.bounce("Some recipients failed: " + bounce_recips.join(', '));
+                hmail.bounce("Some recipients failed: " + bounce_recips.join(', '), { rcpt: bounce_recips, mx: mx });
             });
         }
         processing_mail = false;
@@ -1078,7 +1106,7 @@ HMailItem.prototype.try_deliver_host = function (mx) {
                         var reason = response.join(' ');
                         send_command('QUIT');
                         processing_mail = false;
-                        return self.bounce(reason);
+                        return self.bounce(reason, { mx: mx });
                     }
                 }
                 switch (command) {
@@ -1163,7 +1191,7 @@ HMailItem.prototype.try_deliver_host = function (mx) {
             self.logerror("Unrecognised response from upstream server: " + line);
             processing_mail = false;
             socket.end();
-            return self.bounce("Unrecognised response from upstream server: " + line);
+            return self.bounce("Unrecognised response from upstream server: " + line, {mx: mx});
         }
     });
 }
@@ -1174,7 +1202,12 @@ function populate_bounce_message (from, to, reason, hmail, cb) {
         me:   config.get('me'),
         from: from,
         to:   to,
+        recipients: hmail.todo.rcpt_to.join(', '),
         reason: reason,
+        extended_reason: hmail.todo.rcpt_to.map(function (recip) {
+            if (recip.reason)
+                return recip.original + ': ' + recip.reason
+        }).join('\n'),
         pid: process.pid,
         msgid: '<' + utils.uuid() + '@' + config.get('me') + '>',
     };
@@ -1197,7 +1230,7 @@ function populate_bounce_message (from, to, reason, hmail, cb) {
     })
 }
 
-HMailItem.prototype.bounce = function (err) {
+HMailItem.prototype.bounce = function (err, opts) {
     this.loginfo("bouncing mail: " + err);
     if (!this.todo) {
         // haven't finished reading the todo, delay here...
@@ -1205,10 +1238,14 @@ HMailItem.prototype.bounce = function (err) {
         self.once('ready', function () { self._bounce(err) });
         return;
     }
-    this._bounce(err);
+    this._bounce(err, opts);
 }
 
-HMailItem.prototype._bounce = function (err) {
+HMailItem.prototype._bounce = function (err, opts) {
+    err = new Error(err);
+    err.mx = opts.mx;
+    err.deferred_rcpt = opts.fail_recips;
+    err.bounced_rcpt = opts.bounce_recips;
     this.bounce_error = err;
     plugins.run_hooks("bounce", this, err);
 }
@@ -1216,12 +1253,7 @@ HMailItem.prototype._bounce = function (err) {
 HMailItem.prototype.bounce_respond = function (retval, msg) {
     if (retval != constants.cont) {
         this.loginfo("plugin responded with: " + retval + ". Not sending bounce.");
-        if (retval === constants.stop) {
-            return this.discard(); // calls next_cb
-        }
-        else {
-            return this.next_cb();
-        }
+        return this.discard(); // calls next_cb
     }
 
     var self = this;
@@ -1298,11 +1330,27 @@ HMailItem.prototype.temp_fail = function (err, extra) {
     // 6 hours (configurable) and the expire time is also configurable... But
     // this is good enough for now.
     
-    var delay = (Math.pow(2, (this.num_failures + 5)) * 1000);
+    var delay = Math.pow(2, (this.num_failures + 5));
+
+    plugins.run_hooks('deferred', this, {delay: delay, err: err});
+}
+
+HMailItem.prototype.deferred_respond = function (retval, msg, params) {
+    if (retval != constants.cont && retval != constants.denysoft) {
+        this.loginfo("plugin responded with: " + retval + ". Not deferring. Deleting mail.");
+        return this.discard(); // calls next_cb
+    }
+    
+    var delay = params.delay * 1000;
+    
+    if (retval == constants.denysoft) {
+        delay = parseInt(msg, 10) * 1000;
+    }
+
     var until = Date.now() + delay;
-    
-    this.loginfo("Temp failing " + this.filename + " for " + (delay/1000) + " seconds: " + err);
-    
+
+    this.loginfo("Temp failing " + this.filename + " for " + (delay/1000) + " seconds: " + params.err);
+
     var new_filename = this.filename.replace(/^(\d+)_(\d+)_/, until + '_' + this.num_failures + '_');
     
     var hmail = this;
@@ -1318,7 +1366,7 @@ HMailItem.prototype.temp_fail = function (err, extra) {
 
         temp_fail_queue.add(delay, function () { delivery_queue.push(hmail) });
     });
-}
+};
 
 // The following handler has an impact on outgoing mail. It does remove the queue file.
 HMailItem.prototype.delivered_respond = function (retval, msg) {

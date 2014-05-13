@@ -654,7 +654,7 @@ SPF.prototype.mod_redirect = function (domain, cb) {
         return cb(null, this.SPF_NONE);
     } 
     this.count++;
-    this.been_there[domain] = 1;
+    this.been_there[domain] = true;
     return this.check_host(this.ip, domain, this.mail_from, cb);
 }
 

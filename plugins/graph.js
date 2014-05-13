@@ -4,8 +4,6 @@ var http  = require('http');
 var urlp  = require('url');
 var utils = require('./utils');
 
-var sqlite3 = require('sqlite3').verbose();
-
 var db;
 var select = "SELECT COUNT(*) AS hits, plugin FROM graphdata WHERE timestamp >= ? AND timestamp < ? GROUP BY plugin";
 var insert;
@@ -20,13 +18,14 @@ function createTable() {
 }
 
 exports.register = function () {
-    config  = this.config.get('graph.ini');
-    var ignore_re = config.main.ignore_re || this.config.get('grapher.ignore_re') || 'queue|graph|relay';
+    var plugin = this;
+    config  = plugin.config.get('graph.ini');
+    var ignore_re = config.main.ignore_re || plugin.config.get('grapher.ignore_re') || 'queue|graph|relay';
     ignore_re = new RegExp(ignore_re);
     
     plugins = {accepted: 0, disconnect_early: 0};
     
-    this.config.get('plugins', 'list').forEach(
+    plugin.config.get('plugins', 'list').forEach(
         function (p) {
             if (!p.match(ignore_re)) {
                 plugins[p] = 0;
@@ -34,12 +33,25 @@ exports.register = function () {
         }
     );
 
+    try {
+        var sqlite3 = require('sqlite3').verbose();
+    }
+    catch (e) {
+        plugin.logerror("unable to load sqlite3, try\n\n\t'npm install -g sqlite3'\n\n");
+        return;
+    }
+
     var db_name = config.main.db_file || 'graphlog.db';
     db = new sqlite3.Database(db_name, createTable);
     insert = db.prepare( "INSERT INTO graphdata VALUES (?,?)" );
+
+    plugin.register_hook('init_master',   'http_init');
+    plugin.register_hook('disconnect',    'disconnect');
+    plugin.register_hook('deny',          'deny');
+    plugin.register_hook('queue_ok',      'queue_ok');
 };
 
-exports.hook_init_master = function (next) {
+exports.http_init = function (next) {
     var plugin = this;
     var port   = config.main.http_port || this.config.get('grapher.http_port') || 8080;
     var addr   = config.main.http_addr || '127.0.0.1';
@@ -57,17 +69,17 @@ exports.hook_init_master = function (next) {
         plugin.loginfo("http server running on " + addr + ':' + port);
         next();
     });
-}
+};
 
-exports.hook_disconnect = function (next, connection) {
+exports.disconnect = function (next, connection) {
     if (!connection.current_line) {
         // disconnect without saying anything
         return this.hook_deny(next, connection, [DENY, "random disconnect", "disconnect_early"]);
     }
     next();
-}
+};
 
-exports.hook_deny = function (next, connection, params) {
+exports.deny = function (next, connection, params) {
     var plugin = this;
     insert.bind([new Date().getTime(), params[2]], function (err) {
         if (err) {
@@ -78,7 +90,7 @@ exports.hook_deny = function (next, connection, params) {
             if (err) {
                 plugin.logerror("Insert failed: " + err);
             }
-            try { insert.reset() } catch (err) {}
+            try { insert.reset(); } catch (e) {}
             next();
         });
     });
