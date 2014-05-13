@@ -170,10 +170,30 @@ function setup_listeners (listeners, plugins, type, inactivity_timeout) {
             return cb(new Error("Invalid format for listen parameter in smtp.ini"));
         }
         
-        var server = net.createServer(function (client) {
+        var conn_cb = function (client) {
             client.setTimeout(inactivity_timeout);
             conn.createConnection(client, server);
-        });
+        };
+
+        var server;
+        if (hp[2] == 465) {
+            var options = {
+                key: config.get('tls_key.pem', 'binary'),
+                cert: config.get('tls_cert.pem', 'binary'),
+            };
+            if (!options.key) {
+                return cb(new Error("Missing tls_key.pem for port 465"));
+            }
+            if (!options.cert) {
+                return cb(new Error("Missing tls_cert.pem for port 465"));
+            }
+            logger.lognotice("Creating TLS server on " + host_port);
+            server = require('tls').createServer(options, conn_cb);
+            server.has_tls=true;
+        }
+        else {
+            server = net.createServer(conn_cb);
+        }
 
         server.notes = Server.notes;
         if (Server.cluster) server.cluster = Server.cluster;
@@ -204,7 +224,7 @@ function setup_listeners (listeners, plugins, type, inactivity_timeout) {
         }
         listening();
         plugins.run_hooks('init_' + type, Server);
-    })
+    });
 }
 
 Server.init_master_respond = function (retval, msg) {

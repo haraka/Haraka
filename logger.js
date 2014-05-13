@@ -7,6 +7,7 @@ var connection;
 var outbound;
 var constants = require('./constants');
 var util      = require('util');
+var tty = require('tty')
 
 var logger = exports;
 
@@ -21,6 +22,29 @@ logger.LOGCRIT      = 2;
 logger.LOGALERT     = 1;
 logger.LOGEMERG     = 0;
 
+
+logger.colors = { // Makes me cringe spelling it this way...
+    "DATA" : "green",
+    "PROTOCOL" : "green",
+    "DEBUG" : "grey",
+    "INFO" : "cyan",
+    "info" : "cyan",
+    "NOTICE" : "blue",
+    "WARN" : "red",
+    "ERROR" : "red",
+    "CRIT" : "red",
+    "ALERT" : "red",
+    "EMERG" : "red"
+};
+
+var stdout_is_tty = tty.isatty(process.stdout.fd);
+
+function colorize (color, str) {
+    if (!util.inspect.colors[color]) return str;
+    return '\u001b[' + util.inspect.colors[color][0] + 'm' + str +
+              '\u001b[' + util.inspect.colors[color][1] + 'm';
+}
+
 var loglevel = logger.LOGWARN;
 
 var deferred_logs = [];
@@ -28,7 +52,13 @@ var deferred_logs = [];
 logger.dump_logs = function (exit) {
     while (deferred_logs.length > 0) {
         var log_item = deferred_logs.shift();
-        console.log(log_item.data);
+        var color = logger.colors[log_item.level];
+        if (color && stdout_is_tty) {
+            console.log(colorize(color,log_item.data));
+        }
+        else {
+            console.log(log_item.data);
+        }
     }
     if (exit) {
         process.exit(1);
@@ -63,7 +93,13 @@ logger.log = function (level, data) {
 logger.log_respond = function (retval, msg, data) {
     // any other return code is irrelevant
     if (retval === constants.cont) {
-        return console.log(data.data);
+        var color = logger.colors[data.level];
+        if (color && stdout_is_tty) {
+            return console.log(colorize(color,data.data));
+        }
+        else {
+            return console.log(data.data);
+        }
     }
 };
 

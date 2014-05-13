@@ -45,6 +45,11 @@ Allows you to temporarily disable outbound delivery, while still able to
 receive and queue emails. This can be done while Haraka is running due to
 how Haraka watches for config file changes.
 
+### outbound.ipv6_enabled
+
+When this has a "true" value inside (usually a `1`), it defaults to an 'AAAA'
+lookup first for each MX record, and uses those hosts to send email via.
+
 Outbound Mail Hooks
 -------------------
 
@@ -57,7 +62,17 @@ indicate that the mail has been queued in some custom manner for outbound
 delivery. Any of the `DENY` return codes will cause the message to be
 appropriately rejected.
 
+### The send\_email hook
+
+Parameters: `next, hmail`
+
+Called just as the email is about to be sent.
+
+Respond with `next(DELAY, delay_seconds)` to defer sending the email at this time.
+
 ### The get\_mx hook
+
+Parameters: `next, hmail, domain`
 
 Upon starting delivery the `get_mx` hook is called, with the parameter set to
 the domain in question (for example a mail to `user@example.com` will call the
@@ -79,15 +94,42 @@ outbound IP address to bind to and a `using_lmtp` boolean to specify that
 delivery should be attempted using LMTP instead of SMTP.
 * A list of MX objects in an array, each in the same format as above.
 
+### The deferred hook
+
+Parameters: `next, hmail, {delay: ..., err: ...}`
+
+If the mail is temporarily deferred, the `deferred` hook is called. The hook
+parameter is an object with keys: `delay` and `err`, which explain the delay
+(in seconds) and error message.
+
+If you want to stop at this point, and drop the mail completely, then you
+can call `next(OK)`.
+
+If you want to change the delay, then call `next(DENYSOFT, delay_in_seconds)`.
+Using this you can define a custom delay algorithm indexed by
+`hmail.num_failures`.
+
 ### The bounce hook
+
+Parameters: `next, hmail, error`
 
 If the mail completely bounces then the `bounce` hook is called. This is *not*
 called if the mail is issued a temporary failure (a 4xx error code). The hook
-parameter is the error message received from the remote end. If you do not wish
-to have a bounce message sent to the originating sender of the email then you
-can return `OK` from this hook to stop it from sending a bounce message.
+parameter is the error message received from the remote end as an `Error` object.
+The object may also have the following properties:
+
+* mx - the MX object that caused the bounce
+* deferred_rcpt - the deferred recipients that eventually bounced
+* bounced_rcpt - the bounced recipients
+
+If you do not wish to have a bounce message sent to the originating sender of the
+email then you can return `OK` from this hook to stop it from sending a bounce message.
 
 ### The delivered hook
+
+Parameters: `next, hmail, params`
+
+Params is a list of: `[host, ip, response, delay, port, mode, ok_recips]`
 
 When mails are successfully delivered to the remote end then the `delivered`
 hook is called. The return codes from this hook have no effect, so it is only

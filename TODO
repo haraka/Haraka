@@ -34,6 +34,9 @@ Remove the following deprecated plugins
  - mail_from.access     (replaced by access.js)
  - rcpt_to.access                 ""
  - connect.rdns_access            ""
+ - relay_acl
+ - relay_all
+ - relay_force_routing
 
 Rename the following plugins
  - toobusy      -> connect.toobusy
@@ -41,7 +44,6 @@ Rename the following plugins
  - avg          -> data.avg
  - clamd        -> data.clamd
  - spamassassin -> data.spamassassin
- - spf          -> mail_from.spf
 
 Move the following plugins:
  - test_queue   -> queue/test_queue

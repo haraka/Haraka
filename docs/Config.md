@@ -7,28 +7,26 @@ of configuration files.
 The API is fairly simple:
 
     // From within a plugin:
-    var config_item = this.config.get(name, [type='value'], [callback], [options]);
+    var config_item = this.config.get(name, [type], [callback], [options]);
 
-Where type can be one of:
+Type can be one of:
 
 * 'value' - load a flat file containing a single value (default)
 * 'ini' - load an "ini" style file
 * 'json' - load a json file
 * 'list' - load a flat file containing a list of values
-* 'data' - load a flat file containing a list of values, keeping comments and
-whitespace.
+* 'data' - load a flat file containing a list of values, keeping comments and whitespace.
 
 The name is not a filename, but a name in the config/ directory. For example:
 
     var config_item = this.config.get('rambling.paths', 'list');
 
-This will look up and load the file config/rambling.paths in the Haraka
-directory.
+This will load the file config/rambling.paths in the Haraka directory.
 
-However if you name your ini and json files ending in `.ini` and `.json`
-respectively then the `type` parameter can be left off.
+If your ini and json files have `.ini` and `.json` suffixes,
+the `type` parameter can be omitted.
 
-You can optionally pass in a callback function which will be called whenever
+You can optionally pass in a callback function which will be called when
 an update is detected on the file.
 
 For ini files, an `options` object is allowed.
