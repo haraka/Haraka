@@ -397,8 +397,12 @@ exports.send_trans_email = function (transaction, next) {
     var hmails = [];
     var ok_paths = [];
 
+    var todo_index = 1;
+
     async.forEachSeries(Object.keys(recips), function (domain, cb) {
         var todo = new TODOItem(domain, recips[domain], transaction);
+        todo.uuid = todo.uuid + '.' + todo_index;
+        todo_index++;
         self.process_domain(ok_paths, todo, hmails, cb);
     }, 
     function (err) {
