@@ -3,10 +3,10 @@
 
 // for "ini" type files
 var regex = {
-    section:        /^\s*\[\s*([^\]]*)\s*\]\s*$/,
-    param:          /^\s*([\w@\._]+)\s*=\s*(.*)\s*$/,
+    section:        /^\s*\[\s*([^\]]*?)\s*\]\s*$/,
+    param:          /^\s*([\w@\._]+)\s*=\s*(.*?)\s*$/,
     comment:        /^\s*[;#].*$/,
-    line:           /^\s*(.*)\s*$/,
+    line:           /^\s*(.*?)\s*$/,
     blank:          /^\s*$/,
     continuation:   /\\[ \t]*$/,
     is_integer:     /^-?\d+$/,
