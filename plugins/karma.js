@@ -82,7 +82,7 @@ exports.apply_tarpit = function (connection, hook, score, next) {
 
     // be less punitive to roaming users
     if (([587,465].indexOf(connection.local_port) !== -1) && /^(ehlo|connect|quit)$/.test(hook)) {
-        max = 2;
+        if (max > 2) { max = 2; }
         // Reduce penalty for good history
         if (k.history > 0) {
             delay = parseFloat(delay - 2);
