@@ -1243,9 +1243,11 @@ HMailItem.prototype.bounce = function (err, opts) {
 
 HMailItem.prototype._bounce = function (err, opts) {
     err = new Error(err);
-    err.mx = opts.mx;
-    err.deferred_rcpt = opts.fail_recips;
-    err.bounced_rcpt = opts.bounce_recips;
+    if (opts) {
+        err.mx = opts.mx;
+        err.deferred_rcpt = opts.fail_recips;
+        err.bounced_rcpt = opts.bounce_recips;
+    }
     this.bounce_error = err;
     plugins.run_hooks("bounce", this, err);
 }
