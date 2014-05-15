@@ -822,13 +822,17 @@ HMailItem.prototype.found_mx = function (err, mxs) {
     else {
         // got MXs
         var mxlist = sort_mx(mxs);
+        // support draft-delany-nullmx-02
+        if (mxlist.length == 1 && mxlist[0].priority == 0 && mxlist[0].exchange == "") {
+            return this.bounce("Domain " + this.todo.domain + " sends and receives no email (NULL MX)");
+        }
         // duplicate each MX for each ip address family
         this.mxlist = [];
         for (var mx in mxlist) {
             if (IPV6_ENABLED) {
                 this.mxlist.push(
-                    { exchange: mxlist[mx].exchange, priority: mxlist[mx].priority, port: mxlist[mx].port, family: 'AAAA' },
-                    { exchange: mxlist[mx].exchange, priority: mxlist[mx].priority, port: mxlist[mx].port, family: 'A' }
+                    { exchange: mxlist[mx].exchange, priority: mxlist[mx].priority, port: mxlist[mx].port, using_lmtp: mxlist[mx].using_lmtp, family: 'AAAA' },
+                    { exchange: mxlist[mx].exchange, priority: mxlist[mx].priority, port: mxlist[mx].port, using_lmtp: mxlist[mx].using_lmtp, family: 'A' }
                 );
             }
             else {
