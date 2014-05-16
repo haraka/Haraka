@@ -79,16 +79,14 @@ exports.hook_data_post = function (next, connection) {
         // Abort if the transaction is gone
         if (!connection.transaction) return next();
 
-        if (spamd_response.headers['Tests']) {
-            spamd_response.tests = spamd_response.headers['Tests'];
+        if (spamd_response.headers && spamd_response.headers.Tests) {
+            spamd_response.tests = spamd_response.headers.Tests;
         }
         if (spamd_response.tests === undefined) {
             // strip the 'tests' from the X-Spam-Status header
-            var tests;
-            if (spamd_response.headers['Status'] && 
-                tests = /tests=([^ ]+)/.exec(spamd_response.headers['Status'].replace(/\r?\n\t/g,''))) 
-            {
-                spamd_response.tests = tests[1];
+            if (spamd_response.headers && spamd_response.headers.Status) {
+                var tests = /tests=([^ ]+)/.exec(spamd_response.headers.Status.replace(/\r?\n\t/g,''));
+                if (tests) { spamd_response.tests = tests[1]; }
             }
         }
 
