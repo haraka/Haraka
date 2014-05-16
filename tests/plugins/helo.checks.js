@@ -20,10 +20,7 @@ function _set_up(callback) {
     this.connection.results = new ResultStore(this.connection);
     this.connection.remote_ip='208.75.199.19';
 
-    this.plugin.hook_connect(stub, this.connection);
-
-    // going to need these in multiple tests
-    // this.plugin.register();
+    this.plugin.register();
 
     callback();
 }
@@ -563,5 +560,64 @@ exports.forward_dns = {
         this.plugin.cfg.check.forward_dns=true;
         this.plugin.cfg.reject.forward_dns=true;
         this.plugin.forward_dns(cb, this.connection, test_helo);
+    },
+};
+
+exports.match_re = {
+    setUp : _set_up,
+    tearDown : _tear_down,
+    'miss' : function (test) {
+        test.expect(3);
+        var test_helo = 'not_in_re_list.net';
+        var cb = function (rc, msg) {
+            test.equal(undefined, rc);
+            test.equal(undefined, msg);
+            test.ok(this.connection.results.get('helo.checks').pass.length);
+            test.done();
+        }.bind(this);
+        this.plugin.init(stub, this.connection, test_helo);
+        this.plugin.cfg.list_re = new RegExp('^(' + ['bad.tld'].join('|') + ')$', 'i');
+        this.plugin.match_re(cb, this.connection, test_helo);
+    },
+    'hit, reject=no' : function (test) {
+        test.expect(3);
+        var test_helo = 'ylmf-pc';
+        var cb = function (rc, msg) {
+            test.equal(undefined, rc);
+            test.equal(undefined, msg);
+            test.ok(this.connection.results.get('helo.checks').fail.length);
+            test.done();
+        }.bind(this);
+        this.plugin.init(stub, this.connection, test_helo);
+        this.plugin.cfg.list_re = new RegExp('^(' + ['ylmf-pc'].join('|') + ')$', 'i');
+        this.plugin.match_re(cb, this.connection, test_helo);
+    },
+    'hit, reject=yes, exact' : function (test) {
+        test.expect(3);
+        var test_helo = 'ylmf-pc';
+        var cb = function (rc, msg) {
+            test.equal(DENY, rc);
+            test.equal('That HELO not allowed here', msg);
+            test.ok(this.connection.results.get('helo.checks').fail.length);
+            test.done();
+        }.bind(this);
+        this.plugin.init(stub, this.connection, test_helo);
+        this.plugin.cfg.reject = { match_re: true };
+        this.plugin.cfg.list_re = new RegExp('^(' + ['ylmf-pc'].join('|') + ')$', 'i');
+        this.plugin.match_re(cb, this.connection, test_helo);
+    },
+    'hit, reject=yes, pattern' : function (test) {
+        test.expect(3);
+        var test_helo = 'ylmf-pc';
+        var cb = function (rc, msg) {
+            test.equal(DENY, rc);
+            test.equal('That HELO not allowed here', msg);
+            test.ok(this.connection.results.get('helo.checks').fail.length);
+            test.done();
+        }.bind(this);
+        this.plugin.init(stub, this.connection, test_helo);
+        this.plugin.cfg.reject = { match_re: true };
+        this.plugin.cfg.list_re = new RegExp('^(' + ['ylm.*'].join('|') + ')$', 'i');
+        this.plugin.match_re(cb, this.connection, test_helo);
     },
 };

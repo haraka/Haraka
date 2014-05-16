@@ -24,49 +24,54 @@ exports.register = function () {
         plugin.register_hook('helo', hook);
         plugin.register_hook('ehlo', hook);
     }
-};
 
-exports.hook_connect = function (next, connection) {
-    var plugin = this;
-    plugin.cfg = plugin.config.get('helo.checks.ini', {
-        booleans: [
-            '+check.match_re',
-            '+check.bare_ip',
-            '+check.dynamic',
-            '+check.big_company',
-            '+check.valid_hostname',
-            '+check.forward_dns',
-            '+check.rdns_match',
-            '+check.mismatch',
+    var load_config = function () {
+        plugin.cfg = plugin.config.get('helo.checks.ini', {
+            booleans: [
+                '+check.match_re',
+                '+check.bare_ip',
+                '+check.dynamic',
+                '+check.big_company',
+                '+check.valid_hostname',
+                '+check.forward_dns',
+                '+check.rdns_match',
+                '+check.mismatch',
 
-            '+reject.valid_hostname',
-            '+reject.match_re',
-            '+reject.bare_ip',
-            '+reject.dynamic',
-            '+reject.big_company',
-            '-reject.forward_dns',
-            '-reject.literal_mismatch',
-            '-reject.rdns_match',
-            '-reject.mismatch',
+                '+reject.valid_hostname',
+                '+reject.match_re',
+                '+reject.bare_ip',
+                '+reject.dynamic',
+                '+reject.big_company',
+                '-reject.forward_dns',
+                '-reject.literal_mismatch',
+                '-reject.rdns_match',
+                '-reject.mismatch',
 
-            '+skip.private_ip',
-            '+skip.whitelist',
-            '+skip.relaying',
-        ],
-    });
+                '+skip.private_ip',
+                '+skip.whitelist',
+                '+skip.relaying',
+            ],
+        }, load_config);
 
-    // backwards compatible with old config file
-    if (plugin.cfg.check_no_dot !== undefined) {
-        plugin.cfg.check.valid_hostname = plugin.cfg.check_no_dot ? true : false;
-    }
-    if (plugin.cfg.check_dynamic !== undefined) {
-        plugin.cfg.check.dynamic = plugin.cfg.check_dynamic ? true : false;
-    }
-    if (plugin.cfg.check_raw_ip !== undefined) {
-        plugin.cfg.check.bare_ip = plugin.cfg.check_raw_ip ? true : false;
-    }
+        // backwards compatible with old config file
+        if (plugin.cfg.check_no_dot !== undefined) {
+            plugin.cfg.check.valid_hostname = plugin.cfg.check_no_dot ? true : false;
+        }
+        if (plugin.cfg.check_dynamic !== undefined) {
+            plugin.cfg.check.dynamic = plugin.cfg.check_dynamic ? true : false;
+        }
+        if (plugin.cfg.check_raw_ip !== undefined) {
+            plugin.cfg.check.bare_ip = plugin.cfg.check_raw_ip ? true : false;
+        }
+    };
+    load_config();
 
-    return next();
+    var load_re_file = function () {
+        var regex_list = plugin.valid_regexes(plugin.config.get('helo.checks.regexps', 'list', load_re_file));
+        // pre-compile the regexes
+        plugin.cfg.list_re = new RegExp('^(' + regex_list.join('|') + ')$', 'i');
+    };
+    load_re_file();
 };
 
 exports.init = function (next, connection, helo) {
@@ -167,18 +172,14 @@ exports.match_re = function (next, connection, helo) {
 
     if (plugin.should_skip(connection, 'match_re')) return next();
 
-    var regexps = plugin.config.get('helo.checks.regexps', 'list');
-
-    var fail=0;
-    for (var i=0; i < regexps.length; i++) {
-        var re = new RegExp('^' + regexps[i] + '$');
-        if (re.test(helo)) {
-            connection.results.add(plugin, {fail: 'match_re(' + regexps[i] + ')'});
-            fail++;
+    if (plugin.cfg.list_re.test(helo)) {
+        connection.results.add(plugin, {fail: 'match_re'});
+        if (plugin.cfg.reject.match_re) {
+            return next(DENY, "That HELO not allowed here");
         }
+        return next();
     }
-    if (fail && plugin.cfg.reject.match_re) return next(DENY, "BAD HELO");
-    if (!fail) connection.results.add(plugin, {pass: 'match_re'});
+    connection.results.add(plugin, {pass: 'match_re'});
     return next();
 };
 
@@ -469,4 +470,20 @@ exports.get_a_records = function (host, cb) {
         // return the DNS results
         return cb(null, ips);
     });
+};
+
+exports.valid_regexes = function (list, file) {
+    // accepts an array of regexes and a file name
+    var valid = [];
+    for (var i=0; i<list.length; i++) {
+        try {
+            new RegExp(list[i]);
+        }
+        catch (e) {
+            this.logerror(this, "invalid regex in " + file + ", " + list[i]);
+            continue;
+        }
+        valid.push(list[i]);
+    }
+    return valid;  // returns a list of valid regexes
 };
