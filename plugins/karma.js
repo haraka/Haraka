@@ -688,6 +688,7 @@ exports.max_recipients = function (connection) {
     var score = connection.results.get('karma').connect;
     if (score >  3 && count <= plugin.cfg.recipients.good) return;
     if (score >= 0 && count <= plugin.cfg.recipients.neutral) return;
+    if (count <= plugin.cfg.recipients.bad) return;
 
     return 'too many recipients (' + count + ') for ' + desc + ' karma';
 };
