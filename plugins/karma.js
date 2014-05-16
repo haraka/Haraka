@@ -158,6 +158,8 @@ exports.hook_deny = function (next, connection, params) {
     // exceptions, whose 'DENY' should not be captured
     if (pi_name === 'karma') return next();    // myself
     if (pi_name === 'access') return next();   // ACLs
+    if (pi_name === 'helo.checks') return next(); // has granular reject
+    if (pi_name === 'data.headers') return next(); // has granular reject
     if (pi_hook === 'rcpt_to') return next();  // RCPT hooks are special
     if (pi_hook === 'queue') return next();
 
