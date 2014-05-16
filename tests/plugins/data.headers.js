@@ -15,7 +15,7 @@ function _set_up(callback) {
     this.plugin = Plugin('data.headers');
     this.plugin.name = 'data.headers';  // TODO: delete after PR#495 merged
     this.plugin.config = config;
-    this.plugin.refresh_config(function(){ return; });
+    this.plugin.register();
     try {
         this.plugin.addrparser = require('address-rfc2822');
     }
