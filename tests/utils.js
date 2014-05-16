@@ -8,6 +8,12 @@ constants.import(global);
 
 function _set_up(callback) {
     this.backup = {};
+
+    var levels = [ 'data', 'protocol', 'debug', 'info', 'notice', 'warn', 'error', 'crit', 'alert', 'emerg' ];
+    for (var i=0; i < levels.length; i++) {
+        utils['log' + levels[i]] = stub();
+    }
+
     callback();
 }
 
@@ -217,4 +223,4 @@ exports.valid_regexes = {
         test.deepEqual(['.*\.example.com'], utils.valid_regexes(re_list));
         test.done();
     },
-};
+};  
