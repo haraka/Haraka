@@ -1,0 +1,17 @@
+#!/usr/bin/perl -w
+ 
+use strict;
+open(my $grep, "-|", "grep", @ARGV) || die $!;
+my %uuids;
+while (<$grep>) {
+    if (/^[^\[]*\[(\w+)\]\s+\[([A-F0-9-]+)(?:\.\d+)?\]/) {
+        $uuids{$2}++;
+    }
+}
+if (! scalar(keys(%uuids))) {
+    print "Not found\n";
+    exit(-1);
+}
+print "Looking for UUIDs: ", join(', ',keys(%uuids)), "\n";
+exec 'grep', '-E', '('.join('|',keys(%uuids)).')', $ARGV[-1];
+
