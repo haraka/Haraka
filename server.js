@@ -57,7 +57,7 @@ Server.daemonize = function (config_data) {
         // We are the daemon from here on...
         var npid = require('npid');
         try {
-            npid.create(config_data.main.daemon_pid_file);
+            npid.create(config_data.main.daemon_pid_file).removeOnExit();
         }
         catch (err) {
             logger.logerror(err.message);

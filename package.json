@@ -21,7 +21,7 @@
     "semver"        : "~2.2.1",
     "async"         : "~0.2.9",
     "daemon"        : "~1.1.0",
-    "npid"          : "~0.3.2",
+    "npid"          : "~0.4.0",
     "address-rfc2822":"~0.0.2"
   },
   "optionalDependencies": {
