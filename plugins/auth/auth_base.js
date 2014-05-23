@@ -78,7 +78,7 @@ exports.check_cram_md5_passwd = function (ticket, user, passwd, cb) {
 }
 
 exports.check_user = function (next, connection, credentials, method) {
-    var self = this;
+    var plugin = this;
     connection.notes.authenticating = false;
     if (!(credentials[0] && credentials[1])) {
         connection.respond(504, "Invalid AUTH string", function () {
@@ -105,7 +105,8 @@ exports.check_user = function (next, connection, credentials, method) {
             }
             connection.notes.auth_fails++;
             var delay = Math.pow(2, connection.notes.auth_fails - 1);
-            connection.lognotice(self, 'delaying response for ' + delay + ' seconds');
+            if (plugin.timeout && delay >= plugin.timeout) { delay = plugin.timeout - 1 }
+            connection.lognotice(plugin, 'delaying response for ' + delay + ' seconds');
             // here we include the username, as shown in RFC 5451 example
             connection.auth_results('auth=fail ('+method.toLowerCase()+') smtp.auth='+ credentials[0]);
             setTimeout(function () {
@@ -118,10 +119,10 @@ exports.check_user = function (next, connection, credentials, method) {
     }
 
     if (method === AUTH_METHOD_PLAIN || method === AUTH_METHOD_LOGIN) {
-        this.check_plain_passwd(connection, credentials[0], credentials[1], passwd_ok);
+        plugin.check_plain_passwd(connection, credentials[0], credentials[1], passwd_ok);
     }
     else if (method === AUTH_METHOD_CRAM_MD5) {
-        this.check_cram_md5_passwd(connection.notes.auth_ticket, credentials[0], credentials[1], passwd_ok);
+        plugin.check_cram_md5_passwd(connection.notes.auth_ticket, credentials[0], credentials[1], passwd_ok);
     }
 }
 
