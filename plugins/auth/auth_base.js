@@ -105,6 +105,7 @@ exports.check_user = function (next, connection, credentials, method) {
             }
             connection.notes.auth_fails++;
             var delay = Math.pow(2, connection.notes.auth_fails - 1);
+            if (this.timeout && delay >= this.timeout) { delay = this.timeout - 1 }
             connection.lognotice(self, 'delaying response for ' + delay + ' seconds');
             // here we include the username, as shown in RFC 5451 example
             connection.auth_results('auth=fail ('+method.toLowerCase()+') smtp.auth='+ credentials[0]);
