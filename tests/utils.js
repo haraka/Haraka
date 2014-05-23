@@ -195,3 +195,26 @@ exports.utils = {
         test.done();
     }
 };
+
+exports.valid_regexes = {
+    setUp : _set_up,
+    tearDown : _tear_down,
+    'two valid': function (test) {
+        var re_list = ['.*\.exam.ple','.*\.example.com'];
+        test.expect(1);
+        test.deepEqual(re_list, utils.valid_regexes(re_list));
+        test.done();
+    },
+    'one valid, one invalid': function (test) {
+        var re_list = ['*\.exam.ple','.*\.example.com'];
+        test.expect(1);
+        test.deepEqual(['.*\.example.com'], utils.valid_regexes(re_list));
+        test.done();
+    },
+    'one valid, two invalid': function (test) {
+        var re_list = ['[', '*\.exam.ple','.*\.example.com'];
+        test.expect(1);
+        test.deepEqual(['.*\.example.com'], utils.valid_regexes(re_list));
+        test.done();
+    },
+};
