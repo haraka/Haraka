@@ -8,6 +8,13 @@ The Haraka core reads some configuration files to determine a few actions:
   Can contain either a number or a string. See the top of logger.js for the
 different levels available.
 
+* log_timestamps
+
+  If this contains a 1 (or other truthy value), will prepend a timestamp
+to log lines. Note this only affects log lines sent via console.log, not
+the actual content sent to log hooks, so logging via syslog for example
+will not include a timestamp.
+
 * databytes
 
   Contains the maximum SIZE of an email that Haraka will receive.
