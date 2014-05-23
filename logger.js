@@ -128,7 +128,23 @@ logger.would_log = function (level) {
     return true;
 }
 
+var original_console_log = console.log;
+
+logger._init_timestamps = function () {
+    var self = this;
+    var _timestamps = config.get('log_timestamps', 'value', function () {
+        self._init_timestamps();
+    });
+    if (_timestamps) {
+        console.log = original_console_log.bind(console, new Date().toISOString());
+    }
+    else {
+        console.log = original_console_log;
+    }
+}
+
 logger._init_loglevel();
+logger._init_timestamps();
 
 var level, key;
 for (key in logger) {
