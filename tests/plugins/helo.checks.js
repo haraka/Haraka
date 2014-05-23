@@ -516,7 +516,7 @@ exports.forward_dns = {
     'enabled, pass' : function (test) {
         test.expect(2);
         var outer = this;
-        var test_helo = 'matt.simerson.net';
+        var test_helo = 'b.resolvers.level3.net';
         var cb = function () {
             // console.log(arguments);
             // console.log(outer.connection.results.get('helo.checks'));
@@ -524,7 +524,7 @@ exports.forward_dns = {
             test.ok(outer.connection.results.get('helo.checks').pass.length);
             test.done();
         };
-        this.connection.remote_ip='208.75.177.99';
+        this.connection.remote_ip='4.2.2.2';
         this.plugin.init(stub, this.connection, test_helo);
         this.plugin.cfg.check.forward_dns=true;
         this.plugin.cfg.reject.forward_dns=true;
@@ -541,7 +541,7 @@ exports.forward_dns = {
             test.ok(outer.connection.results.get('helo.checks').fail.length);
             test.done();
         };
-        this.connection.remote_ip='208.75.177.99';
+        this.connection.remote_ip='66.128.51.163';
         this.plugin.init(stub, this.connection, test_helo);
         this.plugin.cfg.check.forward_dns=true;
         this.plugin.cfg.reject.forward_dns=false;
@@ -558,7 +558,7 @@ exports.forward_dns = {
             test.ok(outer.connection.results.get('helo.checks').fail.length);
             test.done();
         };
-        this.connection.remote_ip='208.75.177.99';
+        this.connection.remote_ip='66.128.51.163';
         this.plugin.init(stub, this.connection, test_helo);
         this.plugin.cfg.check.forward_dns=true;
         this.plugin.cfg.reject.forward_dns=true;
