@@ -10,6 +10,7 @@
 
 exports.register = function() {
     var plugin = this;
+    plugin.host_list = {};
 
     var load_host_list = function () {
         plugin.loginfo(plugin, "loading host_list");
