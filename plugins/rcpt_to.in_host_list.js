@@ -10,10 +10,16 @@
 
 exports.register = function() {
     var plugin = this;
+    plugin.host_list = {};
 
     var load_host_list = function () {
         plugin.loginfo(plugin, "loading host_list");
-        plugin.host_list = plugin.config.get('host_list', 'list', load_host_list);
+        var lowered_list = {};
+        var raw_list = plugin.config.get('host_list', 'list', load_host_list);
+        for (var i in raw_list) {
+            lowered_list[raw_list[i].toLowerCase()] = true;
+        }
+        plugin.host_list = lowered_list;
     };
     load_host_list();
 
@@ -95,13 +101,9 @@ exports.hook_rcpt = function(next, connection, params) {
 
 exports.in_host_list = function (domain) {
     var plugin = this;
-    for (var i in plugin.host_list) {
-        plugin.logdebug("checking " + domain + " against " + plugin.host_list[i]);
-
-        // normal matches
-        if (plugin.host_list[i].toLowerCase() === domain) {
-            return true;
-        }
+    plugin.logdebug("checking " + domain + " in config/host_list");
+    if (plugin.host_list[domain]) {
+        return true;
     }
     return false;
 };
@@ -111,8 +113,8 @@ exports.in_host_regex = function (domain) {
     if (!plugin.host_list_regex) return false;
     if (!plugin.host_list_regex.length) return false;
 
-    plugin.logdebug("checking " + domain + " against regexp " + plugin.hl_re.source);
+    plugin.logdebug("checking " + domain + " against config/host_list_regex ");
 
-    if (!plugin.hl_re.test(domain)) { return false; }
-    return true;
+    if (plugin.hl_re.test(domain)) { return true; }
+    return false;
 };
