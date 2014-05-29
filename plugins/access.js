@@ -1,5 +1,6 @@
 // access plugin
 var net_utils = require('./net_utils');
+var utils     = require('./utils');
 
 exports.register = function() {
     var plugin = this;
@@ -337,21 +338,6 @@ exports.rcpt_to_access = function(next, connection, params) {
     return next();
 };
 
-exports.valid_regexes = function (list, file) {
-    var valid = [];
-    for (var i=0; i<list.length; i++) {
-        try {
-            new RegExp(list[i]);
-        }
-        catch (e) {
-            this.logerror(this, "invalid regex in " + file + ", " + list[i]);
-            continue;
-        }
-        valid.push(list[i]);
-    }
-    return valid;
-};
-
 exports.in_list = function (type, phase, address) {
     var plugin = this;
     if (!plugin.list[type][phase]) return false;
@@ -376,7 +362,7 @@ exports.in_re_file = function (file_name, address) {
     // badly if affected performance. It took 8.5x longer to run than
     // in_re_list.
     this.logdebug(this, 'checking ' + address + ' against ' + file_name);
-    var re_list = this.valid_regexes(this.config.get(file_name, 'list'), file_name);
+    var re_list = utils.valid_regexes(this.config.get(file_name, 'list'), file_name);
     for (var i=0; i<re_list.length; i++) {
         if (new RegExp('^' + re_list[i] + '$', 'i').test(address)) return true;
     }
@@ -422,7 +408,7 @@ exports.load_re_file = function (type, phase) {
         var file_name = plugin.cfg.re[type][phase];
         plugin.loginfo(plugin, "loading " + file_name);
 
-        var regex_list = plugin.valid_regexes(
+        var regex_list = utils.valid_regexes(
                 plugin.config.get(file_name, 'list', function () {
                     load_re(); }));
 
