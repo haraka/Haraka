@@ -109,9 +109,9 @@ exports.init_config = function() {
 exports.init_lists = function () {
     var plugin = this;
     plugin.list = {
-        black: { conn: [], helo: [], mail: [], rcpt: [] },
-        white: { conn: [], helo: [], mail: [], rcpt: [] },
-        domain: { any: [] },
+        black: { conn: {}, helo: {}, mail: {}, rcpt: {} },
+        white: { conn: {}, helo: {}, mail: {}, rcpt: {} },
+        domain: { any: {} },
     };
     plugin.list_re = {
         black: {},
@@ -372,8 +372,12 @@ exports.data_any = function(next, connection) {
 
 exports.in_list = function (type, phase, address) {
     var plugin = this;
-    if (!plugin.list[type][phase]) return false;
-    return (plugin.list[type][phase].indexOf(address) === -1) ? false : true;
+    if (!plugin.list[type][phase]) {
+        console.log("phase not defined: " + phase);
+        return false;
+    }
+    if (plugin.list[type][phase][address]) return true;
+    return false;
 };
 
 exports.in_re_list = function (type, phase, address) {
@@ -385,6 +389,8 @@ exports.in_re_list = function (type, phase, address) {
 
 exports.in_file = function (file_name, address, connection) {
     var plugin = this;
+    // using indexOf on an array here is about 20x slower than testing against
+    // a key in an object
     connection.logdebug(plugin, 'checking ' + address + ' against ' + file_name);
     return (plugin.config.get(file_name, 'list').indexOf(address) === -1) ? false : true;
 };
@@ -412,20 +418,17 @@ exports.load_file = function (type, phase) {
         plugin.loginfo(plugin, "loading " + file_name);
 
         // load config with a self-referential callback
-        var list = plugin.config.get(file_name, 'list', function () {
-            load_em_high();
-        });
-
-        // convert list items to LC at load, so we don't have to a run time
-        for (var i=0; i<list.length; i++) {
-            if (list[i] !== list[i].toLowerCase()) list[i] = list[i].toLowerCase();
-        }
+        var list = plugin.config.get(file_name, 'list', load_em_high);
 
         // init the list store, type is white or black
         if (!plugin.list) plugin.list = {};
         if (!plugin.list[type]) plugin.list[type] = {};
 
-        plugin.list[type][phase] = list;
+        // toLower when loading spends a fraction of a second at load time
+        // to save millions of seconds during run time.
+        for (var i=0; i<list.length; i++) {
+            plugin.list.type[list[i].toLowerCase()] = true;
+        }
     }
     load_em_high();
 };
@@ -440,9 +443,7 @@ exports.load_re_file = function (type, phase) {
         var file_name = plugin.cfg.re[type][phase];
         plugin.loginfo(plugin, "loading " + file_name);
 
-        var regex_list = utils.valid_regexes(
-                plugin.config.get(file_name, 'list', function () {
-                    load_re(); }));
+        var regex_list = utils.valid_regexes(plugin.config.get(file_name, 'list', load_re));
 
         // initialize the list store
         if (!plugin.list_re) plugin.list_re = {};
@@ -464,24 +465,22 @@ exports.load_domain_file = function (type, phase) {
         var file_name = plugin.cfg[type][phase];
         plugin.loginfo(plugin, "loading " + file_name);
 
-        var list = plugin.config.get(file_name, 'list', function() {
-            load_domains();
-        });
+        var list = plugin.config.get(file_name, 'list', load_domains);
 
         // init the list store, if needed
         if (!plugin.list) plugin.list = {};
         if (!plugin.list[type]) plugin.list[type] = {};
 
-        // convert list items to LC at load, so we don't have to at run time
+        // convert list items to LC at load (much faster than at run time)
         for (var i=0; i<list.length; i++) {
             if (list[i][0] === '!') {  // whitelist entry
-                plugin.list[type][phase].push(list[i].toLowerCase());
+                plugin.list[type][phase][list[i].toLowerCase()] = true;
                 continue;
             }
 
             var d = net_utils.get_organizational_domain(list[i]);
             if (!d) continue;
-            plugin.list[type][phase].push(d.toLowerCase());
+            plugin.list[type][phase][d.toLowerCase()] = true;
         }
     }
     load_domains();
