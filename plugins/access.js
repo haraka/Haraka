@@ -29,6 +29,7 @@ exports.register = function() {
         ['connect','helo','ehlo','mail','rcpt'].forEach(function (hook) {
             plugin.register_hook(hook, 'any');
         });
+        plugin.register_hook('data_post', 'data_any');
     }
 };
 
@@ -335,6 +336,34 @@ exports.rcpt_to_access = function(next, connection, params) {
     }
 
     connection.transaction.results.add(plugin, {pass: 'unlisted(rcpt)', emit: true});
+    return next();
+};
+
+exports.data_any = function(next, connection) {
+    var plugin = this;
+    if (!plugin.cfg.check.data) return next();
+
+    var hdr_from = connection.transaction.header.get('From');
+    if (!hdr_from) {
+        connection.transaction.results.add(plugin, {fail: 'data(missing_from)'});
+        return next();
+    }
+
+    var hdr_addr = (require('address-rfc2822').parse(hdr_from))[0];
+    var hdr_dom = net_utils.get_organizational_domain(hdr_addr.host());
+
+    var file = plugin.cfg.domain.any;
+    if (plugin.in_list('domain', 'any', '!'+hdr_dom)) {
+        connection.results.add(plugin, {pass: file, whitelist: true, emit: true});
+        return next();
+    }
+
+    if (plugin.in_list('domain', 'any', hdr_dom)) {
+        connection.results.add(plugin, {fail: file+'('+hdr_dom+')', blacklist: true, emit: true});
+        return next(DENY, "Email from that domain is not accepted here.");
+    }
+
+    connection.results.add(plugin, {pass: 'any', emit: true});
     return next();
 };
 
