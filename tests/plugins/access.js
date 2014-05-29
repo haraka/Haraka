@@ -160,23 +160,6 @@ exports.in_re_list = {
     },
 };
 
-exports.valid_regexes = {
-    setUp : _set_up,
-    tearDown : _tear_down,
-    'valid': function (test) {
-        var re_list = ['.*\.exam.ple','.*\.example.com'];
-        test.expect(1);
-        test.deepEqual(re_list, this.plugin.valid_regexes(re_list));
-        test.done();
-    },
-    'invalid': function (test) {
-        var re_list = ['*\.exam.ple','.*\.example.com'];
-        test.expect(1);
-        test.deepEqual(['.*\.example.com'], this.plugin.valid_regexes(re_list));
-        test.done();
-    },
-};
-
 exports.load_re_file = {
     setUp : _set_up,
     tearDown : _tear_down,
