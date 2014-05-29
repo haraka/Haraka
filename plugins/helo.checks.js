@@ -1,6 +1,7 @@
 // Check various bits of the HELO string
 var dns       = require('dns');
 var net_utils = require('./net_utils');
+var utils     = require('./utils');
 
 var checks = [
     'init',               // config loading, multiplicity detection
@@ -70,7 +71,7 @@ exports.register = function () {
     load_config();
 
     var load_re_file = function () {
-        var regex_list = plugin.valid_regexes(plugin.config.get('helo.checks.regexps', 'list', load_re_file));
+        var regex_list = utils.valid_regexes(plugin.config.get('helo.checks.regexps', 'list', load_re_file));
         // pre-compile the regexes
         plugin.cfg.list_re = new RegExp('^(' + regex_list.join('|') + ')$', 'i');
     };
@@ -503,20 +504,4 @@ exports.get_a_records = function (host, cb) {
         // return the DNS results
         return cb(null, ips);
     });
-};
-
-exports.valid_regexes = function (list, file) {
-    // accepts an array of regexes and a file name
-    var valid = [];
-    for (var i=0; i<list.length; i++) {
-        try {
-            new RegExp(list[i]);
-        }
-        catch (e) {
-            this.logerror(this, "invalid regex in " + file + ", " + list[i]);
-            continue;
-        }
-        valid.push(list[i]);
-    }
-    return valid;  // returns a list of valid regexes
 };
