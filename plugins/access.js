@@ -71,36 +71,39 @@ exports.init_config = function() {
         },
     };
 
-    var cfg = plugin.config.get('access.ini', {
-        booleans: [
-            '+check.any',
-            '+check.conn',
-            '-check.helo',
-            '+check.mail',
-            '+check.rcpt',
-        ],
-    });
+    var load_access_ini = function() {
+        var cfg = plugin.config.get('access.ini', {
+            booleans: [
+                '+check.any',
+                '+check.conn',
+                '-check.helo',
+                '+check.mail',
+                '+check.rcpt',
+            ],
+        }, load_access_ini);
 
-    plugin.cfg.check = cfg.check;
-    if (cfg.deny_msg) {
-        for (var p in plugin.cfg.deny_msg) {
-            if (cfg.deny_msg[p]) plugin.cfg.deny_msg[p] = cfg.deny_msg[p];
+        plugin.cfg.check = cfg.check;
+        if (cfg.deny_msg) {
+            for (var p in plugin.cfg.deny_msg) {
+                if (cfg.deny_msg[p]) plugin.cfg.deny_msg[p] = cfg.deny_msg[p];
+            }
         }
-    }
 
-    // backwards compatibility
-    var mf_cfg = plugin.config.get('mail_from.access.ini');
-    if (mf_cfg && mf_cfg.general && mf_cfg.general.deny_msg) {
-        plugin.cfg.deny_msg.mail = mf_cfg.general.deny_msg;
-    }
-    var rcpt_cfg = plugin.config.get('rcpt_to.access.ini');
-    if (rcpt_cfg && rcpt_cfg.general && rcpt_cfg.general.deny_msg) {
-        plugin.cfg.deny_msg.rcpt = rcpt_cfg.general.deny_msg;
-    }
-    var rdns_cfg = this.config.get('connect.rdns_access.ini');
-    if (rdns_cfg && rdns_cfg.general && rdns_cfg.general.deny_msg) {
-        plugin.cfg.deny_msg.conn = rdns_cfg.general.deny_msg;
-    }
+        // backwards compatibility
+        var mf_cfg = plugin.config.get('mail_from.access.ini');
+        if (mf_cfg && mf_cfg.general && mf_cfg.general.deny_msg) {
+            plugin.cfg.deny_msg.mail = mf_cfg.general.deny_msg;
+        }
+        var rcpt_cfg = plugin.config.get('rcpt_to.access.ini');
+        if (rcpt_cfg && rcpt_cfg.general && rcpt_cfg.general.deny_msg) {
+            plugin.cfg.deny_msg.rcpt = rcpt_cfg.general.deny_msg;
+        }
+        var rdns_cfg = plugin.config.get('connect.rdns_access.ini');
+        if (rdns_cfg && rdns_cfg.general && rdns_cfg.general.deny_msg) {
+            plugin.cfg.deny_msg.conn = rdns_cfg.general.deny_msg;
+        }
+    };
+    load_access_ini();
 };
 
 exports.init_lists = function () {
