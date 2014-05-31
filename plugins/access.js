@@ -431,7 +431,7 @@ exports.load_file = function (type, phase) {
         // toLower when loading spends a fraction of a second at load time
         // to save millions of seconds during run time.
         for (var i=0; i<list.length; i++) {
-            plugin.list.type[list[i].toLowerCase()] = true;
+            plugin.list[type][list[i].toLowerCase()] = true;
         }
     }
     load_em_high();
