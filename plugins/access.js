@@ -150,9 +150,13 @@ exports.any = function (next, connection, params) {
         connection.logerror(plugin, "no domain!");
         return next();
     }
+    if (!/\./.test(domain)) {
+        connection.loginfo(plugin, "invalid domain: " + domain);
+        return next();
+    }
     var org_domain = net_utils.get_organizational_domain(domain);
     if (!org_domain) {
-        connection.logerror(plugin, "no org domain from domain " + domain);
+        connection.logerror(plugin, "no org domain from " + domain);
         return next();
     }
 
