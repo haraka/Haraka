@@ -487,9 +487,9 @@ exports.get_a_records = function (host, cb) {
 
     // Set-up timer
     var timer = setTimeout(function () {
-        plugin.logerror('timeout!');
-        var e = new Error('timeout');
+        var e = new Error('timeout resolving: ' + host);
         e.code = 'ETIMEOUT';
+        plugin.logerror(e);
         return cb(e);
     }, (plugin.cfg.main.dns_timeout || 30) * 1000);
 
