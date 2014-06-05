@@ -15,14 +15,14 @@ exports.register = function () {
         cert: false,
     };
 
-    var config_options = ['ciphers','requestCert','rejectUnauthorized','secureProtocol'];
+    var config_options = ['ciphers','requestCert','rejectUnauthorized'];
 
     var load_config = function () {
         plugin.loginfo("loading tls.ini");
         plugin.cfg = plugin.config.get('tls.ini', {
             booleans: [
                 '+main.requestCert',
-                '+main.rejectUnauthorized',
+                '-main.rejectUnauthorized',
             ]
         }, load_config);
 

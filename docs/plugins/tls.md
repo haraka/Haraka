@@ -62,15 +62,7 @@ applies to server connections.
 
 Emits an 'error' event when certificate verification fails.
 
-    `rejectUnauthorized=[true|false]`  (default: true)
-
-### secureProtocol
-
-Restrict SSL to specified protocol(s).
-
-this setting would require SSLv3:
-
-    `secureProtocol=SSLv3_method`
+    `rejectUnauthorized=[true|false]`  (default: false)
 
 ### ciphers
 
