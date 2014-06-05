@@ -4,11 +4,23 @@ This plugin enables the use of TLS (via `STARTTLS`) in Haraka.
 
 For this plugin to work you must have SSL certificates installed correctly.
 
+## Install Location
+
+    config/tls_key.pem
+    config/tls_cert.pem
+
 ## Purchased Certificate
 
-If you have a purchased certificate, install the key as config/tls\_key.pem and the
-certificate (appended with any intermediate/chained/ca-cert files) as
-config/tls\_cert.pem.
+If you have a purchased certificate, append any intermediate/chained/ca-cert
+files to the certificate in this order:
+
+1. The CA signed SSL cert
+2. Any intermediate certificates
+3. The CA root certificate
+
+Example:
+
+    cat mail.example.com.crt intermediary_cert.crt ca-cert.crt > config/tls_cert.pem
 
 See also [Setting Up TLS](https://github.com/baudehlo/Haraka/wiki/Setting-up-TLS-with-CA-certificates)
 
@@ -23,3 +35,38 @@ command:
 You will be prompted to provide details of your organization. Make sure the
 Common Name is set to your servers Fully Qualified Domain Name, which should
 be the same as the contents of your `config/me` file.
+
+## Configuration
+
+The following settings can be specified in config/tls.ini. The
+[Node.js TLS](http://nodejs.org/api/tls.html) page has additional information
+about these options.
+
+### requestCert
+
+Whether a server should request a certificate from a connecting client. Only
+applies to server connections.
+
+    `requestCert=[true|false]`  (default: true)
+
+### rejectUnauthorized
+
+Emits an 'error' event when certificate verification fails.
+
+    `rejectUnauthorized=[true|false]`  (default: true)
+
+### secureProtocol
+
+Restrict SSL to specified protocol(s).
+
+this setting would require SSLv3:
+
+    `secureProtocol=SSLv3_method`
+
+### ciphers
+
+A list of allowable ciphers to use.
+
+    `ciphers=...`
+
+See also: [Strong SSL Ciphers](http://cipherli.st) and the [SSLlabs Test Page](https://www.ssllabs.com/ssltest/index.html)

@@ -13,8 +13,25 @@ exports.register = function () {
     plugin.tls_opts = {
         key: false,
         cert: false,
-        requestCert: true,
     };
+
+    var config_options = ['ciphers','requestCert','rejectUnauthorized','secureProtocol'];
+
+    var load_config = function () {
+        plugin.loginfo("loading tls.ini");
+        plugin.cfg = plugin.config.get('tls.ini', {
+            booleans: [
+                '+main.requestCert',
+                '+main.rejectUnauthorized',
+            ]
+        }, load_config);
+
+        for (var i in config_options) {
+            if (plugin.cfg.main[config_options[i]] === undefined) { continue; }
+            plugin.tls_opts[config_options[i]] = plugin.cfg.main[config_options[i]];
+        }
+    };
+    load_config();
 
     var load_key = function () {
         plugin.loginfo("loading tls_key.pem");
@@ -33,10 +50,11 @@ exports.register = function () {
         }
     };
     load_cert();
+    plugin.logdebug(plugin.tls_opts);
 };
 
 exports.hook_capabilities = function (next, connection) {
-    /* Caution: We cannot advertise STARTTLS if the upgrade has already been done. */
+    /* Caution: do not advertise STARTTLS if the upgrade has already been done. */
     if (connection.using_tls) { return next(); }
 
     var plugin = this;
