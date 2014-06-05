@@ -58,6 +58,12 @@ exports.hook_capabilities = function (next, connection) {
     if (connection.using_tls) { return next(); }
 
     var plugin = this;
+    if (plugin.cfg.no_tls_hosts) {
+        if (plugin.cfg.no_tls_hosts[connection.remote_ip]) {
+            return next();
+        }
+    }
+
     if (!plugin.tls_opts.key) {
         connection.logcrit("No TLS key found. See 'harka -h tls'");
         return next();
@@ -85,7 +91,6 @@ exports.hook_unrecognized_command = function (next, connection, params) {
 
     var plugin = this;
     var timer = setTimeout(function () {
-        if (!connection) { return; }
         connection.logerror(plugin, 'timeout');
         return next();
     }, 10 * 1000);

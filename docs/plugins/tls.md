@@ -38,6 +38,15 @@ be the same as the contents of your `config/me` file.
 
 ## Configuration
 
+### `no_tls_hosts`
+
+If needed, add this section to the tls.ini file and list any IPs that have
+broken TLS. Ex:
+
+    [no_tls_hosts]
+    192.168.1.3=true
+
+
 The following settings can be specified in config/tls.ini. The
 [Node.js TLS](http://nodejs.org/api/tls.html) page has additional information
 about these options.
@@ -70,3 +79,4 @@ A list of allowable ciphers to use.
     `ciphers=...`
 
 See also: [Strong SSL Ciphers](http://cipherli.st) and the [SSLlabs Test Page](https://www.ssllabs.com/ssltest/index.html)
+
