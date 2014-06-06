@@ -38,6 +38,8 @@ be the same as the contents of your `config/me` file.
 
 ## Configuration
 
+The following settings can be specified in config/tls.ini.
+
 ### `no_tls_hosts`
 
 If needed, add this section to the tls.ini file and list any IPs that have
@@ -47,22 +49,8 @@ broken TLS. Ex:
     192.168.1.3=true
 
 
-The following settings can be specified in config/tls.ini. The
-[Node.js TLS](http://nodejs.org/api/tls.html) page has additional information
-about these options.
-
-### requestCert
-
-Whether a server should request a certificate from a connecting client. Only
-applies to server connections.
-
-    `requestCert=[true|false]`  (default: true)
-
-### rejectUnauthorized
-
-Emits an 'error' event when certificate verification fails.
-
-    `rejectUnauthorized=[true|false]`  (default: false)
+The [Node.js TLS](http://nodejs.org/api/tls.html) page has additional information
+about the following options.
 
 ### ciphers
 
@@ -72,3 +60,14 @@ A list of allowable ciphers to use.
 
 See also: [Strong SSL Ciphers](http://cipherli.st) and the [SSLlabs Test Page](https://www.ssllabs.com/ssltest/index.html)
 
+### requestCert
+
+Whether Haraka should request a certificate from a connecting client.
+
+    `requestCert=[true|false]`  (default: true)
+
+### rejectUnauthorized
+
+Reject connections from clients without a CA validated TLS certificate.
+
+    `rejectUnauthorized=[true|false]`  (default: false)
