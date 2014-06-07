@@ -57,8 +57,13 @@ The [routes] section can include routes for domains and email addresses:
 
 # Performance
 
+## File based
+
 Routes from the config file are loaded into an object at server startup. If
 the config file changes, the config file is automatically reloaded. Key
-lookups in the object are extremely fast, about 450,000 qps on a Dell R600. I
-haven't benchmarked Redis lookups but I'd expect them to be in the same
-ballpark.
+lookups in the object are extremely fast, about 450,000 qps on a Dell R600.
+
+## Redis
+
+The benchmarks published by the author(s) of the Node 'redis' module are
+about 30,000 qps.

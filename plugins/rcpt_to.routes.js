@@ -58,7 +58,6 @@ exports.rcpt = function(next, connection, params) {
     var domain = rcpt.host.toLowerCase();
 
     var file_search = function () {
-
         if (plugin.route_list[address]) {
             txn.results.add(plugin, {pass: 'file.email'});
             return next(OK);
@@ -74,7 +73,7 @@ exports.rcpt = function(next, connection, params) {
     };
 
     // if we can't use redis, try files and return
-    if (!redis || !plugin.init_redis_connection) { return file_search(); }
+    if (!redis || !plugin.db) { return file_search(); }
 
     // redis connection open, try it
     plugin.db.multi()
@@ -164,8 +163,8 @@ exports.init_redis_connection = function () {
         return false;
     });
 
-    if (plugin.db) {
-        if (redis_db) { plugin.db.select(redis_db); }
+    if (redis_db) {
+        plugin.db.select(redis_db);
         return true;
     }
     return false;
