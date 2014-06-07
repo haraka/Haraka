@@ -4,8 +4,8 @@ var stub             = require('../fixtures/stub'),
     constants        = require('../../constants'),
     Address          = require('../../address').Address,
     configfile       = require('../../configfile'),
-    config           = require('../../config');
-//  ResultStore      = require('../../result_store');
+    config           = require('../../config'),
+    ResultStore      = require('../../result_store');
 
 // huge hack here, but plugin tests need constants
 constants.import(global);
@@ -30,7 +30,7 @@ function _set_up(callback) {
     this.plugin.register();
     this.connection = Connection.createConnection();
     this.connection.transaction = {
-//      results: new ResultStore(this.connection),
+        results: new ResultStore(this.connection),
         notes: {},
     };
 

@@ -57,13 +57,19 @@ exports.rcpt = function(next, connection, params) {
     var address = rcpt.address().toLowerCase();
     var domain = rcpt.host.toLowerCase();
 
-    connection.loginfo(plugin, "Checking for " + address);
-
     var file_search = function () {
-        if (plugin.route_list[address]) { return next(OK); }
-        if (plugin.route_list[domain])  { return next(OK); }
+
+        if (plugin.route_list[address]) {
+            txn.results.add(plugin, {pass: 'file.email'});
+            return next(OK);
+        }
+        if (plugin.route_list[domain])  {
+            txn.results.add(plugin, {pass: 'file.domain'});
+            return next(OK);
+        }
 
         // not permitted (by this rcpt_to plugin)
+        txn.results.add(plugin, {fail: 'file'});
         return next();
     };
 
@@ -81,8 +87,14 @@ exports.rcpt = function(next, connection, params) {
             }
 
             // got replies from Redis, any with an MX?
-            if (replies[0]) { return next(OK); }
-            if (replies[1]) { return next(OK); }
+            if (replies[0]) {
+                txn.results.add(plugin, {pass: 'redis.email'});
+                return next(OK);
+            }
+            if (replies[1]) {
+                txn.results.add(plugin, {pass: 'redis.domain'});
+                return next(OK);
+            }
 
             return file_search(); // no redis record, try files
         });
