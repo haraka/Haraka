@@ -41,10 +41,10 @@ function _tear_down(callback) {
     callback();
 }
 
-exports.hook_rcpt = {
+exports.rcpt = {
     setUp : _set_up,
     tearDown : _tear_down,
-    'file based miss' : function (test) {
+    'file miss' : function (test) {
         test.expect(2);
         var cb = function (rc, msg) {
             test.equal(rc, undefined);
@@ -52,9 +52,9 @@ exports.hook_rcpt = {
             test.done();
         }.bind(this);
         var addr = new Address('<matt@example.com>');
-        this.plugin.hook_rcpt(cb, this.connection, [addr]);
+        this.plugin.rcpt(cb, this.connection, [addr]);
     },
-    'file based hit' : function (test) {
+    'file hit' : function (test) {
         test.expect(2);
         var cb = function (rc, msg) {
             test.equal(rc, OK);
@@ -63,14 +63,38 @@ exports.hook_rcpt = {
         }.bind(this);
         this.plugin.route_list = {'matt@example.com': '192.168.1.1'};
         var addr = new Address('<matt@example.com>');
-        this.plugin.hook_rcpt(cb, this.connection, [addr]);
+        this.plugin.rcpt(cb, this.connection, [addr]);
     },
+    'redis miss' : function (test) {
+        test.expect(2);
+        var cb = function (rc, msg) {
+            test.equal(rc, undefined);
+            test.equal(msg, undefined);
+            test.done();
+        }.bind(this);
+        var addr = new Address('<matt@example.com>');
+        this.plugin.delete_route('matt@example.com');
+        this.plugin.rcpt(cb, this.connection, [addr]);
+    },
+    'redis hit' : function (test) {
+        test.expect(2);
+        var cb = function (rc, msg) {
+            test.equal(rc, OK);
+            test.equal(msg, undefined);
+            this.plugin.delete_route('matt@example.com');
+            test.done();
+        }.bind(this);
+        var addr = new Address('<matt@example.com>');
+        this.plugin.insert_route('matt@example.com','192.168.2.1');
+        this.plugin.rcpt(cb, this.connection, [addr]);
+    },
+
 };
 
 exports.get_mx = {
     setUp : _set_up,
     tearDown : _tear_down,
-    'email address hit' : function (test) {
+    'email address file hit' : function (test) {
         test.expect(2);
         var cb = function (rc, mx) {
             test.equal(rc, OK);
@@ -82,7 +106,7 @@ exports.get_mx = {
         var addr = new Address('<matt@example.com>');
         this.plugin.get_mx(cb, hmail, addr.host);
     },
-    'email domain hit' : function (test) {
+    'email domain file hit' : function (test) {
         test.expect(2);
         var cb = function (rc, mx) {
             test.equal(rc, OK);
@@ -94,7 +118,7 @@ exports.get_mx = {
         var addr = new Address('<matt@example.com>');
         this.plugin.get_mx(cb, hmail, addr.host);
     },
-    'address preferred ' : function (test) {
+    'address preferred file' : function (test) {
         test.expect(2);
         var cb = function (rc, mx) {
             test.equal(rc, OK);
@@ -106,6 +130,48 @@ exports.get_mx = {
             'matt@example.com': '192.168.1.1',
             'example.com': '192.168.1.2',
         };
+        var addr = new Address('<matt@example.com>');
+        this.plugin.get_mx(cb, hmail, addr.host);
+    },
+    'email address redis hit' : function (test) {
+        var addr = new Address('<matt@example.com>');
+        test.expect(2);
+        var thistest = this;
+
+        this.plugin.insert_route('matt@example.com','192.168.2.1', function() {
+            thistest.plugin.get_mx(function (rc, mx) {
+                test.equal(rc, OK);
+                test.equal(mx, '192.168.2.1');
+                test.done();
+                thistest.plugin.delete_route(addr.address());
+            }, hmail, addr.host);
+        });
+    },
+    'email domain redis hit' : function (test) {
+        test.expect(2);
+        var addr = new Address('<matt@example.com>');
+        this.plugin.insert_route(addr.address(),'192.168.2.2');
+        var cb = function (rc, mx) {
+            test.equal(rc, OK);
+            test.equal(mx, '192.168.2.2');
+            test.done();
+            this.plugin.delete_route(addr.address());
+        }.bind(this);
+        this.plugin.get_mx(cb, hmail, addr.host);
+    },
+    'address preferred redis' : function (test) {
+        test.expect(2);
+        this.plugin.insert_route('matt@example.com','192.168.2.1');
+        this.plugin.insert_route(     'example.com','192.168.2.2');
+
+        var cb = function (rc, mx) {
+            test.equal(rc, OK);
+            test.equal(mx, '192.168.2.1');
+            test.done();
+            this.plugin.delete_route('matt@example.com');
+            this.plugin.delete_route(     'example.com');
+        }.bind(this);
+
         var addr = new Address('<matt@example.com>');
         this.plugin.get_mx(cb, hmail, addr.host);
     },
