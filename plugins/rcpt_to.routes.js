@@ -52,7 +52,7 @@ exports.rcpt = function(next, connection, params) {
     var address = rcpt.address().toLowerCase();
     var domain = rcpt.host.toLowerCase();
 
-    var file_search = function () {
+    var do_file_search = function () {
         if (plugin.route_list[address]) {
             txn.results.add(plugin, {pass: 'file.email'});
             return next(OK);
@@ -68,7 +68,7 @@ exports.rcpt = function(next, connection, params) {
     };
 
     // if we can't use redis, try files and return
-    if (!redis || !plugin.redis_pings) { return file_search(); }
+    if (!redis || !plugin.redis_pings) { return do_file_search(); }
 
     // redis connection open, try it
     plugin.db.multi()
@@ -90,7 +90,7 @@ exports.rcpt = function(next, connection, params) {
                 return next(OK);
             }
 
-            return file_search(); // no redis record, try files
+            return do_file_search(); // no redis record, try files
         });
 };
 
@@ -100,7 +100,7 @@ exports.get_mx = function(next, hmail, domain) {
     // get email address
     var address = hmail.rcpt_to[0].original.toLowerCase();
 
-    var file_search = function () {
+    var do_file_search = function () {
         // check email adress for route
         if (plugin.route_list[address]) {
             return next(OK, plugin.route_list[address]);
@@ -111,12 +111,12 @@ exports.get_mx = function(next, hmail, domain) {
             return next(OK, plugin.route_list[domain]);
         }
 
-        plugin.loginfo('using normal MX lookup for: ' + address);
+        plugin.loginfo('using DNS MX for: ' + address);
         return next();
     };
 
     // if we can't use redis, try files and return
-    if (!redis || !plugin.redis_pings) { return file_search(); }
+    if (!redis || !plugin.redis_pings) { return do_file_search(); }
 
     // redis connection open, try it
     plugin.db.multi()
@@ -132,7 +132,7 @@ exports.get_mx = function(next, hmail, domain) {
             if (replies[0]) { return next(OK, replies[0]); }
             if (replies[1]) { return next(OK, replies[1]); }
 
-            return file_search(); // no redis record, try files
+            return do_file_search(); // no redis record, try files
         });
 };
 

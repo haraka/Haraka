@@ -24,8 +24,9 @@ rejected.
 
 ## MX Routing
 
-Each entry in `config/rcpt_to.routes.ini` or the Redis table must specify a
-MX record. The MX record is the format required by _outbound.js_. Examples:
+Each entry in the [routes] section of `config/rcpt_to.routes.ini` or in Redis
+must specify a MX record. The MX record is the same format as _outbound.js_.
+Examples:
 
     * hostname
     * hostname:port
@@ -60,10 +61,18 @@ The [routes] section can include routes for domains and email addresses:
 ## File based
 
 Routes from the config file are loaded into an object at server startup. If
-the config file changes, the config file is automatically reloaded. Key
-lookups in the object are extremely fast, about 450,000 qps on a Dell R600.
+the config file changes, the routes automatically update. Key lookups in the
+object are extremely fast. In 2014, the author measured 450,000 qps against
+a 92,000 key object on a Xeon E5-2620 @ 2.10GHz.
 
 ## Redis
 
 The benchmarks published by the author(s) of the Node 'redis' module are
 about 30,000 qps.
+
+# Author
+
+Matt Simerson.
+
+Underwritten and graciously donated to the Haraka community
+by [Serious Mumbo, Inc.](http://seriousmumbo.com)
