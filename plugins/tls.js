@@ -90,10 +90,13 @@ exports.hook_unrecognized_command = function (next, connection, params) {
     connection.respond(220, "Go ahead.");
 
     var plugin = this;
+    // adjust plugin.timeout like so: echo '45' > config/tls.timeout
+    var timeout = plugin.timeout - 1;
+
     var timer = setTimeout(function () {
         connection.logerror(plugin, 'timeout');
-        return next();
-    }, 10 * 1000);
+        return next(DENYSOFTDISCONNECT);
+    }, timeout * 1000);
 
     /* Upgrade the connection to TLS. */
     connection.client.upgrade(plugin.tls_opts, function (authorized, verifyError, cert, cipher) {
