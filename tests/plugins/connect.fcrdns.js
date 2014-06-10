@@ -18,6 +18,7 @@ function _set_up(callback) {
     this.plugin.config = config;
     this.plugin.loginfo = stub();
     this.plugin.logerror = stub();
+    this.plugin.register();
 
     this.connection = Connection.createConnection();
     this.connection.results = new ResultStore(this.connection);
@@ -36,11 +37,6 @@ function _tear_down(callback) {
 exports.refresh_config = {
     setUp : _set_up,
     tearDown : _tear_down,
-    'none': function (test) {
-        test.expect(1);
-        test.equal(undefined, this.plugin.cfg);
-        test.done();
-    },
     'defaults return': function (test) {
         test.expect(4);
         var r = this.plugin.refresh_config(this.connection);
@@ -211,6 +207,12 @@ exports.is_generic_rdns = {
         test.equal(false, this.plugin.is_generic_rdns(this.connection, 'c-76-121-96-159.business.wa.comcast.net'));
         test.done();
     },
+    'null': function (test) {
+        test.expect(1);
+        this.connection.remote_ip='192.168.1.1';
+        test.equal(false, this.plugin.is_generic_rdns(this.connection, null));
+        test.done();
+    },
 };
 
 exports.save_auth_results = {
@@ -253,5 +255,39 @@ exports.ptr_compare = {
         var iplist = ['10.1.1.2'];
         test.equal(true, this.plugin.ptr_compare(iplist, this.connection, 'foo.example.com'));
         test.done();
+    },
+};
+
+exports.check_fcrdns = {
+    setUp : _set_up,
+    tearDown : _tear_down,
+    'fail, tolerate': function (test) {
+        test.expect(1);
+        var cb = function (rc, msg) {
+            test.equal(rc, undefined);
+            test.done();
+        };
+        this.connection.remote_ip = '10.1.1.1';
+        this.connection.results.add(this.plugin, {
+            fcrdns: [], invalid_tlds: [], other_ips: [], ptr_names: [],
+            ptr_multidomain: false, has_rdns: false, ptr_name_has_ips: false,
+            ptr_name_to_ip: {},
+        });
+        this.plugin.check_fcrdns(this.connection, ['foo.example.com'], cb);
+    },
+    'null host': function (test) {
+        // this result was experienced "in the wild"
+        test.expect(1);
+        var cb = function (rc, msg) {
+            test.equal(rc, undefined);
+            test.done();
+        };
+        this.connection.remote_ip = '10.1.1.1';
+        this.connection.results.add(this.plugin, {
+            fcrdns: [], invalid_tlds: [], other_ips: [], ptr_names: [],
+            ptr_multidomain: false, has_rdns: false, ptr_name_has_ips: false,
+            ptr_name_to_ip: {},
+        });
+        this.plugin.check_fcrdns(this.connection, ['foo.example.com','', null], cb);
     },
 };

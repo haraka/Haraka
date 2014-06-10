@@ -126,10 +126,12 @@ exports.ip_to_long = function (ip) {
         var d = ip.split('.');
         return ((((((+d[0])*256)+(+d[1]))*256)+(+d[2]))*256)+(+d[3]);
     }
-}
+};
 
 exports.is_ip_in_str = function(ip, str) {
     // Only IPv4 for now
+    if (!str) { return false; }
+    if (!ip) { return false; }
     if (net.isIPv4(ip)) {
         var host_part = (this.split_hostname(str,1))[0].toString();
         var ip_split = ip.split('.');
