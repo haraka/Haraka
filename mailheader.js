@@ -75,7 +75,7 @@ function _decode_header (matched, encoding, cte, data) {
     }
     
     // convert with iconv if encoding != UTF-8
-    if (Iconv && !(/UTF-?8/i.test(encoding))) {
+    if (!(/UTF-?8/i.test(encoding))) {
         data = try_convert(data, encoding);
     }
     
@@ -89,7 +89,7 @@ Header.prototype.decode_header = function decode_header (val) {
     // remove end carriage return
     val = val.replace(/\r?\n$/, '');
     
-    if (Iconv && !/^[\x00-\x7f]*$/.test(val)) {
+    if (!/^[\x00-\x7f]*$/.test(val)) {
         // 8 bit values in the header
         var matches = /\bcharset\s*=\s*["']?([\w_\-]*)/.exec(this.get('content-type'));
         if (matches && !/UTF-?8/i.test(matches[1])) {
