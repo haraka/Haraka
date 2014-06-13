@@ -6,14 +6,6 @@ var phase_prefixes = ['connect','helo','mail_from','rcpt_to','data'];
 
 exports.register = function () {
     var plugin = this;
-    plugin.register_hook('init_master',  'karma_init');
-    plugin.register_hook('init_child',   'karma_init');
-    plugin.register_hook('connect',      'max_concurrent');
-    plugin.register_hook('connect',      'karma_penalty');
-};
-
-exports.karma_init = function (next, server) {
-    var plugin = this;
     plugin.deny_hooks = ['unrecognized_command','helo','data','data_post'];
 
     var load_config = function () {
@@ -30,6 +22,14 @@ exports.karma_init = function (next, server) {
     };
     load_config();
 
+    plugin.register_hook('init_master',  'karma_init');
+    plugin.register_hook('init_child',   'karma_init');
+    plugin.register_hook('connect',      'max_concurrent');
+    plugin.register_hook('connect',      'karma_penalty');
+};
+
+exports.karma_init = function (next, server) {
+    var plugin = this;
     plugin.init_redis_connection();
     return next();
 };
