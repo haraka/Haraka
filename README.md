@@ -84,7 +84,7 @@ mail for. If not, edit the `config/host_list` file. For example if you want
 to receive mail addressed to `user@domain.com`, add `domain.com` to the
 `config/host_list` file.
 
-Finally just start Haraka:
+Finally just start Haraka using root access permissions:
 
     $ haraka -c /path/to/haraka_test
 
