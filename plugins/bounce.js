@@ -4,7 +4,8 @@ var net_utils = require('./net_utils');
 
 exports.register = function () {
     var plugin = this;
-    plugin.register_hook('mail',      'refresh_config');
+    plugin.load_configs();
+
     plugin.register_hook('mail',      'reject_all');
     plugin.register_hook('data',      'single_recipient');
     plugin.register_hook('data',      'bad_rcpt');
@@ -12,59 +13,68 @@ exports.register = function () {
     plugin.register_hook('data_post', 'non_local_msgid');
 };
 
-exports.refresh_config = function (next, connection) {
+exports.load_configs = function () {
     var plugin = this;
 
-    plugin.cfg = plugin.config.get('bounce.ini', {
-        booleans: [
-            '-check.reject_all',
-            '+check.single_recipient',
-            '-check.empty_return_path',
-            '+check.bad_rcpt',
-            '-non_local_msgid',
+    var load_bounce_ini = function () {
+        plugin.cfg = plugin.config.get('bounce.ini', {
+            booleans: [
+                '-check.reject_all',
+                '+check.single_recipient',
+                '-check.empty_return_path',
+                '+check.bad_rcpt',
+                '-non_local_msgid',
 
-            '+reject.single_recipient',
-            '-reject.empty_return_path',
-        ],
-    });
+                '+reject.single_recipient',
+                '-reject.empty_return_path',
+            ],
+        }, load_bounce_ini);
 
-    // Legacy config handling
-    if (plugin.cfg.main.reject_invalid) {
-        connection.logerror(plugin, "bounce.ini is out of date, please update!");
-        plugin.cfg.check.single_recipient=true;
-        plugin.cfg.reject.single_recipient=true;
-    }
+        // Legacy config handling
+        if (plugin.cfg.main.reject_invalid) {
+            plugin.logerror("bounce.ini is out of date, please update!");
+            plugin.cfg.check.single_recipient=true;
+            plugin.cfg.reject.single_recipient=true;
+        }
 
-    if (plugin.cfg.main.reject_all) {
-        connection.logerror(plugin, "bounce.ini is out of date, please update!");
-        plugin.cfg.check.reject_all=true;
-    }
+        if (plugin.cfg.main.reject_all) {
+            plugin.logerror("bounce.ini is out of date, please update!");
+            plugin.cfg.check.reject_all=true;
+        }
+    };
+    load_bounce_ini();
 
-    plugin.cfg.invalid_addrs = plugin.config.get('bounce_bad_rcpt', 'list');
-    return next();
+    var load_bounce_bad_rcpt = function () {
+        var invalids = {};
+        var new_list = plugin.config.get('bounce_bad_rcpt', 'list', load_bounce_bad_rcpt);
+        for (var i=0; i < new_list.length; i++) {
+            invalids[new_list[i]] = true;
+        }
+        plugin.cfg.invalid_addrs = invalids;
+    };
+    load_bounce_bad_rcpt();
 };
 
 exports.reject_all = function (next, connection, params) {
     var plugin = this;
-    var transaction = connection.transaction;
+    if (!plugin.cfg.check.reject_all) { return next(); }
 
-    if (!plugin.cfg.check.reject_all) return next();
     var mail_from = params[0];
 
     if (!plugin.has_null_sender(connection, mail_from)) {
         return next(); // bounce messages are from null senders
     }
 
-    transaction.results.add(plugin, {fail: 'bounces_accepted', emit: true });
+    connection.transaction.results.add(plugin, {fail: 'bounces_accepted', emit: true });
     return next(DENY, "No bounces accepted here");
 };
 
 exports.single_recipient = function(next, connection) {
     var plugin = this;
-    var transaction = connection.transaction;
-
     if (!plugin.cfg.check.single_recipient) return next();
     if (!plugin.has_null_sender(connection)) return next();
+
+    var transaction = connection.transaction;
 
     // Valid bounces have a single recipient
     if (connection.transaction.rcpt_to.length === 1) {
@@ -84,10 +94,10 @@ exports.single_recipient = function(next, connection) {
 
 exports.empty_return_path = function(next, connection) {
     var plugin = this;
-    var transaction = connection.transaction;
-
     if (!plugin.cfg.check.empty_return_path) return next();
     if (!plugin.has_null_sender(connection)) return next();
+
+    var transaction = connection.transaction;
 
     // Bounce messages generally do not have a Return-Path set. This checks
     // for that. But whether it should is worth questioning...
@@ -128,7 +138,7 @@ exports.bad_rcpt = function (next, connection) {
 
     for (var i=0; i < connection.transaction.rcpt_to.length; i++) {
         var rcpt = connection.transaction.rcpt_to[i].address();
-        if (plugin.cfg.invalid_addrs.indexOf(rcpt) === -1) continue;
+        if (!plugin.cfg.invalid_addrs[rcpt]) continue;
         transaction.results.add(plugin, {fail: 'bad_rcpt', emit: true });
         return next(DENY, "That recipient does not accept bounces");
     }
@@ -158,16 +168,19 @@ exports.has_null_sender = function (connection, mail_from) {
 
 exports.non_local_msgid = function (next, connection) {
     var plugin = this;
-    var transaction = connection.transaction;
-
     if (!plugin.cfg.check.non_local_msgid) return next();
     if (!plugin.has_null_sender(connection)) return next();
+
+    var transaction = connection.transaction;
 
     // Bounce messages usually contain the headers of the original message
     // in the body. This parses the body, searching for the Message-ID header.
     // It then inspects the contents of that header, extracting the domain part,
     // and then checking to see if that domain is local to this server.
 
+    // NOTE: this only works reliably if *every* message sent has a local
+    // domain in the Message-ID. In practice, that means outbound MXes MUST
+    // check Message-ID on outbound and rewrite non-conforming Message-IDs.
     var matches = transaction.body.bodytext.match(/[\r\n]Message-ID: .*?[\r\n]/gi);
     if (!matches) {
         connection.loginfo(plugin, "no Message-ID matches");
@@ -203,10 +216,7 @@ exports.non_local_msgid = function (next, connection) {
         return next(DENY, "bounce Message-ID without valid domain, I didn't send it.");
     }
 
-    connection.loginfo(plugin, valid_domains);
-    connection.logerror(plugin, "TODO: verify valid_domains are local");
-    return next();
-
-    // transaction.results.add(plugin, {fail: 'empty_return_path', emit: true });
-    // return next(DENY, "bounce with non-local Message-ID (RFC 3834)");
+    // we wouldn't have accepted the bounce if the recipient wasn't local
+    transaction.results.add(plugin, {fail: 'Message-ID not local', emit: true });
+    return next(DENY, "bounce with non-local Message-ID (RFC 3834)");
 };
