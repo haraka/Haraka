@@ -1,5 +1,7 @@
 // bounce tests
 
+var net_utils = require('./net_utils');
+
 exports.register = function () {
     var plugin = this;
     plugin.register_hook('mail',      'refresh_config');
@@ -7,6 +9,7 @@ exports.register = function () {
     plugin.register_hook('data',      'single_recipient');
     plugin.register_hook('data',      'bad_rcpt');
     plugin.register_hook('data_post', 'empty_return_path');
+    plugin.register_hook('data_post', 'non_local_msgid');
 };
 
 exports.refresh_config = function (next, connection) {
@@ -18,6 +21,7 @@ exports.refresh_config = function (next, connection) {
             '+check.single_recipient',
             '-check.empty_return_path',
             '+check.bad_rcpt',
+            '-non_local_msgid',
 
             '+reject.single_recipient',
             '-reject.empty_return_path',
@@ -150,4 +154,59 @@ exports.has_null_sender = function (connection, mail_from) {
 
     transaction.results.add(plugin, {isa: 'no'});
     return false;
+};
+
+exports.non_local_msgid = function (next, connection) {
+    var plugin = this;
+    var transaction = connection.transaction;
+
+    if (!plugin.cfg.check.non_local_msgid) return next();
+    if (!plugin.has_null_sender(connection)) return next();
+
+    // Bounce messages usually contain the headers of the original message
+    // in the body. This parses the body, searching for the Message-ID header.
+    // It then inspects the contents of that header, extracting the domain part,
+    // and then checking to see if that domain is local to this server.
+
+    var matches = transaction.body.bodytext.match(/[\r\n]Message-ID: .*?[\r\n]/gi);
+    if (!matches) {
+        connection.loginfo(plugin, "no Message-ID matches");
+        transaction.results.add(plugin, { fail: 'Message-ID' });
+        return next(DENY, "bounce without Message-ID in headers, unable to verify that I sent it");
+    }
+
+    connection.loginfo(plugin, matches);
+    var domains=[];
+    for (var i=0; i < matches.length; i++) {
+        var res = matches[i].match(/@.*>/i);
+        if (!res[0]) continue;
+        domains.push(res[0].substring(1, (res[0].length -2)));
+    }
+
+    if (domains.length === 0) {
+        connection.loginfo(plugin, "no domain(s) parsed from Message-ID headers");
+        transaction.results.add(plugin, { fail: 'Message-ID parseable' });
+        return next(DENY, "bounce with invalid Message-ID, I didn't send it.");
+    }
+
+    connection.loginfo(plugin, domains);
+
+    var valid_domains=[];
+    for (var j=0; j < domains.length; j++) {
+        var org_dom = net_utils.get_organizational_domain(domains[j]);
+        if (!org_dom) { continue; }
+        valid_domains.push(org_dom);
+    }
+
+    if (valid_domains.length === 0) {
+        transaction.results.add(plugin, { fail: 'Message-ID valid domain' });
+        return next(DENY, "bounce Message-ID without valid domain, I didn't send it.");
+    }
+
+    connection.loginfo(plugin, valid_domains);
+    connection.logerror(plugin, "TODO: verify valid_domains are local");
+    return next();
+
+    // transaction.results.add(plugin, {fail: 'empty_return_path', emit: true });
+    // return next(DENY, "bounce with non-local Message-ID (RFC 3834)");
 };
