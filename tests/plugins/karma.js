@@ -41,16 +41,12 @@ function _tear_down(callback) {
 exports.karma_init = {
     setUp : _set_up,
     tearDown : _tear_down,
-    'init': function (test) {
-        test.expect(4);
-        var cb = function (rc) {
-            test.equal(undefined, rc);
-            test.ok(this.plugin.cfg.asn);
-            test.ok(this.plugin.deny_hooks);
-            test.ok(this.plugin.db);
-            test.done();
-        }.bind(this);
-        this.plugin.karma_init(cb);
+    'register': function (test) {
+        test.expect(2);
+        this.plugin.register();
+        test.ok(this.plugin.cfg.asn);
+        test.ok(this.plugin.deny_hooks);
+        test.done();
     },
 };
 
