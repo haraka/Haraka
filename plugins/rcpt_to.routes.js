@@ -98,7 +98,10 @@ exports.get_mx = function(next, hmail, domain) {
     var plugin = this;
 
     // get email address
-    var address = hmail.rcpt_to[0].original.toLowerCase();
+    var address = domain;
+    if (hmail && hmail.rcpt_to && hmail.rcpt_to[0]) {
+        address = hmail.rcpt_to[0].original.toLowerCase();
+    }
 
     var do_file_search = function () {
         // check email adress for route
