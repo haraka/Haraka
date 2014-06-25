@@ -1230,7 +1230,9 @@ Connection.prototype.received_line = function() {
     if (this.notes.tls && this.notes.tls.cipher) {
         var sslheader = '(version=' + this.notes.tls.cipher.version +
             ' cipher=' + this.notes.tls.cipher.name +
-            ' verify=' + ((this.notes.tls.authorized) ? 'OK' : 'FAIL') + ')';
+            ' verify=' + ((this.notes.tls.authorized) ? 'OK' : 
+            ((this.notes.tls.authorizationError &&
+              this.notes.tls.authorizationError.message === 'UNABLE_TO_GET_ISSUER_CERT') ? 'NO' : 'FAIL')) + ')';
     }
     return [
         'from ',
