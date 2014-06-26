@@ -1284,8 +1284,6 @@ Connection.prototype.auth_results = function(message) {
     if (has_conn === true) header.push(this.notes.authentication_results.join('; '));
     if (has_tran === true) header.push(this.transaction.notes.authentication_results.join('; '));
     if (header.length === 1) return '';  // no results
-    if (this.notes.authentication_results_added === header.length) return ''; // no change
-    this.notes.authentication_results_added = header.length;
     return header.join('; ');
 };
 
@@ -1454,7 +1452,7 @@ Connection.prototype.data_post_respond = function(retval, msg) {
         case constants.deny:
                 this.respond(552, msg || "Message denied", function() {
                     self.msg_count.reject++;
-                    self.reset_transaction(function () { self.resume() });
+                    self.reset_transaction(function () { self.resume(); });
                 });
                 break;
         case constants.deny_disconnect:
@@ -1466,7 +1464,7 @@ Connection.prototype.data_post_respond = function(retval, msg) {
         case constants.denysoft:
                 this.respond(452, msg || "Message denied temporarily", function() {
                     self.msg_count.tempfail++;
-                    self.reset_transaction(function () { self.resume() });
+                    self.reset_transaction(function () { self.resume(); });
                 });
                 break;
         case constants.denysoftdisconnect:
