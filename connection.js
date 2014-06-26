@@ -323,6 +323,8 @@ Connection.prototype._process_data = function() {
         }
         // Detect early_talker but allow PIPELINING extension (ESMTP)
         else if ((this.state === states.STATE_PAUSE || this.state === states.STATE_PAUSE_SMTP) && !this.esmtp) {
+            // Allow EHLO/HELO to be pipelined with PROXY
+            if (this.proxy && /^(?:EH|HE)LO /i.test(this_line)) return;
             if (!this.early_talker) {
                 this_line = this_line.toString().replace(/\r?\n/,'');
                 this.logdebug('[early_talker] state=' + this.state + ' esmtp=' + this.esmtp + ' line="' + this_line + '"');
@@ -1004,6 +1006,8 @@ Connection.prototype.rcpt_respond = function(retval, msg) {
 // HAProxy support
 
 Connection.prototype.cmd_proxy = function (line) {
+    var self = this;
+
     if (!this.proxy) {
         this.respond(421, 'PROXY not allowed from ' + this.remote_ip);
         return this.disconnect();
@@ -1039,13 +1043,13 @@ Connection.prototype.cmd_proxy = function (line) {
     this.loginfo('HAProxy: proto=' + proto +
         ' src_ip=' + src_ip + ':' + src_port +
         ' dst_ip=' + dst_ip + ':' + dst_port);
-    this.reset_transaction();
-    this.relaying = false;
-    this.remote_ip = src_ip;
-    this.remote_host = undefined;
-    this.hello_host = undefined;
-
-    plugins.run_hooks('lookup_rdns', this);
+    this.reset_transaction(function () {
+        self.relaying = false;
+        self.remote_ip = src_ip;
+        self.remote_host = undefined;
+        self.hello_host = undefined;
+        plugins.run_hooks('lookup_rdns', self);
+    });
 }
 
 
