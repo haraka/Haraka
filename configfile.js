@@ -162,7 +162,8 @@ cfreader.load_ini_config = function(name, options) {
                     return;
                 }
                 else if (match = regex.section.exec(line)) {
-                    current_sect = result[match[1]] = {};
+                    if (!result[match[1]]) result[match[1]] = {};
+                    current_sect = result[match[1]];
                     current_sect_name = match[1];
                     return;
                 }

@@ -213,14 +213,17 @@ exports.load_ini_config = {
         test.done();
     },
     'test.ini, sect1, opts, w/defaults' : function (test) {
-        test.expect(4);
+        test.expect(6);
         var r = configfile.load_ini_config('tests/test.ini', {
-            booleans: ['+sect1.bool_true','-sect1.bool_false']
+            booleans: ['+sect1.bool_true','-sect1.bool_false', 
+                       '+sect1.bool_true_default', 'sect1.-bool_false_default']
         });
         test.strictEqual(r.sect1.bool_true, true);
         test.strictEqual(r.sect1.bool_false, false);
         test.strictEqual(r.sect1.str_true, 'true');
         test.strictEqual(r.sect1.str_false, 'false');
+        test.strictEqual(r.sect1.bool_true_default, true);
+        test.strictEqual(r.sect1.bool_false_default, false);
         test.done();
     },
 };
