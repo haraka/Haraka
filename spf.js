@@ -617,7 +617,7 @@ SPF.prototype.mech_ip = function (qualifier, args, cb) {
             }
             var range = ipaddr.parse(match[1]);
             var rtype = range.kind();
-            if (type !== rtype) {
+            if (this.ip_ver !== rtype) {
                 this.log_debug('mech_ip: ' + this.ip + ' => ' + cidr + ': SKIP');
                 return cb(null, this.SPF_NONE);
             }
