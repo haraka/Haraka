@@ -78,6 +78,56 @@ exports.mismatch = {
     },
 };
 
+
+exports.proto_mismatch = {
+    setUp : _set_up,
+    tearDown : _tear_down,
+    'disabled' : function (test) {
+        test.expect(2);
+        var outer = this;
+        var cb = function () {
+            test.equal(undefined, arguments[0]);
+            test.ok(outer.connection.results.get('helo.checks').skip.length);
+        };
+        this.plugin.init(stub, this.connection, 'helo.example.com');
+        this.plugin.cfg.check.proto_mismatch=false;
+        this.plugin.cfg.reject.proto_mismatch=true;
+        this.connection.esmtp = false;
+        this.plugin.proto_mismatch(cb, this.connection, 'any.example.com', 'esmtp');
+        test.done();
+    },
+    'enabled=true, proto_mismatch, reject=false' : function (test) {
+        test.expect(2);
+        var outer = this;
+        var cb = function () {
+            test.equal(undefined, arguments[0]);
+            // console.log(outer.connection.results.get('helo.checks'));
+            test.ok(outer.connection.results.get('helo.checks').fail.length);
+        };
+        this.plugin.init(stub, this.connection, 'helo.example.com');
+        this.connection.esmtp = false;
+        this.plugin.cfg.check.proto_mismatch=true;
+        this.plugin.cfg.reject.proto_mismatch=false;
+        this.plugin.proto_mismatch(cb, this.connection, 'anything', 'esmtp');
+        test.done();
+    },
+    'enabled=true, proto_mismatch, reject=true' : function (test) {
+        test.expect(2);
+        var outer = this;
+        var cb = function () {
+            test.equal(DENY, arguments[0]);
+            // console.log(outer.connection.results.get('helo.checks'));
+            test.ok(outer.connection.results.get('helo.checks').fail.length);
+        };
+        this.plugin.init(stub, this.connection, 'helo.example.com');
+        this.connection.esmtp = false;
+        this.plugin.cfg.check.proto_mismatch=true;
+        this.plugin.cfg.reject.proto_mismatch=true;
+        this.plugin.proto_mismatch(cb, this.connection, 'anything', 'esmtp');
+        test.done();
+    },
+};
+
 exports.rdns_match = {
     setUp : _set_up,
     tearDown : _tear_down,

@@ -88,6 +88,10 @@ helo.checks results can be accessed by subsequent plugins:
       If HELO is called multiple times, checks if the hostname differs between
       EHLO invocations.
 
+    * proto\_mismatch=true
+
+      If EHLO was sent and the host later tries to then send HELO or vice-versa.
+
 ### [reject]
 
     For all of the checks included above, a matching key in the reject section
@@ -97,6 +101,7 @@ helo.checks results can be accessed by subsequent plugins:
 
     [reject]
     mismatch=false
+    proto_mismatch=false
     rdns_match=false
     dynamic=false
     bare_ip=false

@@ -19,6 +19,9 @@ var checks = [
 exports.register = function () {
     var plugin = this;
 
+    plugin.register_hook('helo', 'proto_mismatch_smtp');
+    plugin.register_hook('ehlo', 'proto_mismatch_esmtp');
+
     for (var i=0; i < checks.length; i++) {
         var hook = checks[i];
         plugin.register_hook('helo', hook);
@@ -38,6 +41,7 @@ exports.hook_connect = function (next, connection) {
             '+check.forward_dns',
             '+check.rdns_match',
             '+check.mismatch',
+            '+check.proto_mismatch',
 
             '+reject.valid_hostname',
             '+reject.match_re',
@@ -48,6 +52,7 @@ exports.hook_connect = function (next, connection) {
             '-reject.literal_mismatch',
             '-reject.rdns_match',
             '-reject.mismatch',
+            '-reject.proto_mismatch',
 
             '+skip.private_ip',
             '+skip.whitelist',
@@ -88,7 +93,9 @@ exports.should_skip = function (connection, test_name) {
     var plugin = this;
 
     var hc = connection.results.get('helo.checks');
-    if (hc && hc.multi && test_name !== 'mismatch') return true;
+    if (hc && hc.multi && test_name !== 'mismatch' && test_name !== 'proto_mismatch') {
+        return true;
+    }
 
     if (!plugin.cfg.check[test_name]) {
         connection.results.add(plugin, {skip: test_name + '(config)'});
@@ -417,6 +424,34 @@ exports.forward_dns = function (next, connection, helo) {
 
     plugin.get_a_records(helo, cb);
 };
+
+exports.proto_mismatch = function (next, connection, helo, proto) {
+    var plugin = this;
+
+    if (plugin.should_skip(connection, 'proto_mismatch')) return next();
+
+    var prev_helo = connection.results.get('helo.checks').helo_host;
+    if (!prev_helo) return next();
+
+    if ((connection.esmtp && proto === 'smtp') || 
+        (!connection.esmtp && proto === 'esmtp')) 
+    {
+        connection.results.add(plugin, {fail: 'proto_mismatch(' + proto + ')'});
+        if (plugin.cfg.reject.proto_mismatch) {
+            return next(DENY, (proto === 'smtp' ? 'HELO' : 'EHLO') + ' protocol mismatch');
+        }
+    }
+
+    return next();
+};
+
+exports.proto_mismatch_smtp = function (next, connection, helo) {
+    this.proto_mismatch(next, connection, helo, 'smtp');
+}
+
+exports.proto_mismatch_esmtp = function (next, connection, helo) {
+    this.proto_mismatch(next, connection, helo, 'esmtp');
+}
 
 exports.emit_log = function (next, connection, helo) {
     var plugin = this;
