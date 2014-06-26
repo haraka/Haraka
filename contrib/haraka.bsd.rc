@@ -46,6 +46,10 @@ stop()
    if [ -f $pidfile ];
    then
        kill `cat $pidfile`
+       if [ -f $pidfile ];
+       then
+           rm $pidfile
+       fi
    else
        echo "no PID file!"
    fi
