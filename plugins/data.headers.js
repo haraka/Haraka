@@ -3,13 +3,34 @@ var net_utils  = require('./net_utils');
 
 exports.register = function () {
     var plugin = this;
+
+    var load_config = function () {
+        plugin.cfg = plugin.config.get('data.headers.ini', {
+            booleans: [
+                '+check.duplicate_singular',
+                '+check.missing_required',
+                '+check.invalid_return_path',
+                '+check.invalid_date',
+                '+check.user_agent',
+                '+check.direct_to_mx',
+                '+check.from_match',
+                '+check.mailing_list',
+
+                '-reject.duplicate_singular',
+                '-reject.missing_required',
+                '-reject.invalid_return_path',
+                '-reject.invalid_date',
+            ],
+        }, load_config);
+    };
+    load_config();
+
     try {
         plugin.addrparser = require('address-rfc2822');
     }
     catch (e) {
         plugin.logerror("unable to load address-rfc2822, try\n\n\t'npm install -g address-rfc2822'\n\n");
     }
-    this.register_hook('data',      'refresh_config');
     this.register_hook('data_post', 'duplicate_singular');
     this.register_hook('data_post', 'missing_required');
     this.register_hook('data_post', 'invalid_date');
@@ -22,31 +43,9 @@ exports.register = function () {
     this.register_hook('data_post', 'mailing_list');
 };
 
-exports.refresh_config = function(next, connection) {
-
-    this.cfg = this.config.get('data.headers.ini', {
-        booleans: [
-            '+check.duplicate_singular',
-            '+check.missing_required',
-            '+check.invalid_return_path',
-            '+check.invalid_date',
-            '+check.user_agent',
-            '+check.direct_to_mx',
-            '+check.from_match',
-            '+check.mailing_list',
-
-            '-reject.duplicate_singular',
-            '-reject.missing_required',
-            '-reject.invalid_return_path',
-            '-reject.invalid_date',
-        ],
-    });
-    return next();
-};
-
 exports.duplicate_singular = function(next, connection) {
     var plugin = this;
-    if (!plugin.cfg.check.duplicate_singular) return next();
+    if (!plugin.cfg.check.duplicate_singular) { return next(); }
 
     // RFC 5322 Section 3.6, Headers that MUST be unique if present
     var singular = plugin.cfg.main.singular !== undefined ?
