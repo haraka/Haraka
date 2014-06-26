@@ -82,8 +82,9 @@ exports.check_user = function (next, connection, credentials, method) {
     connection.notes.authenticating = false;
     if (!(credentials[0] && credentials[1])) {
         connection.respond(504, "Invalid AUTH string", function () {
-            connection.reset_transaction();
-            return next(OK);
+            connection.reset_transaction(function () {
+                return next(OK);
+            });
         });
         return;
     }
@@ -111,8 +112,9 @@ exports.check_user = function (next, connection, credentials, method) {
             connection.auth_results('auth=fail ('+method.toLowerCase()+') smtp.auth='+ credentials[0]);
             setTimeout(function () {
                 connection.respond(535, "Authentication failed", function () {
-                    connection.reset_transaction();
-                    return next(OK);
+                    connection.reset_transaction(function () {
+                        return next(OK)
+                    });
                 });
             }, delay * 1000);
         }
