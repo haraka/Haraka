@@ -1,5 +1,6 @@
 // access plugin
 var net_utils = require('./net_utils');
+var utils     = require('./utils');
 
 exports.register = function() {
     var plugin = this;
@@ -28,6 +29,7 @@ exports.register = function() {
         ['connect','helo','ehlo','mail','rcpt'].forEach(function (hook) {
             plugin.register_hook(hook, 'any');
         });
+        plugin.register_hook('data_post', 'data_any');
     }
 };
 
@@ -69,44 +71,47 @@ exports.init_config = function() {
         },
     };
 
-    var cfg = plugin.config.get('access.ini', {
-        booleans: [
-            '+check.any',
-            '+check.conn',
-            '-check.helo',
-            '+check.mail',
-            '+check.rcpt',
-        ],
-    });
+    var load_access_ini = function() {
+        var cfg = plugin.config.get('access.ini', {
+            booleans: [
+                '+check.any',
+                '+check.conn',
+                '-check.helo',
+                '+check.mail',
+                '+check.rcpt',
+            ],
+        }, load_access_ini);
 
-    plugin.cfg.check = cfg.check;
-    if (cfg.deny_msg) {
-        for (var p in plugin.cfg.deny_msg) {
-            if (cfg.deny_msg[p]) plugin.cfg.deny_msg[p] = cfg.deny_msg[p];
+        plugin.cfg.check = cfg.check;
+        if (cfg.deny_msg) {
+            for (var p in plugin.cfg.deny_msg) {
+                if (cfg.deny_msg[p]) plugin.cfg.deny_msg[p] = cfg.deny_msg[p];
+            }
         }
-    }
 
-    // backwards compatibility
-    var mf_cfg = plugin.config.get('mail_from.access.ini');
-    if (mf_cfg && mf_cfg.general && mf_cfg.general.deny_msg) {
-        plugin.cfg.deny_msg.mail = mf_cfg.general.deny_msg;
-    }
-    var rcpt_cfg = plugin.config.get('rcpt_to.access.ini');
-    if (rcpt_cfg && rcpt_cfg.general && rcpt_cfg.general.deny_msg) {
-        plugin.cfg.deny_msg.rcpt = rcpt_cfg.general.deny_msg;
-    }
-    var rdns_cfg = this.config.get('connect.rdns_access.ini');
-    if (rdns_cfg && rdns_cfg.general && rdns_cfg.general.deny_msg) {
-        plugin.cfg.deny_msg.conn = rdns_cfg.general.deny_msg;
-    }
+        // backwards compatibility
+        var mf_cfg = plugin.config.get('mail_from.access.ini');
+        if (mf_cfg && mf_cfg.general && mf_cfg.general.deny_msg) {
+            plugin.cfg.deny_msg.mail = mf_cfg.general.deny_msg;
+        }
+        var rcpt_cfg = plugin.config.get('rcpt_to.access.ini');
+        if (rcpt_cfg && rcpt_cfg.general && rcpt_cfg.general.deny_msg) {
+            plugin.cfg.deny_msg.rcpt = rcpt_cfg.general.deny_msg;
+        }
+        var rdns_cfg = plugin.config.get('connect.rdns_access.ini');
+        if (rdns_cfg && rdns_cfg.general && rdns_cfg.general.deny_msg) {
+            plugin.cfg.deny_msg.conn = rdns_cfg.general.deny_msg;
+        }
+    };
+    load_access_ini();
 };
 
 exports.init_lists = function () {
     var plugin = this;
     plugin.list = {
-        black: { conn: [], helo: [], mail: [], rcpt: [] },
-        white: { conn: [], helo: [], mail: [], rcpt: [] },
-        domain: { any: [] },
+        black: { conn: {}, helo: {}, mail: {}, rcpt: {} },
+        white: { conn: {}, helo: {}, mail: {}, rcpt: {} },
+        domain: { any: {} },
     };
     plugin.list_re = {
         black: {},
@@ -145,9 +150,13 @@ exports.any = function (next, connection, params) {
         connection.logerror(plugin, "no domain!");
         return next();
     }
+    if (!/\./.test(domain)) {
+        connection.loginfo(plugin, "invalid domain: " + domain);
+        return next();
+    }
     var org_domain = net_utils.get_organizational_domain(domain);
     if (!org_domain) {
-        connection.logerror(plugin, "no org domain from domain " + domain);
+        connection.logerror(plugin, "no org domain from " + domain);
         return next();
     }
 
@@ -337,25 +346,42 @@ exports.rcpt_to_access = function(next, connection, params) {
     return next();
 };
 
-exports.valid_regexes = function (list, file) {
-    var valid = [];
-    for (var i=0; i<list.length; i++) {
-        try {
-            new RegExp(list[i]);
-        }
-        catch (e) {
-            this.logerror(this, "invalid regex in " + file + ", " + list[i]);
-            continue;
-        }
-        valid.push(list[i]);
+exports.data_any = function(next, connection) {
+    var plugin = this;
+    if (!plugin.cfg.check.data) return next();
+
+    var hdr_from = connection.transaction.header.get('From');
+    if (!hdr_from) {
+        connection.transaction.results.add(plugin, {fail: 'data(missing_from)'});
+        return next();
     }
-    return valid;
+
+    var hdr_addr = (require('address-rfc2822').parse(hdr_from))[0];
+    var hdr_dom = net_utils.get_organizational_domain(hdr_addr.host());
+
+    var file = plugin.cfg.domain.any;
+    if (plugin.in_list('domain', 'any', '!'+hdr_dom)) {
+        connection.results.add(plugin, {pass: file, whitelist: true, emit: true});
+        return next();
+    }
+
+    if (plugin.in_list('domain', 'any', hdr_dom)) {
+        connection.results.add(plugin, {fail: file+'('+hdr_dom+')', blacklist: true, emit: true});
+        return next(DENY, "Email from that domain is not accepted here.");
+    }
+
+    connection.results.add(plugin, {pass: 'any', emit: true});
+    return next();
 };
 
 exports.in_list = function (type, phase, address) {
     var plugin = this;
-    if (!plugin.list[type][phase]) return false;
-    return (plugin.list[type][phase].indexOf(address) === -1) ? false : true;
+    if (!plugin.list[type][phase]) {
+        console.log("phase not defined: " + phase);
+        return false;
+    }
+    if (plugin.list[type][phase][address]) return true;
+    return false;
 };
 
 exports.in_re_list = function (type, phase, address) {
@@ -367,6 +393,8 @@ exports.in_re_list = function (type, phase, address) {
 
 exports.in_file = function (file_name, address, connection) {
     var plugin = this;
+    // using indexOf on an array here is about 20x slower than testing against
+    // a key in an object
     connection.logdebug(plugin, 'checking ' + address + ' against ' + file_name);
     return (plugin.config.get(file_name, 'list').indexOf(address) === -1) ? false : true;
 };
@@ -376,7 +404,7 @@ exports.in_re_file = function (file_name, address) {
     // badly if affected performance. It took 8.5x longer to run than
     // in_re_list.
     this.logdebug(this, 'checking ' + address + ' against ' + file_name);
-    var re_list = this.valid_regexes(this.config.get(file_name, 'list'), file_name);
+    var re_list = utils.valid_regexes(this.config.get(file_name, 'list'), file_name);
     for (var i=0; i<re_list.length; i++) {
         if (new RegExp('^' + re_list[i] + '$', 'i').test(address)) return true;
     }
@@ -394,20 +422,17 @@ exports.load_file = function (type, phase) {
         plugin.loginfo(plugin, "loading " + file_name);
 
         // load config with a self-referential callback
-        var list = plugin.config.get(file_name, 'list', function () {
-            load_em_high();
-        });
-
-        // convert list items to LC at load, so we don't have to a run time
-        for (var i=0; i<list.length; i++) {
-            if (list[i] !== list[i].toLowerCase()) list[i] = list[i].toLowerCase();
-        }
+        var list = plugin.config.get(file_name, 'list', load_em_high);
 
         // init the list store, type is white or black
         if (!plugin.list) plugin.list = {};
         if (!plugin.list[type]) plugin.list[type] = {};
 
-        plugin.list[type][phase] = list;
+        // toLower when loading spends a fraction of a second at load time
+        // to save millions of seconds during run time.
+        for (var i=0; i<list.length; i++) {
+            plugin.list[type][list[i].toLowerCase()] = true;
+        }
     }
     load_em_high();
 };
@@ -422,9 +447,7 @@ exports.load_re_file = function (type, phase) {
         var file_name = plugin.cfg.re[type][phase];
         plugin.loginfo(plugin, "loading " + file_name);
 
-        var regex_list = plugin.valid_regexes(
-                plugin.config.get(file_name, 'list', function () {
-                    load_re(); }));
+        var regex_list = utils.valid_regexes(plugin.config.get(file_name, 'list', load_re));
 
         // initialize the list store
         if (!plugin.list_re) plugin.list_re = {};
@@ -446,24 +469,22 @@ exports.load_domain_file = function (type, phase) {
         var file_name = plugin.cfg[type][phase];
         plugin.loginfo(plugin, "loading " + file_name);
 
-        var list = plugin.config.get(file_name, 'list', function() {
-            load_domains();
-        });
+        var list = plugin.config.get(file_name, 'list', load_domains);
 
         // init the list store, if needed
         if (!plugin.list) plugin.list = {};
         if (!plugin.list[type]) plugin.list[type] = {};
 
-        // convert list items to LC at load, so we don't have to at run time
+        // convert list items to LC at load (much faster than at run time)
         for (var i=0; i<list.length; i++) {
             if (list[i][0] === '!') {  // whitelist entry
-                plugin.list[type][phase].push(list[i].toLowerCase());
+                plugin.list[type][phase][list[i].toLowerCase()] = true;
                 continue;
             }
 
             var d = net_utils.get_organizational_domain(list[i]);
             if (!d) continue;
-            plugin.list[type][phase].push(d.toLowerCase());
+            plugin.list[type][phase][d.toLowerCase()] = true;
         }
     }
     load_domains();
