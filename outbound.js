@@ -1130,7 +1130,17 @@ HMailItem.prototype.try_deliver_host = function (mx) {
                         var tls_options = { key: key, cert: cert };
 
                         smtp_properties = {};
-                        socket.upgrade(tls_options);
+                        socket.upgrade(tls_options, function (authorized, verifyError, cert, cipher) {
+                            self.loginfo('secured:' +
+                                ((cipher) ? ' cipher=' + cipher.name + ' version=' + cipher.version : '') +
+                                ' verified=' + authorized +
+                              ((verifyError) ? ' error="' + verifyError + '"' : '' ) +
+                              ((cert && cert.subject) ? ' cn="' + cert.subject.CN + '"' +
+                              ' organization="' + cert.subject.O + '"' : '') +
+                              ((cert && cert.issuer) ? ' issuer="' + cert.issuer.O + '"' : '') +
+                              ((cert && cert.valid_to) ? ' expires="' + cert.valid_to + '"' : '') +
+                              ((cert && cert.fingerprint) ? ' fingerprint=' + cert.fingerprint : ''));
+                        });
                         break;
                     case 'helo':
                         send_command('MAIL', 'FROM:' + self.todo.mail_from);
