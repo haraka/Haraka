@@ -253,7 +253,7 @@ function connect(port, host, cb) {
 
     var socket = new pluggableStream(cryptoSocket);
 
-    socket.upgrade = function (options) {
+    socket.upgrade = function (options, cb) {
         socket.clean();
         cryptoSocket.removeAllListeners('data');
 
@@ -285,8 +285,12 @@ function connect(port, host, cb) {
             } else {
                 cleartext.authorized = true;
             }
+            var cert = pair.cleartext.getPeerCertificate();
+            if (pair.cleartext.getCipher) {
+                var cipher = pair.cleartext.getCipher();
+            }
 
-            if (cb) cb();
+            if (cb) cb(cleartext.authorized, verifyError, cert, cipher);
 
             socket.emit('secure');
         });
