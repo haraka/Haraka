@@ -6,14 +6,6 @@ var phase_prefixes = ['connect','helo','mail_from','rcpt_to','data'];
 
 exports.register = function () {
     var plugin = this;
-    plugin.register_hook('init_master',  'karma_init');
-    plugin.register_hook('init_child',   'karma_init');
-    plugin.register_hook('connect',      'max_concurrent');
-    plugin.register_hook('connect',      'karma_penalty');
-};
-
-exports.karma_init = function (next, server) {
-    var plugin = this;
     plugin.deny_hooks = ['unrecognized_command','helo','data','data_post'];
 
     var load_config = function () {
@@ -30,6 +22,14 @@ exports.karma_init = function (next, server) {
     };
     load_config();
 
+    plugin.register_hook('init_master',  'karma_init');
+    plugin.register_hook('init_child',   'karma_init');
+    plugin.register_hook('connect',      'max_concurrent');
+    plugin.register_hook('connect',      'karma_penalty');
+};
+
+exports.karma_init = function (next, server) {
+    var plugin = this;
     plugin.init_redis_connection();
     return next();
 };
@@ -82,7 +82,7 @@ exports.apply_tarpit = function (connection, hook, score, next) {
 
     // be less punitive to roaming users
     if (([587,465].indexOf(connection.local_port) !== -1) && /^(ehlo|connect|quit)$/.test(hook)) {
-        max = 2;
+        if (max > 2) { max = 2; }
         // Reduce penalty for good history
         if (k.history > 0) {
             delay = parseFloat(delay - 2);
@@ -158,6 +158,8 @@ exports.hook_deny = function (next, connection, params) {
     // exceptions, whose 'DENY' should not be captured
     if (pi_name === 'karma') return next();    // myself
     if (pi_name === 'access') return next();   // ACLs
+    if (pi_name === 'helo.checks') return next(); // has granular reject
+    if (pi_name === 'data.headers') return next(); // has granular reject
     if (pi_hook === 'rcpt_to') return next();  // RCPT hooks are special
     if (pi_hook === 'queue') return next();
 
@@ -686,6 +688,7 @@ exports.max_recipients = function (connection) {
     var score = connection.results.get('karma').connect;
     if (score >  3 && count <= plugin.cfg.recipients.good) return;
     if (score >= 0 && count <= plugin.cfg.recipients.neutral) return;
+    if (count <= plugin.cfg.recipients.bad) return;
 
     return 'too many recipients (' + count + ') for ' + desc + ' karma';
 };
