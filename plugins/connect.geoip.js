@@ -24,6 +24,12 @@ exports.geoip_lookup = function (next, connection) {
     //    city: 'San Francisco',
     //    ll: [37.7484, -122.4156]
 
+    if (!plugin.geoip) {
+        // geoip-lite dropped node 0.8 support
+        connection.results.add(plugin, {err: "geoip-lite not loaded!"});
+        return next();
+    }
+
     var r = plugin.geoip.lookup(connection.remote_ip);
     if (!r) return next();
 
