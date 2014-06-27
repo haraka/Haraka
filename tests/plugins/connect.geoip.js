@@ -17,8 +17,7 @@ function _set_up(callback) {
     try {
         this.plugin.geoip = require('geoip-lite');
     }
-    catch (e) {
-    }
+    catch (ignore) {}
 
     this.connection = Connection.createConnection();
     this.connection.results = new ResultStore(this.plugin);
@@ -35,7 +34,7 @@ function _tear_down(callback) {
 exports.haversine = {
     setUp : _set_up,
     tearDown : _tear_down,
-    'WA to MI': function (test) {
+    'WA to MI is 2000-2500km': function (test) {
         test.expect(2);
         var r = this.plugin.haversine(47.673, -122.3419, 38, -97);
         test.equal(true, (r > 2000));
@@ -49,13 +48,15 @@ exports.geoip_lookup = {
     setUp : _set_up,
     tearDown : _tear_down,
 
-    'seattle: ': function (test) {
+    'seattle: lat + long': function (test) {
         var cb = function (rc) {
             test.expect(1);
             test.equal(undefined, rc);
             if (this.plugin.geoip) {
-                test.expect(2);
+                test.expect(4);
                 var r = this.connection.results.get('connect.geoip');
+                test.equal(47.6738, r.ll[0]);
+                test.equal(-122.3419, r.ll[1]);
                 // console.log(r);
                 test.ok(r);
             }
@@ -64,14 +65,15 @@ exports.geoip_lookup = {
         this.connection.remote_ip='192.48.85.146';
         this.plugin.geoip_lookup(cb, this.connection);
     },
-    'michigan: ': function (test) {
-        test.expect(2);
+    'michigan: lat + long': function (test) {
         var cb = function (rc) {
             test.expect(1);
             test.equal(undefined, rc);
             if (this.plugin.geoip) {
-                test.expect(2);
+                test.expect(4);
                 var r = this.connection.results.get('connect.geoip');
+                test.equal(38, r.ll[0]);
+                test.equal(-97, r.ll[1]);
                 // console.log(r);
                 test.ok(r);
             }
