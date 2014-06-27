@@ -23,7 +23,7 @@ exports.load_configs = function () {
                 '+check.single_recipient',
                 '-check.empty_return_path',
                 '+check.bad_rcpt',
-                '-non_local_msgid',
+                '-check.non_local_msgid',
 
                 '+reject.single_recipient',
                 '-reject.empty_return_path',
@@ -176,11 +176,16 @@ exports.non_local_msgid = function (next, connection) {
     // Bounce messages usually contain the headers of the original message
     // in the body. This parses the body, searching for the Message-ID header.
     // It then inspects the contents of that header, extracting the domain part,
-    // and then checking to see if that domain is local to this server.
+    // and then checks to see if that domain is local to this server.
 
     // NOTE: this only works reliably if *every* message sent has a local
     // domain in the Message-ID. In practice, that means outbound MXes MUST
-    // check Message-ID on outbound and rewrite non-conforming Message-IDs.
+    // check Message-ID on outbound and modify non-conforming Message-IDs.
+    //
+    // NOTE 2: Searching the bodytext of a bounce is too simple. The bounce
+    // message should exist as a MIME Encoded part. See here for ideas
+    //     http://lamsonproject.org/blog/2009-07-09.html
+    //     http://lamsonproject.org/docs/bounce_detection.html
     var matches = transaction.body.bodytext.match(/[\r\n]Message-ID: .*?[\r\n]/gi);
     if (!matches) {
         connection.loginfo(plugin, "no Message-ID matches");
