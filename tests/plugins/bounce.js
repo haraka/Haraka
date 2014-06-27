@@ -28,7 +28,7 @@ function _set_up(callback) {
             single_recipient:true,
             empty_return_path:true,
         },
-        invalid_addrs: [ 'test@bad1.com', 'test@bad2.com', ]
+        invalid_addrs: { 'test@bad1.com': true, 'test@bad2.com': true },
     };
 
     // stub out functions
@@ -49,21 +49,17 @@ function _tear_down(callback) {
     callback();
 }
 
-exports.refresh_config = {
+exports.load_configs = {
     setUp : _set_up,
     tearDown : _tear_down,
     'yes': function (test) {
         test.expect(3);
-        var plugin = this.plugin;
-        var cb = function () {
-            test.ok(plugin.cfg.main);
-            test.ok(plugin.cfg.check);
-            test.ok(plugin.cfg.reject);
-        };
-        this.plugin.refresh_config(cb);
+        this.plugin.load_configs();
+        test.ok(this.plugin.cfg.main);
+        test.ok(this.plugin.cfg.check);
+        test.ok(this.plugin.cfg.reject);
         test.done();
     },
-    // TODO: write a bounce.ini, w/o settings, make sure defaults apply
 };
 
 exports.reject_all = {
@@ -188,8 +184,8 @@ exports.bad_rcpt = {
         test.expect(1);
         this.connection.transaction.mail_from= new Address.Address('<>');
         this.connection.transaction.rcpt_to= [ new Address.Address('test@good.com') ];
-        var cb = function () {
-            test.equal(undefined, arguments[0]);
+        var cb = function (rc) {
+            test.equal(undefined, rc);
         };
         this.plugin.bad_rcpt(cb, this.connection);
         test.done();
@@ -198,9 +194,10 @@ exports.bad_rcpt = {
         test.expect(1);
         this.connection.transaction.mail_from= new Address.Address('<>');
         this.connection.transaction.rcpt_to= [ new Address.Address('test@bad1.com') ];
-        var cb = function () {
-            test.equal(DENY, arguments[0]);
+        var cb = function (rc) {
+            test.equal(DENY, rc);
         };
+        this.plugin.cfg.invalid_addrs = {'test@bad1.com': true, 'test@bad2.com': true };
         this.plugin.bad_rcpt(cb, this.connection);
         test.done();
     },
@@ -211,9 +208,10 @@ exports.bad_rcpt = {
                 new Address.Address('test@bad1.com'),
                 new Address.Address('test@bad2.com')
                 ];
-        var cb = function () {
-            test.equal(DENY, arguments[0]);
+        var cb = function (rc) {
+            test.equal(DENY, rc);
         };
+        this.plugin.cfg.invalid_addrs = {'test@bad1.com': true, 'test@bad2.com': true };
         this.plugin.bad_rcpt(cb, this.connection);
         test.done();
     },
@@ -224,10 +222,10 @@ exports.bad_rcpt = {
                 new Address.Address('test@good.com'),
                 new Address.Address('test@bad2.com')
                 ];
-        var outer = this;
-        var cb = function () {
-            test.equal(DENY, arguments[0]);
+        var cb = function (rc) {
+            test.equal(DENY, rc);
         };
+        this.plugin.cfg.invalid_addrs = {'test@bad1.com': true, 'test@bad2.com': true };
         this.plugin.bad_rcpt(cb, this.connection);
         test.done();
     },
