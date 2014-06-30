@@ -152,7 +152,7 @@ exports.hook_data_post = function (next, connection) {
             var match;
             // Make sure we actually got a result
             if ((match = /<result code='(\d+)'/.exec(result))) {
-                var code = match[1];
+                var code = parseInt(match[1]);
                 var group;
                 var rules;
                 var gbudb_ip;
@@ -203,23 +203,15 @@ exports.hook_data_post = function (next, connection) {
                         txn.add_header(header.header, header.value);
                     }
                 }
+                // Summary log
+                connection.loginfo(self, 'result: time=' + elapsed + 'ms code=' + code +
+                                         (gbudb_ip ? ' ip="' + gbudb_ip + '"' : '') + 
+                                         (group ? ' group="' + group + '"' : '') +
+                                         (rules ? ' rule_count=' + rules.split(/\s+/).length : '') +
+                                         (rules ? ' rules="' + rules + '"' : ''));
                 // Result code MUST in the 0-63 range otherwise we got an error
                 // http://www.armresearch.com/support/articles/software/snfServer/errors.jsp
                 if (code === 0 || (code && code <= 63)) {
-                    if (!txn.notes.metadata) txn.notes.metadata = {};
-                    txn.notes.metadata.messagesniffer = {
-                        time: elapsed,
-                        ip: gbudb_ip,
-                        code: code,
-                        group: group,
-                        rules: rules.split(/\s+/),
-                    };
-                    // Summary log
-                    connection.loginfo(self, 'result: time=' + elapsed + 'ms code=' + code +
-                                             (gbudb_ip ? ' ip="' + gbudb_ip + '"' : '') + 
-                                             (group ? ' group="' + group + '"' : '') +
-                                             (rules ? ' rule_count=' + rules.split(/\s+/).length : '') +
-                                             (rules ? ' rules="' + rules + '"' : ''));
                     // Handle result
                     var action;
                     if (cfg.message) {
@@ -253,7 +245,7 @@ exports.hook_data_post = function (next, connection) {
                                 action = cfg.message["code_" + code];
                             }
                             else {
-                                if (code > 1) { 
+                                if (code > 1 && code !== 40) { 
                                     if (cfg.message['nonzero']) {
                                         action = cfg.message['nonzero'];
                                     }
@@ -267,13 +259,12 @@ exports.hook_data_post = function (next, connection) {
                     }
                     else {
                         // Default with no configuration
-                        if (code === 40) {
-                            // GBUdb caution; proceed anyway by default
-                            return next();
-                        }
-                        else if (code > 1) {
+                        if (code > 1 && code !== 40) {
                             return next(DENY, 'Spam detected by MessageSniffer' +
                                               ' (code=' + code + ' group=' + group + ')');
+                        }
+                        else {
+                            return next();
                         }
                     }
                     switch (action) {
@@ -301,7 +292,29 @@ exports.hook_data_post = function (next, connection) {
                     }
                 }
                 else {
-                    connection.logerror(self, 'error code=' + code);
+                    // Out-of-band code returned
+                    // Handle Bulk/Noisy special rule by re-writing the Precedence header
+                    if (code === 100) {
+                        var precedence = txn.header.get('precedence');
+                        if (precedence) {
+                            // We already have a precedence header
+                            precedence = precedence.trim().toLowerCase();
+                            switch (precedence) {
+                                case 'bulk':
+                                case 'list':
+                                case 'junk':
+                                    // Leave these as they are
+                                    break;
+                                default:
+                                    // Remove anything else and replace it with 'bulk'
+                                    txn.remove_header('precedence');
+                                    txn.add_header('Precedence', 'bulk');
+                            }
+                        }
+                        else {
+                            txn.add_header('Precedence', 'bulk');
+                        }
+                    }
                     return next();
                 }
             }
@@ -321,9 +334,9 @@ exports.hook_disconnect = function (next, connection) {
     var self = this;
     var cfg = this.config.get('messagesniffer.ini');
 
-    if (cfg.main.gbudb_report_deny && !connection.notes.snf_run && 
-        (connection.last_reject && connection.last_reject.charAt(0) == '5' &&
-         connection.last_reject !== '503 RCPT required first')) 
+    // Train GBUdb on rejected messages and recipients
+    if (cfg.main.gbudb_report_deny && !connection.notes.snf_run &&
+        (connection.rcpt_count.reject > 1 || connection.msg_count.reject > 1)) 
     {
         SNFClient("<snf><xci><gbudb><bad ip='" + connection.remote_ip + "'/></gbudb></xci></snf>", function (err, result) {
             if (err) {
