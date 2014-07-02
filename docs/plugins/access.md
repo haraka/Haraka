@@ -6,7 +6,7 @@ two somewhat different modes, **any** -vs- **precise**.
 
 ## ANY
 
-The **any** check is based on the idea that I want to block an offending domain
+The **any** check is premised on blocking a domain
 name no matter where in the SMTP conversation it appears. That's possible using
 several regex lists in the **precise** checks, but it's also much slower.
 
@@ -33,6 +33,12 @@ person you know that still uses it:
 
     aol.com
     !friend@aol.com
+
+### ANY data
+
+In addition to checking for a domain in the envelope, ANY can also check in
+the message headers as well. Settings 'data=true' in the [checks] section of
+`config/access.ini` enables this. At present this only checks the From header.
 
 ## PRECISE
 

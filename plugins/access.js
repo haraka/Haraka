@@ -126,18 +126,22 @@ exports.any = function (next, connection, params) {
     // step 1: get a domain name from whatever info is available
     var domain;
     var email;
+    var hook = '';
     try {
         if (params === undefined) {              // connect
+            hook = 'connect';
             var h = connection.remote_host;
             if (!h) return next();
             if (h === 'DNSERROR' || h === 'Unknown') return next();
             domain = h;
         }
         else if (typeof params === 'string') {   // HELO/EHLO
+            hook = 'helo';
             domain = params;
             if (net_utils.is_ipv4_literal(domain)) { return next(); }
         }
         else if (Array.isArray(params)) {        // MAIL FROM / RCPT TO
+            hook = 'mf/rt';
             email = params[0].address();
             domain = params[0].host;
         }
@@ -186,7 +190,8 @@ exports.any = function (next, connection, params) {
         return next(DENY, "You are not welcome here.");
     }
 
-    connection.results.add(plugin, {pass: 'any', emit: true});
+    var pass_msg = hook ? (hook + ':any') : 'any';
+    connection.results.add(plugin, {pass: pass_msg, emit: true});
     return next();
 };
 
@@ -348,7 +353,10 @@ exports.rcpt_to_access = function(next, connection, params) {
 
 exports.data_any = function(next, connection) {
     var plugin = this;
-    if (!plugin.cfg.check.data) return next();
+    if (!plugin.cfg.check.data) {
+        connection.transaction.results.add(plugin, {skip: 'data(disabled)'});
+        return next();
+    }
 
     var hdr_from = connection.transaction.header.get('From');
     if (!hdr_from) {
