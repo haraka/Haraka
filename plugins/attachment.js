@@ -1,12 +1,4 @@
-/*
-** This source is proprietary property.
-** Copyright (c) 2012, Fort Systems Ltd.
-** All rights reserved.
-**
-** This code including the methods and algorithms contained within may
-** not be copied, redistributed or modified without the express written
-** consent from Fort Systems Ltd.
-*/
+// attachment
 
 var fs = require('fs');
 var tmp;
