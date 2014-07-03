@@ -198,15 +198,6 @@ exports.start_attachment = function (connection, ctype, filename, body, stream) 
         if ((ext = filename.match(/(\.[^\. ]+)$/)) && ext[1]) {
             fileext = ext[1].toLowerCase();
         }
-        // Check for and optionally reject duplicate filenames
-        // We only apply this for files with a file extension
-        if (txn.notes.attachment_files.indexOf(filename) !== -1 &&
-            fileext !== '.unknown') 
-        {
-            // Duplicate filename!
-            connection.logwarn(this, 'duplicate filename detected: ' + filename);
-            txn.notes.attachment_result = [ DENY, 'Message contains multiple attachments with the same name (' + filename + ')' ];
-        }
         txn.notes.attachment_files.push(filename);
         // See if filename extension matches archive extension list
         // We check with the dot prefixed and without
