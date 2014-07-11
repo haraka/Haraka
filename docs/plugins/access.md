@@ -133,17 +133,17 @@ hostname (if any) of the remote.
 
 ### MAIL FROM
 
-* connect.mail\_from.whitelist          (pass)
-* connect.mail\_from.whitelist\_regex   (pass)
-* connect.mail\_from.blacklist          (block)
-* connect.mail\_from.blacklist\_regex   (block)
+* mail\_from.access.whitelist          (pass)
+* mail\_from.access.whitelist\_regex   (pass)
+* mail\_from.access.blacklist          (block)
+* mail\_from.access.blacklist\_regex   (block)
 
 ### RCPT TO
 
-* connect.rcpt\_to.whitelist           (pass)
-* connect.rcpt\_to.whitelist\_regex    (pass)
-* connect.rcpt\_to.blacklist           (block)
-* connect.rcpt\_to.blacklist\_regex    (block)
+* rcpt\_to.access.whitelist           (pass)
+* rcpt\_to.access.whitelist\_regex    (pass)
+* rcpt\_to.access.blacklist           (block)
+* rcpt\_to.access.blacklist\_regex    (block)
 
 
 ## NOTES
