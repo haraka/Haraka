@@ -1,4 +1,6 @@
 // Check various bits of the HELO string
+/*jslint vars: true, plusplus: true, node: true */
+/*global DENY */
 var dns       = require('dns');
 var net_utils = require('./net_utils');
 var utils     = require('./utils');
@@ -23,8 +25,9 @@ exports.register = function () {
     plugin.register_hook('helo', 'proto_mismatch_smtp');
     plugin.register_hook('ehlo', 'proto_mismatch_esmtp');
 
-    for (var i=0; i < checks.length; i++) {
-        var hook = checks[i];
+    var i, hook;
+    for (i=0; i < checks.length; i++) {
+        hook = checks[i];
         plugin.register_hook('helo', hook);
         plugin.register_hook('ehlo', hook);
     }
@@ -122,7 +125,7 @@ exports.should_skip = function (connection, test_name) {
 exports.mismatch = function (next, connection, helo) {
     var plugin = this;
 
-    if (plugin.should_skip(connection, 'mismatch')) return next();
+    if (plugin.should_skip(connection, 'mismatch')) { return next(); }
 
     var prev_helo = connection.results.get('helo.checks').helo_host;
     if (!prev_helo) {
@@ -138,7 +141,7 @@ exports.mismatch = function (next, connection, helo) {
 
     var msg = 'mismatch(' + prev_helo + ' / ' + helo + ')';
     connection.results.add(plugin, {fail: msg});
-    if (plugin.cfg.reject.mismatch) return next(DENY, 'HELO host ' + msg);
+    if (plugin.cfg.reject.mismatch) { return next(DENY, 'HELO host ' + msg); }
 
     return next();
 };
@@ -146,7 +149,7 @@ exports.mismatch = function (next, connection, helo) {
 exports.valid_hostname = function (next, connection, helo) {
     var plugin = this;
 
-    if (plugin.should_skip(connection, 'valid_hostname')) return next();
+    if (plugin.should_skip(connection, 'valid_hostname')) { return next(); }
 
     if (net_utils.is_ipv4_literal(helo)) {
         connection.results.add(plugin, {skip: 'valid_hostname(literal)'});
@@ -184,7 +187,7 @@ exports.valid_hostname = function (next, connection, helo) {
 exports.match_re = function (next, connection, helo) {
     var plugin = this;
 
-    if (plugin.should_skip(connection, 'match_re')) return next();
+    if (plugin.should_skip(connection, 'match_re')) { return next(); }
 
     if (plugin.cfg.list_re.test(helo)) {
         connection.results.add(plugin, {fail: 'match_re'});
@@ -456,11 +459,11 @@ exports.proto_mismatch = function (next, connection, helo, proto) {
 
 exports.proto_mismatch_smtp = function (next, connection, helo) {
     this.proto_mismatch(next, connection, helo, 'smtp');
-}
+};
 
 exports.proto_mismatch_esmtp = function (next, connection, helo) {
     this.proto_mismatch(next, connection, helo, 'esmtp');
-}
+};
 
 exports.emit_log = function (next, connection, helo) {
     var plugin = this;
