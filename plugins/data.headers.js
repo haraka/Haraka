@@ -1,6 +1,5 @@
 // validate message headers and some fields
-/*jslint vars: true, plusplus: true, continue: true, node: true */
-/*global DENY */
+/* jshint node: true, plusplus: false */
 
 var net_utils  = require('./net_utils');
 
@@ -57,13 +56,13 @@ exports.duplicate_singular = function(next, connection) {
                     'Bcc', 'Message-Id', 'In-Reply-To', 'References',
                     'Subject'];
 
-    var name, i, failures = [];
-    for (i=0; i < singular.length; i++ ) {
+    var failures = [];
+    for (var i=0; i < singular.length; i++ ) {
         if (connection.transaction.header.get_all(singular[i]).length <= 1) {
             continue;
         }
 
-        name = singular[i];
+        var name = singular[i];
         connection.transaction.results.add(plugin, {fail: 'duplicate:'+name});
         failures.push(name);
     }
@@ -205,10 +204,10 @@ exports.user_agent = function (next, connection) {
     // X-Mailer: Apple Mail, swaks, Outlook (12-14), Yahoo Webmail, Cold Fusion, Zimbra, Evolution
 
     // Check for User-Agent
-    var i, name, header, headers = ['user-agent','x-mailer','x-mua'];
-    for (i=0; i < headers.length; i++) {
-        name = headers[i];
-        header = connection.transaction.header.get(name);
+    var headers = ['user-agent','x-mailer','x-mua'];
+    for (var i=0; i < headers.length; i++) {
+        var name = headers[i];
+        var header = connection.transaction.header.get(name);
         if (!header) { continue; }   // header not present
         found_ua++;
         connection.transaction.results.add(plugin, {pass: 'UA('+header.substring(0,12)+')'});
@@ -300,10 +299,7 @@ exports.from_match = function (next, connection) {
 exports.mailing_list = function (next, connection) {
     var plugin = this;
     if (!plugin.cfg.check.mailing_list) { return next(); }
-
     if (!connection.transaction) { return next(); }
-
-    var header, i, j, found_mlm = 0;
 
     var mlms = {
         'Mailing-List'       : [
@@ -318,11 +314,13 @@ exports.mailing_list = function (next, connection) {
         'X-Google-Loop'      : [ { mlm: 'googlegroups' } ],
     };
 
+    var found_mlm = 0;
+
     Object.keys(mlms).forEach(function (name) {
-        header = connection.transaction.header.get(name);
+        var header = connection.transaction.header.get(name);
         if (!header) { return; }  // header not present
-        for (i=0; i < mlms[name].length; i++) {
-            j = mlms[name][i];
+        for (var i=0; i < mlms[name].length; i++) {
+            var j = mlms[name][i];
             if (j.start) {
                 if (header.substring(0,j.start.length) === j.start) {
                     connection.transaction.results.add(plugin, {pass: 'MLM('+j.mlm+')'});
