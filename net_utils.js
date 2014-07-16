@@ -218,36 +218,6 @@ exports.same_ipv4_network = function (ip, ipList) {
     return false;
 };
 
-function load_tld_files () {
-    config.get('top-level-tlds','list').forEach(function (tld) {
-        top_level_tlds[tld.toLowerCase()] = 1;
-    });
-
-    config.get('two-level-tlds', 'list').forEach(function (tld) {
-        two_level_tlds[tld.toLowerCase()] = 1;
-    });
-
-    config.get('three-level-tlds', 'list').forEach(function (tld) {
-        three_level_tlds[tld.toLowerCase()] = 1;
-    });
-
-    config.get('extra-tlds', 'list').forEach(function (tld) {
-        var s = tld.split(/\./);
-        if (s.length === 2) {
-            two_level_tlds[tld.toLowerCase()] = 1;
-        }
-        else if (s.length === 3) {
-            three_level_tlds[tld.toLowerCase()] = 1;
-        }
-    });
-
-    logger.loginfo('loaded TLD files:' +
-    ' 1=' + Object.keys(top_level_tlds).length +
-    ' 2=' + Object.keys(two_level_tlds).length +
-    ' 3=' + Object.keys(three_level_tlds).length
-    );
-}
-
 function load_public_suffix_list() {
     config.get('public-suffix-list','list').forEach(function (entry) {
         // Parsing rules: http://publicsuffix.org/list/
@@ -332,39 +302,6 @@ function load_tld_files () {
     ' 2=' + Object.keys(two_level_tlds).length +
     ' 3=' + Object.keys(three_level_tlds).length
     );
-}
-
-function loadPublicSuffixList() {
-    config.get('public_suffix_list','list').forEach(function (entry) {
-        // Parsing rules: http://publicsuffix.org/list/
-        // Each line is only read up to the first whitespace
-        var suffix = entry.split(/\s/).shift().toLowerCase();
-
-        // Each line which is not entirely whitespace or begins with a comment contains a rule.
-        if (!suffix) return;                            // empty string
-        if ('/' === suffix.substring(0,1)) return;      // comment
-
-        // A rule may begin with a "!" (exclamation mark). If it does, it is
-        // labelled as a "exception rule" and then treated as if the exclamation
-        // mark is not present.
-        if ('!' === suffix.substring(0,1)) {
-            var eName = suffix.substring(1);   // remove ! prefix
-            var up_one = suffix.split('.').slice(1).join('.'); // bbc.co.uk -> co.uk
-            if (public_suffix_list[up_one]) {
-                public_suffix_list[up_one].push(eName);
-            }
-            else if (public_suffix_list['*.'+up_one]) {
-                public_suffix_list['*.'+up_one].push(eName);
-            }
-            else {
-                logger.logerror("unable to find parent for exception: "+eName);
-            }
-        }
-
-        public_suffix_list[suffix] = [];
-    });
-    var entries = Object.keys(public_suffix_list).length;
-    logger.loginfo('loaded '+ entries +' Public Suffixes');
 }
 
 exports.get_public_ip = function (cb) {
