@@ -105,6 +105,10 @@ exports.check_user = function (next, connection, credentials, method) {
                 connection.notes.auth_fails = 0;
             }
             connection.notes.auth_fails++;
+
+            connection.notes.auth_login_userlogin = null;
+            connection.notes.auth_login_asked_login = false;
+
             var delay = Math.pow(2, connection.notes.auth_fails - 1);
             if (plugin.timeout && delay >= plugin.timeout) { delay = plugin.timeout - 1 }
             connection.lognotice(plugin, 'delaying response for ' + delay + ' seconds');
