@@ -26,7 +26,7 @@ rejected.
 
 NOTE: MX routing by default routes *only* based on domains. To route for email
 addresses, you must set the preference `always_split=true` in
-config/outbound.js.
+'config/outbound.ini'.
 
 Each entry in the [routes] section of `config/rcpt_to.routes.ini` or in Redis
 must specify a MX record. The MX record is the same format as _outbound.js_.
