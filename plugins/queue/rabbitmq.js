@@ -64,8 +64,7 @@ exports.init_rabbitmq_server = function() {
     //Read the config file rabbitmq
     var config     = plugin.config.get('rabbitmq.ini');
     //Just putting the defaults
-    var rabbitmq_ip  = '127.0.0.1';
-    var rabbitmq_port = '5672';
+    var options = {};
     var confirm = true;
     var durable = true;
     var autoDelete = false;
@@ -73,8 +72,10 @@ exports.init_rabbitmq_server = function() {
 
     //Getting the values from config file rabbitmq.ini
     if (config.rabbitmq) {
-        rabbitmq_ip = config.rabbitmq.server_ip || '127.0.0.1';
-        rabbitmq_port = config.rabbitmq.server_port || '5672';
+        options['host'] = config.rabbitmq.server_ip || '127.0.0.1';
+        options['port'] = config.rabbitmq.server_port || '5672';
+        options['login'] = config.rabbitmq.user || 'guest';
+        options['password'] = config.rabbitmq.password || 'guest';
         exchangeName = config.rabbitmq.exchangeName || 'emailMessages';
         exchangeType = config.rabbitmq.exchangeType || 'direct';
         confirm = config.rabbitmq.confirm === 'true'|| true;
@@ -94,7 +95,7 @@ exports.init_rabbitmq_server = function() {
 
     //Create connection to the rabbitmq server
     logger.logdebug("About to Create connection with server");
-    rabbitqueue = amqp.createConnection({ host: rabbitmq_ip , port : rabbitmq_port });
+    rabbitqueue = amqp.createConnection(options);
 
 
     //Declaring listerner on error on connection.
