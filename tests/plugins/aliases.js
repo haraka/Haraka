@@ -37,6 +37,8 @@ function _set_up(callback) {
         return this.configfile;
     }.bind(this);
 
+    this.plugin.inherits = stub();
+
     // going to need these in multiple tests
     this.plugin.register();
 
@@ -59,7 +61,7 @@ exports.aliases = {
     'register function should inherit from queue/discard' : function (test) {
         test.expect(2);
         test.ok(this.plugin.inherits.called);
-        test.equals(this.plugin.inherits.args[0], 'queue/discard');
+        test.ok(this.plugin.inherits.args[0].match(/queue\/discard/));
         test.done();
     },
     'register function should call register_hook()' : function (test) {
