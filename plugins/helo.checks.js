@@ -15,15 +15,10 @@ var checks = [
     'forward_dns',        // HELO hostname resolves to the connecting IP
     'mismatch',           // hostname differs between invocations
     'emit_log',           // emit a loginfo summary
-    'helo_claims_us',     // Claims to be one of our domains
 ];
 
 exports.register = function () {
     var plugin = this;
-
-    // init must always run first
-    plugin.register_hook('helo', 'init');
-    plugin.register_hook('ehlo', 'init');
 
     plugin.register_hook('helo', 'proto_mismatch_smtp');
     plugin.register_hook('ehlo', 'proto_mismatch_esmtp');
@@ -71,31 +66,6 @@ exports.register = function () {
         }
         if (plugin.cfg.check_raw_ip !== undefined) {
             plugin.cfg.check.bare_ip = plugin.cfg.check_raw_ip ? true : false;
-        }
-
-        // Override with smtpf settings
-        if (server.notes.smtpf_config) {
-            var smtpf = server.notes.smtpf_config;
-            // Disable some of defaults
-            plugin.cfg.check.match_re = false;
-            plugin.cfg.check.big_company = false
-            plugin.cfg.skip.private_ip = true;
-            if (smtpf['rfc2821-strict-helo']) {
-                plugin.cfg.check.valid_hostname = true;
-                plugin.cfg.reject.valid_hostname = true;
-                plugin.cfg.check.bare_ip = true;
-                plugin.cfg.reject.bare_ip = true;
-                plugin.cfg.check.proto_mismatch = true;
-                plugin.cfg.reject.proto_mismatch = true;
-            }
-            if (smtpf['helo-is-ptr']) {
-                plugin.cfg.check.dynamic = true;
-                plugin.cfg.reject.dynamic = true;
-            }
-            if (smtpf['helo-ip-mismtch']) {
-                plugin.cfg.check.literal_mismatch = 3;
-                plugin.cfg.reject.literal_mismatch = true;
-            }
         }
     };
     load_config();
@@ -154,8 +124,10 @@ exports.mismatch = function (next, connection, helo) {
 
     if (plugin.should_skip(connection, 'mismatch')) return next();
 
-    var prev_helo = connection.notes.prev_helo;
+    //var prev_helo = connection.notes.prev_helo;
+    var prev_helo = connection.results.get('helo.checks').helo_host;
     if (!prev_helo) {
+        connection.results.add(plugin, {skip: 'mismatch(1st)'});
         connection.notes.prev_helo = helo;
         return next();
     }
@@ -468,14 +440,11 @@ exports.proto_mismatch = function (next, connection, helo, proto) {
 
     if (plugin.should_skip(connection, 'proto_mismatch')) return next();
 
-    var prev_helo = connection.notes.prev_helo;
-    if (!prev_helo) {
-        connection.notes.prev_helo = helo;
-        return next();
-    }
+    var prev_helo = connection.results.get('helo.checks').helo_host;
+    if (!prev_helo) return next();
 
-    if ((connection.esmtp && proto === 'smtp') ||
-        (!connection.esmtp && proto === 'esmtp'))
+    if ((connection.esmtp && proto === 'smtp') || 
+        (!connection.esmtp && proto === 'esmtp')) 
     {
         connection.results.add(plugin, {fail: 'proto_mismatch(' + proto + ')'});
         if (plugin.cfg.reject.proto_mismatch) {
@@ -492,57 +461,6 @@ exports.proto_mismatch_smtp = function (next, connection, helo) {
 
 exports.proto_mismatch_esmtp = function (next, connection, helo) {
     this.proto_mismatch(next, connection, helo, 'esmtp');
-}
-
-exports.helo_claims_us = function (next, connection, helo) {
-    var self = this;
-    var smtpf = server.notes.smtpf_config;
-    var routeMap = server.notes.routeMap;
-    if (!smtpf || !routeMap || !connection.notes.rdns ||
-        net_utils.is_rfc1918(connection.remote_ip) ||
-        (smtpf && !smtpf['helo-claims-us']) || !/\./.test(helo))
-    {
-        return next();
-    }
-    var lookups = routeMap.generate_rdns_lookups('route', helo);
-    lookups.pop();
-    routeMap.lookup(connection, lookups, function(err, k, v) {
-        if (k && /FORWARD/i.test(v)) {
-            var domain = k.split(':')[1];
-            connection.logdebug(self, 'found k: ' + k + ' domain: ' + domain);
-            if (Array.isArray(connection.notes.rdns.fcrdns) && connection.notes.rdns.fcrdns.length) {
-                var fcrdns = connection.notes.rdns.fcrdns;
-                var re = new RegExp(domain + '$', 'i');
-                for (var i=0; i<fcrdns.length; i++) {
-                    if (re.test(fcrdns[i].toLowerCase())) {
-                        connection.logdebug(self, 'matched FCrDNS: ' + fcrdns[i]);
-                        return next();
-                    }
-                }
-            }
-            // Do a lookup of the EHLO/HELO name and see
-            // if it matches the connected IP address.
-            var func = 'resolve4';
-            if (connection.remote_ip.indexOf(':') !== -1) {
-                func = 'resolve6';
-            }
-            dns[func](helo, function (err, ips) {
-                if (ips && Array.isArray(ips) && ips.length) {
-                    for (var i=0; i<ips.length; i++) {
-                        if (ips[i] === connection.remote_ip) {
-                            connection.logdebug(self, 'HELO name matches connected IP');
-                            return next();
-                        }
-                    }
-                }
-                // No match
-                return next(DENY, 'HELO claims to be us (' + domain + ')');
-            });
-        }
-        else {
-            return next();
-        }
-    });
 }
 
 exports.emit_log = function (next, connection, helo) {
