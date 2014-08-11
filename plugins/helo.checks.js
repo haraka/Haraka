@@ -21,6 +21,10 @@ var checks = [
 exports.register = function () {
     var plugin = this;
 
+    // init must always run first
+    plugin.register_hook('helo', 'init');
+    plugin.register_hook('ehlo', 'init');
+
     plugin.register_hook('helo', 'proto_mismatch_smtp');
     plugin.register_hook('ehlo', 'proto_mismatch_esmtp');
 
@@ -187,9 +191,6 @@ exports.valid_hostname = function (next, connection, helo) {
     }
 
     // this will fail if TLD is invalid or hostname is a public suffix
-var result = net_utils.get_organizational_domain(helo);
-connection.loginfo(this, 'helo="' + helo + ' result="' + result + '"');
-
     if (!net_utils.get_organizational_domain(helo)) {
         // Check for any excluded TLDs
         var excludes = this.config.get('helo.checks.allow', 'list');

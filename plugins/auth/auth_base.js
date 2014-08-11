@@ -113,7 +113,7 @@ exports.check_user = function (next, connection, credentials, method) {
             setTimeout(function () {
                 connection.respond(535, "Authentication failed", function () {
                     connection.reset_transaction(function () {
-                        return next(OK)
+                        return next(OK);
                     });
                 });
             }, delay * 1000);
