@@ -5,7 +5,7 @@ daemon.
 
 ## Configuration
 
-Configuration is stored in `config/auth_vpopmaild.ini` and uses the INI
+Configuration is stored in `config/auth_vpopmaild.ini` and uses INI
 style formatting.
 
 There are three configuration settings:
