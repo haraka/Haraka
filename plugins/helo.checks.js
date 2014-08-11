@@ -124,7 +124,6 @@ exports.mismatch = function (next, connection, helo) {
 
     if (plugin.should_skip(connection, 'mismatch')) return next();
 
-    //var prev_helo = connection.notes.prev_helo;
     var prev_helo = connection.results.get('helo.checks').helo_host;
     if (!prev_helo) {
         connection.results.add(plugin, {skip: 'mismatch(1st)'});
