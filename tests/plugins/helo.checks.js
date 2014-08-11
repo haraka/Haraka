@@ -93,7 +93,7 @@ exports.proto_mismatch = {
         this.plugin.proto_mismatch(cb, this.connection, 'any.example.com', 'esmtp');
         test.done();
     },
-    'enabled=true, proto_mismatch, reject=false' : function (test) {
+    'enabled=true, proto_mismatch, reject=false, esmtp=false' : function (test) {
         test.expect(2);
         var outer = this;
         var cb = function () {
@@ -103,6 +103,21 @@ exports.proto_mismatch = {
         };
         this.plugin.init(stub, this.connection, 'helo.example.com');
         this.connection.esmtp = false;
+        this.plugin.cfg.check.proto_mismatch=true;
+        this.plugin.cfg.reject.proto_mismatch=false;
+        this.plugin.proto_mismatch(cb, this.connection, 'anything', 'esmtp');
+        test.done();
+    },
+    'enabled=true, proto_mismatch, reject=false, esmtp=true' : function (test) {
+        test.expect(2);
+        var outer = this;
+        var cb = function () {
+            test.equal(undefined, arguments[0]);
+            // console.log(outer.connection.results.get('helo.checks'));
+            test.ok(outer.connection.results.get('helo.checks').fail.length === 0);
+        };
+        this.plugin.init(stub, this.connection, 'helo.example.com');
+        this.connection.esmtp = true;
         this.plugin.cfg.check.proto_mismatch=true;
         this.plugin.cfg.reject.proto_mismatch=false;
         this.plugin.proto_mismatch(cb, this.connection, 'anything', 'esmtp');
