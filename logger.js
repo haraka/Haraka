@@ -7,7 +7,7 @@ var connection;
 var outbound;
 var constants = require('./constants');
 var util      = require('util');
-var tty = require('tty')
+var tty       = require('tty');
 
 var logger = exports;
 
@@ -34,7 +34,7 @@ logger.colors = { // Makes me cringe spelling it this way...
     "ERROR" : "red",
     "CRIT" : "red",
     "ALERT" : "red",
-    "EMERG" : "red"
+    "EMERG" : "red",
 };
 
 var stdout_is_tty = tty.isatty(process.stdout.fd);
@@ -63,7 +63,7 @@ logger.dump_logs = function (exit) {
     if (exit) {
         process.exit(1);
     }
-}
+};
 
 logger.log = function (level, data) {
     if (level === 'PROTOCOL') {
@@ -88,7 +88,7 @@ logger.log = function (level, data) {
             'data'  : data
         });
     }
-}
+};
 
 logger.log_respond = function (retval, msg, data) {
     // any other return code is irrelevant
@@ -126,7 +126,7 @@ logger._init_loglevel = function () {
 logger.would_log = function (level) {
     if (loglevel < level) return false;
     return true;
-}
+};
 
 var original_console_log = console.log;
 
@@ -141,61 +141,60 @@ logger._init_timestamps = function () {
     else {
         console.log = original_console_log;
     }
-}
+};
 
 logger._init_loglevel();
 logger._init_timestamps();
 
 var level, key;
 for (key in logger) {
-    if(logger.hasOwnProperty(key)) {
-        if (key.match(/^LOG\w/)) {
-            level = key.slice(3);
-            logger[key.toLowerCase()] = (function(level, key) {
-                return function() {
-                    if (loglevel < logger[key])
-                        return;
-                    var levelstr = "[" + level + "]";
-                    var str = "";
-                    var uuidstr = "[-]";
-                    var pluginstr = "[core]";
-                    for (var i = 0; i < arguments.length; i++) {
-                        var data = arguments[i];
-                        if (typeof(data) === 'object') {
-                            // if the object is a connection, we wish to add
-                            // the connection id
-                            if (data instanceof connection.Connection) {
-                                uuidstr = "[" + data.uuid;
-                                if (data.tran_count > 0) {
-                                  uuidstr += "." + data.tran_count;
-                                }
-                                uuidstr += "]";
+    if(!logger.hasOwnProperty(key)) { continue; }
+
+    if (key.match(/^LOG\w/)) {
+        level = key.slice(3);
+        logger[key.toLowerCase()] = (function(level, key) {
+            return function() {
+                if (loglevel < logger[key]) { return; }
+                var levelstr = "[" + level + "]";
+                var str = "";
+                var uuidstr = "[-]";
+                var pluginstr = "[core]";
+                for (var i = 0; i < arguments.length; i++) {
+                    var data = arguments[i];
+                    if (typeof(data) === 'object') {
+                        // if the object is a connection, we wish to add
+                        // the connection id
+                        if (data instanceof connection.Connection) {
+                            uuidstr = "[" + data.uuid;
+                            if (data.tran_count > 0) {
+                                uuidstr += "." + data.tran_count;
                             }
-                            else if (data instanceof plugins.Plugin) {
-                                pluginstr = "[" + data.name + "]"; 
-                            }
-                            else if (data instanceof outbound.HMailItem) {
-                                pluginstr = "[outbound]";
-                                if (data.todo && data.todo.uuid) {
-                                    uuidstr = "[" + data.todo.uuid + "]";
-                                }
-                            }
-                            else {
-                                str += util.inspect(data);
+                            uuidstr += "]";
+                        }
+                        else if (data instanceof plugins.Plugin) {
+                            pluginstr = "[" + data.name + "]";
+                        }
+                        else if (data instanceof outbound.HMailItem) {
+                            pluginstr = "[outbound]";
+                            if (data.todo && data.todo.uuid) {
+                                uuidstr = "[" + data.todo.uuid + "]";
                             }
                         }
                         else {
-                            str += data;
+                            str += util.inspect(data);
                         }
                     }
-                    logger.log(level, [levelstr, uuidstr, pluginstr, str].join(" "));
+                    else {
+                        str += data;
+                    }
                 }
-            })(level, key);
-        }
+                logger.log(level, [levelstr, uuidstr, pluginstr, str].join(" "));
+            };
+        })(level, key);
     }
 }
 
 // load these down here so it sees all the logger methods compiled above
 plugins = require('./plugins');
 connection = require('./connection');
-outbound = require('./outbound'); 
+outbound = require('./outbound');
