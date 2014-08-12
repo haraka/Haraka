@@ -105,23 +105,19 @@ exports.dump_logs = {
 exports.colors = {
     setUp : _set_up,
     tearDown : _tear_down,
-    'util.inspect.colors' : function (test) {
-        test.expect(1);
-        test.ok(util.inspect.colors);
-        test.done();
-    },
     'colors' : function (test) {
         test.expect(1);
         test.ok(this.logger.colors);
-        // console.log(this.logger.colors);
         test.done();
     },
     'colorize' : function (test) {
         test.expect(4);
         test.ok(this.logger.colorize);
         test.equal('function', typeof this.logger.colorize);
+        // missing on Node < 0.10
         test.equal('error', this.logger.colorize('bad-color', 'error'));
-        test.equal('\u001b[34mgood\u001b[39m', this.logger.colorize('blue', 'good'));
+        var expected = util.inspect.colors ? '\u001b[34mgood\u001b[39m' : 'good';
+        test.equal(expected, this.logger.colorize('blue', 'good'));
         test.done();
     },
 };
