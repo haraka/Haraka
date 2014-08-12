@@ -23,13 +23,14 @@ logger.LOGCRIT      = 2;
 logger.LOGALERT     = 1;
 logger.LOGEMERG     = 0;
 
+logger.loglevel     = logger.LOGWARN;
+logger.deferred_logs = [];
 
 logger.colors = { // Makes me cringe spelling it this way...
     "DATA" : "green",
     "PROTOCOL" : "green",
     "DEBUG" : "grey",
     "INFO" : "cyan",
-    "info" : "cyan",
     "NOTICE" : "blue",
     "WARN" : "red",
     "ERROR" : "red",
@@ -40,23 +41,23 @@ logger.colors = { // Makes me cringe spelling it this way...
 
 var stdout_is_tty = tty.isatty(process.stdout.fd);
 
-function colorize (color, str) {
+logger.colorize = function (color, str) {
     if (!util.inspect.colors) { return str; }  // node util before Nov 2013
     if (!util.inspect.colors[color]) { return str; }  // unknown color
     return '\u001b[' + util.inspect.colors[color][0] + 'm' + str +
            '\u001b[' + util.inspect.colors[color][1] + 'm';
-}
+};
 
 var loglevel = logger.LOGWARN;
 
 var deferred_logs = [];
 
 logger.dump_logs = function (exit) {
-    while (deferred_logs.length > 0) {
-        var log_item = deferred_logs.shift();
+    while (logger.deferred_logs.length > 0) {
+        var log_item = logger.deferred_logs.shift();
         var color = logger.colors[log_item.level];
         if (color && stdout_is_tty) {
-            console.log(colorize(color,log_item.data));
+            console.log(logger.colorize(color,log_item.data));
         }
         else {
             console.log(log_item.data);
@@ -65,6 +66,7 @@ logger.dump_logs = function (exit) {
     if (exit) {
         process.exit(1);
     }
+    return true;
 };
 
 logger.log = function (level, data) {
@@ -73,36 +75,37 @@ logger.log = function (level, data) {
     }
     data = data.replace(/\r/g, '\\r')
                .replace(/\n$/, '');
-    // todo - just buffer these up (defer) until plugins are loaded
-    if (plugins && plugins.plugin_list) {
-        while (deferred_logs.length > 0) {
-            var log_item = deferred_logs.shift();
-            plugins.run_hooks('log', logger, log_item);
-        }
-        plugins.run_hooks('log', logger, {
-            'level' : level,
-            'data'  : data
-        });
+
+    var item = { 'level' : level, 'data'  : data };
+
+    // buffer until plugins are loaded
+    if (!plugins || !plugins.plugin_list) {
+        logger.deferred_logs.push( item );
+        return true;
     }
-    else {
-        deferred_logs.push({
-            'level' : level,
-            'data'  : data
-        });
+
+    // process buffered logs
+    while (logger.deferred_logs.length > 0) {
+        var log_item = logger.deferred_logs.shift();
+        plugins.run_hooks('log', logger, log_item);
     }
+
+    plugins.run_hooks('log', logger, item );
+    return true;
 };
 
 logger.log_respond = function (retval, msg, data) {
     // any other return code is irrelevant
-    if (retval === constants.cont) {
-        var color = logger.colors[data.level];
-        if (color && stdout_is_tty) {
-            return console.log(colorize(color,data.data));
-        }
-        else {
-            return console.log(data.data);
-        }
+    if (retval !== constants.cont) { return false; }
+
+    var color = logger.colors[data.level];
+    if (color && stdout_is_tty) {
+        console.log(logger.colorize(color,data.data));
+        return true;
     }
+
+    console.log(data.data);
+    return true;
 };
 
 logger._init_loglevel = function () {
@@ -112,21 +115,21 @@ logger._init_loglevel = function () {
     });
     if (_loglevel) {
         var loglevel_num = parseInt(_loglevel);
-        if (!loglevel_num || loglevel_num === NaN) {
-            this.log('info', 'loglevel: ' + _loglevel.toUpperCase());
-            loglevel = logger[_loglevel.toUpperCase()];
+        if (!loglevel_num || isNaN(loglevel_num)) {
+            this.log('INFO', 'loglevel: ' + _loglevel.toUpperCase());
+            logger.loglevel = logger[_loglevel.toUpperCase()];
         }
         else {
-            loglevel = loglevel_num;
+            logger.loglevel = loglevel_num;
         }
-        if (!loglevel) {
-            loglevel = logger.LOGWARN;
+        if (!logger.loglevel) {
+            logger.loglevel = logger.LOGWARN;
         }
     }
 };
 
 logger.would_log = function (level) {
-    if (loglevel < level) return false;
+    if (logger.loglevel < level) { return false; }
     return true;
 };
 
@@ -156,7 +159,7 @@ for (key in logger) {
         level = key.slice(3);
         logger[key.toLowerCase()] = (function(level, key) {
             return function() {
-                if (loglevel < logger[key]) { return; }
+                if (logger.loglevel < logger[key]) { return; }
                 var levelstr = "[" + level + "]";
                 var str = "";
                 var uuidstr = "[-]";
