@@ -6,7 +6,8 @@ var utils  = require('./utils');
 var config = require('./config');
 var events = require('events');
 var util   = require('util');
-var Iconv  = require('./mailheader').Iconv;
+var try_convert = require('./mailheader').try_convert;
+var iconv  = require('iconv-lite');
 var attstr = require('./attachment_stream');
 
 var buf_siz = config.get('mailparser.bufsize') || 65536;
@@ -181,14 +182,12 @@ Body.prototype.parse_end = function (line) {
             // First we convert the banner to the same encoding as the body
             var banner_str = this.options.banner[this.is_html ? 1 : 0];
             var banner_buf = null;
-            if (Iconv) {
-                try {
-                    var converter = new Iconv("UTF-8", enc + "//IGNORE");
-                    banner_buf = converter.convert(banner_str);
-                }
-                catch (err) {
-                    logger.logerror("iconv conversion of banner to " + enc + " failed: " + err);
-                }
+
+            try {
+                banner_buf = iconv.encode(banner_str, enc);
+            }
+            catch (err) {
+                logger.logerror("iconv conversion of banner to " + enc + " failed: " + err);
             }
 
             if (!banner_buf) {
@@ -244,36 +243,11 @@ Body.prototype.parse_end = function (line) {
         }
 
         // Now convert the buffer to UTF-8 to store in this.bodytext
-        if (Iconv) {
-            if (/UTF-?8/i.test(enc)) {
-                this.bodytext = buf.toString();
-            }
-            else {
-                try {
-                    var converter = new Iconv(enc, "UTF-8");
-                    this.bodytext = converter.convert(buf).toString();
-                }
-                catch (err) {
-                    logger.logwarn("initial iconv conversion from " + enc + " to UTF-8 failed: " + err.message);
-                    this.body_encoding = 'broken//' + enc;
-                    // EINVAL is returned when the encoding type is not recognised/supported (e.g. ANSI_X3)
-                    if (err.code !== 'EINVAL') {
-                        // Perform the conversion again, but ignore any errors
-                        try { 
-                            var converter = new Iconv(enc, 'UTF-8//TRANSLIT//IGNORE');
-                            this.bodytext = converter.convert(buf).toString();
-                        }
-                        catch (e) {
-                            logger.logerror('iconv conversion from ' + enc + ' to UTF-8 failed: ' + e.message);
-                            this.bodytext = buf.toString();
-                        }
-                    }
-                }
-            }
+        if (/UTF-?8/i.test(enc)) {
+            this.bodytext = buf.toString();
         }
         else {
-            this.body_encoding = 'no_iconv';
-            this.bodytext = buf.toString();
+            this.bodytext = try_convert(buf, enc);
         }
 
         // delete this.body_text_encoded;
