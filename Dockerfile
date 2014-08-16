@@ -16,9 +16,8 @@ MAINTAINER Justin Plock <jplock@gmail.com>
 
 RUN sed 's/main$/main universe/' -i /etc/apt/sources.list
 RUN DEBIAN_FRONTEND=noninteractive apt-get -y -q update
-RUN DEBIAN_FRONTEND=noninteractive apt-get -y -q install python-software-properties g++ make git
-RUN add-apt-repository ppa:chris-lea/node.js
-RUN DEBIAN_FRONTEND=noninteractive apt-get -y -q update
+RUN DEBIAN_FRONTEND=noninteractive apt-get -y -q install python-software-properties g++ make git curl
+RUN curl -sL https://deb.nodesource.com/setup | sudo bash -
 RUN DEBIAN_FRONTEND=noninteractive apt-get -y -q install nodejs
 
 RUN npm install -g Haraka
