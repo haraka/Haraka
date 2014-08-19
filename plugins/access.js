@@ -1,4 +1,6 @@
 // access plugin
+/*jslint node: true, continue: true */
+/*global DENY, DENYDISCONNECT */
 var net_utils = require('./net_utils');
 var utils     = require('./utils');
 
@@ -8,11 +10,11 @@ exports.register = function() {
     plugin.init_config();
     plugin.init_lists();
 
-    var phase;
-    for (phase in plugin.cfg.white)    plugin.load_file('white', phase);
-    for (phase in plugin.cfg.black)    plugin.load_file('black', phase);
-    for (phase in plugin.cfg.re.white) plugin.load_re_file('white', phase);
-    for (phase in plugin.cfg.re.black) plugin.load_re_file('black', phase);
+    var p;
+    for (p in plugin.cfg.white)    { plugin.load_file('white', p); }
+    for (p in plugin.cfg.black)    { plugin.load_file('black', p); }
+    for (p in plugin.cfg.re.white) { plugin.load_re_file('white', p); }
+    for (p in plugin.cfg.re.black) { plugin.load_re_file('black', p); }
 
     if (plugin.cfg.check.conn) {
         plugin.register_hook('connect', 'rdns_access');
@@ -21,8 +23,8 @@ exports.register = function() {
         plugin.register_hook('helo',    'helo_access');
         plugin.register_hook('ehlo',    'helo_access');
     }
-    if (plugin.cfg.check.mail) plugin.register_hook('mail', 'mail_from_access');
-    if (plugin.cfg.check.rcpt) plugin.register_hook('rcpt', 'rcpt_to_access');
+    if (plugin.cfg.check.mail) { plugin.register_hook('mail', 'mail_from_access'); }
+    if (plugin.cfg.check.rcpt) { plugin.register_hook('rcpt', 'rcpt_to_access'); }
 
     if (plugin.cfg.check.any) {
         plugin.load_domain_file('domain', 'any');
@@ -84,8 +86,9 @@ exports.init_config = function() {
 
         plugin.cfg.check = cfg.check;
         if (cfg.deny_msg) {
-            for (var p in plugin.cfg.deny_msg) {
-                if (cfg.deny_msg[p]) plugin.cfg.deny_msg[p] = cfg.deny_msg[p];
+            var p;
+            for (p in plugin.cfg.deny_msg) {
+                if (cfg.deny_msg[p]) { plugin.cfg.deny_msg[p] = cfg.deny_msg[p]; }
             }
         }
 
@@ -121,7 +124,7 @@ exports.init_lists = function () {
 
 exports.any = function (next, connection, params) {
     var plugin = this;
-    if (!plugin.cfg.check.any) return next();
+    if (!plugin.cfg.check.any) { return next(); }
 
     // step 1: get a domain name from whatever info is available
     var domain;
@@ -131,8 +134,8 @@ exports.any = function (next, connection, params) {
         if (params === undefined) {              // connect
             hook = 'connect';
             var h = connection.remote_host;
-            if (!h) return next();
-            if (h === 'DNSERROR' || h === 'Unknown') return next();
+            if (!h) { return next(); }
+            if (h === 'DNSERROR' || h === 'Unknown') { return next(); }
             domain = h;
         }
         else if (typeof params === 'string') {   // HELO/EHLO
@@ -197,7 +200,7 @@ exports.any = function (next, connection, params) {
 
 exports.rdns_access = function(next, connection) {
     var plugin = this;
-    if (!plugin.cfg.check.conn) return next();
+    if (!plugin.cfg.check.conn) { return next(); }
 
     // TODO: can this really happen?
     if (!connection.remote_ip) {
@@ -208,13 +211,13 @@ exports.rdns_access = function(next, connection) {
     var r_ip = connection.remote_ip;
     var host = connection.remote_host;
 
-    var addrs = [ r_ip, host ];
-    for (var i=0; i<addrs.length; i++) {
-        var addr = addrs[i];
-        if (!addr) continue;  // empty rDNS host
-        if (/[\w]/.test(addr)) addr = addr.toLowerCase();
+    var i, addr, file, addrs = [ r_ip, host ];
+    for (i=0; i<addrs.length; i++) {
+        addr = addrs[i];
+        if (!addr) { continue; }  // empty rDNS host
+        if (/[\w]/.test(addr)) { addr = addr.toLowerCase(); }
 
-        var file = plugin.cfg.white.conn;
+        file = plugin.cfg.white.conn;
         connection.logdebug(plugin, 'checking ' + addr + ' against ' + file);
         if (plugin.in_list('white', 'conn', addr)) {
             connection.results.add(plugin, {pass: file, whitelist: true, emit: true});
@@ -230,12 +233,12 @@ exports.rdns_access = function(next, connection) {
     }
 
     // blacklist checks
-    for (var i=0; i < addrs.length; i++) {
-        var addr = addrs[i];
-        if (!addr) continue;  // empty rDNS host
-        if (/[\w]/.test(addr)) addr = addr.toLowerCase();
+    for (i=0; i < addrs.length; i++) {
+        addr = addrs[i];
+        if (!addr) { continue; }  // empty rDNS host
+        if (/[\w]/.test(addr)) { addr = addr.toLowerCase(); }
 
-        var file = plugin.cfg.black.conn;
+        file = plugin.cfg.black.conn;
         if (plugin.in_list('black', 'conn', addr)) {
             connection.results.add(plugin, {fail: file, emit: true});
             return next(DENYDISCONNECT, host + ' [' + r_ip + '] ' + plugin.cfg.deny_msg.conn);
@@ -255,7 +258,7 @@ exports.rdns_access = function(next, connection) {
 
 exports.helo_access = function(next, connection, helo) {
     var plugin = this;
-    if (!plugin.cfg.check.helo) return next();
+    if (!plugin.cfg.check.helo) { return next(); }
 
     var file = plugin.cfg.re.black.helo;
     if (plugin.in_re_list('black', 'helo', helo)) {
@@ -269,7 +272,7 @@ exports.helo_access = function(next, connection, helo) {
 
 exports.mail_from_access = function(next, connection, params) {
     var plugin = this;
-    if (!plugin.cfg.check.mail) return next();
+    if (!plugin.cfg.check.mail) { return next(); }
 
     var mail_from = params[0].address();
     if (!mail_from) {
@@ -312,7 +315,7 @@ exports.mail_from_access = function(next, connection, params) {
 
 exports.rcpt_to_access = function(next, connection, params) {
     var plugin = this;
-    if (!plugin.cfg.check.rcpt) return next();
+    if (!plugin.cfg.check.rcpt) { return next(); }
 
     var rcpt_to = params[0].address();
 
@@ -388,13 +391,13 @@ exports.in_list = function (type, phase, address) {
         console.log("phase not defined: " + phase);
         return false;
     }
-    if (plugin.list[type][phase][address]) return true;
+    if (plugin.list[type][phase][address]) { return true; }
     return false;
 };
 
 exports.in_re_list = function (type, phase, address) {
     var plugin = this;
-    if (!plugin.list_re[type][phase]) return false;
+    if (!plugin.list_re[type][phase]) { return false; }
     plugin.logdebug(plugin, 'checking ' + address + ' against ' + plugin.cfg.re[type][phase].source);
     return plugin.list_re[type][phase].test(address);
 };
@@ -412,9 +415,9 @@ exports.in_re_file = function (file_name, address) {
     // badly if affected performance. It took 8.5x longer to run than
     // in_re_list.
     this.logdebug(this, 'checking ' + address + ' against ' + file_name);
-    var re_list = utils.valid_regexes(this.config.get(file_name, 'list'), file_name);
-    for (var i=0; i<re_list.length; i++) {
-        if (new RegExp('^' + re_list[i] + '$', 'i').test(address)) return true;
+    var i, re_list = utils.valid_regexes(this.config.get(file_name, 'list'), file_name);
+    for (i=0; i < re_list.length; i++) {
+        if (new RegExp('^' + re_list[i] + '$', 'i').test(address)) { return true; }
     }
     return false;
 };
@@ -433,12 +436,13 @@ exports.load_file = function (type, phase) {
         var list = plugin.config.get(file_name, 'list', load_em_high);
 
         // init the list store, type is white or black
-        if (!plugin.list) plugin.list = {};
-        if (!plugin.list[type]) plugin.list[type] = {};
+        if (!plugin.list)       { plugin.list = { type: {} }; }
+        if (!plugin.list[type]) { plugin.list[type] = {}; }
 
         // toLower when loading spends a fraction of a second at load time
         // to save millions of seconds during run time.
-        for (var i=0; i<list.length; i++) {
+        var i;
+        for (i=0; i<list.length; i++) {
             plugin.list[type][list[i].toLowerCase()] = true;
         }
     }
@@ -458,8 +462,8 @@ exports.load_re_file = function (type, phase) {
         var regex_list = utils.valid_regexes(plugin.config.get(file_name, 'list', load_re));
 
         // initialize the list store
-        if (!plugin.list_re) plugin.list_re = {};
-        if (!plugin.list_re[type]) plugin.list_re[type] = {};
+        if (!plugin.list_re)       { plugin.list_re = { type: {} }; }
+        if (!plugin.list_re[type]) { plugin.list_re[type] = {}; }
 
         // compile the regexes at the designated location
         plugin.list_re[type][phase] = new RegExp('^(' + regex_list.join('|') + ')$', 'i');
@@ -480,18 +484,19 @@ exports.load_domain_file = function (type, phase) {
         var list = plugin.config.get(file_name, 'list', load_domains);
 
         // init the list store, if needed
-        if (!plugin.list) plugin.list = {};
-        if (!plugin.list[type]) plugin.list[type] = {};
+        if (!plugin.list)       { plugin.list = { type: {} }; }
+        if (!plugin.list[type]) { plugin.list[type] = {}; }
 
         // convert list items to LC at load (much faster than at run time)
-        for (var i=0; i<list.length; i++) {
+        var i, d;
+        for (i=0; i < list.length; i++) {
             if (list[i][0] === '!') {  // whitelist entry
                 plugin.list[type][phase][list[i].toLowerCase()] = true;
                 continue;
             }
 
-            var d = net_utils.get_organizational_domain(list[i]);
-            if (!d) continue;
+            d = net_utils.get_organizational_domain(list[i]);
+            if (!d) { continue; }
             plugin.list[type][phase][d.toLowerCase()] = true;
         }
     }
