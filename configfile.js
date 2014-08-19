@@ -1,6 +1,6 @@
 "use strict";
-/*jslint vars: true, plusplus: true, node: true */
-/*global DENY */
+/* jshint node: true, plusplus: false */
+/* global DENY */
 
 // Config file loader
 
@@ -165,10 +165,11 @@ cfreader.load_ini_config = function(name, options) {
                 if (regex.comment.test(line)) {
                     return;
                 }
-                else if (regex.blank.test(line)) {
+                if (regex.blank.test(line)) {
                     return;
                 }
-                else if (match = regex.section.exec(line)) {
+                match = regex.section.exec(line);
+                if (match) {
                     if (!result[match[1]]) result[match[1]] = {};
                     current_sect = result[match[1]];
                     current_sect_name = match[1];
@@ -180,7 +181,8 @@ cfreader.load_ini_config = function(name, options) {
                 }
                 line = pre + line;
                 pre = '';
-                if (match = regex.param.exec(line)) {
+                match = regex.param.exec(line);
+                if (match) {
                     if (options && Array.isArray(options.booleans) &&
                         bool_matches.indexOf(current_sect_name + '.' + match[1]) !== -1)
                     {
@@ -197,10 +199,9 @@ cfreader.load_ini_config = function(name, options) {
                     else {
                         current_sect[match[1]] = match[2];
                     }
+                    return;
                 }
-                else {
-                    logger.logerror("Invalid line in config file '" + name + "': " + line);
-                }
+                logger.logerror("Invalid line in config file '" + name + "': " + line);
             });
         }
     }
@@ -239,10 +240,11 @@ cfreader.load_flat_config = function(name, type) {
                 if (regex.comment.test(line)) {
                     return;
                 }
-                else if (regex.blank.test(line)) {
+                if (regex.blank.test(line)) {
                     return;
                 }
-                else if (line_data = regex.line.exec(line)) {
+                line_data = regex.line.exec(line);
+                if (line_data) {
                     result.push(line_data[1].trim());
                 }
             });
