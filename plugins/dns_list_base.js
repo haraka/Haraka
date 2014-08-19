@@ -37,13 +37,6 @@ exports.lookup = function (lookup, zone, cb) {
 
     // Reverse lookup if IPv4 address
     if (net.isIPv4(lookup)) {
-        // Don't query private addresses
-        if (is_rfc1918(lookup) && lookup.split('.')[0] !== '127') {
-            this.logdebug('skipping private IP: ' + lookup);
-            process.nextTick(function () {
-                return cb(new Error("RFC 1918 private IP"));
-            });
-        }
         lookup = lookup.split('.').reverse().join('.');
     }
     // TODO: IPv6 not supported
@@ -54,7 +47,7 @@ exports.lookup = function (lookup, zone, cb) {
     }
 
     if (this.enable_stats) {
-        var start = (new Date).getTime();
+        var start = new Date().getTime();
     }
 
     // Build the query, adding the root dot if missing
@@ -66,7 +59,7 @@ exports.lookup = function (lookup, zone, cb) {
     dns.resolve(query, 'A', function (err, a) {
         // Statistics
         if (self.enable_stats) {
-            var elapsed = (new Date).getTime() - start;
+            var elapsed = new Date().getTime() - start;
             redis_client.hincrby('dns-list-stat:' + zone, 'TOTAL', 1);
             (err) 
                 ? redis_client.hincrby('dns-list-stat:' + zone, err.code, 1)
@@ -120,7 +113,7 @@ exports.multi = function (lookup, zones, cb) {
             }
         });
     });
-}
+};
 
 // Return first positive or last result.
 exports.first = function (lookup, zones, cb) {
@@ -133,7 +126,7 @@ exports.first = function (lookup, zones, cb) {
             return cb(err, zone, a);
         }
     });
-}
+};
 
 
 exports.check_zones = function (interval) {
@@ -172,7 +165,7 @@ exports.check_zones = function (interval) {
             self.check_zones();
         }, (interval * 60) * 1000);
     }
-}
+};
 
 exports.disable_zone = function (zone, result) {
     if (zone && this.zones && this.zones.length && this.disable_allowed) {
@@ -184,4 +177,4 @@ exports.disable_zone = function (zone, result) {
             this.logwarn('disabling zone \'' + zone + '\'' + (result ? ': ' + result : ''));
         }
     }
-}
+};

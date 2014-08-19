@@ -70,20 +70,27 @@ exports.get_uniq_zones = function () {
 
 exports.connect_first = function(next, connection) {
 
+    var remote_ip = connection.remote_ip;
+
+    if (net_utils.is_rfc1918(remote_ip)) {
+         plugin.logdebug('skipping private IP: ' + remote_ip);
+         return next();
+    }
+
     if (!this.zones || !this.zones.length) {
         connection.logerror(this, "no zones");
         return next();
     }
 
     var plugin = this;
-    this.first(connection.remote_ip, this.zones, function (err, zone, a) {
+    this.first(remote_ip, this.zones, function (err, zone, a) {
         if (err) {
             connection.logerror(plugin, err);
             return next();
         }
         if (!a) return next();
 
-        var msg = 'host [' + connection.remote_ip + '] is blacklisted by ' + zone;
+        var msg = 'host [' + remote_ip + '] is blacklisted by ' + zone;
         if (plugin.cfg.main.reject) return next(DENY, msg);
 
         connection.loginfo(plugin, msg);
@@ -94,23 +101,33 @@ exports.connect_first = function(next, connection) {
 exports.connect_multi = function(next, connection) {
     var plugin = this;
 
+    var remote_ip = connection.remote_ip;
+
+    if (net_utils.is_rfc1918(remote_ip)) {
+         plugin.logdebug('skipping private IP: ' + remote_ip);
+         return next();
+    }
+
     if (!plugin.zones || !plugin.zones.length) {
         connection.logerror(plugin, "no enabled zones");
         return next();
     }
 
     var hits = [];
-    plugin.multi(connection.remote_ip, plugin.zones, function (err, zone, a, pending) {
+    plugin.multi(remote_ip, plugin.zones, function (err, zone, a, pending) {
+        var deny_msg = 'host [' + remote_ip + '] is blacklisted by ' + hits.join(', ');
         if (err) {
             connection.results.add(plugin, {err: err});
             if (pending > 0) return;
-            if (plugin.cfg.main.reject && hits.length) return next(DENY,
-                'host [' + connection.remote_ip + '] is blacklisted by ' + hits.join(', '));
+            if (plugin.cfg.main.reject && hits.length) {
+                return next(DENY, deny_msg);
+            }
             return next();
         }
 
         if (a) {
             hits.push(zone);
+            deny_msg = 'host [' + remote_ip + '] is blacklisted by ' + hits.join(', ');
             connection.results.add(plugin, {fail: zone});
         }
         else {
@@ -120,8 +137,9 @@ exports.connect_multi = function(next, connection) {
         if (pending > 0) return;
         connection.results.add(plugin, {emit: true});
 
-        if (plugin.cfg.main.reject && hits.length) return next(DENY,
-            'host [' + connection.remote_ip + '] is blacklisted by ' + hits.join(', '));
+        if (plugin.cfg.main.reject && hits.length) {
+            return next(DENY, deny_msg);
+        }
         return next();
     });
 };
