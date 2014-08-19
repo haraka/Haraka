@@ -1,5 +1,5 @@
 // Check various bits of the HELO string
-/*jslint vars: true, plusplus: true, node: true */
+/*jshint plusplus: false, node: true */
 /*global DENY, DENYSOFT */
 var dns       = require('dns');
 var net_utils = require('./net_utils');
@@ -368,7 +368,6 @@ exports.literal_mismatch = function (next, connection, helo) {
     }
     return next();
 };
-
 
 exports.forward_dns = function (next, connection, helo) {
     var plugin = this;
