@@ -1,6 +1,6 @@
 // access plugin
-/*jslint node: true, continue: true */
-/*global DENY, DENYDISCONNECT */
+/* jshint node: true */
+/* global DENY, DENYDISCONNECT */
 var net_utils = require('./net_utils');
 var utils     = require('./utils');
 
@@ -415,8 +415,8 @@ exports.in_re_file = function (file_name, address) {
     // badly if affected performance. It took 8.5x longer to run than
     // in_re_list.
     this.logdebug(this, 'checking ' + address + ' against ' + file_name);
-    var i, re_list = utils.valid_regexes(this.config.get(file_name, 'list'), file_name);
-    for (i=0; i < re_list.length; i++) {
+    var re_list = utils.valid_regexes(this.config.get(file_name, 'list'), file_name);
+    for (var i=0; i < re_list.length; i++) {
         if (new RegExp('^' + re_list[i] + '$', 'i').test(address)) { return true; }
     }
     return false;
@@ -488,14 +488,13 @@ exports.load_domain_file = function (type, phase) {
         if (!plugin.list[type]) { plugin.list[type] = {}; }
 
         // convert list items to LC at load (much faster than at run time)
-        var i, d;
-        for (i=0; i < list.length; i++) {
+        for (var i=0; i < list.length; i++) {
             if (list[i][0] === '!') {  // whitelist entry
                 plugin.list[type][phase][list[i].toLowerCase()] = true;
                 continue;
             }
 
-            d = net_utils.get_organizational_domain(list[i]);
+            var d = net_utils.get_organizational_domain(list[i]);
             if (!d) { continue; }
             plugin.list[type][phase][d.toLowerCase()] = true;
         }
