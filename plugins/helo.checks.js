@@ -1,5 +1,5 @@
 // Check various bits of the HELO string
-/*jshint plusplus: false, node: true */
+/*jshint node: true, plusplus: false */
 /*global DENY, DENYSOFT */
 var dns       = require('dns');
 var net_utils = require('./net_utils');
@@ -25,9 +25,8 @@ exports.register = function () {
     plugin.register_hook('helo', 'proto_mismatch_smtp');
     plugin.register_hook('ehlo', 'proto_mismatch_esmtp');
 
-    var i, hook;
-    for (i=0; i < checks.length; i++) {
-        hook = checks[i];
+    for (var i=0; i < checks.length; i++) {
+        var hook = checks[i];
         plugin.register_hook('helo', hook);
         plugin.register_hook('ehlo', hook);
     }
@@ -310,9 +309,9 @@ exports.big_company = function (next, connection, helo) {
         return next();
     }
 
-    var i, re, allowed_rdns = plugin.cfg.bigco[helo].split(/,/);
-    for (i=0; i < allowed_rdns.length; i++) {
-        re = new RegExp(allowed_rdns[i].replace(/\./g, '\\.') + '$');
+    var allowed_rdns = plugin.cfg.bigco[helo].split(/,/);
+    for (var i=0; i < allowed_rdns.length; i++) {
+        var re = new RegExp(allowed_rdns[i].replace(/\./g, '\\.') + '$');
         if (re.test(rdns)) {
             connection.results.add(plugin, {pass: 'big_co'});
             return next();
