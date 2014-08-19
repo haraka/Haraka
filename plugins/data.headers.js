@@ -88,9 +88,9 @@ exports.missing_required = function(next, connection) {
                    plugin.cfg.main.required.split(',') :
                    ['Date', 'From'];
 
-    var h, i, failures = [];
-    for (i=0; i < required.length; i++) {
-        h = required[i];
+    var failures = [];
+    for (var i=0; i < required.length; i++) {
+        var h = required[i];
         if (connection.transaction.header.get_all(h).length === 0) {
             connection.transaction.results.add(plugin, {fail: 'missing:'+h});
             failures.push(h);
@@ -325,7 +325,7 @@ exports.mailing_list = function (next, connection) {
                 if (header.substring(0,j.start.length) === j.start) {
                     connection.transaction.results.add(plugin, {pass: 'MLM('+j.mlm+')'});
                     found_mlm++;
-                    return;
+                    continue;
                 }
                 connection.logerror(plugin, "mlm start miss: " + name + ': ' + header);
             }
@@ -333,24 +333,24 @@ exports.mailing_list = function (next, connection) {
                 if (header.match(new RegExp(j.match,'i'))) {
                     connection.transaction.results.add(plugin, {pass: 'MLM('+j.mlm+')'});
                     found_mlm++;
-                    return;
+                    continue;
                 }
                 connection.logerror(plugin, "mlm match miss: " + name + ': ' + header);
             }
             if (name === 'X-Mailman-Version') {
                 connection.transaction.results.add(plugin, {pass: 'MLM('+j.mlm+')'});
                 found_mlm++;
-                return;
+                continue;
             }
             if (name === 'X-Majordomo-Version') {
                 connection.transaction.results.add(plugin, {pass: 'MLM('+j.mlm+')'});
                 found_mlm++;
-                return;
+                continue;
             }
             if (name === 'X-Google-Loop') {
                 connection.transaction.results.add(plugin, {pass: 'MLM('+j.mlm+')'});
                 found_mlm++;
-                return;
+                continue;
             }
         }
     });
