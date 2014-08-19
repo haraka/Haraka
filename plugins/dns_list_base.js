@@ -1,7 +1,6 @@
 // DNS list module
 var dns = require('dns');
 var net = require('net');
-var is_rfc1918 = require('./net_utils').is_rfc1918;
 
 exports.enable_stats = false;
 exports.disable_allowed = false;
