@@ -17,30 +17,14 @@ exports.lookup = function (lookup, zone, cb) {
         });
     }
 
-    if (this.enable_stats && !redis_client) {
-        var redis = require('redis');
-        var host_port = this.redis_host.split(':');
-        if (!host_port[0]) host_port[0] = '127.0.0.1';
-        if (!host_port[1]) {
-            host_port[1] = 6379;
-        }
-        else {
-            host_port[1] = parseInt(host_port[1], 10);
-        }
-        redis_client = redis.createClient(host_port[1], host_port[0]);
-        redis_client.on('error', function (err) {
-            self.logerror("Redis error: " + err);
-            redis_client.quit();
-            redis_client = null; // should force a reconnect - not sure if that's the right thing but better than nothing...
-        });
-    }
+    if (this.enable_stats) { init_redis(); }
 
     // Reverse lookup if IPv4 address
     if (net.isIPv4(lookup)) {
         lookup = lookup.split('.').reverse().join('.');
     }
-    // TODO: IPv6 not supported
     else if (net.isIPv6(lookup)) {
+        // TODO: IPv6 not supported
         process.nextTick(function () {
             return cb(new Error("IPv6 not supported"));
         });
@@ -86,6 +70,27 @@ exports.lookup = function (lookup, zone, cb) {
     });
 };
 
+exports.init_redis = function () {
+    if (redis_client) { return; }
+
+    var redis = require('redis');
+    var host_port = this.redis_host.split(':');
+    if (!host_port[0]) host_port[0] = '127.0.0.1';
+    if (!host_port[1]) {
+        host_port[1] = 6379;
+    }
+    else {
+        host_port[1] = parseInt(host_port[1], 10);
+    }
+
+    redis_client = redis.createClient(host_port[1], host_port[0]);
+    redis_client.on('error', function (err) {
+        self.logerror("Redis error: " + err);
+        redis_client.quit();
+        redis_client = null; // should force a reconnect - not sure if that's the right thing but better than nothing...
+    });
+};
+
 exports.multi = function (lookup, zones, cb) {
     if (!lookup || !zones) return cb();
     if (typeof zones === 'string') zones = [ '' + zones ];
@@ -127,7 +132,6 @@ exports.first = function (lookup, zones, cb) {
         }
     });
 };
-
 
 exports.check_zones = function (interval) {
     var self = this;
