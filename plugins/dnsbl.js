@@ -1,4 +1,5 @@
 // dnsbl plugin
+var net_utils = require('./net_utils');
 
 exports.register = function() {
     var plugin = this;
