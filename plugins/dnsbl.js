@@ -70,21 +70,21 @@ exports.get_uniq_zones = function () {
 };
 
 exports.connect_first = function(next, connection) {
+    var plugin = this;
 
     var remote_ip = connection.remote_ip;
 
     if (net_utils.is_rfc1918(remote_ip)) {
-         plugin.logdebug('skipping private IP: ' + remote_ip);
+         connection.logdebug(plugin, 'skipping private IP: ' + remote_ip);
          return next();
     }
 
-    if (!this.zones || !this.zones.length) {
-        connection.logerror(this, "no zones");
+    if (!plugin.zones || !plugin.zones.length) {
+        connection.logerror(plugin, "no zones");
         return next();
     }
 
-    var plugin = this;
-    this.first(remote_ip, this.zones, function (err, zone, a) {
+    plugin.first(remote_ip, plugin.zones, function (err, zone, a) {
         if (err) {
             connection.logerror(plugin, err);
             return next();
@@ -105,7 +105,7 @@ exports.connect_multi = function(next, connection) {
     var remote_ip = connection.remote_ip;
 
     if (net_utils.is_rfc1918(remote_ip)) {
-         plugin.logdebug('skipping private IP: ' + remote_ip);
+         connection.logdebug(plugin, 'skipping private IP: ' + remote_ip);
          return next();
     }
 
