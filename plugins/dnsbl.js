@@ -53,7 +53,7 @@ exports.get_uniq_zones = function () {
     var unique_zones = {};
 
     // Compatibility with old plugin
-    var legacy_zones = this.config.get('dnsbl.zones', 'list');
+    var legacy_zones = plugin.config.get('dnsbl.zones', 'list');
     for (var i=0; i < legacy_zones.length; i++) {
         unique_zones[legacy_zones[i]] = true;
     }
@@ -66,23 +66,33 @@ exports.get_uniq_zones = function () {
     }
 
     for (var key in unique_zones) { plugin.zones.push(key); }
-    return this.zones;
+    return plugin.zones;
 };
 
-exports.connect_first = function(next, connection) {
+exports.should_skip = function (connection) {
     var plugin = this;
 
-    var remote_ip = connection.remote_ip;
+    if (!connection) { return true; }
+    var rip = connection.remote_ip;
 
-    if (net_utils.is_rfc1918(remote_ip)) {
-         connection.logdebug(plugin, 'skipping private IP: ' + remote_ip);
-         return next();
+    if (net_utils.is_rfc1918(rip)) {
+         connection.logdebug(plugin, 'skipping private IP: ' + rip);
+         return true;
     }
 
     if (!plugin.zones || !plugin.zones.length) {
         connection.logerror(plugin, "no zones");
-        return next();
+        return true;
     }
+
+    return false;
+};
+
+exports.connect_first = function(next, connection) {
+    var plugin = this;
+    var remote_ip = connection.remote_ip;
+
+    if (plugin.should_skip(connection)) { return next(); }
 
     plugin.first(remote_ip, plugin.zones, function (err, zone, a) {
         if (err) {
@@ -101,18 +111,9 @@ exports.connect_first = function(next, connection) {
 
 exports.connect_multi = function(next, connection) {
     var plugin = this;
-
     var remote_ip = connection.remote_ip;
 
-    if (net_utils.is_rfc1918(remote_ip)) {
-         connection.logdebug(plugin, 'skipping private IP: ' + remote_ip);
-         return next();
-    }
-
-    if (!plugin.zones || !plugin.zones.length) {
-        connection.logerror(plugin, "no enabled zones");
-        return next();
-    }
+    if (plugin.should_skip(connection)) { return next(); }
 
     var hits = [];
     plugin.multi(remote_ip, plugin.zones, function (err, zone, a, pending) {
