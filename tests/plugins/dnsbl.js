@@ -11,8 +11,6 @@ function _set_up(callback) {
     this.plugin = Plugin('dnsbl');
     this.plugin.config = config;
 
-    this.plugin.loginfo = stub();
-
     callback();
 }
 
