@@ -40,7 +40,7 @@ logger.colors = { // Makes me cringe spelling it this way...
 var stdout_is_tty = tty.isatty(process.stdout.fd);
 
 function colorize (color, str) {
-    if (!util.inspect.colors[color]) return str;
+    if (!util.inspect.colors || !util.inspect.colors[color]) return str;
     return '\u001b[' + util.inspect.colors[color][0] + 'm' + str +
               '\u001b[' + util.inspect.colors[color][1] + 'm';
 }
