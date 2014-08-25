@@ -1,4 +1,6 @@
 // Check various bits of the HELO string
+/*jshint node: true, plusplus: false */
+/*global DENY, DENYSOFT */
 var dns       = require('dns');
 var net_utils = require('./net_utils');
 var utils     = require('./utils');
@@ -122,7 +124,7 @@ exports.should_skip = function (connection, test_name) {
 exports.mismatch = function (next, connection, helo) {
     var plugin = this;
 
-    if (plugin.should_skip(connection, 'mismatch')) return next();
+    if (plugin.should_skip(connection, 'mismatch')) { return next(); }
 
     var prev_helo = connection.results.get('helo.checks').helo_host;
     if (!prev_helo) {
@@ -138,7 +140,7 @@ exports.mismatch = function (next, connection, helo) {
 
     var msg = 'mismatch(' + prev_helo + ' / ' + helo + ')';
     connection.results.add(plugin, {fail: msg});
-    if (plugin.cfg.reject.mismatch) return next(DENY, 'HELO host ' + msg);
+    if (plugin.cfg.reject.mismatch) { return next(DENY, 'HELO host ' + msg); }
 
     return next();
 };
@@ -146,7 +148,7 @@ exports.mismatch = function (next, connection, helo) {
 exports.valid_hostname = function (next, connection, helo) {
     var plugin = this;
 
-    if (plugin.should_skip(connection, 'valid_hostname')) return next();
+    if (plugin.should_skip(connection, 'valid_hostname')) { return next(); }
 
     if (net_utils.is_ipv4_literal(helo)) {
         connection.results.add(plugin, {skip: 'valid_hostname(literal)'});
@@ -184,7 +186,7 @@ exports.valid_hostname = function (next, connection, helo) {
 exports.match_re = function (next, connection, helo) {
     var plugin = this;
 
-    if (plugin.should_skip(connection, 'match_re')) return next();
+    if (plugin.should_skip(connection, 'match_re')) { return next(); }
 
     if (plugin.cfg.list_re.test(helo)) {
         connection.results.add(plugin, {fail: 'match_re'});
@@ -200,7 +202,7 @@ exports.match_re = function (next, connection, helo) {
 exports.rdns_match = function (next, connection, helo) {
     var plugin = this;
 
-    if (plugin.should_skip(connection, 'rdns_match')) return next();
+    if (plugin.should_skip(connection, 'rdns_match')) { return next(); }
 
     if (!helo) {
         connection.results.add(plugin, {fail: 'rdns_match(empty)'});
@@ -234,13 +236,15 @@ exports.rdns_match = function (next, connection, helo) {
 exports.bare_ip = function (next, connection, helo) {
     var plugin = this;
 
-    if (plugin.should_skip(connection, 'bare_ip')) return next();
+    if (plugin.should_skip(connection, 'bare_ip')) { return next(); }
 
     // RFC 2821, 4.1.1.1  Address literals must be in brackets
     // RAW IPs must be formatted: "[1.2.3.4]" not "1.2.3.4" in HELO
     if(/^\d+\.\d+\.\d+\.\d+$/.test(helo)) {
         connection.results.add(plugin, {fail: 'bare_ip(invalid literal)'});
-        if (plugin.cfg.reject.bare_ip) return next(DENY, "Invalid address format in HELO");
+        if (plugin.cfg.reject.bare_ip) {
+            return next(DENY, "Invalid address format in HELO");
+        }
         return next();
     }
 
@@ -251,7 +255,7 @@ exports.bare_ip = function (next, connection, helo) {
 exports.dynamic = function (next, connection, helo) {
     var plugin = this;
 
-    if (plugin.should_skip(connection, 'dynamic')) return next();
+    if (plugin.should_skip(connection, 'dynamic')) { return next(); }
 
     // Skip if no dots or an IP literal or address
     if (!/\./.test(helo)) {
@@ -266,7 +270,9 @@ exports.dynamic = function (next, connection, helo) {
 
     if (net_utils.is_ip_in_str(connection.remote_ip, helo)) {
         connection.results.add(plugin, {fail: 'dynamic'});
-        if (plugin.cfg.reject.dynamic) return next(DENY, 'HELO is dynamic');
+        if (plugin.cfg.reject.dynamic) {
+            return next(DENY, 'HELO is dynamic');
+        }
         return next();
     }
 
@@ -277,7 +283,7 @@ exports.dynamic = function (next, connection, helo) {
 exports.big_company = function (next, connection, helo) {
     var plugin = this;
 
-    if (plugin.should_skip(connection, 'big_company')) return next();
+    if (plugin.should_skip(connection, 'big_company')) { return next(); }
 
     if (net_utils.is_ipv4_literal(helo)) {
         connection.results.add(plugin, {skip: 'big_co(literal)'});
@@ -322,7 +328,7 @@ exports.big_company = function (next, connection, helo) {
 exports.literal_mismatch = function (next, connection, helo) {
     var plugin = this;
 
-    if (plugin.should_skip(connection, 'literal_mismatch')) return next();
+    if (plugin.should_skip(connection, 'literal_mismatch')) { return next(); }
 
     var literal = /^\[(\d+\.\d+\.\d+\.\d+)\]$/.exec(helo);
     if (!literal) {
@@ -330,7 +336,7 @@ exports.literal_mismatch = function (next, connection, helo) {
         return next();
     }
 
-    var lmm_mode = parseInt(plugin.cfg.check.literal_mismatch);
+    var lmm_mode = parseInt(plugin.cfg.check.literal_mismatch, 10);
     var helo_ip = literal[1];
     if (lmm_mode > 2 && net_utils.is_rfc1918(helo_ip)) {
         connection.results.add(plugin, {pass: 'literal_mismatch(private)'});
@@ -362,11 +368,10 @@ exports.literal_mismatch = function (next, connection, helo) {
     return next();
 };
 
-
 exports.forward_dns = function (next, connection, helo) {
     var plugin = this;
 
-    if (plugin.should_skip(connection, 'forward_dns')) return next();
+    if (plugin.should_skip(connection, 'forward_dns')) { return next(); }
     if (!plugin.cfg.check.valid_hostname) {
         connection.results.add(plugin, {err: 'forward_dns(valid_hostname disabled)'});
         return next();
@@ -437,10 +442,10 @@ exports.forward_dns = function (next, connection, helo) {
 exports.proto_mismatch = function (next, connection, helo, proto) {
     var plugin = this;
 
-    if (plugin.should_skip(connection, 'proto_mismatch')) return next();
+    if (plugin.should_skip(connection, 'proto_mismatch')) { return next(); }
 
     var prev_helo = connection.results.get('helo.checks').helo_host;
-    if (!prev_helo) return next();
+    if (!prev_helo) { return next(); }
 
     if ((connection.esmtp && proto === 'smtp') || 
         (!connection.esmtp && proto === 'esmtp')) 
@@ -456,11 +461,11 @@ exports.proto_mismatch = function (next, connection, helo, proto) {
 
 exports.proto_mismatch_smtp = function (next, connection, helo) {
     this.proto_mismatch(next, connection, helo, 'smtp');
-}
+};
 
 exports.proto_mismatch_esmtp = function (next, connection, helo) {
     this.proto_mismatch(next, connection, helo, 'esmtp');
-}
+};
 
 exports.emit_log = function (next, connection, helo) {
     var plugin = this;
@@ -496,10 +501,10 @@ exports.get_a_records = function (host, cb) {
 
     // Set-up timer
     var timer = setTimeout(function () {
-        var e = new Error('timeout resolving: ' + host);
-        e.code = 'ETIMEOUT';
-        plugin.logerror(e);
-        return cb(e);
+        var err = new Error('timeout resolving: ' + host);
+        err.code = 'ETIMEOUT';
+        plugin.logerror(err);
+        return cb(err);
     }, (plugin.cfg.main.dns_timeout || 30) * 1000);
 
     // fully qualify, to ignore any search options in /etc/resolv.conf
@@ -507,8 +512,8 @@ exports.get_a_records = function (host, cb) {
 
     // do the queries
     dns.resolve(host, function(err, ips) {
-        if (timer) clearTimeout(timer);
-        if (err) return cb(err, ips);
+        if (timer) { clearTimeout(timer); }
+        if (err) { return cb(err, ips); }
         // plugin.logdebug(plugin, host + ' => ' + ips);
         // return the DNS results
         return cb(null, ips);
