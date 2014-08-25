@@ -211,8 +211,10 @@ exports.rdns_access = function(next, connection) {
     var r_ip = connection.remote_ip;
     var host = connection.remote_host;
 
-    var i, addr, file, addrs = [ r_ip, host ];
-    for (i=0; i<addrs.length; i++) {
+    var addr;
+    var file;
+    var addrs = [ r_ip, host ];
+    for (var i=0; i<addrs.length; i++) {
         addr = addrs[i];
         if (!addr) { continue; }  // empty rDNS host
         if (/[\w]/.test(addr)) { addr = addr.toLowerCase(); }
