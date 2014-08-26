@@ -62,7 +62,6 @@ exports.aliases = {
         test.expect(2);
         test.ok(this.plugin.inherits.called);
         test.equals(this.plugin.inherits.args[0], 'queue/discard');
-        // test.ok(this.plugin.inherits.args[0].match(/queue\/discard/));
         test.done();
     },
     'register function should call register_hook()' : function (test) {
