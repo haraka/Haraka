@@ -1,5 +1,4 @@
-dkim\_sign
-=========
+# `dkim_sign`
 
 This plugin implements the DKIM Core specification found at dkimcore.org
 
@@ -9,15 +8,15 @@ and deploy, yet provides all the same delivery advantages as DKIM.
 This plugin can only *sign* outbound messages.  It does not validate
 DKIM signatures.
 
-Getting Started
----------------
+
+## Getting Started
 
 Generate DKIM selector and keys:
 
-    cd /path/to/haraka/config/dkim
+    % cd /path/to/haraka/config/dkim
     ./dkim_key_gen.sh example.org
 
-Peek into the dkim\_key\_gen.sh shell script to see the commands used to
+Peek into the `dkim_key_gen.sh` shell script to see the commands used to
 create and format the DKIM public key. Within the config/dkim/example.org
  directory will be 4 files:
 
@@ -44,8 +43,11 @@ And the values in the address have the following meaning:
     keytypes: [ rsa ]
 
 
-What to sign
-------------
+## Key size
+
+The default key size created by `dkim_key_gen.sh` is 2048. As of mid-2014, there are some DNS providers that do not support key sizes that long.
+
+# What to sign
 
 The DKIM signing key for messages from example.org *should* be signed with
  a DKIM key for example.org. Failing to do so will result in messages not
@@ -56,10 +58,9 @@ For correct alignment, Haraka signs each message with that domains DKIM key.
 For an alternative, see the legacy Single Domain Configuration below.
 
 
-Configuration
--------------
+# Configuration
 
-This plugin uses the configuration dkim\_sign.ini in INI format.
+This plugin uses the configuration `dkim_sign.ini` in INI format.
 All configuration should appear within the 'main' block and is
 checked for updates on every run.
 
@@ -76,8 +77,7 @@ checked for updates on every run.
     will be added if it is missing.
 
 
-Single Domain Configuration
---------------------
+## Single Domain Configuration
 
 To sign all messages with a single DKIM key, these two config settings
 are required.
