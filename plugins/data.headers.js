@@ -260,6 +260,11 @@ exports.from_match = function (next, connection) {
     if (!connection.transaction) { return next(); }
 
     var env_addr = connection.transaction.mail_from;
+    if (!env_addr) {
+        connection.transaction.results.add(plugin, {fail: 'from_match(null)'});
+        return next();
+    }
+
     var hdr_from = connection.transaction.header.get('From');
     if (!hdr_from) {
         connection.transaction.results.add(plugin, {fail: 'from_match(missing)'});
