@@ -103,7 +103,8 @@ function setupClient(self) {
 
     self.client.on('error', function (err) {
         if (self.state >= states.STATE_DISCONNECTING) return;
-        self.fail(rhost + ' connection error: ' + err);
+        self.lognotice(rhost + ' connection error: ' + err);
+        self.fail();
     });
 
     self.client.on('timeout', function () {
