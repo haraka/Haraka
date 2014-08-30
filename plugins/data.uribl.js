@@ -16,6 +16,7 @@ var excludes = {};
 function check_excludes_list(host) {
     host = host.toLowerCase().split('.').reverse();
     for (var i=0; i < host.length; i++) {
+        var check;
         if (i === 0) {
             var check = host[i];
         }
@@ -248,6 +249,10 @@ exports.hook_lookup_rdns = function (next, connection) {
     var plugin = this;
     dns.reverse(connection.remote_ip, function (err, rdns) {
         if (err) {
+            if (err.code) {
+                if (err.code === dns.NXDOMAIN) return next();
+                if (err.code === 'ENOTFOUND') return next();
+            }
             connection.results.add(plugin, {err: err });
             return next();
         }
