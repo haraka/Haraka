@@ -394,7 +394,7 @@ Connection.prototype._process_data = function() {
             });
         }
         else {
-            this.logwarn('DATA line length (' + this.current_data.length + ') exceeds limit of ' + maxlength + ' bytes');
+            this.lognotice('DATA line length (' + this.current_data.length + ') exceeds limit of ' + maxlength + ' bytes');
             this.transaction.notes.data_line_length_exceeded = true;
             var b = Buffer.concat([
                 this.current_data.slice(0, maxlength - 2),
@@ -1048,7 +1048,7 @@ Connection.prototype.cmd_proxy = function (line) {
         self.hello_host = undefined;
         plugins.run_hooks('lookup_rdns', self);
     });
-}
+};
 
 
 /////////////////////////////////////////////////////////////////////////////
