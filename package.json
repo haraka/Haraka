@@ -34,7 +34,7 @@
   },
   "devDependencies": {
     "nodeunit"      : "https://github.com/godsflaw/nodeunit/archive/master.tar.gz",
-    "coveralls"     : "^2.11.1"
+    "coveralls"     : "*"
   },
   "licenses": [ {
     "type": "MIT",
