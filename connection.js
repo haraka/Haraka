@@ -90,20 +90,20 @@ function setupClient(self) {
     self.client.on('end', function() {
         if (self.state >= states.STATE_DISCONNECTING) return;
         self.remote_close = true;
-        self.lognotice(rhost + ' half closed connection');
+        self.loginfo(rhost + ' half closed connection');
         self.fail();
     });
 
     self.client.on('close', function(has_error) {
         if (self.state >= states.STATE_DISCONNECTING) return;
         self.remote_close = true;
-        self.lognotice(rhost + ' dropped connection');
+        self.loginfo(rhost + ' dropped connection');
         self.fail();
     });
 
     self.client.on('error', function (err) {
         if (self.state >= states.STATE_DISCONNECTING) return;
-        self.lognotice(rhost + ' connection error: ' + err);
+        self.loginfo(rhost + ' connection error: ' + err);
         self.fail();
     });
 
@@ -204,7 +204,7 @@ Connection.prototype.process_line = function (line) {
         if (logger.would_log(logger.LOGPROTOCOL)) {
             this.logprotocol("C: (after-disconnect): " + this.current_line + ' state=' + this.state);
         }
-        this.logwarn("data after disconnect from " + this.remote_ip);
+        this.loginfo("data after disconnect from " + this.remote_ip);
         return;
     }
 
@@ -395,7 +395,7 @@ Connection.prototype._process_data = function() {
             });
         }
         else {
-            this.lognotice('DATA line length (' + this.current_data.length + ') exceeds limit of ' + maxlength + ' bytes');
+            this.loginfo('DATA line length (' + this.current_data.length + ') exceeds limit of ' + maxlength + ' bytes');
             this.transaction.notes.data_line_length_exceeded = true;
             var b = Buffer.concat([
                 this.current_data.slice(0, maxlength - 2),
