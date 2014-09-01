@@ -49,6 +49,7 @@ function SMTPClient(port, host, connect_timeout, idle_timeout) {
         var code = matches[1],
             cont = matches[2],
             msg = matches[3];
+
         client.response.push(msg);
         if (cont !== ' ') {
             return;
@@ -342,7 +343,7 @@ exports.get_client_plugin = function (plugin, connection, config, callback) {
                         }
                     }
                 }
-
+                
                 var auth_matches = smtp_client.response[line].match(/^AUTH (.*)$/);
                 if (auth_matches) {
                     smtp_client.auth_capabilities = [];
