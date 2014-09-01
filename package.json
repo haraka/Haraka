@@ -30,11 +30,11 @@
     "vs-stun"       : "~0.0.7",
     "geoip-lite"    : "~1.1.3",
     "redis"         : "~0.10.1",
-    "tmp"           : "~0.0.24",
-    "coveralls"     : "^2.11.1"
+    "tmp"           : "~0.0.24"
   },
   "devDependencies": {
-    "nodeunit" : "https://github.com/godsflaw/nodeunit/archive/master.tar.gz"
+    "nodeunit"      : "https://github.com/godsflaw/nodeunit/archive/master.tar.gz",
+    "coveralls"     : "^2.11.1"
   },
   "licenses": [ {
     "type": "MIT",
