@@ -581,7 +581,16 @@ SPF.prototype.mech_ptr = function (qualifier, args, cb) {
                     }
                     // Finished
                     if (pending === 0) {
-                        var re = new RegExp(domain.replace('\.','\\.') + '$', 'i');
+                        var re;
+                        // Catch bogus PTR matches e.g. ptr:*.bahnhof.se (should be ptr:bahnhof.se)
+                        // These will cause a regexp error, so we can catch them.
+                        try {
+                            re = new RegExp(domain.replace('\.','\\.') + '$', 'i');
+                        }
+                        catch (e) {
+                            self.log_debug('mech_ptr: domain="' + self.domain + '" err="' + e.message + '"');
+                            return cb(null, self.SPF_PERMERROR);
+                        } 
                         for (var t=0; t<names.length; t++) {
                             if (re.test(names[t])) {
                                 self.log_debug('mech_ptr: ' + names[t] + ' => ' + domain + ': MATCH!');
