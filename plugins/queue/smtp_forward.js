@@ -22,23 +22,26 @@ exports.register = function () {
 exports.hook_queue = function (next, connection) {
     var plugin = this;
     var cfg = plugin.cfg.main;
-    connection.loginfo(this, "forwarding to " + cfg.host + ":" + cfg.port);
-    smtp_client_mod.get_client_plugin(this, connection, plugin.cfg, function (err, smtp_client) {
+
+    connection.loginfo(plugin, "forwarding to " + cfg.host + ":" + cfg.port);
+
+    smtp_client_mod.get_client_plugin(plugin, connection, cfg, function (err, smtp_client) {
         smtp_client.next = next;
         var rcpt = 0;
+
         var send_rcpt = function () {
             if (smtp_client.is_dead_sender(plugin, connection)) {
                 return;
             }
-            else if (rcpt < connection.transaction.rcpt_to.length) {
-                smtp_client.send_command('RCPT',
-                    'TO:' + connection.transaction.rcpt_to[rcpt]);
-                rcpt++;
-            }
-            else {
+            if (rcpt === connection.transaction.rcpt_to.length) {
                 smtp_client.send_command('DATA');
+                return;
             }
+            smtp_client.send_command('RCPT',
+                'TO:' + connection.transaction.rcpt_to[rcpt]);
+            rcpt++;
         };
+
         smtp_client.on('mail', send_rcpt);
         if (cfg.one_message_per_rcpt) {
             smtp_client.on('rcpt', function () { smtp_client.send_command('DATA'); });

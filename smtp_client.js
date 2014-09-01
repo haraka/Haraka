@@ -216,9 +216,7 @@ SMTPClient.prototype.is_dead_sender = function (plugin, connection) {
     if (connection.transaction) { return false; }
 
     // This likely means the sender went away on us, cleanup.
-    connection.logwarn(
-        plugin, "transaction went away, releasing smtp_client"
-    );
+    connection.logwarn(plugin, "transaction went away, releasing smtp_client");
     this.release();
     return true;
 };
@@ -227,8 +225,8 @@ SMTPClient.prototype.is_dead_sender = function (plugin, connection) {
 exports.get_pool = function (server, port, host, connect_timeout, pool_timeout, max) {
     port = port || 25;
     host = host || 'localhost';
-    connect_timeout = (connect_timeout === undefined) ? 30 : connect_timeout;
-    pool_timeout = (pool_timeout === undefined) ? 300 : pool_timeout;
+    connect_timeout = parseInt(connect_timeout) || 30;
+    pool_timeout = parseInt(pool_timeout) || 300;
     var name = port + ':' + host + ':' + pool_timeout;
     if (!server.notes.pool) {
         server.notes.pool = {};
@@ -276,7 +274,7 @@ exports.get_pool = function (server, port, host, connect_timeout, pool_timeout, 
 
 // Get a smtp_client for the given attributes.
 exports.get_client = function (server, callback, port, host, connect_timeout, pool_timeout, max) {
-    var pool = exports.get_pool(server, port, host, connect_timeout, pool_timeout, max);
+    var pool = this.get_pool(server, port, host, connect_timeout, pool_timeout, max);
     pool.acquire(callback);
 };
 
@@ -343,7 +341,7 @@ exports.get_client_plugin = function (plugin, connection, config, callback) {
                         }
                     }
                 }
-                
+
                 var auth_matches = smtp_client.response[line].match(/^AUTH (.*)$/);
                 if (auth_matches) {
                     smtp_client.auth_capabilities = [];
@@ -387,7 +385,7 @@ exports.get_client_plugin = function (plugin, connection, config, callback) {
 
         smtp_client.on('auth', function () {
             if (smtp_client.is_dead_sender(plugin, connection)) {
-              return;
+                return;
             }
             smtp_client.authenticated = true;
             smtp_client.send_command('MAIL',
