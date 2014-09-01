@@ -338,6 +338,7 @@ exports.hook_data_post = function (next, connection) {
 function extract_urls (urls, body, connection, self) {
     // extract from body.bodytext
     var match;
+    if (!body || !body.bodytext) { return; }
 
     // extract numeric URIs
     while (match = numeric_ip.exec(body.bodytext)) {
