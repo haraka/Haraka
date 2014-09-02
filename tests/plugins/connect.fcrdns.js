@@ -186,12 +186,6 @@ exports.is_generic_rdns = {
     'dsl-188-34-255-136.asretelecom.net': function (test) {
         test.expect(1);
         this.connection.remote_ip='188.34.255.136';
-        test.equal(false, this.plugin.is_generic_rdns(this.connection, 'dsl-188-34-255-136.asretelecom.net'));
-        test.done();
-    },
-    'dsl-188-34-255-136.asretelecom.net': function (test) {
-        test.expect(1);
-        this.connection.remote_ip='188.34.255.136';
         test.ok(this.plugin.is_generic_rdns(this.connection, 'dsl-188-34-255-136.asretelecom.net'));
         test.done();
     },
@@ -211,6 +205,18 @@ exports.is_generic_rdns = {
         test.expect(1);
         this.connection.remote_ip='192.168.1.1';
         test.equal(false, this.plugin.is_generic_rdns(this.connection, null));
+        test.done();
+    },
+    'tld, com': function (test) {
+        test.expect(1);
+        this.connection.remote_ip='192.168.1.1';
+        test.equal(false, this.plugin.is_generic_rdns(this.connection, 'com'));
+        test.done();
+    },
+    'empty string': function (test) {
+        test.expect(1);
+        this.connection.remote_ip='192.168.1.1';
+        test.equal(false, this.plugin.is_generic_rdns(this.connection, ''));
         test.done();
     },
 };

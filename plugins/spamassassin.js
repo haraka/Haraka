@@ -25,6 +25,10 @@ exports.hook_data_post = function (next, connection) {
     var results_timeout = parseInt(config.main.results_timeout) || 300;
 
     socket.on('connect', function () {
+        if (!connection.transaction) {
+            socket.end();
+            return next();
+        }
         this.is_connected = true;
         // Reset timeout
         this.setTimeout(results_timeout * 1000);
@@ -146,7 +150,7 @@ function munge_subject(connection, config, score) {
 
     connection.transaction.remove_header('Subject');
     connection.transaction.add_header('Subject', config.main.subject_prefix + " " + subj);
-};
+}
 
 function setup_defaults(config) {
     for (var key in defaults) {
@@ -158,7 +162,7 @@ function setup_defaults(config) {
         if (!config.main[item]) return;
         config.main[item] = Number(config.main[item]);
     });
-};
+}
 
 exports.do_header_updates = function (connection, spamd_response, config) {
     var plugin = this;
@@ -190,7 +194,7 @@ function score_too_high(config, connection, spamd_response) {
         if (rmax && (score >= rmax)) {
             return "spam score exceeded relay threshold";
         }
-    };
+    }
 
     var max = config.main.reject_threshold;
     if (max && (score >= max)) {
@@ -268,7 +272,7 @@ function get_spamd_socket(config, next, connection, plugin) {
         return next();
     });
     return socket;
-};
+}
 
 function msg_too_big(config, connection, plugin) {
     if (!config.main.max_size) return false;
@@ -280,7 +284,7 @@ function msg_too_big(config, connection, plugin) {
         return true;
     }
     return false;
-};
+}
 
 function log_results(connection, plugin, spamd_response, config) {
     connection.loginfo(plugin, "status=" + spamd_response.flag +
@@ -290,4 +294,4 @@ function log_results(connection, plugin, spamd_response, config) {
              (config.main.relay_reject_threshold || config.main.reject_threshold) :
              config.main.reject_threshold) +
           ', tests="' + spamd_response.tests + '"');
-};
+}
