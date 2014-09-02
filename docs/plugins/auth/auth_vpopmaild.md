@@ -5,7 +5,7 @@ daemon.
 
 ## Configuration
 
-Configuration is stored in `config/auth_vpopmaild.ini` and uses the INI
+Configuration is stored in `config/auth_vpopmaild.ini` and uses INI
 style formatting.
 
 There are three configuration settings:
@@ -15,11 +15,11 @@ There are three configuration settings:
 * port: The TCP port that vpopmaild is listening on (default: 89).
 
 * sysadmin: A colon separated username:password of a vpopmail user with
-    SYSADMIN privileges. This is only necessary to support CRAM-MD5. On new
-    installs, it best not to use CRAM-MD5, as it requires storing the
-    credentials on the server in clear text. However, if you have existing
-    clients whose MUA is configured to authenticate with CRAM-MD5, you'll
-    need to enable this.
+    SYSADMIN privileges (see vpopmail/bin/vmoduser -S). This is **only**
+    necessary to support CRAM-MD5 which requires access to the clear text
+    password. On new installs, it's best not to use CRAM-MD5, as it requires
+    storing clear text passwords. Legacy clients with MUAs configured
+    to authenticate with CRAM-MD5 will need this enabled.
 
 
 ### Per-domain Configuration
