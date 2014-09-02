@@ -33,7 +33,8 @@
     "tmp"           : "~0.0.24"
   },
   "devDependencies": {
-    "nodeunit" : "https://github.com/godsflaw/nodeunit/archive/master.tar.gz"
+    "nodeunit"      : "https://github.com/godsflaw/nodeunit/archive/master.tar.gz",
+    "coveralls"     : "*"
   },
   "licenses": [ {
     "type": "MIT",
