@@ -15,6 +15,7 @@ Outbound improvements
  - Limit concurrency by domain
  - Disable deliveries for a domain
  - Pool connections by domain/MX
+ - Enable TLS by default
 
 Plugin behavior changes
  - in SpamAssassin plugin, change default behavior of 'legacy' status header.

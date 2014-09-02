@@ -20,35 +20,46 @@ process with the SIGHUP signal (via the `kill` command line tool).
 Outbound Configuration Files
 ----------------------------
 
-### outbound.concurrency\_max
+### outbound.ini
+
+* `disabled`
+
+Default: false. Allows one to temporarily disable outbound delivery, while
+still receiving and queuing emails. This can be changed while Haraka is
+running.
+
+* `concurrency_max`
 
 Default: 100. Specifies the maximum concurrent connections to make. Note that
 if using cluster (multiple CPUs) then this will be multiplied by the number
 of CPUs that you have.
 
-### outbound.enable\_tls
+* `enable_tls`
 
-Default: 0. Put a "1" in this file to enable TLS for outbound mail when the
-remote end is capable of receiving TLS connections.
+Default: false. Switch to true to enable TLS for outbound mail when the
+remote end is capable.
 
 This uses the same `tls_key.pem` and `tls_cert.pem` files that the `tls`
-plugin uses. See the plugin documentation for information on generating those
+plugin uses. See the [tls plugin
+docs](http://haraka.github.io/manual/plugins/tls.html) for information on generating those
 files.
+
+* `ipv6_enabled`
+
+When this has a "true" value inside (usually a `1`), it defaults to an 'AAAA'
+lookup first for each MX record, and uses those hosts to send email via.
+
+* `always_split`
+
+Default: false. By default, Haraka will group message recipients by domain
+name, so that a message with two recipients at the same domain will get sent
+in the same SMTP session. When `always_split` is enabled, every recipient will
+get delivered in it's own SMTP session. This is useful if one wished to route
+messages for foo@example.com differently than messages to bar@example.com.
 
 ### outbound.bounce\_message
 
 See "Bounce Messages" below for details.
-
-### outbound.disabled
-
-Allows you to temporarily disable outbound delivery, while still able to
-receive and queue emails. This can be done while Haraka is running due to
-how Haraka watches for config file changes.
-
-### outbound.ipv6_enabled
-
-When this has a "true" value inside (usually a `1`), it defaults to an 'AAAA'
-lookup first for each MX record, and uses those hosts to send email via.
 
 Outbound Mail Hooks
 -------------------

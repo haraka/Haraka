@@ -33,14 +33,38 @@ var fn_re = /^(\d+)_(\d+)_/; // I like how this looks like a person
 
 var queue_dir = path.resolve(config.get('queue_dir') || (process.env.HARAKA + '/queue'));
 var uniq = Math.round(Math.random() * MAX_UNIQ);
-var MAX_CONCURRENCY = config.get('outbound.concurrency_max') || 100;
-var IPV6_ENABLED    = config.get('outbound.ipv6_enabled') || 0;
+var cfg;
+var load_config = function () {
+    cfg  = config.get('outbound.ini', {
+        booleans: [
+            '-disabled',
+            '-always_split',
+            '-enable_tls',    // TODO: default to enabled in Haraka 3.0
+            '-ipv6_enabled',
+            ],
+    }, load_config).main;
+
+    // legacy config file support. Remove in Haraka 4.0
+    if (!cfg.enable_tls && config.get('outbound.enable_tls')) {
+        cfg.enable_tls = true;
+    }
+    if (!cfg.maxTempFailures) {
+        cfg.maxTempFailures = config.get('outbound.maxTempFailures') || 13;
+    }
+    if (!cfg.concurrency_max) {
+        cfg.concurrency_max = config.get('outbound.concurrency_max') || 100;
+    }
+    if (!cfg.ipv6_enabled && config.get('outbound.ipv6_enabled')) {
+        cfg.ipv6_enabled = true;
+    }
+};
+load_config();
 
 var load_queue = async.queue(function (file, cb) {
     var hmail = new HMailItem(file, path.join(queue_dir, file));
     exports._add_file(hmail);
     hmail.once('ready', cb);
-}, MAX_CONCURRENCY);
+}, cfg.concurrency_max);
 
 var in_progress = 0;
 var delivery_queue = async.queue(function (hmail, cb) {
@@ -50,7 +74,7 @@ var delivery_queue = async.queue(function (hmail, cb) {
         cb();
     };
     hmail.send();
-}, MAX_CONCURRENCY);
+}, cfg.concurrency_max);
 
 var temp_fail_queue = new TimerQueue();
 
@@ -110,6 +134,7 @@ process.on('message', function (msg) {
     }
     if (msg.event && msg.event === 'outbound.flush_queue') {
         exports.flush_queue();
+        return;
     }
     // ignores the message
 });
@@ -840,7 +865,7 @@ HMailItem.prototype.found_mx = function (err, mxs) {
         // duplicate each MX for each ip address family
         this.mxlist = [];
         for (var mx in mxlist) {
-            if (IPV6_ENABLED) {
+            if (cfg.ipv6_enabled) {
                 this.mxlist.push(
                     { exchange: mxlist[mx].exchange, priority: mxlist[mx].priority, port: mxlist[mx].port, using_lmtp: mxlist[mx].using_lmtp, family: 'AAAA' },
                     { exchange: mxlist[mx].exchange, priority: mxlist[mx].priority, port: mxlist[mx].port, using_lmtp: mxlist[mx].using_lmtp, family: 'A' }
@@ -1013,7 +1038,7 @@ HMailItem.prototype.try_deliver_host = function (mx) {
             }
         }
 
-        if (smtp_properties.tls && config.get('outbound.enable_tls') && !secured) {
+        if (smtp_properties.tls && cfg.enable_tls && !secured) {
             socket.on('secure', function () {
                 // Set this flag so we don't try STARTTLS again if it
                 // is incorrectly offered at EHLO once we are secured.
@@ -1347,7 +1372,7 @@ HMailItem.prototype.temp_fail = function (err, extra) {
     this.num_failures++;
     
     // Test for max failures which is configurable.
-    if (this.num_failures >= (config.get('outbound.maxTempFailures') || 13)) {
+    if (this.num_failures >= (cfg.maxTempFailures)) {
         return this.bounce("Too many failures (" + err + ")", extra);
     }
 
