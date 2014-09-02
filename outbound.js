@@ -295,12 +295,12 @@ function _fname () {
 }
 
 exports.send_email = function () {
+    var self = this;
+
     if (arguments.length === 2) {
-        this.loginfo("Sending email as with a transaction");
+        this.loginfo("Sending email as a transaction");
         return this.send_trans_email(arguments[0], arguments[1]);
     }
-
-    var self = this;
 
     var from = arguments[0],
         to   = arguments[1],
@@ -382,29 +382,38 @@ exports.send_trans_email = function (transaction, next) {
     }
 
     transaction.add_leading_header('Received', '(Haraka outbound); ' + date_to_str(new Date()));
-    
-    // First get each domain
-    var recips = {};
-    var num_domains = 0;
-    transaction.rcpt_to.forEach(function (item) {
-        var domain = item.host;
-        if (!recips[domain]) {
-            recips[domain] = [];
-            num_domains++;
-        }
-        recips[domain].push(item);
-    });
+
+    var deliveries = [];
+    var always_split = config.get('outbound.ini', { booleans: ['-main.always_split']}).main.always_split;
+    if (always_split) {
+        this.loginfo("always split");
+        transaction.rcpt_to.forEach(function (rcpt) {
+            deliveries.push({domain: rcpt.address(), rcpts: [ rcpt ]});
+        });
+    }
+    else {
+        // First get each domain
+        var recips = {};
+        transaction.rcpt_to.forEach(function (rcpt) {
+            var domain = rcpt.host;
+            if (!recips[domain]) { recips[domain] = []; }
+            recips[domain].push(rcpt);
+        });
+        Object.keys(recips).forEach(function (domain) {
+            deliveries.push({'domain': domain, 'rcpts': recips[domain]});
+        });
+    }
     
     var hmails = [];
     var ok_paths = [];
 
     var todo_index = 1;
 
-    async.forEachSeries(Object.keys(recips), function (domain, cb) {
-        var todo = new TODOItem(domain, recips[domain], transaction);
+    async.forEachSeries(deliveries, function (deliv, cb) {
+        var todo = new TODOItem(deliv.domain, deliv.rcpts, transaction);
         todo.uuid = todo.uuid + '.' + todo_index;
         todo_index++;
-        self.process_domain(ok_paths, todo, hmails, cb);
+        self.process_delivery(ok_paths, todo, hmails, cb);
     }, 
     function (err) {
         if (err) {
@@ -415,16 +424,16 @@ exports.send_trans_email = function (transaction, next) {
             return;
         }
 
-        for (var i = 0; i < hmails.length; i++) {
-            var hmail = hmails[i];
+        for (var j=0; j<hmails.length; j++) {
+            var hmail = hmails[j];
             delivery_queue.push(hmail);
         }
 
         if (next) next(OK, "Message Queued (" + transaction.uuid + ")");
-    })
-}
+    });
+};
 
-exports.process_domain = function (ok_paths, todo, hmails, cb) {
+exports.process_delivery = function (ok_paths, todo, hmails, cb) {
     var self = this;
     this.loginfo("Processing domain: " + todo.domain);
     var fname = _fname();
