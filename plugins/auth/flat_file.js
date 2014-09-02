@@ -3,11 +3,14 @@ var net_utils = require('./net_utils');
 
 exports.register = function () {
     this.inherits('auth/auth_base');
-}
+};
 
 exports.hook_capabilities = function (next, connection) {
     // don't allow AUTH unless private IP or encrypted
-    if (!net_utils.is_rfc1918(connection.remote_ip) && !connection.using_tls) return next();
+    if (!net_utils.is_rfc1918(connection.remote_ip) && !connection.using_tls) {
+        connection.logdebug(plugin, "Auth disabled for insecure public connection");
+        return next();
+    }
     var config = this.config.get('auth_flat_file.ini');
     var methods = (config.core && config.core.methods ) ? config.core.methods.split(',') : null;
     if(methods && methods.length > 0) {
@@ -23,4 +26,4 @@ exports.get_plain_passwd = function (user, cb) {
         return cb(config.users[user]);
     }
     return cb();
-}
+};
