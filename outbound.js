@@ -191,7 +191,7 @@ exports.load_queue_files = function (pid, cb_name, files) {
     var self = this;
     if (files.length === 0) return;
 
-    if (config.get('outbound.disabled') && cb_name === '_add_file') {
+    if (cfg.disabled && cb_name === '_add_file') {
         // try again in 1 second if delivery is disabled
         setTimeout(function () {self.load_queue_files(pid, cb_name, files);}, 1000);
         return;
@@ -411,7 +411,7 @@ exports.send_trans_email = function (transaction, next) {
     transaction.add_leading_header('Received', '(Haraka outbound); ' + date_to_str(new Date()));
 
     var deliveries = [];
-    var always_split = config.get('outbound.ini', { booleans: ['-main.always_split']}).main.always_split;
+    var always_split = cfg.always_split;
     if (always_split) {
         this.loginfo("always split");
         transaction.rcpt_to.forEach(function (rcpt) {
@@ -702,7 +702,7 @@ HMailItem.prototype.read_todo = function () {
 };
 
 HMailItem.prototype.send = function () {
-    if (config.get('outbound.disabled')) {
+    if (cfg.disabled) {
         // try again in 1 second if delivery is disabled
         this.logdebug("delivery disabled temporarily. Retrying in 1s.");
         var hmail = this;
