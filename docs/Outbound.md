@@ -51,10 +51,10 @@ lookup first for each MX record, and uses those hosts to send email via.
 
 * `always_split`
 
-Default: false. By default, Haraka will group message recipients by domain
-name, so that a message with two recipients at the same domain will get sent
-in the same SMTP session. When `always_split` is enabled, every recipient will
-get delivered in its own SMTP session. This carries a performance penalty but
+Default: false. By default, Haraka groups message recipients by domain so that
+messages with multiple recipients at the same domain get sent in a single SMTP
+session. When `always_split` is enabled, each recipient gets a queue entry and
+delivery in its own SMTP session. This carries a performance penalty but
 enables more flexibility in mail delivery and bounce handling.
 
 ### outbound.bounce\_message
