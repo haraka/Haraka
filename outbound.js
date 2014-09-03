@@ -415,7 +415,7 @@ exports.send_trans_email = function (transaction, next) {
     if (always_split) {
         this.loginfo("always split");
         transaction.rcpt_to.forEach(function (rcpt) {
-            deliveries.push({domain: rcpt.address(), rcpts: [ rcpt ]});
+            deliveries.push({domain: rcpt.host, rcpts: [ rcpt ]});
         });
     }
     else {
