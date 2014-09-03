@@ -102,6 +102,9 @@ exports.get_mx = function(next, hmail, domain) {
     if (hmail && hmail.rcpt_to && hmail.rcpt_to[0]) {
         address = hmail.rcpt_to[0].original.toLowerCase();
     }
+    else {
+        plugin.logerror('no rcpt from hmail, falling back to domain' );
+    }
 
     var do_file_search = function () {
         // check email adress for route
