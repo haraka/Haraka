@@ -1,4 +1,5 @@
 // Look up URLs in SURBL
+/* jshint node: true */
 var url       = require('url');
 var dns       = require('dns');
 var isIPv4    = require('net').isIPv4;
@@ -16,8 +17,9 @@ var excludes = {};
 function check_excludes_list(host) {
     host = host.toLowerCase().split('.').reverse();
     for (var i=0; i < host.length; i++) {
+        var check;
         if (i === 0) {
-            var check = host[i];
+            check = host[i];
         }
         else {
             check = [ host[i], check ].join('.');
@@ -40,12 +42,12 @@ exports.register = function() {
             Object.keys(net_utils.top_level_tlds).join('|') + ')))(?!\\w)';
         schemed = new RegExp(re_schemed, 'gi');
     }
-}
+};
 
 exports.load_uri_config = function (next) {
     lists = this.config.get('data.uribl.ini');
     zones = Object.keys(lists);
-    if (!zones || !zones.length > 1) {
+    if (!zones || zones.length <= 1) {
         this.logerr('aborting: no zones configured');
         return next();
     }
@@ -57,7 +59,7 @@ exports.load_uri_config = function (next) {
     if (lists.main && !lists.main.max_uris_per_list) {
         lists.main.max_uris_per_list = 20;
     }
-}
+};
 
 exports.do_lookups = function (connection, next, hosts, type) {
     var plugin = this;
@@ -78,12 +80,13 @@ exports.do_lookups = function (connection, next, hosts, type) {
     }
     connection.logdebug(plugin, '(' + type + ') found ' + hosts.length + ' items for lookup');
 
+    var j;
     var queries = {};
     for (var i=0; i < hosts.length; i++) {
         var host = hosts[i].toLowerCase();
         connection.logdebug(plugin, '(' + type + ') checking: ' + host);
         // Make sure we have a valid TLD
-        if (!isIPv4(host) && !net_utils.top_level_tlds[(host.split('\.').reverse())[0]]) {
+        if (!isIPv4(host) && !net_utils.top_level_tlds[(host.split('.').reverse())[0]]) {
             continue;
         }
         // Check the exclusion list
@@ -92,7 +95,7 @@ exports.do_lookups = function (connection, next, hosts, type) {
             continue;
         }
         // Loop through the zones
-        for (var j=0; j < zones.length; j++) {
+        for (j=0; j < zones.length; j++) {
             var zone = zones[j];
             if (zone === 'main') continue;  // skip config
             if (!lists[zone] || (lists[zone] && !/^(?:1|true|yes|enabled|on)$/i.test(lists[zone][type]))) {
@@ -142,7 +145,7 @@ exports.do_lookups = function (connection, next, hosts, type) {
 
     // Flatten object into array for easier querying
     var queries_to_run = [];
-    for (var j=0; j < Object.keys(queries).length; j++) {
+    for (j=0; j < Object.keys(queries).length; j++) {
         for (var k=0; k < Object.keys(queries[Object.keys(queries)[j]]).length; k++) {
             // host/domain, zone
             queries_to_run.push( [ Object.keys(queries[Object.keys(queries)[j]])[k], Object.keys(queries)[j] ] );
@@ -157,7 +160,6 @@ exports.do_lookups = function (connection, next, hosts, type) {
     }
 
     // Perform the lookups
-    var plugin = this;
     var pending_queries = 0;
     var called_next = false;
 
@@ -197,22 +199,22 @@ exports.do_lookups = function (connection, next, hosts, type) {
                         results.add(plugin, {fail: type });
                         return next(DENY, msg);
                     }
-                }
+                };
                 // Optionally validate first result against a regexp
                 if (lists[query[1]] && lists[query[1]].validate) {
                     var re = new RegExp(lists[query[1]].validate);
                     if (!re.test(addrs[0])) {
                         connection.logdebug(plugin, 'ignoring result (' + addrs[0] + ') for: ' +
                                 lookup + ' as it did not match validation rule');
-                        var skip = true;
+                        skip = true;
                     }
                 }
                 // Check for optional bitmask
                 if (lists[query[1]] && lists[query[1]].bitmask) {
                     // A bitmask zone should only return a single result
                     // We only support a bitmask of up to 128 in a single octet
-                    var last_octet = new Number((addrs[0].split('.'))[3]);
-                    var bitmask = new Number(lists[query[1]].bitmask);
+                    var last_octet = Number((addrs[0].split('.'))[3]);
+                    var bitmask = Number(lists[query[1]].bitmask);
                     if ((last_octet & bitmask) > 0) {
                         connection.loginfo(plugin, 'found ' + query[0] + ' in zone ' + query[1] +
                             ' (' + addrs.join(',') + '; bitmask=' + bitmask + ')');
@@ -220,7 +222,7 @@ exports.do_lookups = function (connection, next, hosts, type) {
                     } else {
                         connection.logdebug(plugin, 'ignoring result (' + addrs[0] + ') for: ' +
                                 lookup + ' as the bitmask did not match');
-                        var skip = true;
+                        skip = true;
                     }
                 }
                 else {
@@ -248,6 +250,10 @@ exports.hook_lookup_rdns = function (next, connection) {
     var plugin = this;
     dns.reverse(connection.remote_ip, function (err, rdns) {
         if (err) {
+            if (err.code) {
+                if (err.code === dns.NXDOMAIN) return next();
+                if (err.code === 'ENOTFOUND') return next();
+            }
             connection.results.add(plugin, {err: err });
             return next();
         }
@@ -264,19 +270,19 @@ exports.hook_ehlo = function (next, connection, helo) {
     } else {
         this.do_lookups(connection, next, helo, 'helo');
     }
-}
+};
 exports.hook_helo = exports.hook_ehlo;
 
 exports.hook_mail = function (next, connection, params) {
     this.load_uri_config(next);
     this.do_lookups(connection, next, params[0].host, 'envfrom');
-}
+};
 
 exports.hook_data = function (next, connection) {
     // enable mail body parsing
     connection.transaction.parse_body = 1;
     return next();
-}
+};
 
 exports.hook_data_post = function (next, connection) {
     this.load_uri_config(next);
@@ -292,34 +298,34 @@ exports.hook_data_post = function (next, connection) {
             return plugin.do_lookups(connection, cb, fmatch[1], 'from');
         }
         cb();
-    }
+    };
 
     // Reply-To header
     var do_replyto_header = function (cb) {
         var replyto = trans.header.get('reply-to');
-        var rmatch;
-        if (rmatch = email_re.exec(replyto)) {
+        var rmatch = email_re.exec(replyto);
+        if (rmatch) {
             return plugin.do_lookups(connection, cb, rmatch[1], 'replyto');
         }
         cb();
-    }
+    };
 
     // Message-Id header
     var do_msgid_header = function (cb) {
         var msgid = trans.header.get('message-id');
-        var mmatch;
-        if (mmatch = /@([^>]+)>/.exec(msgid)) {
+        var mmatch = /@([^>]+)>/.exec(msgid);
+        if (mmatch) {
             return plugin.do_lookups(connection, cb, mmatch[1], 'msgid');
         }
-        cb();
-    }
+         cb();
+    };
 
     // Body
     var do_body = function (cb) {
         var urls = {};
         extract_urls(urls, trans.body, connection, plugin);
         return plugin.do_lookups(connection, cb, Object.keys(urls), 'body');
-    }
+    };
 
     var chain = [ do_from_header, do_replyto_header, do_msgid_header, do_body ];
     var chain_caller = function (code, msg) {
@@ -331,18 +337,18 @@ exports.hook_data_post = function (next, connection) {
         }
         var next_in_chain = chain.shift();
         next_in_chain(chain_caller);
-    }
+    };
     chain_caller();
-}
+};
 
 function extract_urls (urls, body, connection, self) {
     // extract from body.bodytext
     var match;
     if (!body || !body.bodytext) { return; }
 
+    var uri;
     // extract numeric URIs
     while (match = numeric_ip.exec(body.bodytext)) {
-        var uri;
         try {
             uri = url.parse(match[0]);
             // Don't reverse the IPs here; we do it in the lookup
@@ -356,7 +362,6 @@ function extract_urls (urls, body, connection, self) {
 
     // match plain hostname.tld
     while (match = schemeless.exec(body.bodytext)) {
-        var uri;
         try {
             uri = url.parse('http://' + match[1]);
             urls[uri.hostname] = uri;
@@ -369,7 +374,6 @@ function extract_urls (urls, body, connection, self) {
 
     // match scheme:// URI
     while (match = schemed.exec(body.bodytext)) {
-        var uri;
         try {
             uri = url.parse(match[1]);
             urls[uri.hostname] = uri;
