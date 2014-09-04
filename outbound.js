@@ -413,7 +413,7 @@ exports.send_trans_email = function (transaction, next) {
     var deliveries = [];
     var always_split = cfg.always_split;
     if (always_split) {
-        this.loginfo("always split");
+        this.logdebug("always split");
         transaction.rcpt_to.forEach(function (rcpt) {
             deliveries.push({domain: rcpt.host, rcpts: [ rcpt ]});
         });
