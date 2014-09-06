@@ -1,4 +1,5 @@
 "use strict";
+/* jshint node: true */
 var logger = require('./logger');
 var config = require('./config');
 var net    = require('net');
@@ -24,7 +25,8 @@ exports.is_public_suffix = function (host) {
         return true;           // matched a wildcard, ex: *.uk
     }
 
-    try { var puny = punycode.toUnicode(host); }
+    var puny;
+    try { puny = punycode.toUnicode(host); }
     catch(e) {}
     if (puny && public_suffix_list[puny]) return true;
 
@@ -99,7 +101,7 @@ exports.split_hostname = function(host,level) {
         domain = split.shift() + '.' + domain;
     }
     return [split.reverse().join('.'), domain];
-}
+};
 
 exports.long_to_ip = function (n) {
     var d = n%256;
@@ -108,15 +110,15 @@ exports.long_to_ip = function (n) {
         d = n%256 + '.' + d;
     }
     return d;
-}
+};
 
 exports.dec_to_hex = function (d) {
     return d.toString(16);
-}
+};
 
 exports.hex_to_dec = function (h) {
     return parseInt(h, 16);
-}
+};
 
 exports.ip_to_long = function (ip) {
     if (!net.isIPv4(ip)) {
@@ -133,23 +135,24 @@ exports.is_ip_in_str = function(ip, str) {
     if (!str) { return false; }
     if (!ip) { return false; }
     if (net.isIPv4(ip)) {
+        var oct1, oct2, oct3, oct4;
         var host_part = (this.split_hostname(str,1))[0].toString();
         var ip_split = ip.split('.');
         // See if the 3rd and 4th octets appear in the string
         // We test the largest of the two octets first
         if (ip_split[3].length >= ip_split[2].length) {
-            var oct4 = host_part.lastIndexOf(ip_split[3]);
+            oct4 = host_part.lastIndexOf(ip_split[3]);
             if (oct4 !== -1) {
-                var oct3 = (host_part.substring(0, oct4) + host_part.substring(oct4 + ip_split[3].length));
+                oct3 = (host_part.substring(0, oct4) + host_part.substring(oct4 + ip_split[3].length));
                 if (oct3.lastIndexOf(ip_split[2]) !== -1) {
                     return true;
                 }
             }
         }
         else {
-            var oct3 = host_part.indexOf(ip_split[2]);
+            oct3 = host_part.indexOf(ip_split[2]);
             if (oct3 !== -1) {
-                var oct4 = (host_part.substring(0, oct3) + host_part.substring(oct3 + ip_split[2].length));
+                oct4 = (host_part.substring(0, oct3) + host_part.substring(oct3 + ip_split[2].length));
                 if (oct4.lastIndexOf(ip_split[3]) !== -1) {
                     return true;
                 }
@@ -157,18 +160,18 @@ exports.is_ip_in_str = function(ip, str) {
         }
         // 1st and 2nd octets
         if (ip_split[1].length >= ip_split[2].length) {
-            var oct2 = host_part.lastIndexOf(ip_split[1]);
+            oct2 = host_part.lastIndexOf(ip_split[1]);
             if (oct2 !== -1) {
-                var oct1 = (host_part.substring(0, oct2) + host_part.substring(oct2 + ip_split[1].length));
+                oct1 = (host_part.substring(0, oct2) + host_part.substring(oct2 + ip_split[1].length));
                 if (oct1.lastIndexOf(ip_split[0]) !== -1) {
                     return true;
                 }
             }
         }
         else {
-            var oct1 = host_part.lastIndexOf(ip_split[0]);
+            oct1 = host_part.lastIndexOf(ip_split[0]);
             if (oct1 !== -1) {
-                var oct2 = (host_part.substring(0, oct1) + host_part.substring(oct1 + ip_split[0].length));
+                oct2 = (host_part.substring(0, oct1) + host_part.substring(oct1 + ip_split[0].length));
                 if (oct2.lastIndexOf(ip_split[1]) !== -1) {
                     return true;
                 }
@@ -185,11 +188,11 @@ exports.is_ip_in_str = function(ip, str) {
         }
     }
     return false;
-}
+};
 
 exports.is_rfc1918 = function (ip) {
     return (net.isIPv4(ip) && re_private_ipv4.test(ip));
-}
+};
 
 exports.is_ipv4_literal = function (host) {
     return /^\[(\d{1,3}\.){3}\d{1,3}\]$/.test(host) ? true : false;
@@ -311,7 +314,7 @@ exports.get_public_ip = function (cb) {
     }
 
     // manual config override, for the cases where we can't figure it out
-    if (config.get('smtp.ini').public_ip) {
+    if (config.get('smtp.ini').main.public_ip) {
         nu.public_ip = config.get('smtp.ini').public_ip;
         return cb(null, nu.public_ip);
     }
@@ -332,7 +335,7 @@ exports.get_public_ip = function (cb) {
         if (timer) clearTimeout(timer);
         if (error) {
             return cb(error);
-        };
+        }
         socket.close();
         /*          sample socket.stun response
          *
@@ -341,6 +344,9 @@ exports.get_public_ip = function (cb) {
          *  type: 'Full Cone NAT'
          *  }
         */
+        if (!socket.stun.public) {
+            return cb(new Error('invalid STUN result'));
+        }
         return cb(null, socket.stun.public.host);
     };
 
