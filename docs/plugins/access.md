@@ -6,7 +6,7 @@ two somewhat different modes, **any** -vs- **precise**.
 
 ## ANY
 
-The **any** check is based on the idea that I want to block an offending domain
+The **any** check is premised on blocking a domain
 name no matter where in the SMTP conversation it appears. That's possible using
 several regex lists in the **precise** checks, but it's also much slower.
 
@@ -33,6 +33,12 @@ person you know that still uses it:
 
     aol.com
     !friend@aol.com
+
+### ANY data
+
+In addition to checking for a domain in the envelope, ANY can also check in
+the message headers as well. Settings 'data=true' in the [checks] section of
+`config/access.ini` enables this. At present this only checks the From header.
 
 ## PRECISE
 
@@ -127,17 +133,17 @@ hostname (if any) of the remote.
 
 ### MAIL FROM
 
-* connect.mail\_from.whitelist          (pass)
-* connect.mail\_from.whitelist\_regex   (pass)
-* connect.mail\_from.blacklist          (block)
-* connect.mail\_from.blacklist\_regex   (block)
+* mail\_from.access.whitelist          (pass)
+* mail\_from.access.whitelist\_regex   (pass)
+* mail\_from.access.blacklist          (block)
+* mail\_from.access.blacklist\_regex   (block)
 
 ### RCPT TO
 
-* connect.rcpt\_to.whitelist           (pass)
-* connect.rcpt\_to.whitelist\_regex    (pass)
-* connect.rcpt\_to.blacklist           (block)
-* connect.rcpt\_to.blacklist\_regex    (block)
+* rcpt\_to.access.whitelist           (pass)
+* rcpt\_to.access.whitelist\_regex    (pass)
+* rcpt\_to.access.blacklist           (block)
+* rcpt\_to.access.blacklist\_regex    (block)
 
 
 ## NOTES

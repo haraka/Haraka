@@ -45,13 +45,11 @@ exports.createTransaction = function(uuid) {
 };
 
 Transaction.prototype.add_data = function(line) {
-    if (!this.discard_data) this.message_stream.add_line(line);
-    if (typeof line !== 'string') {
-        line = line.toString('binary');
+    if (typeof line === 'string') { // This shouldn't ever really happen...
+        line = new Buffer(line);
     }
-    line = line.replace(/^\./, '').replace(/\r\n$/, '\n');
     // check if this is the end of headers line  
-    if (this.header_pos === 0 && line[0] === '\n') {
+    if (this.header_pos === 0 && (line[0] === 0x0A || (line[0] === 0x0D && line[1] === 0x0A)) ) {
         this.header.parse(this.header_lines);
         this.header_pos = this.header_lines.length;
         if (this.parse_body) {
@@ -61,15 +59,26 @@ Transaction.prototype.add_data = function(line) {
     else if (this.header_pos === 0) {
         // Build up headers
         if (this.header_lines.length < MAX_HEADER_LINES) {
-            this.header_lines.push(line);
+            if (line[0] === 0x2E) line = line.slice(1); // Strip leading "."
+            this.header_lines.push(line.toString('binary').replace(/\r\n$/, '\n'));
         }
     }
     else if (this.header_pos && this.parse_body) {
-        this.body.parse_more(line);
+        if (line[0] === 0x2E) line = line.slice(1); // Strip leading "."
+        var new_line = this.body.parse_more(line.toString('binary').replace(/\r\n$/, '\n'));
+        
+        if (!new_line.length) {
+            return; // buffering for banners
+        }
+
+        new_line = new_line.replace(/^\./gm, '..').replace(/\r?\n/gm, '\r\n');
+        line = new Buffer(new_line);
     }
+
+    if (!this.discard_data) this.message_stream.add_line(line);
 };
 
-Transaction.prototype.end_data = function() {
+Transaction.prototype.end_data = function(cb) {
     if (this.header_lines.length && this.header.header_list.length === 0) {
         // Headers not parsed yet - must be a busted email
         // Strategy: Find first blank line, parse up to that as headers. Rest as body.
@@ -94,7 +103,15 @@ Transaction.prototype.end_data = function() {
     }
     if (this.header_pos && this.parse_body) {
         var data = this.body.parse_end();
+        if (data.length) {
+            data = data.replace(/^\./gm, '..').replace(/\r?\n/gm, '\r\n');
+            var line = new Buffer(data);
+
+            if (!this.discard_data) this.message_stream.add_line(line);
+        }
     }
+
+    this.message_stream.add_line_end(cb);
 }
 
 Transaction.prototype.add_header = function(key, value) {
@@ -124,7 +141,7 @@ Transaction.prototype.attachment_hooks = function (start, data, end) {
 };
 
 Transaction.prototype.set_banner = function (text, html) {
-    throw "transaction.set_banner is currently non-functional";
+    // throw "transaction.set_banner is currently non-functional";
     this.parse_body = true;
     if (!html) {
         html = text.replace(/\n/g, '<br/>\n');

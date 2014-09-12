@@ -262,6 +262,11 @@ exports.is_generic_rdns = function (connection, domain) {
     connection.results.add(plugin, {fail: 'is_generic_rdns'});
 
     var orgDom = net_utils.get_organizational_domain(domain);
+    if (!orgDom) {
+        connection.loginfo(this, 'no org domain for: ' + domain);
+        return false;
+    }
+
     var host_part = domain.split('.').slice(0,orgDom.split('.').length+1);
     if (/(?:static|business)/.test(host_part)) {
         // Allow some obvious generic but static ranges

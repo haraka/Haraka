@@ -84,7 +84,7 @@ exports.hook_capabilities = function (next, connection) {
 exports.hook_unrecognized_command = function (next, connection, params) {
     /* Watch for STARTTLS directive from client. */
     if (!connection.notes.tls_enabled) { return next(); }
-    if (params[0] !== 'STARTTLS') { return next(); }
+    if (params[0].toUpperCase() !== 'STARTTLS') { return next(); }
 
     /* Respond to STARTTLS command. */
     connection.respond(220, "Go ahead.");
