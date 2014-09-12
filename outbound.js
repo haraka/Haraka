@@ -1035,7 +1035,7 @@ HMailItem.prototype.try_deliver_host = function (mx) {
         if (success) {
             var reason = response.join(' ');
             self.delivered(host, port, (mx.using_lmtp ? 'LMTP' : 'SMTP'), mx.exchange, 
-                           reason, ok_recips, fail_recips, bounce_recips);
+                           reason, ok_recips, fail_recips, bounce_recips, secured);
         }
         else {
             self.discard();
@@ -1306,7 +1306,7 @@ HMailItem.prototype.double_bounce = function (err) {
     // Another strategy might be delivery "plugins" to cope with this.
 }
 
-HMailItem.prototype.delivered = function (ip, port, mode, host, response, ok_recips, fail_recips, bounce_recips) {
+HMailItem.prototype.delivered = function (ip, port, mode, host, response, ok_recips, fail_recips, bounce_recips, secured) {
     var delay = (Date.now() - this.todo.queue_time)/1000;
     this.lognotice("delivered file=" + this.filename + 
                    ' domain="' + this.todo.domain + '"' +
@@ -1314,11 +1314,12 @@ HMailItem.prototype.delivered = function (ip, port, mode, host, response, ok_rec
                    ' ip=' + ip +
                    ' port=' + port +
                    ' mode=' + mode + 
+                   ' tls=' + ((secured) ? 'Y' : 'N') +
                    ' response="' + response + '"' +
                    ' delay=' + delay +
                    ' fails=' + this.num_failures + 
                    ' rcpts=' + ok_recips.length + '/' + fail_recips.length + '/' + bounce_recips.length);
-    plugins.run_hooks("delivered", this, [host, ip, response, delay, port, mode, ok_recips]);
+    plugins.run_hooks("delivered", this, [host, ip, response, delay, port, mode, ok_recips, secured]);
 }
 
 HMailItem.prototype.discard = function () {

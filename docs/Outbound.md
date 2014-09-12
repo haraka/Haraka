@@ -129,13 +129,11 @@ email then you can return `OK` from this hook to stop it from sending a bounce m
 
 Parameters: `next, hmail, params`
 
-Params is a list of: `[host, ip, response, delay, port, mode, ok_recips]`
+Params is a list of: `[host, ip, response, delay, port, mode, ok_recips, fail_recips, bounce_recips, secured]`
 
 When mails are successfully delivered to the remote end then the `delivered`
 hook is called. The return codes from this hook have no effect, so it is only
 useful for logging the fact that a successful delivery occurred.
-This hook is called with `(hmail, [host, ip, response, delay, port, mode, recipients])` 
-as parameters:
  
 * `host` - Hostname of the MX that the message was delivered to,
 * `ip` - IP address of the host that the message was delivered to,
@@ -145,8 +143,13 @@ that received the message and will typically contain the remote queue ID and
 message being delivered.
 * `port` - Port number that the message was delivered to.
 * `mode` - Shows whether SMTP or LMTP was used to deliver the mail.
-* `recipients` - an Address array containing all of the recipients that were
+* `ok_recips` - an Address array containing all of the recipients that were
 successfully delivered to.
+* `fail_recips` - an Address array containing all of the recipients that were
+deferred.
+* `bounce_recips` - an Address containing all of the recipients that were rejected
+and bounced.
+* `secured` - A boolean denoting if the connection used TLS or not.
 
 Bounce Messages
 ---------------
