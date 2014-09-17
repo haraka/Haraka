@@ -48,7 +48,7 @@ exports.hook_data_post = function (next, connection) {
         this.is_connected = true;
         // Reset timeout
         this.setTimeout(results_timeout * 1000);
-        socket.write(headers.join("\r\n"));
+        socket.write(headers.join("\r\n") + "\r\n");
         connection.transaction.message_stream.pipe(socket);
     });
 
@@ -57,7 +57,7 @@ exports.hook_data_post = function (next, connection) {
     var last_header;
 
     socket.on('line', function (line) {
-        connection.logprotocol(plugin, "Spamd C: " + line);
+        connection.logprotocol(plugin, "Spamd C: " + line + ' state=' + state);
         line = line.replace(/\r?\n/, '');
         if (state === 'line0') {
             spamd_response.line0 = line;
@@ -79,9 +79,9 @@ exports.hook_data_post = function (next, connection) {
             }
         }
         else if (state === 'headers') {
-            var m;   // printable ASCII: [ -~]
-            if (m = line.match(/^X-Spam-([-~]+):\s+(.*)/)) {
-                // connection.logdebug(plugin, "header: " + line);
+            var m;
+            if (m = line.match(/^X-Spam-([\x21-\x39\x3B-\x7E]+):\s+(.*)/)) {
+                connection.logdebug(plugin, "header: " + line);
                 last_header = m[1];
                 spamd_response.headers[m[1]] = m[2];
                 return;
@@ -105,7 +105,10 @@ exports.hook_data_post = function (next, connection) {
         if (spamd_response.tests === undefined) {
             // strip the 'tests' from the X-Spam-Status header
             if (spamd_response.headers && spamd_response.headers.Status) {
-                var tests = /tests=([^ ]+)/.exec(spamd_response.headers.Status.replace(/\r?\n\t/g,''));
+                // SpamAssassin appears to have a bug that causes a space not to
+                // be added before autolearn= when the header line has been folded.
+                // So we modify the regexp here not to match autolearn onwards. 
+                var tests = /tests=((?:(?!autolearn)[^ ])+)/.exec(spamd_response.headers.Status.replace(/\r?\n\t/g,''));
                 if (tests) { spamd_response.tests = tests[1]; }
             }
         }
