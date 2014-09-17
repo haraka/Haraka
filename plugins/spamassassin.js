@@ -1,7 +1,7 @@
 // Call spamassassin via spamd
 
 var sock = require('./line_socket');
-var prettySize = require('./utils').prettySize;
+var utils = require('./utils');
 
 var defaults = {
     spamd_socket: 'localhost:783',
@@ -80,7 +80,7 @@ exports.hook_data_post = function (next, connection) {
         }
         else if (state === 'headers') {
             var m;   // printable ASCII: [ -~]
-            if (m = line.match(/^X-Spam-([ -~]+):(.*)/)) {
+            if (m = line.match(/^X-Spam-([-~]+):\s+(.*)/)) {
                 // connection.logdebug(plugin, "header: " + line);
                 last_header = m[1];
                 spamd_response.headers[m[1]] = m[2];
@@ -163,7 +163,7 @@ exports.munge_subject = function (connection, score) {
     if (parseFloat(score) < parseFloat(munge)) return;
 
     var subj = connection.transaction.header.get('Subject');
-    var subject_re = new RegExp('^' + plugin.cfg.main.subject_prefix);
+    var subject_re = new RegExp('^' + utils.regexp_escape(plugin.cfg.main.subject_prefix));
     if (subject_re.test(subj)) return;    // prevent double munge
 
     connection.transaction.remove_header('Subject');
@@ -291,7 +291,7 @@ exports.msg_too_big = function(connection) {
 
     var max = plugin.cfg.main.max_size;
     if (size <= max) { return false; }
-    connection.loginfo(plugin, 'skipping, size ' + prettySize(size) + ' exceeds max: ' + prettySize(max));
+    connection.loginfo(plugin, 'skipping, size ' + utils.prettySize(size) + ' exceeds max: ' + utils.prettySize(max));
     return true;
 };
 

@@ -189,3 +189,7 @@ exports.valid_regexes = function (list, file) {
     }
     return valid;  // returns a list of valid regexes
 };
+
+exports.regexp_escape = function(text) {
+    return text.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
+}
