@@ -80,7 +80,7 @@ exports.hook_data_post = function (next, connection) {
         }
         else if (state === 'headers') {
             var m;
-            if (m = line.match(/^X-Spam-([\x21-\x39\x3B-\x7E]+):\s+(.*)/)) {
+            if (m = line.match(/^X-Spam-([\x21-\x39\x3B-\x7E]+):\s*(.*)/)) {
                 connection.logdebug(plugin, "header: " + line);
                 last_header = m[1];
                 spamd_response.headers[m[1]] = m[2];
