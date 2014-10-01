@@ -44,7 +44,12 @@
     "mail" : "helpme@gmail.com",
     "url" : "https://github.com/baudehlo/Haraka/issues"
   },
-  "bin": { "haraka": "./bin/haraka", "spf": "./bin/spf", "haraka_grep": "./bin/haraka_grep" },
+  "bin": { 
+    "haraka": "./bin/haraka", 
+    "spf": "./bin/spf",
+    "dkimverify": "./bin/dkimverify",
+    "haraka_grep": "./bin/haraka_grep" 
+  },
   "scripts": {
     "test": "./run_tests"
   }
