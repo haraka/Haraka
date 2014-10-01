@@ -1257,11 +1257,12 @@ Connection.prototype.received_line = function() {
 
 Connection.prototype.auth_results = function(message) {
     // http://tools.ietf.org/search/rfc7001
-    var has_conn = this.notes.authentication_results ? true : false;
     var has_tran = (this.transaction && this.transaction.notes) ? true : false;
 
     // initialize connection note
-    if (has_conn === false) { this.notes.authentication_results = []; }
+    if (!this.notes.authentication_results) {
+        this.notes.authentication_results = [];
+    }
 
     // initialize transaction note, if possible
     if (has_tran === true && !this.transaction.notes.authentication_results) {
@@ -1280,8 +1281,10 @@ Connection.prototype.auth_results = function(message) {
 
     // assemble the new header
     var header = [ config.get('me') ];
-    if (has_conn === true) header.push(this.notes.authentication_results.join('; '));
-    if (has_tran === true) header.push(this.transaction.notes.authentication_results.join('; '));
+    header = header.concat(this.notes.authentication_results);
+    if (has_tran === true) {
+        header = header.concat(this.transaction.notes.authentication_results);
+    }
     if (header.length === 1) return '';  // no results
     return header.join('; ');
 };
