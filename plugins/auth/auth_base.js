@@ -18,12 +18,12 @@ exports.hook_capabilities = function (next, connection) {
         connection.notes.allowed_auth_methods = methods;
     }
     next();
-}
+};
 
 // You need to override this at a minimum. Run cb(passwd) to provide a password.
 exports.get_plain_passwd = function (user, cb) {
     return cb();
-}
+};
 
 exports.hook_unrecognized_command = function (next, connection, params) {
     if(params[0].toUpperCase() === AUTH_COMMAND && params[1]) {
@@ -46,7 +46,7 @@ exports.hook_unrecognized_command = function (next, connection, params) {
         return this.auth_plain(next, connection, params);
     }
     return next();
-}
+};
 
 exports.check_plain_passwd = function (connection, user, passwd, cb) {
     this.get_plain_passwd(user, function (plain_pw) {
@@ -57,8 +57,8 @@ exports.check_plain_passwd = function (connection, user, passwd, cb) {
             return cb(true);
         }
         return cb(false);
-    })
-}
+    });
+};
 
 exports.check_cram_md5_passwd = function (ticket, user, passwd, cb) {
     this.get_plain_passwd(user, function (plain_pw) {
@@ -74,8 +74,8 @@ exports.check_cram_md5_passwd = function (ticket, user, passwd, cb) {
             return cb(true);
         }
         return cb(false);
-    })
-}
+    });
+};
 
 exports.check_user = function (next, connection, credentials, method) {
     var plugin = this;
@@ -110,7 +110,7 @@ exports.check_user = function (next, connection, credentials, method) {
             connection.notes.auth_login_asked_login = false;
 
             var delay = Math.pow(2, connection.notes.auth_fails - 1);
-            if (plugin.timeout && delay >= plugin.timeout) { delay = plugin.timeout - 1 }
+            if (plugin.timeout && delay >= plugin.timeout) { delay = plugin.timeout - 1; }
             connection.lognotice(plugin, 'delaying response for ' + delay + ' seconds');
             // here we include the username, as shown in RFC 5451 example
             connection.auth_results('auth=fail ('+method.toLowerCase()+') smtp.auth='+ credentials[0]);
@@ -122,7 +122,7 @@ exports.check_user = function (next, connection, credentials, method) {
                 });
             }, delay * 1000);
         }
-    }
+    };
 
     if (method === AUTH_METHOD_PLAIN || method === AUTH_METHOD_LOGIN) {
         plugin.check_plain_passwd(connection, credentials[0], credentials[1], passwd_ok);
@@ -130,7 +130,7 @@ exports.check_user = function (next, connection, credentials, method) {
     else if (method === AUTH_METHOD_CRAM_MD5) {
         plugin.check_cram_md5_passwd(connection.notes.auth_ticket, credentials[0], credentials[1], passwd_ok);
     }
-}
+};
 
 exports.select_auth_method = function(next, connection, method) {
     var split = method.split(/\s+/);
@@ -152,7 +152,7 @@ exports.select_auth_method = function(next, connection, method) {
         }
     }
     return next();
-}
+};
 
 exports.auth_plain = function(next, connection, params) {
     if (!params || (params && !params.length)) {
@@ -164,9 +164,8 @@ exports.auth_plain = function(next, connection, params) {
         var credentials = unbase64(params[0]).split(/\0/);
         credentials.shift();  // Discard authid
         return this.check_user(next, connection, credentials, AUTH_METHOD_PLAIN);
-        return next();
     }
-}
+};
 
 exports.auth_login = function(next, connection, params) {
     if ((!connection.notes.auth_login_asked_login && params[0]) ||
@@ -192,7 +191,7 @@ exports.auth_login = function(next, connection, params) {
         connection.notes.auth_login_asked_login = true;
         return next(OK);
     });
-}
+};
 
 exports.auth_cram_md5 = function(next, connection, params) {
     if(params) {
@@ -207,21 +206,16 @@ exports.auth_cram_md5 = function(next, connection, params) {
         connection.notes.auth_ticket = ticket;
         return next(OK);
     });
-}
+};
 
 function hexi (number) {
     return String(Math.abs(parseInt(number)).toString(16));
 }
 
-function base64 (str) {
-    var buffer = new Buffer(str, "UTF-8");
-    return buffer.toString("base64");
-}
+exports.base64 = function (str) {
+    return new Buffer(str, "UTF-8").toString("base64");
+};
 
-function unbase64 (str) {
-    var buffer = new Buffer(str, "base64");
-    return buffer.toString("UTF-8");
-}
-
-exports.base64 = base64;
-exports.unbase64 = unbase64;
+exports.unbase64 = function (str) {
+    return new Buffer(str, "base64").toString("UTF-8");
+};
