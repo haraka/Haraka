@@ -4,7 +4,8 @@ var stub         = require('../../fixtures/stub'),
     configfile   = require('../../../configfile'),
     config       = require('../../../config'),
     constants    = require('../../../constants'),
-    ResultStore  = require('../../../result_store');
+    ResultStore  = require('../../../result_store'),
+    utils        = require('../../../utils');
 
 constants.import(global);
 
@@ -135,7 +136,7 @@ exports.select_auth_method = {
             test.ok(this.connection.relaying);
             test.done();
         }.bind(this);
-        var method = 'PLAIN ' + this.plugin.base64('discard\0test\0testpass');
+        var method = 'PLAIN ' + utils.base64('discard\0test\0testpass');
         this.connection.notes.allowed_auth_methods = ['PLAIN','LOGIN'];
         this.plugin.select_auth_method(next, this.connection, method);
     },
@@ -169,7 +170,7 @@ exports.auth_plain = {
             test.ok(this.connection.relaying);
             test.done();
         }.bind(this);
-        var method = this.plugin.base64('discard\0test\0testpass');
+        var method = utils.base64('discard\0test\0testpass');
         this.plugin.auth_plain(next, this.connection, [method]);
     },
 };
@@ -220,7 +221,7 @@ exports.hook_unrecognized_command = {
             test.ok(this.connection.relaying);
             test.done();
         }.bind(this);
-        var params = ['AUTH','PLAIN', this.plugin.base64('discard\0test\0testpass')];
+        var params = ['AUTH','PLAIN', utils.base64('discard\0test\0testpass')];
         this.connection.notes.allowed_auth_methods = ['PLAIN','LOGIN'];
         this.plugin.hook_unrecognized_command(next, this.connection, params);
     },
@@ -234,7 +235,7 @@ exports.hook_unrecognized_command = {
         this.connection.notes.allowed_auth_methods = ['PLAIN','LOGIN'];
         this.connection.notes.authenticating=true;
         this.connection.notes.auth_method='PLAIN';
-        this.plugin.hook_unrecognized_command(next, this.connection, [this.plugin.base64('discard\0test\0testpass')]);
+        this.plugin.hook_unrecognized_command(next, this.connection, [utils.base64('discard\0test\0testpass')]);
     },
 };
 
