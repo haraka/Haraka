@@ -33,7 +33,7 @@ exports.hook_unrecognized_command = function (next, connection, params) {
     if (!connection.notes.authenticating) { return next(); }
 
     var am = connection.notes.auth_method;
-    if (am.notes.auth_method === AUTH_METHOD_CRAM_MD5 && connection.notes.auth_ticket) {
+    if (am === AUTH_METHOD_CRAM_MD5 && connection.notes.auth_ticket) {
         return plugin.auth_cram_md5(next, connection, params);
     }
     if (am === AUTH_METHOD_LOGIN) {

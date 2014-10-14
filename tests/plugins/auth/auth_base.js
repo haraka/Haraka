@@ -202,13 +202,39 @@ exports.check_user = {
 exports.hook_unrecognized_command = {
     setUp : _set_up,
     tearDown : _tear_down,
-    'foo': function (test) {
-        var next = function () {
-            test.expect(0);
+    'AUTH type FOO': function (test) {
+        var next = function (code) {
+            test.expect(2);
+            test.equal(code, null);
+            test.equal(this.connection.relaying, false);
             test.done();
-        };
+        }.bind(this);
         var params = ['AUTH','FOO'];
+        this.connection.notes.allowed_auth_methods = ['PLAIN','LOGIN'];
         this.plugin.hook_unrecognized_command(next, this.connection, params);
+    },
+    'AUTH PLAIN': function (test) {
+        var next = function (code) {
+            test.expect(2);
+            test.equal(code, OK);
+            test.ok(this.connection.relaying);
+            test.done();
+        }.bind(this);
+        var params = ['AUTH','PLAIN', this.plugin.base64('discard\0test\0testpass')];
+        this.connection.notes.allowed_auth_methods = ['PLAIN','LOGIN'];
+        this.plugin.hook_unrecognized_command(next, this.connection, params);
+    },
+    'AUTH PLAIN, authenticating': function (test) {
+        var next = function (code) {
+            test.expect(2);
+            test.equal(code, OK);
+            test.ok(this.connection.relaying);
+            test.done();
+        }.bind(this);
+        this.connection.notes.allowed_auth_methods = ['PLAIN','LOGIN'];
+        this.connection.notes.authenticating=true;
+        this.connection.notes.auth_method='PLAIN';
+        this.plugin.hook_unrecognized_command(next, this.connection, [this.plugin.base64('discard\0test\0testpass')]);
     },
 };
 
