@@ -1,10 +1,11 @@
 // Proxy AUTH requests selectively by domain
-var sock = require('./line_socket');
+var sock  = require('./line_socket');
+var utils = require('./utils');
 var smtp_regexp = /^([0-9]{3})([ -])(.*)/;
 
 exports.register = function () {
     this.inherits('auth/auth_base');
-}
+};
 
 exports.hook_capabilities = function (next, connection) {
     var config = this.config.get('auth_proxy.ini');
@@ -14,12 +15,12 @@ exports.hook_capabilities = function (next, connection) {
         connection.notes.allowed_auth_methods = methods;
     }
     next();
-}
+};
 
 exports.check_plain_passwd = function (connection, user, passwd, cb) {
     var domain;
     if ((domain = /@([^@]+)$/.exec(user))) {
-        var domain = domain[1].toLowerCase();
+        domain = domain[1].toLowerCase();
     } else {
         // AUTH user not in user@domain.com format
         connection.logerror(this, 'AUTH user="' + user + '" error="not in required format"');
@@ -34,7 +35,7 @@ exports.check_plain_passwd = function (connection, user, passwd, cb) {
     }
 
     this.try_auth_proxy(connection, config.domains[domain].split(/[,; ]/), user, passwd, cb);
-}
+};
 
 exports.try_auth_proxy = function (connection, hosts, user, passwd, cb) {
     if (!hosts || (hosts && !hosts.length)) return cb(false);
@@ -50,7 +51,7 @@ exports.try_auth_proxy = function (connection, hosts, user, passwd, cb) {
     var command = 'connect';
     var response = [];
 
-    var hostport = host.split(/:/)
+    var hostport = host.split(/:/);
     var socket = sock.connect(((hostport[1]) ? hostport[1] : 25), hostport[0]);
     connection.logdebug(self, 'attempting connection to host=' + hostport[0] + ' port=' + ((hostport[1]) ? hostport[1] : 25));
     socket.setTimeout(30 * 1000);
@@ -123,7 +124,7 @@ exports.try_auth_proxy = function (connection, hosts, user, passwd, cb) {
                             connection.logdebug(self, 'found supported AUTH methods: ' + methods);
                             // Prefer PLAIN as it's easiest
                             if (methods.indexOf('PLAIN') !== -1) {
-                                socket.send_command('AUTH','PLAIN ' + self.base64("\0" + user + "\0" + passwd));
+                                socket.send_command('AUTH','PLAIN ' + utils.base64("\0" + user + "\0" + passwd));
                                 return;
                             }
                             else if (methods.indexOf('LOGIN') !== -1) {
@@ -143,11 +144,11 @@ exports.try_auth_proxy = function (connection, hosts, user, passwd, cb) {
                     // Handle LOGIN
                     if (code[0] === '3' && response[0] === 'VXNlcm5hbWU6') {
                         // Write to the socket directly to keep the state at 'auth'
-                        this.write(self.base64(user) + "\r\n");
+                        this.write(utils.base64(user) + "\r\n");
                         response = [];
                         return;
                     } else if (code[0] === '3' && response[0] === 'UGFzc3dvcmQ6') {
-                        this.write(self.base64(passwd) + "\r\n");
+                        this.write(utils.base64(passwd) + "\r\n");
                         response = [];
                         return;
                     }
@@ -157,7 +158,7 @@ exports.try_auth_proxy = function (connection, hosts, user, passwd, cb) {
                         if ((u = /^([^@]+)@.+$/.exec(user))) {
                             user = u[1];
                             if (methods.indexOf('PLAIN') !== -1) {
-                                socket.send_command('AUTH', 'PLAIN ' + self.base64("\0" + user + "\0" + passwd));
+                                socket.send_command('AUTH', 'PLAIN ' + utils.base64("\0" + user + "\0" + passwd));
                             } else if (methods.indexOf('LOGIN') !== -1) {
                                 socket.send_command('AUTH', 'LOGIN');
                             }
