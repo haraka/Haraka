@@ -5,6 +5,7 @@ var path        = require('path');
 var dns         = require('dns');
 var net         = require('net');
 var util        = require("util");
+var n_constants = require('constants');
 var events      = require("events");
 var utils       = require('./utils');
 var sock        = require('./line_socket');
@@ -1164,7 +1165,12 @@ HMailItem.prototype.try_deliver_host = function (mx) {
                     case 'starttls':
                         var key = config.get('tls_key.pem', 'binary');
                         var cert = config.get('tls_cert.pem', 'binary');
-                        var tls_options = { key: key, cert: cert };
+                        var tls_options = {
+                            key: key,
+                            cert: cert,
+                            secureProtocol: 'SSLv23_method',
+                            secureOptions: n_constants.SSL_OP_NO_SSLv3,
+                        };
 
                         smtp_properties = {};
                         socket.upgrade(tls_options, function (authorized, verifyError, cert, cipher) {

@@ -1,7 +1,8 @@
 // TLS is built into Haraka. Enabling this plugin advertises STARTTLS.
 // see 'haraka -h tls' for help
 
-var utils = require('./utils');
+var n_constants = require('constants');
+var utils       = require('./utils');
 
 // To create a key:
 // openssl req -x509 -nodes -days 2190 -newkey rsa:2048 \
@@ -10,9 +11,14 @@ var utils = require('./utils');
 exports.register = function () {
     var plugin = this;
 
+    // Setting secureProtocol to 'SSLv23_method' and secureOptions to
+    // n_constants.SSL_OP_NO_SSLv3 are used to disable SSLv2 and SSLv3
+    // protcol support.
     plugin.tls_opts = {
         key: false,
         cert: false,
+        secureProtocol: 'SSLv23_method',
+        secureOptions: n_constants.SSL_OP_NO_SSLv3,
     };
 
     var config_options = ['ciphers','requestCert','rejectUnauthorized'];

@@ -1,4 +1,5 @@
 // Proxy AUTH requests selectively by domain
+var n_constants = require('constants');
 var sock = require('./line_socket');
 var smtp_regexp = /^([0-9]{3})([ -])(.*)/;
 
@@ -176,7 +177,12 @@ exports.try_auth_proxy = function (connection, hosts, user, passwd, cb) {
                 }
                 switch (command) {
                     case 'starttls':
-                        var tls_options = { key: key, cert: cert };
+                        var tls_options = {
+                            key: key,
+                            cert: cert,
+                            secureProtocol: 'SSLv23_method',
+                            secureOptions: n_constants.SSL_OP_NO_SSLv3,
+                        };
                         this.upgrade(tls_options);
                         break;
                     case 'connect':

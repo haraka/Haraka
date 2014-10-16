@@ -5,6 +5,7 @@
 var events = require('events');
 var util = require('util');
 var generic_pool = require('generic-pool');
+var n_constants = require('constants');
 var line_socket = require('./line_socket');
 var logger = require('./logger');
 var uuid = require('./utils').uuid;
@@ -80,7 +81,12 @@ function SMTPClient(port, host, connect_timeout, idle_timeout) {
                 break;
             case 'starttls':
                 if (tls_key && tls_cert) {
-                    this.upgrade({key: tls_key, cert: tls_cert});
+                    this.upgrade({
+                        key: tls_key,
+                        cert: tls_cert,
+                        secureProtocol: 'SSLv23_method',
+                        secureOptions: n_constants.SSL_OP_NO_SSLv3,
+                    });
                 }
                 break;
             case 'greeting':
