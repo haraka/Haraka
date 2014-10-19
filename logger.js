@@ -157,13 +157,13 @@ logger._init_timestamps = function () {
 logger._init_loglevel();
 logger._init_timestamps();
 
-logger.log_if_level = function (level, key) {
+logger.log_if_level = function (level, key, plugin) {
     return function() {
         if (logger.loglevel < logger[key]) { return; }
         var levelstr = '[' + level + ']';
         var str = '';
         var uuidstr = '[-]';
-        var pluginstr = '[core]';
+        var pluginstr = '[' + (plugin || 'core') + ']';
         for (var i=0; i < arguments.length; i++) {
             var data = arguments[i];
             if (typeof(data) !== 'object') {
@@ -197,13 +197,13 @@ logger.log_if_level = function (level, key) {
     };
 };
 
-logger.add_log_methods = function (object) {
+logger.add_log_methods = function (object, plugin) {
     if (!object) return;
     if (typeof(object) !== 'object') return;
     for (var level in logger.levels) {
         var fname = 'log' + level.toLowerCase();
         if (object[fname]) continue;  // already added
-        object[fname] = logger.log_if_level(level, 'LOG'+level);
+        object[fname] = logger.log_if_level(level, 'LOG'+level, plugin);
     }
 };
 
