@@ -51,8 +51,12 @@ exports.try_auth_proxy = function (connection, hosts, user, passwd, cb) {
     var response = [];
 
     var hostport = host.split(/:/)
-    var socket = sock.connect(((hostport[1]) ? hostport[1] : 25), hostport[0]);
-    connection.logdebug(self, 'attempting connection to host=' + hostport[0] + ' port=' + ((hostport[1]) ? hostport[1] : 25));
+    var host = hostport[0];
+    var port = hostport[1] ? hostport[1] : 25;
+    connection.notes.auth_proxy = { host: host, port: port, user: user, passwd: passwd, tls: false };
+
+    var socket = sock.connect(port, host);
+    connection.logdebug(self, 'attempting connection to host=' + host + ' port=' + port);
     socket.setTimeout(30 * 1000);
     socket.on('connect', function () {
     });
@@ -112,6 +116,7 @@ exports.try_auth_proxy = function (connection, hosts, user, passwd, cb) {
                                 this.on('secure', function () {
                                     socket.send_command('EHLO', self.config.get('me'));
                                 });
+                                connection.notes.auth_proxy.tls = true;
                                 socket.send_command('STARTTLS');
                                 return;
                             }
@@ -123,10 +128,12 @@ exports.try_auth_proxy = function (connection, hosts, user, passwd, cb) {
                             connection.logdebug(self, 'found supported AUTH methods: ' + methods);
                             // Prefer PLAIN as it's easiest
                             if (methods.indexOf('PLAIN') !== -1) {
+                                connection.notes.auth_proxy.login = 'PLAIN';
                                 socket.send_command('AUTH','PLAIN ' + self.base64("\0" + user + "\0" + passwd));
                                 return;
                             }
                             else if (methods.indexOf('LOGIN') !== -1) {
+                                connection.notes.auth_proxy.login = 'LOGIN';
                                 socket.send_command('AUTH','LOGIN');
                                 return;
                             }
@@ -156,6 +163,7 @@ exports.try_auth_proxy = function (connection, hosts, user, passwd, cb) {
                         var u; 
                         if ((u = /^([^@]+)@.+$/.exec(user))) {
                             user = u[1];
+                            connection.notes.auth_proxy.user = user;
                             if (methods.indexOf('PLAIN') !== -1) {
                                 socket.send_command('AUTH', 'PLAIN ' + self.base64("\0" + user + "\0" + passwd));
                             } else if (methods.indexOf('LOGIN') !== -1) {
