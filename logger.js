@@ -26,7 +26,7 @@ logger.LOGEMERG     = 0;
 logger.loglevel     = logger.LOGWARN;
 logger.deferred_logs = [];
 
-logger.colors = { // Makes me cringe spelling it this way...
+logger.colors = {
     "DATA" : "green",
     "PROTOCOL" : "green",
     "DEBUG" : "grey",
@@ -153,50 +153,49 @@ logger._init_timestamps();
 
 var level, key;
 for (key in logger) {
-    if(!logger.hasOwnProperty(key)) { continue; }
+    if (!logger.hasOwnProperty(key)) { continue; }
+    if (!key.match(/^LOG\w/))        { continue; }
 
-    if (key.match(/^LOG\w/)) {
-        level = key.slice(3);
-        logger[key.toLowerCase()] = (function(level, key) {
-            return function() {
-                if (logger.loglevel < logger[key]) { return; }
-                var levelstr = "[" + level + "]";
-                var str = "";
-                var uuidstr = "[-]";
-                var pluginstr = "[core]";
-                for (var i = 0; i < arguments.length; i++) {
-                    var data = arguments[i];
-                    if (typeof(data) === 'object') {
-                        // if the object is a connection, we wish to add
-                        // the connection id
-                        if (data instanceof connection.Connection) {
-                            uuidstr = "[" + data.uuid;
-                            if (data.tran_count > 0) {
-                                uuidstr += "." + data.tran_count;
-                            }
-                            uuidstr += "]";
+    level = key.slice(3);
+    logger[key.toLowerCase()] = (function(level, key) {
+        return function() {
+            if (logger.loglevel < logger[key]) { return; }
+            var levelstr = "[" + level + "]";
+            var str = "";
+            var uuidstr = "[-]";
+            var pluginstr = "[core]";
+            for (var i = 0; i < arguments.length; i++) {
+                var data = arguments[i];
+                if (typeof(data) === 'object') {
+                    // if the object is a connection, we wish to add
+                    // the connection id
+                    if (data instanceof connection.Connection) {
+                        uuidstr = "[" + data.uuid;
+                        if (data.tran_count > 0) {
+                            uuidstr += "." + data.tran_count;
                         }
-                        else if (data instanceof plugins.Plugin) {
-                            pluginstr = "[" + data.name + "]";
-                        }
-                        else if (data instanceof outbound.HMailItem) {
-                            pluginstr = "[outbound]";
-                            if (data.todo && data.todo.uuid) {
-                                uuidstr = "[" + data.todo.uuid + "]";
-                            }
-                        }
-                        else {
-                            str += util.inspect(data);
+                        uuidstr += "]";
+                    }
+                    else if (data instanceof plugins.Plugin) {
+                        pluginstr = "[" + data.name + "]";
+                    }
+                    else if (data instanceof outbound.HMailItem) {
+                        pluginstr = "[outbound]";
+                        if (data.todo && data.todo.uuid) {
+                            uuidstr = "[" + data.todo.uuid + "]";
                         }
                     }
                     else {
-                        str += data;
+                        str += util.inspect(data);
                     }
                 }
-                logger.log(level, [levelstr, uuidstr, pluginstr, str].join(" "));
-            };
-        })(level, key);
-    }
+                else {
+                    str += data;
+                }
+            }
+            logger.log(level, [levelstr, uuidstr, pluginstr, str].join(" "));
+        };
+    })(level, key);
 }
 
 // load these down here so it sees all the logger methods compiled above
