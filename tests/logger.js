@@ -121,3 +121,46 @@ exports.colors = {
         test.done();
     },
 };
+
+exports.log_if_level = {
+    setUp : _set_up,
+    tearDown : _tear_down,
+    'log_if_level is a function' : function (test) {
+        test.expect(1);
+        test.ok('function' === typeof(this.logger.log_if_level));
+        test.done();
+    },
+    'log_if_level test log entry' : function (test) {
+        test.expect(5);
+        this.logger.loglevel = 9;
+        var f = this.logger.log_if_level('INFO', 'LOGINFO');
+        test.ok(f);
+        test.ok('function' === typeof(f));
+        test.ok(f("test info message"));
+        test.equal(1, this.logger.deferred_logs.length);
+        // console.log(this.logger.deferred_logs[0]);
+        test.equal('INFO', this.logger.deferred_logs[0].level);
+        test.done();
+    },
+};
+
+exports.add_log_methods = {
+    setUp : _set_up,
+    tearDown : _tear_down,
+    'ignores non-objects' : function (test) {
+        test.expect(2);
+        test.equal(undefined, this.logger.add_log_methods(''));
+        test.equal(undefined, this.logger.add_log_methods(function foo(){}));
+        test.done();
+    },
+    'adds functions to an object' : function (test) {
+        var testObj = {};
+        this.logger.add_log_methods(testObj);
+        var levels = ['DATA','PROTOCOL','DEBUG','INFO','NOTICE','WARN','ERROR','CRIT','ALERT','EMERG'];
+        test.expect(levels.length);
+        for (var i=0; i<levels.length; i++) {
+            test.ok('function' === typeof(testObj['log'+levels[i].toLowerCase()]));
+        }
+        test.done();
+    },
+};

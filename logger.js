@@ -12,16 +12,22 @@ var tty       = require('tty');
 
 var logger = exports;
 
-logger.LOGDATA      = 9;
-logger.LOGPROTOCOL  = 8;
-logger.LOGDEBUG     = 7;
-logger.LOGINFO      = 6;
-logger.LOGNOTICE    = 5;
-logger.LOGWARN      = 4;
-logger.LOGERROR     = 3;
-logger.LOGCRIT      = 2;
-logger.LOGALERT     = 1;
-logger.LOGEMERG     = 0;
+logger.levels = {
+    DATA:     9,
+    PROTOCOL: 8,
+    DEBUG:    7,
+    INFO:     6,
+    NOTICE:   5,
+    WARN:     4,
+    ERROR:    3,
+    CRIT:     2,
+    ALERT:    1,
+    EMERG:    0,
+};
+
+for (var level in logger.levels) {
+    logger['LOG' + level] = logger.levels[level];
+}
 
 logger.loglevel     = logger.LOGWARN;
 logger.deferred_logs = [];
@@ -151,52 +157,57 @@ logger._init_timestamps = function () {
 logger._init_loglevel();
 logger._init_timestamps();
 
-var level, key;
-for (key in logger) {
-    if (!logger.hasOwnProperty(key)) { continue; }
-    if (!key.match(/^LOG\w/))        { continue; }
+logger.log_if_level = function (level, key) {
+    return function() {
+        if (logger.loglevel < logger[key]) { return; }
+        var levelstr = '[' + level + ']';
+        var str = '';
+        var uuidstr = '[-]';
+        var pluginstr = '[core]';
+        for (var i=0; i < arguments.length; i++) {
+            var data = arguments[i];
+            if (typeof(data) !== 'object') {
+                str += data;
+                continue;
+            }
 
-    level = key.slice(3);
-    logger[key.toLowerCase()] = (function(level, key) {
-        return function() {
-            if (logger.loglevel < logger[key]) { return; }
-            var levelstr = "[" + level + "]";
-            var str = "";
-            var uuidstr = "[-]";
-            var pluginstr = "[core]";
-            for (var i = 0; i < arguments.length; i++) {
-                var data = arguments[i];
-                if (typeof(data) === 'object') {
-                    // if the object is a connection, we wish to add
-                    // the connection id
-                    if (data instanceof connection.Connection) {
-                        uuidstr = "[" + data.uuid;
-                        if (data.tran_count > 0) {
-                            uuidstr += "." + data.tran_count;
-                        }
-                        uuidstr += "]";
-                    }
-                    else if (data instanceof plugins.Plugin) {
-                        pluginstr = "[" + data.name + "]";
-                    }
-                    else if (data instanceof outbound.HMailItem) {
-                        pluginstr = "[outbound]";
-                        if (data.todo && data.todo.uuid) {
-                            uuidstr = "[" + data.todo.uuid + "]";
-                        }
-                    }
-                    else {
-                        str += util.inspect(data);
-                    }
+            // if the object is a connection, add the connection id
+            if (data instanceof connection.Connection) {
+                uuidstr = '[' + data.uuid;
+                if (data.tran_count > 0) {
+                    uuidstr += "." + data.tran_count;
                 }
-                else {
-                    str += data;
+                uuidstr += ']';
+            }
+            else if (data instanceof plugins.Plugin) {
+                pluginstr = '[' + data.name + ']';
+            }
+            else if (data instanceof outbound.HMailItem) {
+                pluginstr = '[outbound]';
+                if (data.todo && data.todo.uuid) {
+                    uuidstr = '[' + data.todo.uuid + ']';
                 }
             }
-            logger.log(level, [levelstr, uuidstr, pluginstr, str].join(" "));
-        };
-    })(level, key);
-}
+            else {
+                str += util.inspect(data);
+            }
+        }
+        logger.log(level, [levelstr, uuidstr, pluginstr, str].join(' '));
+        return true;
+    };
+};
+
+logger.add_log_methods = function (object) {
+    if (!object) return;
+    if (typeof(object) !== 'object') return;
+    for (var level in logger.levels) {
+        var fname = 'log' + level.toLowerCase();
+        if (object[fname]) continue;  // already added
+        object[fname] = logger.log_if_level(level, 'LOG'+level);
+    }
+};
+
+logger.add_log_methods(logger);
 
 // load these down here so it sees all the logger methods compiled above
 plugins = require('./plugins');
