@@ -23,22 +23,26 @@ exports.hook_queue = function (next, connection) {
     var plugin = this;
     var cfg = plugin.cfg.main;
 
-    connection.loginfo(plugin, "forwarding to " + cfg.host + ":" + cfg.port);
+    var txn = connection.transaction;
+    var rcpt_count = txn.rcpt_to.length;
+    if (rcpt_count === 1) {
+        var dom = txn.rcpt_to[0].host;
+        if (plugin.cfg[dom]) { cfg = plugin.cfg[dom]; }
+    }
 
-    smtp_client_mod.get_client_plugin(plugin, connection, cfg, function (err, smtp_client) {
+    connection.loginfo(plugin, 'forwarding to ' + cfg.host + ':' + cfg.port);
+
+    var smc_cb = function (err, smtp_client) {
         smtp_client.next = next;
         var rcpt = 0;
 
         var send_rcpt = function () {
-            if (smtp_client.is_dead_sender(plugin, connection)) {
-                return;
-            }
-            if (rcpt === connection.transaction.rcpt_to.length) {
+            if (smtp_client.is_dead_sender(plugin, connection)) { return; }
+            if (rcpt === rcpt_count) {
                 smtp_client.send_command('DATA');
                 return;
             }
-            smtp_client.send_command('RCPT',
-                'TO:' + connection.transaction.rcpt_to[rcpt]);
+            smtp_client.send_command('RCPT', 'TO:' + txn.rcpt_to[rcpt]);
             rcpt++;
         };
 
@@ -51,17 +55,13 @@ exports.hook_queue = function (next, connection) {
         }
 
         smtp_client.on('data', function () {
-            if (smtp_client.is_dead_sender(plugin, connection)) {
-                return;
-            }
-            smtp_client.start_data(connection.transaction.message_stream);
+            if (smtp_client.is_dead_sender(plugin, connection)) { return; }
+            smtp_client.start_data(txn.message_stream);
         });
 
         smtp_client.on('dot', function () {
-            if (smtp_client.is_dead_sender(plugin, connection)) {
-                return;
-            }
-            if (rcpt < connection.transaction.rcpt_to.length) {
+            if (smtp_client.is_dead_sender(plugin, connection)) { return; }
+            if (rcpt < rcpt_count) {
                 smtp_client.send_command('RSET');
                 return;
             }
@@ -71,11 +71,8 @@ exports.hook_queue = function (next, connection) {
         });
 
         smtp_client.on('rset', function () {
-            if (smtp_client.is_dead_sender(plugin, connection)) {
-                return;
-            }
-            smtp_client.send_command('MAIL',
-                'FROM:' + connection.transaction.mail_from);
+            if (smtp_client.is_dead_sender(plugin, connection)) { return; }
+            smtp_client.send_command('MAIL', 'FROM:' + txn.mail_from);
         });
 
         smtp_client.on('bad_code', function (code, msg) {
@@ -86,7 +83,9 @@ exports.hook_queue = function (next, connection) {
                                 msg + ' (' + connection.transaction.uuid + ')');
             smtp_client.release();
         });
-    });
+    };
+
+    smtp_client_mod.get_client_plugin(plugin, connection, cfg, smc_cb);
 };
 
 exports.hook_queue_outbound = exports.hook_queue;

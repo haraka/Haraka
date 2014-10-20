@@ -324,12 +324,12 @@ exports.get_client_plugin = function (plugin, connection, config, callback) {
             };
             for (var line in smtp_client.response) {
                 if (smtp_client.response[line].match(/^XCLIENT/)) {
-                    if(!smtp_client.xclient) {
-                        smtp_client.send_command('XCLIENT',
-                            'ADDR=' + connection.remote_ip);
+                    if (!smtp_client.xclient) {
+                        smtp_client.send_command('XCLIENT', 'ADDR=' + connection.remote_ip);
                         return;
                     }
                 }
+
                 if (smtp_client.response[line].match(/^STARTTLS/) && !secured) {
                     if (c.enable_tls) {
                         tls_key = plugin.config.get('tls_key.pem', 'binary');
@@ -346,7 +346,7 @@ exports.get_client_plugin = function (plugin, connection, config, callback) {
                 if (auth_matches) {
                     smtp_client.auth_capabilities = [];
                     auth_matches = auth_matches[1].split(' ');
-                    for (var i = 0; i < auth_matches.length; i++) {
+                    for (var i=0; i < auth_matches.length; i++) {
                         smtp_client.auth_capabilities.push(auth_matches[i].toLowerCase());
                     }
                 }
@@ -374,7 +374,7 @@ exports.get_client_plugin = function (plugin, connection, config, callback) {
                     }
                     logger.logdebug('[smtp_client_pool] uuid=' + smtp_client.uuid + ' authenticating as "' + config.auth.user + '"');
                     smtp_client.send_command('AUTH',
-                        'PLAIN ' + utils.base64(config.auth.user + "\0" + config.auth.user + "\0" + config.auth.pass) );
+                        'PLAIN ' + base64(config.auth.user + "\0" + config.auth.user + "\0" + config.auth.pass) );
                     break;
                 case 'cram-md5':
                     throw new Error("Not implemented");
@@ -384,12 +384,9 @@ exports.get_client_plugin = function (plugin, connection, config, callback) {
         });
 
         smtp_client.on('auth', function () {
-            if (smtp_client.is_dead_sender(plugin, connection)) {
-                return;
-            }
+            if (smtp_client.is_dead_sender(plugin, connection)) { return; }
             smtp_client.authenticated = true;
-            smtp_client.send_command('MAIL',
-                'FROM:' + connection.transaction.mail_from);
+            smtp_client.send_command('MAIL', 'FROM:' + connection.transaction.mail_from);
         });
 
         smtp_client.on('error', function (msg) {
@@ -399,8 +396,7 @@ exports.get_client_plugin = function (plugin, connection, config, callback) {
 
         if (smtp_client.connected) {
             if (smtp_client.xclient) {
-                smtp_client.send_command('XCLIENT',
-                    'ADDR=' + connection.remote_ip);
+                smtp_client.send_command('XCLIENT', 'ADDR=' + connection.remote_ip);
             }
             else {
                 smtp_client.emit('helo');
