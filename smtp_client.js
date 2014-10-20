@@ -225,8 +225,8 @@ SMTPClient.prototype.is_dead_sender = function (plugin, connection) {
 exports.get_pool = function (server, port, host, connect_timeout, pool_timeout, max) {
     port = port || 25;
     host = host || 'localhost';
-    connect_timeout = parseInt(connect_timeout) || 30;
-    pool_timeout = parseInt(pool_timeout) || 300;
+    connect_timeout = (connect_timeout === undefined) ? 30 : connect_timeout;
+    pool_timeout = (pool_timeout === undefined) ? 300 : pool_timeout;
     var name = port + ':' + host + ':' + pool_timeout;
     if (!server.notes.pool) {
         server.notes.pool = {};
@@ -274,7 +274,7 @@ exports.get_pool = function (server, port, host, connect_timeout, pool_timeout, 
 
 // Get a smtp_client for the given attributes.
 exports.get_client = function (server, callback, port, host, connect_timeout, pool_timeout, max) {
-    var pool = this.get_pool(server, port, host, connect_timeout, pool_timeout, max);
+    var pool = exports.get_pool(server, port, host, connect_timeout, pool_timeout, max);
     pool.acquire(callback);
 };
 
@@ -346,7 +346,7 @@ exports.get_client_plugin = function (plugin, connection, config, callback) {
                 if (auth_matches) {
                     smtp_client.auth_capabilities = [];
                     auth_matches = auth_matches[1].split(' ');
-                    for (var i=0; i < auth_matches.length; i++) {
+                    for (var i = 0; i < auth_matches.length; i++) {
                         smtp_client.auth_capabilities.push(auth_matches[i].toLowerCase());
                     }
                 }
@@ -374,7 +374,7 @@ exports.get_client_plugin = function (plugin, connection, config, callback) {
                     }
                     logger.logdebug('[smtp_client_pool] uuid=' + smtp_client.uuid + ' authenticating as "' + config.auth.user + '"');
                     smtp_client.send_command('AUTH',
-                        'PLAIN ' + base64(config.auth.user + "\0" + config.auth.user + "\0" + config.auth.pass) );
+                        'PLAIN ' + utils.base64(config.auth.user + "\0" + config.auth.user + "\0" + config.auth.pass) );
                     break;
                 case 'cram-md5':
                     throw new Error("Not implemented");
@@ -384,7 +384,9 @@ exports.get_client_plugin = function (plugin, connection, config, callback) {
         });
 
         smtp_client.on('auth', function () {
-            if (smtp_client.is_dead_sender(plugin, connection)) { return; }
+            if (smtp_client.is_dead_sender(plugin, connection)) {
+                return;
+            }
             smtp_client.authenticated = true;
             smtp_client.send_command('MAIL', 'FROM:' + connection.transaction.mail_from);
         });

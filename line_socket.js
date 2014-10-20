@@ -1,5 +1,4 @@
 "use strict";
-/* jshint node: true */
 // A subclass of Socket which reads data by line
 
 var net  = require('net');
