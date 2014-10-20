@@ -19,16 +19,28 @@ exports.register = function () {
     load_config();
 };
 
+exports.get_config = function (connection) {
+    var plugin = this;
+    var dom = connection.transaction.rcpt_to[0].host;
+
+    if (!plugin.cfg[dom]) { return plugin.cfg.main; }  // no specific route
+
+    var rcpt_count = connection.transaction.rcpt_to.length;
+    if (rcpt_count === 1) { return plugin.cfg[dom]; }
+
+    var dst_host = plugin.cfg[dom].host;
+    for (var i=1; i < rcpt_count; i++) {
+        if (connection.transaction.rcpt_to[i].host !== dst_host) {
+            return plugin.cfg.main;
+        }
+    }
+    return plugin.cfg[dom];
+};
+
 exports.hook_queue = function (next, connection) {
     var plugin = this;
-    var cfg = plugin.cfg.main;
-
+    var cfg = plugin.get_config(connection);
     var txn = connection.transaction;
-    var rcpt_count = txn.rcpt_to.length;
-    if (rcpt_count === 1) {
-        var dom = txn.rcpt_to[0].host;
-        if (plugin.cfg[dom]) { cfg = plugin.cfg[dom]; }
-    }
 
     connection.loginfo(plugin, 'forwarding to ' + cfg.host + ':' + cfg.port);
 
@@ -38,7 +50,7 @@ exports.hook_queue = function (next, connection) {
 
         var send_rcpt = function () {
             if (smtp_client.is_dead_sender(plugin, connection)) { return; }
-            if (rcpt === rcpt_count) {
+            if (rcpt === txn.rcpt_to.length) {
                 smtp_client.send_command('DATA');
                 return;
             }
@@ -61,7 +73,7 @@ exports.hook_queue = function (next, connection) {
 
         smtp_client.on('dot', function () {
             if (smtp_client.is_dead_sender(plugin, connection)) { return; }
-            if (rcpt < rcpt_count) {
+            if (rcpt < txn.rcpt_to.length) {
                 smtp_client.send_command('RSET');
                 return;
             }
