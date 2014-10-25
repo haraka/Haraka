@@ -20,7 +20,7 @@ function _tear_down(callback) {
     callback();
 }
 
-exports.refresh_config = {
+exports.load_clamd_ini = {
     setUp : _set_up,
     tearDown : _tear_down,
     'none': function (test) {
@@ -29,22 +29,15 @@ exports.refresh_config = {
         test.done();
     },
     'defaults': function (test) {
-        test.expect(12);
-        var r = this.plugin.refresh_config();
-        // console.log(r);
-        test.equal('localhost:3310', r.main.clamd_socket);
-        test.equal(30, r.main.timeout);
-        test.equal(10, r.main.connect_timeout);
-        test.equal(26214400, r.main.max_size);
-        test.equal(false, r.main.only_with_attachments);
-        test.equal(false, r.main.randomize_host_order);
-
-        test.equal('localhost:3310', this.plugin.cfg.main.clamd_socket);
-        test.equal(30, this.plugin.cfg.main.timeout);
-        test.equal(10, this.plugin.cfg.main.connect_timeout);
-        test.equal(26214400, this.plugin.cfg.main.max_size);
-        test.equal(false, this.plugin.cfg.main.only_with_attachments);
-        test.equal(false, this.plugin.cfg.main.randomize_host_order);
+        test.expect(6);
+        this.plugin.load_clamd_ini();
+        var cfg = this.plugin.cfg.main;
+        test.equal('localhost:3310', cfg.clamd_socket);
+        test.equal(30, cfg.timeout);
+        test.equal(10, cfg.connect_timeout);
+        test.equal(26214400, cfg.max_size);
+        test.equal(false, cfg.only_with_attachments);
+        test.equal(false, cfg.randomize_host_order);
         test.done();
     },
 };
