@@ -189,7 +189,7 @@ exports.hook_data_post = function (next, connection) {
             });
         });
 
-        var result = "";
+        var result = '';
         socket.on('line', function (line) {
             connection.logprotocol(plugin, 'C:' + line);
             result = line.replace(/\r?\n/, '');
@@ -198,21 +198,16 @@ exports.hook_data_post = function (next, connection) {
         socket.setTimeout((plugin.cfg.main.connect_timeout || 10) * 1000);
 
         socket.on('end', function () {
-            if (/^stream: OK/.test(result)) {
-                // OK
-                if (transaction) {
-                    transaction.results.add(plugin, {pass: 'clean', emit: true});
-                }
+            if (!transaction) return next();
+            if (/^stream: OK/.test(result)) {                // OK
+                transaction.results.add(plugin, {pass: 'clean', emit: true});
                 return next();
             }
             var m = /^stream: (\S+) FOUND/.exec(result);
             if (m) {
-                var virus;
-                // Virus found
+                var virus;                                   // Virus found
                 if (m[1]) { virus = m[1]; }
-                if (transaction) {
-                    transaction.results.add(plugin, {fail: 'virus' + (virus ? ('(' + virus + ')') : ''), emit: true});
-                }
+                transaction.results.add(plugin, {fail: 'virus' + (virus ? ('(' + virus + ')') : ''), emit: true});
                 // Check skip list exclusions
                 for (var i=0; i < plugin.skip_list_exclude.length; i++) {
                     if (plugin.skip_list_exclude[i].test(virus)) {
@@ -232,17 +227,13 @@ exports.hook_data_post = function (next, connection) {
             }
             if (/size limit exceeded/.test(result)) {
                 var errmsg = 'INSTREAM size limit exceeded. Check StreamMaxLength in clamd.conf';
-                if (transaction) {
-                    transaction.results.add(plugin, {err: errmsg, emit: true});
-                }
+                transaction.results.add(plugin, {err: errmsg, emit: true});
                 // Continue as StreamMaxLength default is 25Mb
                 return next();
             }
 
             // Unknown result
-            if (transaction) {
-                transaction.results.add(plugin, {err: 'unknown result: ' + result, emit: true});
-            }
+            transaction.results.add(plugin, {err: 'unknown result: ' + result, emit: true});
             return next(DENYSOFT, 'Error running virus scanner');
         });
 
