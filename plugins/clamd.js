@@ -208,20 +208,19 @@ exports.hook_data_post = function (next, connection) {
                 var virus;                                   // Virus found
                 if (m[1]) { virus = m[1]; }
                 transaction.results.add(plugin, {fail: 'virus' + (virus ? ('(' + virus + ')') : ''), emit: true});
+
                 // Check skip list exclusions
                 for (var i=0; i < plugin.skip_list_exclude.length; i++) {
-                    if (plugin.skip_list_exclude[i].test(virus)) {
-                        return next(DENY, 'Message is infected with ' + (virus || 'UNKNOWN'));
-                    }
+                    if (!plugin.skip_list_exclude[i].test(virus)) continue;
+                    return next(DENY, 'Message is infected with ' + (virus || 'UNKNOWN'));
                 }
+
                 // Check skip list
                 for (var j=0; j < plugin.skip_list.length; j++) {
-                    if (plugin.skip_list[j].test(virus)) {
-                        connection.logwarn(plugin, virus + ' matches exclusion');
-                        // Add header
-                        transaction.add_header('X-Haraka-Virus', virus);
-                        return next();
-                    }
+                    if (!plugin.skip_list[j].test(virus)) continue;
+                    connection.logwarn(plugin, virus + ' matches exclusion');
+                    transaction.add_header('X-Haraka-Virus', virus);
+                    return next();
                 }
                 return next(DENY, 'Message is infected with ' + (virus || 'UNKNOWN'));
             }
@@ -232,7 +231,6 @@ exports.hook_data_post = function (next, connection) {
                 return next();
             }
 
-            // Unknown result
             transaction.results.add(plugin, {err: 'unknown result: ' + result, emit: true});
             return next(DENYSOFT, 'Error running virus scanner');
         });
