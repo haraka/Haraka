@@ -158,23 +158,20 @@ exports.hook_deny = function (next, connection, params) {
     var pi_hook     = params[5];
 
     // exceptions, whose 'DENY' should not be captured
-    var exceptions = {
-        plugins: [
-            'karma',        // myself
-            'access',       // ACLs
-            'helo.checks',  // has granular reject
-            'data.headers', //       ""
-            'spamassassin', //       ""
-            'clamd'         // has clamd.excludes
-        ],
-        hooks: [
-            'rcpt_to',      // RCPT hooks are special
-            'queue',
-        ]
-    };
-
-    if (exceptions.plugins.indexOf(pi_name) !== -1) return next();
-    if (exceptions.hooks.indexOf  (pi_hook) !== -1) return next();
+    switch (pi_name) {
+        case 'karma':        // myself
+        case 'access':       // ACLs
+        case 'helo.checks':  // has granular reject
+        case 'data.headers': //       ""
+        case 'spamassassin': //       ""
+        case 'clamd':        // has clamd.excludes
+            return next();
+    }
+    switch (pi_hook) {
+        case 'rcpt_to':      // RCPT hooks are special
+        case 'queue':
+            return next();
+    }
 
     if (pi_deny === DENY || pi_deny === DENYDISCONNECT || pi_deny === DISCONNECT) {
         connection.results.incr(plugin, {connect: -2});
