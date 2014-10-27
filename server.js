@@ -1,5 +1,6 @@
 "use strict";
 // smtp network server
+/* jshint node: true */
 
 var net         = require('./tls_socket');
 var logger      = require('./logger');
@@ -23,7 +24,7 @@ for (var key in logger) {
                     args.push(arguments[i]);
                 }
                 logger[key].apply(logger, args);
-            }
+            };
         })(key);
     }
 }
@@ -64,7 +65,7 @@ Server.daemonize = function (config_data) {
             process.exit(1);
         }
     }
-}
+};
 
 Server.flushQueue = function () {
     if (Server.cluster) {
@@ -75,7 +76,7 @@ Server.flushQueue = function () {
     else {
         out.flush_queue();
     }
-}
+};
 
 Server.createServer = function (params) {
     var config_data = config.get('smtp.ini');
@@ -127,8 +128,8 @@ Server.createServer = function (params) {
                 for (var i=0; i<workers; i++) {
                     new_workers.push(cluster.fork({ CLUSTER_MASTER_PID: process.pid }));
                 }
-                for (var i=0; i<pids.length; i++) {
-                    new_workers[i % new_workers.length].send({event: 'outbound.load_pid_queue', data: pids[i]});
+                for (var j=0; j<pids.length; j++) {
+                    new_workers[j % new_workers.length].send({event: 'outbound.load_pid_queue', data: pids[j]});
                 }
                 cluster.on('online', function (worker) {
                     logger.lognotice('worker ' + worker.id + ' started pid=' + worker.process.pid);
@@ -241,7 +242,7 @@ Server.init_master_respond = function (retval, msg) {
                 Server.logerror("init_master returned error" + ((msg) ? ': ' + msg : ''));
                 process.exit(1);
     }
-}
+};
 
 Server.init_child_respond = function (retval, msg) {
     switch(retval) {
@@ -262,7 +263,7 @@ Server.init_child_respond = function (retval, msg) {
                 }
                 process.exit(1);
     }
-}
+};
 
 function listening () {
     var config_data = config.get('smtp.ini');
