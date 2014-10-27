@@ -98,21 +98,21 @@ exports.get_dns_results = {
     'origin.asn.cymru.com': function (test) {
         var cb = function (zone, obj) {
             test.equal('origin.asn.cymru.com', zone);
-            test.equal('40431', obj.asn);
-            test.equal('208.75.176.0/21', obj.net);
+            test.equal('15169', obj.asn);
+            test.equal('8.8.8.0/24', obj.net);
             test.done();
         };
         test.expect(4);
         test.ok(
-                this.plugin.get_dns_results('origin.asn.cymru.com', '208.75.177.99', cb)
+                this.plugin.get_dns_results('origin.asn.cymru.com', '8.8.8.8', cb)
             );
     },
     'asn.routeviews.org': function (test) {
         test.expect(3);
         var cb = function (zone, obj) {
             test.equal('asn.routeviews.org', zone);
-            if (obj.asn && obj.asn === '40431') {
-                test.equal('40431', obj.asn);
+            if (obj.asn && obj.asn === '15169') {
+                test.equal('15169', obj.asn);
             }
             else {
                 test.ok("Node DNS (c-ares) bug");
@@ -121,19 +121,19 @@ exports.get_dns_results = {
             test.done();
         };
         test.ok(
-                this.plugin.get_dns_results('asn.routeviews.org', '208.75.177.99', cb)
+                this.plugin.get_dns_results('asn.routeviews.org', '8.8.8.8', cb)
             );
     },
     'origin.asn.spameatingmonkey.net': function (test) {
         var cb = function (zone, obj) {
             test.equal('origin.asn.spameatingmonkey.net', zone);
-            test.equal('40431', obj.asn);
+            test.equal('15169', obj.asn);
             test.equal('US', obj.country);
             test.done();
         };
         test.expect(4);
         test.ok(
-                this.plugin.get_dns_results('origin.asn.spameatingmonkey.net', '208.75.177.99', cb)
+                this.plugin.get_dns_results('origin.asn.spameatingmonkey.net', '8.8.8.8', cb)
             );
     },
 };
