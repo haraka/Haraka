@@ -62,6 +62,7 @@ exports.apply_tarpit = function (connection, hook, score, next) {
     // If tarpit is enabled on the reset_transaction hook, Haraka doesn't
     // wait. Then bad things happen, like a Haraka crash.
     if (hook === 'reset_transaction') { return next(); }
+    if (hook === 'queue') { return next(); }
 
     // no delay for senders with good karma
     var k = connection.results.get('karma');
@@ -160,7 +161,8 @@ exports.hook_deny = function (next, connection, params) {
     if (pi_name === 'karma')        { return next(); } // myself
     if (pi_name === 'access')       { return next(); } // ACLs
     if (pi_name === 'helo.checks')  { return next(); } // has granular reject
-    if (pi_name === 'data.headers') { return next(); } // has granular reject
+    if (pi_name === 'data.headers') { return next(); } //        ""
+    if (pi_name === 'spamassassin') { return next(); } //        ""
     if (pi_hook === 'rcpt_to')      { return next(); } // RCPT hooks are special
     if (pi_hook === 'queue')        { return next(); }
 
