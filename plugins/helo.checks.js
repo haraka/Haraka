@@ -15,69 +15,76 @@ var checks = [
     'valid_hostname',     // HELO hostname is a legal DNS name
     'rdns_match',         // HELO hostname matches rDNS
     'forward_dns',        // HELO hostname resolves to the connecting IP
-    'mismatch',           // hostname differs between invocations
+    'host_mismatch',      // hostname differs between invocations
     'emit_log',           // emit a loginfo summary
 ];
 
 exports.register = function () {
     var plugin = this;
+    plugin.load_helo_checks_ini();
 
-    plugin.register_hook('helo', 'proto_mismatch_smtp');
-    plugin.register_hook('ehlo', 'proto_mismatch_esmtp');
+    if (plugin.cfg.check.proto_mismatch) {
+        plugin.register_hook('helo', 'proto_mismatch_smtp');
+        plugin.register_hook('ehlo', 'proto_mismatch_esmtp');
+    }
 
     for (var i=0; i < checks.length; i++) {
         var hook = checks[i];
+        if (!plugin.cfg.check[hook]) continue; // disabled in config
         plugin.register_hook('helo', hook);
         plugin.register_hook('ehlo', hook);
     }
 
-    var load_config = function () {
-        plugin.cfg = plugin.config.get('helo.checks.ini', {
-            booleans: [
-                '+check.match_re',
-                '+check.bare_ip',
-                '+check.dynamic',
-                '+check.big_company',
-                '+check.valid_hostname',
-                '+check.forward_dns',
-                '+check.rdns_match',
-                '+check.mismatch',
+    if (plugin.cfg.check.match_re) {
+        var load_re_file = function () {
+            var regex_list = utils.valid_regexes(plugin.config.get('helo.checks.regexps', 'list', load_re_file));
+            // pre-compile the regexes
+            plugin.cfg.list_re = new RegExp('^(' + regex_list.join('|') + ')$', 'i');
+        };
+        load_re_file();
+    }
+};
 
-                '+reject.valid_hostname',
-                '+reject.match_re',
-                '+reject.bare_ip',
-                '+reject.dynamic',
-                '+reject.big_company',
-                '-reject.forward_dns',
-                '-reject.literal_mismatch',
-                '-reject.rdns_match',
-                '-reject.mismatch',
+exports.load_helo_checks_ini = function () {
+    var plugin = this;
 
-                '+skip.private_ip',
-                '+skip.whitelist',
-                '+skip.relaying',
-            ],
-        }, load_config);
+    plugin.cfg = plugin.config.get('helo.checks.ini', {
+        booleans: [
+            '+check.match_re',
+            '+check.bare_ip',
+            '+check.dynamic',
+            '+check.big_company',
+            '+check.valid_hostname',
+            '+check.forward_dns',
+            '+check.rdns_match',
+            '+check.mismatch',
 
-        // backwards compatible with old config file
-        if (plugin.cfg.check_no_dot !== undefined) {
-            plugin.cfg.check.valid_hostname = plugin.cfg.check_no_dot ? true : false;
-        }
-        if (plugin.cfg.check_dynamic !== undefined) {
-            plugin.cfg.check.dynamic = plugin.cfg.check_dynamic ? true : false;
-        }
-        if (plugin.cfg.check_raw_ip !== undefined) {
-            plugin.cfg.check.bare_ip = plugin.cfg.check_raw_ip ? true : false;
-        }
-    };
-    load_config();
+            '+reject.valid_hostname',
+            '+reject.match_re',
+            '+reject.bare_ip',
+            '+reject.dynamic',
+            '+reject.big_company',
+            '-reject.forward_dns',
+            '-reject.literal_mismatch',
+            '-reject.rdns_match',
+            '-reject.mismatch',
 
-    var load_re_file = function () {
-        var regex_list = utils.valid_regexes(plugin.config.get('helo.checks.regexps', 'list', load_re_file));
-        // pre-compile the regexes
-        plugin.cfg.list_re = new RegExp('^(' + regex_list.join('|') + ')$', 'i');
-    };
-    load_re_file();
+            '+skip.private_ip',
+            '+skip.whitelist',
+            '+skip.relaying',
+        ],
+    }, plugin.load_helo_checks_ini);
+
+    // backwards compatible with old config file
+    if (plugin.cfg.check_no_dot !== undefined) {
+        plugin.cfg.check.valid_hostname = plugin.cfg.check_no_dot ? true : false;
+    }
+    if (plugin.cfg.check_dynamic !== undefined) {
+        plugin.cfg.check.dynamic = plugin.cfg.check_dynamic ? true : false;
+    }
+    if (plugin.cfg.check_raw_ip !== undefined) {
+        plugin.cfg.check.bare_ip = plugin.cfg.check_raw_ip ? true : false;
+    }
 };
 
 exports.init = function (next, connection, helo) {
@@ -99,12 +106,7 @@ exports.should_skip = function (connection, test_name) {
     var plugin = this;
 
     var hc = connection.results.get('helo.checks');
-    if (hc && hc.multi && test_name !== 'mismatch' && test_name !== 'proto_mismatch') {
-        return true;
-    }
-
-    if (!plugin.cfg.check[test_name]) {
-        connection.results.add(plugin, {skip: test_name + '(config)'});
+    if (hc && hc.multi && test_name !== 'host_mismatch' && test_name !== 'proto_mismatch') {
         return true;
     }
 
@@ -121,24 +123,24 @@ exports.should_skip = function (connection, test_name) {
     return false;
 };
 
-exports.mismatch = function (next, connection, helo) {
+exports.host_mismatch = function (next, connection, helo) {
     var plugin = this;
 
-    if (plugin.should_skip(connection, 'mismatch')) { return next(); }
+    if (plugin.should_skip(connection, 'host_mismatch')) { return next(); }
 
     var prev_helo = connection.results.get('helo.checks').helo_host;
     if (!prev_helo) {
-        connection.results.add(plugin, {skip: 'mismatch(1st)'});
+        connection.results.add(plugin, {skip: 'host_mismatch(1st)'});
         connection.notes.prev_helo = helo;
         return next();
     }
 
     if (prev_helo === helo) {
-        connection.results.add(plugin, {pass: 'mismatch'});
+        connection.results.add(plugin, {pass: 'host_mismatch'});
         return next();
     }
 
-    var msg = 'mismatch(' + prev_helo + ' / ' + helo + ')';
+    var msg = 'host_mismatch(' + prev_helo + ' / ' + helo + ')';
     connection.results.add(plugin, {fail: msg});
     if (plugin.cfg.reject.mismatch) { return next(DENY, 'HELO host ' + msg); }
 
