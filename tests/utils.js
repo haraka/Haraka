@@ -218,3 +218,18 @@ exports.valid_regexes = {
         test.done();
     },
 };
+
+exports.base64 = {
+    setUp : _set_up,
+    tearDown : _tear_down,
+    'base64': function (test) {
+        test.expect(1);
+        test.equal(utils.base64("matt the tester"), 'bWF0dCB0aGUgdGVzdGVy');
+        test.done();
+    },
+    'unbase64': function (test) {
+        test.expect(1);
+        test.equal(utils.unbase64("bWF0dCB0aGUgdGVzdGVy"), 'matt the tester');
+        test.done();
+    }
+};
