@@ -77,6 +77,24 @@ exports.results_init = {
     },
 };
 
+exports.assemble_note_obj = {
+    setUp : _set_up,
+    tearDown : _tear_down,
+    'no auth fails': function (test) {
+        test.expect(1);
+        var obj = this.plugin.assemble_note_obj(this.connection, 'notes.auth_fails');
+        test.equal(undefined, obj);
+        test.done();
+    },
+    'has auth fails': function (test) {
+        test.expect(1);
+        this.connection.notes.auth_fails=[1,2];
+        var obj = this.plugin.assemble_note_obj(this.connection, 'notes.auth_fails');
+        test.deepEqual([1,2], obj);
+        test.done();
+    },
+};
+
 exports.max_concurrent = {
     setUp : _set_up,
     tearDown : _tear_down,
@@ -499,4 +517,3 @@ exports.should_we_deny = {
         this.plugin.should_we_deny(next, this.connection, 'connect');
     },
 };
-

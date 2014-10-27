@@ -158,13 +158,23 @@ exports.hook_deny = function (next, connection, params) {
     var pi_hook     = params[5];
 
     // exceptions, whose 'DENY' should not be captured
-    if (pi_name === 'karma')        { return next(); } // myself
-    if (pi_name === 'access')       { return next(); } // ACLs
-    if (pi_name === 'helo.checks')  { return next(); } // has granular reject
-    if (pi_name === 'data.headers') { return next(); } //        ""
-    if (pi_name === 'spamassassin') { return next(); } //        ""
-    if (pi_hook === 'rcpt_to')      { return next(); } // RCPT hooks are special
-    if (pi_hook === 'queue')        { return next(); }
+    var exceptions = {
+        plugins: [
+            'karma',        // myself
+            'access',       // ACLs
+            'helo.checks',  // has granular reject
+            'data.headers', //       ""
+            'spamassassin', //       ""
+            'clamd'         // has clamd.excludes
+        ],
+        hooks: [
+            'rcpt_to',      // RCPT hooks are special
+            'queue',
+        ]
+    };
+
+    if (exceptions.plugins.indexOf(pi_name) !== -1) return next();
+    if (exceptions.hooks.indexOf  (pi_hook) !== -1) return next();
 
     if (pi_deny === DENY || pi_deny === DENYDISCONNECT || pi_deny === DISCONNECT) {
         connection.results.incr(plugin, {connect: -2});
@@ -466,12 +476,12 @@ exports.get_award_location = function (connection, award_key) {
 
     var obj;
     if (loc_bits[0] === 'notes') {        // ex: notes.spf_mail_helo
-        obj = assemble_note_obj(connection, bits[0]);
+        obj = plugin.assemble_note_obj(connection, bits[0]);
         if (obj) { return obj; }
 
         // connection.loginfo(plugin, "no conn note: " + bits[0]);
         if (!connection.transaction) { return; }
-        obj = assemble_note_obj(connection.transaction, bits[0]);
+        obj = plugin.assemble_note_obj(connection.transaction, bits[0]);
         if (obj) { return obj; }
 
         // connection.loginfo(plugin, "no txn note: " + bits[0]);
@@ -722,19 +732,19 @@ exports.check_syntax_RcptTo = function (connection) {
     connection.results.add(plugin, {fail: 'rfc5321.RcptTo'});
 };
 
-function assemble_note_obj(prefix, key) {
+exports.assemble_note_obj = function(prefix, key) {
     var note = prefix;
     var parts = key.split('.');
-    while(parts.length > 0) {
+    while (parts.length > 0) {
         var next = parts.shift();
         if (phase_prefixes.indexOf(next) !== -1) {
             next = next + '.' + parts.shift();
         }
         note = note[next];
-        if (note == null) { break; }
+        if (note === null || note === undefined) { break; }
     }
     return note;
-}
+};
 
 exports.check_asn_neighborhood = function (connection, asnkey, expire) {
     var plugin = this;
