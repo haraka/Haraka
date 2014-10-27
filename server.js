@@ -88,7 +88,7 @@ Server.createServer = function (params) {
             config_data.main[param_key] = params[param_key];
         }
     }
-    
+
     // config_data defaults
     apply_defaults(config_data.main);
 
@@ -96,7 +96,7 @@ Server.createServer = function (params) {
     if (listeners[0] === '') listeners = [];
     if (config_data.main.port) {
         var host = config_data.main.listen_host;
-        if (!host) { 
+        if (!host) {
             host = '[::0]';
             Server.default_host = true;
         }
@@ -115,7 +115,7 @@ Server.createServer = function (params) {
 
     // Cluster
     if (cluster && config_data.main.nodes) {
-        Server.cluster = cluster; 
+        Server.cluster = cluster;
         if (cluster.isMaster) {
             out.scan_queue_pids(function (err, pids) {
                 if (err) {
@@ -124,7 +124,7 @@ Server.createServer = function (params) {
                 }
                 Server.daemonize(config_data);
                 // Fork workers
-                var workers = (config_data.main.nodes === 'cpus') ? 
+                var workers = (config_data.main.nodes === 'cpus') ?
                     os.cpus().length : config_data.main.nodes;
                 var new_workers = [];
                 for (var i=0; i<workers; i++) {
@@ -172,7 +172,7 @@ function setup_listeners (listeners, plugins, type, inactivity_timeout) {
         if (!hp) {
             return cb(new Error("Invalid format for listen parameter in smtp.ini"));
         }
-        
+
         var conn_cb = function (client) {
             client.setTimeout(inactivity_timeout);
             conn.createConnection(client, server);
@@ -235,14 +235,14 @@ Server.init_master_respond = function (retval, msg) {
     switch(retval) {
         case constants.ok:
         case constants.cont:
-                // Load the queue if we're just one process
-                if (!(cluster && config.get('smtp.ini').main.nodes)) {
-                    out.load_queue();
-                }
-                break;
+            // Load the queue if we're just one process
+            if (!(cluster && config.get('smtp.ini').main.nodes)) {
+                out.load_queue();
+            }
+            break;
         default:
-                Server.logerror("init_master returned error" + ((msg) ? ': ' + msg : ''));
-                process.exit(1);
+            Server.logerror("init_master returned error" + ((msg) ? ': ' + msg : ''));
+            process.exit(1);
     }
 };
 
@@ -250,26 +250,26 @@ Server.init_child_respond = function (retval, msg) {
     switch(retval) {
         case constants.ok:
         case constants.cont:
-                break;
+            break;
         default:
-                var pid = process.env.CLUSTER_MASTER_PID;
-                Server.logerror("init_child returned error" + ((msg) ? ': ' + msg : ''));
-                try {
-                    if (pid) { 
-                        process.kill(pid);
-                        Server.logerror('Killing master (pid=' + pid + ')');
-                    }
+            var pid = process.env.CLUSTER_MASTER_PID;
+            Server.logerror("init_child returned error" + ((msg) ? ': ' + msg : ''));
+            try {
+                if (pid) {
+                    process.kill(pid);
+                    Server.logerror('Killing master (pid=' + pid + ')');
                 }
-                catch (err) {
-                    Server.logerror('Terminating child');
-                }
-                process.exit(1);
+            }
+            catch (err) {
+                Server.logerror('Terminating child');
+            }
+            process.exit(1);
     }
 };
 
 function listening () {
     var config_data = config.get('smtp.ini');
-   
+
     // Drop privileges
     if (config_data.main.group) {
         Server.lognotice('Switching from current gid: ' + process.getgid());
