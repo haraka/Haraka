@@ -383,7 +383,7 @@ exports.hook_data_post = function (next, connection) {
     var plugin = this;
 
     var results = connection.results.collate(plugin);
-    connection.loginfo("adding header: " + results);
+    connection.loginfo(plugin, "adding header: " + results);
     connection.transaction.add_header('X-Haraka-Karma', results);
 
     return plugin.should_we_deny(next, connection, 'data_post');
