@@ -34,7 +34,7 @@ cfreader.read_config = function(name, type, cb, options) {
     var result = cfreader.load_config(name, type, options);
 
     if (!cfreader.watch_files) return result;        // watch disabled
-    if (!options || options.no_watch) return result; // disabled for this file
+    if (options && !options.no_watch) return result; // disabled for this file
     if (name in cfreader._watchers) return result;   // file already watched
     if (!cb) return result;                 // no callback, no reason to watch
 
