@@ -1,4 +1,3 @@
-"use strict";
 // clamd
 /* jshint node: true */
 /* global DENY, DENYSOFT */
