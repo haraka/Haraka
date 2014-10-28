@@ -82,8 +82,15 @@ Server.flushQueue = function () {
 
 Server.get_listen_addrs = function (cfg, port) {
     if (!port) port = 25;
-    var listeners = (cfg.listen || '').split(/\s*,\s*/);
-    if (listeners[0] === '') listeners = [];
+    var listeners = [];
+    if (cfg && cfg.listen) {
+        listeners = cfg.listen.split(/\s*,\s*/);
+        if (listeners[0] === '') listeners = [];
+        for (var i=0; i < listeners.length; i++) {
+            if (/:[0-9]{1,5}$/.test(listeners[i])) continue;
+            listeners[i] = listeners[i] + ':' + port;
+        }
+    }
     if (cfg.port) {
         var host = cfg.listen_host;
         if (!host) {
@@ -92,10 +99,10 @@ Server.get_listen_addrs = function (cfg, port) {
         }
         listeners.unshift(host + ':' + cfg.port);
     }
-    if (!listeners.length) {
-        Server.default_host = true;
-        listeners.push('[::0]:' + port);
-    }
+    if (listeners.length) return listeners;
+
+    Server.default_host = true;
+    listeners.push('[::0]:' + port);
 
     return listeners;
 };
@@ -248,7 +255,7 @@ function setup_listeners (cfg, plugins, type, inactivity_timeout) {
             logger.logerror("Failed to setup listeners: " + err.message);
             return process.exit(-1);
         }
-        listening();
+        Server.listening();
         plugins.run_hooks('init_' + type, Server);
     });
 }
@@ -290,7 +297,7 @@ Server.init_child_respond = function (retval, msg) {
     }
 };
 
-function listening () {
+Server.listening = function () {
     var config_data = config.get('smtp.ini');
 
     // Drop privileges
@@ -306,4 +313,4 @@ function listening () {
     }
 
     Server.ready = 1;
-}
+};
