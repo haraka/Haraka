@@ -27,14 +27,15 @@ exports.hook_data_post = function(next, connection) {
               ' header.i=' + res.identity
             );
             connection.loginfo(self, 'identity="' + res.identity + '" ' +
-                                     'domain="' + res.domain + '" ' + 
+                                     'domain="' + res.domain + '" ' +
+                                     'selector="' + res.selector + '" ' + 
                                      'result=' + res.result + ' ' +
-                                     ((res.error) ? ' (' + res.error + ')' : ''));
+                                     ((res.error) ? '(' + res.error + ')' : ''));
         });
         connection.logdebug(self, JSON.stringify(results));
         // Store results for other plugins
         txn.notes.dkim_results = results;
         return next();
-    });
+    }, ((plugin.timeout) ? plugin.timeout - 1 : 0));
     txn.message_stream.pipe(verifier, { line_endings: '\r\n' });
 }
