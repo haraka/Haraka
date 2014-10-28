@@ -18,6 +18,7 @@ function Transaction() {
     this.header_lines = [];
     this.data_lines = [];
     this.banner = null;
+    this.body_filters = [];
     this.data_bytes = 0;
     this.header_pos = 0;
     this.body = null;
@@ -45,10 +46,22 @@ exports.createTransaction = function(uuid) {
 };
 
 Transaction.prototype.ensure_body = function() {
-    this.body = this.body || new body.Body(this.header);
+    if (this.body) {
+        return;
+    }
+
+    this.body = new body.Body(this.header);
     if (this.banner) {
         this.body.set_banner(this.banner);
     }
+    this.body_filters.forEach(function(o) {
+        this.body.add_filter(function(ct, buf) {
+            if ((o.ct_match instanceof RegExp && o.ct_match.test(ct.toLowerCase()))
+                        || String(o.ct_match).toLowerCase() === ct.toLowerCase()) {
+                return o.filter(ct, buf);
+            }
+        });
+    });
 };
 
 Transaction.prototype.add_data = function(line) {
@@ -154,4 +167,9 @@ Transaction.prototype.set_banner = function (text, html) {
         html = text.replace(/\n/g, '<br/>\n');
     }
     this.banner = [text, html];
+}
+
+Transaction.prototype.add_body_filter = function (ct_match, filter) {
+    this.parse_body = true;
+    this.body_filters.push({'ct_match': ct_match, 'filter': filter});
 }
