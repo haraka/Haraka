@@ -1,26 +1,24 @@
 // This plugin checks for clients that talk before we sent a response
 
 exports.register = function() {
-    this.register_hook('data', 'check_early_talker');
+    var plugin = this;
+
+    var load_config = function () {
+        // config/early_talker.pause is in milliseconds
+        plugin.pause = plugin.config.get('early_talker.pause', load_config);
+    };
+    load_config();
+
+    plugin.register_hook('data', 'early_talker');
 };
 
-exports.check_early_talker = function(next, connection) {
-    // Don't delay AUTH/RELAY clients
-    if (connection.relaying) return next();
-    var pause = this.config.get('early_talker.pause');
-    if (pause) {
-        setTimeout(function () { _check_early_talker(connection, next) }, pause);
-    }
-    else {
-        _check_early_talker(connection, next);
-    }
-};
+exports.early_talker = function(next, connection) {
+    var plugin = this;
+    if (!plugin.pause      ) { return next(); } // config set to 0
+    if (connection.relaying) { return next(); } // Don't pause AUTH/RELAY clients
 
-var _check_early_talker = function (connection, next) {
-    if (connection.early_talker) {
+    setTimeout(function () {
+        if (!connection.early_talker) { return next(); }
         next(DENYDISCONNECT, "You talk too soon");
-    }
-    else {
-        next();
-    }
+    }, plugin.pause);
 };

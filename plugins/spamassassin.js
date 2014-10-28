@@ -1,7 +1,7 @@
 // Call spamassassin via spamd
 
 var sock = require('./line_socket');
-var prettySize = require('./utils').prettySize;
+var utils = require('./utils');
 
 var defaults = {
     spamd_socket: 'localhost:783',
@@ -48,7 +48,7 @@ exports.hook_data_post = function (next, connection) {
         this.is_connected = true;
         // Reset timeout
         this.setTimeout(results_timeout * 1000);
-        socket.write(headers.join("\r\n"));
+        socket.write(headers.join("\r\n") + "\r\n");
         connection.transaction.message_stream.pipe(socket);
     });
 
@@ -57,7 +57,7 @@ exports.hook_data_post = function (next, connection) {
     var last_header;
 
     socket.on('line', function (line) {
-        connection.logprotocol(plugin, "Spamd C: " + line);
+        connection.logprotocol(plugin, "Spamd C: " + line + ' state=' + state);
         line = line.replace(/\r?\n/, '');
         if (state === 'line0') {
             spamd_response.line0 = line;
@@ -79,9 +79,9 @@ exports.hook_data_post = function (next, connection) {
             }
         }
         else if (state === 'headers') {
-            var m;   // printable ASCII: [ -~]
-            if (m = line.match(/^X-Spam-([ -~]+):(.*)/)) {
-                // connection.logdebug(plugin, "header: " + line);
+            var m;
+            if (m = line.match(/^X-Spam-([\x21-\x39\x3B-\x7E]+):\s*(.*)/)) {
+                connection.logdebug(plugin, "header: " + line);
                 last_header = m[1];
                 spamd_response.headers[m[1]] = m[2];
                 return;
@@ -105,7 +105,10 @@ exports.hook_data_post = function (next, connection) {
         if (spamd_response.tests === undefined) {
             // strip the 'tests' from the X-Spam-Status header
             if (spamd_response.headers && spamd_response.headers.Status) {
-                var tests = /tests=([^ ]+)/.exec(spamd_response.headers.Status.replace(/\r?\n\t/g,''));
+                // SpamAssassin appears to have a bug that causes a space not to
+                // be added before autolearn= when the header line has been folded.
+                // So we modify the regexp here not to match autolearn onwards. 
+                var tests = /tests=((?:(?!autolearn)[^ ])+)/.exec(spamd_response.headers.Status.replace(/\r?\n\t/g,''));
                 if (tests) { spamd_response.tests = tests[1]; }
             }
         }
@@ -163,7 +166,7 @@ exports.munge_subject = function (connection, score) {
     if (parseFloat(score) < parseFloat(munge)) return;
 
     var subj = connection.transaction.header.get('Subject');
-    var subject_re = new RegExp('^' + plugin.cfg.main.subject_prefix);
+    var subject_re = new RegExp('^' + utils.regexp_escape(plugin.cfg.main.subject_prefix));
     if (subject_re.test(subj)) return;    // prevent double munge
 
     connection.transaction.remove_header('Subject');
@@ -291,7 +294,7 @@ exports.msg_too_big = function(connection) {
 
     var max = plugin.cfg.main.max_size;
     if (size <= max) { return false; }
-    connection.loginfo(plugin, 'skipping, size ' + prettySize(size) + ' exceeds max: ' + prettySize(max));
+    connection.loginfo(plugin, 'skipping, size ' + utils.prettySize(size) + ' exceeds max: ' + utils.prettySize(max));
     return true;
 };
 

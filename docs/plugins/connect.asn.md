@@ -71,6 +71,7 @@ in the same ASes are likely to have the same vulnerability. It is not easy for
 spammers to move mail servers or the bot armies to a different AS; therefore,
 AS numbers are robust to indicate malicious hosts."
 
+See also: [Using BGP data to find spammers](http://www.bgpmon.net/using-bgp-data-to-find-spammers/)
 
 ## Consumers
 

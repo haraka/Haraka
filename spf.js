@@ -1,4 +1,5 @@
 // spf
+/* jshint node: true */
 
 "use strict";
 var dns = require('dns');
@@ -23,7 +24,7 @@ function SPF(count, been_there) {
 
     // Prevent circular references
     // This isn't covered in the RFC...
-    this.been_there = {}
+    this.been_there = {};
     if (been_there) {
         this.been_there = been_there;
     }
@@ -50,7 +51,7 @@ SPF.prototype.const_translate = function (value) {
     }
     if (t[value]) return t[value];
     return 'UNKNOWN';
-}
+};
 
 SPF.prototype.result = function (value) {
     switch (value) {
@@ -63,7 +64,7 @@ SPF.prototype.result = function (value) {
         case this.SPF_PERMERROR: return 'PermError';
         default:                 return 'Unknown (' + value + ')';
     }
-}
+};
 
 SPF.prototype.return_const = function (qualifier) {
     switch (qualifier) {
@@ -73,7 +74,7 @@ SPF.prototype.return_const = function (qualifier) {
         case '?':   return this.SPF_NEUTRAL;
         default:    return this.SPF_PERMERROR;
     }
-}
+};
 
 SPF.prototype.expand_macros = function (str) {
     var macro = /%{([slodipvh])((?:(?:\d+)?r?)?)?([-.+,/_=])?}/ig;
@@ -140,7 +141,7 @@ SPF.prototype.expand_macros = function (str) {
     str = str.replace(/%_/g, ' ');
     str = str.replace(/%-/g, '%20');
     return str;
-}
+};
 
 SPF.prototype.log_debug = function (str) {
     util.debug(str);
@@ -179,8 +180,8 @@ SPF.prototype.check_host = function (ip, domain, mail_from, cb) {
             }
         }
 
-        var spf_record;
-        for (var i=0; i < txt_rrs.length; i++) {
+        var i, spf_record;
+        for (i=0; i < txt_rrs.length; i++) {
             var match = /^(v=spf1(?:$|\s.+$))/i.exec(txt_rrs[i]);
             if (match) {
                 if (!spf_record) {
@@ -213,7 +214,7 @@ SPF.prototype.check_host = function (ip, domain, mail_from, cb) {
         var mech_regexp2 = /^([-+~?])?(a|mx|ptr|ip4|ip6|include|exists)((?::[^\/ ]+(?:\/\d+(?:\/\/\d+)?)?)|\/\d+(?:\/\/\d+)?)$/;
         var mod_regexp = /^([^ =]+)=([a-z0-9._-]+)$/;
         var split = spf_record.split(' ');
-        for (var i=1; i<split.length; i++) {
+        for (i=1; i<split.length; i++) {
             // Skip blanks
             if (!split[i]) continue;
             var match;
