@@ -1,3 +1,6 @@
+"use strict";
+/* jshint node: true */
+
 var crypto = require('crypto');
 var Stream = require('stream').Stream;
 var indexOfLF = require('./utils').indexOfLF;
@@ -419,7 +422,9 @@ DKIMVerifyStream.prototype.debug = function (str) {
     util.debug(str);
 };
 
+
 DKIMVerifyStream.prototype.handle_buf = function (buf) {
+    var self = this;
     // Abort any further processing if the headers
     // did not contain any DKIM-Signature fields.
     if (this._in_body && this._no_signatures_found) {
@@ -427,6 +432,34 @@ DKIMVerifyStream.prototype.handle_buf = function (buf) {
     }
 
     buf = this.buffer.pop(buf);
+
+    var save_result = function (err, result) {
+        self.pending--;
+        if (result) {
+            self.results.push({
+                identity: result.identity,
+                domain: result.domain,
+                result: result.result,
+                error: ((err) ? err.message : null)
+            });
+
+            // Set the overall result based on this precedence order
+            var rr = ['pass','tempfail','fail','invalid','none'];
+            for (var r=0; r<rr.length; r++) {
+                if (!self.result || (self.result && self.result !== rr[r] && result.result == rr[r])) {
+                    self.result = rr[r];
+                }
+            }
+        }
+
+        self.debug(JSON.stringify(result));
+
+        if (self.pending === 0) {
+            if (self.cb) {
+                self.cb(null, self.result, self.results);
+            }
+        }
+    };
 
     // Process input buffer into lines
     var offset = 0;
@@ -463,42 +496,15 @@ DKIMVerifyStream.prototype.handle_buf = function (buf) {
                     // Create new DKIM objects for each header
                     var dkim_headers = this.header_idx['dkim-signature'];
                     this.debug('Found ' + dkim_headers.length + ' DKIM signatures');
-                    var self = this;
                     this.pending = dkim_headers.length;
                     for (var d=0; d<dkim_headers.length; d++) {
-                        this.dkim_objects.push(new DKIMObject(dkim_headers[d], this.header_idx, function (err, result) {
-                            self.pending--;
-                            if (result) {
-                                self.results.push({
-                                    identity: result.identity,
-                                    domain: result.domain,
-                                    result: result.result,
-                                    error: ((err) ? err.message : null)
-                                });
-
-                                // Set the overall result based on this precedence order
-                                var rr = ['pass','tempfail','fail','invalid','none'];
-                                for (r=0; r<rr.length; r++) {
-                                    if (!self.result || (self.result && self.result !== rr[r] && result.result == rr[r])) {
-                                        self.result = rr[r];
-                                    }
-                                }
-                            }
-
-                            self.debug(JSON.stringify(result));
-
-                            if (self.pending === 0) {
-                                if (self.cb) {
-                                    self.cb(null, self.result, self.results);
-                                }
-                            }
-                        }));
+                        this.dkim_objects.push(new DKIMObject(dkim_headers[d], this.header_idx, save_result));
                     }
                     if (this.pending === 0) {
                         if (this.cb) this.cb(new Error('no signatures found'));
                     }
                 }
-                continue;
+                continue;  // while()
             }
         }
 
@@ -517,7 +523,6 @@ DKIMVerifyStream.prototype.handle_buf = function (buf) {
                 this.dkim_objects[e].add_body_line(line);
             }
         }
-
     }
 
     this.buffer.push(buf);
