@@ -171,6 +171,38 @@ Server.createServer = function (params) {
     }
 };
 
+Server.get_smtp_server = function (host, port, inactivity_timeout) {
+
+    var server;
+    var conn_cb = function (client) {
+        client.setTimeout(inactivity_timeout);
+        conn.createConnection(client, server);
+    };
+
+    if (port != 465) {
+        server = net.createServer(conn_cb);
+        return server;
+    }
+
+    var options = {
+        key: config.get('tls_key.pem', 'binary'),
+        cert: config.get('tls_cert.pem', 'binary'),
+    };
+    if (!options.key) {
+        logger.logerror("Missing tls_key.pem for port 465");
+        return;
+    }
+    if (!options.cert) {
+        logger.logerror("Missing tls_cert.pem for port 465");
+        return;
+    }
+
+    logger.logdebug("Creating TLS server on " + host + ':' + port);
+    server = require('tls').createServer(options, conn_cb);
+    server.has_tls=true;
+    return server;
+};
+
 function setup_listeners (cfg, plugins, type, inactivity_timeout) {
 
     var listeners = Server.get_listen_addrs(cfg.main);
@@ -186,25 +218,8 @@ function setup_listeners (cfg, plugins, type, inactivity_timeout) {
             conn.createConnection(client, server);
         };
 
-        var server;
-        if (hp[2] == 465) {
-            var options = {
-                key: config.get('tls_key.pem', 'binary'),
-                cert: config.get('tls_cert.pem', 'binary'),
-            };
-            if (!options.key) {
-                return cb(new Error("Missing tls_key.pem for port 465"));
-            }
-            if (!options.cert) {
-                return cb(new Error("Missing tls_cert.pem for port 465"));
-            }
-            logger.lognotice("Creating TLS server on " + host_port);
-            server = require('tls').createServer(options, conn_cb);
-            server.has_tls=true;
-        }
-        else {
-            server = net.createServer(conn_cb);
-        }
+        var server = Server.get_smtp_server(hp[1], hp[0], inactivity_timeout);
+        if (!server) return cb();
 
         server.notes = Server.notes;
         if (Server.cluster) server.cluster = Server.cluster;
