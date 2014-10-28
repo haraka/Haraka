@@ -1,5 +1,6 @@
 "use strict";
 // smtp network server
+/* jshint node: true */
 
 var net         = require('./tls_socket');
 var logger      = require('./logger');
@@ -23,7 +24,7 @@ for (var key in logger) {
                     args.push(arguments[i]);
                 }
                 logger[key].apply(logger, args);
-            }
+            };
         })(key);
     }
 }
@@ -45,26 +46,28 @@ function apply_defaults(obj) {
 }
 
 Server.daemonize = function (config_data) {
-    if (/^(?:1|true|yes|enabled|on)$/i.test(config_data.main.daemonize)) {
-        if (!process.env.__daemon) {
-            // Remove process.on('exit') listeners otherwise
-            // we get a spurious 'Exiting' log entry.
-            process.removeAllListeners('exit');
-            logger.lognotice('Daemonizing...');
-        }
-        var log_fd = require('fs').openSync(config_data.main.daemon_log_file, 'a');
-        daemon({stdout: log_fd});
-        // We are the daemon from here on...
-        var npid = require('npid');
-        try {
-            npid.create(config_data.main.daemon_pid_file).removeOnExit();
-        }
-        catch (err) {
-            logger.logerror(err.message);
-            process.exit(1);
-        }
+    if (!/^(?:1|true|yes|enabled|on)$/i.test(config_data.main.daemonize)) {
+        return;
     }
-}
+
+    if (!process.env.__daemon) {
+        // Remove process.on('exit') listeners otherwise
+        // we get a spurious 'Exiting' log entry.
+        process.removeAllListeners('exit');
+        logger.lognotice('Daemonizing...');
+    }
+    var log_fd = require('fs').openSync(config_data.main.daemon_log_file, 'a');
+    daemon({stdout: log_fd});
+    // We are the daemon from here on...
+    var npid = require('npid');
+    try {
+        npid.create(config_data.main.daemon_pid_file).removeOnExit();
+    }
+    catch (err) {
+        logger.logerror(err.message);
+        process.exit(1);
+    }
+};
 
 Server.flushQueue = function () {
     if (Server.cluster) {
@@ -75,7 +78,34 @@ Server.flushQueue = function () {
     else {
         out.flush_queue();
     }
-}
+};
+
+Server.get_listen_addrs = function (cfg, port) {
+    if (!port) port = 25;
+    var listeners = [];
+    if (cfg && cfg.listen) {
+        listeners = cfg.listen.split(/\s*,\s*/);
+        if (listeners[0] === '') listeners = [];
+        for (var i=0; i < listeners.length; i++) {
+            if (/:[0-9]{1,5}$/.test(listeners[i])) continue;
+            listeners[i] = listeners[i] + ':' + port;
+        }
+    }
+    if (cfg.port) {
+        var host = cfg.listen_host;
+        if (!host) {
+            host = '[::0]';
+            Server.default_host = true;
+        }
+        listeners.unshift(host + ':' + cfg.port);
+    }
+    if (listeners.length) return listeners;
+
+    Server.default_host = true;
+    listeners.push('[::0]:' + port);
+
+    return listeners;
+};
 
 Server.createServer = function (params) {
     var config_data = config.get('smtp.ini');
@@ -85,24 +115,9 @@ Server.createServer = function (params) {
             config_data.main[param_key] = params[param_key];
         }
     }
-    
+
     // config_data defaults
     apply_defaults(config_data.main);
-
-    var listeners = (config_data.main.listen || '').split(/\s*,\s*/);
-    if (listeners[0] === '') listeners = [];
-    if (config_data.main.port) {
-        var host = config_data.main.listen_host;
-        if (!host) { 
-            host = '[::0]';
-            Server.default_host = true;
-        }
-        listeners.unshift(host + ':' + config_data.main.port);
-    }
-    if (!listeners.length) {
-        Server.default_host = true;
-        listeners.push('[::0]:25');
-    }
 
     Server.notes = {};
     plugins.server = Server;
@@ -112,7 +127,7 @@ Server.createServer = function (params) {
 
     // Cluster
     if (cluster && config_data.main.nodes) {
-        Server.cluster = cluster; 
+        Server.cluster = cluster;
         if (cluster.isMaster) {
             out.scan_queue_pids(function (err, pids) {
                 if (err) {
@@ -121,14 +136,14 @@ Server.createServer = function (params) {
                 }
                 Server.daemonize(config_data);
                 // Fork workers
-                var workers = (config_data.main.nodes === 'cpus') ? 
+                var workers = (config_data.main.nodes === 'cpus') ?
                     os.cpus().length : config_data.main.nodes;
                 var new_workers = [];
                 for (var i=0; i<workers; i++) {
                     new_workers.push(cluster.fork({ CLUSTER_MASTER_PID: process.pid }));
                 }
-                for (var i=0; i<pids.length; i++) {
-                    new_workers[i % new_workers.length].send({event: 'outbound.load_pid_queue', data: pids[i]});
+                for (var j=0; j<pids.length; j++) {
+                    new_workers[j % new_workers.length].send({event: 'outbound.load_pid_queue', data: pids[j]});
                 }
                 cluster.on('online', function (worker) {
                     logger.lognotice('worker ' + worker.id + ' started pid=' + worker.process.pid);
@@ -154,46 +169,64 @@ Server.createServer = function (params) {
         }
         else {
             // Workers
-            setup_listeners(listeners, plugins, "child", inactivity_timeout);
+            setup_listeners(config_data, plugins, "child", inactivity_timeout);
         }
     }
     else {
         this.daemonize(config_data);
-        setup_listeners(listeners, plugins, "master", inactivity_timeout);
+        setup_listeners(config_data, plugins, "master", inactivity_timeout);
     }
 };
 
-function setup_listeners (listeners, plugins, type, inactivity_timeout) {
+Server.get_smtp_server = function (host, port, inactivity_timeout) {
+
+    var server;
+    var conn_cb = function (client) {
+        client.setTimeout(inactivity_timeout);
+        conn.createConnection(client, server);
+    };
+
+    if (port != 465) {
+        server = net.createServer(conn_cb);
+        return server;
+    }
+
+    var options = {
+        key: config.get('tls_key.pem', 'binary'),
+        cert: config.get('tls_cert.pem', 'binary'),
+    };
+    if (!options.key) {
+        logger.logerror("Missing tls_key.pem for port 465");
+        return;
+    }
+    if (!options.cert) {
+        logger.logerror("Missing tls_cert.pem for port 465");
+        return;
+    }
+
+    logger.logdebug("Creating TLS server on " + host + ':' + port);
+    server = require('tls').createServer(options, conn_cb);
+    server.has_tls=true;
+    return server;
+};
+
+function setup_listeners (cfg, plugins, type, inactivity_timeout) {
+
+    var listeners = Server.get_listen_addrs(cfg.main);
+
     async.each(listeners, function (host_port, cb) {
         var hp = /^\[?([^\]]+)\]?:(\d+)$/.exec(host_port);
         if (!hp) {
             return cb(new Error("Invalid format for listen parameter in smtp.ini"));
         }
-        
+
         var conn_cb = function (client) {
             client.setTimeout(inactivity_timeout);
             conn.createConnection(client, server);
         };
 
-        var server;
-        if (hp[2] == 465) {
-            var options = {
-                key: config.get('tls_key.pem', 'binary'),
-                cert: config.get('tls_cert.pem', 'binary'),
-            };
-            if (!options.key) {
-                return cb(new Error("Missing tls_key.pem for port 465"));
-            }
-            if (!options.cert) {
-                return cb(new Error("Missing tls_cert.pem for port 465"));
-            }
-            logger.lognotice("Creating TLS server on " + host_port);
-            server = require('tls').createServer(options, conn_cb);
-            server.has_tls=true;
-        }
-        else {
-            server = net.createServer(conn_cb);
-        }
+        var server = Server.get_smtp_server(hp[1], hp[0], inactivity_timeout);
+        if (!server) return cb();
 
         server.notes = Server.notes;
         if (Server.cluster) server.cluster = Server.cluster;
@@ -222,7 +255,7 @@ function setup_listeners (listeners, plugins, type, inactivity_timeout) {
             logger.logerror("Failed to setup listeners: " + err.message);
             return process.exit(-1);
         }
-        listening();
+        Server.listening();
         plugins.run_hooks('init_' + type, Server);
     });
 }
@@ -232,41 +265,41 @@ Server.init_master_respond = function (retval, msg) {
     switch(retval) {
         case constants.ok:
         case constants.cont:
-                // Load the queue if we're just one process
-                if (!(cluster && config.get('smtp.ini').main.nodes)) {
-                    out.load_queue();
-                }
-                break;
+            // Load the queue if we're just one process
+            if (!(cluster && config.get('smtp.ini').main.nodes)) {
+                out.load_queue();
+            }
+            break;
         default:
-                Server.logerror("init_master returned error" + ((msg) ? ': ' + msg : ''));
-                process.exit(1);
+            Server.logerror("init_master returned error" + ((msg) ? ': ' + msg : ''));
+            process.exit(1);
     }
-}
+};
 
 Server.init_child_respond = function (retval, msg) {
     switch(retval) {
         case constants.ok:
         case constants.cont:
-                break;
+            break;
         default:
-                var pid = process.env.CLUSTER_MASTER_PID;
-                Server.logerror("init_child returned error" + ((msg) ? ': ' + msg : ''));
-                try {
-                    if (pid) { 
-                        process.kill(pid);
-                        Server.logerror('Killing master (pid=' + pid + ')');
-                    }
+            var pid = process.env.CLUSTER_MASTER_PID;
+            Server.logerror("init_child returned error" + ((msg) ? ': ' + msg : ''));
+            try {
+                if (pid) {
+                    process.kill(pid);
+                    Server.logerror('Killing master (pid=' + pid + ')');
                 }
-                catch (err) {
-                    Server.logerror('Terminating child');
-                }
-                process.exit(1);
+            }
+            catch (err) {
+                Server.logerror('Terminating child');
+            }
+            process.exit(1);
     }
-}
+};
 
-function listening () {
+Server.listening = function () {
     var config_data = config.get('smtp.ini');
-   
+
     // Drop privileges
     if (config_data.main.group) {
         Server.lognotice('Switching from current gid: ' + process.getgid());
@@ -280,4 +313,4 @@ function listening () {
     }
 
     Server.ready = 1;
-}
+};
