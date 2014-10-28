@@ -126,7 +126,7 @@ function insert_banner (ct, buf, banners) {
 }
 
 Body.prototype.set_banner = function (banners) {
-    this.add_filter(function (ct, buf) { insert_banner(ct, buf, banners); });
+    this.add_filter(function (ct, buf) { return insert_banner(ct, buf, banners); });
 }
 
 Body.prototype.parse_more = function (line) {
