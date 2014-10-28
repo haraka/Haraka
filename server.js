@@ -80,6 +80,26 @@ Server.flushQueue = function () {
     }
 };
 
+Server.get_listen_addrs = function (cfg, port) {
+    if (!port) port = 25;
+    var listeners = (cfg.listen || '').split(/\s*,\s*/);
+    if (listeners[0] === '') listeners = [];
+    if (cfg.port) {
+        var host = cfg.listen_host;
+        if (!host) {
+            host = '[::0]';
+            Server.default_host = true;
+        }
+        listeners.unshift(host + ':' + cfg.port);
+    }
+    if (!listeners.length) {
+        Server.default_host = true;
+        listeners.push('[::0]:' + port);
+    }
+
+    return listeners;
+};
+
 Server.createServer = function (params) {
     var config_data = config.get('smtp.ini');
     var param_key;
@@ -91,21 +111,6 @@ Server.createServer = function (params) {
 
     // config_data defaults
     apply_defaults(config_data.main);
-
-    var listeners = (config_data.main.listen || '').split(/\s*,\s*/);
-    if (listeners[0] === '') listeners = [];
-    if (config_data.main.port) {
-        var host = config_data.main.listen_host;
-        if (!host) {
-            host = '[::0]';
-            Server.default_host = true;
-        }
-        listeners.unshift(host + ':' + config_data.main.port);
-    }
-    if (!listeners.length) {
-        Server.default_host = true;
-        listeners.push('[::0]:25');
-    }
 
     Server.notes = {};
     plugins.server = Server;
@@ -157,16 +162,19 @@ Server.createServer = function (params) {
         }
         else {
             // Workers
-            setup_listeners(listeners, plugins, "child", inactivity_timeout);
+            setup_listeners(config_data, plugins, "child", inactivity_timeout);
         }
     }
     else {
         this.daemonize(config_data);
-        setup_listeners(listeners, plugins, "master", inactivity_timeout);
+        setup_listeners(config_data, plugins, "master", inactivity_timeout);
     }
 };
 
-function setup_listeners (listeners, plugins, type, inactivity_timeout) {
+function setup_listeners (cfg, plugins, type, inactivity_timeout) {
+
+    var listeners = Server.get_listen_addrs(cfg.main);
+
     async.each(listeners, function (host_port, cb) {
         var hp = /^\[?([^\]]+)\]?:(\d+)$/.exec(host_port);
         if (!hp) {
