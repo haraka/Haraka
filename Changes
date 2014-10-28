@@ -1,5 +1,8 @@
 
-2.N.N - May NN, 2014
+2.N.N - ???? NN, 2014
+
+
+2.5.0 - May 24, 2014
 
 * added automated build testing via Travis-CI.org
 * fixed dkim_sign crash issue #560
