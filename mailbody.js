@@ -11,6 +11,31 @@ var attstr = require('./attachment_stream');
 
 var buf_siz = config.get('mailparser.bufsize') || 65536;
 
+function Body (header, options) {
+    this.header = header || new Header();
+    this.header_lines = [];
+    this.is_html = false;
+    this.options = options || {};
+    this.filters = [];
+    this.bodytext = '';
+    this.body_text_encoded = '';
+    this.body_encoding = null;
+    this.boundary = null;
+    this.ct = null;
+    this.decode_function = null;
+    this.children = []; // if multipart
+    this.state = 'start';
+    this.buf = new Buffer(buf_siz);
+    this.buf_fill = 0;
+}
+
+util.inherits(Body, events.EventEmitter);
+exports.Body = Body;
+
+Body.prototype.add_filter = function (filter) {
+    this.filters.push(filter);
+}
+
 function _get_html_insert_position (buf) {
     // TODO: consider re-writing this to go backwards from the end
     for (var i=0,l=buf.length; i<l; i++) {
@@ -38,7 +63,7 @@ function _get_html_insert_position (buf) {
     return buf.length - 1; // default is at the end
 }
 
-function add_banner (ct, buf, banners) {
+function insert_banner (ct, buf, banners) {
     if (!banners || !/^text\//i.test(ct)) {
         return;
     }
@@ -100,36 +125,8 @@ function add_banner (ct, buf, banners) {
     return new_buf;
 }
 
-function Body (header, options) {
-    this.header = header || new Header();
-    this.header_lines = [];
-    this.is_html = false;
-    this.options = options || {};
-    this.filters = [];
-    this.bodytext = '';
-    this.body_text_encoded = '';
-    this.body_encoding = null;
-    this.boundary = null;
-    this.ct = null;
-    this.decode_function = null;
-    this.children = []; // if multipart
-    this.state = 'start';
-    this.buf = new Buffer(buf_siz);
-    this.buf_fill = 0;
-
-    // TODO: get rid of this way of adding a filter.
-    if (this.options.banner) {
-        var banners = this.options.banner;
-        this.add_filter(function (ct, buf) { add_banner(ct, buf, banners); });
-        delete this.options.banner; // TODO: don't munge original object.
-    }
-}
-
-util.inherits(Body, events.EventEmitter);
-exports.Body = Body;
-
-Body.prototype.add_filter = function (filter) {
-    this.filters.push(filter);
+Body.prototype.set_banner = function (banners) {
+    this.add_filter(function (ct, buf) { insert_banner(ct, buf, banners); });
 }
 
 Body.prototype.parse_more = function (line) {

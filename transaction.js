@@ -44,6 +44,13 @@ exports.createTransaction = function(uuid) {
     return t;
 };
 
+Transaction.prototype.ensure_body = function() {
+    this.body = this.body || new body.Body(this.header);
+    if (this.banner) {
+        this.body.set_banner(this.banner);
+    }
+};
+
 Transaction.prototype.add_data = function(line) {
     if (typeof line === 'string') { // This shouldn't ever really happen...
         line = new Buffer(line);
@@ -53,7 +60,7 @@ Transaction.prototype.add_data = function(line) {
         this.header.parse(this.header_lines);
         this.header_pos = this.header_lines.length;
         if (this.parse_body) {
-            this.body = this.body || new body.Body(this.header, {"banner": this.banner});
+            this.ensure_body();
         }
     }
     else if (this.header_pos === 0) {
@@ -95,7 +102,7 @@ Transaction.prototype.end_data = function(cb) {
         this.header.parse(this.header_lines);
         this.header_pos = header_pos;
         if (this.parse_body) {
-            this.body = this.body || new body.Body(this.header, {"banner": this.banner});
+            this.ensure_body();
             for (var i = 0; i < body_lines.length; i++) {
                 this.body.parse_more(body_lines[i]);
             }
@@ -136,7 +143,7 @@ Transaction.prototype.remove_header = function (key) {
 
 Transaction.prototype.attachment_hooks = function (start, data, end) {
     this.parse_body = 1;
-    this.body = this.body || new body.Body(this.header, {"banner": this.banner});
+    this.ensure_body();
     this.body.on('attachment_start', start);
 };
 
