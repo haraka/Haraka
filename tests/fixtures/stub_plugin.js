@@ -13,7 +13,7 @@ function Plugin(name) {
     }
 
     this.name = name;
-    this.inherits = stub();
+    this.base = {};
     this.register_hook = stub();
     this.config = stub();
 
@@ -60,6 +60,16 @@ Plugin.prototype.load_plugin = function(name) {
     }
 
     return this;
+};
+
+Plugin.prototype.inherits = function (parent_name) {
+    var parent_plugin = this.load_plugin(parent_name);
+    for (var method in parent_plugin) {
+        if (!this[method]) {
+            this[method] = parent_plugin[method];
+        }
+    }
+    this.base[parent_name] = parent_plugin;
 };
 
 module.exports = Plugin;
