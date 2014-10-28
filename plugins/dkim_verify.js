@@ -31,6 +31,20 @@ exports.hook_data_post = function(next, connection) {
                                      'selector="' + res.selector + '" ' + 
                                      'result=' + res.result + ' ' +
                                      ((res.error) ? '(' + res.error + ')' : ''));
+            // Add individual results to ResultStore
+            if (res.result === 'pass') { 
+                txn.results.add(self, { pass: res.domain }); 
+            }
+            else if (res.result === 'fail') { 
+                txn.results.add(self, {
+                    fail: res.domain + ((res.error) ? '(' + res.error + ')' : '') 
+                }); 
+            }
+            else { 
+                txn.results.add(self, { 
+                    err: res.domain + ((res.error) ? '(' + res.error + ')' : '') 
+                }); 
+            }
         });
         connection.logdebug(self, JSON.stringify(results));
         // Store results for other plugins
