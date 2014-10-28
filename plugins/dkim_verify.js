@@ -1,3 +1,6 @@
+"use strict";
+/* jshint node: true */
+
 var dkim = require('./dkim');
 var DKIMVerifyStream = dkim.DKIMVerifyStream;
 var util = require('util');
