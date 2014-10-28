@@ -98,21 +98,3 @@ exports.get_plain_passwd = {
         }
     }
 };
-
-exports.check_plain_passwd = {
-    setUp : _set_up,
-    tearDown : _tear_down,
-    'any': function (test) {
-        var cb = function(result) {
-            test.expect(1);
-            if (result) {
-                test.ok(result);
-            }
-            else {
-                test.ok(1);  // TODO, find a way to test
-            }
-            test.done();
-        };
-        this.plugin.check_plain_passwd(this.connection, 'matt@example.com', 'sekret', cb);
-    }
-};

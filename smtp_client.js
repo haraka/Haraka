@@ -8,7 +8,7 @@ var generic_pool = require('generic-pool');
 var line_socket = require('./line_socket');
 var logger = require('./logger');
 var uuid = require('./utils').uuid;
-var base64 = require('./plugins/auth/auth_base').base64;
+var utils = require('./utils');
 
 var smtp_regexp = /^([0-9]{3})([ -])(.*)/;
 var STATE_IDLE = 1;
@@ -28,7 +28,7 @@ function SMTPClient(port, host, connect_timeout, idle_timeout) {
     this.socket.setKeepAlive(true);
     this.state = STATE_IDLE;
     this.command = 'greeting';
-    this.response = []
+    this.response = [];
     this.connected = false;
     this.authenticated = false;
     this.auth_capabilities = [];
@@ -223,10 +223,10 @@ SMTPClient.prototype.is_dead_sender = function (plugin, connection) {
 
 // Separate pools are kept for each set of server attributes.
 exports.get_pool = function (server, port, host, connect_timeout, pool_timeout, max) {
-    var port = port || 25;
-    var host = host || 'localhost';
-    var connect_timeout = (connect_timeout === undefined) ? 30 : connect_timeout;
-    var pool_timeout = (pool_timeout === undefined) ? 300 : pool_timeout;
+    port = port || 25;
+    host = host || 'localhost';
+    connect_timeout = (connect_timeout === undefined) ? 30 : connect_timeout;
+    pool_timeout = (pool_timeout === undefined) ? 300 : pool_timeout;
     var name = port + ':' + host + ':' + pool_timeout;
     if (!server.notes.pool) {
         server.notes.pool = {};
@@ -236,8 +236,8 @@ exports.get_pool = function (server, port, host, connect_timeout, pool_timeout, 
             name: name,
             create: function (callback) {
                 var smtp_client = new SMTPClient(port, host, connect_timeout);
-                logger.logdebug('[smtp_client_pool] uuid=' + smtp_client.uuid + ' host=' + host 
-                    + ' port=' + port + ' pool_timeout=' + pool_timeout + ' created');
+                logger.logdebug('[smtp_client_pool] uuid=' + smtp_client.uuid + ' host=' + host +
+                    ' port=' + port + ' pool_timeout=' + pool_timeout + ' created');
                 callback(null, smtp_client);
             },
             destroy: function(smtp_client) {
@@ -360,7 +360,7 @@ exports.get_client_plugin = function (plugin, connection, config, callback) {
                 if (config.auth.type === null || typeof(config.auth.type) === 'undefined') { return; } // Ignore blank
                 var auth_type = config.auth.type.toLowerCase();
                 if (smtp_client.auth_capabilities.indexOf(auth_type) == -1) {
-                    throw new Error("Auth type \"" + auth_type + "\" not supported by server (supports: " + smtp_client.auth_capabilities.join(',') + ")")
+                    throw new Error("Auth type \"" + auth_type + "\" not supported by server (supports: " + smtp_client.auth_capabilities.join(',') + ")");
                 }
                 switch (auth_type) {
                     case 'plain':
@@ -369,7 +369,7 @@ exports.get_client_plugin = function (plugin, connection, config, callback) {
                         }
                         logger.logdebug('[smtp_client_pool] uuid=' + smtp_client.uuid + ' authenticating as "' + config.auth.user + '"');
                         smtp_client.send_command('AUTH',
-                            'PLAIN ' + base64(config.auth.user + "\0" + config.auth.user + "\0" + config.auth.pass) );
+                            'PLAIN ' + utils.base64(config.auth.user + "\0" + config.auth.user + "\0" + config.auth.pass) );
                         break;
                     case 'cram-md5':
                         throw new Error("Not implemented");
