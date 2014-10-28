@@ -45,7 +45,12 @@
     "mail" : "helpme@gmail.com",
     "url" : "https://github.com/baudehlo/Haraka/issues"
   },
-  "bin": { "haraka": "./bin/haraka", "spf": "./bin/spf", "haraka_grep": "./bin/haraka_grep" },
+  "bin": { 
+    "haraka": "./bin/haraka", 
+    "spf": "./bin/spf",
+    "dkimverify": "./bin/dkimverify",
+    "haraka_grep": "./bin/haraka_grep" 
+  },
   "scripts": {
     "test": "./run_tests",
     "coveralls": "jscoverage *.js && QUICKSORT_COV=1 ./node_modules/nodeunit/bin/nodeunit --reporter=lcov tests --reporter=lcov tests | coveralls"
