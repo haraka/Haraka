@@ -6,11 +6,11 @@ var plugin = exports;
 
 dkim.DKIMObject.prototype.debug = function (str) {
     plugin.logdebug(str);
-}
+};
 
 DKIMVerifyStream.prototype.debug = function (str) {
     plugin.logdebug(str);
-}
+};
 
 exports.hook_data_post = function(next, connection) {
     var self = this;
@@ -37,4 +37,4 @@ exports.hook_data_post = function(next, connection) {
         return next();
     });
     txn.message_stream.pipe(verifier, { line_endings: '\r\n' });
-}
+};
