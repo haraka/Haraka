@@ -1,0 +1,24 @@
+{
+  "name": "haraka-httpd",
+  "version": "1.0.0",
+  "description": "Haraka HTTP for SMTPd",
+  "main": "server",
+  "keywords": [ "http", "watch" ],
+  "authors": [
+    "Matt Simerson"
+  ],
+  "license": "MIT",
+  "homepage": "http://haraka.github.io/",
+  "private": true,
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "client/bower_components",
+    "test"
+  ],
+  "dependencies": {
+    "bootstrap": "~3.3.1",
+    "jquery": "~2.1.1",
+    "html5-boilerplate": "^5.0.0"
+  }
+}
