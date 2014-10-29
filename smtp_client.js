@@ -13,10 +13,12 @@ var uuid = require('./utils').uuid;
 var utils = require('./utils');
 
 var smtp_regexp = /^([0-9]{3})([ -])(.*)/;
-var STATE_IDLE = 1;
-var STATE_ACTIVE = 2;
-var STATE_RELEASED = 3;
-var STATE_DESTROYED = 4;
+var STATE = {
+    IDLE: 1,
+    ACTIVE: 2,
+    RELEASED: 3,
+    DESTROYED: 4,
+};
 
 var tls_key;
 var tls_cert;
