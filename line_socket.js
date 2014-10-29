@@ -1,5 +1,6 @@
 "use strict";
 // A subclass of Socket which reads data by line
+/* jshint node: true */
 
 var net  = require('net');
 var tls  = require('./tls_socket');
@@ -8,7 +9,6 @@ var line_regexp = /^([^\n]*\n)/;
 
 function Socket(options) {
     if (!(this instanceof Socket)) return new Socket(options);
-    var self = this;
     net.Socket.call(this, options);
     setup_line_processor(this);
 }
@@ -26,13 +26,14 @@ function setup_line_processor (self) {
     };
 
     self.process_end = function () {
-        if (current_data.length)
-            self.emit('line', current_data)
+        if (current_data.length) {
+            self.emit('line', current_data);
+        }
         current_data = '';
     };
 
-    self.on('data', function (data) { self.process_data(data) });
-    self.on('end',  function ()     { self.process_end()      });
+    self.on('data', function (data) { self.process_data(data);});
+    self.on('end',  function ()     { self.process_end();     });
 }
 
 util.inherits(Socket, net.Socket);
@@ -53,4 +54,4 @@ exports.connect = function (port, host, cb) {
     var sock = tls.connect(options, cb);
     setup_line_processor(sock);
     return sock;
-}
+};
