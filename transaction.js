@@ -57,7 +57,7 @@ Transaction.prototype.ensure_body = function() {
     this.body_filters.forEach(function(o) {
         this.body.add_filter(function(ct, buf) {
             if ((o.ct_match instanceof RegExp && o.ct_match.test(ct.toLowerCase()))
-                        || String(o.ct_match).toLowerCase() === ct.toLowerCase()) {
+                        || ct.toLowerCase().indexOf(String(o.ct_match).toLowerCase()) === 0) {
                 return o.filter(ct, buf);
             }
         });
