@@ -23,7 +23,8 @@ exports.get_config = function (connection) {
     var plugin = this;
     var dom = connection.transaction.rcpt_to[0].host;
 
-    if (!plugin.cfg[dom]) { return plugin.cfg.main; }  // no specific route
+    if (!dom)             return plugin.cfg.main;
+    if (!plugin.cfg[dom]) return plugin.cfg.main;  // no specific route
 
     var rcpt_count = connection.transaction.rcpt_to.length;
     if (rcpt_count === 1) { return plugin.cfg[dom]; }
@@ -49,7 +50,9 @@ exports.hook_queue = function (next, connection) {
         var rcpt = 0;
 
         var send_rcpt = function () {
-            if (smtp_client.is_dead_sender(plugin, connection)) { return; }
+            if (smtp_client.is_dead_sender(plugin, connection)) {
+                return;
+            }
             if (rcpt === txn.rcpt_to.length) {
                 smtp_client.send_command('DATA');
                 return;
@@ -67,12 +70,16 @@ exports.hook_queue = function (next, connection) {
         }
 
         smtp_client.on('data', function () {
-            if (smtp_client.is_dead_sender(plugin, connection)) { return; }
+            if (smtp_client.is_dead_sender(plugin, connection)) {
+                return;
+            }
             smtp_client.start_data(txn.message_stream);
         });
 
         smtp_client.on('dot', function () {
-            if (smtp_client.is_dead_sender(plugin, connection)) { return; }
+            if (smtp_client.is_dead_sender(plugin, connection)) {
+                return;
+            }
             if (rcpt < txn.rcpt_to.length) {
                 smtp_client.send_command('RSET');
                 return;
@@ -83,7 +90,9 @@ exports.hook_queue = function (next, connection) {
         });
 
         smtp_client.on('rset', function () {
-            if (smtp_client.is_dead_sender(plugin, connection)) { return; }
+            if (smtp_client.is_dead_sender(plugin, connection)) {
+                return;
+            }
             smtp_client.send_command('MAIL', 'FROM:' + txn.mail_from);
         });
 
