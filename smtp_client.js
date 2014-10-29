@@ -13,10 +13,12 @@ var uuid = require('./utils').uuid;
 var utils = require('./utils');
 
 var smtp_regexp = /^([0-9]{3})([ -])(.*)/;
-var STATE_IDLE = 1;
-var STATE_ACTIVE = 2;
-var STATE_RELEASED = 3;
-var STATE_DESTROYED = 4;
+var STATE = {
+    IDLE: 1,
+    ACTIVE: 2,
+    RELEASED: 3,
+    DESTROYED: 4,
+};
 
 var tls_key;
 var tls_cert;
@@ -27,7 +29,7 @@ function SMTPClient(port, host, connect_timeout, idle_timeout) {
     this.socket = line_socket.connect(port, host);
     this.socket.setTimeout(((connect_timeout === undefined) ? 30 : connect_timeout) * 1000);
     this.socket.setKeepAlive(true);
-    this.state = STATE_IDLE;
+    this.state = STATE.IDLE;
     this.command = 'greeting';
     this.response = [];
     this.connected = false;
@@ -70,7 +72,7 @@ function SMTPClient(port, host, connect_timeout, idle_timeout) {
         }
         else if (code.match(/^[45]/)) {
             self.emit('bad_code', code, self.response.join(' '));
-            if (self.state != STATE_ACTIVE) {
+            if (self.state != STATE.ACTIVE) {
                 return;
             }
         }
@@ -119,16 +121,16 @@ function SMTPClient(port, host, connect_timeout, idle_timeout) {
             if (!error) {
                 error = '';
             }
-            if (self.state === STATE_ACTIVE) {
+            if (self.state === STATE.ACTIVE) {
                 self.emit('error', self.uuid + ': SMTP connection ' + msg + ' ' + error);
                 self.destroy();
             }
             else {
                 logger.logdebug('[smtp_client_pool] ' + self.uuid + ': SMTP connection ' + msg + ' ' + error + ' (state=' + self.state + ')');
-                if (self.state === STATE_IDLE) {
+                if (self.state === STATE.IDLE) {
                     self.destroy();
                 }
-                else if (self.state === STATE_RELEASED) {
+                else if (self.state === STATE.RELEASED) {
                     self.destroy();
                 }
             }
@@ -165,10 +167,10 @@ SMTPClient.prototype.release = function () {
     }
 
     logger.logdebug('[smtp_client_pool] ' + this.uuid + ' resetting, state=' + this.state);
-    if (this.state === STATE_DESTROYED) {
+    if (this.state === STATE.DESTROYED) {
         return;
     }
-    this.state = STATE_RELEASED;
+    this.state = STATE.RELEASED;
     this.removeAllListeners('greeting');
     this.removeAllListeners('capabilities');
     this.removeAllListeners('xclient');
@@ -190,10 +192,10 @@ SMTPClient.prototype.release = function () {
 
     this.on('rset', function () {
         logger.logdebug('[smtp_client_pool] ' + this.uuid + ' releasing, state=' + this.state);
-        if (this.state === STATE_DESTROYED) {
+        if (this.state === STATE.DESTROYED) {
             return;
         }
-        this.state = STATE_IDLE;
+        this.state = STATE.IDLE;
         this.removeAllListeners('rset');
         this.removeAllListeners('bad_code');
         this.pool.release(this);
@@ -203,7 +205,7 @@ SMTPClient.prototype.release = function () {
 };
 
 SMTPClient.prototype.destroy = function () {
-    if (this.state !== STATE_DESTROYED) {
+    if (this.state !== STATE.DESTROYED) {
         this.pool.destroy(this);
     }
 };
@@ -242,7 +244,7 @@ exports.get_pool = function (server, port, host, connect_timeout, pool_timeout, 
             },
             destroy: function(smtp_client) {
                 logger.logdebug('[smtp_client_pool] ' + smtp_client.uuid + ' destroyed, state=' + smtp_client.state);
-                smtp_client.state = STATE_DESTROYED;
+                smtp_client.state = STATE.DESTROYED;
                 smtp_client.socket.destroy();
                 // Remove pool object from server notes once empty
                 var size = pool.getPoolSize();
@@ -262,7 +264,7 @@ exports.get_pool = function (server, port, host, connect_timeout, pool_timeout, 
         pool.acquire = function (callback, priority) {
             var callback_wrapper = function (err, smtp_client) {
                 smtp_client.pool = pool;
-                smtp_client.state = STATE_ACTIVE;
+                smtp_client.state = STATE.ACTIVE;
                 callback(err, smtp_client);
             };
             acquire.call(pool, callback_wrapper, priority);
