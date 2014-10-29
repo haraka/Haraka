@@ -16,8 +16,7 @@ var smtp_regexp = /^([0-9]{3})([ -])(.*)/;
 var STATE_IDLE = 1;
 var STATE_ACTIVE = 2;
 var STATE_RELEASED = 3;
-var STATE_DEAD = 4;
-var STATE_DESTROYED = 5;
+var STATE_DESTROYED = 4;
 
 var tls_key;
 var tls_cert;
@@ -127,7 +126,6 @@ function SMTPClient(port, host, connect_timeout, idle_timeout) {
             else {
                 logger.logdebug('[smtp_client_pool] ' + self.uuid + ': SMTP connection ' + msg + ' ' + error + ' (state=' + self.state + ')');
                 if (self.state === STATE_IDLE) {
-                    self.state = STATE_DEAD;
                     self.destroy();
                 }
                 else if (self.state === STATE_RELEASED) {
@@ -264,11 +262,6 @@ exports.get_pool = function (server, port, host, connect_timeout, pool_timeout, 
         pool.acquire = function (callback, priority) {
             var callback_wrapper = function (err, smtp_client) {
                 smtp_client.pool = pool;
-                if (smtp_client.state === STATE_DEAD) {
-                    smtp_client.destroy();
-                    pool.acquire(callback, priority);
-                    return;
-                }
                 smtp_client.state = STATE_ACTIVE;
                 callback(err, smtp_client);
             };
