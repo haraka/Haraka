@@ -42,16 +42,21 @@ exports.load_host_list = function () {
 exports.validate_rcpt = function(next, connection, params) {
     var plugin = this;
 
-    var domain = params[0].host.toLowerCase();
+    var rcpt = params[0];
+    if (!rcpt.host) {
+        connection.transaction.results.add(plugin, {fail: '!domain'});
+        return next();
+    }
+    var domain = rcpt.host.toLowerCase();
 
     if (!plugin.in_host_list(domain) && !plugin.in_ldap_ini(domain)) {
-        connection.logdebug(plugin, "domain '" + domain + "' is not local; skipping ldap.");
+        connection.logdebug(plugin, "domain '" + domain + "' is not local; skip ldap");
         return next();
     }
 
     var ar = connection.transaction.results.get('access');
     if (ar && ar.pass.length > 0 && ar.pass.indexOf("rcpt_to.access.whitelist") !== -1) {
-        connection.loginfo(plugin, "Accepting whitelisted recipient.");
+        connection.loginfo(plugin, "skip whitelisted recipient");
         return next();
     }
 
@@ -62,8 +67,8 @@ exports.validate_rcpt = function(next, connection, params) {
         connection.logerror(plugin, 'error: ' + err);
     });
 
-    var rcpt = params[0];
-    var plain_rcpt = JSON.stringify(rcpt.original).replace('<', '').replace('>', '').replace('"', '').replace('"', '');
+    var plain_rcpt = rcpt.address().toLowerCase();
+    // JSON.stringify(rcpt.original).replace(/</, '').replace(/>/, '').replace(/"/g, '');
 
     var opts = {
         filter: '(&(objectClass=' + cfg.objectclass + ')(|(mail=' + plain_rcpt  + ')(mailAlternateAddress=' + plain_rcpt + ')))',
@@ -73,7 +78,10 @@ exports.validate_rcpt = function(next, connection, params) {
 
     connection.logdebug(plugin, "Search filter is: " + util.inspect(opts));
 
-    client.search(cfg.basedn, opts, function(err, res) {
+    var search_result = function(err, res) {
+        if (err) {
+            connection.logerror(plugin, 'LDAP search error: ' + err);
+        }
         var items = [];
         res.on('searchEntry', function(entry) {
             connection.logdebug(plugin, 'entry: ' + JSON.stringify(entry.object));
@@ -87,13 +95,12 @@ exports.validate_rcpt = function(next, connection, params) {
         res.on('end', function(result) {
             connection.logdebug(plugin, 'LDAP search results: ' + items.length + ' -- ' + util.inspect(items));
 
-            if (!items.length) {
-                return next(DENY, "Sorry - no mailbox here by that name.");
-            } else {
-                next();
-            }
+            if (items.length) return next();
+
+            next(DENY, "Sorry - no mailbox here by that name.");
         });
-    });
+    };
+    client.search(cfg.basedn, opts, search_result);
 };
 
 exports.in_host_list = function (domain) {
