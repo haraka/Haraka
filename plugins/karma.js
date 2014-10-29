@@ -7,7 +7,7 @@ var phase_prefixes = ['connect','helo','mail_from','rcpt_to','data'];
 
 exports.register = function () {
     var plugin = this;
-    plugin.deny_hooks = ['unrecognized_command','helo','data','data_post'];
+    plugin.deny_hooks = ['unrecognized_command','helo','data','data_post','queue'];
 
     var load_config = function () {
         plugin.loginfo("loading karma.ini");
@@ -390,6 +390,8 @@ exports.hook_rcpt_ok = function (next, connection, rcpt) {
 exports.hook_data_post = function (next, connection) {
     // goal: prevent delivery of spam
     var plugin = this;
+
+    plugin.check_awards(connection);  // update awards
 
     var results = connection.results.collate(plugin);
     connection.loginfo(plugin, "adding header: " + results);
