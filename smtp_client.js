@@ -1,6 +1,8 @@
+"use strict";
 // SMTP client object and class. This allows for every part of the client
 // protocol to be hooked for different levels of control, such as
 // smtp_forward and smtp_proxy queue plugins.
+/* jshint node: true */
 
 var events = require('events');
 var util = require('util');
@@ -292,7 +294,7 @@ exports.get_client_plugin = function (plugin, connection, config, callback) {
         config.main.host, config.main.connect_timeout, config.main.timeout, config.main.max_connections);
     pool.acquire(function (err, smtp_client) {
         connection.logdebug(plugin, 'Got smtp_client: ' + smtp_client.uuid);
-        
+
         var secured = false;
 
         smtp_client.call_next = function (retval, msg) {
@@ -323,6 +325,10 @@ exports.get_client_plugin = function (plugin, connection, config, callback) {
         smtp_client.on('xclient', helo);
 
         smtp_client.on('capabilities', function () {
+            var on_secured = function () {
+                secured = true;
+                smtp_client.emit('greeting', 'EHLO');
+            };
             for (var line in smtp_client.response) {
                 if (smtp_client.response[line].match(/^XCLIENT/)) {
                     if(!smtp_client.xclient) {
@@ -335,17 +341,14 @@ exports.get_client_plugin = function (plugin, connection, config, callback) {
                     tls_key = plugin.config.get('tls_key.pem', 'binary');
                     tls_cert = plugin.config.get('tls_cert.pem', 'binary');
                     if (tls_key && tls_cert && enable_tls) {
-                        smtp_client.socket.on('secure', function () {
-                            secured = true;
-                            smtp_client.emit('greeting', 'EHLO');
-                        });
+                        smtp_client.socket.on('secure', on_secured);
                         smtp_client.send_command('STARTTLS');
                         return;
                     }
                 }
-                
-                var auth_matches;
-                if (auth_matches = smtp_client.response[line].match(/^AUTH (.*)$/)) {
+
+                var auth_matches = smtp_client.response[line].match(/^AUTH (.*)$/);
+                if (auth_matches) {
                     smtp_client.auth_capabilities = [];
                     auth_matches = auth_matches[1].split(' ');
                     for (var i = 0; i < auth_matches.length; i++) {
@@ -354,35 +357,34 @@ exports.get_client_plugin = function (plugin, connection, config, callback) {
                 }
             }
         });
-        
+
         smtp_client.on('helo', function () {
-            if (config.auth && !smtp_client.authenticated) {
-                if (config.auth.type === null || typeof(config.auth.type) === 'undefined') { return; } // Ignore blank
-                var auth_type = config.auth.type.toLowerCase();
-                if (smtp_client.auth_capabilities.indexOf(auth_type) == -1) {
-                    throw new Error("Auth type \"" + auth_type + "\" not supported by server (supports: " + smtp_client.auth_capabilities.join(',') + ")");
-                }
-                switch (auth_type) {
-                    case 'plain':
-                        if (!config.auth.user || !config.auth.pass) {
-                            throw new Error("Must include auth.user and auth.pass for PLAIN auth.");
-                        }
-                        logger.logdebug('[smtp_client_pool] uuid=' + smtp_client.uuid + ' authenticating as "' + config.auth.user + '"');
-                        smtp_client.send_command('AUTH',
-                            'PLAIN ' + utils.base64(config.auth.user + "\0" + config.auth.user + "\0" + config.auth.pass) );
-                        break;
-                    case 'cram-md5':
-                        throw new Error("Not implemented");
-                    default:
-                        throw new Error("Unknown AUTH type: " + auth_type);
-                }
-            }
-            else {
+            if (!config.auth || smtp_client.authenticated) {
                 if (smtp_client.is_dead_sender(plugin, connection)) {
-                  return;
+                    return;
                 }
-                smtp_client.send_command('MAIL',
-                    'FROM:' + connection.transaction.mail_from);
+                smtp_client.send_command('MAIL', 'FROM:' + connection.transaction.mail_from);
+                return;
+            }
+
+            if (config.auth.type === null || typeof(config.auth.type) === 'undefined') { return; } // Ignore blank
+            var auth_type = config.auth.type.toLowerCase();
+            if (smtp_client.auth_capabilities.indexOf(auth_type) == -1) {
+                throw new Error("Auth type \"" + auth_type + "\" not supported by server (supports: " + smtp_client.auth_capabilities.join(',') + ")");
+            }
+            switch (auth_type) {
+                case 'plain':
+                    if (!config.auth.user || !config.auth.pass) {
+                        throw new Error("Must include auth.user and auth.pass for PLAIN auth.");
+                    }
+                    logger.logdebug('[smtp_client_pool] uuid=' + smtp_client.uuid + ' authenticating as "' + config.auth.user + '"');
+                    smtp_client.send_command('AUTH',
+                        'PLAIN ' + utils.base64(config.auth.user + "\0" + config.auth.user + "\0" + config.auth.pass) );
+                    break;
+                case 'cram-md5':
+                    throw new Error("Not implemented");
+                default:
+                    throw new Error("Unknown AUTH type: " + auth_type);
             }
         });
 

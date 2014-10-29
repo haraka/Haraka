@@ -1,15 +1,26 @@
+"use strict";
 // Forward to an SMTP server
 // Opens the connection to the ongoing SMTP server at queue time
 // and passes back any errors seen on the ongoing server to the
 // originating server.
+/* jshint node: true */
+/* global OK, DENY, DENYSOFT */
 
 var smtp_client_mod = require('./smtp_client');
 
+exports.register = function () {
+    var plugin = this;
+    var load_config = function () {
+        plugin.cfg = plugin.config.get('smtp_forward.ini', load_config);
+    };
+    load_config();
+};
+
 exports.hook_queue = function (next, connection) {
     var plugin = this;
-    var config = this.config.get('smtp_forward.ini');
-    connection.loginfo(this, "forwarding to " + config.main.host + ":" + config.main.port);
-    smtp_client_mod.get_client_plugin(this, connection, config, function (err, smtp_client) {
+    var cfg = plugin.cfg.main;
+    connection.loginfo(this, "forwarding to " + cfg.host + ":" + cfg.port);
+    smtp_client_mod.get_client_plugin(this, connection, plugin.cfg, function (err, smtp_client) {
         smtp_client.next = next;
         var rcpt = 0;
         var send_rcpt = function () {
@@ -26,7 +37,7 @@ exports.hook_queue = function (next, connection) {
             }
         };
         smtp_client.on('mail', send_rcpt);
-        if (config.main.one_message_per_rcpt) {
+        if (cfg.one_message_per_rcpt) {
             smtp_client.on('rcpt', function () { smtp_client.send_command('DATA'); });
         }
         else {
