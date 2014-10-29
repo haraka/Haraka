@@ -15,19 +15,7 @@ var async       = require('async');
 var daemon      = require('daemon');
 
 // Need these here so we can run hooks
-for (var key in logger) {
-    if (key.match(/^log\w/)) {
-        exports[key] = (function (key) {
-            return function () {
-                var args = ["[server] "];
-                for (var i=0, l=arguments.length; i<l; i++) {
-                    args.push(arguments[i]);
-                }
-                logger[key].apply(logger, args);
-            };
-        })(key);
-    }
-}
+logger.add_log_methods(exports, 'server');
 
 var Server = exports;
 
@@ -39,8 +27,7 @@ var defaults = {
 };
 
 function apply_defaults(obj) {
-    var key;
-    for (key in defaults) {
+    for (var key in defaults) {
         obj[key] = obj[key] || defaults[key];
     }
 }
@@ -56,8 +43,10 @@ Server.daemonize = function (config_data) {
         process.removeAllListeners('exit');
         logger.lognotice('Daemonizing...');
     }
+
     var log_fd = require('fs').openSync(config_data.main.daemon_log_file, 'a');
     daemon({stdout: log_fd});
+
     // We are the daemon from here on...
     var npid = require('npid');
     try {
@@ -109,10 +98,9 @@ Server.get_listen_addrs = function (cfg, port) {
 
 Server.createServer = function (params) {
     var config_data = config.get('smtp.ini');
-    var param_key;
-    for (param_key in params) {
-        if (typeof params[param_key] !== 'function') {
-            config_data.main[param_key] = params[param_key];
+    for (var key in params) {
+        if (typeof params[key] !== 'function') {
+            config_data.main[key] = params[key];
         }
     }
 
@@ -126,56 +114,55 @@ Server.createServer = function (params) {
     var inactivity_timeout = (config_data.main.inactivity_timeout || 300) * 1000;
 
     // Cluster
-    if (cluster && config_data.main.nodes) {
-        Server.cluster = cluster;
-        if (cluster.isMaster) {
-            out.scan_queue_pids(function (err, pids) {
-                if (err) {
-                    Server.logcrit("Scanning queue failed. Shutting down.");
-                    process.exit(1);
-                }
-                Server.daemonize(config_data);
-                // Fork workers
-                var workers = (config_data.main.nodes === 'cpus') ?
-                    os.cpus().length : config_data.main.nodes;
-                var new_workers = [];
-                for (var i=0; i<workers; i++) {
-                    new_workers.push(cluster.fork({ CLUSTER_MASTER_PID: process.pid }));
-                }
-                for (var j=0; j<pids.length; j++) {
-                    new_workers[j % new_workers.length].send({event: 'outbound.load_pid_queue', data: pids[j]});
-                }
-                cluster.on('online', function (worker) {
-                    logger.lognotice('worker ' + worker.id + ' started pid=' + worker.process.pid);
-                });
-                cluster.on('listening', function (worker, address) {
-                    logger.lognotice('worker ' + worker.id + ' listening on ' + address.address + ':' + address.port);
-                });
-                cluster.on('exit', function (worker, code, signal) {
-                    if (signal) {
-                        logger.lognotice('worker ' + worker.id + ' killed by signal ' + signal);
-                    }
-                    else if (code !== 0) {
-                        logger.lognotice('worker ' + worker.id + ' exited with error code: ' + code);
-                    }
-                    if (signal || code !== 0) {
-                        // Restart worker
-                        var new_worker = cluster.fork({ CLUSTER_MASTER_PID: process.pid });
-                        new_worker.send({event: 'outbound.load_pid_queue', data: worker.process.pid});
-                    }
-                });
-                plugins.run_hooks('init_master', Server);
-            });
-        }
-        else {
-            // Workers
-            setup_listeners(config_data, plugins, "child", inactivity_timeout);
-        }
-    }
-    else {
+    if (!cluster || !config_data.main.nodes) {
         this.daemonize(config_data);
         setup_listeners(config_data, plugins, "master", inactivity_timeout);
+        return;
     }
+
+    Server.cluster = cluster;
+    if (!cluster.isMaster) {      // Workers
+        setup_listeners(config_data, plugins, "child", inactivity_timeout);
+        return;
+    }
+
+    out.scan_queue_pids(function (err, pids) {
+        if (err) {
+            Server.logcrit("Scanning queue failed. Shutting down.");
+            process.exit(1);
+        }
+        Server.daemonize(config_data);
+        // Fork workers
+        var workers = (config_data.main.nodes === 'cpus') ?
+            os.cpus().length : config_data.main.nodes;
+        var new_workers = [];
+        for (var i=0; i<workers; i++) {
+            new_workers.push(cluster.fork({ CLUSTER_MASTER_PID: process.pid }));
+        }
+        for (var j=0; j<pids.length; j++) {
+            new_workers[j % new_workers.length].send({event: 'outbound.load_pid_queue', data: pids[j]});
+        }
+        cluster.on('online', function (worker) {
+            logger.lognotice('worker ' + worker.id + ' started pid=' + worker.process.pid);
+        });
+        cluster.on('listening', function (worker, address) {
+            logger.lognotice('worker ' + worker.id + ' listening on ' + address.address + ':' + address.port);
+        });
+        cluster.on('exit', function (worker, code, signal) {
+            if (signal) {
+                logger.lognotice('worker ' + worker.id + ' killed by signal ' + signal);
+            }
+            else if (code !== 0) {
+                logger.lognotice('worker ' + worker.id + ' exited with error code: ' + code);
+            }
+            if (signal || code !== 0) {
+                // Restart worker
+                var new_worker = cluster.fork({ CLUSTER_MASTER_PID: process.pid });
+                new_worker.send({event: 'outbound.load_pid_queue', data: worker.process.pid});
+            }
+        });
+        plugins.run_hooks('init_master', Server);
+    });
 };
 
 Server.get_smtp_server = function (host, port, inactivity_timeout) {
