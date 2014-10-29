@@ -338,7 +338,7 @@ exports.get_client_plugin = function (plugin, connection, config, callback) {
                     }
                 }
                 if (smtp_client.response[line].match(/^STARTTLS/) && !secured) {
-                    if (/(true|yes|enabled|on|1)/i.test(c.enable_tls)) {
+                    if (c.enable_tls) {
                         tls_key = plugin.config.get('tls_key.pem', 'binary');
                         tls_cert = plugin.config.get('tls_cert.pem', 'binary');
                         if (tls_key && tls_cert) {

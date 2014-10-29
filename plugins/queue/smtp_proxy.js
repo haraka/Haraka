@@ -8,12 +8,24 @@
 
 var smtp_client_mod = require('./smtp_client');
 
+exports.register = function () {
+    var plugin = this;
+    var load_config = function () {
+        plugin.cfg = plugin.config.get('smtp_proxy.ini', {
+            booleans: [
+                  '-main.enable_tls',
+                ],
+        },
+        load_config);
+    };
+    load_config();
+};
+
 exports.hook_mail = function (next, connection, params) {
     var plugin = this;
-    var config = this.config.get('smtp_proxy.ini');
-    connection.loginfo(this, "proxying to " + config.main.host + ":" + config.main.port);
-    var self = this;
-    smtp_client_mod.get_client_plugin(this, connection, config, function (err, smtp_client) {
+    var c = plugin.cfg.main;
+    connection.loginfo(this, "proxying to " + c.host + ":" + c.port);
+    smtp_client_mod.get_client_plugin(plugin, connection, plugin.cfg, function (err, smtp_client) {
         connection.notes.smtp_client = smtp_client;
         smtp_client.next = next;
 
@@ -44,7 +56,7 @@ exports.hook_mail = function (next, connection, params) {
                 // errors are OK for rcpt, but nothing else
                 // this can also happen if the destination server
                 // times out, but that is okay.
-                connection.loginfo(self, "message denied, proxying failed");
+                connection.loginfo(plugin, "message denied, proxying failed");
                 smtp_client.release();
                 delete connection.notes.smtp_client;
             }
