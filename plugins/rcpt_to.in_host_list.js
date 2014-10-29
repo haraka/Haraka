@@ -1,4 +1,8 @@
-// Check RCPT TO domain is in host list
+"use strict";
+// Check RCPT TO domain is in config/host_list
+
+/* jshint node: true */
+/* global OK */
 
 // Previous versions of this plugin (Haraka <= 2.4.0) did not account for
 // relaying users. This plugin now permits relaying clients to send if
@@ -10,54 +14,10 @@
 
 exports.register = function() {
     var plugin = this;
-    plugin.host_list = {};
+    plugin.inherits('rcpt_to.host_list_base');
 
-    var load_host_list = function () {
-        plugin.loginfo(plugin, "loading host_list");
-        var lowered_list = {};
-        var raw_list = plugin.config.get('host_list', 'list', load_host_list);
-        for (var i in raw_list) {
-            lowered_list[raw_list[i].toLowerCase()] = true;
-        }
-        plugin.host_list = lowered_list;
-    };
-    load_host_list();
-
-    var load_host_list_regex = function () {
-        plugin.loginfo(plugin, "loading host_list_regex");
-        plugin.host_list_regex = plugin.config.get('host_list_regex', 'list', load_host_list_regex);
-        plugin.hl_re = new RegExp ('^(?:' + plugin.host_list_regex.join('|') + ')$', 'i');
-    };
-    load_host_list_regex();
-};
-
-exports.hook_mail = function(next, connection, params) {
-    var plugin = this;
-    var txn = connection.transaction;
-    if (!txn) { return; }
-
-    var email = params[0].address();
-    if (!email) {
-        txn.results.add(plugin, {skip: 'mail_from.null', emit: true});
-        return next();
-    }
-
-    var domain = params[0].host.toLowerCase();
-
-    if (plugin.in_host_list(domain)) {
-        txn.results.add(plugin, {pass: 'mail_from'});
-        txn.notes.local_sender = true;
-        return next();
-    }
-
-    if (plugin.in_host_regex(domain)) {
-        txn.results.add(plugin, {pass: 'mail_from'});
-        txn.notes.local_sender = true;
-        return next();
-    }
-
-    txn.results.add(plugin, {msg: 'mail_from!local'});
-    return next();
+    plugin.load_host_list();
+    plugin.load_host_list_regex();
 };
 
 exports.hook_rcpt = function(next, connection, params) {
@@ -97,24 +57,4 @@ exports.hook_rcpt = function(next, connection, params) {
     // Another RCPT plugin may yet vouch for this recipient.
     txn.results.add(plugin, {msg: 'rcpt!local'});
     return next();
-};
-
-exports.in_host_list = function (domain) {
-    var plugin = this;
-    plugin.logdebug("checking " + domain + " in config/host_list");
-    if (plugin.host_list[domain]) {
-        return true;
-    }
-    return false;
-};
-
-exports.in_host_regex = function (domain) {
-    var plugin = this;
-    if (!plugin.host_list_regex) return false;
-    if (!plugin.host_list_regex.length) return false;
-
-    plugin.logdebug("checking " + domain + " against config/host_list_regex ");
-
-    if (plugin.hl_re.test(domain)) { return true; }
-    return false;
 };

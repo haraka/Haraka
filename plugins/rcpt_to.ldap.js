@@ -1,81 +1,120 @@
+"use strict";
+/* jshint node: true */
+/* globals DENY */
+
+var util = require('util');
+
 exports.register = function() {
     var plugin = this;
+    plugin.inherits('host_list_base');
 
-    var load_host_list = function () {
-         plugin.loginfo(plugin, "loading host_list");
-         plugin.host_list = plugin.config.get('host_list', 'list', load_host_list);
-     };
-    load_host_list();
-
-    var load_ldap_conf = function() {
-        plugin.loginfo("loading rcpt_to.ldap.ini");
-        plugin.ldap_conf = plugin.config.get('rcpt_to.ldap.ini', 'ini', load_ldap_conf);
+    try {
+        plugin.ldap = require('ldapjs');
     }
-    load_ldap_conf();
+    catch(e) {
+        plugin.logerror("failed to load ldapjs, try installing it (npm install ldapjs)");
+        return;
+    }
+
+    // only load this stuff if ldapjs loaded
+    plugin.load_host_list();
+    plugin.load_ldap_ini();
+    plugin.register_hook('rcpt', 'ldap_rcpt');
 };
 
-exports.hook_rcpt = function(next, connection, params) {
+exports.load_ldap_ini = function() {
+    var plugin = this;
+    plugin.loginfo("loading rcpt_to.ldap.ini");
+    plugin.cfg = plugin.config.get('rcpt_to.ldap.ini', 'ini', plugin.load_ldap_ini);
+};
 
-  var ldap = require('ldapjs');
-  var util = require('util');
-  var host_list;
-  var plugin = this;
-  var domain;
+exports.ldap_rcpt = function(next, connection, params) {
+    var plugin = this;
+    var txn = connection.transaction;
+    if (!txn) return next();
 
-  domain = params[0].host.toLowerCase();
-  if (plugin.host_list.indexOf(domain) == -1) {
-    connection.loginfo("Recipient domain is not a local domain; skipping ldap checks.", this);
-    return next();
-  }
-
-  var ar = connection.transaction.results.get('access');
-  if (ar.pass.length >= 1) {
-    if (ar.pass.indexOf("rcpt_to.access.whitelist") > -1) {
-      connection.loginfo("Accepting recipient since its whitelisted already.", this);
-      return next();
+    var rcpt = params[0];
+    if (!rcpt.host) {
+        txn.results.add(plugin, {fail: '!domain'});
+        return next();
     }
-  }
+    var domain = rcpt.host.toLowerCase();
 
-  var client = ldap.createClient({
-    url: plugin.ldap_conf.main.server
-  });
+    if (!plugin.in_host_list(domain) && !plugin.in_ldap_ini(domain)) {
+        connection.logdebug(plugin, "domain '" + domain + "' is not local; skip ldap");
+        return next();
+    }
 
-  client.bind(plugin.ldap_conf.main.binddn, plugin.ldap_conf.main.bindpw, function(err) {
-    connection.logerror('error: ' + err, connection);
-  });
+    var ar = txn.results.get('access');
+    if (ar && ar.pass.length > 0 && ar.pass.indexOf("rcpt_to.access.whitelist") !== -1) {
+        connection.loginfo(plugin, "skip whitelisted recipient");
+        return next();
+    }
 
-  var rcpt = params[0];
-  var plain_rcpt = JSON.stringify(rcpt.original).replace('<', '').replace('>', '').replace('"', '').replace('"', '');
+    txn.results.add(plugin, { msg: 'connecting' });
 
-  var opts = {
-    filter: '(&(objectClass=' + plugin.ldap_conf.main.objectclass + ')(|(mail=' + plain_rcpt  + ')(mailAlternateAddress=' + plain_rcpt + ')))',
-    scope: 'sub',
-    attributes: ['dn', 'mail', 'mailAlternateAddress']
-  };
+    var cfg = plugin.in_host_list(domain) ? plugin.cfg.main : plugin.cfg[domain];
+    if (!cfg) {
+        connection.logerror(plugin, 'no LDAP config for ' + domain);
+        return next();
+    }
 
-  this.logdebug("Search filter is: " + util.inspect(opts), connection);
+    var client;
+    try { client = plugin.ldap.createClient({ url: cfg.server }); }
+    catch (e) {
+        connection.logerror(plugin, 'connect error: ' + e);
+        return next();
+    }
 
-  client.search(plugin.ldap_conf.main.basedn, opts, function(err, res) {
-    var items = []
-    res.on('searchEntry', function(entry) {
-        connection.logdebug('entry: ' + JSON.stringify(entry.object), connection);
-        items.push(entry.object);
-      });
+    client.bind(cfg.binddn, cfg.bindpw, function(err) {
+        connection.logerror(plugin, 'error: ' + err);
+    });
 
-    res.on('error', function(err) {
-        connection.logerror('LDAP search error: ' + err, connection);
-      });
+    var opts = plugin.get_search_opts(cfg, rcpt);
+    connection.logdebug(plugin, "Search filter is: " + util.inspect(opts));
 
-    res.on('end', function(result) {
-        connection.logdebug('LDAP search results: ' + items.length + ' -- ' + util.inspect(items));
-
-        if (!items.length) {
-          return next(DENY, "Sorry - no mailbox here by that name.");
-        } else {
-          next();
+    var search_result = function(err, res) {
+        if (err) {
+            connection.logerror(plugin, 'LDAP search error: ' + err);
         }
+        var items = [];
+        res.on('searchEntry', function(entry) {
+            connection.logdebug(plugin, 'entry: ' + JSON.stringify(entry.object));
+            items.push(entry.object);
+        });
 
-      });
+        res.on('error', function(err) {
+            connection.logerror(plugin, 'LDAP search error: ' + err);
+        });
 
-  });
-}
+        res.on('end', function(result) {
+            connection.logdebug(plugin, 'LDAP search results: ' + items.length + ' -- ' + util.inspect(items));
+
+            if (items.length) return next();
+
+            next(DENY, "Sorry - no mailbox here by that name.");
+        });
+    };
+    client.search(cfg.basedn, opts, search_result);
+};
+
+exports.get_search_opts = function (cfg, rcpt) {
+
+    var plain_rcpt = rcpt.address().toLowerCase();
+    // JSON.stringify(rcpt.original).replace(/</, '').replace(/>/, '').replace(/"/g, '');
+
+    return {
+        filter: '(&(objectClass=' + cfg.objectclass + ')(|(mail=' + plain_rcpt  + ')(mailAlternateAddress=' + plain_rcpt + ')))',
+        scope: 'sub',
+        attributes: ['dn', 'mail', 'mailAlternateAddress']
+    };
+};
+
+exports.in_ldap_ini = function (domain) {
+    var plugin = this;
+    if (!domain) return false;
+    if (!plugin.cfg) return false;
+    if (!plugin.cfg[domain]) return false;
+    if (!plugin.cfg[domain].server) return false;
+    return true;
+};
