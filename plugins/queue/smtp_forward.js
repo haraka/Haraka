@@ -11,7 +11,12 @@ var smtp_client_mod = require('./smtp_client');
 exports.register = function () {
     var plugin = this;
     var load_config = function () {
-        plugin.cfg = plugin.config.get('smtp_forward.ini', load_config);
+        plugin.cfg = plugin.config.get('smtp_forward.ini', {
+            booleans: [
+                  '-main.enable_tls',
+                ],
+        },
+        load_config);
     };
     load_config();
 };
@@ -76,7 +81,7 @@ exports.hook_queue = function (next, connection) {
             if (smtp_client.is_dead_sender(plugin, connection)) {
                 return;
             }
-            smtp_client.call_next(((code && code[0] === '5') ? DENY : DENYSOFT), 
+            smtp_client.call_next(((code && code[0] === '5') ? DENY : DENYSOFT),
                                   msg + ' (' + connection.transaction.uuid + ')');
             smtp_client.release();
         });

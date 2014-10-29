@@ -282,9 +282,9 @@ exports.get_client = function (server, callback, port, host, connect_timeout, po
 // config and listeners for plugins. Currently this is what smtp_proxy and
 // smtp_forward have in common.
 exports.get_client_plugin = function (plugin, connection, config, callback) {
-    var enable_tls = /(true|yes|1)/i.exec(config.main.enable_tls) != null;
-    var pool = exports.get_pool(connection.server, config.main.port,
-        config.main.host, config.main.connect_timeout, config.main.timeout, config.main.max_connections);
+    var c = config.main;
+    var pool = exports.get_pool(connection.server, c.port, c.host,
+                                c.connect_timeout, c.timeout, c.max_connections);
     pool.acquire(function (err, smtp_client) {
         connection.logdebug(plugin, 'Got smtp_client: ' + smtp_client.uuid);
 
@@ -331,12 +331,14 @@ exports.get_client_plugin = function (plugin, connection, config, callback) {
                     }
                 }
                 if (smtp_client.response[line].match(/^STARTTLS/) && !secured) {
-                    tls_key = plugin.config.get('tls_key.pem', 'binary');
-                    tls_cert = plugin.config.get('tls_cert.pem', 'binary');
-                    if (tls_key && tls_cert && enable_tls) {
-                        smtp_client.socket.on('secure', on_secured);
-                        smtp_client.send_command('STARTTLS');
-                        return;
+                    if (c.enable_tls) {
+                        tls_key = plugin.config.get('tls_key.pem', 'binary');
+                        tls_cert = plugin.config.get('tls_cert.pem', 'binary');
+                        if (tls_key && tls_cert) {
+                            smtp_client.socket.on('secure', on_secured);
+                            smtp_client.send_command('STARTTLS');
+                            return;
+                        }
                     }
                 }
 
