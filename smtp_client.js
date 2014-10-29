@@ -35,51 +35,51 @@ function SMTPClient(port, host, connect_timeout, idle_timeout) {
     this.connected = false;
     this.authenticated = false;
     this.auth_capabilities = [];
-    var self = this;
+    var client = this;
 
     this.socket.on('line', function (line) {
-        self.emit('server_protocol', line);
+        client.emit('server_protocol', line);
         var matches = smtp_regexp.exec(line);
         if (!matches) {
-            self.emit('error', self.uuid + ': Unrecognised response from upstream server: ' + line);
-            self.destroy();
+            client.emit('error', client.uuid + ': Unrecognised response from upstream server: ' + line);
+            client.destroy();
             return;
         }
 
         var code = matches[1],
             cont = matches[2],
             msg = matches[3];
-        self.response.push(msg);
+        client.response.push(msg);
         if (cont !== ' ') {
             return;
         }
 
-        if (self.command === 'ehlo') {
+        if (client.command === 'ehlo') {
             if (code.match(/^5/)) {
                 // Handle fallback to HELO if EHLO is rejected
-                self.emit('greeting', 'HELO');
+                client.emit('greeting', 'HELO');
                 return;
             }
-            self.emit('capabilities');
-            if (self.command != 'ehlo') {
+            client.emit('capabilities');
+            if (client.command != 'ehlo') {
                 return;
             }
         }
-        if (self.command === 'xclient' && code.match(/^5/)) {
+        if (client.command === 'xclient' && code.match(/^5/)) {
             // XCLIENT command was rejected (no permission?)
             // Carry on without XCLIENT
-            self.command = 'helo';
+            client.command = 'helo';
         }
         else if (code.match(/^[45]/)) {
-            self.emit('bad_code', code, self.response.join(' '));
-            if (self.state != STATE.ACTIVE) {
+            client.emit('bad_code', code, client.response.join(' '));
+            if (client.state != STATE.ACTIVE) {
                 return;
             }
         }
-        switch (self.command) {
+        switch (client.command) {
             case 'xclient':
-                self.xclient = true;
-                self.emit('xclient', 'EHLO');
+                client.xclient = true;
+                client.emit('xclient', 'EHLO');
                 break;
             case 'starttls':
                 if (tls_key && tls_cert) {
@@ -87,11 +87,11 @@ function SMTPClient(port, host, connect_timeout, idle_timeout) {
                 }
                 break;
             case 'greeting':
-                self.connected = true;
-                self.emit('greeting', 'EHLO');
+                client.connected = true;
+                client.emit('greeting', 'EHLO');
                 break;
             case 'ehlo':
-                self.emit('helo');
+                client.emit('helo');
                 break;
             case 'helo':
             case 'mail':
@@ -100,20 +100,20 @@ function SMTPClient(port, host, connect_timeout, idle_timeout) {
             case 'dot':
             case 'rset':
             case 'auth':
-                self.emit(self.command);
+                client.emit(client.command);
                 break;
             case 'quit':
-                self.emit('quit');
-                self.destroy();
+                client.emit('quit');
+                client.destroy();
                 break;
             default:
-                throw new Error("Unknown command: " + self.command);
+                throw new Error("Unknown command: " + client.command);
         }
     });
 
     this.socket.on('connect', function () {
         // Remove connection timeout and set idle timeout
-        self.socket.setTimeout(((idle_timeout) ? idle_timeout : 300) * 1000);
+        client.socket.setTimeout(((idle_timeout) ? idle_timeout : 300) * 1000);
     });
 
     var closed = function (msg) {
@@ -121,26 +121,26 @@ function SMTPClient(port, host, connect_timeout, idle_timeout) {
             if (!error) {
                 error = '';
             }
-            if (self.state === STATE.ACTIVE) {
-                self.emit('error', self.uuid + ': SMTP connection ' + msg + ' ' + error);
-                self.destroy();
+            if (client.state === STATE.ACTIVE) {
+                client.emit('error', client.uuid + ': SMTP connection ' + msg + ' ' + error);
+                client.destroy();
             }
             else {
-                logger.logdebug('[smtp_client_pool] ' + self.uuid + ': SMTP connection ' + msg + ' ' + error + ' (state=' + self.state + ')');
-                if (self.state === STATE.IDLE) {
-                    self.destroy();
+                logger.logdebug('[smtp_client_pool] ' + client.uuid + ': SMTP connection ' + msg + ' ' + error + ' (state=' + client.state + ')');
+                if (client.state === STATE.IDLE) {
+                    client.destroy();
                 }
-                else if (self.state === STATE.RELEASED) {
-                    self.destroy();
+                else if (client.state === STATE.RELEASED) {
+                    client.destroy();
                 }
             }
         };
     };
 
-    this.socket.on('error', closed('errored'));
+    this.socket.on('error',   closed('errored'));
     this.socket.on('timeout', closed('timed out'));
-    this.socket.on('close', closed('closed'));
-    this.socket.on('end', closed('ended'));
+    this.socket.on('close',   closed('closed'));
+    this.socket.on('end',     closed('ended'));
 }
 
 util.inherits(SMTPClient, events.EventEmitter);
