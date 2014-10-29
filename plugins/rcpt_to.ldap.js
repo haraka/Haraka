@@ -6,6 +6,7 @@ var util = require('util');
 
 exports.register = function() {
     var plugin = this;
+    plugin.inherits('host_list_base');
 
     try {
         plugin.ldap = require('ldapjs');
@@ -18,7 +19,7 @@ exports.register = function() {
     // only load this stuff if ldapjs loaded
     plugin.load_host_list();
     plugin.load_ldap_ini();
-    plugin.register_hook('rcpt', 'validate_rcpt');
+    plugin.register_hook('rcpt', 'ldap_rcpt');
 };
 
 exports.load_ldap_ini = function() {
@@ -27,24 +28,14 @@ exports.load_ldap_ini = function() {
     plugin.cfg = plugin.config.get('rcpt_to.ldap.ini', 'ini', plugin.load_ldap_ini);
 };
 
-exports.load_host_list = function () {
+exports.ldap_rcpt = function(next, connection, params) {
     var plugin = this;
-
-    plugin.loginfo(plugin, "loading host_list");
-    var lowered_list = {};  // assemble
-    var raw_list = plugin.config.get('host_list', 'list', plugin.load_host_list);
-    for (var i in raw_list) {
-        lowered_list[raw_list[i].toLowerCase()] = true;
-    }
-    plugin.host_list = lowered_list;
-};
-
-exports.validate_rcpt = function(next, connection, params) {
-    var plugin = this;
+    var txn = connection.transaction;
+    if (!txn) return next();
 
     var rcpt = params[0];
     if (!rcpt.host) {
-        connection.transaction.results.add(plugin, {fail: '!domain'});
+        txn.results.add(plugin, {fail: '!domain'});
         return next();
     }
     var domain = rcpt.host.toLowerCase();
@@ -54,28 +45,32 @@ exports.validate_rcpt = function(next, connection, params) {
         return next();
     }
 
-    var ar = connection.transaction.results.get('access');
+    var ar = txn.results.get('access');
     if (ar && ar.pass.length > 0 && ar.pass.indexOf("rcpt_to.access.whitelist") !== -1) {
         connection.loginfo(plugin, "skip whitelisted recipient");
         return next();
     }
 
+    txn.results.add(plugin, { msg: 'connecting' });
+
     var cfg = plugin.in_host_list(domain) ? plugin.cfg.main : plugin.cfg[domain];
-    var client = plugin.ldap.createClient({ url: cfg.server });
+    if (!cfg) {
+        connection.logerror(plugin, 'no LDAP config for ' + domain);
+        return next();
+    }
+
+    var client;
+    try { client = plugin.ldap.createClient({ url: cfg.server }); }
+    catch (e) {
+        connection.logerror(plugin, 'connect error: ' + e);
+        return next();
+    }
 
     client.bind(cfg.binddn, cfg.bindpw, function(err) {
         connection.logerror(plugin, 'error: ' + err);
     });
 
-    var plain_rcpt = rcpt.address().toLowerCase();
-    // JSON.stringify(rcpt.original).replace(/</, '').replace(/>/, '').replace(/"/g, '');
-
-    var opts = {
-        filter: '(&(objectClass=' + cfg.objectclass + ')(|(mail=' + plain_rcpt  + ')(mailAlternateAddress=' + plain_rcpt + ')))',
-        scope: 'sub',
-        attributes: ['dn', 'mail', 'mailAlternateAddress']
-    };
-
+    var opts = plugin.get_search_opts(cfg, rcpt);
     connection.logdebug(plugin, "Search filter is: " + util.inspect(opts));
 
     var search_result = function(err, res) {
@@ -103,15 +98,22 @@ exports.validate_rcpt = function(next, connection, params) {
     client.search(cfg.basedn, opts, search_result);
 };
 
-exports.in_host_list = function (domain) {
-    var plugin = this;
-    plugin.logdebug("checking " + domain + " in config/host_list");
-    if (plugin.host_list[domain]) return true;
-    return false;
+exports.get_search_opts = function (cfg, rcpt) {
+
+    var plain_rcpt = rcpt.address().toLowerCase();
+    // JSON.stringify(rcpt.original).replace(/</, '').replace(/>/, '').replace(/"/g, '');
+
+    return {
+        filter: '(&(objectClass=' + cfg.objectclass + ')(|(mail=' + plain_rcpt  + ')(mailAlternateAddress=' + plain_rcpt + ')))',
+        scope: 'sub',
+        attributes: ['dn', 'mail', 'mailAlternateAddress']
+    };
 };
 
 exports.in_ldap_ini = function (domain) {
     var plugin = this;
+    if (!domain) return false;
+    if (!plugin.cfg) return false;
     if (!plugin.cfg[domain]) return false;
     if (!plugin.cfg[domain].server) return false;
     return true;
