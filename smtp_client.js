@@ -127,7 +127,7 @@ function SMTPClient(port, host, connect_timeout, idle_timeout) {
             }
             else {
                 logger.logdebug('[smtp_client_pool] ' + self.uuid + ': SMTP connection ' + msg + ' ' + error + ' (state=' + self.state + ')');
-                if (self.state === STATE_IDLE) {
+                if (self.state === STATE.IDLE) {
                     self.destroy();
                 }
                 else if (self.state === STATE.RELEASED) {
@@ -264,7 +264,7 @@ exports.get_pool = function (server, port, host, connect_timeout, pool_timeout, 
         pool.acquire = function (callback, priority) {
             var callback_wrapper = function (err, smtp_client) {
                 smtp_client.pool = pool;
-                smtp_client.state = STATE_ACTIVE;
+                smtp_client.state = STATE.ACTIVE;
                 callback(err, smtp_client);
             };
             acquire.call(pool, callback_wrapper, priority);
