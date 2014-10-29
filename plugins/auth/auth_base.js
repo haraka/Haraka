@@ -54,14 +54,14 @@ exports.check_plain_passwd = function (connection, user, passwd, cb) {
     });
 };
 
-exports.check_cram_md5_passwd = function (ticket, user, passwd, cb) {
+exports.check_cram_md5_passwd = function (connection, user, passwd, cb) {
     this.get_plain_passwd(user, function (plain_pw) {
         if (plain_pw == null) {
             return cb(false);
         }
         
         var hmac = crypto.createHmac('md5', plain_pw);
-            hmac.update(ticket);
+            hmac.update(connection.notes.auth_ticket);
 
         if (hmac.digest('hex') === passwd) {
             return cb(true);
@@ -121,7 +121,7 @@ exports.check_user = function (next, connection, credentials, method) {
         plugin.check_plain_passwd(connection, credentials[0], credentials[1], passwd_ok);
     }
     else if (method === AUTH_METHOD_CRAM_MD5) {
-        plugin.check_cram_md5_passwd(connection.notes.auth_ticket, credentials[0], credentials[1], passwd_ok);
+        plugin.check_cram_md5_passwd(connection, credentials[0], credentials[1], passwd_ok);
     }
 };
 
