@@ -29,32 +29,36 @@ exports.load_ldap_ini = function() {
 
 exports.load_host_list = function () {
     var plugin = this;
+
     plugin.loginfo(plugin, "loading host_list");
-    plugin.host_list = plugin.config.get('host_list', 'list', plugin.load_host_list);
+    var lowered_list = {};  // assemble
+    var raw_list = plugin.config.get('host_list', 'list', plugin.load_host_list);
+    for (var i in raw_list) {
+        lowered_list[raw_list[i].toLowerCase()] = true;
+    }
+    plugin.host_list = lowered_list;
 };
 
 exports.validate_rcpt = function(next, connection, params) {
     var plugin = this;
 
     var domain = params[0].host.toLowerCase();
-    if (plugin.host_list.indexOf(domain) == -1) {
-        connection.loginfo(plugin, "Recipient domain is not local; skipping ldap check.");
+
+    if (!plugin.in_host_list(domain) && !plugin.in_ldap_ini(domain)) {
+        connection.logdebug(plugin, "domain '" + domain + "' is not local; skipping ldap.");
         return next();
     }
 
     var ar = connection.transaction.results.get('access');
-    if (ar && ar.pass.length >= 1) {
-        if (ar.pass.indexOf("rcpt_to.access.whitelist") !== -1) {
-            connection.loginfo(plugin, "Accepting whitelisted recipient.");
-            return next();
-        }
+    if (ar && ar.pass.length > 0 && ar.pass.indexOf("rcpt_to.access.whitelist") !== -1) {
+        connection.loginfo(plugin, "Accepting whitelisted recipient.");
+        return next();
     }
 
-    var client = plugin.ldap.createClient({
-        url: plugin.cfg.main.server
-    });
+    var cfg = plugin.in_host_list(domain) ? plugin.cfg.main : plugin.cfg[domain];
+    var client = plugin.ldap.createClient({ url: cfg.server });
 
-    client.bind(plugin.cfg.main.binddn, plugin.cfg.main.bindpw, function(err) {
+    client.bind(cfg.binddn, cfg.bindpw, function(err) {
         connection.logerror(plugin, 'error: ' + err);
     });
 
@@ -62,14 +66,14 @@ exports.validate_rcpt = function(next, connection, params) {
     var plain_rcpt = JSON.stringify(rcpt.original).replace('<', '').replace('>', '').replace('"', '').replace('"', '');
 
     var opts = {
-        filter: '(&(objectClass=' + plugin.cfg.main.objectclass + ')(|(mail=' + plain_rcpt  + ')(mailAlternateAddress=' + plain_rcpt + ')))',
+        filter: '(&(objectClass=' + cfg.objectclass + ')(|(mail=' + plain_rcpt  + ')(mailAlternateAddress=' + plain_rcpt + ')))',
         scope: 'sub',
         attributes: ['dn', 'mail', 'mailAlternateAddress']
     };
 
     connection.logdebug(plugin, "Search filter is: " + util.inspect(opts));
 
-    client.search(plugin.cfg.main.basedn, opts, function(err, res) {
+    client.search(cfg.basedn, opts, function(err, res) {
         var items = [];
         res.on('searchEntry', function(entry) {
             connection.logdebug(plugin, 'entry: ' + JSON.stringify(entry.object));
@@ -90,4 +94,18 @@ exports.validate_rcpt = function(next, connection, params) {
             }
         });
     });
+};
+
+exports.in_host_list = function (domain) {
+    var plugin = this;
+    plugin.logdebug("checking " + domain + " in config/host_list");
+    if (plugin.host_list[domain]) return true;
+    return false;
+};
+
+exports.in_ldap_ini = function (domain) {
+    var plugin = this;
+    if (!plugin.cfg[domain]) return false;
+    if (!plugin.cfg[domain].server) return false;
+    return true;
 };
