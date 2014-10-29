@@ -16,12 +16,14 @@ exports.register = function () {
                 '+check.user_agent',
                 '+check.direct_to_mx',
                 '+check.from_match',
+                '+check.delivered_to',
                 '+check.mailing_list',
 
                 '-reject.duplicate_singular',
                 '-reject.missing_required',
                 '-reject.invalid_return_path',
                 '-reject.invalid_date',
+                '+reject.delivered_to',
             ],
         }, load_config);
     };
@@ -41,6 +43,7 @@ exports.register = function () {
     this.register_hook('data_post', 'direct_to_mx');
     if (plugin.addrparser) {
         this.register_hook('data_post', 'from_match');
+        this.register_hook('data_post', 'delivered_to');
     }
     this.register_hook('data_post', 'mailing_list');
 };
@@ -298,6 +301,27 @@ exports.from_match = function (next, connection) {
     connection.transaction.results.add(plugin, {emit: true,
         fail: 'from_match(' + env_dom + ' / ' + msg_dom + ')'
     });
+    return next();
+};
+
+exports.delivered_to = function (next, connection) {
+    var plugin = this;
+    if (!plugin.cfg.check.delivered_to) { return next(); }
+
+    var txn = connection.transaction;
+    if (!txn) return next();
+    var del_to = txn.header.get('Delivered-To');
+    if (!del_to) return next();
+
+    var rcpts = connection.transaction.rcpt_to;
+    for (var i=0; i<rcpts.length; i++) {
+        var rcpt = rcpts[i].address();
+        if (rcpt !== del_to) continue;
+        connection.transaction.results.add(plugin, {emit: true, fail: 'delivered_to'});
+        if (!plugin.cfg.reject.delivered_to) continue;
+        return next(DENY, "Invalid Delivered-To header content");
+    }
+
     return next();
 };
 

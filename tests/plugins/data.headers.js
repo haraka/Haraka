@@ -1,3 +1,4 @@
+/* jshint node: true */
 
 var stub         = require('../fixtures/stub'),
     Plugin       = require('../fixtures/stub_plugin'),
@@ -5,22 +6,22 @@ var stub         = require('../fixtures/stub'),
     Address      = require('../../address'),
     configfile   = require('../../configfile'),
     config       = require('../../config'),
+    constants    = require('../../constants'),
     Header       = require('../../mailheader').Header,
     ResultStore  = require("../../result_store");
+
+constants.import(global);
 
 function _set_up(callback) {
     this.backup = {};
 
-    // needed for tests
     this.plugin = Plugin('data.headers');
-    this.plugin.name = 'data.headers';  // TODO: delete after PR#495 merged
     this.plugin.config = config;
     this.plugin.register();
     try {
         this.plugin.addrparser = require('address-rfc2822');
     }
-    catch (e) {
-    }
+    catch (ignore) {}
 
     // stub out functions
     this.connection = Connection.createConnection();
@@ -28,6 +29,7 @@ function _set_up(callback) {
     this.connection.transaction = {
         header: new Header(),
         results: new ResultStore(this.plugin),
+        rcpt_to: [],
     };
     this.connection.notes = {};
 
@@ -294,5 +296,69 @@ exports.mailing_list = {
         this.connection.transaction.header.add_end('X-Google-Loop', "blah-blah whatcha");
         this.plugin.mailing_list(next_cb, this.connection);
         test.done();
+    },
+};
+
+exports.delivered_to = {
+    setUp : _set_up,
+    tearDown : _tear_down,
+    'disabled': function (test) {
+        test.expect(2);
+        var next_cb = function(res, msg) {
+            test.equal(undefined, res);
+            test.equal(undefined, msg);
+            test.done();
+        }.bind(this);
+        this.plugin.cfg.check.delivered_to=false;
+        this.plugin.delivered_to(next_cb, this.connection);
+    },
+    'header not present': function (test) {
+        test.expect(2);
+        var next_cb = function(res, msg) {
+            test.equal(undefined, res);
+            test.equal(undefined, msg);
+            test.done();
+        }.bind(this);
+        this.plugin.cfg.check.delivered_to=true;
+        this.plugin.delivered_to(next_cb, this.connection);
+    },
+    'no recipient match': function (test) {
+        test.expect(2);
+        var next_cb = function(res, msg) {
+            test.equal(undefined, res);
+            test.equal(undefined, msg);
+            test.done();
+        }.bind(this);
+        this.plugin.cfg.check.delivered_to=true;
+        // this.connection.transaction.mail_from = new Address.Address('<test@example.com>');
+        this.connection.transaction.header.add_end('Delivered-To', "user@example.com");
+        this.plugin.delivered_to(next_cb, this.connection);
+    },
+    'recipient match': function (test) {
+        test.expect(2);
+        var next_cb = function(res, msg) {
+            test.equal(DENY, res);
+            test.equal('Invalid Delivered-To header content', msg);
+            test.done();
+        }.bind(this);
+        this.plugin.cfg.check.delivered_to=true;
+        // this.connection.transaction.mail_from = new Address.Address('<test@example.com>');
+        this.connection.transaction.header.add_end('Delivered-To', "user@example.com");
+        this.connection.transaction.rcpt_to.push(new Address.Address('user@example.com'));
+        this.plugin.delivered_to(next_cb, this.connection);
+    },
+    'recipient match, reject disabled': function (test) {
+        test.expect(2);
+        var next_cb = function(res, msg) {
+            test.equal(undefined, res);
+            test.equal(undefined, msg);
+            test.done();
+        }.bind(this);
+        this.plugin.cfg.check.delivered_to=true;
+        this.plugin.cfg.reject.delivered_to=false;
+        // this.connection.transaction.mail_from = new Address.Address('<test@example.com>');
+        this.connection.transaction.header.add_end('Delivered-To', "user@example.com");
+        this.connection.transaction.rcpt_to.push(new Address.Address('user@example.com'));
+        this.plugin.delivered_to(next_cb, this.connection);
     },
 };
