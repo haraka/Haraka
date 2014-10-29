@@ -59,13 +59,13 @@ Server.daemonize = function (config_data) {
 };
 
 Server.flushQueue = function () {
-    if (Server.cluster) {
-        for (var id in cluster.workers) {
-            cluster.workers[id].send({event: 'outbound.flush_queue'});
-        }
-    }
-    else {
+    if (!Server.cluster) {
         out.flush_queue();
+        return;
+    }
+
+    for (var id in cluster.workers) {
+        cluster.workers[id].send({event: 'outbound.flush_queue'});
     }
 };
 
@@ -97,32 +97,31 @@ Server.get_listen_addrs = function (cfg, port) {
 };
 
 Server.createServer = function (params) {
-    var config_data = config.get('smtp.ini');
+    var cfg = config.get('smtp.ini');
     for (var key in params) {
-        if (typeof params[key] !== 'function') {
-            config_data.main[key] = params[key];
-        }
+        if (typeof params[key] === 'function') continue;
+        cfg.main[key] = params[key];
     }
 
-    // config_data defaults
-    apply_defaults(config_data.main);
+    // cfg defaults
+    apply_defaults(cfg.main);
 
     Server.notes = {};
     plugins.server = Server;
     plugins.load_plugins();
 
-    var inactivity_timeout = (config_data.main.inactivity_timeout || 300) * 1000;
+    var inactivity_timeout = (cfg.main.inactivity_timeout || 300) * 1000;
 
     // Cluster
-    if (!cluster || !config_data.main.nodes) {
-        this.daemonize(config_data);
-        setup_listeners(config_data, plugins, "master", inactivity_timeout);
+    if (!cluster || !cfg.main.nodes) {
+        this.daemonize(cfg);
+        setup_smtp_listeners(cfg, plugins, "master", inactivity_timeout);
         return;
     }
 
     Server.cluster = cluster;
     if (!cluster.isMaster) {      // Workers
-        setup_listeners(config_data, plugins, "child", inactivity_timeout);
+        setup_smtp_listeners(cfg, plugins, "child", inactivity_timeout);
         return;
     }
 
@@ -131,10 +130,10 @@ Server.createServer = function (params) {
             Server.logcrit("Scanning queue failed. Shutting down.");
             process.exit(1);
         }
-        Server.daemonize(config_data);
+        Server.daemonize(cfg);
         // Fork workers
-        var workers = (config_data.main.nodes === 'cpus') ?
-            os.cpus().length : config_data.main.nodes;
+        var workers = (cfg.main.nodes === 'cpus') ?
+            os.cpus().length : cfg.main.nodes;
         var new_workers = [];
         for (var i=0; i<workers; i++) {
             new_workers.push(cluster.fork({ CLUSTER_MASTER_PID: process.pid }));
@@ -197,7 +196,7 @@ Server.get_smtp_server = function (host, port, inactivity_timeout) {
     return server;
 };
 
-function setup_listeners (cfg, plugins, type, inactivity_timeout) {
+function setup_smtp_listeners (cfg, plugins, type, inactivity_timeout) {
 
     var listeners = Server.get_listen_addrs(cfg.main);
 
@@ -285,17 +284,17 @@ Server.init_child_respond = function (retval, msg) {
 };
 
 Server.listening = function () {
-    var config_data = config.get('smtp.ini');
+    var cfg = config.get('smtp.ini');
 
     // Drop privileges
-    if (config_data.main.group) {
+    if (cfg.main.group) {
         Server.lognotice('Switching from current gid: ' + process.getgid());
-        process.setgid(config_data.main.group);
+        process.setgid(cfg.main.group);
         Server.lognotice('New gid: ' + process.getgid());
     }
-    if (config_data.main.user) {
+    if (cfg.main.user) {
         Server.lognotice('Switching from current uid: ' + process.getuid());
-        process.setuid(config_data.main.user);
+        process.setuid(cfg.main.user);
         Server.lognotice('New uid: ' + process.getuid());
     }
 
