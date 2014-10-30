@@ -21,21 +21,28 @@ var Server = exports;
 
 var defaults = {
     inactivity_timeout: 600,
-    daemonize: false,
     daemon_log_file: '/var/log/haraka.log',
     daemon_pid_file: '/var/run/haraka.pid'
 };
 
-function apply_defaults(obj) {
+Server.load_smtp_ini = function () {
+    Server.cfg = config.get('smtp.ini', {
+        booleans: [
+            '-main.daemonize',
+            ],
+    },
+    Server.load_smtp_ini);
+
     for (var key in defaults) {
-        obj[key] = obj[key] || defaults[key];
+        if (Server.cfg[key] !== undefined) continue;
+        Server.cfg[key] = defaults[key];
     }
-}
+};
+Server.load_smtp_ini();
 
 Server.daemonize = function (config_data) {
-    if (!/^(?:1|true|yes|enabled|on)$/i.test(config_data.main.daemonize)) {
-        return;
-    }
+    var c = this.cfg.main;
+    if (!c.daemonize) return;
 
     if (!process.env.__daemon) {
         // Remove process.on('exit') listeners otherwise
@@ -44,13 +51,13 @@ Server.daemonize = function (config_data) {
         logger.lognotice('Daemonizing...');
     }
 
-    var log_fd = require('fs').openSync(config_data.main.daemon_log_file, 'a');
+    var log_fd = require('fs').openSync(c.daemon_log_file, 'a');
     daemon({stdout: log_fd});
 
     // We are the daemon from here on...
     var npid = require('npid');
     try {
-        npid.create(config_data.main.daemon_pid_file).removeOnExit();
+        npid.create(c.daemon_pid_file).removeOnExit();
     }
     catch (err) {
         logger.logerror(err.message);
@@ -97,31 +104,28 @@ Server.get_listen_addrs = function (cfg, port) {
 };
 
 Server.createServer = function (params) {
-    var cfg = config.get('smtp.ini');
+    var c = Server.cfg.main;
     for (var key in params) {
         if (typeof params[key] === 'function') continue;
-        cfg.main[key] = params[key];
+        c[key] = params[key];
     }
-
-    // cfg defaults
-    apply_defaults(cfg.main);
 
     Server.notes = {};
     plugins.server = Server;
     plugins.load_plugins();
 
-    var inactivity_timeout = (cfg.main.inactivity_timeout || 300) * 1000;
+    var inactivity_timeout = (c.inactivity_timeout || 300) * 1000;
 
-    if (!cluster || !cfg.main.nodes) {
-        this.daemonize(cfg);
-        setup_smtp_listeners(cfg, plugins, "master", inactivity_timeout);
+    if (!cluster || !c.nodes) {
+        Server.daemonize(c);
+        Server.setup_smtp_listeners(plugins, 'master', inactivity_timeout);
         return;
     }
 
     // Cluster
     Server.cluster = cluster;
     if (!cluster.isMaster) {      // Workers
-        setup_smtp_listeners(cfg, plugins, "child", inactivity_timeout);
+        Server.setup_smtp_listeners(plugins, "child", inactivity_timeout);
         return;
     }
 
@@ -131,10 +135,9 @@ Server.createServer = function (params) {
             Server.logcrit("Scanning queue failed. Shutting down.");
             process.exit(1);
         }
-        Server.daemonize(cfg);
+        Server.daemonize();
         // Fork workers
-        var workers = (cfg.main.nodes === 'cpus') ?
-            os.cpus().length : cfg.main.nodes;
+        var workers = (c.nodes === 'cpus') ? os.cpus().length : c.nodes;
         var new_workers = [];
         for (var i=0; i<workers; i++) {
             new_workers.push(cluster.fork({ CLUSTER_MASTER_PID: process.pid }));
@@ -197,9 +200,9 @@ Server.get_smtp_server = function (host, port, inactivity_timeout) {
     return server;
 };
 
-function setup_smtp_listeners (cfg, plugins, type, inactivity_timeout) {
+Server.setup_smtp_listeners = function (plugins, type, inactivity_timeout) {
 
-    var listeners = Server.get_listen_addrs(cfg.main);
+    var listeners = Server.get_listen_addrs(Server.cfg.main);
 
     var runInitHooks = function (err) {
         if (err) {
@@ -247,7 +250,7 @@ function setup_smtp_listeners (cfg, plugins, type, inactivity_timeout) {
     };
 
     async.each(listeners, setupListener, runInitHooks);
-}
+};
 
 Server.init_master_respond = function (retval, msg) {
     Server.ready = 1;
@@ -287,17 +290,17 @@ Server.init_child_respond = function (retval, msg) {
 };
 
 Server.listening = function () {
-    var cfg = config.get('smtp.ini');
+    var c = Server.cfg.main;
 
     // Drop privileges
-    if (cfg.main.group) {
+    if (c.group) {
         Server.lognotice('Switching from current gid: ' + process.getgid());
-        process.setgid(cfg.main.group);
+        process.setgid(c.group);
         Server.lognotice('New gid: ' + process.getgid());
     }
-    if (cfg.main.user) {
+    if (c.user) {
         Server.lognotice('Switching from current uid: ' + process.getuid());
-        process.setuid(cfg.main.user);
+        process.setuid(c.user);
         Server.lognotice('New uid: ' + process.getuid());
     }
 
