@@ -19,12 +19,6 @@ logger.add_log_methods(exports, 'server');
 
 var Server = exports;
 
-var defaults = {
-    inactivity_timeout: 600,
-    daemon_log_file: '/var/log/haraka.log',
-    daemon_pid_file: '/var/run/haraka.pid'
-};
-
 Server.load_smtp_ini = function () {
     Server.cfg = config.get('smtp.ini', {
         booleans: [
@@ -32,6 +26,12 @@ Server.load_smtp_ini = function () {
             ],
     },
     Server.load_smtp_ini);
+
+    var defaults = {
+        inactivity_timeout: 600,
+        daemon_log_file: '/var/log/haraka.log',
+        daemon_pid_file: '/var/run/haraka.pid'
+    };
 
     for (var key in defaults) {
         if (Server.cfg[key] !== undefined) continue;
