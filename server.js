@@ -112,19 +112,20 @@ Server.createServer = function (params) {
 
     var inactivity_timeout = (cfg.main.inactivity_timeout || 300) * 1000;
 
-    // Cluster
     if (!cluster || !cfg.main.nodes) {
         this.daemonize(cfg);
         setup_smtp_listeners(cfg, plugins, "master", inactivity_timeout);
         return;
     }
 
+    // Cluster
     Server.cluster = cluster;
     if (!cluster.isMaster) {      // Workers
         setup_smtp_listeners(cfg, plugins, "child", inactivity_timeout);
         return;
     }
 
+    // Master
     out.scan_queue_pids(function (err, pids) {
         if (err) {
             Server.logcrit("Scanning queue failed. Shutting down.");
@@ -200,18 +201,25 @@ function setup_smtp_listeners (cfg, plugins, type, inactivity_timeout) {
 
     var listeners = Server.get_listen_addrs(cfg.main);
 
-    async.each(listeners, function (host_port, cb) {
+    var runInitHooks = function (err) {
+        if (err) {
+            logger.logerror("Failed to setup listeners: " + err.message);
+            return process.exit(-1);
+        }
+        Server.listening();
+        plugins.run_hooks('init_' + type, Server);
+    };
+
+    var setupListener = function (host_port, cb) {
+
         var hp = /^\[?([^\]]+)\]?:(\d+)$/.exec(host_port);
         if (!hp) {
             return cb(new Error("Invalid format for listen parameter in smtp.ini"));
         }
+        var host = hp[1];
+        var port = hp[2];
 
-        var conn_cb = function (client) {
-            client.setTimeout(inactivity_timeout);
-            conn.createConnection(client, server);
-        };
-
-        var server = Server.get_smtp_server(hp[1], hp[0], inactivity_timeout);
+        var server = Server.get_smtp_server(host, port, inactivity_timeout);
         if (!server) return cb();
 
         server.notes = Server.notes;
@@ -226,8 +234,8 @@ function setup_smtp_listeners (cfg, plugins, type, inactivity_timeout) {
         // Fallback from IPv6 to IPv4 if not supported
         // But only if we supplied the default of [::0]:25
         server.on('error', function (e) {
-            if (e.code === 'EAFNOSUPPORT' && /^::0/.test(hp[1]) && Server.default_host) {
-                server.listen(hp[2], '0.0.0.0');
+            if (e.code === 'EAFNOSUPPORT' && /^::0/.test(host) && Server.default_host) {
+                server.listen(port, '0.0.0.0');
             }
             else {
                 // Pass error to callback
@@ -235,15 +243,10 @@ function setup_smtp_listeners (cfg, plugins, type, inactivity_timeout) {
             }
         });
 
-        server.listen(hp[2], hp[1]);
-    }, function (err) {
-        if (err) {
-            logger.logerror("Failed to setup listeners: " + err.message);
-            return process.exit(-1);
-        }
-        Server.listening();
-        plugins.run_hooks('init_' + type, Server);
-    });
+        server.listen(port, host);
+    };
+
+    async.each(listeners, setupListener, runInitHooks);
 }
 
 Server.init_master_respond = function (retval, msg) {
