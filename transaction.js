@@ -56,10 +56,10 @@ Transaction.prototype.ensure_body = function() {
         this.body.set_banner(this.banner);
     }
     this.body_filters.forEach(function(o) {
-        self.body.add_filter(function(ct, buf) {
+        self.body.add_filter(function(ct, enc, buf) {
             if ((o.ct_match instanceof RegExp && o.ct_match.test(ct.toLowerCase()))
                         || ct.toLowerCase().indexOf(String(o.ct_match).toLowerCase()) === 0) {
-                return o.filter(ct, buf);
+                return o.filter(ct, enc, buf);
             }
         });
     });

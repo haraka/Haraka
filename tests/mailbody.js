@@ -62,7 +62,7 @@ exports.filters = {
         test.expect(2);
 
         var body = new Body();
-        body.add_filter(function (ct, buf) { });
+        body.add_filter(function (ct, enc, buf) { });
         var parts = _fill_body(body);
 
         test.ok(/Some text/.test(parts[0]));
@@ -73,7 +73,7 @@ exports.filters = {
         test.expect(2);
 
         var body = new Body();
-        body.add_filter(function (ct, buf) {
+        body.add_filter(function (ct, enc, buf) {
             if (/^text\/plain/.test(ct)) {
                 return new Buffer("TEXT FILTERED");
             }

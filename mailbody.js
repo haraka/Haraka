@@ -63,7 +63,7 @@ function _get_html_insert_position (buf) {
     return buf.length - 1; // default is at the end
 }
 
-function insert_banner (ct, buf, banners) {
+function insert_banner (ct, enc, buf, banners) {
     if (!banners || !/^text\//i.test(ct)) {
         return;
     }
@@ -126,7 +126,7 @@ function insert_banner (ct, buf, banners) {
 }
 
 Body.prototype.set_banner = function (banners) {
-    this.add_filter(function (ct, buf) { return insert_banner(ct, buf, banners); });
+    this.add_filter(function (ct, enc, buf) { return insert_banner(ct, enc, buf, banners); });
 }
 
 Body.prototype.parse_more = function (line) {
@@ -252,7 +252,7 @@ Body.prototype.parse_end = function (line) {
 
             var new_buf = buf;
             this.filters.forEach(function (filter) {
-                new_buf = filter(ct, new_buf) || new_buf;
+                new_buf = filter(ct, enc, new_buf) || new_buf;
             });
 
             // Now convert back to base_64 or QP if required:
