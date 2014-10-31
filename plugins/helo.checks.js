@@ -502,7 +502,9 @@ exports.get_a_records = function (host, cb) {
     }
 
     // Set-up timer
+    var timed_out = false;
     var timer = setTimeout(function () {
+        timed_out = true;
         var err = new Error('timeout resolving: ' + host);
         err.code = 'ETIMEOUT';
         plugin.logerror(err);
@@ -514,6 +516,7 @@ exports.get_a_records = function (host, cb) {
 
     // do the queries
     dns.resolve(host, function(err, ips) {
+        if (timed_out) { return; }
         if (timer) { clearTimeout(timer); }
         if (err) { return cb(err, ips); }
         // plugin.logdebug(plugin, host + ' => ' + ips);
