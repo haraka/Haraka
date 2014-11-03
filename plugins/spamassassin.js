@@ -3,31 +3,33 @@
 var sock = require('./line_socket');
 var utils = require('./utils');
 
-var defaults = {
-    spamd_socket: 'localhost:783',
-    max_size:     500000,
-    old_headers_action: "rename",
-    subject_prefix: "*** SPAM ***",
-};
-
 exports.register = function () {
     var plugin = this;
-    var load_config = function () {
-        plugin.loginfo("loading spamassassin.ini");
-        plugin.cfg = plugin.config.get('spamassassin.ini', load_config);
+    plugin.load_spamassassin_ini();
+};
 
-        for (var key in defaults) {
-            if (plugin.cfg.main[key]) continue;
-            plugin.cfg.main[key] = defaults[key];
-        }
+exports.load_spamassassin_ini = function () {
+    var plugin = this;
+    plugin.loginfo("loading spamassassin.ini");
+    plugin.cfg = plugin.config.get('spamassassin.ini', plugin.load_spamassassin_ini);
 
-        ['reject_threshold', 'relay_reject_threshold',
-        'munge_subject_threshold', 'max_size'].forEach(function (item) {
-            if (!plugin.cfg.main[item]) return;
-            plugin.cfg.main[item] = Number(plugin.cfg.main[item]);
-        });
+    var defaults = {
+        spamd_socket: 'localhost:783',
+        max_size:     500000,
+        old_headers_action: "rename",
+        subject_prefix: "*** SPAM ***",
     };
-    load_config();
+
+    for (var key in defaults) {
+        if (plugin.cfg.main[key]) continue;
+        plugin.cfg.main[key] = defaults[key];
+    }
+
+    ['reject_threshold', 'relay_reject_threshold',
+    'munge_subject_threshold', 'max_size'].forEach(function (item) {
+        if (!plugin.cfg.main[item]) return;
+        plugin.cfg.main[item] = Number(plugin.cfg.main[item]);
+    });
 };
 
 exports.hook_data_post = function (next, connection) {
