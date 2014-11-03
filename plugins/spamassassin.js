@@ -41,21 +41,7 @@ exports.hook_data_post = function (next, connection) {
 
     var username        = plugin.get_spamd_username(connection);
     var headers         = plugin.get_spamd_headers(connection, username);
-    var socket          = plugin.get_spamd_socket(next, connection);
-    socket.is_connected = false;
-    var results_timeout = parseInt(plugin.cfg.main.results_timeout) || 300;
-
-    socket.on('connect', function () {
-        if (!connection.transaction) {
-            socket.end();
-            return next();
-        }
-        this.is_connected = true;
-        // Reset timeout
-        this.setTimeout(results_timeout * 1000);
-        socket.write(headers.join("\r\n") + "\r\n");
-        connection.transaction.message_stream.pipe(socket);
-    });
+    var socket          = plugin.get_spamd_socket(next, connection, headers);
 
     var spamd_response = { headers: {} };
     var state = 'line0';
@@ -149,7 +135,7 @@ exports.fixup_old_headers = function (transaction) {
                 transaction.remove_header('X-Spam-' + key);
             }
             break;
-        // case "rename":
+        // case 'rename':
         default:
             for (key in headers) {
                 if (!key) continue;
@@ -217,7 +203,7 @@ exports.score_too_high = function (connection, spamd_response) {
         return "spam score exceeded threshold";
     }
 
-    return;
+    return false;
 };
 
 exports.get_spamd_username = function(connection) {
@@ -258,20 +244,32 @@ exports.get_spamd_headers = function(connection, username) {
     return headers;
 };
 
-exports.get_spamd_socket = function(next, connection) {
+exports.get_spamd_socket = function(next, connection, headers) {
     var plugin = this;
     // TODO: support multiple spamd backends
-    var socket = new sock.Socket();
-    if (plugin.cfg.main.spamd_socket.match(/\//)) {    // assume unix socket
-        socket.connect(plugin.cfg.main.spamd_socket);
-    }
-    else {
-        var hostport = plugin.cfg.main.spamd_socket.split(/:/);
-        socket.connect((hostport[1] || 783), hostport[0]);
-    }
 
-    var connect_timeout = parseInt(plugin.cfg.main.connect_timeout) || 30;
-    socket.setTimeout(connect_timeout * 1000);
+    var socket = new sock.Socket();
+    socket.is_connected = false;
+    var results_timeout = parseInt(plugin.cfg.main.results_timeout) || 300;
+
+    socket.on('connect', function () {
+        if (!connection.transaction) {
+            socket.end();
+            return next();
+        }
+        this.is_connected = true;
+        // Reset timeout
+        this.setTimeout(results_timeout * 1000);
+        socket.write(headers.join("\r\n") + "\r\n");
+        connection.transaction.message_stream.pipe(socket);
+    });
+
+    socket.on('error', function (err) {
+        connection.logerror(plugin, 'connection failed: ' + err);
+        // TODO: optionally DENYSOFT
+        // TODO: add a transaction note
+        return next();
+    });
 
     socket.on('timeout', function () {
         if (!this.is_connected) {
@@ -283,12 +281,18 @@ exports.get_spamd_socket = function(next, connection) {
         socket.end();
         return next();
     });
-    socket.on('error', function (err) {
-        connection.logerror(plugin, 'connection failed: ' + err);
-        // TODO: optionally DENYSOFT
-        // TODO: add a transaction note
-        return next();
-    });
+
+    var connect_timeout = parseInt(plugin.cfg.main.connect_timeout) || 30;
+    socket.setTimeout(connect_timeout * 1000);
+
+    if (plugin.cfg.main.spamd_socket.match(/\//)) {    // assume unix socket
+        socket.connect(plugin.cfg.main.spamd_socket);
+    }
+    else {
+        var hostport = plugin.cfg.main.spamd_socket.split(/:/);
+        socket.connect((hostport[1] || 783), hostport[0]);
+    }
+
     return socket;
 };
 
