@@ -1,4 +1,7 @@
+'use strict';
 // Call spamassassin via spamd
+/* jshint node: true */
+/* global DENY */
 
 var sock = require('./line_socket');
 var utils = require('./utils');
@@ -67,8 +70,8 @@ exports.hook_data_post = function (next, connection) {
         }
         else if (state === 'response') {
             if (line.match(/\S/)) {
-                var matches;
-                if (matches = line.match(/Spam: (True|False) ; (-?\d+\.\d) \/ (-?\d+\.\d)/)) {
+                var matches = line.match(/Spam: (True|False) ; (-?\d+\.\d) \/ (-?\d+\.\d)/);
+                if (matches) {
                     spamd_response.flag = matches[1];
                     spamd_response.score = matches[2];
                     spamd_response.hits = matches[2];  // backwards compat
@@ -81,8 +84,8 @@ exports.hook_data_post = function (next, connection) {
             }
         }
         else if (state === 'headers') {
-            var m;
-            if (m = line.match(/^X-Spam-([\x21-\x39\x3B-\x7E]+):\s*(.*)/)) {
+            var m = line.match(/^X-Spam-([\x21-\x39\x3B-\x7E]+):\s*(.*)/);
+            if (m) {
                 connection.logdebug(plugin, "header: " + line);
                 last_header = m[1];
                 spamd_response.headers[m[1]] = m[2];
@@ -136,18 +139,19 @@ exports.fixup_old_headers = function (transaction) {
     var action = plugin.cfg.main.old_headers_action;
     var headers = transaction.notes.spamassassin.headers;
 
+    var key;
     switch (action) {
         case "keep":
             break;
         case "drop":
-            for (var key in headers) {
+            for (key in headers) {
                 if (!key) continue;
                 transaction.remove_header('X-Spam-' + key);
             }
             break;
-        case "rename":
+        // case "rename":
         default:
-            for (var key in headers) {
+            for (key in headers) {
                 if (!key) continue;
                 key = 'X-Spam-' + key;
                 var old_val = transaction.header.get(key);
@@ -286,7 +290,7 @@ exports.get_spamd_socket = function(next, connection) {
         return next();
     });
     return socket;
-}
+};
 
 exports.msg_too_big = function(connection) {
     var plugin = this;
@@ -309,4 +313,4 @@ exports.log_results = function(connection, spamd_response) {
           ', reject=' + ((connection.relaying) ?
              (cfg.relay_reject_threshold || cfg.reject_threshold) : cfg.reject_threshold) +
           ', tests="' + spamd_response.tests + '"');
-}
+};
