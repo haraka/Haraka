@@ -762,18 +762,10 @@ exports.check_asn_neighborhood = function (connection, asnkey, expire) {
         var net_score = parseFloat(res.good || 0) - (res.bad || 0);
         if (!net_score) { return; }
 
-        var award = 1;
-        if (plugin.cfg.asn.award && !isNaN(plugin.cfg.asn.award)) {
-            award = parseFloat(plugin.cfg.asn.award);
-        }
-
-        // less than +/- 5 either way is not enough history
         if (net_score < -5) {
-            connection.results.incr(plugin, {connect: (award * -1)});
             connection.results.add(plugin, {fail: 'neighbors'});
         }
         if (net_score > 5) {
-            connection.results.incr(plugin, {connect: award});
             connection.results.add(plugin, {pass: 'neighbors'});
         }
         connection.results.add(plugin, {neighbors: net_score, emit: true});
