@@ -273,7 +273,7 @@ exports.get_spamd_socket = function(next, connection, headers) {
 
     socket.on('timeout', function () {
         if (!this.is_connected) {
-            connection.logerror(plugin, 'connection timed out');
+            connection.logerror(plugin, 'spamd connection timed out');
         }
         else {
             connection.logerror(plugin, 'timeout waiting for results');
