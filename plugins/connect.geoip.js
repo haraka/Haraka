@@ -1,24 +1,140 @@
-var net       = require('net'),
-    net_utils = require('./net_utils');
+var async     = require('async');
+var fs        = require('fs');
+var net       = require('net');
+var net_utils = require('./net_utils');
 
 exports.register = function () {
     var plugin = this;
+
+    plugin.load_geoip_ini();
+
+    plugin.load_maxmind();
+    plugin.load_geoip_lite();
+};
+
+exports.load_geoip_ini = function () {
+    var plugin = this;
+    plugin.cfg = plugin.config.get('connect.geoip.ini', {
+            booleans: [
+                '+main.show_city',
+                '+main.show_region',
+                '-main.calc_distance',
+            ],
+        },
+        plugin.load_geoip_ini
+    );
+};
+
+exports.load_maxmind = function (loadDone) {
+    var plugin = this;
+
+    try {
+        plugin.maxmind = require('maxmind');
+    }
+    catch (e) {
+        plugin.logerror(e);
+        plugin.logerror("unable to load maxmind, try\n\n\t'npm install -g maxmind'\n\n");
+        if (loadDone) loadDone();
+        return;
+    }
+
+    var dbs = ['GeoIPCity', 'GeoIP', 'GeoIPv6',  'GeoIPASNum', 'GeoISP',
+               'GeoIPNetSpeedCell',  'GeoIPOrg', 'GeoLiteCityV6'];
+    var dbsFound = [];
+
+    var fsDone = function (err) {
+        if (err) { plugin.logerror(err); }
+        if (dbsFound.length === 0) {
+            plugin.logerror('no GeoIP DBs found');
+            if (loadDone) loadDone();
+            return;
+        }
+        plugin.db_loaded=true;
+        plugin.maxmind.init(dbsFound, {indexCache: true, checkForUpdates: true});
+        plugin.register_hook('connect',     'maxmind_lookup');
+        plugin.register_hook('data_post',   'geoip_headers');
+        if (loadDone) loadDone();
+    };
+
+    var dbdir = plugin.cfg.main.dbdir || '/usr/local/share/GeoIP/';
+    var fsIter = function (file, iterDone) {
+        var path = dbdir + file + '.dat';
+
+        fs.exists(path, function (exists) {
+            if (!exists) return iterDone();
+            dbsFound.push(path);
+            iterDone();
+        });
+    };
+
+    async.each(dbs, fsIter, fsDone);
+};
+
+exports.load_geoip_lite = function () {
+    var plugin = this;
+    if (plugin.db_loaded) return;
+
     try {
         plugin.geoip = require('geoip-lite');
     }
     catch (e) {
+        plugin.logerror(e);
         plugin.logerror("unable to load geoip-lite, try\n\n\t'npm install -g geoip-lite'\n\n");
         return;
     }
 
     if (!plugin.geoip) {
-        // geoip-lite dropped node 0.8 support
-        plugin.logerror("unable to load geoip-lite");
+        // geoip-lite dropped node 0.8 support, it may not have loaded
+        plugin.logerror('unable to load geoip-lite');
         return;
     }
 
     plugin.register_hook('connect',     'geoip_lookup');
     plugin.register_hook('data_post',   'geoip_headers');
+};
+
+exports.maxmind_lookup = function (next, connection) {
+    var plugin = this;
+
+    if (!plugin.maxmind) { return next(); }
+
+    var show = [];
+    var loc = plugin.maxmind.getLocation(connection.remote_ip);
+    if (loc) {
+        connection.results.add(plugin, {continent: loc.continentCode});
+        connection.results.add(plugin, {country: loc.countryCode});
+        connection.results.add(plugin, {region: loc.region});
+        connection.results.add(plugin, {city: loc.city});
+        connection.results.add(plugin, {ll: [loc.latitude, loc.longitude]});
+        show.push(loc.countryCode);
+        if (plugin.cfg.main.show_region) { show.push(loc.region); }
+        if (plugin.cfg.main.show_city  ) { show.push(loc.city); }
+    }
+    else {
+        var country = plugin.maxmind.getCountry(connection.remote_ip);
+        if (country) {
+            connection.results.add(plugin, {country: country.code});
+            connection.results.add(plugin, {continent: country.continentCode});
+            show.push(country.code);
+        }
+    }
+
+    var asn = plugin.maxmind.getAsn(connection.remote_ip);
+    if (asn) {
+        var match = asn.match(/^(?:AS)([0-9]+)\s+(.*)$/);
+        connection.results.add(plugin, {asn: match[1]});
+        connection.results.add(plugin, {asn_org: match[2]});
+    }
+
+    var distance;
+    if (loc && plugin.cfg.main.calc_distance) {
+        distance = plugin.calculate_distance(connection, [loc.latitude, loc.longitude]);
+        show.push(distance+'km');
+    }
+
+    connection.results.add(plugin, {human: show.join(', '), emit:true});
+
+    return next();
 };
 
 exports.geoip_lookup = function (next, connection) {
@@ -41,15 +157,8 @@ exports.geoip_lookup = function (next, connection) {
 
     connection.results.add(plugin, r);
 
-    plugin.cfg = plugin.config.get('connect.geoip.ini', {
-        booleans: [
-            '+main.show_city',
-            '+main.show_region',
-            '-main.calc_distance',
-        ],
-    });
     if (plugin.cfg.main.calc_distance) {
-        r.distance = plugin.calculate_distance(connection, r);
+        r.distance = plugin.calculate_distance(connection, r.ll);
     }
 
     var show = [ r.country ];
@@ -88,7 +197,7 @@ exports.geoip_headers = function (next, connection) {
     return next();
 };
 
-exports.calculate_distance = function (connection, r_geoip) {
+exports.calculate_distance = function (connection, rll) {
     var plugin = this;
 
     var cb = function (err, l_ip) {
@@ -109,8 +218,7 @@ exports.calculate_distance = function (connection, r_geoip) {
             return;
         }
 
-        var gcd = plugin.haversine(plugin.local_geoip.ll[0], plugin.local_geoip.ll[1],
-                                    r_geoip.ll[0], r_geoip.ll[1]);
+        var gcd = plugin.haversine(plugin.local_geoip.ll[0], plugin.local_geoip.ll[1], rll[0], rll[1]);
 
         connection.results.add(plugin, {distance: gcd});
 

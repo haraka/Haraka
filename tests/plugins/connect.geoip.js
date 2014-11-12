@@ -8,16 +8,8 @@ var stub             = require('../fixtures/stub'),
     ResultStore      = require("../../result_store");
 
 function _set_up(callback) {
-    this.backup = {};
-
     this.plugin = Plugin('connect.geoip');
     this.plugin.config = config;
-    this.plugin.cfg = { main: {} };
-
-    try {
-        this.plugin.geoip = require('geoip-lite');
-    }
-    catch (ignore) {}
 
     this.connection = Connection.createConnection();
     this.connection.results = new ResultStore(this.plugin);
@@ -27,6 +19,64 @@ function _set_up(callback) {
 function _tear_down(callback) {
     callback();
 }
+
+exports.register = {
+    setUp : _set_up,
+    tearDown : _tear_down,
+    'maxmind module loaded': function (test) {
+        if (this.plugin.maxmind) {
+            test.expect(1);
+            test.ok(this.plugin.maxmind);
+        }
+        test.done();
+    },
+    'geoip-lite module loaded': function (test) {
+        if (this.plugin.geoip) {
+            test.expect(1);
+            test.ok(this.plugin.geoip);
+        }
+        test.done();
+    },
+};
+
+exports.load_maxmind = {
+    setUp : _set_up,
+    tearDown : _tear_down,
+    'module registered': function (test) {
+        var cb = function () {
+            test.expect(1);
+            test.ok(this.plugin.maxmind);
+            test.done();
+        }.bind(this);
+        this.plugin.load_geoip_ini();
+        this.plugin.load_maxmind(cb);
+    },
+};
+
+exports.maxmind_lookup = {
+    setUp : _set_up,
+    tearDown : _tear_down,
+    'lookup test': function (test) {
+
+        var cb = function() {
+            test.expect(4);
+            var r = this.connection.results.get('connect.geoip');
+            test.equal('53837', r.asn);
+            test.equal('ServedBy the Net, LLC.', r.asn_org);
+            test.equal('US', r.country);
+            test.equal('NA', r.continent);
+            test.done();
+        }.bind(this);
+
+        var cbLoad = function () {
+            this.connection.remote_ip='192.48.85.146';
+            this.plugin.maxmind_lookup(cb, this.connection);
+        }.bind(this);
+
+        this.plugin.load_geoip_ini();
+        this.plugin.load_maxmind(cbLoad);
+    },
+};
 
 // ServedBy ll: [ 47.6738, -122.3419 ],
 // WMISD  [ 38, -97 ]

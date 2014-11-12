@@ -5,22 +5,39 @@ provide geographic information about mail senders.
 
 # SYNOPSIS
 
-Use MaxMind's GeoIP databases and the geoip-lite node module to report
-geographic information about incoming connections.
+Use MaxMind's GeoIP databases to report geographic information about senders. This plugin has support for both the [maxmind](https://github.com/runk/node-maxmind) and [geoip-lite](https://github.com/bluesmoon/node-geoip) node modules.
+
+# INSTALL
+
+Install the npm geoip module you prefer:
+
+    npm install maxmind
+      or
+    npm install geoip-lite
+
+If both are installed, maxmind will be preferred as it's faster and also provides ASN data. The maxmind module requires manual download of the GeoIP databases. A MaxMind-provided script in `contrib/geolite-mirror-simple.pl` has instructions for installion as a cron job:
+
+```bash
+mkdir -p /usr/local/share/GeoIP/download
+perl contrib/geolite-mirror-simple.pl
+```
 
 # DESCRIPTION
 
-This plugin stores results in connection.notes.geoip. The following
-keys are typically available:
+GeoIP results are stored in connection.notes.geoip and connection.[results](https://github.com/baudehlo/Haraka/blob/master/docs/Results.md).connect.geoip. The following information is typically available:
 
-    range: [ 3479299040, 3479299071 ],
-    country: 'US',
-    region: 'CA',
-    city: 'San Francisco',
-    ll: [37.7484, -122.4156],
+    continent: NA,
+    country:   US,
+
+If the GeoIP city database is available, the following may also be available:
+
+    region:   CA,
+    city:     San Francisco,
+    ll:       [37.7484, -122.4156],
     distance: 1539    // in kilometers
+    range:    [ 3479299040, 3479299071 ],
 
-Adds entries like this to your logs:
+`connect.geoip` also adds entries like this to your logs:
 
     [connect.geoip] US
     [connect.geoip] US, WA
@@ -28,7 +45,8 @@ Adds entries like this to your logs:
     [connect.geoip] US, WA, Seattle, 1319km
 
 Calculating the distance requires the public IP of this mail server. This may
-be the IP that Haraka is bound to, but if not you'll need to supply it.
+be the IP that Haraka is bound to. If not, make sure that `utils.get_public_ip`
+can figure it out (via STUN or in `smtp.ini`).
 
 # CONFIG
 
