@@ -8,8 +8,9 @@ exports.register = function () {
 
     plugin.load_geoip_ini();
 
-    plugin.load_maxmind();
-    plugin.load_geoip_lite();
+    plugin.load_maxmind(function () {
+        plugin.load_geoip_lite();
+    });
 };
 
 exports.load_geoip_ini = function () {
@@ -52,8 +53,8 @@ exports.load_maxmind = function (loadDone) {
         }
         plugin.db_loaded=true;
         plugin.maxmind.init(dbsFound, {indexCache: true, checkForUpdates: true});
-        plugin.register_hook('connect',     'maxmind_lookup');
-        plugin.register_hook('data_post',   'geoip_headers');
+        plugin.register_hook('connect',     'lookup_maxmind');
+        plugin.register_hook('data_post',   'add_geoip_headers');
         if (loadDone) loadDone();
     };
 
@@ -91,38 +92,34 @@ exports.load_geoip_lite = function () {
     }
 
     plugin.db_loaded=true;
-    plugin.register_hook('connect',     'geoip_lookup');
-    plugin.register_hook('data_post',   'geoip_headers');
+    plugin.register_hook('connect',     'lookup_geoip');
+    plugin.register_hook('data_post',   'add_geoip_headers');
 };
 
-exports.maxmind_lookup = function (next, connection) {
+exports.lookup_maxmind = function (next, connection) {
     var plugin = this;
 
     if (!plugin.maxmind) { return next(); }
     if (!plugin.maxmind.dbsLoaded) { return next(); }
 
+    var ip = connection.remote_ip;
     var show = [];
-    var loc = plugin.maxmind.getLocation(connection.remote_ip);
+    var loc = plugin.get_geoip_maxmind(ip);
     if (loc) {
         connection.results.add(plugin, {continent: loc.continentCode});
-        connection.results.add(plugin, {country: loc.countryCode});
-        connection.results.add(plugin, {region: loc.region});
-        connection.results.add(plugin, {city: loc.city});
-        connection.results.add(plugin, {ll: [loc.latitude, loc.longitude]});
+        connection.results.add(plugin, {country: loc.countryCode || loc.code});
+        show.push(loc.continentCode);
         show.push(loc.countryCode);
-        if (plugin.cfg.main.show_region) { show.push(loc.region); }
-        if (plugin.cfg.main.show_city  ) { show.push(loc.city); }
-    }
-    else {
-        var country = plugin.maxmind.getCountry(connection.remote_ip);
-        if (country) {
-            connection.results.add(plugin, {country: country.code});
-            connection.results.add(plugin, {continent: country.continentCode});
-            show.push(country.code);
+        if (loc.city) {
+            connection.results.add(plugin, {region: loc.region});
+            connection.results.add(plugin, {city: loc.city});
+            connection.results.add(plugin, {ll: [loc.latitude, loc.longitude]});
+            if (plugin.cfg.main.show_region) { show.push(loc.region); }
+            if (plugin.cfg.main.show_city  ) { show.push(loc.city); }
         }
     }
 
-    var asn = plugin.maxmind.getAsn(connection.remote_ip);
+    var asn = plugin.maxmind.getAsn(ip);
     if (asn) {
         var match = asn.match(/^(?:AS)([0-9]+)\s+(.*)$/);
         connection.results.add(plugin, {asn: match[1]});
@@ -142,7 +139,7 @@ exports.maxmind_lookup = function (next, connection) {
     });
 };
 
-exports.geoip_lookup = function (next, connection) {
+exports.lookup_geoip = function (next, connection) {
     var plugin = this;
 
     // geoip.lookup results look like this:
@@ -157,7 +154,7 @@ exports.geoip_lookup = function (next, connection) {
         return next();
     }
 
-    var r = plugin.geoip.lookup(connection.remote_ip);
+    var r = plugin.get_geoip_lite(connection.remote_ip);
     if (!r) { return next(); }
 
     connection.results.add(plugin, r);
@@ -178,7 +175,46 @@ exports.geoip_lookup = function (next, connection) {
     });
 };
 
-exports.geoip_headers = function (next, connection) {
+exports.get_geoip = function (ip) {
+    var plugin = this;
+
+    var result = plugin.get_geoip_maxmind(ip);
+    if (result) return result;
+
+    return plugin.get_geoip_lite(ip);
+};
+
+exports.get_geoip_maxmind = function (ip) {
+    var plugin = this;
+    if (!ip) return;
+    if (!plugin.maxmind) return;
+    if (net_utils.is_rfc1918(ip)) return;
+
+    var ipv6 = net.isIPv6(ip);
+
+    var result = ipv6 ? plugin.maxmind.getLocationV6(ip) : plugin.maxmind.getLocation(ip);
+    if (!result) {
+        result = ipv6 ? plugin.maxmind.getCountryV6(ip) : plugin.maxmind.getCountry(ip);
+    }
+    return result;
+};
+
+exports.get_geoip_lite = function (ip) {
+    var plugin = this;
+    if (!ip) return;
+    if (!plugin.geoip) return;
+    if (net_utils.is_rfc1918(ip)) return;
+
+    var result = plugin.geoip.lookup(ip);
+    if (result) {
+        result.latitude = plugin.result.ll[0];
+        result.longitude = plugin.result.ll[1];
+    }
+
+    return result;
+};
+
+exports.add_geoip_headers = function (next, connection) {
     var plugin = this;
     var txn = connection.transaction;
     if (!txn) { return; }
@@ -216,15 +252,9 @@ exports.get_local_geo = function (ip, connection) {
     }
 
     if (!plugin.local_geoip) {
-        if (plugin.geoip) {
-            plugin.local_geoip = plugin.geoip.lookup(plugin.local_ip);
-            plugin.local_geoip.latitude = plugin.local_geoip.ll[0];
-            plugin.local_geoip.longitude = plugin.local_geoip.ll[1];
-        }
-        if (plugin.maxmind) {
-            plugin.local_geoip = plugin.maxmind.getLocation(plugin.local_ip);
-        }
+         plugin.local_geoip = plugin.get_geoip(plugin.local_ip);
     }
+
     if (!plugin.local_geoip) {
         connection.logerror(plugin, "no GeoIP results for local_ip!");
     }
@@ -285,10 +315,9 @@ exports.received_headers = function (connection) {
     for (var i=0; i < received.length; i++) {
         var match = /\[(\d+\.\d+\.\d+\.\d+)\]/.exec(received[i]);
         if (!match) continue;
-        if (!net.isIPv4(match[1])) continue;  // TODO: support IPv6
         if (net_utils.is_rfc1918(match[1])) continue;  // exclude private IP
 
-        var gi = plugin.geoip.lookup(match[1]);
+        var gi = plugin.get_geoip(match[1]);
         connection.loginfo(plugin, 'received=' + match[1] + ' country=' + ((gi) ? gi.country : 'UNKNOWN'));
         results.push(match[1] + ':' + ((gi) ? gi.country : 'UNKNOWN'));
     }

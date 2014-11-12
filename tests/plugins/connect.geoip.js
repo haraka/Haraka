@@ -69,7 +69,7 @@ exports.load_geoip_lite = {
     },
 };
 
-exports.maxmind_lookup = {
+exports.lookup_maxmind = {
     setUp : _set_up,
     tearDown : _tear_down,
     'servedby.tnpi.net': function (test) {
@@ -88,7 +88,7 @@ exports.maxmind_lookup = {
 
         var cbLoad = function () {
             this.connection.remote_ip='192.48.85.146';
-            this.plugin.maxmind_lookup(cb, this.connection);
+            this.plugin.lookup_maxmind(cb, this.connection);
         }.bind(this);
 
         this.plugin.load_geoip_ini();
@@ -132,7 +132,7 @@ exports.haversine = {
     }
 };
 
-exports.geoip_lookup = {
+exports.lookup_geoip = {
     setUp : _set_up,
     tearDown : _tear_down,
     'seattle: lat + long': function (test) {
@@ -148,7 +148,7 @@ exports.geoip_lookup = {
             test.done();
         }.bind(this);
         this.connection.remote_ip='192.48.85.146';
-        this.plugin.geoip_lookup(cb, this.connection);
+        this.plugin.lookup_geoip(cb, this.connection);
     },
     'michigan: lat + long': function (test) {
         var cb = function (rc) {
@@ -163,6 +163,6 @@ exports.geoip_lookup = {
             test.done();
         }.bind(this);
         this.connection.remote_ip='199.176.179.3';
-        this.plugin.geoip_lookup(cb, this.connection);
+        this.plugin.lookup_geoip(cb, this.connection);
     },
 };
