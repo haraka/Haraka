@@ -74,7 +74,7 @@ exports.maxmind_lookup = {
     tearDown : _tear_down,
     'servedby.tnpi.net': function (test) {
         var cb = function() {
-            if (installed.maxmind) {
+            if (installed.maxmind && this.plugin.db_loaded) {
                 test.expect(4);
                 var r = this.connection.results.get('connect.geoip');
 // console.log(r);

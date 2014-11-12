@@ -44,6 +44,7 @@ exports.load_maxmind = function (loadDone) {
 
     var fsDone = function (err) {
         if (err) { plugin.logerror(err); }
+        plugin.maxmind.dbsLoaded=dbsFound.length;
         if (dbsFound.length === 0) {
             plugin.logerror('no GeoIP DBs found');
             if (loadDone) loadDone();
@@ -98,6 +99,7 @@ exports.maxmind_lookup = function (next, connection) {
     var plugin = this;
 
     if (!plugin.maxmind) { return next(); }
+    if (!plugin.maxmind.dbsLoaded) { return next(); }
 
     var show = [];
     var loc = plugin.maxmind.getLocation(connection.remote_ip);
