@@ -13,7 +13,7 @@ Install the npm geoip module you prefer:
 
     npm install maxmind
       or
-    npm install geoip-lite
+    npm install -g geoip-lite
 
 If both are installed, maxmind will be preferred as it's faster and also provides ASN data. The maxmind module requires manual download of the GeoIP databases. A MaxMind-provided script in `contrib/geolite-mirror-simple.pl` has instructions for installion as a cron job:
 

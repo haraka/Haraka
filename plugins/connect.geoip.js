@@ -89,6 +89,7 @@ exports.load_geoip_lite = function () {
         return;
     }
 
+    plugin.db_loaded=true;
     plugin.register_hook('connect',     'geoip_lookup');
     plugin.register_hook('data_post',   'geoip_headers');
 };
@@ -126,15 +127,17 @@ exports.maxmind_lookup = function (next, connection) {
         connection.results.add(plugin, {asn_org: match[2]});
     }
 
-    var distance;
-    if (loc && plugin.cfg.main.calc_distance) {
-        distance = plugin.calculate_distance(connection, [loc.latitude, loc.longitude]);
-        show.push(distance+'km');
+    if (!loc || !plugin.cfg.main.calc_distance) {
+        connection.results.add(plugin, {human: show.join(', '), emit:true});
+        return next();
     }
 
-    connection.results.add(plugin, {human: show.join(', '), emit:true});
-
-    return next();
+    plugin.calculate_distance(connection, [loc.latitude, loc.longitude], function (err, distance) {
+        if (err) { connection.results.add(plugin, {err: err}); }
+        if (distance) { show.push(distance+'km'); }
+        connection.results.add(plugin, {human: show.join(', '), emit:true});
+        return next();
+    });
 };
 
 exports.geoip_lookup = function (next, connection) {
@@ -157,17 +160,20 @@ exports.geoip_lookup = function (next, connection) {
 
     connection.results.add(plugin, r);
 
-    if (plugin.cfg.main.calc_distance) {
-        r.distance = plugin.calculate_distance(connection, r.ll);
-    }
-
     var show = [ r.country ];
     if (r.region   && plugin.cfg.main.show_region) { show.push(r.region); }
     if (r.city     && plugin.cfg.main.show_city  ) { show.push(r.city); }
-    if (r.distance                               ) { show.push(r.distance+'km');}
 
-    connection.results.add(plugin, {human: show.join(', '), emit:true});
-    return next();
+    if (!plugin.cfg.main.calc_distance) {
+        connection.results.add(plugin, {human: show.join(', '), emit:true});
+        return next();
+    }
+
+    plugin.calculate_distance(connection, r.ll, function (err, distance) {
+        show.push(r.distance+'km');
+        connection.results.add(plugin, {human: show.join(', '), emit:true});
+        return next();
+    });
 };
 
 exports.geoip_headers = function (next, connection) {
@@ -197,7 +203,32 @@ exports.geoip_headers = function (next, connection) {
     return next();
 };
 
-exports.calculate_distance = function (connection, rll) {
+exports.get_local_geo = function (ip, connection) {
+    var plugin = this;
+
+    if (!plugin.local_ip) { plugin.local_ip = ip; }
+    if (!plugin.local_ip) { plugin.local_ip = plugin.cfg.main.public_ip; }
+    if (!plugin.local_ip) {
+        connection.logerror(plugin, "can't calculate distance, set public_ip in smtp.ini");
+        return;
+    }
+
+    if (!plugin.local_geoip) {
+        if (plugin.geoip) {
+            plugin.local_geoip = plugin.geoip.lookup(plugin.local_ip);
+            plugin.local_geoip.latitude = plugin.local_geoip.ll[0];
+            plugin.local_geoip.longitude = plugin.local_geoip.ll[1];
+        }
+        if (plugin.maxmind) {
+            plugin.local_geoip = plugin.maxmind.getLocation(plugin.local_ip);
+        }
+    }
+    if (!plugin.local_geoip) {
+        connection.logerror(plugin, "no GeoIP results for local_ip!");
+    }
+};
+
+exports.calculate_distance = function (connection, rll, done) {
     var plugin = this;
 
     var cb = function (err, l_ip) {
@@ -205,30 +236,21 @@ exports.calculate_distance = function (connection, rll) {
             connection.results.add(plugin, {err: err});
             connection.logerror(plugin, err);
         }
-        if (!plugin.local_ip) { plugin.local_ip = l_ip; }
-        if (!plugin.local_ip) { plugin.local_ip = plugin.cfg.main.public_ip; }
-        if (!plugin.local_ip) {
-            connection.logerror(plugin, "can't calculate distance, set public_ip in smtp.ini");
-            return;
-        }
 
-        if (!plugin.local_geoip) { plugin.local_geoip = plugin.geoip.lookup(plugin.local_ip); }
-        if (!plugin.local_geoip) {
-            connection.logerror(plugin, "no GeoIP results for local_ip!");
-            return;
-        }
+        plugin.get_local_geo(l_ip, connection);
+        if (!plugin.local_ip || !plugin.local_geoip) { return done(); }
 
-        var gcd = plugin.haversine(plugin.local_geoip.ll[0], plugin.local_geoip.ll[1], rll[0], rll[1]);
-
+        var gl = plugin.local_geoip;
+        var gcd = plugin.haversine(gl.latitude, gl.longitude, rll[0], rll[1]);
         connection.results.add(plugin, {distance: gcd});
 
         if (plugin.cfg.main.too_far && (parseFloat(plugin.cfg.main.too_far) < parseFloat(gcd))) {
             connection.results.add(plugin, {too_far: true});
         }
-        return gcd;
+        done(err, gcd);
     };
 
-    if (plugin.local_ip) return cb(undefined, plugin.local_ip);
+    if (plugin.local_ip) return cb(null, plugin.local_ip);
     net_utils.get_public_ip(cb);
 };
 

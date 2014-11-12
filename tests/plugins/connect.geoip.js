@@ -7,6 +7,12 @@ var stub             = require('../fixtures/stub'),
     // Header       = require('../../mailheader').Header,
     ResultStore      = require("../../result_store");
 
+var installed = {};
+try { installed.maxmind = require('maxmind'); }
+catch (ignore) {}
+try { installed.geoip = require('geoip-lite'); }
+catch (ignore) {}
+
 function _set_up(callback) {
     this.plugin = Plugin('connect.geoip');
     this.plugin.config = config;
@@ -23,18 +29,11 @@ function _tear_down(callback) {
 exports.register = {
     setUp : _set_up,
     tearDown : _tear_down,
-    'maxmind module loaded': function (test) {
-        if (this.plugin.maxmind) {
-            test.expect(1);
-            test.ok(this.plugin.maxmind);
-        }
-        test.done();
-    },
-    'geoip-lite module loaded': function (test) {
-        if (this.plugin.geoip) {
-            test.expect(1);
-            test.ok(this.plugin.geoip);
-        }
+    'config loaded': function (test) {
+        test.expect(2);
+        this.plugin.register();
+        test.ok(this.plugin.cfg);
+        test.ok(this.plugin.cfg.main);
         test.done();
     },
 };
@@ -42,10 +41,15 @@ exports.register = {
 exports.load_maxmind = {
     setUp : _set_up,
     tearDown : _tear_down,
-    'module registered': function (test) {
+    'maxmind module loads if installed': function (test) {
+        var loads;
+        try { loads = require('maxmind'); }
+        catch (ignore) {}
         var cb = function () {
-            test.expect(1);
-            test.ok(this.plugin.maxmind);
+            if (loads) {
+                test.expect(1);
+                test.ok(this.plugin.maxmind);
+            }
             test.done();
         }.bind(this);
         this.plugin.load_geoip_ini();
@@ -53,18 +57,32 @@ exports.load_maxmind = {
     },
 };
 
+exports.load_geoip_lite = {
+    setUp : _set_up,
+    tearDown : _tear_down,
+    'geoip-lite module loads if installed': function (test) {
+        if (installed.geoip) {
+            test.expect(1);
+            test.ok(this.plugin.geoip);
+        }
+        test.done();
+    },
+};
+
 exports.maxmind_lookup = {
     setUp : _set_up,
     tearDown : _tear_down,
-    'lookup test': function (test) {
-
+    'servedby.tnpi.net': function (test) {
         var cb = function() {
-            test.expect(4);
-            var r = this.connection.results.get('connect.geoip');
-            test.equal('53837', r.asn);
-            test.equal('ServedBy the Net, LLC.', r.asn_org);
-            test.equal('US', r.country);
-            test.equal('NA', r.continent);
+            if (installed.maxmind) {
+                test.expect(4);
+                var r = this.connection.results.get('connect.geoip');
+// console.log(r);
+                test.equal('53837', r.asn);
+                test.equal('ServedBy the Net, LLC.', r.asn_org);
+                test.equal('US', r.country);
+                test.equal('NA', r.continent);
+            }
             test.done();
         }.bind(this);
 
@@ -74,12 +92,32 @@ exports.maxmind_lookup = {
         }.bind(this);
 
         this.plugin.load_geoip_ini();
+        this.plugin.cfg.main.calc_distance=true;
         this.plugin.load_maxmind(cbLoad);
     },
 };
 
 // ServedBy ll: [ 47.6738, -122.3419 ],
 // WMISD  [ 38, -97 ]
+
+exports.calculate_distance = {
+    setUp : _set_up,
+    tearDown : _tear_down,
+    'seattle to michigan': function (test) {
+        this.plugin.register();
+        if (!this.plugin.db_loaded) {
+            return test.done();
+        }
+        this.plugin.cfg.main.calc_distance=true;
+        this.plugin.local_ip='192.48.85.146';
+        this.connection.remote_ip='199.176.179.3';
+        this.plugin.calculate_distance(this.connection, [38, -97], function (err, d) {
+            test.expect(1);
+            test.ok(d);
+            test.done();
+        });
+    },
+};
 
 exports.haversine = {
     setUp : _set_up,
@@ -97,12 +135,9 @@ exports.haversine = {
 exports.geoip_lookup = {
     setUp : _set_up,
     tearDown : _tear_down,
-
     'seattle: lat + long': function (test) {
         var cb = function (rc) {
-            test.expect(1);
-            test.equal(undefined, rc);
-            if (this.plugin.geoip) {
+            if (installed.geoip) {
                 test.expect(4);
                 var r = this.connection.results.get('connect.geoip');
                 test.equal(47.6738, r.ll[0]);
@@ -117,9 +152,7 @@ exports.geoip_lookup = {
     },
     'michigan: lat + long': function (test) {
         var cb = function (rc) {
-            test.expect(1);
-            test.equal(undefined, rc);
-            if (this.plugin.geoip) {
+            if (installed.geoip) {
                 test.expect(4);
                 var r = this.connection.results.get('connect.geoip');
                 test.equal(38, r.ll[0]);

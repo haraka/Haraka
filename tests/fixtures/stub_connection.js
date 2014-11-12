@@ -1,6 +1,7 @@
 'use strict';
 
 var stub = require('./stub');
+var logger = require('../../logger');
 
 var connection = exports;
 
@@ -10,10 +11,7 @@ function Connection(client, server) {
     this.relaying = false;
     this.notes  = {};
 
-    var levels = [ 'data', 'protocol', 'debug', 'info', 'notice', 'warn', 'error', 'crit', 'alert', 'emerg' ];
-    for (var i=0; i < levels.length; i++) {
-        this['log' + levels[i]] = stub();
-    }
+    logger.add_log_methods(this, 'test');
 }
 
 connection.createConnection = function(client, server) {
