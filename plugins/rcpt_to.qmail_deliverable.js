@@ -1,3 +1,4 @@
+'use strict';
 // validate an email address is local, using qmail-deliverabled
 
 var http = require('http');

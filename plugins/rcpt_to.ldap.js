@@ -1,6 +1,4 @@
-"use strict";
-/* jshint node: true */
-/* globals DENY */
+'use strict';
 
 var util = require('util');
 

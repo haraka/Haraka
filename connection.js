@@ -1,6 +1,6 @@
-"use strict";
-/* jshint node: true */
+'use strict';
 // a single connection
+
 var path        = require('path');
 var config      = require('./config');
 var logger      = require('./logger');
@@ -370,7 +370,8 @@ Connection.prototype._process_data = function() {
                 // Invalid pipeline sequence
                 // Treat this as early talker
                 if (!this.early_talker) {
-                    this.logdebug('[early_talker] state=' + this.state + ' esmtp=' + this.esmtp + ' line="' + this_line + '"');
+                    this.logdebug('[early_talker] state=' + this.state +
+                            ' esmtp=' + this.esmtp + ' line="' + this_line + '"');
                 }
                 this.early_talker = 1;
                 setTimeout(function() { self._process_data(); }, this.early_talker_delay);
@@ -383,7 +384,8 @@ Connection.prototype._process_data = function() {
         }
     }
 
-    if (this.current_data && (this.current_data.length > maxlength) && (indexOfLF(this.current_data, maxlength) == -1)) {
+    if (this.current_data && (this.current_data.length > maxlength) &&
+            (indexOfLF(this.current_data, maxlength) === -1)) {
         if (this.state !== states.STATE_DATA       &&
             this.state !== states.STATE_PAUSE_DATA)
         {
@@ -571,7 +573,7 @@ Connection.prototype.pause = function () {
     var self = this;
     if (self.state >= states.STATE_DISCONNECTING) return;
     self.client.pause();
-    if (self.state != states.STATE_PAUSE_DATA) self.prev_state = self.state;
+    if (self.state !== states.STATE_PAUSE_DATA) self.prev_state = self.state;
     self.state = states.STATE_PAUSE_DATA;
 };
 
@@ -1032,7 +1034,7 @@ Connection.prototype.cmd_proxy = function (line) {
             if (ipaddr.IPv6.isValid(src_ip) && ipaddr.IPv6.isValid(dst_ip)) {
                 break;
             }
-        case 'UNKNOWN':
+        // case 'UNKNOWN':
         default:
             this.respond(421, 'Invalid PROXY format');
             return this.disconnect();

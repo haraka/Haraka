@@ -1,6 +1,5 @@
 "use strict";
 // A subclass of Socket which reads data by line
-/* jshint node: true */
 
 var net  = require('net');
 var tls  = require('./tls_socket');

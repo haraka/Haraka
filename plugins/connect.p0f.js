@@ -1,6 +1,5 @@
 'use strict';
 // p0f v3 client - http://lcamtuf.coredump.cx/p0f3/
-/* jshint node: true */
 
 var net = require('net');
 var ipaddr = require('ipaddr.js');

@@ -1,6 +1,6 @@
+'use strict';
 // Check various bits of the HELO string
-/*jshint node: true, plusplus: false */
-/*global DENY, DENYSOFT */
+
 var dns       = require('dns');
 var net_utils = require('./net_utils');
 var utils     = require('./utils');

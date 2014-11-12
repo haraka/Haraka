@@ -1,5 +1,4 @@
-"use strict";
-/* jshint node: true */
+'use strict';
 
 var stub = require('./stub');
 

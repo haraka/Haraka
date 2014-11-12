@@ -1,3 +1,4 @@
+'use strict';
 // rcpt_to.access plugin
 
 exports.register = function() {
@@ -5,7 +6,7 @@ exports.register = function() {
     var config = this.config.get('rcpt_to.access.ini');
     this.wl = this.config.get('rcpt_to.access.whitelist', 'list');
     this.bl = this.config.get('rcpt_to.access.blacklist', 'list');
-    this.deny_msg = config.general && (config.general['deny_msg'] ||
+    this.deny_msg = config.general && (config.general.deny_msg ||
         'Connection rejected.');
     var white_regex =
         this.config.get('rcpt_to.access.whitelist_regex', 'list');
@@ -22,7 +23,7 @@ exports.register = function() {
 
     this.logerror(this, "plugin deprecated. see 'haraka -h access' for upgrade instructions");
     this.register_hook('rcpt', 'rcpt_to_access');
-}
+};
 
 exports.rcpt_to_access = function(next, connection, params) {
     var plugin = this;

@@ -1,5 +1,5 @@
+'use strict';
 // karma - reward good and penalize bad mail senders
-/* jshint node: true */
 
 var ipaddr = require('ipaddr.js');
 var redis  = require('redis');

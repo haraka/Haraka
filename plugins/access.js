@@ -1,6 +1,4 @@
 // access plugin
-/* jshint node: true */
-/* global DENY, DENYDISCONNECT */
 var net_utils = require('./net_utils');
 var utils     = require('./utils');
 

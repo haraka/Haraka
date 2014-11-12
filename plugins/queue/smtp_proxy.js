@@ -1,10 +1,8 @@
-"use strict";
+'use strict';
 // Proxy to an SMTP server
 // Opens the connection to the ongoing SMTP server at MAIL FROM time
 // and passes back any errors seen on the ongoing server to the
 // originating server.
-/* jshint node: true */
-/* global OK, DENY, DENYSOFT */
 
 var smtp_client_mod = require('./smtp_client');
 

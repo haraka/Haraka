@@ -1,7 +1,6 @@
+'use strict';
 // spf
-/* jshint node: true */
 
-"use strict";
 var dns = require('dns');
 var util = require('util');
 var ipaddr = require('ipaddr.js');
@@ -84,12 +83,12 @@ SPF.prototype.expand_macros = function (str) {
         // match[2] = transformers
         // match[3] = delimiter
         if (!match[3]) match[3] = '.';
-        var strip;
-        if (strip = /(\d+)/.exec(match[2])) {
+        var strip = /(\d+)/.exec(match[2]);
+        if (strip) {
             strip = strip[1];
         }
         var reverse = ((('' + match[2]).indexOf('r')) !== -1 ? true : false);
-        var replace;
+        var replace, kind;
         switch (match[1]) {
             case 's':   // sender
                 replace = this.mail_from;
@@ -145,7 +144,7 @@ SPF.prototype.expand_macros = function (str) {
 
 SPF.prototype.log_debug = function (str) {
     util.debug(str);
-}
+};
 
 SPF.prototype.check_host = function (ip, domain, mail_from, cb) {
     var self = this;
@@ -180,9 +179,9 @@ SPF.prototype.check_host = function (ip, domain, mail_from, cb) {
             }
         }
 
-        var i, spf_record;
+        var i, spf_record, match;
         for (i=0; i < txt_rrs.length; i++) {
-            var match = /^(v=spf1(?:$|\s.+$))/i.exec(txt_rrs[i]);
+            match = /^(v=spf1(?:$|\s.+$))/i.exec(txt_rrs[i]);
             if (match) {
                 if (!spf_record) {
                     self.log_debug('found SPF record for domain ' + domain + ': ' + match[1]);
@@ -216,8 +215,8 @@ SPF.prototype.check_host = function (ip, domain, mail_from, cb) {
         var split = spf_record.split(' ');
         for (i=1; i<split.length; i++) {
             // Skip blanks
+            var obj;
             if (!split[i]) continue;
-            var match;
             if (match = (mech_regexp1.exec(split[i]) || mech_regexp2.exec(split[i]))) {
                 // match[1] = qualifier
                 // match[2] = mechanism
@@ -244,7 +243,7 @@ SPF.prototype.check_host = function (ip, domain, mail_from, cb) {
                     }
                 }
 
-                var obj = {};
+                obj = {};
                 obj[match[2]] = [ match[1], match[3] ];
                 mech_array.push(obj);
             }
@@ -257,7 +256,7 @@ SPF.prototype.check_host = function (ip, domain, mail_from, cb) {
                     self.log_debug('skipping unknown modifier: ' + match[1]);
                 }
                 else {
-                    var obj = {};
+                    obj = {};
                     obj[match[1]] = match[2];
                     mod_array.push(obj);
                 }
@@ -292,7 +291,7 @@ SPF.prototype.check_host = function (ip, domain, mail_from, cb) {
             var args = next_in_chain[func];
             self.log_debug('running modifier: ' + func + ' args=' + args + ' domain=' + self.domain);
             self['mod_' + func](args, mod_chain_caller);
-        }
+        };
 
         // Run all the mechanisms first
         var mech_chain_caller = function (err, result) {
@@ -322,15 +321,15 @@ SPF.prototype.check_host = function (ip, domain, mail_from, cb) {
             var args = next_in_chain[func];
             self.log_debug('running mechanism: ' + func + ' args=' + args + ' domain=' + self.domain);
             self['mech_' + func](((args && args.length) ? args[0] : null), ((args && args.length) ? args[1] : null), mech_chain_caller);
-        }
+        };
         // Start the chain
         mech_chain_caller();
     });
-}
+};
 
 SPF.prototype.mech_all = function (qualifier, args, cb) {
     return cb(null, this.return_const(qualifier));
-}
+};
 
 SPF.prototype.mech_include = function (qualifier, args, cb) {
     var self = this;
@@ -357,7 +356,7 @@ SPF.prototype.mech_include = function (qualifier, args, cb) {
             }
         }
     });
-}
+};
 
 SPF.prototype.mech_exists = function (qualifier, args, cb) {
     var self = this;
@@ -371,7 +370,6 @@ SPF.prototype.mech_exists = function (qualifier, args, cb) {
                 case 'ENODATA':
                 case dns.NXDOMAIN:
                     return cb(null, self.SPF_NONE);
-                    break;
                 default:
                     return cb(null, self.SPF_TEMPERROR);
             }
@@ -379,7 +377,7 @@ SPF.prototype.mech_exists = function (qualifier, args, cb) {
         self.log_debug('mech_exists: ' + exists + ' result=' + addrs.join(','));
         return cb(null, self.return_const(qualifier));
     });
-}
+};
 
 SPF.prototype.mech_a = function (qualifier, args, cb) {
     var self = this;
@@ -396,12 +394,13 @@ SPF.prototype.mech_a = function (qualifier, args, cb) {
     }
     // Calculate with IP method to use
     var resolve_method;
+    var cidr;
     if (this.ip_ver === 'ipv4') {
-        var cidr = cidr4;
+        cidr = cidr4;
         resolve_method = 'resolve4';
     }
     else if (this.ip_ver === 'ipv6') {
-        var cidr = cidr6;
+        cidr = cidr6;
         resolve_method = 'resolve6';
     }
     // Use current domain
@@ -438,7 +437,7 @@ SPF.prototype.mech_a = function (qualifier, args, cb) {
         }
         return cb(null, self.SPF_NONE);
     });
-}
+};
 
 SPF.prototype.mech_mx = function (qualifier, args, cb) {
     var self = this;
@@ -474,12 +473,13 @@ SPF.prototype.mech_mx = function (qualifier, args, cb) {
             var mx = mxes[a].exchange;
             // Calculate which IP method to use
             var resolve_method;
+            var cidr;
             if (self.ip_ver === 'ipv4') {
-                var cidr = cidr4;
+                cidr = cidr4;
                 resolve_method = 'resolve4';
             }
             else if (self.ip_ver === 'ipv6') {
-                var cidr = cidr6;
+                cidr = cidr6;
                 resolve_method = 'resolve6';
             }
             dns[resolve_method](mx, function (err, addrs) {
@@ -535,7 +535,7 @@ SPF.prototype.mech_mx = function (qualifier, args, cb) {
             return cb(null, self.SPF_NONE);
         }
     });
-}
+};
 
 SPF.prototype.mech_ptr = function (qualifier, args, cb) {
     var self = this;
@@ -611,41 +611,41 @@ SPF.prototype.mech_ptr = function (qualifier, args, cb) {
             }
         }
     });
-}
+};
 
 SPF.prototype.mech_ip = function (qualifier, args, cb) {
     var cidr = args.substr(1);
     var match = /^([^\/ ]+)(?:\/(\d+))?$/.exec(cidr);
-    if (match) {
-        // match[1] == ip
-        // match[2] == mask
-        try {
-            if (!match[2]) {
-                // Default masks for each IP version
-                if (this.ip_ver === 'ipv4') match[2] = '32';
-                if (this.ip_ver === 'ipv6') match[2] = '128';
-            }
-            var range = ipaddr.parse(match[1]);
-            var rtype = range.kind();
-            if (this.ip_ver !== rtype) {
-                this.log_debug('mech_ip: ' + this.ip + ' => ' + cidr + ': SKIP');
-                return cb(null, this.SPF_NONE);
-            }
-            if (this.ipaddr.match(range, match[2])) {
-                this.log_debug('mech_ip: ' + this.ip + ' => ' + cidr + ': MATCH!');
-                return cb(null, this.return_const(qualifier));
-            } 
-            else {
-                this.log_debug('mech_ip: ' + this.ip + ' => ' + cidr + ': NO MATCH');
-            }
+    if (!match) { return cb(null, this.SPF_NONE); }
+
+    // match[1] == ip
+    // match[2] == mask
+    try {
+        if (!match[2]) {
+            // Default masks for each IP version
+            if (this.ip_ver === 'ipv4') match[2] = '32';
+            if (this.ip_ver === 'ipv6') match[2] = '128';
         }
-        catch (e) {
-            this.log_debug(e.message);
-            return cb(null, this.SPF_PERMERROR);
+        var range = ipaddr.parse(match[1]);
+        var rtype = range.kind();
+        if (this.ip_ver !== rtype) {
+            this.log_debug('mech_ip: ' + this.ip + ' => ' + cidr + ': SKIP');
+            return cb(null, this.SPF_NONE);
+        }
+        if (this.ipaddr.match(range, match[2])) {
+            this.log_debug('mech_ip: ' + this.ip + ' => ' + cidr + ': MATCH!');
+            return cb(null, this.return_const(qualifier));
+        } 
+        else {
+            this.log_debug('mech_ip: ' + this.ip + ' => ' + cidr + ': NO MATCH');
         }
     }
+    catch (e) {
+        this.log_debug(e.message);
+        return cb(null, this.SPF_PERMERROR);
+    }
     return cb(null, this.SPF_NONE);
-}
+};
 
 SPF.prototype.mech_ip4 = SPF.prototype.mech_ip;
 SPF.prototype.mech_ip6 = SPF.prototype.mech_ip;
@@ -659,11 +659,11 @@ SPF.prototype.mod_redirect = function (domain, cb) {
     this.count++;
     this.been_there[domain] = 1;
     return this.check_host(this.ip, domain, this.mail_from, cb);
-}
+};
 
 SPF.prototype.mod_exp = function (str, cb) {
     // NOT IMPLEMENTED
     return cb(null, this.SPF_NONE);
-}
+};
 
 exports.SPF = SPF;

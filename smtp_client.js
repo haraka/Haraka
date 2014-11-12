@@ -1,8 +1,7 @@
-"use strict";
+'use strict';
 // SMTP client object and class. This allows for every part of the client
 // protocol to be hooked for different levels of control, such as
 // smtp_forward and smtp_proxy queue plugins.
-/* jshint node: true */
 
 var events = require('events');
 var util = require('util');
@@ -61,7 +60,7 @@ function SMTPClient(port, host, connect_timeout, idle_timeout) {
                 return;
             }
             client.emit('capabilities');
-            if (client.command != 'ehlo') {
+            if (client.command !== 'ehlo') {
                 return;
             }
         }
@@ -72,7 +71,7 @@ function SMTPClient(port, host, connect_timeout, idle_timeout) {
         }
         else if (code.match(/^[45]/)) {
             client.emit('bad_code', code, client.response.join(' '));
-            if (client.state != STATE.ACTIVE) {
+            if (client.state !== STATE.ACTIVE) {
                 return;
             }
         }
@@ -366,7 +365,7 @@ exports.get_client_plugin = function (plugin, connection, config, callback) {
 
             if (config.auth.type === null || typeof(config.auth.type) === 'undefined') { return; } // Ignore blank
             var auth_type = config.auth.type.toLowerCase();
-            if (smtp_client.auth_capabilities.indexOf(auth_type) == -1) {
+            if (smtp_client.auth_capabilities.indexOf(auth_type) === -1) {
                 throw new Error("Auth type \"" + auth_type + "\" not supported by server (supports: " + smtp_client.auth_capabilities.join(',') + ")");
             }
             switch (auth_type) {

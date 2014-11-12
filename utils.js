@@ -1,5 +1,4 @@
-"use strict";
-/* jshint node: true */
+'use strict';
 
 // copied from http://www.broofa.com/Tools/Math.uuid.js
 var CHARS = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'.split('');
@@ -7,24 +6,24 @@ var CHARS = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'.spl
 exports.uuid = function () {
     var chars = CHARS, uuid = new Array(36), rnd=0, r;
     for (var i = 0; i < 36; i++) {
-        if (i==8 || i==13 ||  i==18 || i==23) {
+        if (i===8 || i===13 || i===18 || i===23) {
             uuid[i] = '-';
         }
-        else if (i==14) {
+        else if (i===14) {
             uuid[i] = '4';
         }
         else {
             if (rnd <= 0x02) rnd = 0x2000000 + (Math.random()*0x1000000)|0;
             r = rnd & 0xf;
             rnd = rnd >> 4;
-            uuid[i] = chars[(i == 19) ? (r & 0x3) | 0x8 : r];
+            uuid[i] = chars[(i === 19) ? (r & 0x3) | 0x8 : r];
         }
     }
     return uuid.join('');
 };
 
 exports.in_array = function (item, array) {
-    return (array.indexOf(item) != -1);
+    return (array.indexOf(item) !== -1);
 };
 
 exports.sort_keys = function (obj) {
@@ -38,7 +37,7 @@ exports.uniq = function (arr) {
         if (out.length === 0) {
             out.push(arr[i]);
         }
-        else if (out[o] != arr[i]) {
+        else if (out[o] !== arr[i]) {
             out.push(arr[i]);
             o++;
         }

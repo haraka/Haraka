@@ -1,4 +1,3 @@
-/* jshint node: true */
 
 var stub         = require('../fixtures/stub'),
     Plugin       = require('../fixtures/stub_plugin'),
@@ -13,7 +12,6 @@ var stub         = require('../fixtures/stub'),
 constants.import(global);
 
 function _set_up(callback) {
-    this.backup = {};
 
     this.plugin = Plugin('data.headers');
     this.plugin.config = config;
