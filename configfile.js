@@ -1,7 +1,4 @@
-"use strict";
-/* jshint node: true, plusplus: false */
-/* global DENY */
-
+'use strict';
 // Config file loader
 
 // for "ini" type files
@@ -46,7 +43,7 @@ cfreader.read_config = function(name, type, cb, options) {
         });
     }
     catch (e) {
-        if (e.code != 'ENOENT') { // ignore error when ENOENT
+        if (e.code !== 'ENOENT') { // ignore error when ENOENT
             logger.logerror("Error watching config file: " + name + " : " + e);
         }
     }

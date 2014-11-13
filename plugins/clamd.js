@@ -1,6 +1,4 @@
 // clamd
-/* jshint node: true */
-/* global DENY, DENYSOFT */
 
 var sock = require('./line_socket');
 

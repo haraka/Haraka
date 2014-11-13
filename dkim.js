@@ -1,5 +1,4 @@
-"use strict";
-/* jshint node: true */
+'use strict';
 
 var crypto = require('crypto');
 var Stream = require('stream').Stream;
@@ -19,8 +18,8 @@ function md5(str) {
 }
 
 function Buf() {
-    this.bar = [],
-    this.blen = 0,
+    this.bar = [];
+    this.blen = 0;
     this.pop = function (buf) {
         if (!this.bar.length) {
             if (!buf) buf = new Buffer('');
@@ -34,13 +33,13 @@ function Buf() {
         this.bar = [];
         this.blen = 0;
         return nb;
-    },
+    };
     this.push = function (buf) {
         if (buf.length) {
             this.bar.push(buf);
             this.blen += buf.length;
         }
-    }
+    };
 }
 
 
@@ -432,7 +431,7 @@ function DKIMVerifyStream(cb, timeout) {
     this.result = 'none';
     this.pending = 0;
     this.writable = true;
-    this.timeout = timeout || 30
+    this.timeout = timeout || 30;
 }
 
 util.inherits(DKIMVerifyStream, Stream);
@@ -466,7 +465,7 @@ DKIMVerifyStream.prototype.handle_buf = function (buf) {
             // Set the overall result based on this precedence order
             var rr = ['pass','tempfail','fail','invalid','none'];
             for (var r=0; r<rr.length; r++) {
-                if (!self.result || (self.result && self.result !== rr[r] && result.result == rr[r])) {
+                if (!self.result || (self.result && self.result !== rr[r] && result.result === rr[r])) {
                     self.result = rr[r];
                 }
             }

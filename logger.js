@@ -1,5 +1,4 @@
 "use strict";
-/* jshint node: true */
 // Log class
 
 var config    = require('./config');

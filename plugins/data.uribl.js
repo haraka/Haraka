@@ -1,5 +1,6 @@
+'use strict';
 // Look up URLs in SURBL
-/* jshint node: true */
+
 var url       = require('url');
 var dns       = require('dns');
 var isIPv4    = require('net').isIPv4;

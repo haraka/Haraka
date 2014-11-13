@@ -1,5 +1,5 @@
 "use strict";
-/* jshint node: true */
+
 var fs          = require('fs');
 var path        = require('path');
 var dns         = require('dns');
@@ -23,9 +23,6 @@ var FsyncWriteStream = require('./fsync_writestream');
 
 var core_consts = require('constants');
 var WRITE_EXCL  = core_consts.O_CREAT | core_consts.O_TRUNC | core_consts.O_WRONLY | core_consts.O_EXCL;
-
-var DENY = constants.deny;
-var OK   = constants.ok;
 
 var MAX_UNIQ = 10000;
 var host = require('os').hostname().replace(/\\/, '\\057').replace(/:/, '\\072');
@@ -161,7 +158,7 @@ exports.load_queue = function (pid) {
             fs.mkdirSync(queue_dir, 493); // 493 == 0755
         }
         catch (err) {
-            if (err.code != 'EEXIST') {
+            if (err.code !== 'EEXIST') {
                 logger.logerror("Error creating queue directory: " + err);
                 throw err;
             }
@@ -859,7 +856,7 @@ HMailItem.prototype.found_mx = function (err, mxs) {
         // got MXs
         var mxlist = sort_mx(mxs);
         // support draft-delany-nullmx-02
-        if (mxlist.length == 1 && mxlist[0].priority == 0 && mxlist[0].exchange == "") {
+        if (mxlist.length === 1 && mxlist[0].priority === 0 && mxlist[0].exchange === '') {
             return this.bounce("Domain " + this.todo.domain + " sends and receives no email (NULL MX)");
         }
         // duplicate each MX for each ip address family
@@ -1090,7 +1087,9 @@ HMailItem.prototype.try_deliver_host = function (mx) {
     
     socket.on('line', function (line) {
         if (!processing_mail) {
-            if (command != 'quit') self.logprotocol("Received data after stopping processing: " + line);
+            if (command !== 'quit') {
+                self.logprotocol("Received data after stopping processing: " + line);
+            }
             return;
         }
         self.logprotocol("S: " + line);
@@ -1111,7 +1110,7 @@ HMailItem.prototype.try_deliver_host = function (mx) {
                         self.lognotice('recipient ' + last_recip + ' deferred: ' + reason);
                         last_recip.reason = reason;
                         fail_recips.push(last_recip);
-                        if (command == 'dot_lmtp') {
+                        if (command === 'dot_lmtp') {
                             response = [];
                             if (ok_recips.length === 0) {
                                 return finish_processing_mail(true);
@@ -1136,7 +1135,7 @@ HMailItem.prototype.try_deliver_host = function (mx) {
                         self.lognotice('recipient ' + last_recip + ' rejected: ' + reason);
                         last_recip.reason = reason;
                         bounce_recips.push(last_recip);
-                        if (command == 'dot_lmtp') {
+                        if (command === 'dot_lmtp') {
                             response = [];
                             if (ok_recips.length === 0) {
                                 return finish_processing_mail(true);
@@ -1305,7 +1304,7 @@ HMailItem.prototype._bounce = function (err, opts) {
 };
 
 HMailItem.prototype.bounce_respond = function (retval, msg) {
-    if (retval != constants.cont) {
+    if (retval !== constants.cont) {
         this.loginfo("plugin responded with: " + retval + ". Not sending bounce.");
         return this.discard(); // calls next_cb
     }
@@ -1391,14 +1390,14 @@ HMailItem.prototype.temp_fail = function (err, extra) {
 };
 
 HMailItem.prototype.deferred_respond = function (retval, msg, params) {
-    if (retval != constants.cont && retval != constants.denysoft) {
+    if (retval !== constants.cont && retval !== constants.denysoft) {
         this.loginfo("plugin responded with: " + retval + ". Not deferring. Deleting mail.");
         return this.discard(); // calls next_cb
     }
     
     var delay = params.delay * 1000;
     
-    if (retval == constants.denysoft) {
+    if (retval === constants.denysoft) {
         delay = parseInt(msg, 10) * 1000;
     }
 
@@ -1425,7 +1424,7 @@ HMailItem.prototype.deferred_respond = function (retval, msg, params) {
 
 // The following handler has an impact on outgoing mail. It does remove the queue file.
 HMailItem.prototype.delivered_respond = function (retval, msg) {
-    if (retval != constants.cont && retval != constants.ok) {
+    if (retval !== constants.cont && retval !== constants.ok) {
         this.logwarn("delivered plugin responded with: " + retval + " msg=" + msg + ".");
     }
     this.discard();

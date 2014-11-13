@@ -1,0 +1,23 @@
+{
+    "camelcase": false,
+    "eqeqeq": true,
+    "freeze": true,
+    "indent": 4,
+    "newcap": true,
+    "maxdepth": 3,
+    "maxstatements": 30,
+    "maxlen": 80,
+    "eqnull": true,
+    "funcscope": true,
+    "node"     : true,
+    "globals"  : {
+        "server"             : false,
+        "DENY"               : false,
+        "DENYSOFT"           : false,
+        "DISCONNECT"         : false,
+        "DENYDISCONNECT"     : false,
+        "DENYSOFTDISCONNECT" : false,
+        "OK"                 : false,
+        "CONT"               : false
+    }
+}

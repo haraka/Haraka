@@ -1,6 +1,5 @@
-"use strict";
+'use strict';
 // smtp network server
-/* jshint node: true */
 
 var net         = require('./tls_socket');
 var logger      = require('./logger');

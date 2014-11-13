@@ -1,5 +1,5 @@
 "use strict";
-/* jshint node: true */
+
 var logger = require('./logger');
 var config = require('./config');
 var net    = require('net');

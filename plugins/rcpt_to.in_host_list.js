@@ -1,8 +1,5 @@
-"use strict";
+'use strict';
 // Check RCPT TO domain is in config/host_list
-
-/* jshint node: true */
-/* global OK */
 
 // Previous versions of this plugin (Haraka <= 2.4.0) did not account for
 // relaying users. This plugin now permits relaying clients to send if

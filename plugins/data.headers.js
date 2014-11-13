@@ -1,5 +1,4 @@
 // validate message headers and some fields
-/* jshint node: true, plusplus: false */
 
 var net_utils  = require('./net_utils');
 

@@ -1,7 +1,5 @@
-"use strict";
+'use strict';
 // Base class for plugins that use config/host_list
-/* jshint node: true */
-/* global OK */
 
 exports.load_host_list = function () {
     var plugin = this;
