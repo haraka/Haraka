@@ -289,18 +289,17 @@ exports.calculate_distance = function (connection, rll, done) {
 exports.haversine = function (lat1, lon1, lat2, lon2) {
     // calculate the great circle distance using the haversine formula
     // found here: http://www.movable-type.co.uk/scripts/latlong.html
-    var R = 6371; // km
-    function toRad(v) { return v * Math.PI / 180; }
-    var dLat = toRad(lat2-lat1);
-    var dLon = toRad(lon2-lon1);
-        lat1 = toRad(lat1);
-        lat2 = toRad(lat2);
+    var EARTH_RADIUS = 6371; // km
+    function toRadians(v) { return v * Math.PI / 180; }
+    var deltaLat = toRadians(lat2 - lat1);
+    var deltaLon = toRadians(lon2 - lon1);
+            lat1 = toRadians(lat1);
+            lat2 = toRadians(lat2);
 
-    var a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-            Math.sin(dLon/2) * Math.sin(dLon/2) * Math.cos(lat1) * Math.cos(lat2);
+    var a = Math.sin(deltaLat/2) * Math.sin(deltaLat/2) +
+            Math.sin(deltaLon/2) * Math.sin(deltaLon/2) * Math.cos(lat1) * Math.cos(lat2);
     var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-    var d = R * c;
-    return d.toFixed(0);
+    return (EARTH_RADIUS * c).toFixed(0);
 };
 
 exports.received_headers = function (connection) {
