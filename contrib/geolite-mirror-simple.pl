@@ -24,10 +24,12 @@ use PerlIO::gzip;
 # This example overwrite your GeoIPCity.dat database!
 
 my %mirror = (    # local-filename       geolite-name
-               'GeoIP.dat.gz'      => 'GeoLiteCountry/GeoIP.dat.gz',
-               'GeoIPCity.dat.gz'  => 'GeoLiteCity.dat.gz',
-               'GeoIPv6.dat.gz'    => 'GeoIPv6.dat.gz',
-               'GeoIPASNum.dat.gz' => 'asnum/GeoIPASNum.dat.gz'
+               'GeoIP.dat.gz'        => 'GeoLiteCountry/GeoIP.dat.gz',
+               'GeoIPCity.dat.gz'    => 'GeoLiteCity.dat.gz',
+               'GeoIPCityv6.dat.gz'  => 'GeoLiteCityv6-beta/GeoLiteCityv6.dat.gz',
+               'GeoIPv6.dat.gz'      => 'GeoIPv6.dat.gz',
+               'GeoIPASNum.dat.gz'   => 'asnum/GeoIPASNum.dat.gz',
+               'GeoIPASNumv6.dat.gz' => 'asnum/GeoIPASNumv6.dat.gz',
 );
 
 $ua->agent("MaxMind-geolite-mirror-simple/$VERSION");

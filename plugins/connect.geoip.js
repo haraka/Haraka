@@ -192,9 +192,12 @@ exports.get_geoip_maxmind = function (ip) {
 
     var ipv6 = net.isIPv6(ip);
 
-    var result = ipv6 ? plugin.maxmind.getLocationV6(ip) : plugin.maxmind.getLocation(ip);
+    var result;
+    try { result = ipv6 ? plugin.maxmind.getLocationV6(ip) : plugin.maxmind.getLocation(ip); }
+    catch (e) { plugin.logerror(e); }
     if (!result) {
-        result = ipv6 ? plugin.maxmind.getCountryV6(ip) : plugin.maxmind.getCountry(ip);
+        try { result = ipv6 ? plugin.maxmind.getCountryV6(ip) : plugin.maxmind.getCountry(ip); }
+        catch (e) { plugin.logerror(e); }
     }
     return result;
 };
@@ -206,9 +209,9 @@ exports.get_geoip_lite = function (ip) {
     if (net_utils.is_rfc1918(ip)) return;
 
     var result = plugin.geoip.lookup(ip);
-    if (result) {
-        result.latitude = plugin.result.ll[0];
-        result.longitude = plugin.result.ll[1];
+    if (result && result.ll) {
+        result.latitude = result.ll[0];
+        result.longitude = result.ll[1];
     }
 
     return result;
