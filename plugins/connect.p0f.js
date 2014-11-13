@@ -1,3 +1,4 @@
+'use strict';
 // p0f v3 client - http://lcamtuf.coredump.cx/p0f3/
 
 var net = require('net');
@@ -57,22 +58,22 @@ function P0FClient(path) {
             }
             self.process_send_queue();
         });
-    }
+    };
     connect();
-};
+}
 
 P0FClient.prototype.decode_response = function (data) {
     var decode_string = function (data, start, end) {
-        var str = ''
+        var str = '';
         for (var a=start; a<end; a++) {
             var b = data.readUInt8(a);
             if (b === 0x0) break;
             str = str + String.fromCharCode(b);
         }
         return str;
-    }
+    };
 
-    if (!this.receive_queue.length > 0) {
+    if (this.receive_queue.length <= 0) {
         throw new Error('unexpected data received');
     }
     var item = this.receive_queue.shift();
@@ -90,7 +91,6 @@ P0FClient.prototype.decode_response = function (data) {
     switch (st) {
         case (0x00):
             return item.cb(new Error('bad query'));
-            break;
         case (0x10):
             var p0f = {
                 query:       item.ip,
@@ -110,16 +110,14 @@ P0FClient.prototype.decode_response = function (data) {
                 http_flavor: decode_string(data, 136, 168),
                 link_type:   decode_string(data, 168, 200),
                 language:    decode_string(data, 200, 232),
-            }
+            };
             return item.cb(null, p0f);
-            break;
         case (0x20):
             return item.cb(null, null);
-            break;
         default:
             throw new Error('unknown status: ' + st);
     }
-}
+};
 
 P0FClient.prototype.query = function (ip, cb) {
     if (this.socket_has_error) {
@@ -143,63 +141,71 @@ P0FClient.prototype.query = function (ip, cb) {
         this.receive_queue.push({ip: ip, cb: cb});
         if (!this.sock.write(buf)) this.ready = false;
     }
-}
+};
 
 P0FClient.prototype.process_send_queue = function () {
-    if (this.send_queue.length === 0) { return; };
+    if (this.send_queue.length === 0) { return; }
 
     for (var i=0; i<this.send_queue.length; i++) {
+        var item;
         if (this.socket_has_error) {
-            var item = this.send_queue.shift();
+            item = this.send_queue.shift();
             item.cb(this.socket_has_error);
             continue;
         }
         if (!this.ready) break;
-        var item = this.send_queue.shift();
+        item = this.send_queue.shift();
         this.receive_queue.push({ip: item.ip, cb: item.cb});
         if (!this.sock.write(item.buf)) {
             this.ready = false;
         }
     }
-}
+};
 
 exports.P0FClient = P0FClient;
 
-exports.hook_init_master = function (next) {
-    var cfg = this.config.get('connect.p0f.ini');
-    if (!cfg.main.socket_path) return next();
-    // Start p0f process?
-    server.notes.p0f_client = new P0FClient(cfg.main.socket_path);
-    return next();
-}
+exports.register = function () {
+    this.cfg = this.config.get('connect.p0f.ini');
+};
 
-exports.hook_init_child = function (next) {
-    var cfg = this.config.get('connect.p0f.ini');
-    if (!cfg.main.socket_path) return next();
-    server.notes.p0f_client = new P0FClient(cfg.main.socket_path);
+exports.hook_init_master = function (next, server) {
+    var c = this.cfg.main;
+    if (!c.socket_path) return next();
+    // Start p0f process?
+    server.notes.p0f_client = new P0FClient(c.socket_path);
     return next();
-}
+};
+
+exports.hook_init_child = function (next, server) {
+    var c = this.cfg.main;
+    if (!c.socket_path) return next();
+    server.notes.p0f_client = new P0FClient(c.socket_path);
+    return next();
+};
 
 exports.hook_lookup_rdns = function onLookup(next, connection) {
-    if (!server.notes.p0f_client) return next();
     var plugin = this;
+    if (!server.notes.p0f_client) {
+        connection.logerror(plugin, 'missing server');
+        return next();
+    }
     var p0f_client = server.notes.p0f_client;
     p0f_client.query(connection.remote_ip, function (err, result) {
         if (err) {
             connection.results.add(plugin, {err: err.message});
             return next();
-        };
+        }
 
         if (!result) {
             connection.results.add(plugin, {err: 'no p0f results'});
             return next();
-        };
+        }
 
         connection.loginfo(plugin, format_results(result));
         connection.results.add(plugin, result);
         return next();
     });
-}
+};
 
 function format_results(result) {
     return [
@@ -209,26 +215,25 @@ function format_results(result) {
         'total_conn=' + result.total_conn,
         'shared_ip=' + ((result.last_nat === 0) ? 'N' : 'Y'),
     ].join(' ');
-};
+}
 
 exports.hook_data_post = function (next, connection) {
     var plugin = this;
-    var cfg = this.config.get('connect.p0f.ini');
-    var header_name = cfg.main.add_header;
+    var header_name = plugin.cfg.main.add_header;
     if (!header_name) {
         connection.logdebug(plugin, 'header disabled in ini' );
         return next();
-    };
+    }
 
     connection.transaction.remove_header(header_name);
     var result = connection.results.get('connect.p0f');
     if (!result) {
         connection.results.add(plugin, {err: 'no p0f note'});
         return next();
-    };
+    }
 
     connection.logdebug(plugin, 'adding header');
     connection.transaction.add_header(header_name, format_results(result));
 
     return next();
-}
+};

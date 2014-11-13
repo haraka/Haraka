@@ -15,11 +15,14 @@ Outbound improvements
  - Limit concurrency by domain
  - Disable deliveries for a domain
  - Pool connections by domain/MX
+ - Enable TLS by default
 
 Plugin behavior changes
  - in SpamAssassin plugin, change default behavior of 'legacy' status header.
    Presently, when undefined, legacy is used. Legacy support should be changed to
    only when requested, with a sunset date.
+ - data.uribl; expand short URLs before lookups, add support for uri-a (sbl.spamhaus.org), uri-ns, uri-ns-a lookup types.
+
 
 Remove the following deprecated plugins
  - rdns.regexp

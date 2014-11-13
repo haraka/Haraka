@@ -1,4 +1,4 @@
-"use strict";
+'use strict';
 
 var stub = require('./stub');
 
@@ -26,5 +26,19 @@ connection.createConnection = function(client, server) {
     }
 
     var obj  = new Connection(client, server);
+
+    obj.respond = function(code, msg, func) { return func(); };
+    obj.reset_transaction = function(cb) {
+        if (this.transaction && this.transaction.resetting === false) {
+            this.transaction.resetting = true;
+        }
+        else {
+            this.transaction = null;
+        }
+        if (cb) cb();
+    };
+
+    obj.auth_results = function(message) {};
+
     return obj;
 };

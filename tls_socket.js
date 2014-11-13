@@ -170,7 +170,7 @@ function createServer(cb) {
 
         socket.upgrade = function (options, cb) {
             log.logdebug("Upgrading to TLS");
-            
+
             socket.clean();
             cryptoSocket.removeAllListeners('data');
 
@@ -179,10 +179,17 @@ function createServer(cb) {
             if (!options) options = {};
             // TODO: bug in Node means we can't do this until it's fixed
             // options.secureOptions = SSL_OP_ALL;
-            
+
+            var requestCert = true;
+            var rejectUnauthorized = false;
+            if (options) {
+                if (options.requestCert !== undefined) { requestCert = options.requestCert; }
+                if (options.rejectUnauthorized !== undefined) { rejectUnauthorized = options.rejectUnauthorized; }
+            }
             var sslcontext = crypto.createCredentials(options);
 
-            var pair = tls.createSecurePair(sslcontext, true, true, false);
+            // tls.createSecurePair(credentials, isServer, requestCert, rejectUnauthorized)
+            var pair = tls.createSecurePair(sslcontext, true, requestCert, rejectUnauthorized);
 
             var cleartext = pipe(pair, cryptoSocket);
 
@@ -211,7 +218,7 @@ function createServer(cb) {
             cleartext._controlReleased = true;
 
             socket.cleartext = cleartext;
-            
+
             if (socket._timeout) {
                 cleartext.setTimeout(socket._timeout);
             }
@@ -253,7 +260,7 @@ function connect(port, host, cb) {
 
     var socket = new pluggableStream(cryptoSocket);
 
-    socket.upgrade = function (options) {
+    socket.upgrade = function (options, cb) {
         socket.clean();
         cryptoSocket.removeAllListeners('data');
 
@@ -265,12 +272,13 @@ function connect(port, host, cb) {
 
         var sslcontext = crypto.createCredentials(options);
 
+        // tls.createSecurePair([credentials], [isServer]);
         var pair = tls.createSecurePair(sslcontext, false);
 
         socket.pair = pair;
 
         var cleartext = pipe(pair, cryptoSocket);
- 
+
         pair.on('error', function(exception) {
             socket.emit('error', exception);
         });
@@ -285,15 +293,19 @@ function connect(port, host, cb) {
             } else {
                 cleartext.authorized = true;
             }
+            var cert = pair.cleartext.getPeerCertificate();
+            if (pair.cleartext.getCipher) {
+                var cipher = pair.cleartext.getCipher();
+            }
 
-            if (cb) cb();
+            if (cb) cb(cleartext.authorized, verifyError, cert, cipher);
 
             socket.emit('secure');
         });
 
         cleartext._controlReleased = true;
         socket.cleartext = cleartext;
-        
+
         if (socket._timeout) {
             cleartext.setTimeout(socket._timeout);
         }

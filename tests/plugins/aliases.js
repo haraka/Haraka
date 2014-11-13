@@ -37,6 +37,8 @@ function _set_up(callback) {
         return this.configfile;
     }.bind(this);
 
+    this.plugin.inherits = stub();
+
     // going to need these in multiple tests
     this.plugin.register();
 

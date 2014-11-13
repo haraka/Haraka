@@ -1,4 +1,5 @@
 "use strict";
+
 var logger = require('./logger');
 var config = require('./config');
 var net    = require('net');
@@ -24,7 +25,8 @@ exports.is_public_suffix = function (host) {
         return true;           // matched a wildcard, ex: *.uk
     }
 
-    try { var puny = punycode.toUnicode(host); }
+    var puny;
+    try { puny = punycode.toUnicode(host); }
     catch(e) {}
     if (puny && public_suffix_list[puny]) return true;
 
@@ -99,7 +101,7 @@ exports.split_hostname = function(host,level) {
         domain = split.shift() + '.' + domain;
     }
     return [split.reverse().join('.'), domain];
-}
+};
 
 exports.long_to_ip = function (n) {
     var d = n%256;
@@ -108,15 +110,15 @@ exports.long_to_ip = function (n) {
         d = n%256 + '.' + d;
     }
     return d;
-}
+};
 
 exports.dec_to_hex = function (d) {
     return d.toString(16);
-}
+};
 
 exports.hex_to_dec = function (h) {
     return parseInt(h, 16);
-}
+};
 
 exports.ip_to_long = function (ip) {
     if (!net.isIPv4(ip)) {
@@ -126,28 +128,31 @@ exports.ip_to_long = function (ip) {
         var d = ip.split('.');
         return ((((((+d[0])*256)+(+d[1]))*256)+(+d[2]))*256)+(+d[3]);
     }
-}
+};
 
 exports.is_ip_in_str = function(ip, str) {
     // Only IPv4 for now
+    if (!str) { return false; }
+    if (!ip) { return false; }
     if (net.isIPv4(ip)) {
+        var oct1, oct2, oct3, oct4;
         var host_part = (this.split_hostname(str,1))[0].toString();
         var ip_split = ip.split('.');
         // See if the 3rd and 4th octets appear in the string
         // We test the largest of the two octets first
         if (ip_split[3].length >= ip_split[2].length) {
-            var oct4 = host_part.lastIndexOf(ip_split[3]);
+            oct4 = host_part.lastIndexOf(ip_split[3]);
             if (oct4 !== -1) {
-                var oct3 = (host_part.substring(0, oct4) + host_part.substring(oct4 + ip_split[3].length));
+                oct3 = (host_part.substring(0, oct4) + host_part.substring(oct4 + ip_split[3].length));
                 if (oct3.lastIndexOf(ip_split[2]) !== -1) {
                     return true;
                 }
             }
         }
         else {
-            var oct3 = host_part.indexOf(ip_split[2]);
+            oct3 = host_part.indexOf(ip_split[2]);
             if (oct3 !== -1) {
-                var oct4 = (host_part.substring(0, oct3) + host_part.substring(oct3 + ip_split[2].length));
+                oct4 = (host_part.substring(0, oct3) + host_part.substring(oct3 + ip_split[2].length));
                 if (oct4.lastIndexOf(ip_split[3]) !== -1) {
                     return true;
                 }
@@ -155,18 +160,18 @@ exports.is_ip_in_str = function(ip, str) {
         }
         // 1st and 2nd octets
         if (ip_split[1].length >= ip_split[2].length) {
-            var oct2 = host_part.lastIndexOf(ip_split[1]);
+            oct2 = host_part.lastIndexOf(ip_split[1]);
             if (oct2 !== -1) {
-                var oct1 = (host_part.substring(0, oct2) + host_part.substring(oct2 + ip_split[1].length));
+                oct1 = (host_part.substring(0, oct2) + host_part.substring(oct2 + ip_split[1].length));
                 if (oct1.lastIndexOf(ip_split[0]) !== -1) {
                     return true;
                 }
             }
         }
         else {
-            var oct1 = host_part.lastIndexOf(ip_split[0]);
+            oct1 = host_part.lastIndexOf(ip_split[0]);
             if (oct1 !== -1) {
-                var oct2 = (host_part.substring(0, oct1) + host_part.substring(oct1 + ip_split[0].length));
+                oct2 = (host_part.substring(0, oct1) + host_part.substring(oct1 + ip_split[0].length));
                 if (oct2.lastIndexOf(ip_split[1]) !== -1) {
                     return true;
                 }
@@ -183,11 +188,11 @@ exports.is_ip_in_str = function(ip, str) {
         }
     }
     return false;
-}
+};
 
 exports.is_rfc1918 = function (ip) {
     return (net.isIPv4(ip) && re_private_ipv4.test(ip));
-}
+};
 
 exports.is_ipv4_literal = function (host) {
     return /^\[(\d{1,3}\.){3}\d{1,3}\]$/.test(host) ? true : false;
@@ -215,36 +220,6 @@ exports.same_ipv4_network = function (ip, ipList) {
     }
     return false;
 };
-
-function load_tld_files () {
-    config.get('top-level-tlds','list').forEach(function (tld) {
-        top_level_tlds[tld.toLowerCase()] = 1;
-    });
-
-    config.get('two-level-tlds', 'list').forEach(function (tld) {
-        two_level_tlds[tld.toLowerCase()] = 1;
-    });
-
-    config.get('three-level-tlds', 'list').forEach(function (tld) {
-        three_level_tlds[tld.toLowerCase()] = 1;
-    });
-
-    config.get('extra-tlds', 'list').forEach(function (tld) {
-        var s = tld.split(/\./);
-        if (s.length === 2) {
-            two_level_tlds[tld.toLowerCase()] = 1;
-        }
-        else if (s.length === 3) {
-            three_level_tlds[tld.toLowerCase()] = 1;
-        }
-    });
-
-    logger.loginfo('loaded TLD files:' +
-    ' 1=' + Object.keys(top_level_tlds).length +
-    ' 2=' + Object.keys(two_level_tlds).length +
-    ' 3=' + Object.keys(three_level_tlds).length
-    );
-}
 
 function load_public_suffix_list() {
     config.get('public-suffix-list','list').forEach(function (entry) {
@@ -332,39 +307,6 @@ function load_tld_files () {
     );
 }
 
-function loadPublicSuffixList() {
-    config.get('public_suffix_list','list').forEach(function (entry) {
-        // Parsing rules: http://publicsuffix.org/list/
-        // Each line is only read up to the first whitespace
-        var suffix = entry.split(/\s/).shift().toLowerCase();
-
-        // Each line which is not entirely whitespace or begins with a comment contains a rule.
-        if (!suffix) return;                            // empty string
-        if ('/' === suffix.substring(0,1)) return;      // comment
-
-        // A rule may begin with a "!" (exclamation mark). If it does, it is
-        // labelled as a "exception rule" and then treated as if the exclamation
-        // mark is not present.
-        if ('!' === suffix.substring(0,1)) {
-            var eName = suffix.substring(1);   // remove ! prefix
-            var up_one = suffix.split('.').slice(1).join('.'); // bbc.co.uk -> co.uk
-            if (public_suffix_list[up_one]) {
-                public_suffix_list[up_one].push(eName);
-            }
-            else if (public_suffix_list['*.'+up_one]) {
-                public_suffix_list['*.'+up_one].push(eName);
-            }
-            else {
-                logger.logerror("unable to find parent for exception: "+eName);
-            }
-        }
-
-        public_suffix_list[suffix] = [];
-    });
-    var entries = Object.keys(public_suffix_list).length;
-    logger.loginfo('loaded '+ entries +' Public Suffixes');
-}
-
 exports.get_public_ip = function (cb) {
     var nu = this;
     if (nu.public_ip) {
@@ -372,7 +314,7 @@ exports.get_public_ip = function (cb) {
     }
 
     // manual config override, for the cases where we can't figure it out
-    if (config.get('smtp.ini').public_ip) {
+    if (config.get('smtp.ini').main.public_ip) {
         nu.public_ip = config.get('smtp.ini').public_ip;
         return cb(null, nu.public_ip);
     }
@@ -393,7 +335,7 @@ exports.get_public_ip = function (cb) {
         if (timer) clearTimeout(timer);
         if (error) {
             return cb(error);
-        };
+        }
         socket.close();
         /*          sample socket.stun response
          *
@@ -402,6 +344,9 @@ exports.get_public_ip = function (cb) {
          *  type: 'Full Cone NAT'
          *  }
         */
+        if (!socket.stun.public) {
+            return cb(new Error('invalid STUN result'));
+        }
         return cb(null, socket.stun.public.host);
     };
 

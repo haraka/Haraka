@@ -2,7 +2,7 @@
 Haraka - a Node.js Mail Server
 ------------------------------
 
-[![Build Status](https://travis-ci.org/baudehlo/Haraka.svg?branch=master)](https://travis-ci.org/baudehlo/Haraka)
+[![Build Status](https://travis-ci.org/baudehlo/Haraka.svg?branch=master)](https://travis-ci.org/baudehlo/Haraka) [![Coverage Status](https://coveralls.io/repos/baudehlo/Haraka/badge.png)](https://coveralls.io/r/baudehlo/Haraka)
 
 Haraka is an SMTP server which uses a plugin architecture to implement most
 of its functionality. It uses a highly scalable event model to be able to
@@ -84,7 +84,7 @@ mail for. If not, edit the `config/host_list` file. For example if you want
 to receive mail addressed to `user@domain.com`, add `domain.com` to the
 `config/host_list` file.
 
-Finally just start Haraka:
+Finally just start Haraka using root access permissions:
 
     $ haraka -c /path/to/haraka_test
 

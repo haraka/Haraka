@@ -1,10 +1,10 @@
 {
-  "author": "Matt Sergeant <helpme@gmail.com> (http://baudehlo.wordpress.com/)",
+  "author": "Matt Sergeant <helpme@gmail.com> (http://baudehlo.com/)",
   "name": "Haraka",
   "description": "An SMTP Server project.",
   "keywords": ["haraka", "smtp", "server", "email"],
-  "version": "2.4.0",
-  "homepage": "https://github.com/baudehlo/Haraka/",
+  "version": "2.5.0",
+  "homepage": "http://haraka.github.io",
   "repository": {
     "type": "git",
     "url": "git://github.com/baudehlo/Haraka.git"
@@ -14,25 +14,28 @@
     "node": ">= v0.8.0"
   },
   "dependencies": {
-    "nopt"          : ">= 1.0.5",
-    "generic-pool"  : ">= 2.0.2",
-    "iconv"         : ">= 1.1.3",
-    "ipaddr.js"     : ">= 0.1.1",
-    "semver"        : ">= 1.0.14",
-    "async"         : ">= 0.1.22",
-    "daemon"        : ">= 1.1.0",
-    "npid"          : ">= 0.3.1",
-    "address-rfc2822":">= 0.0.2"
+    "nopt"          : "~2.1.2",
+    "generic-pool"  : "~2.0.2",
+    "iconv"         : "~2.1.0",
+    "ipaddr.js"     : "~0.1.2",
+    "semver"        : "~2.2.1",
+    "async"         : "~0.2.9",
+    "daemon"        : "~1.1.0",
+    "npid"          : "~0.4.0",
+    "address-rfc2822":"~0.0.2"
   },
   "optionalDependencies": {
-    "node-syslog"   : ">= 1.1.2",
-    "ldapjs"        : ">= 0.6.3",
-    "vs-stun"       : ">= 0.0.7",
-    "geoip-lite"    : ">= 1.0.7",
-    "redis"         : ">= 0.10.0"
+    "node-syslog"   : "~1.1.7",
+    "ldapjs"        : "~0.7.1",
+    "vs-stun"       : "~0.0.7",
+    "geoip-lite"    : "~1.1.3",
+    "redis"         : "~0.10.1",
+    "tmp"           : "~0.0.24"
   },
   "devDependencies": {
-    "nodeunit" : "https://github.com/godsflaw/nodeunit/archive/master.tar.gz"
+    "nodeunit"      : "https://github.com/godsflaw/nodeunit/archive/master.tar.gz",
+    "jscoverage"    : "*",
+    "coveralls"     : "*"
   },
   "licenses": [ {
     "type": "MIT",
@@ -42,8 +45,14 @@
     "mail" : "helpme@gmail.com",
     "url" : "https://github.com/baudehlo/Haraka/issues"
   },
-  "bin": { "haraka": "./bin/haraka", "spf": "./bin/spf" },
+  "bin": { 
+    "haraka": "./bin/haraka", 
+    "spf": "./bin/spf",
+    "dkimverify": "./bin/dkimverify",
+    "haraka_grep": "./bin/haraka_grep" 
+  },
   "scripts": {
-    "test": "./run_tests"
+    "test": "./run_tests",
+    "coveralls": "jscoverage *.js && QUICKSORT_COV=1 ./node_modules/nodeunit/bin/nodeunit --reporter=lcov tests --reporter=lcov tests | coveralls"
   }
 }

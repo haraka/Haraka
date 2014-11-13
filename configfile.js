@@ -1,12 +1,12 @@
-"use strict";
+'use strict';
 // Config file loader
 
 // for "ini" type files
 var regex = {
-    section:        /^\s*\[\s*([^\]]*)\s*\]\s*$/,
-    param:          /^\s*([\w@\._]+)\s*=\s*(.*)\s*$/,
+    section:        /^\s*\[\s*([^\]]*?)\s*\]\s*$/,
+    param:          /^\s*([\w@\._-]+)\s*=\s*(.*?)\s*$/,
     comment:        /^\s*[;#].*$/,
-    line:           /^\s*(.*)\s*$/,
+    line:           /^\s*(.*?)\s*$/,
     blank:          /^\s*$/,
     continuation:   /\\[ \t]*$/,
     is_integer:     /^-?\d+$/,
@@ -23,24 +23,28 @@ cfreader._watchers = {};
 cfreader.read_config = function(name, type, cb, options) {
     // Check cache first
     if (name in cfreader._config_cache) {
+        // logger.logdebug("Returning cached file: " + name);
         return cfreader._config_cache[name];
     }
 
     // load config file
     var result = cfreader.load_config(name, type, options);
 
-    if (cfreader.watch_files) {
-        if (name in cfreader._watchers) return result;
-        try {
-            cfreader._watchers[name] = fs.watch(name, {persistent: false}, function (event, filename) {
-                cfreader.load_config(name, type, options);
-                if (typeof cb === 'function') cb();
-            });
-        }
-        catch (e) {
-            if (e.code != 'ENOENT') { // ignore error when ENOENT
-                logger.logerror("Error watching config file: " + name + " : " + e);
-            }
+    if (!cfreader.watch_files) return result;        // watch disabled
+    if (options && options.no_watch) return result;  // disabled for this file
+    if (name in cfreader._watchers) return result;   // file already watched
+    if (!cb) return result;                 // no callback, no reason to watch
+
+    try {
+        cfreader._watchers[name] = fs.watch(name, {persistent: false}, function (fse, filename) {
+            logger.loginfo("Detected " + fse + ", reloading " + name);
+            cfreader.load_config(name, type, options);
+            if (typeof cb === 'function') cb();
+        });
+    }
+    catch (e) {
+        if (e.code !== 'ENOENT') { // ignore error when ENOENT
+            logger.logerror("Error watching config file: " + name + " : " + e);
         }
     }
 
@@ -75,8 +79,8 @@ cfreader.load_config = function(name, type, options) {
         result = cfreader.load_flat_config(name, type, options);
         if (result && type !== 'list' && type !== 'data') {
             result = result[0];
-            if (Array.isArray(options) && options['boolean'] === true) {
-                result = is_truth.test(result);
+            if (options && Array.isArray(options.booleans) && options.booleans.indexOf(result) === -1) {
+                result = regex.is_truth.test(result);
             }
             else if (regex.is_integer.test(result)) {
                 result = parseInt(result, 10);
@@ -87,7 +91,9 @@ cfreader.load_config = function(name, type, options) {
         }
     }
 
-    cfreader._config_cache[name] = result;
+    if (!options || !options.no_cache) {
+        cfreader._config_cache[name] = result;
+    }
 
     return result;
 };
@@ -122,26 +128,26 @@ cfreader.load_ini_config = function(name, options) {
     // Initialize any booleans
     if (options && Array.isArray(options.booleans)) {
         for (var i=0; i<options.booleans.length; i++) {
-            var m;
-            if (m = /^(?:([^\. ]+)\.)?(.+)/.exec(options.booleans[i])) {
-                var section = m[1] || 'main';
-                var key     = m[2];
+            var m = /^(?:([^\. ]+)\.)?(.+)/.exec(options.booleans[i]);
+            if (!m) continue;
 
-                var bool_default = section[0] === '+' ? true
-                                 :     key[0] === '+' ? true
-                                 : false;
+            var section = m[1] || 'main';
+            var key     = m[2];
 
-                if (section.match(/^(\-|\+)/)) section = section.substr(1);
-                if (    key.match(/^(\-|\+)/)) key     =     key.substr(1);
+            var bool_default = section[0] === '+' ? true
+                                :     key[0] === '+' ? true
+                                : false;
 
-                // so the boolean detection in the next section will match
-                if (options.booleans.indexOf(section+'.'+key) === -1) {
-                    bool_matches.push(section+'.'+key);
-                }
+            if (section.match(/^(\-|\+)/)) section = section.substr(1);
+            if (    key.match(/^(\-|\+)/)) key     =     key.substr(1);
 
-                if (!result[section]) result[section] = {};
-                result[section][key] = bool_default;
+            // so the boolean detection in the next section will match
+            if (options.booleans.indexOf(section+'.'+key) === -1) {
+                bool_matches.push(section+'.'+key);
             }
+
+            if (!result[section]) result[section] = {};
+            result[section][key] = bool_default;
         }
     }
 
@@ -156,11 +162,13 @@ cfreader.load_ini_config = function(name, options) {
                 if (regex.comment.test(line)) {
                     return;
                 }
-                else if (regex.blank.test(line)) {
+                if (regex.blank.test(line)) {
                     return;
                 }
-                else if (match = regex.section.exec(line)) {
-                    current_sect = result[match[1]] = {};
+                match = regex.section.exec(line);
+                if (match) {
+                    if (!result[match[1]]) result[match[1]] = {};
+                    current_sect = result[match[1]];
                     current_sect_name = match[1];
                     return;
                 }
@@ -170,7 +178,8 @@ cfreader.load_ini_config = function(name, options) {
                 }
                 line = pre + line;
                 pre = '';
-                if (match = regex.param.exec(line)) {
+                match = regex.param.exec(line);
+                if (match) {
                     if (options && Array.isArray(options.booleans) &&
                         bool_matches.indexOf(current_sect_name + '.' + match[1]) !== -1)
                     {
@@ -187,10 +196,9 @@ cfreader.load_ini_config = function(name, options) {
                     else {
                         current_sect[match[1]] = match[2];
                     }
+                    return;
                 }
-                else {
-                    logger.logerror("Invalid line in config file '" + name + "': " + line);
-                }
+                logger.logerror("Invalid line in config file '" + name + "': " + line);
             });
         }
     }
@@ -229,10 +237,11 @@ cfreader.load_flat_config = function(name, type) {
                 if (regex.comment.test(line)) {
                     return;
                 }
-                else if (regex.blank.test(line)) {
+                if (regex.blank.test(line)) {
                     return;
                 }
-                else if (line_data = regex.line.exec(line)) {
+                line_data = regex.line.exec(line);
+                if (line_data) {
                     result.push(line_data[1].trim());
                 }
             });
@@ -270,7 +279,7 @@ cfreader.load_binary_config = function(name, type) {
         if (utils.existsSync(name)) {
             return fs.readFileSync(name);
         }
-        return null
+        return null;
     }
     catch (err) {
         if (err.code === 'EBADF') {

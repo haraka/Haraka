@@ -41,16 +41,12 @@ function _tear_down(callback) {
 exports.karma_init = {
     setUp : _set_up,
     tearDown : _tear_down,
-    'init': function (test) {
-        test.expect(4);
-        var cb = function (rc) {
-            test.equal(undefined, rc);
-            test.ok(this.plugin.cfg.asn);
-            test.ok(this.plugin.deny_hooks);
-            test.ok(this.plugin.db);
-            test.done();
-        }.bind(this);
-        this.plugin.karma_init(cb);
+    'register': function (test) {
+        test.expect(2);
+        this.plugin.register();
+        test.ok(this.plugin.cfg.asn);
+        test.ok(this.plugin.deny_hooks);
+        test.done();
     },
 };
 
@@ -77,6 +73,24 @@ exports.results_init = {
         test.expect(2);
         test.ok(r);
         test.ok(r.todo);
+        test.done();
+    },
+};
+
+exports.assemble_note_obj = {
+    setUp : _set_up,
+    tearDown : _tear_down,
+    'no auth fails': function (test) {
+        test.expect(1);
+        var obj = this.plugin.assemble_note_obj(this.connection, 'notes.auth_fails');
+        test.equal(undefined, obj);
+        test.done();
+    },
+    'has auth fails': function (test) {
+        test.expect(1);
+        this.connection.notes.auth_fails=[1,2];
+        var obj = this.plugin.assemble_note_obj(this.connection, 'notes.auth_fails');
+        test.deepEqual([1,2], obj);
         test.done();
     },
 };
@@ -503,4 +517,3 @@ exports.should_we_deny = {
         this.plugin.should_we_deny(next, this.connection, 'connect');
     },
 };
-

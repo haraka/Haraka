@@ -1,4 +1,5 @@
-// Check RCPT TO domain is in host list
+'use strict';
+// Check RCPT TO domain is in config/host_list
 
 // Previous versions of this plugin (Haraka <= 2.4.0) did not account for
 // relaying users. This plugin now permits relaying clients to send if
@@ -10,48 +11,10 @@
 
 exports.register = function() {
     var plugin = this;
+    plugin.inherits('rcpt_to.host_list_base');
 
-    var load_host_list = function () {
-        plugin.loginfo(plugin, "loading host_list");
-        plugin.host_list = plugin.config.get('host_list', 'list', load_host_list);
-    };
-    load_host_list();
-
-    var load_host_list_regex = function () {
-        plugin.loginfo(plugin, "loading host_list_regex");
-        plugin.host_list_regex = plugin.config.get('host_list_regex', 'list', load_host_list_regex);
-        plugin.hl_re = new RegExp ('^(?:' + plugin.host_list_regex.join('|') + ')$', 'i');
-    };
-    load_host_list_regex();
-};
-
-exports.hook_mail = function(next, connection, params) {
-    var plugin = this;
-    var txn = connection.transaction;
-    if (!txn) { return; }
-
-    var email = params[0].address();
-    if (!email) {
-        txn.results.add(plugin, {skip: 'mail_from.null', emit: true});
-        return next();
-    }
-
-    var domain = params[0].host.toLowerCase();
-
-    if (plugin.in_host_list(domain)) {
-        txn.results.add(plugin, {pass: 'mail_from'});
-        txn.notes.local_sender = true;
-        return next();
-    }
-
-    if (plugin.in_host_regex(domain)) {
-        txn.results.add(plugin, {pass: 'mail_from'});
-        txn.notes.local_sender = true;
-        return next();
-    }
-
-    txn.results.add(plugin, {msg: 'mail_from!local'});
-    return next();
+    plugin.load_host_list();
+    plugin.load_host_list_regex();
 };
 
 exports.hook_rcpt = function(next, connection, params) {
@@ -91,28 +54,4 @@ exports.hook_rcpt = function(next, connection, params) {
     // Another RCPT plugin may yet vouch for this recipient.
     txn.results.add(plugin, {msg: 'rcpt!local'});
     return next();
-};
-
-exports.in_host_list = function (domain) {
-    var plugin = this;
-    for (var i in plugin.host_list) {
-        plugin.logdebug("checking " + domain + " against " + plugin.host_list[i]);
-
-        // normal matches
-        if (plugin.host_list[i].toLowerCase() === domain) {
-            return true;
-        }
-    }
-    return false;
-};
-
-exports.in_host_regex = function (domain) {
-    var plugin = this;
-    if (!plugin.host_list_regex) return false;
-    if (!plugin.host_list_regex.length) return false;
-
-    plugin.logdebug("checking " + domain + " against regexp " + plugin.hl_re.source);
-
-    if (!plugin.hl_re.test(domain)) { return false; }
-    return true;
 };

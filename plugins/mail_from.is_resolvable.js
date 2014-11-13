@@ -35,7 +35,7 @@ exports.hook_mail = function(next, connection, params) {
 
     dns.resolveMx(domain, function(err, addresses) {
         if (err) {
-            results.add(plugin, {err: err.message});
+            results.add(plugin, {msg: err.message});
             connection.logdebug(plugin, domain + ': MX => ' + err.message);
             switch (err.code) {
                 case dns.NXDOMAIN:
@@ -79,7 +79,7 @@ exports.hook_mail = function(next, connection, params) {
                 dns.resolve(addr.exchange, function(err, addresses) {
                     pending_queries--;
                     if (err) {
-                        results.add(plugin, {err: err.message});
+                        results.add(plugin, {msg: err.message});
                         connection.logdebug(plugin, domain + ': MX ' + addr.priority + ' ' +
                                         addr.exchange + ' => ' + err.message);
                     }
@@ -109,7 +109,7 @@ exports.hook_mail = function(next, connection, params) {
             // Check for implicit MX 0 record
             dns.resolve(domain, function(err, addresses) {
                 if (err) {
-                    results.add(plugin, {err: domain + ':A:' + err.message});
+                    results.add(plugin, {msg: domain + ':A:' + err.message});
                     connection.logdebug(plugin, domain + ': A => ' + err.message);
                     switch (err.code) {
                         case dns.NXDOMAIN:

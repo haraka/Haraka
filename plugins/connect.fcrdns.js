@@ -3,6 +3,21 @@ var dns       = require('dns'),
     utils     = require('./utils'),
     net_utils = require('./net_utils');
 
+exports.register = function () {
+    var plugin = this;
+    var load_config = function () {
+        plugin.cfg = plugin.config.get('connect.fcrdns.ini', {
+            booleans: [
+                '-reject.no_rdns',
+                '-reject.no_fcrdns',
+                '-reject.invalid_tld',
+                '-reject.generic_rdns',
+            ]
+        }, load_config);
+    };
+    load_config();
+};
+
 exports.hook_lookup_rdns = function (next, connection) {
     var plugin = this;
     var rip = connection.remote_ip;
@@ -161,6 +176,7 @@ exports.check_fcrdns = function(connection, results, do_next) {
     var plugin = this;
 
     for (var fdom in results) {    // mail.example.com
+        if (!fdom) continue;
         var org_domain = net_utils.get_organizational_domain(fdom); // example.com
 
         // Multiple domains?
@@ -195,6 +211,7 @@ exports.check_fcrdns = function(connection, results, do_next) {
 
 exports.ptr_compare = function (ip_list, connection, domain) {
     var plugin = this;
+    if (!ip_list) return false;
     if (!ip_list.length) return false;
 
     if (ip_list.indexOf(connection.remote_ip) !== -1) {
@@ -235,6 +252,8 @@ exports.save_auth_results = function (connection) {
 exports.is_generic_rdns = function (connection, domain) {
     var plugin = this;
     // IP in rDNS? (Generic rDNS)
+    if (!domain) return false;
+
     if (!net_utils.is_ip_in_str(connection.remote_ip, domain)) {
         connection.results.add(plugin, {pass: 'is_generic_rdns'});
         return false;
@@ -243,6 +262,11 @@ exports.is_generic_rdns = function (connection, domain) {
     connection.results.add(plugin, {fail: 'is_generic_rdns'});
 
     var orgDom = net_utils.get_organizational_domain(domain);
+    if (!orgDom) {
+        connection.loginfo(this, 'no org domain for: ' + domain);
+        return false;
+    }
+
     var host_part = domain.split('.').slice(0,orgDom.split('.').length+1);
     if (/(?:static|business)/.test(host_part)) {
         // Allow some obvious generic but static ranges
@@ -273,19 +297,6 @@ exports.log_summary = function (connection) {
 
 exports.refresh_config = function (connection) {
     var plugin = this;
-    plugin.cfg = plugin.config.get('connect.fcrdns.ini', {
-        booleans: [
-            '-reject.no_rdns',
-            '-reject.no_fcrdns',
-            '-reject.invalid_tld',
-            '-reject.generic_rdns',
-        ]
-    });
-
-    var defaults = {
-        timeout: 30,
-    };
-
     // allow rdns_acccess whitelist to override
     if (connection.notes.rdns_access && connection.notes.rdns_access === 'white') {
         plugin.cfg.reject.no_rdns = 0;

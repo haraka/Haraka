@@ -1,4 +1,4 @@
-"use strict";
+'use strict';
 
 // copied from http://www.broofa.com/Tools/Math.uuid.js
 var CHARS = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'.split('');
@@ -6,24 +6,24 @@ var CHARS = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'.spl
 exports.uuid = function () {
     var chars = CHARS, uuid = new Array(36), rnd=0, r;
     for (var i = 0; i < 36; i++) {
-        if (i==8 || i==13 ||  i==18 || i==23) {
+        if (i===8 || i===13 || i===18 || i===23) {
             uuid[i] = '-';
-        } 
-        else if (i==14) {
+        }
+        else if (i===14) {
             uuid[i] = '4';
         }
         else {
             if (rnd <= 0x02) rnd = 0x2000000 + (Math.random()*0x1000000)|0;
             r = rnd & 0xf;
             rnd = rnd >> 4;
-            uuid[i] = chars[(i == 19) ? (r & 0x3) | 0x8 : r];
+            uuid[i] = chars[(i === 19) ? (r & 0x3) | 0x8 : r];
         }
     }
     return uuid.join('');
 };
 
 exports.in_array = function (item, array) {
-    return (array.indexOf(item) != -1);
+    return (array.indexOf(item) !== -1);
 };
 
 exports.sort_keys = function (obj) {
@@ -37,23 +37,23 @@ exports.uniq = function (arr) {
         if (out.length === 0) {
             out.push(arr[i]);
         }
-        else if (out[o] != arr[i]) {
+        else if (out[o] !== arr[i]) {
             out.push(arr[i]);
             o++;
         }
     }
     return out;
-}
+};
 
 exports.ISODate = function (d) {
-   function pad(n) {return n<10 ? '0'+n : n}
-   return d.getUTCFullYear()+'-'
-      + pad(d.getUTCMonth()+1)+'-'
-      + pad(d.getUTCDate())+'T'
-      + pad(d.getUTCHours())+':'
-      + pad(d.getUTCMinutes())+':'
-      + pad(d.getUTCSeconds())+'Z'
-}
+   function pad(n) { return n<10 ? '0'+n : n; }
+   return d.getUTCFullYear()+'-' +
+      pad(d.getUTCMonth()+1)+'-' +
+      pad(d.getUTCDate())+'T'    +
+      pad(d.getUTCHours())+':'   +
+      pad(d.getUTCMinutes())+':' +
+      pad(d.getUTCSeconds())+'Z' ;
+};
 
 var _daynames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 var _monnames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -72,7 +72,7 @@ exports.date_to_str = function (d) {
            _monnames[d.getMonth()] + ' ' + d.getFullYear() + ' ' +
            _pad(d.getHours(),2) + ':' + _pad(d.getMinutes(),2) + ':' + _pad(d.getSeconds(),2) +
            ' ' + d.toString().match(/\sGMT([+-]\d+)/)[1];
-}
+};
 
 exports.decode_qp = function (line) {
     line = line.replace(/\r\n/g,"\n").replace(/[ \t]+\r?\n/g,"\n");
@@ -96,7 +96,7 @@ exports.decode_qp = function (line) {
         pos++;
     }
     return buf.slice(0, pos);
-}
+};
 
 function _char_to_qp (ch) {
     return "=" + _pad(ch.charCodeAt(0).toString(16).toUpperCase(), 2);
@@ -151,7 +151,7 @@ exports.encode_qp = function (str) {
     }
 
     return out;
-}
+};
 
 var versions   = process.version.split('.'),
     version    = Number(versions[0].substring(1)),
@@ -165,11 +165,39 @@ exports.indexOfLF = function (buf, maxlength) {
         if (buf[i] === 0x0a) return i;
     }
     return -1;
-}
+};
 
 exports.prettySize = function (size) {
     if (size === 0 || !size) return 0;
     var i = Math.floor(Math.log(size)/Math.log(1024));
     var units = ['B', 'kB', 'MB', 'GB', 'TB'];
     return (size/Math.pow(1024,i)).toFixed(2) * 1 + '' + units[i];
-}
+};
+
+exports.valid_regexes = function (list, file) {
+    // list: an array of regexes. file: the file name containing the regex list
+    var valid = [];
+    for (var i=0; i<list.length; i++) {
+        try {
+            new RegExp(list[i]);
+        }
+        catch (e) {
+            require('./logger').logerror("invalid regex in " + file + ", " + list[i]);
+            continue;
+        }
+        valid.push(list[i]);
+    }
+    return valid;  // returns a list of valid regexes
+};
+
+exports.regexp_escape = function(text) {
+    return text.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
+};
+
+exports.base64 = function (str) {
+    return new Buffer(str, "UTF-8").toString("base64");
+};
+
+exports.unbase64 = function (str) {
+    return new Buffer(str, "base64").toString("UTF-8");
+};

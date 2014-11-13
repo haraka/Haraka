@@ -1,4 +1,3 @@
-
 var stub             = require('../fixtures/stub'),
     Plugin           = require('../fixtures/stub_plugin'),
     Connection       = require('../fixtures/stub_connection'),
@@ -16,7 +15,9 @@ function _set_up(callback) {
 
     // needed for tests
     this.plugin = Plugin('rcpt_to.in_host_list');
+    this.plugin.inherits('rcpt_to.host_list_base');
     this.plugin.cfg = {};
+    this.plugin.host_list = {};
     this.connection = Connection.createConnection();
     this.connection.transaction = {
         results: new ResultStore(this.connection),
@@ -41,7 +42,7 @@ exports.in_host_list = {
     },
     'hit' : function (test) {
         test.expect(1);
-        this.plugin.host_list=['test.com'];
+        this.plugin.host_list['test.com'] = true;
         var r = this.plugin.in_host_list('test.com');
         test.equal(true, r);
         test.done();
@@ -105,7 +106,7 @@ exports.hook_mail = {
             test.notEqual(-1, res.msg.indexOf('mail_from!local'));
             test.done();
         }.bind(this);
-        this.plugin.host_list = ['miss.com'];
+        this.plugin.host_list = { 'miss.com': true };
         this.plugin.hook_mail(next, this.connection, [new Address('<user@example.com>')]);
     },
     'hit' : function (test) {
@@ -118,7 +119,7 @@ exports.hook_mail = {
             test.notEqual(-1, res.pass.indexOf('mail_from'));
             test.done();
         }.bind(this);
-        this.plugin.host_list = ['example.com'];
+        this.plugin.host_list = { 'example.com': true };
         this.plugin.hook_mail(next, this.connection, [new Address('<user@example.com>')]);
     },
     'hit, regex, exact' : function (test) {
@@ -173,7 +174,7 @@ exports.hook_rcpt = {
             test.equal(undefined, msg);
             test.done();
         };
-        this.plugin.host_list=['test.com'];
+        this.plugin.host_list = { 'test.com': true };
         this.plugin.hook_rcpt(next, this.connection, [new Address('test@test.com')]);
     },
     'miss list' : function (test) {
@@ -183,7 +184,7 @@ exports.hook_rcpt = {
             test.equal(undefined, msg);
             test.done();
         };
-        this.plugin.host_list=['miss.com'];
+        this.plugin.host_list = { 'miss.com': true };
         this.plugin.hook_rcpt(next, this.connection, [new Address('test@test.com')]);
     },
     'hit regex, exact' : function (test) {
@@ -227,7 +228,7 @@ exports.hook_rcpt = {
             test.done();
         };
         this.connection.relaying=true;
-        this.connection.transaction.notes={ local_sender: true };
+        this.connection.transaction.notes = { local_sender: true };
         this.plugin.hook_rcpt(next, this.connection, [new Address('test@test.com')]);
     },
 };

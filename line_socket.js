@@ -8,31 +8,31 @@ var line_regexp = /^([^\n]*\n)/;
 
 function Socket(options) {
     if (!(this instanceof Socket)) return new Socket(options);
-    var self = this;
     net.Socket.call(this, options);
     setup_line_processor(this);
 }
 
-function setup_line_processor (self) {
+function setup_line_processor (socket) {
     var current_data = '';
-    self.process_data = function (data) {
+    socket.process_data = function (data) {
         current_data += data;
         var results;
         while (results = line_regexp.exec(current_data)) {
             var this_line = results[1];
             current_data = current_data.slice(this_line.length);
-            self.emit('line', this_line);
+            socket.emit('line', this_line);
         }
     };
 
-    self.process_end = function () {
-        if (current_data.length)
-            self.emit('line', current_data)
+    socket.process_end = function () {
+        if (current_data.length) {
+            socket.emit('line', current_data);
+        }
         current_data = '';
     };
 
-    self.on('data', function (data) { self.process_data(data) });
-    self.on('end',  function ()     { self.process_end()      });
+    socket.on('data', function (data) { socket.process_data(data);});
+    socket.on('end',  function ()     { socket.process_end();     });
 }
 
 util.inherits(Socket, net.Socket);
@@ -53,4 +53,4 @@ exports.connect = function (port, host, cb) {
     var sock = tls.connect(options, cb);
     setup_line_processor(sock);
     return sock;
-}
+};

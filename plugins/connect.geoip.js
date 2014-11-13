@@ -10,6 +10,13 @@ exports.register = function () {
         plugin.logerror("unable to load geoip-lite, try\n\n\t'npm install -g geoip-lite'\n\n");
         return;
     }
+
+    if (!plugin.geoip) {
+        // geoip-lite dropped node 0.8 support
+        plugin.logerror("unable to load geoip-lite");
+        return;
+    }
+
     plugin.register_hook('connect',     'geoip_lookup');
     plugin.register_hook('data_post',   'geoip_headers');
 };
@@ -24,8 +31,13 @@ exports.geoip_lookup = function (next, connection) {
     //    city: 'San Francisco',
     //    ll: [37.7484, -122.4156]
 
+    if (!plugin.geoip) {
+        connection.logerror(plugin, "oops, geoip-lite not loaded");
+        return next();
+    }
+
     var r = plugin.geoip.lookup(connection.remote_ip);
-    if (!r) return next();
+    if (!r) { return next(); }
 
     connection.results.add(plugin, r);
 
@@ -41,9 +53,9 @@ exports.geoip_lookup = function (next, connection) {
     }
 
     var show = [ r.country ];
-    if (r.region   && plugin.cfg.main.show_region) show.push(r.region);
-    if (r.city     && plugin.cfg.main.show_city  ) show.push(r.city);
-    if (r.distance                               ) show.push(r.distance+'km');
+    if (r.region   && plugin.cfg.main.show_region) { show.push(r.region); }
+    if (r.city     && plugin.cfg.main.show_city  ) { show.push(r.city); }
+    if (r.distance                               ) { show.push(r.distance+'km');}
 
     connection.results.add(plugin, {human: show.join(', '), emit:true});
     return next();
@@ -52,7 +64,7 @@ exports.geoip_lookup = function (next, connection) {
 exports.geoip_headers = function (next, connection) {
     var plugin = this;
     var txn = connection.transaction;
-    if (!txn) return;
+    if (!txn) { return; }
     txn.remove_header('X-Haraka-GeoIP');
     txn.remove_header('X-Haraka-GeoIP-Received');
     var geoip = connection.results.get('connect.geoip');
@@ -63,11 +75,11 @@ exports.geoip_headers = function (next, connection) {
     var received = [];
 
     var rh = plugin.received_headers(connection);
-    if (rh) received.push(rh);
-    if (!rh) plugin.user_agent(connection); // No received headers.
+    if ( rh) { received.push(rh); }
+    if (!rh) { plugin.user_agent(connection); } // No received headers.
 
     var oh = plugin.originating_headers(connection);
-    if (oh) received.push(oh);
+    if (oh) { received.push(oh); }
 
     // Add any received results to a trace header
     if (received.length) {
@@ -80,6 +92,10 @@ exports.calculate_distance = function (connection, r_geoip) {
     var plugin = this;
 
     var cb = function (err, l_ip) {
+        if (err) {
+            connection.results.add(plugin, {err: err});
+            connection.logerror(plugin, err);
+        }
         if (!plugin.local_ip) { plugin.local_ip = l_ip; }
         if (!plugin.local_ip) { plugin.local_ip = plugin.cfg.main.public_ip; }
         if (!plugin.local_ip) {
@@ -112,18 +128,18 @@ exports.haversine = function (lat1, lon1, lat2, lon2) {
     // calculate the great circle distance using the haversine formula
     // found here: http://www.movable-type.co.uk/scripts/latlong.html
     var R = 6371; // km
-    function toRad(v) { return v * Math.PI / 180; };
+    function toRad(v) { return v * Math.PI / 180; }
     var dLat = toRad(lat2-lat1);
     var dLon = toRad(lon2-lon1);
-    var lat1 = toRad(lat1);
-    var lat2 = toRad(lat2);
+        lat1 = toRad(lat1);
+        lat2 = toRad(lat2);
 
     var a = Math.sin(dLat/2) * Math.sin(dLat/2) +
             Math.sin(dLon/2) * Math.sin(dLon/2) * Math.cos(lat1) * Math.cos(lat2);
     var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
     var d = R * c;
     return d.toFixed(0);
-}
+};
 
 exports.received_headers = function (connection) {
     var plugin = this;
