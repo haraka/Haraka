@@ -243,6 +243,7 @@ exports.add_geoip_headers = function (next, connection) {
 
 exports.get_local_geo = function (ip, connection) {
     var plugin = this;
+    if (plugin.local_geoip) return;  // cached
 
     if (!plugin.local_ip) { plugin.local_ip = ip; }
     if (!plugin.local_ip) { plugin.local_ip = plugin.cfg.main.public_ip; }
