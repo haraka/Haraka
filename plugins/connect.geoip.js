@@ -1,3 +1,5 @@
+'use strict';
+
 var async     = require('async');
 var fs        = require('fs');
 var net       = require('net');
@@ -224,8 +226,9 @@ exports.add_geoip_headers = function (next, connection) {
     txn.remove_header('X-Haraka-GeoIP');
     txn.remove_header('X-Haraka-GeoIP-Received');
     var geoip = connection.results.get('connect.geoip');
-    if (geoip) {
-        txn.add_header('X-Haraka-GeoIP', geoip.human);
+    if (geoip) {             txn.add_header('X-Haraka-GeoIP',   geoip.human  );
+        if (geoip.asn)     { txn.add_header('X-Haraka-ASN',     geoip.asn    ); }
+        if (geoip.asn_org) { txn.add_header('X-Haraka-ASN-Org', geoip.asn_org); }
     }
 
     var received = [];
