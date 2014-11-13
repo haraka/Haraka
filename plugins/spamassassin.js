@@ -1,9 +1,7 @@
 'use strict';
 // Call spamassassin via spamd
-/* jshint node: true */
-/* global DENY */
 
-var sock = require('./line_socket');
+var sock  = require('./line_socket');
 var utils = require('./utils');
 
 exports.register = function () {
@@ -99,7 +97,9 @@ exports.hook_data_post = function (next, connection) {
                 // SpamAssassin appears to have a bug that causes a space not to
                 // be added before autolearn= when the header line has been folded.
                 // So we modify the regexp here not to match autolearn onwards. 
-                var tests = /tests=((?:(?!autolearn)[^ ])+)/.exec(spamd_response.headers.Status.replace(/\r?\n\t/g,''));
+                var tests = /tests=((?:(?!autolearn)[^ ])+)/.exec(
+                        spamd_response.headers.Status.replace(/\r?\n\t/g,'')
+                    );
                 if (tests) { spamd_response.tests = tests[1]; }
             }
         }
@@ -304,7 +304,8 @@ exports.msg_too_big = function(connection) {
 
     var max = plugin.cfg.main.max_size;
     if (size <= max) { return false; }
-    connection.loginfo(plugin, 'skipping, size ' + utils.prettySize(size) + ' exceeds max: ' + utils.prettySize(max));
+    connection.loginfo(plugin, 'skipping, size ' + utils.prettySize(size) +
+            ' exceeds max: ' + utils.prettySize(max));
     return true;
 };
 
