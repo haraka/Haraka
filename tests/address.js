@@ -2,9 +2,9 @@ var Address = require("../address").Address;
 
 function _check(test, address, user, host) {
     test.expect(2);
-    var address = new Address(address);
-    test.equal(address.user, user);
-    test.equal(address.host, host);
+    var a = new Address(address);
+    test.equal(a.user, user);
+    test.equal(a.host, host);
     test.done();
 }
 
@@ -57,4 +57,27 @@ exports.bad = {
         }
         test.done();
     }
+};
+
+exports.compile_re = {
+    'compiles with no exceptions': function (test) {
+        test.expect(1);
+        var addr = require('../address');
+        addr.compile_re();
+        test.ok(addr);
+        test.done();
+    },
+};
+
+exports.isNull = {
+    'positive <>': function (test) {
+        test.expect(1);
+        test.ok(new Address('<>').isNull());
+        test.done();
+    },
+    'negative': function (test) {
+        test.expect(1);
+        test.ok(!new Address('<matt@example.com>').isNull());
+        test.done();
+    },
 };
