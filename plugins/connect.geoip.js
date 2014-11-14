@@ -14,11 +14,7 @@ exports.register = function (done) {
     var loadProvider = function (fName, iterDone) {
         plugin[fName](iterDone);
     };
-    var finalCb = function () {
-        // calls done() only when testing
-        if (done && typeof(done) === 'function') done();
-    };
-    async.eachSeries(['load_maxmind', 'load_geoip_lite'], loadProvider, finalCb);
+    async.eachSeries(['load_maxmind', 'load_geoip_lite'], loadProvider, done);
 };
 
 exports.load_geoip_ini = function () {
