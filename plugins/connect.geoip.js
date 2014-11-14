@@ -9,15 +9,16 @@ exports.register = function (done) {
     var plugin = this;
 
     plugin.load_geoip_ini();
+    plugin.hasProvider=false;
 
-    var loadIt = function (fName, iterDone) {
+    var loadProvider = function (fName, iterDone) {
         plugin[fName](iterDone);
     };
     var finalCb = function () {
         // calls done() only when testing
         if (done && typeof(done) === 'function') done();
     };
-    async.some(['load_maxmind', 'load_geoip_lite'], loadIt, finalCb);
+    async.eachSeries(['load_maxmind', 'load_geoip_lite'], loadProvider, finalCb);
 };
 
 exports.load_geoip_ini = function () {
@@ -35,6 +36,7 @@ exports.load_geoip_ini = function () {
 
 exports.load_maxmind = function (loadDone) {
     var plugin = this;
+    if (plugin.hasProvider) return loadDone();
 
     try {
         plugin.maxmind = require('maxmind');
@@ -42,7 +44,7 @@ exports.load_maxmind = function (loadDone) {
     catch (e) {
         plugin.logerror(e);
         plugin.logerror("unable to load maxmind, try\n\n\t'npm install -g maxmind'\n\n");
-        return loadDone(false);
+        return loadDone();
     }
 
     var dbs = ['GeoIPCity', 'GeoIP', 'GeoIPv6',  'GeoIPASNum', 'GeoISP',
@@ -53,13 +55,15 @@ exports.load_maxmind = function (loadDone) {
         if (err) { plugin.logerror(err); }
         plugin.maxmind.dbsLoaded = dbsFound.length;
         if (dbsFound.length === 0) {
-            plugin.logerror('no GeoIP Dbs!');
-            return loadDone(false);
+            plugin.logerror('maxmind loaded but no GeoIP DBs found!');
+            return loadDone();
         }
+        plugin.hasProvider=true;
+        plugin.loginfo('geoip provider maxmind with ' + dbsFound.length + ' DBs');
         plugin.maxmind.init(dbsFound, {indexCache: true, checkForUpdates: true});
         plugin.register_hook('connect',     'lookup_maxmind');
         plugin.register_hook('data_post',   'add_geoip_headers');
-        loadDone(true);
+        loadDone();
     };
 
     var dbdir = plugin.cfg.main.dbdir || '/usr/local/share/GeoIP/';
@@ -78,27 +82,28 @@ exports.load_maxmind = function (loadDone) {
 
 exports.load_geoip_lite = function (done) {
     var plugin = this;
+    if (plugin.hasProvider) return done();
 
     try {
         plugin.geoip = require('geoip-lite');
     }
     catch (e) {
-        plugin.logerror(e);
         plugin.logerror("unable to load geoip-lite, try\n\n" +
                 "\t'npm install -g geoip-lite'\n\n");
-        return done(false);
+        return done();
     }
 
     if (!plugin.geoip) {
         // geoip-lite dropped node 0.8 support, it may not have loaded
-        console.logerror('unable to load geoip-lite');
-        return done(false);
+        plugin.logerror('unable to load geoip-lite');
+        return done();
     }
 
+    plugin.loginfo('geoip provider geoip-lite');
     plugin.register_hook('connect',     'lookup_geoip');
     plugin.register_hook('data_post',   'add_geoip_headers');
 
-    return done(true);
+    return done();
 };
 
 exports.lookup_maxmind = function (next, connection) {
