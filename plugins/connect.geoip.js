@@ -59,10 +59,10 @@ exports.load_maxmind = function (loadDone) {
             return loadDone();
         }
         plugin.hasProvider=true;
-        plugin.loginfo('geoip provider maxmind with ' + dbsFound.length + ' DBs');
+        plugin.loginfo('provider maxmind with ' + dbsFound.length + ' DBs');
         plugin.maxmind.init(dbsFound, {indexCache: true, checkForUpdates: true});
         plugin.register_hook('connect',     'lookup_maxmind');
-        plugin.register_hook('data_post',   'add_geoip_headers');
+        plugin.register_hook('data_post',   'add_headers');
         loadDone();
     };
 
@@ -99,9 +99,9 @@ exports.load_geoip_lite = function (done) {
         return done();
     }
 
-    plugin.loginfo('geoip provider geoip-lite');
+    plugin.loginfo('provider geoip-lite');
     plugin.register_hook('connect',     'lookup_geoip');
-    plugin.register_hook('data_post',   'add_geoip_headers');
+    plugin.register_hook('data_post',   'add_headers');
 
     return done();
 };
@@ -160,7 +160,7 @@ exports.lookup_geoip = function (next, connection) {
     //    ll: [37.7484, -122.4156]
 
     if (!plugin.geoip) {
-        connection.logerror(plugin, "oops, geoip-lite not loaded");
+        connection.logerror(plugin, 'geoip-lite not loaded');
         return next();
     }
 
@@ -227,16 +227,16 @@ exports.get_geoip_lite = function (ip) {
     return result;
 };
 
-exports.add_geoip_headers = function (next, connection) {
+exports.add_headers = function (next, connection) {
     var plugin = this;
     var txn = connection.transaction;
     if (!txn) { return; }
     txn.remove_header('X-Haraka-GeoIP');
     txn.remove_header('X-Haraka-GeoIP-Received');
-    var geoip = connection.results.get('connect.geoip');
-    if (geoip) {             txn.add_header('X-Haraka-GeoIP',   geoip.human  );
-        if (geoip.asn)     { txn.add_header('X-Haraka-ASN',     geoip.asn    ); }
-        if (geoip.asn_org) { txn.add_header('X-Haraka-ASN-Org', geoip.asn_org); }
+    var r = connection.results.get('connect.geoip');
+    if (r) {             txn.add_header('X-Haraka-GeoIP',   r.human  );
+        if (r.asn)     { txn.add_header('X-Haraka-ASN',     r.asn    ); }
+        if (r.asn_org) { txn.add_header('X-Haraka-ASN-Org', r.asn_org); }
     }
 
     var received = [];
