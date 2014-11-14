@@ -148,7 +148,7 @@ exports.lookup_maxmind = function (next, connection) {
 exports.lookup_geoip = function (next, connection) {
     var plugin = this;
 
-    // geoip.lookup results look like this:
+    // geoip results look like this:
     // range: [ 3479299040, 3479299071 ],
     //    country: 'US',
     //    region: 'CA',
@@ -351,7 +351,8 @@ exports.originating_headers = function (connection) {
     if (!net.isIPv4(found_ip)) return;
     if (net_utils.is_rfc1918(found_ip)) return;
 
-    var gi = plugin.geoip.lookup(found_ip);
-    connection.loginfo(plugin, 'originating=' + found_ip + ' country=' + ((gi) ? gi.country : 'UNKNOWN'));
+    var gi = plugin.get_geoip(found_ip);
+    connection.loginfo(plugin, 'originating=' + found_ip + ' country=' +
+            ((gi) ? gi.country : 'UNKNOWN'));
     return found_ip + ':' + ((gi) ? gi.country : 'UNKNOWN');
 };
