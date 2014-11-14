@@ -8,7 +8,6 @@ var stub             = require('../fixtures/stub'),
     // Header       = require('../../mailheader').Header,
     ResultStore      = require("../../result_store");
 
-
 function _set_up(callback) {
     this.plugin = new Plugin('connect.geoip');
     this.plugin.config = config;
@@ -126,6 +125,35 @@ exports.lookup_maxmind = {
 // ServedBy ll: [ 47.6738, -122.3419 ],
 // WMISD  [ 38, -97 ]
 
+exports.get_geoip = {
+    setUp : function (callback) {
+        this.plugin = new Plugin('connect.geoip');
+        this.plugin.config = config;
+
+        try { this.plugin.mm_loads = require('maxmind'); }
+        catch (ignore) {}
+        try { this.plugin.gl_loads = require('geoip-lite'); }
+        catch (ignore) {}
+
+        this.plugin.register(function () {
+            callback();
+        });
+    },
+    tearDown : _tear_down,
+    'no IP fails': function (test) {
+        if (!this.plugin.hasProvider) { return test.done(); }
+        test.expect(1);
+        test.ok(!this.plugin.get_geoip());
+        test.done();
+    },
+    'ipv4 private fails': function (test) {
+        if (!this.plugin.hasProvider) { return test.done(); }
+        test.expect(1);
+        test.ok(!this.plugin.get_geoip('192.168.85.146'));
+        test.done();
+    },
+};
+
 exports.lookup_geoip = {
     setUp : function (callback) {
         this.plugin = new Plugin('connect.geoip');
@@ -186,25 +214,11 @@ exports.get_geoip_maxmind = {
         });
     },
     tearDown : _tear_down,
-    'no IP fails': function (test) {
-        if (!this.plugin.maxmind) { return test.done(); }
-        if (!this.plugin.maxmind.dbsLoaded) { return test.done(); }
-        test.expect(1);
-        test.ok(!this.plugin.get_geoip_maxmind());
-        test.done();
-    },
     'ipv4 public passes': function (test) {
         if (!this.plugin.maxmind) { return test.done(); }
         if (!this.plugin.maxmind.dbsLoaded) { return test.done(); }
         test.expect(1);
         test.ok(this.plugin.get_geoip_maxmind('192.48.85.146'));
-        test.done();
-    },
-    'ipv4 private fails': function (test) {
-        if (!this.plugin.maxmind) { return test.done(); }
-        if (!this.plugin.maxmind.dbsLoaded) { return test.done(); }
-        test.expect(1);
-        test.ok(!this.plugin.get_geoip_maxmind('192.168.85.146'));
         test.done();
     },
     'ipv6 public passes': function (test) {

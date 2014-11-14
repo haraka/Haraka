@@ -183,6 +183,9 @@ exports.lookup_geoip = function (next, connection) {
 
 exports.get_geoip = function (ip) {
     var plugin = this;
+    if (!ip) return;
+    if (!net.isIPv4(ip) && !net.isIPv6(ip)) return;
+    if (net_utils.is_rfc1918(ip)) return;
 
     var result = plugin.get_geoip_maxmind(ip);
     if (result) return result;
@@ -192,17 +195,23 @@ exports.get_geoip = function (ip) {
 
 exports.get_geoip_maxmind = function (ip) {
     var plugin = this;
-    if (!ip) return;
     if (!plugin.maxmind) return;
-    if (net_utils.is_rfc1918(ip)) return;
 
     var ipv6 = net.isIPv6(ip);
 
     var result;
-    try { result = ipv6 ? plugin.maxmind.getLocationV6(ip) : plugin.maxmind.getLocation(ip); }
+    try {
+        // Try GeoIPCity first
+        result = ipv6 ? plugin.maxmind.getLocationV6(ip)
+                      : plugin.maxmind.getLocation(ip);
+    }
     catch (e) { plugin.logerror(e); }
     if (!result) {
-        try { result = ipv6 ? plugin.maxmind.getCountryV6(ip) : plugin.maxmind.getCountry(ip); }
+        try {
+            // then try GeoIP country
+            result = ipv6 ? plugin.maxmind.getCountryV6(ip)
+                          : plugin.maxmind.getCountry(ip);
+        }
         catch (e) { plugin.logerror(e); }
     }
     return result;
@@ -210,9 +219,8 @@ exports.get_geoip_maxmind = function (ip) {
 
 exports.get_geoip_lite = function (ip) {
     var plugin = this;
-    if (!ip) return;
     if (!plugin.geoip) return;
-    if (net_utils.is_rfc1918(ip)) return;
+    if (!net.isIPv4(ip)) return;
 
     var result = plugin.geoip.lookup(ip);
     if (result && result.ll) {
@@ -348,8 +356,6 @@ exports.originating_headers = function (connection) {
     var match = /(\d+\.\d+\.\d+\.\d+)/.exec(orig);
     if (!match) return;
     var found_ip = match[1];
-    if (!net.isIPv4(found_ip)) return;
-    if (net_utils.is_rfc1918(found_ip)) return;
 
     var gi = plugin.get_geoip(found_ip);
     connection.loginfo(plugin, 'originating=' + found_ip + ' country=' +
