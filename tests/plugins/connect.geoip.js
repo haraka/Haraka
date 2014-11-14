@@ -1,5 +1,5 @@
 'use strict';
-/* jshint node: true */
+
 var stub             = require('../fixtures/stub'),
     Connection       = require('../fixtures/stub_connection'),
     Plugin           = require('../fixtures/stub_plugin'),
