@@ -181,6 +181,10 @@ SPF.prototype.check_host = function (ip, domain, mail_from, cb) {
 
         var i, spf_record, match;
         for (i=0; i < txt_rrs.length; i++) {
+            // Node 0.11.x compatibility
+            if (Array.isArray(txt_rrs[i])) {
+                txt_rrs[i] = txt_rrs[i].join('');
+            }
             match = /^(v=spf1(?:$|\s.+$))/i.exec(txt_rrs[i]);
             if (match) {
                 if (!spf_record) {

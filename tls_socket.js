@@ -4,12 +4,12 @@
 /*----------------------------------------------------------------------------------------------*/
 
 var tls = require('tls');
+var constants = require('constants');
 var crypto = require('crypto');
 var util = require('util');
 var net = require('net');
 var stream = require('stream');
 var log = require('./logger');
-var SSL_OP_ALL = require('constants').SSL_OP_ALL;
 
 // provides a common socket for attaching
 // and detaching from either main socket, or crypto socket
@@ -178,7 +178,15 @@ function createServer(cb) {
             // See http://www.openssl.org/docs/ssl/SSL_CTX_set_options.html
             if (!options) options = {};
             // TODO: bug in Node means we can't do this until it's fixed
-            // options.secureOptions = SSL_OP_ALL;
+            // options.secureOptions = constants.SSL_OP_ALL;
+
+            // Setting secureProtocol to 'SSLv23_method' and secureOptions to
+            // constants.SSL_OP_NO_SSLv3 are used to disable SSLv2 and SSLv3
+            // protcol support.
+
+            options.secureProtocol = options.secureProtocol || 'SSLv23_method';
+            options.secureOptions  = options.secureOptions  ||
+                constants.SSL_OP_NO_SSLv3;
 
             var requestCert = true;
             var rejectUnauthorized = false;
@@ -268,7 +276,10 @@ function connect(port, host, cb) {
         // See http://www.openssl.org/docs/ssl/SSL_CTX_set_options.html
         if (!options) options = {};
         // TODO: bug in Node means we can't do this until it's fixed
-        // options.secureOptions = SSL_OP_ALL;
+        // options.secureOptions = constants.SSL_OP_ALL;
+
+        options.secureProtocol = options.secureProtocol || 'SSLv23_method';
+        options.secureOptions  = options.secureOptions  || constants.SSL_OP_NO_SSLv3;
 
         var sslcontext = crypto.createCredentials(options);
 

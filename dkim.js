@@ -318,6 +318,10 @@ DKIMObject.prototype.end = function () {
         if (!res) return self.result('no key for signature', 'invalid');
         for (var r=0; r<res.length; r++) {
             var record = res[r];
+            // Node 0.11.x compatibility
+            if (Array.isArray(record)) {
+                record = record.join('');
+            }
             if (record.indexOf('p=') === -1) {
                 self.debug(self.identity + ': ignoring TXT record: ' + record);
                 continue;
