@@ -91,8 +91,9 @@ exports.apply_tarpit = function (connection, hook, score, next) {
             connection.logdebug(plugin, "tarpit reduced for good history: " + delay);
         }
         // Reduce penalty for good ASN history
-        var n = connection.results.get('connect.asn');
-        if (n && n.neighbors > 0) {
+        var asn = connection.results.get('connect.asn');
+        if (!asn) { asn = connection.results.get('connect.geoip'); }
+        if (asn && asn.asn && k.neighbors > 0) {
             delay = parseFloat(delay - 2);
             connection.logdebug(plugin, "tarpit reduced for good neighbors: " + delay);
         }
@@ -189,7 +190,12 @@ exports.hook_deny = function (next, connection, params) {
 };
 
 exports.hook_connect = function (next, connection) {
-    this.should_we_deny(next, connection, 'connect');
+    var plugin = this;
+    var asnkey = plugin.get_asn_key(connection);
+    if (asnkey) {
+        plugin.check_asn_neighborhood(connection, asnkey);
+    }
+    plugin.should_we_deny(next, connection, 'connect');
 };
 exports.hook_helo = function (next, connection) {
     this.should_we_deny(next, connection, 'helo');
@@ -234,10 +240,6 @@ exports.hook_lookup_rdns = function (next, connection) {
     var expire = (plugin.cfg.redis.expire_days || 60) * 86400; // convert to days
     var rip    = connection.remote_ip;
     var dbkey  = 'karma|' + rip;
-    var asnkey = plugin.get_asn_key(connection);
-    if (asnkey) {
-        plugin.check_asn_neighborhood(connection, asnkey, expire);
-    }
 
     plugin.db.multi()
         .hget('concurrent', rip)
@@ -429,7 +431,6 @@ exports.hook_disconnect = function (next, connection) {
 
     var pos_lim = plugin.cfg.thresholds.positive || 3;
     var asnkey = plugin.get_asn_key(connection);
-
     if (k.connect > pos_lim) {
         plugin.db.hincrby(key, 'good', 1);
         if (asnkey) plugin.db.hincrby(asnkey, 'good', 1);
@@ -584,7 +585,7 @@ exports.check_awards = function (connection) {
         var condition = bits[2];
         switch (condition) {
             case 'equals':
-                if (wants !== note) { continue; }
+                if (wants != note) { continue; }
                 break;
             case 'gt':
                 if (parseFloat(note) <= parseFloat(wants)) { continue; }
@@ -745,7 +746,7 @@ exports.assemble_note_obj = function(prefix, key) {
     return note;
 };
 
-exports.check_asn_neighborhood = function (connection, asnkey, expire) {
+exports.check_asn_neighborhood = function (connection, asnkey) {
     var plugin = this;
     plugin.db.hgetall(asnkey, function (err, res) {
         if (err) {
@@ -754,6 +755,7 @@ exports.check_asn_neighborhood = function (connection, asnkey, expire) {
         }
 
         if (res === null) {
+            var expire = (plugin.cfg.redis.expire_days || 60) * 86400; // convert to days
             plugin.init_asn(asnkey, expire);
             return;
         }
@@ -763,7 +765,7 @@ exports.check_asn_neighborhood = function (connection, asnkey, expire) {
         if (!net_score) { return; }
 
         if (net_score < -5) {
-            connection.results.add(plugin, {fail: 'neighbors'});
+            connection.results.add(plugin, {fail: 'neighbors('+net_score+')'});
         }
         if (net_score > 5) {
             connection.results.add(plugin, {pass: 'neighbors'});
@@ -812,6 +814,9 @@ exports.get_asn_key = function (connection) {
     var plugin = this;
     if (!plugin.cfg.asn.enable) { return; }
     var asn = connection.results.get('connect.asn');
+    if (!asn || !asn.asn) {
+        asn = connection.results.get('connect.geoip');
+    }
     if (!asn || !asn.asn || isNaN(asn.asn)) { return; }
     return 'as' + asn.asn;
 };

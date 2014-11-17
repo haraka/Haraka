@@ -1,9 +1,16 @@
 # connect.asn
 
-Inserts a result object with the ASN of the connecting IP address. The ASN is
-the [Autonomous System Number](http://en.wikipedia.org/wiki/Autonomous_System_(Internet))
+* Use network services to look up the ASN of the remote IP.
+* Inserts a result object with the ASN of the connecting IP address.
+
+The AS Nunber is the [Autonomous System Number](http://en.wikipedia.org/wiki/Autonomous_System_(Internet))
 that represents the bailiwick or sphere of control of a network operator.
 
+## alternate source
+
+If your mail server is very busy, use instead the `connect.geoip`
+plugin with the MaxMind backend. It caches a copy of the ASN database locally
+and gets the ASN without the additional network traffic and delays.
 
 ## Usage
 
@@ -13,6 +20,7 @@ You can also access the ASN number for other plugins that run after this plugin 
     if (asn && asn.asn) {
         connection.loginfo(plugin, "hey look, it's ASN: " + asn.asn);
     }
+
 
 ## Configuration
 
@@ -77,9 +85,3 @@ See also: [Using BGP data to find spammers](http://www.bgpmon.net/using-bgp-data
 
 The [karma](/manual/plugins/karma.html) plugin uses the ASN to maintain
 its network neighborhood reputation.
-
-
-## TODO
-
-Keep an eye on node-geoip. If/when it adds support for ASN lookups, note
-that as an alternative data source.
