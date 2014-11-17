@@ -32,9 +32,8 @@ exports.register = {
         try { this.plugin.gl_loads = require('geoip-lite'); }
         catch (ignore) {}
 
-        this.plugin.register(function () {
-            callback();
-        });
+        this.plugin.register();
+        callback();
     },
     tearDown : _tear_down,
     'config loaded': function (test) {
@@ -64,13 +63,11 @@ exports.load_maxmind = {
     tearDown : _tear_down,
     'maxmind module loads if installed': function (test) {
         var p = this.plugin;
-        this.plugin.load_maxmind(function (success) {
-            if (success) {
-                test.expect(1);
-                test.ok(p.maxmind);
-            }
-            test.done();
-        });
+        if (this.plugin.load_maxmind()) {
+            test.expect(1);
+            test.ok(p.maxmind);
+        }
+        test.done();
     },
 };
 
@@ -79,13 +76,11 @@ exports.load_geoip_lite = {
     tearDown : _tear_down,
     'geoip-lite module loads if installed': function (test) {
         var p = this.plugin;
-        this.plugin.load_geoip_lite(function (success) {
-            if (success) {
-                test.expect(1);
-                test.ok(p.geoip);
-            }
-            test.done();
-        });
+        if (this.plugin.load_geoip_lite()) {
+            test.expect(1);
+            test.ok(p.geoip);
+        }
+        test.done();
     },
 };
 
@@ -98,9 +93,8 @@ exports.lookup_maxmind = {
         this.connection = Connection.createConnection();
         this.connection.results = new ResultStore(this.plugin);
 
-        this.plugin.load_maxmind(function (success) {
-            callback();
-        });
+        this.plugin.load_maxmind();
+        callback();
     },
     tearDown : _tear_down,
     'servedby.tnpi.net': function (test) {
@@ -135,9 +129,8 @@ exports.get_geoip = {
         try { this.plugin.gl_loads = require('geoip-lite'); }
         catch (ignore) {}
 
-        this.plugin.register(function () {
-            callback();
-        });
+        this.plugin.register();
+        callback();
     },
     tearDown : _tear_down,
     'no IP fails': function (test) {
@@ -161,9 +154,8 @@ exports.lookup_geoip = {
         this.plugin.load_geoip_ini();
         this.connection = Connection.createConnection();
         this.connection.results = new ResultStore(this.plugin);
-        this.plugin.load_geoip_lite(function () {
-            callback();
-        });
+        this.plugin.load_geoip_lite();
+        callback();
     },
     tearDown : _tear_down,
     'seattle: lat + long': function (test) {
@@ -202,16 +194,15 @@ exports.get_geoip_maxmind = {
         this.plugin.config = config;
         this.plugin.load_geoip_ini();
         var p = this.plugin;
-        this.plugin.load_maxmind(function (success) {
-            if (!p.maxmind) {
-                p.logerror("maxmind not loaded!");
-                return callback();
-            }
-            if (!p.maxmind.dbsLoaded) {
-                p.logerror("no maxmind DBs loaded!");
-            }
-            callback();
-        });
+        this.plugin.load_maxmind();
+        if (!p.maxmind) {
+            p.logerror("maxmind not loaded!");
+            return callback();
+        }
+        if (!p.maxmind.dbsLoaded) {
+            p.logerror("no maxmind DBs loaded!");
+        }
+        callback();
     },
     tearDown : _tear_down,
     'ipv4 public passes': function (test) {
@@ -236,9 +227,8 @@ exports.get_geoip_lite = {
         this.plugin = new Plugin('connect.geoip');
         this.plugin.config = config;
         this.plugin.load_geoip_ini();
-        this.plugin.load_geoip_lite(function () {
-            callback();
-        });
+        this.plugin.load_geoip_lite();
+        callback();
     },
     tearDown : _tear_down,
     'no IP fails': function (test) {
