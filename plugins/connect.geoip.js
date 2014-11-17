@@ -48,7 +48,7 @@ exports.load_maxmind = function () {
     var dbdir = plugin.cfg.main.dbdir || '/usr/local/share/GeoIP/';
     for (var i=0; i < dbs.length; i++) {
         var path = dbdir + dbs[i] + '.dat';
-        if (!fs.existsSync(path)) return;
+        if (!fs.existsSync(path)) continue;
         dbsFound.push(path);
     }
 
