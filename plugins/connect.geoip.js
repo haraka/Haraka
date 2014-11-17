@@ -5,16 +5,14 @@ var fs        = require('fs');
 var net       = require('net');
 var net_utils = require('./net_utils');
 
-exports.register = function (done) {
+exports.register = function () {
     var plugin = this;
 
     plugin.load_geoip_ini();
     plugin.hasProvider=false;
 
-    var loadProvider = function (fName, iterDone) {
-        plugin[fName](iterDone);
-    };
-    async.eachSeries(['load_maxmind', 'load_geoip_lite'], loadProvider, done);
+    plugin.load_maxmind();
+    plugin.load_geoip_lite();
 };
 
 exports.load_geoip_ini = function () {
@@ -30,9 +28,9 @@ exports.load_geoip_ini = function () {
     );
 };
 
-exports.load_maxmind = function (loadDone) {
+exports.load_maxmind = function () {
     var plugin = this;
-    if (plugin.hasProvider) return loadDone();
+    if (plugin.hasProvider) return;
 
     try {
         plugin.maxmind = require('maxmind');
@@ -40,45 +38,36 @@ exports.load_maxmind = function (loadDone) {
     catch (e) {
         plugin.logerror(e);
         plugin.logerror("unable to load maxmind, try\n\n\t'npm install -g maxmind'\n\n");
-        return loadDone();
+        return;
     }
 
     var dbs = ['GeoIPCity', 'GeoIP', 'GeoIPv6',  'GeoIPASNum', 'GeoISP',
                'GeoIPNetSpeedCell',  'GeoIPOrg', 'GeoLiteCityV6'];
     var dbsFound = [];
 
-    var fsDone = function (err) {
-        if (err) { plugin.logerror(err); }
-        plugin.maxmind.dbsLoaded = dbsFound.length;
-        if (dbsFound.length === 0) {
-            plugin.logerror('maxmind loaded but no GeoIP DBs found!');
-            return loadDone();
-        }
-        plugin.hasProvider=true;
-        plugin.loginfo('provider maxmind with ' + dbsFound.length + ' DBs');
-        plugin.maxmind.init(dbsFound, {indexCache: true, checkForUpdates: true});
-        plugin.register_hook('connect',     'lookup_maxmind');
-        plugin.register_hook('data_post',   'add_headers');
-        loadDone();
-    };
-
     var dbdir = plugin.cfg.main.dbdir || '/usr/local/share/GeoIP/';
-    var fsIter = function (file, iterDone) {
-        var path = dbdir + file + '.dat';
+    for (var i=0; i < dbs.length; i++) {
+        var path = dbdir + dbs[i] + '.dat';
+        if (!fs.existsSync(path)) return;
+        dbsFound.push(path);
+    }
 
-        fs.exists(path, function (exists) {
-            if (!exists) return iterDone();
-            dbsFound.push(path);
-            iterDone();
-        });
-    };
+    plugin.maxmind.dbsLoaded = dbsFound.length;
+    if (dbsFound.length === 0) {
+        plugin.logerror('maxmind loaded but no GeoIP DBs found!');
+        return;
+    }
 
-    async.each(dbs, fsIter, fsDone);
+    plugin.hasProvider=true;
+    plugin.loginfo('provider maxmind with ' + dbsFound.length + ' DBs');
+    plugin.maxmind.init(dbsFound, {indexCache: true, checkForUpdates: true});
+    plugin.register_hook('connect',     'lookup_maxmind');
+    plugin.register_hook('data_post',   'add_headers');
 };
 
-exports.load_geoip_lite = function (done) {
+exports.load_geoip_lite = function () {
     var plugin = this;
-    if (plugin.hasProvider) return done();
+    if (plugin.hasProvider) return;
 
     try {
         plugin.geoip = require('geoip-lite');
@@ -86,20 +75,20 @@ exports.load_geoip_lite = function (done) {
     catch (e) {
         plugin.logerror("unable to load geoip-lite, try\n\n" +
                 "\t'npm install -g geoip-lite'\n\n");
-        return done();
+        return;
     }
 
     if (!plugin.geoip) {
         // geoip-lite dropped node 0.8 support, it may not have loaded
         plugin.logerror('unable to load geoip-lite');
-        return done();
+        return;
     }
 
     plugin.loginfo('provider geoip-lite');
     plugin.register_hook('connect',     'lookup_geoip');
     plugin.register_hook('data_post',   'add_headers');
 
-    return done();
+    return;
 };
 
 exports.lookup_maxmind = function (next, connection) {
@@ -187,10 +176,19 @@ exports.get_geoip = function (ip) {
     if (!net.isIPv4(ip) && !net.isIPv6(ip)) return;
     if (net_utils.is_rfc1918(ip)) return;
 
-    var result = plugin.get_geoip_maxmind(ip);
-    if (result) return result;
+    var res = plugin.get_geoip_maxmind(ip);
+    if (!res) {
+        res = plugin.get_geoip_lite(ip);
+    }
 
-    return plugin.get_geoip_lite(ip);
+    var show = [];
+    if (res.continentCode) show.push(res.continentCode);
+    if (res.countryCode || res.code) show.push(res.countryCode || res.code);
+    if (res.region)        show.push(res.region);
+    if (res.city)          show.push(res.city);
+    res.human = show.join(', ');
+
+    return res;
 };
 
 exports.get_geoip_maxmind = function (ip) {
@@ -266,7 +264,8 @@ exports.get_local_geo = function (ip, connection) {
     if (!plugin.local_ip) { plugin.local_ip = ip; }
     if (!plugin.local_ip) { plugin.local_ip = plugin.cfg.main.public_ip; }
     if (!plugin.local_ip) {
-        connection.logerror(plugin, "can't calculate distance, set public_ip in smtp.ini");
+        connection.logerror(plugin, "can't calculate distance, " +
+                'set public_ip in smtp.ini');
         return;
     }
 
@@ -336,8 +335,9 @@ exports.received_headers = function (connection) {
         if (net_utils.is_rfc1918(match[1])) continue;  // exclude private IP
 
         var gi = plugin.get_geoip(match[1]);
-        connection.loginfo(plugin, 'received=' + match[1] + ' country=' + ((gi) ? gi.country : 'UNKNOWN'));
-        results.push(match[1] + ':' + ((gi) ? gi.country : 'UNKNOWN'));
+        var country = gi.countryCode || gi.code || 'UNKNOWN';
+        connection.loginfo(plugin, 'received=' + match[1] + ' country=' + country);
+        results.push(match[1] + ':' + country);
     }
     return results;
 };
@@ -358,7 +358,8 @@ exports.originating_headers = function (connection) {
     var found_ip = match[1];
 
     var gi = plugin.get_geoip(found_ip);
-    connection.loginfo(plugin, 'originating=' + found_ip + ' country=' +
-            ((gi) ? gi.country : 'UNKNOWN'));
-    return found_ip + ':' + ((gi) ? gi.country : 'UNKNOWN');
+    if (!gi) return;
+
+    connection.loginfo(plugin, 'originating=' + found_ip + ' ' + gi.human);
+    return found_ip + ':' + (gi.countryCode || gi.code);
 };
