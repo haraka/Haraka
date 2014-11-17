@@ -9,10 +9,11 @@ exports.register = function () {
     var plugin = this;
 
     plugin.load_geoip_ini();
-    plugin.hasProvider=false;
+    plugin.hasProvider = plugin.load_maxmind();
 
-    plugin.load_maxmind();
-    plugin.load_geoip_lite();
+    if (!plugin.hasProvider) {
+        plugin.hasProvider = plugin.load_geoip_lite();
+    }
 };
 
 exports.load_geoip_ini = function () {
@@ -30,7 +31,6 @@ exports.load_geoip_ini = function () {
 
 exports.load_maxmind = function () {
     var plugin = this;
-    if (plugin.hasProvider) return;
 
     try {
         plugin.maxmind = require('maxmind');
@@ -58,16 +58,16 @@ exports.load_maxmind = function () {
         return;
     }
 
-    plugin.hasProvider=true;
     plugin.loginfo('provider maxmind with ' + dbsFound.length + ' DBs');
     plugin.maxmind.init(dbsFound, {indexCache: true, checkForUpdates: true});
     plugin.register_hook('connect',     'lookup_maxmind');
     plugin.register_hook('data_post',   'add_headers');
+
+    return true;
 };
 
 exports.load_geoip_lite = function () {
     var plugin = this;
-    if (plugin.hasProvider) return;
 
     try {
         plugin.geoip = require('geoip-lite');
@@ -88,7 +88,7 @@ exports.load_geoip_lite = function () {
     plugin.register_hook('connect',     'lookup_geoip');
     plugin.register_hook('data_post',   'add_headers');
 
-    return;
+    return true;
 };
 
 exports.lookup_maxmind = function (next, connection) {

@@ -63,8 +63,7 @@ exports.load_maxmind = {
     tearDown : _tear_down,
     'maxmind module loads if installed': function (test) {
         var p = this.plugin;
-        this.plugin.load_maxmind();
-        if (this.hasProvider) {
+        if (this.plugin.load_maxmind()) {
             test.expect(1);
             test.ok(p.maxmind);
         }
@@ -77,8 +76,7 @@ exports.load_geoip_lite = {
     tearDown : _tear_down,
     'geoip-lite module loads if installed': function (test) {
         var p = this.plugin;
-        this.plugin.load_geoip_lite();
-        if (this.plugin.hasProvider) {
+        if (this.plugin.load_geoip_lite()) {
             test.expect(1);
             test.ok(p.geoip);
         }
