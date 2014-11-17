@@ -58,6 +58,11 @@ exports.get_dns_results = function (zone, ip, cb) {
             return cb(zone, '');
         }
 
+        if (!addrs || !addrs[0]) {
+            plugin.logerror(plugin, 'no ' + zone + ' results for ' + query);
+            return cb(zone, '');
+        }
+
         var first = addrs[0];
         if (Array.isArray(first)) {
             // node 0.11 returns TXT records as an array of labels
@@ -82,7 +87,6 @@ exports.get_dns_results = function (zone, ip, cb) {
 
         return cb(zone, result);
     });
-    return true;
 };
 
 exports.hook_lookup_rdns = function (next, connection) {
