@@ -97,15 +97,13 @@ exports.get_dns_results = {
 
     'origin.asn.cymru.com': function (test) {
         var cb = function (zone, obj) {
+            test.expect(3);
             test.equal('origin.asn.cymru.com', zone);
             test.equal('15169', obj.asn);
             test.equal('8.8.8.0/24', obj.net);
             test.done();
         };
-        test.expect(4);
-        test.ok(
-                this.plugin.get_dns_results('origin.asn.cymru.com', '8.8.8.8', cb)
-            );
+        this.plugin.get_dns_results('origin.asn.cymru.com', '8.8.8.8', cb)
     },
     'asn.routeviews.org': function (test) {
         test.expect(3);
