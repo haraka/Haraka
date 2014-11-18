@@ -70,7 +70,7 @@ exports.get_dns_results = function (zone, ip, cb) {
         }
 
         plugin.logdebug(plugin, zone + " answers: " + addrs);
-        var result = '';
+        var result;
 
         if (zone === 'origin.asn.cymru.com') {
             result = plugin.parse_cymru(first);
@@ -143,7 +143,7 @@ exports.parse_routeviews = function (thing) {
     if (labels.length !== 3) {
         plugin.logerror(plugin, "result length not 3: " + labels.length +
                 ' string="' + thing + '"');
-        return '';
+        return;
     }
 
     return { asn: labels[0], net: labels[1] + '/' + labels[2] };
@@ -152,14 +152,13 @@ exports.parse_routeviews = function (thing) {
 exports.parse_cymru = function (str) {
     var plugin = this;
     var r = str.split(/\s+\|\s*/);
-    //  99.177.75.208.origin.asn.cymru.com. 14350 IN TXT \
-    //      "40431 | 208.75.176.0/21 | US | arin | 2007-03-02"
-    // handle this: cymru: result 4:              string= \
-    //      "10290 | 12.129.48.0/24 | US | arin |"
+    //  99.177.75.208.origin.asn.cymru.com. 14350 IN TXT
+    //        "40431 | 208.75.176.0/21 | US | arin | 2007-03-02"
+    //        "10290 | 12.129.48.0/24  | US | arin |"
     if (r.length < 4) {
         plugin.logerror(plugin, "cymru: bad result length " + r.length +
                 ' string="' + str + '"');
-        return '';
+        return;
     }
     return { asn: r[0], net: r[1], country: r[2], assignor: r[3], date: r[4] };
 };
@@ -172,7 +171,7 @@ exports.parse_monkey = function (str) {
     if (r.length < 3) {
         plugin.logerror(plugin, "monkey: bad result length " + r.length +
                 ' string="' + str + '"');
-        return '';
+        return;
     }
     return {
         asn: r[1].substring(2),
