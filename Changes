@@ -1,6 +1,40 @@
 
 2.N.N - ???? NN, 2014
 
+* Fix timeout bug in helo.checks
+* p0f: add register(), load config once, early
+* server: improved config handling
+* data.headers: add Delivered-To check
+* karma: apply awards before adding message header & permit rejection at queue
+* rcpt_to.ldap: new plugin (thanks @abhas)
+* smtp_client: only load tls_* when cfg.enable_tls
+* added plugins/host_list_base
+* Platform independent temp dir (thanks @martinvd)
+* move deprecated docs into docs/deprecated
+* Switch to Phusion baseimage instead of stock Ubuntu (thanks @Synchro)
+* dkim_verify: new plugin (thanks @smfreegard)
+* many new tests
+* improved config file 'watch' logic
+* improved URI parser (for URIBL plugin)
+* Allow mixed case STARTTLS command
+* bannering fixes in outbound.js (@godsflaw)
+* added support for per recipient routes to outbound
+* Allow hyphens in params in config files (@abhas)
+* Install Node via package manager (Mohd Rozi)
+* Fix a couple crit errors (@Illirgway)
+* Add noisy/bulk out-of-band rule support to MessaageSniffer plugin
+* initial support for rabbitmq plugin (@samuelharden)
+* bounce, added non_local_msgid checks and much faster lookups
+* helo.checks: match_re now validates and pre-compiles all REs
+* vpopmail: fail faster during a CRAM-MD5 auth attempt with an invalid user
+* fcrdns: handle a null hostname
+* Add new proto_mismatch check to helo.checks
+* Improve HAProxy support code and documentation
+* karma.ini: score updates for access & uribl plugins
+* tls: reworked for efficiency and linear style
+* access: test hostname validity before PSL lookup
+* access: load lists into objects (vs arrays), for much faster runtime access
+* host_list: huge performance increase, esp for many hosts
 
 2.5.0 - May 24, 2014
 
