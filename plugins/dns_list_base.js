@@ -157,6 +157,8 @@ exports.check_zones = function (interval) {
         // A DNS list should never return positive or an error for this lookup
         // If it does, move it to the disabled list
         this.multi('127.0.0.1', zones, function (err, zone, a, pending) {
+            if (!zone) return;
+
             if (a || (err && err.code === 'ETIMEOUT')) {
                 return self.disable_zone(zone, ((a) ? a : err.code));
             }
