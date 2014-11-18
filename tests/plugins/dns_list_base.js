@@ -1,3 +1,5 @@
+'use strict';
+
 var stub         = require('../fixtures/stub'),
     Plugin       = require('../fixtures/stub_plugin');
 
@@ -5,7 +7,7 @@ function _set_up(callback) {
     this.backup = {};
 
     // needed for tests
-    this.plugin = Plugin('dns_list_base');
+    this.plugin = new Plugin('dns_list_base');
 
     callback();
 }
@@ -76,23 +78,46 @@ exports.multi = {
     setUp : _set_up,
     tearDown : _tear_down,
     'spamcop': function (test) {
-        test.expect(1);
+        test.expect(3);
         var cb = function (err, zone, a, pending) {
-            test.equal(null, err);
-            test.done();
+            if (pending) {
+                test.equal(null, err);
+                test.ok(a);
+                test.equal(true, pending);
+            }
+            else {
+                test.done();
+            }
         };
         this.plugin.multi('127.0.0.2', 'bl.spamcop.net', cb);
+    },
+    'spamhaus XML': function (test) {
+        test.expect(3);
+        var cb = function (err, zone, a, pending) {
+            if (pending) {
+                test.equal(null, err);
+                test.ok(a);
+                test.equal(true, pending);
+            }
+            else {
+                test.done();
+            }
+        };
+        this.plugin.multi('127.0.0.2', 'xbl.spamhaus.org', cb);
     },
     'spamcop + spamhaus XBL': function (test) {
         test.expect(6);
         var cb = function (err, zone, a, pending) {
-            test.equal(null, err);
-            test.ok(zone);
-            test.ok(a);
-            if (0===pending) {
+            if (pending) {
+                test.equal(null, err);
+                test.ok(zone);
+                test.equal(true, pending);
+            }
+            else {
                 test.done();
             }
         };
-        this.plugin.multi('127.0.0.2', ['bl.spamcop.net','xbl.spamhaus.org'], cb);
+        var dnsbls = ['bl.spamcop.net','xbl.spamhaus.org'];
+        this.plugin.multi('127.0.0.2', dnsbls, cb);
     },
 };

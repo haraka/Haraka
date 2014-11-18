@@ -8,7 +8,7 @@ function _set_up(callback) {
     this.backup = {};
 
     // needed for tests
-    this.plugin = Plugin('dnsbl');
+    this.plugin = new Plugin('dnsbl');
     this.plugin.config = config;
 
     callback();
