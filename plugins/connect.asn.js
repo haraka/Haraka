@@ -57,7 +57,7 @@ exports.get_dns_results = function (zone, ip, cb) {
             plugin.logerror(plugin, "error: " + err + ' running: '+query);
             return cb(zone, null);
         }
-
+console.error(addrs);
         if (!addrs || !addrs[0]) {
             plugin.logerror(plugin, 'no ' + zone + ' results for ' + query);
             return cb(zone, null);
