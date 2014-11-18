@@ -104,7 +104,7 @@ exports.get_dns_results = {
     tearDown : _tear_down,
 
     'origin.asn.cymru.com': function (test) {
-        var cb = function (zone, obj) {
+        var cb = function (err, zone, obj) {
             if (obj) {
                 test.expect(3);
                 test.equal('origin.asn.cymru.com', zone);
@@ -120,7 +120,7 @@ exports.get_dns_results = {
         this.plugin.get_dns_results('origin.asn.cymru.com', '8.8.8.8', cb);
     },
     'asn.routeviews.org': function (test) {
-        var cb = function (zone, obj) {
+        var cb = function (err, zone, obj) {
             if (obj) {
                 test.expect(2);
                 test.equal('asn.routeviews.org', zone);
@@ -131,14 +131,13 @@ exports.get_dns_results = {
             else {
                 test.expect(1);
                 test.ok("Node DNS (c-ares) bug");
-                console.log(obj);
             }
             test.done();
         };
         this.plugin.get_dns_results('asn.routeviews.org', '8.8.8.8', cb);
     },
     'origin.asn.spameatingmonkey.net': function (test) {
-        var cb = function (zone, obj) {
+        var cb = function (err, zone, obj) {
             if (obj) {
                 test.expect(3);
                 test.equal('origin.asn.spameatingmonkey.net', zone);

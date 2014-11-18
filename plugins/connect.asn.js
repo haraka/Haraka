@@ -1,9 +1,10 @@
 // determine the ASN of the connecting IP
 
-var dns = require('dns');
+var dns   = require('dns');
+var async = require('async');
 var net_utils = require('./net_utils');
 
-var test_ip = '208.75.177.99';
+var test_ip = '66.128.51.163';
 var providers = [];
 var conf_providers = [ 'origin.asn.cymru.com', 'asn.routeviews.org' ];
 
@@ -13,7 +14,11 @@ exports.register = function () {
     plugin.load_asn_ini();
 
     // add working providers to the provider list
-    var result_cb = function (zone, res) {
+    var result_cb = function (err, zone, res) {
+        if (err) {
+            plugin.logerror(plugin, err);
+            return;
+        }
         if (!res) {
             plugin.logerror(plugin, zone + " failed");
             return;
@@ -41,27 +46,24 @@ exports.load_asn_ini = function () {
     }
 };
 
-exports.get_dns_results = function (zone, ip, cb) {
+exports.get_dns_results = function (zone, ip, done) {
     var plugin = this;
     var query = ip.split('.').reverse().join('.') + '.' + zone;
     // plugin.logdebug(plugin, "query: " + query);
 
     var timer = setTimeout(function () {
-        plugin.logerror(plugin, 'timeout: ' + zone);
-        return cb(zone, null);
+        return done(new Error('timeout'), zone, null);
     }, (plugin.cfg.main.timeout || 4) * 1000);
 
     dns.resolveTxt(query, function (err, addrs) {
         clearTimeout(timer);
         if (err) {
             plugin.logerror(plugin, "error: " + err + ' running: '+query);
-            return cb(zone, null);
+            return done(err, zone);
         }
 
-console.error(addrs);
         if (!addrs || !addrs[0]) {
-            plugin.logerror(plugin, 'no ' + zone + ' results for ' + query);
-            return cb(zone, null);
+            return done(new Error('no results for ' + query), zone);
         }
 
         var first = addrs[0];
@@ -69,7 +71,6 @@ console.error(addrs);
             // node 0.11 returns TXT records as an array of labels
             first = addrs[0].join('');  // concatenate the labels
         }
-console.error(first);
 
         plugin.logdebug(plugin, zone + " answers: " + addrs);
         var result;
@@ -87,7 +88,7 @@ console.error(first);
             plugin.logerror(plugin, "unrecognized ASN provider: " + zone);
         }
 
-        return cb(zone, result);
+        return done(null, zone, result);
     });
 };
 
@@ -96,35 +97,41 @@ exports.hook_lookup_rdns = function (next, connection) {
     var ip = connection.remote_ip;
     if (net_utils.is_rfc1918(ip)) return next();
 
-    var pending = providers.length;
-    var result_cb = function (zone, r) {
-        pending--;
-        if (!r && pending === 0) return next();
+    function provIter (zone, cb) {
 
-        // store asn & net from any source
-        if (r.asn) connection.results.add(plugin, {asn: r.asn});
-        if (r.net) connection.results.add(plugin, {net: r.net});
+        function result_cb (err, zone, r) {
+            if (err) {
+                connection.logerror(plugin, err.message);
+                return cb();
+            }
+            if (!r) return cb();
 
-        // store provider specific results
-        if (zone === 'origin.asn.cymru.com') {
-            connection.results.add(plugin, { emit: true, cymru: r});
-        }
-        else if (zone === 'asn.routeviews.org') {
-            connection.results.add(plugin, { emit: true, routeviews: r });
-        }
-        else if (zone === 'origin.asn.spameatingmonkey.net') {
-            connection.results.add(plugin, { emit: true, monkey: r });
-        }
-        if (pending === 0) return next();
-    };
+            // store asn & net from any source
+            if (r.asn) connection.results.add(plugin, {asn: r.asn});
+            if (r.net) connection.results.add(plugin, {net: r.net});
 
-    for (var i=0; i < providers.length; i++) {
-        var zone = providers[i];
+            // store provider specific results
+            if (zone === 'origin.asn.cymru.com') {
+                connection.results.add(plugin, { emit: true, cymru: r});
+            }
+            else if (zone === 'asn.routeviews.org') {
+                connection.results.add(plugin, { emit: true, routeviews: r });
+            }
+            else if (zone === 'origin.asn.spameatingmonkey.net') {
+                connection.results.add(plugin, { emit: true, monkey: r });
+            }
+            return cb();
+        }
+
         connection.logdebug(plugin, "zone: " + zone);
         plugin.get_dns_results(zone, ip, result_cb);
     }
 
-    if (pending === 0) return next();
+    function provDone (err) {
+        if (err) connection.logerror(plugin, err);
+        next();
+    }
+    async.each(providers, provIter, provDone);
 };
 
 exports.parse_routeviews = function (thing) {
