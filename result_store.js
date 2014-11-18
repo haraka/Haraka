@@ -1,8 +1,7 @@
 // results.js - programmatic handling of plugin results
 
-"use strict"
+'use strict';
 
-var util = require('util');
 var config = require('./config');
 
 // see docs in docs/Results.md
@@ -142,7 +141,7 @@ ResultStore.prototype.private_collate = function (result, name) {
     for (var key in result) {
         if (all_opts.indexOf(key) !== -1) continue;
         if (hide.length && hide.indexOf(key) !== -1) continue;
-        if (util.isArray(result[key]) && result[key].length === 0) continue;
+        if (Array.isArray(result[key]) && result[key].length === 0) continue;
         r.push(key + ': ' + result[key]);
     }
 
