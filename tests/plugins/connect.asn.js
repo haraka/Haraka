@@ -105,22 +105,30 @@ exports.get_dns_results = {
 
     'origin.asn.cymru.com': function (test) {
         var cb = function (zone, obj) {
-            test.expect(3);
-            test.equal('origin.asn.cymru.com', zone);
-            test.equal('15169', obj.asn);
-            test.equal('8.8.8.0/24', obj.net);
+            if (obj) {
+                test.expect(3);
+                test.equal('origin.asn.cymru.com', zone);
+                test.equal('15169', obj.asn);
+                test.equal('8.8.8.0/24', obj.net);
+            }
+            else {
+                test.equal('something', obj);
+            }
             test.done();
         };
         this.plugin.get_dns_results('origin.asn.cymru.com', '8.8.8.8', cb);
     },
     'asn.routeviews.org': function (test) {
-        test.expect(2);
         var cb = function (zone, obj) {
-            test.equal('asn.routeviews.org', zone);
-            if (obj.asn && obj.asn === '15169') {
-                test.equal('15169', obj.asn);
+            if (obj) {
+                test.expect(2);
+                test.equal('asn.routeviews.org', zone);
+                if (obj.asn && obj.asn === '15169') {
+                    test.equal('15169', obj.asn);
+                }
             }
             else {
+                test.expect(1);
                 test.ok("Node DNS (c-ares) bug");
                 console.log(obj);
             }
@@ -130,12 +138,18 @@ exports.get_dns_results = {
     },
     'origin.asn.spameatingmonkey.net': function (test) {
         var cb = function (zone, obj) {
-            test.equal('origin.asn.spameatingmonkey.net', zone);
-            test.equal('15169', obj.asn);
-            test.equal('US', obj.country);
+            if (obj) {
+                test.expect(3);
+                test.equal('origin.asn.spameatingmonkey.net', zone);
+                test.equal('15169', obj.asn);
+                test.equal('US', obj.country);
+            }
+            else {
+                test.expect(1);
+                test.equal('something', obj);
+            }
             test.done();
         };
-        test.expect(3);
         this.plugin.get_dns_results(
                 'origin.asn.spameatingmonkey.net',
                 '8.8.8.8',

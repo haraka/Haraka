@@ -48,19 +48,19 @@ exports.get_dns_results = function (zone, ip, cb) {
 
     var timer = setTimeout(function () {
         plugin.logerror(plugin, 'timeout: ' + zone);
-        return cb(zone, '');
+        return cb(zone, null);
     }, (plugin.cfg.main.timeout || 4) * 1000);
 
     dns.resolveTxt(query, function (err, addrs) {
         clearTimeout(timer);
         if (err) {
             plugin.logerror(plugin, "error: " + err + ' running: '+query);
-            return cb(zone, '');
+            return cb(zone, null);
         }
 
         if (!addrs || !addrs[0]) {
             plugin.logerror(plugin, 'no ' + zone + ' results for ' + query);
-            return cb(zone, '');
+            return cb(zone, null);
         }
 
         var first = addrs[0];
