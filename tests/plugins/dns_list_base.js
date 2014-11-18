@@ -80,30 +80,40 @@ exports.multi = {
     'spamcop': function (test) {
         test.expect(3);
         var cb = function (err, zone, a, pending) {
-            test.equal(null, err);
-            test.ok(a);
-            test.equal(0, pending);
-            test.done();
+            if (pending) {
+                test.equal(null, err);
+                test.ok(a);
+                test.equal(true, pending);
+            }
+            else {
+                test.done();
+            }
         };
         this.plugin.multi('127.0.0.2', 'bl.spamcop.net', cb);
     },
     'spamhaus XML': function (test) {
         test.expect(3);
         var cb = function (err, zone, a, pending) {
-            test.equal(null, err);
-            test.ok(a);
-            test.equal(0, pending);
-            test.done();
+            if (pending) {
+                test.equal(null, err);
+                test.ok(a);
+                test.equal(true, pending);
+            }
+            else {
+                test.done();
+            }
         };
         this.plugin.multi('127.0.0.2', 'xbl.spamhaus.org', cb);
     },
     'spamcop + spamhaus XBL': function (test) {
         test.expect(6);
         var cb = function (err, zone, a, pending) {
-            test.equal(null, err);
-            test.ok(zone);
-            test.ok(a);
-            if (pending === 0) {
+            if (pending) {
+                test.equal(null, err);
+                test.ok(zone);
+                test.equal(true, pending);
+            }
+            else {
                 test.done();
             }
         };

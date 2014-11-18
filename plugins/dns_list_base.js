@@ -1,6 +1,7 @@
 // DNS list module
-var dns = require('dns');
-var net = require('net');
+var dns   = require('dns');
+var net   = require('net');
+var async = require('async');
 
 exports.enable_stats = false;
 exports.disable_allowed = false;
@@ -40,28 +41,29 @@ exports.lookup = function (lookup, zone, cb) {
     }
     this.logdebug('looking up: ' + query);
     dns.resolve(query, 'A', function (err, a) {
-        // Statistics
-        self.stats_incr_zone(err, zone);
+        self.stats_incr_zone(err, zone, start);  // Statistics
 
-        // Check for a return of 127.0.0.1 or outside 127/8
+        // Check for a result of 127.0.0.1 or outside 127/8
         // This should *never* happen on a proper DNS list
         if (a && (a[0] === '127.0.0.1' || (a[0].split('.'))[0] !== '127')) {
             self.disable_zone(zone, a);
-            // Return a null A record instead
-            return cb(err, null);
+            return cb(err, null);  // Return a null A record
         }
-        // Disable list if it starts timing out
-        if (err && err.code === 'ETIMEOUT') {
-            self.disable_zone(zone, err.code);
-        }
-        if (err && err.code === 'ENOTFOUND') {
-            return cb(null, a);  // Not an error for a DNSBL
+
+        if (err) {
+            // Disable list if it starts timing out
+            if (err.code === 'ETIMEOUT') {
+                self.disable_zone(zone, err.code);
+            }
+            if (err.code === 'ENOTFOUND') {
+                return cb(null, a);  // Not an error for a DNSBL
+            }
         }
         return cb(err, a);
     });
 };
 
-exports.stats_incr_zone = function (err, zone) {
+exports.stats_incr_zone = function (err, zone, start) {
     var plugin = this;
     if (!plugin.enable_stats) return;
 
@@ -101,12 +103,9 @@ exports.multi = function (lookup, zones, cb) {
     if (typeof zones === 'string') zones = [ '' + zones ];
     var self = this;
     var listed = [];
-    var pending = 0;
 
     var redis_incr = function (zone) {
         if (!self.enable_stats) return;
-        if (pending !== 0) return;  // All queries completed?
-        if (listed.length === 0) return;
 
         // Statistics: check hit overlap
         for (var i=0; i < listed.length; i++) {
@@ -115,16 +114,20 @@ exports.multi = function (lookup, zones, cb) {
         }
     };
 
-    zones.forEach(function (zone) {
-        pending++;
+    function zoneIter (zone, done) {
         self.lookup(lookup, zone, function (err, a) {
-            pending--;
-            if (a) listed.push(zone);
-            cb(err, zone, a, pending);
-
-            listed.forEach(redis_incr);
+            if (a) {
+                listed.push(zone);
+                redis_incr(zone);
+            }
+            cb(err, zone, a, true);
+            done();
         });
-    });
+    }
+    function zonesDone (err) {
+        cb(err, null, null, false);
+    }
+    async.each(zones, zoneIter, zonesDone);
 };
 
 // Return first positive or last result.

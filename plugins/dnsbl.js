@@ -120,7 +120,7 @@ exports.connect_multi = function(next, connection) {
         var deny_msg = 'host [' + remote_ip + '] is blacklisted by ' + hits.join(', ');
         if (err) {
             connection.results.add(plugin, {err: err});
-            if (pending > 0) return;
+            if (pending) return;
             if (plugin.cfg.main.reject && hits.length) {
                 return next(DENY, deny_msg);
             }
@@ -133,10 +133,10 @@ exports.connect_multi = function(next, connection) {
             connection.results.add(plugin, {fail: zone});
         }
         else {
-            connection.results.add(plugin, {pass: zone});
+            if (zone) connection.results.add(plugin, {pass: zone});
         }
 
-        if (pending > 0) return;
+        if (pending) return;
         connection.results.add(plugin, {emit: true});
 
         if (plugin.cfg.main.reject && hits.length) {
