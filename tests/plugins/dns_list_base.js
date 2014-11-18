@@ -1,3 +1,5 @@
+'use strict';
+
 var stub         = require('../fixtures/stub'),
     Plugin       = require('../fixtures/stub_plugin');
 
@@ -105,6 +107,7 @@ exports.multi = {
                 test.done();
             }
         };
-        this.plugin.multi('127.0.0.2', ['bl.spamcop.net','xbl.spamhaus.org'], cb);
+        var dnsbls = ['bl.spamcop.net','xbl.spamhaus.org'];
+        this.plugin.multi('127.0.0.2', dnsbls, cb);
     },
 };
