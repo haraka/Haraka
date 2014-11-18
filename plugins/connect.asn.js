@@ -57,6 +57,7 @@ exports.get_dns_results = function (zone, ip, cb) {
             plugin.logerror(plugin, "error: " + err + ' running: '+query);
             return cb(zone, null);
         }
+
 console.error(addrs);
         if (!addrs || !addrs[0]) {
             plugin.logerror(plugin, 'no ' + zone + ' results for ' + query);
@@ -66,8 +67,9 @@ console.error(addrs);
         var first = addrs[0];
         if (Array.isArray(first)) {
             // node 0.11 returns TXT records as an array of labels
-            first = join('', addrs[0]);  // concatenate the labels
+            first = addrs[0].join('');  // concatenate the labels
         }
+console.error(first);
 
         plugin.logdebug(plugin, zone + " answers: " + addrs);
         var result;
