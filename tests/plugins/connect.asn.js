@@ -49,8 +49,8 @@ exports.parse_routeviews = {
 
     '40431 string, asn-only': function (test) {
         test.expect(1);
-        test.deepEqual(
-                '',
+        test.equal(
+                undefined,
                 this.plugin.parse_routeviews('40431')
                 );
         test.done();
@@ -112,6 +112,7 @@ exports.get_dns_results = {
                 test.equal('8.8.8.0/24', obj.net);
             }
             else {
+                test.expect(1);
                 test.equal('something', obj);
             }
             test.done();
