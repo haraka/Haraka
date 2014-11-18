@@ -51,12 +51,11 @@ exports.lookup = function (lookup, zone, cb) {
         }
 
         if (err) {
-            // Disable list if it starts timing out
-            if (err.code === 'ETIMEOUT') {
-                self.disable_zone(zone, err.code);
+            if (err.code === 'ETIMEOUT') {         // list timed out
+                self.disable_zone(zone, err.code); // disable it
             }
-            if (err.code === 'ENOTFOUND') {
-                return cb(null, a);  // Not an error for a DNSBL
+            if (err.code === 'ENOTFOUND') {  // unlisted
+                return cb(null, a);          // not an error for a DNSBL
             }
         }
         return cb(err, a);
