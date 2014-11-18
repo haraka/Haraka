@@ -76,17 +76,21 @@ exports.multi = {
     setUp : _set_up,
     tearDown : _tear_down,
     'spamcop': function (test) {
-        test.expect(1);
+        test.expect(3);
         var cb = function (err, zone, a, pending) {
             test.equal(null, err);
+            test.ok(a);
+            test.equal(0, pending);
             test.done();
         };
         this.plugin.multi('127.0.0.2', 'bl.spamcop.net', cb);
     },
     'spamhaus XML': function (test) {
-        test.expect(1);
+        test.expect(3);
         var cb = function (err, zone, a, pending) {
             test.equal(null, err);
+            test.ok(a);
+            test.equal(0, pending);
             test.done();
         };
         this.plugin.multi('127.0.0.2', 'xbl.spamhaus.org', cb);
