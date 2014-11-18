@@ -5,7 +5,7 @@ function _set_up(callback) {
     this.backup = {};
 
     // needed for tests
-    this.plugin = Plugin('dns_list_base');
+    this.plugin = new Plugin('dns_list_base');
 
     callback();
 }
@@ -83,13 +83,21 @@ exports.multi = {
         };
         this.plugin.multi('127.0.0.2', 'bl.spamcop.net', cb);
     },
+    'spamhaus XML': function (test) {
+        test.expect(1);
+        var cb = function (err, zone, a, pending) {
+            test.equal(null, err);
+            test.done();
+        };
+        this.plugin.multi('127.0.0.2', 'xbl.spamhaus.org', cb);
+    },
     'spamcop + spamhaus XBL': function (test) {
         test.expect(6);
         var cb = function (err, zone, a, pending) {
             test.equal(null, err);
             test.ok(zone);
             test.ok(a);
-            if (0===pending) {
+            if (pending === 0) {
                 test.done();
             }
         };
