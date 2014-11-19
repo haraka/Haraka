@@ -36,95 +36,6 @@ Body.prototype.add_filter = function (filter) {
     this.filters.push(filter);
 }
 
-function _get_html_insert_position (buf) {
-    // TODO: consider re-writing this to go backwards from the end
-    for (var i=0,l=buf.length; i<l; i++) {
-        if (buf[i] === 60 && buf[i+1] === 47) { // found: "</"
-            if ( (buf[i+2] === 98  || buf[i+2] === 66) && // "b" or "B"
-                 (buf[i+3] === 111 || buf[i+3] === 79) && // "o" or "O"
-                 (buf[i+4] === 100 || buf[i+4] === 68) && // "d" or "D"
-                 (buf[i+5] === 121 || buf[i+5] === 89) && // "y" or "Y"
-                 buf[i+6] === 62)
-            {
-                // matched </body>
-                return i;
-            }
-            if ( (buf[i+2] === 104 || buf[i+2] === 72) && // "h" or "H"
-                 (buf[i+3] === 116 || buf[i+3] === 84) && // "t" or "T"
-                 (buf[i+4] === 109 || buf[i+4] === 77) && // "m" or "M"
-                 (buf[i+5] === 108 || buf[i+5] === 76) && // "l" or "L"
-                 buf[i+6] === 62)
-            {
-                // matched </html>
-                return i;
-            }
-        }
-    }
-    return buf.length - 1; // default is at the end
-}
-
-function insert_banner (ct, enc, buf, banners) {
-    if (!banners || !/^text\//i.test(ct)) {
-        return;
-    }
-    var is_html = /text\/html/i.test(ct);
-
-    // First we convert the banner to the same encoding as the buf
-    var banner_str = banners[is_html ? 1 : 0];
-    var banner_buf = null;
-    if (Iconv) {
-        try {
-            var converter = new Iconv("UTF-8", enc + "//IGNORE");
-            banner_buf = converter.convert(banner_str);
-        }
-        catch (err) {
-            logger.logerror("iconv conversion of banner to " + enc + " failed: " + err);
-        }
-    }
-
-    if (!banner_buf) {
-        banner_buf = new Buffer(banner_str);
-    }
-
-    // Allocate a new buffer: (7 or 2 is <P>...</P> vs \n...\n - correct that if you change those!)
-    var new_buf = new Buffer(buf.length + banner_buf.length + (is_html ? 7 : 2));
-
-    // Now we find where to insert it and combine it with the original buf:
-    if (is_html) {
-        var insert_pos = _get_html_insert_position(buf);
-
-        // copy start of buf into new_buf
-        buf.copy(new_buf, 0, 0, insert_pos);
-
-        // add in <P>
-        new_buf[insert_pos++] = 60;
-        new_buf[insert_pos++] = 80;
-        new_buf[insert_pos++] = 62;
-
-        // copy all of banner into new_buf
-        banner_buf.copy(new_buf, insert_pos);
-
-        // add in </P>
-        new_buf[banner_buf.length + insert_pos++] = 60;
-        new_buf[banner_buf.length + insert_pos++] = 47;
-        new_buf[banner_buf.length + insert_pos++] = 80;
-        new_buf[banner_buf.length + insert_pos++] = 62;
-
-        // copy remainder of buf into new_buf, if there is buf remaining
-        if (buf.length > (insert_pos - 7)) {
-            buf.copy(new_buf, insert_pos + banner_buf.length, insert_pos - 7);
-        }
-    }
-    else {
-        buf.copy(new_buf);
-        new_buf[buf.length] = 10; // \n
-        banner_buf.copy(new_buf, buf.length + 1);
-        new_buf[buf.length + banner_buf.length + 1] = 10; // \n
-    }
-
-    return new_buf;
-}
-
 Body.prototype.set_banner = function (banners) {
     this.add_filter(function (ct, enc, buf) { return insert_banner(ct, enc, buf, banners); });
 }
@@ -215,6 +126,95 @@ Body.prototype.parse_start = function (line) {
     }
     
     return this["parse_" + this.state](line);
+}
+
+function _get_html_insert_position (buf) {
+    // TODO: consider re-writing this to go backwards from the end
+    for (var i=0,l=buf.length; i<l; i++) {
+        if (buf[i] === 60 && buf[i+1] === 47) { // found: "</"
+            if ( (buf[i+2] === 98  || buf[i+2] === 66) && // "b" or "B"
+                 (buf[i+3] === 111 || buf[i+3] === 79) && // "o" or "O"
+                 (buf[i+4] === 100 || buf[i+4] === 68) && // "d" or "D"
+                 (buf[i+5] === 121 || buf[i+5] === 89) && // "y" or "Y"
+                 buf[i+6] === 62)
+            {
+                // matched </body>
+                return i;
+            }
+            if ( (buf[i+2] === 104 || buf[i+2] === 72) && // "h" or "H"
+                 (buf[i+3] === 116 || buf[i+3] === 84) && // "t" or "T"
+                 (buf[i+4] === 109 || buf[i+4] === 77) && // "m" or "M"
+                 (buf[i+5] === 108 || buf[i+5] === 76) && // "l" or "L"
+                 buf[i+6] === 62)
+            {
+                // matched </html>
+                return i;
+            }
+        }
+    }
+    return buf.length - 1; // default is at the end
+}
+
+function insert_banner (ct, enc, buf, banners) {
+    if (!banners || !/^text\//i.test(ct)) {
+        return;
+    }
+    var is_html = /text\/html/i.test(ct);
+
+    // First we convert the banner to the same encoding as the buf
+    var banner_str = banners[is_html ? 1 : 0];
+    var banner_buf = null;
+    if (Iconv) {
+        try {
+            var converter = new Iconv("UTF-8", enc + "//IGNORE");
+            banner_buf = converter.convert(banner_str);
+        }
+        catch (err) {
+            logger.logerror("iconv conversion of banner to " + enc + " failed: " + err);
+        }
+    }
+
+    if (!banner_buf) {
+        banner_buf = new Buffer(banner_str);
+    }
+
+    // Allocate a new buffer: (7 or 2 is <P>...</P> vs \n...\n - correct that if you change those!)
+    var new_buf = new Buffer(buf.length + banner_buf.length + (is_html ? 7 : 2));
+
+    // Now we find where to insert it and combine it with the original buf:
+    if (is_html) {
+        var insert_pos = _get_html_insert_position(buf);
+
+        // copy start of buf into new_buf
+        buf.copy(new_buf, 0, 0, insert_pos);
+
+        // add in <P>
+        new_buf[insert_pos++] = 60;
+        new_buf[insert_pos++] = 80;
+        new_buf[insert_pos++] = 62;
+
+        // copy all of banner into new_buf
+        banner_buf.copy(new_buf, insert_pos);
+
+        // add in </P>
+        new_buf[banner_buf.length + insert_pos++] = 60;
+        new_buf[banner_buf.length + insert_pos++] = 47;
+        new_buf[banner_buf.length + insert_pos++] = 80;
+        new_buf[banner_buf.length + insert_pos++] = 62;
+
+        // copy remainder of buf into new_buf, if there is buf remaining
+        if (buf.length > (insert_pos - 7)) {
+            buf.copy(new_buf, insert_pos + banner_buf.length, insert_pos - 7);
+        }
+    }
+    else {
+        buf.copy(new_buf);
+        new_buf[buf.length] = 10; // \n
+        banner_buf.copy(new_buf, buf.length + 1);
+        new_buf[buf.length + banner_buf.length + 1] = 10; // \n
+    }
+
+    return new_buf;
 }
 
 Body.prototype.parse_end = function (line) {
