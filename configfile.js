@@ -1,4 +1,4 @@
-"use strict";
+'use strict';
 // Config file loader
 
 var path = require('path');
@@ -31,29 +31,78 @@ cfreader._enoent_files = {};
 
 cfreader.on_watch_event = function (name, type, options, cb) {
     return function (fse, filename) {
-        logger.loginfo("Detected " + fse + ", reloading " + name);
+        logger.loginfo('Detected ' + fse + ', reloading ' + name);
         cfreader.load_config(name, type, options);
         if (typeof cb === 'function') cb();
+        if (fse !== 'rename') return;
         // https://github.com/joyent/node/issues/2062
         // On a rename event, we'll need to re-watch the file
-        if (fse === 'rename') {
-            cfreader._watchers[name].close();
-            try {
-                cfreader._watchers[name] = fs.watch(name, 
-                                                    { persistent: false }, 
-                                                    cfreader.on_watch_event(name, type, options, cb));
+        cfreader._watchers[name].close();
+        try {
+            cfreader._watchers[name] = fs.watch(name, 
+                                                { persistent: false }, 
+                                                cfreader.on_watch_event(name, type, options, cb));
+        }
+        catch (e) {
+            if (e.code === 'ENOENT') {
+                cfreader._enoent_files[name] = true;
+                cfreader.ensure_enoent_timer();
             }
-            catch (e) {
-                if (e.code === 'ENOENT') {
-                    cfreader._enoent_files[name] = true;
-                    cfreader.ensure_enoent_timer();
-                }
-                else {
-                    logger.logerror("Error watching file: " + name + " : " + e);
-                }
+            else {
+                logger.logerror('Error watching file: ' + name + ' : ' + e);
             }
         }
     }
+}
+
+cfreader.watch_dir = function () {
+    // NOTE: This only works on Linux and Windows
+    if (cfreader._watchers[cfreader.config_path]) return;
+    try {
+        cfreader._watchers[cfreader.config_path] = fs.watch(cfreader.config_path, 
+                                                            { persistent: false }, 
+                                                            function (fse, filename) 
+        {
+            if (!filename) return;
+            var full_path = path.join(cfreader.config_path, filename);
+            //logger.loginfo('event=' + fse + 
+            //                ' filename=' + filename + 
+            //                ' in_read_args=' + ((cfreader._read_args[full_path]) ? true : false));
+            if (!cfreader._read_args[full_path]) return;
+            var args = cfreader._read_args[full_path];
+            if (args.options && args.options.no_watch) return;
+            logger.loginfo('Detected ' + fse + ', reloading ' + filename);
+            cfreader.load_config(full_path, args.type, args.options);
+            if (typeof args.cb === 'function') args.cb();
+        });
+    }
+    catch (e) {
+        logger.logerror('Error watching directory ' + cfreader.config_path + '(' + e + ')');
+    }
+    return;
+}
+
+cfreader.watch_file = function (name, type, cb, options) {
+    // This works on all OS's, but watch_dir() above is preferred for Linux and 
+    // Windows as it is far more efficient.
+    // NOTE: we have to have an fs.watch per file and it isn't possible to watch
+    // a file that doesn't exist yet, so we have to note which files we attempted
+    // to watch that returned ENOENT and then fs.stat each of them periodically
+    if (cfreader._watchers[name] || (options && options.no_watch)) return; 
+    try {
+        cfreader._watchers[name] = fs.watch(name, {persistent: false}, 
+                                            cfreader.on_watch_event(name, type, options, cb));
+    }
+    catch (e) {
+        if (e.code != 'ENOENT') { // ignore error when ENOENT
+            logger.logerror('Error watching config file: ' + name + ' : ' + e);
+        }
+        else {
+            cfreader._enoent_files[name] = true;
+            cfreader.ensure_enoent_timer();
+        }
+    }
+    return;
 }
 
 cfreader.read_config = function(name, type, cb, options) {
@@ -68,7 +117,7 @@ cfreader.read_config = function(name, type, cb, options) {
 
     // Check cache first
     if (name in cfreader._config_cache) {
-        //logger.logdebug("Returning cached file: " + name);
+        //logger.logdebug('Returning cached file: ' + name);
         return cfreader._config_cache[name];
     }
 
@@ -79,49 +128,11 @@ cfreader.read_config = function(name, type, cb, options) {
     // We can watch the directory on these platforms which 
     // allows us to notice when files are newly created.
     if (platform === 'linux' || platform === 'win32') {
-        if (cfreader._watchers[cfreader.config_path]) return result;
-        try {
-            cfreader._watchers[cfreader.config_path] = fs.watch(cfreader.config_path, 
-                                                                { persistent: false }, 
-                                                                function (fse, filename) 
-            {
-                if (!filename) return;
-                var full_path = path.join(cfreader.config_path, filename);
-                //logger.loginfo('event=' + fse + 
-                //                ' filename=' + filename + 
-                //                ' in_read_args=' + ((cfreader._read_args[full_path]) ? true : false));
-                if (!cfreader._read_args[full_path]) return;
-                var args = cfreader._read_args[full_path];
-                if (args.options && args.options.no_watch) return;
-                logger.loginfo("Detected " + fse + ", reloading " + filename);
-                cfreader.load_config(full_path, args.type, args.options);
-                if (typeof args.cb === 'function') args.cb();
-            });
-        }
-        catch (e) {
-            logger.logerror("Error watching directory " + cfreader.config_path + "(" + e + ")");
-        }
+        cfreader.watch_dir();
     }
     else {
         // All other operating systems
-        // NOTE: we have to have an fs.watch per file and it isn't possible to watch
-        // a file that doesn't exist yet, so we have to note which files we attempted
-        // to watch that returned ENOENT and then fs.stat each of them periodically
-        if (cfreader._watchers[name]) return result;
-        if (options && options.no_watch) return result;
-        try {
-            cfreader._watchers[name] = fs.watch(name, {persistent: false}, 
-                                                cfreader.on_watch_event(name, type, options, cb));
-        }
-        catch (e) {
-            if (e.code != 'ENOENT') { // ignore error when ENOENT
-                logger.logerror("Error watching config file: " + name + " : " + e);
-            }
-            else {
-                cfreader._enoent_files[name] = true;
-                cfreader.ensure_enoent_timer();
-            }
-        }
+        cfreader.watch_file(name, type, cb, options);
     }
 
     return result;
@@ -252,7 +263,7 @@ cfreader.load_ini_config = function(name, options) {
 
     try {
         if (utils.existsSync(name)) {
-            var data = fs.readFileSync(name, "UTF-8");
+            var data = fs.readFileSync(name, 'UTF-8');
             var lines = data.split(/\r\n|\r|\n/);
             var match;
             var pre = '';
@@ -297,7 +308,7 @@ cfreader.load_ini_config = function(name, options) {
                     }
                     return;
                 }
-                logger.logerror("Invalid line in config file '" + name + "': " + line);
+                logger.logerror('Invalid line in config file \'' + name + '\': ' + line);
             });
         }
     }
