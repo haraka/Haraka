@@ -3,6 +3,7 @@
 
 var path = require('path');
 var platform = process.platform;
+var yaml = require('js-yaml');
 
 // for "ini" type files
 var regex = {
@@ -165,7 +166,7 @@ cfreader.empty_config = function(type) {
     if (type === 'ini') {
         return { main: {} };
     }
-    else if (type === 'json') {
+    else if (type === 'json' || type === 'yaml') {
         return {};
     }
     else {
@@ -181,6 +182,9 @@ cfreader.load_config = function(name, type, options) {
     }
     else if (type === 'json' || /\.json$/.test(name)) {
         result = cfreader.load_json_config(name);
+    }
+    else if (type === 'yaml' || /\.yaml$/.test(name)) {
+        result = cfreader.load_yaml_config(name);
     }
     else if (type === 'binary') {
         result = cfreader.load_binary_config(name, type);
@@ -214,6 +218,19 @@ cfreader.load_json_config = function(name) {
         if (utils.existsSync(name)) {
             result = JSON.parse(fs.readFileSync(name));
         }
+        else {
+            // File doesn't exist
+            // If filename ends in .json, try .yaml instead
+            if (/\.json$/.test(name)) {
+                var yaml_name = name.replace(/\.json$/, '.yaml');
+                if (utils.existsSync(yaml_name)) {
+                    // We have to read_config() here, so the file is watched
+                    result = cfreader.read_config(yaml_name);
+                    // Replace original config cache with this result
+                    cfreader._config_cache[name] = result;
+                }
+            }
+        }
     }
     catch (err) {
         if (err.code === 'EBADF') {
@@ -225,8 +242,57 @@ cfreader.load_json_config = function(name) {
             throw err;
         }
     }
+
+    cfreader.process_file_overrides(name, result);
     return result;
+}
+
+cfreader.process_file_overrides = function (name, result) {
+    // We might be re-loading this file, so build a list
+    // of currently cached overrides so we can remove
+    // them before we add them in again.
+    if (cfreader._config_cache[name]) {
+        var ck_keys = Object.keys(cfreader._config_cache[name]);
+        for (var i=0; i<ck_keys.length; i++) {
+            if (ck_keys[i].substr(0,1) === '!') {
+                delete cfreader._config_cache[path.join(cfreader.config_path, ck_keys[i].substr(1))];
+            }
+        }
+    }
+
+    // Allow JSON files to create or overwrite other
+    // configuration file data using by prefixing the
+    // outer variable name with ! e.g. !smtp.ini
+    var keys = Object.keys(result);
+    for (var i=0; i<keys.length; i++) {
+        if (keys[i].substr(0,1) === '!') {
+            // Overwrite the config cache for this filename
+            logger.logwarn('Overriding file ' + keys[i].substr(1) + ' with configuration from ' + name);
+            cfreader._config_cache[path.join(cfreader.config_path, keys[i].substr(1))] = result[keys[i]];
+        }
+    }
 };
+
+cfreader.load_yaml_config = function(name) {
+    var result = cfreader.empty_config('yaml');
+    try {
+        if (utils.existsSync(name)) {
+            result = yaml.safeLoad(fs.readFileSync(name, 'utf8'));
+        }
+    }
+    catch (err) {
+        if (err.code === 'EBADF') {
+            if (cfreader._config_cache[name]) {
+                return cfreader._config_cache[name];
+            }
+        }
+        else {
+            throw err;
+        }
+    }
+    cfreader.process_file_overrides(name, result);
+    return result;
+}
 
 cfreader.load_ini_config = function(name, options) {
     var result       = cfreader.empty_config('ini');
