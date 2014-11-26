@@ -1457,7 +1457,7 @@ Connection.prototype.data_post_respond = function(retval, msg) {
                     self.reset_transaction(function () { self.resume(); });
                 });
                 break;
-        case constants.deny_disconnect:
+        case constants.denydisconnect:
                 this.respond(552, msg || "Message denied", function() {
                     self.msg_count.reject++;
                     self.disconnect();
