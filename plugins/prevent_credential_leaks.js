@@ -1,5 +1,5 @@
 // Prevent a user from sending their AUTH credentials
-// This is a simple, primitave form of anti-phishing.
+// This is a simple, primitive form of anti-phishing.
 
 function escapeRegExp(str) {
   return str.replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, "\\$&");
