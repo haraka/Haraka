@@ -46,9 +46,9 @@ exports.register = function () {
     insert = db.prepare( "INSERT INTO graphdata VALUES (?,?)" );
 
     plugin.register_hook('init_master',   'http_init');
-    plugin.register_hook('disconnect',    'disconnect');
-    plugin.register_hook('deny',          'deny');
-    plugin.register_hook('queue_ok',      'queue_ok');
+    plugin.register_hook('disconnect',    'hook_disconnect');
+    plugin.register_hook('deny',          'hook_deny');
+    plugin.register_hook('queue_ok',      'hook_queue_ok');
 };
 
 exports.http_init = function (next) {
@@ -71,7 +71,7 @@ exports.http_init = function (next) {
     });
 };
 
-exports.disconnect = function (next, connection) {
+exports.hook_disconnect = function (next, connection) {
     if (!connection.current_line) {
         // disconnect without saying anything
         return this.hook_deny(next, connection, [DENY, "random disconnect", "disconnect_early"]);
@@ -79,7 +79,7 @@ exports.disconnect = function (next, connection) {
     next();
 };
 
-exports.deny = function (next, connection, params) {
+exports.hook_deny = function (next, connection, params) {
     var plugin = this;
     insert.bind([new Date().getTime(), params[2]], function (err) {
         if (err) {
