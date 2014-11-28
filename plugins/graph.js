@@ -96,7 +96,7 @@ exports.deny = function (next, connection, params) {
     });
 };
 
-exports.hook_queue_ok = function (next, connection, params) {
+exports.queue_ok = function (next, connection, params) {
     var plugin = this;
     insert.bind([new Date().getTime(), 'accepted'], function (err) {
         if (err) {
