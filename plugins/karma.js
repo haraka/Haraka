@@ -1,32 +1,58 @@
 'use strict';
 // karma - reward good and penalize bad mail senders
 
+var utils  = require('./utils');
 var ipaddr = require('ipaddr.js');
 var redis  = require('redis');
-var phase_prefixes = ['connect','helo','mail_from','rcpt_to','data'];
+var phase_prefixes = utils.to_object(
+        ['connect','helo','mail_from','rcpt_to','data']
+        );
 
 exports.register = function () {
     var plugin = this;
-    plugin.deny_hooks = ['unrecognized_command','helo','data','data_post','queue'];
+    plugin.deny_hooks = utils.to_object(
+            ['unrecognized_command','helo','data','data_post','queue']
+        );
 
-    var load_config = function () {
-        plugin.loginfo("loading karma.ini");
-        plugin.cfg = plugin.config.get('karma.ini', {
-            booleans: [
-                '+asn.enable',
-            ],
-        }, load_config);
-
-        if (plugin.cfg.deny && plugin.cfg.deny.hooks) {
-            plugin.deny_hooks = plugin.cfg.deny.hooks.split(/[\s,;]+/);
-        }
-    };
-    load_config();
+    plugin.load_karma_ini();
 
     plugin.register_hook('init_master',  'karma_init');
     plugin.register_hook('init_child',   'karma_init');
     plugin.register_hook('connect',      'max_concurrent');
     plugin.register_hook('connect',      'karma_penalty');
+};
+
+exports.load_karma_ini = function () {
+    var plugin = this;
+
+    plugin.loginfo("loading karma.ini");
+    plugin.cfg = plugin.config.get('karma.ini', {
+        booleans: [
+            '+asn.enable',
+        ],
+    }, plugin.load_karma_ini);
+
+    if (plugin.cfg.deny && plugin.cfg.deny.hooks) {
+        plugin.deny_hooks = utils.to_object(plugin.cfg.deny.hooks);
+    }
+
+    var e = plugin.cfg.deny_excludes;
+    if (e && e.hooks) {
+        plugin.deny_exclude_hooks = utils.to_object(e.hooks);
+    }
+    else {
+        plugin.deny_exclude_hooks = utils.to_object('rcpt_to, queue');
+    }
+
+    if (e && e.plugins) {
+        plugin.deny_exclude_plugins = utils.to_object(e.plugins);
+    }
+    else {
+        plugin.deny_exclude_plugins = utils.to_object(
+                ['access', 'helo.checks', 'data.headers', 'spamassassin',
+                'mail_from.is_resolvable', 'clamd']
+        );
+    }
 };
 
 exports.karma_init = function (next, server) {
@@ -138,10 +164,10 @@ exports.should_we_deny = function (next, connection, hook) {
     }
 
     if (score > negative_limit) {
-        return plugin.apply_tarpit(connection, hook, score, function() { next(); });
+        return plugin.apply_tarpit(connection, hook, score, next);
     }
-    if (plugin.deny_hooks.indexOf(hook) === -1) {
-        return plugin.apply_tarpit(connection, hook, score, function() { next(); });
+    if (plugin.deny_hooks[hook]) {
+        return plugin.apply_tarpit(connection, hook, score, next);
     }
 
     return plugin.apply_tarpit(connection, hook, score, function () {
@@ -159,23 +185,16 @@ exports.hook_deny = function (next, connection, params) {
     var pi_hook     = params[5];
 
     // exceptions, whose 'DENY' should not be captured
-    switch (pi_name) {
-        case 'karma':               // myself
-        case 'access':              // ACLs
-        case 'helo.checks':         // has granular reject
-        case 'data.headers':        //       ""
-        case 'spamassassin':        //       ""
-        case 'mail_from.is_resolvable': //   ""
-        case 'clamd':               // has clamd.excludes
-            return next();
+    if (pi_name === 'karma' || plugin.deny_exclude_plugins[pi_name] ) {
+        return next();
     }
-    switch (pi_hook) {
-        case 'rcpt_to':      // RCPT hooks are special
-        case 'queue':        // dest MX said reject
-            return next();
+    if (plugin.deny_exclude_hooks[pi_hook]) {
+        return next();
     }
 
-    if (pi_deny === DENY || pi_deny === DENYDISCONNECT || pi_deny === DISCONNECT) {
+    if (pi_deny === DENY ||
+        pi_deny === DENYDISCONNECT ||
+        pi_deny === DISCONNECT) {
         connection.results.incr(plugin, {connect: -2});
     }
     else {
@@ -493,7 +512,7 @@ exports.get_award_location = function (connection, award_key) {
     var notekey = loc_bits[2];
 
     if (loc_bits[0] === 'results') {   // ex: results.connect.geoip.distance
-        if (phase_prefixes.indexOf(pi_name) !== -1) {
+        if (phase_prefixes[pi_name]) {
             pi_name = loc_bits[1] + '.' + loc_bits[2];
             notekey = loc_bits[3];
         }
@@ -518,7 +537,7 @@ exports.get_award_location = function (connection, award_key) {
     if (loc_bits[0] === 'transaction' && loc_bits[1] === 'results') { // ex: transaction.results.spf
         pi_name = loc_bits[2];
         notekey = loc_bits[3];
-        if (phase_prefixes.indexOf(pi_name) !== -1) {
+        if (phase_prefixes[pi_name]) {
             pi_name = loc_bits[2] + '.' + loc_bits[3];
             notekey = loc_bits[4];
         }
@@ -738,7 +757,7 @@ exports.assemble_note_obj = function(prefix, key) {
     var parts = key.split('.');
     while (parts.length > 0) {
         var next = parts.shift();
-        if (phase_prefixes.indexOf(next) !== -1) {
+        if (phase_prefixes[next]) {
             next = next + '.' + parts.shift();
         }
         note = note[next];
