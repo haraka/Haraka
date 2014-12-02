@@ -166,7 +166,7 @@ exports.should_we_deny = function (next, connection, hook) {
     if (score > negative_limit) {
         return plugin.apply_tarpit(connection, hook, score, next);
     }
-    if (plugin.deny_hooks[hook]) {
+    if (!plugin.deny_hooks[hook]) {
         return plugin.apply_tarpit(connection, hook, score, next);
     }
 
@@ -185,10 +185,12 @@ exports.hook_deny = function (next, connection, params) {
     var pi_hook     = params[5];
 
     // exceptions, whose 'DENY' should not be captured
-    if (pi_name === 'karma' || plugin.deny_exclude_plugins[pi_name] ) {
-        return next();
+    if (pi_name) {
+        if (pi_name === 'karma' || plugin.deny_exclude_plugins[pi_name] ) {
+            return next();
+        }
     }
-    if (plugin.deny_exclude_hooks[pi_hook]) {
+    if (pi_hook && plugin.deny_exclude_hooks[pi_hook]) {
         return next();
     }
 
