@@ -184,6 +184,15 @@ exports.hook_deny = function (next, connection, params) {
 //  var pi_params   = params[4];
     var pi_hook     = params[5];
 
+    if (pi_deny === DENY ||
+        pi_deny === DENYDISCONNECT ||
+        pi_deny === DISCONNECT) {
+        connection.results.incr(plugin, {connect: -2});
+    }
+    else {
+        connection.results.incr(plugin, {connect: -1});
+    }
+
     // exceptions, whose 'DENY' should not be captured
     if (pi_name) {
         if (pi_name === 'karma' || plugin.deny_exclude_plugins[pi_name] ) {
@@ -192,15 +201,6 @@ exports.hook_deny = function (next, connection, params) {
     }
     if (pi_hook && plugin.deny_exclude_hooks[pi_hook]) {
         return next();
-    }
-
-    if (pi_deny === DENY ||
-        pi_deny === DENYDISCONNECT ||
-        pi_deny === DISCONNECT) {
-        connection.results.incr(plugin, {connect: -2});
-    }
-    else {
-        connection.results.incr(plugin, {connect: -1});
     }
 
     // let temporary errors pass through
