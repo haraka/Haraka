@@ -117,8 +117,13 @@ exports.lookup_maxmind = function (next, connection) {
     var asn = plugin.maxmind.getAsn(ip);
     if (asn) {
         var match = asn.match(/^(?:AS)([0-9]+)\s+(.*)$/);
-        connection.results.add(plugin, {asn: match[1]});
-        connection.results.add(plugin, {asn_org: match[2]});
+        if (match) {
+            connection.results.add(plugin, {asn: match[1]});
+            connection.results.add(plugin, {asn_org: match[2]});
+        }
+        else {
+            connection.logerror(plugin, 'unexpected AS format: ' + asn);
+        }
     }
 
     if (!loc || !plugin.cfg.main.calc_distance) {
