@@ -723,7 +723,7 @@ HMailItem.prototype._send = function () {
 };
 
 HMailItem.prototype.send_email_respond = function (retval, delay_seconds) {
-    if (retval === constants.delay) {
+    if (retval === DELAY) {
         // Try again in 'delay' seconds.
         this.logdebug("Delivery of this email delayed for " + delay_seconds + " seconds");
         var hmail = this;
@@ -744,7 +744,7 @@ HMailItem.prototype.get_mx = function () {
 
 HMailItem.prototype.get_mx_respond = function (retval, mx) {
     switch(retval) {
-        case constants.ok:
+        case OK:
                 var mx_list;
                 if (Array.isArray(mx)) {
                     mx_list = mx;
@@ -762,10 +762,10 @@ HMailItem.prototype.get_mx_respond = function (retval, mx) {
                 }
                 this.logdebug("Got an MX from Plugin: " + this.todo.domain + " => 0 " + mx);
                 return this.found_mx(null, mx_list);
-        case constants.deny:
+        case DENY:
                 this.logwarn("get_mx plugin returned DENY: " + mx);
                 return this.bounce("No MX for " + this.domain);
-        case constants.denysoft:
+        case DENYSOFT:
                 this.logwarn("get_mx plugin returned DENYSOFT: " + mx);
                 return this.temp_fail("Temporary MX lookup error for " + this.domain);
     }
@@ -1306,7 +1306,7 @@ HMailItem.prototype._bounce = function (err, opts) {
 };
 
 HMailItem.prototype.bounce_respond = function (retval, msg) {
-    if (retval !== constants.cont) {
+    if (retval !== CONT) {
         this.loginfo("plugin responded with: " + retval + ". Not sending bounce.");
         return this.discard(); // calls next_cb
     }
@@ -1392,14 +1392,14 @@ HMailItem.prototype.temp_fail = function (err, extra) {
 };
 
 HMailItem.prototype.deferred_respond = function (retval, msg, params) {
-    if (retval !== constants.cont && retval !== constants.denysoft) {
+    if (retval !== CONT && retval !== DENYSOFT) {
         this.loginfo("plugin responded with: " + retval + ". Not deferring. Deleting mail.");
         return this.discard(); // calls next_cb
     }
     
     var delay = params.delay * 1000;
     
-    if (retval === constants.denysoft) {
+    if (retval === DENYSOFT) {
         delay = parseInt(msg, 10) * 1000;
     }
 
@@ -1426,7 +1426,7 @@ HMailItem.prototype.deferred_respond = function (retval, msg, params) {
 
 // The following handler has an impact on outgoing mail. It does remove the queue file.
 HMailItem.prototype.delivered_respond = function (retval, msg) {
-    if (retval !== constants.cont && retval !== constants.ok) {
+    if (retval !== CONT && retval !== OK) {
         this.logwarn("delivered plugin responded with: " + retval + " msg=" + msg + ".");
     }
     this.discard();
