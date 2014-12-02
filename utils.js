@@ -26,6 +26,21 @@ exports.in_array = function (item, array) {
     return (array.indexOf(item) !== -1);
 };
 
+exports.to_object = function (array) {
+    if (typeof array === 'string') {
+        array = array.split(/[\s,;]+/);
+    }
+    if (!Array.isArray(array)) {
+        throw "arguments to to_object must be a string or array";
+    }
+    var rv = {};
+    for (var i = 0; i < array.length; i++) {
+        if (array[i] === undefined) { continue; }
+        rv[array[i]] = true;
+    }
+    return rv;
+};
+
 exports.sort_keys = function (obj) {
     return Object.keys(obj).sort();
 };
@@ -56,7 +71,8 @@ exports.ISODate = function (d) {
 };
 
 var _daynames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-var _monnames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+var _monnames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 function _pad (num, n, p) {
     var s = '' + num;

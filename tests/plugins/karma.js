@@ -21,10 +21,10 @@ function _set_up(callback) {
     this.backup = {};
 
     // needed for tests
-    this.plugin = Plugin('karma');
+    this.plugin = new Plugin('karma');
     this.plugin.config = config;
     this.plugin.cfg = { main: {} };
-    this.plugin.deny_hooks = ['connect'];
+    this.plugin.deny_hooks = {'connect': true};
     this.plugin.tarpit_hooks = ['connect'];
 
     this.connection = Connection.createConnection();
@@ -155,6 +155,7 @@ exports.hook_deny = {
             test.equal(undefined, rc);
             test.done();
         };
+        this.plugin.deny_exclude_plugins = { access: true };
         this.plugin.hook_deny(next, this.connection, ['','','access','']);
     },
     'pi_hook=rcpt_to': function (test) {
@@ -163,7 +164,9 @@ exports.hook_deny = {
             test.equal(undefined, rc);
             test.done();
         };
-        this.plugin.hook_deny(next, this.connection, ['','','','','','rcpt_to']);
+        this.plugin.deny_exclude_hooks = { rcpt_to: true };
+        this.plugin.hook_deny(next, this.connection,
+                ['','','','','','rcpt_to']);
     },
     'pi_hook=queue': function (test) {
         test.expect(1);
@@ -171,6 +174,7 @@ exports.hook_deny = {
             test.equal(undefined, rc);
             test.done();
         };
+        this.plugin.deny_exclude_hooks = { queue: true };
         this.plugin.hook_deny(next, this.connection, ['','','','','','queue']);
     },
     'denysoft': function (test) {
@@ -500,7 +504,7 @@ exports.should_we_deny = {
             test.done();
         }.bind(this);
         this.plugin.cfg.tarpit = { max: 1, delay: 0 };
-        this.plugin.deny_hooks = ['connect'];
+        this.plugin.deny_hooks = { connect: true};
         this.connection.results.add(this.plugin, { connect: -6 });
         this.plugin.should_we_deny(next, this.connection, 'connect');
     },
@@ -512,7 +516,7 @@ exports.should_we_deny = {
             test.done();
         }.bind(this);
         this.plugin.cfg.tarpit = { max: 1, delay: 0 };
-        this.plugin.deny_hooks = ['helo'];
+        this.plugin.deny_hooks = { helo: true };
         this.connection.results.add(this.plugin, { connect: -6 });
         this.plugin.should_we_deny(next, this.connection, 'connect');
     },
