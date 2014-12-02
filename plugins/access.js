@@ -443,7 +443,7 @@ exports.load_file = function (type, phase) {
         // to save millions of seconds during run time.
         var i;
         for (i=0; i<list.length; i++) {
-            plugin.list[type][list[i].toLowerCase()] = true;
+            plugin.list[type][phase][list[i].toLowerCase()] = true;
         }
     }
     load_em_high();
