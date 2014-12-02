@@ -160,17 +160,18 @@ exports.hook_deny = function (next, connection, params) {
 
     // exceptions, whose 'DENY' should not be captured
     switch (pi_name) {
-        case 'karma':        // myself
-        case 'access':       // ACLs
-        case 'helo.checks':  // has granular reject
-        case 'data.headers': //       ""
-        case 'spamassassin': //       ""
-        case 'clamd':        // has clamd.excludes
+        case 'karma':               // myself
+        case 'access':              // ACLs
+        case 'helo.checks':         // has granular reject
+        case 'data.headers':        //       ""
+        case 'spamassassin':        //       ""
+        case 'mail_from.is_resolvable': //   ""
+        case 'clamd':               // has clamd.excludes
             return next();
     }
     switch (pi_hook) {
         case 'rcpt_to':      // RCPT hooks are special
-        case 'queue':
+        case 'queue':        // dest MX said reject
             return next();
     }
 
