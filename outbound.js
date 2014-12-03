@@ -21,8 +21,6 @@ var date_to_str = utils.date_to_str;
 var existsSync  = utils.existsSync;
 var FsyncWriteStream = require('./fsync_writestream');
 
-constants.import(exports);
-
 var core_consts = require('constants');
 var WRITE_EXCL  = core_consts.O_CREAT | core_consts.O_TRUNC | core_consts.O_WRONLY | core_consts.O_EXCL;
 
@@ -348,7 +346,7 @@ exports.send_email = function () {
             from = new Address(from);
         }
         catch (err) {
-            return next(DENY, "Malformed from: " + err);
+            return next(constants.deny, "Malformed from: " + err);
         }
         transaction.mail_from = from;
     }
@@ -360,7 +358,7 @@ exports.send_email = function () {
     }
 
     if (to.length === 0) {
-        return next(DENY, "No recipients for email");
+        return next(constants.deny, "No recipients for email");
     }
 
     // Set RCPT TO's, and parse each if it's not an Address object.
@@ -370,7 +368,7 @@ exports.send_email = function () {
                 to[i] = new Address(to[i]);
             }
             catch (err) {
-                return next(DENY, "Malformed to address (" + to[i] + "): " + err);
+                return next(constants.deny, "Malformed to address (" + to[i] + "): " + err);
             }
         }
     }
@@ -446,7 +444,7 @@ exports.send_trans_email = function (transaction, next) {
             for (var i=0,l=ok_paths.length; i<l; i++) {
                 fs.unlink(ok_paths[i], function () {});
             }
-            if (next) next(DENY, err);
+            if (next) next(constants.deny, err);
             return;
         }
 
@@ -455,7 +453,9 @@ exports.send_trans_email = function (transaction, next) {
             delivery_queue.push(hmail);
         }
 
-        if (next) next(OK, "Message Queued (" + transaction.uuid + ")");
+        if (next) {
+            next(constants.ok, "Message Queued (" + transaction.uuid + ")");
+        }
     });
 };
 
@@ -1327,7 +1327,7 @@ HMailItem.prototype.bounce_respond = function (retval, msg) {
         }
 
         exports.send_email(from, recip, data_lines.join(''), function (code, msg) {
-            if (code === DENY) {
+            if (code === constants.deny) {
                 // failed to even queue the mail
                 return self.double_bounce("Unable to queue the bounce message. Not sending bounce!");
             }
