@@ -1593,7 +1593,7 @@ Connection.prototype.queue_respond = function(retval, msg) {
 
 Connection.prototype.queue_ok_respond = function (retval, msg, params) {
     var self = this;
-    this.lognotice('queue code=' + constants.translate(retval) + ' msg="' + (params || '') + '"');
+    this.lognotice('queue_ok code=' + constants.translate(retval) + ' msg="' + (params || '') + '"');
     this.respond(250, params, function() {
         self.msg_count.accept++;
         self.reset_transaction(function () { self.resume();});
