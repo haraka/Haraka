@@ -3,13 +3,18 @@
 var dns = require('dns');
 
 exports.register = function () {
+    this.load_ini();
+};
+
+exports.load_ini = function () {
     var plugin = this;
     plugin.cfg = plugin.config.get('mail_from.is_resolvable.ini', {
         booleans: [
             '-main.allow_mx_ip',
             '+main.reject_no_mx',
             ],
-    });
+    },
+    plugin.load_ini);
 
     plugin.re_bogus_ip = new RegExp(plugin.cfg.main.re_bogus_ip ||
             '^(?:0\\.0\\.0\\.0|255\\.255\\.255\\.255|127\\.)' );
