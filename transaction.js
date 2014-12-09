@@ -18,6 +18,7 @@ function Transaction() {
     this.header_lines = [];
     this.data_lines = [];
     this.banner = null;
+    this.body_filters = [];
     this.data_bytes = 0;
     this.header_pos = 0;
     this.body = null;
@@ -44,6 +45,26 @@ exports.createTransaction = function(uuid) {
     return t;
 };
 
+Transaction.prototype.ensure_body = function() {
+    var self = this;
+    if (this.body) {
+        return;
+    }
+
+    this.body = new body.Body(this.header);
+    if (this.banner) {
+        this.body.set_banner(this.banner);
+    }
+    this.body_filters.forEach(function(o) {
+        self.body.add_filter(function(ct, enc, buf) {
+            if ((o.ct_match instanceof RegExp && o.ct_match.test(ct.toLowerCase()))
+                        || ct.toLowerCase().indexOf(String(o.ct_match).toLowerCase()) === 0) {
+                return o.filter(ct, enc, buf);
+            }
+        });
+    });
+};
+
 Transaction.prototype.add_data = function(line) {
     if (typeof line === 'string') { // This shouldn't ever really happen...
         line = new Buffer(line);
@@ -53,7 +74,7 @@ Transaction.prototype.add_data = function(line) {
         this.header.parse(this.header_lines);
         this.header_pos = this.header_lines.length;
         if (this.parse_body) {
-            this.body = this.body || new body.Body(this.header, {"banner": this.banner});
+            this.ensure_body();
         }
     }
     else if (this.header_pos === 0) {
@@ -95,7 +116,7 @@ Transaction.prototype.end_data = function(cb) {
         this.header.parse(this.header_lines);
         this.header_pos = header_pos;
         if (this.parse_body) {
-            this.body = this.body || new body.Body(this.header, {"banner": this.banner});
+            this.ensure_body();
             for (var i = 0; i < body_lines.length; i++) {
                 this.body.parse_more(body_lines[i]);
             }
@@ -136,7 +157,7 @@ Transaction.prototype.remove_header = function (key) {
 
 Transaction.prototype.attachment_hooks = function (start, data, end) {
     this.parse_body = 1;
-    this.body = this.body || new body.Body(this.header, {"banner": this.banner});
+    this.ensure_body();
     this.body.on('attachment_start', start);
 };
 
@@ -147,4 +168,9 @@ Transaction.prototype.set_banner = function (text, html) {
         html = text.replace(/\n/g, '<br/>\n');
     }
     this.banner = [text, html];
+}
+
+Transaction.prototype.add_body_filter = function (ct_match, filter) {
+    this.parse_body = true;
+    this.body_filters.push({'ct_match': ct_match, 'filter': filter});
 }

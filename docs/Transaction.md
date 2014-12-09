@@ -148,6 +148,16 @@ Sets a banner to be added to the end of the email. If the html part is not
 given (optional) then the text part will have each line ending replaced with
 `<br/>` when being inserted into HTML parts.
 
+* transaction.add\_body\_filter(ct_match, filter)
+
+Adds a filter to be applied to body parts in the email.  ct\_match should be a
+regular expression to match against the full content-type line, or a string to
+match at the start, e.g. `/^text\/html/` or `'text/plain'`.  filter will be
+called when each body part matching ct_match is complete.  It receives three
+parameters, the content-type line, the encoding name, and a buffer with the
+full body part.  It should return a buffer with the desired contents of the
+body in the same encoding.
+
 * transaction.results
 
 Store results of processing in a structured format. See [docs/Results](http://haraka.github.io/manual/Results.html)
