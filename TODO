@@ -37,9 +37,9 @@ Remove the following deprecated plugins
  - mail_from.access     (replaced by access.js)
  - rcpt_to.access                 ""
  - connect.rdns_access            ""
- - relay_acl
- - relay_all
- - relay_force_routing
+ - relay_acl            (replaced by relay.js)
+ - relay_all                      ""
+ - relay_force_routing            ""
 
 Rename the following plugins
  - toobusy      -> connect.toobusy
@@ -57,3 +57,6 @@ Built-in HTTP server
 - a dispatch mechanism, so each plugin gets their own URL space
 - uses the same TLS/SSL certs as smtpd
 - auth against SMTP-AUTH provider
+
+Update tests to detect HARAKA_NETWORK_TESTS and skip network tests unless it's set
+  (to prevent annoying test suite failures that are tangential to Haraka)
