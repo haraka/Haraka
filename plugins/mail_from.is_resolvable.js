@@ -37,7 +37,7 @@ exports.hook_mail = function(next, connection, params) {
         return next(DENYSOFT, 'Temporary resolver error (timeout)');
     }, ((c.timeout) ? c.timeout : 30) * 1000);
 
-    var mxCb = function (code, reply) {
+    var mxDone = function (code, reply) {
         if (called_next) return;
         clearTimeout(timeout_id);
         called_next++;
@@ -45,11 +45,11 @@ exports.hook_mail = function(next, connection, params) {
     };
 
     dns.resolveMx(domain, function(err, addresses) {
-        if (err && plugin.mxErr(connection, domain, 'MX', err)) return;
+        if (err && plugin.mxErr(connection, domain, 'MX', err, mxDone)) return;
 
         if (!addresses || !addresses.length) {
             // Check for implicit MX 0 record
-            return plugin.implicit_mx(connection, domain, mxCb);
+            return plugin.implicit_mx(connection, domain, mxDone);
         }
 
         // Verify that the MX records resolve to valid addresses
@@ -61,10 +61,10 @@ exports.hook_mail = function(next, connection, params) {
             if (a_records && a_records.length) {
                 connection.logdebug(plugin, domain + ': ' + a_records);
                 results.add(plugin, {pass: 'has_a_records'});
-                return mxCb();
+                return mxDone();
             }
             results.add(plugin, {fail: 'has_a_records'});
-            return mxCb(((c.reject_no_mx) ? DENY : DENYSOFT),
+            return mxDone(((c.reject_no_mx) ? DENY : DENYSOFT),
                     'MX without A records');
         }
 
@@ -109,32 +109,33 @@ exports.hook_mail = function(next, connection, params) {
     });
 };
 
-exports.mxErr = function (connection, domain, type, err) {
+exports.mxErr = function (connection, domain, type, err, mxDone) {
     var plugin = this;
     connection.transaction.results.add(plugin,
             {msg: domain + ':' + type + ':' + err.message});
     connection.logdebug(plugin, domain + ':' + type + ' => ' + err.message);
     switch (err.code) {
-        case dns.NXDOMAIN:
+        case 'NXDOMAIN':
         case 'ENOTFOUND':
         case 'ENODATA':
             // Ignore
             break;
         default:
-            plugin.mxCb(DENYSOFT, 'Temp. resolver error (' + err.code + ')');
+            mxDone(DENYSOFT, 'Temp. resolver error (' + err.code + ')');
             return true;
     }
     return false;
 };
 
-exports.implicit_mx = function (connection, domain, mxCb) {
+exports.implicit_mx = function (connection, domain, mxDone) {
     var plugin = this;
+    var txn = connection.transaction;
     dns.resolve(domain, 'A', function(err, addresses) {
-        if (err && plugin.mxErr(connection, domain, 'A', err)) return;
+        if (err && plugin.mxErr(connection, domain, 'A', err, mxDone)) return;
 
         if (!addresses || !addresses.length) {
-            connection.results.add(plugin, {fail: 'has_a_records'});
-            return mxCb(((plugin.cfg.main.reject_no_mx) ? DENY : DENYSOFT),
+            txn.results.add(plugin, {fail: 'has_a_records'});
+            return mxDone(((plugin.cfg.main.reject_no_mx) ? DENY : DENYSOFT),
                     'No MX for your FROM address');
         }
 
@@ -149,10 +150,14 @@ exports.implicit_mx = function (connection, domain, mxCb) {
             }
             a_records[addr] = true;
         }
+
         a_records = Object.keys(a_records);
         if (a_records && a_records.length) {
-            connection.transaction.results.add(plugin, {pass: 'has_a_records'});
+            txn.results.add(plugin, {pass: 'implicit_mx'});
+            return mxDone();
         }
-        return mxCb();
+
+        txn.results.add(plugin, {fail: 'implicit_mx('+domain+')'});
+        return mxDone();
     });
 };
