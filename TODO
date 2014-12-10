@@ -8,7 +8,7 @@
   - virus/*
 
 Outbound improvements
- - Rate Limiting (there's a branch for this but it's incomplete)
+ - Rate Limiting (there's an incomplete branch for this)
  - Provide better command line tools for manipulating/inspecting the queue
  - Add the ability to force a run on a specific queue file or destination domain
  - Make retry times configurable (handle RFC requirements for 5 days and DSN queued warnings)
@@ -47,9 +47,6 @@ Rename the following plugins
  - avg          -> data.avg
  - clamd        -> data.clamd
  - spamassassin -> data.spamassassin
-
-Move the following plugins:
- - test_queue   -> queue/test_queue
 
 Built-in HTTP server
 - instead of each plugin bringing their own, and getting relegated to some
