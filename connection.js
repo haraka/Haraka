@@ -1,7 +1,9 @@
 'use strict';
 // a single connection
 
+var net         = require('net');
 var path        = require('path');
+
 var config      = require('./config');
 var logger      = require('./logger');
 var trans       = require('./transaction');
@@ -53,17 +55,23 @@ for (var key in logger) {
 
 // Load HAProxy hosts into an object for fast lookups
 // as this list is checked on every new connection.
-var haproxy_hosts = {};
+var haproxy_hosts_ipv4 = [];
+var haproxy_hosts_ipv6 = [];
 function loadHAProxyHosts() {
-    var hosts = config.get('haproxy_hosts', 'list', function () {
-        loadHAProxyHosts();
-    });
-    var new_host_list = [];
+    var hosts = config.get('haproxy_hosts', 'list', loadHAProxyHosts);
+    var new_ipv4_hosts = [];
+    var new_ipv6_hosts = [];
     for (var i=0; i<hosts.length; i++) {
         var host = hosts[i].split(/\//);
-        new_host_list[i] = [ipaddr.parse(host[0]), parseInt(host[1] || 32)];
+        if (net.isIPv6(host[0])) {
+            new_ipv6_hosts[i] = [ipaddr.IPv6.parse(host[0]), parseInt(host[1] || 64)];
+        }
+        else {
+            new_ipv4_hosts[i] = [ipaddr.IPv4.parse(host[0]), parseInt(host[1] || 32)];
+        }
     }
-    haproxy_hosts = new_host_list;
+    haproxy_hosts_ipv4 = new_ipv4_hosts;
+    haproxy_hosts_ipv6 = new_ipv6_hosts;
 }
 loadHAProxyHosts();
 
@@ -118,8 +126,12 @@ function setupClient(self) {
         self.process_data(data);
     });
 
-    if (haproxy_hosts.some(function (element, index, array) {
-        return ipaddr.IPv4.parse(self.remote_ip).match(element[0], element[1]);
+    var halist = net.ipIPv6(self.remote_ip)
+               ? haproxy_hosts_ipv6
+               : haproxy_hosts_ipv4;
+
+    if (ha_list.some(function (element, index, array) {
+        return ipaddr.parse(self.remote_ip).match(element[0], element[1]);
     })) {
         self.proxy = true;
         // Wait for PROXY command
