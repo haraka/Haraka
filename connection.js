@@ -126,9 +126,9 @@ function setupClient(self) {
         self.process_data(data);
     });
 
-    var halist = net.ipIPv6(self.remote_ip)
-               ? haproxy_hosts_ipv6
-               : haproxy_hosts_ipv4;
+    var ha_list = net.isIPv6(self.remote_ip)
+                ? haproxy_hosts_ipv6
+                : haproxy_hosts_ipv4;
 
     if (ha_list.some(function (element, index, array) {
         return ipaddr.parse(self.remote_ip).match(element[0], element[1]);
