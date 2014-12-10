@@ -61,7 +61,7 @@ function loadHAProxyHosts() {
     var new_host_list = [];
     for (var i=0; i<hosts.length; i++) {
         var host = hosts[i].split(/\//);
-        new_host_list[i] = [ipaddr.IPv4.parse(host[0]), parseInt(host[1] || 32)];
+        new_host_list[i] = [ipaddr.parse(host[0]), parseInt(host[1] || 32)];
     }
     haproxy_hosts = new_host_list;
 }
