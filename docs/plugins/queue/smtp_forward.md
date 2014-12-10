@@ -24,12 +24,12 @@ Configuration
     
   * port=PORT
     
-    The port to connect to.
+    The port to connect to. Default: 25
  
   * connect\_timeout=SECONDS
 
     The maximum amount of time to wait when creating a new connection
-    to the host.  Default if unspecified is 30 seconds.
+    to the host.  Default: 30 seconds.
 
   * timeout=SECONDS
     
@@ -39,9 +39,9 @@ Configuration
 
   * max\_connections=NUMBER
    
-    Maximum number of connections to create at any given time.
+    Maximum number of connections at any given time. Default: 1000
 
-  * enable\_tls=[true|yes|1]
+  * enable\_tls=[true]
 
     Enable TLS with the forward host (if supported)
 

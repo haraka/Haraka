@@ -25,8 +25,9 @@ var tls_cert;
 function SMTPClient(port, host, connect_timeout, idle_timeout) {
     events.EventEmitter.call(this);
     this.uuid = uuid();
+    this.connect_timeout = parseInt(connect_timeout) || 30;
     this.socket = line_socket.connect(port, host);
-    this.socket.setTimeout(((connect_timeout === undefined) ? 30 : connect_timeout) * 1000);
+    this.socket.setTimeout(this.connect_timeout * 1000);
     this.socket.setKeepAlive(true);
     this.state = STATE.IDLE;
     this.command = 'greeting';
@@ -120,19 +121,20 @@ function SMTPClient(port, host, connect_timeout, idle_timeout) {
             if (!error) {
                 error = '';
             }
+            var errMsg = client.uuid + ': SMTP connection ' + msg + ' ' + error;
+            switch (client.state) {
+                case STATE.ACTIVE:
+                case STATE.IDLE:
+                case STATE.RELEASED:
+                    client.destroy();
+                    break;
+                default:
+            }
             if (client.state === STATE.ACTIVE) {
-                client.emit('error', client.uuid + ': SMTP connection ' + msg + ' ' + error);
-                client.destroy();
+                client.emit('error', errMsg);
+                return;
             }
-            else {
-                logger.logdebug('[smtp_client_pool] ' + client.uuid + ': SMTP connection ' + msg + ' ' + error + ' (state=' + client.state + ')');
-                if (client.state === STATE.IDLE) {
-                    client.destroy();
-                }
-                else if (client.state === STATE.RELEASED) {
-                    client.destroy();
-                }
-            }
+            logger.logdebug('[smtp_client_pool] ' + errMsg + ' (state=' + client.state + ')');
         };
     };
 
@@ -210,16 +212,14 @@ SMTPClient.prototype.destroy = function () {
 };
 
 SMTPClient.prototype.is_dead_sender = function (plugin, connection) {
-    if (!connection.transaction) {
-        // This likely means the sender went away on us, cleanup.
-        connection.logwarn(
-          plugin, "transaction went away, releasing smtp_client"
-        );
-        this.release();
-        return true;
-    }
+    if (connection.transaction) { return false; }
 
-    return false;
+    // This likely means the sender went away on us, cleanup.
+    connection.logwarn(
+        plugin, "transaction went away, releasing smtp_client"
+    );
+    this.release();
+    return true;
 };
 
 // Separate pools are kept for each set of server attributes.
@@ -237,8 +237,8 @@ exports.get_pool = function (server, port, host, connect_timeout, pool_timeout, 
             name: name,
             create: function (callback) {
                 var smtp_client = new SMTPClient(port, host, connect_timeout);
-                logger.logdebug('[smtp_client_pool] uuid=' + smtp_client.uuid + ' host=' + host +
-                    ' port=' + port + ' pool_timeout=' + pool_timeout + ' created');
+                logger.logdebug('[smtp_client_pool] uuid=' + smtp_client.uuid + ' host=' +
+                    host + ' port=' + port + ' pool_timeout=' + pool_timeout + ' created');
                 callback(null, smtp_client);
             },
             destroy: function(smtp_client) {
@@ -279,8 +279,8 @@ exports.get_client = function (server, callback, port, host, connect_timeout, po
     pool.acquire(callback);
 };
 
-// Get a smtp_client for the given attributes and set it up the common
-// config and listeners for plugins. Currently this is what smtp_proxy and
+// Get a smtp_client for the given attributes and set up the common
+// config and listeners for plugins. This is what smtp_proxy and
 // smtp_forward have in common.
 exports.get_client_plugin = function (plugin, connection, config, callback) {
     var c = config.main;
