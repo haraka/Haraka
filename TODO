@@ -23,34 +23,6 @@ Plugin behavior changes
    only when requested, with a sunset date.
  - data.uribl; expand short URLs before lookups, add support for uri-a (sbl.spamhaus.org), uri-ns, uri-ns-a lookup types.
 
-
-Remove the following deprecated plugins
- - rdns.regexp
- - data.nomsgid         (subsumed into data.headers.js)
- - data.noreceived               ""
- - data.rfc5322_header_checks    ""
- - daemonize
- - mail_from.nobounces  (subsumed into bounce.js)
- - mail_from.blocklist
- - rcpt_to.blocklist
- - lookup_rdns_strict
- - mail_from.access     (replaced by access.js)
- - rcpt_to.access                 ""
- - connect.rdns_access            ""
- - relay_acl            (replaced by relay.js)
- - relay_all                      ""
- - relay_force_routing            ""
-
-Rename the following plugins
- - toobusy      -> connect.toobusy
- - attachment   -> data.attachment
- - avg          -> data.avg
- - clamd        -> data.clamd
- - spamassassin -> data.spamassassin
-
-Move the following plugins:
- - test_queue   -> queue/test_queue
-
 Built-in HTTP server
 - uses the same TLS/SSL certs as smtpd
 - auth against SMTP-AUTH provider
