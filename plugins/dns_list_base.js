@@ -130,13 +130,16 @@ exports.multi = function (lookup, zones, cb) {
 };
 
 // Return first positive or last result.
-exports.first = function (lookup, zones, cb) {
+exports.first = function (lookup, zones, cb, cb_each) {
     if (!lookup || !zones) return cb();
     if (typeof zones === 'string') zones = [ '' + zones ];
-    var run_cb = 0;
+    var run_cb = false;
     this.multi(lookup, zones, function (err, zone, a, pending) {
-        if (!run_cb && ((!err && a) || pending === 0)) {
-            run_cb++;
+        if (zone && cb_each && typeof cb_each === 'function') {
+            cb_each(err, zone, a);
+        }
+        if (!run_cb && ((!err && a) || !pending)) {
+            run_cb = true;
             return cb(err, zone, a);
         }
     });

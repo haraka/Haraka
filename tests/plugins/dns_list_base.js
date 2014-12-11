@@ -78,11 +78,11 @@ exports.multi = {
     setUp : _set_up,
     tearDown : _tear_down,
     'spamcop': function (test) {
-        test.expect(3);
+        test.expect(4);
         var cb = function (err, zone, a, pending) {
+            test.equal(null, err);
             if (pending) {
-                test.equal(null, err);
-                test.ok(a);
+                test.ok((Array.isArray(a) && a.length > 0));
                 test.equal(true, pending);
             }
             else {
@@ -91,12 +91,12 @@ exports.multi = {
         };
         this.plugin.multi('127.0.0.2', 'bl.spamcop.net', cb);
     },
-    'spamhaus XML': function (test) {
-        test.expect(3);
+    'spamhaus XBL': function (test) {
+        test.expect(4);
         var cb = function (err, zone, a, pending) {
+            test.equal(null, err);
             if (pending) {
-                test.equal(null, err);
-                test.ok(a);
+                test.ok((Array.isArray(a) && a.length > 0));
                 test.equal(true, pending);
             }
             else {
@@ -106,18 +106,83 @@ exports.multi = {
         this.plugin.multi('127.0.0.2', 'xbl.spamhaus.org', cb);
     },
     'spamcop + spamhaus XBL': function (test) {
-        test.expect(6);
+        test.expect(12);
         var cb = function (err, zone, a, pending) {
+            test.equal(null, err);
             if (pending) {
-                test.equal(null, err);
                 test.ok(zone);
+                test.ok((Array.isArray(a) && a.length > 0));
                 test.equal(true, pending);
             }
             else {
+                test.equal(null, zone);
+                test.equal(null, a);
+                test.equal(false, pending);
                 test.done();
             }
         };
         var dnsbls = ['bl.spamcop.net','xbl.spamhaus.org'];
         this.plugin.multi('127.0.0.2', dnsbls, cb);
     },
+    'spamcop + spamhaus XBL + negative result': function (test) {
+        test.expect(12);
+        var cb = function (err, zone, a, pending) {
+            test.equal(null, err);
+            test.equal(null, a);
+            if (pending) {
+                test.equal(true, pending);
+                test.ok(zone);
+            }
+            else {
+                test.equal(false, pending);
+                test.equal(null, zone);
+                test.done();
+            }
+        };
+        var dnsbls = ['bl.spamcop.net','xbl.spamhaus.org'];
+        this.plugin.multi('127.0.0.1', dnsbls, cb);
+    }
 };
+
+exports.first = {
+    setUp : _set_up,
+    tearDown : _tear_down,
+    'positive result': function (test) {
+        test.expect(3);
+        var cb = function (err, zone, a) {
+            test.equal(null, err);
+            test.ok(zone);
+            test.ok((Array.isArray(a) && a.length > 0));
+            test.done();
+        }
+        var dnsbls = [ 'zen.spamhaus.org', 'bl.spamcop.net' ];
+        this.plugin.first('127.0.0.2', dnsbls , cb);
+    },
+    'negative result': function (test) {
+        test.expect(3);
+        var cb = function (err, zone, a) {
+            test.equal(null, err);
+            test.equal(null, zone);
+            test.equal(null, a);
+            test.done();
+        }
+        var dnsbls = [ 'zen.spamhaus.org', 'bl.spamcop.net' ];
+        this.plugin.first('127.0.0.1', dnsbls, cb);
+    },
+    'each_cb': function (test) {
+        test.expect(7);
+        var dnsbls = [ 'zen.spamhaus.org', 'bl.spamcop.net' ];
+        var pending = dnsbls.length;
+        var cb = function () {
+            test.ok(pending);
+        }
+        var cb_each = function (err, zone, a) {
+            pending--;
+            test.equal(null, err);
+            test.ok(zone);
+            test.ok((Array.isArray(a) && a.length > 0));
+            if (pending === 0) test.done(); 
+        }
+        this.plugin.first('127.0.0.2', dnsbls, cb, cb_each);
+    }
+}
