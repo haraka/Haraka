@@ -138,10 +138,12 @@ exports.first = function (lookup, zones, cb, cb_each) {
         if (zone && cb_each && typeof cb_each === 'function') {
             cb_each(err, zone, a);
         }
-        if (!ran_cb && ((!err && a) || !pending)) {
-            ran_cb = true;
-            return cb(err, zone, a);
-        }
+        if (ran_cb) return;
+        if (pending && (err || !a)) return;
+
+        // has pending queries OR this one is a positive result
+        ran_cb = true;
+        return cb(err, zone, a);
     });
 };
 

@@ -36,7 +36,8 @@ exports.refresh_config = function () {
             plugin.enable_stats = false;
         }
 
-        if (plugin.cfg.main.stats_redis_host && plugin.cfg.main.stats_redis_host !== plugin.redis_host) {
+        if (plugin.cfg.main.stats_redis_host &&
+            plugin.cfg.main.stats_redis_host !== plugin.redis_host) {
             plugin.redis_host = plugin.cfg.main.stats_redis_host;
             plugin.loginfo('set stats redis host to: ' + plugin.redis_host);
         }
@@ -108,12 +109,8 @@ exports.connect_first = function(next, connection) {
         return next();
     }, function each_result (err, zone, a) {
         if (err) return;
-        if (a) {
-            connection.results.add(plugin, {fail: zone});
-        }
-        else {
-            connection.results.add(plugin, {pass: zone});
-        }
+        var result = a ? {fail: zone} : {pass: zone};
+        connection.results.add(plugin, result);
     });
 };
 
@@ -124,20 +121,23 @@ exports.connect_multi = function(next, connection) {
     if (plugin.should_skip(connection)) { return next(); }
 
     var hits = [];
+    function get_deny_msg () {
+        return 'host [' + remote_ip + '] is blacklisted by ' + hits.join(', ');
+    }
+
     plugin.multi(remote_ip, plugin.zones, function (err, zone, a, pending) {
-        var deny_msg = 'host [' + remote_ip + '] is blacklisted by ' + hits.join(', ');
         if (err) {
             connection.results.add(plugin, {err: err});
             if (pending) return;
             if (plugin.cfg.main.reject && hits.length) {
-                return next(DENY, deny_msg);
+                return next(DENY, get_deny_msg());
             }
             return next();
         }
 
         if (a) {
             hits.push(zone);
-            deny_msg = 'host [' + remote_ip + '] is blacklisted by ' + hits.join(', ');
+            deny_msg = get_deny_msg();
             connection.results.add(plugin, {fail: zone});
         }
         else {
@@ -148,7 +148,7 @@ exports.connect_multi = function(next, connection) {
         connection.results.add(plugin, {emit: true});
 
         if (plugin.cfg.main.reject && hits.length) {
-            return next(DENY, deny_msg);
+            return next(DENY, get_deny_msg());
         }
         return next();
     });
