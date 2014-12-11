@@ -8,6 +8,12 @@ The Haraka core reads some configuration files to determine a few actions:
   Can contain either a number or a string. See the top of logger.js for the
 different levels available.
 
+* smtp.yaml or smtp.json
+
+If either of these files exist then they are loaded first after loglevel.
+This file is designed to use the JSON/YAML file overrides documented in
+Config.md to optionally provide the entire configuration in a single file.
+
 * log_timestamps
 
   If this contains a 1 (or other truthy value), will prepend a timestamp

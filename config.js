@@ -10,11 +10,7 @@ config.get = function(name, type, cb, options) {
     var args = this.arrange_args([name, type, cb, options]);
     if (!args[1]) args[1] = 'value';
 
-    var config_path = process.env.HARAKA
-                    ? path.join(process.env.HARAKA, 'config')
-                    : path.join(__dirname, './config');
-
-    var full_path = path.resolve(config_path, args[0]);
+    var full_path = path.resolve(configloader.config_path, args[0]);
 
     var results = configloader.read_config(full_path, args[1], args[2], args[3]);
 

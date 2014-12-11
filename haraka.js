@@ -19,6 +19,7 @@ catch(e) {
 
 var fs     = require('fs');
 var logger = require('./logger');
+var config = require('./config');
 var server = require('./server');
 
 exports.version = JSON.parse(
@@ -56,6 +57,9 @@ process.on('exit', function() {
     logger.lognotice('Shutting down');
     logger.dump_logs();
 });
+
+// Load smtp.json or smtp.yaml as early as possible
+var cfg = config.get('smtp.json');
 
 logger.log("NOTICE", "Starting up Haraka version " + exports.version);
 

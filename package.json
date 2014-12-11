@@ -22,7 +22,8 @@
     "async"         : "~0.2.9",
     "daemon"        : "~1.1.0",
     "npid"          : "~0.4.0",
-    "address-rfc2822":"~0.0.2"
+    "address-rfc2822":"~0.0.2",
+    "js-yaml"       : "~3.2.3"
   },
   "optionalDependencies": {
     "node-syslog"   : "~1.1.7",

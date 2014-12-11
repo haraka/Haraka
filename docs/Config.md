@@ -20,10 +20,11 @@ This will load the file config/rambling.paths in the Haraka directory.
 * 'value' - load a flat file containing a single value (default)
 * 'ini' - load an "ini" style file
 * 'json' - load a json file
+* 'yaml' - load a yaml file
 * 'list' - load a flat file containing a list of values
 * 'data' - load a flat file containing a list of values, keeping comments and whitespace.
 
-If your ini and json files have `.ini` and `.json` suffixes,
+If your ini and json files have `.ini`, `.json` or `.yaml` suffixes,
 the `type` parameter can be omitted.  
 
 See the [File Formats](#file_formats) section below for a more detailed
@@ -146,6 +147,31 @@ JSON Files
 ----------
 
 These are as you would expect, and returns an object as given in the file.
+
+If a requested .json file does not exist then the same file will be checked
+for with a .yaml extension and that will be loaded instead.   This is done
+because YAML files are far easier for a human to write.
+
+You can use JSON or YAML files to override any other file by prefixing the
+outer variable name with a `!` e.g.
+
+``````
+{
+    "!smtpgreeting": [ 'this is line one', 'this is line two' ]
+}
+`````
+
+If the config/smtpgreeting file did not exist, then this value would replace
+it.
+
+NOTE: You must ensure that the data type (e.g. Object, Array or String) for 
+the replaced value is correct.  This cannot be done automatically.
+
+YAML Files
+----------
+
+As per JSON files above but in YAML format.
+
 
 Reloading/Caching
 ========
