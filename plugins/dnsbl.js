@@ -96,7 +96,7 @@ exports.connect_first = function(next, connection) {
 
     plugin.first(remote_ip, plugin.zones, function (err, zone, a) {
         if (err) {
-            connection.logerror(plugin, err);
+            connection.results.add(plugin, {err: err});
             return next();
         }
         if (!a) return next();
@@ -106,6 +106,14 @@ exports.connect_first = function(next, connection) {
 
         connection.loginfo(plugin, msg);
         return next();
+    }, function each_result (err, zone, a) {
+        if (err) return;
+        if (a) {
+            connection.results.add(plugin, {fail: zone});
+        }
+        else {
+            connection.results.add(plugin, {pass: zone});
+        }
     });
 };
 
