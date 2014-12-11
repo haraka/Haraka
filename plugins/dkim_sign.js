@@ -149,7 +149,7 @@ exports.register = function () {
 
 exports.hook_queue_outbound = function (next, connection) {
     var plugin = this;
-    if (plugin.cfg.disabled) { return next(); }
+    if (plugin.cfg.main.disabled) { return next(); }
 
     plugin.get_key_dir(connection, function(keydir) {
         var domain, selector, private_key;

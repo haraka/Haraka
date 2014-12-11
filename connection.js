@@ -61,7 +61,7 @@ function loadHAProxyHosts() {
     var new_host_list = [];
     for (var i=0; i<hosts.length; i++) {
         var host = hosts[i].split(/\//);
-        new_host_list[i] = [ipaddr.IPv4.parse(host[0]), parseInt(host[1] || 32)];
+        new_host_list[i] = [ipaddr.parse(host[0]), parseInt(host[1] || 32)];
     }
     haproxy_hosts = new_host_list;
 }
@@ -1593,7 +1593,7 @@ Connection.prototype.queue_respond = function(retval, msg) {
 
 Connection.prototype.queue_ok_respond = function (retval, msg, params) {
     var self = this;
-    this.lognotice('queue code=' + constants.translate(retval) + ' msg="' + (params || '') + '"');
+    this.lognotice('queue_ok code=' + constants.translate(retval) + ' msg="' + (params || '') + '"');
     this.respond(250, params, function() {
         self.msg_count.accept++;
         self.reset_transaction(function () { self.resume();});

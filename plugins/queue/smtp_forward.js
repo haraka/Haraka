@@ -58,13 +58,13 @@ exports.hook_queue = function (next, connection) {
             if (smtp_client.is_dead_sender(plugin, connection)) {
                 return;
             }
-            else if (rcpt < connection.transaction.rcpt_to.length) {
+            if (rcpt < connection.transaction.rcpt_to.length) {
                 smtp_client.send_command('RSET');
+                return;
             }
-            else {
-                smtp_client.call_next(OK, smtp_client.response + ' (' + connection.transaction.uuid + ')');
-                smtp_client.release();
-            }
+            smtp_client.call_next(OK, smtp_client.response +
+                    ' (' + connection.transaction.uuid + ')');
+            smtp_client.release();
         });
 
         smtp_client.on('rset', function () {
@@ -80,7 +80,7 @@ exports.hook_queue = function (next, connection) {
                 return;
             }
             smtp_client.call_next(((code && code[0] === '5') ? DENY : DENYSOFT),
-                                  msg + ' (' + connection.transaction.uuid + ')');
+                                msg + ' (' + connection.transaction.uuid + ')');
             smtp_client.release();
         });
     });
