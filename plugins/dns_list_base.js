@@ -133,13 +133,13 @@ exports.multi = function (lookup, zones, cb) {
 exports.first = function (lookup, zones, cb, cb_each) {
     if (!lookup || !zones) return cb();
     if (typeof zones === 'string') zones = [ '' + zones ];
-    var run_cb = false;
+    var ran_cb = false;
     this.multi(lookup, zones, function (err, zone, a, pending) {
         if (zone && cb_each && typeof cb_each === 'function') {
             cb_each(err, zone, a);
         }
-        if (!run_cb && ((!err && a) || !pending)) {
-            run_cb = true;
+        if (!ran_cb && ((!err && a) || !pending)) {
+            ran_cb = true;
             return cb(err, zone, a);
         }
     });
