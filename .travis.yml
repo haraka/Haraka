@@ -6,3 +6,4 @@ node_js:
 #   - "0.6"   # no longer supported by async
 after_script:
     - npm run coveralls
+sudo: false
