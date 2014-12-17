@@ -49,6 +49,7 @@ function SMTPClient(port, host, connect_timeout, idle_timeout) {
         var code = matches[1],
             cont = matches[2],
             msg = matches[3];
+
         client.response.push(msg);
         if (cont !== ' ') {
             return;
@@ -215,9 +216,7 @@ SMTPClient.prototype.is_dead_sender = function (plugin, connection) {
     if (connection.transaction) { return false; }
 
     // This likely means the sender went away on us, cleanup.
-    connection.logwarn(
-        plugin, "transaction went away, releasing smtp_client"
-    );
+    connection.logwarn(plugin, "transaction went away, releasing smtp_client");
     this.release();
     return true;
 };
@@ -283,7 +282,7 @@ exports.get_client = function (server, callback, port, host, connect_timeout, po
 // config and listeners for plugins. This is what smtp_proxy and
 // smtp_forward have in common.
 exports.get_client_plugin = function (plugin, connection, config, callback) {
-    var c = config.main;
+    var c = config;
     var pool = exports.get_pool(connection.server, c.port, c.host,
                                 c.connect_timeout, c.timeout, c.max_connections);
     pool.acquire(function (err, smtp_client) {
@@ -325,12 +324,12 @@ exports.get_client_plugin = function (plugin, connection, config, callback) {
             };
             for (var line in smtp_client.response) {
                 if (smtp_client.response[line].match(/^XCLIENT/)) {
-                    if(!smtp_client.xclient) {
-                        smtp_client.send_command('XCLIENT',
-                            'ADDR=' + connection.remote_ip);
+                    if (!smtp_client.xclient) {
+                        smtp_client.send_command('XCLIENT', 'ADDR=' + connection.remote_ip);
                         return;
                     }
                 }
+
                 if (smtp_client.response[line].match(/^STARTTLS/) && !secured) {
                     if (c.enable_tls) {
                         tls_key = plugin.config.get('tls_key.pem', 'binary');
@@ -386,11 +385,10 @@ exports.get_client_plugin = function (plugin, connection, config, callback) {
 
         smtp_client.on('auth', function () {
             if (smtp_client.is_dead_sender(plugin, connection)) {
-              return;
+                return;
             }
             smtp_client.authenticated = true;
-            smtp_client.send_command('MAIL',
-                'FROM:' + connection.transaction.mail_from);
+            smtp_client.send_command('MAIL', 'FROM:' + connection.transaction.mail_from);
         });
 
         smtp_client.on('error', function (msg) {
@@ -400,8 +398,7 @@ exports.get_client_plugin = function (plugin, connection, config, callback) {
 
         if (smtp_client.connected) {
             if (smtp_client.xclient) {
-                smtp_client.send_command('XCLIENT',
-                    'ADDR=' + connection.remote_ip);
+                smtp_client.send_command('XCLIENT', 'ADDR=' + connection.remote_ip);
             }
             else {
                 smtp_client.emit('helo');
