@@ -21,6 +21,9 @@ exports.register = function () {
 
 exports.get_config = function (connection) {
     var plugin = this;
+
+    if (!connection.transaction) return plugin.cfg.main;
+    if (!connection.transaction.rcpt_to[0]) return plugin.cfg.main;
     var dom = connection.transaction.rcpt_to[0].host;
 
     if (!dom)             return plugin.cfg.main;
