@@ -10,79 +10,105 @@ exports.arrange_args = {
     // config.get('name');
     'name' : function (test) {
         test.expect(1);
-        test.deepEqual(config.arrange_args(['test.ini']), ['test.ini', 'ini', undefined, undefined]);
+        test.deepEqual(
+            config.arrange_args(['test.ini']),
+            ['test.ini', 'ini', undefined, undefined]);
         test.done();
     },
     // config.get('name', type);
     'name, type' : function (test) {
         test.expect(1);
-        test.deepEqual(config.arrange_args(['test.ini','ini']), ['test.ini', 'ini', undefined, undefined]);
+        test.deepEqual(
+            config.arrange_args(['test.ini','ini']), 
+            ['test.ini', 'ini', undefined, undefined]);
         test.done();
     },
     // config.get('name', cb);
     'name, callback' : function (test) {
         test.expect(1);
-        test.deepEqual(config.arrange_args(['test.ini',cb]), ['test.ini', 'ini', cb, undefined]);
+        test.deepEqual(
+            config.arrange_args(['test.ini',cb]),
+            ['test.ini', 'ini', cb, undefined]);
         test.done();
     },
     // config.get('name', cb, options);
     'name, callback, options' : function (test) {
         test.expect(1);
-        test.deepEqual(config.arrange_args(['test.ini',cb,opts]), ['test.ini', 'ini', cb, opts]);
+        test.deepEqual(
+            config.arrange_args(['test.ini',cb,opts]),
+            ['test.ini', 'ini', cb, opts]);
         test.done();
     },
     // config.get('name', options);
     'name, options' : function (test) {
         test.expect(1);
-        test.deepEqual(config.arrange_args(['test.ini',opts]), ['test.ini', 'ini', undefined, opts]);
+        test.deepEqual(
+            config.arrange_args(['test.ini',opts]),
+            ['test.ini', 'ini', undefined, opts]);
         test.done();
     },
     // config.get('name', type, cb);
     'name, type, callback' : function (test) {
         test.expect(1);
-        test.deepEqual(config.arrange_args(['test.ini','ini',cb]), ['test.ini', 'ini', cb, undefined]);
+        test.deepEqual(
+            config.arrange_args(['test.ini','ini',cb]),
+            ['test.ini', 'ini', cb, undefined]);
         test.done();
     },
     // config.get('name', type, options);
     'name, type, options' : function (test) {
         test.expect(1);
-        test.deepEqual(config.arrange_args(['test.ini','ini',opts]), ['test.ini', 'ini', undefined, opts]);
+        test.deepEqual(
+            config.arrange_args(['test.ini','ini',opts]),
+            ['test.ini', 'ini', undefined, opts]);
         test.done();
     },
     // config.get('name', type, cb, options);
     'name, type, callback, options' : function (test) {
         test.expect(1);
-        test.deepEqual(config.arrange_args(['test.ini','ini',cb, opts]), ['test.ini', 'ini', cb, opts]);
+        test.deepEqual(
+            config.arrange_args(['test.ini','ini',cb, opts]),
+            ['test.ini', 'ini', cb, opts]);
         test.done();
     },
     // config.get('name', list, cb, options);
     'name, list type, callback, options' : function (test) {
         test.expect(1);
-        test.deepEqual(config.arrange_args(['test.ini','list',cb, opts]), ['test.ini', 'list', cb, opts]);
+        test.deepEqual(
+            config.arrange_args(['test.ini','list',cb, opts]),
+            ['test.ini', 'list', cb, opts]);
         test.done();
     },
     // config.get('name', binary, cb, options);
     'name, binary type, callback, options' : function (test) {
         test.expect(1);
-        test.deepEqual(config.arrange_args(['test.ini','binary',cb, opts]), ['test.ini', 'binary', cb, opts]);
+        test.deepEqual(
+            config.arrange_args(['test.ini','binary',cb, opts]),
+            ['test.ini', 'binary', cb, opts]);
         test.done();
     },
     // config.get('name', type, cb, options);
     'name, value type, callback, options' : function (test) {
         test.expect(1);
-        test.deepEqual(config.arrange_args(['test.ini','value',cb, opts]), ['test.ini', 'value', cb, opts]);
+        test.deepEqual(
+            config.arrange_args(['test.ini','value',cb, opts]),
+            ['test.ini', 'value', cb, opts]);
         test.done();
     },
     // config.get('name', type, cb, options);
     'name, json type, callback, options' : function (test) {
         test.expect(1);
-        test.deepEqual(config.arrange_args(['test.ini','json',cb, opts]), ['test.ini', 'json', cb, opts]);
+        test.deepEqual(
+            config.arrange_args(['test.ini','json',cb, opts]),
+            ['test.ini', 'json', cb, opts]);
         test.done();
     },
     // config.get('name', type, cb, options);
     'name, data type, callback, options' : function (test) {
         test.expect(1);
-        test.deepEqual(config.arrange_args(['test.ini','data',cb, opts]), ['test.ini', 'data', cb, opts]);
+        test.deepEqual(
+            config.arrange_args(['test.ini','data',cb, opts]),
+            ['test.ini', 'data', cb, opts]);
         test.done();
     },
 };
@@ -90,7 +116,11 @@ exports.arrange_args = {
 var res = { "main": {} };
 var res2 = { "main": { "reject": true } };
 var testopts = { booleans: ['main.bool_true','main.bool_false'] };
-var testini2 = { main: { bool_true: true, bool_false: false, str_true: 'true', str_false: 'false' } };
+var testini2 = { main: {
+    bool_true: true, bool_false: false,
+    str_true: 'true', str_false: 'false'
+    }
+};
 
 function _test_get(test, name, type, callback, options, expected) {
     test.expect(1);
@@ -109,8 +139,10 @@ exports.get = {
     },
     'test.ini, no opts' : function (test) {
         _test_get(test, '../tests/test.ini', null, null, null, {
-            main: { bool_true: 'true', bool_false: 'false', str_true: 'true', str_false: 'false' },
-            sect1: { bool_true: 'true', bool_false: 'false', str_true: 'true', str_false: 'false' },
+            main: { bool_true: 'true', bool_false: 'false',
+                str_true: 'true', str_false: 'false' },
+            sect1: { bool_true: 'true', bool_false: 'false',
+                str_true: 'true', str_false: 'false' },
             whitespace: { str_no_trail: 'true', str_trail: 'true' }
         });
     },
@@ -127,14 +159,15 @@ exports.load_ini_config = {
         test.expect(1);
         test.deepEqual(
                 configfile.load_ini_config('non-exist.ini'),
-                { main: { } }
+                    { main: { } }
                 );
         test.done();
     },
     'non-exist.ini boolean' : function (test) {
         test.expect(1);
         test.deepEqual(
-                configfile.load_ini_config('non-exist.ini', { booleans: ['reject']}),
+                configfile.load_ini_config('non-exist.ini',
+                    { booleans: ['reject']}),
                 { main: { reject: false } }
                 );
         test.done();
@@ -142,15 +175,18 @@ exports.load_ini_config = {
     'non-exist.ini boolean true default' : function (test) {
         test.expect(3);
         test.deepEqual(
-                configfile.load_ini_config('non-exist.ini', { booleans: ['+reject']}),
+                configfile.load_ini_config('non-exist.ini',
+                    { booleans: ['+reject']}),
                 { main: { reject: true } }
                 );
         test.deepEqual(
-                configfile.load_ini_config('non-exist.ini', { booleans: ['+main.reject']}),
+                configfile.load_ini_config('non-exist.ini',
+                    { booleans: ['+main.reject']}),
                 { main: { reject: true } }
                 );
         test.deepEqual(
-                configfile.load_ini_config('non-exist.ini', { booleans: ['main.+reject']}),
+                configfile.load_ini_config('non-exist.ini',
+                    { booleans: ['main.+reject']}),
                 { main: { reject: true } }
                 );
         test.done();
@@ -158,15 +194,18 @@ exports.load_ini_config = {
     'non-exist.ini boolean false default' : function (test) {
         test.expect(3);
         test.deepEqual(
-                configfile.load_ini_config('non-exist.ini', { booleans: ['-reject']}),
+                configfile.load_ini_config('non-exist.ini',
+                    { booleans: ['-reject']}),
                 { main: { reject: false } }
                 );
         test.deepEqual(
-                configfile.load_ini_config('non-exist.ini', { booleans: ['-main.reject']}),
+                configfile.load_ini_config('non-exist.ini',
+                    { booleans: ['-main.reject']}),
                 { main: { reject: false } }
                 );
         test.deepEqual(
-                configfile.load_ini_config('non-exist.ini', { booleans: ['main.-reject']}),
+                configfile.load_ini_config('non-exist.ini',
+                    { booleans: ['main.-reject']}),
                 { main: { reject: false } }
                 );
         test.done();
@@ -174,11 +213,13 @@ exports.load_ini_config = {
     'non-exist.ini boolean false default, section' : function (test) {
         test.expect(2);
         test.deepEqual(
-                configfile.load_ini_config('non-exist.ini', { booleans: ['-reject.boolf']}),
+                configfile.load_ini_config('non-exist.ini',
+                    { booleans: ['-reject.boolf']}),
                 { main: { }, reject: {boolf: false} }
                 );
         test.deepEqual(
-                configfile.load_ini_config('non-exist.ini', { booleans: ['+reject.boolt']}),
+                configfile.load_ini_config('non-exist.ini',
+                    { booleans: ['+reject.boolt']}),
                 { main: { }, reject: {boolt: true} }
                 );
         test.done();
