@@ -6,10 +6,6 @@ var utils = require('../utils');
 exports.load = function(name, type, options, regex) {
     var result = [];
 
-    if (!utils.existsSync(name)) {
-        return this.no_config(name, type, result);
-    }
-
     var data = fs.readFileSync(name, "UTF-8");
     if (type === 'data') {
         while (data.length > 0) {
@@ -44,10 +40,6 @@ exports.load = function(name, type, options, regex) {
         }
     }
 
-    return this.no_config(name, type, result);
-};
-
-exports.no_config = function (name, type, result) {
     // Return hostname for 'me' if no result
     if (/\/me$/.test(name) && !(result && result.length)) {
         return [ require('os').hostname() ];

@@ -1,5 +1,7 @@
 'use strict';
 
+var fs = require('fs');
+
 var _set_up = function (done) {
     this.bin = require('../../cfreader/binary');
     done();
@@ -28,10 +30,12 @@ exports.load = {
     	test.done();
     },
     'loads the test binary file': function(test) {
-    	test.expect(1);
-    	var result = this.bin.load('tests/config/test.binary');
-        test.ok(result);
-    	// console.log(result);
+    	test.expect(3);
+        var testBin = 'tests/config/test.binary';
+    	var result = this.bin.load(testBin);
+        test.ok(Buffer.isBuffer(result));
+        test.equal(result.length, 120);
+        test.deepEqual(result, fs.readFileSync(testBin));
     	test.done();
     },
 };

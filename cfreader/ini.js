@@ -4,7 +4,7 @@ var fs = require('fs');
 var utils = require('../utils');
 var logger = fake_logger();
 
-exports.load = function(name, options, regex, cached) {
+exports.load = function(name, options, regex) {
     var result       = { main: {} };
     var current_sect = result.main;
     var current_sect_name = 'main';
@@ -37,8 +37,6 @@ exports.load = function(name, options, regex, cached) {
             result[section][key] = bool_default;
         }
     }
-
-    if (!utils.existsSync(name)) return result;
 
     var match;
     var pre = '';

@@ -180,6 +180,21 @@ cfreader.empty_config = function(type) {
 cfreader.load_config = function(name, type, options) {
     var result;
 
+    if (!utils.existsSync(name)) {
+
+        if (!/\.json$/.test(name)) {
+            return this.emtpy_config(type);
+        }
+
+        var yaml_name = name.replace(/\.json$/, '.yaml');
+        if (!utils.existsSync(yaml_name)) {
+            return this.emtpy_config(type);
+        }
+
+        name = yaml_name;
+        type = 'yaml';
+    }
+
     try {
         if (type === 'ini' || /\.ini$/.test(name)) {
             result = require('./cfreader/ini').load(name, options, regex);
