@@ -19,7 +19,7 @@ config.get = function(name, type, cb, options) {
     if (Array.isArray(results)) {
         return results.slice();
     } 
-    
+
     return results;
 };
 
@@ -58,7 +58,8 @@ config.arrange_args = function (args) {
             // console.log('not recognized string:' + what_is_it);
             continue;
         }
-        // console.log('unknown arg:' + what_is_it + ', typeof: ' + typeof what_is_it);
+        // console.log('unknown arg:' + what_is_it + ', typeof: '
+        //  + typeof what_is_it);
     }
 
     if (!fs_type && fs_name.match(/\.ini$/)) {

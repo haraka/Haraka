@@ -259,9 +259,9 @@ exports.helo_access = {
         this.plugin.init_config();
         this.plugin.init_lists();
         var cb = function (rc) {
-            // console.log(this.connection.results.get('access'));
+            var r = this.connection.results.get('access');
             test.equal(undefined, rc);
-            test.ok(this.connection.results.get('access').pass.length);
+            test.ok(r && r.pass.length);
             test.done();
         }.bind(this);
         this.plugin.cfg.check.helo=true;
@@ -273,11 +273,12 @@ exports.helo_access = {
         this.plugin.init_lists();
         var cb = function (rc) {
             test.equal(DENY, rc);
-            // console.log(this.connection.results.get('access'));
-            test.ok(this.connection.results.get('access').fail.length);
+            var r = this.connection.results.get('access');
+            test.ok(r && r.fail && r.fail.length);
             test.done();
         }.bind(this);
         var black = [ '.*spam.com' ];
+        this.plugin.cfg.check.helo=true;
         this.plugin.list_re.black.helo = new RegExp('^(' + black.join('|') + ')$', 'i');
         this.plugin.helo_access(cb, this.connection, 'bad.spam.com');
     },

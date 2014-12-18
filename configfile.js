@@ -1,12 +1,10 @@
 'use strict';
 // Config file loader
-
+var fs   = require('fs');
 var path = require('path');
-var platform = process.platform;
-var yaml = require('js-yaml');
 
 // for "ini" type files
-var regex = {
+var regex = exports.regex = {
     section:        /^\s*\[\s*([^\]]*?)\s*\]\s*$/,
     param:          /^\s*([\w@\._-]+)\s*=\s*(.*?)\s*$/,
     comment:        /^\s*[;#].*$/,
@@ -20,8 +18,8 @@ var regex = {
 
 var cfreader = exports;
 
-cfreader.config_path = process.env.HARAKA
-                     ? path.join(process.env.HARAKA, 'config')
+cfreader.config_path = process.env.HARAKA ?
+                       path.join(process.env.HARAKA, 'config')
                      : path.join(__dirname, './config');
 cfreader.watch_files = true;
 cfreader._config_cache = {};
@@ -37,12 +35,13 @@ cfreader.on_watch_event = function (name, type, options, cb) {
         if (typeof cb === 'function') cb();
         if (fse !== 'rename') return;
         // https://github.com/joyent/node/issues/2062
-        // On a rename event, we'll need to re-watch the file
+        // After a rename event, re-watch the file
         cfreader._watchers[name].close();
         try {
-            cfreader._watchers[name] = fs.watch(name, 
-                                                { persistent: false }, 
-                                                cfreader.on_watch_event(name, type, options, cb));
+            cfreader._watchers[name] = fs.watch(
+                name,
+                { persistent: false },
+                cfreader.on_watch_event(name, type, options, cb));
         }
         catch (e) {
             if (e.code === 'ENOENT') {
@@ -53,49 +52,53 @@ cfreader.on_watch_event = function (name, type, options, cb) {
                 logger.logerror('Error watching file: ' + name + ' : ' + e);
             }
         }
-    }
-}
+    };
+};
 
 cfreader.watch_dir = function () {
     // NOTE: This only works on Linux and Windows
-    if (cfreader._watchers[cfreader.config_path]) return;
+    var cp = cfreader.config_path;
+    if (cfreader._watchers[cp]) return;
+    var watcher = function (fse, filename) {
+        if (!filename) return;
+        var full_path = path.join(cp, filename);
+        //logger.loginfo('event=' + fse +
+        //   ' filename=' + filename +
+        //   ' in_read_args=' + ((cfreader._read_args[full_path]) ? true : false));
+        if (!cfreader._read_args[full_path]) return;
+        var args = cfreader._read_args[full_path];
+        if (args.options && args.options.no_watch) return;
+        logger.loginfo('Detected ' + fse + ', reloading ' + filename);
+        cfreader.load_config(full_path, args.type, args.options);
+        if (typeof args.cb === 'function') args.cb();
+    };
     try {
-        cfreader._watchers[cfreader.config_path] = fs.watch(cfreader.config_path, 
-                                                            { persistent: false }, 
-                                                            function (fse, filename) 
-        {
-            if (!filename) return;
-            var full_path = path.join(cfreader.config_path, filename);
-            //logger.loginfo('event=' + fse + 
-            //                ' filename=' + filename + 
-            //                ' in_read_args=' + ((cfreader._read_args[full_path]) ? true : false));
-            if (!cfreader._read_args[full_path]) return;
-            var args = cfreader._read_args[full_path];
-            if (args.options && args.options.no_watch) return;
-            logger.loginfo('Detected ' + fse + ', reloading ' + filename);
-            cfreader.load_config(full_path, args.type, args.options);
-            if (typeof args.cb === 'function') args.cb();
-        });
+        cfreader._watchers[cp] = fs.watch(
+            cp,
+            { persistent: false },
+            watcher
+        );
     }
     catch (e) {
-        logger.logerror('Error watching directory ' + cfreader.config_path + '(' + e + ')');
+        logger.logerror('Error watching directory ' + cp + ': ' + e);
     }
     return;
-}
+};
 
 cfreader.watch_file = function (name, type, cb, options) {
-    // This works on all OS's, but watch_dir() above is preferred for Linux and 
+    // This works on all OS's, but watch_dir() above is preferred for Linux and
     // Windows as it is far more efficient.
-    // NOTE: we have to have an fs.watch per file and it isn't possible to watch
-    // a file that doesn't exist yet, so we have to note which files we attempted
-    // to watch that returned ENOENT and then fs.stat each of them periodically
-    if (cfreader._watchers[name] || (options && options.no_watch)) return; 
+    // NOTE: we need a fs.watch per file. It's impossible to watch non-existent
+    // files. Instead, note which files we attempted
+    // to watch that returned ENOENT and fs.stat each periodically
+    if (cfreader._watchers[name] || (options && options.no_watch)) return;
     try {
-        cfreader._watchers[name] = fs.watch(name, {persistent: false}, 
-                                            cfreader.on_watch_event(name, type, options, cb));
+        cfreader._watchers[name] = fs.watch(
+            name, {persistent: false},
+            cfreader.on_watch_event(name, type, options, cb));
     }
     catch (e) {
-        if (e.code != 'ENOENT') { // ignore error when ENOENT
+        if (e.code !== 'ENOENT') { // ignore error when ENOENT
             logger.logerror('Error watching config file: ' + name + ' : ' + e);
         }
         else {
@@ -104,7 +107,7 @@ cfreader.watch_file = function (name, type, cb, options) {
         }
     }
     return;
-}
+};
 
 cfreader.read_config = function(name, type, cb, options) {
     // Store arguments used so we can re-use them by filename later
@@ -114,7 +117,7 @@ cfreader.read_config = function(name, type, cb, options) {
         type: type,
         cb: cb,
         options: options
-    }
+    };
 
     // Check cache first
     if (name in cfreader._config_cache) {
@@ -126,16 +129,16 @@ cfreader.read_config = function(name, type, cb, options) {
     var result = cfreader.load_config(name, type, options);
     if (!cfreader.watch_files) return result;
 
-    // We can watch the directory on these platforms which 
+    // We can watch the directory on these platforms which
     // allows us to notice when files are newly created.
-    if (platform === 'linux' || platform === 'win32') {
+    var os = process.platform;
+    if (os === 'linux' || os === 'win32') {
         cfreader.watch_dir();
-    }
-    else {
-        // All other operating systems
-        cfreader.watch_file(name, type, cb, options);
+        return result;
     }
 
+    // All other operating systems
+    cfreader.watch_file(name, type, cb, options);
     return result;
 };
 
@@ -154,320 +157,86 @@ cfreader.ensure_enoent_timer = function () {
                     delete(cfreader._enoent_files[file]);
                     var args = cfreader._read_args[file];
                     cfreader.load_config(file, args.type, args.options, args.cb);
-                    cfreader._watchers[file] = fs.watch(file, {persistent: false}, 
-                                                        cfreader.on_watch_event(file, args.type, args.options, args.cb));
+                    cfreader._watchers[file] = fs.watch(
+                        file, {persistent: false},
+                        cfreader.on_watch_event(file, args.type, args.options, args.cb));
                 });
             })(file); // END BLOCK SCOPE
         }
     }, 60 * 1000);
-}
+};
 
 cfreader.empty_config = function(type) {
     if (type === 'ini') {
         return { main: {} };
     }
-    else if (type === 'json' || type === 'yaml') {
+    if (type === 'json' || type === 'yaml') {
         return {};
     }
-    else {
-        return [];
-    }
+
+    return [];
 };
 
 cfreader.load_config = function(name, type, options) {
     var result;
 
-    if (type === 'ini' || /\.ini$/.test(name)) {
-        result = cfreader.load_ini_config(name, options);
-    }
-    else if (type === 'json' || /\.json$/.test(name)) {
-        result = cfreader.load_json_config(name);
-    }
-    else if (type === 'yaml' || /\.yaml$/.test(name)) {
-        result = cfreader.load_yaml_config(name);
-    }
-    else if (type === 'binary') {
-        result = cfreader.load_binary_config(name, type);
-    }
-    else {
-        result = cfreader.load_flat_config(name, type, options);
-        if (result && type !== 'list' && type !== 'data') {
-            result = result[0];
-            if (options && Array.isArray(options.booleans) && options.booleans.indexOf(result) === -1) {
-                result = regex.is_truth.test(result);
-            }
-            else if (regex.is_integer.test(result)) {
-                result = parseInt(result, 10);
-            }
-            else if (regex.is_float.test(result)) {
-                result = parseFloat(result);
-            }
+    try {
+        if (type === 'ini' || /\.ini$/.test(name)) {
+            result = require('./cfreader/ini').load(name, options, regex);
+        }
+        else if (type === 'json' || /\.json$/.test(name)) {
+            result = require('./cfreader/json').load(name);
+            cfreader.process_file_overrides(name, result);
+        }
+        else if (type === 'yaml' || /\.yaml$/.test(name)) {
+            result = require('./cfreader/yaml').load(name);
+            cfreader.process_file_overrides(name, result);
+        }
+        else if (type === 'binary') {
+            result = require('./cfreader/binary').load(name);
+        }
+        else {
+            result = require('./cfreader/flat').load(name, type, options, regex);
+        }
+        if (!options || !options.no_cache) {
+            cfreader._config_cache[name] = result;
         }
     }
-
-    if (!options || !options.no_cache) {
-        cfreader._config_cache[name] = result;
+    catch (err) {
+        if (err.code !== 'EBADF') throw err;
+        if (cfreader._config_cache[name]) {
+            result = cfreader._config_cache[name];
+        }
     }
 
     return result;
 };
 
-cfreader.load_json_config = function(name) {
-    var result = cfreader.empty_config('json');
-    try {
-        if (utils.existsSync(name)) {
-            result = JSON.parse(fs.readFileSync(name));
-        }
-        else {
-            // File doesn't exist
-            // If filename ends in .json, try .yaml instead
-            if (/\.json$/.test(name)) {
-                var yaml_name = name.replace(/\.json$/, '.yaml');
-                if (utils.existsSync(yaml_name)) {
-                    // We have to read_config() here, so the file is watched
-                    result = cfreader.read_config(yaml_name);
-                    // Replace original config cache with this result
-                    cfreader._config_cache[name] = result;
-                }
-            }
-        }
-    }
-    catch (err) {
-        if (err.code === 'EBADF') {
-            if (cfreader._config_cache[name]) {
-                return cfreader._config_cache[name];
-            }
-        }
-        else {
-            throw err;
-        }
-    }
-
-    cfreader.process_file_overrides(name, result);
-    return result;
-}
-
 cfreader.process_file_overrides = function (name, result) {
-    // We might be re-loading this file, so build a list
-    // of currently cached overrides so we can remove
-    // them before we add them in again.
+    // We might be re-loading this file:
+    //     * build a list of cached overrides
+    //     * remove them and add them back
+    var cp = cfreader.config_path;
     if (cfreader._config_cache[name]) {
         var ck_keys = Object.keys(cfreader._config_cache[name]);
         for (var i=0; i<ck_keys.length; i++) {
-            if (ck_keys[i].substr(0,1) === '!') {
-                delete cfreader._config_cache[path.join(cfreader.config_path, ck_keys[i].substr(1))];
-            }
+            if (ck_keys[i].substr(0,1) !== '!') continue;
+            delete cfreader._config_cache[path.join(cp, ck_keys[i].substr(1))];
         }
     }
 
     // Allow JSON files to create or overwrite other
-    // configuration file data using by prefixing the
+    // configuration file data by prefixing the
     // outer variable name with ! e.g. !smtp.ini
     var keys = Object.keys(result);
-    for (var i=0; i<keys.length; i++) {
-        if (keys[i].substr(0,1) === '!') {
-            // Overwrite the config cache for this filename
-            logger.logwarn('Overriding file ' + keys[i].substr(1) + ' with configuration from ' + name);
-            cfreader._config_cache[path.join(cfreader.config_path, keys[i].substr(1))] = result[keys[i]];
-        }
+    for (var j=0; j<keys.length; j++) {
+        if (keys[j].substr(0,1) !== '!') continue;
+        var fooz = keys[j].substr(1);
+        // Overwrite the config cache for this filename
+        logger.logwarn('Overriding file ' + fooz + ' with config from ' + name);
+        cfreader._config_cache[path.join(cp, fooz)] = result[keys[j]];
     }
 };
 
-cfreader.load_yaml_config = function(name) {
-    var result = cfreader.empty_config('yaml');
-    try {
-        if (utils.existsSync(name)) {
-            result = yaml.safeLoad(fs.readFileSync(name, 'utf8'));
-        }
-    }
-    catch (err) {
-        if (err.code === 'EBADF') {
-            if (cfreader._config_cache[name]) {
-                return cfreader._config_cache[name];
-            }
-        }
-        else {
-            throw err;
-        }
-    }
-    cfreader.process_file_overrides(name, result);
-    return result;
-}
-
-cfreader.load_ini_config = function(name, options) {
-    var result       = cfreader.empty_config('ini');
-    var current_sect = result.main;
-    var current_sect_name = 'main';
-    var bool_matches = [];
-    if (options && options.booleans) bool_matches = options.booleans.slice();
-
-    // Initialize any booleans
-    if (options && Array.isArray(options.booleans)) {
-        for (var i=0; i<options.booleans.length; i++) {
-            var m = /^(?:([^\. ]+)\.)?(.+)/.exec(options.booleans[i]);
-            if (!m) continue;
-
-            var section = m[1] || 'main';
-            var key     = m[2];
-
-            var bool_default = section[0] === '+' ? true
-                                :     key[0] === '+' ? true
-                                : false;
-
-            if (section.match(/^(\-|\+)/)) section = section.substr(1);
-            if (    key.match(/^(\-|\+)/)) key     =     key.substr(1);
-
-            // so the boolean detection in the next section will match
-            if (options.booleans.indexOf(section+'.'+key) === -1) {
-                bool_matches.push(section+'.'+key);
-            }
-
-            if (!result[section]) result[section] = {};
-            result[section][key] = bool_default;
-        }
-    }
-
-    try {
-        if (utils.existsSync(name)) {
-            var data = fs.readFileSync(name, 'UTF-8');
-            var lines = data.split(/\r\n|\r|\n/);
-            var match;
-            var pre = '';
-
-            lines.forEach(function(line) {
-                if (regex.comment.test(line)) {
-                    return;
-                }
-                if (regex.blank.test(line)) {
-                    return;
-                }
-                match = regex.section.exec(line);
-                if (match) {
-                    if (!result[match[1]]) result[match[1]] = {};
-                    current_sect = result[match[1]];
-                    current_sect_name = match[1];
-                    return;
-                }
-                else if (regex.continuation.test(line)) {
-                    pre += line.replace(regex.continuation, '');
-                    return;
-                }
-                line = pre + line;
-                pre = '';
-                match = regex.param.exec(line);
-                if (match) {
-                    if (options && Array.isArray(options.booleans) &&
-                        bool_matches.indexOf(current_sect_name + '.' + match[1]) !== -1)
-                    {
-                        current_sect[match[1]] = regex.is_truth.test(match[2]);
-                        logger.logdebug('Returning boolean ' + current_sect[match[1]] +
-                                       ' for ' + current_sect_name + '.' + match[1] + '=' + match[2]);
-                    }
-                    else if (regex.is_integer.test(match[2])) {
-                        current_sect[match[1]] = parseInt(match[2], 10);
-                    }
-                    else if (regex.is_float.test(match[2])) {
-                        current_sect[match[1]] = parseFloat(match[2]);
-                    }
-                    else {
-                        current_sect[match[1]] = match[2];
-                    }
-                    return;
-                }
-                logger.logerror('Invalid line in config file \'' + name + '\': ' + line);
-            });
-        }
-    }
-    catch (err) {
-        if (err.code === 'EBADF') {
-            if (cfreader._config_cache[name]) {
-                return cfreader._config_cache[name];
-            }
-        }
-        else {
-            throw err;
-        }
-    }
-
-    return result;
-};
-
-cfreader.load_flat_config = function(name, type) {
-    var result = cfreader.empty_config();
-
-    try {
-        if (utils.existsSync(name)) {
-            var data   = fs.readFileSync(name, "UTF-8");
-            if (type === 'data') {
-                while (data.length > 0) {
-                    var match = data.match(/^([^\n]*)\n?/);
-                    result.push(match[1]);
-                    data = data.slice(match[0].length);
-                }
-                return result;
-            }
-            var lines  = data.split(/\r\n|\r|\n/);
-
-            lines.forEach( function(line) {
-                var line_data;
-                if (regex.comment.test(line)) {
-                    return;
-                }
-                if (regex.blank.test(line)) {
-                    return;
-                }
-                line_data = regex.line.exec(line);
-                if (line_data) {
-                    result.push(line_data[1].trim());
-                }
-            });
-        }
-    }
-    catch (err) {
-        if (err.code === 'EBADF') {
-            if (cfreader._config_cache[name]) {
-                return cfreader._config_cache[name];
-            }
-        }
-        else {
-            throw err;
-        }
-    }
-
-    // Return hostname for 'me' if no result
-    if (/\/me$/.test(name) && !(result && result.length)) {
-        return [ require('os').hostname() ];
-    }
-
-    // For value types with no result
-    if (!(type && (type === 'list' || type === 'data'))) {
-        if (!(result && result.length)) {
-            return null;
-        }
-    }
-    return result;
-};
-
-cfreader.load_binary_config = function(name, type) {
-    var result = cfreader.empty_config();
-
-    try {
-        if (utils.existsSync(name)) {
-            return fs.readFileSync(name);
-        }
-        return null;
-    }
-    catch (err) {
-        if (err.code === 'EBADF') {
-            if (cfreader._config_cache[name]) {
-                return cfreader._config_cache[name];
-            }
-        }
-        else {
-            throw err;
-        }
-    }
-};
-var fs     = require('fs');
 var utils  = require('./utils');
 var logger = require('./logger');

@@ -258,7 +258,10 @@ exports.rdns_access = function(next, connection) {
 
 exports.helo_access = function(next, connection, helo) {
     var plugin = this;
-    if (!plugin.cfg.check.helo) { return next(); }
+    if (!plugin.cfg.check.helo) {
+        // console.log('helo access checks disabled');
+        return next();
+    }
 
     var file = plugin.cfg.re.black.helo;
     if (plugin.in_re_list('black', 'helo', helo)) {
@@ -398,7 +401,8 @@ exports.in_list = function (type, phase, address) {
 exports.in_re_list = function (type, phase, address) {
     var plugin = this;
     if (!plugin.list_re[type][phase]) { return false; }
-    plugin.logdebug(plugin, 'checking ' + address + ' against ' + plugin.cfg.re[type][phase].source);
+    plugin.logdebug(plugin, 'checking ' + address + ' against ' +
+        plugin.cfg.re[type][phase].source);
     return plugin.list_re[type][phase].test(address);
 };
 
