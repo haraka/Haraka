@@ -4,13 +4,9 @@ var _set_up = function (done) {
     this.yaml = require('../../cfreader/yaml');
     done();
 };
-var _tear_down = function (done) {
-    done();
-};
 
 exports.load = {
     setUp : _set_up,
-    tearDown : _tear_down,
     'module is required' : function (test) {
         test.expect(1);
         test.ok(this.yaml);
@@ -21,11 +17,16 @@ exports.load = {
     	test.ok(typeof this.yaml.load === 'function');
     	test.done();
     },
-    'returns an empty object for non-existing files': function(test) {
-    	test.expect(1);
-    	var result = this.yaml.load('tests/config/non-existent.yaml');
-    	test.deepEqual(result, {});
-    	test.done();
+    'throws when file is non-existent': function(test) {
+        test.expect(2);
+        try {
+            this.yaml.load('tests/config/non-existent.haml');
+        }
+        catch (e) {
+            test.equal(e.code, 'ENOENT');
+            test.ok(/no such file or dir/.test(e.message));
+        }
+        test.done();
     },
     'loads the test yaml file': function(test) {
     	test.expect(4);

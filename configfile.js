@@ -2,6 +2,7 @@
 // Config file loader
 var fs   = require('fs');
 var path = require('path');
+var logger;
 
 // for "ini" type files
 var regex = exports.regex = {
@@ -21,6 +22,7 @@ var cfreader = exports;
 cfreader.config_path = process.env.HARAKA ?
                        path.join(process.env.HARAKA, 'config')
                      : path.join(__dirname, './config');
+
 cfreader.watch_files = true;
 cfreader._config_cache = {};
 cfreader._read_args = {};
@@ -166,52 +168,51 @@ cfreader.ensure_enoent_timer = function () {
     }, 60 * 1000);
 };
 
-cfreader.empty_config = function(type) {
-    if (type === 'ini') {
-        return { main: {} };
-    }
-    if (type === 'json' || type === 'yaml') {
-        return {};
-    }
+cfreader.get_filetype_reader = function (type) {
+    if (type === 'value') return require('./cfreader/flat');
+    if (type === 'list' ) return require('./cfreader/flat');
 
-    return [];
+    return require('./cfreader/' + type);
 };
 
 cfreader.load_config = function(name, type, options) {
     var result;
 
-    if (!utils.existsSync(name)) {
+    var cfrType = cfreader.get_filetype_reader(type);
 
+    if (!utils.existsSync(name)) {
+        
         if (!/\.json$/.test(name)) {
-            return this.emtpy_config(type);
+            return cfrType.empty(options, type);
         }
 
         var yaml_name = name.replace(/\.json$/, '.yaml');
         if (!utils.existsSync(yaml_name)) {
-            return this.emtpy_config(type);
+            return cfrType.empty(options, type);
         }
 
         name = yaml_name;
         type = 'yaml';
+        cfrType = require('./cfreader/yaml');
     }
 
     try {
         if (type === 'ini' || /\.ini$/.test(name)) {
-            result = require('./cfreader/ini').load(name, options, regex);
+            result = cfrType.load(name, options, regex);
         }
         else if (type === 'json' || /\.json$/.test(name)) {
-            result = require('./cfreader/json').load(name);
+            result = cfrType.load(name);
             cfreader.process_file_overrides(name, result);
         }
         else if (type === 'yaml' || /\.yaml$/.test(name)) {
-            result = require('./cfreader/yaml').load(name);
+            result = cfrType.load(name);
             cfreader.process_file_overrides(name, result);
         }
         else if (type === 'binary') {
-            result = require('./cfreader/binary').load(name);
+            result = cfrType.load(name);
         }
         else {
-            result = require('./cfreader/flat').load(name, type, options, regex);
+            result = cfrType.load(name, type, options, regex);
         }
         if (!options || !options.no_cache) {
             cfreader._config_cache[name] = result;
@@ -246,12 +247,12 @@ cfreader.process_file_overrides = function (name, result) {
     var keys = Object.keys(result);
     for (var j=0; j<keys.length; j++) {
         if (keys[j].substr(0,1) !== '!') continue;
-        var fooz = keys[j].substr(1);
+        var fn = keys[j].substr(1);
         // Overwrite the config cache for this filename
-        logger.logwarn('Overriding file ' + fooz + ' with config from ' + name);
-        cfreader._config_cache[path.join(cp, fooz)] = result[keys[j]];
+        logger.logwarn('Overriding file ' + fn + ' with config from ' + name);
+        cfreader._config_cache[path.join(cp, fn)] = result[keys[j]];
     }
 };
 
 var utils  = require('./utils');
-var logger = require('./logger');
+// var logger = require('./logger');

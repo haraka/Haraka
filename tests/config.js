@@ -1,6 +1,4 @@
-var stub         = require('./fixtures/stub'),
-    configfile   = require('../configfile'),
-    config       = require('../config');
+var config       = require('../config');
 
 var cb = function () { return false; };
 var opts = { booleans: ['arg1'] };
@@ -130,7 +128,7 @@ function _test_get(test, name, type, callback, options, expected) {
 exports.get = {
     // config.get('name');
     'name, bare' : function (test) {
-        _test_get(test, 'test', null, null, null, null);
+        _test_get(test, 'test', null, null, null, '');
     },
     // config.get('name.ini');
     'name.ini' : function (test) {

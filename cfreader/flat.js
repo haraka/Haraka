@@ -1,7 +1,6 @@
 'use strict';
 
 var fs = require('fs');
-var utils = require('../utils');
 
 exports.load = function(name, type, options, regex) {
     var result = [];
@@ -29,7 +28,8 @@ exports.load = function(name, type, options, regex) {
 
     if (result && type !== 'list' && type !== 'data') {
         result = result[0];
-        if (options && utils.in_array(result, options.booleans)) {
+        if (options && 
+            require('../utils').in_array(result, options.booleans)) {
             result = regex.is_truth.test(result);
         }
         else if (regex.is_integer.test(result)) {
@@ -53,4 +53,9 @@ exports.load = function(name, type, options, regex) {
     }
 
     return result;
+};
+
+exports.empty = function (options, type) {
+    if (type && type === 'value') return '';
+    return [];
 };
