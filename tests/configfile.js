@@ -196,7 +196,7 @@ exports.non_existing = {
         test.equal(result, null);
         test.done();
     },
-    'empty string for flat file': function(test) {
+    'null for flat file': function(test) {
         test.expect(1);
         var result = this.cfreader.load_config(
                 'tests/config/non-existent.flat',
@@ -205,7 +205,7 @@ exports.non_existing = {
         test.deepEqual(result, null);
         test.done();
     },
-    'empty string for value file': function(test) {
+    'null for value file': function(test) {
         test.expect(1);
         var result = this.cfreader.load_config(
                 'tests/config/non-existent.value',
