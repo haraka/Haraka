@@ -56,6 +56,9 @@ exports.load = function(name, type, options, regex) {
 };
 
 exports.empty = function (options, type) {
-    if (type && type === 'value') return '';
+    if (type) {
+        if (type === 'flat') return null;
+        if (type === 'value') return null;
+    }
     return [];
 };
