@@ -10,20 +10,7 @@ exports.register = function() {
     plugin.cfg = {};
     plugin.route_list={};
 
-    var load_config = function () {
-        plugin.loginfo(plugin, "loading rcpt_to.routes.ini");
-        plugin.cfg = plugin.config.get('rcpt_to.routes.ini', load_config);
-
-        var lowered = {};
-        if (plugin.cfg.routes) {
-            var keys = Object.keys(plugin.cfg.routes);
-            for (var i=0; i < keys.length; i++) {
-                lowered[keys[i].toLowerCase()] = plugin.cfg.routes[keys[i]];
-            }
-            plugin.route_list = lowered;
-        }
-    };
-    load_config();
+    plugin.load_config();
 
     try { redis = require('redis'); }
     catch (e) {
@@ -34,6 +21,23 @@ exports.register = function() {
 
     plugin.register_hook('rcpt',   'rcpt');
     plugin.register_hook('get_mx', 'get_mx');
+};
+
+exports.load_config = function () {
+    var plugin = this;
+    plugin.loginfo(plugin, "loading rcpt_to.routes.ini");
+    plugin.cfg = plugin.config.get('rcpt_to.routes.ini', function () {
+        plugin.load_config();
+    });
+
+    var lowered = {};
+    if (plugin.cfg.routes) {
+        var keys = Object.keys(plugin.cfg.routes);
+        for (var i=0; i < keys.length; i++) {
+            lowered[keys[i].toLowerCase()] = plugin.cfg.routes[keys[i]];
+        }
+        plugin.route_list = lowered;
+    }
 };
 
 exports.rcpt = function(next, connection, params) {

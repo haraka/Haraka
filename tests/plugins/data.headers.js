@@ -13,7 +13,7 @@ constants.import(global);
 
 function _set_up(callback) {
 
-    this.plugin = Plugin('data.headers');
+    this.plugin = new Plugin('data.headers');
     this.plugin.config = config;
     this.plugin.register();
     try {

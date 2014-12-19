@@ -3,13 +3,17 @@
 exports.register = function() {
     var plugin = this;
 
-    var load_config = function () {
-        // config/early_talker.pause is in milliseconds
-        plugin.pause = plugin.config.get('early_talker.pause', load_config);
-    };
-    load_config();
+    plugin.load_config();
 
     plugin.register_hook('data', 'early_talker');
+};
+
+exports.load_config = function () {
+    var plugin = this;
+    // config/early_talker.pause is in milliseconds
+    plugin.pause = plugin.config.get('early_talker.pause', function () {
+        plugin.load_config();
+    });
 };
 
 exports.early_talker = function(next, connection) {

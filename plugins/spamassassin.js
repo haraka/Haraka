@@ -12,7 +12,9 @@ exports.register = function () {
 exports.load_spamassassin_ini = function () {
     var plugin = this;
     plugin.loginfo("loading spamassassin.ini");
-    plugin.cfg = plugin.config.get('spamassassin.ini', plugin.load_spamassassin_ini);
+    plugin.cfg = plugin.config.get('spamassassin.ini', function () {
+        plugin.load_spamassassin_ini();
+    });
 
     var defaults = {
         spamd_socket: 'localhost:783',

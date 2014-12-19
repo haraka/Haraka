@@ -2,6 +2,7 @@
 
 var stub = require('./stub');
 var logger = require('../../logger');
+var ResultStore  = require('../../result_store');
 
 var connection = exports;
 
@@ -10,7 +11,7 @@ function Connection(client, server) {
     this.server = server;
     this.relaying = false;
     this.notes  = {};
-
+    this.results = new ResultStore(this);
     logger.add_log_methods(this, 'test');
 }
 

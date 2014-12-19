@@ -12,10 +12,15 @@ var options = {
 
 exports.register = function () {
     var plugin = this;
-    var load_config = function () {
-        plugin.cfg = plugin.config.get('rcpt_to.qmail_deliverable.ini', load_config);
-    };
-    load_config();
+    plugin.load_qmd_ini();
+};
+
+exports.load_qmd_ini = function () {
+    var plugin = this;
+    plugin.cfg = plugin.config.get(
+                'rcpt_to.qmail_deliverable.ini',
+                function () { plugin.load_qmd_ini(); }
+                );
 };
 
 exports.hook_mail = function(next, connection, params) {

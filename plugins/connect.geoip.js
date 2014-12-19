@@ -25,8 +25,9 @@ exports.load_geoip_ini = function () {
                 '-main.calc_distance',
             ],
         },
-        plugin.load_geoip_ini
-    );
+        function () {
+            plugin.load_geoip_ini();
+        });
 };
 
 exports.load_maxmind = function () {
@@ -37,7 +38,8 @@ exports.load_maxmind = function () {
     }
     catch (e) {
         plugin.logerror(e);
-        plugin.logerror("unable to load maxmind, try\n\n\t'npm install -g maxmind'\n\n");
+        plugin.logerror("unable to load maxmind, try\n\n\t" +
+             "'npm install -g maxmind'\n\n");
         return;
     }
 
