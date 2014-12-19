@@ -2,7 +2,115 @@
 
 var _set_up = function (done) {
     this.cfreader = require('../configfile');
+    this.opts = { booleans: ['main.bool_true','main.bool_false'] };
     done();
+};
+
+exports.load_ini_config = {
+    setUp: _set_up,
+    'non-exist.ini empty' : function (test) {
+        test.expect(1);
+        test.deepEqual(
+                this.cfreader.load_ini_config('non-exist.ini'),
+                { main: { } }
+                );
+        test.done();
+    },
+    'non-exist.ini boolean' : function (test) {
+        test.expect(1);
+        test.deepEqual(
+                this.cfreader.load_ini_config('non-exist.ini', { booleans: ['reject']}),
+                { main: { reject: false } }
+                );
+        test.done();
+    },
+    'non-exist.ini boolean true default' : function (test) {
+        test.expect(3);
+        test.deepEqual(
+                this.cfreader.load_ini_config('non-exist.ini', { booleans: ['+reject']}),
+                { main: { reject: true } }
+                );
+        test.deepEqual(
+                this.cfreader.load_ini_config('non-exist.ini', { booleans: ['+main.reject']}),
+                { main: { reject: true } }
+                );
+        test.deepEqual(
+                this.cfreader.load_ini_config('non-exist.ini', { booleans: ['main.+reject']}),
+                { main: { reject: true } }
+                );
+        test.done();
+    },
+    'non-exist.ini boolean false default' : function (test) {
+        test.expect(3);
+        test.deepEqual(
+                this.cfreader.load_ini_config('non-exist.ini', { booleans: ['-reject']}),
+                { main: { reject: false } }
+                );
+        test.deepEqual(
+                this.cfreader.load_ini_config('non-exist.ini', { booleans: ['-main.reject']}),
+                { main: { reject: false } }
+                );
+        test.deepEqual(
+                this.cfreader.load_ini_config('non-exist.ini', { booleans: ['main.-reject']}),
+                { main: { reject: false } }
+                );
+        test.done();
+    },
+    'non-exist.ini boolean false default, section' : function (test) {
+        test.expect(2);
+        test.deepEqual(
+                this.cfreader.load_ini_config('non-exist.ini', { booleans: ['-reject.boolf']}),
+                { main: { }, reject: {boolf: false} }
+                );
+        test.deepEqual(
+                this.cfreader.load_ini_config('non-exist.ini', { booleans: ['+reject.boolt']}),
+                { main: { }, reject: {boolt: true} }
+                );
+        test.done();
+    },
+    'test.ini, no opts' : function (test) {
+        test.expect(4);
+        var r = this.cfreader.load_ini_config('tests/test.ini');
+        test.strictEqual(r.main.bool_true, 'true');
+        test.strictEqual(r.main.bool_false, 'false');
+        test.strictEqual(r.main.str_true, 'true');
+        test.strictEqual(r.main.str_false, 'false');
+        test.done();
+    },
+    'test.ini, opts' : function (test) {
+        test.expect(4);
+        var r = this.cfreader.load_ini_config('tests/test.ini', this.opts);
+        test.strictEqual(r.main.bool_true, true);
+        test.strictEqual(r.main.bool_false, false);
+        test.strictEqual(r.main.str_true, 'true');
+        test.strictEqual(r.main.str_false, 'false');
+        test.done();
+    },
+    'test.ini, sect1, opts' : function (test) {
+        test.expect(4);
+        var r = this.cfreader.load_ini_config('tests/test.ini', {
+            booleans: ['sect1.bool_true','sect1.bool_false']
+        });
+        test.strictEqual(r.sect1.bool_true, true);
+        test.strictEqual(r.sect1.bool_false, false);
+        test.strictEqual(r.sect1.str_true, 'true');
+        test.strictEqual(r.sect1.str_false, 'false');
+        test.done();
+    },
+    'test.ini, sect1, opts, w/defaults' : function (test) {
+        test.expect(6);
+        var r = this.cfreader.load_ini_config('tests/test.ini', {
+            booleans: ['+sect1.bool_true','-sect1.bool_false', 
+                       '+sect1.bool_true_default', 'sect1.-bool_false_default']
+        });
+        test.strictEqual(r.sect1.bool_true, true);
+        test.strictEqual(r.sect1.bool_false, false);
+        test.strictEqual(r.sect1.str_true, 'true');
+        test.strictEqual(r.sect1.str_false, 'false');
+        test.strictEqual(r.sect1.bool_true_default, true);
+        test.strictEqual(r.sect1.bool_false_default, false);
+        test.done();
+    },
 };
 
 exports.get_filetype_reader  = {
