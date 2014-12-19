@@ -1,27 +1,26 @@
 'use strict';
 // a single connection
 
-var dns         = require('dns');
-var ipaddr      = require('ipaddr.js');
-var fs          = require('fs');
 var net         = require('net');
 var path        = require('path');
 
 var config      = require('./config');
 var logger      = require('./logger');
 var trans       = require('./transaction');
+var dns         = require('dns');
 var plugins     = require('./plugins');
 var constants   = require('./constants');
 var rfc1869     = require('./rfc1869');
+var fs          = require('fs');
 var Address     = require('./address').Address;
 var uuid        = require('./utils').uuid;
 var outbound    = require('./outbound');
 var date_to_str = require('./utils').date_to_str;
 var indexOfLF   = require('./utils').indexOfLF;
+var ipaddr      = require('ipaddr.js');
 var ResultStore = require('./result_store');
 
-var version = JSON.parse(fs.readFileSync(
-    path.join(__dirname, 'package.json'))).version;
+var version  = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'))).version;
 
 var line_regexp = /^([^\n]*\n)/;
 

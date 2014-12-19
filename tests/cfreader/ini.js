@@ -16,20 +16,20 @@ exports.load = {
         test.done();
     },
     'has a load function': function(test) {
-    	test.expect(1);
-    	test.ok(typeof this.ini.load === 'function');
-    	test.done();
+        test.expect(1);
+        test.ok(typeof this.ini.load === 'function');
+        test.done();
     },
     'loads the test ini file': function(test) {
-    	test.expect(1);
-    	var result = this.ini.load('tests/config/test.ini',  {}, regex);
-    	// console.log(result);
-    	test.deepEqual(result.main,
-            { bool_true: 'true', bool_false: 'false',
-              str_true: 'true', str_false: 'false'
-            }
-        );
-    	test.done();
+        test.expect(1);
+        var result = this.ini.load('tests/config/test.ini',  {}, regex);
+        // console.log(result);
+        test.deepEqual(result.main,
+                { bool_true: 'true', bool_false: 'false',
+                    str_true: 'true', str_false: 'false'
+                }
+                );
+        test.done();
     },
     'test.ini, no opts' : function (test) {
         test.expect(4);
@@ -64,7 +64,7 @@ exports.load = {
         test.expect(6);
         var r = this.ini.load('tests/config/test.ini', {
             booleans: ['+sect1.bool_true','-sect1.bool_false', 
-                       '+sect1.bool_true_default', 'sect1.-bool_false_default']
+            '+sect1.bool_true_default', 'sect1.-bool_false_default']
         }, regex);
         test.strictEqual(r.sect1.bool_true, true);
         test.strictEqual(r.sect1.bool_false, false);

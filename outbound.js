@@ -1,13 +1,11 @@
 'use strict';
 
-var async       = require('async');
 var fs          = require('fs');
 var path        = require('path');
 var dns         = require('dns');
 var net         = require('net');
-var util        = require('util');
-var events      = require('events');
-
+var util        = require("util");
+var events      = require("events");
 var utils       = require('./utils');
 var sock        = require('./line_socket');
 var logger      = require('./logger');
@@ -15,11 +13,14 @@ var config      = require('./config');
 var constants   = require('./constants');
 var trans       = require('./transaction');
 var plugins     = require('./plugins');
+var async       = require('async');
 var Address     = require('./address').Address;
 var TimerQueue  = require('./timer_queue');
+var date_to_str = utils.date_to_str;
+var existsSync  = utils.existsSync;
 var FsyncWriteStream = require('./fsync_writestream');
-var core_consts = require('constants');
 
+var core_consts = require('constants');
 var WRITE_EXCL  = core_consts.O_CREAT | core_consts.O_TRUNC | core_consts.O_WRONLY | core_consts.O_EXCL;
 
 var MAX_UNIQ = 10000;
@@ -152,7 +153,7 @@ exports.load_queue = function (pid) {
     // properly.
 
     // no reason not to do this stuff syncronously - we're just loading here
-    if (!utils.existsSync(queue_dir)) {
+    if (!existsSync(queue_dir)) {
         this.logdebug("Creating queue directory " + queue_dir);
         try {
             fs.mkdirSync(queue_dir, 493); // 493 == 0755
@@ -398,16 +399,14 @@ exports.send_trans_email = function (transaction, next) {
     // add in potentially missing headers
     if (!transaction.header.get_all('Message-Id').length) {
         this.loginfo("Adding missing Message-Id header");
-        transaction.add_header('Message-Id', '<' + transaction.uuid +
-            '@' + config.get('me') + '>');
+        transaction.add_header('Message-Id', '<' + transaction.uuid + '@' + config.get('me') + '>');
     }
     if (!transaction.header.get_all('Date').length) {
         this.loginfo("Adding missing Date header");
-        transaction.add_header('Date', utils.date_to_str(new Date()));
+        transaction.add_header('Date', date_to_str(new Date()));
     }
 
-    transaction.add_leading_header('Received', '(Haraka outbound); ' +
-        utils.date_to_str(new Date()));
+    transaction.add_leading_header('Received', '(Haraka outbound); ' + date_to_str(new Date()));
 
     var deliveries = [];
     var always_split = cfg.always_split;
