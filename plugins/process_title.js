@@ -54,7 +54,7 @@ exports.hook_init_master = function (next, server) {
                 default:
                     // Unknown message
             }
-        }
+        };
         // Register any new workers
         cluster.on('fork', function (worker) {
             server.notes.pt_concurrent_cluster[worker.id] = 0;
