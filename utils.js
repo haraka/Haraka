@@ -1,7 +1,8 @@
 'use strict';
 
 // copied from http://www.broofa.com/Tools/Math.uuid.js
-var CHARS = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'.split('');
+var CHARS = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'
+    .split('');
 
 exports.uuid = function () {
     var chars = CHARS, uuid = new Array(36), rnd=0, r;
@@ -23,6 +24,8 @@ exports.uuid = function () {
 };
 
 exports.in_array = function (item, array) {
+    if (!array) return false;
+    if (!Array.isArray(array)) return false;
     return (array.indexOf(item) !== -1);
 };
 
@@ -86,7 +89,8 @@ exports.pad = _pad;
 exports.date_to_str = function (d) {
     return _daynames[d.getDay()] + ', ' + _pad(d.getDate(),2) + ' ' +
            _monnames[d.getMonth()] + ' ' + d.getFullYear() + ' ' +
-           _pad(d.getHours(),2) + ':' + _pad(d.getMinutes(),2) + ':' + _pad(d.getSeconds(),2) +
+           _pad(d.getHours(),2) + ':' + _pad(d.getMinutes(),2) + ':' +
+           _pad(d.getSeconds(),2) +
            ' ' + d.toString().match(/\sGMT([+-]\d+)/)[1];
 };
 
