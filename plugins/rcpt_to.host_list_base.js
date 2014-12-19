@@ -4,8 +4,6 @@
 exports.load_host_list = function () {
     var plugin = this;
 
-    plugin.loginfo(plugin, "loading host_list");
-
     var lowered_list = {};  // assemble
     var raw_list = plugin.config.get('host_list', 'list', function () {
         plugin.load_host_list();
@@ -21,7 +19,6 @@ exports.load_host_list = function () {
 exports.load_host_list_regex = function () {
     var plugin = this;
 
-    plugin.loginfo(plugin, "loading host_list_regex");
     plugin.host_list_regex = plugin.config.get(
             'host_list_regex',
             'list',

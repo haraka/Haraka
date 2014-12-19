@@ -25,7 +25,6 @@ exports.register = function() {
 
 exports.load_config = function () {
     var plugin = this;
-    plugin.loginfo(plugin, "loading rcpt_to.routes.ini");
     plugin.cfg = plugin.config.get('rcpt_to.routes.ini', function () {
         plugin.load_config();
     });

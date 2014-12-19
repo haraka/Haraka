@@ -25,7 +25,6 @@ exports.register = function () {
 exports.load_karma_ini = function () {
     var plugin = this;
 
-    plugin.loginfo("loading karma.ini");
     plugin.cfg = plugin.config.get('karma.ini', {
         booleans: [
             '+asn.enable',

@@ -35,13 +35,11 @@ exports.register = function () {
 
 exports.load_pem = function (file) {
     var plugin = this;
-    plugin.loginfo('loading ' + file);
     return plugin.config.get(file, 'binary');
 };
 
 exports.load_config = function () {
     var plugin = this;
-    plugin.loginfo("loading tls.ini");
     plugin.cfg = plugin.config.get('tls.ini', {
         booleans: [
             '+main.requestCert',

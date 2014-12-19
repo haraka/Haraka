@@ -23,7 +23,6 @@ exports.register = function() {
 
 exports.load_ldap_ini = function() {
     var plugin = this;
-    plugin.loginfo('loading rcpt_to.ldap.ini');
     plugin.cfg = plugin.config.get('rcpt_to.ldap.ini', 'ini', function () {
         plugin.load_ldap_ini();
     });

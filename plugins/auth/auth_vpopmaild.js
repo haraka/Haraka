@@ -11,7 +11,6 @@ exports.register = function () {
 
 exports.load_vpop_ini = function () {
     var plugin = this;
-    plugin.loginfo("loading auth_vpopmaild.ini");
     plugin.cfg = plugin.config.get('auth_vpopmaild.ini', function () {
         plugin.load_vpop_ini();
     });

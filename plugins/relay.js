@@ -48,7 +48,6 @@ exports.load_relay_ini = function () {
 
 exports.load_dest_domains = function () {
     var plugin = this;
-    plugin.loginfo(plugin, "loading relay_dest_domain.ini");
     plugin.dest = plugin.config.get(
         'relay_dest_domains.ini',
         'ini',
@@ -59,7 +58,6 @@ exports.load_dest_domains = function () {
 exports.load_acls = function () {
     var plugin = this;
     var file_name = 'relay_acl_allow';
-    plugin.loginfo(plugin, "loading " + file_name);
 
     // load with a self-referential callback
     plugin.acl_allow = plugin.config.get(file_name, 'list', function () {

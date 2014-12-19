@@ -430,10 +430,11 @@ exports.load_file = function (type, phase) {
     }
     function load_em_high () {
         var file_name = plugin.cfg[type][phase];
-        plugin.loginfo(plugin, "loading " + file_name);
 
         // load config with a self-referential callback
-        var list = plugin.config.get(file_name, 'list', load_em_high);
+        var list = plugin.config.get(file_name, 'list', function () {
+            load_em_high();
+        });
 
         // init the list store, type is white or black
         if (!plugin.list)       { plugin.list = { type: {} }; }
@@ -455,19 +456,25 @@ exports.load_re_file = function (type, phase) {
         plugin.loginfo(plugin, "skipping " + plugin.cfg.re[type][phase]);
         return;
     }
-    function load_re () {
+    var load_re = function () {
         var file_name = plugin.cfg.re[type][phase];
-        plugin.loginfo(plugin, "loading " + file_name);
 
-        var regex_list = utils.valid_regexes(plugin.config.get(file_name, 'list', load_re));
+        var regex_list = utils.valid_regexes(
+                plugin.config.get(
+                    file_name,
+                    'list',
+                    function () { load_re(); }
+                    )
+                );
 
         // initialize the list store
         if (!plugin.list_re)       { plugin.list_re = { type: {} }; }
         if (!plugin.list_re[type]) { plugin.list_re[type] = {}; }
 
         // compile the regexes at the designated location
-        plugin.list_re[type][phase] = new RegExp('^(' + regex_list.join('|') + ')$', 'i');
-    }
+        plugin.list_re[type][phase] =
+            new RegExp('^(' + regex_list.join('|') + ')$', 'i');
+    };
     load_re();
 };
 
@@ -479,9 +486,10 @@ exports.load_domain_file = function (type, phase) {
     }
     function load_domains () {
         var file_name = plugin.cfg[type][phase];
-        plugin.loginfo(plugin, "loading " + file_name);
 
-        var list = plugin.config.get(file_name, 'list', load_domains);
+        var list = plugin.config.get(file_name, 'list', function () {
+            load_domains();
+        });
 
         // init the list store, if needed
         if (!plugin.list)       { plugin.list = { type: {} }; }

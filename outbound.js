@@ -8,7 +8,6 @@ var util        = require("util");
 var events      = require("events");
 var utils       = require('./utils');
 var sock        = require('./line_socket');
-// var server      = require('./server');
 var logger      = require('./logger');
 var config      = require('./config');
 var constants   = require('./constants');
