@@ -4,30 +4,23 @@ var stub         = require('../fixtures/stub'),
     Plugin       = require('../fixtures/stub_plugin'),
     Connection   = require('../fixtures/stub_connection'),
     Address      = require('../../address'),
-    configfile   = require('../../configfile'),
     config       = require('../../config');
 
-function _set_up(callback) {
+var _set_up = function (done) {
 
     this.plugin = new Plugin('spamassassin');
     this.plugin.config = config;
     this.plugin.cfg = { main: { } };
 
     this.connection = Connection.createConnection();
-    // this.connection.results = new ResultStore(this.plugin);
     this.connection.transaction = stub;
     this.connection.transaction.notes = {};
 
-    callback();
-}
-
-function _tear_down(callback) {
-    callback();
-}
+    done();
+};
 
 exports.register = {
     setUp : _set_up,
-    tearDown : _tear_down,
     'loads the spamassassin plugin': function (test) {
         test.expect(1);
         test.equal('spamassassin', this.plugin.name);
@@ -44,7 +37,6 @@ exports.register = {
 
 exports.load_spamassassin_ini = {
     setUp : _set_up,
-    tearDown : _tear_down,
     'loads spamassassin.ini': function (test) {
         test.expect(2);
         test.equal(undefined, this.plugin.cfg.main.spamd_socket);
@@ -56,7 +48,6 @@ exports.load_spamassassin_ini = {
 
 exports.msg_too_big = {
     setUp : _set_up,
-    tearDown : _tear_down,
     'max_size not set': function (test) {
         test.expect(1);
         test.equal(false, this.plugin.msg_too_big(this.connection));
@@ -82,7 +73,6 @@ exports.msg_too_big = {
 
 exports.get_spamd_headers = {
     setUp : _set_up,
-    tearDown : _tear_down,
     'returns a spamd protocol request': function (test) {
         test.expect(1);
         this.connection.transaction.mail_from = new Address.Address('<matt@example.com>');
@@ -102,7 +92,6 @@ exports.get_spamd_headers = {
 
 exports.get_spamd_username = {
     setUp : _set_up,
-    tearDown : _tear_down,
     'default': function (test) {
         test.expect(1);
         test.equal('default', this.plugin.get_spamd_username(this.connection));
@@ -131,7 +120,6 @@ exports.get_spamd_username = {
 
 exports.score_too_high = {
     setUp : _set_up,
-    tearDown : _tear_down,
     'no threshhold is not too high': function (test) {
         test.expect(1);
         test.ok(!this.plugin.score_too_high(this.connection, {score: 5}));

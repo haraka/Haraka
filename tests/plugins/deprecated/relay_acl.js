@@ -1,41 +1,27 @@
-var stub         = require('../fixtures/stub'),
-    constants    = require('../../constants'),
-    Connection   = require('../fixtures/stub_connection'),
-    Plugin       = require('../fixtures/stub_plugin'),
-    configfile   = require('../../configfile'),
-    config       = require('../../config'),
-    ResultStore  = require("../../result_store");
+'use strict';
 
-// huge hack here, but plugin tests need constants
-constants.import(global);
+var Connection   = require('../../fixtures/stub_connection');
+var Plugin       = require('../../fixtures/stub_plugin');
+var config       = require('../../../config');
+var ResultStore  = require("../../../result_store");
 
-function _set_up(callback) {
-    this.backup = {};
+var _set_up = function (done) {
 
-    // needed for tests
-    this.plugin = Plugin('relay_acl');
+    this.plugin = new Plugin('relay_acl');
     this.plugin.config = config;
     this.plugin.cfg = {};
 
     this.connection = Connection.createConnection();
-    this.connection.results = new ResultStore(this.connection);
+
     this.connection.transaction = {
         results: new ResultStore(this.connection),
     };
 
-    // going to need these in multiple tests
-    // this.plugin.register();
-
-    callback();
-}
-
-function _tear_down(callback) {
-    callback();
-}
+    done();
+};
 
 exports.is_acl_allowed = {
     setUp : _set_up,
-    tearDown : _tear_down,
     'bare IP' : function (test) {
         test.expect(3);
         this.plugin.acl_allow=['127.0.0.6'];
@@ -77,7 +63,6 @@ exports.is_acl_allowed = {
 
 exports.relay_dest_domains = {
     setUp : _set_up,
-    tearDown : _tear_down,
     'relaying' : function (test) {
         test.expect(2);
         var outer = this;
@@ -149,7 +134,6 @@ exports.relay_dest_domains = {
 
 exports.refresh_config = {
     setUp : _set_up,
-    tearDown : _tear_down,
     'callback' : function (test) {
         test.expect(1);
         var outer = this;

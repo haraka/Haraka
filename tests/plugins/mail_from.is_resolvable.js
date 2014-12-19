@@ -1,37 +1,27 @@
+'use strict';
 
 var stub         = require('../fixtures/stub'),
     Plugin       = require('../fixtures/stub_plugin'),
     Connection   = require('../fixtures/stub_connection'),
-    configfile   = require('../../configfile'),
     config       = require('../../config'),
-    logger       = require('../../logger'),
     ResultStore  = require('../../result_store');
 
-function _set_up(callback) {
-    this.backup = {};
-
-    // needed for tests
+var _set_up = function (done) {
+    
     this.plugin = new Plugin('mail_from.is_resolvable');
     this.plugin.config = config;
     this.plugin.register();
+
     this.connection = Connection.createConnection();
-    this.connection.results = new ResultStore(this.plugin);
+
     this.connection.transaction = { notes: {} };
     this.connection.transaction.results = new ResultStore(this.plugin);
 
-    logger.add_log_methods(this);
-    // this.plugin.loginfo = stub();
-
-    callback();
-}
-
-function _tear_down(callback) {
-    callback();
-}
+    done();
+};
 
 exports.mxErr = {
     setUp : _set_up,
-    tearDown : _tear_down,
     'any.com, no err code': function (test) {
         test.expect(3);
         var t = this;
@@ -63,10 +53,8 @@ exports.mxErr = {
     }
 };
 
-
 exports.implicit_mx = {
     setUp : _set_up,
-    tearDown : _tear_down,
     'tnpi.net': function (test) {
         test.expect(2);
         var t = this;

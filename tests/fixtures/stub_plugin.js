@@ -18,6 +18,7 @@ function Plugin(name) {
     this.base = {};
     this.register_hook = stub();
     this.config = stub();
+    constants.import(global);
 
     logger.add_log_methods(this, 'test');
 

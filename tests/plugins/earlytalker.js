@@ -1,20 +1,17 @@
-var Plugin       = require('../fixtures/stub_plugin'),
-    Connection   = require('../fixtures/stub_connection'),
-    configfile   = require('../../configfile'),
-    config       = require('../../config'),
-    constants    = require('../../constants');
+'use strict';
 
-constants.import(global);
+var Plugin       = require('../fixtures/stub_plugin');
+var Connection   = require('../fixtures/stub_connection');
+var config       = require('../../config');
 
-function _set_up(callback) {
-    this.backup = {};
-
-    this.plugin = Plugin('early_talker');
+var _set_up = function (callback) {
+    
+    this.plugin = new Plugin('early_talker');
     this.plugin.config = config;
 
     this.connection = Connection.createConnection();
     callback();
-}
+};
 
 function _tear_down(callback) { callback(); }
 

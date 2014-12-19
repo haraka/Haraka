@@ -1,19 +1,16 @@
-var stub             = require('../fixtures/stub'),
-    Plugin           = require('../fixtures/stub_plugin'),
-    Connection       = require('../fixtures/stub_connection'),
-    constants        = require('../../constants'),
-    Address          = require('../../address').Address,
-    configfile       = require('../../configfile'),
-    config           = require('../../config'),
-    ResultStore      = require('../../result_store');
+'use strict';
 
-// huge hack here, but plugin tests need constants
-constants.import(global);
+var Plugin        = require('../fixtures/stub_plugin');
+var Connection    = require('../fixtures/stub_connection');
+var Address       = require('../../address').Address;
+var config        = require('../../config');
+var ResultStore   = require('../../result_store');
 
 var hmail = {
     "queue_time":1402091363826,
     "domain":"example.com",
-    "rcpt_to":[{"original":"matt@example.com","user":"matt","host":"example.com"}],
+    "rcpt_to":[
+        {"original":"matt@example.com","user":"matt","host":"example.com"}],
     "mail_from":{"original":"<>",
     "user":null,
     "host":null},
@@ -21,11 +18,10 @@ var hmail = {
     "uuid":"DFB28F2B-CC21-438B-864D-934E6860AB61.1",
 };
 
-function _set_up_file(callback) {
-    this.backup = {};
+var _set_up_file = function (done) {
 
     // needed for tests
-    this.plugin = Plugin('rcpt_to.routes');
+    this.plugin = new Plugin('rcpt_to.routes');
     this.plugin.config = config;
     this.plugin.register();
     this.connection = Connection.createConnection();
@@ -34,14 +30,13 @@ function _set_up_file(callback) {
         notes: {},
     };
 
-    callback();
-}
+    done();
+};
 
-function _set_up_redis(callback) {
+var _set_up_redis = function (done) {
     this.backup = {};
 
-    // needed for tests
-    this.plugin = Plugin('rcpt_to.routes');
+    this.plugin = new Plugin('rcpt_to.routes');
     this.plugin.config = config;
     this.plugin.register();
     this.connection = Connection.createConnection();
@@ -50,20 +45,15 @@ function _set_up_redis(callback) {
         notes: {},
     };
 
-    this.plugin.redis_ping(callback);
-}
+    this.plugin.redis_ping(done);
+};
 
-function _tear_down(callback) {
-    callback();
-}
-
-function _tear_down_redis(callback) {
-    this.plugin.delete_route('matt@example.com', callback);
-}
+var _tear_down_redis = function (done) {
+    this.plugin.delete_route('matt@example.com', done);
+};
 
 exports.rcpt_file = {
     setUp : _set_up_file,
-    tearDown : _tear_down,
     'miss' : function (test) {
         test.expect(2);
         var cb = function (rc, msg) {
@@ -128,7 +118,6 @@ exports.rcpt_redis = {
 
 exports.get_mx_file = {
     setUp : _set_up_file,
-    tearDown : _tear_down,
     'email address file hit' : function (test) {
         test.expect(2);
         var cb = function (rc, mx) {

@@ -1,35 +1,29 @@
+'use strict';
 
 var stub         = require('../fixtures/stub'),
     Plugin       = require('../fixtures/stub_plugin'),
     Connection   = require('../fixtures/stub_connection'),
-    configfile   = require('../../configfile'),
     config       = require('../../config'),
     ResultStore  = require('../../result_store');
 
-function _set_up(callback) {
-    this.backup = {};
-
-    // needed for tests
-    this.plugin = Plugin('clamd');
+var _set_up = function (done) {
+    
+    this.plugin = new Plugin('clamd');
     this.plugin.config = config;
     this.plugin.register();
+    
     this.connection = Connection.createConnection();
-    this.connection.results = new ResultStore(this.plugin);
-    this.connection.transaction = { notes: {} };
-    this.connection.transaction.results = new ResultStore(this.plugin);
+    
+    this.connection.transaction = {
+        notes: {},
+        results: new ResultStore(this.plugin),
+    };
 
-    this.plugin.loginfo = stub();
-
-    callback();
-}
-
-function _tear_down(callback) {
-    callback();
-}
+    done();
+};
 
 exports.load_clamd_ini = {
     setUp : _set_up,
-    tearDown : _tear_down,
     'none': function (test) {
         test.expect(1);
         test.deepEqual([], this.plugin.skip_list);
@@ -50,7 +44,6 @@ exports.load_clamd_ini = {
 
 exports.hook_data = {
     setUp : _set_up,
-    tearDown : _tear_down,
     'only_with_attachments, false': function (test) {
         test.expect(2);
         test.equal(false, this.plugin.cfg.main.only_with_attachments);
@@ -75,7 +68,6 @@ exports.hook_data = {
 
 exports.hook_data_post = {
     setUp : _set_up,
-    tearDown : _tear_down,
     'skip attachment': function (test) {
         this.connection.transaction.notes = { clamd_found_attachment: false };
         this.plugin.cfg.main.only_with_attachments=true;

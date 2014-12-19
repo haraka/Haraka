@@ -3,22 +3,15 @@
 var stub         = require('../fixtures/stub'),
     Plugin       = require('../fixtures/stub_plugin');
 
-function _set_up(callback) {
-    this.backup = {};
-
-    // needed for tests
+var _set_up = function (done) {
+    
     this.plugin = new Plugin('dns_list_base');
 
-    callback();
-}
-
-function _tear_down(callback) {
-    callback();
-}
+    done();
+};
 
 exports.disable_zone = {
     setUp : _set_up,
-    tearDown : _tear_down,
     'empty request': function (test) {
         test.expect(1);
         var res = this.plugin.disable_zone();
@@ -53,7 +46,6 @@ exports.disable_zone = {
 
 exports.lookup = {
     setUp : _set_up,
-    tearDown : _tear_down,
     'Spamcop, test IP': function (test) {
         test.expect(2);
         var cb = function (err, a) {
@@ -76,7 +68,6 @@ exports.lookup = {
 
 exports.multi = {
     setUp : _set_up,
-    tearDown : _tear_down,
     'Spamcop': function (test) {
         test.expect(4);
         var cb = function (err, zone, a, pending) {
@@ -146,7 +137,6 @@ exports.multi = {
 
 exports.first = {
     setUp : _set_up,
-    tearDown : _tear_down,
     'positive result': function (test) {
         test.expect(3);
         var cb = function (err, zone, a) {
@@ -154,7 +144,7 @@ exports.first = {
             test.ok(zone);
             test.ok((Array.isArray(a) && a.length > 0));
             test.done();
-        }
+        };
         var dnsbls = [ 'cbl.abuseat.org', 'bl.spamcop.net' ];
         this.plugin.first('127.0.0.2', dnsbls , cb);
     },
@@ -165,7 +155,7 @@ exports.first = {
             test.equal(null, zone);
             test.equal(null, a);
             test.done();
-        }
+        };
         var dnsbls = [ 'cbl.abuseat.org', 'bl.spamcop.net' ];
         this.plugin.first('127.0.0.1', dnsbls, cb);
     },
@@ -175,14 +165,14 @@ exports.first = {
         var pending = dnsbls.length;
         var cb = function () {
             test.ok(pending);
-        }
+        };
         var cb_each = function (err, zone, a) {
             pending--;
             test.equal(null, err);
             test.ok(zone);
             test.ok((Array.isArray(a) && a.length > 0));
             if (pending === 0) test.done(); 
-        }
+        };
         this.plugin.first('127.0.0.2', dnsbls, cb, cb_each);
     }
-}
+};
