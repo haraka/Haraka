@@ -1,34 +1,26 @@
-var stub         = require('../../fixtures/stub'),
-    Plugin       = require('../../fixtures/stub_plugin'),
+'use strict';
+
+var Plugin       = require('../../fixtures/stub_plugin'),
     Connection   = require('../../fixtures/stub_connection'),
-    configfile   = require('../../../configfile'),
     config       = require('../../../config');
 
-function _set_up(callback) {
+var _set_up = function(done) {
     this.backup = {};
 
     // needed for tests
-    this.plugin = Plugin('auth/auth_vpopmaild');
+    this.plugin = new Plugin('auth/auth_vpopmaild');
     this.plugin.inherits('auth/auth_base');
     this.plugin.config = config;
     this.plugin.cfg = config.get('auth_vpopmaild.ini');
 
-    // stub out functions
     this.connection = Connection.createConnection();
-    // this.connection.results = new ResultStore(this.connection);
-    this.connection.notes = {};
     this.connection.capabilities=null;
 
-    callback();
-}
-
-function _tear_down(callback) {
-    callback();
-}
+    done();
+};
 
 exports.hook_capabilities = {
     setUp : _set_up,
-    tearDown : _tear_down,
     'no TLS': function (test) {
         var cb = function (rc, msg) {
             test.expect(3);
@@ -69,7 +61,6 @@ exports.hook_capabilities = {
 
 exports.get_vpopmaild_socket = {
     setUp : _set_up,
-    tearDown : _tear_down,
     'any': function (test) {
         test.expect(1);
         var socket = this.plugin.get_vpopmaild_socket('foo@localhost.com');
@@ -82,7 +73,6 @@ exports.get_vpopmaild_socket = {
 
 exports.get_plain_passwd = {
     setUp : _set_up,
-    tearDown : _tear_down,
     'matt@example.com': function (test) {
         var cb = function(pass) {
             test.expect(1);

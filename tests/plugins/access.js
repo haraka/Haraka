@@ -1,38 +1,28 @@
-var stub         = require('../fixtures/stub'),
-    Plugin       = require('../fixtures/stub_plugin'),
-    Connection   = require('../fixtures/stub_connection'),
-    Address      = require('../../address').Address,
-    configfile   = require('../../configfile'),
-    config       = require('../../config'),
-    ResultStore  = require('../../result_store'),
-    constants    = require('../../constants');
+'use strict';
 
-constants.import(global);
+var stub         = require('../fixtures/stub');
+var Plugin       = require('../fixtures/stub_plugin');
+var Connection   = require('../fixtures/stub_connection');
+var Address      = require('../../address').Address;
+var config       = require('../../config');
+var ResultStore  = require('../../result_store');
 
-function _set_up(callback) {
-    this.backup = {};
+var _set_up = function (done) {
 
-    // needed for tests
-    this.plugin = Plugin('access');
+    this.plugin = new Plugin('access');
     this.plugin.config = config;
 
-    // stub out functions
     this.connection = Connection.createConnection();
     this.connection.results = new ResultStore(this.connection);
     this.connection.transaction = {
         results: new ResultStore(this.connection),
     };
 
-    callback();
-}
-
-function _tear_down(callback) {
-    callback();
-}
+    done();
+};
 
 exports.in_list = {
     setUp : _set_up,
-    tearDown : _tear_down,
     'white, mail': function (test) {
         var list = {'matt@exam.ple':true,'matt@example.com':true};
         this.plugin.cfg  = { white: { mail: 'test no file' }};
@@ -97,7 +87,6 @@ exports.in_list = {
 
 exports.in_re_list = {
     setUp : _set_up,
-    tearDown : _tear_down,
     'white, mail': function (test) {
         var list = ['.*exam.ple','.*example.com'];
         this.plugin.cfg = { re: { white: { mail: 'test file name' }}};
@@ -162,7 +151,6 @@ exports.in_re_list = {
 
 exports.load_re_file = {
     setUp : _set_up,
-    tearDown : _tear_down,
     'whitelist': function (test) {
         test.expect(3);
         this.plugin.init_config();
@@ -177,7 +165,6 @@ exports.load_re_file = {
 
 exports.in_file = {
     setUp : _set_up,
-    tearDown : _tear_down,
     'in_file': function (test) {
         test.expect(2);
         var file = 'mail_from.access.whitelist';
@@ -189,7 +176,6 @@ exports.in_file = {
 
 exports.in_re_file = {
     setUp : _set_up,
-    tearDown : _tear_down,
     'in_re_file': function (test) {
         test.expect(2);
         var file = 'mail_from.access.whitelist_regex';
@@ -201,7 +187,6 @@ exports.in_re_file = {
 
 exports.rdns_access = {
     setUp : _set_up,
-    tearDown : _tear_down,
     'no list': function (test) {
         test.expect(2);
         this.plugin.init_config();
@@ -269,7 +254,6 @@ exports.rdns_access = {
 
 exports.helo_access = {
     setUp : _set_up,
-    tearDown : _tear_down,
     'no list': function (test) {
         test.expect(2);
         this.plugin.init_config();
@@ -301,7 +285,6 @@ exports.helo_access = {
 
 exports.mail_from_access = {
     setUp : _set_up,
-    tearDown : _tear_down,
     'no lists populated': function (test) {
         test.expect(2);
         this.plugin.init_config();
@@ -368,7 +351,6 @@ exports.mail_from_access = {
 
 exports.rcpt_to_access = {
     setUp : _set_up,
-    tearDown : _tear_down,
     'no lists populated': function (test) {
         test.expect(2);
         this.plugin.init_config();

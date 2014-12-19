@@ -1,35 +1,22 @@
-var stub             = require('../fixtures/stub'),
-    constants        = require('../../constants'),
-    Connection       = require('../fixtures/stub_connection'),
-    Plugin           = require('../fixtures/stub_plugin');
+'use strict';
 
-// huge hack here, but plugin tests need constants
-constants.import(global);
+var stub             = require('../../fixtures/stub');
+var Connection       = require('../../fixtures/stub_connection');
+var Plugin           = require('../../fixtures/stub_plugin');
 
-function _set_up(callback) {
-    this.backup = {};
+var _set_up = function (callback) {
 
-    // needed for tests
-    this.plugin = Plugin('relay_all');
+    this.plugin = new Plugin('relay_all');
     this.connection = Connection.createConnection();
     this.params = ['foo@bar.com'];
 
-    // stub out functions
-    this.connection.loginfo = stub();
-
-    // going to need these in multiple tests
     this.plugin.register();
 
     callback();
-}
-
-function _tear_down(callback) {
-    callback();
-}
+};
 
 exports.relay_all = {
     setUp : _set_up,
-    tearDown : _tear_down,
     'should have register function' : function (test) {
         test.expect(2);
         test.isNotNull(this.plugin);
@@ -56,7 +43,7 @@ exports.relay_all = {
     'confirm_all hook always returns OK' : function (test) {
         var next = function (action) {
             test.expect(1);
-            test.equals(action, constants.ok);
+            test.equals(action, OK);
             test.done();
         };
 

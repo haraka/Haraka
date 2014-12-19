@@ -1,37 +1,27 @@
-var stub         = require('../fixtures/stub'),
-    Plugin       = require('../fixtures/stub_plugin'),
-    Connection   = require('../fixtures/stub_connection'),
-    constants    = require('../../constants'),
-    configfile   = require('../../configfile'),
-    config       = require('../../config'),
-    Address      = require('../../address'),
-    ResultStore  = require("../../result_store");
+'use strict';
 
-constants.import(global);
+var stub         = require('../fixtures/stub');
+var Plugin       = require('../fixtures/stub_plugin');
+var Connection   = require('../fixtures/stub_connection');
+var config       = require('../../config');
+var Address      = require('../../address');
 
-function _set_up(callback) {
-    this.backup = {};
-
-    // needed for tests
-    this.plugin = Plugin('helo.checks');
+var _set_up = function (done) {
+    
+    this.plugin = new Plugin('helo.checks');
     this.plugin.config = config;
 
     this.connection = Connection.createConnection();
-    this.connection.results = new ResultStore(this.connection);
+
     this.connection.remote_ip='208.75.199.19';
 
     this.plugin.register();
 
-    callback();
-}
-
-function _tear_down(callback) {
-    callback();
-}
+    done();
+};
 
 exports.host_mismatch = {
     setUp : _set_up,
-    tearDown : _tear_down,
     'host_mismatch, reject=false' : function (test) {
         test.expect(2);
         var outer = this;
@@ -64,7 +54,6 @@ exports.host_mismatch = {
 
 exports.proto_mismatch = {
     setUp : _set_up,
-    tearDown : _tear_down,
     'proto_mismatch, reject=false, esmtp=false' : function (test) {
         test.expect(2);
         var outer = this;
@@ -114,7 +103,6 @@ exports.proto_mismatch = {
 
 exports.rdns_match = {
     setUp : _set_up,
-    tearDown : _tear_down,
     'pass' : function (test) {
         test.expect(2);
         var outer = this;
@@ -178,7 +166,6 @@ exports.rdns_match = {
 
 exports.bare_ip = {
     setUp : _set_up,
-    tearDown : _tear_down,
     'pass' : function (test) {
         test.expect(2);
         var outer = this;
@@ -223,7 +210,6 @@ exports.bare_ip = {
 
 exports.dynamic = {
     setUp : _set_up,
-    tearDown : _tear_down,
     'pass' : function (test) {
         test.expect(2);
         var outer = this;
@@ -275,7 +261,6 @@ exports.dynamic = {
 
 exports.big_company = {
     setUp : _set_up,
-    tearDown : _tear_down,
     'pass, reject=false' : function (test) {
         test.expect(2);
         var outer = this;
@@ -325,7 +310,6 @@ exports.big_company = {
 
 exports.literal_mismatch = {
     setUp : _set_up,
-    tearDown : _tear_down,
     'pass' : function (test) {
         test.expect(2);
         var outer = this;
@@ -394,7 +378,6 @@ exports.literal_mismatch = {
 
 exports.valid_hostname = {
     setUp : _set_up,
-    tearDown : _tear_down,
     'pass' : function (test) {
         test.expect(2);
         var test_helo = 'great.domain.com';
@@ -444,7 +427,6 @@ exports.valid_hostname = {
 
 exports.forward_dns = {
     setUp : _set_up,
-    tearDown : _tear_down,
     'pass' : function (test) {
         test.expect(2);
         var outer = this;
@@ -500,7 +482,6 @@ exports.forward_dns = {
 
 exports.match_re = {
     setUp : _set_up,
-    tearDown : _tear_down,
     'miss' : function (test) {
         test.expect(3);
         var test_helo = 'not_in_re_list.net';

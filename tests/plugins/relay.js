@@ -1,14 +1,9 @@
 'use strict';
 
-var stub         = require('../fixtures/stub'),
-    constants    = require('../../constants'),
-    Connection   = require('../fixtures/stub_connection'),
+var Connection   = require('../fixtures/stub_connection'),
     Plugin       = require('../fixtures/stub_plugin'),
-    configfile   = require('../../configfile'),
     config       = require('../../config'),
     ResultStore  = require("../../result_store");
-
-constants.import(global);
 
 var _set_up = function (done) {
 
@@ -107,7 +102,6 @@ exports.acl = {
         this.plugin.config = config;
         this.plugin.cfg = { relay: { dest_domains: true } };
         this.connection = Connection.createConnection();
-        this.connection.results = new ResultStore(this.connection);
         callback();
     },
     'relay.acl=false' : function (test) {
@@ -169,12 +163,11 @@ exports.acl = {
 
 exports.dest_domains = {
     setUp : function (callback) {
-        this.plugin = Plugin('relay');
+        this.plugin = new Plugin('relay');
         this.plugin.config = config;
         this.plugin.cfg = { relay: { dest_domains: true } };
 
         this.connection = Connection.createConnection();
-        this.connection.results = new ResultStore(this.connection);
         this.connection.transaction = {
             results: new ResultStore(this.connection),
         };
@@ -253,13 +246,12 @@ exports.dest_domains = {
 
 exports.force_routing = {
     setUp : function (callback) {
-        this.plugin = Plugin('relay');
+        this.plugin = new Plugin('relay');
         this.plugin.config = config;
         this.plugin.cfg = { relay: { force_routing: true } };
         this.plugin.dest = {};
 
         this.connection = Connection.createConnection();
-        this.connection.results = new ResultStore(this.connection);
         this.connection.transaction = {
             results: new ResultStore(this.connection),
         };
@@ -322,7 +314,7 @@ exports.all = {
     'all hook always returns OK' : function (test) {
         var next = function (action) {
             test.expect(1);
-            test.equals(action, constants.ok);
+            test.equals(action, OK);
             test.done();
         };
         this.plugin.cfg.relay = { all: true };

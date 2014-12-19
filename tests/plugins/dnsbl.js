@@ -1,16 +1,18 @@
-var stub         = require('../fixtures/stub'),
-    Plugin       = require('../fixtures/stub_plugin'),
-    config       = require('../../config'),
-    Connection   = require('../fixtures/stub_connection');
+'use strict';
 
-function _set_up(done) {
+var Plugin       = require('../fixtures/stub_plugin');
+var config       = require('../../config');
+var Connection   = require('../fixtures/stub_connection');
 
-    // needed for tests
+var _set_up = function (done) {
+
     this.plugin = new Plugin('dnsbl');
     this.plugin.config = config;
 
+    this.connection = Connection.createConnection();
+
     done();
-}
+};
 
 exports.load_config = {
     setUp : _set_up,
@@ -57,20 +59,18 @@ exports.should_skip = {
     },
     'no remote_ip': function (test) {
         test.expect(1);
-        this.connection = Connection.createConnection();
+        
         test.equal(true, this.plugin.should_skip(this.connection));
         test.done();
     },
     'private remote_ip, no zones': function (test) {
         test.expect(1);
-        this.connection = Connection.createConnection();
         this.connection.remote_ip = '192.168.1.1';
         test.equal(true, this.plugin.should_skip(this.connection));
         test.done();
     },
     'private remote_ip': function (test) {
         test.expect(1);
-        this.connection = Connection.createConnection();
         this.connection.remote_ip = '192.168.1.1';
 
         this.plugin.load_config();
@@ -82,7 +82,6 @@ exports.should_skip = {
     },
     'public remote_ip': function (test) {
         test.expect(1);
-        this.connection = Connection.createConnection();
         this.connection.remote_ip = '208.1.1.1';
 
         this.plugin.load_config();
@@ -94,7 +93,6 @@ exports.should_skip = {
     },
     'public remote_ip, no zones': function (test) {
         test.expect(1);
-        this.connection = Connection.createConnection();
         this.connection.remote_ip = '208.1.1.1';
         test.equal(true, this.plugin.should_skip(this.connection));
         test.done();

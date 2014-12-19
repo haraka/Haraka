@@ -1,32 +1,21 @@
-var stub             = require('../fixtures/stub'),
-    Plugin           = require('../fixtures/stub_plugin'),
-    Connection       = require('../fixtures/stub_connection'),
-    constants        = require('../../constants'),
-    Address          = require('../../address');
+'use strict';
 
-// huge hack here, but plugin tests need constants
-constants.import(global);
+var stub             = require('../fixtures/stub');
+var Plugin           = require('../fixtures/stub_plugin');
+var Connection       = require('../fixtures/stub_connection');
+var Address          = require('../../address');
 
-function _set_up(callback) {
-    this.backup = {};
+var _set_up = function (done) {
 
-    // needed for tests
-    this.plugin = Plugin('rcpt_to.qmail_deliverable');
+    this.plugin = new Plugin('rcpt_to.qmail_deliverable');
+
     this.connection = Connection.createConnection();
 
-    // going to need these in multiple tests
-    // this.plugin.register();
-
-    callback();
-}
-
-function _tear_down(callback) {
-    callback();
-}
+    done();
+};
 
 exports.get_qmd_response = {
     setUp : _set_up,
-    tearDown : _tear_down,
     'stub' : function (test) {
         test.expect(0);
         // can't really test this very well without a QMD server
@@ -36,7 +25,6 @@ exports.get_qmd_response = {
 
 exports.check_qmd_reponse = {
     setUp : _set_up,
-    tearDown : _tear_down,
     '11' : function (test) {
         test.expect(1);
         var r = this.plugin.check_qmd_reponse(this.connection, '11');

@@ -1,42 +1,28 @@
-var stub         = require('../../fixtures/stub'),
-    Plugin       = require('../../fixtures/stub_plugin'),
-    Connection   = require('../../fixtures/stub_connection'),
-    configfile   = require('../../../configfile'),
-    config       = require('../../../config'),
-    constants    = require('../../../constants'),
-    ResultStore  = require('../../../result_store'),
-    utils        = require('../../../utils');
+'use strict';
 
-constants.import(global);
+var Plugin       = require('../../fixtures/stub_plugin');
+var Connection   = require('../../fixtures/stub_connection');
+var config       = require('../../../config');
+var utils        = require('../../../utils');
 
-function _set_up(callback) {
-    this.backup = {};
+var _set_up = function (done) {
 
-    // needed for tests
-    this.plugin = Plugin('auth/auth_base');
+    this.plugin = new Plugin('auth/auth_base');
     this.plugin.config = config;
+
     this.plugin.get_plain_passwd = function (user, cb) {
         if (user === 'test') return cb('testpass');
         return cb(null);
     };
 
-    // stub out functions
     this.connection = Connection.createConnection();
-
-    this.connection.results = new ResultStore(this.connection);
-    this.connection.notes = {};
     this.connection.capabilities=null;
 
-    callback();
-}
-
-function _tear_down(callback) {
-    callback();
-}
+    done();
+};
 
 exports.hook_capabilities = {
     setUp : _set_up,
-    tearDown : _tear_down,
     'no TLS, no auth': function (test) {
         var cb = function (rc, msg) {
             test.expect(3);
@@ -65,7 +51,6 @@ exports.hook_capabilities = {
 
 exports.get_plain_passwd = {
     setUp : _set_up,
-    tearDown : _tear_down,
     'get_plain_passwd, no result': function (test) {
         this.plugin.get_plain_passwd('user', function (pass) {
             test.expect(1);
@@ -84,7 +69,6 @@ exports.get_plain_passwd = {
 
 exports.check_plain_passwd = {
     setUp : _set_up,
-    tearDown : _tear_down,
     'valid password': function (test) {
         this.plugin.check_plain_passwd(this.connection, 'test', 'testpass', function (pass) {
             test.expect(1);
@@ -110,7 +94,6 @@ exports.check_plain_passwd = {
 
 exports.select_auth_method = {
     setUp : _set_up,
-    tearDown : _tear_down,
     'no auth methods yield no result': function (test) {
         var next = function (code) {
             test.equal(code, null);
@@ -144,7 +127,6 @@ exports.select_auth_method = {
 
 exports.auth_plain = {
     setUp : _set_up,
-    tearDown : _tear_down,
     'params type=string returns OK': function (test) {
         var next = function () {
             test.expect(2);
@@ -177,7 +159,6 @@ exports.auth_plain = {
 
 exports.check_user = {
     setUp : _set_up,
-    tearDown : _tear_down,
     'bad auth': function (test) {
         var next = function (code) {
             test.expect(2);
@@ -202,7 +183,6 @@ exports.check_user = {
 
 exports.hook_unrecognized_command = {
     setUp : _set_up,
-    tearDown : _tear_down,
     'AUTH type FOO': function (test) {
         var next = function (code) {
             test.expect(2);
@@ -241,7 +221,6 @@ exports.hook_unrecognized_command = {
 
 exports.hexi = {
     setUp : _set_up,
-    tearDown : _tear_down,
     'hexi': function (test) {
         test.expect(2);
         test.equal(this.plugin.hexi(512), 200);
