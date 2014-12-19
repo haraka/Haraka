@@ -13,8 +13,9 @@ exports.load_ini = function () {
             '-main.allow_mx_ip',
             '+main.reject_no_mx',
             ],
-    },
-    plugin.load_ini);
+    }, function () {
+        plugin.load_ini();
+    });
 
     plugin.re_bogus_ip = new RegExp(plugin.cfg.main.re_bogus_ip ||
             '^(?:0\\.0\\.0\\.0|255\\.255\\.255\\.255|127\\.)' );

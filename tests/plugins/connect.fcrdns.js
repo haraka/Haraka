@@ -2,7 +2,6 @@ var stub         = require('../fixtures/stub'),
     Plugin       = require('../fixtures/stub_plugin'),
     Connection   = require('../fixtures/stub_connection'),
     constants    = require('../../constants'),
-    configfile   = require('../../configfile'),
     config       = require('../../config'),
     ResultStore  = require('../../result_store'),
     dns          = require('dns');
@@ -14,17 +13,12 @@ function _set_up(callback) {
     this.backup = {};
 
     // needed for tests
-    this.plugin = Plugin('connect.fcrdns');
+    this.plugin = new Plugin('connect.fcrdns');
     this.plugin.config = config;
-    this.plugin.loginfo = stub();
-    this.plugin.logerror = stub();
     this.plugin.register();
 
     this.connection = Connection.createConnection();
     this.connection.results = new ResultStore(this.connection);
-    this.connection.notes = {};
-    this.connection.loginfo = stub();
-    this.connection.logerror = stub();
     this.connection.auth_results = stub();
 
     callback();

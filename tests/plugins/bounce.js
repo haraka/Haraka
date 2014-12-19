@@ -1,20 +1,17 @@
-var stub         = require('../fixtures/stub'),
-    Plugin       = require('../fixtures/stub_plugin'),
+var Plugin       = require('../fixtures/stub_plugin'),
     Connection   = require('../fixtures/stub_connection'),
     constants    = require('../../constants'),
     Address      = require('../../address'),
-    configfile   = require('../../configfile'),
     config       = require('../../config'),
     ResultStore  = require('../../result_store'),
     Header       = require('../../mailheader').Header;
 
 constants.import(global);
 
-function _set_up(callback) {
-    this.backup = {};
+function _set_up(done) {
 
     // needed for tests
-    this.plugin = Plugin('bounce');
+    this.plugin = new Plugin('bounce');
     this.plugin.config = config;
     this.plugin.cfg = {
         main: { },
@@ -39,22 +36,27 @@ function _set_up(callback) {
         results: new ResultStore(this.plugin),
     };
 
-    // going to need these in multiple tests
-    this.plugin.register();
-
-    callback();
+    done();
 }
 
-function _tear_down(callback) {
-    callback();
+function _tear_down(done) {
+    done();
 }
 
 exports.load_configs = {
     setUp : _set_up,
     tearDown : _tear_down,
-    'yes': function (test) {
+    'load_bounce_ini': function (test) {
         test.expect(3);
-        this.plugin.load_configs();
+        this.plugin.load_bounce_ini();
+        test.ok(this.plugin.cfg.main);
+        test.ok(this.plugin.cfg.check);
+        test.ok(this.plugin.cfg.reject);
+        test.done();
+    },
+    'load_bounce_bad_rcpt': function (test) {
+        test.expect(3);
+        this.plugin.load_bounce_bad_rcpt();
         test.ok(this.plugin.cfg.main);
         test.ok(this.plugin.cfg.check);
         test.ok(this.plugin.cfg.reject);

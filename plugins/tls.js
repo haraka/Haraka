@@ -17,40 +17,42 @@ exports.register = function () {
 
     var config_options = ['ciphers','requestCert','rejectUnauthorized'];
 
-    var load_config = function () {
-        plugin.loginfo("loading tls.ini");
-        plugin.cfg = plugin.config.get('tls.ini', {
-            booleans: [
-                '+main.requestCert',
-                '-main.rejectUnauthorized',
-            ]
-        }, load_config);
+    plugin.load_config();
 
-        for (var i in config_options) {
-            if (plugin.cfg.main[config_options[i]] === undefined) { continue; }
-            plugin.tls_opts[config_options[i]] = plugin.cfg.main[config_options[i]];
-        }
-    };
-    load_config();
+    plugin.tls_opts.key = plugin.load_pem('tls_key.pem');
+    if (!plugin.tls_opts.key) {
+        plugin.logcrit("config/tls_key.pem not loaded. See 'haraka -h tls'");
+    }
 
-    var load_key = function () {
-        plugin.loginfo("loading tls_key.pem");
-        plugin.tls_opts.key = plugin.config.get('tls_key.pem', 'binary', load_key);
-        if (!plugin.tls_opts.key) {
-            plugin.logcrit("config/tls_key.pem not loaded. See 'haraka -h tls'");
-        }
-    };
-    load_key();
+    plugin.tls_opts.cert = plugin.load_pem('tls_cert.pem');
 
-    var load_cert = function () {
-        plugin.loginfo("loading tls_cert.pem");
-        plugin.tls_opts.cert = plugin.config.get('tls_cert.pem', 'binary', load_cert);
-        if (!plugin.tls_opts.cert) {
-            plugin.logcrit("config/tls_cert.pem not loaded. See 'haraka -h tls'");
-        }
-    };
-    load_cert();
+    if (!plugin.tls_opts.cert) {
+        plugin.logcrit("config/tls_cert.pem not loaded. See 'haraka -h tls'");
+    }
+
     plugin.logdebug(plugin.tls_opts);
+};
+
+exports.load_pem = function (file) {
+    var plugin = this;
+    return plugin.config.get(file, 'binary');
+};
+
+exports.load_config = function () {
+    var plugin = this;
+    plugin.cfg = plugin.config.get('tls.ini', {
+        booleans: [
+            '+main.requestCert',
+            '-main.rejectUnauthorized',
+        ]
+    }, function () {
+        plugin.load_config();
+    });
+
+    for (var i in config_options) {
+        if (plugin.cfg.main[config_options[i]] === undefined) { continue; }
+        plugin.tls_opts[config_options[i]] = plugin.cfg.main[config_options[i]];
+    }
 };
 
 exports.hook_capabilities = function (next, connection) {

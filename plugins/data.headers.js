@@ -5,28 +5,7 @@ var net_utils  = require('./net_utils');
 exports.register = function () {
     var plugin = this;
 
-    var load_config = function () {
-        plugin.cfg = plugin.config.get('data.headers.ini', {
-            booleans: [
-                '+check.duplicate_singular',
-                '+check.missing_required',
-                '+check.invalid_return_path',
-                '+check.invalid_date',
-                '+check.user_agent',
-                '+check.direct_to_mx',
-                '+check.from_match',
-                '+check.delivered_to',
-                '+check.mailing_list',
-
-                '-reject.duplicate_singular',
-                '-reject.missing_required',
-                '-reject.invalid_return_path',
-                '-reject.invalid_date',
-                '+reject.delivered_to',
-            ],
-        }, load_config);
-    };
-    load_config();
+    plugin.load_headers_ini();
 
     try {
         plugin.addrparser = require('address-rfc2822');
@@ -45,6 +24,31 @@ exports.register = function () {
         this.register_hook('data_post', 'delivered_to');
     }
     this.register_hook('data_post', 'mailing_list');
+};
+
+exports.load_headers_ini = function () {
+    var plugin = this;
+    plugin.cfg = plugin.config.get('data.headers.ini', {
+        booleans: [
+            '+check.duplicate_singular',
+            '+check.missing_required',
+            '+check.invalid_return_path',
+            '+check.invalid_date',
+            '+check.user_agent',
+            '+check.direct_to_mx',
+            '+check.from_match',
+            '+check.delivered_to',
+            '+check.mailing_list',
+
+            '-reject.duplicate_singular',
+            '-reject.missing_required',
+            '-reject.invalid_return_path',
+            '-reject.invalid_date',
+            '+reject.delivered_to',
+        ],
+    }, function () {
+        plugin.load_headers_ini();
+    });
 };
 
 exports.duplicate_singular = function(next, connection) {

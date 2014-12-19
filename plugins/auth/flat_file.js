@@ -4,17 +4,22 @@ var net_utils = require('./net_utils');
 exports.register = function () {
     var plugin = this;
     plugin.inherits('auth/auth_base');
-    var load_config = function () {
-        plugin.cfg = plugin.config.get('auth_flat_file.ini', load_config);
-    };
-    load_config();
+    plugin.load_flat_ini();
+};
+
+exports.load_flat_ini = function () {
+    var plugin = this;
+    plugin.cfg = plugin.config.get('auth_flat_file.ini', function () {
+        plugin.load_flat_ini();
+    });
 };
 
 exports.hook_capabilities = function (next, connection) {
     var plugin = this;
     // don't allow AUTH unless private IP or encrypted
     if (!net_utils.is_rfc1918(connection.remote_ip) && !connection.using_tls) {
-        connection.logdebug(plugin, "Auth disabled for insecure public connection");
+        connection.logdebug(plugin,
+                "Auth disabled for insecure public connection");
         return next();
     }
 

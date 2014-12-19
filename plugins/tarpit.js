@@ -1,7 +1,9 @@
 // tarpit
 
-var hooks_to_delay = ['connect', 'helo', 'ehlo', 'mail', 'rcpt', 'rcpt_ok', 'data',
-   'data_post', 'queue', 'unrecognized_command', 'vrfy', 'noop', 'rset', 'quit'];
+var hooks_to_delay = ['connect', 'helo', 'ehlo', 'mail', 'rcpt', 'rcpt_ok',
+     'data', 'data_post', 'queue', 'unrecognized_command', 'vrfy', 'noop',
+     'rset', 'quit'
+     ];
 
 exports.register = function () {
     // Register tarpit function last

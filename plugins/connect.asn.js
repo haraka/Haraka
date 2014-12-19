@@ -36,7 +36,9 @@ exports.register = function () {
 
 exports.load_asn_ini = function () {
     var plugin = this;
-    plugin.cfg = plugin.config.get('connect.asn.ini', plugin.load_asn_ini);
+    plugin.cfg = plugin.config.get('connect.asn.ini', function () {
+        plugin.load_asn_ini();
+    });
 
     if (plugin.cfg.main.providers) {
         conf_providers = plugin.cfg.main.providers.split(/[\s,;]+/);

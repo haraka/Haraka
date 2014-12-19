@@ -9,7 +9,9 @@ exports.wildcard_to_regexp = function (str) {
 exports.load_excludes = function() {
     var plugin = this;
     plugin.loginfo('Loading excludes file');
-    var list = plugin.config.get('clamd.excludes','list', plugin.load_excludes);
+    var list = plugin.config.get('clamd.excludes','list', function () {
+        plugin.load_excludes();
+    });
 
     var new_skip_list_exclude = [];
     var new_skip_list = [];
@@ -81,7 +83,9 @@ exports.load_clamd_ini = function() {
     };
 
     for (var key in defaults) {
-        if (plugin.cfg.main[key] === undefined) plugin.cfg.main[key] = defaults[key];
+        if (plugin.cfg.main[key] === undefined) {
+            plugin.cfg.main[key] = defaults[key];
+        }
     }
 
     // resolve mismatch between docs (...attachment) and code (...attachments)

@@ -1,11 +1,13 @@
-"use strict";
+'use strict';
 
-var stub       = require('./stub'),
-    vm_harness = require('./vm_harness'),
-    path       = require('path'),
-    constants  = require('../../constants'),
-    vm         = require('vm'),
-    fs         = require('fs');
+var fs         = require('fs');
+var path       = require('path');
+var vm         = require('vm');
+
+var stub       = require('./stub');
+var vm_harness = require('./vm_harness');
+var constants  = require('../../constants');
+var logger     = require('../../logger');
 
 function Plugin(name) {
     if (false === (this instanceof Plugin)) {
@@ -17,10 +19,7 @@ function Plugin(name) {
     this.register_hook = stub();
     this.config = stub();
 
-    var levels = [ 'data', 'protocol', 'debug', 'info', 'notice', 'warn', 'error', 'crit', 'alert', 'emerg' ];
-    for (var i=0; i < levels.length; i++) {
-        this['log' + levels[i]] = stub();
-    }
+    logger.add_log_methods(this, 'test');
 
     return this.load_plugin(name);
 }

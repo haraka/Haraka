@@ -25,12 +25,13 @@ exports.register = function () {
 exports.load_karma_ini = function () {
     var plugin = this;
 
-    plugin.loginfo("loading karma.ini");
     plugin.cfg = plugin.config.get('karma.ini', {
         booleans: [
             '+asn.enable',
         ],
-    }, plugin.load_karma_ini);
+    }, function () {
+        plugin.load_karma_ini();
+    });
 
     if (plugin.cfg.deny && plugin.cfg.deny.hooks) {
         plugin.deny_hooks = utils.to_object(plugin.cfg.deny.hooks);

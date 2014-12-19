@@ -5,17 +5,21 @@ var dns       = require('dns'),
 
 exports.register = function () {
     var plugin = this;
-    var load_config = function () {
-        plugin.cfg = plugin.config.get('connect.fcrdns.ini', {
-            booleans: [
-                '-reject.no_rdns',
-                '-reject.no_fcrdns',
-                '-reject.invalid_tld',
-                '-reject.generic_rdns',
-            ]
-        }, load_config);
-    };
-    load_config();
+    plugin.load_fcrdns_ini();
+};
+
+exports.load_fcrdns_ini = function () {
+    var plugin = this;
+    plugin.cfg = plugin.config.get('connect.fcrdns.ini', {
+        booleans: [
+            '-reject.no_rdns',
+            '-reject.no_fcrdns',
+            '-reject.invalid_tld',
+            '-reject.generic_rdns',
+        ]
+    }, function () {
+        plugin.load_fcrdns_ini();
+    });
 };
 
 exports.hook_lookup_rdns = function (next, connection) {

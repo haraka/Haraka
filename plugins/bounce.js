@@ -4,7 +4,8 @@ var net_utils = require('./net_utils');
 
 exports.register = function () {
     var plugin = this;
-    plugin.load_configs();
+    plugin.load_bounce_ini();
+    plugin.load_bounce_bad_rcpt();
 
     plugin.register_hook('mail',      'reject_all');
     plugin.register_hook('data',      'single_recipient');
@@ -13,46 +14,49 @@ exports.register = function () {
     plugin.register_hook('data_post', 'non_local_msgid');
 };
 
-exports.load_configs = function () {
+exports.load_bounce_bad_rcpt = function () {
     var plugin = this;
 
-    var load_bounce_ini = function () {
-        plugin.cfg = plugin.config.get('bounce.ini', {
-            booleans: [
-                '-check.reject_all',
-                '+check.single_recipient',
-                '-check.empty_return_path',
-                '+check.bad_rcpt',
-                '-check.non_local_msgid',
+    var new_list = plugin.config.get('bounce_bad_rcpt', 'list', function () {
+        load_bounce_bad_rcpt();
+    });
 
-                '+reject.single_recipient',
-                '-reject.empty_return_path',
-            ],
-        }, load_bounce_ini);
+    var invalids = {};
+    for (var i=0; i < new_list.length; i++) {
+        invalids[new_list[i]] = true;
+    }
+    
+    plugin.cfg.invalid_addrs = invalids;
+};
 
-        // Legacy config handling
-        if (plugin.cfg.main.reject_invalid) {
-            plugin.logerror("bounce.ini is out of date, please update!");
-            plugin.cfg.check.single_recipient=true;
-            plugin.cfg.reject.single_recipient=true;
-        }
+exports.load_bounce_ini = function () {
+    var plugin = this;
+    plugin.cfg = plugin.config.get('bounce.ini', {
+        booleans: [
+            '-check.reject_all',
+            '+check.single_recipient',
+            '-check.empty_return_path',
+            '+check.bad_rcpt',
+            '-check.non_local_msgid',
 
-        if (plugin.cfg.main.reject_all) {
-            plugin.logerror("bounce.ini is out of date, please update!");
-            plugin.cfg.check.reject_all=true;
-        }
-    };
-    load_bounce_ini();
+            '+reject.single_recipient',
+            '-reject.empty_return_path',
+        ],
+    }, function () {
+        plugin.load_bounce_ini();
+    });
 
-    var load_bounce_bad_rcpt = function () {
-        var invalids = {};
-        var new_list = plugin.config.get('bounce_bad_rcpt', 'list', load_bounce_bad_rcpt);
-        for (var i=0; i < new_list.length; i++) {
-            invalids[new_list[i]] = true;
-        }
-        plugin.cfg.invalid_addrs = invalids;
-    };
-    load_bounce_bad_rcpt();
+    // Legacy config handling
+    if (plugin.cfg.main.reject_invalid) {
+        plugin.logerror("bounce.ini is out of date, please update!");
+        plugin.cfg.check.single_recipient=true;
+        plugin.cfg.reject.single_recipient=true;
+    }
+
+    if (plugin.cfg.main.reject_all) {
+        plugin.logerror("bounce.ini is out of date, please update!");
+        plugin.cfg.check.reject_all=true;
+    }
 };
 
 exports.reject_all = function (next, connection, params) {
