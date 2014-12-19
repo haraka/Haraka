@@ -6,7 +6,7 @@ var platform = process.platform;
 var yaml = require('js-yaml');
 
 // for "ini" type files
-var regex = {
+var regex = exports.regex = {
     section:        /^\s*\[\s*([^\]]*?)\s*\]\s*$/,
     param:          /^\s*([\w@\._-]+)\s*=\s*(.*?)\s*$/,
     comment:        /^\s*[;#].*$/,
@@ -53,8 +53,8 @@ cfreader.on_watch_event = function (name, type, options, cb) {
                 logger.logerror('Error watching file: ' + name + ' : ' + e);
             }
         }
-    }
-}
+    };
+};
 
 cfreader.watch_dir = function () {
     // NOTE: This only works on Linux and Windows
@@ -81,7 +81,7 @@ cfreader.watch_dir = function () {
         logger.logerror('Error watching directory ' + cfreader.config_path + '(' + e + ')');
     }
     return;
-}
+};
 
 cfreader.watch_file = function (name, type, cb, options) {
     // This works on all OS's, but watch_dir() above is preferred for Linux and 
@@ -104,7 +104,7 @@ cfreader.watch_file = function (name, type, cb, options) {
         }
     }
     return;
-}
+};
 
 cfreader.read_config = function(name, type, cb, options) {
     // Store arguments used so we can re-use them by filename later
@@ -114,7 +114,7 @@ cfreader.read_config = function(name, type, cb, options) {
         type: type,
         cb: cb,
         options: options
-    }
+    };
 
     // Check cache first
     if (name in cfreader._config_cache) {
@@ -160,7 +160,7 @@ cfreader.ensure_enoent_timer = function () {
             })(file); // END BLOCK SCOPE
         }
     }, 60 * 1000);
-}
+};
 
 cfreader.empty_config = function(type) {
     if (type === 'ini') {
@@ -172,6 +172,13 @@ cfreader.empty_config = function(type) {
     else {
         return [];
     }
+};
+
+cfreader.get_filetype_reader = function (type) {
+    if (type === 'value') return require('./cfreader/flat');
+    if (type === 'list' ) return require('./cfreader/flat');
+
+    return require('./cfreader/' + type);
 };
 
 cfreader.load_config = function(name, type, options) {
@@ -245,7 +252,7 @@ cfreader.load_json_config = function(name) {
 
     cfreader.process_file_overrides(name, result);
     return result;
-}
+};
 
 cfreader.process_file_overrides = function (name, result) {
     // We might be re-loading this file, so build a list
@@ -292,7 +299,7 @@ cfreader.load_yaml_config = function(name) {
     }
     cfreader.process_file_overrides(name, result);
     return result;
-}
+};
 
 cfreader.load_ini_config = function(name, options) {
     var result       = cfreader.empty_config('ini');
