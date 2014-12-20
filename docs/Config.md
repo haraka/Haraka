@@ -1,28 +1,28 @@
 Config Files
 ============
 
-Haraka contains a flexible config loader which can load a few different types
-of configuration files.
+Haraka's config loader can load several types of configuration files.
 
 The API is fairly simple:
 
     // From within a plugin:
-    var config_item = this.config.get(name, [type], [callback], [options]);
+    var cfg = this.config.get(name, [type], [callback], [options]);
 
 `name` is not a filename, but a name in the config/ directory. For example:
 
-    var config_item = this.config.get('rambling.paths', 'list');
+    var cfg = this.config.get('rambling.paths', 'list');
 
 This will load the file config/rambling.paths in the Haraka directory.
 
 `type` can be one of:
 
 * 'value' - load a flat file containing a single value (default)
-* 'ini' - load an "ini" style file
-* 'json' - load a json file
-* 'yaml' - load a yaml file
-* 'list' - load a flat file containing a list of values
-* 'data' - load a flat file containing a list of values, keeping comments and whitespace.
+* 'ini'   - load an "ini" style file
+* 'json'  - load a json file
+* 'yaml'  - load a yaml file
+* 'list'  - load a flat file containing a list of values
+* 'data'  - load a flat file containing a list of values, keeping comments and whitespace.
+* 'binary' - load a binary file into a Buffer
 
 If your ini and json files have `.ini`, `.json` or `.yaml` suffixes,
 the `type` parameter can be omitted.  
@@ -41,7 +41,7 @@ var cfg;  // variable global to this plugin only
 
 exports.register = function () {
     var plugin = this;
-    plugin.loginfo('calling register function');
+    plugin.loginfo('register function called');
     cfg = plugin.config.get('my_plugin.ini', function () {
         // This closure will be run for each detected update of my_plugin.ini
         // Re-run the outer function again
@@ -57,16 +57,13 @@ exports.hook_connect = function (next, connection) {
 
 The optional `options` object can accepts the following keys:
 
-* `no_watch` (default: false) - this prevents Haraka from watching the file
-for updates.
-* `no_cache` (default: false) - this prevents Haraka from caching the file
-in the configuration cache which means that the file will be re-read on
-every call to `config.get`.  This is not recommended as configuration files
-are read using syncronous functions and will therefore block the event loop
-and slow down the operation of Haraka.
-* `booleans` (default: none) - for .ini file types, this allows you to specify
-keys that are boolean types and to default the boolean to true or falsae if 
-desired.  See below for details.
+* `no_watch` (default: false) - prevents Haraka from watching for updates.
+* `no_cache` (default: false) - prevents Haraka from caching the file. This
+means that the file will be re-read on every call to `config.get`.  This is
+not recommended as config files are read syncronously, will block the event
+loop, and will slow down Haraka.
+* `booleans` (default: none) - for .ini files, this allows specifying
+boolean type keys. Default true or false can be specified.
 
 <a name="file_formats">File Formats</a>
 ============
