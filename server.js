@@ -23,8 +23,9 @@ Server.load_smtp_ini = function () {
         booleans: [
             '-main.daemonize',
             ],
-    },
-    Server.load_smtp_ini);
+    }, function () {
+        Server.load_smtp_ini();
+    });
 
     var defaults = {
         inactivity_timeout: 600,
@@ -33,10 +34,11 @@ Server.load_smtp_ini = function () {
     };
 
     for (var key in defaults) {
-        if (Server.cfg[key] !== undefined) continue;
-        Server.cfg[key] = defaults[key];
+        if (Server.cfg.main[key] !== undefined) continue;
+        Server.cfg.main[key] = defaults[key];
     }
 };
+
 Server.load_smtp_ini();
 
 Server.daemonize = function (config_data) {
