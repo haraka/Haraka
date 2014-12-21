@@ -233,3 +233,26 @@ exports.non_existing = {
         test.done();
     },
 };
+
+exports.get_cache_key = {
+    setUp: _set_up,
+    'no options is the name': function (test) {
+        test.expect(1);
+        test.equal(this.cfreader.get_cache_key('test'),
+            'test');
+        test.done();
+    },
+    'one option is name + serialized opts': function (test) {
+        test.expect(1);
+        test.equal(this.cfreader.get_cache_key('test', {foo: 'bar'}),
+            'test{"foo":"bar"}');
+        test.done();
+    },
+    'two options are returned predictably': function (test) {
+        test.expect(1);
+        test.equal(
+            this.cfreader.get_cache_key('test', {opt1: 'foo', opt2: 'bar'}),
+            'test{"opt1":"foo","opt2":"bar"}');
+        test.done();
+    }
+};
