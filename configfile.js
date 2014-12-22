@@ -184,32 +184,34 @@ cfreader.get_filetype_reader = function (type) {
 cfreader.load_config = function(name, type, options) {
     var result;
 
-    if (type === 'ini' || /\.ini$/.test(name)) {
-        result = cfreader.load_ini_config(name, options);
-    }
-    else if (type === 'json' || /\.json$/.test(name)) {
-        result = cfreader.load_json_config(name);
-    }
-    else if (type === 'yaml' || /\.yaml$/.test(name)) {
-        result = cfreader.load_yaml_config(name);
-    }
-    else if (type === 'binary') {
-        result = cfreader.load_binary_config(name, type);
-    }
-    else {
-        result = cfreader.load_flat_config(name, type, options);
-        if (result && type !== 'list' && type !== 'data') {
-            result = result[0];
-            if (options && Array.isArray(options.booleans) && options.booleans.indexOf(result) === -1) {
-                result = regex.is_truth.test(result);
+    switch (type) {
+        case 'ini':
+            result = cfreader.load_ini_config(name, options);
+            break;
+        case 'json':
+            result = cfreader.load_json_config(name);
+            break;
+        case 'yaml':
+            result = cfreader.load_yaml_config(name);
+            break;
+        case 'binary':
+            result = cfreader.load_binary_config(name, type);
+            break;
+        default:
+            result = cfreader.load_flat_config(name, type, options);
+            if (result && type !== 'list' && type !== 'data') {
+                result = result[0];
+                if (options && Array.isArray(options.booleans) &&
+                    options.booleans.indexOf(result) === -1) {
+                    result = regex.is_truth.test(result);
+                }
+                else if (regex.is_integer.test(result)) {
+                    result = parseInt(result, 10);
+                }
+                else if (regex.is_float.test(result)) {
+                    result = parseFloat(result);
+                }
             }
-            else if (regex.is_integer.test(result)) {
-                result = parseInt(result, 10);
-            }
-            else if (regex.is_float.test(result)) {
-                result = parseFloat(result);
-            }
-        }
     }
 
     if (!options || !options.no_cache) {
@@ -232,7 +234,7 @@ cfreader.load_json_config = function(name) {
                 var yaml_name = name.replace(/\.json$/, '.yaml');
                 if (utils.existsSync(yaml_name)) {
                     // We have to read_config() here, so the file is watched
-                    result = cfreader.read_config(yaml_name);
+                    result = cfreader.read_config(yaml_name, 'yaml');
                     // Replace original config cache with this result
                     cfreader._config_cache[name] = result;
                 }
