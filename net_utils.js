@@ -314,7 +314,7 @@ exports.get_public_ip = function (cb) {
     }
 
     // manual config override, for the cases where we can't figure it out
-    var smtpIni = config.get('smtp.ini', {no_cache: true}).main;
+    var smtpIni = config.get('smtp.ini').main;
     if (smtpIni.public_ip) {
         nu.public_ip = smtpIni.public_ip;
         return cb(null, nu.public_ip);
