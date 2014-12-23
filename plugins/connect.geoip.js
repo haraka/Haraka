@@ -120,6 +120,11 @@ exports.lookup_maxmind = function (next, connection) {
     if (asn) {
         var match = asn.match(/^(?:AS)([0-9]+)\s+(.*)$/);
         if (match) {
+            connection.results.add({name: 'connect.asn'},
+                { geoip: match,
+                    asn: match[1],
+                    asn_org: match[2]
+                });
             connection.results.add(plugin, {asn: match[1]});
             connection.results.add(plugin, {asn_org: match[2]});
         }

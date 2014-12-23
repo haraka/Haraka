@@ -10,6 +10,7 @@ var conf_providers = [ 'origin.asn.cymru.com', 'asn.routeviews.org' ];
 
 exports.register = function () {
     var plugin = this;
+    plugin.registered = false;
 
     plugin.load_asn_ini();
 
@@ -26,6 +27,10 @@ exports.register = function () {
 
         plugin.loginfo(plugin, zone + " succeeded");
         if (providers.indexOf(zone) === -1) providers.push(zone);
+
+        if (plugin.registered) return;
+        plugin.registered = true;
+        plugin.register_hook('lookup_rdns', 'lookup_asn');
     };
 
     // test each provider
@@ -94,7 +99,7 @@ exports.get_dns_results = function (zone, ip, done) {
     });
 };
 
-exports.hook_lookup_rdns = function (next, connection) {
+exports.lookup_asn = function (next, connection) {
     var plugin = this;
     var ip = connection.remote_ip;
     if (net_utils.is_rfc1918(ip)) return next();
