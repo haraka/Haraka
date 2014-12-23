@@ -107,10 +107,15 @@ cfreader.watch_file = function (name, type, cb, options) {
 };
 
 cfreader.get_cache_key = function (name, options) {
-    if (!options) return name;
     // this ordering of objects isn't guaranteed to be consistent, but I've
     // heard that it typically is.
-    return name + JSON.stringify(options);
+    if (options) return name + JSON.stringify(options);
+
+    if (cfreader._read_args[name] && cfreader._read_args[name].options) {
+        return name + JSON.stringify(cfreader._read_args[name].options);
+    }
+
+    return name;
 };
 
 cfreader.read_config = function(name, type, cb, options) {
@@ -232,6 +237,7 @@ cfreader.load_config = function(name, type, options) {
 
 cfreader.load_json_config = function(name) {
     var result = cfreader.empty_config('json');
+    var cache_key = cfreader.get_cache_key(name);
     try {
         if (utils.existsSync(name)) {
             result = JSON.parse(fs.readFileSync(name));
@@ -245,15 +251,15 @@ cfreader.load_json_config = function(name) {
                     // We have to read_config() here, so the file is watched
                     result = cfreader.read_config(yaml_name, 'yaml');
                     // Replace original config cache with this result
-                    cfreader._config_cache[name] = result;
+                    cfreader._config_cache[cache_key] = result;
                 }
             }
         }
     }
     catch (err) {
         if (err.code === 'EBADF') {
-            if (cfreader._config_cache[name]) {
-                return cfreader._config_cache[name];
+            if (cfreader._config_cache[cache_key]) {
+                return cfreader._config_cache[cache_key];
             }
         }
         else {
@@ -269,8 +275,9 @@ cfreader.process_file_overrides = function (name, result) {
     // We might be re-loading this file, so build a list
     // of currently cached overrides so we can remove
     // them before we add them in again.
-    if (cfreader._config_cache[name]) {
-        var ck_keys = Object.keys(cfreader._config_cache[name]);
+    var cache_key = cfreader.get_cache_key(name);
+    if (cfreader._config_cache[cache_key]) {
+        var ck_keys = Object.keys(cfreader._config_cache[cache_key]);
         for (var i=0; i<ck_keys.length; i++) {
             if (ck_keys[i].substr(0,1) === '!') {
                 delete cfreader._config_cache[path.join(cfreader.config_path, ck_keys[i].substr(1))];
@@ -300,8 +307,9 @@ cfreader.load_yaml_config = function(name) {
     }
     catch (err) {
         if (err.code === 'EBADF') {
-            if (cfreader._config_cache[name]) {
-                return cfreader._config_cache[name];
+            var cache_key = cfreader.get_cache_key(name);
+            if (cfreader._config_cache[cache_key]) {
+                return cfreader._config_cache[cache_key];
             }
         }
         else {
