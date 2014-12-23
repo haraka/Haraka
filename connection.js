@@ -20,7 +20,8 @@ var indexOfLF   = require('./utils').indexOfLF;
 var ipaddr      = require('ipaddr.js');
 var ResultStore = require('./result_store');
 
-var version  = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'))).version;
+var version = JSON.parse(
+        fs.readFileSync(path.join(__dirname, 'package.json'))).version;
 
 var line_regexp = /^([^\n]*\n)/;
 
@@ -39,18 +40,17 @@ var states = exports.states = {
 
 // copy logger methods into Connection:
 for (var key in logger) {
-    if (key.match(/^log\w/)) {
-        Connection.prototype[key] = (function (key) {
-            return function () {
-                // pass the connection instance to logger
-                var args = [ this ];
-                for (var i=0, l=arguments.length; i<l; i++) {
-                    args.push(arguments[i]);
-                }
-                logger[key].apply(logger, args);
-            };
-        })(key);
-    }
+    if (!/^log\w/.test(key)) continue;
+    Connection.prototype[key] = (function (key) {
+        return function () {
+            // pass the connection instance to logger
+            var args = [ this ];
+            for (var i=0, l=arguments.length; i<l; i++) {
+                args.push(arguments[i]);
+            }
+            logger[key].apply(logger, args);
+        };
+    })(key);
 }
 
 // Load HAProxy hosts into an object for fast lookups
@@ -64,10 +64,12 @@ function loadHAProxyHosts() {
     for (var i=0; i<hosts.length; i++) {
         var host = hosts[i].split(/\//);
         if (net.isIPv6(host[0])) {
-            new_ipv6_hosts[i] = [ipaddr.IPv6.parse(host[0]), parseInt(host[1] || 64)];
+            new_ipv6_hosts[i] =
+                [ipaddr.IPv6.parse(host[0]), parseInt(host[1] || 64)];
         }
         else {
-            new_ipv4_hosts[i] = [ipaddr.IPv4.parse(host[0]), parseInt(host[1] || 32)];
+            new_ipv4_hosts[i] =
+                [ipaddr.IPv4.parse(host[0]), parseInt(host[1] || 32)];
         }
     }
     haproxy_hosts_ipv4 = new_ipv4_hosts;
@@ -90,8 +92,9 @@ function setupClient(self) {
     }
     self.remote_ip = ipaddr.process(ip).toString();
     self.remote_port = self.client.remotePort;
-    self.lognotice('connect ip=' + self.remote_ip + ' port=' + self.remote_port +
-                   ' local_ip=' + self.local_ip + ' local_port=' + self.local_port);
+    self.lognotice('connect ip=' + self.remote_ip +
+            ' port=' + self.remote_port +
+            ' local_ip=' + self.local_ip + ' local_port=' + self.local_port);
 
     var rhost = 'client ' + ((self.remote_host) ? self.remote_host + ' ' : '') +
                 '[' + self.remote_ip + ']';
@@ -126,8 +129,8 @@ function setupClient(self) {
         self.process_data(data);
     });
 
-    var ha_list = net.isIPv6(self.remote_ip)
-                ? haproxy_hosts_ipv6
+    var ha_list = net.isIPv6(self.remote_ip) ?
+                  haproxy_hosts_ipv6
                 : haproxy_hosts_ipv4;
 
     if (ha_list.some(function (element, index, array) {
@@ -169,8 +172,10 @@ function Connection(client, server) {
     this.transaction = null;
     this.tran_count = 0;
     this.capabilities = null;
-    this.early_talker_delay = config.get('early_talker.pause') || config.get('early_talker_delay') || 1000;
-    this.banner_includes_uuid = config.get('banner_includes_uuid') ? true : false;
+    this.early_talker_delay = config.get('early_talker.pause') ||
+                              config.get('early_talker_delay') || 1000;
+    this.banner_includes_uuid =
+        config.get('banner_includes_uuid') ? true : false;
     this.deny_includes_uuid = config.get('deny_includes_uuid') || null;
     this.early_talker = 0;
     this.pipelining = 0;
@@ -214,7 +219,8 @@ Connection.prototype.process_line = function (line) {
 
     if (this.state >= states.STATE_DISCONNECTING) {
         if (logger.would_log(logger.LOGPROTOCOL)) {
-            this.logprotocol("C: (after-disconnect): " + this.current_line + ' state=' + this.state);
+            this.logprotocol("C: (after-disconnect): " +
+                    this.current_line + ' state=' + this.state);
         }
         this.loginfo("data after disconnect from " + this.remote_ip);
         return;
@@ -242,7 +248,8 @@ Connection.prototype.process_line = function (line) {
         this.state = states.STATE_PAUSE_SMTP;
         var matches = /^([^ ]*)( +(.*))?$/.exec(this.current_line);
         if (!matches) {
-            return plugins.run_hooks('unrecognized_command', this, this.current_line);
+            return plugins.run_hooks('unrecognized_command',
+                    this, this.current_line);
         }
         var method = "cmd_" + matches[1].toLowerCase();
         var remaining = matches[3] || '';
