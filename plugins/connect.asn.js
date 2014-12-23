@@ -45,8 +45,13 @@ exports.load_asn_ini = function () {
         plugin.load_asn_ini();
     });
 
-    if (plugin.cfg.main.providers) {
-        conf_providers = plugin.cfg.main.providers.split(/[\s,;]+/);
+    if (plugin.cfg.main.providers !== undefined) {  // defined
+        if (plugin.cfg.main.providers === '') {   // and not empty
+            conf_providers = [];
+        }
+        else {
+            conf_providers = plugin.cfg.main.providers.split(/[\s,;]+/);
+        }
     }
     if (plugin.cfg.main.test_ip) {
         test_ip = plugin.cfg.main.test_ip;

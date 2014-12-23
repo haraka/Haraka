@@ -93,15 +93,33 @@ exports.load_geoip_lite = function () {
     return true;
 };
 
+exports.get_maxmind_asn = function (connection) {
+    var plugin = this;
+
+    var asn = plugin.maxmind.getAsn(connection.remote_ip);
+    if (!asn) return;
+
+    var match = asn.match(/^(?:AS)([0-9]+)\s+(.*)$/);
+    if (!match) {
+        connection.logerror(plugin, 'unexpected AS format: ' + asn);
+        return;
+    }
+
+    connection.results.add(plugin,
+            { emit: true, asn: match[1], org: match[2] });
+};
+
 exports.lookup_maxmind = function (next, connection) {
     var plugin = this;
 
     if (!plugin.maxmind) { return next(); }
     if (!plugin.maxmind.dbsLoaded) { return next(); }
 
-    var ip = connection.remote_ip;
     var show = [];
-    var loc = plugin.get_geoip_maxmind(ip);
+
+    plugin.get_maxmind_asn(connection);
+
+    var loc = plugin.get_geoip_maxmind(connection.remote_ip);
     if (loc) {
         connection.results.add(plugin, {continent: loc.continentCode});
         connection.results.add(plugin, {country: loc.countryCode || loc.code});
@@ -116,29 +134,13 @@ exports.lookup_maxmind = function (next, connection) {
         }
     }
 
-    var asn = plugin.maxmind.getAsn(ip);
-    if (asn) {
-        var match = asn.match(/^(?:AS)([0-9]+)\s+(.*)$/);
-        if (match) {
-            connection.results.add({name: 'connect.asn'},
-                { geoip: match,
-                    asn: match[1],
-                    asn_org: match[2]
-                });
-            connection.results.add(plugin, {asn: match[1]});
-            connection.results.add(plugin, {asn_org: match[2]});
-        }
-        else {
-            connection.logerror(plugin, 'unexpected AS format: ' + asn);
-        }
-    }
-
     if (!loc || !plugin.cfg.main.calc_distance) {
         connection.results.add(plugin, {human: show.join(', '), emit:true});
         return next();
     }
 
-    plugin.calculate_distance(connection, [loc.latitude, loc.longitude], function (err, distance) {
+    plugin.calculate_distance(connection,
+            [loc.latitude, loc.longitude], function (err, distance) {
         if (err) { connection.results.add(plugin, {err: err}); }
         if (distance) { show.push(distance+'km'); }
         connection.results.add(plugin, {human: show.join(', '), emit:true});
@@ -306,7 +308,8 @@ exports.calculate_distance = function (connection, rll, done) {
         var gcd = plugin.haversine(gl.latitude, gl.longitude, rll[0], rll[1]);
         connection.results.add(plugin, {distance: gcd});
 
-        if (plugin.cfg.main.too_far && (parseFloat(plugin.cfg.main.too_far) < parseFloat(gcd))) {
+        if (plugin.cfg.main.too_far &&
+            (parseFloat(plugin.cfg.main.too_far) < parseFloat(gcd))) {
             connection.results.add(plugin, {too_far: true});
         }
         done(err, gcd);
@@ -327,7 +330,8 @@ exports.haversine = function (lat1, lon1, lat2, lon2) {
             lat2 = toRadians(lat2);
 
     var a = Math.sin(deltaLat/2) * Math.sin(deltaLat/2) +
-            Math.sin(deltaLon/2) * Math.sin(deltaLon/2) * Math.cos(lat1) * Math.cos(lat2);
+            Math.sin(deltaLon/2) * Math.sin(deltaLon/2) *
+            Math.cos(lat1) * Math.cos(lat2);
     var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
     return (EARTH_RADIUS * c).toFixed(0);
 };
@@ -348,7 +352,8 @@ exports.received_headers = function (connection) {
 
         var gi = plugin.get_geoip(match[1]);
         var country = gi.countryCode || gi.code || 'UNKNOWN';
-        connection.loginfo(plugin, 'received=' + match[1] + ' country=' + country);
+        connection.loginfo(plugin, 'received=' + match[1] +
+                ' country=' + country);
         results.push(match[1] + ':' + country);
     }
     return results;
