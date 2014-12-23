@@ -106,6 +106,13 @@ cfreader.watch_file = function (name, type, cb, options) {
     return;
 };
 
+cfreader.get_cache_key = function (name, options) {
+    if (!options) return name;
+    // this ordering of objects isn't guaranteed to be consistent, but I've
+    // heard that it typically is.
+    return name + JSON.stringify(options);
+};
+
 cfreader.read_config = function(name, type, cb, options) {
     // Store arguments used so we can re-use them by filename later
     // and so we know which files we've attempted to read so that
@@ -117,9 +124,10 @@ cfreader.read_config = function(name, type, cb, options) {
     };
 
     // Check cache first
-    if (name in cfreader._config_cache) {
+    var cache_key = cfreader.get_cache_key(name, options);
+    if (cache_key in cfreader._config_cache) {
         //logger.logdebug('Returning cached file: ' + name);
-        return cfreader._config_cache[name];
+        return cfreader._config_cache[cache_key];
     }
 
     // load config file
@@ -215,7 +223,8 @@ cfreader.load_config = function(name, type, options) {
     }
 
     if (!options || !options.no_cache) {
-        cfreader._config_cache[name] = result;
+        var cache_key = cfreader.get_cache_key(name, options);
+        cfreader._config_cache[cache_key] = result;
     }
 
     return result;
