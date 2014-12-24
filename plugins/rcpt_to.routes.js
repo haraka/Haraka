@@ -102,8 +102,8 @@ exports.get_mx = function(next, hmail, domain) {
 
     // get email address
     var address = domain;
-    if (hmail && hmail.rcpt_to && hmail.rcpt_to[0]) {
-        address = hmail.rcpt_to[0].original.toLowerCase();
+    if (hmail && hmail.todo && hmail.todo.rcpt_to && hmail.todo.rcpt_to[0]) {
+        address = hmail.todo.rcpt_to[0].address();
     }
     else {
         plugin.logerror('no rcpt from hmail, falling back to domain' );

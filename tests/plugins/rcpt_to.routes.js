@@ -7,20 +7,22 @@ var config        = require('../../config');
 var ResultStore   = require('../../result_store');
 
 var hmail = {
-    "queue_time":1402091363826,
-    "domain":"example.com",
-    "rcpt_to":[
-        {"original":"matt@example.com","user":"matt","host":"example.com"}],
-    "mail_from":{"original":"<>",
-    "user":null,
-    "host":null},
-    "notes":{},
-    "uuid":"DFB28F2B-CC21-438B-864D-934E6860AB61.1",
+    todo: {
+        "queue_time":1402091363826,
+        "domain":"example.com",
+        "rcpt_to":[ new Address('matt@example.com') ],
+        "mail_from": new Address('<>'),
+        "notes": {
+            authentication_results: [ 'spf=pass smtp.mailfrom=example.net' ],
+            spf_mail_result: 'Pass',
+            local_sender: true,
+        },
+        "uuid":"DFB28F2B-CC21-438B-864D-934E6860AB61.1",
+    },
 };
 
 var _set_up_file = function (done) {
 
-    // needed for tests
     this.plugin = new Plugin('rcpt_to.routes');
     this.plugin.config = config;
     this.plugin.register();
@@ -34,7 +36,6 @@ var _set_up_file = function (done) {
 };
 
 var _set_up_redis = function (done) {
-    this.backup = {};
 
     this.plugin = new Plugin('rcpt_to.routes');
     this.plugin.config = config;
@@ -61,8 +62,8 @@ exports.rcpt_file = {
             test.equal(msg, undefined);
             test.done();
         }.bind(this);
-        var addr = new Address('<matt@example.com>');
-        this.plugin.rcpt(cb, this.connection, [addr]);
+        this.plugin.rcpt(cb, this.connection,
+            [ new Address('<matt@example.com>') ]);
     },
     'hit' : function (test) {
         test.expect(2);
@@ -72,8 +73,8 @@ exports.rcpt_file = {
             test.done();
         }.bind(this);
         this.plugin.route_list = {'matt@example.com': '192.168.1.1'};
-        var addr = new Address('<matt@example.com>');
-        this.plugin.rcpt(cb, this.connection, [addr]);
+        this.plugin.rcpt(cb, this.connection,
+            [new Address('<matt@example.com>')]);
     },
 };
 
