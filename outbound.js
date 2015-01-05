@@ -947,6 +947,11 @@ HMailItem.prototype.try_deliver_host = function (mx) {
     if (this.hostlist.length === 0) {
         return this.try_deliver(); // try next MX
     }
+
+    // Allow transaction notes to set outbound IP
+    if (!mx.bind && this.todo.notes.outbound_ip) {
+        mx.bind = this.todo.notes.outbound_ip;
+    }
     
     var host = this.hostlist.shift();
     var port            = mx.port || 25;
