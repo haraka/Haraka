@@ -158,6 +158,30 @@ message being delivered.
 successfully delivered to.
 * `secured` - A boolean denoting if the connection used TLS or not.
 
+Outbound IP address
+-------------------
+
+Normally the OS will decide which IP address will be used for outbound 
+connections using the IP routing table.  
+
+There are instances where you may want to separate outbound traffic on 
+different IP addresses based on sender, domain or some other identifier.  
+To do this, the IP address that you want to use *must* be bound to an 
+interface (or alias) on the local system.
+
+As described above the outbound IP can be set using the `bind` parameter 
+returned my the `get_mx` hook or during the reception of the message you
+can set a transaction note in a plugin to tell Haraka which outbound IP 
+address you would like it to use when it tries to deliver the message:
+
+`````
+connection.transaction.notes.outbound_ip = '1.2.3.4';
+`````
+
+Note: if the `get_mx` hook returns a `bind` parameter, then this will be 
+used in preference to the transaction note.
+
+
 Bounce Messages
 ---------------
 
