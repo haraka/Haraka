@@ -6,7 +6,7 @@ var platform = process.platform;
 var yaml = require('js-yaml');
 
 // for "ini" type files
-var regex = {
+var regex = exports.regex = {
     section:        /^\s*\[\s*([^\]]*?)\s*\]\s*$/,
     param:          /^\s*([\w@\._-]+)\s*=\s*(.*?)\s*$/,
     comment:        /^\s*[;#].*$/,
@@ -53,8 +53,8 @@ cfreader.on_watch_event = function (name, type, options, cb) {
                 logger.logerror('Error watching file: ' + name + ' : ' + e);
             }
         }
-    }
-}
+    };
+};
 
 cfreader.watch_dir = function () {
     // NOTE: This only works on Linux and Windows
@@ -81,7 +81,7 @@ cfreader.watch_dir = function () {
         logger.logerror('Error watching directory ' + cfreader.config_path + '(' + e + ')');
     }
     return;
-}
+};
 
 cfreader.watch_file = function (name, type, cb, options) {
     // This works on all OS's, but watch_dir() above is preferred for Linux and 
@@ -104,7 +104,14 @@ cfreader.watch_file = function (name, type, cb, options) {
         }
     }
     return;
-}
+};
+
+cfreader.get_cache_key = function (name, options) {
+    if (!options) return name;
+    // this ordering of objects isn't guaranteed to be consistent, but I've
+    // heard that it typically is.
+    return name + JSON.stringify(options);
+};
 
 cfreader.read_config = function(name, type, cb, options) {
     // Store arguments used so we can re-use them by filename later
@@ -114,12 +121,13 @@ cfreader.read_config = function(name, type, cb, options) {
         type: type,
         cb: cb,
         options: options
-    }
+    };
 
     // Check cache first
-    if (name in cfreader._config_cache) {
+    var cache_key = cfreader.get_cache_key(name, options);
+    if (cache_key in cfreader._config_cache) {
         //logger.logdebug('Returning cached file: ' + name);
-        return cfreader._config_cache[name];
+        return cfreader._config_cache[cache_key];
     }
 
     // load config file
@@ -160,7 +168,7 @@ cfreader.ensure_enoent_timer = function () {
             })(file); // END BLOCK SCOPE
         }
     }, 60 * 1000);
-}
+};
 
 cfreader.empty_config = function(type) {
     if (type === 'ini') {
@@ -174,39 +182,49 @@ cfreader.empty_config = function(type) {
     }
 };
 
+cfreader.get_filetype_reader = function (type) {
+    if (type === 'value') return require('./cfreader/flat');
+    if (type === 'list' ) return require('./cfreader/flat');
+
+    return require('./cfreader/' + type);
+};
+
 cfreader.load_config = function(name, type, options) {
     var result;
 
-    if (type === 'ini' || /\.ini$/.test(name)) {
-        result = cfreader.load_ini_config(name, options);
-    }
-    else if (type === 'json' || /\.json$/.test(name)) {
-        result = cfreader.load_json_config(name);
-    }
-    else if (type === 'yaml' || /\.yaml$/.test(name)) {
-        result = cfreader.load_yaml_config(name);
-    }
-    else if (type === 'binary') {
-        result = cfreader.load_binary_config(name, type);
-    }
-    else {
-        result = cfreader.load_flat_config(name, type, options);
-        if (result && type !== 'list' && type !== 'data') {
-            result = result[0];
-            if (options && Array.isArray(options.booleans) && options.booleans.indexOf(result) === -1) {
-                result = regex.is_truth.test(result);
+    switch (type) {
+        case 'ini':
+            result = cfreader.load_ini_config(name, options);
+            break;
+        case 'json':
+            result = cfreader.load_json_config(name);
+            break;
+        case 'yaml':
+            result = cfreader.load_yaml_config(name);
+            break;
+        case 'binary':
+            result = cfreader.load_binary_config(name, type);
+            break;
+        default:
+            result = cfreader.load_flat_config(name, type, options);
+            if (result && type !== 'list' && type !== 'data') {
+                result = result[0];
+                if (options && Array.isArray(options.booleans) &&
+                    options.booleans.indexOf(result) === -1) {
+                    result = regex.is_truth.test(result);
+                }
+                else if (regex.is_integer.test(result)) {
+                    result = parseInt(result, 10);
+                }
+                else if (regex.is_float.test(result)) {
+                    result = parseFloat(result);
+                }
             }
-            else if (regex.is_integer.test(result)) {
-                result = parseInt(result, 10);
-            }
-            else if (regex.is_float.test(result)) {
-                result = parseFloat(result);
-            }
-        }
     }
 
     if (!options || !options.no_cache) {
-        cfreader._config_cache[name] = result;
+        var cache_key = cfreader.get_cache_key(name, options);
+        cfreader._config_cache[cache_key] = result;
     }
 
     return result;
@@ -225,7 +243,7 @@ cfreader.load_json_config = function(name) {
                 var yaml_name = name.replace(/\.json$/, '.yaml');
                 if (utils.existsSync(yaml_name)) {
                     // We have to read_config() here, so the file is watched
-                    result = cfreader.read_config(yaml_name);
+                    result = cfreader.read_config(yaml_name, 'yaml');
                     // Replace original config cache with this result
                     cfreader._config_cache[name] = result;
                 }
@@ -245,7 +263,7 @@ cfreader.load_json_config = function(name) {
 
     cfreader.process_file_overrides(name, result);
     return result;
-}
+};
 
 cfreader.process_file_overrides = function (name, result) {
     // We might be re-loading this file, so build a list
@@ -292,7 +310,7 @@ cfreader.load_yaml_config = function(name) {
     }
     cfreader.process_file_overrides(name, result);
     return result;
-}
+};
 
 cfreader.load_ini_config = function(name, options) {
     var result       = cfreader.empty_config('ini');

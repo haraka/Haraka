@@ -368,6 +368,7 @@ MessageStream.prototype.pipe = function (destination, options) {
     else {
         self._read();
     }
+    return destination;
 }
 
 MessageStream.prototype.pause = function () {

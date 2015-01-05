@@ -1,4 +1,4 @@
-"use strict";
+'use strict';
 
 var fs          = require('fs');
 var path        = require('path');
@@ -8,7 +8,6 @@ var util        = require("util");
 var events      = require("events");
 var utils       = require('./utils');
 var sock        = require('./line_socket');
-var server      = require('./server');
 var logger      = require('./logger');
 var config      = require('./config');
 var constants   = require('./constants');
@@ -31,7 +30,7 @@ var fn_re = /^(\d+)_(\d+)_/; // I like how this looks like a person
 var queue_dir = path.resolve(config.get('queue_dir') || (process.env.HARAKA + '/queue'));
 var uniq = Math.round(Math.random() * MAX_UNIQ);
 var cfg;
-var load_config = function () {
+exports.load_config = function () {
     cfg  = config.get('outbound.ini', {
         booleans: [
             '-disabled',
@@ -39,7 +38,9 @@ var load_config = function () {
             '-enable_tls',    // TODO: default to enabled in Haraka 3.0
             '-ipv6_enabled',
             ],
-    }, load_config).main;
+    }, function () {
+        exports.load_config();
+    }).main;
 
     // legacy config file support. Remove in Haraka 4.0
     if (!cfg.enable_tls && config.get('outbound.enable_tls')) {
@@ -55,7 +56,7 @@ var load_config = function () {
         cfg.ipv6_enabled = true;
     }
 };
-load_config();
+exports.load_config();
 
 var load_queue = async.queue(function (file, cb) {
     var hmail = new HMailItem(file, path.join(queue_dir, file));

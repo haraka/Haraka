@@ -1,36 +1,26 @@
-var stub         = require('../fixtures/stub'),
-    constants    = require('../../constants'),
-    Connection   = require('../fixtures/stub_connection'),
+'use strict';
+
+var Connection   = require('../fixtures/stub_connection'),
     Plugin       = require('../fixtures/stub_plugin'),
-    configfile   = require('../../configfile'),
     config       = require('../../config'),
     ResultStore  = require("../../result_store");
 
-constants.import(global);
+var _set_up = function (done) {
 
-function _set_up(callback) {
-    this.backup = {};
-
-    this.plugin = Plugin('relay');
+    this.plugin = new Plugin('relay');
     this.plugin.config = config;
     this.plugin.cfg = {};
 
     this.connection = Connection.createConnection();
-    this.connection.results = new ResultStore(this.connection);
     this.connection.transaction = {
         results: new ResultStore(this.connection),
     };
 
-    callback();
-}
-
-function _tear_down(callback) {
-    callback();
-}
+    done();
+};
 
 exports.plugin = {
     setUp : _set_up,
-    tearDown : _tear_down,
     'should have register function' : function (test) {
         test.expect(2);
         test.isNotNull(this.plugin);
@@ -47,16 +37,19 @@ exports.plugin = {
     },
 };
 
-exports.refresh_config = {
+exports.load_config_files = {
     setUp : _set_up,
-    tearDown : _tear_down,
     'relay.ini' : function (test) {
-        test.expect(5);
-        this.plugin.refresh_config();
+        test.expect(3);
+        this.plugin.load_relay_ini();
+        test.ok(typeof this.plugin.cfg === 'object');
         test.ok(this.plugin.cfg);
         test.ok(this.plugin.cfg.relay);
-        test.ok(Array.isArray(this.plugin.acl_allow));
-        test.ok(typeof this.plugin.cfg === 'object');
+        test.done();
+    },
+    'relay_dest_domains.ini': function (test) {
+        test.expect(1);
+        this.plugin.load_dest_domains();
         test.ok(typeof this.plugin.dest === 'object');
         test.done();
     },
@@ -64,7 +57,6 @@ exports.refresh_config = {
 
 exports.is_acl_allowed = {
     setUp : _set_up,
-    tearDown : _tear_down,
     'bare IP' : function (test) {
         test.expect(3);
         this.plugin.acl_allow=['127.0.0.6'];
@@ -106,14 +98,12 @@ exports.is_acl_allowed = {
 
 exports.acl = {
     setUp : function (callback) {
-        this.plugin = Plugin('relay');
+        this.plugin = new Plugin('relay');
         this.plugin.config = config;
         this.plugin.cfg = { relay: { dest_domains: true } };
         this.connection = Connection.createConnection();
-        this.connection.results = new ResultStore(this.connection);
         callback();
     },
-    tearDown : _tear_down,
     'relay.acl=false' : function (test) {
         test.expect(1);
         var next = function(rc) {
@@ -173,19 +163,17 @@ exports.acl = {
 
 exports.dest_domains = {
     setUp : function (callback) {
-        this.plugin = Plugin('relay');
+        this.plugin = new Plugin('relay');
         this.plugin.config = config;
         this.plugin.cfg = { relay: { dest_domains: true } };
 
         this.connection = Connection.createConnection();
-        this.connection.results = new ResultStore(this.connection);
         this.connection.transaction = {
             results: new ResultStore(this.connection),
         };
 
         callback();
     },
-    tearDown : _tear_down,
     'relay.dest_domains=false' : function (test) {
         test.expect(1);
         var next = function(rc) {
@@ -258,20 +246,18 @@ exports.dest_domains = {
 
 exports.force_routing = {
     setUp : function (callback) {
-        this.plugin = Plugin('relay');
+        this.plugin = new Plugin('relay');
         this.plugin.config = config;
         this.plugin.cfg = { relay: { force_routing: true } };
         this.plugin.dest = {};
 
         this.connection = Connection.createConnection();
-        this.connection.results = new ResultStore(this.connection);
         this.connection.transaction = {
             results: new ResultStore(this.connection),
         };
 
         callback();
     },
-    tearDown : _tear_down,
     'relay.force_routing=false' : function (test) {
         test.expect(1);
         var next = function(rc) {
@@ -314,7 +300,6 @@ exports.force_routing = {
 
 exports.all = {
     setUp : _set_up,
-    tearDown : _tear_down,
     'register_hook() should register available function' : function (test) {
         test.expect(3);
         test.isNotNull(this.plugin.all);
@@ -329,7 +314,7 @@ exports.all = {
     'all hook always returns OK' : function (test) {
         var next = function (action) {
             test.expect(1);
-            test.equals(action, constants.ok);
+            test.equals(action, OK);
             test.done();
         };
         this.plugin.cfg.relay = { all: true };

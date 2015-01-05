@@ -1,29 +1,22 @@
 'use strict';
 
-var stub             = require('../fixtures/stub'),
-    Connection       = require('../fixtures/stub_connection'),
-    Plugin           = require('../fixtures/stub_plugin'),
-    configfile       = require('../../configfile'),
-    config           = require('../../config'),
-    // Header       = require('../../mailheader').Header,
-    ResultStore      = require("../../result_store");
+var Connection       = require('../fixtures/stub_connection');
+var Plugin           = require('../fixtures/stub_plugin');
+var config           = require('../../config');
 
-function _set_up(callback) {
+var _set_up = function (done) {
     this.plugin = new Plugin('connect.geoip');
     this.plugin.config = config;
+    
     this.plugin.load_geoip_ini();
 
     this.connection = Connection.createConnection();
-    this.connection.results = new ResultStore(this.plugin);
 
-    callback();
-}
-function _tear_down(callback) {
-    callback();
-}
+    done();
+};
 
 exports.register = {
-    setUp : function (callback) {
+    setUp : function (done) {
         this.plugin = new Plugin('connect.geoip');
         this.plugin.config = config;
 
@@ -33,9 +26,8 @@ exports.register = {
         catch (ignore) {}
 
         this.plugin.register();
-        callback();
+        done();
     },
-    tearDown : _tear_down,
     'config loaded': function (test) {
         test.expect(2);
         test.ok(this.plugin.cfg);
@@ -60,7 +52,6 @@ exports.register = {
 
 exports.load_maxmind = {
     setUp : _set_up,
-    tearDown : _tear_down,
     'maxmind module loads if installed': function (test) {
         var p = this.plugin;
         if (this.plugin.load_maxmind()) {
@@ -73,7 +64,6 @@ exports.load_maxmind = {
 
 exports.load_geoip_lite = {
     setUp : _set_up,
-    tearDown : _tear_down,
     'geoip-lite module loads if installed': function (test) {
         var p = this.plugin;
         if (this.plugin.load_geoip_lite()) {
@@ -85,18 +75,16 @@ exports.load_geoip_lite = {
 };
 
 exports.lookup_maxmind = {
-    setUp : function (callback) {
+    setUp : function (done) {
         this.plugin = new Plugin('connect.geoip');
         this.plugin.config = config;
         this.plugin.load_geoip_ini();
 
         this.connection = Connection.createConnection();
-        this.connection.results = new ResultStore(this.plugin);
 
         this.plugin.load_maxmind();
-        callback();
+        done();
     },
-    tearDown : _tear_down,
     'servedby.tnpi.net': function (test) {
         var cb = function() {
             if (this.plugin.maxmind && this.plugin.maxmind.dbsLoaded) {
@@ -120,7 +108,7 @@ exports.lookup_maxmind = {
 // WMISD  [ 38, -97 ]
 
 exports.get_geoip = {
-    setUp : function (callback) {
+    setUp : function (done) {
         this.plugin = new Plugin('connect.geoip');
         this.plugin.config = config;
 
@@ -130,9 +118,8 @@ exports.get_geoip = {
         catch (ignore) {}
 
         this.plugin.register();
-        callback();
+        done();
     },
-    tearDown : _tear_down,
     'no IP fails': function (test) {
         if (!this.plugin.hasProvider) { return test.done(); }
         test.expect(1);
@@ -148,16 +135,14 @@ exports.get_geoip = {
 };
 
 exports.lookup_geoip = {
-    setUp : function (callback) {
+    setUp : function (done) {
         this.plugin = new Plugin('connect.geoip');
         this.plugin.config = config;
         this.plugin.load_geoip_ini();
         this.connection = Connection.createConnection();
-        this.connection.results = new ResultStore(this.plugin);
         this.plugin.load_geoip_lite();
-        callback();
+        done();
     },
-    tearDown : _tear_down,
     'seattle: lat + long': function (test) {
         var cb = function (rc) {
             if (this.plugin.geoip) {
@@ -189,7 +174,7 @@ exports.lookup_geoip = {
 };
 
 exports.get_geoip_maxmind = {
-    setUp : function (callback) {
+    setUp : function (done) {
         this.plugin = new Plugin('connect.geoip');
         this.plugin.config = config;
         this.plugin.load_geoip_ini();
@@ -197,14 +182,13 @@ exports.get_geoip_maxmind = {
         this.plugin.load_maxmind();
         if (!p.maxmind) {
             p.logerror("maxmind not loaded!");
-            return callback();
+            return done();
         }
         if (!p.maxmind.dbsLoaded) {
             p.logerror("no maxmind DBs loaded!");
         }
-        callback();
+        done();
     },
-    tearDown : _tear_down,
     'ipv4 public passes': function (test) {
         if (!this.plugin.maxmind) { return test.done(); }
         if (!this.plugin.maxmind.dbsLoaded) { return test.done(); }
@@ -223,14 +207,13 @@ exports.get_geoip_maxmind = {
 };
 
 exports.get_geoip_lite = {
-    setUp : function (callback) {
+    setUp : function (done) {
         this.plugin = new Plugin('connect.geoip');
         this.plugin.config = config;
         this.plugin.load_geoip_ini();
         this.plugin.load_geoip_lite();
-        callback();
+        done();
     },
-    tearDown : _tear_down,
     'no IP fails': function (test) {
         if (!this.plugin.geoip) {
             this.plugin.logerror("geoip-lite not loaded!");
@@ -262,7 +245,6 @@ exports.get_geoip_lite = {
 
 exports.calculate_distance = {
     setUp : _set_up,
-    tearDown : _tear_down,
     'seattle to michigan': function (test) {
         this.plugin.register();
         if (!this.plugin.db_loaded) {
@@ -281,7 +263,6 @@ exports.calculate_distance = {
 
 exports.haversine = {
     setUp : _set_up,
-    tearDown : _tear_down,
     'WA to MI is 2000-2500km': function (test) {
         test.expect(2);
         var r = this.plugin.haversine(47.673, -122.3419, 38, -97);

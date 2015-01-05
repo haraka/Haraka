@@ -134,17 +134,32 @@ exports.DKIMSignStream = DKIMSignStream;
 
 exports.register = function () {
     var plugin = this;
-    function load_config () {
-        plugin.cfg = plugin.config.get('dkim_sign.ini', {
-                booleans: [
-                    '+disabled',
-                ]
-            },
-            load_config
-        );
-        plugin.private_key = plugin.config.get('dkim.private.key', 'data', load_config).join("\n");
-    }
-    load_config();
+    plugin.load_dkim_sign_ini();
+    plugin.load_dkim_key();
+};
+
+exports.load_dkim_sign_ini = function () {
+    var plugin = this;
+    plugin.cfg = plugin.config.get('dkim_sign.ini', {
+            booleans: [
+                '+disabled',
+            ]
+        },
+        function () { plugin.load_dkim_sign_ini(); }
+    );
+};
+
+exports.load_dkim_key = function () {
+    var plugin = this;
+    plugin.private_key = plugin.config.get(
+        'dkim.private.key',
+        'data',
+        function () { plugin.load_dkim_key(); }
+    ).join('\n');
+};
+
+exports.load_key = function (file) {
+    return this.config.get(file, 'data').join('\n');
 };
 
 exports.hook_queue_outbound = function (next, connection) {
@@ -161,8 +176,8 @@ exports.hook_queue_outbound = function (next, connection) {
         else {
             domain = keydir.split('/').pop();
             connection.logdebug(plugin, 'dkim_domain: '+domain);
-            private_key = plugin.config.get('dkim/'+domain+'/private', 'data').join("\n");
-            selector    = plugin.config.get('dkim/'+domain+'/selector','data').join("\n");
+            private_key = plugin.load_key('dkim/'+domain+'/private');
+            selector    = plugin.load_key('dkim/'+domain+'/selector');
         }
 
         if (!plugin.has_key_data(connection,domain,selector,private_key)) {

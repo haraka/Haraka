@@ -1,26 +1,21 @@
-var stub         = require('../fixtures/stub'),
-    Plugin       = require('../fixtures/stub_plugin'),
-    configfile   = require('../../configfile'),
-    config       = require('../../config'),
-    Connection   = require('../fixtures/stub_connection');
+'use strict';
 
-function _set_up(callback) {
-    this.backup = {};
+var Plugin       = require('../fixtures/stub_plugin');
+var config       = require('../../config');
+var Connection   = require('../fixtures/stub_connection');
 
-    // needed for tests
+var _set_up = function (done) {
+
     this.plugin = new Plugin('dnsbl');
     this.plugin.config = config;
 
-    callback();
-}
+    this.connection = Connection.createConnection();
 
-function _tear_down(callback) {
-    callback();
-}
+    done();
+};
 
-exports.refresh_config = {
+exports.load_config = {
     setUp : _set_up,
-    tearDown : _tear_down,
     'none': function (test) {
         test.expect(1);
         test.equal(undefined, this.plugin.cfg);
@@ -28,7 +23,7 @@ exports.refresh_config = {
     },
     'defaults': function (test) {
         test.expect(3);
-        this.plugin.refresh_config();
+        this.plugin.load_config();
         test.equal(true, this.plugin.cfg.main.reject);
         test.equal(30,     this.plugin.cfg.main.periodic_checks);
         test.equal('first', this.plugin.cfg.main.search);
@@ -38,7 +33,6 @@ exports.refresh_config = {
 
 exports.get_uniq_zones = {
     setUp : _set_up,
-    tearDown : _tear_down,
     'none': function (test) {
         test.expect(1);
         test.equal(undefined, this.plugin.zones);
@@ -46,7 +40,7 @@ exports.get_uniq_zones = {
     },
     'dnsbl.zones': function (test) {
         test.expect(2);
-        this.plugin.refresh_config();
+        this.plugin.load_config();
         this.plugin.cfg.main.zones = 'dnsbl.test, dnsbl2.test';
         this.plugin.get_uniq_zones();
         test.notEqual(-1, this.plugin.zones.indexOf('dnsbl.test'));
@@ -58,7 +52,6 @@ exports.get_uniq_zones = {
 
 exports.should_skip = {
     setUp : _set_up,
-    tearDown : _tear_down,
     'no connection': function (test) {
         test.expect(1);
         test.equal(true, this.plugin.should_skip());
@@ -66,23 +59,21 @@ exports.should_skip = {
     },
     'no remote_ip': function (test) {
         test.expect(1);
-        this.connection = Connection.createConnection();
+        
         test.equal(true, this.plugin.should_skip(this.connection));
         test.done();
     },
     'private remote_ip, no zones': function (test) {
         test.expect(1);
-        this.connection = Connection.createConnection();
         this.connection.remote_ip = '192.168.1.1';
         test.equal(true, this.plugin.should_skip(this.connection));
         test.done();
     },
     'private remote_ip': function (test) {
         test.expect(1);
-        this.connection = Connection.createConnection();
         this.connection.remote_ip = '192.168.1.1';
 
-        this.plugin.refresh_config();
+        this.plugin.load_config();
         this.plugin.cfg.main.zones = 'dnsbl.test, dnsbl2.test';
         this.plugin.get_uniq_zones();
 
@@ -91,10 +82,9 @@ exports.should_skip = {
     },
     'public remote_ip': function (test) {
         test.expect(1);
-        this.connection = Connection.createConnection();
         this.connection.remote_ip = '208.1.1.1';
 
-        this.plugin.refresh_config();
+        this.plugin.load_config();
         this.plugin.cfg.main.zones = 'dnsbl.test, dnsbl2.test';
         this.plugin.get_uniq_zones();
 
@@ -103,7 +93,6 @@ exports.should_skip = {
     },
     'public remote_ip, no zones': function (test) {
         test.expect(1);
-        this.connection = Connection.createConnection();
         this.connection.remote_ip = '208.1.1.1';
         test.equal(true, this.plugin.should_skip(this.connection));
         test.done();

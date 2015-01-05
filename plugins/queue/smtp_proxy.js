@@ -23,7 +23,7 @@ exports.hook_mail = function (next, connection, params) {
     var plugin = this;
     var c = plugin.cfg.main;
     connection.loginfo(this, "proxying to " + c.host + ":" + c.port);
-    smtp_client_mod.get_client_plugin(plugin, connection, plugin.cfg, function (err, smtp_client) {
+    smtp_client_mod.get_client_plugin(plugin, connection, c, function (err, smtp_client) {
         connection.notes.smtp_client = smtp_client;
         smtp_client.next = next;
 

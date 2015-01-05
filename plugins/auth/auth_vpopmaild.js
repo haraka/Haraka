@@ -6,12 +6,14 @@ var net    = require('net'),
 exports.register = function () {
     var plugin = this;
     plugin.inherits('auth/auth_base');
+    plugin.load_vpop_ini();
+};
 
-    var load_config = function () {
-        plugin.loginfo("loading auth_vpopmaild.ini");
-        plugin.cfg = plugin.config.get('auth_vpopmaild.ini', load_config);
-    };
-    load_config();
+exports.load_vpop_ini = function () {
+    var plugin = this;
+    plugin.cfg = plugin.config.get('auth_vpopmaild.ini', function () {
+        plugin.load_vpop_ini();
+    });
 };
 
 exports.hook_capabilities = function (next, connection) {

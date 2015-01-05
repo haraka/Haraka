@@ -1,42 +1,25 @@
-var stub         = require('../fixtures/stub'),
-    Plugin       = require('../fixtures/stub_plugin'),
-    Connection   = require('../fixtures/stub_connection'),
-    constants    = require('../../constants'),
-    configfile   = require('../../configfile'),
-    config       = require('../../config'),
-    ResultStore  = require('../../result_store'),
-    dns          = require('dns');
+'use strict';
 
+var stub         = require('../fixtures/stub');
+var Plugin       = require('../fixtures/stub_plugin');
+var Connection   = require('../fixtures/stub_connection');
+var config       = require('../../config');
+var dns          = require('dns');
 
-constants.import(global);
+var _set_up = function (done) {
 
-function _set_up(callback) {
-    this.backup = {};
-
-    // needed for tests
-    this.plugin = Plugin('connect.fcrdns');
+    this.plugin = new Plugin('connect.fcrdns');
     this.plugin.config = config;
-    this.plugin.loginfo = stub();
-    this.plugin.logerror = stub();
     this.plugin.register();
 
     this.connection = Connection.createConnection();
-    this.connection.results = new ResultStore(this.connection);
-    this.connection.notes = {};
-    this.connection.loginfo = stub();
-    this.connection.logerror = stub();
     this.connection.auth_results = stub();
 
-    callback();
-}
-
-function _tear_down(callback) {
-    callback();
-}
+    done();
+};
 
 exports.refresh_config = {
     setUp : _set_up,
-    tearDown : _tear_down,
     'defaults return': function (test) {
         test.expect(4);
         var r = this.plugin.refresh_config(this.connection);
@@ -59,7 +42,6 @@ exports.refresh_config = {
 
 exports.handle_ptr_error = {
     setUp : _set_up,
-    tearDown : _tear_down,
     'ENOTFOUND reject.no_rdns=0': function (test) {
         test.expect(1);
         this.plugin.refresh_config(this.connection);
@@ -135,7 +117,6 @@ exports.handle_ptr_error = {
 
 exports.handle_a_error = {
     setUp : _set_up,
-    tearDown : _tear_down,
     'ENOTFOUND': function (test) {
         test.expect(1);
         this.plugin.refresh_config(this.connection);
@@ -176,7 +157,6 @@ exports.handle_a_error = {
 
 exports.is_generic_rdns = {
     setUp : _set_up,
-    tearDown : _tear_down,
     'mail.theartfarm.com': function (test) {
         test.expect(1);
         this.connection.remote_ip='208.75.177.101';
@@ -223,7 +203,6 @@ exports.is_generic_rdns = {
 
 exports.save_auth_results = {
     setUp : _set_up,
-    tearDown : _tear_down,
     'fcrdns fail': function (test) {
         test.expect(1);
         this.connection.results.add(this.plugin, { pass: 'fcrdns' });
@@ -240,7 +219,6 @@ exports.save_auth_results = {
 
 exports.ptr_compare = {
     setUp : _set_up,
-    tearDown : _tear_down,
     'fail': function (test) {
         test.expect(1);
         this.connection.remote_ip = '10.1.1.1';
@@ -266,7 +244,6 @@ exports.ptr_compare = {
 
 exports.check_fcrdns = {
     setUp : _set_up,
-    tearDown : _tear_down,
     'fail, tolerate': function (test) {
         test.expect(1);
         var cb = function (rc, msg) {

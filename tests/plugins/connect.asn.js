@@ -1,26 +1,21 @@
+'use strict';
 
-var stub             = require('../fixtures/stub'),
-    Connection       = require('../fixtures/stub_connection'),
-    Plugin           = require('../fixtures/stub_plugin');
+var stub             = require('../fixtures/stub');
+var Plugin           = require('../fixtures/stub_plugin');
+var Connection       = require('../fixtures/stub_connection');
 
-function _set_up(callback) {
-    this.backup = {};
-
-    // needed for tests
+var _set_up = function (done) {
+    
     this.plugin = new Plugin('connect.asn');
+
     this.plugin.cfg = { main: {} };
     this.connection = Connection.createConnection();
 
-    callback();
-}
-function _tear_down(callback) {
-    callback();
-}
+    done();
+};
 
 exports.parse_monkey = {
     setUp : _set_up,
-    tearDown : _tear_down,
-
     '15169/23': function (test) {
         test.expect(1);
         test.deepEqual(
@@ -45,8 +40,6 @@ exports.parse_monkey = {
 
 exports.parse_routeviews = {
     setUp : _set_up,
-    tearDown : _tear_down,
-
     '40431 string, asn-only': function (test) {
         test.expect(1);
         test.equal(
@@ -75,8 +68,6 @@ exports.parse_routeviews = {
 
 exports.parse_cymru = {
     setUp : _set_up,
-    tearDown : _tear_down,
-
     '40431': function (test) {
         test.expect(1);
         test.deepEqual(
@@ -101,8 +92,6 @@ exports.parse_cymru = {
 
 exports.get_dns_results = {
     setUp : _set_up,
-    tearDown : _tear_down,
-
     'origin.asn.cymru.com': function (test) {
         var cb = function (err, zone, obj) {
             if (obj) {

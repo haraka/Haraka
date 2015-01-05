@@ -12,56 +12,57 @@ SPF.prototype.log_debug = function (str) {
 exports.register = function () {
     var plugin = this;
 
-    function load_config () {
-        plugin.cfg = plugin.config.get('spf.ini', {
-                booleans: [
-                    '-defer.helo_temperror',
-                    '-defer.mfrom_temperror',
+    plugin.load_config();
+};
 
-                    '-defer_relay.helo_temperror',
-                    '-defer_relay.mfrom_temperror',
+exports.load_config = function () {
+    plugin.cfg = plugin.config.get('spf.ini', {
+            booleans: [
+                '-defer.helo_temperror',
+                '-defer.mfrom_temperror',
 
-                    '-deny.helo_softfail',
-                    '-deny.helo_fail',
-                    '-deny.helo_permerror',
+                '-defer_relay.helo_temperror',
+                '-defer_relay.mfrom_temperror',
 
-                    '-deny.mfrom_softfail',
-                    '-deny.mfrom_fail',
-                    '-deny.mfrom_permerror',
+                '-deny.helo_softfail',
+                '-deny.helo_fail',
+                '-deny.helo_permerror',
 
-                    '-deny_relay.helo_softfail',
-                    '-deny_relay.helo_fail',
-                    '-deny_relay.helo_permerror',
+                '-deny.mfrom_softfail',
+                '-deny.mfrom_fail',
+                '-deny.mfrom_permerror',
 
-                    '-deny_relay.mfrom_softfail',
-                    '-deny_relay.mfrom_fail',
-                    '-deny_relay.mfrom_permerror',
-                ]
-            },
-            load_config
-        );
+                '-deny_relay.helo_softfail',
+                '-deny_relay.helo_fail',
+                '-deny_relay.helo_permerror',
 
-        // when set, preserve legacy config settings
-        ['helo','mail'].forEach(function (phase) {
-            if (plugin.cfg.main[phase + '_softfail_reject']) {
-                plugin.cfg.deny[phase + '_softfail'] = true;
-            }
-            if (plugin.cfg.main[phase + '_fail_reject']) {
-                plugin.cfg.deny[phase + '_fail'] = true;
-            }
-            if (plugin.cfg.main[phase + '_temperror_defer']) {
-                plugin.cfg.defer[phase + '_temperror'] = true;
-            }
-            if (plugin.cfg.main[phase + '_permerror_reject']) {
-                plugin.cfg.deny[phase + '_permerror'] = true;
-            }
-        });
+                '-deny_relay.mfrom_softfail',
+                '-deny_relay.mfrom_fail',
+                '-deny_relay.mfrom_permerror',
+            ]
+        },
+        function () { plugin.load_config(); }
+    );
 
-        if (!plugin.cfg.relay) {
-            plugin.cfg.relay = { context: 'sender' };  // default/legacy
+    // when set, preserve legacy config settings
+    ['helo','mail'].forEach(function (phase) {
+        if (plugin.cfg.main[phase + '_softfail_reject']) {
+            plugin.cfg.deny[phase + '_softfail'] = true;
         }
+        if (plugin.cfg.main[phase + '_fail_reject']) {
+            plugin.cfg.deny[phase + '_fail'] = true;
+        }
+        if (plugin.cfg.main[phase + '_temperror_defer']) {
+            plugin.cfg.defer[phase + '_temperror'] = true;
+        }
+        if (plugin.cfg.main[phase + '_permerror_reject']) {
+            plugin.cfg.deny[phase + '_permerror'] = true;
+        }
+    });
+
+    if (!plugin.cfg.relay) {
+        plugin.cfg.relay = { context: 'sender' };  // default/legacy
     }
-    load_config();
 };
 
 exports.hook_helo = exports.hook_ehlo = function (next, connection, helo) {

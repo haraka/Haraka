@@ -1,19 +1,15 @@
+'use strict';
 
-var stub         = require('../fixtures/stub'),
-    Plugin       = require('../fixtures/stub_plugin'),
-    configfile   = require('../../configfile'),
-    config       = require('../../config'),
-    Address      = require('../../address'),
-    Connection   = require('../fixtures/stub_connection'),
-    ResultStore  = require("../../result_store"),
-    Header       = require('../../mailheader').Header,
-    utils        = require('../../utils');
+var Plugin       = require('../fixtures/stub_plugin');
+var Connection   = require('../fixtures/stub_connection');
+var config       = require('../../config');
+var Address      = require('../../address');
+var Header       = require('../../mailheader').Header;
+var utils        = require('../../utils');
 
-function _set_up(callback) {
-    this.backup = {};
+var _set_up = function (done) {
 
-    // needed for tests
-    this.plugin = Plugin('dkim_sign');
+    this.plugin = new Plugin('dkim_sign');
     this.plugin.config = config;
     this.plugin.cfg = { main: { } };
 
@@ -21,18 +17,12 @@ function _set_up(callback) {
     this.connection.transaction = {
         header: new Header(),
     };
-    this.connection.results = new ResultStore(this.plugin);
 
-    callback();
-}
-
-function _tear_down(callback) {
-    callback();
-}
+    done();
+};
 
 exports.get_sender_domain = {
     setUp : _set_up,
-    tearDown : _tear_down,
     'no transaction': function (test) {
         test.expect(1);
         delete this.connection.transaction;
@@ -103,7 +93,6 @@ exports.get_sender_domain = {
 
 exports.get_key_dir = {
     setUp : _set_up,
-    tearDown : _tear_down,
     'no transaction': function (test) {
         test.expect(1);
         var cb = function (dir) {
@@ -127,7 +116,6 @@ exports.get_key_dir = {
 
 exports.get_headers_to_sign = {
     setUp : _set_up,
-    tearDown : _tear_down,
     'none': function (test) {
         test.expect(1);
         var r = this.plugin.get_headers_to_sign(this.plugin.cfg);

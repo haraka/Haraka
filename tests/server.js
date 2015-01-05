@@ -2,16 +2,15 @@
 // var constants = require('./../constants');
 // var Logger    = require('./fixtures/stub_logger');
 // var utils     = require('./../utils');
-var server       = require('./../server');
 
-function _set_up(callback) {
-    this.server = server;
+function _set_up(done) {
+    this.server = require('../server');
 
-    callback();
+    done();
 }
 
-function _tear_down(callback) {
-    callback();
+function _tear_down(done) {
+    done();
 }
 
 exports.get_listen_addrs = {
@@ -71,7 +70,20 @@ exports.get_listen_addrs = {
         test.deepEqual(['127.0.0.1:250','[::1]:250'], listeners);
         test.done();
     },
+};
 
+exports.load_smtp_ini = {
+    setUp : _set_up,
+    'saves settings to Server.cfg': function (test) {
+        test.expect(3);
+        this.server.load_smtp_ini();
+        // console.log(this.server.cfg);
+        var c = this.server.cfg.main;
+        test.notEqual(c.daemonize, undefined);
+        test.notEqual(c.daemon_log_file, undefined);
+        test.notEqual(c.daemon_pid_file, undefined);
+        test.done();
+    }
 };
 
 exports.get_smtp_server = {

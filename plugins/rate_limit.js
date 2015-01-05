@@ -26,7 +26,7 @@ exports.register = function () {
     }
     this.register_hook('connect', 'incr_concurrency');
     this.register_hook('disconnect', 'decr_concurrency');
-}
+};
 
 exports.lookup_host_key = function (type, args, cb) {
     var remote_ip = args[0];
@@ -171,7 +171,7 @@ exports.rate_limit = function (connection, key, value, cb) {
             return cb(null, false);
         }
     });
-}
+};
 
 // TODO: support this in Redis somehow
 exports.incr_concurrency = function (next, connection) {
@@ -208,7 +208,7 @@ exports.incr_concurrency = function (next, connection) {
         }
         return next();
     });
-}
+};
 
 exports.decr_concurrency = function (next, connection) {
     var self = this;
@@ -232,7 +232,7 @@ exports.decr_concurrency = function (next, connection) {
         connection.loginfo(self, count + ' active connections to this child');
         return next();
     });
-}
+};
 
 exports.hook_connect = function (next, connection) {
     var self = this;
@@ -283,7 +283,7 @@ exports.hook_connect = function (next, connection) {
             }
         }); 
     });
-}
+};
 
 exports.hook_rcpt = function (next, connection, params) {
     var self = this;
@@ -365,6 +365,6 @@ exports.hook_rcpt = function (next, connection, params) {
                 }
             });
         });
-    }
+    };
     chain_caller();
-}
+};

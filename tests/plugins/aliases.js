@@ -1,24 +1,23 @@
-var stub             = require('../fixtures/stub'),
-    Address          = require('../../address').Address,
-    Connection       = require('../fixtures/stub_connection'),
-    Plugin           = require('../fixtures/stub_plugin');
+'use strict';
 
-function _set_up(callback) {
-    this.backup = {};
+var stub             = require('../fixtures/stub');
+var Plugin           = require('../fixtures/stub_plugin');
+var Connection       = require('../fixtures/stub_connection');
+var Address          = require('../../address').Address;
+
+var _set_up = function (done) {
 
     // needed for tests
     this.plugin = new Plugin('aliases');
-    this.connection = Connection.createConnection();
-    this.recip = new Address('<test1@example.com>');
+    this.recip  = new Address('<test1@example.com>');
     this.params = [this.recip];
 
-    // stub out functions
+    this.connection = Connection.createConnection();
     this.connection.loginfo = stub();
-    this.connection.logdebug = stub();
-    this.connection.notes = stub();
-    this.connection.transaction = stub();
-    this.connection.transaction.notes = stub();
-    this.connection.transaction.rcpt_to = [ this.params ];
+    this.connection.transaction = {
+        notes: stub(),
+        rcpt_to: [ this.params ],
+    };
 
     // some test data
     this.configfile = {
@@ -33,6 +32,7 @@ function _set_up(callback) {
         "test8" : { "to" : "should_fail" },
         "test9" : { "action" : "alias" }
     };
+
     this.plugin.config.get = function (file, type) {
         return this.configfile;
     }.bind(this);
@@ -42,16 +42,11 @@ function _set_up(callback) {
     // going to need these in multiple tests
     this.plugin.register();
 
-    callback();
-}
-
-function _tear_down(callback) {
-    callback();
-}
+    done();
+};
 
 exports.aliases = {
     setUp : _set_up,
-    tearDown : _tear_down,
     'should have register function' : function (test) {
         test.expect(2);
         test.isNotNull(this.plugin);

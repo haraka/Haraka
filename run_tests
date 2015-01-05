@@ -25,7 +25,13 @@ if (process.argv[2]) {
     });
 }
 else {
-    reporter.run(['tests', 'tests/plugins','tests/plugins/auth'], undefined, function (err) {
+    reporter.run([
+        'tests',
+        'tests/cfreader',
+        'tests/plugins',
+        'tests/plugins/auth',
+        'tests/plugins/queue'
+        ], undefined, function (err) {
         process.exit(((err) ? 1 : 0));
     });
 }

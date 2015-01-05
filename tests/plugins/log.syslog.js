@@ -1,19 +1,17 @@
+'use strict';
+
 var stub             = require('../fixtures/stub'),
-    constants        = require('../../constants'),
-    Logger           = require('../fixtures/stub_logger'),
     Plugin           = require('../fixtures/stub_plugin');
 
-function _set_up(callback) {
+var _set_up = function (done) {
     this.backup = {};
 
-    // needed for tests
     try {
         this.plugin = new Plugin('log.syslog');
     }
     catch (e) {
         console.log(e);
     }
-    this.logger = Logger.createLogger();
 
     // backup modifications
     this.backup.plugin = {};
@@ -43,16 +41,11 @@ function _set_up(callback) {
         }.bind(this);
     }
 
-    callback();
-}
-
-function _tear_down(callback) {
-    callback();
-}
+    done();
+};
 
 exports.register = {
     setUp : _set_up,
-    tearDown : _tear_down,
     'should have register function' : function (test) {
         if (this.plugin) {
             test.expect(2);
@@ -127,7 +120,6 @@ exports.register = {
 
 exports.hook = {
     setUp : _set_up,
-    tearDown : _tear_down,
     'returns just next() by default (missing always_ok)' : function (test) {
         if (!this.plugin) { return; }
 
@@ -165,7 +157,7 @@ exports.hook = {
 
         var next = function (action) {
             test.expect(1);
-            test.equals(action, constants.ok);
+            test.equals(action, OK);
             test.done();
         };
 
@@ -200,7 +192,7 @@ exports.hook = {
 
         var next = function (action) {
             test.expect(1);
-            test.equals(action, constants.ok);
+            test.equals(action, OK);
             test.done();
         };
 
@@ -232,7 +224,6 @@ exports.hook = {
 
 exports.log = {
     setUp : _set_up,
-    tearDown : _tear_down,
     'syslog hook logs correct thing' : function (test) {
         if (!this.plugin) { return; }
 

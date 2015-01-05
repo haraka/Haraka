@@ -11,7 +11,7 @@ var port = 9001;
 exports.register = function () {
     var cfg = this.config.get('messagesniffer.ini');
     if (cfg.main.port) port = parseInt(cfg.main.port);
-}
+};
 
 exports.hook_connect = function (next, connection) {
     var self = this;
@@ -97,7 +97,7 @@ exports.hook_connect = function (next, connection) {
             return next();
         }
     });
-}
+};
 
 exports.hook_data_post = function (next, connection) {
     var self = this;
@@ -117,7 +117,7 @@ exports.hook_data_post = function (next, connection) {
         // Add spam flag
         txn.remove_header('X-Spam-Flag');
         txn.add_header('X-Spam-Flag', 'YES');
-    }
+    };
 
     // Check GBUdb results
     if (connection.notes.gbudb && connection.notes.gbudb.action) {
@@ -125,7 +125,6 @@ exports.hook_data_post = function (next, connection) {
             case 'accept':
             case 'quarantine':
                 return next(OK);
-                break;
             case 'tag':
                 // Tag message
                 tag_subject();

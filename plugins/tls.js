@@ -10,67 +10,65 @@ var utils = require('./utils');
 exports.register = function () {
     var plugin = this;
 
+    // declare first, these opts might be updated by tls.ini
     plugin.tls_opts = {
-        key: false,
-        cert: false,
+        key: plugin.load_pem('tls_key.pem'),
+        cert: plugin.load_pem('tls_cert.pem'),
     };
+
+    plugin.load_tls_ini();
+
+    plugin.logdebug(plugin.tls_opts);
+
+    if (!plugin.tls_opts.key) {
+        plugin.logcrit("config/tls_key.pem not loaded. See 'haraka -h tls'");
+        return;
+    }
+    if (!plugin.tls_opts.cert) {
+        plugin.logcrit("config/tls_cert.pem not loaded. See 'haraka -h tls'");
+        return;
+    }
+    
+    plugin.register_hook('capabilities', 'tls_capabilities');
+    plugin.register_hook('unrecognized_command', 'tls_unrecognized_command');
+};
+
+exports.load_pem = function (file) {
+    var plugin = this;
+    return plugin.config.get(file, 'binary');
+};
+
+exports.load_tls_ini = function () {
+    var plugin = this;
+    plugin.cfg = plugin.config.get('tls.ini', {
+        booleans: [
+            '+main.requestCert',
+            '-main.rejectUnauthorized',
+        ]
+    }, function () {
+        plugin.load_tls_ini();
+    });
+
+    if (!plugin.cfg.no_tls_hosts) {
+        plugin.cfg.no_tls_hosts = {};
+    }
 
     var config_options = ['ciphers','requestCert','rejectUnauthorized'];
 
-    var load_config = function () {
-        plugin.loginfo("loading tls.ini");
-        plugin.cfg = plugin.config.get('tls.ini', {
-            booleans: [
-                '+main.requestCert',
-                '-main.rejectUnauthorized',
-            ]
-        }, load_config);
-
-        for (var i in config_options) {
-            if (plugin.cfg.main[config_options[i]] === undefined) { continue; }
-            plugin.tls_opts[config_options[i]] = plugin.cfg.main[config_options[i]];
-        }
-    };
-    load_config();
-
-    var load_key = function () {
-        plugin.loginfo("loading tls_key.pem");
-        plugin.tls_opts.key = plugin.config.get('tls_key.pem', 'binary', load_key);
-        if (!plugin.tls_opts.key) {
-            plugin.logcrit("config/tls_key.pem not loaded. See 'haraka -h tls'");
-        }
-    };
-    load_key();
-
-    var load_cert = function () {
-        plugin.loginfo("loading tls_cert.pem");
-        plugin.tls_opts.cert = plugin.config.get('tls_cert.pem', 'binary', load_cert);
-        if (!plugin.tls_opts.cert) {
-            plugin.logcrit("config/tls_cert.pem not loaded. See 'haraka -h tls'");
-        }
-    };
-    load_cert();
-    plugin.logdebug(plugin.tls_opts);
+    for (var i = 0; i < config_options.length; i++) {
+        var opt = config_options[i];
+        if (plugin.cfg.main[opt] === undefined) { continue; }
+        plugin.tls_opts[opt] = plugin.cfg.main[opt];
+    }
 };
 
-exports.hook_capabilities = function (next, connection) {
-    /* Caution: do not advertise STARTTLS if the upgrade has already been done. */
+exports.tls_capabilities = function (next, connection) {
+    /* Caution: do not advertise STARTTLS if already TLS upgraded */
     if (connection.using_tls) { return next(); }
 
     var plugin = this;
-    if (plugin.cfg.no_tls_hosts) {
-        if (plugin.cfg.no_tls_hosts[connection.remote_ip]) {
-            return next();
-        }
-    }
-
-    if (!plugin.tls_opts.key) {
-        connection.logcrit("No TLS key found. See 'harka -h tls'");
-        return next();
-    }
-
-    if (!plugin.tls_opts.cert) {
-        connection.logcrit("No TLS cert found. See 'harka -h tls'");
+    
+    if (plugin.cfg.no_tls_hosts[connection.remote_ip]) {
         return next();
     }
 
@@ -81,7 +79,7 @@ exports.hook_capabilities = function (next, connection) {
     next();
 };
 
-exports.hook_unrecognized_command = function (next, connection, params) {
+exports.tls_unrecognized_command = function (next, connection, params) {
     /* Watch for STARTTLS directive from client. */
     if (!connection.notes.tls_enabled) { return next(); }
     if (params[0].toUpperCase() !== 'STARTTLS') { return next(); }

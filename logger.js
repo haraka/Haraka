@@ -1,4 +1,4 @@
-"use strict";
+'use strict';
 // Log class
 
 var config    = require('./config');
@@ -145,6 +145,7 @@ logger._init_timestamps = function () {
     var _timestamps = config.get('log_timestamps', 'value', function () {
         self._init_timestamps();
     });
+    
     if (_timestamps) {
         console.log = original_console_log.bind(console, new Date().toISOString());
     }

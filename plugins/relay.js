@@ -7,65 +7,72 @@ var ipaddr = require('ipaddr.js'),
 
 exports.register = function() {
     var plugin = this;
-    plugin.refresh_config();
-    if (plugin.cfg.relay.acl          ) { plugin.register_hook('connect',  'acl'   ); }
-    if (plugin.cfg.relay.dest_domains ) { plugin.register_hook('rcpt',     'dest_domains'); }
-    if (plugin.cfg.relay.all          ) { plugin.register_hook('rcpt',     'all'   ); }
-    if (plugin.cfg.relay.force_routing) { plugin.register_hook('get_mx',   'force_routing'); }
-};
 
-exports.refresh_config = function() {
-    var plugin = this;
-
-    var load_relay_ini = function () {
-        plugin.cfg = plugin.config.get('relay.ini', {
-            booleans: [
-                '+relay.acl',
-                '+relay.force_routing',
-                '-relay.all',
-                '-relay.dest_domains',
-            ],
-        }, function () {
-            load_relay_ini();
-        });
-    };
-
-    var load_dest_domains = function () {
-        plugin.loginfo(plugin, "loading relay_dest_domain.ini");
-        plugin.dest = plugin.config.get('relay_dest_domains.ini', 'ini', function() {
-            load_dest_domains();
-        });
-    };
-
-    var load_acls = function () {
-        var file_name = 'relay_acl_allow';
-        plugin.loginfo(plugin, "loading " + file_name);
-
-        // load with a self-referential callback
-        plugin.acl_allow = plugin.config.get(file_name, 'list', function () {
-            load_acls();
-        });
-
-        for (var i=0; i<plugin.acl_allow.length; i++) {
-            var cidr = plugin.acl_allow[i].split('/');
-            if (!net.isIP(cidr[0])) {
-                plugin.logerror(plugin, "invalid entry in " + file_name + ": " + cidr[0]);
-            }
-            if (!cidr[1]) {
-                plugin.logerror(plugin, "appending missing CIDR suffix in: " + file_name);
-                plugin.acl_allow[i] = cidr[0] + '/32';
-            }
-        }
-    };
-
-    load_relay_ini();             // plugin.cfg = { }
+    plugin.load_relay_ini();             // plugin.cfg = { }
 
     if (plugin.cfg.relay.acl) {
-         load_acls();             // plugin.acl_allow = [..]
+         plugin.load_acls();             // plugin.acl_allow = [..]
+         plugin.register_hook('connect', 'acl');
     }
 
     if (plugin.cfg.relay.force_routing || plugin.cfg.relay.dest_domains) {
-        load_dest_domains();      // plugin.dest.domains = { }
+        plugin.load_dest_domains();      // plugin.dest.domains = { }
+    }
+
+    if (plugin.cfg.relay.force_routing) {
+        plugin.register_hook('get_mx', 'force_routing');
+    }
+
+    if (plugin.cfg.relay.dest_domains) {
+        plugin.register_hook('rcpt', 'dest_domains');
+    }
+
+    if (plugin.cfg.relay.all) {
+        plugin.register_hook('rcpt', 'all');
+    }
+};
+
+exports.load_relay_ini = function () {
+    var plugin = this;
+    plugin.cfg = plugin.config.get('relay.ini', {
+        booleans: [
+            '+relay.acl',
+            '+relay.force_routing',
+            '-relay.all',
+            '-relay.dest_domains',
+        ],
+    }, function () {
+        plugin.load_relay_ini();
+    });
+};
+
+exports.load_dest_domains = function () {
+    var plugin = this;
+    plugin.dest = plugin.config.get(
+        'relay_dest_domains.ini',
+        'ini',
+        function() { plugin.load_dest_domains(); }
+    );
+};
+
+exports.load_acls = function () {
+    var plugin = this;
+    var file_name = 'relay_acl_allow';
+
+    // load with a self-referential callback
+    plugin.acl_allow = plugin.config.get(file_name, 'list', function () {
+        plugin.load_acls();
+    });
+
+    for (var i=0; i<plugin.acl_allow.length; i++) {
+        var cidr = plugin.acl_allow[i].split('/');
+        if (!net.isIP(cidr[0])) {
+            plugin.logerror(plugin, "invalid entry in " + file_name + ": " + cidr[0]);
+        }
+        if (!cidr[1]) {
+            plugin.logerror(plugin, "appending missing CIDR suffix in: " + file_name);
+            plugin.acl_allow[i] = cidr[0] + '/32';
+        }
     }
 };
 
@@ -193,9 +200,8 @@ exports.all = function(next, connection, params) {
 // relay everything - could be useful for a spamtrap
     var plugin = this;
     if (!plugin.cfg.relay.all) { return next(); }
-// TODO: This looks like a bug (shortening the recipient array)
-    var recipient = params.shift();
-    connection.loginfo(plugin, "confirming recipient " + recipient);
+
+    connection.loginfo(plugin, "confirming recipient " + params[0]);
     connection.relaying = true;
     next(OK);
 };

@@ -5,7 +5,7 @@ exports.register = function() {
     var plugin = this;
     plugin.inherits('dns_list_base');
 
-    plugin.refresh_config();
+    plugin.load_config();
 
     if (plugin.cfg.main.periodic_checks) {
         plugin.check_zones(plugin.cfg.main.periodic_checks);
@@ -19,32 +19,31 @@ exports.register = function() {
     }
 };
 
-exports.refresh_config = function () {
+exports.load_config = function () {
     var plugin = this;
 
-    var load_cfg = function () {
-        plugin.cfg = plugin.config.get('dnsbl.ini', {
-            booleans: ['+main.reject', '-main.enable_stats'],
-        }, load_cfg);
+    plugin.cfg = plugin.config.get('dnsbl.ini', {
+        booleans: ['+main.reject', '-main.enable_stats'],
+    }, function () {
+        plugin.load_config();
+    });
 
-        if (plugin.cfg.main.enable_stats && !plugin.enable_stats) {
-            plugin.loginfo('stats reporting enabled');
-            plugin.enable_stats = true;
-        }
-        if (!plugin.cfg.main.enable_stats && plugin.enable_stats) {
-            plugin.loginfo('stats reporting disabled');
-            plugin.enable_stats = false;
-        }
+    if (plugin.cfg.main.enable_stats && !plugin.enable_stats) {
+        plugin.loginfo('stats reporting enabled');
+        plugin.enable_stats = true;
+    }
+    if (!plugin.cfg.main.enable_stats && plugin.enable_stats) {
+        plugin.loginfo('stats reporting disabled');
+        plugin.enable_stats = false;
+    }
 
-        if (plugin.cfg.main.stats_redis_host &&
-            plugin.cfg.main.stats_redis_host !== plugin.redis_host) {
-            plugin.redis_host = plugin.cfg.main.stats_redis_host;
-            plugin.loginfo('set stats redis host to: ' + plugin.redis_host);
-        }
+    if (plugin.cfg.main.stats_redis_host &&
+        plugin.cfg.main.stats_redis_host !== plugin.redis_host) {
+        plugin.redis_host = plugin.cfg.main.stats_redis_host;
+        plugin.loginfo('set stats redis host to: ' + plugin.redis_host);
+    }
 
-        plugin.get_uniq_zones();
-    };
-    load_cfg();
+    plugin.get_uniq_zones();
 };
 
 exports.get_uniq_zones = function () {
@@ -137,7 +136,6 @@ exports.connect_multi = function(next, connection) {
 
         if (a) {
             hits.push(zone);
-            deny_msg = get_deny_msg();
             connection.results.add(plugin, {fail: zone});
         }
         else {

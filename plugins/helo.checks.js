@@ -73,7 +73,9 @@ exports.load_helo_checks_ini = function () {
             '+skip.whitelist',
             '+skip.relaying',
         ],
-    }, plugin.load_helo_checks_ini);
+    }, function () {
+        plugin.load_helo_checks_ini();
+    });
 
     // backwards compatible with old config file
     if (plugin.cfg.check_no_dot !== undefined) {
