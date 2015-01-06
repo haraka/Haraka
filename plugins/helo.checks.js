@@ -6,7 +6,6 @@ var net_utils = require('./net_utils');
 var utils     = require('./utils');
 
 var checks = [
-    'init',
     'match_re',           // List of regexps
     'bare_ip',            // HELO is bare IP (vs required Address Literal)
     'dynamic',            // HELO hostname looks dynamic (dsl|dialup|etc...)
@@ -22,6 +21,10 @@ var checks = [
 exports.register = function () {
     var plugin = this;
     plugin.load_helo_checks_ini();
+
+    // Always run init
+    plugin.register_hook('helo', 'init');
+    plugin.register_hook('ehlo', 'init');
 
     if (plugin.cfg.check.proto_mismatch) {
         plugin.register_hook('helo', 'proto_mismatch_smtp');
