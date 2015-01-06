@@ -20,6 +20,18 @@ var _set_up = function (done) {
     done();
 };
 
+exports.init = {
+    setUp: _set_up,
+    'ensure init is always run first on each hook': function (test) {
+        test.expect(4);
+        test.equal(this.plugin.register_hook.args[0][0], 'helo');
+        test.equal(this.plugin.register_hook.args[0][1], 'init');
+        test.equal(this.plugin.register_hook.args[1][0], 'ehlo');
+        test.equal(this.plugin.register_hook.args[1][1], 'init');
+        test.done();
+    }
+}
+
 exports.host_mismatch = {
     setUp : _set_up,
     'host_mismatch, reject=false' : function (test) {
