@@ -12,7 +12,7 @@ exports.lookup = function (lookup, zone, cb) {
     var self = this;
 
     if (!lookup || !zone) {
-        process.nextTick(function () {
+        return process.nextTick(function () {
             return cb(new Error('missing data'));
         });
     }
@@ -25,7 +25,7 @@ exports.lookup = function (lookup, zone, cb) {
     }
     else if (net.isIPv6(lookup)) {
         // TODO: IPv6 not supported
-        process.nextTick(function () {
+        return process.nextTick(function () {
             return cb(new Error('IPv6 not supported'));
         });
     }
