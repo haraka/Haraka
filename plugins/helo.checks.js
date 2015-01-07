@@ -22,14 +22,15 @@ exports.register = function () {
     var plugin = this;
     plugin.load_helo_checks_ini();
 
-    // Always run init
-    plugin.register_hook('helo', 'init');
-    plugin.register_hook('ehlo', 'init');
-
     if (plugin.cfg.check.proto_mismatch) {
+        // NOTE: these *must* run before init
         plugin.register_hook('helo', 'proto_mismatch_smtp');
         plugin.register_hook('ehlo', 'proto_mismatch_esmtp');
     }
+
+    // Always run init
+    plugin.register_hook('helo', 'init');
+    plugin.register_hook('ehlo', 'init');
 
     for (var i=0; i < checks.length; i++) {
         var hook = checks[i];
@@ -451,8 +452,8 @@ exports.proto_mismatch = function (next, connection, helo, proto) {
 
     if (plugin.should_skip(connection, 'proto_mismatch')) { return next(); }
 
-    var prev_helo = connection.results.get('helo.checks').helo_host;
-    if (!prev_helo) { return next(); }
+    var r = connection.results.get('helo.checks');
+    if (!r || (r && !r.helo_host)) { return next(); }
 
     if ((connection.esmtp && proto === 'smtp') || 
         (!connection.esmtp && proto === 'esmtp')) 

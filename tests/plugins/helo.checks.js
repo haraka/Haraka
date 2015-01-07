@@ -22,12 +22,12 @@ var _set_up = function (done) {
 
 exports.init = {
     setUp: _set_up,
-    'ensure init is always run first on each hook': function (test) {
+    'ensure init is always run': function (test) {
         test.expect(4);
-        test.equal(this.plugin.register_hook.args[0][0], 'helo');
-        test.equal(this.plugin.register_hook.args[0][1], 'init');
-        test.equal(this.plugin.register_hook.args[1][0], 'ehlo');
-        test.equal(this.plugin.register_hook.args[1][1], 'init');
+        test.equal(this.plugin.register_hook.args[2][0], 'helo');
+        test.equal(this.plugin.register_hook.args[2][1], 'init');
+        test.equal(this.plugin.register_hook.args[3][0], 'ehlo');
+        test.equal(this.plugin.register_hook.args[3][1], 'init');
         test.done();
     }
 }
