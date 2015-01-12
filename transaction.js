@@ -17,6 +17,7 @@ function Transaction() {
     this.rcpt_to = [];
     this.header_lines = [];
     this.data_lines = [];
+    this.attachment_start_hooks = [];
     this.banner = null;
     this.body_filters = [];
     this.data_bytes = 0;
@@ -52,6 +53,9 @@ Transaction.prototype.ensure_body = function() {
     }
 
     this.body = new body.Body(this.header);
+    this.attachment_start_hooks.forEach(function (h) {
+        self.body.on('attachment_start', h);
+    });
     if (this.banner) {
         this.body.set_banner(this.banner);
     }
@@ -157,8 +161,7 @@ Transaction.prototype.remove_header = function (key) {
 
 Transaction.prototype.attachment_hooks = function (start, data, end) {
     this.parse_body = 1;
-    this.ensure_body();
-    this.body.on('attachment_start', start);
+    this.attachment_start_hooks.push(start);
 };
 
 Transaction.prototype.set_banner = function (text, html) {
