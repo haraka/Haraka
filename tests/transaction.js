@@ -48,4 +48,29 @@ exports.transaction = {
             test.done();
         });
     },
+
+    'regression: attachment_hooks before set_banner/add_body_filter': function (test) {
+        var self = this;
+
+        test.expect(2);
+
+        this.transaction.attachment_hooks(function () {});
+        this.transaction.set_banner('banner');
+        this.transaction.add_body_filter('', function () {
+            test.ok(true, "body filter called");
+        });
+        [
+            "Content-Type: text/plain\n",
+            "\n",
+            "Some text\n",
+        ].forEach(function (line) {
+            self.transaction.add_data(line);
+        });
+        this.transaction.end_data(function () {
+            self.transaction.message_stream.get_data(function (body) {
+                test.ok(/banner$/.test(body.trim()), "banner applied");
+                test.done();
+            });
+        });
+    },
 };
