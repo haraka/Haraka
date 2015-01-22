@@ -10,6 +10,7 @@ var conf_providers = [ 'origin.asn.cymru.com', 'asn.routeviews.org' ];
 
 exports.register = function () {
     var plugin = this;
+    plugin.registered = false;
 
     plugin.load_asn_ini();
 
@@ -26,6 +27,10 @@ exports.register = function () {
 
         plugin.loginfo(plugin, zone + " succeeded");
         if (providers.indexOf(zone) === -1) providers.push(zone);
+
+        if (plugin.registered) return;
+        plugin.registered = true;
+        plugin.register_hook('lookup_rdns', 'lookup_asn');
     };
 
     // test each provider
@@ -40,8 +45,13 @@ exports.load_asn_ini = function () {
         plugin.load_asn_ini();
     });
 
-    if (plugin.cfg.main.providers) {
-        conf_providers = plugin.cfg.main.providers.split(/[\s,;]+/);
+    if (plugin.cfg.main.providers !== undefined) {  // defined
+        if (plugin.cfg.main.providers === '') {   // and not empty
+            conf_providers = [];
+        }
+        else {
+            conf_providers = plugin.cfg.main.providers.split(/[\s,;]+/);
+        }
     }
     if (plugin.cfg.main.test_ip) {
         test_ip = plugin.cfg.main.test_ip;
@@ -94,7 +104,7 @@ exports.get_dns_results = function (zone, ip, done) {
     });
 };
 
-exports.hook_lookup_rdns = function (next, connection) {
+exports.lookup_asn = function (next, connection) {
     var plugin = this;
     var ip = connection.remote_ip;
     if (net_utils.is_rfc1918(ip)) return next();
