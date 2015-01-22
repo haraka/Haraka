@@ -141,6 +141,10 @@ exports.flush_queue = function () {
     temp_fail_queue.drain();
 };
 
+exports.stop_queue = function () {
+    temp_fail_queue.stop();
+};
+
 exports.load_pid_queue = function (pid) {
     this.loginfo("Loading queue for pid: " + pid);
     this.load_queue(pid);

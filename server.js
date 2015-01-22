@@ -201,6 +201,8 @@ Server.get_smtp_server = function (host, port, inactivity_timeout) {
     return server;
 };
 
+Server.smtp_server_listeners = [];
+
 Server.setup_smtp_listeners = function (plugins, type, inactivity_timeout) {
 
     var listeners = Server.get_listen_addrs(Server.cfg.main);
@@ -248,6 +250,12 @@ Server.setup_smtp_listeners = function (plugins, type, inactivity_timeout) {
         });
 
         server.listen(port, host);
+
+        Server.smtp_server_listeners.push({
+            host: host,
+            port: port,
+            server: server
+        });
     };
 
     async.each(listeners, setupListener, runInitHooks);
@@ -306,4 +314,21 @@ Server.listening = function () {
     }
 
     Server.ready = 1;
+};
+
+Server.close = function () {
+    var list = Server.smtp_server_listeners;
+    for (var i=0; i < list.length; i++) {
+        list[i].server.close();
+    }
+
+    if (!Server.cluster) {
+        out.stop_queue();
+        return;
+    }
+
+    for (var id in cluster.workers) {
+        cluster.workers[id].send({event: 'outbound.stop_queue'});
+    }
+    Server.smtp_server_listeners = [];
 };
