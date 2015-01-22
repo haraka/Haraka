@@ -21,9 +21,9 @@ Configuration is stored in `config/auth_flat_file.ini` and uses the INI
 style formatting. 
 
 Authentication methods are listed in the `[core]` section under `methods`
-parameter. You can list a few authentification methods comma separated. Currently
-only two methods are supported : `CRAM-MD5`, `PLAIN` and `LOGIN`. Be aware, the `PLAIN` 
-and `LOGIN` methods are highly unsecure which is why TLS is required before AUTH is
+parameter. Lists of authentification methods are comma separated. Currently
+supported methods are: `CRAM-MD5`, `PLAIN` and `LOGIN`. The `PLAIN` 
+and `LOGIN` methods are not secure. That is why TLS is required before AUTH is
 offered.
 
 Example:
