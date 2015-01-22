@@ -22,13 +22,14 @@ style formatting.
 
 Authentication methods are listed in the `[core]` section under `methods`
 parameter. You can list a few authentification methods comma separated. Currently
-only two methods are supported : `CRAM-MD5` and `LOGIN`. Be aware, the LOGIN
-method is highly unsecure and should be used only for local communication.
-We strongly recommend only `CRAM-MD5`.
+only two methods are supported : `CRAM-MD5`, `PLAIN` and `LOGIN`. Be aware, the `PLAIN` 
+and `LOGIN` methods are highly unsecure which is why TLS is required before AUTH is
+offered.
 
 Example:
+
     [core]
-    methods=LOGIN,CRAM-MD5
+    methods=PLAIN,LOGIN,CRAM-MD5
 
 
 Users are stored in the `[users]` section.
