@@ -134,6 +134,10 @@ process.on('message', function (msg) {
         exports.flush_queue();
         return;
     }
+    if (msg.event && msg.event === 'outbound.stop_queue') {
+        exports.stop_queue();
+        return;
+    }
     // ignores the message
 });
 
