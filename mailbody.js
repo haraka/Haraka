@@ -330,7 +330,6 @@ Body.prototype.parse_multipart_preamble = function (line) {
             return line;
         }
     }
-    this.body_text_encoded += line;
     return line;
 }
 
