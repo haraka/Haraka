@@ -69,6 +69,7 @@ exports.filters = {
         test.ok(/This is some HTML/.test(parts[1]));
         test.done();
     },
+
     'search/replace': function (test) {
         test.expect(2);
 
@@ -85,6 +86,46 @@ exports.filters = {
 
         test.equal(parts[0], "TEXT FILTERED");
         test.equal(parts[1], "<p>HTML FILTERED</p>");
+        test.done();
+    },
+
+    'regression: duplicate multi-part preamble when filters added': function (test) {
+        test.expect(1);
+
+        var body = new Body();
+        body.add_filter(function () {});
+
+        var lines = [];
+
+        body.state = 'headers'; // HACK
+        [
+            "Content-Type: multipart/mixed; boundary=abcd\n",
+            "\n",
+            "This is a multi-part message in MIME format.\n",
+            "--abcd\n",
+            "Content-Type: text/plain\n",
+            "\n",
+            "Testing, 1, 2, 3.\n",
+            "--abcd--\n",
+        ].forEach(function (line) {
+            lines.push(body.parse_more(line));
+        });
+        lines.push(body.parse_end());
+
+        // Ignore blank lines.
+        lines = lines.filter(function (l) {
+            return l.trim();
+        });
+
+        var dupe = false;
+        var line;
+        while (line = lines.pop()) {
+            lines.forEach(function (l) {
+                dupe = dupe || line === l;
+            });
+        }
+
+        test.ok(!dupe, "no duplicate lines found");
         test.done();
     },
 };
