@@ -382,7 +382,7 @@ exports.send_email = function () {
     var re = /^([^\n]*\n?)/;
     while (match = re.exec(contents)) {
         var line = match[1];
-        line = line.replace(/\n?$/, '\r\n'); // make sure it ends in \r\n
+        line = line.replace(/\r\n|\n?$/, '\r\n'); // make sure it ends in \r\n
         transaction.add_data(new Buffer(line));
         contents = contents.substr(match[1].length);
         if (contents.length === 0) {
