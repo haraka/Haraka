@@ -142,7 +142,7 @@ exports.load_dkim_sign_ini = function () {
     var plugin = this;
     plugin.cfg = plugin.config.get('dkim_sign.ini', {
             booleans: [
-                '+disabled',
+                '-disabled',
             ]
         },
         function () { plugin.load_dkim_sign_ini(); }
