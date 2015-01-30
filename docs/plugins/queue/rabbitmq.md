@@ -18,6 +18,9 @@ Configuration
         ; ip and port of the server.
         server_ip = localhost
         server_port = 5672
+        ; user and password
+        user = guest
+        password = guest
         ; name of the queue which reader will read
         queueName = email
         ; This is for making it persistant while publishing message
