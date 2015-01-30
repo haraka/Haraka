@@ -20,8 +20,8 @@ var regex = exports.regex = {
 
 var cfreader = exports;
 
-cfreader.config_path = process.env.HARAKA
-                     ? path.join(process.env.HARAKA, 'config')
+cfreader.config_path = process.env.HARAKA ?
+                       path.join(process.env.HARAKA, 'config')
                      : path.join(__dirname, './config');
 cfreader.watch_files = true;
 cfreader._config_cache = {};
@@ -37,12 +37,13 @@ cfreader.on_watch_event = function (name, type, options, cb) {
         if (typeof cb === 'function') cb();
         if (fse !== 'rename') return;
         // https://github.com/joyent/node/issues/2062
-        // On a rename event, we'll need to re-watch the file
+        // After a rename event, re-watch the file
         cfreader._watchers[name].close();
         try {
-            cfreader._watchers[name] = fs.watch(name, 
-                                                { persistent: false }, 
-                                                cfreader.on_watch_event(name, type, options, cb));
+            cfreader._watchers[name] = fs.watch(
+                name,
+                { persistent: false },
+                cfreader.on_watch_event(name, type, options, cb));
         }
         catch (e) {
             if (e.code === 'ENOENT') {
@@ -60,14 +61,15 @@ cfreader.watch_dir = function () {
     // NOTE: This only works on Linux and Windows
     if (cfreader._watchers[cfreader.config_path]) return;
     try {
-        cfreader._watchers[cfreader.config_path] = fs.watch(cfreader.config_path, 
-                                                            { persistent: false }, 
-                                                            function (fse, filename) 
+        cfreader._watchers[cfreader.config_path] = fs.watch(
+            cfreader.config_path,
+            { persistent: false },
+            function (fse, filename)
         {
             if (!filename) return;
             var full_path = path.join(cfreader.config_path, filename);
-            //logger.loginfo('event=' + fse + 
-            //                ' filename=' + filename + 
+            //logger.loginfo('event=' + fse +
+            //                ' filename=' + filename +
             //                ' in_read_args=' + ((cfreader._read_args[full_path]) ? true : false));
             if (!cfreader._read_args[full_path]) return;
             var args = cfreader._read_args[full_path];
@@ -84,18 +86,19 @@ cfreader.watch_dir = function () {
 };
 
 cfreader.watch_file = function (name, type, cb, options) {
-    // This works on all OS's, but watch_dir() above is preferred for Linux and 
+    // This works on all OS's, but watch_dir() above is preferred for Linux and
     // Windows as it is far more efficient.
-    // NOTE: we have to have an fs.watch per file and it isn't possible to watch
-    // a file that doesn't exist yet, so we have to note which files we attempted
-    // to watch that returned ENOENT and then fs.stat each of them periodically
-    if (cfreader._watchers[name] || (options && options.no_watch)) return; 
+    // NOTE: we need a fs.watch per file. It's impossible to watch non-existent
+    // files. Instead, note which files we attempted
+    // to watch that returned ENOENT and fs.stat each periodically
+    if (cfreader._watchers[name] || (options && options.no_watch)) return;
     try {
-        cfreader._watchers[name] = fs.watch(name, {persistent: false}, 
-                                            cfreader.on_watch_event(name, type, options, cb));
+        cfreader._watchers[name] = fs.watch(
+            name, {persistent: false},
+            cfreader.on_watch_event(name, type, options, cb));
     }
     catch (e) {
-        if (e.code != 'ENOENT') { // ignore error when ENOENT
+        if (e.code !== 'ENOENT') { // ignore error when ENOENT
             logger.logerror('Error watching config file: ' + name + ' : ' + e);
         }
         else {
@@ -122,6 +125,7 @@ cfreader.read_config = function(name, type, cb, options) {
     // Store arguments used so we can re-use them by filename later
     // and so we know which files we've attempted to read so that
     // we can ignore any other files written to the same directory.
+
     cfreader._read_args[name] = {
         type: type,
         cb: cb,
@@ -139,7 +143,7 @@ cfreader.read_config = function(name, type, cb, options) {
     var result = cfreader.load_config(name, type, options);
     if (!cfreader.watch_files) return result;
 
-    // We can watch the directory on these platforms which 
+    // We can watch the directory on these platforms which
     // allows us to notice when files are newly created.
     if (platform === 'linux' || platform === 'win32') {
         cfreader.watch_dir();
@@ -167,8 +171,9 @@ cfreader.ensure_enoent_timer = function () {
                     delete(cfreader._enoent_files[file]);
                     var args = cfreader._read_args[file];
                     cfreader.load_config(file, args.type, args.options, args.cb);
-                    cfreader._watchers[file] = fs.watch(file, {persistent: false}, 
-                                                        cfreader.on_watch_event(file, args.type, args.options, args.cb));
+                    cfreader._watchers[file] = fs.watch(
+                        file, {persistent: false},
+                        cfreader.on_watch_event(file, args.type, args.options, args.cb));
                 });
             })(file); // END BLOCK SCOPE
         }
