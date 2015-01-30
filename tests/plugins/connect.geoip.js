@@ -88,12 +88,15 @@ exports.lookup_maxmind = {
     'servedby.tnpi.net': function (test) {
         var cb = function() {
             if (this.plugin.maxmind && this.plugin.maxmind.dbsLoaded) {
-                test.expect(4);
+                test.expect(3);
                 var r = this.connection.results.get('connect.geoip');
                 test.equal('53837', r.asn);
-                test.equal('ServedBy the Net, LLC.', r.asn_org);
                 test.equal('US', r.country);
                 test.equal('NA', r.continent);
+                if (r.asn_org) {
+                    test.expect(4);
+                    test.equal('ServedBy the Net, LLC.', r.asn_org);
+                }
             }
             test.done();
         }.bind(this);
@@ -253,7 +256,10 @@ exports.calculate_distance = {
         this.plugin.cfg.main.calc_distance=true;
         this.plugin.local_ip='192.48.85.146';
         this.connection.remote_ip='199.176.179.3';
-        this.plugin.calculate_distance(this.connection, [38, -97], function (err, d) {
+        this.plugin.calculate_distance(
+                this.connection,
+                [38, -97],
+                function (err, d) {
             test.expect(1);
             test.ok(d);
             test.done();
