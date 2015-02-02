@@ -1435,6 +1435,9 @@ Connection.prototype.data_done = function() {
     }
 
     this.transaction.end_data(function () {
+        // As this will be called asynchronously,
+        // make sure we still have a transaction.
+        if (!self.transaction) return;
         // Record the start time of this hook as we can't take too long
         // as the client will typically hang up after 2 to 3 minutes
         // despite the RFC mandating that 10 minutes should be allowed.
