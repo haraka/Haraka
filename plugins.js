@@ -15,13 +15,7 @@ var states      = require('./connection').states;
 function Plugin(name) {
     this.name = name;
     this.base = {};
-    this.timeout = config.get(name + '.timeout');
-    if (this.timeout === null) {
-        this.timeout = config.get('plugin_timeout') || 30;
-    }
-    else {
-        logger.logdebug("plugin " + name + " set timeout to: " + this.timeout + "s");
-    }
+    this.timeout = get_timeout(name);
     var full_paths = [];
     this._get_plugin_paths().forEach(function (pp) {
         full_paths.push(path.resolve(pp, name) + '.js');
@@ -34,8 +28,9 @@ function Plugin(name) {
 Plugin.prototype.register_hook = function(hook_name, method_name) {
     this.hooks[hook_name] = this.hooks[hook_name] || [];
     this.hooks[hook_name].push(method_name);
-    
-    logger.logdebug("registered hook " + hook_name + " to " + this.name + "." + method_name);
+
+    logger.logdebug("registered hook " + hook_name + " to " + this.name + '.' +
+            method_name);
 };
 
 Plugin.prototype.register = function () {}; // noop
@@ -75,8 +70,23 @@ Plugin.prototype._get_plugin_paths = function () {
     return paths;
 };
 
-// copy logger methods into Plugin:
+function get_timeout (name) {
 
+    var timeout = parseFloat((config.get(name + '.timeout')));
+    if (isNaN(timeout)) {
+        logger.logdebug('no timeout in ' + name + '.timeout');
+        timeout = parseFloat(config.get('plugin_timeout'));
+    }
+    if (isNaN(timeout)) {
+        logger.logdebug('no timeout in plugin_timeout');
+        timeout = 30;
+    }
+
+    logger.logdebug('plugin ' + name + ' timeout is: ' + timeout + 's');
+    return timeout;
+}
+
+// copy logger methods into Plugin:
 for (var key in logger) {
     if (key.match(/^log\w/)) {
         // console.log("adding Plugin." + key + " method");
@@ -99,7 +109,7 @@ plugins.Plugin = Plugin;
 plugins.load_plugins = function () {
     logger.loginfo("Loading plugins");
     var plugin_list = config.get('plugins', 'list');
-    
+
     plugins.plugin_list = plugin_list.map(plugins.load_plugin);
     logger.dump_logs(); // now logging plugins are loaded.
 };
@@ -150,9 +160,9 @@ plugins._load_and_compile_plugin = function(name) {
         }
 
         return require(path.dirname(fp[i]) + '/' + module);
-    }     
+    };
     var code = '"use strict";' + rf;
-    var sandbox = { 
+    var sandbox = {
         require: custom_require,
         __filename: fp[i],
         __dirname:  path.dirname(fp[i]),
@@ -173,64 +183,65 @@ plugins._load_and_compile_plugin = function(name) {
     catch (err) {
         logger.logcrit("Compiling plugin: " + name + " failed");
         if (config.get('smtp.ini').main.ignore_bad_plugins) {
-            logger.logcrit("Loading plugin " + name + " failed: ", err.message
-                           + " - will skip this plugin and continue");
+            logger.logcrit("Loading plugin " + name + " failed: ", err.message +
+                           " - will skip this plugin and continue");
             return;
         }
         throw err; // default is to re-throw and stop Haraka
     }
-    
+
     return plugin;
 };
 
 plugins._register_plugin = function (plugin) {
     plugin.register();
-    
+
     // register any hook_blah methods.
     for (var method in plugin) {
-        var result;
-        if (result = method.match(/^hook_(\w+)\b/)) {
+        var result = method.match(/^hook_(\w+)\b/);
+        if (result) {
             plugin.register_hook(result[1], method);
         }
     }
-    
+
     return plugin;
 };
 
 plugins.run_hooks = function (hook, object, params) {
     // Bail out if the client has disconnected
-    if (object.constructor.name === 'Connection' && object.state >= states.DISCONNECTING) {
-        if (hook != 'log') {
+    if (object.constructor.name === 'Connection' &&
+        object.state >= states.DISCONNECTING) {
+        if (hook !== 'log') {
             object.logdebug('aborting ' + hook + ' hook as client has disconnected');
         }
         return;
     }
 
-    if (hook != 'log')
+    if (hook !== 'log')
         object.logdebug("running " + hook + " hooks");
-    
-    if ((hook == 'reset_transaction' || hook == 'disconnect') && object.current_hook) {
+
+    if ((hook === 'reset_transaction' || hook === 'disconnect') && object.current_hook) {
         object.current_hook[2](); // call cancel function
     }
 
-    if (hook != 'deny' && hook != 'log' &&
-        hook != 'reset_transaction' &&
-        hook != 'disconnect' && 
-        object.hooks_to_run && object.hooks_to_run.length) 
+    if (hook !== 'deny' && hook !== 'log' &&
+        hook !== 'reset_transaction' &&
+        hook !== 'disconnect' &&
+        object.hooks_to_run && object.hooks_to_run.length)
     {
         throw new Error("We are already running hooks! Fatal error!");
     }
 
     if (hook === 'deny') {
-        // Save the hooks_to_run list so that we can run any remaining 
+        // Save the hooks_to_run list so that we can run any remaining
         // plugins on the previous hook once this hook is complete.
         object.saved_hooks_to_run = object.hooks_to_run;
     }
     object.hooks_to_run = [];
-    
+
     for (var i = 0; i < plugins.plugin_list.length; i++) {
         var plugin = plugins.plugin_list[i];
-        
+
         if (plugin && plugin.hooks[hook]) {
             var j;
             for (j = 0; j < plugin.hooks[hook].length; j++) {
@@ -239,7 +250,7 @@ plugins.run_hooks = function (hook, object, params) {
             }
         }
     }
-    
+
     plugins.run_next_hook(hook, object, params);
 };
 
@@ -285,14 +296,14 @@ plugins.run_next_hook = function(hook, object, params) {
                 object[log]([
                     'hook='     + hook,
                     'plugin='   + item[0].name,
-                    'function=' + item[1], 
+                    'function=' + item[1],
                     'params="'  + ((params) ? ((typeof params === 'string') ? params : params[0]) : '') + '"',
                     'retval='   + constants.translate(retval),
                     'msg="'     + ((msg) ? msg : '') + '"',
                 ].join(' '));
             }
         }
-        if (object.hooks_to_run.length == 0 || 
+        if (object.hooks_to_run.length == 0 ||
             retval !== constants.cont)
         {
             var respond_method = hook + "_respond";
@@ -301,7 +312,7 @@ plugins.run_next_hook = function(hook, object, params) {
                     switch(deny_retval) {
                         case constants.ok:
                             // Override rejection
-                            object.loginfo('deny(soft?) overriden by deny hook' + 
+                            object.loginfo('deny(soft?) overriden by deny hook' +
                                            (deny_msg ? ': ' + deny_msg : ''));
                             // Restore hooks_to_run with saved copy so that
                             // any other plugins on this hook can also run.
@@ -329,32 +340,32 @@ plugins.run_next_hook = function(hook, object, params) {
         else {
             plugins.run_next_hook(hook, object, params);
         }
-    }
-    
+    };
+
     if (!object.hooks_to_run.length) return callback();
-    
+
     // shift the next one off the stack and run it.
     item = object.hooks_to_run.shift();
     item.push(cancel);
 
-    if (item[0].timeout && hook != 'log') {
+    if (item[0].timeout && hook !== 'log') {
         timeout_id = setTimeout(function () {
             timed_out = true;
-            object.logcrit("Plugin " + item[0].name + 
+            object.logcrit("Plugin " + item[0].name +
                 " timed out on hook " + hook + " - make sure it calls the callback");
             callback(constants.denysoft, "plugin timeout");
         }, item[0].timeout * 1000);
     }
-    
-    if (hook != 'log')
+
+    if (hook !== 'log')
         object.logdebug("running " + hook + " hook in " + item[0].name + " plugin");
-    
+
     try {
         object.current_hook = item;
         item[0][ item[1] ].call(item[0], callback, object, params);
     }
     catch (err) {
-        if (hook != 'log') {
+        if (hook !== 'log') {
             object.logcrit("Plugin " + item[0].name + " failed: " + (err.stack || err));
         }
         callback();

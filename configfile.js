@@ -133,10 +133,12 @@ cfreader.read_config = function(name, type, cb, options) {
     };
 
     // Check cache first
-    var cache_key = cfreader.get_cache_key(name, options);
-    if (cache_key in cfreader._config_cache) {
-        //logger.logdebug('Returning cached file: ' + name);
-        return cfreader._config_cache[cache_key];
+    if (!process.env.WITHOUT_CONFIG_CACHE) {
+        var cache_key = cfreader.get_cache_key(name, options);
+        if (cache_key in cfreader._config_cache) {
+            //logger.logdebug('Returning cached file: ' + name);
+            return cfreader._config_cache[cache_key];
+        }
     }
 
     // load config file
