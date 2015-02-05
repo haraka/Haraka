@@ -96,6 +96,10 @@ exports.stat_queue = function (cb) {
 exports.scan_queue_pids = function (cb) {
     var self = this;
 
+    // Under cluster, this is called first by the master so
+    // we create the queue directory if it doesn't exist.
+    this.ensure_queue_dir();
+
     fs.readdir(queue_dir, function (err, files) {
         if (err) {
             self.logerror("Failed to load queue directory (" + queue_dir + "): " + err);
@@ -146,13 +150,9 @@ exports.load_pid_queue = function (pid) {
     this.load_queue(pid);
 };
 
-exports.load_queue = function (pid) {
-    // Initialise and load queue
-
-    // we create the dir here because this is used when Haraka is running
-    // properly.
-
-    // no reason not to do this stuff syncronously - we're just loading here
+exports.ensure_queue_dir = function () {
+    // No reason not to do this stuff syncronously -
+    // this code is only run at start-up.
     if (!existsSync(queue_dir)) {
         this.logdebug("Creating queue directory " + queue_dir);
         try {
@@ -165,7 +165,13 @@ exports.load_queue = function (pid) {
             }
         }
     }
+}
 
+exports.load_queue = function (pid) {
+    // Initialise and load queue
+    // This function is called first when not running under cluster,
+    // so we create the queue directory if it doesn't already exist.
+    this.ensure_queue_dir();
     this._load_cur_queue(pid, "_add_file");
 };
 
