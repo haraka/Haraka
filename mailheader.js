@@ -2,11 +2,7 @@
 // An RFC 2822 email header parser
 var logger = require('./logger');
 var utils  = require('./utils');
-var Iconv;
-try { Iconv = require('iconv').Iconv }
-catch (err) {
-    logger.logdebug("No iconv available - install with 'npm install iconv'");
-}
+var iconv  = require('iconv-lite');
 
 function Header (options) {
     this.headers = {};
@@ -16,7 +12,6 @@ function Header (options) {
 };
 
 exports.Header = Header;
-exports.Iconv  = Iconv;
 
 Header.prototype.parse = function (lines) {
     var self = this;
@@ -53,23 +48,13 @@ Header.prototype.parse = function (lines) {
     })
 };
 
-function try_convert(data, encoding) {
+var try_convert = exports.try_convert = function (data, encoding) {
     try {
-        var converter = new Iconv(encoding, "UTF-8");
-        data = converter.convert(data);
+        data = iconv.decode(data, encoding);
     }
     catch (err) {
-        // TODO: raise a flag for this for possible scoring
-        logger.logwarn("initial iconv conversion from " + encoding + " to UTF-8 failed: " + err.message);
-        if (err.code !== 'EINVAL') {
-            try {
-                var converter = new Iconv(encoding, "UTF-8//TRANSLIT//IGNORE");
-                data = converter.convert(data);
-            }
-            catch (e) {
-                logger.logerror("iconv from " + encoding + " to UTF-8 failed: " + e.message);
-            }
-        }
+        // TODO: raise a flag for this for possible scoring?
+        logger.logerror("iconv from " + encoding + " to UTF-8 failed: " + err);
     }
 
     return data;
@@ -90,7 +75,7 @@ function _decode_header (matched, encoding, cte, data) {
     }
     
     // convert with iconv if encoding != UTF-8
-    if (Iconv && !(/UTF-?8/i.test(encoding))) {
+    if (!(/UTF-?8/i.test(encoding))) {
         data = try_convert(data, encoding);
     }
     
@@ -104,7 +89,7 @@ Header.prototype.decode_header = function decode_header (val) {
     // remove end carriage return
     val = val.replace(/\r?\n$/, '');
     
-    if (Iconv && !/^[\x00-\x7f]*$/.test(val)) {
+    if (!/^[\x00-\x7f]*$/.test(val)) {
         // 8 bit values in the header
         var matches = /\bcharset\s*=\s*["']?([\w_\-]*)/.exec(this.get('content-type'));
         if (matches && !/UTF-?8/i.test(matches[1])) {
