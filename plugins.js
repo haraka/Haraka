@@ -1,4 +1,4 @@
-"use strict";
+'use strict';
 // load all defined plugins
 
 var logger      = require('./logger');
@@ -12,19 +12,6 @@ var utils       = require('./utils');
 var util        = require('util');
 var states      = require('./connection').states;
 
-var plugin_paths = [path.join(__dirname, './plugins')];
-if (process.env.HARAKA) { plugin_paths.unshift(path.join(process.env.HARAKA, 'plugins')); }
-// Allow environment customized path to plugins in addition to defaults.
-// Multiple paths separated by (semi-)colon ':|;' depending on environment.
-if (process.env.HARAKA_PLUGIN_PATH) {
-    var separator = os.type().indexOf('Windows') >= 0 ? ';' : ':';
-    var paths = process.env.HARAKA_PLUGIN_PATH.split(separator).map(function(p) {
-        var pNorm = path.normalize(p);
-        logger.logdebug('Adding plugin path: ' + pNorm);
-        plugin_paths.unshift(pNorm);
-    });
-}
-
 function Plugin(name) {
     this.name = name;
     this.base = {};
@@ -35,21 +22,21 @@ function Plugin(name) {
     else {
         logger.logdebug("plugin " + name + " set timeout to: " + this.timeout + "s");
     }
-    var full_paths = []
-    plugin_paths.forEach(function (pp) {
+    var full_paths = [];
+    this._get_plugin_paths().forEach(function (pp) {
         full_paths.push(path.resolve(pp, name) + '.js');
     });
     this.full_paths = full_paths;
     this.config = config;
     this.hooks = {};
-};
+}
 
 Plugin.prototype.register_hook = function(hook_name, method_name) {
     this.hooks[hook_name] = this.hooks[hook_name] || [];
     this.hooks[hook_name].push(method_name);
     
     logger.logdebug("registered hook " + hook_name + " to " + this.name + "." + method_name);
-}
+};
 
 Plugin.prototype.register = function () {}; // noop
 
@@ -64,7 +51,29 @@ Plugin.prototype.inherits = function (parent_name) {
         parent_plugin.register.call(this);
     }
     this.base[parent_name] = parent_plugin;
-}
+};
+
+Plugin.prototype._get_plugin_paths = function () {
+
+    var paths = [ path.join(__dirname, './plugins') ];
+
+    if (process.env.HARAKA) {
+        paths.unshift(path.join(process.env.HARAKA, 'plugins'));
+    }
+
+    // Allow environment customized path to plugins in addition to defaults.
+    // Multiple paths separated by (semi-)colon ':|;' depending on environment.
+    if (process.env.HARAKA_PLUGIN_PATH) {
+        var separator = os.type().indexOf('Windows') >= 0 ? ';' : ':';
+        process.env.HARAKA_PLUGIN_PATH.split(separator).map(function(p) {
+            var pNorm = path.normalize(p);
+            logger.logdebug('Adding plugin path: ' + pNorm);
+            paths.unshift(pNorm);
+        });
+    }
+
+    return paths;
+};
 
 // copy logger methods into Plugin:
 
@@ -78,7 +87,7 @@ for (var key in logger) {
                     args.push(arguments[i]);
                 }
                 logger[key].apply(logger, args);
-            }
+            };
         })(key);
     }
 }
@@ -104,7 +113,7 @@ plugins.load_plugin = function(name) {
     }
 
     return plugin;
-}
+};
 
 // Set in server.js; initialized to empty object
 // to prevent it from blowing up any unit tests.
@@ -172,7 +181,7 @@ plugins._load_and_compile_plugin = function(name) {
     }
     
     return plugin;
-}
+};
 
 plugins._register_plugin = function (plugin) {
     plugin.register();
@@ -186,7 +195,7 @@ plugins._register_plugin = function (plugin) {
     }
     
     return plugin;
-}
+};
 
 plugins.run_hooks = function (hook, object, params) {
     // Bail out if the client has disconnected
