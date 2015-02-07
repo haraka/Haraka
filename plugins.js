@@ -4,6 +4,7 @@
 var logger      = require('./logger');
 var config      = require('./config');
 var constants   = require('./constants');
+var os          = require('os');
 var path        = require('path');
 var vm          = require('vm');
 var fs          = require('fs');
@@ -13,6 +14,16 @@ var states      = require('./connection').states;
 
 var plugin_paths = [path.join(__dirname, './plugins')];
 if (process.env.HARAKA) { plugin_paths.unshift(path.join(process.env.HARAKA, 'plugins')); }
+// Allow environment customized path to plugins in addition to defaults.
+// Multiple paths separated by (semi-)colon ':|;' depending on environment.
+if (process.env.HARAKA_PLUGIN_PATH) {
+    var separator = os.type().indexOf('Windows') >= 0 ? ';' : ':';
+    var paths = process.env.HARAKA_PLUGIN_PATH.split(separator).map(function(p) {
+        var pNorm = path.normalize(p);
+        logger.logdebug('Adding plugin path: ' + pNorm);
+        plugin_paths.unshift(pNorm);
+    });
+}
 
 function Plugin(name) {
     this.name = name;
