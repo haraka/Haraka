@@ -24,7 +24,7 @@ queued for outbound delivery.
 ### Getting Help
 
 * [Join the mailing list][8] (implemented as a Haraka plugin)
-* Join us on IRC at `#haraka`
+* Join us on IRC at `#haraka` on [freenode][14]
 * [GitHub Issues](https://github.com/baudehlo/Haraka/issues)
 
 
@@ -138,3 +138,4 @@ SpamAssassin and a hacker on [Qpsmtpd][13].
 [11]: https://haraka.github.io/manual/plugins/dnsbl.html
 [12]: https://github.com/baudehlo/Haraka/tree/master/plugins
 [13]: https://github.com/smtpd/qpsmtpd/
+[14]: https://freenode.net/irc_servers.shtml
