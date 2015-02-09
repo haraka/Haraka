@@ -59,28 +59,26 @@ cfreader.on_watch_event = function (name, type, options, cb) {
 
 cfreader.watch_dir = function () {
     // NOTE: This only works on Linux and Windows
-    if (cfreader._watchers[cfreader.config_path]) return;
+    var cp = cfreader.config_path;
+    if (cfreader._watchers[cp]) return;
+    var watcher = function (fse, filename) {
+        if (!filename) return;
+        var full_path = path.join(cp, filename);
+        //logger.loginfo('event=' + fse +
+        //    ' filename=' + filename + ' in_read_args=' +
+        //    ((cfreader._read_args[full_path]) ? true : false));
+        if (!cfreader._read_args[full_path]) return;
+        var args = cfreader._read_args[full_path];
+        if (args.options && args.options.no_watch) return;
+        logger.loginfo('Detected ' + fse + ', reloading ' + filename);
+        cfreader.load_config(full_path, args.type, args.options);
+        if (typeof args.cb === 'function') args.cb();
+    };
     try {
-        cfreader._watchers[cfreader.config_path] = fs.watch(
-            cfreader.config_path,
-            { persistent: false },
-            function (fse, filename)
-        {
-            if (!filename) return;
-            var full_path = path.join(cfreader.config_path, filename);
-            //logger.loginfo('event=' + fse +
-            //                ' filename=' + filename +
-            //                ' in_read_args=' + ((cfreader._read_args[full_path]) ? true : false));
-            if (!cfreader._read_args[full_path]) return;
-            var args = cfreader._read_args[full_path];
-            if (args.options && args.options.no_watch) return;
-            logger.loginfo('Detected ' + fse + ', reloading ' + filename);
-            cfreader.load_config(full_path, args.type, args.options);
-            if (typeof args.cb === 'function') args.cb();
-        });
+        cfreader._watchers[cp] = fs.watch(cp, { persistent: false }, watcher);
     }
     catch (e) {
-        logger.logerror('Error watching directory ' + cfreader.config_path + '(' + e + ')');
+        logger.logerror('Error watching directory ' + cp + '(' + e + ')');
     }
     return;
 };
@@ -358,56 +356,56 @@ cfreader.load_ini_config = function(name, options) {
         }
     }
 
-    try {
-        if (utils.existsSync(name)) {
-            var data = fs.readFileSync(name, 'UTF-8');
-            var lines = data.split(/\r\n|\r|\n/);
-            var match;
-            var pre = '';
+    if (!utils.existsSync(name)) { return result; }
 
-            lines.forEach(function(line) {
-                if (regex.comment.test(line)) {
-                    return;
+    try {
+        var data = fs.readFileSync(name, 'UTF-8');
+        var lines = data.split(/\r\n|\r|\n/);
+        var match;
+        var pre = '';
+
+        lines.forEach(function(line) {
+            if (regex.comment.test(line)) {
+                return;
+            }
+            if (regex.blank.test(line)) {
+                return;
+            }
+            match = regex.section.exec(line);
+            if (match) {
+                if (!result[match[1]]) result[match[1]] = {};
+                current_sect = result[match[1]];
+                current_sect_name = match[1];
+                return;
+            }
+            else if (regex.continuation.test(line)) {
+                pre += line.replace(regex.continuation, '');
+                return;
+            }
+            line = pre + line;
+            pre = '';
+            match = regex.param.exec(line);
+            if (match) {
+                if (options && Array.isArray(options.booleans) &&
+                    bool_matches.indexOf(current_sect_name + '.' + match[1]) !== -1)
+                {
+                    current_sect[match[1]] = regex.is_truth.test(match[2]);
+                    logger.logdebug('Returning boolean ' + current_sect[match[1]] +
+                                    ' for ' + current_sect_name + '.' + match[1] + '=' + match[2]);
                 }
-                if (regex.blank.test(line)) {
-                    return;
+                else if (regex.is_integer.test(match[2])) {
+                    current_sect[match[1]] = parseInt(match[2], 10);
                 }
-                match = regex.section.exec(line);
-                if (match) {
-                    if (!result[match[1]]) result[match[1]] = {};
-                    current_sect = result[match[1]];
-                    current_sect_name = match[1];
-                    return;
+                else if (regex.is_float.test(match[2])) {
+                    current_sect[match[1]] = parseFloat(match[2]);
                 }
-                else if (regex.continuation.test(line)) {
-                    pre += line.replace(regex.continuation, '');
-                    return;
+                else {
+                    current_sect[match[1]] = match[2];
                 }
-                line = pre + line;
-                pre = '';
-                match = regex.param.exec(line);
-                if (match) {
-                    if (options && Array.isArray(options.booleans) &&
-                        bool_matches.indexOf(current_sect_name + '.' + match[1]) !== -1)
-                    {
-                        current_sect[match[1]] = regex.is_truth.test(match[2]);
-                        logger.logdebug('Returning boolean ' + current_sect[match[1]] +
-                                       ' for ' + current_sect_name + '.' + match[1] + '=' + match[2]);
-                    }
-                    else if (regex.is_integer.test(match[2])) {
-                        current_sect[match[1]] = parseInt(match[2], 10);
-                    }
-                    else if (regex.is_float.test(match[2])) {
-                        current_sect[match[1]] = parseFloat(match[2]);
-                    }
-                    else {
-                        current_sect[match[1]] = match[2];
-                    }
-                    return;
-                }
-                logger.logerror('Invalid line in config file \'' + name + '\': ' + line);
-            });
-        }
+                return;
+            }
+            logger.logerror('Invalid line in config file \'' + name + '\': ' + line);
+        });
     }
     catch (err) {
         if (err.code === 'EBADF') {
