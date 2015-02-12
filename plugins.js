@@ -64,7 +64,7 @@ Plugin.prototype._get_plugin_paths = function () {
     // Allow environment customized path to plugins in addition to defaults.
     // Multiple paths separated by (semi-)colon ':|;' depending on environment.
     if (process.env.HARAKA_PLUGIN_PATH) {
-        var separator = os.type().indexOf('Windows') >= 0 ? ';' : ':';
+        var separator = /^win/.test(os.platform()) ? ';' : ':';
         process.env.HARAKA_PLUGIN_PATH.split(separator).map(function(p) {
             var pNorm = path.normalize(p);
             logger.logdebug('Adding plugin path: ' + pNorm);

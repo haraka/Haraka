@@ -49,7 +49,7 @@ exports.get_plugin_paths = {
         test.deepEqual(
             this.plugin._get_plugin_paths(),
             [
-                '/etc/haraka/plugins',
+                path.join('/etc', '/haraka', '/plugins'),
                 path.join(__dirname, '../plugins')
             ],
             'default ./path'
@@ -68,7 +68,7 @@ exports.get_plugin_paths = {
         test.deepEqual(
             this.plugin._get_plugin_paths(),
             [
-                '/etc/haraka_plugins',
+                path.join('/etc', '/haraka_plugins'),
                 path.join(__dirname, '../plugins')
             ],
             'default + HARAKA_PLUGIN_PATH');
