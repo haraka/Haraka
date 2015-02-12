@@ -1,33 +1,58 @@
 # default list of plugins
 
+#process_title
 # Log to syslog (disabled by default, see docs)
 # log.syslog
 
+# CONNECT
+#toobusy
+#relay
 # control which IPs, rDNS hostnames, HELO hostnames, MAIL FROM addresses, and
 # RCPT TO address you accept mail from. See 'haraka -h access'.
 access
-
+# connect.p0f
+# connect.geoip
+# connect.asn
+# connect.fcrdns
 # block mails from known bad hosts (see config/dnsbl.zones for the DNS zones queried)
 dnsbl
 
-# Check mail headers are valid
-data.headers
-
-# block mail from some known bad HELOs - see config/helo.checks.ini for configuration
+HELO
+#early_talker
+# see config/helo.checks.ini for configuration
 helo.checks
-
 # see 'haraka -h tls' for config instructions before enabling!
 # tls
+# auth: auth_base   auth_ldap   auth_proxy  flat_file
 
+# MAIL FROM
 # Only accept mail where the MAIL FROM domain is resolvable to an MX record
 mail_from.is_resolvable
+#spf
+
+# RCPT TO
+# NOTE: A rcpt_to plugin is REQUIRED for inbound email.
+# Edit config/host_list to set what domains you accept mail for.
+rcpt_to.in_host_list
+#rcpt_to.qmail_deliverable
+#rcpt_to.ldap
+#rcpt_to.routes
+
+# DATA
+#bounce
+# Check mail headers are valid
+data.headers
+#data.uribl
+#attachment
+#clamd
+#spamassassin
+#dkim_sign
+#karma
+
+# QUEUE
+# queues: discard  qmail-queue  quarantine  smtp_forward  smtp_proxy
+# Queue mail via smtp - see config/smtp_forward.ini for where your mail goes
+queue/smtp_forward
 
 # Disconnect client if they spew bad SMTP commands at us
 max_unrecognized_commands
-
-# Only accept mail for your personal list of hosts. Edit config/host_list
-# NOTE: THIS IS REQUIRED for inbound email.
-rcpt_to.in_host_list
-
-# Queue mail via smtp - see config/smtp_forward.ini for where your mail goes
-queue/smtp_forward
