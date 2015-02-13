@@ -13,9 +13,9 @@ Haraka has very good spam protection (see [plugins][4]) and works
 well as a filtering [MTA][3]. It also works well as a [MSA][5] running on
 port 587 with auth and [dkim_sign][6] plugins enabled.
 
-Haraka makes no attempt to be a mail store (like Exchange or Postix/Exim/Qmail
-+ [LDA][7]) nor an IMAP server (like Dovecot or Courier). Haraka is typically
-used **with** such systems.
+Haraka makes no attempt to be a mail store (like Exchange or Postix/Exim/Qmail),
+a [LDA][7], nor an IMAP server (like Dovecot or Courier). Haraka is
+typically used **with** such systems.
 
 Haraka has a scalable outbound mail delivery engine built in. Mail
 marked as `relaying` (such as via an `auth` plugin) is automatically
