@@ -4,7 +4,7 @@ Haraka - a Node.js Mail Server
 
 [![Build Status][ci-img]][ci-url]
 [![Coverage Status][cov-img]][cov-url]
-[![Windows Status][ci-win-img][ci-win-url]
+[![Windows Status][ci-win-img]][ci-win-url]
 
 
 Haraka is a highly scalable [node.js][1] email server with a modular
