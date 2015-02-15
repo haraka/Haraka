@@ -2,7 +2,10 @@
 Haraka - a Node.js Mail Server
 ------------------------------
 
-[![Build Status](https://travis-ci.org/baudehlo/Haraka.svg?branch=master)](https://travis-ci.org/baudehlo/Haraka) [![Coverage Status](https://coveralls.io/repos/baudehlo/Haraka/badge.png)](https://coveralls.io/r/baudehlo/Haraka)
+[![Build Status][ci-img]][ci-url]
+[![Coverage Status][cov-img]][cov-url]
+[![Windows Status][ci-win-img][ci-win-url]
+
 
 Haraka is a highly scalable [node.js][1] email server with a modular
 plugin architecture. Haraka can serve thousands of concurrent connections
@@ -139,3 +142,10 @@ SpamAssassin and a hacker on [Qpsmtpd][13].
 [12]: https://github.com/baudehlo/Haraka/tree/master/plugins
 [13]: https://github.com/smtpd/qpsmtpd/
 [14]: https://freenode.net/irc_servers.shtml
+
+[ci-img]: https://travis-ci.org/baudehlo/Haraka.svg?branch=master
+[ci-url]: https://travis-ci.org/baudehlo/Haraka
+[cov-img]: https://coveralls.io/repos/baudehlo/Haraka/badge.png
+[cov-url]: https://coveralls.io/r/baudehlo/Haraka
+[ci-win-img]: https://ci.appveyor.com/api/projects/status/g29l24w7qwoam47f?svg=true
+[ci-win-url]: https://ci.appveyor.com/project/msimerson/haraka-pa8a5
