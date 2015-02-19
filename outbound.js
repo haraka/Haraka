@@ -43,6 +43,9 @@ exports.load_config = function () {
     }).main;
 
     // legacy config file support. Remove in Haraka 4.0
+    if (!cfg.disabled && config.get('outbound.disabled')) {
+        cfg.disabled = true;
+    }
     if (!cfg.enable_tls && config.get('outbound.enable_tls')) {
         cfg.enable_tls = true;
     }
