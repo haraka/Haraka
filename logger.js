@@ -147,7 +147,13 @@ logger._init_timestamps = function () {
     });
     
     if (_timestamps) {
-        console.log = original_console_log.bind(console, new Date().toISOString());
+        console.log = function() {
+            var new_arguments = [new Date().toISOString()];
+            for (var key in arguments) {
+                new_arguments.push(arguments[key]);
+            }
+            original_console_log.apply(console, new_arguments);
+        }
     }
     else {
         console.log = original_console_log;

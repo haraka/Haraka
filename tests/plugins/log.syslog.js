@@ -4,7 +4,7 @@ var stub             = require('../fixtures/stub'),
     Plugin           = require('../fixtures/stub_plugin');
 
 var _set_up = function (done) {
-    this.backup = {};
+    this.backup = { plugin: { Syslog: {} } };
 
     try {
         this.plugin = new Plugin('log.syslog');
@@ -12,10 +12,6 @@ var _set_up = function (done) {
     catch (e) {
         console.log(e);
     }
-
-    // backup modifications
-    this.backup.plugin = {};
-    this.backup.plugin.Syslog = {};
 
     // stub out functions
     this.log = stub();
@@ -41,6 +37,14 @@ var _set_up = function (done) {
         }.bind(this);
     }
 
+    try {
+        this.plugin.Syslog = require('node-syslog');
+    }
+    catch (e) {
+        console.log('unable to load node-syslog');
+        return done();
+    }
+
     done();
 };
 
@@ -55,7 +59,7 @@ exports.register = {
         test.done();
     },
     'register function should call register_hook()' : function (test) {
-        if (this.plugin) {
+        if (this.plugin && this.plugin.Syslog) {
             this.plugin.register();
             test.expect(1);
             test.ok(this.plugin.register_hook.called);
@@ -63,7 +67,7 @@ exports.register = {
         test.done();
     },
     'register_hook() should register for proper hook' : function (test) {
-        if (this.plugin) {
+        if (this.plugin && this.plugin.Syslog) {
             this.plugin.register();
             test.expect(1);
             test.equals(this.plugin.register_hook.args[0], 'log');
@@ -71,7 +75,7 @@ exports.register = {
         test.done();
     },
     'register_hook() should register available function' : function (test) {
-        if (this.plugin) {
+        if (this.plugin && this.plugin.Syslog) {
             this.plugin.register();
             test.expect(3);
             test.equals(this.plugin.register_hook.args[1], 'syslog');
@@ -82,7 +86,7 @@ exports.register = {
     },
     'register calls Syslog.init()' : function (test) {
         // local setup
-        if (this.plugin) {
+        if (this.plugin && this.plugin.Syslog) {
             this.backup.plugin.Syslog.init = this.plugin.Syslog.init;
             this.plugin.Syslog.init = stub();
             this.plugin.register();
@@ -93,11 +97,13 @@ exports.register = {
         test.done();
 
         // local teardown
-        this.plugin.Syslog.init = this.backup.plugin.Syslog.init;
+        if (this.plugin && this.plugin.Syslog) {
+            this.plugin.Syslog.init = this.backup.plugin.Syslog.init;
+        }
     },
     'register calls Syslog.init() with correct args' : function (test) {
         // local setup
-        if (this.plugin) {
+        if (this.plugin && this.plugin.Syslog) {
             this.backup.plugin.Syslog.init = this.plugin.Syslog.init;
             this.plugin.Syslog.init = stub();
             this.plugin.register();
@@ -114,14 +120,16 @@ exports.register = {
         test.done();
 
         // local teardown
-        this.plugin.Syslog.init = this.backup.plugin.Syslog.init;
+        if (this.plugin && this.plugin.Syslog) {
+            this.plugin.Syslog.init = this.backup.plugin.Syslog.init;
+        }
     },
 };
 
 exports.hook = {
     setUp : _set_up,
     'returns just next() by default (missing always_ok)' : function (test) {
-        if (!this.plugin) { return; }
+        if (!this.plugin || !this.plugin.Syslog) { return test.done(); }
 
         var next = function (action) {
             test.expect(1);
@@ -135,7 +143,7 @@ exports.hook = {
         // local setup
         this.backup.configfile = this.configfile;
         this.configfile.general.always_ok = 'false';
-        if (!this.plugin) { return; }
+        if (!this.plugin || !this.plugin.Syslog) { return test.done(); }
 
         this.plugin.register();
 
@@ -148,7 +156,7 @@ exports.hook = {
         this.plugin.syslog(next, this.logger, this.log);
     },
     'returns next(OK) if always_ok is true' : function (test) {
-        if (!this.plugin) { return; }
+        if (!this.plugin || !this.plugin.Syslog) { return test.done(); }
 
         // local setup
         this.backup.configfile = this.configfile;
@@ -167,7 +175,7 @@ exports.hook = {
         this.configfile = this.backup.configfile;
     },
     'returns just next() if always_ok is 0' : function (test) {
-        if (!this.plugin) { return; }
+        if (!this.plugin || !this.plugin.Syslog) { return test.done(); }
 
         // local setup
         this.backup.configfile = this.configfile;
@@ -183,7 +191,7 @@ exports.hook = {
         this.plugin.syslog(next, this.logger, this.log);
     },
     'returns next(OK) if always_ok is 1' : function (test) {
-        if (!this.plugin) { return; }
+        if (!this.plugin || !this.plugin.Syslog) { return test.done(); }
 
         // local setup
         this.backup.configfile = this.configfile;
@@ -202,7 +210,7 @@ exports.hook = {
         this.configfile = this.backup.configfile;
     },
     'returns next() if always_ok is random' : function (test) {
-        if (!this.plugin) { return; }
+        if (!this.plugin || !this.plugin.Syslog) { return test.done(); }
 
         // local setup
         this.backup.configfile = this.configfile;
@@ -225,7 +233,7 @@ exports.hook = {
 exports.log = {
     setUp : _set_up,
     'syslog hook logs correct thing' : function (test) {
-        if (!this.plugin) { return; }
+        if (!this.plugin || !this.plugin.Syslog) { return test.done(); }
 
         // local setup
         var next = stub();
@@ -235,7 +243,8 @@ exports.log = {
 
         test.expect(3);
         test.ok(this.plugin.Syslog.log.called);
-        test.equals(this.plugin.Syslog.log.args[0], this.plugin.Syslog.LOG_INFO);
+        test.equals(this.plugin.Syslog.log.args[0],
+                this.plugin.Syslog.LOG_INFO);
         test.equals(this.plugin.Syslog.log.args[1], this.log.data);
         test.done();
 

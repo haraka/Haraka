@@ -7,7 +7,7 @@ var querystring = require('querystring');
 var options = {
     method: 'get',
     host: '127.0.0.1',
-    port: 8898,
+    port: 8998,
 };
 
 exports.register = function () {
