@@ -374,6 +374,53 @@ exports.is_ipv4_literal = {
     },
 };
 
+function _is_rfc1918(test, ip, expected) {
+    test.expect(1);
+    test.equals(expected, net_utils.is_rfc1918(ip));
+    test.done();
+};
+
+
+exports.is_rfc1918 = {
+    '127.0.0.1': function (test) {
+        _is_rfc1918(test, '127.0.0.1', true);
+    },
+    '10.255.31.23': function (test) {
+        _is_rfc1918(test, '10.255.31.23', true);
+    },
+    '172.16.255.254': function (test) {
+        _is_rfc1918(test, '172.16.255.254', true);
+    },
+    '192.168.123.123': function (test) {
+        _is_rfc1918(test, '192.168.123.123', true);
+    },
+    '169.254.23.54 (APIPA)': function (test) {
+        _is_rfc1918(test, '169.254.23.54', true);
+    },
+    '::1': function (test) {
+        _is_rfc1918(test, '::1', true);
+    },
+    '0:0:0:0:0:0:0:1': function (test) {
+        _is_rfc1918(test, '0:0:0:0:0:0:0:1', true);
+    },
+    '0000:0000:0000:0000:0000:0000:0000:0001': function (test) {
+        _is_rfc1918(test, '0000:0000:0000:0000:0000:0000:0000:0001', true);
+    },
+    '123.123.123.123': function (test) {
+        _is_rfc1918(test, '123.123.123.123', false);
+    },
+    'dead::beef': function (test) {
+        _is_rfc1918(test, 'dead::beef', false);
+    },
+    '192.168.1 (missing octet)': function (test) {
+        _is_rfc1918(test, '192.168.1', false);
+    },
+    '239.0.0.1 (multicast; not currently considered rfc1918)': function (test) {
+        _is_rfc1918(test, '239.0.0.1', false);
+    },
+};
+
+
 exports.get_public_ip = {
     setUp: function (callback) {
         this.net_utils = require("../net_utils");

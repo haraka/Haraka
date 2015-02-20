@@ -7,6 +7,7 @@ var punycode = require('punycode');
 
 // Regexp to match private IPv4 ranges
 var re_private_ipv4 = /^(?:10|127|169\.254|172\.(?:1[6-9]|2[0-9]|3[01])|192\.168)\..*/;
+var re_private_ipv6 = /^(?:::1|(?:0{1,4}:){7}0{0,3}1)$/;
 
 var public_suffix_list = {};
 load_public_suffix_list();
@@ -191,7 +192,13 @@ exports.is_ip_in_str = function(ip, str) {
 };
 
 exports.is_rfc1918 = function (ip) {
-    return (net.isIPv4(ip) && re_private_ipv4.test(ip));
+    if (net.isIPv4(ip)) {
+        return re_private_ipv4.test(ip);
+    }
+    else if (net.isIPv6(ip)) {
+        return re_private_ipv6.test(ip);
+    }
+    return false;
 };
 
 exports.is_ipv4_literal = function (host) {
