@@ -5,9 +5,6 @@ var config = require('./config');
 var net    = require('net');
 var punycode = require('punycode');
 
-// Regexp to match private IPv4 ranges
-var re_private_ipv4 = /^(?:10|127|169\.254|172\.(?:1[6-9]|2[0-9]|3[01])|192\.168)\..*/;
-
 var public_suffix_list = {};
 load_public_suffix_list();
 
@@ -34,8 +31,8 @@ exports.is_public_suffix = function (host) {
 };
 
 exports.get_organizational_domain = function (host) {
-    // the domain that was registered with a domain name registrar
-    // See https://datatracker.ietf.org/doc/draft-kucherawy-dmarc-base/?include_text=1
+    // the domain that was registered with a domain name registrar. See
+    // https://datatracker.ietf.org/doc/draft-kucherawy-dmarc-base/?include_text=1
     //   section 3.2
 
     if (!host) return null;
@@ -121,13 +118,10 @@ exports.hex_to_dec = function (h) {
 };
 
 exports.ip_to_long = function (ip) {
-    if (!net.isIPv4(ip)) {
-        return false;
-    }
-    else {
-        var d = ip.split('.');
-        return ((((((+d[0])*256)+(+d[1]))*256)+(+d[2]))*256)+(+d[3]);
-    }
+    if (!net.isIPv4(ip)) { return false; }
+
+    var d = ip.split('.');
+    return ((((((+d[0])*256)+(+d[1]))*256)+(+d[2]))*256)+(+d[3]);
 };
 
 exports.octets_in_string = function (str, oct1, oct2) {
@@ -156,7 +150,6 @@ exports.octets_in_string = function (str, oct1, oct2) {
 };
 
 exports.is_ip_in_str = function(ip, str) {
-    // Only IPv4 for now
     if (!str) { return false; }
     if (!ip) { return false; }
     if (!net.isIPv4(ip)) {
@@ -187,9 +180,76 @@ exports.is_ip_in_str = function(ip, str) {
     return false;
 };
 
-exports.is_rfc1918 = function (ip) {
-    return (net.isIPv4(ip) && re_private_ipv4.test(ip));
+var re_ipv4 = {
+    loopback: /^127\./,
+    link_local: /^169\.254\./,
+
+    private10: /^10\./,          // 10/8
+    private192: /^192\.168\./,   // 192.168/16
+    // 172.16/16 .. 172.31/16
+    private172: /^172\.(1[6-9]|2[0-9]|3[01])\./,  // 172.16/12
 };
+
+exports.is_private_ipv4 = function (ip) {
+
+    // RFC 1918, reserved as "private" IP space
+    if (re_ipv4.private10.test(ip)) return true;
+    if (re_ipv4.private192.test(ip)) return true;
+    if (re_ipv4.private172.test(ip)) return true;
+
+    return false;
+};
+
+exports.is_local_ipv4 = function (ip) {
+    // 127/8 (loopback)   # RFC 1122
+    if (re_ipv4.loopback.test(ip)) return true;
+
+    // link local: 169.254/16) RFC 3927
+    if (re_ipv4.link_local.test(ip)) return true;
+
+    return false;
+};
+
+var re_ipv6 = {
+    loopback:     /^(0{1,4}:){7}0{0,3}1$/,
+    link_local:   /^fe80::/i,
+    unique_local: /^f(c|d)[a-f0-9]{2}:/i,
+};
+
+exports.is_local_ipv6 = function (ip) {
+    if (ip === '::1') return true;   // RFC 4291
+
+    // 2 more IPv6 notations for ::1
+    // 0:0:0:0:0:0:0:1 or 0000:0000:0000:0000:0000:0000:0000:0001
+    if (re_ipv6.loopback.test(ip)) return true;
+
+    // link local: fe80::/10, RFC 4862
+    if (re_ipv6.link_local.test(ip)) return true;
+
+    // unique local (fc00::/7)   -> fc00: - fd00:
+    if (re_ipv6.unique_local.test(ip)) return true;
+
+    return false;
+};
+
+exports.is_private_ip = function (ip) {
+    if (net.isIPv4(ip)) {
+        if (this.is_private_ipv4(ip)) return true;
+        if (this.is_local_ipv4(ip)) return true;
+        return false;
+    }
+
+    if (net.isIPv6(ip)) {
+        if (this.is_local_ipv6(ip)) return true;
+        return false;
+    }
+
+    logger.logerror('invalid IP address: ' + ip);
+    return false;
+};
+
+// backwards compatibility for non-public modules. Sunset: v3.0
+exports.is_rfc1918 = exports.is_private_ip;
 
 exports.is_ipv4_literal = function (host) {
     return /^\[(\d{1,3}\.){3}\d{1,3}\]$/.test(host) ? true : false;
@@ -224,7 +284,8 @@ function load_public_suffix_list() {
         // Each line is only read up to the first whitespace
         var suffix = entry.split(/\s/).shift().toLowerCase();
 
-        // Each line which is not entirely whitespace or begins with a comment contains a rule.
+        // Each line which is not entirely whitespace or begins with a comment
+        // contains a rule.
         if (!suffix) return;                            // empty string
         if ('/' === suffix.substring(0,1)) return;      // comment
 
@@ -233,7 +294,8 @@ function load_public_suffix_list() {
         // mark is not present.
         if ('!' === suffix.substring(0,1)) {
             var eName = suffix.substring(1);   // remove ! prefix
-            var up_one = suffix.split('.').slice(1).join('.'); // bbc.co.uk -> co.uk
+            // bbc.co.uk -> co.uk
+            var up_one = suffix.split('.').slice(1).join('.');
             if (public_suffix_list[up_one]) {
                 public_suffix_list[up_one].push(eName);
             }

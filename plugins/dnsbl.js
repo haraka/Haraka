@@ -75,7 +75,7 @@ exports.should_skip = function (connection) {
     if (!connection) { return true; }
     var rip = connection.remote_ip;
 
-    if (net_utils.is_rfc1918(rip)) {
+    if (net_utils.is_private_ip(rip)) {
          connection.logdebug(plugin, 'skipping private IP: ' + rip);
          return true;
     }

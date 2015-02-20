@@ -188,7 +188,7 @@ exports.get_geoip = function (ip) {
     var plugin = this;
     if (!ip) return;
     if (!net.isIPv4(ip) && !net.isIPv6(ip)) return;
-    if (net_utils.is_rfc1918(ip)) return;
+    if (net_utils.is_private_ip(ip)) return;
 
     var res = plugin.get_geoip_maxmind(ip);
     if (!res) {
@@ -348,7 +348,7 @@ exports.received_headers = function (connection) {
     for (var i=0; i < received.length; i++) {
         var match = /\[(\d+\.\d+\.\d+\.\d+)\]/.exec(received[i]);
         if (!match) continue;
-        if (net_utils.is_rfc1918(match[1])) continue;  // exclude private IP
+        if (net_utils.is_private_ip(match[1])) continue;  // exclude private IP
 
         var gi = plugin.get_geoip(match[1]);
         var country = gi.countryCode || gi.code || 'UNKNOWN';

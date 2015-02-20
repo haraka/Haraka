@@ -69,7 +69,7 @@ exports.hook_helo = exports.hook_ehlo = function (next, connection, helo) {
     var plugin = this;
 
     // Bypass private IPs
-    if (net_utils.is_rfc1918(connection.remote_ip)) { return next(); }
+    if (net_utils.is_private_ip(connection.remote_ip)) { return next(); }
 
     // RFC 4408, 2.1: "SPF clients must be prepared for the "HELO"
     //           identity to be malformed or an IP address literal.
@@ -111,7 +111,7 @@ exports.hook_mail = function (next, connection, params) {
     var plugin = this;
 
     // For inbound message from a private IP, skip MAIL FROM check
-    if (!connection.relaying && net_utils.is_rfc1918(connection.remote_ip)) return next();
+    if (!connection.relaying && net_utils.is_private_ip(connection.remote_ip)) return next();
 
     var txn = connection.transaction;
     if (!txn) return next();
@@ -179,7 +179,7 @@ exports.hook_mail = function (next, connection, params) {
     }
 
     // outbound (relaying), context=myself, private IP
-    if (net_utils.is_rfc1918(connection.remote_ip)) return next();
+    if (net_utils.is_private_ip(connection.remote_ip)) return next();
 
     // outbound (relaying), context=myself
     net_utils.get_public_ip(function(e, sender_ip) {

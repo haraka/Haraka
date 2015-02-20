@@ -1,5 +1,5 @@
 require('../configfile').watch_files = false;
-var net_utils = require("../net_utils");
+var net_utils = require('../net_utils');
 
 function _check(test, ip, host, res) {
     test.expect(1);
@@ -375,6 +375,51 @@ exports.is_ipv4_literal = {
     },
 };
 
+function _is_private_ip(test, ip, expected) {
+    test.expect(1);
+    test.equals(expected, net_utils.is_private_ip(ip));
+    test.done();
+}
+
+exports.is_private_ip = {
+    '127.0.0.1': function (test) {
+        _is_private_ip(test, '127.0.0.1', true);
+    },
+    '10.255.31.23': function (test) {
+        _is_private_ip(test, '10.255.31.23', true);
+    },
+    '172.16.255.254': function (test) {
+        _is_private_ip(test, '172.16.255.254', true);
+    },
+    '192.168.123.123': function (test) {
+        _is_private_ip(test, '192.168.123.123', true);
+    },
+    '169.254.23.54 (APIPA)': function (test) {
+        _is_private_ip(test, '169.254.23.54', true);
+    },
+    '::1': function (test) {
+        _is_private_ip(test, '::1', true);
+    },
+    '0:0:0:0:0:0:0:1': function (test) {
+        _is_private_ip(test, '0:0:0:0:0:0:0:1', true);
+    },
+    '0000:0000:0000:0000:0000:0000:0000:0001': function (test) {
+        _is_private_ip(test, '0000:0000:0000:0000:0000:0000:0000:0001', true);
+    },
+    '123.123.123.123': function (test) {
+        _is_private_ip(test, '123.123.123.123', false);
+    },
+    'dead::beef': function (test) {
+        _is_private_ip(test, 'dead::beef', false);
+    },
+    '192.168.1 (missing octet)': function (test) {
+        _is_private_ip(test, '192.168.1', false);
+    },
+    '239.0.0.1 (multicast; not currently considered rfc1918)': function (test) {
+        _is_private_ip(test, '239.0.0.1', false);
+    },
+};
+
 exports.get_public_ip = {
     setUp: function (callback) {
         this.net_utils = require("../net_utils");
@@ -444,4 +489,88 @@ exports.octets_in_string = {
         test.equal(net_utils.octets_in_string(str, 2, 7), false );
         test.done();
     }
+};
+
+exports.is_local_ipv4 = {
+    '127/8': function (test) {
+        test.expect(3);
+        test.equal(net_utils.is_local_ipv4('127.0.0.0'), true);
+        test.equal(net_utils.is_local_ipv4('127.0.0.1'), true);
+        test.equal(net_utils.is_local_ipv4('127.1.0.255'), true);
+
+        test.done();
+    },
+    '0/8': function (test) {
+        test.expect(4);
+        test.equal(net_utils.is_local_ipv4('0.0.0.1'), false);
+        test.equal(net_utils.is_local_ipv4('0.255.0.1'), false);
+        test.equal(net_utils.is_local_ipv4('1.255.0.1'), false);
+        test.equal(net_utils.is_local_ipv4('10.255.0.1'), false);
+        test.done();
+    },
+};
+
+exports.is_private_ipv4 = {
+    '10/8': function (test) {
+        test.expect(4);
+        test.equal(net_utils.is_private_ipv4('10.0.0.0'), true);
+        test.equal(net_utils.is_private_ipv4('10.255.0.0'), true);
+        test.equal(net_utils.is_private_ipv4('9.255.0.0'), false);
+        test.equal(net_utils.is_private_ipv4('11.255.0.0'), false);
+        test.done();
+    },
+    '192.168/16': function (test) {
+        test.expect(3);
+        test.equal(net_utils.is_private_ipv4('192.168.0.0'), true);
+        test.equal(net_utils.is_private_ipv4('192.169.0.0'), false);
+        test.equal(net_utils.is_private_ipv4('192.167.0.0'), false);
+        test.done();
+    },
+    '172.16-31': function (test) {
+        test.expect(5);
+        test.equal(net_utils.is_private_ipv4('172.16.0.0'), true);
+        test.equal(net_utils.is_private_ipv4('172.20.0.0'), true);
+        test.equal(net_utils.is_private_ipv4('172.31.0.0'), true);
+        test.equal(net_utils.is_private_ipv4('172.15.0.0'), false);
+        test.equal(net_utils.is_private_ipv4('172.32.0.0'), false);
+        test.done();
+    },
+};
+
+exports.is_local_ipv6 = {
+    '::1': function (test) {
+        test.expect(3);
+        test.equal(net_utils.is_local_ipv6('::1'), true);
+        test.equal(net_utils.is_local_ipv6('0:0:0:0:0:0:0:1'), true);
+        test.equal(net_utils.is_local_ipv6(
+            '0000:0000:0000:0000:0000:0000:0000:0001'), true);
+        test.done();
+    },
+    'fe80::/10': function (test) {
+        test.expect(4);
+        test.equal(net_utils.is_local_ipv6('fe80::'), true);
+        test.equal(net_utils.is_local_ipv6('fe80:'), false);
+        test.equal(net_utils.is_local_ipv6('fe8:'), false);
+        test.equal(net_utils.is_local_ipv6(':fe80:'), false);
+        test.done();
+    },
+    'fc80::/7': function (test) {
+        test.expect(10);
+        test.equal(net_utils.is_local_ipv6('fc00:'), true);
+        test.equal(net_utils.is_local_ipv6('fcff:'), true);
+
+        // examples from https://en.wikipedia.org/wiki/Unique_local_address
+        test.equal(net_utils.is_local_ipv6('fde4:8dba:82e1::'), true);
+        test.equal(net_utils.is_local_ipv6('fde4:8dba:82e1:ffff::'), true);
+
+        test.equal(net_utils.is_local_ipv6('fd00:'), true);
+        test.equal(net_utils.is_local_ipv6('fdff:'), true);
+
+        test.equal(net_utils.is_local_ipv6('fb00:'), false);
+        test.equal(net_utils.is_local_ipv6('fe00:'), false);
+
+        test.equal(net_utils.is_local_ipv6('fe8:'), false);
+        test.equal(net_utils.is_local_ipv6(':fe80:'), false);
+        test.done();
+    },
 };
