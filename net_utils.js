@@ -192,16 +192,13 @@ exports.is_ip_in_str = function(ip, str) {
 };
 
 exports.is_rfc1918 = function (ip) {
-    switch(true) {
-        case (net.isIPv4(ip)):
-            return re_private_ipv4.test(ip);
-            break;
-        case (net.isIPv6(ip)):
-            return re_private_ipv6.test(ip);
-            break;
-        default:
-            return false;
+    if (net.isIPv4(ip)) {
+        return re_private_ipv4.test(ip);
     }
+    else if (net.isIPv6(ip)) {
+        return re_private_ipv6.test(ip);
+    }
+    return false;
 };
 
 exports.is_ipv4_literal = function (host) {
