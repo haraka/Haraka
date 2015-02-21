@@ -1,39 +1,70 @@
 
-2.N.N - ???? NN, 2014
+2.6.0 - Feb NN, 2015
 
-* Fix timeout bug in helo.checks
+* other bug fixes
+* updated a few tests so test suite passes on Windows
+* log.syslog: handle failure to load node-syslog
+* plugin directory is $ENV definable (@martin1yness)
+* logging timestamps were static, fixed by @cloudbuy
+* queue/rabbitmq_amqplib, new plugin for RabbitMQ using amqplib (@esevece)
+* outbound:
+    * plugins can set the outbound IP (during get_mx)
+    * only replace line endings if not \r\n
+    * bannering fixes
+    * added support for per recipient routes
+* tls: don't register hooks upless certs exist
+* removed contrib/geolite-mirror-simple.pl (replaced by
+  docs update pointing to maxmind-geolite-mirror)
+* rcpt.routes: new plugin by @msimerson
+* make haproxy IPv6 compatible 
+* record_envelope_addresses: new plugin by @deburau
+* prevent_credential_leaks: new plugin by @smfreegard
+* config:
+    * configfile: added .yaml support
+    * improved config file 'watch' logic
+    * Allow hyphens in params in config files (@abhas)
+    * cached requests include options in cache key name
+* asn: updates for node 0.11 compat
+* dnsbl: use aysync.each vs forEach (avoid race condition)
+* spamassassin: improved config loading and test coverage
+* geoip: deprecate geoip-lite in favor of maxmind, IPv6 compatible
+* disable SSLv3 (due to POODLE)
+* dkim & spf, updates for node 0.11 compatibiilty
+* karma: move neighbor scoring from code to karma.ini
+    * move excludes list to karma.ini
+    * apply awards before adding message header & permit rejection at queue
+    * karma.ini: score updates for access & uribl plugins
+    * score denials issued by skipped plugins
+    * add scores for specific DNSBLs
+* add transaction body filters (@chazomaticus)
+    * change bannering to use them
+* helo.checks: fix timeout bug
+    * match_re now validates and pre-compiles all REs
+    * Add new proto_mismatch check
 * p0f: add register(), load config once, early
 * server: improved config handling
 * data.headers: add Delivered-To check
-* karma: apply awards before adding message header & permit rejection at queue
-* rcpt_to.ldap: new plugin (thanks @abhas)
+* rcpt_to.ldap: new plugin by @abhas
 * smtp_client: only load tls_* when cfg.enable_tls
 * added plugins/host_list_base
 * Platform independent temp dir (thanks @martinvd)
 * move deprecated docs into docs/deprecated
 * Switch to Phusion baseimage instead of stock Ubuntu (thanks @Synchro)
-* dkim_verify: new plugin (thanks @smfreegard)
+* dkim_verify: new plugin by @smfreegard
 * many new tests
-* improved config file 'watch' logic
 * improved URI parser (for URIBL plugin)
 * Allow mixed case STARTTLS command
-* bannering fixes in outbound.js (@godsflaw)
-* added support for per recipient routes to outbound
-* Allow hyphens in params in config files (@abhas)
 * Install Node via package manager (Mohd Rozi)
 * Fix a couple crit errors (@Illirgway)
 * Add noisy/bulk out-of-band rule support to MessaageSniffer plugin
 * initial support for rabbitmq plugin (@samuelharden)
 * bounce, added non_local_msgid checks and much faster lookups
-* helo.checks: match_re now validates and pre-compiles all REs
 * vpopmail: fail faster during a CRAM-MD5 auth attempt with an invalid user
 * fcrdns: handle a null hostname
-* Add new proto_mismatch check to helo.checks
 * Improve HAProxy support code and documentation
-* karma.ini: score updates for access & uribl plugins
 * tls: reworked for efficiency and linear style
 * access: test hostname validity before PSL lookup
-* access: load lists into objects (vs arrays), for much faster runtime access
+    * load lists into objects (vs arrays), for much faster runtime access
 * host_list: huge performance increase, esp for many hosts
 
 2.5.0 - May 24, 2014
