@@ -121,7 +121,7 @@ exports.should_skip = function (connection, test_name) {
         return true;
     }
 
-    if (plugin.cfg.skip.private_ip && net_utils.is_rfc1918(connection.remote_ip)) {
+    if (plugin.cfg.skip.private_ip && net_utils.is_private_ip(connection.remote_ip)) {
         connection.results.add(plugin, {skip: test_name + '(private)'});
         return true;
     }
@@ -346,7 +346,7 @@ exports.literal_mismatch = function (next, connection, helo) {
 
     var lmm_mode = parseInt(plugin.cfg.check.literal_mismatch, 10);
     var helo_ip = literal[1];
-    if (lmm_mode > 2 && net_utils.is_rfc1918(helo_ip)) {
+    if (lmm_mode > 2 && net_utils.is_private_ip(helo_ip)) {
         connection.results.add(plugin, {pass: 'literal_mismatch(private)'});
         return next();
     }

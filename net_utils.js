@@ -191,7 +191,7 @@ exports.is_ip_in_str = function(ip, str) {
     return false;
 };
 
-exports.is_rfc1918 = function (ip) {
+exports.is_private_ip = function (ip) {
     if (net.isIPv4(ip)) {
         return re_private_ipv4.test(ip);
     }
@@ -200,6 +200,9 @@ exports.is_rfc1918 = function (ip) {
     }
     return false;
 };
+
+// backwards compatibility for non-public modules. Sunset: Haraka 3.0
+exports.is_rfc1918 = exports.is_private_ip;
 
 exports.is_ipv4_literal = function (host) {
     return /^\[(\d{1,3}\.){3}\d{1,3}\]$/.test(host) ? true : false;
