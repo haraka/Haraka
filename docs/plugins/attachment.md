@@ -37,13 +37,13 @@ Configuration
 
 * attachment.ini
 
-  - archive_max_depth
+  - archive\_max\_depth
     (default: 5)
 
     The maximum level of nested archives that will be unpacked.
     If this is exceeded the message will be rejected.
 
-  - archive_extns
+  - archive\_extns
     (default: .zip,.tar,.tgz,.taz,.z,.gz,.rar,.7z) 
 
     File extensions that should be treated as archives.

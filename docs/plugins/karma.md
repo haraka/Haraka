@@ -1,45 +1,27 @@
+# karma - a scoring engine
 
-# `karma`
-
-A heuristic scoring engine that uses connection metadata and the results
-of other Haraka plugins as inputs. Connections scoring in excess of specified
-thresholds are [penalized](#penalties) in proportionate ways.
+A heuristic scoring engine that uses connection metadata and the results of other Haraka plugins as inputs. Connections scoring in excess of specified thresholds are [penalized](#penalties) in proportionate ways.
 
 ## Description
 
-Haraka includes some excellent plugins that detect message or sender patterns
-that are indicative of spam. Some plugins have accuracy rates above 95%. The
-extent that such plugins can be utilized depends on a sites tolerance for
-blocking legit messages. Sites that can't tolerate blocking ham are challenged
-to benefit from imperfect plugins.
+Haraka includes some excellent plugins that detect message or sender patterns that are indicative of spam. [Some](sa-url) [plugins](snf-url) [have](fcrdns-url) [accuracy](uribl-url) rates above 95%. The extent that such plugins can be utilized depends on a sites tolerance for blocking legit messages. Sites that can't tolerate blocking ham are challenged to benefit from imperfect plugins.
 
-Karma's contribution is to heuristically score results from every plugin. By
-scoring a few "95+" plugins, accuracy rates above 99% are attainable. With a
-half dozen such plugins, 99.99% accuracy is attainable. With karma, good
-senders can occasionally fail a test or two and still deliver their mail.
-Poor senders find themselves crawling towards rejection.
+Karma's contribution is to heuristically score results from every plugin. By scoring a few "95+" plugins, accuracy rates above 99% are attainable. With a half dozen such plugins, 99.99% accuracy is attainable. With karma, good senders with good history can occasionally fail tests and still deliver their mail. Poor senders find themselves crawling towards rejection.
 
 ## How Karma Works
 
-Karma takes a holistic view of the **connection**, expecting other plugins to
-tolerate failures (deny/reject=false) and store processing [results](http://haraka.github.io/manual/Results.html).
-During the connection, karma progressively collects these results and applies
-the [awards](#awards) defined in `karma.ini`.
+Karma takes a holistic view of **connections**, expecting other plugins to tolerate failures (deny/reject=false) and store processing [results](results-url). During the connection, karma progressively collects these results and applies the [awards](#awards) defined in `karma.ini`.
 
-The scoring mechanism is not dissimilar to
-[SpamAssassin](http://haraka.github.io/manual/plugins/spamassassin.html), but Karma
-has some particular advantages:
+The scoring mechanism is not dissimilar to [SpamAssassin](sa-url), but Karma has some particular advantages:
 
-    * Runs under Node, so it's very fast
-    * Async. Very scalable.
-    * Local sender reputation database
+    * Runs entirely in Node, so it's very fast
+    * Async and very scalable.
+    * Builds a local sender reputation database
     * Access to connection properties (relaying, port, auth attempts, etc..)
     * Access to raw SMTP commands (data + formatting inspection)
     * Ability to reject connections before DATA
 
-Karma is not a replacement for content filters. Karma focuses on the quality
-of the **connection**, whereas content filters (bayes\*) focus on the contents
-of the **message**. Karma works best with content filters.
+Karma is not a replacement for content filters. Karma focuses on the quality of the **connection**, whereas content filters (bayes\*) focus on the contents of the **message**. Karma works best with content filters.
 
 
 # CONFIG
@@ -53,48 +35,35 @@ Karma allows the site administrator to control how much weight to assign to
 plugin results, providing a great deal of control over what results are
 worth rejecting for.
 
-Karma begins scoring the connection when the first packet arrives. The IP
-reputation, [sender OS](/manual/plugins/connect.p0f.html), [GeoIP location](/manual/plugins/connect.geoip.html), [DNSBL](/manual/plugins/dnsbl.html) listing, and [FCrDNS](/manual/plugins/connect.fcrdns.html) are
-often a sufficient basis for rejecting a connection without ever blocking a
-ham.
+Karma begins scoring the connection when the first packet arrives. The IP reputation, [sender OS](p0f-url), [GeoIP location](geoip-url), [DNSBL](dnsbl-url) listing, and [FCrDNS](fcrdns-url) are often a sufficient basis for rejecting a connection without ever blocking a ham.
 
-Karma performs checks early and often, maximizing the penality it can
-exact upon bad mailers.
+Karma performs checks early and often, maximizing the penality it can exact upon bad mailers.
 
 
 ## <a name="penalties"></a>Penalties
 
 ### Deny / Reject
 
-When connections become worse than [thresholds]negative, they are denied
-during the next [deny]hook.
+When connections become worse than [thresholds]negative, they are denied during the next [deny]hook.
 
 ### History
 
 Karma history is computed as the number of good - bad connections.
 
-When each connection ends, *karma* records the result. When a sufficient
-history has been built for an IP or ASN, future connections from that
-address(es) will get a positive or negative karma award.
+When each connection ends, *karma* records the result. When a sufficient history has been built for an IP or ASN, future connections from that address(es) will get a positive or negative karma award.
 
-The reward is purposefully small, to permit good senders in bad
-neighborhoods the ability to send.
+The reward is purposefully small, to permit good senders in bad neighborhoods the ability to send.
 
 ### <a name="delay"></a>Connection Delays
 
-Connection delays (aka tarpitting, teergrubing, early talker) slow down a
-SMTP conversation by inserting artificial delays. Early talking is when a
-sender talks out of turn. Karma punishes early talkers and increases
-connection delays adaptively as connection quality declines.
+Connection delays (aka tarpitting, teergrubing, early talker) slow down a SMTP conversation by inserting artificial delays. Early talking is when a sender talks out of turn. Karma punishes early talkers and increases connection delays adaptively as connection quality declines.
 
 Karma's delay goals:
 
     1. Don't delay valid senders
     2. Penalize senders in proportion to their karma score
     3. Dampen bruteforce AUTH attacks.
-    4. Since the only *cost* we can exact from miscreants is time, and
-       connections are cheap to maintain, keep miscreants online as long
-       as possible.
+    4. Since the only *cost* we can exact from miscreants is time, and connections are cheap to maintain, keep miscreants online as long as possible.
 
 There are three tarpit options:
 
@@ -215,3 +184,13 @@ To combat these bruteforce attacks several strategies are called for:
 Karma is most effective at filtering mail delivered by bots and rogue servers.
 Spam delivered by servers with good reputations flies past most of karma's
 checks. Expect to use karma *with* content filters.
+
+
+[p0f-url]: /manual/plugins/connect.p0f.html
+[geoip-url]: /manual/plugins/connect.geoip.html
+[dnsbl-url]: /manual/plugins/dnsbl.html
+[fcrdns-url]: http://haraka.github.io/manual/plugins/connect.fcrdns.html
+[uribl-url]: http://haraka.github.io/manual/plugins/data.uribl.html
+[sa-url]: http://haraka.github.io/manual/plugins/spamassassin.html
+[snf-url]: http://haraka.github.io/manual/plugins/messagesniffer.html
+[results-url]: http://haraka.github.io/manual/Results.html
