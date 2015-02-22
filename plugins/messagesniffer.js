@@ -2,7 +2,7 @@
 
 var fs = require('fs');
 var net = require('net');
-var is_rfc1918 = require('./net_utils').is_rfc1918;
+var net_utils = require('./net_utils');
 var plugin = exports;
 
 // Defaults
@@ -18,7 +18,7 @@ exports.hook_connect = function (next, connection) {
     var cfg = this.config.get('messagesniffer.ini');
 
     // Skip any private IP ranges
-    if (is_rfc1918(connection.remote_ip)) return next();
+    if (net_utils.is_private_ip(connection.remote_ip)) return next();
 
     // Retrieve GBUdb information for the connecting IP
     SNFClient("<snf><xci><gbudb><test ip='" + connection.remote_ip + "'/></gbudb></xci></snf>", function (err, result) {
