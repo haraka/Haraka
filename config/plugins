@@ -17,7 +17,7 @@ access
 # block mails from known bad hosts (see config/dnsbl.zones for the DNS zones queried)
 dnsbl
 
-HELO
+# HELO
 #early_talker
 # see config/helo.checks.ini for configuration
 helo.checks
