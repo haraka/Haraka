@@ -1,4 +1,4 @@
-"use strict";
+'use strict';
 
 var logger = require('./logger');
 var config = require('./config');
@@ -130,62 +130,59 @@ exports.ip_to_long = function (ip) {
     }
 };
 
+exports.octets_in_string = function (str, oct1, oct2) {
+    var oct1_idx, oct2_idx;
+
+    // test the largest of the two octets first
+    if (oct2.length >= oct1.length) {
+        oct2_idx = str.lastIndexOf(oct2);
+        if (oct2_idx === -1) { return false; }
+
+        oct1_idx = (str.substring(0, oct2_idx) +
+            str.substring(oct2_idx + oct2.length)).lastIndexOf(oct1);
+        if (oct1_idx === -1) { return false; }
+
+        return true;  // both were found
+    }
+
+    oct1_idx = str.indexOf(oct1);
+    if (oct1_idx === -1) { return false; }
+
+    oct2_idx = (str.substring(0, oct1_idx) +
+        str.substring(oct1_idx + oct1.length)).lastIndexOf(oct2);
+    if (oct2_idx === -1) { return false; }
+
+    return true;
+};
+
 exports.is_ip_in_str = function(ip, str) {
     // Only IPv4 for now
     if (!str) { return false; }
     if (!ip) { return false; }
-    if (net.isIPv4(ip)) {
-        var oct1, oct2, oct3, oct4;
-        var host_part = (this.split_hostname(str,1))[0].toString();
-        var ip_split = ip.split('.');
-        // See if the 3rd and 4th octets appear in the string
-        // We test the largest of the two octets first
-        if (ip_split[3].length >= ip_split[2].length) {
-            oct4 = host_part.lastIndexOf(ip_split[3]);
-            if (oct4 !== -1) {
-                oct3 = (host_part.substring(0, oct4) + host_part.substring(oct4 + ip_split[3].length));
-                if (oct3.lastIndexOf(ip_split[2]) !== -1) {
-                    return true;
-                }
-            }
-        }
-        else {
-            oct3 = host_part.indexOf(ip_split[2]);
-            if (oct3 !== -1) {
-                oct4 = (host_part.substring(0, oct3) + host_part.substring(oct3 + ip_split[2].length));
-                if (oct4.lastIndexOf(ip_split[3]) !== -1) {
-                    return true;
-                }
-            }
-        }
-        // 1st and 2nd octets
-        if (ip_split[1].length >= ip_split[2].length) {
-            oct2 = host_part.lastIndexOf(ip_split[1]);
-            if (oct2 !== -1) {
-                oct1 = (host_part.substring(0, oct2) + host_part.substring(oct2 + ip_split[1].length));
-                if (oct1.lastIndexOf(ip_split[0]) !== -1) {
-                    return true;
-                }
-            }
-        }
-        else {
-            oct1 = host_part.lastIndexOf(ip_split[0]);
-            if (oct1 !== -1) {
-                oct2 = (host_part.substring(0, oct1) + host_part.substring(oct1 + ip_split[0].length));
-                if (oct2.lastIndexOf(ip_split[1]) !== -1) {
-                    return true;
-                }
-            }
-        }
-        // Whole IP in hex
-        var host_part_copy = host_part;
-        var ip_hex = this.dec_to_hex(this.ip_to_long(ip));
-        for (var i=0; i<4; i++) {
-            var part = host_part_copy.indexOf(ip_hex.substring(i*2, (i*2)+2));
-            if (part === -1) break;
-            if (i === 3) return true;
-            host_part_copy = host_part_copy.substring(0, part) + host_part_copy.substring(part+2);
-        }
+    if (!net.isIPv4(ip)) {
+        return false;   // IPv4 only, for now
+    }
+
+    var host_part = (this.split_hostname(str,1))[0].toString();
+    var octets = ip.split('.');
+    // See if the 3rd and 4th octets appear in the string
+    if (this.octets_in_string(host_part, octets[2], octets[3])) {
+        return true;
+    }
+    // then the 1st and 2nd octets
+    if (this.octets_in_string(host_part, octets[0], octets[1])) {
+        return true;
+    }
+
+    // Whole IP in hex
+    var host_part_copy = host_part;
+    var ip_hex = this.dec_to_hex(this.ip_to_long(ip));
+    for (var i=0; i<4; i++) {
+        var part = host_part_copy.indexOf(ip_hex.substring(i*2, (i*2)+2));
+        if (part === -1) break;
+        if (i === 3) return true;
+        host_part_copy = host_part_copy.substring(0, part) +
+            host_part_copy.substring(part+2);
     }
     return false;
 };

@@ -1,9 +1,9 @@
 require('../configfile').watch_files = false;
 var net_utils = require("../net_utils");
 
-function _check(test, ip, host, ok) {
+function _check(test, ip, host, res) {
     test.expect(1);
-    test.equals(net_utils.is_ip_in_str(ip, host), ok);
+    test.equals(net_utils.is_ip_in_str(ip, host), res);
     test.done();
 }
 
@@ -37,11 +37,12 @@ exports.dynamic_rdns = {
 
 function _org_domain(test, actual, expected) {
     test.expect(1);
-    test.equals(expected, net_utils.get_organizational_domain(actual));
+    test.equals(net_utils.get_organizational_domain(actual), expected);
     test.done();
 }
 
 exports.get_organizational_domain = {
+    /* jshint -W100 */
     null: function (test) {
         _org_domain(test, null, null);
     },
@@ -282,10 +283,12 @@ exports.get_organizational_domain = {
         _org_domain(test, 'xn--85x722f.com.cn', 'xn--85x722f.com.cn');
     },
     'xn--85x722f.xn--55qx5d.cn': function (test) {
-        _org_domain(test, 'xn--85x722f.xn--55qx5d.cn', 'xn--85x722f.xn--55qx5d.cn');
+        _org_domain(test, 'xn--85x722f.xn--55qx5d.cn',
+            'xn--85x722f.xn--55qx5d.cn');
     },
     'www.xn--85x722f.xn--55qx5d.cn': function (test) {
-        _org_domain(test, 'www.xn--85x722f.xn--55qx5d.cn', 'xn--85x722f.xn--55qx5d.cn');
+        _org_domain(test, 'www.xn--85x722f.xn--55qx5d.cn',
+            'xn--85x722f.xn--55qx5d.cn');
     },
     'shishi.xn--55qx5d.cn': function (test) {
         _org_domain(test, 'shishi.xn--55qx5d.cn', 'shishi.xn--55qx5d.cn');
@@ -298,7 +301,8 @@ exports.get_organizational_domain = {
         _org_domain(test, 'xn--85x722f.xn--fiqs8s', 'xn--85x722f.xn--fiqs8s');
     },
     'www.xn--85x722f.xn--fiqs8s': function (test) {
-        _org_domain(test, 'www.xn--85x722f.xn--fiqs8s', 'xn--85x722f.xn--fiqs8s');
+        _org_domain(test, 'www.xn--85x722f.xn--fiqs8s',
+            'xn--85x722f.xn--fiqs8s');
     },
     'shishi.xn--fiqs8s': function (test) {
         _org_domain(test, 'shishi.xn--fiqs8s', 'shishi.xn--fiqs8s');
@@ -335,7 +339,7 @@ function _is_public_suffix(test, label, expected) {
     test.expect(1);
     test.equals(expected, net_utils.is_public_suffix(label));
     test.done();
-};
+}
 
 exports.is_public_suffix = {
     'com': function (test) {
@@ -358,9 +362,6 @@ exports.is_public_suffix = {
     },
     'gov': function (test) {
         _is_public_suffix(test, 'gov', true);
-    },
-    'org': function (test) {
-        _is_public_suffix(test, 'org', true);
     },
 };
 
@@ -425,3 +426,22 @@ function has_stun () {
     }
     return true;
 }
+
+exports.octets_in_string = {
+    'c-24-18-98-14.hsd1.wa.comcast.net': function (test) {
+        var str = 'c-24-18-98-14.hsd1.wa.comcast.net';
+        test.expect(3);
+        test.equal(net_utils.octets_in_string(str, 98, 14), true );
+        test.equal(net_utils.octets_in_string(str, 24, 18), true );
+        test.equal(net_utils.octets_in_string(str, 2, 7), false );
+        test.done();
+    },
+    '149.213.210.203.in-addr.arpa': function (test) {
+        var str = '149.213.210.203.in-addr.arpa';
+        test.expect(3);
+        test.equal(net_utils.octets_in_string(str, 149, 213), true );
+        test.equal(net_utils.octets_in_string(str, 210, 20), true );
+        test.equal(net_utils.octets_in_string(str, 2, 7), false );
+        test.done();
+    }
+};
