@@ -63,6 +63,17 @@ exports.uniq = function (arr) {
     return out;
 };
 
+exports.extend = function (target) {
+    // http://stackoverflow.com/questions/14974864/
+    var sources = [].slice.call(arguments, 1);
+    sources.forEach(function (source) {
+        for (var prop in source) {
+            target[prop] = source[prop];
+        }
+    });
+    return target;
+};
+
 exports.ISODate = function (d) {
    function pad(n) { return n<10 ? '0'+n : n; }
    return d.getUTCFullYear()+'-' +
@@ -124,9 +135,12 @@ function _char_to_qp (ch) {
 
 // Shameless attempt to copy from Perl's MIME::QuotedPrint::Perl code.
 exports.encode_qp = function (str) {
-    str = str.replace(/([^\ \t\n!"#\$%&'()*+,\-.\/0-9:;<>?\@A-Z\[\\\]^_`a-z{|}~])/g, function (orig, p1) {
-        return _char_to_qp(p1);
-    }).replace(/([ \t]+)$/gm, function (orig, p1) {
+    str = str.replace(
+        /([^\ \t\n!"#\$%&'()*+,\-.\/0-9:;<>?\@A-Z\[\\\]^_`a-z{|}~])/g,
+        function (orig, p1) {
+            return _char_to_qp(p1);
+        }
+    ).replace(/([ \t]+)$/gm, function (orig, p1) {
         return p1.split('').map(_char_to_qp).join('');
     });
 
@@ -177,7 +191,8 @@ var versions   = process.version.split('.'),
     version    = Number(versions[0].substring(1)),
     subversion = Number(versions[1]);
 
-exports.existsSync = require((version > 0 || subversion >= 8) ? 'fs' : 'path').existsSync;
+exports.existsSync =
+    require((version > 0 || subversion >= 8) ? 'fs' : 'path').existsSync;
 
 exports.indexOfLF = function (buf, maxlength) {
     for (var i=0; i<buf.length; i++) {
@@ -202,7 +217,8 @@ exports.valid_regexes = function (list, file) {
             new RegExp(list[i]);
         }
         catch (e) {
-            require('./logger').logerror("invalid regex in " + file + ", " + list[i]);
+            require('./logger')
+                .logerror("invalid regex in " + file + ", " + list[i]);
             continue;
         }
         valid.push(list[i]);

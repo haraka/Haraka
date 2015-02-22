@@ -252,3 +252,23 @@ exports.to_object = {
         test.done();
     },
 };
+
+exports.extend = {
+    'copies properties from one object': function (test) {
+        test.expect(1);
+        var both = utils.extend({first: 'boo'}, {second: 'ger'});
+        test.deepEqual({first: 'boo', second: 'ger'}, both);
+        test.done();
+    },
+    'copies properties from multiple objects': function (test) {
+        test.expect(1);
+        test.deepEqual(
+            utils.extend(
+                {first: 'boo'}, {second: 'ger'}, {third: 'eat'}
+                ),
+                {first: 'boo', second: 'ger', third: 'eat'}
+        );
+        test.done();
+    },
+};
+
