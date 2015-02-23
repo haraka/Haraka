@@ -1,7 +1,14 @@
-# default list of plugins
+# This file lists plugins that Haraka will run
+#
+# Plugin ordering often matters, run 'haraka -o -c /path/to/haraka/config'
+# to see the order plugins (and their hooks) will run in.
+#
+# To see a list of all plugins, run 'haraka -l'
+#
+# To see the help docs for a particular plugin, run 'haraka -h plugin.name'
 
 #process_title
-# Log to syslog (disabled by default, see docs)
+# Log to syslog (see 'haraka -h log.syslog')
 # log.syslog
 
 # CONNECT
@@ -23,7 +30,12 @@ dnsbl
 helo.checks
 # see 'haraka -h tls' for config instructions before enabling!
 # tls
-# auth: auth_base   auth_ldap   auth_proxy  flat_file
+#
+# AUTH plugins require TLS before AUTH is advertised, see
+#     https://github.com/baudehlo/Haraka/wiki/Require-SSL-TLS
+# auth/flat_file
+# auth/auth_proxy
+# auth/auth_ldap
 
 # MAIL FROM
 # Only accept mail where the MAIL FROM domain is resolvable to an MX record
@@ -31,8 +43,8 @@ mail_from.is_resolvable
 #spf
 
 # RCPT TO
-# NOTE: A rcpt_to plugin is REQUIRED for inbound email.
-# Edit config/host_list to set what domains you accept mail for.
+# At least one rcpt_to plugin is REQUIRED for inbound email. The simplest
+# plugin is in_host_list, see 'haraka -h rcpt_to.in_host_list' to configure.
 rcpt_to.in_host_list
 #rcpt_to.qmail_deliverable
 #rcpt_to.ldap
