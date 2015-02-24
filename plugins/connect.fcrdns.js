@@ -25,7 +25,7 @@ exports.load_fcrdns_ini = function () {
 exports.hook_lookup_rdns = function (next, connection) {
     var plugin = this;
     var rip = connection.remote_ip;
-    if (net_utils.is_rfc1918(rip)) {
+    if (net_utils.is_private_ip(rip)) {
         connection.results.add(plugin, {skip: "private_ip"});
         return next();
     }
@@ -80,7 +80,7 @@ exports.hook_lookup_rdns = function (next, connection) {
             if (!net_utils.get_organizational_domain(ptr_domain)) {
                 connection.results.add(plugin, {fail: 'valid_tld(' + ptr_domain +')'});
                 if (!plugin.cfg.reject.invalid_tld) continue;
-                if (net_utils.is_rfc1918(rip)) continue;
+                if (net_utils.is_private_ip(rip)) continue;
                 return do_next(DENY, 'client [' + rip +
                         '] rejected; invalid TLD in rDNS (' + ptr_domain + ')');
             }

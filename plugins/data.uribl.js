@@ -118,7 +118,7 @@ exports.do_lookups = function (connection, next, hosts, type) {
                     continue;
                 }
                 // Skip any private IPs
-                if (net_utils.is_rfc1918(host)) {
+                if (net_utils.is_private_ip(host)) {
                     results.add(plugin, {skip: 'private IP' });
                     continue;
                 }

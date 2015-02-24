@@ -107,7 +107,7 @@ exports.get_dns_results = function (zone, ip, done) {
 exports.lookup_asn = function (next, connection) {
     var plugin = this;
     var ip = connection.remote_ip;
-    if (net_utils.is_rfc1918(ip)) return next();
+    if (net_utils.is_private_ip(ip)) return next();
 
     function provIter (zone, cb) {
 
