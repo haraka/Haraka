@@ -1,13 +1,19 @@
-// send logs to syslog
+'use strict';
+// log to syslog
 
 exports.register = function() {
     var plugin = this;
 
     try { plugin.Syslog = require('node-syslog'); }
     catch (e) {
-        plugin.logerror("unable to load node-syslog, plugin disabled\n" +
-                "try: npm install node-syslog" );
-        return;
+        plugin.logerror('failed to load node-syslog');
+
+        try { plugin.Syslog = require('strong-fork-syslog'); }
+        catch (e) {
+            plugin.logerror("couldn't load strong-fork-syslog either");
+            plugin.logerror('try: npm i node-syslog strong-fork-syslog' );
+            return;
+        }
     }
 
     var options   = 0;
@@ -138,6 +144,8 @@ exports.syslog = function (next, logger, log) {
         case 'DATA':
         case 'PROTOCOL':
         case 'DEBUG':
+            plugin.Syslog.log(plugin.Syslog.LOG_DEBUG, log.data);
+            break;
         default:
             plugin.Syslog.log(plugin.Syslog.LOG_DEBUG, log.data);
     }
