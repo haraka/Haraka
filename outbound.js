@@ -1312,7 +1312,7 @@ HMailItem.prototype.bounce = function (err, opts) {
     if (!this.todo) {
         // haven't finished reading the todo, delay here...
         var self = this;
-        self.once('ready', function () { self._bounce(err); });
+        self.once('ready', function () { self._bounce(err, opts); });
         return;
     }
     this._bounce(err, opts);
