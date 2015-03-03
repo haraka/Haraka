@@ -50,11 +50,11 @@ Configuration
 
     Enable PLAIN or LOGIN SMTP AUTH.  This is required to enable AUTH.
 
-   * auth\_user=USERNAME
+  * auth\_user=USERNAME
 
     SMTP AUTH username to use.
 
-   * auth\_pass=PASSWORD
+  * auth\_pass=PASSWORD
 
     SMTP AUTH password to use.
 
