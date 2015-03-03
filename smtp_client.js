@@ -283,6 +283,15 @@ exports.get_client = function (server, callback, port, host, connect_timeout, po
 // smtp_forward have in common.
 exports.get_client_plugin = function (plugin, connection, config, callback) {
     var c = config;
+    // Merge in authentication settings from smtp_forward/proxy.ini if present
+    // FIXME: config.auth could be changed when API isn't frozen
+    if (c.auth_type || c.auth_user || c.auth_pass) {
+        c.auth = {
+            type: c.auth_type,
+            user: c.auth_user,
+            pass: c.auth_pass
+        }
+    }
     var pool = exports.get_pool(connection.server, c.port, c.host,
                                 c.connect_timeout, c.timeout, c.max_connections);
     pool.acquire(function (err, smtp_client) {
