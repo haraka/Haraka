@@ -29,20 +29,12 @@ cfreader._read_args = {};
 cfreader._watchers = {};
 cfreader._enoent_timer = false;
 cfreader._enoent_files = {};
-cfreader._sedation_timers = {};
 
 cfreader.on_watch_event = function (name, type, options, cb) {
     return function (fse, filename) {
-        if (cfreader._sedation_timers[name]) {
-            clearTimeout(cfreader._sedation_timers[name]);
-        }
-        cfreader._sedation_timers[name] = setTimeout(function () {
-            logger.loginfo('Reloading file: ' + name);
-            cfreader.load_config(name, type, options);
-            delete cfreader._sedation_timers[name];
-            if (typeof cb === 'function') cb(); 
-        }, 5 * 1000);
-        logger.logdebug('Detected ' + fse + ' on ' + name);
+        logger.loginfo('Detected ' + fse + ', reloading ' + name);
+        cfreader.load_config(name, type, options);
+        if (typeof cb === 'function') cb();
         if (fse !== 'rename') return;
         // https://github.com/joyent/node/issues/2062
         // After a rename event, re-watch the file
@@ -72,19 +64,15 @@ cfreader.watch_dir = function () {
     var watcher = function (fse, filename) {
         if (!filename) return;
         var full_path = path.join(cp, filename);
+        //logger.loginfo('event=' + fse +
+        //    ' filename=' + filename + ' in_read_args=' +
+        //    ((cfreader._read_args[full_path]) ? true : false));
         if (!cfreader._read_args[full_path]) return;
         var args = cfreader._read_args[full_path];
         if (args.options && args.options.no_watch) return;
-        if (cfreader._sedation_timers[filename]) {
-            clearTimeout(cfreader._sedation_timers[filename]);
-        }
-        cfreader._sedation_timers[filename] = setTimeout(function () {
-            logger.loginfo('Reloading file: ' + full_path);
-            cfreader.load_config(full_path, args.type, args.options);
-            delete cfreader._sedation_timers[filename];
-            if (typeof args.cb === 'function') args.cb();
-        }, 5 * 1000);
-        logger.logdebug('Detected ' + fse + ' on ' + filename);
+        logger.loginfo('Detected ' + fse + ', reloading ' + filename);
+        cfreader.load_config(full_path, args.type, args.options);
+        if (typeof args.cb === 'function') args.cb();
     };
     try {
         cfreader._watchers[cp] = fs.watch(cp, { persistent: false }, watcher);
