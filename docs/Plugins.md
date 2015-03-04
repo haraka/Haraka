@@ -9,6 +9,17 @@ The 'rcpt' plugin is used to determine if a particular recipient should be
 allowed to be relayed or received for. The 'queue' plugin queue's the email
 somewhere - perhaps to disk, or perhaps to an onward SMTP server.
 
+You can get a list of built-in plugins by running:
+
+`haraka -l -c /path/to/config`
+
+and display the help text for a plugin by running:
+
+`haraka -h <name> -c /path/to/config`
+
+You can omit the `-c /path/to/config` if you want to only see the plugins 
+supplied with Haraka and not your own local plugins in your `config` directory.
+
 Anatomy of a Plugin
 ------
 
@@ -179,6 +190,73 @@ lists the domains for which you wish to receive email.
 If a rcpt plugin DOES call `next(OK)` then the `rcpt_ok` hook is run. This
 is primarily used by the `queue/smtp_proxy` plugin which needs to run after
 all rcpt hooks.
+
+Hook Run Order
+--------------
+
+The ordering of hooks is determined by the SMTP protocol, some knowledge of
+RFC5321 is required.
+
+##### Typical Inbound mail
+
+- hook_lookup_rdns
+- hook_connect
+- hook_helo **OR** hook_ehlo (EHLO is sent when ESMTP is desired which allows extensions
+such as STARTTLS, AUTH, SIZE etc.)
+    - hook_helo
+    - hook_ehlo
+      - hook_capabilities
+      - *hook_unrecognized_command* will run for each ESMTP extension the client requests 
+e.g. STARTTLS, AUTH etc.)
+  - hook_mail
+  - hook_rcpt (this will run once per-recipient)
+  - hook_rcpt_ok (this will run for every recipient that hook_rcpt returned `next(OK)` for)
+  - hook_data
+  - *[attachment hooks]*
+  - hook_data_post
+  - hook_queue **OR** hook_queue_outbound
+  - hook_queue_ok (called if hook_queue or hook_queue_outbound returns `next(OK)`)
+- hook_quit **OR** hook_rset **OR** hook_helo **OR** hook_ehlo (the client can either 
+disconnect once a message has been sent or it can start a new transaction by sending RSET, EHLO
+or HELO to reset the transaction and then start a new transaction by starting with MAIL again)
+  - hook_reset_transaction
+- hook_disconnect
+
+##### Typical Outbound mail
+
+When we say outbound here - we mean messages that use Haraka built-in queueing and delivery
+mechanisms which are used when `connection.relaying = true` is set during the message transaction
+and `hook_queue_outbound` is called to queue the message.
+
+The Outbound ordering will be the mirror the Inbound mail order above until `hook_queue_outbound`
+is reached, after that the order is:
+
+- hook_send_email
+- hook_get_mx
+- hook_delivered **OR** hook_deferred **OR** hook_bounce
+  - hook_delivered  (called once per delivery domain with at least one successfull recipient)
+  - hook_deferred  (called once per delivery domain where at least one recipient or connection was deferred)
+  - hook_bounce  (called once per delivery domain where the recipient(s) or message was rejected by the destination)
+ 
+Plugin Run Order
+----------------
+
+Plugins will be run on each hook in the order that they are specified on 
+`config/plugins`.  If a plugin returns anything other than `next()` on a hook, 
+then all subsequent plugins due to run on that hook will be skipped.
+
+This is important as some plugins might rely on `results` or `notes` that have
+been set by plugins that need to run before them.   This should be noted in the
+plugins documentation though, so you should make sure that you read it.
+
+If you are writing complex plugins of your own, you may find that you have to 
+split your plugins into multiple plugins if you require your hooks to run in a 
+specific order e.g. you want hook_deny to run last after all other plugins and
+hook_lookup_rdns to run first, then you'd need two plugins to achieve this.
+
+You can check the order that the plugins will run on each hook by running:
+
+`haraka -o -c /path/to/config`
 
 Sharing State
 -------------

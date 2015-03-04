@@ -45,6 +45,18 @@ Configuration
 
     Enable TLS with the forward host (if supported)
 
+  * auth\_type=[plain|login]
+
+    Enable PLAIN or LOGIN SMTP AUTH.  This is required to enable AUTH.
+
+  * auth\_user=USERNAME
+
+    SMTP AUTH username to use.
+
+  * auth\_pass=PASSWORD
+
+    SMTP AUTH password to use.
+
 # Per-Domain Configuration
 
 More specific forward routes for domains can be defined. More specific routes

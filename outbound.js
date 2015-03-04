@@ -168,7 +168,7 @@ exports.ensure_queue_dir = function () {
             }
         }
     }
-}
+};
 
 exports.load_queue = function (pid) {
     // Initialise and load queue
@@ -183,10 +183,11 @@ exports._load_cur_queue = function (pid, cb_name, cb) {
     self.loginfo("Loading outbound queue from ", queue_dir);
     fs.readdir(queue_dir, function (err, files) {
         if (err) {
-            return self.logerror("Failed to load queue directory (" + queue_dir + "): " + err);
+            return self.logerror("Failed to load queue directory (" +
+                queue_dir + "): " + err);
         }
         
-        self.cur_time = new Date(); // set this once so we're not calling it a lot
+        self.cur_time = new Date(); // set once so we're not calling it a lot
 
         self.load_queue_files(pid, cb_name, files);
 
@@ -200,7 +201,9 @@ exports.load_queue_files = function (pid, cb_name, files) {
 
     if (cfg.disabled && cb_name === '_add_file') {
         // try again in 1 second if delivery is disabled
-        setTimeout(function () {self.load_queue_files(pid, cb_name, files);}, 1000);
+        setTimeout(function () {
+            self.load_queue_files(pid, cb_name, files);
+        }, 1000);
         return;
     }
 
@@ -209,20 +212,23 @@ exports.load_queue_files = function (pid, cb_name, files) {
         this.loginfo("Grabbing queue files for pid: " + pid);
         async.eachLimit(files, 200, function (file, cb) {
             var match = /^(\d+)(_\d+_)(\d+)(_\d+\..*)$/.exec(file);
-            if (match && match[3] == pid) {
+            if (match && match[3] === pid) {
                 var next_process = match[1];
                 var new_filename = match[1] + match[2] + process.pid + match[4];
                 // self.loginfo("Renaming: " + file + " to " + new_filename);
                 fs.rename(queue_dir + '/' + file, queue_dir + '/' + new_filename, function (err) {
                     if (err) {
-                        self.logerror("Unable to rename queue file: " + file + " to " + new_filename + " : " + err);
+                        self.logerror("Unable to rename queue file: " + file +
+                            " to " + new_filename + " : " + err);
                         return cb();
                     }
                     if (next_process <= self.cur_time) {
                         load_queue.push(new_filename);
                     }
                     else {
-                        temp_fail_queue.add(next_process - self.cur_time, function () { load_queue.push(new_filename);});
+                        temp_fail_queue.add(next_process - self.cur_time, function () {
+                            load_queue.push(new_filename);
+                        });
                     }
                     // self.loginfo("Done");
                     cb();
@@ -292,7 +298,9 @@ exports._add_file = function (hmail) {
         delivery_queue.push(hmail);
     }
     else {
-        temp_fail_queue.add(hmail.next_process - this.cur_time, function () { delivery_queue.push(hmail);});
+        temp_fail_queue.add(hmail.next_process - this.cur_time, function () {
+            delivery_queue.push(hmail);
+        });
     }
 };
 
@@ -378,7 +386,8 @@ exports.send_email = function () {
                 to[i] = new Address(to[i]);
             }
             catch (err) {
-                return next(constants.deny, "Malformed to address (" + to[i] + "): " + err);
+                return next(constants.deny,
+                    "Malformed to address (" + to[i] + "): " + err);
             }
         }
     }
