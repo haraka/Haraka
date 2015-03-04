@@ -24,7 +24,8 @@ exports.load_ini = function () {
 exports.hook_mail = function(next, connection, params) {
     var plugin    = this;
     var mail_from = params[0];
-    var results   = connection.transaction.results;
+    var txn       = connection.transaction;
+    var results   = txn.results;
 
     // Check for MAIL FROM without an @ first - ignore those here
     if (!mail_from.host) {
@@ -39,7 +40,7 @@ exports.hook_mail = function(next, connection, params) {
         // DNS answer didn't return (UDP)
         connection.loginfo(plugin, 'timed out resolving MX for ' + domain);
         called_next++;
-        results.add(plugin, {err: 'timeout(' + domain + ')'});
+        if (txn) results.add(plugin, {err: 'timeout(' + domain + ')'});
         return next(DENYSOFT, 'Temporary resolver error (timeout)');
     }, ((c.timeout) ? c.timeout : 30) * 1000);
 
@@ -51,6 +52,7 @@ exports.hook_mail = function(next, connection, params) {
     };
 
     dns.resolveMx(domain, function(err, addresses) {
+        if (!txn) return;
         if (err && plugin.mxErr(connection, domain, 'MX', err, mxDone)) return;
 
         if (!addresses || !addresses.length) {
@@ -88,6 +90,7 @@ exports.hook_mail = function(next, connection, params) {
             pending_queries++;
             dns.resolve(addr.exchange, function(err, addresses) {
                 pending_queries--;
+                if (!txn) return;
                 if (err) {
                     results.add(plugin, {msg: err.message});
                     connection.logdebug(plugin, domain + ': MX ' +
@@ -117,8 +120,9 @@ exports.hook_mail = function(next, connection, params) {
 
 exports.mxErr = function (connection, domain, type, err, mxDone) {
     var plugin = this;
-    connection.transaction.results.add(plugin,
-            {msg: domain + ':' + type + ':' + err.message});
+    var txn = connection.transaction;
+    if (!txn) return;
+    txn.results.add(plugin, {msg: domain + ':' + type + ':' + err.message});
     connection.logdebug(plugin, domain + ':' + type + ' => ' + err.message);
     switch (err.code) {
         case 'NXDOMAIN':
@@ -137,6 +141,7 @@ exports.implicit_mx = function (connection, domain, mxDone) {
     var plugin = this;
     var txn = connection.transaction;
     dns.resolve(domain, 'A', function(err, addresses) {
+        if (!txn) return;
         if (err && plugin.mxErr(connection, domain, 'A', err, mxDone)) return;
 
         if (!addresses || !addresses.length) {
