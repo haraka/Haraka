@@ -65,9 +65,15 @@ connections where every recipient is identical.
 
     # default SMTP host
     host=1.2.3.4
+    # auth_type=plain
+    # auth_user=user
+    # auth_user=pass
 
     [example1.com]
     host=1.2.3.5
+    # auth_type=plain
+    # auth_user=user
+    # auth_pass=pass
 
     [example2.com]
     host=1.2.3.5
