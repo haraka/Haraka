@@ -10,18 +10,18 @@ The **any** check is premised on blocking a domain
 name no matter where in the SMTP conversation it appears. That's possible using
 several regex lists in the **precise** checks, but it's also much slower.
 
-With **any**, just drop the offending domain name into the _access.domain_ file
+With **any**, just drop the offending domain name into the _access.domains_ file
 and it gets blocked for the rDNS hostname, the HELO hostname, the MAIL FROM
 domain name, and the RCPT TO domain name.
 
-The **any** blacklist matches only on the [Organizational Domain](#Organizational Domain) name (see NOTES below). Entries placed in the _access.domain_ file are automatically reduced to the OD. Examples:
+The **any** blacklist matches only on the [Organizational Domain](#Organizational Domain) name (see NOTES below). Entries placed in the _access.domains_ file are automatically reduced to the OD. Examples:
 
            ENTRY                  O.D.
     mail.spam-central.com  -> spam-central.com
     mail151.wayn.net       -> wayn.net
 
 In case the O.D. match is too broad, whitelist entries are placed in the same
-_access.domain_ file with a ! prefix. Whitelist entries can be email addresses
+_access.domains_ file with a ! prefix. Whitelist entries can be email addresses
 (for the MAIL FROM and RCPT TO tests) or hostnames for the rDNS and HELO
 hostnames. To block anything from example.com but not special.example.com:
 
