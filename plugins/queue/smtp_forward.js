@@ -50,6 +50,35 @@ exports.hook_queue = function (next, connection) {
 
     var smc_cb = function (err, smtp_client) {
         smtp_client.next = next;
+        
+        var config = plugin.cfg;
+        if (config.auth.user) {
+            connection.loginfo(plugin, "Configuring authentication for SMTP server " + config.main.host + ":" + config.main.port);
+            smtp_client.on('greeting', function() {
+
+                var base64 = function(str) {
+                    var buffer = new Buffer(str, "UTF-8");
+                    return buffer.toString("base64");
+                };
+
+                if (config.auth.type === 'plain') {
+                    connection.loginfo(plugin, "Authenticating with AUTH PLAIN " + config.auth.user);
+                    smtp_client.send_command('AUTH', 'PLAIN ' + base64("\0" + config.auth.user + "\0" + config.auth.pass));
+                } else if (config.auth.type === 'login') {
+                    smtp_client.send_command('AUTH', 'LOGIN');
+                    smtp_client.on('auth', function() {
+                        connection.loginfo(plugin, "Authenticating with AUTH LOGIN " + config.auth.user);
+                    });
+                    smtp_client.on('auth_username', function() {
+                        smtp_client.send_command(base64(config.auth.user) + "\r\n");
+                    });
+                    smtp_client.on('auth_password', function() {
+                        smtp_client.send_command(base64(config.auth.pass) + "\r\n");
+                    });
+                }
+            });
+        }
+        
         var rcpt = 0;
 
         var dead_sender = function () {
