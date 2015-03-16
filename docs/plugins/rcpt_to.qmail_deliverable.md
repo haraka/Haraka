@@ -1,4 +1,5 @@
-# `qmail_deliverable`
+rcpt\_to.qmail\_deliverable
+===========================
 
 A client for checking the deliverability of an email
 address against the [qmail-deliverabled](http://search.cpan.org/dist/Qmail-Deliverable/) daemon.

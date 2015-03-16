@@ -1,4 +1,5 @@
-# `rcpt_to.in_host_list`
+rcpt\_to.in\_host\_list
+=====================
 
 This plugin is the mainstay of an inbound Haraka server. It should list the
 domains that are local to the host. Mails that have RCPT TO not matching

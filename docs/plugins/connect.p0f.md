@@ -1,4 +1,4 @@
-connect.p0f - A TCP Fingerprinting Plugin
+connect.p0f - TCP Fingerprinting
 ========================
 
 Use TCP fingerprint info (remote computer OS, network distance, etc) to

@@ -1,24 +1,16 @@
+var SPF = require('../spf').SPF;
 
-var SPF = require("../spf").SPF;
-
-
-function _set_up(callback) {
-    this.backup = {};
-
+function _set_up(done) {
     this.SPF = new SPF();
-
-    callback();
-}
-function _tear_down(callback) {
-    callback();
+    this.SPF.log_debug = function () {};  // noop, hush debug output
+    done();
 }
 
 exports.SPF = {
     setUp : _set_up,
-    tearDown : _tear_down,
     'new SPF': function (test) {
         test.expect(1);
-        test.ok(this);
+        test.ok(this.SPF);
         test.done();
     },
     'constants' : function (test) {
@@ -64,5 +56,4 @@ exports.SPF = {
         }
     },
 };
-
 

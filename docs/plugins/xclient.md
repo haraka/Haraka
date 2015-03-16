@@ -1,8 +1,10 @@
-XCLIENT
+xclient
 =======
 
-This plug-in implements the XCLIENT protocol.
-See http://www.postfix.org/XCLIENT_README.html
+Implements the [XCLIENT](http://www.postfix.org/XCLIENT_README.html) protocol.
 
-The configuration file xclient.hosts.ini is read for a list of IP addresses
-that should be allowed to use the XCLIENT protocol.
+## configuration
+
+* xclient.hosts.ini
+
+    A list of IP addresses that should be allowed to use the XCLIENT protocol.
