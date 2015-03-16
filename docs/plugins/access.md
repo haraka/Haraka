@@ -1,4 +1,4 @@
-# access
+# access - ACLs
 
 This plugin applies Access Control Lists during the connect, helo, mail, and
 rcpt phases of the SMTP conversation. It has a split personality, supporting
