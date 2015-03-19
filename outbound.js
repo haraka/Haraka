@@ -961,6 +961,15 @@ HMailItem.prototype.try_deliver = function () {
 
 var smtp_regexp = /^(\d{3})([ -])(?:(\d\.\d\.\d)\s)?(.*)/;
 
+var cram_md5_response = function (username, password, challenge) {
+    var crypto = require('crypto');
+    var c = utils.unbase64(challenge);
+    var hmac = crypto.createHmac('md5', password);
+    hmac.update(c);
+    var digest = hmac.digest('hex');
+    return utils.base64(username + ' ' + digest);
+}
+
 HMailItem.prototype.try_deliver_host = function (mx) {
     if (this.hostlist.length === 0) {
         return this.try_deliver(); // try next MX
@@ -1014,11 +1023,14 @@ HMailItem.prototype.try_deliver_host = function (mx) {
     var fail_recips = [];
     var bounce_recips = [];
     var secured = false;
+    var authenticating = false;
+    var authenticated = false;
     var smtp_properties = {
         "tls": false,
         "max_size": 0,
         "eightbitmime": false,
         "enh_status_codes": false,
+        "auth": [],
     };
     
     var send_command = function (cmd, data) {
@@ -1034,6 +1046,7 @@ HMailItem.prototype.try_deliver_host = function (mx) {
         if (cmd === 'dot' || cmd === 'dot_lmtp') {
             line = '.';
         }
+        if (authenticating) cmd = 'auth';
         self.logprotocol("C: " + line);
         socket.write(line + "\r\n");
         command = cmd.toLowerCase();
@@ -1054,13 +1067,20 @@ HMailItem.prototype.try_deliver_host = function (mx) {
             }
             else {
                 var matches;
+                // Check for SIZE parameter and limit
                 matches = r.match(/^SIZE\s+(\d+)$/);
                 if (matches) {
                     smtp_properties.max_size = matches[1];
                 }
+                // Check for AUTH
+                matches = r.match(/^AUTH\s+(.+)$/);
+                if (matches) {
+                    smtp_properties.auth = matches[1].split(/\s+/);
+                }
             }
         }
 
+        // TLS
         if (smtp_properties.tls && cfg.enable_tls && !secured) {
             socket.on('secure', function () {
                 // Set this flag so we don't try STARTTLS again if it
@@ -1068,11 +1088,66 @@ HMailItem.prototype.try_deliver_host = function (mx) {
                 secured = true;
                 send_command(mx.using_lmtp ? 'LHLO' : 'EHLO', config.get('me'));
             });
-            send_command('STARTTLS');
+            return send_command('STARTTLS');
         }
-        else {
-            send_command('MAIL', 'FROM:' + self.todo.mail_from);
+
+        // IMPORTANT: we do STARTTLS before we attempt AUTH for extra security
+        if (!authenticated && (mx.auth_user && mx.auth_pass)) {
+            // We have AUTH credentials to send for this domain
+            if (!(Array.isArray(smtp_properties.auth) && smtp_properties.auth.length)) {
+                // AUTH not offered
+                self.logwarn('AUTH configured for domain ' + self.todo.domain + 
+                             ' but host ' + host + ' did not advertise AUTH capability');
+                // Try and send the message without authentication
+                return send_command('MAIL', 'FROM:' + self.todo.mail_from);
+            }
+
+            if (!mx.auth_type) {
+                // User hasn't specified an authentication type, so we pick one
+                // We'll prefer CRAM-MD5 as it's the most secure that we support.
+                if (smtp_properties.auth.indexOf('CRAM-MD5') !== -1) {
+                    mx.auth_type = 'CRAM-MD5';
+                }
+                // PLAIN requires less round-trips compared to LOGIN
+                else if (smtp_properties.auth.indexOf('PLAIN') !== -1) {
+                    // PLAIN requires less round trips compared to LOGIN
+                    // So we'll make this our 2nd pick.
+                    mx.auth_type = 'PLAIN';
+                }
+                else if (smtp_properties.auth.indexOf('LOGIN') !== -1) {
+                    mx.auth_type = 'LOGIN';
+                }
+            }
+
+            if (!mx.auth_type || (mx.auth_type && smtp_properties.auth.indexOf(mx.auth_type.toUpperCase()) === -1)) {
+                // No compatible authentication types offered by the server
+                self.logwarn('AUTH configured for domain ' + self.todo.domain + ' but host ' + host + 
+                             'did not offer any compatible types' + 
+                             ((mx.auth_type) ? ' (requested: ' + mx.auth_type + ')' : '') +
+                             ' (offered: ' + smtp_properties.auth.join(',') + ')');
+                // Proceed without authentication
+                return send_command('MAIL', 'FROM:' + self.todo.mail_from);
+            }
+
+            switch (mx.auth_type.toUpperCase()) {
+                case 'PLAIN':
+                    return send_command('AUTH', 'PLAIN ' +
+                        utils.base64(mx.auth_user + "\0" + mx.auth_user + "\0" + mx.auth_pass));
+                case 'LOGIN':
+                    authenticating = true;
+                    return send_command('AUTH', 'LOGIN');
+                case 'CRAM-MD5':
+                    authenticating = true;
+                    return send_command('AUTH', 'CRAM-MD5');
+                default:
+                    // Unsupported AUTH type
+                    self.logwarn('Unsupported authentication type ' + mx.auth_type.toUpperCase() +
+                                 ' requested for domain ' + self.todo.domain);
+                    return send_command('MAIL', 'FROM:' + self.todo.mail_from);
+            }
         }
+
+        return send_command('MAIL', 'FROM:' + self.todo.mail_from);
     };
 
     var finish_processing_mail = function (success) {
@@ -1094,7 +1169,7 @@ HMailItem.prototype.try_deliver_host = function (mx) {
         if (success) {
             var reason = response.join(' ');
             self.delivered(host, port, (mx.using_lmtp ? 'LMTP' : 'SMTP'), mx.exchange, 
-                           reason, ok_recips, fail_recips, bounce_recips, secured);
+                           reason, ok_recips, fail_recips, bounce_recips, secured, authenticated);
         }
         else {
             self.discard();
@@ -1128,7 +1203,38 @@ HMailItem.prototype.try_deliver_host = function (mx) {
                 rest = matches[4];
             response.push(rest);
             if (cont === ' ') {
-                if (code.match(/^4/)) {
+                if (code.match(/^2/)) {
+                    // Successful command, fall through
+                }
+                else if (code.match(/^3/) && command !== 'data') {
+                    if (authenticating) {
+                        var resp = response.join(' ');
+                        switch (mx.auth_type.toUpperCase()) {
+                            case 'LOGIN':
+                                if (resp === 'VXNlcm5hbWU6') {
+                                    // Username:
+                                    return send_command(utils.base64(mx.auth_user));
+                                }
+                                else if (resp === 'UGFzc3dvcmQ6') {
+                                    // Password:
+                                    return send_command(utils.base64(mx.auth_pass));
+                                }
+                                break;
+                            case 'CRAM-MD5':
+                                // The response is our challenge
+                                return send_command(cram_md5_response(mx.auth_user, mx.auth_pass, resp));
+                            default:
+                                // This shouldn't happen...
+                        } 
+                    }
+                    // Error
+                    reason = response.join(' ');
+                    send_command('QUIT');
+                    processing_mail = false;
+                    return self.temp_fail("Upstream error: " + code + " " + ((extc) ? extc + ' ' : '') + reason);
+                }
+                else if (code.match(/^4/)) {
+                    authenticating = false;
                     if (/^rcpt/.test(command) || command === 'dot_lmtp') {
                         if (command === 'dot_lmtp') last_recip = ok_recips.shift();
                         // this recipient was rejected
@@ -1151,6 +1257,7 @@ HMailItem.prototype.try_deliver_host = function (mx) {
                     }
                 }
                 else if (code.match(/^5/)) {
+                    authenticating = false;
                     if (command === 'ehlo') {
                         // EHLO command was rejected; fall-back to HELO
                         return send_command('HELO', config.get('me'));
@@ -1203,6 +1310,11 @@ HMailItem.prototype.try_deliver_host = function (mx) {
                               ((cert && cert.valid_to) ? ' expires="' + cert.valid_to + '"' : '') +
                               ((cert && cert.fingerprint) ? ' fingerprint=' + cert.fingerprint : ''));
                         });
+                        break;
+                    case 'auth':
+                        authenticating = false;
+                        authenticated = true;
+                        send_command('MAIL', 'FROM:' + self.todo.mail_from);
                         break;
                     case 'helo':
                         send_command('MAIL', 'FROM:' + self.todo.mail_from);
@@ -1369,7 +1481,7 @@ HMailItem.prototype.double_bounce = function (err) {
     // Another strategy might be delivery "plugins" to cope with this.
 };
 
-HMailItem.prototype.delivered = function (ip, port, mode, host, response, ok_recips, fail_recips, bounce_recips, secured) {
+HMailItem.prototype.delivered = function (ip, port, mode, host, response, ok_recips, fail_recips, bounce_recips, secured, authenticated) {
     var delay = (Date.now() - this.todo.queue_time)/1000;
     this.lognotice("delivered file=" + this.filename + 
                    ' domain="' + this.todo.domain + '"' +
@@ -1378,11 +1490,12 @@ HMailItem.prototype.delivered = function (ip, port, mode, host, response, ok_rec
                    ' port=' + port +
                    ' mode=' + mode + 
                    ' tls=' + ((secured) ? 'Y' : 'N') +
+                   ' auth=' + ((authenticated) ? 'Y' : 'N') +
                    ' response="' + response + '"' +
                    ' delay=' + delay +
                    ' fails=' + this.num_failures + 
                    ' rcpts=' + ok_recips.length + '/' + fail_recips.length + '/' + bounce_recips.length);
-    plugins.run_hooks("delivered", this, [host, ip, response, delay, port, mode, ok_recips, secured]);
+    plugins.run_hooks("delivered", this, [host, ip, response, delay, port, mode, ok_recips, secured, authenticated]);
 };
 
 HMailItem.prototype.discard = function () {
