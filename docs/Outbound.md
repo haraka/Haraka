@@ -99,10 +99,16 @@ The MX record is sent via next(OK, mx) and can be one of:
     * hostname:port
     * ipaddress
     * ipaddress:port
-* An MX object of the form: `{priority: 0, exchange: hostname}` and optionally
-a `port` value to specify an alternate port, and a `bind` value to specify an
-outbound IP address to bind to and a `using_lmtp` boolean to specify that
-delivery should be attempted using LMTP instead of SMTP.
+* An MX object of the form: `{priority: 0, exchange: hostname}` with the 
+following optional properies:
+       * `port` to specify an alternate port
+       * `bind` to specify an outbound IP address to bind to
+       * `using_lmtp` boolean to specify that delivery should be attempted using 
+          LMTP instead of SMTP.
+       *  `auth_user` to specify an AUTH username (required if AUTH is desired)
+       *  `auth_pass` to specify an AUTH password (required if AUTH is desired)
+       *  `auth_type` to specify an AUTH type that should be used with the MX.
+If this is not specified then Haraka will pick an appropriate method.
 * A list of MX objects in an array, each in the same format as above.
 
 ### The deferred hook
@@ -181,6 +187,18 @@ connection.transaction.notes.outbound_ip = '1.2.3.4';
 Note: if the `get_mx` hook returns a `bind` parameter, then this will be 
 used in preference to the transaction note.
 
+AUTH
+----
+
+If you wish to use AUTH for a particular domain or domains, or you wish to
+force all mail to an outbound service or smart host that requires authentication
+then you can use the `get_mx` hook documented above to do this by supplying
+both `auth_user` and `auth_pass` properties in an MX object.
+
+If AUTH properties are supplied and the remote end does not offer AUTH or there
+are no compatible AUTH methods, then the message with be sent without AUTH and
+a warning will be logged.
+
 
 Bounce Messages
 ---------------
@@ -249,3 +267,4 @@ The callback parameter may be omitted if you don't need to handle errors
 should queueing to disk fail e.g:
 
     outbound.send_email(form, to, contents);
+

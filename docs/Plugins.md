@@ -174,7 +174,7 @@ These are just the name of the hook, with any parameter sent to it:
 * get\_mx (hmail, domain) - called when sending outbound mail to lookup the MX record
 * deferred (hmail, params) - called when sending outbound mail if the mail was deferred
 * bounce (hmail, err) - called when sending outbound mail if the mail would bounce
-* delivered (hmail, [host, ip, response, delay, port, mode, ok_recips, secured]) - 
+* delivered (hmail, [host, ip, response, delay, port, mode, ok_recips, secured, authenticated]) - 
 called when outbound mail is delivered to the destination
 * send\_email (hmail) - called when outbound is about to be sent
 
