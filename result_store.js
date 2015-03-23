@@ -27,7 +27,9 @@ ResultStore.prototype.has = function (plugin_name, list, search) {
     if (!result[list]) return false;
     if (typeof result[list] === 'string') {
         if (typeof search === 'string' && search === result[list]) return true;
-        if (typeof search === 'object' && result[list].match(search)) return true;
+        if (typeof search === 'object' && result[list].match(search)) {
+            return true;
+        }
         return false;
     }
     if (Array.isArray(result[list])) {
@@ -58,13 +60,13 @@ ResultStore.prototype.add = function (plugin, obj) {
 
     // these arrays are overwritten when passed
     for (var j=0; j < overwrite_lists.length; j++) {
-        var key = overwrite_lists[j];
+        key = overwrite_lists[j];
         if (!obj[key]) continue;
         result[key] = obj[key];
     }
 
     // anything else is an arbitrary key/val to store
-    for (var key in obj) {
+    for (key in obj) {
         if (all_opts.indexOf(key) !== -1) continue; // weed out our keys
         result[key] = obj[key];            // save the rest
     }
@@ -126,6 +128,10 @@ ResultStore.prototype.get = function (plugin_name) {
     var result = this.store[plugin_name];
     if (!result) return;
     return result;
+};
+
+ResultStore.prototype.get_all = function () {
+    return this.store;
 };
 
 ResultStore.prototype.private_collate = function (result, name) {
