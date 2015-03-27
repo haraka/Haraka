@@ -1,4 +1,22 @@
 
+2.6.1 - Mar 27, 2015
+
+* added sedation timers for config file re-reading
+* Add AUTH support to outbound
+* tests/spf: quiet excessive DEBUG noise
+* allow domains with underscore
+* correct name of domains config file in access
+* Fix SMTP AUTH in smtp_forward/proxy and add docs
+* Fix opts not being passed to HMailItem _bounce function
+* log.syslog will try strong-fork-syslog (for node 0.12 compat)
+* improvements to Plugin docs
+* rename net_utils.is_rfc1918 -> is_private_ip
+    * IPv6 compat
+    * test coverage
+    * add IPv6 unique local fc00::/7
+* pre-populated config/plugins
+* added utils.extend, copies props onto objects
+
 2.6.0 - Feb 21, 2015
 
 * other bug fixes
