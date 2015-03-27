@@ -46,3 +46,8 @@ add an entry to config/plugins to enable p0f:
 3. review settings in config/connect.p0f.ini
 
 
+## Startup
+
+In the contrib/ubuntu-upstart directory is a config file (p0f.conf) for Ubuntu.
+
+In the contrib/bsd-rc.d directory is a startup file for FreeBSD.
