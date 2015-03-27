@@ -1,0 +1,14 @@
+#!/bin/bash
+# Update Haraka TLD files
+
+CURL=`which curl 2> /dev/null`
+
+if [ $? -ne 0 ]; then
+    echo "Error: curl not found"
+    exit 1
+fi
+
+$CURL -s https://data.iana.org/TLD/tlds-alpha-by-domain.txt > top-level-tlds
+$CURL -s http://george.surbl.org/two-level-tlds > two-level-tlds
+$CURL -s http://george.surbl.org/three-level-tlds > three-level-tlds
+$CURL -s http://rss.uribl.com/hosters/hosters.txt > extra-tlds
