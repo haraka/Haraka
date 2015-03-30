@@ -17,14 +17,16 @@ exports.hook_unrecognized_command = function (next, connection, params) {
 
     // XCLIENT is not allowed after transaction start
     if (connection.transaction) {
-        return next(DENY, DSN.proto_unspecified('Mail transaction in progress', 503));
+        return next(DENY,
+            DSN.proto_unspecified('Mail transaction in progress', 503));
     }
 
     // Check that the client is authorized
     var config = this.config.get('xclient.hosts','list');
     var found;
     for (var i in config) {
-        connection.logdebug(this, 'Checking ' + connection.remote_ip + ' == ' + config[i]);
+        connection.logdebug(this, 'Checking ' + connection.remote_ip +
+            ' == ' + config[i]);
         // TODO: handle ip/mask here.
         if (connection.remote_ip === config[i]) {
             found = true;
@@ -84,7 +86,8 @@ exports.hook_unrecognized_command = function (next, connection, params) {
 
     // Abort if we don't have a valid IP address
     if (!xclient.addr) {
-        return next(DENY, DSN.proto_invalid_cmd_args('No valid IP address found', 501));
+        return next(DENY,
+            DSN.proto_invalid_cmd_args('No valid IP address found', 501));
     }
 
     // Apply changes

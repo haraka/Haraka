@@ -21,7 +21,7 @@ Configuration
 
 This plugin uses the configuration file rate\_limit.ini which is checked for 
 updates before each hook, so changes to this file will never require a restart 
-and will take effect immediately after the changes are saved.
+and will take effect seconds after the changes are saved.
 
 The configuration options for each heading are detailed below:
 

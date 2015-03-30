@@ -1,4 +1,5 @@
 // connect.rdns_access plugin
+// WARNING: this plugin is deprecated. see 'haraka -h access' to upgrade
 
 exports.register = function() {
     var i;
@@ -23,7 +24,7 @@ exports.register = function() {
     this.logerror(this, "plugin deprecated. see 'haraka -h access' for upgrade instructions");
 
     this.register_hook('connect', 'rdns_access');
-}
+};
 
 exports.rdns_access = function(next, connection) {
     var plugin = this;

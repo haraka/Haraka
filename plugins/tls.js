@@ -97,7 +97,8 @@ exports.tls_unrecognized_command = function (next, connection, params) {
     }, timeout * 1000);
 
     /* Upgrade the connection to TLS. */
-    connection.client.upgrade(plugin.tls_opts, function (authorized, verifyError, cert, cipher) {
+    connection.client.upgrade(plugin.tls_opts, function (authorized,
+            verifyError, cert, cipher) {
         clearTimeout(timer);
         connection.reset_transaction(function () {
             connection.hello_host = undefined;

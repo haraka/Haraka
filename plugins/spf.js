@@ -94,7 +94,8 @@ exports.hook_helo = exports.hook_ehlo = function (next, connection, helo) {
             return next();
         }
         var host = connection.hello_host;
-        plugin.log_result(connection, 'helo', host, 'postmaster@' + host, spf.result(result));
+        plugin.log_result(connection, 'helo', host, 'postmaster@' +
+            host, spf.result(result));
 
         connection.notes.spf_helo = result;  // used between hooks
         connection.results.add(plugin, {
@@ -111,7 +112,10 @@ exports.hook_mail = function (next, connection, params) {
     var plugin = this;
 
     // For inbound message from a private IP, skip MAIL FROM check
-    if (!connection.relaying && net_utils.is_private_ip(connection.remote_ip)) return next();
+    if (!connection.relaying &&
+         net_utils.is_private_ip(connection.remote_ip)) {
+        return next();
+    }
 
     var txn = connection.transaction;
     if (!txn) return next();
@@ -129,7 +133,8 @@ exports.hook_mail = function (next, connection, params) {
             connection.auth_results( "spf="+auth_result+" smtp.helo=" + h_host);
 
             var sender = '<> via ' + h_host;
-            return plugin.return_results(next, connection, spf, 'helo', h_result, sender);
+            return plugin.return_results(next, connection, spf, 'helo',
+                h_result, sender);
         }
     }
 
@@ -165,7 +170,8 @@ exports.hook_mail = function (next, connection, params) {
             domain: host,
             emit: true,
         });
-        return plugin.return_results(next, connection, spf, 'mail', result, '<'+mfrom+'>');
+        return plugin.return_results(next, connection, spf, 'mail', result,
+            '<'+mfrom+'>');
     };
 
     // typical inbound (!relay)

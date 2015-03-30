@@ -153,7 +153,7 @@ logger._init_timestamps = function () {
                 new_arguments.push(arguments[key]);
             }
             original_console_log.apply(console, new_arguments);
-        }
+        };
     }
     else {
         console.log = original_console_log;

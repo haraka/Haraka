@@ -1,4 +1,4 @@
-"use strict";
+'use strict';
 /*----------------------------------------------------------------------------------------------*/
 /* Obtained and modified from http://js.5sh.net/starttls.js on 8/18/2011.                       */
 /*----------------------------------------------------------------------------------------------*/
@@ -32,14 +32,14 @@ pluggableStream.prototype.pause = function () {
         this.targetsocket.pause();
         this.readable = false;
     }
-}
+};
 
 pluggableStream.prototype.resume = function () {
     if (this.targetsocket.resume) {
         this.readable = true;
         this.targetsocket.resume();
     }
-}
+};
 
 pluggableStream.prototype.attach = function (socket) {
     var self = this;
@@ -109,19 +109,19 @@ pluggableStream.prototype.end = function (data, encoding) {
     if (this.targetsocket.end) {
         return this.targetsocket.end(data, encoding);
     }
-}
+};
 
 pluggableStream.prototype.destroySoon = function () {
     if (this.targetsocket.destroySoon) {
         return this.targetsocket.destroySoon();
     }
-}
+};
 
 pluggableStream.prototype.destroy = function () {
     if (this.targetsocket.destroy) {
         return this.targetsocket.destroy();
     }
-}
+};
 
 pluggableStream.prototype.setKeepAlive = function (bool) {
     this._keepalive = bool;
@@ -245,12 +245,12 @@ function createServer(cb) {
 if (require('semver').gt(process.version, '0.7.0')) {
     var _net_connect = function (options) {
         return net.connect(options);
-    }
+    };
 }
 else {
     var _net_connect = function (options) {
         return net.connect(options.port, options.host);
-    }
+    };
 }
 
 function connect(port, host, cb) {
