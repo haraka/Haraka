@@ -256,7 +256,7 @@ exports.get_spamd_socket = function(next, connection, headers) {
     socket.on('connect', function () {
         if (!connection.transaction) {
             socket.end();
-            return next();
+            return;
         }
         this.is_connected = true;
         // Reset timeout
