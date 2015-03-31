@@ -28,6 +28,7 @@
   "optionalDependencies": {
     "node-syslog"   : "~1.1.7",
     "strong-fork-syslog" : "~1.2.3",
+    "strong-store-cluster" : "*",
     "ldapjs"        : "~0.7.1",
     "vs-stun"       : "~0.0.7",
     "maxmind"       : "*",
