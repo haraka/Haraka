@@ -2,7 +2,7 @@ language: node_js
 node_js:
     - "0.12"
     - "0.10"
-    - "0.8"
+#   - "0.8"   # no longer supported by iconv
 #   - "0.6"   # no longer supported by async
     - iojs
 
