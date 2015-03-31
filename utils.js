@@ -187,12 +187,22 @@ exports.encode_qp = function (str) {
     return out;
 };
 
-var versions   = process.version.split('.'),
-    version    = Number(versions[0].substring(1)),
-    subversion = Number(versions[1]);
+exports.node_min = function (min, cur) {
+    var wants = min.split('.');
+    var has = (cur || process.version.substring(1)).split('.');
+
+    for (var i=0; i<=3; i++) {
+        // note use of unary + for fast type conversion to num
+        if (+has[i] > +wants[i]) { return true;  }
+        if (+has[i] < +wants[i]) { return false; }
+    }
+
+    // they're identical
+    return true;
+};
 
 exports.existsSync =
-    require((version > 0 || subversion >= 8) ? 'fs' : 'path').existsSync;
+    require(exports.node_min('0.8') ? 'fs' : 'path').existsSync;
 
 exports.indexOfLF = function (buf, maxlength) {
     for (var i=0; i<buf.length; i++) {

@@ -272,3 +272,23 @@ exports.extend = {
     },
 };
 
+exports.node_min = {
+    'node is new enough': function (test) {
+        test.expect(6);
+        test.ok(utils.node_min('0.8.0',  '0.10.0'));
+        test.ok(utils.node_min('0.10.0', '0.10.0'));
+        test.ok(utils.node_min('0.10.0', '0.10.1'));
+        test.ok(utils.node_min('0.10.0', '0.12.0'));
+        test.ok(utils.node_min('0.10.0', '1.0.0'));
+        test.ok(utils.node_min('0.10',   '1.0'));
+        test.done();
+    },
+    'node is too old': function (test) {
+        test.expect(4);
+        test.ok(!utils.node_min('0.12.0', '0.10.0'));
+        test.ok(!utils.node_min('1.0.0',  '0.8.0'));
+        test.ok(!utils.node_min('1.0.0',  '0.10.0'));
+        test.ok(!utils.node_min('1.0.0',  '0.12.0'));
+        test.done();
+    },
+};
