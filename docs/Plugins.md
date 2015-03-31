@@ -183,8 +183,8 @@ sets the `connection.relaying = true` flag, then we do not need any rcpt
 hooks, or if we do, none of them need call `next(OK)`. However if
 `connection.relaying` remains `false` (as is the default - you don't want an
 open relay!), then one rcpt plugin MUST return `next(OK)` or your sender
-will receive the error message "I cannot deliver for that user". The most
-obvious choice for this activity is the `rcpt_to.in_host_list` plugin, which
+will receive the error message "I cannot deliver for that user". The default
+plugin for this is `rcpt_to.in_host_list`, which
 lists the domains for which you wish to receive email.
 
 If a rcpt plugin DOES call `next(OK)` then the `rcpt_ok` hook is run. This
@@ -294,6 +294,9 @@ All of these notes are simply a Javascript object underneath - so you use
 them like a simple key/value store e.g.
 
     connection.transaction.notes.test = 'testing';
+
+## See also, [Results](Results)
+
 
 Further Reading
 --------------
