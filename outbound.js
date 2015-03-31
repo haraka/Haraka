@@ -894,8 +894,6 @@ HMailItem.prototype.found_mx = function (err, mxs) {
                 this.mxlist.push(mxlist[mx]);
             }
         }
-
-        this.mxlist = mxlist;
         this.try_deliver();
     }
 };
