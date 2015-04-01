@@ -21,8 +21,12 @@ exports.register = function() {
         plugin.register_hook('helo',    'helo_access');
         plugin.register_hook('ehlo',    'helo_access');
     }
-    if (plugin.cfg.check.mail) { plugin.register_hook('mail', 'mail_from_access'); }
-    if (plugin.cfg.check.rcpt) { plugin.register_hook('rcpt', 'rcpt_to_access'); }
+    if (plugin.cfg.check.mail) {
+        plugin.register_hook('mail', 'mail_from_access');
+    }
+    if (plugin.cfg.check.rcpt) {
+        plugin.register_hook('rcpt', 'rcpt_to_access');
+    }
 
     if (plugin.cfg.check.any) {
         plugin.load_domain_file('domain', 'any');
@@ -86,7 +90,9 @@ exports.init_config = function() {
         if (cfg.deny_msg) {
             var p;
             for (p in plugin.cfg.deny_msg) {
-                if (cfg.deny_msg[p]) { plugin.cfg.deny_msg[p] = cfg.deny_msg[p]; }
+                if (cfg.deny_msg[p]) {
+                    plugin.cfg.deny_msg[p] = cfg.deny_msg[p];
+                }
             }
         }
 
@@ -167,19 +173,20 @@ exports.any = function (next, connection, params) {
 
     // step 2: check for whitelist
     var file = plugin.cfg.domain.any;
+    var cr = connection.results;
     if (plugin.in_list('domain', 'any', '!'+org_domain)) {
-        connection.results.add(plugin, {pass: file, whitelist: true, emit: true});
+        cr.add(plugin, {pass: file, whitelist: true, emit: true});
         return next();
     }
     if (email) {
         if (plugin.in_list('domain', 'any', '!'+email)) {
-            connection.results.add(plugin, {pass: file, whitelist: true, emit: true});
+            cr.add(plugin, {pass: file, whitelist: true, emit: true});
             return next();
         }
     }
     else {
         if (plugin.in_list('domain', 'any', '!'+domain)) {
-            connection.results.add(plugin, {pass: file, whitelist: true, emit: true});
+            cr.add(plugin, {pass: file, whitelist: true, emit: true});
             return next();
         }
     }
@@ -187,12 +194,12 @@ exports.any = function (next, connection, params) {
     // step 3: check for blacklist
     file = plugin.cfg.domain.any;
     if (plugin.in_list('domain', 'any', org_domain)) {
-        connection.results.add(plugin, {fail: file+'('+org_domain+')', blacklist: true, emit: true});
+        cr.add(plugin, {fail: file+'('+org_domain+')', blacklist: true, emit: true});
         return next(DENY, "You are not welcome here.");
     }
 
     var pass_msg = hook ? (hook + ':any') : 'any';
-    connection.results.add(plugin, {pass: pass_msg, emit: true});
+    cr.add(plugin, {pass: pass_msg, emit: true});
     return next();
 };
 

@@ -7,7 +7,9 @@ var spawn = require('child_process').spawn;
 var exec = require('child_process').exec;
 var path = require('path');
 var crypto = require('crypto');
-var default_archive_extns = ['.zip', '.tar', '.tgz', '.taz', '.z', '.gz', '.rar', '.7z']
+var default_archive_extns = [
+    '.zip', '.tar', '.tgz', '.taz', '.z', '.gz', '.rar', '.7z'
+];
 
 exports.register = function () {
     this.register_hook('data_post', 'wait_for_attachment_hooks');
@@ -18,12 +20,16 @@ exports.register = function () {
     }
     catch (e) {
         archives_disabled = true;
-        this.logwarn('This module requires the \'tmp\' module to extract filenames from archive files');
+        this.logwarn('This module requires the \'tmp\' module to extract ' +
+            'filenames from archive files');
     }
-}
+};
 
 function wildcard_to_regexp (str) {
-    return str.replace(/[-\[\]\/{}()*+?.,\\^$|#\s]/g, "\\$&").replace('\\*', '.*').replace('\\?', '.') + '$';
+    return str
+        .replace(/[-\[\]\/{}()*+?.,\\^$|#\s]/g, "\\$&")
+        .replace('\\*', '.*')
+        .replace('\\?', '.') + '$';
 }
 
 function options_to_array(options) {
@@ -41,8 +47,6 @@ function options_to_array(options) {
     }
     return (arr.length ? arr : false);
 }
-
-
 
 exports.unarchive_recursive = function(connection, f, archive_file_name, cb) {
     if (archives_disabled) {
@@ -338,7 +342,7 @@ exports.check_attachments = function (next, connection) {
     }
 
     return next();
-}
+};
 
 exports.check_items_against_regexps = function (items, regexps) {
     if ((regexps && Array.isArray(regexps) && regexps.length > 0) &&
@@ -362,8 +366,7 @@ exports.check_items_against_regexps = function (items, regexps) {
         }
     }
     return false;
-}
-
+};
 
 exports.wait_for_attachment_hooks = function (next, connection) {
     var txn = connection.transaction;
@@ -374,4 +377,4 @@ exports.wait_for_attachment_hooks = function (next, connection) {
     else {
         next();
     }
-}
+};
