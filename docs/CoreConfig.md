@@ -84,23 +84,14 @@ will not include a timestamp.
   Seconds to allow a plugin to run before the next hook is called automatically
   default: 30
 
-  Note also that each plugin can have a `config/&lt;plugin_name&gt;.timeout`
-  file specifying a per-plugin timeout. In this file you can set a timeout
-  of 0 to mean that this plugin's hooks never time out. Use this with care.
-
-* cluster\_modules
-
-  NOTE: this is only valid on node.js 0.4 using the LearnBoost cluster module
-  it is not used on node.js 0.6 or later.
-
-  A list of cluster modules to load. Use a colon to separate parameters to be
-  passed to the module/plugin. Typical example:
-
-    repl:8888
-    stats: {"connections": true}
-
-  The above allows you to get stats on your setup via the repl on port 8888.
-
+  Note also that each plugin can have a `config/<plugin_name>.timeout`
+  file specifying a per-plugin timeout.  In this file you can set a timeout of 0 
+  to mean that this plugin's hooks never time out.  Use this with care.
+  
+  If the plugin is in a sub-directory of plugins, then you must create this file
+  in the equivalent path e.g. the queue/smtp_forward would need a timeout file in
+  `config/queue/smtp_forward.timeout`
+  
 * smtpgreeting
 
   The greeting line used when a client connects. This can be multiple lines
