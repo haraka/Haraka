@@ -1435,7 +1435,7 @@ Connection.prototype.data_done = function() {
     var max_received = config.get('max_received_count') || 100;
     if (this.transaction.header.get_all('received').length > max_received) {
         this.logerror("Incoming message had too many Received headers");
-        this.respond(552, "Too many received headers - possible mail loop", function() {
+        this.respond(550, "Too many received headers - possible mail loop", function() {
             self.reset_transaction();
         });
         return;
@@ -1474,25 +1474,25 @@ Connection.prototype.data_post_respond = function(retval, msg) {
     var self = this;
     switch (retval) {
         case constants.deny:
-                this.respond(552, msg || "Message denied", function() {
+                this.respond(550, msg || "Message denied", function() {
                     self.msg_count.reject++;
                     self.reset_transaction(function () { self.resume(); });
                 });
                 break;
         case constants.denydisconnect:
-                this.respond(552, msg || "Message denied", function() {
+                this.respond(550, msg || "Message denied", function() {
                     self.msg_count.reject++;
                     self.disconnect();
                 });
                 break;
         case constants.denysoft:
-                this.respond(452, msg || "Message denied temporarily", function() {
+                this.respond(450, msg || "Message denied temporarily", function() {
                     self.msg_count.tempfail++;
                     self.reset_transaction(function () { self.resume(); });
                 });
                 break;
         case constants.denysoftdisconnect:
-                this.respond(452, msg || "Message denied temporarily", function() {
+                this.respond(450, msg || "Message denied temporarily", function() {
                     self.msg_count.tempfail++;
                     self.disconnect();
                 });
@@ -1525,25 +1525,25 @@ Connection.prototype.queue_outbound_respond = function(retval, msg) {
                 plugins.run_hooks("queue_ok", this, msg || 'Message Queued (' + self.transaction.uuid + ')');
                 break;
         case constants.deny:
-                this.respond(552, msg || "Message denied", function() {
+                this.respond(550, msg || "Message denied", function() {
                     self.msg_count.reject++;
                     self.reset_transaction(function () { self.resume();});
                 });
                 break;
         case constants.denydisconnect:
-                this.respond(552, msg || "Message denied", function() {
+                this.respond(550, msg || "Message denied", function() {
                     self.msg_count.reject++;
                     self.disconnect();
                 });
                 break;
         case constants.denysoft:
-                this.respond(452, msg || "Message denied temporarily", function() {
+                this.respond(450, msg || "Message denied temporarily", function() {
                     self.msg_count.tempfail++;
                     self.reset_transaction(function () { self.resume();});
                 });
                 break;
         case constants.denysoftdisconnect:
-                this.respond(452, msg || "Message denied temporarily", function() {
+                this.respond(450, msg || "Message denied temporarily", function() {
                     self.msg_count.tempfail++;
                     self.disconnect();
                 });
@@ -1555,14 +1555,14 @@ Connection.prototype.queue_outbound_respond = function(retval, msg) {
                                 plugins.run_hooks("queue_ok", self, msg || 'Message Queued (' + self.transaction.uuid + ')');
                                 break;
                         case constants.deny:
-                                self.respond(552, msg || "Message denied", function() {
+                                self.respond(550, msg || "Message denied", function() {
                                     self.msg_count.reject++;
                                     self.reset_transaction(function () { self.resume();});
                                 });
                                 break;
                         default:
                                 self.logerror("Unrecognised response from outbound layer: " + retval + " : " + msg);
-                                self.respond(552, msg || "Internal Server Error", function() {
+                                self.respond(550, msg || "Internal Server Error", function() {
                                     self.msg_count.reject++;
                                     self.reset_transaction(function () { self.resume();});
                                 });
@@ -1581,25 +1581,25 @@ Connection.prototype.queue_respond = function(retval, msg) {
                 plugins.run_hooks("queue_ok", this, msg || 'Message Queued (' + self.transaction.uuid + ')');
                 break;
         case constants.deny:
-                this.respond(552, msg || "Message denied", function() {
+                this.respond(550, msg || "Message denied", function() {
                     self.msg_count.reject++;
                     self.reset_transaction(function () { self.resume();});
                 });
                 break;
         case constants.denydisconnect:
-                this.respond(552, msg || "Message denied", function() {
+                this.respond(550, msg || "Message denied", function() {
                     self.msg_count.reject++;
                     self.disconnect();
                 });
                 break;
         case constants.denysoft:
-                this.respond(452, msg || "Message denied temporarily", function() {
+                this.respond(450, msg || "Message denied temporarily", function() {
                     self.msg_count.tempfail++;
                     self.reset_transaction(function () { self.resume();});
                 });
                 break;
         case constants.denysoftdisconnect:
-                this.respond(452, msg || "Message denied temporarily", function() {
+                this.respond(450, msg || "Message denied temporarily", function() {
                     self.msg_count.tempfail++;
                     self.disconnect();
                 });
