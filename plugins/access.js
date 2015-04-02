@@ -21,8 +21,12 @@ exports.register = function() {
         plugin.register_hook('helo',    'helo_access');
         plugin.register_hook('ehlo',    'helo_access');
     }
-    if (plugin.cfg.check.mail) { plugin.register_hook('mail', 'mail_from_access'); }
-    if (plugin.cfg.check.rcpt) { plugin.register_hook('rcpt', 'rcpt_to_access'); }
+    if (plugin.cfg.check.mail) {
+        plugin.register_hook('mail', 'mail_from_access');
+    }
+    if (plugin.cfg.check.rcpt) {
+        plugin.register_hook('rcpt', 'rcpt_to_access');
+    }
 
     if (plugin.cfg.check.any) {
         plugin.load_domain_file('domain', 'any');
@@ -398,7 +402,13 @@ exports.in_list = function (type, phase, address) {
 exports.in_re_list = function (type, phase, address) {
     var plugin = this;
     if (!plugin.list_re[type][phase]) { return false; }
-    plugin.logdebug(plugin, 'checking ' + address + ' against ' + plugin.cfg.re[type][phase].source);
+    if (!plugin.cfg.re[type][phase].source) {
+        plugin.logdebug(plugin, 'empty file: ' + plugin.cfg.re[type][phase]);
+    }
+    else {
+        plugin.logdebug(plugin, 'checking ' + address + ' against ' +
+            plugin.cfg.re[type][phase].source);
+    }
     return plugin.list_re[type][phase].test(address);
 };
 
