@@ -111,6 +111,18 @@ exports.load_ini_config = {
         test.strictEqual(r.sect1.bool_false_default, false);
         test.done();
     },
+    'test.ini, funnychars, /' : function (test) {
+        test.expect(1);
+        var r = this.cfreader.load_ini_config('tests/config/test.ini');
+        test.strictEqual(r.funnychars['results.auth/auth_base.fail'], 'fun');
+        test.done();
+    },
+    'test.ini, funnychars, _' : function (test) {
+        test.expect(1);
+        var r = this.cfreader.load_ini_config('tests/config/test.ini');
+        test.strictEqual(r.funnychars['results.auth/auth_base.fail'], 'fun');
+        test.done();
+    },
 };
 
 exports.get_filetype_reader  = {
