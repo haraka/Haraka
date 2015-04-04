@@ -161,12 +161,12 @@ Same thing with **has** (retrieve a string match):
         // some_test passed (1x)
     }
 
-So the syntax for using **has** is a little more pleasant.
+The syntax for using **has** is a little more pleasant.
 
 Both options require one to check for each reason which is unpleasant when
 and all we really want to know is if some\_test passed or not.
 
-Retrieve a matching pattern:
+To retrieve a matching pattern:
 
     if (r.has('plugin_name', 'pass', /^some_test/)) {
         // some_test passed (2x)
