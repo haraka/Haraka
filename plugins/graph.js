@@ -1,5 +1,4 @@
 // log our denys
-/* jshint multistr: true */
 
 var http  = require('http');
 var urlp  = require('url');
@@ -34,12 +33,10 @@ exports.register = function () {
         }
     );
 
-    var sqlite3;
     try {
-        sqlite3 = require('sqlite3').verbose();
+        var sqlite3 = require('sqlite3').verbose();
     }
     catch (e) {
-        plugin.logerror(e);
         plugin.logerror("unable to load sqlite3, try\n\n\t'npm install -g sqlite3'\n\n");
         return;
     }
@@ -48,19 +45,30 @@ exports.register = function () {
     db = new sqlite3.Database(db_name, createTable);
     insert = db.prepare( "INSERT INTO graphdata VALUES (?,?)" );
 
-    plugin.register_hook('init_http',     'init_http');
+    plugin.register_hook('init_master',   'http_init');
     plugin.register_hook('disconnect',    'disconnect');
     plugin.register_hook('deny',          'deny');
     plugin.register_hook('queue_ok',      'queue_ok');
 };
 
-exports.init_http = function (next, server, app) {
+exports.http_init = function (next) {
     var plugin = this;
+    var port   = config.main.http_port || this.config.get('grapher.http_port') || 8080;
+    var addr   = config.main.http_addr || '127.0.0.1';
+    var server = http.createServer(
+        function (req, res) {
+            plugin.handle_http_request(req, res);
+        });
 
-    app.use('/graph/data',  plugin.handle_data);
-    app.use('/graph/',      plugin.handle_root);
+    server.on('error', function (err) {
+        plugin.logerror("http server failed to start. Maybe running elsewhere?" + err);
+        next(DENY);
+    });
 
-    return next();
+    server.listen(port, addr, function () {
+        plugin.loginfo("http server running on " + addr + ':' + port);
+        next();
+    });
 };
 
 exports.disconnect = function (next, connection) {
@@ -99,13 +107,28 @@ exports.queue_ok = function (next, connection, params) {
             if (err) {
                 plugin.logerror("Insert failed: " + err);
             }
-            try { insert.reset(); } catch (ignore) {}
+            try { insert.reset() } catch (err) {}
             next();
         });
     });
 };
 
-exports.handle_root = function (req, res) {
+exports.handle_http_request = function (req, res) {
+    var parsed = urlp.parse(req.url, true);
+    // this.loginfo("Handling URL: " + parsed.href);
+    switch (parsed.pathname) {
+        case '/':
+            this.handle_root(res, parsed);
+            break;
+        case '/data':
+            this.handle_data(res, parsed);
+            break;
+        default:
+            this.handle_404(res, parsed);
+    }
+};
+
+exports.handle_root = function (res, parsed) {
     res.writeHead(200, { 'Content-Type': 'text/html' });
     res.end('<html>\
         <head>\
@@ -163,8 +186,7 @@ exports.handle_root = function (req, res) {
     ');
 };
 
-exports.handle_data = function (req, res) {
-    var parsed = urlp.parse(req.url, true);
+exports.handle_data = function (res, parsed) {
     res.writeHead(200, { 'Content-Type': 'text/plain' });
     var distance;
     // this.loginfo("query period: " + (parsed.query.period || 'day'));
@@ -181,7 +203,7 @@ exports.handle_data = function (req, res) {
         case 'hour':
             distance = 3600000;
             break;
-        // case 'day':
+        case 'day':
         default:
             distance = 86400000;
     }
@@ -216,7 +238,7 @@ exports.get_data = function (res, earliest, today, group_by) {
     },
     function (err, rows ) {
             write_to(utils.ISODate(new Date(next_stop)) + ',' + 
-                utils.sort_keys(plugins).map(function(i){ return 1000 * 60 * (aggregate[i]/group_by); }).join(',')
+                utils.sort_keys(plugins).map(function(i){ return 1000 * 60 * (aggregate[i]/group_by) }).join(',')
             );
             if (next_stop >= today) {
                 return res.end();
@@ -236,4 +258,10 @@ var reset_agg = function () {
         agg[p] = 0;
     }
     return agg;
+};
+
+exports.handle_404 = function (res, parsed) {
+    this.logerror("404: " + parsed.href);
+    res.writeHead(404);
+    res.end('No such file: ' + parsed.href);
 };
