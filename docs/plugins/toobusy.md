@@ -4,10 +4,10 @@ toobusy
 This plugin will stop Haraka accepting new connections when the event loop 
 latency is too high.
 
-See https://github.com/lloyd/node-toobusy for details.
+See https://github.com/STRML/node-toobusy for details.
 
-To use this plugin you have to install the 'toobusy' module by running
-'npm install toobusy' in your Haraka configuration directory.
+To use this plugin you have to install the 'toobusy-js' module by running
+'npm install toobusy-js' in your Haraka configuration directory.
 
 This plugin should be listed at the top of your config/plugins file so that 
 it runs before any other plugin that hooks lookup\_rdns.

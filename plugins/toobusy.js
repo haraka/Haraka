@@ -1,6 +1,6 @@
 // Stop accepting new connections when we are too busy
 
-var toobusy = require('toobusy');
+var toobusy = require('toobusy-js');
 var was_busy = false;
 
 exports.register = function () {
