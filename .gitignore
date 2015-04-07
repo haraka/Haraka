@@ -2,4 +2,3 @@ node_modules
 .coveralls.yml
 Haraka
 *~
-bower_components
