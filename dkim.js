@@ -406,6 +406,8 @@ DKIMObject.prototype.end = function () {
             }
             return self.result(null, ((verified) ? 'pass' : 'fail'));
         }
+        // We didn't find a valid DKIM record for this signature
+        return self.result('no key for signature', 'invalid');
     });
 };
 
