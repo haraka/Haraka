@@ -310,6 +310,13 @@ exports.get_award_location = {
         test.equal(undefined, r);
         test.done();
     },
+    'results.auth/auth_base': function (test) {
+        test.expect(1);
+        this.connection.results.add({name: 'auth/auth_base'}, { fail: 'PLAIN' });
+        var r = this.plugin.get_award_location(this.connection, 'results.auth/auth_base');
+        test.equal('PLAIN', r.fail[0]);
+        test.done();
+    },
 };
 
 exports.get_award_condition = {
@@ -321,6 +328,13 @@ exports.get_award_condition = {
         ));
         test.equal(4000, this.plugin.get_award_condition(
             'results.geoip.distance@uniq', '-1 if gt 4000'
+        ));
+        test.done();
+    },
+    'auth/auth_base': function (test) {
+        test.expect(1);
+        test.equal('plain', this.plugin.get_award_condition(
+            'results.auth/auth_base.fail@plain', '-1 if in'
         ));
         test.done();
     },
@@ -361,6 +375,18 @@ exports.check_awards = {
         // test that the award was applied
         test.equal('geoip.distance', this.connection.results.get('karma').fail[0]);
 
+        test.done();
+    },
+    'auth failure': function (test) {
+        test.expect(2);
+        this.connection.results.add({name: 'karma'}, {
+            todo: { 'results.auth/auth_base.fail@PLAIN': '-1 if in' }
+        });
+        this.connection.results.add({name: 'auth/auth_base'},
+                {fail: 'PLAIN'});
+        var r = this.plugin.check_awards(this.connection);
+        test.equal(undefined, r);
+        test.equal('auth/auth_base.fail', this.connection.results.get('karma').fail[0]);
         test.done();
     },
 };
