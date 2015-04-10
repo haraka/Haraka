@@ -5,6 +5,7 @@ var url       = require('url');
 var dns       = require('dns');
 var isIPv4    = require('net').isIPv4;
 var net_utils = require('./net_utils');
+var utils     = require('./utils');
 
 // Default regexps to extract the URIs from the message
 var numeric_ip = /\w{3,16}:\/+(\S+@)?(\d+|0[xX][0-9A-Fa-f]+)\.(\d+|0[xX][0-9A-Fa-f]+)\.(\d+|0[xX][0-9A-Fa-f]+)\.(\d+|0[xX][0-9A-Fa-f]+)/gi;
@@ -81,6 +82,7 @@ exports.do_lookups = function (connection, next, hosts, type) {
         return next();
     }
     connection.logdebug(plugin, '(' + type + ') found ' + hosts.length + ' items for lookup');
+    utils.shuffle(hosts);
 
     var j;
     var queries = {};
@@ -154,7 +156,7 @@ exports.do_lookups = function (connection, next, hosts, type) {
         }
     }
     // Randomize the order a bit
-    queries_to_run.sort(Math.round(Math.random())-0.25);
+    utils.shuffle(queries_to_run);
 
     if(!queries_to_run.length) {
         results.add(plugin, {skip: type + ' (no queries)' });
