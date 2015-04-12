@@ -96,6 +96,8 @@ exports.tls_unrecognized_command = function (next, connection, params) {
         return next(DENYSOFTDISCONNECT);
     }, timeout * 1000);
 
+    connection.notes.tls_timer = timer;
+
     /* Upgrade the connection to TLS. */
     connection.client.upgrade(plugin.tls_opts, function (authorized,
             verifyError, cert, cipher) {
@@ -122,3 +124,10 @@ exports.tls_unrecognized_command = function (next, connection, params) {
         });
     });
 };
+
+exports.hook_disconnect = function (next, connection) {
+    if (connection.notes.tls_timer) {
+        clearTimeout(connection.notes.tls_timer);
+    }
+    return next();
+}
