@@ -141,11 +141,19 @@ process.on('message', function (msg) {
         exports.flush_queue();
         return;
     }
+    if (msg.event && msg.event === 'outbound.stop_queue') {
+        exports.stop_queue();
+        return;
+    }
     // ignores the message
 });
 
 exports.flush_queue = function () {
     temp_fail_queue.drain();
+};
+
+exports.stop_queue = function () {
+    temp_fail_queue.stop();
 };
 
 exports.load_pid_queue = function (pid) {

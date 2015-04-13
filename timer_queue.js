@@ -13,7 +13,7 @@ function TimerQueue (interval) {
     var self = this;
     interval = interval || 1000;
     this.queue = [];
-    setInterval(function () { self.fire() }, interval);
+    this.interval = setInterval(function () { self.fire() }, interval);
 }
 
 module.exports = TimerQueue;
@@ -60,4 +60,8 @@ TimerQueue.prototype.drain = function () {
         var to_run = this.queue.shift();
         if (to_run.cb) to_run.cb();
     }
+}
+
+TimerQueue.prototype.stop = function () {
+    clearInterval(this.interval);
 }
