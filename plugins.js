@@ -106,9 +106,16 @@ var plugins = exports;
 
 plugins.Plugin = Plugin;
 
-plugins.load_plugins = function () {
+plugins.load_plugins = function (override) {
     logger.loginfo("Loading plugins");
-    var plugin_list = config.get('plugins', 'list');
+    var plugin_list;
+    if (override) {
+        if (!Array.isArray(override)) override = [ override ];
+        plugin_list = override;
+    }
+    else {
+        plugin_list = config.get('plugins', 'list');
+    }
 
     plugins.plugin_list = plugin_list.map(plugins.load_plugin);
     logger.dump_logs(); // now logging plugins are loaded.
