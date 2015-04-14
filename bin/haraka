@@ -33,6 +33,8 @@ var fs   = require('fs'),
         "message":     path,
         "dump-mime":   Boolean,
         "dump-stream": Boolean,
+        "skip-deny":   Boolean,
+        "set-relay":   Boolean,
     },
     shortHands = {
         "v": ["--version"],
