@@ -21,8 +21,9 @@ function default_result () {
     return { pass: [], fail: [], msg: [], err: [], skip: [] };
 }
 
-ResultStore.prototype.has = function (plugin_name, list, search) {
-    var result = this.store[plugin_name];
+ResultStore.prototype.has = function (plugin, list, search) {
+    var name = this.resolve_plugin_name(plugin);
+    var result = this.store[name];
     if (!result) return false;
     if (!result[list]) return false;
     if (typeof result[list] === 'string') {
@@ -43,8 +44,7 @@ ResultStore.prototype.has = function (plugin_name, list, search) {
 };
 
 ResultStore.prototype.add = function (plugin, obj) {
-    var name = plugin.name;
-
+    var name = this.resolve_plugin_name(plugin);
     var result = this.store[name];
     if (!result) {
         result = default_result();
@@ -90,10 +90,11 @@ ResultStore.prototype.add = function (plugin, obj) {
 };
 
 ResultStore.prototype.incr = function (plugin, obj) {
-    var result = this.store[plugin.name];
+    var name = this.resolve_plugin_name(plugin);
+    var result = this.store[name];
     if (!result) {
         result = default_result();
-        this.store[plugin.name] = result;
+        this.store[name] = result;
     }
 
     for (var key in obj) {
@@ -105,10 +106,11 @@ ResultStore.prototype.incr = function (plugin, obj) {
 };
 
 ResultStore.prototype.push = function (plugin, obj) {
-    var result = this.store[plugin.name];
+    var name = this.resolve_plugin_name(plugin);
+    var result = this.store[name];
     if (!result) {
         result = default_result();
-        this.store[plugin.name] = result;
+        this.store[name] = result;
     }
 
     for (var key in obj) {
@@ -118,7 +120,7 @@ ResultStore.prototype.push = function (plugin, obj) {
 };
 
 ResultStore.prototype.collate = function (plugin) {
-    var name = plugin.name;
+    var name = this.resolve_plugin_name(plugin);
     var result = this.store[name];
     if (!result) return;
     return this.private_collate(result, name).join(', ');
@@ -128,6 +130,12 @@ ResultStore.prototype.get = function (plugin_name) {
     var result = this.store[plugin_name];
     if (!result) return;
     return result;
+};
+
+ResultStore.prototype.resolve_plugin_name = function (thing) {
+    if (!thing) { return; }
+    if (typeof thing === 'string') { return thing; }
+    return thing.name;
 };
 
 ResultStore.prototype.get_all = function () {
