@@ -502,6 +502,7 @@ else if (parsed.test) {
         var args = arguments;
         var mail = new Address(((parsed.envfrom) ? parsed.envfrom : 'test@example.com'));
         connection.init_transaction(function () {
+            connection.transaction.mail_from = mail;
             run_next_hook(args[0], 'mail', connection, [mail, null]);
         });
     }
