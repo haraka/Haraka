@@ -146,7 +146,11 @@ Transaction.prototype.end_data = function(cb) {
         }
     }
 
-    this.message_stream.add_line_end(cb);
+    if (!this.discard_data) {
+        this.message_stream.add_line_end(cb);
+    } else {
+        cb();
+    }
 };
 
 Transaction.prototype.add_header = function(key, value) {
