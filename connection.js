@@ -204,6 +204,7 @@ function Connection(client, server) {
     this.max_line_length = config.get('max_line_length') || 512;
     this.max_data_line_length = config.get('max_data_line_length') || 992;
     this.results = new ResultStore(this);
+    this.errors = 0;
     setupClient(this);
 }
 
@@ -518,6 +519,7 @@ Connection.prototype.disconnect_respond = function () {
         'esmtp=' + (this.esmtp ? 'Y' : 'N'),
         'tls='   + (this.using_tls ? 'Y' : 'N'),
         'pipe='  + (this.pipelining ? 'Y' : 'N'),
+        'errors='+ this.errors,
         'txns='  + this.tran_count,
         'rcpts=' + this.rcpt_count.accept + '/' +
                    this.rcpt_count.tempfail + '/' +
@@ -674,6 +676,7 @@ Connection.prototype.unrecognized_command_respond = function(retval, msg) {
                 });
                 break;
         default:
+                this.errors++;
                 this.respond(500, msg || "Unrecognized command");
     }
 };
@@ -1145,19 +1148,23 @@ Connection.prototype.cmd_help = function() {
 
 Connection.prototype.cmd_mail = function(line) {
     if (!this.hello_host) {
+        this.errors++;
         return this.respond(503, 'Use EHLO/HELO before MAIL');
     }
     // Require authentication on connections to port 587 & 465
     if (!this.relaying && [587,465].indexOf(this.local_port) !== -1) {
+        this.errors++;
         return this.respond(550, 'Authentication required');
     }
     var results;
     var from;
     try {
-        results = rfc1869.parse("mail", line, config.get('strict_rfc1869') && !this.relaying);
+        results = rfc1869.parse("mail", line, config.get('strict_rfc1869') &&
+                  !this.relaying);
         from    = new Address (results.shift());
     }
     catch (err) {
+        this.errors++;
         if (err.stack) {
             this.logerror(err.stack.split(/\n/)[0]);
         }
@@ -1203,16 +1210,19 @@ Connection.prototype.cmd_mail = function(line) {
 
 Connection.prototype.cmd_rcpt = function(line) {
     if (!this.transaction || !this.transaction.mail_from) {
+        this.errors++;
         return this.respond(503, "Use MAIL before RCPT");
     }
 
     var results;
     var recip;
     try {
-        results = rfc1869.parse("rcpt", line, config.get('strict_rfc1869') && !this.relaying);
+        results = rfc1869.parse("rcpt", line, config.get('strict_rfc1869') &&
+                      !this.relaying);
         recip   = new Address(results.shift());
     }
     catch (err) {
+        this.errors++;
         if (err.stack) {
             this.logerror(err.stack.split(/\n/)[0]);
         }
@@ -1327,19 +1337,24 @@ Connection.prototype.cmd_data = function(args) {
     // RFC 5321 Section 4.3.2
     // DATA does not accept arguments
     if (args) {
+        this.errors++;
         return this.respond(501, "Syntax error");
     }
     if (!this.transaction) {
+        this.errors++;
         return this.respond(503, "MAIL required first");
     }
     if (!this.transaction.rcpt_to.length) {
+        this.errors++;
         return this.respond(503, "RCPT required first");
     }
 
     this.accumulate_data('Received: ' + this.received_line() + "\r\n");
     this.auth_results_clean();   // rename old A-R headers
     var ar_field = this.auth_results();  // assemble new one
-    if (ar_field) this.transaction.add_header('Authentication-Results', ar_field);
+    if (ar_field) {
+        this.transaction.add_header('Authentication-Results', ar_field);
+    }
     plugins.run_hooks('data', this);
 };
 
