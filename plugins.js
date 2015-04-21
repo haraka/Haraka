@@ -151,11 +151,14 @@ plugins._load_and_compile_plugin = function(name) {
         throw "Loading plugin " + name + " failed: " + last_err;
     }
     var custom_require = function _haraka_require (module) {
+        module.id = fp[i];
+
         if (!/^\./.test(module)) {
             return require(module);
         }
 
-        if (utils.existsSync(__dirname + '/' + module + '.js') || utils.existsSync(__dirname + '/' + module)) {
+        if (utils.existsSync(__dirname + '/' + module + '.js') ||
+            utils.existsSync(__dirname + '/' + module)) {
             return require(module);
         }
 

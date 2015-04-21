@@ -9,11 +9,12 @@ var utils  = require('./utils');
 var nosql  = exports;
 nosql.cfg  = config.get('nosql.ini');
 var default_callback = function (ignore) {};
+var caller = _get_caller_name(module.parent.id);
+logger.logdebug('calling plugin is ' + caller);
 
 nosql.get = function (key, done) {
     if (!done) done = default_callback;
 
-    var caller = _get_caller_name();
     if (nosql.redis) {   // Redis selected, use it
         return nosql.redis.hget(caller, key, done);
     }
@@ -35,7 +36,6 @@ nosql.get = function (key, done) {
 nosql.set = function (key, val, done) {
     if (!done) done = default_callback;
 
-    var caller = _get_caller_name();
     if (nosql.redis) {
         nosql.redis.hset(caller, key, val, done);
         return;
@@ -59,7 +59,6 @@ nosql.set = function (key, val, done) {
 nosql.del = function (key, done) {
     if (!done) done = default_callback;
 
-    var caller = _get_caller_name();
     if (nosql.redis) {
         return nosql.redis.hdel(caller, key, done);
     }
@@ -79,7 +78,6 @@ nosql.del = function (key, done) {
 nosql.incrby = function (key, incr, done) {
     if (!done) done = default_callback;
 
-    var caller = _get_caller_name();
     if (nosql.redis) {
         return nosql.redis.hincrby(caller, key, incr, done);
     }
@@ -116,7 +114,6 @@ nosql.incrby = function (key, incr, done) {
 nosql.reset = function (done) {
     if (!done) done = default_callback;
 
-    var caller = _get_caller_name();
     if (nosql.redis) {
         return nosql.redis.del(caller, done);
     }
@@ -168,7 +165,7 @@ nosql.redis_connect = function (done) {
     nosql.redis = redis.createClient(port, ip);  // client
 
     nosql.redis.on('error', function (error) {
-        logger.logerror('nosql redis error: ' + error.message);
+        // logger.logerror('nosql redis error: ' + error.message);
         if (done && !ranDone) { ranDone++; done(error); }
     });
 
@@ -200,9 +197,12 @@ nosql.redis_ping = function(done) {
     });
 };
 
-function _get_caller_name () {
+function _get_caller_name (full_path) {
 
-    var full_path = module.parent.filename;
+    if (!full_path) {
+        logger.logerror('full_path not found!');
+        return 'plugins';
+    }
     if (utils.node_min('0.12')) {
         return path.parse(full_path).name;
     }
