@@ -42,7 +42,8 @@ exports.createTransaction = function(uuid) {
     var t = new Transaction();
     t.uuid = uuid || utils.uuid();
     // Initialize MessageStream here to pass in the UUID
-    t.message_stream = new MessageStream(config.get('smtp.ini'), t.uuid, t.header.header_list);
+    t.message_stream = new MessageStream(
+            config.get('smtp.ini'), t.uuid, t.header.header_list);
     return t;
 };
 
@@ -61,8 +62,11 @@ Transaction.prototype.ensure_body = function() {
     }
     this.body_filters.forEach(function(o) {
         self.body.add_filter(function(ct, enc, buf) {
-            if ((o.ct_match instanceof RegExp && o.ct_match.test(ct.toLowerCase()))
-                        || ct.toLowerCase().indexOf(String(o.ct_match).toLowerCase()) === 0) {
+            if ((o.ct_match instanceof RegExp &&
+                 o.ct_match.test(ct.toLowerCase())) ||
+                    ct.toLowerCase()
+                      .indexOf(String(o.ct_match)
+                      .toLowerCase()) === 0) {
                 return o.filter(ct, enc, buf);
             }
         });
@@ -71,10 +75,11 @@ Transaction.prototype.ensure_body = function() {
 
 Transaction.prototype.add_data = function(line) {
     if (typeof line === 'string') { // This shouldn't ever really happen...
-        line = new Buffer(line);
+        line = new Buffer(line, 'binary');
     }
     // check if this is the end of headers line  
-    if (this.header_pos === 0 && (line[0] === 0x0A || (line[0] === 0x0D && line[1] === 0x0A)) ) {
+    if (this.header_pos === 0 &&
+        (line[0] === 0x0A || (line[0] === 0x0D && line[1] === 0x0A)) ) {
         this.header.parse(this.header_lines);
         this.header_pos = this.header_lines.length;
         if (this.parse_body) {
@@ -85,19 +90,21 @@ Transaction.prototype.add_data = function(line) {
         // Build up headers
         if (this.header_lines.length < MAX_HEADER_LINES) {
             if (line[0] === 0x2E) line = line.slice(1); // Strip leading "."
-            this.header_lines.push(line.toString('binary').replace(/\r\n$/, '\n'));
+            this.header_lines.push(
+                    line.toString('binary').replace(/\r\n$/, '\n'));
         }
     }
     else if (this.header_pos && this.parse_body) {
         if (line[0] === 0x2E) line = line.slice(1); // Strip leading "."
-        var new_line = this.body.parse_more(line.toString('binary').replace(/\r\n$/, '\n'));
+        var new_line = this.body.parse_more(
+                line.toString('binary').replace(/\r\n$/, '\n'));
         
         if (!new_line.length) {
             return; // buffering for banners
         }
 
         new_line = new_line.replace(/^\./gm, '..').replace(/\r?\n/gm, '\r\n');
-        line = new Buffer(new_line);
+        line = new Buffer(new_line,'binary');
     }
 
     if (!this.discard_data) this.message_stream.add_line(line);
@@ -106,7 +113,8 @@ Transaction.prototype.add_data = function(line) {
 Transaction.prototype.end_data = function(cb) {
     if (this.header_lines.length && this.header.header_list.length === 0) {
         // Headers not parsed yet - must be a busted email
-        // Strategy: Find first blank line, parse up to that as headers. Rest as body.
+        // Strategy: Find first blank line, parse up to that as headers.
+        //           Rest as body.
         var header_pos = 0;
         for (var i = 0; i < this.header_lines.length; i++) {
             header_pos = i;
@@ -121,23 +129,29 @@ Transaction.prototype.end_data = function(cb) {
         this.header_pos = header_pos;
         if (this.parse_body) {
             this.ensure_body();
-            for (var i = 0; i < body_lines.length; i++) {
-                this.body.parse_more(body_lines[i]);
+            for (var j = 0; j < body_lines.length; j++) {
+                this.body.parse_more(body_lines[j]);
             }
         }
     }
     if (this.header_pos && this.parse_body) {
         var data = this.body.parse_end();
         if (data.length) {
-            data = data.replace(/^\./gm, '..').replace(/\r?\n/gm, '\r\n');
-            var line = new Buffer(data);
+            data = data.toString('binary')
+                       .replace(/^\./gm, '..')
+                       .replace(/\r?\n/gm, '\r\n');
+            var line = new Buffer(data, 'binary');
 
             if (!this.discard_data) this.message_stream.add_line(line);
         }
     }
 
-    this.message_stream.add_line_end(cb);
-}
+    if (!this.discard_data) {
+        this.message_stream.add_line_end(cb);
+    } else {
+        cb();
+    }
+};
 
 Transaction.prototype.add_header = function(key, value) {
     this.header.add_end(key, value);
@@ -171,9 +185,9 @@ Transaction.prototype.set_banner = function (text, html) {
         html = text.replace(/\n/g, '<br/>\n');
     }
     this.banner = [text, html];
-}
+};
 
 Transaction.prototype.add_body_filter = function (ct_match, filter) {
     this.parse_body = true;
     this.body_filters.push({'ct_match': ct_match, 'filter': filter});
-}
+};

@@ -12,6 +12,7 @@ var os          = require('os');
 var cluster     = require('cluster');
 var async       = require('async');
 var daemon      = require('daemon');
+var path        = require('path');
 
 // Need these here so we can run hooks
 logger.add_log_methods(exports, 'server');
@@ -39,7 +40,14 @@ Server.load_smtp_ini = function () {
     }
 };
 
+Server.load_http_ini = function () {
+    Server.http_cfg = config.get('http.ini', function () {
+        Server.load_http_ini();
+    }).main;
+};
+
 Server.load_smtp_ini();
+Server.load_http_ini();
 
 Server.daemonize = function () {
     var c = this.cfg.main;
@@ -120,6 +128,7 @@ Server.createServer = function (params) {
     if (!cluster || !c.nodes) {
         Server.daemonize(c);
         Server.setup_smtp_listeners(plugins, 'master', inactivity_timeout);
+        Server.setup_http_listeners(plugins, 'master');
         return;
     }
 
@@ -128,7 +137,8 @@ Server.createServer = function (params) {
 
     // Workers
     if (!cluster.isMaster) {
-        Server.setup_smtp_listeners(plugins, "child", inactivity_timeout);
+        Server.setup_smtp_listeners(plugins, 'child', inactivity_timeout);
+        Server.setup_http_listeners(plugins, 'child');
         return;
     }
 
@@ -145,7 +155,7 @@ Server.get_smtp_server = function (host, port, inactivity_timeout) {
         conn.createConnection(client, server);
     };
 
-    if (port != 465) {
+    if (port !== '465') {
         server = net.createServer(conn_cb);
         return server;
     }
@@ -218,6 +228,77 @@ Server.setup_smtp_listeners = function (plugins, type, inactivity_timeout) {
     };
 
     async.each(listeners, setupListener, runInitHooks);
+};
+
+Server.setup_http_listeners = function (plugins, type) {
+    if (!Server.http_cfg) return;
+    if (!Server.http_cfg.listen) return;
+
+    var listeners = Server.get_listen_addrs(Server.http_cfg, 80);
+    if (!listeners.length) return;
+
+    var express;
+    try {
+        express = require('express');
+    }
+    catch (err) {
+        logger.logerror('express failed to load. No http server. ' +
+                ' Try installing express with: npm install -g express');
+        return;
+    }
+    var app = express();
+    var server, wss;
+
+    Server.init_http_respond = function () {
+        // logger.loginfo(arguments);
+    };
+    Server.init_wss_respond = function () {
+        // logger.loginfo(arguments);
+    };
+
+    var setupListener = function (host_port, cb) {
+        var hp = /^\[?([^\]]+)\]?:(\d+)$/.exec(host_port);
+        if (!hp) {
+            return cb(new Error('Invalid format for listen in http.ini'));
+        }
+
+        server = require('http').createServer(app);
+
+        server.on('listening', function () {
+            var addr = this.address();
+            logger.lognotice('Listening on ' + addr.address + ':' + addr.port);
+            cb();
+        });
+
+        server.on('error', function (e) { cb(e); });
+
+        server.listen(hp[2], hp[1]);
+    };
+
+    var registerRoutes = function (err) {
+        if (err) {
+            logger.logerror('Failed to setup http routes: ' + err.message);
+        }
+
+        plugins.run_hooks('init_http', Server, app);
+
+        var WebSocketServer;
+        try { WebSocketServer = require('ws').Server; }
+        catch (e) {
+            logger.logerror('unable to load ws.\ndid you: npm install -g ws?');
+        }
+
+        if (WebSocketServer) {
+            wss = new WebSocketServer({ server: server });
+            plugins.run_hooks('init_wss', Server, wss);
+        }
+
+        app.get('/plugins', Server.http_plugins);
+        app.use(express.static(Server.get_http_docroot()));
+        app.use(Server.handle404);
+    };
+
+    async.each(listeners, setupListener, registerRoutes);
 };
 
 Server.init_master_respond = function (retval, msg) {
@@ -308,4 +389,38 @@ Server.listening = function () {
     }
 
     Server.ready = 1;
+};
+
+Server.get_http_docroot = function () {
+    if (Server.http_cfg.docroot) return Server.http_cfg.docroot;
+
+    Server.http_cfg.docroot = path.join(
+        (process.env.HARAKA || __dirname),
+        '/html'
+    );
+    logger.loginfo('using html docroot: ' + Server.http_cfg.docroot);
+    return Server.http_cfg.docroot;
+};
+
+Server.handle404 = function(req, res){
+    // abandon all hope, serve up a 404
+    var docroot = Server.get_http_docroot();
+
+    // respond with html page
+    if (req.accepts('html')) {
+        res.status(404).sendFile('404.html', { root: docroot });
+        return;
+    }
+
+    // respond with json
+    if (req.accepts('json')) {
+        res.status(404).send({ err: 'Not found' });
+        return;
+    }
+
+    res.status(404).send('Not found!');
+};
+
+Server.http_plugins = function(req, res) {
+    return res.json({ plugins: Server.hooks_to_run });
 };

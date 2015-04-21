@@ -8,7 +8,7 @@ var yaml = require('js-yaml');
 // for "ini" type files
 var regex = exports.regex = {
     section:        /^\s*\[\s*([^\]]*?)\s*\]\s*$/,
-    param:          /^\s*([\w@\._-]+)\s*=\s*(.*?)\s*$/,
+    param:          /^\s*([\w@\._\-\/]+)\s*=\s*(.*?)\s*$/,
     comment:        /^\s*[;#].*$/,
     line:           /^\s*(.*?)\s*$/,
     blank:          /^\s*$/,

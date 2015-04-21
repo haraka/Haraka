@@ -52,9 +52,6 @@ Move the following plugins:
  - test_queue   -> queue/test_queue
 
 Built-in HTTP server
-- instead of each plugin bringing their own, and getting relegated to some
-  god-forsaken port number:
-- a dispatch mechanism, so each plugin gets their own URL space
 - uses the same TLS/SSL certs as smtpd
 - auth against SMTP-AUTH provider
 

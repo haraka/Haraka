@@ -88,8 +88,7 @@ exports.apply_tarpit = function (connection, hook, score, next) {
 
     // If tarpit is enabled on the reset_transaction hook, Haraka doesn't
     // wait. Then bad things happen, like a Haraka crash.
-    if (hook === 'reset_transaction') { return next(); }
-    if (hook === 'queue') { return next(); }
+    if (utils.in_array(hook, ['reset_transaction','queue'])) { return next(); }
 
     // no delay for senders with good karma
     var k = connection.results.get('karma');
@@ -107,35 +106,59 @@ exports.apply_tarpit = function (connection, hook, score, next) {
         connection.logdebug(plugin, "static tarpit: " + delay);
     }
 
-    var max = plugin.cfg.tarpit.max || 5;
-
-    // be less punitive to roaming users
-    if (([587,465].indexOf(connection.local_port) !== -1) && /^(ehlo|connect|quit)$/.test(hook)) {
-        if (max > 2) { max = 2; }
-        // Reduce penalty for good history
-        if (k.history > 0) {
-            delay = parseFloat(delay - 2);
-            connection.logdebug(plugin, "tarpit reduced for good history: " + delay);
-        }
-        // Reduce penalty for good ASN history
-        var asn = connection.results.get('connect.asn');
-        if (!asn) { asn = connection.results.get('connect.geoip'); }
-        if (asn && asn.asn && k.neighbors > 0) {
-            delay = parseFloat(delay - 2);
-            connection.logdebug(plugin, "tarpit reduced for good neighbors: " + delay);
-        }
-    }
-
-    if (delay > max) {
-        delay = max;
-        connection.logdebug(plugin, "tarpit reduced to max: " + delay);
-    }
+    delay = plugin.tarpit_cap(connection, hook, delay, k);
+    // if (!delay) { return; }
 
     connection.loginfo(plugin, 'tarpitting '+hook+' for ' + delay + 's');
     setTimeout(function () {
         connection.loginfo(plugin, 'tarpit '+hook+' end');
         next();
     }, delay * 1000);
+};
+
+exports.tarpit_cap = function (connection, hook, delay, k) {
+    var plugin = this;
+
+    // detect roaming users based on MSA ports that require auth
+    if (utils.in_array(connection.local_port, [587,465]) &&
+        utils.in_array(hook, ['ehlo','connect','quit'])) {
+        return plugin.tarpit_delay_msa(connection, delay, k);
+    }
+
+    var max = plugin.cfg.tarpit.max || 5;
+    if (delay > max) {
+        delay = max;
+        connection.logdebug(plugin, "tarpit capped to: " + delay);
+    }
+
+    return delay;
+};
+
+exports.tarpit_delay_msa = function (connection, delay, k) {
+    var plugin = this;
+    var trg = 'tarpit reduced for good';
+
+    // Reduce penalty for good history
+    if (k.history > 0) {
+        delay = parseFloat(delay - 2);
+        connection.logdebug(plugin, trg + ' history: ' + delay);
+    }
+
+    // Reduce penalty for good ASN history
+    var asn = connection.results.get('connect.asn');
+    if (!asn) { asn = connection.results.get('connect.geoip'); }
+    if (asn && asn.asn && k.neighbors > 0) {
+        connection.logdebug(plugin, trg + ' neighbors: ' + delay);
+        delay = parseFloat(delay - 2);
+    }
+
+    var max = plugin.cfg.tarpit.max_msa || 2;
+    if (delay > max) {
+        connection.logdebug(plugin, "tarpit capped at: " + delay);
+        delay = max;
+    }
+
+    return delay;
 };
 
 exports.should_we_deny = function (next, connection, hook) {
@@ -260,7 +283,7 @@ exports.hook_lookup_rdns = function (next, connection) {
     plugin.init_redis_connection();
     plugin.results_init(connection);
 
-    var expire = (plugin.cfg.redis.expire_days || 60) * 86400; // convert to days
+    var expire = (plugin.cfg.redis.expire_days || 60) * 86400; // to days
     var rip    = connection.remote_ip;
     var dbkey  = 'karma|' + rip;
 
@@ -280,15 +303,16 @@ exports.hook_lookup_rdns = function (next, connection) {
             }
 
             plugin.db.multi()
-                .hincrby(dbkey, 'connections', 1)  // increment total connections
-                .expire(dbkey, expire)             // extend expiration date
-                .hincrby('concurrent', rip, 1)     // increment concurrent connections
+                .hincrby(dbkey, 'connections', 1)  // increment total conn
+                .expire(dbkey, expire)             // extend expiration
+                .hincrby('concurrent', rip, 1)     // increment concurrency
                 .exec(function (err, replies) {
                     if (err) connection.results.add(plugin, {err: err});
                 });
 
             var history = (dbr.good || 0) - (dbr.bad || 0);
-            connection.results.add(plugin, {history: history, total_connects: dbr.connections});
+            connection.results.add(plugin,
+                    {history: history, total_connects: dbr.connections});
 
             if (plugin.check_concurrency(replies[0], history)) {
                 connection.results.add(plugin, {fail: 'max_concurrent'});
@@ -304,14 +328,16 @@ exports.hook_lookup_rdns = function (next, connection) {
             var days_old = (ms_old / 86400 / 1000).toFixed(2);
             connection.results.add(plugin, {msg: 'days_old: ' + days_old});
 
-            var penalty_days = plugin.cfg.penalty.days || plugin.cfg.main.penalty_days || 1;
+            var penalty_days = plugin.cfg.penalty.days ||
+                               plugin.cfg.main.penalty_days || 1;
             if (days_old >= penalty_days) {
                 connection.results.add(plugin, {msg: 'penalty expired'});
                 return next();
             }
 
             var left = +(penalty_days - days_old).toFixed(2);
-            connection.results.add(plugin, {fail: 'penalty', msg: 'penalty left('+left+')'});
+            connection.results.add(plugin,
+                    {fail: 'penalty', msg: 'penalty left('+left+')'});
             return next();
         });
 
@@ -331,7 +357,8 @@ exports.max_concurrent = function (next, connection) {
 
     // Disconnect slowly.
     setTimeout(function () {
-        return next(DENYSOFTDISCONNECT, "too many concurrent connections for you");
+        return next(DENYSOFTDISCONNECT,
+                "too many concurrent connections for you");
     }, delay * 1000);
 };
 
@@ -360,7 +387,8 @@ exports.hook_mail = function (next, connection, params) {
     // look for an illegal (RFC 5321,(2)821) space in envelope from
     var full_from = connection.current_line;
     if (full_from.toUpperCase().substring(0,11) !== 'MAIL FROM:<') {
-        connection.loginfo(plugin, "RFC ignorant env addr format: " + full_from );
+        connection.loginfo(plugin,
+                "RFC ignorant env addr format: " + full_from );
         connection.results.add(plugin, {fail: 'rfc5321.MailFrom'});
     }
 
@@ -425,13 +453,18 @@ exports.hook_data_post = function (next, connection) {
     return plugin.should_we_deny(next, connection, 'data_post');
 };
 
+exports.decrement_concurrency = function (connection) {
+    var plugin = this;
+    if (plugin.cfg.concurrency) {
+        plugin.db.hincrby('concurrent', connection.remote_ip, -1);
+    }
+};
+
 exports.hook_disconnect = function (next, connection) {
     var plugin = this;
 
     plugin.init_redis_connection();
-    if (plugin.cfg.concurrency) {
-        plugin.db.hincrby('concurrent', connection.remote_ip, -1);
-    }
+    plugin.decrement_concurrency(connection);
 
     var k = connection.results.get('karma');
     if (!k) {
