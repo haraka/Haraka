@@ -3,7 +3,6 @@
 
 var net         = require('net');
 var path        = require('path');
-
 var config      = require('./config');
 var logger      = require('./logger');
 var trans       = require('./transaction');
@@ -19,6 +18,7 @@ var date_to_str = require('./utils').date_to_str;
 var indexOfLF   = require('./utils').indexOfLF;
 var ipaddr      = require('ipaddr.js');
 var ResultStore = require('./result_store');
+var hostname    = (require('os').hostname().split(/\./))[0];
 
 var version = JSON.parse(
         fs.readFileSync(path.join(__dirname, 'package.json'))).version;
@@ -467,7 +467,7 @@ Connection.prototype.respond = function(code, msg, func) {
 
     while (mess = messages.shift()) {
         var line = code + (messages.length ? "-" : " ") +
-            (uuid ? '[' + uuid + '] ' : '' ) + mess;
+            (uuid ? '[' + uuid + '@' + hostname + '] ' : '' ) + mess;
         this.logprotocol("S: " + line);
         buf = buf + line + "\r\n";
     }
