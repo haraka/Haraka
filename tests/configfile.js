@@ -122,13 +122,13 @@ exports.load_config = {
     },
     'test.ini, funnychars, /' : function (test) {
         test.expect(1);
-        var r = this.cfreader.load_ini_config('tests/config/test.ini');
+        var r = this.cfreader.load_config('tests/config/test.ini', 'ini');
         test.strictEqual(r.funnychars['results.auth/auth_base.fail'], 'fun');
         test.done();
     },
     'test.ini, funnychars, _' : function (test) {
         test.expect(1);
-        var r = this.cfreader.load_ini_config('tests/config/test.ini');
+        var r = this.cfreader.load_config('tests/config/test.ini', 'ini');
         test.strictEqual(r.funnychars['results.auth/auth_base.fail'], 'fun');
         test.done();
     },
