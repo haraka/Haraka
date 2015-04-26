@@ -18,7 +18,7 @@ exports.load_bounce_bad_rcpt = function () {
     var plugin = this;
 
     var new_list = plugin.config.get('bounce_bad_rcpt', 'list', function () {
-        load_bounce_bad_rcpt();
+        plugin.load_bounce_bad_rcpt();
     });
 
     var invalids = {};
@@ -37,10 +37,11 @@ exports.load_bounce_ini = function () {
             '+check.single_recipient',
             '-check.empty_return_path',
             '+check.bad_rcpt',
-            '-check.non_local_msgid',
+            '+check.non_local_msgid',
 
             '+reject.single_recipient',
             '-reject.empty_return_path',
+            '-reject.non_local_msgid',
         ],
     }, function () {
         plugin.load_bounce_ini();
@@ -69,7 +70,8 @@ exports.reject_all = function (next, connection, params) {
         return next(); // bounce messages are from null senders
     }
 
-    connection.transaction.results.add(plugin, {fail: 'bounces_accepted', emit: true });
+    connection.transaction.results.add(plugin,
+            {fail: 'bounces_accepted', emit: true });
     return next(DENY, "No bounces accepted here");
 };
 
@@ -82,7 +84,8 @@ exports.single_recipient = function(next, connection) {
 
     // Valid bounces have a single recipient
     if (connection.transaction.rcpt_to.length === 1) {
-        transaction.results.add(plugin, {pass: 'single_recipient', emit: true });
+        transaction.results.add(plugin,
+                {pass: 'single_recipient', emit: true });
         return next();
     }
 
@@ -190,11 +193,14 @@ exports.non_local_msgid = function (next, connection) {
     // message should exist as a MIME Encoded part. See here for ideas
     //     http://lamsonproject.org/blog/2009-07-09.html
     //     http://lamsonproject.org/docs/bounce_detection.html
-    var matches = transaction.body.bodytext.match(/[\r\n]Message-ID: .*?[\r\n]/gi);
+    var matches = transaction.body.bodytext.match(
+            /[\r\n]Message-ID: .*?[\r\n]/gi);
     if (!matches) {
         connection.loginfo(plugin, "no Message-ID matches");
         transaction.results.add(plugin, { fail: 'Message-ID' });
-        return next(DENY, "bounce without Message-ID in headers, unable to verify that I sent it");
+        if (!plugin.cfg.reject.non_local_msgid) return next();
+        return next(DENY, 'bounce without Message-ID in headers, unable to ' +
+                ' verify that I sent it');
     }
 
     connection.loginfo(plugin, matches);
@@ -206,8 +212,10 @@ exports.non_local_msgid = function (next, connection) {
     }
 
     if (domains.length === 0) {
-        connection.loginfo(plugin, "no domain(s) parsed from Message-ID headers");
+        connection.loginfo(plugin,
+                'no domain(s) parsed from Message-ID headers');
         transaction.results.add(plugin, { fail: 'Message-ID parseable' });
+        if (!plugin.cfg.reject.non_local_msgid) return next();
         return next(DENY, "bounce with invalid Message-ID, I didn't send it.");
     }
 
@@ -222,10 +230,14 @@ exports.non_local_msgid = function (next, connection) {
 
     if (valid_domains.length === 0) {
         transaction.results.add(plugin, { fail: 'Message-ID valid domain' });
-        return next(DENY, "bounce Message-ID without valid domain, I didn't send it.");
+        if (!plugin.cfg.reject.non_local_msgid) return next();
+        return next(DENY, 'bounce Message-ID without valid domain, ' + 
+                "I didn't send it.");
     }
 
     // we wouldn't have accepted the bounce if the recipient wasn't local
-    transaction.results.add(plugin, {fail: 'Message-ID not local', emit: true });
+    transaction.results.add(plugin,
+            {fail: 'Message-ID not local', emit: true });
+    if (!plugin.cfg.reject.non_local_msgid) return next();
     return next(DENY, "bounce with non-local Message-ID (RFC 3834)");
 };
