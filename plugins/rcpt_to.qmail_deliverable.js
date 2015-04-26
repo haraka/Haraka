@@ -131,7 +131,7 @@ exports.get_qmd_response = function (connection, domain, email, cb) {
         res.on('data', function (chunk) {
             connection.logprotocol(plugin, 'BODY: ' + chunk);
             var hexnum = new Number(chunk).toString(16);
-            var arr = plugin.check_qmd_reponse(connection, hexnum);
+            var arr = plugin.check_qmd_response(connection, hexnum);
             connection.loginfo(plugin, arr[1]);
             cb(undefined, arr);
 
@@ -141,7 +141,7 @@ exports.get_qmd_response = function (connection, domain, email, cb) {
     });
 };
 
-exports.check_qmd_reponse = function (connection, hexnum) {
+exports.check_qmd_response = function (connection, hexnum) {
     var plugin = this;
     connection.logprotocol(plugin,"HEXRV: " + hexnum );
 
