@@ -194,7 +194,7 @@ function createServer(cb) {
                 if (options.requestCert !== undefined) { requestCert = options.requestCert; }
                 if (options.rejectUnauthorized !== undefined) { rejectUnauthorized = options.rejectUnauthorized; }
             }
-            var sslcontext = crypto.createCredentials(options);
+            var sslcontext = (tls.createSecureContext || crypto.createCredentials)(options);
 
             // tls.createSecurePair(credentials, isServer, requestCert, rejectUnauthorized)
             var pair = tls.createSecurePair(sslcontext, true, requestCert, rejectUnauthorized);
@@ -281,7 +281,7 @@ function connect(port, host, cb) {
         options.secureProtocol = options.secureProtocol || 'SSLv23_method';
         options.secureOptions  = options.secureOptions  || constants.SSL_OP_NO_SSLv3;
 
-        var sslcontext = crypto.createCredentials(options);
+        var sslcontext = (tls.createSecureContext || crypto.createCredentials)(options);
 
         // tls.createSecurePair([credentials], [isServer]);
         var pair = tls.createSecurePair(sslcontext, false);
