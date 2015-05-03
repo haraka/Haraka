@@ -137,7 +137,9 @@ exports.check_concurrency = {
         self.connection.remote_ip='192.0.2.1';
         self.plugin.cfg.concurrency.history = undefined;
         self.plugin.cfg.concurrency = { max: 4 };
-        self.plugin.check_concurrency(cb, self.connection, 4);
+        self.plugin.nosql.set('concurrency|192.0.2.1', 4, function () {
+            self.plugin.check_concurrency(cb, self.connection);
+        });
     },
     'too many': function (test) {
         test.expect(2);
@@ -148,9 +150,12 @@ exports.check_concurrency = {
             test.done();
         };
         var self = this;
+        self.connection.remote_ip='192.0.2.1';
         self.plugin.cfg.concurrency.history = undefined;
         self.plugin.cfg.concurrency = { max: 4 };
         self.plugin.cfg.concurrency.disconnect_delay=1;
-        self.plugin.check_concurrency(cb, self.connection, 5);
+        self.plugin.nosql.set('concurrency|192.0.2.1', 5, function () {
+            self.plugin.check_concurrency(cb, self.connection);
+        });
     },
 };
