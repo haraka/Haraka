@@ -85,7 +85,7 @@ logger.log = function (level, data) {
 
     // buffer until plugins are loaded
     if (!plugins || (Array.isArray(plugins.plugin_list) && 
-                     !plugins.plugin_list.length) 
+                     !plugins.plugin_list.length)) 
     {
         logger.deferred_logs.push(item);
         return true;
