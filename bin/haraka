@@ -372,11 +372,11 @@ else if (parsed.order) {
     for (var h = 0; h < hooks.length; h++) {
         var hook = hooks[h];
         console.log(sprintf('%\'--80s', 'Hook: ' + hook + ' '));
-        console.log(sprintf('%-37s %-37s %-4s', 'Plugin', 'Method', 'Prio'));
+        console.log(sprintf('%-35s %-35s %-4s %-3s', 'Plugin', 'Method', 'Prio', 'T/O'));
         console.log(sprintf("%'-80s",''));
         for (var p=0; p<plugins.registered_hooks[hook].length; p++) {
             var item = plugins.registered_hooks[hook][p];
-            console.log(sprintf('%-37s %-37s %4d', item.plugin, item.method, item.priority));
+            console.log(sprintf('%-35s %-35s %4d %3d', item.plugin, item.method, item.priority, item.timeout));
         }
         console.log('');
     }

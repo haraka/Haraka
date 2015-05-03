@@ -42,7 +42,8 @@ Plugin.prototype.register_hook = function(hook_name, method_name, priority) {
     exports.registered_hooks[hook_name].push({
         plugin: this.name,
         method: method_name,
-        priority: priority
+        priority: priority,
+        timeout: this.timeout
     });
     this.hooks[hook_name] = this.hooks[hook_name] || [];
     this.hooks[hook_name].push(method_name);
