@@ -16,8 +16,9 @@ exports.register = function () {
 
     plugin.load_karma_ini();
 
-    plugin.register_hook('init_master',  'karma_init');
-    plugin.register_hook('init_child',   'karma_init');
+    plugin.register_hook('init_master',  'init_redis_connection');
+    plugin.register_hook('init_child',   'init_redis_connection');
+    plugin.register_hook('lookup_rdns',  'init_redis_connection');
 };
 
 exports.load_karma_ini = function () {
@@ -52,12 +53,6 @@ exports.load_karma_ini = function () {
                 'mail_from.is_resolvable', 'clamd']
         );
     }
-};
-
-exports.karma_init = function (next, server) {
-    var plugin = this;
-    plugin.init_redis_connection();
-    return next();
 };
 
 exports.results_init = function (connection) {
@@ -282,7 +277,6 @@ exports.hook_unrecognized_command = function(next, connection, cmd) {
 exports.hook_lookup_rdns = function (next, connection) {
     var plugin = this;
 
-    plugin.init_redis_connection();
     plugin.results_init(connection);
 
     var expire = (plugin.cfg.redis.expire_days || 60) * 86400; // to days
@@ -388,8 +382,6 @@ exports.increment = function (connection, key, val) {
 
 exports.hook_disconnect = function (next, connection) {
     var plugin = this;
-
-    plugin.init_redis_connection();
 
     var k = connection.results.get('karma');
     if (!k) {
@@ -708,10 +700,10 @@ exports.check_asn_neighborhood = function (connection, asnkey) {
 };
 
 // Redis DB functions
-exports.init_redis_connection = function () {
+exports.init_redis_connection = function (next, server_or_conn) {
     var plugin = this;
     // this is called during init, lookup_rdns, and disconnect
-    if (plugin.db && plugin.db.ping()) { return; } // connection is good
+    if (plugin.db && plugin.db.ping()) { return next(); } // connection is good
 
     var redis_ip  = '127.0.0.1';
     var redis_port = '6379';
@@ -738,6 +730,8 @@ exports.init_redis_connection = function () {
             plugin.db.select(dbid);
         }
     });
+
+    next();
 };
 
 exports.init_ip = function (dbkey, rip, expire) {
