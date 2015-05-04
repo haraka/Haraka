@@ -149,6 +149,7 @@ exports.incr_concurrency = function (next, connection) {
             plugin.nosql.set(dbkey, 1);
         }
 
+        connection.notes.limit=concurrent;
         next();
     });
 };
@@ -164,28 +165,27 @@ exports.check_concurrency = function (next, connection) {
     if (!max) { return next(); }
     connection.logdebug(plugin, 'concurrent max: ' + max);
 
-    plugin.nosql.get(plugin.get_key(connection), function (err, concurrent) {
+    var concurrent = parseInt(connection.notes.limit);
 
-        if (concurrent <= max) {
-            connection.logdebug(plugin, 'concurrent ' + concurrent +
-                ' <= ' + max);
-            return next();
-        }
+    if (concurrent <= max) {
         connection.logdebug(plugin, 'concurrent ' + concurrent +
-                ' exceeds max ' + max);
+            ' <= ' + max);
+        return next();
+    }
+    connection.logdebug(plugin, 'concurrent ' + concurrent +
+            ' exceeds max ' + max);
 
-        var delay = 3;
-        if (plugin.cfg.concurrency.disconnect_delay) {
-            delay = parseFloat(plugin.cfg.concurrency.disconnect_delay);
-        }
+    var delay = 3;
+    if (plugin.cfg.concurrency.disconnect_delay) {
+        delay = parseFloat(plugin.cfg.concurrency.disconnect_delay);
+    }
 
-        connection.results.add(plugin, {fail: 'concurrency.max'});
+    connection.results.add(plugin, {fail: 'concurrency.max'});
 
-        // Disconnect slowly.
-        setTimeout(function () {
-            return next(DENYSOFTDISCONNECT, 'Too many concurrent connections');
-        }, delay * 1000);
-    });
+    // Disconnect slowly.
+    setTimeout(function () {
+        return next(DENYSOFTDISCONNECT, 'Too many concurrent connections');
+    }, delay * 1000);
 };
 
 exports.get_concurrency_limit = function (connection) {
