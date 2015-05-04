@@ -251,18 +251,33 @@ exports.unbase64 = function (str) {
 // Fisher-Yates shuffle
 // http://bost.ocks.org/mike/shuffle/
 exports.shuffle = function(array) {
-  var m = array.length, t, i;
+    var m = array.length, t, i;
 
-  // While there remain elements to shuffle…
-  while (m) {
-      // Pick a remaining element…
-      i = Math.floor(Math.random() * m--);
+    // While there remain elements to shuffle…
+    while (m) {
+        // Pick a remaining element…
+        i = Math.floor(Math.random() * m--);
 
-      // And swap it with the current element.
-      t = array[m];
-      array[m] = array[i];
-      array[i] = t;
-  }
+        // And swap it with the current element.
+        t = array[m];
+        array[m] = array[i];
+        array[i] = t;
+    }
 
-  return array;
-}
+    return array;
+};
+
+exports.elapsed = function (start, decimal_places) {
+    var diff = (Date.now() - start) / 1000;  // in seconds
+
+    if (decimal_places === undefined) {
+        decimal_places = diff > 5 ? 0 : diff > 2 ? 1 : 2;
+    }
+    else {
+        decimal_places = parseInt(decimal_places);
+        if (isNaN(decimal_places)) {
+            decimal_places = 2;
+        }
+    }
+    return diff.toFixed(decimal_places);
+};
