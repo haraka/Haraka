@@ -38,7 +38,11 @@
   "devDependencies": {
     "nodeunit"      : "https://github.com/godsflaw/nodeunit/archive/master.tar.gz",
     "jscoverage"    : "*",
-    "coveralls"     : "*"
+    "coveralls"     : "*",
+    "grunt"         : "*",
+    "grunt-contrib-clean" : "*",
+    "grunt-contrib-jshint" : "*",
+    "grunt-version-check" : "*"
   },
   "licenses": [ {
     "type": "MIT",
