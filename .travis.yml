@@ -4,7 +4,8 @@ node_js:
     - "0.10"
 #   - "0.8"   # no longer supported by iconv
 #   - "0.6"   # no longer supported by async
-    - iojs
+    - "iojs-v1.8.1"
+    - "iojs"
 
 services:
     - redis-server
@@ -12,6 +13,7 @@ services:
 matrix:
     allow_failures:
         - node_js: "0.8"
+        - node_js: "iojs"
 #       - node_js: "0.6"
 
 after_success:
