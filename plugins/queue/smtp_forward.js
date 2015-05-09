@@ -54,6 +54,10 @@ exports.hook_queue = function (next, connection) {
 
         var dead_sender = function () {
             if (smtp_client.is_dead_sender(plugin, connection)) {
+                var rs = connection.transaction ?
+                         connection.transaction.results :
+                         connection.results;
+                rs.add(plugin, { err: 'dead sender' });
                 return true;
             }
             return false;
@@ -90,6 +94,10 @@ exports.hook_queue = function (next, connection) {
                 smtp_client.send_command('RSET');
                 return;
             }
+            var rs = connection.transaction ?
+                     connection.transaction.results :
+                     connection.results;
+            rs.add(plugin, { pass: smtp_client.response });
             smtp_client.call_next(OK, smtp_client.response +
                     ' (' + connection.transaction.uuid + ')');
             smtp_client.release();
