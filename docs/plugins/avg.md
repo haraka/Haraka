@@ -1,9 +1,8 @@
 # avg - Anti-Virus scanner
 
-This plug-in implements Anti-Virus scanning with AVG using the TCPD daemon which is available for Linux/FreeBSD and is [free for personal or commercial use](http://www.avg.com/gb-en/faq.pnuid-faq_v3_linux).
-It can be downloaded from [here](http://free.avg.com/gb-en/download.prd-alf).
+Implement virus scanning with AVG's TCPD daemon, available for Linux/FreeBSD. AVG linux is [free for personal or commercial use](http://www.avg.com/gb-en/faq.pnuid-faq_v3_linux) and can be downloaded from [free.avg.com](http://free.avg.com/gb-en/download.prd-alf).
 
-Any message that AVG considers to be infected will be rejected.  Any errors encountered will cause the plugin to return a temporary failure.
+Messages that AVG detects as infected are rejected. Errors will cause the plugin to return temporary failures unless the defer options are changed (see below).
 
 ## Configuration
 
@@ -24,3 +23,13 @@ The following options can be set in avg.ini:
 * session\_timeout
 
     Maximum number of seconds to wait for a reply to a command before failing.  A timeout will cause a temporary failure to be sent to the remote MTA.
+
+* [defer]
+
+By default, this plugin defers when errors or timeouts are encountered. To
+fail open (let messages pass when errors are enounctered), set the error
+and/or timeout values to false.
+
+    [defer]
+    error=true
+    timeout=true
