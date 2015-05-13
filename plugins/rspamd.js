@@ -1,6 +1,10 @@
 'use strict';
 
+// node built-ins
 var http = require('http');
+
+// haraka libs
+var net_utils = require('./net_utils');
 
 exports.register = function () {
     this.load_rspamd_ini();
@@ -11,15 +15,22 @@ exports.load_rspamd_ini = function () {
 
     plugin.cfg = plugin.config.get('rspamd.ini', {
         booleans: [
-            '+main.reject',
             '-main.always_add_headers',
+            '-check.authenticated',
+            '-check.private_ip',
+            '+reject.spam',
+            '-reject.authenticated',
         ],
     }, function () {
         plugin.load_rspamd_ini();
     });
 
-    if (!plugin.cfg.main.reject_message) {
-        plugin.cfg.main.reject_message = 'Detected as spam';
+    if (!plugin.cfg.reject.message) {
+        plugin.cfg.reject.message = 'Detected as spam';
+    }
+
+    if (!plugin.cfg.spambar) {
+        plugin.cfg.spambar = { positive: '+', negative: '-', neutral: '/' };
     }
 
     if (!plugin.cfg.main.port) plugin.cfg.main.port = 11333;
@@ -38,6 +49,10 @@ exports.get_options = function (connection) {
         method: 'POST',
     };
 
+    if (connection.notes.auth_user) {
+        options.headers.User = connection.notes.auth_user;
+    }
+
     if (connection.remote_ip) options.headers.IP = connection.remote_ip;
 
     var fcrdns = connection.results.get('connect.fcrdns');
@@ -51,10 +66,6 @@ exports.get_options = function (connection) {
     }
 
     if (connection.hello_host) options.headers.Helo = connection.hello_host;
-
-    if (connection.notes.auth_user) {
-        options.headers.User = connection.notes.auth_user;
-    }
 
     if (connection.transaction.mail_from) {
         options.headers.From =
@@ -84,7 +95,15 @@ exports.hook_data_post = function (next, connection) {
     if (!connection.transaction) return next();
 
     var plugin = this;
-    var cfg = plugin.cfg.main;
+    var cfg = plugin.cfg;
+
+    var authed = connection.notes.auth_user;
+    if (authed && !cfg.check.authenticated) return next();
+    if (!cfg.check.private_ip &&
+        net_utils.is_private_ip(connection.remote_ip)) {
+        return next();
+    }
+
     var options = plugin.get_options(connection);
 
     var req;
@@ -103,16 +122,19 @@ exports.hook_data_post = function (next, connection) {
                     time: (Date.now() - start)/1000,
                 });
 
-                if (data.action === 'reject') {
-                    if (!cfg.reject) return next();
-                    return next(DENY, cfg.reject_message);
+                function no_reject () {
+                    if (data.action === 'add header' ||
+                        cfg.main.always_add_headers) {
+                        plugin.add_headers(connection, data);
+                    }
+                    return next();
                 }
 
-                if (data.action === 'add header' || cfg.always_add_headers) {
-                    plugin.add_headers(connection, data);
-                }
+                if (data.action !== 'reject') return no_reject();
 
-                return next();
+                if (!authed && !cfg.reject.spam) return no_reject();
+                if (authed && !cfg.reject.authenticated) return no_reject();
+                return next(DENY, cfg.reject.message);
             });
         })
     );
@@ -171,32 +193,32 @@ exports.parse_response = function (rawData, connection) {
 
 exports.add_headers = function (connection, data) {
     var plugin = this;
-    var cfg = plugin.cfg.main;
+    var cfg = plugin.cfg;
 
-    if (cfg.header_bar) {
+    if (cfg.header && cfg.header.bar) {
         var spamBar = '';
         var spamBarScore = data.score;
         if (data.score === 0) {
-            spamBar = cfg.spambar_neutral || '/';
+            spamBar = cfg.spambar.neutral || '/';
         }
         else {
             var spamBarChar;
             if (data.score > 0) {
-                spamBarChar = cfg.spambar_positive || '+';
+                spamBarChar = cfg.spambar.positive || '+';
             }
             else {
                 spamBarScore = spamBarScore * -1;
-                spamBarChar = cfg.spambar_negative || '-';
+                spamBarChar = cfg.spambar.negative || '-';
             }
             for (var i = 0; i < data.score; i++) {
                 spamBar += spamBarChar;
             }
         }
-        connection.transaction.remove_header(cfg.header_bar);
-        connection.transaction.add_header(cfg.header_bar, spamBar);
+        connection.transaction.remove_header(cfg.header.bar);
+        connection.transaction.add_header(cfg.header.bar, spamBar);
     }
 
-    if (cfg.header_report) {
+    if (cfg.header && cfg.header.report) {
         var prettySymbols = [];
         for (var k in data) {
             if (data[k].score) {
@@ -204,13 +226,13 @@ exports.add_headers = function (connection, data) {
                     '(' + data[k].score + ')');
             }
         }
-        connection.transaction.remove_header(cfg.header_report);
-        connection.transaction.add_header(cfg.header_report,
+        connection.transaction.remove_header(cfg.header.report);
+        connection.transaction.add_header(cfg.header.report,
             prettySymbols.join(' '));
     }
 
-    if (cfg.header_score) {
-        connection.transaction.remove_header(cfg.header_score);
-        connection.transaction.add_header(cfg.header_score, '' + data.score);
+    if (cfg.header.score) {
+        connection.transaction.remove_header(cfg.header.score);
+        connection.transaction.add_header(cfg.header.score, '' + data.score);
     }
 };
