@@ -29,6 +29,7 @@ exports.load_rspamd_ini = function () {
 exports.get_options = function (connection) {
     var plugin = this;
 
+    // https://rspamd.com/doc/architecture/protocol.html
     var options = {
         headers: {},
         port: plugin.cfg.main.port,
@@ -37,22 +38,41 @@ exports.get_options = function (connection) {
         method: 'POST',
     };
 
-    var fcrdns = connection.results.get('connect.fcrdns');
-    if (fcrdns && fcrdns.fcrdns) options.headers.Hostname = fcrdns.fcrdns[0];
-
-    var helo = connection.results.get('helo.checks');
-    if (helo && helo.helo_host) options.headers.Helo = helo.helo_host;
-
-    if (connection.notes.auth_user)
-        options.headers.User = connection.notes.auth_user;
-
-    if (connection.transaction.rcpt_to)
-        options.headers.Rcpt = connection.transaction.rcpt_to;
-
-    if (connection.transaction.mail_from)
-        options.headers.From = connection.transaction.mail_from.address().toString();
-
     if (connection.remote_ip) options.headers.IP = connection.remote_ip;
+
+    var fcrdns = connection.results.get('connect.fcrdns');
+    if (fcrdns && fcrdns.fcrdns) {
+        options.headers.Hostname = fcrdns.fcrdns[0];
+    }
+    else {
+        if (connection.remote_host) {
+            options.headers.Hostname = connection.remote_host;
+        }
+    }
+
+    if (connection.hello_host) options.headers.Helo = connection.hello_host;
+
+    if (connection.notes.auth_user) {
+        options.headers.User = connection.notes.auth_user;
+    }
+
+    if (connection.transaction.mail_from) {
+        options.headers.From =
+            connection.transaction.mail_from.address().toString();
+    }
+
+    var rcpts = connection.transaction.rcpt_to;
+    if (rcpts) {
+        options.headers.Rcpt = [];
+        for (var i=0; i < rcpts.length; i++) {
+            options.headers.Rcpt.push(rcpts[i].address());
+        }
+
+        // for per-user options
+        if (rcpts.length === 1) {
+            options.headers['Deliver-To'] = options.headers.Rcpt[0];
+        }
+    }
 
     if (connection.transaction.uuid)
         options.headers['Queue-Id'] = connection.transaction.uuid;
@@ -69,6 +89,7 @@ exports.hook_data_post = function (next, connection) {
 
     var req;
     var rawData = '';
+    var start = Date.now();
     connection.transaction.message_stream.pipe(
         req = http.request(options, function (res) {
             res.on('data', function (chunk) { rawData += chunk; });
@@ -78,6 +99,9 @@ exports.hook_data_post = function (next, connection) {
 
                 data.emit = true; // spit out a log entry
                 connection.transaction.results.add(plugin, data);
+                connection.transaction.results.add(plugin, {
+                    time: (Date.now() - start)/1000,
+                });
 
                 if (data.action === 'reject') {
                     if (!cfg.reject) return next();
@@ -87,6 +111,7 @@ exports.hook_data_post = function (next, connection) {
                 if (data.action === 'add header' || cfg.always_add_headers) {
                     plugin.add_headers(connection, data);
                 }
+
                 return next();
             });
         })
@@ -102,7 +127,7 @@ exports.parse_response = function (rawData, connection) {
     var plugin = this;
 
     try {
-        var data = JSON.parse(rawData).default;
+        var data = JSON.parse(rawData);
     }
     catch (err) {
         connection.transaction.results.add(plugin, {
@@ -113,26 +138,32 @@ exports.parse_response = function (rawData, connection) {
 
     // copy those nested objects into a higher level object
     var dataClean = {};
-    Object.keys(data).forEach(function (key) {
-        switch (typeof data[key]) {
+    Object.keys(data.default).forEach(function (key) {
+        var a = data.default[key];
+        switch (typeof a) {
             case 'object':
                 // transform { name: KEY, score: VAL } -> { KEY: VAL }
-                if (data[key].name && data[key].score !== undefined) {
-                    dataClean[ data[key].name ] = data[key].score;
+                if (a.name && a.score !== undefined) {
+                    dataClean[ a.name ] = a.score;
                     break;
                 }
                 // unhandled type
-                connection.logerror(plugin, data[key]);
+                connection.logerror(plugin, a);
                 break;
             case 'boolean':
             case 'number':
             case 'string':
-                dataClean[key] = data[key];
+                dataClean[key] = a;
                 break;
             default:
-                connection.loginfo(plugin,
-                        "skipping unhandled: " + typeof data[key]);
+                connection.loginfo(plugin, "skipping unhandled: " + typeof a);
         }
+    });
+
+    // arrays which might be present
+    ['urls', 'emails', 'messages'].forEach(function (b) {
+        // collapse to comma separated string, so values get logged
+        if (data[b] && data[b].length) dataClean[b] = data[b].join(',');
     });
 
     return dataClean;
