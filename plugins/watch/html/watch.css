@@ -1,0 +1,104 @@
+body {
+  padding-left: 10px;
+  font-size: 6pt;
+  font-family: sans-serif;
+}
+h1 {
+/*  text-align: center; */
+}
+table {
+  border-collapse: collapse;
+  border: 1px solid black;
+  font-size: 8pt;
+}
+tr.spacer > td {
+  line-height: 6px;
+	background-color: #e6e6e6;
+}
+th,td {
+  border: 1px dotted grey;
+}
+th {
+  padding: 2px;
+  padding-left: 3px;
+  padding-right: 3px;
+	text-align: center;
+	/* background-color: lightgrey; */
+	font-weight: bold;
+}
+th#queue {
+  font-size: 6pt;
+}
+td {
+  text-align: center;
+	color: grey;
+  padding: 2px;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+td#queue {
+  width: 20px;
+  min-width: 20px;
+  max-width: 20px;
+}
+.uuid_tiny {
+  font-size: 4pt;
+  width: 25px;
+  min-width: 25px;
+  max-width: 25px;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+.got       { color: black; }
+.center    { text-align: center; }
+.left      { text-align: left; }
+.right     { text-align: right; }
+.top       { vertical-align: top; }
+.bottom    { vertical-align: bottom; }
+.red       { color: red; }
+.green     { color: green; }
+.yellow    { color: yellow; }
+.black     { color: black; }
+.white     { color: white; }
+.bg_red    { background-color: #ffc0cf; color: black; }
+.bg_dred   { background-color: red; color: yellow; }
+.bg_lred   { background-color: #fee3e9; color: black; }
+.bg_lgreen { background-color: #defcda; color: black; }
+.bg_green  { background-color: #bafba7; color: black; }
+.bg_dgreen { background-color: green; color: white; }
+.bg_yellow { background-color: #fefaae; color: black; }
+.bg_dyellow{ background-color: yellow; color: black; }
+.bg_black  { background-color: black; color: white; }
+.bg_white  { background-color: white; color: black; }
+
+span#head_left {
+		float: clear;
+}
+span#head_right {
+		float: right;
+}
+
+nav { font-size: 8pt; }
+nav ul ul { display: none; }
+nav ul li:hover > ul { display: block; }
+nav ul {
+    background: #efefef;
+    padding: 0 10px;
+    list-style: none;
+    position: relative;
+    display: inline-table;
+}
+nav ul:after {
+    content: ""; clear: both; display: block;
+}
+nav ul li:hover {
+  background: #4b545f;
+}
+nav ul li:hover a {
+  color: #fff;
+}
+nav ul li a {
+  display: block; padding: 5px 10px;
+  color: #757575;
+  text-decoration: none;
+}
