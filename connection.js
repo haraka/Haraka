@@ -248,7 +248,21 @@ Connection.prototype.process_line = function (line) {
 
     // Check for non-ASCII characters
     if (/[^\x00-\x7F]/.test(this.current_line)) {
-        return this.respond(501, 'Syntax error (8-bit characters not allowed)');
+        // See if this is a TLS handshake
+        var buf = new Buffer(this.current_line.substr(0,3), 'binary');
+        console.log(buf);
+        if (buf[0] === 0x16 && buf[1] === 0x03 && 
+           (buf[2] === 0x00 || buf[2] === 0x01)) // SSLv3/TLS1.x format
+        {
+            // Nuke the current input buffer to prevent processing further input
+            this.current_data = null;
+            this.respond(501, 'SSL attempted over a non-SSL socket');
+            this.disconnect();
+            return;
+        }
+        else {
+            return this.respond(501, 'Syntax error (8-bit characters not allowed)');
+        }
     }
 
     if (this.state === states.STATE_CMD) {
