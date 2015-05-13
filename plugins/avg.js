@@ -1,29 +1,58 @@
-// avg
-// TODO: this could use pooled connections
+// avg - AVG virus scanner
+'use strict';
 
-var fs = require('fs');
+// TODO: use pooled connections
+
+var fs   = require('fs');
+var path = require('path');
+
 var sock = require('./line_socket');
 var smtp_regexp = /^([0-9]{3})([ -])(.*)/;
 
-exports.hook_data_post = function (next, connection) {
-    var self = this;
-    var txn = connection.transaction;
-    if (!txn) return next();
-    var cfg = this.config.get('avg.ini');
+exports.register = function () {
+    var plugin = this;
 
-    var tmpdir = cfg.main.tmpdir || '/tmp';
-    var tmpfile = tmpdir + '/' + txn.uuid + '.tmp';
-    var ws = fs.createWriteStream(tmpfile);
+    plugin.load_avg_ini();
+};
+
+exports.load_avg_ini = function () {
+    var plugin = this;
+
+    plugin.cfg = plugin.config.get('avg.ini', {
+        booleans: [
+            '+defer.timeout',
+            '+defer.error',
+        ],
+    }, function () {
+        plugin.load_avg_ini();
+    });
+};
+
+exports.get_tmp_file = function (transaction) {
+    var plugin = this;
+    var tmpdir  = plugin.cfg.main.tmpdir || '/tmp';
+    return path.join(tmpdir, transaction.uuid + '.tmp');
+};
+
+exports.hook_data_post = function (next, connection) {
+    var plugin = this;
+    if (!connection.transaction) return next();
+
+    var tmpfile = plugin.get_tmp_file(connection.transaction);
+    var ws      = fs.createWriteStream(tmpfile);
 
     ws.once('error', function(err) {
-        connection.logerror(self, 'Error writing temporary file: ' + err.message);
+        connection.results.add(plugin, {
+            err: 'Error writing temporary file: ' + err.message
+        });
+        if (!plugin.cfg.defer.error) return next();
         return next(DENYSOFT, 'Virus scanner error (AVG)');
     });
 
     ws.once('close', function() {
         var start_time = Date.now();
         var socket = new sock.Socket();
-        socket.setTimeout((cfg.main.connect_timeout || 10) * 1000);
+        socket.setTimeout((plugin.cfg.main.connect_timeout || 10) * 1000);
         var connected = false;
         var command = 'connect';
         var response = [];
@@ -31,89 +60,104 @@ exports.hook_data_post = function (next, connection) {
         var do_next = function (code, msg) {
             fs.unlink(tmpfile, function(){});
             return next(code, msg);
-        }
+        };
 
         socket.send_command = function (cmd, data) {
             var line = cmd + (data ? (' ' + data) : '');
-            connection.logprotocol(self, '> ' + line);
-            this.write(line + "\r\n");
+            connection.logprotocol(plugin, '> ' + line);
+            this.write(line + '\r\n');
             command = cmd.toLowerCase();
             response = [];
         };
 
         socket.on('timeout', function () {
-            connection.logerror(self, (connected ? 'connection' : 'session') +  ' timed out');
+            var msg = (connected ? 'connection' : 'session') +  ' timed out';
+            connection.results.add(plugin, { err: msg });
+            if (!plugin.cfg.defer.timeout) return do_next();
             return do_next(DENYSOFT, 'Virus scanner timeout (AVG)');
         });
+
         socket.on('error', function (err) {
-            connection.logerror(self, err.message);
+            connection.results.add(plugin, { err: err.message });
+            if (!plugin.cfg.defer.error) return do_next();
             return do_next(DENYSOFT, 'Virus scanner error (AVG)');
         });
+
         socket.on('connect', function () {
             connected = true;
-            this.setTimeout((cfg.main.session_timeout || 30) * 1000);
+            this.setTimeout((plugin.cfg.main.session_timeout || 30) * 1000);
         });
+
         socket.on('line', function (line) {
-            var matches;
-            connection.logprotocol(self, '< ' + line);
-            if (matches = smtp_regexp.exec(line)) {
-                var code = matches[1],
-                    cont = matches[2],
-                    rest = matches[3];
-                response.push(rest);
-                if (cont === ' ') {
-                    switch (command) {
-                        case 'connect':
-                            if (code !== '220') {
-                                // Error
-                                connection.logerror(self, 'Unrecognised response: ' + line);
-                                return do_next(DENYSOFT, 'Virus scanner error (AVG)');
-                            }
-                            else {
-                                socket.send_command('SCAN', tmpfile);
-                            }
-                            break;
-                        case 'scan':
-                            var end_time = Date.now();
-                            var elapsed = end_time - start_time;
-                            connection.loginfo(self, 'time=' + elapsed + 'ms ' +
-                                                     'code=' + code + ' ' +
-                                                     'response="' + response.join(' ') + '"');
-                            // Check code
-                            switch (code) {
-                                case '200':  // 200 ok
-                                    // Message did not contain a virus
-                                    socket.send_command('QUIT');
-                                    return do_next();
-                                    break;
-                                case '403':  // 403 File 'eicar.com' infected: 'Virus identified EICAR_Test'
-                                    // Virus found
-                                    do_next(DENY, response.join(' '));
-                                    return socket.send_command('QUIT');
-                                    break;
-                                default:  
-                                    // Any other result is an error
-                                    connection.logerror(self, 'Bad response: ' + response.join(' '));
-                            }
-                            socket.send_command('QUIT');
-                            return do_next(DENYSOFT, 'Virus scanner error (AVG)');
-                            break;
-                        case 'quit':
-                            socket.end();
-                            break;
-                        default:
-                            throw new Error('Unknown command: ' + command);
-                    }
-                }
-            }
-            else {
-                connection.logerror(self, 'Unrecognised response: ' + line);
+            var matches = smtp_regexp.exec(line);
+            connection.logprotocol(plugin, '< ' + line);
+            if (!matches) {
+                connection.results.add(plugin,
+                    { err: 'Unrecognised response: ' + line,
+                });
                 socket.end();
+                if (!plugin.cfg.defer.error) return do_next();
                 return do_next(DENYSOFT, 'Virus scanner error (AVG)');
             }
+
+            var code = matches[1],
+                cont = matches[2],
+                rest = matches[3];
+            response.push(rest);
+            if (cont !== ' ') { return; }
+
+            switch (command) {
+                case 'connect':
+                    if (code !== '220') {
+                        // Error
+                        connection.results.add(plugin, {
+                            err: 'Unrecognised response: ' + line,
+                        });
+                        if (!plugin.cfg.defer.timeout) return do_next();
+                        return do_next(DENYSOFT, 'Virus scanner error (AVG)');
+                    }
+                    else {
+                        socket.send_command('SCAN', tmpfile);
+                    }
+                    break;
+                case 'scan':
+                    var end_time = Date.now();
+                    var elapsed = end_time - start_time;
+                    connection.loginfo(plugin, 'time=' + elapsed + 'ms ' +
+                                    'code=' + code + ' ' +
+                                    'response="' + response.join(' ') + '"');
+                    // Check code
+                    switch (code) {
+                        case '200':  // 200 ok
+                            // Message did not contain a virus
+                            connection.results.add(plugin, { pass: 'clean' });
+                            socket.send_command('QUIT');
+                            return do_next();
+                        case '403':
+                            // File 'eicar.com', 'Virus identified EICAR_Test'
+                            connection.results.add(plugin, {
+                                fail: response.join(' ')
+                            });
+                            socket.send_command('QUIT');
+                            return do_next(DENY, response.join(' '));
+                        default:  
+                            // Any other result is an error
+                            connection.results.add(plugin, {
+                                err: 'Bad response: ' + response.join(' ')
+                            });
+                    }
+                    socket.send_command('QUIT');
+                    if (!plugin.cfg.defer.error) return do_next();
+                    return do_next(DENYSOFT, 'Virus scanner error (AVG)');
+                case 'quit':
+                    socket.end();
+                    break;
+                default:
+                    throw new Error('Unknown command: ' + command);
+            }
         });
-        socket.connect((cfg.main.port || 54322), cfg.main.host);
+        socket.connect((plugin.cfg.main.port || 54322), plugin.cfg.main.host);
     });
 
-    txn.message_stream.pipe(ws, { line_endings: '\r\n' });
-}
+    connection.transaction.message_stream.pipe(ws, { line_endings: '\r\n' });
+};

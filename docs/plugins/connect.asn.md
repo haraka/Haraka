@@ -1,20 +1,21 @@
-# connect.asn
+# connect.asn - get AS number of remote
 
-* Use network services to look up the ASN of the remote IP.
-* Inserts a result object with the ASN of the connecting IP address.
+* Use DNS queries to look up the ASN of the remote IP.
+* Inserts a result object with the ASN of the remote host.
 
-The AS Nunber is the [Autonomous System Number](http://en.wikipedia.org/wiki/Autonomous_System_(Internet))
+The AS Number is the [Autonomous System Number](http://en.wikipedia.org/wiki/Autonomous_System_(Internet))
 that represents the bailiwick or sphere of control of a network operator.
 
-## alternate source
+## Faster Lookups
 
-If your mail server is very busy, use instead the `connect.geoip`
-plugin with the MaxMind backend. It caches a copy of the ASN database locally
-and gets the ASN without the additional network traffic and delays.
+If your mail server is very busy:
+
+* Download the [routeviews ASN zones](ftp://ftp.routeviews.org/dnszones/) and serve them on a local DNS server. If you use SpamAssassin, this is highly recommended as it looks up ASN using routeviews via DNS.
+* Use instead the `connect.geoip` plugin with the MaxMind backend. It caches the ASN database locally and gets the ASN without network traffic and delays.
 
 ## Usage
 
-You can also access the ASN number for other plugins that run after this plugin like so:
+The AS number can be accessed by plugins that run after `connect.asn` like so:
 
     var asn = connection.results.get('connect.asn');
     if (asn && asn.asn) {
@@ -28,8 +29,9 @@ The following settings can be set in config/connect.asn.ini.
 
 * providers: comma separated list of DNS zones that provide IP to ASN lookups
 
-Supported providers: origin.asn.cymru.com, origin.asn.spameatingmonkey.net
-and asn.routeviews.org
+    * origin.asn.cymru.com
+    * origin.asn.spameatingmonkey.net
+    * asn.routeviews.org
 
 * test\_ip: (Default:
 
