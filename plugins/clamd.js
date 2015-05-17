@@ -74,6 +74,22 @@ exports.load_clamd_ini = function() {
         booleans: [
             '-main.randomize_host_order',
             '-main.only_with_attachments',
+            '+reject.virus',
+            '+reject.error',
+
+            // clamd options that are disabled by default. If admin enables
+            // them for clamd, Haraka should reject by default.
+            '+reject.Broken.Executable',
+            '+reject.Structured',     // DLP options
+            '+reject.Encrypted',
+            '+reject.PUA',
+            '+reject.OLE2',
+            '+reject.Safebrowsing',
+            '+reject.UNOFFICIAL',
+
+            // clamd.conf options enabled by default, but prone to false
+            // positives.
+            '-reject.Phishing',
         ],
     }, function () {
         plugin.load_clamd_ini();
@@ -90,6 +106,30 @@ exports.load_clamd_ini = function() {
         if (plugin.cfg.main[key] === undefined) {
             plugin.cfg.main[key] = defaults[key];
         }
+    }
+
+    var rejectPatterns = {
+        'Broken.Executable': '^Broken\\.Executable\\.?',
+        Encrypted:           '^Encrypted\\.',
+        PUA:                 '^PUA\\.',
+        Structured:          '^Heuristics\\.Structured\\.',
+        OLE2:                '^Heuristics\\.OLE2\\.ContainsMacros',
+        Safebrowsing:        '^Heuristics\\.Safebrowsing\\.',
+        Phishing:            '^Heuristics\\.Phishing\\.',
+        UNOFFICIAL:          '\\.UNOFFICIAL$',
+    };
+
+    var all_reject_opts = [];
+    var enabled_reject_opts = [];
+    Object.keys(rejectPatterns).forEach(function (opt) {
+        all_reject_opts.push(rejectPatterns[opt]);
+        if (!plugin.cfg.reject[opt]) return;
+        enabled_reject_opts.push(rejectPatterns[opt]);
+    });
+
+    if (enabled_reject_opts.length) {
+        plugin.allRE = new RegExp(all_reject_opts.join('|'));
+        plugin.rejectRE = new RegExp(enabled_reject_opts.join('|'));
     }
 
     // resolve mismatch between docs (...attachment) and code (...attachments)
@@ -147,9 +187,8 @@ exports.hook_data_post = function (next, connection) {
     var try_next_host = function () {
         var connected = false;
         if (!hosts.length) {
-            if (txn) {
-                txn.results.add(plugin, {err: 'connecting', emit: true});
-            }
+            if (txn) txn.results.add(plugin, {err: 'connecting' });
+            if (!plugin.cfg.reject.error) return next();
             return next(DENYSOFT, 'Error connecting to virus scanner');
         }
         var host = hosts.shift();
@@ -162,9 +201,8 @@ exports.hook_data_post = function (next, connection) {
                 connection.logerror(plugin, 'Timeout connecting to ' + host);
                 return try_next_host();
             }
-            if (txn) {
-                txn.results.add(plugin, {err: 'clamd timed out', emit: true});
-            }
+            if (txn) txn.results.add(plugin, {err: 'clamd timed out' });
+            if (!plugin.cfg.reject.error) return next();
             return next(DENYSOFT, 'Virus scanner timed out');
         });
 
@@ -176,9 +214,8 @@ exports.hook_data_post = function (next, connection) {
                 return try_next_host();
             }
 
-            if (txn) {
-                txn.results.add(plugin, {err: err, emit: true});
-            }
+            if (txn) txn.results.add(plugin, {err: err });
+            if (!plugin.cfg.reject.error) return next();
             return next(DENYSOFT, 'Virus scanner error');
         });
 
@@ -207,14 +244,22 @@ exports.hook_data_post = function (next, connection) {
                 txn.results.add(plugin, {pass: 'clean', emit: true});
                 return next();
             }
+
             var m = /^stream: (\S+) FOUND/.exec(result);
             if (m) {
                 var virus;                                   // Virus found
                 if (m[1]) { virus = m[1]; }
                 txn.results.add(plugin, {
-                    fail: 'virus' + (virus ? ('(' + virus + ')') : ''),
+                    fail: virus ? virus : 'virus',
                     emit: true
                 });
+
+                if (virus && plugin.rejectRE &&       // enabled
+                    plugin.allRE.test(virus) &&       // has a reject option
+                    !plugin.rejectRE.test(virus)) {   // reject=false set
+                        return next();
+                }
+                if (!plugin.cfg.reject.virus) { return next(); }
 
                 // Check skip list exclusions
                 for (var i=0; i < plugin.skip_list_exclude.length; i++) {
@@ -233,36 +278,41 @@ exports.hook_data_post = function (next, connection) {
                 return next(DENY, 'Message is infected with ' +
                         (virus || 'UNKNOWN'));
             }
+
             if (/size limit exceeded/.test(result)) {
                 txn.results.add(plugin, {
                     err: 'INSTREAM size limit exceeded. Check ' +
                         'StreamMaxLength in clamd.conf',
-                    emit: true
                 });
                 // Continue as StreamMaxLength default is 25Mb
                 return next();
             }
 
             txn.results.add(plugin, { err: 'unknown result: ' + result });
+            if (!plugin.cfg.reject.error) return next();
             return next(DENYSOFT, 'Error running virus scanner');
         });
 
-        var match;
-        if (host.match(/^\//)) {
-            // assume unix socket
-            socket.connect(host);
-        }
-        else if ((match = /^\[([^\] ]+)\](?::(\d+))?/.exec(host))) {
-            // IPv6 literal
-            socket.connect((match[2] || 3310), match[1]);
-        }
-        else {
-            // IP:port, hostname:port or hostname
-            var hostport = host.split(/:/);
-            socket.connect((hostport[1] || 3310), hostport[0]);
-        }
+        clamd_connect(socket, host);
     };
 
     // Start the process
     try_next_host();
 };
+
+function clamd_connect (socket, host) {
+    var match;
+    if (host.match(/^\//)) {
+        // assume unix socket
+        socket.connect(host);
+    }
+    else if ((match = /^\[([^\] ]+)\](?::(\d+))?/.exec(host))) {
+        // IPv6 literal
+        socket.connect((match[2] || 3310), match[1]);
+    }
+    else {
+        // IP:port, hostname:port or hostname
+        var hostport = host.split(/:/);
+        socket.connect((hostport[1] || 3310), hostport[0]);
+    }
+}

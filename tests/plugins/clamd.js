@@ -7,13 +7,13 @@ var stub         = require('../fixtures/stub'),
     ResultStore  = require('../../result_store');
 
 var _set_up = function (done) {
-    
+
     this.plugin = new Plugin('clamd');
     this.plugin.config = config;
     this.plugin.register();
-    
+
     this.connection = Connection.createConnection();
-    
+
     this.connection.transaction = {
         notes: {},
         results: new ResultStore(this.plugin),
@@ -38,6 +38,30 @@ exports.load_clamd_ini = {
         test.equal(26214400, cfg.max_size);
         test.equal(false, cfg.only_with_attachments);
         test.equal(false, cfg.randomize_host_order);
+        test.done();
+    },
+    'reject opts': function (test) {
+        test.expect(14);
+        test.equal(true, this.plugin.rejectRE.test('Encrypted.'));
+        test.equal(true, this.plugin.rejectRE.test('Heuristics.Structured.'));
+        test.equal(true, this.plugin.rejectRE.test(
+                    'Heuristics.Structured.CreditCardNumber'));
+        test.equal(true, this.plugin.rejectRE.test('Broken.Executable.'));
+        test.equal(true, this.plugin.rejectRE.test('PUA.'));
+        test.equal(true, this.plugin.rejectRE.test(
+                    'Heuristics.OLE2.ContainsMacros'));
+        test.equal(true, this.plugin.rejectRE.test('Heuristics.Safebrowsing.'));
+        test.equal(true, this.plugin.rejectRE.test(
+        'Heuristics.Safebrowsing.Suspected-phishing_safebrowsing.clamav.net'));
+        test.equal(true, this.plugin.rejectRE.test(
+                    'Sanesecurity.Junk.50402.UNOFFICIAL'));
+        test.equal(false, this.plugin.rejectRE.test(
+                    'Sanesecurity.UNOFFICIAL.oops'));
+        test.equal(false, this.plugin.rejectRE.test('Phishing'));
+        test.equal(false, this.plugin.rejectRE.test(
+                    'Heuristics.Phishing.Email.SpoofedDomain'));
+        test.equal(false, this.plugin.rejectRE.test('Suspect.Executable'));
+        test.equal(false, this.plugin.rejectRE.test('MattWuzHere'));
         test.done();
     },
 };
