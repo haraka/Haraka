@@ -83,12 +83,12 @@ exports.check_user = function (next, connection, credentials, method) {
         return;
     }
 
-    var passwd_ok = function (valid) {
+    var passwd_ok = function (valid, message) {
         if (valid) {
             connection.relaying = true;
             connection.results.add({name:'relay'}, {pass: 'auth'});
             connection.results.add(plugin, {pass: method});
-            connection.respond(235, "Authentication successful", function () {
+            connection.respond(235, ((message) ? message : "Authentication successful"), function () {
                 connection.authheader = "(authenticated bits=0)\n";
                 connection.auth_results('auth=pass (' +
                             method.toLowerCase() + ')' );
@@ -117,7 +117,7 @@ exports.check_user = function (next, connection, credentials, method) {
         connection.auth_results('auth=fail (' + method.toLowerCase() +
                     ') smtp.auth='+ credentials[0]);
         setTimeout(function () {
-            connection.respond(535, "Authentication failed", function () {
+            connection.respond(535, ((message) ? message : "Authentication failed"), function () {
                 connection.reset_transaction(function () {
                     return next(OK);
                 });
