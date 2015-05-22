@@ -7,17 +7,19 @@ Provide options for bounce processing.
 Each feature can be enabled/disabled with a true/false toggle in the [check]
 section of `config/bounce.ini`:
 
-Some features can have rejections diasabled in the [reject] section.
+Some features can have rejections disabled in the [reject] section.
 
     [check]
     reject_all=false
     single_recipient=true
     empty_return_path=true
     bad_rcpt=true
+    non_local_msgid=true
 
     [reject]
     single_recipient=true
     empty_return_path=true
+    non_local_msgid=false
 
 ## Features
 

@@ -47,6 +47,10 @@ exports.load_limit_ini = function () {
     plugin.cfg = plugin.config.get('limit.ini', function () {
         plugin.load_limit_ini();
     });
+
+    if (!plugin.cfg.concurrency) {   // no config file
+        plugin.cfg.concurrency = {};
+    }
 };
 
 exports.max_unrecognized_commands = function(next, connection, cmd) {
