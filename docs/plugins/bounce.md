@@ -14,11 +14,13 @@ Some features can have rejections disabled in the [reject] section.
     single_recipient=true
     empty_return_path=true
     bad_rcpt=true
+    bounce_spf=true
     non_local_msgid=true
 
     [reject]
     single_recipient=true
     empty_return_path=true
+    bounce_spf=false
     non_local_msgid=false
 
 ## Features
@@ -50,3 +52,13 @@ messages. Examples of email addresses that should be listed are:
 autoresponders, do-not-reply@example.com, dmarc-feedback@example.com, and
 any other email addresses used solely for machine generated messages.
 
+### bounce\_spf
+
+Parses the message body and any MIME parts for Received: headers and
+strips out the IP addresses of each Received hop and then checks what
+the SPF result would have been if bounced message had been sent by that
+hop.
+
+If no 'Pass' result is found, then this test will fail.
+If SPF returns 'None', 'TempError' or 'PermError' then the test will 
+be skipped.
