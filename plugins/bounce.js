@@ -16,6 +16,7 @@ exports.register = function () {
     plugin.register_hook('data',      'single_recipient');
     plugin.register_hook('data',      'bad_rcpt');
     plugin.register_hook('data_post', 'empty_return_path');
+    plugin.register_hook('data',      'bounce_spf_enable');
     plugin.register_hook('data_post', 'bounce_spf');
     plugin.register_hook('data_post', 'non_local_msgid');
 };
@@ -276,12 +277,20 @@ function find_received_headers (ips, body, connection, self) {
     var match;
     while (match = received_re.exec(body.bodytext)) {
         var ip = match[1];
-        if (!net_utils.is_private_ip(ip)) ips[ip] = true;
+        if (net_utils.is_private_ip(ip)) continue;
+        ips[ip] = true;
     }
     for (var i=0,l=body.children.length; i < l; i++) {
         // Recure to any MIME children
         find_received_headers(ips, body.children[i], connection, self);
     }
+}
+
+exports.bounce_spf_enable = function (next, connection) {
+    if (plugin.cfg.check.bounce_spf) {
+        connection.transaction.parse_body = true;
+    }
+    return next();
 }
 
 exports.bounce_spf = function (next, connection) {
