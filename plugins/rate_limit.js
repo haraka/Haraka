@@ -150,25 +150,31 @@ exports.rate_limit = function (connection, key, value, cb) {
 
     connection.logdebug(self, 'key=' + key + ' limit=' + limit + ' ttl=' + ttl);
 
-    client.incr(key, function(err, val) {
+    client.get(key, function(err, val) {
         if (err) return cb(err);
-        connection.logdebug(self, 'key=' + key + ' value=' + val);
-        if (parseInt(val) === 1) {
-            // New key; set ttl
-            client.expire(key, ttl, function (err, result) {
-                if (err) {
-                    connection.logerror(self, err);
-                }
-            });
+
+        connection.logdebug(self, 'key=' + key + ' current value=' + (val || 'NEW' ));
+
+        var check_limits = function(err, result){
+            if (err) return cb(err);
+
+            if (parseInt(val) + 1 > parseInt(limit)) {
+                // Limit breached
+                connection.lognotice(self, key + ' rate ' + val + ' exceeds ' + limit + '/' + ttl + 's');
+                return cb(null, true);
+            }
+            else {
+                // OK
+                return cb(null, false);
+            }
+
+        };
+
+        if (val == null) { // new key
+            client.setex(key, ttl, 1, check_limits);
         }
-        if (parseInt(val) > parseInt(limit)) {
-            // Limit breached
-            connection.lognotice(self, key + ' rate ' + val + ' exceeds ' + limit + '/' + ttl + 's');
-            return cb(null, true);
-        } 
-        else {
-            // OK
-            return cb(null, false);
+        else { // old key
+            client.incr(key, check_limits);
         }
     });
 };
