@@ -140,7 +140,7 @@ exports.hook_data_post = function (next, connection) {
     );
 
     req.on('error', function (err) {
-        connection.logerror('Rspamd query failed: ' + err.message);
+        connection.logerror(plugin, 'query failed: ' + err.message);
         return next();
     });
 };
