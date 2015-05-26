@@ -17,7 +17,7 @@ exports.register = function () {
     // this.register_hook('init_child',   'init');
     [
         'lookup_rdns', 'connect', 'helo', 'ehlo', 'mail', 'rcpt', 'rcpt_ok',
-        'data', 'data_post'
+        'data', 'data_post', 'reset_transaction'
     ]
     .forEach(function (hook) {
         plugin.register_hook(hook,  'get_incremental_results');
@@ -106,9 +106,10 @@ exports.hook_init_wss = function (next, server, new_wss) {
 };
 
 exports.get_incremental_results = function (next, connection) {
-    this.get_connection_results(connection);
+    var plugin = this;
+    plugin.get_connection_results(connection);
     if (connection.transaction) {
-        this.get_transaction_results(connection.transaction);
+        plugin.get_transaction_results(connection.transaction);
     }
     return next();
 };
@@ -154,8 +155,9 @@ exports.w_deny = function(next, connection, params) {
 
     connection.logdebug(this, "watch sending dark red to "+pi_name);
     var bg_class = pi_code === DENYSOFT ? 'bg_dyellow' : 'bg_dred';
-    if (req[pi_name]) req[pi_name].classy = bg_class;
-    if (!req[pi_name]) req[pi_name] = { classy: bg_class };
+    var report_as = plugin.get_plugin_name(pi_name);
+    if (req[report_as]) req[report_as].classy = bg_class;
+    if (!req[report_as]) req[report_as] = { classy: bg_class };
 
     wss.broadcast(req);
     return next();
@@ -188,7 +190,7 @@ exports.get_connection_results = function (connection) {
         relay      : get_relay(connection),
         helo       : get_helo(connection),
         early      : get_early,
-        duration   : { newval: utils.elapsed(connection.start_time) },
+        queue      : { newval: utils.elapsed(connection.start_time) },
     };
 
     // see if changed since we last sent
@@ -229,17 +231,29 @@ exports.get_transaction_results = function (txn) {
     wss.broadcast(req);
 };
 
+exports.get_plugin_name = function (pi_name) {
+
+    // coalesce auth/* and queue/* plugins to 'auth' and 'queue'
+    if (/^(queue|auth)\//.test(pi_name)) {
+        return pi_name.split('/').shift();
+    }
+
+    return pi_name;
+};
+
 exports.get_plugin_result = function (req, res, name) {
     var plugin = this;
     if (name[0] === '_') return;  // ignore anything with leading _
 
     var formatted = plugin.format_results(name, res[name]);
     if (res[name]._watch_saw === JSON.stringify(formatted)) {
-        return;  // same as cached, don't report
+        // plugin.loginfo(name + ' skip, same as cached');
+        return;  // don't report
     }
 
     // save to request that gets sent to client
-    req[name] = formatted;
+    // plugin.loginfo(name + ' saved to res');
+    req[ plugin.get_plugin_name(name) ] = formatted;
 
     // cache formatted result to avoid sending dups to client
     res[name]._watch_saw = JSON.stringify(formatted);
@@ -262,7 +276,7 @@ exports.format_results = function (pi_name, r) {
 exports.get_class = function (pi_name, r) {
     var plugin = this;
 
-    switch(pi_name) {
+    switch (pi_name) {
         case 'bounce':
             if (r.isa === 'no') return 'bg_lgreen';
             if (r.fail.length)  return 'bg_red';
@@ -289,15 +303,16 @@ exports.get_class = function (pi_name, r) {
                    r.fail.length > 0 ? 'bg_yellow' :
                    r.pass.length > 5 ? 'bg_green' : 'bg_lgreen';
         case 'karma':
-            if (r.connect === undefined) {
+            if (r.score === undefined) {
                 var history = parseFloat(r.history) || 0;
                 return history >  2 ? 'bg_green' :
                        history < -1 ? 'bg_red'   : 'bg_yellow';
             }
-            var score = parseFloat(r.connect) || 0;
-            return score > 2  ? 'bg_green'  :
+            var score = parseFloat(r.score) || 0;
+            return score > 3  ? 'bg_green'  :
                    score > 0  ? 'bg_lgreen' :
-                   score < -1 ? 'bg_red'    : 'bg_yellow';
+                   score < -3 ? 'bg_red'    :
+                   score < 0  ? 'bg_lred'   : 'bg_yellow';
         case 'relay':
             return (r.pass.length && r.fail.length === 0) ? 'bg_green' :
                     r.pass.length ? 'bg_lgreen' :
@@ -311,14 +326,21 @@ exports.get_class = function (pi_name, r) {
                     r.pass.length ? 'bg_lgreen' : '';
         case 'spamassassin':
             var hits = parseFloat(r.hits);
-            return hits > 3 ? 'bg_red' :
-                   hits > 1 ? 'bg_lred' :
+            return hits > 5 ? 'bg_red' :
+                   hits > 2 ? 'bg_yellow' :
                    hits < 0 ? 'bg_green' : 'bg_lgreen';
         case 'spf':
             return r.result === 'Pass' ? 'bg_green' :
                    r.result === 'Neutral' ? 'bg_lgreen' :
                    /fail/i.test(r.result) ? 'bg_red' :
                    /error/i.test(r.result) ? 'bg_yellow' : '';
+        case 'rspamd':
+            return r.is_spam === true ? 'bg_red' :
+                   r.action  === 'greylist' ? 'bg_grey' :
+                   r.is_skipped === true ? '' :
+                   r.score > 5 ? 'bg_lred' :
+                   r.score < 0 ? 'bg_green' :
+                   r.score < 3 ? 'bg_lgreen' : 'bg_yellow';
         default:
             return (r.pass.length && r.fail.length === 0) ? 'bg_green' :
                     r.pass.length ? 'bg_lgreen' :
@@ -346,16 +368,12 @@ exports.get_value = function (pi_name, r) {
 
 exports.get_title = function (pi_name, r) {
     var plugin = this;
+    // title: the value shown in the HTML tooltip
 
-    // controls the value shown in the HTML tooltip
-    switch(pi_name) {
+    switch (pi_name) {
         case 'spamassassin':
             var hits = parseFloat(r.hits);
-            return r.flag + ', ' + hits + ' hits';
-        case 'connect.asn':
-            var title = r.asn;
-            if (r.net) title += ' ' + r.net;
-            return title;
+            return r.flag + ', ' + hits + ' hits, time: ' + r.time;
         case 'connect.p0f':
             return r.os_name +' '+ r.os_flavor + ', ' + r.distance + ' hops';
         case 'bounce':
@@ -369,6 +387,7 @@ exports.get_title = function (pi_name, r) {
             return r.result === 'pass' ? r.result :
                     [ r.result, r.disposition, comment ].join(', ');
         case 'queue':
+            // remove transaction suffix
             var bits = r.human.split(/\s+/);
             bits.pop();
             return bits.join(' ');

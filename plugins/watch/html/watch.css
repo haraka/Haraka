@@ -60,6 +60,7 @@ td#queue {
 .yellow    { color: yellow; }
 .black     { color: black; }
 .white     { color: white; }
+.lgrey     { color: lightgrey; }
 .bg_red    { background-color: #ffc0cf; color: black; }
 .bg_dred   { background-color: red; color: yellow; }
 .bg_lred   { background-color: #fee3e9; color: black; }
@@ -70,6 +71,7 @@ td#queue {
 .bg_dyellow{ background-color: yellow; color: black; }
 .bg_black  { background-color: black; color: white; }
 .bg_white  { background-color: white; color: black; }
+.bg_grey   { background-color: grey;  color: black; }
 
 span#head_left {
 		float: clear;
