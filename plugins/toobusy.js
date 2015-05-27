@@ -1,12 +1,23 @@
 // Stop accepting new connections when we are too busy
 
-var toobusy = require('toobusy-js');
+var toobusy;
 var was_busy = false;
 
 exports.register = function () {
     var plugin = this;
 
+    try {
+        toobusy = require('toobusy-js');
+    }
+    catch (e) {
+        plugin.logerror(e);
+        plugin.logerror("try: 'npm install -g toobusy-js'");
+        return;
+    }
+
     plugin.loadConfig();
+
+    plugin.register_hook('lookup_rdns', 'check_busy');
 };
 
 exports.loadConfig = function () {
@@ -22,7 +33,7 @@ exports.loadConfig = function () {
     }
 };
 
-exports.hook_lookup_rdns = function (next, connection) {
+exports.check_busy = function (next, connection) {
     if (!toobusy()) {
         was_busy = false;
         return next();
@@ -36,5 +47,6 @@ exports.hook_lookup_rdns = function (next, connection) {
     // Log a CRIT error at the first occurrence
     var currentLag = toobusy.lag();
     var maxLag = toobusy.maxLag();
-    this.logcrit('deferring connections: lag=' + currentLag + ' max=' + maxLag);
+    this.logcrit(
+        'deferring connections: lag=' + currentLag + ' max=' + maxLag);
 };
