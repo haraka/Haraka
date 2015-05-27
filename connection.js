@@ -183,8 +183,8 @@ function Connection(client, server) {
     this.banner_includes_uuid =
         config.get('banner_includes_uuid') ? true : false;
     this.deny_includes_uuid = config.get('deny_includes_uuid') || null;
-    this.early_talker = 0;
-    this.pipelining = 0;
+    this.early_talker = false;
+    this.pipelining = false;
     this.relaying = false;
     this.esmtp = false;
     this.last_response = null;
@@ -402,7 +402,7 @@ Connection.prototype._process_data = function() {
                 // has reset the state back to states.STATE_CMD and this
                 // ensures that we only process one command at a
                 // time.
-                this.pipelining = 1;
+                this.pipelining = true;
                 this.logdebug('pipeline: ' + this_line);
             }
             else {
@@ -412,7 +412,7 @@ Connection.prototype._process_data = function() {
                     this.logdebug('[early_talker] state=' + this.state +
                             ' esmtp=' + this.esmtp + ' line="' + this_line + '"');
                 }
-                this.early_talker = 1;
+                this.early_talker = true;
                 setTimeout(function() {
                     self._process_data();
                 }, this.early_talker_delay);
@@ -1369,6 +1369,9 @@ Connection.prototype.cmd_data = function(args) {
     }
     if (!this.transaction.rcpt_to.length) {
         this.errors++;
+        if (this.pipelining) {
+            return this.respond(554, "No valid recipients");
+        }
         return this.respond(503, "RCPT required first");
     }
 
