@@ -92,10 +92,8 @@ function DSN(code, msg, def, subject, detail) {
     }
 }
 
-exports.create = function () {
-    var obj = Object.create(DSN);
-    DSN.apply(obj, arguments);
-    return obj;
+exports.create = function (code, msg, subject, detail) {
+    return new DSN(code, msg, null, subject, detail);
 }
 
 exports.unspecified                 = function(msg, code) { return new DSN(code, msg, 450, 0, 0); }
