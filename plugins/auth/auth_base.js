@@ -83,12 +83,11 @@ exports.check_user = function (next, connection, credentials, method) {
         return;
     }
 
-    // otps: {
-    //   message, code
-    // }
+    // valid: (true|false)
+    // opts: ({ message, code }|String)
     var passwd_ok = function (valid, opts) {
-        var status_code = (opts && opts['code']) || (valid ? 235 : 535);
-        var status_message = (opts && opts['message']) ||
+        var status_code = (typeof(opts) == 'object' && opts['code']) || (valid ? 235 : 535);
+        var status_message = (typeof(opts) == 'object' ? opts['message'] : opts) ||
                 (valid  ? '2.7.0 Authentication successful' : '5.7.8 Authentication failed');
 
         if (valid) {
