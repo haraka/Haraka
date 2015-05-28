@@ -2,8 +2,8 @@
 // a single connection
 
 // node.js built-in libs
-var fs          = require('fs');
 var dns         = require('dns');
+var fs          = require('fs');
 var net         = require('net');
 var os          = require('os');
 var path        = require('path');
@@ -1593,20 +1593,20 @@ Connection.prototype.queue_outbound_respond = function(retval, msg) {
             outbound.send_email(this.transaction, function(retval, msg) {
                 switch(retval) {
                     case constants.ok:
-                            plugins.run_hooks("queue_ok", self, msg || 'Message Queued (' + self.transaction.uuid + ')');
-                            break;
+                        plugins.run_hooks("queue_ok", self, msg || 'Message Queued (' + self.transaction.uuid + ')');
+                        break;
                     case constants.deny:
-                            self.respond(550, msg || "Message denied", function() {
-                                self.msg_count.reject++;
-                                self.reset_transaction(function () { self.resume();});
-                            });
-                            break;
+                        self.respond(550, msg || "Message denied", function() {
+                            self.msg_count.reject++;
+                            self.reset_transaction(function () { self.resume();});
+                        });
+                        break;
                     default:
-                            self.logerror("Unrecognised response from outbound layer: " + retval + " : " + msg);
-                            self.respond(550, msg || "Internal Server Error", function() {
-                                self.msg_count.reject++;
-                                self.reset_transaction(function () { self.resume();});
-                            });
+                        self.logerror("Unrecognised response from outbound layer: " + retval + " : " + msg);
+                        self.respond(550, msg || "Internal Server Error", function() {
+                            self.msg_count.reject++;
+                            self.reset_transaction(function () { self.resume();});
+                        });
                 }
             });
     }
