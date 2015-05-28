@@ -52,10 +52,15 @@ exports.hook_queue = function (next, connection) {
         smtp_client.next = next;
         var rcpt = 0;
 
-        var send_rcpt = function () {
+        var dead_sender = function () {
             if (smtp_client.is_dead_sender(plugin, connection)) {
-                return;
+                return true;
             }
+            return false;
+        };
+
+        var send_rcpt = function () {
+            if (dead_sender()) return;
             if (rcpt === txn.rcpt_to.length) {
                 smtp_client.send_command('DATA');
                 return;
@@ -66,23 +71,21 @@ exports.hook_queue = function (next, connection) {
 
         smtp_client.on('mail', send_rcpt);
         if (cfg.one_message_per_rcpt) {
-            smtp_client.on('rcpt', function () { smtp_client.send_command('DATA'); });
+            smtp_client.on('rcpt', function () {
+                smtp_client.send_command('DATA');
+            });
         }
         else {
             smtp_client.on('rcpt', send_rcpt);
         }
 
         smtp_client.on('data', function () {
-            if (smtp_client.is_dead_sender(plugin, connection)) {
-                return;
-            }
+            if (dead_sender()) return;
             smtp_client.start_data(txn.message_stream);
         });
 
         smtp_client.on('dot', function () {
-            if (smtp_client.is_dead_sender(plugin, connection)) {
-                return;
-            }
+            if (dead_sender()) return;
             if (rcpt < txn.rcpt_to.length) {
                 smtp_client.send_command('RSET');
                 return;
@@ -93,16 +96,12 @@ exports.hook_queue = function (next, connection) {
         });
 
         smtp_client.on('rset', function () {
-            if (smtp_client.is_dead_sender(plugin, connection)) {
-                return;
-            }
+            if (dead_sender()) return;
             smtp_client.send_command('MAIL', 'FROM:' + txn.mail_from);
         });
 
         smtp_client.on('bad_code', function (code, msg) {
-            if (smtp_client.is_dead_sender(plugin, connection)) {
-                return;
-            }
+            if (dead_sender()) return;
             smtp_client.call_next(((code && code[0] === '5') ? DENY : DENYSOFT),
                                 msg + ' (' + connection.transaction.uuid + ')');
             smtp_client.release();
