@@ -31,6 +31,43 @@ exports.connection = {
         test.deepEqual([], this.connection.get_capabilities());
         test.done();
     },
+    'queue_msg, defined' : function (test) {
+        test.expect(1);
+        test.equal(
+                'test message',
+                this.connection.queue_msg(1, 'test message')
+                );
+        test.done();
+    },
+    'queue_msg, default deny' : function (test) {
+        test.expect(2);
+        test.equal(
+                'Message denied',
+                this.connection.queue_msg(DENY)
+                );
+        test.equal(
+                'Message denied',
+                this.connection.queue_msg(DENYDISCONNECT)
+                );
+        test.done();
+    },
+    'queue_msg, default denysoft' : function (test) {
+        test.expect(2);
+        test.equal(
+                'Message denied temporarily',
+                this.connection.queue_msg(DENYSOFT)
+                );
+        test.equal(
+                'Message denied temporarily',
+                this.connection.queue_msg(DENYSOFTDISCONNECT)
+                );
+        test.done();
+    },
+    'queue_msg, default else' : function (test) {
+        test.expect(1);
+        test.equal('', this.connection.queue_msg('hello'));
+        test.done();
+    },
     /*
     'max_data_exceeded_respond' : function (test) {
         test.expect(1);
