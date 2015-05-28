@@ -47,6 +47,7 @@ var enum_status_codes = [
         "Too many recipients",                                      // X.5.3
         "Invalid command arguments",                                // X.5.4
         "Wrong protocol version",                                   // X.5.5
+        "Authentication Exchange line is too long",                 // X.5.6
     ],
     [   // X.6.XXX Message Content or Media Status  (media_*)
         "Other or undefined media error",                           // X.6.0
@@ -65,6 +66,10 @@ var enum_status_codes = [
         "Cryptographic failure",                                    // X.7.5
         "Cryptographic algorithm not supported",                    // X.7.6
         "Message integrity failure",                                // X.7.7
+        "Authentication credentials invalid",                       // X.7.8
+        "Authentication mechanism is too weak",                     // X.7.9
+        "",                                                         // X.7.10
+        "Encryption required for requested authentication mechanism", // X.7.11
     ]
 ];
 
@@ -87,7 +92,11 @@ function DSN(code, msg, def, subject, detail) {
     }
 }
 
-exports.DSN = DSN;
+exports.create = function () {
+    var obj = Object.create(DSN);
+    DSN.apply(obj, arguments);
+    return obj;
+}
 
 exports.unspecified                 = function(msg, code) { return new DSN(code, msg, 450, 0, 0); }
 
@@ -157,3 +166,13 @@ exports.sec_feature_unsupported     = function(msg, code) { return new DSN(code,
 exports.sec_crypto_failure          = function(msg, code) { return new DSN(code, msg, 550, 7, 5); }
 exports.sec_crypto_algo_unsupported = function(msg, code) { return new DSN(code, msg, 450, 7, 6); }
 exports.sec_msg_integrity_failure   = function(msg, code) { return new DSN(code, msg, 550, 7, 7); }
+
+// RFC4954
+exports.auth_succeeded              = function(msg, code) { return new DSN(code, msg || 'Authentication Succeeded', 235, 7, 0); }
+exports.auth_pass_transition_needed = function(msg, code) { return new DSN(code, msg || 'A password transition is needed', 432, 7, 12); }
+exports.auth_temp_fail              = function(msg, code) { return new DSN(code, msg || 'Temporary authentication failure', 454, 7, 0); }
+exports.auth_too_weak               = function(msg, code) { return new DSN(code, msg, 534, 7, 9); }
+exports.auth_invalid                = function(msg, code) { return new DSN(code, msg, 535, 7, 8); }
+exports.auth_exch_too_long          = function(msg, code) { return new DSN(code, msg, 500, 5, 6)}
+exports.auth_required               = function(msg, code) { return new DSN(code, msg || 'Authentication required', 530, 7, 0); }
+exports.auth_crypt_required         = function(msg, code) { return new DSN(code, msg, 538, 7, 11); }
