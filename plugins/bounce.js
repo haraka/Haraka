@@ -287,6 +287,7 @@ function find_received_headers (ips, body, connection, self) {
 }
 
 exports.bounce_spf_enable = function (next, connection) {
+    var plugin = this;
     if (plugin.cfg.check.bounce_spf) {
         connection.transaction.parse_body = true;
     }
