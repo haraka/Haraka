@@ -1,6 +1,11 @@
 // bounce tests
-
 var net_utils = require('./net_utils');
+var SPF = require('./spf').SPF;
+
+// Override logging in SPF module
+SPF.prototype.log_debug = function (str) {
+    return exports.logdebug(str);
+};
 
 exports.register = function () {
     var plugin = this;
@@ -11,6 +16,8 @@ exports.register = function () {
     plugin.register_hook('data',      'single_recipient');
     plugin.register_hook('data',      'bad_rcpt');
     plugin.register_hook('data_post', 'empty_return_path');
+    plugin.register_hook('data',      'bounce_spf_enable');
+    plugin.register_hook('data_post', 'bounce_spf');
     plugin.register_hook('data_post', 'non_local_msgid');
 };
 
@@ -37,10 +44,12 @@ exports.load_bounce_ini = function () {
             '+check.single_recipient',
             '-check.empty_return_path',
             '+check.bad_rcpt',
+            '+check.bounce_spf',
             '+check.non_local_msgid',
 
             '+reject.single_recipient',
             '-reject.empty_return_path',
+            '-reject.bounce_spf',
             '-reject.non_local_msgid',
         ],
     }, function () {
@@ -173,6 +182,21 @@ exports.has_null_sender = function (connection, mail_from) {
     return false;
 };
 
+var message_id_re = /^Message-ID:\s*(<[^>]+>)/mig;
+
+function find_message_id_headers (headers, body, connection, self) {
+    if (!body) return;
+    var match;
+    while (match = message_id_re.exec(body.bodytext)) {
+        var mid = match[1];
+        headers[mid] = true;
+    }
+    for (var i=0,l=body.children.length; i < l; i++) {
+        // Recure to any MIME children
+        find_message_id_headers(headers, body.children[i], connection, self);
+    }
+}
+
 exports.non_local_msgid = function (next, connection) {
     var plugin = this;
     if (!plugin.cfg.check.non_local_msgid) return next();
@@ -193,9 +217,13 @@ exports.non_local_msgid = function (next, connection) {
     // message should exist as a MIME Encoded part. See here for ideas
     //     http://lamsonproject.org/blog/2009-07-09.html
     //     http://lamsonproject.org/docs/bounce_detection.html
-    var matches = transaction.body.bodytext.match(
-            /[\r\n]Message-ID: .*?[\r\n]/gi);
-    if (!matches) {
+ 
+    var matches = {}
+    find_message_id_headers(matches, transaction.body, connection, plugin);
+    matches = Object.keys(matches);
+    connection.logdebug(plugin, 'found Message-IDs: ' + matches.join(', '));
+
+    if (!matches.length) {
         connection.loginfo(plugin, "no Message-ID matches");
         transaction.results.add(plugin, { fail: 'Message-ID' });
         if (!plugin.cfg.reject.non_local_msgid) return next();
@@ -203,12 +231,11 @@ exports.non_local_msgid = function (next, connection) {
                 ' verify that I sent it');
     }
 
-    connection.loginfo(plugin, matches);
     var domains=[];
     for (var i=0; i < matches.length; i++) {
-        var res = matches[i].match(/@.*>/i);
+        var res = matches[i].match(/@(.*)>/i);
         if (!res[0]) continue;
-        domains.push(res[0].substring(1, (res[0].length -2)));
+        domains.push(res[0].substring(1, (res[0].length-1)));
     }
 
     if (domains.length === 0) {
@@ -219,7 +246,7 @@ exports.non_local_msgid = function (next, connection) {
         return next(DENY, "bounce with invalid Message-ID, I didn't send it.");
     }
 
-    connection.loginfo(plugin, domains);
+    connection.logdebug(plugin, domains);
 
     var valid_domains=[];
     for (var j=0; j < domains.length; j++) {
@@ -241,3 +268,115 @@ exports.non_local_msgid = function (next, connection) {
     if (!plugin.cfg.reject.non_local_msgid) return next();
     return next(DENY, "bounce with non-local Message-ID (RFC 3834)");
 };
+
+// Lazy regexp to get IPs from Received: headers in bounces
+var received_re = /^Received:.*[\[\(](\d+\.\d+\.\d+\.\d+|.*:.*)[\]\)]/mig;
+
+function find_received_headers (ips, body, connection, self) {
+    if (!body) return;
+    var match;
+    while (match = received_re.exec(body.bodytext)) {
+        var ip = match[1];
+        if (net_utils.is_private_ip(ip)) continue;
+        ips[ip] = true;
+    }
+    for (var i=0,l=body.children.length; i < l; i++) {
+        // Recure to any MIME children
+        find_received_headers(ips, body.children[i], connection, self);
+    }
+}
+
+exports.bounce_spf_enable = function (next, connection) {
+    var plugin = this;
+    if (plugin.cfg.check.bounce_spf) {
+        connection.transaction.parse_body = true;
+    }
+    return next();
+}
+
+exports.bounce_spf = function (next, connection) {
+    var plugin = this;
+    if (!plugin.cfg.check.bounce_spf) return next();
+    if (!plugin.has_null_sender(connection)) return next();
+    var txn = connection.transaction;
+
+    // Recurse through all textual parts and store all parsed IPs
+    // in an object to remove any duplicates which might appear.
+    var ips = {};
+    find_received_headers(ips, txn.body, connection, plugin);
+    ips = Object.keys(ips);
+    if (!ips.length) {
+        connection.loginfo(plugin, 'No received headers found in message');
+        return next();
+    }
+
+    connection.logdebug(plugin, 'found IPs to check: ' + ips.join(', '));
+
+    var pending = 0;
+    var aborted = false;
+    var called_cb = false;
+
+    var timer = setTimeout(function () {
+        connection.logerror(plugin, 'Timed out');
+        txn.results.add(plugin, { skip: 'bounce_spf(timeout)' });
+        return run_cb(true);
+    }, (plugin.timeout - 1) * 1000);
+
+    var run_cb = function (abort, retval, msg) {
+        if (aborted) return;
+        if (abort) aborted = true;
+        if (!aborted && pending > 0) return;
+        if (called_cb) return;
+        clearTimeout(timer);
+        called_cb = true;
+        return next(retval, msg);
+    }
+
+    ips.forEach(function (ip) {
+        if (aborted) return;
+        var spf = new SPF();
+        pending++;
+        spf.check_host(ip, txn.rcpt_to[0].host, txn.rcpt_to[0].address(), 
+            function (err, result) {
+                if (aborted) return;
+                pending--;
+                if (err) {
+                    connection.logerror(plugin, err.message);
+                    return run_cb();
+                }
+                connection.logdebug(plugin, 'ip=' + ip + ' ' + 
+                                            'spf_result=' + spf.result(result));
+                switch (result) {
+                    case (spf.SPF_NONE):
+                        // Abort as domain doesn't publish an SPF record
+                    case (spf.SPF_TEMPERROR):
+                    case (spf.SPF_PERMERROR):
+                        // Abort as all subsequent lookups will return this
+                        connection.logdebug(plugin, 'Aborted: SPF returned ' +
+                                                    spf.result(result));
+                        txn.results.add(plugin, { skip: 'bounce_spf' });
+                        return run_cb(true);
+                        break;
+                    case (spf.SPF_PASS):
+                        // Presume this is a valid bounce
+                        // TODO: this could be spoofed; could weight each IP to combat
+                        connection.loginfo(plugin, 'Valid bounce originated from ' + ip);
+                        txn.results.add(plugin, { pass: 'bounce_spf' });
+                        return run_cb(true);
+                        break;
+                }
+                if (pending === 0 && !aborted) {
+                    // We've checked all the IPs and none of them returned Pass
+                    txn.results.add(plugin, {fail: 'bounce_spf', emit: true });
+                    if (!plugin.cfg.reject.bounce_spf) return run_cb();
+                    return run_cb(false, DENY, 'Invalid bounce (spoofed sender)');
+                }
+            }
+        );
+        if (pending === 0 && !aborted) {
+            // No lookups run for some reason
+            return run_cb();
+        }
+    });
+}
+
