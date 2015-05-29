@@ -2,12 +2,7 @@
   "author": "Matt Sergeant <helpme@gmail.com> (http://baudehlo.com/)",
   "name": "Haraka",
   "description": "An SMTP Server project.",
-  "keywords": [
-    "haraka",
-    "smtp",
-    "server",
-    "email"
-  ],
+  "keywords": ["haraka", "smtp", "server", "email"],
   "version": "2.6.1",
   "homepage": "http://haraka.github.io",
   "repository": {

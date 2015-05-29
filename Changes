@@ -1,4 +1,55 @@
 
+
+2.7.0 - Jun NN, 2015
+
+* New Features
+    * SPF bounce check
+    * rspamd plugin (@fatalbanana)
+    * watch plugin
+    * limit plugin (connection concurrency, errors, unrecognized commands)
+    * plugins can now be npm packages (see also #946)
+    * built-in HTTP server (Express backed)
+
+* Improvements
+    * save smtp_forward result to result_store 
+    * auth_base: permit a return message (@DarkSorrow)
+    * add DSN.create() and RFC 4954 support
+    * enhanced pipelining support
+    * added config/access.domains with some tips (@EyePulp)
+    * Add SSL detection over plain-text socket
+    * earlytalker: store results
+    * bounce: make it safe to check non_local_msgid
+    * AVG: store results, added defer options
+    * tls: change createCredentials to tls.createSecureContext (@DarkSorrow)
+    * update dependency versions (esp async 0.2.9 -> 1.0.0)
+    * ASN docs: add FTP download note for routeviews
+    * karma: removed concurrency limits (see limit plugin) and penalty feature
+    * added utils.elapsed()
+    * deny message includes hostname
+    * Add Fisher-Yates shuffle to randomize lookup order in data.uribl
+    * change default message size limit to 25mb
+    * auth_base: save auth results
+    * upgrade toobusy plugin to toobusy-js (@alexkavon)
+    * configfile: permit / char in ini keys
+    * added utils.node_min()
+    * added result_store.get_all()
+    * updated ubuntu upstart script
+
+* Bug Fixes
+    * added helo.checks boolean for proto_mismatch
+    * make rate_limit redis keys always expire @celesteking
+    * dkim_sign: Buffer.concat expects an array of buffers
+    * transaction: check discard_data before adding line end (@DarkSorrow)
+    * fix 8-bit msg not displayed properly in gmail
+    * fcrdns: always init results
+    * TLS timer on error
+    * dkim_verify: fixed timeout issue
+    * smtp_[proxy|forward]: correct authentication example
+    * Fork child workers after init_master hook
+    * connection: return 450/550 for plugin DENY* (was 452/552)
+    * spamassassin: don't call next() when transaction gone
+    * outbound: fix crash when sending bounce mail
+
 2.6.1 - Mar 27, 2015
 
 * added sedation timers for config file re-reading
