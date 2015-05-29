@@ -1573,9 +1573,28 @@ Connection.prototype.queue_msg = function (retval, msg) {
     }
 };
 
+Connection.prototype.store_queue_result = function (retval, msg) {
+    var plugin = {name: 'queue'};
+    switch (retval) {
+        case constants.ok:
+            this.transaction.results.add(plugin, { pass: msg });
+            break;
+        case constants.deny:
+        case constants.denydisconnect:
+        case constants.denysoft:
+        case constants.denysoftdisconnect:
+            this.transaction.results.add(plugin, { fail: msg });
+            break;
+        default:
+            this.transaction.results.add(plugin, { msg: msg });
+            break;
+    }
+};
+
 Connection.prototype.queue_outbound_respond = function(retval, msg) {
     var self = this;
     if (!msg) msg = this.queue_msg(retval, msg);
+    this.store_queue_result(retval, msg);
     if (retval !== constants.ok) {
         this.lognotice('queue code=' + constants.translate(retval) + ' msg="' + msg + '"');
     }
@@ -1619,7 +1638,9 @@ Connection.prototype.queue_outbound_respond = function(retval, msg) {
                         if (!msg) msg = self.queue_msg(retval, msg);
                         self.respond(550, msg, function() {
                             self.msg_count.reject++;
-                            self.reset_transaction(function () { self.resume();});
+                            self.reset_transaction(function () {
+                                self.resume();
+                            });
                         });
                         break;
                     default:
@@ -1636,6 +1657,8 @@ Connection.prototype.queue_outbound_respond = function(retval, msg) {
 Connection.prototype.queue_respond = function(retval, msg) {
     var self = this;
     if (!msg) msg = this.queue_msg(retval, msg);
+    this.store_queue_result(retval, msg);
+
     if (retval !== constants.ok) {
         this.lognotice('queue code=' + constants.translate(retval) + ' msg="' + msg + '"');
     }

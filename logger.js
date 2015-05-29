@@ -188,6 +188,9 @@ logger.log_if_level = function (level, key, plugin) {
             else if (data instanceof plugins.Plugin) {
                 pluginstr = '[' + data.name + ']';
             }
+            else if (typeof data === 'object' && data.name) {
+                pluginstr = '[' + data.name + ']';
+            }
             else if (data instanceof outbound.HMailItem) {
                 pluginstr = '[outbound]';
                 if (data.todo && data.todo.uuid) {
