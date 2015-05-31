@@ -108,12 +108,17 @@ are accessible to other plugins as well.
 
 The karma result object contains at least the following:
 
-    connect: 0,       <- score for this connection
+    score: 0,         <- score for this connection
     history: 0,       <- score for all connections
-    total_connects: 0,
+       good: 0,       <- qty of past 'good' connections
+       bad: 0,        <- qty of past 'bad' connections
+    connections: 0,   <- total past connections
     pass: [],         <- tests that added positive karma
     fail: [],         <- tests that added negative karma
 
+If an IP has at least 5 connections and all are good or bad, and `all_good` or
+`all_bad` result will be added to the `pass` or `fail` test list. This are
+very good indicators of future connection quality and are scored in karma.ini.
 
 ### <a name="Neighbor_Reputation"></a>ASN / Network Neighborhood Reputation
 
