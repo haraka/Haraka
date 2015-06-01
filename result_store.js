@@ -55,7 +55,12 @@ ResultStore.prototype.add = function (plugin, obj) {
     for (var i=0; i < append_lists.length; i++) {
         var key = append_lists[i];
         if (!obj[key]) continue;
-        result[key].push(obj[key]);
+        if (Array.isArray(obj[key])) {
+            result[key] = result[key].concat(obj[key]);
+        }
+        else {
+            result[key].push(obj[key]);
+        }
     }
 
     // these arrays are overwritten when passed
@@ -113,7 +118,12 @@ ResultStore.prototype.push = function (plugin, obj) {
 
     for (var key in obj) {
         if (!result[key]) result[key] = [];
-        result[key].push( obj[key] );
+        if (Array.isArray(obj[key])) {
+            result[key] = result[key].concat(obj[key]);
+        }
+        else {
+            result[key].push(obj[key]);
+        }
     }
 };
 
