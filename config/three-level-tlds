@@ -268,6 +268,7 @@ com.sapo.pt
 compute-1.amazonaws.com
 compute.amazonaws.cn
 compute.amazonaws.com
+content.nlgrid.com
 cpa.clicksure.com
 daigo.ibaraki.jp
 daisen.akita.jp
@@ -283,6 +284,7 @@ do.sapo.pt
 docs.google.com
 doshi.yamanashi.jp
 dothome.co.kr
+dyn.dhs.org
 dyndns.org.uk
 earth.orderbox-dns.com
 ebetsu.hokkaido.jp
@@ -1812,6 +1814,7 @@ suwa.nagano.jp
 suzaka.nagano.jp
 suzu.ishikawa.jp
 suzuka.mie.jp
+t.en25.com
 taa.it
 tabayama.yamanashi.jp
 tabuse.yamaguchi.jp
@@ -2068,6 +2071,8 @@ uryu.hokkaido.jp
 us-east-1.amazonaws.com
 us1.list-manage.com
 us1.list-manage1.com
+us10.list-manage.com
+us10.list-manage1.com
 us2.list-manage.com
 us2.list-manage1.com
 us2.list-manage2.com
@@ -2084,6 +2089,8 @@ us7.list-manage.com
 us7.list-manage1.com
 us8.list-manage.com
 us8.list-manage1.com
+us9.list-manage.com
+us9.list-manage1.com
 usa.oita.jp
 user.icpnet.pl
 ushiku.ibaraki.jp
