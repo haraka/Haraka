@@ -292,3 +292,48 @@ exports.node_min = {
         test.done();
     },
 };
+
+exports.elapsed = {
+    'returns 0 decimal places': function (test) {
+        test.expect(1);
+        var start = new Date();
+        start.setTime(start.getTime() - 3517);   // 3.517 seconds ago
+        test.strictEqual(utils.elapsed(start, 0), '4');
+        test.done();
+    },
+    'returns 1 decimal place': function (test) {
+        test.expect(1);
+        var start = new Date();
+        start.setTime(start.getTime() - 3517);   // 3.517 seconds ago
+        test.strictEqual(utils.elapsed(start, 1), '3.5');
+        test.done();
+    },
+    'returns 2 decimal places': function (test) {
+        test.expect(1);
+        var start = new Date();
+        start.setTime(start.getTime() - 3517);   // 3.517 seconds ago
+        test.strictEqual(utils.elapsed(start, 2), '3.52');
+        test.done();
+    },
+    'default N > 5 has 0 decimal places': function (test) {
+        test.expect(1);
+        var start = new Date();
+        start.setTime(start.getTime() - 13517);   // 3.517 seconds ago
+        test.strictEqual(utils.elapsed(start), '14');
+        test.done();
+    },
+    'default N > 2 has 1 decimal places': function (test) {
+        test.expect(1);
+        var start = new Date();
+        start.setTime(start.getTime() - 3517);   // 3.517 seconds ago
+        test.strictEqual(utils.elapsed(start), '3.5');
+        test.done();
+    },
+    'default has 2 decimal places': function (test) {
+        test.expect(1);
+        var start = new Date();
+        start.setTime(start.getTime() - 1517);   // 3.517 seconds ago
+        test.strictEqual(utils.elapsed(start), '1.52');
+        test.done();
+    },
+};

@@ -1,12 +1,12 @@
 # karma - a scoring engine
 
-A heuristic scoring engine that uses connection metadata and the results of other Haraka plugins as inputs. Connections scoring in excess of specified thresholds are [penalized](#penalties) in proportionate ways.
+Karma is a heuristic scoring engine that uses connection metadata and other Haraka plugins as inputs. Connections scoring in excess of specified thresholds are [penalized](#penalties) in proportionate ways.
 
 ## Description
 
 Haraka includes some excellent plugins that detect message or sender patterns that are indicative of spam. [Some](sa-url) [plugins](snf-url) [have](fcrdns-url) [accuracy](uribl-url) rates above 95%. The extent that such plugins can be utilized depends on a sites tolerance for blocking legit messages. Sites that can't tolerate blocking ham are challenged to benefit from imperfect plugins.
 
-Karma's contribution is to heuristically score results from every plugin. By scoring a few "95+" plugins, accuracy rates above 99% are attainable. With a half dozen such plugins, 99.99% accuracy is attainable. With karma, good senders with good history can occasionally fail tests and still deliver their mail. Poor senders find themselves crawling towards rejection.
+Karma heuristically scores results from every plugin. By scoring a few "95+" plugins, accuracy rates above 99% are attainable. With a half dozen such plugins, 99.99% accuracy is attainable. With karma, good senders with good history can occasionally fail tests (false positives) and still deliver their mail. Senders with poor history have a harder time.
 
 ## How Karma Works
 
@@ -16,12 +16,12 @@ The scoring mechanism is not dissimilar to [SpamAssassin](sa-url), but Karma has
 
     * Runs entirely in Node, so it's very fast
     * Async and very scalable.
-    * Builds a local sender reputation database
-    * Access to connection properties (relaying, port, auth attempts, etc..)
+    * Builds sender and network reputation databases
+    * Has access to connection properties (relaying, port, auth attempts, etc..)
     * Access to raw SMTP commands (data + formatting inspection)
-    * Ability to reject connections before DATA
+    * Can reject connections before DATA (save lots of bandwidth)
 
-Karma is not a replacement for content filters. Karma focuses on the quality of the **connection**, whereas content filters (bayes\*) focus on the contents of the **message**. Karma works best with content filters.
+Karma is not a replacement for content filters. Karma focuses on the quality of the **connection**. Content filters (bayes\*) focus on the contents of the **message**. Karma works best *with* content filters.
 
 
 # CONFIG
@@ -56,7 +56,7 @@ The reward is purposefully small, to permit good senders in bad neighborhoods th
 
 ### <a name="delay"></a>Connection Delays
 
-Connection delays (aka tarpitting, teergrubing, early talker) slow down a SMTP conversation by inserting artificial delays. Early talking is when a sender talks out of turn. Karma punishes early talkers and increases connection delays adaptively as connection quality declines.
+Connection delays (aka tarpitting, teergrubing, early talker) slow down a SMTP conversation by inserting artificial delays. Early talking is when a sender talks out of turn. Karma punishes early talkers and increases connection delays adaptively as connection quality changes.
 
 Karma's delay goals:
 
@@ -83,35 +83,16 @@ responses.
 
 When using `karma`, do not use Haraka's `tarpit` or `early_talker` plugins.
 
-### Penalty Box
-
-When senders score worse than [thresholds]punish, they are prevented from
-connecting for *penalty\_days*. Limiting SMTP abuse to just a few connections
-per day(s) greatly reduces bruteforce attacks and spam attempts.
-
-    [core] connect ip=173.234.145.190 port=9472 local_ip=127.0.0.30 local_port=25
-    [connect.asn] asn: 15003, net: 173.234.144.0/21, country: US, authority: arin
-    [connect.fcrdns] 173.234.145.190.rdns.ubiquity.io(Error: queryA ENOTFOUND)
-    [connect.fcrdns] ip=173.234.145.190 rdns="173.234.145.190.rdns.ubiquity.io" rdns_len=1 fcrdns="" fcrdns_len=0 other_ips_len=0 invalid_tlds=0 generic_rdns=true
-    [connect.p0f] os="Windows 7 or 8" link_type="Ethernet or modem" distance=12 total_conn=4 shared_ip=N
-    [karma] neighbors: -88
-    [core] hook=lookup_rdns plugin=karma function=hook_lookup_rdns params="" retval=DENYDISCONNECT msg="Your mother was a hampster and your father smells of elderberries!"
-    [core] disconnect ip=173.234.145.190 rdns="" helo="" relay=N early=N esmtp=N tls=N pipe=N txns=0 rcpts=0/0/0 msgs=0/0/0 bytes=0 lr="554 Your mother was a hampster and your father smells of elderberries!" time=10.009
-    [core] data after disconnect from 173.234.145.190
-
-
 ## Included Tests
 
 Connection data that karma considers:
 
 * [IP Reputation](#IP_Reputation)
 * [Neighbor reputation](#Neighbor_Reputation) (the network ASN)
-* DENY attempts by other plugins
+* DENY events by other plugins
 * envelope sender from a spammy TLD
 * [malformed envelope addresses](#malformed_env)
 * [unrecognized SMTP commands](#unrecognized)
-* too many recipient attempts
-* too many concurrent connections for class (unknown, good, bad)
 * matching *env from* and *env to* name (rare in ham, frequent in spam)
 
 The data from these tests are helpful but the real power of karma is [scoring
@@ -133,9 +114,6 @@ The karma result object contains at least the following:
     pass: [],         <- tests that added positive karma
     fail: [],         <- tests that added negative karma
 
-When a sender has more bad than good connections, and have a connection
-scoring worse than [thresholds]punish, they can be sent to the penalty box.
-
 
 ### <a name="Neighbor_Reputation"></a>Neighborhood Reputation (ASN)
 
@@ -152,7 +130,7 @@ ASNs with less than 5 karma points in either direction are ignored.
 
 ### <a name="malformed_env"></a>Malformed Envelope Addresses
 
-Some malware senders don't bother complying with the RFC (5321, 2821, 821) address format. Karma checks the envelope from and to addresses for a common RFC ignorant pattern that is highly correlated with malware.
+Very old versions of Outlook Express and some malware senders don't bother complying with the RFC (5321, 2821, 821) address format. Karma checks the envelope from and to addresses for a common RFC ignorant pattern that is highly correlated with malware.
 
 
 ### <a name="unrecognized"></a>Unrecognized SMTP verbs/commands

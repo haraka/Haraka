@@ -12,18 +12,29 @@ var fs   = require('fs'),
     base = path.join(__dirname, '..'),
     ver  = JSON.parse(fs.readFileSync(base+'/package.json', 'utf8'))['version'],
     knownOpts = {
-        "version": Boolean,
-        "verbose": Boolean,
-        "help":    [String, null],
-        "configs": path,
-        "install": path,
-        "list":    Boolean,
-        "plugin":  String,
-        "force":   Boolean,
-        "qlist":   Boolean,
-        "qstat":   Boolean,
-        "qempty":  Boolean,
-        "order":   Boolean,
+        "version":     Boolean,
+        "verbose":     Boolean,
+        "help":        [String, null],
+        "configs":     path,
+        "install":     path,
+        "list":        Boolean,
+        "plugin":      Array,
+        "force":       Boolean,
+        "qlist":       Boolean,
+        "qstat":       Boolean,
+        "qempty":      Boolean,
+        "order":       Boolean,
+        "test":        [String, Array],
+        "ip":          String,
+        "helo":        String,
+        "ehlo":        String,
+        "envfrom":     String,
+        "envrcpt":     [String, Array],
+        "message":     path,
+        "dump-mime":   Boolean,
+        "dump-stream": Boolean,
+        "skip-deny":   Boolean,
+        "set-relay":   Boolean,
     },
     shortHands = {
         "v": ["--version"],
@@ -34,6 +45,7 @@ var fs   = require('fs'),
         "p": ["--plugin"],
         "f": ["--force"],
         "o": ["--order"],
+        "t": ["--test"],
     },
     parsed = nopt(knownOpts, shortHands, process.argv, 2),
     existsSync = require(base+'/utils').existsSync;
@@ -53,6 +65,18 @@ var usage = [
     "\t--qlist       \t\tList the outbound queue",
     "\t--qstat       \t\tGet statistics on the outbound queue",
     "\t-o, --order   \t\tShow all registered plugins and their run order",
+    "\t-t PLUGIN     \t\tPlugin test mode",
+    "\t--------------- PLUGIN TEST MODE OPTIONS (all optional) --------------",
+    "\t--ip IP       \t\tIP address to use",
+    "\t--helo HELO   \t\tHELO to use",
+    "\t--ehlo EHLO   \t\tEHLO to use",
+    "\t--envfrom FROM\t\tMAIL FROM to use",
+    "\t--envfrom TO  \t\tRCPT TO(s) to use",
+    "\t--message FILE\t\tMessage file to use",
+    "\t--dump-mime   \t\tDump the MIME structure and body text",
+    "\t--dump-stream \t\tDump the MessageStream to stdout",
+    "\t--skip-deny   \t\tContinue running hooks after DENY/DENYSOFT",
+    "\t--set-relay   \t\tSet connection.relaying",
 ].join('\n');
 
 
@@ -382,7 +406,160 @@ else if (parsed.order) {
     }
     process.exit();
 }
+else if (parsed.test) {
+    if (!parsed.configs) {
+        fail("order option requires config path");
+    }
+    process.env.HARAKA = parsed.configs;
+    try {
+        require.paths.push(path.join(process.env.HARAKA, 'node_modules'));
+    }
+    catch(e) {
+        process.env.NODE_PATH = process.env.NODE_PATH ?
+                (process.env.NODE_PATH + ':' + path.join(process.env.HARAKA, 'node_modules'))
+                :
+                (path.join(process.env.HARAKA, 'node_modules'));
+        require('module')._initPaths(); // Horrible hack
+    }
+    var cfreader = require(path.join(base, 'configfile')).watch_files = false;
+    var logger = require(path.join(base, "logger"));
+    logger.loglevel = logger.levels.PROTOCOL;
+    var fs = require('fs');
 
+    // Attempt to load message early
+    var msg;
+    if (parsed.message) {
+        try {
+            msg = fs.readFileSync(parsed.message);
+        }
+        catch (e) {
+            logger.logcrit(e.message);
+            logger.dump_logs(1);
+        }
+    }
+
+    var plugins = require(path.join(base, "plugins"));
+    plugins.server = { notes: {} };
+    plugins.load_plugins((parsed.test && parsed.test[0] !== 'all') ? parsed.test : null);
+    var Connection = require(path.join(base, "connection"));
+    var Transaction = require(path.join(base, "transaction"));
+    var Address = require(path.join(base, 'address')).Address;
+    var constants = require(path.join(base, 'constants'));
+    var client = {
+        remoteAddress: ((parsed.ip) ? parsed.ip : '1.2.3.4'),
+        remotePort: 1234,
+        destroy: function () {},
+        on: function (event, cb) {},
+        end: function () {
+            process.exit();
+        },
+        write: function (buf) {},
+        resume: function () {},
+        pause: function () {},
+    }
+    var server = {
+        address: function () {
+            return { port: 25, family: 'ipv4', address: '127.0.0.1' };
+        },
+    }
+    var connection = new Connection.createConnection(client, server);
+    if (parsed['set-relay']) connection.relaying = true;
+   
+    var run_next_hook = function () {
+        var args = Array.prototype.slice.call(arguments);
+        var code = args.shift();
+        if (!parsed['skip-deny'] && code !== constants.ok && code !== constants.cont) {
+             plugins.run_hooks('quit', connection);
+        }
+        else { 
+             plugins.run_hooks.apply(this, args);
+        }
+    }
+
+    connection.connect_respond = function () {
+        var helo = 'test.example.com';
+        var mode = 'ehlo';
+        if (parsed.ehlo) {
+            helo = parsed.ehlo;
+        }
+        else if (parsed.helo) {
+            helo = parsed.helo;
+            mode = 'helo';
+        }
+        connection.hello_host = helo;
+        run_next_hook(arguments[0], mode, connection, helo);
+    }
+    connection.helo_respond = connection.ehlo_respond = function () {
+        var args = arguments;
+        var mail = new Address(((parsed.envfrom) ? parsed.envfrom : 'test@example.com'));
+        connection.init_transaction(function () {
+            connection.transaction.mail_from = mail;
+            run_next_hook(args[0], 'mail', connection, [mail, null]);
+        });
+    }
+    connection.mail_respond = function () {
+        var rcpt = new Address(((parsed.envrcpt) ? parsed.envrcpt : 'test@example.com'));
+        this.transaction.rcpt_to.push(rcpt);
+        run_next_hook(arguments[0], 'rcpt', connection, [rcpt, null]);
+    }
+    connection.rcpt_respond = function () {
+        connection.transaction.parse_body = true;
+        run_next_hook(arguments[0], 'data', connection);
+    }
+    connection.data_respond = function () {
+        var args = arguments;
+        // Add data to stream
+        if (msg) {
+            var buf = msg;
+            var indexOfLF   = require(path.join(base, 'utils')).indexOfLF;
+            while ((offset = indexOfLF(buf)) !== -1) {
+                var line = buf.slice(0, offset+1);
+                if (buf.length > offset) {
+                    buf = buf.slice(offset+1);
+                }
+                connection.transaction.add_data(line);
+                connection.transaction.data_bytes += line.length;
+            }
+        }
+        else {
+            // Add empty data to initialize message_stream
+            connection.transaction.add_data('');
+        }
+        connection.data_done(function () {
+            run_next_hook(args[0], 'data_post', connection);
+        });
+    }
+    connection.data_post_respond = function () {
+        var args = arguments;
+        // Dump MIME structure and decoded body text?
+        var dump_mime_structure = function (body) {
+            console.log('Found MIME part ' + body.ct);
+            console.log(body.bodytext);
+            for (var i=0,l=body.children.length; i < l; i++) {
+                dump_mime_structure(body.children[i]);
+            }
+        }
+        if (parsed['dump-mime']) {
+            dump_mime_structure(connection.transaction.body);
+        }
+        if (parsed['dump-stream']) {
+            console.log('STREAM:');
+            connection.transaction.message_stream.on('end', function () {
+                run_next_hook(args[0], 'queue', connection);
+            });
+            connection.transaction.message_stream.pipe(process.stdout);
+        }
+        else {
+            run_next_hook(args[0], 'queue', connection);
+        }
+    }
+    connection.queue_respond = function () {
+        run_next_hook(arguments[0], 'queue_ok', connection);
+    }
+    connection.queue_ok_respond = function () {
+        run_next_hook(arguments[0], 'quit', connection);
+    }
+}
 else if (parsed.configs) {
     var haraka_path = path.join(base, 'haraka.js');
 

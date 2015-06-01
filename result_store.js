@@ -145,6 +145,7 @@ ResultStore.prototype.private_collate = function (result, name) {
 
     // anything not predefined in the result was purposeful, show it first
     for (var key in result) {
+        if (key[0] === '_') continue;  // ignore 'private' keys
         if (all_opts.indexOf(key) !== -1) continue;
         if (hide.length && hide.indexOf(key) !== -1) continue;
         if (Array.isArray(result[key]) && result[key].length === 0) continue;

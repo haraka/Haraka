@@ -85,40 +85,6 @@ exports.assemble_note_obj = {
     },
 };
 
-exports.max_concurrent = {
-    setUp : _set_up,
-    'no results': function (test) {
-        test.expect(2);
-        var cb = function (rc, msg) {
-            test.equal(undefined, rc);
-            test.equal(undefined, msg);
-            test.done();
-        }.bind(this);
-        this.plugin.max_concurrent(cb, this.connection);
-    },
-    'results fail=0': function (test) {
-        test.expect(2);
-        var cb = function (rc, msg) {
-            test.equal(undefined, rc);
-            test.equal(undefined, msg);
-            test.done();
-        }.bind(this);
-        this.connection.results.add(this.plugin, {pass: 'test pass'});
-        this.plugin.max_concurrent(cb, this.connection);
-    },
-    'results fail=max_concurrent': function (test) {
-        test.expect(2);
-        var cb = function (rc, msg) {
-            test.equal(DENYSOFTDISCONNECT, rc);
-            test.ok(msg);
-            test.done();
-        }.bind(this);
-        this.plugin.cfg.concurrency = {disconnect_delay: 1};
-        this.connection.results.add(this.plugin, {fail: 'max_concurrent'});
-        this.plugin.max_concurrent(cb, this.connection);
-    },
-};
-
 exports.hook_deny = {
     setUp : _set_up,
     'no params': function (test) {
@@ -172,78 +138,6 @@ exports.hook_deny = {
             test.done();
         };
         this.plugin.hook_deny(next, this.connection, [DENYSOFT,'','','','','']);
-    },
-};
-
-exports.max_concurrent = {
-    setUp : _set_up,
-    'no results': function (test) {
-        test.expect(2);
-        var next = function (rc, msg) {
-            test.equal(undefined, rc);
-            test.equal(undefined, msg);
-            test.done();
-        };
-        this.plugin.max_concurrent(next, this.connection);
-    },
-    'no matching fail': function (test) {
-        test.expect(2);
-        var next = function (rc, msg) {
-            test.equal(undefined, rc);
-            test.equal(undefined, msg);
-            test.done();
-        };
-        this.connection.results.add(this.plugin, {fail: 'test'});
-        this.plugin.max_concurrent(next, this.connection);
-    },
-    'matching fail': function (test) {
-        test.expect(3);
-        var before = Date.now();
-        var next = function (rc, msg) {
-            test.ok(Date.now() >= before + 1);
-            test.equal(DENYSOFTDISCONNECT, rc);
-            test.ok(msg);
-            test.done();
-        };
-        this.connection.results.add(this.plugin, {fail: 'max_concurrent'});
-        this.plugin.cfg.concurrency = {disconnect_delay: 1};
-        this.plugin.max_concurrent(next, this.connection);
-    },
-};
-
-exports.karma_penalty = {
-    setUp : _set_up,
-    'no results': function (test) {
-        test.expect(2);
-        var next = function (rc, msg) {
-            test.equal(undefined, rc);
-            test.equal(undefined, msg);
-            test.done();
-        };
-        this.plugin.karma_penalty(next, this.connection);
-    },
-    'no matching fail': function (test) {
-        test.expect(2);
-        var next = function (rc, msg) {
-            test.equal(undefined, rc);
-            test.equal(undefined, msg);
-            test.done();
-        };
-        this.connection.results.add(this.plugin, {fail: 'test'});
-        this.plugin.karma_penalty(next, this.connection);
-    },
-    'matching fail': function (test) {
-        test.expect(3);
-        var before = Date.now();
-        var next = function (rc, msg) {
-            test.ok(Date.now() >= before + 1);
-            test.equal(DENYDISCONNECT, rc);
-            test.ok(msg);
-            test.done();
-        };
-        this.connection.results.add(this.plugin, {fail: 'penalty'});
-        this.plugin.cfg.penalty = {disconnect_delay: 1};
-        this.plugin.karma_penalty(next, this.connection);
     },
 };
 

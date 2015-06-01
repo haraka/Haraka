@@ -22,6 +22,7 @@ exports.register = function () {
 
     if (plugin.cfg.concurrency) {
         plugin.register_hook('lookup_rdns',  'incr_concurrency');
+        plugin.register_hook('connect',      'check_concurrency');
         plugin.register_hook('disconnect',   'decr_concurrency');
     }
 
@@ -46,6 +47,10 @@ exports.load_limit_ini = function () {
     plugin.cfg = plugin.config.get('limit.ini', function () {
         plugin.load_limit_ini();
     });
+
+    if (!plugin.cfg.concurrency) {   // no config file
+        plugin.cfg.concurrency = {};
+    }
 };
 
 exports.max_unrecognized_commands = function(next, connection, cmd) {
@@ -131,7 +136,7 @@ exports.incr_concurrency = function (next, connection) {
     var plugin = this;
     if (!plugin.cfg.concurrency) { return next(); }
 
-    var dbkey = 'concurrency|' + connection.remote_ip;
+    var dbkey = plugin.get_key(connection);
 
     plugin.nosql.incrby(dbkey, 1, function (err, concurrent) {
 
@@ -148,20 +153,27 @@ exports.incr_concurrency = function (next, connection) {
             plugin.nosql.set(dbkey, 1);
         }
 
-        plugin.check_concurrency(next, connection, concurrent);
+        connection.notes.limit=concurrent;
+        next();
     });
 };
 
-exports.check_concurrency = function (next, connection, concurrent) {
+exports.get_key = function (connection) {
+    return 'concurrency|' + connection.remote_ip;
+};
+
+exports.check_concurrency = function (next, connection) {
     var plugin = this;
 
     var max = plugin.get_concurrency_limit(connection);
     if (!max) { return next(); }
     connection.logdebug(plugin, 'concurrent max: ' + max);
 
+    var concurrent = parseInt(connection.notes.limit);
+
     if (concurrent <= max) {
         connection.logdebug(plugin, 'concurrent ' + concurrent +
-            ' within ' + max);
+            ' <= ' + max);
         return next();
     }
     connection.logdebug(plugin, 'concurrent ' + concurrent +
@@ -173,6 +185,7 @@ exports.check_concurrency = function (next, connection, concurrent) {
     }
 
     connection.results.add(plugin, {fail: 'concurrency.max'});
+
     // Disconnect slowly.
     setTimeout(function () {
         return next(DENYSOFTDISCONNECT, 'Too many concurrent connections');
@@ -213,7 +226,7 @@ exports.decr_concurrency = function (next, connection) {
     var plugin = this;
     if (!plugin.cfg.concurrency) { return next(); }
 
-    var dbkey = 'concurrency|' + connection.remote_ip;
+    var dbkey = plugin.get_key(connection);
     plugin.nosql.incrby(dbkey, -1, function (err, concurrent) {
         connection.logdebug(plugin, 'decrement concurrency to ' + concurrent);
 

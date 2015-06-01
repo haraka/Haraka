@@ -70,7 +70,7 @@ will not include a timestamp.
   file, it will be truncated to that length. We recommend a 6 as a good
   balance of finding in the logs and not making lines too long.
 
-* banner\_include\_uuid
+* banner\_includes\_uuid
 
   This will add the full UUID to the first line of the SMTP greeting banner.
 

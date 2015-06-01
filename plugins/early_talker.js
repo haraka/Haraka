@@ -19,7 +19,13 @@ exports.load_config = function () {
 exports.early_talker = function(next, connection) {
     var plugin = this;
     if (!plugin.pause      ) { return next(); } // config set to 0
-    if (connection.relaying) { return next(); } // Don't pause AUTH/RELAY clients
+    if (connection.relaying) {   // Don't pause AUTH/RELAY clients
+        if (connection.early_talker) {
+            connection.results.add(plugin,
+                    { skip: 'an early talking relaying client?!'});
+        }
+        return next();
+    }
 
     setTimeout(function () {
         if (!connection.early_talker) { return next(); }

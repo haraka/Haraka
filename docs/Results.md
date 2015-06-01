@@ -171,3 +171,14 @@ Retrieve a matching pattern:
     if (r.has('plugin_name', 'pass', /^some_test/)) {
         // some_test passed (2x)
     }
+
+### Private Results
+
+To store structured data in results that are hidden from the human and
+human_html output, prefix the name of the key with an underscore.
+
+Example:
+
+```js
+connection.results.add(plugin, { _hidden: "some data' });
+```

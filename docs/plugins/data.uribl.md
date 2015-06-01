@@ -97,7 +97,7 @@ The following are optional for each list:
 * no\_ip\_lookups = 1 | true | yes | on | enabled
 
   Specifies that no IP addresses should ever be check against this list.
-  This is required for lists list dbl.spamhaus.org.
+  This is required for dbl.spamhaus.org.
 
 * strip\_to\_domain= 1 | true | yes | on | enabled
 
