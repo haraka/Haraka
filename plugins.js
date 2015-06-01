@@ -12,6 +12,10 @@ var utils       = require('./utils');
 var util        = require('util');
 var states      = require('./connection').states;
 
+exports.registered_hooks = {};
+exports.registered_plugins = {};
+exports.plugin_list = [];
+
 function Plugin(name) {
     this.name = name;
     this.base = {};
@@ -26,12 +30,27 @@ function Plugin(name) {
     this.hooks = {};
 }
 
-Plugin.prototype.register_hook = function (hook_name, method_name) {
+Plugin.prototype.register_hook = function(hook_name, method_name, priority) {
+    priority = parseInt(priority);
+    if (!priority) priority = 0;
+    if (priority > 100) priority = 100;
+    if (priority < -100) priority = -100;
+
+    if (!Array.isArray(exports.registered_hooks[hook_name])) {
+        exports.registered_hooks[hook_name] = [];
+    }
+    exports.registered_hooks[hook_name].push({
+        plugin: this.name,
+        method: method_name,
+        priority: priority,
+        timeout: this.timeout
+    });
     this.hooks[hook_name] = this.hooks[hook_name] || [];
     this.hooks[hook_name].push(method_name);
 
-    logger.logdebug('registered hook ' + hook_name + ' to ' + this.name +
-            '.' + method_name);
+    logger.logdebug("registered hook " + hook_name + 
+                    " to " + this.name + '.' + method_name +
+                    " priority " + priority);
 };
 
 Plugin.prototype.register = function () {}; // noop
@@ -50,7 +69,6 @@ Plugin.prototype.inherits = function (parent_name) {
 };
 
 Plugin.prototype._get_plugin_paths = function () {
-
     var paths = [ path.join(__dirname, './plugins') ];
 
     if (process.env.HARAKA) {
@@ -72,7 +90,6 @@ Plugin.prototype._get_plugin_paths = function () {
 };
 
 function get_timeout (name) {
-
     var timeout = parseFloat((config.get(name + '.timeout')));
     if (isNaN(timeout)) {
         logger.logdebug('no timeout in ' + name + '.timeout');
@@ -118,7 +135,23 @@ plugins.load_plugins = function (override) {
         plugin_list = config.get('plugins', 'list');
     }
 
-    plugins.plugin_list = plugin_list.map(plugins.load_plugin);
+    plugin_list.forEach(function (plugin) {
+        plugins.load_plugin(plugin);
+    });
+
+    plugins.plugin_list = Object.keys(plugins.registered_plugins);
+
+    // Sort registered_hooks by priority
+    var hooks = Object.keys(plugins.registered_hooks);
+    for (var h=0; h<hooks.length; h++) {
+        var hook = hooks[h];
+        plugins.registered_hooks[hook].sort(function (a, b) {
+            if (a.priority < b.priority) return -1;
+            if (a.priority > b.priority) return 1;
+            return 0;
+        });
+    }
+
     logger.dump_logs(); // now logging plugins are loaded.
 };
 
@@ -130,6 +163,7 @@ plugins.load_plugin = function (name) {
         plugins._register_plugin(plugin);
     }
 
+    plugins.registered_plugins[name] = plugin;
     return plugin;
 };
 
@@ -243,14 +277,11 @@ plugins.run_hooks = function (hook, object, params) {
     }
     object.hooks_to_run = [];
 
-    for (var i = 0; i < plugins.plugin_list.length; i++) {
-        var plugin = plugins.plugin_list[i];
-
-        if (plugin && plugin.hooks[hook]) {
-            for (var j = 0; j < plugin.hooks[hook].length; j++) {
-                var hook_code_name = plugin.hooks[hook][j];
-                object.hooks_to_run.push([plugin, hook_code_name]);
-            }
+    if (plugins.registered_hooks[hook]) {
+        for (var i=0; i<plugins.registered_hooks[hook].length; i++) {
+            var item = plugins.registered_hooks[hook][i];
+            var plugin = plugins.registered_plugins[item.plugin];
+            object.hooks_to_run.push([plugin, item.method]);
         }
     }
 

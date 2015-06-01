@@ -249,10 +249,23 @@ This is important as some plugins might rely on `results` or `notes` that have
 been set by plugins that need to run before them.   This should be noted in the
 plugins documentation though, so you should make sure that you read it.
 
-If you are writing complex plugins of your own, you may find that you have to 
-split your plugins into multiple plugins if you require your hooks to run in a 
-specific order e.g. you want hook_deny to run last after all other plugins and
-hook_lookup_rdns to run first, then you'd need two plugins to achieve this.
+If you are writing complex plugins of your own, you may find that you require 
+your hooks to run in a specific order e.g. you want hook_deny to run last after 
+all other plugins and hook_lookup_rdns to run first, then you can explicitly 
+register your hooks and provide a `priority` value which is an integer between
+-100 (highest priority) to 100 (lowest priority) which defaults to 0 (zero) if
+not supplied.  You can apply a priority to your hook in the following way:
+
+`````
+exports.register = function() {
+    var plugin = this;
+    plugin.register_hook('connect',  'hook_connect', -100);
+}
+`````
+
+This would ensure that your hook_connect function will run before any other
+plugins registered on the `connect` hook, regardless of the order it was 
+specified in `config/plugins`.
 
 You can check the order that the plugins will run on each hook by running:
 

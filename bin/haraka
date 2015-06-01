@@ -385,31 +385,22 @@ else if (parsed.order) {
                 (path.join(process.env.HARAKA, 'node_modules'));
         require('module')._initPaths(); // Horrible hack
     }
+    var sprintf = require('sprintf-js').sprintf;
     var logger = require(path.join(base, "logger"));
     if (!parsed.verbose)
         logger.log = function () {} // disable logging for this
     var plugins = require(path.join(base, "plugins"));
     plugins.load_plugins();
-    var hooks = ['init_master', 'init_child', 'lookup_rdns', 'connect', 'helo', 'ehlo', 
-                 'capabilities', 'unrecognized_command', 'mail', 'rcpt', 'rcpt_ok', 'data', 
-                 'max_data_exceeded', 'data_post', 'queue', 'queue_outbound','queue_ok', 
-                 'quit', 'disconnect', 'vrfy', 'noop', 'rset', 'reset_transaction', 'deny',
-                 'get_mx', 'bounce', 'delivered', 'send_email','deferred'];
     console.log('');
+    var hooks = Object.keys(plugins.registered_hooks);
     for (var h = 0; h < hooks.length; h++) {
         var hook = hooks[h];
-        console.log(hook + '\n----------------------');
-        for (var i = 0; i < plugins.plugin_list.length; i++) {
-            var plugin = plugins.plugin_list[i];
-            if (plugin && plugin.hooks[hook]) {
-                var j;
-                for (j = 0; j < plugin.hooks[hook].length; j++) {
-                    var hook_code_name = plugin.hooks[hook][j];
-                    (hook_code_name === 'hook_' + hook) ?
-                        console.log(plugin.name) :
-                        console.log(plugin.name + ' => ' + hook_code_name);
-                }
-            }
+        console.log(sprintf('%\'--80s', 'Hook: ' + hook + ' '));
+        console.log(sprintf('%-35s %-35s %-4s %-3s', 'Plugin', 'Method', 'Prio', 'T/O'));
+        console.log(sprintf("%'-80s",''));
+        for (var p=0; p<plugins.registered_hooks[hook].length; p++) {
+            var item = plugins.registered_hooks[hook][p];
+            console.log(sprintf('%-35s %-35s %4d %3d', item.plugin, item.method, item.priority, item.timeout));
         }
         console.log('');
     }

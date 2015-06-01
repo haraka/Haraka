@@ -2,7 +2,12 @@
   "author": "Matt Sergeant <helpme@gmail.com> (http://baudehlo.com/)",
   "name": "Haraka",
   "description": "An SMTP Server project.",
-  "keywords": ["haraka", "smtp", "server", "email"],
+  "keywords": [
+    "haraka",
+    "smtp",
+    "server",
+    "email"
+  ],
   "version": "2.6.1",
   "homepage": "http://haraka.github.io",
   "repository": {
@@ -23,17 +28,18 @@
     "daemon"        : "~1.1.0",
     "npid"          : "~0.4.0",
     "address-rfc2822":"~0.0.2",
-    "js-yaml"       : "~3.3.0"
+    "js-yaml"       : "~3.3.0",
+    "sprintf-js"    : "~1.0.2"
   },
   "optionalDependencies": {
-    "node-syslog"   : "~1.1.7",
-    "strong-fork-syslog" : "~1.2.3",
-    "ldapjs"        : "~0.7.1",
-    "vs-stun"       : "~0.0.7",
-    "maxmind"       : "*",
-    "redis"         : "~0.10.1",
-    "tmp"           : "~0.0.24",
-    "haraka-nosql"  : "*"
+    "node-syslog": "~1.1.7",
+    "strong-fork-syslog": "~1.2.3",
+    "ldapjs": "~0.7.1",
+    "vs-stun": "~0.0.7",
+    "maxmind": "*",
+    "redis": "~0.10.1",
+    "tmp": "~0.0.24",
+    "haraka-nosql": "*"
   },
   "devDependencies": {
     "nodeunit"      : "https://github.com/godsflaw/nodeunit/archive/master.tar.gz",
@@ -44,19 +50,21 @@
     "grunt-contrib-jshint" : "*",
     "grunt-version-check" : "*"
   },
-  "licenses": [ {
-    "type": "MIT",
-    "url": "https://github.com/baudehlo/Haraka/blob/master/LICENSE"
-  } ],
+  "licenses": [
+    {
+      "type": "MIT",
+      "url": "https://github.com/baudehlo/Haraka/blob/master/LICENSE"
+    }
+  ],
   "bugs": {
-    "mail" : "helpme@gmail.com",
-    "url" : "https://github.com/baudehlo/Haraka/issues"
+    "mail": "helpme@gmail.com",
+    "url": "https://github.com/baudehlo/Haraka/issues"
   },
-  "bin": { 
-    "haraka": "./bin/haraka", 
+  "bin": {
+    "haraka": "./bin/haraka",
     "spf": "./bin/spf",
     "dkimverify": "./bin/dkimverify",
-    "haraka_grep": "./bin/haraka_grep" 
+    "haraka_grep": "./bin/haraka_grep"
   },
   "scripts": {
     "test": "node run_tests",
