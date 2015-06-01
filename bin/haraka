@@ -508,6 +508,7 @@ else if (parsed.test) {
     }
     connection.mail_respond = function () {
         var rcpt = new Address(((parsed.envrcpt) ? parsed.envrcpt : 'test@example.com'));
+        this.transaction.rcpt_to.push(rcpt);
         run_next_hook(arguments[0], 'rcpt', connection, [rcpt, null]);
     }
     connection.rcpt_respond = function () {
