@@ -24,8 +24,8 @@ exports.register = function () {
         // Client default is 127.0.0.1:6379
         client = redis.createClient();
     }
-    this.register_hook('connect', 'incr_concurrency');
-    this.register_hook('disconnect', 'decr_concurrency');
+    this.register_hook('connect_init', 'incr_concurrency');
+    this.register_hook('disconnect',   'decr_concurrency');
 };
 
 exports.lookup_host_key = function (type, args, cb) {
@@ -76,7 +76,7 @@ exports.lookup_host_key = function (type, args, cb) {
     if (config[type].default) {
         return cb(null, ip, config[type].default);
     }
-}
+};
 
 exports.lookup_mail_key = function (type, args, cb) {
     var mail = args[0];
@@ -107,7 +107,7 @@ exports.lookup_mail_key = function (type, args, cb) {
     if (config[type].default) {
         return cb(null, email, config[type].default);
     }
-}
+};
 
 exports.rate_limit = function (connection, key, value, cb) {
     var self = this;
@@ -186,7 +186,10 @@ exports.incr_concurrency = function (next, connection) {
     var snotes = connection.server.notes;
 
     // Concurrency 
-    this.lookup_host_key('concurrency', [connection.remote_ip, connection.remote_host], function (err, key, value) {
+    this.lookup_host_key('concurrency',
+            [connection.remote_ip, connection.remote_host],
+            function (err, key, value)
+    {
         if (err) {
             connection.logerror(self, err);
             return next();
@@ -198,7 +201,8 @@ exports.incr_concurrency = function (next, connection) {
         if (!snotes.concurrency) snotes.concurrency = {};
         if (!snotes.concurrency[key]) snotes.concurrency[key] = 0;
         snotes.concurrency[key]++;
-        connection.logdebug(self, '[concurrency] key=' + key + ' value=' + snotes.concurrency[key] + ' limit=' + value);
+        connection.logdebug(self, '[concurrency] key=' + key + ' value=' +
+                snotes.concurrency[key] + ' limit=' + value);
         var count = 0;
         var keys = Object.keys(snotes.concurrency);
         for (var i=0; i<keys.length; i++) {

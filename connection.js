@@ -151,7 +151,7 @@ function setupClient(self) {
         }, 30 * 1000);
     }
     else {
-        plugins.run_hooks('lookup_rdns', self);
+        plugins.run_hooks('connect_init', self);
     }
 }
 
@@ -635,6 +635,12 @@ Connection.prototype.resume = function () {
 /////////////////////////////////////////////////////////////////////////////
 // SMTP Responses
 
+Connection.prototype.connect_init_respond = function (retval, msg) {
+    // retval and message are ignored
+    this.logdebug('running connect_init_respond');
+    plugins.run_hooks('lookup_rdns', this);
+};
+
 Connection.prototype.lookup_rdns_respond = function (retval, msg) {
     var self = this;
     switch (retval) {
@@ -1089,12 +1095,13 @@ Connection.prototype.cmd_proxy = function (line) {
     this.loginfo('HAProxy: proto=' + proto +
         ' src_ip=' + src_ip + ':' + src_port +
         ' dst_ip=' + dst_ip + ':' + dst_port);
+
     this.reset_transaction(function () {
         self.relaying = false;
         self.remote_ip = src_ip;
         self.remote_host = undefined;
         self.hello_host = undefined;
-        plugins.run_hooks('lookup_rdns', self);
+        plugins.run_hooks('connect_init', self);
     });
 };
 

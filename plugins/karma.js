@@ -24,9 +24,9 @@ exports.register = function () {
 
     plugin.register_hook('init_master',  'init_redis_connection');
     plugin.register_hook('init_child',   'init_redis_connection');
-    plugin.register_hook('lookup_rdns',  'init_redis_connection');
-    plugin.register_hook('lookup_rdns',  'results_init');
-    plugin.register_hook('lookup_rdns',  'history_from_redis');
+    plugin.register_hook('connect_init', 'init_redis_connection');
+    plugin.register_hook('connect_init', 'results_init');
+    plugin.register_hook('connect_init', 'history_from_redis');
 };
 
 exports.load_karma_ini = function () {

@@ -73,7 +73,7 @@ exports.hook_init_master = function (next, server) {
     }
     setupInterval(title, server);
     return next();
-}
+};
 
 exports.hook_init_child = function (next, server) {
     server.notes.pt_connections = 0;
@@ -87,9 +87,9 @@ exports.hook_init_child = function (next, server) {
     process.title = title;
     setupInterval(title, server);
     return next();
-}
+};
 
-exports.hook_lookup_rdns = function (next, connection) {
+exports.hook_connect_init = function (next, connection) {
     var server = connection.server;
     connection.notes.pt_connect_run = true;
     if (server.cluster) {
@@ -99,7 +99,7 @@ exports.hook_lookup_rdns = function (next, connection) {
     server.notes.pt_connections++;
     server.notes.pt_concurrent++;
     return next(); 
-}
+};
 
 exports.hook_disconnect = function (next, connection) {
     var server = connection.server;
@@ -107,21 +107,22 @@ exports.hook_disconnect = function (next, connection) {
     // It might not if the disconnection is immediate
     // echo "QUIT" | nc localhost 25 
     // will exhibit this behaviour.
+    var worker;
     if (!connection.notes.pt_connect_run) {
         if (server.cluster) {
-            var worker = server.cluster.worker;
+            worker = server.cluster.worker;
             worker.send({event: 'process_title.connect', wid: worker.id});
         }
         server.notes.pt_connections++;
         server.notes.pt_concurrent++;
     }
     if (server.cluster) {
-        var worker = server.cluster.worker;
+        worker = server.cluster.worker;
         worker.send({event: 'process_title.disconnect', wid: worker.id});
     }
     server.notes.pt_concurrent--;
     return next();
-}
+};
 
 exports.hook_data = function (next, connection) {
     var server = connection.server;
@@ -131,7 +132,7 @@ exports.hook_data = function (next, connection) {
     }
     server.notes.pt_messages++;
     return next();
-}
+};
 
 
 var setupInterval = function (title, server) {
