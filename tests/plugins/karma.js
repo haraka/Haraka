@@ -51,7 +51,7 @@ exports.results_init = {
         test.done();
     },
     'init, empty cfg': function (test) {
-        this.plugin.results_init(this.connection);
+        this.plugin.results_init(stub, this.connection);
         var r = this.connection.results.get('karma');
         test.expect(1);
         test.ok(r);
@@ -59,7 +59,7 @@ exports.results_init = {
     },
     'init, cfg': function (test) {
         this.plugin.cfg.awards = { test: 1 };
-        this.plugin.results_init(this.connection);
+        this.plugin.results_init(stub, this.connection);
         var r = this.connection.results.get('karma');
         test.expect(2);
         test.ok(r);
@@ -180,25 +180,25 @@ exports.get_award_location = {
     },
     'results.karma': function (test) {
         test.expect(1);
-        this.connection.results.add({name: 'karma'}, { connect: -1 });
+        this.connection.results.add({name: 'karma'}, { score: -1 });
         var r = this.plugin.get_award_location(this.connection, 'results.karma');
         // console.log(r);
-        test.equal(-1, r.connect);
+        test.equal(-1, r.score);
         test.done();
     },
     'results.karma, txn': function (test) {
         // results should be found in conn or txn
         test.expect(1);
-        this.connection.transaction.results.add({name: 'karma'}, { connect: -1 });
+        this.connection.transaction.results.add({name: 'karma'}, { score: -1 });
         var r = this.plugin.get_award_location(this.connection, 'results.karma');
         // console.log(r);
-        test.equal(-1, r.connect);
+        test.equal(-1, r.score);
         test.done();
     },
     'txn.results.karma': function (test) {
         // these results shouldn't be found, b/c txn specified
         test.expect(1);
-        this.connection.results.add({name: 'karma'}, { connect: -1 });
+        this.connection.results.add({name: 'karma'}, { score: -1 });
         var r = this.plugin.get_award_location(this.connection, 'transaction.results.karma');
         // console.log(r);
         test.equal(undefined, r);
@@ -283,6 +283,17 @@ exports.check_awards = {
         test.equal('auth/auth_base.fail', this.connection.results.get('karma').fail[0]);
         test.done();
     },
+    'valid recipient': function (test) {
+        test.expect(2);
+        this.connection.results.add({name: 'karma'}, {
+            todo: { 'results.rcpt_to.qmd.pass@exist': '1 if in' }
+        });
+        this.connection.results.add({name: 'rcpt_to.qmd'}, {pass: 'exist'});
+        var r = this.plugin.check_awards(this.connection);
+        test.equal(undefined, r);
+        test.equal('qmd.pass', this.connection.results.get('karma').pass[0]);
+        test.done();
+    },
 };
 
 exports.apply_tarpit = {
@@ -350,7 +361,7 @@ exports.apply_tarpit = {
             test.done();
         };
         this.plugin.cfg.tarpit = { max: 1, delay: 0 };
-        this.connection.results.add(this.plugin, { connect: -2 });
+        this.connection.results.add(this.plugin, { score: -2 });
         this.plugin.apply_tarpit(this.connection, 'connect', -2, next);
     },
 };
@@ -383,7 +394,7 @@ exports.should_we_deny = {
             test.equal(undefined, msg);
             test.done();
         };
-        this.connection.results.add(this.plugin, { connect: 'blah' });
+        this.connection.results.add(this.plugin, { score: 'blah' });
         this.plugin.should_we_deny(next, this.connection, 'connect');
     },
     'valid score, okay': function (test) {
@@ -394,7 +405,7 @@ exports.should_we_deny = {
             test.done();
         }.bind(this);
         this.plugin.cfg.tarpit = { max: 1, delay: 0 };
-        this.connection.results.add(this.plugin, { connect: -1 });
+        this.connection.results.add(this.plugin, { score: -1 });
         this.plugin.should_we_deny(next, this.connection, 'connect');
     },
     'valid score, -6, deny_hook': function (test) {
@@ -406,7 +417,7 @@ exports.should_we_deny = {
         }.bind(this);
         this.plugin.cfg.tarpit = { max: 1, delay: 0 };
         this.plugin.deny_hooks = { connect: true};
-        this.connection.results.add(this.plugin, { connect: -6 });
+        this.connection.results.add(this.plugin, { score: -6 });
         this.plugin.should_we_deny(next, this.connection, 'connect');
     },
     'valid score, -6, pass_hook': function (test) {
@@ -418,7 +429,7 @@ exports.should_we_deny = {
         }.bind(this);
         this.plugin.cfg.tarpit = { max: 1, delay: 0 };
         this.plugin.deny_hooks = { helo: true };
-        this.connection.results.add(this.plugin, { connect: -6 });
+        this.connection.results.add(this.plugin, { score: -6 });
         this.plugin.should_we_deny(next, this.connection, 'connect');
     },
 };
