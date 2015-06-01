@@ -327,6 +327,10 @@ plugins.run_next_hook = function (hook, object, params) {
             if (retval === constants.cont) {
                 return plugins.run_next_hook(hook, object, params);
             }
+            if (/^(connect_init|disconnect)$/.test(hook)) {
+                // these hooks ignore retval and always run for every plugin
+                return plugins.run_next_hook(hook, object, params);
+            }
         }
 
         var respond_method = hook + '_respond';
