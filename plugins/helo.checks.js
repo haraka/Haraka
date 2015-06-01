@@ -62,6 +62,7 @@ exports.load_helo_checks_ini = function () {
             '+check.forward_dns',
             '+check.rdns_match',
             '+check.mismatch',
+            '+check.proto_mismatch',
 
             '+reject.valid_hostname',
             '+reject.match_re',
@@ -72,6 +73,7 @@ exports.load_helo_checks_ini = function () {
             '-reject.literal_mismatch',
             '-reject.rdns_match',
             '-reject.mismatch',
+            '-reject.proto_mismatch',
 
             '+skip.private_ip',
             '+skip.whitelist',

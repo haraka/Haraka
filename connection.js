@@ -1,26 +1,32 @@
 'use strict';
 // a single connection
 
+// node.js built-in libs
+var dns         = require('dns');
+var fs          = require('fs');
 var net         = require('net');
+var os          = require('os');
 var path        = require('path');
 
+// npm libs
+var ipaddr      = require('ipaddr.js');
+
+// Haraka libs
 var config      = require('./config');
 var logger      = require('./logger');
 var trans       = require('./transaction');
-var dns         = require('dns');
 var plugins     = require('./plugins');
 var constants   = require('./constants');
 var rfc1869     = require('./rfc1869');
-var fs          = require('fs');
 var Address     = require('./address').Address;
 var uuid        = require('./utils').uuid;
 var outbound    = require('./outbound');
 var date_to_str = require('./utils').date_to_str;
 var indexOfLF   = require('./utils').indexOfLF;
-var ipaddr      = require('ipaddr.js');
 var ResultStore = require('./result_store');
 
-var version = JSON.parse(
+var hostname    = (os.hostname().split(/\./))[0];
+var version     = JSON.parse(
         fs.readFileSync(path.join(__dirname, 'package.json'))).version;
 
 var line_regexp = /^([^\n]*\n)/;
@@ -177,8 +183,8 @@ function Connection(client, server) {
     this.banner_includes_uuid =
         config.get('banner_includes_uuid') ? true : false;
     this.deny_includes_uuid = config.get('deny_includes_uuid') || null;
-    this.early_talker = 0;
-    this.pipelining = 0;
+    this.early_talker = false;
+    this.pipelining = false;
     this.relaying = false;
     this.esmtp = false;
     this.last_response = null;
@@ -204,6 +210,7 @@ function Connection(client, server) {
     this.max_line_length = config.get('max_line_length') || 512;
     this.max_data_line_length = config.get('max_data_line_length') || 992;
     this.results = new ResultStore(this);
+    this.errors = 0;
     setupClient(this);
 }
 
@@ -241,7 +248,20 @@ Connection.prototype.process_line = function (line) {
 
     // Check for non-ASCII characters
     if (/[^\x00-\x7F]/.test(this.current_line)) {
-        return this.respond(501, 'Syntax error (8-bit characters not allowed)');
+        // See if this is a TLS handshake
+        var buf = new Buffer(this.current_line.substr(0,3), 'binary');
+        if (buf[0] === 0x16 && buf[1] === 0x03 && 
+           (buf[2] === 0x00 || buf[2] === 0x01)) // SSLv3/TLS1.x format
+        {
+            // Nuke the current input buffer to prevent processing further input
+            this.current_data = null;
+            this.respond(501, 'SSL attempted over a non-SSL socket');
+            this.disconnect();
+            return;
+        }
+        else {
+            return this.respond(501, 'Syntax error (8-bit characters not allowed)');
+        }
     }
 
     if (this.state === states.STATE_CMD) {
@@ -382,7 +402,7 @@ Connection.prototype._process_data = function() {
                 // has reset the state back to states.STATE_CMD and this
                 // ensures that we only process one command at a
                 // time.
-                this.pipelining = 1;
+                this.pipelining = true;
                 this.logdebug('pipeline: ' + this_line);
             }
             else {
@@ -392,8 +412,10 @@ Connection.prototype._process_data = function() {
                     this.logdebug('[early_talker] state=' + this.state +
                             ' esmtp=' + this.esmtp + ' line="' + this_line + '"');
                 }
-                this.early_talker = 1;
-                setTimeout(function() { self._process_data(); }, this.early_talker_delay);
+                this.early_talker = true;
+                setTimeout(function() {
+                    self._process_data();
+                }, this.early_talker_delay);
             }
             break;
         }
@@ -445,7 +467,9 @@ Connection.prototype.respond = function(code, msg, func) {
     }
     if (!(Array.isArray(msg))) {
         // msg not an array, make it so:
-        messages = msg.toString().split(/\n/).filter(function (msg) { return /\S/.test(msg);});
+        messages = msg.toString().split(/\n/).filter(function (msg) {
+            return /\S/.test(msg);
+        });
     } else {
         // copy
         messages = msg.slice().filter(function (msg) { return /\S/.test(msg);});
@@ -466,7 +490,7 @@ Connection.prototype.respond = function(code, msg, func) {
 
     while (mess = messages.shift()) {
         var line = code + (messages.length ? "-" : " ") +
-            (uuid ? '[' + uuid + '] ' : '' ) + mess;
+            (uuid ? '[' + uuid + '@' + hostname + '] ' : '' ) + mess;
         this.logprotocol("S: " + line);
         buf = buf + line + "\r\n";
     }
@@ -518,6 +542,7 @@ Connection.prototype.disconnect_respond = function () {
         'esmtp=' + (this.esmtp ? 'Y' : 'N'),
         'tls='   + (this.using_tls ? 'Y' : 'N'),
         'pipe='  + (this.pipelining ? 'Y' : 'N'),
+        'errors='+ this.errors,
         'txns='  + this.tran_count,
         'rcpts=' + this.rcpt_count.accept + '/' +
                    this.rcpt_count.tempfail + '/' +
@@ -612,33 +637,33 @@ Connection.prototype.resume = function () {
 
 Connection.prototype.lookup_rdns_respond = function (retval, msg) {
     var self = this;
-    switch(retval) {
+    switch (retval) {
         case constants.ok:
-                this.remote_host = msg || 'Unknown';
-                this.remote_info = this.remote_info || this.remote_host;
-                plugins.run_hooks('connect', this);
-                break;
+            this.remote_host = msg || 'Unknown';
+            this.remote_info = this.remote_info || this.remote_host;
+            plugins.run_hooks('connect', this);
+            break;
         case constants.deny:
-                this.loop_respond(554, msg || "rDNS Lookup Failed");
-                break;
+            this.loop_respond(554, msg || "rDNS Lookup Failed");
+            break;
         case constants.denydisconnect:
         case constants.disconnect:
-                this.respond(554, msg || "rDNS Lookup Failed", function () {
-                    self.disconnect();
-                });
-                break;
+            this.respond(554, msg || "rDNS Lookup Failed", function () {
+                self.disconnect();
+            });
+            break;
         case constants.denysoft:
-                this.loop_respond(421, msg || "rDNS Temporary Failure");
-                break;
+            this.loop_respond(421, msg || "rDNS Temporary Failure");
+            break;
         case constants.denysoftdisconnect:
-                this.respond(421, msg || "rDNS Temporary Failure", function () {
-                    self.disconnect();
-                });
-                break;
+            this.respond(421, msg || "rDNS Temporary Failure", function () {
+                self.disconnect();
+            });
+            break;
         default:
-                dns.reverse(this.remote_ip, function(err, domains) {
-                    self.rdns_response(err, domains);
-                });
+            dns.reverse(this.remote_ip, function(err, domains) {
+                self.rdns_response(err, domains);
+            });
     }
 };
 
@@ -658,23 +683,24 @@ Connection.prototype.rdns_response = function (err, domains) {
 
 Connection.prototype.unrecognized_command_respond = function(retval, msg) {
     var self = this;
-    switch(retval) {
+    switch (retval) {
         case constants.ok:
-                // response already sent, cool...
-                break;
+            // response already sent, cool...
+            break;
         case constants.next_hook:
-                plugins.run_hooks(msg, this);
-                break;
+            plugins.run_hooks(msg, this);
+            break;
         case constants.deny:
-                this.respond(500, msg || "Unrecognized command");
-                break;
+            this.respond(500, msg || "Unrecognized command");
+            break;
         case constants.denydisconnect:
-                this.respond(521, msg || "Unrecognized command", function () {
-                    self.disconnect();
-                });
-                break;
+            this.respond(521, msg || "Unrecognized command", function () {
+                self.disconnect();
+            });
+            break;
         default:
-                this.respond(500, msg || "Unrecognized command");
+            this.errors++;
+            this.respond(500, msg || "Unrecognized command");
     }
 };
 
@@ -686,39 +712,39 @@ Connection.prototype.connect_respond = function(retval, msg) {
     // 421 = Service shutting down and closing transmission channel
     switch (retval) {
         case constants.deny:
-                this.loop_respond(554, msg || "Your mail is not welcome here");
-                break;
+            this.loop_respond(554, msg || "Your mail is not welcome here");
+            break;
         case constants.denydisconnect:
         case constants.disconnect:
-                this.respond(554, msg || "Your mail is not welcome here", function() {
-                    self.disconnect();
-                });
-                break;
+            this.respond(554, msg || "Your mail is not welcome here", function() {
+                self.disconnect();
+            });
+            break;
         case constants.denysoft:
-                this.loop_respond(421, msg || "Come back later");
-                break;
+            this.loop_respond(421, msg || "Come back later");
+            break;
         case constants.denysoftdisconnect:
-                this.respond(421, msg || "Come back later", function() {
-                    self.disconnect();
-                });
-                break;
+            this.respond(421, msg || "Come back later", function() {
+                self.disconnect();
+            });
+            break;
         default:
-                var greeting = config.get('smtpgreeting', 'list');
-                if (greeting.length) {
-                    // RFC5321 section 4.2
-                    // Hostname/domain should appear after the 220
-                    greeting[0] = config.get('me') + ' ESMTP ' + greeting[0];
-                    if (this.banner_includes_uuid) {
-                        greeting[0] += ' (' + this.uuid + ')';
-                    }
+            var greeting = config.get('smtpgreeting', 'list');
+            if (greeting.length) {
+                // RFC5321 section 4.2
+                // Hostname/domain should appear after the 220
+                greeting[0] = config.get('me') + ' ESMTP ' + greeting[0];
+                if (this.banner_includes_uuid) {
+                    greeting[0] += ' (' + this.uuid + ')';
                 }
-                else {
-                    greeting = config.get('me') + " ESMTP Haraka " + version + " ready";
-                    if (this.banner_includes_uuid) {
-                        greeting += ' (' + this.uuid + ')';
-                    }
+            }
+            else {
+                greeting = config.get('me') + " ESMTP Haraka " + version + " ready";
+                if (this.banner_includes_uuid) {
+                    greeting += ' (' + this.uuid + ')';
                 }
-                this.respond(220, msg || greeting);
+            }
+            this.respond(220, msg || greeting);
     }
 };
 
@@ -726,35 +752,35 @@ Connection.prototype.helo_respond = function(retval, msg) {
     var self = this;
     switch (retval) {
         case constants.deny:
-                this.respond(550, msg || "HELO denied", function() {
-                    self.greeting = null;
-                    self.hello_host = null;
-                });
-                break;
+            this.respond(550, msg || "HELO denied", function() {
+                self.greeting = null;
+                self.hello_host = null;
+            });
+            break;
         case constants.denydisconnect:
-                this.respond(550, msg || "HELO denied", function() {
-                    self.disconnect();
-                });
-                break;
+            this.respond(550, msg || "HELO denied", function() {
+                self.disconnect();
+            });
+            break;
         case constants.denysoft:
-                this.respond(450, msg || "HELO denied", function() {
-                    self.greeting = null;
-                    self.hello_host = null;
-                });
-                break;
+            this.respond(450, msg || "HELO denied", function() {
+                self.greeting = null;
+                self.hello_host = null;
+            });
+            break;
         case constants.denysoftdisconnect:
-                this.respond(450, msg || "HELO denied", function() {
-                    self.disconnect();
-                });
-                break;
+            this.respond(450, msg || "HELO denied", function() {
+                self.disconnect();
+            });
+            break;
         default:
-                // RFC5321 section 4.1.1.1
-                // Hostname/domain should appear after 250
-                this.respond(250, config.get('me') + " Hello " +
-                    ((this.remote_host && this.remote_host !== 'DNSERROR' &&
-                    this.remote_host !== 'NXDOMAIN') ? this.remote_host + ' ' : '') +
-                    "[" + this.remote_ip + "]" +
-                    ", Haraka is at your service.");
+            // RFC5321 section 4.1.1.1
+            // Hostname/domain should appear after 250
+            this.respond(250, config.get('me') + " Hello " +
+                ((this.remote_host && this.remote_host !== 'DNSERROR' &&
+                this.remote_host !== 'NXDOMAIN') ? this.remote_host + ' ' : '') +
+                "[" + this.remote_ip + "]" +
+                ", Haraka is at your service.");
     }
 };
 
@@ -762,46 +788,46 @@ Connection.prototype.ehlo_respond = function(retval, msg) {
     var self = this;
     switch (retval) {
         case constants.deny:
-                this.respond(550, msg || "EHLO denied", function() {
-                    self.greeting = null;
-                    self.hello_host = null;
-                });
-                break;
+            this.respond(550, msg || "EHLO denied", function() {
+                self.greeting = null;
+                self.hello_host = null;
+            });
+            break;
         case constants.denydisconnect:
-                this.respond(550, msg || "EHLO denied", function() {
-                    self.disconnect();
-                });
-                break;
+            this.respond(550, msg || "EHLO denied", function() {
+                self.disconnect();
+            });
+            break;
         case constants.denysoft:
-                this.respond(450, msg || "EHLO denied", function() {
-                    self.greeting = null;
-                    self.hello_host = null;
-                });
-                break;
+            this.respond(450, msg || "EHLO denied", function() {
+                self.greeting = null;
+                self.hello_host = null;
+            });
+            break;
         case constants.denysoftdisconnect:
-                this.respond(450, msg || "EHLO denied", function () {
-                    self.disconnect();
-                });
-                break;
+            this.respond(450, msg || "EHLO denied", function () {
+                self.disconnect();
+            });
+            break;
         default:
-                // RFC5321 section 4.1.1.1
-                // Hostname/domain should appear after 250
-                var response = [config.get('me') + " Hello " +
-                                ((this.remote_host && this.remote_host !== 'DNSERROR' &&
-                                this.remote_host !== 'NXDOMAIN') ? this.remote_host + ' ' : '') +
-                                "[" + this.remote_ip + "]" +
-                                ", Haraka is at your service.",
-                                "PIPELINING",
-                                "8BITMIME",
-                                ];
+            // RFC5321 section 4.1.1.1
+            // Hostname/domain should appear after 250
+            var response = [config.get('me') + " Hello " +
+                            ((this.remote_host && this.remote_host !== 'DNSERROR' &&
+                            this.remote_host !== 'NXDOMAIN') ? this.remote_host + ' ' : '') +
+                            "[" + this.remote_ip + "]" +
+                            ", Haraka is at your service.",
+                            "PIPELINING",
+                            "8BITMIME",
+                            ];
 
-                var databytes = parseInt(config.get('databytes')) || 0;
-                response.push("SIZE " + databytes);
+            var databytes = parseInt(config.get('databytes')) || 0;
+            response.push("SIZE " + databytes);
 
-                this.capabilities = response;
+            this.capabilities = response;
 
-                plugins.run_hooks('capabilities', this);
-                this.esmtp = true;
+            plugins.run_hooks('capabilities', this);
+            this.esmtp = true;
     }
 };
 
@@ -820,30 +846,30 @@ Connection.prototype.vrfy_respond = function(retval, msg) {
     var self = this;
     switch (retval) {
         case constants.deny:
-                this.respond(550, msg || "Access Denied", function() {
-                    self.reset_transaction();
-                });
-                break;
+            this.respond(550, msg || "Access Denied", function() {
+                self.reset_transaction();
+            });
+            break;
         case constants.denydisconnect:
-                this.respond(550, msg || "Access Denied", function() {
-                    self.disconnect();
-                });
-                break;
+            this.respond(550, msg || "Access Denied", function() {
+                self.disconnect();
+            });
+            break;
         case constants.denysoft:
-                this.respond(450, msg || "Lookup Failed", function() {
-                    self.reset_transaction();
-                });
-                break;
+            this.respond(450, msg || "Lookup Failed", function() {
+                self.reset_transaction();
+            });
+            break;
         case constants.denysoftdisconnect:
-                this.respond(450, msg || "Lookup Failed", function() {
-                    self.disconnect();
-                });
-                break;
+            this.respond(450, msg || "Lookup Failed", function() {
+                self.disconnect();
+            });
+            break;
         case constants.ok:
-                this.respond(250, msg || "User OK");
-                break;
+            this.respond(250, msg || "User OK");
+            break;
         default:
-                this.respond(252, "Just try sending a mail and we'll see how it turns out...");
+            this.respond(252, "Just try sending a mail and we'll see how it turns out...");
     }
 };
 
@@ -851,15 +877,15 @@ Connection.prototype.noop_respond = function(retval, msg) {
     var self = this;
     switch (retval) {
         case constants.deny:
-                this.respond(500, msg || "Stop wasting my time");
-                break;
+            this.respond(500, msg || "Stop wasting my time");
+            break;
         case constants.denydisconnect:
-                this.respond(500, msg || "Stop wasting my time", function() {
-                    self.disconnect();
-                });
-                break;
+            this.respond(500, msg || "Stop wasting my time", function() {
+                self.disconnect();
+            });
+            break;
         default:
-                this.respond(250, "OK");
+            this.respond(250, "OK");
     }
 };
 
@@ -885,27 +911,27 @@ Connection.prototype.mail_respond = function(retval, msg) {
     ].join(' '));
     switch (retval) {
         case constants.deny:
-                this.respond(550, msg || dmsg + " denied", function() {
-                    self.reset_transaction();
-                });
-                break;
+            this.respond(550, msg || dmsg + " denied", function() {
+                self.reset_transaction();
+            });
+            break;
         case constants.denydisconnect:
-                this.respond(550, msg || dmsg + " denied", function() {
-                    self.disconnect();
-                });
-                break;
+            this.respond(550, msg || dmsg + " denied", function() {
+                self.disconnect();
+            });
+            break;
         case constants.denysoft:
-                this.respond(450, msg || dmsg + " denied", function() {
-                    self.reset_transaction();
-                });
-                break;
+            this.respond(450, msg || dmsg + " denied", function() {
+                self.reset_transaction();
+            });
+            break;
         case constants.denysoftdisconnect:
-                this.respond(450, msg || dmsg + " denied", function() {
-                    self.disconnect();
-                });
-                break;
+            this.respond(450, msg || dmsg + " denied", function() {
+                self.disconnect();
+            });
+            break;
         default:
-                this.respond(250, msg || dmsg + " OK");
+            this.respond(250, msg || dmsg + " OK");
     }
 };
 
@@ -924,38 +950,38 @@ Connection.prototype.rcpt_ok_respond = function (retval, msg) {
     ].join(' '));
     switch (retval) {
         case constants.deny:
-                this.respond(550, msg || dmsg + " denied", function() {
-                    self.transaction.rcpt_count.reject++;
-                    self.rcpt_count.reject++;
-                    self.transaction.rcpt_to.pop();
-                });
-                break;
+            this.respond(550, msg || dmsg + " denied", function() {
+                self.transaction.rcpt_count.reject++;
+                self.rcpt_count.reject++;
+                self.transaction.rcpt_to.pop();
+            });
+            break;
         case constants.denydisconnect:
-                this.respond(550, msg || dmsg + " denied", function() {
-                    self.transaction.rcpt_count.reject++;
-                    self.rcpt_count.reject++;
-                    self.disconnect();
-                });
-                break;
+            this.respond(550, msg || dmsg + " denied", function() {
+                self.transaction.rcpt_count.reject++;
+                self.rcpt_count.reject++;
+                self.disconnect();
+            });
+            break;
         case constants.denysoft:
-                this.respond(450, msg || dmsg + " denied", function() {
-                    self.transaction.rcpt_count.tempfail++;
-                    self.rcpt_count.tempfail++;
-                    self.transaction.rcpt_to.pop();
-                });
-                break;
+            this.respond(450, msg || dmsg + " denied", function() {
+                self.transaction.rcpt_count.tempfail++;
+                self.rcpt_count.tempfail++;
+                self.transaction.rcpt_to.pop();
+            });
+            break;
         case constants.denysoftdisconnect:
-                this.respond(450, msg || dmsg + " denied", function() {
-                    self.transaction.rcpt_count.tempfail++;
-                    self.rcpt_count.tempfail++;
-                    self.disconnect();
-                });
-                break;
+            this.respond(450, msg || dmsg + " denied", function() {
+                self.transaction.rcpt_count.tempfail++;
+                self.rcpt_count.tempfail++;
+                self.disconnect();
+            });
+            break;
         default:
-                this.respond(250, msg || dmsg + " OK", function() {
-                    self.rcpt_count.accept++;
-                    self.transaction.rcpt_count.accept++;
-                });
+            this.respond(250, msg || dmsg + " OK", function() {
+                self.rcpt_count.accept++;
+                self.transaction.rcpt_count.accept++;
+            });
     }
 };
 
@@ -980,45 +1006,45 @@ Connection.prototype.rcpt_respond = function(retval, msg) {
     }
     switch (retval) {
         case constants.deny:
-                this.respond(550, msg || dmsg + " denied", function() {
-                    self.transaction.rcpt_count.reject++;
-                    self.rcpt_count.reject++;
-                    self.transaction.rcpt_to.pop();
-                });
-                break;
+            this.respond(550, msg || dmsg + " denied", function() {
+                self.transaction.rcpt_count.reject++;
+                self.rcpt_count.reject++;
+                self.transaction.rcpt_to.pop();
+            });
+            break;
         case constants.denydisconnect:
-                this.respond(550, msg || dmsg + " denied", function() {
-                    self.transaction.rcpt_count.reject++;
-                    self.rcpt_count.reject++;
-                    self.disconnect();
-                });
-                break;
+            this.respond(550, msg || dmsg + " denied", function() {
+                self.transaction.rcpt_count.reject++;
+                self.rcpt_count.reject++;
+                self.disconnect();
+            });
+            break;
         case constants.denysoft:
-                this.respond(450, msg || dmsg + " denied", function() {
-                    self.transaction.rcpt_count.tempfail++;
-                    self.rcpt_count.tempfail++;
-                    self.transaction.rcpt_to.pop();
-                });
-                break;
+            this.respond(450, msg || dmsg + " denied", function() {
+                self.transaction.rcpt_count.tempfail++;
+                self.rcpt_count.tempfail++;
+                self.transaction.rcpt_to.pop();
+            });
+            break;
         case constants.denysoftdisconnect:
-                this.respond(450, msg || dmsg + " denied", function() {
-                    self.transaction.rcpt_count.tempfail++;
-                    self.rcpt_count.tempfail++;
-                    self.disconnect();
-                });
-                break;
+            this.respond(450, msg || dmsg + " denied", function() {
+                self.transaction.rcpt_count.tempfail++;
+                self.rcpt_count.tempfail++;
+                self.disconnect();
+            });
+            break;
         case constants.ok:
-                plugins.run_hooks('rcpt_ok', this, rcpt);
-                break;
+            plugins.run_hooks('rcpt_ok', this, rcpt);
+            break;
         default:
-                if (retval !== constants.cont) {
-                    this.logalert("No plugin determined if relaying was allowed");
-                }
-                this.respond(550, "I cannot deliver mail for " + rcpt.format(), function() {
-                    self.transaction.rcpt_count.reject++;
-                    self.rcpt_count.reject++;
-                    self.transaction.rcpt_to.pop();
-                });
+            if (retval !== constants.cont) {
+                this.logalert("No plugin determined if relaying was allowed");
+            }
+            this.respond(550, "I cannot deliver mail for " + rcpt.format(), function() {
+                self.transaction.rcpt_count.reject++;
+                self.rcpt_count.reject++;
+                self.transaction.rcpt_to.pop();
+            });
     }
 };
 
@@ -1145,19 +1171,23 @@ Connection.prototype.cmd_help = function() {
 
 Connection.prototype.cmd_mail = function(line) {
     if (!this.hello_host) {
+        this.errors++;
         return this.respond(503, 'Use EHLO/HELO before MAIL');
     }
     // Require authentication on connections to port 587 & 465
     if (!this.relaying && [587,465].indexOf(this.local_port) !== -1) {
+        this.errors++;
         return this.respond(550, 'Authentication required');
     }
     var results;
     var from;
     try {
-        results = rfc1869.parse("mail", line, config.get('strict_rfc1869') && !this.relaying);
+        results = rfc1869.parse("mail", line, config.get('strict_rfc1869') &&
+                  !this.relaying);
         from    = new Address (results.shift());
     }
     catch (err) {
+        this.errors++;
         if (err.stack) {
             this.logerror(err.stack.split(/\n/)[0]);
         }
@@ -1203,16 +1233,19 @@ Connection.prototype.cmd_mail = function(line) {
 
 Connection.prototype.cmd_rcpt = function(line) {
     if (!this.transaction || !this.transaction.mail_from) {
+        this.errors++;
         return this.respond(503, "Use MAIL before RCPT");
     }
 
     var results;
     var recip;
     try {
-        results = rfc1869.parse("rcpt", line, config.get('strict_rfc1869') && !this.relaying);
+        results = rfc1869.parse("rcpt", line, config.get('strict_rfc1869') &&
+                      !this.relaying);
         recip   = new Address(results.shift());
     }
     catch (err) {
+        this.errors++;
         if (err.stack) {
             this.logerror(err.stack.split(/\n/)[0]);
         }
@@ -1255,7 +1288,7 @@ Connection.prototype.received_line = function() {
     if (this.notes.tls && this.notes.tls.cipher) {
         sslheader = '(version=' + this.notes.tls.cipher.version +
             ' cipher=' + this.notes.tls.cipher.name +
-            ' verify=' + ((this.notes.tls.authorized) ? 'OK' : 
+            ' verify=' + ((this.notes.tls.authorized) ? 'OK' :
             ((this.notes.tls.authorizationError &&
               this.notes.tls.authorizationError.message === 'UNABLE_TO_GET_ISSUER_CERT') ? 'NO' : 'FAIL')) + ')';
     }
@@ -1327,19 +1360,27 @@ Connection.prototype.cmd_data = function(args) {
     // RFC 5321 Section 4.3.2
     // DATA does not accept arguments
     if (args) {
+        this.errors++;
         return this.respond(501, "Syntax error");
     }
     if (!this.transaction) {
+        this.errors++;
         return this.respond(503, "MAIL required first");
     }
     if (!this.transaction.rcpt_to.length) {
+        this.errors++;
+        if (this.pipelining) {
+            return this.respond(554, "No valid recipients");
+        }
         return this.respond(503, "RCPT required first");
     }
 
     this.accumulate_data('Received: ' + this.received_line() + "\r\n");
     this.auth_results_clean();   // rename old A-R headers
     var ar_field = this.auth_results();  // assemble new one
-    if (ar_field) this.transaction.add_header('Authentication-Results', ar_field);
+    if (ar_field) {
+        this.transaction.add_header('Authentication-Results', ar_field);
+    }
     plugins.run_hooks('data', this);
 };
 
@@ -1348,27 +1389,27 @@ Connection.prototype.data_respond = function(retval, msg) {
     var cont = 0;
     switch (retval) {
         case constants.deny:
-                this.respond(554, msg || "Message denied", function() {
-                    self.reset_transaction();
-                });
-                break;
+            this.respond(554, msg || "Message denied", function() {
+                self.reset_transaction();
+            });
+            break;
         case constants.denydisconnect:
-                this.respond(554, msg || "Message denied", function() {
-                    self.disconnect();
-                });
-                break;
+            this.respond(554, msg || "Message denied", function() {
+                self.disconnect();
+            });
+            break;
         case constants.denysoft:
-                this.respond(451, msg || "Message denied", function() {
-                    self.reset_transaction();
-                });
-                break;
+            this.respond(451, msg || "Message denied", function() {
+                self.reset_transaction();
+            });
+            break;
         case constants.denysoftdisconnect:
-                this.respond(451, msg || "Message denied", function() {
-                    self.disconnect();
-                });
-                break;
+            this.respond(451, msg || "Message denied", function() {
+                self.disconnect();
+            });
+            break;
         default:
-                cont = 1;
+            cont = 1;
     }
 
     if (!cont) {
@@ -1474,36 +1515,36 @@ Connection.prototype.data_post_respond = function(retval, msg) {
     var self = this;
     switch (retval) {
         case constants.deny:
-                this.respond(550, msg || "Message denied", function() {
-                    self.msg_count.reject++;
-                    self.reset_transaction(function () { self.resume(); });
-                });
-                break;
+            this.respond(550, msg || "Message denied", function() {
+                self.msg_count.reject++;
+                self.reset_transaction(function () { self.resume(); });
+            });
+            break;
         case constants.denydisconnect:
-                this.respond(550, msg || "Message denied", function() {
-                    self.msg_count.reject++;
-                    self.disconnect();
-                });
-                break;
+            this.respond(550, msg || "Message denied", function() {
+                self.msg_count.reject++;
+                self.disconnect();
+            });
+            break;
         case constants.denysoft:
-                this.respond(450, msg || "Message denied temporarily", function() {
-                    self.msg_count.tempfail++;
-                    self.reset_transaction(function () { self.resume(); });
-                });
-                break;
+            this.respond(450, msg || "Message denied temporarily", function() {
+                self.msg_count.tempfail++;
+                self.reset_transaction(function () { self.resume(); });
+            });
+            break;
         case constants.denysoftdisconnect:
-                this.respond(450, msg || "Message denied temporarily", function() {
-                    self.msg_count.tempfail++;
-                    self.disconnect();
-                });
-                break;
+            this.respond(450, msg || "Message denied temporarily", function() {
+                self.msg_count.tempfail++;
+                self.disconnect();
+            });
+            break;
         default:
-                if (this.relaying) {
-                    plugins.run_hooks("queue_outbound", this);
-                }
-                else {
-                    plugins.run_hooks("queue", this);
-                }
+            if (this.relaying) {
+                plugins.run_hooks("queue_outbound", this);
+            }
+            else {
+                plugins.run_hooks("queue", this);
+            }
     }
 };
 
@@ -1515,101 +1556,147 @@ Connection.prototype.max_data_exceeded_respond = function (retval, msg) {
     });
 };
 
+Connection.prototype.queue_msg = function (retval, msg) {
+    if (msg) return msg;
+
+    switch (retval) {
+        case constants.ok:
+            return 'Message Queued (' + this.transaction.uuid + ')';
+        case constants.deny:
+        case constants.denydisconnect:
+            return 'Message denied';
+        case constants.denysoft:
+        case constants.denysoftdisconnect:
+            return 'Message denied temporarily';
+        default:
+            return '';
+    }
+};
+
+Connection.prototype.store_queue_result = function (retval, msg) {
+    var plugin = {name: 'queue'};
+    switch (retval) {
+        case constants.ok:
+            this.transaction.results.add(plugin, { pass: msg });
+            break;
+        case constants.deny:
+        case constants.denydisconnect:
+        case constants.denysoft:
+        case constants.denysoftdisconnect:
+            this.transaction.results.add(plugin, { fail: msg });
+            break;
+        default:
+            this.transaction.results.add(plugin, { msg: msg });
+            break;
+    }
+};
+
 Connection.prototype.queue_outbound_respond = function(retval, msg) {
     var self = this;
+    if (!msg) msg = this.queue_msg(retval, msg);
+    this.store_queue_result(retval, msg);
     if (retval !== constants.ok) {
-        this.lognotice('queue code=' + constants.translate(retval) + ' msg="' + (msg || '') + '"');
+        this.lognotice('queue code=' + constants.translate(retval) + ' msg="' + msg + '"');
     }
-    switch(retval) {
+    switch (retval) {
         case constants.ok:
-                plugins.run_hooks("queue_ok", this, msg || 'Message Queued (' + self.transaction.uuid + ')');
-                break;
+            plugins.run_hooks('queue_ok', this, msg);
+            break;
         case constants.deny:
-                this.respond(550, msg || "Message denied", function() {
-                    self.msg_count.reject++;
-                    self.reset_transaction(function () { self.resume();});
-                });
-                break;
+            this.respond(550, msg, function() {
+                self.msg_count.reject++;
+                self.reset_transaction(function () { self.resume();});
+            });
+            break;
         case constants.denydisconnect:
-                this.respond(550, msg || "Message denied", function() {
-                    self.msg_count.reject++;
-                    self.disconnect();
-                });
-                break;
+            this.respond(550, msg, function() {
+                self.msg_count.reject++;
+                self.disconnect();
+            });
+            break;
         case constants.denysoft:
-                this.respond(450, msg || "Message denied temporarily", function() {
-                    self.msg_count.tempfail++;
-                    self.reset_transaction(function () { self.resume();});
-                });
-                break;
+            this.respond(450, msg, function() {
+                self.msg_count.tempfail++;
+                self.reset_transaction(function () { self.resume();});
+            });
+            break;
         case constants.denysoftdisconnect:
-                this.respond(450, msg || "Message denied temporarily", function() {
-                    self.msg_count.tempfail++;
-                    self.disconnect();
-                });
-                break;
+            this.respond(450, msg, function() {
+                self.msg_count.tempfail++;
+                self.disconnect();
+            });
+            break;
         default:
-                outbound.send_email(this.transaction, function(retval, msg) {
-                    switch(retval) {
-                        case constants.ok:
-                                plugins.run_hooks("queue_ok", self, msg || 'Message Queued (' + self.transaction.uuid + ')');
-                                break;
-                        case constants.deny:
-                                self.respond(550, msg || "Message denied", function() {
-                                    self.msg_count.reject++;
-                                    self.reset_transaction(function () { self.resume();});
-                                });
-                                break;
-                        default:
-                                self.logerror("Unrecognised response from outbound layer: " + retval + " : " + msg);
-                                self.respond(550, msg || "Internal Server Error", function() {
-                                    self.msg_count.reject++;
-                                    self.reset_transaction(function () { self.resume();});
-                                });
-                    }
-                });
+            outbound.send_email(this.transaction, function(retval, msg) {
+                if (!msg) msg = self.queue_msg(retval, msg);
+                switch (retval) {
+                    case constants.ok:
+                        if (!msg) msg = self.queue_msg(retval, msg);
+                        plugins.run_hooks('queue_ok', self, msg);
+                        break;
+                    case constants.deny:
+                        if (!msg) msg = self.queue_msg(retval, msg);
+                        self.respond(550, msg, function() {
+                            self.msg_count.reject++;
+                            self.reset_transaction(function () {
+                                self.resume();
+                            });
+                        });
+                        break;
+                    default:
+                        self.logerror("Unrecognised response from outbound layer: " + retval + " : " + msg);
+                        self.respond(550, msg || "Internal Server Error", function() {
+                            self.msg_count.reject++;
+                            self.reset_transaction(function () { self.resume();});
+                        });
+                }
+            });
     }
 };
 
 Connection.prototype.queue_respond = function(retval, msg) {
     var self = this;
+    if (!msg) msg = this.queue_msg(retval, msg);
+    this.store_queue_result(retval, msg);
+
     if (retval !== constants.ok) {
-        this.lognotice('queue code=' + constants.translate(retval) + ' msg="' + (msg || '') + '"');
+        this.lognotice('queue code=' + constants.translate(retval) + ' msg="' + msg + '"');
     }
     switch (retval) {
         case constants.ok:
-                plugins.run_hooks("queue_ok", this, msg || 'Message Queued (' + self.transaction.uuid + ')');
-                break;
+            plugins.run_hooks('queue_ok', this, msg);
+            break;
         case constants.deny:
-                this.respond(550, msg || "Message denied", function() {
-                    self.msg_count.reject++;
-                    self.reset_transaction(function () { self.resume();});
-                });
-                break;
+            this.respond(550, msg, function() {
+                self.msg_count.reject++;
+                self.reset_transaction(function () { self.resume();});
+            });
+            break;
         case constants.denydisconnect:
-                this.respond(550, msg || "Message denied", function() {
-                    self.msg_count.reject++;
-                    self.disconnect();
-                });
-                break;
+            this.respond(550, msg, function() {
+                self.msg_count.reject++;
+                self.disconnect();
+            });
+            break;
         case constants.denysoft:
-                this.respond(450, msg || "Message denied temporarily", function() {
-                    self.msg_count.tempfail++;
-                    self.reset_transaction(function () { self.resume();});
-                });
-                break;
+            this.respond(450, msg, function() {
+                self.msg_count.tempfail++;
+                self.reset_transaction(function () { self.resume();});
+            });
+            break;
         case constants.denysoftdisconnect:
-                this.respond(450, msg || "Message denied temporarily", function() {
-                    self.msg_count.tempfail++;
-                    self.disconnect();
-                });
-                break;
+            this.respond(450, msg, function() {
+                self.msg_count.tempfail++;
+                self.disconnect();
+            });
+            break;
         default:
-                this.respond(451, msg || "Queuing declined or disabled, try later", function() {
-                    self.msg_count.tempfail++;
-                    self.reset_transaction(function () { self.resume();});
-                });
-                break;
+            if (!msg) msg = 'Queuing declined or disabled, try later';
+            this.respond(451, msg, function() {
+                self.msg_count.tempfail++;
+                self.reset_transaction(function () { self.resume();});
+            });
+            break;
     }
 };
 

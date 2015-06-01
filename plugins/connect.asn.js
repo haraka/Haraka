@@ -63,19 +63,28 @@ exports.get_dns_results = function (zone, ip, done) {
     var query = ip.split('.').reverse().join('.') + '.' + zone;
     // plugin.logdebug(plugin, "query: " + query);
 
+    // Ensure that we can only run the callback once
+    var run_cb = false;
+    var cb = function () {
+        if (run_cb) return;
+        run_cb = true;
+        return done.apply(plugin, arguments);
+    }
+
     var timer = setTimeout(function () {
-        return done(new Error('timeout'), zone, null);
+        return cb(new Error('timeout'), zone, null);
     }, (plugin.cfg.main.timeout || 4) * 1000);
 
     dns.resolveTxt(query, function (err, addrs) {
         clearTimeout(timer);
+        if (run_cb) return;
         if (err) {
             plugin.logerror(plugin, "error: " + err + ' running: '+query);
-            return done(err, zone);
+            return cb(err, zone);
         }
 
         if (!addrs || !addrs[0]) {
-            return done(new Error('no results for ' + query), zone);
+            return cb(new Error('no results for ' + query), zone);
         }
 
         var first = addrs[0];
@@ -100,7 +109,7 @@ exports.get_dns_results = function (zone, ip, done) {
             plugin.logerror(plugin, "unrecognized ASN provider: " + zone);
         }
 
-        return done(null, zone, result);
+        return cb(null, zone, result);
     });
 };
 

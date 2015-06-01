@@ -9,7 +9,7 @@
 //         connect.fcrdns.ini. 
 //
 //         The FCrDNS plugin uses the white/blacklist functionality in the
-//         connect.rdns_access plugin.
+//         access plugin.
 
 var dns = require('dns');
 

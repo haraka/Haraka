@@ -1,0 +1,108 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+		<meta charset="UTF-8">
+		<title>Haraka Activity</title>
+		<script src="//code.jquery.com/jquery-1.10.1.min.js"></script>
+    <script src="//code.jquery.com/ui/1.10.4/jquery-ui.js"></script>
+		<script src="/watch/client.js"></script>
+
+		<link rel="stylesheet" href="/watch/watch.css" />
+		<link rel="stylesheet" href="/watch/jquery.tipsy.css" />
+    <link rel="stylesheet" href="//code.jquery.com/ui/1.10.4/themes/smoothness/jquery-ui.css">
+		<style>
+label, input { display:block; }
+input.text { margin-bottom:12px; width:95%; padding: .4em; }
+fieldset { padding:0; border:0; margin-top:25px; }
+.ui-dialog .ui-state-error { padding: .3em; }
+.validateTips { border: 1px solid transparent; padding: 0.3em; }
+.ui-menu { width: 75px; }
+#head_next_right { float: right; max-width: 200px;}
+		</style>
+</head>
+<body>
+<script>
+$(document).ready(function() {
+		display_th();
+    if (!("WebSocket" in window)) {
+        alert('<p>You need a browser that supports WebSockets.</p>');
+    }
+		else {
+				ws_connect(); // has WebSockets
+				$('a[rel=tipsy]').tipsy({fade: true, gravity: 'n'});
+		}
+});
+</script>
+
+<div id="dialog-form" title="Log in">
+  <p class="validateTips">All form fields are required.</p>
+  <form>
+  <fieldset>
+    <label for="email">Email</label>
+    <input type="text" name="email" id="email" value="" class="text ui-widget-content ui-corner-all" placeholder="email">
+    <label for="password">Password</label>
+    <input type="password" name="password" id="password" value="" class="text ui-widget-content ui-corner-all" placeholder="password">
+  </fieldset>
+  </form>
+</div>
+
+<div id="headline">
+		<span id="head_right">
+				<!-- http://line25.com/tutorials/how-to-create-a-pure-css-dropdown-menu -->
+				<nav>
+						<ul id="menu">
+							<li>Menu
+						    <ul>
+									<!--<li><a onClick='$("#dialog-form").dialog("open");'>Sign In</a></li>-->
+									<li><a onClick='$("div#messages").empty();'>Clear Messages</a></li>
+									<li><a onClick='reset_table();'>Empty Table</a></li>
+									<!--<li><a onClick='ws_disconnect(); ws_connect();'>Connect</a></li>-->
+									<!--<li class="ui-state-disabled">Log Out</li>-->
+									<!--<li><a onClick="">Hide Recipients</a></li>-->
+						    </ul>
+						  </li>
+						</ul>
+				</nav>
+		</span>
+		<span id="head_next_right">
+        <span id=watchers></span> watchers.
+		    <div id="messages"></div>
+    </span>
+		<span id=head_left>
+				<h1>Haraka Activity <span id="connect_state" onClick='ws_disconnect(); ws_connect();'>Monitor</span></h1>
+		<div>Displays in real time. Hover or tap results for more info.</div>
+</div>
+		<table id=connections>
+				<thead><tr id=labels></tr></thead>
+				<tfoot><tr id=helptext></tr></tfoot>
+				<tbody><tr id=connects></tr></tbody>
+		</table>
+		<!-- https://github.com/CloCkWeRX/tipsy/ (not the main tipsy fork!) -->
+<script src="/watch/jquery.tipsy.js"></script>
+<script>
+var email = $( "#email" ),
+    password = $( "#password" ),
+    allFields = $( [] ).add( email ).add( password ),
+		tips = $( ".validateTips" );
+
+$( "#dialog-form" ).dialog({
+      autoOpen: false,
+      height: 250,
+      width: 250,
+      modal: true,
+      buttons: {
+        "Log in": function() {
+          allFields.removeClass( "ui-state-error" );
+          $( this ).dialog( "close" );
+        },
+        Cancel: function() {
+          $( this ).dialog( "close" );
+        }
+      },
+      close: function() {
+        allFields.val( "" ).removeClass( "ui-state-error" );
+      }
+    });
+</script>
+</body>
+</html>

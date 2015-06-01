@@ -1,5 +1,6 @@
 // connect.rdns_access plugin
-// WARNING: this plugin is deprecated. see 'haraka -h access' to upgrade
+//
+// NOTICE: this plugin is deprecated. See 'haraka -h access' to upgrade
 
 exports.register = function() {
     var i;

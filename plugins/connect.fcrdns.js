@@ -24,12 +24,8 @@ exports.load_fcrdns_ini = function () {
 
 exports.hook_lookup_rdns = function (next, connection) {
     var plugin = this;
-    var rip = connection.remote_ip;
-    if (net_utils.is_private_ip(rip)) {
-        connection.results.add(plugin, {skip: "private_ip"});
-        return next();
-    }
 
+    // always init, so results.get is deterministic
     connection.results.add(plugin, {
         fcrdns: [],               // PTR host names that resolve to this IP
         invalid_tlds: [],         // rDNS names with invalid TLDs
@@ -40,6 +36,12 @@ exports.hook_lookup_rdns = function (next, connection) {
         ptr_name_has_ips: false,  // PTR host has IP address(es)
         ptr_name_to_ip: {},       // host names and their IP addresses
     });
+
+    var rip = connection.remote_ip;
+    if (net_utils.is_private_ip(rip)) {
+        connection.results.add(plugin, {skip: "private_ip"});
+        return next();
+    }
 
     plugin.refresh_config(connection);
 

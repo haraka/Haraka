@@ -49,7 +49,7 @@ The important part is `send-proxy` which causes HAProxy to send the PROXY
 extension on connection.
 
 When using `option smtpchk` you will see CONNRESET errors reported in the Haraka logs as
-smtpchk drops the connection before the HELO reponse is still being written.
+smtpchk drops the connection before the HELO response is still being written.
 You can use the `option tcp-check` instead to provide a better service check by having
 the check wait for the banner, send QUIT and then check the response:
 

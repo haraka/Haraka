@@ -14,16 +14,16 @@
     "node": ">= v0.8.0"
   },
   "dependencies": {
-    "nopt"          : "~2.1.2",
-    "generic-pool"  : "~2.0.2",
+    "nopt"          : "~3.0.1",
+    "generic-pool"  : "~2.2.0",
     "iconv"         : "~2.1.0",
-    "ipaddr.js"     : "~0.1.2",
+    "ipaddr.js"     : "~1.0.1",
     "semver"        : "~2.2.1",
-    "async"         : "~0.2.9",
+    "async"         : "~0.9.0",
     "daemon"        : "~1.1.0",
     "npid"          : "~0.4.0",
     "address-rfc2822":"~0.0.2",
-    "js-yaml"       : "~3.2.3"
+    "js-yaml"       : "~3.3.0"
   },
   "optionalDependencies": {
     "node-syslog"   : "~1.1.7",
@@ -32,12 +32,17 @@
     "vs-stun"       : "~0.0.7",
     "maxmind"       : "*",
     "redis"         : "~0.10.1",
-    "tmp"           : "~0.0.24"
+    "tmp"           : "~0.0.24",
+    "haraka-nosql"  : "*"
   },
   "devDependencies": {
     "nodeunit"      : "https://github.com/godsflaw/nodeunit/archive/master.tar.gz",
     "jscoverage"    : "*",
-    "coveralls"     : "*"
+    "coveralls"     : "*",
+    "grunt"         : "*",
+    "grunt-contrib-clean" : "*",
+    "grunt-contrib-jshint" : "*",
+    "grunt-version-check" : "*"
   },
   "licenses": [ {
     "type": "MIT",
