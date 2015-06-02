@@ -15,7 +15,7 @@ var data_plugins     = ['bounce','data.headers','karma','spamassassin','clamd', 
 // redrawn.
 var seen_plugins     = connect_plugins.concat(helo_plugins, mail_from_plugins,
                        rcpt_to_plugins, data_plugins);
-var ignore_seen      = ['local_port', 'remote_host', 'helo', 'mail_from', 'rcpt_to', 'duration', 'queue'];
+var ignore_seen      = ['local_port', 'remote_host', 'helo', 'mail_from', 'rcpt_to', 'queue'];
 
 var rows_showing = 0;
 
@@ -37,7 +37,7 @@ function newRowConnectRow1 (data, uuid, txnId) {
     '<td class="uuid uuid_tiny got" rowspan=2 title='+data.uuid+'>'+ data.uuid+'</td>',
     '<td class="remote_host got" colspan=' + (connect_cols - 1) +' title="'+ host.title+'">'+host.newval+'</td>',
     '<td class="local_port bg_dgreen" title="connected">'+port+'</td>',
-    '<td class="helo" colspan="' + helo_cols + '"></td>',
+    '<td class="helo lgrey" colspan="' + helo_cols + '"></td>',
     ];
 }
 
@@ -50,7 +50,7 @@ function newRowConnectRow2 (data, uuid, txnId) {
         var nv = shorten_pi(plugin);
         var newc = '', tit = '';
         if (data[plugin]) {       // not always updated
-            if (data[plugin].newc)   newc = data[plugin].classy;
+            if (data[plugin].classy) newc = data[plugin].classy;
             if (data[plugin].newval) nv   = data[plugin].newval;
             if (data[plugin].title)  tit  = data[plugin].title;
         }
@@ -127,7 +127,6 @@ function updateRow(row_data, selector) {
         var td = row_data[td_name];
         if (typeof td !== 'object' ) continue;
 
-        if (td_name === 'duration') td_name = 'queue';
         var td_name_css = css_safe(td_name);
         var td_sel = selector + ' > td.' + td_name_css;
 
@@ -262,7 +261,6 @@ function update_seen(plugin) {
     if (seen_plugins.indexOf(plugin) !== -1) return;
     if (ignore_seen.indexOf(plugin) !== -1) return;
 
-    $('#messages').append(', refresh('+plugin+') ');
     seen_plugins.push(plugin);
 
     var bits = plugin.split('.');
@@ -284,6 +282,7 @@ function update_seen(plugin) {
                 data_plugins.push(plugin);
                 break;
         }
+        $('#messages').append(', refresh('+plugin+') ');
         return reset_table();
     }
 
@@ -291,10 +290,8 @@ function update_seen(plugin) {
     if (bits.length === 2) {
         switch (bits[0]) {
             case 'auth':  // gets coalesced under the 'HELO auth' box
-            case 'queue': // gets coalesced in the 'QUEUE' box
-                break;
+                return;
         }
-        return;
     }
 
     $('#messages').append(', uncategorized('+plugin+') ');
@@ -304,9 +301,9 @@ function update_seen(plugin) {
 
 function prune_table() {
     rows_showing++;
-    var max = 100;
+    var max = 200;
     if (rows_showing < max) return;
-    $('table#connections > tbody > tr:gt('+(max*3)+')').fadeOut(8000, function() {
+    $('table#connections > tbody > tr:gt('+(max*3)+')').fadeOut(2000, function() {
         $(this).remove();
     });
     rows_showing = $('table#connections > tbody > tr').length;

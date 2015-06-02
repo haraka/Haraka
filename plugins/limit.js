@@ -21,7 +21,7 @@ exports.register = function () {
     });
 
     if (plugin.cfg.concurrency) {
-        plugin.register_hook('lookup_rdns',  'incr_concurrency');
+        plugin.register_hook('connect_init', 'incr_concurrency');
         plugin.register_hook('connect',      'check_concurrency');
         plugin.register_hook('disconnect',   'decr_concurrency');
     }
