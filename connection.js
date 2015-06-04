@@ -1098,7 +1098,10 @@ Connection.prototype.cmd_proxy = function (line) {
 
     this.reset_transaction(function () {
         self.relaying = false;
+        self.local_ip = dst_ip;
+        self.local_port = dst_port;
         self.remote_ip = src_ip;
+        self.remote_port = src_port;
         self.remote_host = undefined;
         self.hello_host = undefined;
         plugins.run_hooks('connect_init', self);
