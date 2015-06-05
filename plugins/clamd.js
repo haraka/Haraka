@@ -1,13 +1,7 @@
 // clamd
 
 var sock = require('./line_socket');
-
-exports.wildcard_to_regexp = function (str) {
-    return str
-        .replace(/[-\[\]\/{}()*+?.,\\^$|#\s]/g, "\\$&")
-        .replace(/\\\*/g, '.*')
-        .replace(/\\\?/g, '.') + '$';
-};
+var utils = require('./utils');
 
 exports.load_excludes = function() {
     var plugin = this;
@@ -38,7 +32,7 @@ exports.load_excludes = function() {
                 // Wildcard exclude
                 try {
                     re = new RegExp(
-                            plugin.wildcard_to_regexp(list[i].substr(1)),'i');
+                            utils.wildcard_to_regexp(list[i].substr(1)),'i');
                     new_skip_list_exclude.push(re);
                 }
                 catch (e) {
@@ -59,7 +53,7 @@ exports.load_excludes = function() {
         default:
             // Wildcard skip
             try {
-                re = new RegExp(plugin.wildcard_to_regexp(list[i]),'i');
+                re = new RegExp(utils.wildcard_to_regexp(list[i]),'i');
                 new_skip_list.push(re);
             }
             catch (e) {

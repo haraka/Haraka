@@ -281,3 +281,10 @@ exports.elapsed = function (start, decimal_places) {
     }
     return diff.toFixed(decimal_places);
 };
+
+exports.wildcard_to_regexp = function (str) {
+    return str
+        .replace(/[-\[\]\/{}()*+?.,\\^$|#\s]/g, "\\$&")
+        .replace('\\*', '.*')
+        .replace('\\?', '.') + '$';
+};
