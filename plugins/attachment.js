@@ -7,6 +7,7 @@ var spawn = require('child_process').spawn;
 var exec = require('child_process').exec;
 var path = require('path');
 var crypto = require('crypto');
+var utils = require('./utils');
 var default_archive_extns = [
     '.zip', '.tar', '.tgz', '.taz', '.z', '.gz', '.rar', '.7z'
 ];
@@ -24,13 +25,6 @@ exports.register = function () {
             'filenames from archive files');
     }
 };
-
-function wildcard_to_regexp (str) {
-    return str
-        .replace(/[-\[\]\/{}()*+?.,\\^$|#\s]/g, "\\$&")
-        .replace('\\*', '.*')
-        .replace('\\?', '.') + '$';
-}
 
 function options_to_array(options) {
     if (!options) return false;
