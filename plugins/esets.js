@@ -20,7 +20,10 @@ exports.hook_data_post = function (next, connection) {
 
     ws.once('close', function() {
         var start_time = Date.now();
-        child_process.exec('LANG=C /opt/eset/esets/bin/esets_cli ' + tmpfile, { encoding: 'utf8', timeout: 30 * 1000 }, function (error, stdout, stderr) {
+        child_process.exec('LANG=C /opt/eset/esets/bin/esets_cli ' + tmpfile, 
+                           { encoding: 'utf8', timeout: 30 * 1000 }, 
+                           function (error, stdout, stderr) 
+        {
             // Remove the temporary file
             fs.unlink(tmpfile, function(){});
 
