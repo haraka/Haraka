@@ -1571,7 +1571,7 @@ Connection.prototype.queue_msg = function (retval, msg) {
 
     switch (retval) {
         case constants.ok:
-            return 'Message Queued (' + this.transaction.uuid + ')';
+            return 'Message Queued';
         case constants.deny:
         case constants.denydisconnect:
             return 'Message denied';
@@ -1605,6 +1605,7 @@ Connection.prototype.queue_outbound_respond = function(retval, msg) {
     var self = this;
     if (!msg) msg = this.queue_msg(retval, msg);
     this.store_queue_result(retval, msg);
+    msg = msg + ' (' + this.transaction.uuid + ')';
     if (retval !== constants.ok) {
         this.lognotice('queue code=' + constants.translate(retval) + ' msg="' + msg + '"');
     }
@@ -1657,7 +1658,9 @@ Connection.prototype.queue_outbound_respond = function(retval, msg) {
                         self.logerror("Unrecognised response from outbound layer: " + retval + " : " + msg);
                         self.respond(550, msg || "Internal Server Error", function() {
                             self.msg_count.reject++;
-                            self.reset_transaction(function () { self.resume();});
+                            self.reset_transaction(function () {
+                                self.resume();
+                            });
                         });
                 }
             });
@@ -1668,6 +1671,7 @@ Connection.prototype.queue_respond = function(retval, msg) {
     var self = this;
     if (!msg) msg = this.queue_msg(retval, msg);
     this.store_queue_result(retval, msg);
+    msg = msg + ' (' + this.transaction.uuid + ')';
 
     if (retval !== constants.ok) {
         this.lognotice('queue code=' + constants.translate(retval) + ' msg="' + msg + '"');
