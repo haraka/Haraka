@@ -305,6 +305,13 @@ plugins.  This is done using `notes` - there are three types available:
   on things like greylisting which uses client, sender and recipient
   information etc.
 
+* hmail.todo.notes
+
+  Available on any outbound hook that passes `hmail` as a function parameter.  
+  This is the same object as 'connection.transaction.notes', so anything 
+  you store in the transaction notes is automatically available in the 
+  outbound functions here.
+  
 All of these notes are simply a Javascript object underneath - so you use
 them like a simple key/value store e.g.
 
