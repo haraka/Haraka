@@ -130,14 +130,14 @@ logger.dump_and_exit = function (code) {
     });
 }
 
-logger.log = function (level, data) {
+logger.log = function (level, data, logobj) {
     if (level === 'PROTOCOL') {
         data = data.replace(/\n/g, '\\n');
     }
     data = data.replace(/\r/g, '\\r')
         .replace(/\n$/, '');
 
-    const item = { 'level' : level, 'data'  : data };
+    const item = { 'level' : level, 'data'  : data, obj: logobj};
 
     // buffer until plugins are loaded
     if (!plugins || (Array.isArray(plugins.plugin_list) &&
@@ -153,7 +153,7 @@ logger.log = function (level, data) {
         plugins.run_hooks('log', logger, log_item);
     }
 
-    plugins.run_hooks('log', logger, item );
+    plugins.run_hooks('log', logger, item);
     return true;
 }
 
