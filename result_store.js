@@ -76,22 +76,7 @@ ResultStore.prototype.add = function (plugin, obj) {
         result[key] = obj[key];            // save the rest
     }
 
-    // collate results
-    result.human = obj.human;
-    if (!result.human) {
-        var r = this.private_collate(result, name);
-        result.human = r.join(', ');
-        result.human_html = r.join(', \t ');
-    }
-
-    // logging results
-    if (obj.emit) this.conn.loginfo(plugin, result.human);  // by request
-    if (obj.err)  this.conn.logerror(plugin, obj.err);      // by default
-    if (!obj.emit && !obj.err) {                            // by config
-        var pic = cfg[name];
-        if (pic && pic.debug) this.conn.logdebug(plugin, result.human);
-    }
-    return this.human;
+    return this._log(plugin, result, obj);
 };
 
 ResultStore.prototype.incr = function (plugin, obj) {
@@ -110,10 +95,11 @@ ResultStore.prototype.incr = function (plugin, obj) {
 };
 
 ResultStore.prototype.push = function (plugin, obj) {
-    var result = this.store[plugin.name];
+    var name = plugin.name;
+    var result = this.store[name];
     if (!result) {
         result = default_result();
-        this.store[plugin.name] = result;
+        this.store[name] = result;
     }
 
     for (var key in obj) {
@@ -125,6 +111,8 @@ ResultStore.prototype.push = function (plugin, obj) {
             result[key].push(obj[key]);
         }
     }
+
+    return this._log(plugin, result, obj);
 };
 
 ResultStore.prototype.collate = function (plugin) {
@@ -176,6 +164,27 @@ ResultStore.prototype.private_collate = function (result, name) {
     }
 
     return r;
+};
+
+ResultStore.prototype._log = function (plugin, result, obj) {
+    var name = plugin.name;
+
+    // collate results
+    result.human = obj.human;
+    if (!result.human) {
+        var r = this.private_collate(result, name);
+        result.human = r.join(', ');
+        result.human_html = r.join(', \t ');
+    }
+
+    // logging results
+    if (obj.emit) this.conn.loginfo(plugin, result.human);  // by request
+    if (obj.err)  this.conn.logerror(plugin, obj.err);      // by default
+    if (!obj.emit && !obj.err) {                            // by config
+        var pic = cfg[name];
+        if (pic && pic.debug) this.conn.logdebug(plugin, result.human);
+    }
+    return this.human;
 };
 
 module.exports = ResultStore;
