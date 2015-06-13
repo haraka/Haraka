@@ -1740,7 +1740,9 @@ Connection.prototype.queue_respond = function(retval, msg) {
 
 Connection.prototype.queue_ok_respond = function (retval, msg, params) {
     var self = this;
-    this.lognotice('queue_ok code=' + constants.translate(retval) + ' msg="' + (params || '') + '"');
+    // This hook is common to both hook_queue and hook_queue_outbound
+    // retval and msg are ignored in this hook so we always log OK
+    this.lognotice('queue code=OK' + ' msg="' + (params || '') + '"');
     this.respond(250, params, function() {
         self.msg_count.accept++;
         self.reset_transaction(function () { self.resume();});
