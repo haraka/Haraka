@@ -981,8 +981,9 @@ Connection.prototype.rcpt_ok_respond = function (retval, msg) {
     }
     var rcpt = this.transaction.rcpt_to[this.transaction.rcpt_to.length - 1];
     var dmsg = "recipient " + rcpt.format();
+    // Log OK instead of CONT as this hook only runs if hook_rcpt returns OK
     this.lognotice(dmsg + ' ' + [
-        'code=' + constants.translate(retval),
+        'code=' + constants.translate((retval === constants.cont ? constants.ok : retval)),
         'msg="' + (msg || '') + '"',
         'sender="' + this.transaction.mail_from.address() + '"',
     ].join(' '));
