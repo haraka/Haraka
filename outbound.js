@@ -58,6 +58,9 @@ exports.load_config = function () {
     if (!cfg.ipv6_enabled && config.get('outbound.ipv6_enabled')) {
         cfg.ipv6_enabled = true;
     }
+    if (!cfg.received_header) {
+        cfg.received_header = config.get('outbound.received_header') || 'Haraka outbound';
+    }
 };
 exports.load_config();
 
@@ -424,7 +427,7 @@ exports.send_trans_email = function (transaction, next) {
         transaction.add_header('Date', date_to_str(new Date()));
     }
 
-    transaction.add_leading_header('Received', '(Haraka outbound); ' + date_to_str(new Date()));
+    transaction.add_leading_header('Received', '('+cfg.received_header+'); ' + date_to_str(new Date()));
 
     var deliveries = [];
     var always_split = cfg.always_split;

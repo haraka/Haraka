@@ -94,12 +94,7 @@ exports.hook_queue = function (next, connection) {
                 smtp_client.send_command('RSET');
                 return;
             }
-            var rs = connection.transaction ?
-                     connection.transaction.results :
-                     connection.results;
-            rs.add(plugin, { pass: smtp_client.response });
-            smtp_client.call_next(OK, smtp_client.response +
-                    ' (' + connection.transaction.uuid + ')');
+            smtp_client.call_next(OK, smtp_client.response);
             smtp_client.release();
         });
 
@@ -111,7 +106,7 @@ exports.hook_queue = function (next, connection) {
         smtp_client.on('bad_code', function (code, msg) {
             if (dead_sender()) return;
             smtp_client.call_next(((code && code[0] === '5') ? DENY : DENYSOFT),
-                                msg + ' (' + connection.transaction.uuid + ')');
+                                msg);
             smtp_client.release();
         });
     };

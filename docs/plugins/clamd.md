@@ -62,6 +62,33 @@ The following options can be defined in clamd.ini;
   If the clamd limit is reached the plug-in will log a notice that
   this has happened and will allow the message though.
 
+### [reject]
+
+An optional reject section can offer control over when to reject connections.
+The default settings are shown. ClamAV recommends that hits coming from 
+SafeBrowsing / Phishing / Heuristics, Potentially Unwanted Applications, and
+UNOFFICIAL be used only for scoring.
+
+    * virus=true
+    * error=true
+
+The following reject options are disabled by default in clamd.conf. With a
+default ClamAV install, these will have no effect. When an admin enables in
+clamd.conf, Haraka with then, by default, reject such messages. Adjust these
+settings to suit.
+
+    * Broken.Executable=true
+    * Structured=true
+    * Encrypted=true
+    * PUA=true
+    * OLE2=true
+    * Safebrowsing=true
+    * UNOFFICIAL=true
+
+The following options are enabled by default in clamd but ClamAV suggests
+using them only for scoring.
+
+    * Phishing=false
 
 ## clamd.excludes
 
@@ -89,3 +116,4 @@ The following options can be defined in clamd.ini;
 # Phishing
 Heuristics.Phishing.*
 `````
+

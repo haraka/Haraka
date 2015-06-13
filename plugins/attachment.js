@@ -13,8 +13,6 @@ var default_archive_extns = [
 ];
 
 exports.register = function () {
-    this.register_hook('data_post', 'wait_for_attachment_hooks');
-    this.register_hook('data_post', 'check_attachments');
     try {
         tmp = require('tmp');
         tmp.setGracefulCleanup();
@@ -23,7 +21,10 @@ exports.register = function () {
         archives_disabled = true;
         this.logwarn('This module requires the \'tmp\' module to extract ' +
             'filenames from archive files');
+        return;
     }
+    this.register_hook('data_post', 'wait_for_attachment_hooks');
+    this.register_hook('data_post', 'check_attachments');
 };
 
 function options_to_array(options) {
