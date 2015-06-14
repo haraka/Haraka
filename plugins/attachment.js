@@ -1,16 +1,15 @@
 // attachment
 
-var fs = require('fs');
+var fs     = require('fs');
+var spawn  = require('child_process').spawn;
+var exec   = require('child_process').exec;
+var path   = require('path');
+var crypto = require('crypto');
+
+var utils = require('./utils');
+
 var tmp;
 var archives_disabled = false;
-var spawn = require('child_process').spawn;
-var exec = require('child_process').exec;
-var path = require('path');
-var crypto = require('crypto');
-var utils = require('./utils');
-var default_archive_extns = [
-    '.zip', '.tar', '.tgz', '.taz', '.z', '.gz', '.rar', '.7z'
-];
 
 exports.register = function () {
     try {
@@ -23,8 +22,27 @@ exports.register = function () {
             'filenames from archive files');
         return;
     }
+    this.load_archive_ini();
+
     this.register_hook('data_post', 'wait_for_attachment_hooks');
     this.register_hook('data_post', 'check_attachments');
+};
+
+exports.load_archive_ini = function () {
+    var plugin = this;
+
+    plugin.cfg = plugin.config.get('attachment.ini', function () {
+        plugin.load_archive_ini();
+    });
+
+    plugin.cfg.timeout = (plugin.cfg.main.timeout || 30) * 1000;
+
+    plugin.archive_max_depth = plugin.cfg.main.archive_max_depth || 5;
+
+    plugin.archive_exts =
+        options_to_array(plugin.cfg.main.archive_extensions) ||
+        [ '.zip', '.tar', '.tgz', '.taz', '.z', '.gz', '.rar', '.7z' ];
+
 };
 
 function options_to_array(options) {
@@ -44,18 +62,16 @@ function options_to_array(options) {
 }
 
 exports.unarchive_recursive = function(connection, f, archive_file_name, cb) {
+    var plugin = this;
+
     if (archives_disabled) {
         connection.logdebug(this, 'archive support disabled');
         return cb();
     }
-    
+
     var self = this;
-    var cfg = this.config.get('attachment.ini');
     var files = [];
     var tmpfiles = [];
-    var maxdepth = cfg.main.archive_max_depth || 5;
-    var archive_extns = options_to_array(cfg.main.archive_extensions) || default_archive_extns;
-    var timeout = cfg.main.timeout || 30;
     var depth_exceeded = false;
     var count = 0;
     var done_cb = false;
@@ -82,19 +98,20 @@ exports.unarchive_recursive = function(connection, f, archive_file_name, cb) {
 
     function listFiles(in_file, prefix, depth) {
         if (!depth) depth = 0;
-        if (depth >= maxdepth || depth_exceeded) {
+        if (depth >= plugin.archive_max_depth || depth_exceeded) {
             if (count === 0) {
                 return do_cb(new Error('maximum archive depth exceeded'));
             }
             return;
         }
         count++;
-        var bsdtar = exec('LANG=C bsdtar -tf ' + in_file, { timeout: timeout * 1000 },  function (err, stdout, stderr) {
+        var cmd = 'LANG=C bsdtar -tf ' + in_file;
+        var bsdtar = exec(cmd, { timeout: plugin.cfg.timeout },  function (err, stdout, stderr) {
             count--;
             if (err) {
                 if (err.code === 127) {
                     // file not found
-                    self.logwarn('bsdtar binary not found, disabling archive features');
+                    self.logwarn('bsdtar not found, disabling archive features');
                     archives_disabled = true;
                     return do_cb();
                 }
@@ -112,8 +129,8 @@ exports.unarchive_recursive = function(connection, f, archive_file_name, cb) {
                 connection.logdebug(self, 'file: ' + file + ' depth=' + depth);
                 files.push((prefix ? prefix + '/' : '') + file);
                 var extn = path.extname(file.toLowerCase());
-                if (archive_extns.indexOf(extn) !== -1 ||
-                    archive_extns.indexOf(extn.substring(1)) !== -1) 
+                if (plugin.archive_exts.indexOf(extn) !== -1 ||
+                    plugin.archive_exts.indexOf(extn.substring(1)) !== -1)
                 {
                     connection.logdebug(self, 'need to extract file: ' + file);
                     count++;
@@ -128,7 +145,7 @@ exports.unarchive_recursive = function(connection, f, archive_file_name, cb) {
                         tmpfiles.push([fd, tmpfile]);
                         connection.logdebug(self, 'running command: ' + cmd);
                         count++;
-                        exec(cmd, { timeout: timeout * 1000 }, function (error, stdout, stderr) {
+                        exec(cmd, { timeout: plugin.cfg.timeout }, function (error, stdout, stderr) {
                             count--;
                             if (error) {
                                 connection.logdebug(self, 'error: return code ' + error.code + ': ' + stderr.toString('utf-8'));
@@ -153,55 +170,62 @@ exports.unarchive_recursive = function(connection, f, archive_file_name, cb) {
 
     timer = setTimeout(function () {
         return do_cb(new Error('timeout unpacking attachments'));
-    }, timeout * 1000);
+    }, plugin.cfg.timeout);
 
     listFiles(f, archive_file_name);
-}
+};
 
 exports.start_attachment = function (connection, ctype, filename, body, stream) {
     var plugin = this;
     var txn = connection.transaction;
-    var cfg = this.config.get('attachment.ini');
-    var archive_exts = options_to_array(cfg.main.archive_extensions) || default_archive_extns;
 
-    function next() {
+    function next () {
         if (txn.notes.attachment_count === 0 && txn.notes.attachment_next) {
             return txn.notes.attachment_next();
         }
-        else {
-            return;
-        }
+        return;
     }
 
     // Calculate and report the md5 of each attachment
     var md5 = crypto.createHash('md5');
     var digest;
+    var bytes = 0;
     stream.on('data', function (data) {
+        bytes += data.length;
         md5.update(data);
     });
     stream.once('end', function () {
         digest = md5.digest('hex');
-        connection.loginfo(plugin, 'file="' + filename + '" ctype="' + ctype + '" md5=' + digest);
+        var ca = ctype.match(/^(.*)?;\s+name="(.*)?"/);
+        txn.results.push(plugin, { attach: {
+                file: filename,
+                ctype: (ca && ca[2] === filename) ? ca[1] : ctype,
+                md5: digest,
+                bytes: bytes,
+            },
+        });
+        connection.loginfo(plugin, 'file="' + filename + '" ctype="' +
+                ctype + '" md5=' + digest);
     });
 
     // Parse Content-Type
-    var ct;
-    if ((ct = ctype.match(/^([^\/]+\/[^;\r\n ]+)/)) && ct[1]) {
+    var ct = ctype.match(/^([^\/]+\/[^;\r\n ]+)/);
+    if (ct && ct[1]) {
         connection.logdebug(plugin, 'found content type: ' + ct[1]);
         txn.notes.attachment_ctypes.push(ct[1]);
     }
     if (filename) {
         connection.logdebug(plugin, 'found attachment file: ' + filename);
-        var ext;
+        var ext = filename.match(/(\.[^\. ]+)$/);
         var fileext = '.unknown';
-        if ((ext = filename.match(/(\.[^\. ]+)$/)) && ext[1]) {
+        if (ext && ext[1]) {
             fileext = ext[1].toLowerCase();
         }
         txn.notes.attachment_files.push(filename);
         // See if filename extension matches archive extension list
         // We check with the dot prefixed and without
-        if (!archives_disabled && (archive_exts.indexOf(fileext) !== -1 ||
-            archive_exts.indexOf(fileext.substring(1)) !== -1)) 
+        if (!archives_disabled && (plugin.archive_exts.indexOf(fileext) !== -1 ||
+            plugin.archive_exts.indexOf(fileext.substring(1)) !== -1))
         {
             connection.logdebug(plugin, 'found ' + fileext + ' on archive list');
             txn.notes.attachment_count++;
@@ -259,21 +283,20 @@ exports.start_attachment = function (connection, ctype, filename, body, stream) 
                     });
                 });
             });
-	}
+        }
     }
-    txn.notes.attachments.push({ 
+    txn.notes.attachments.push({
         ctype: ((ct && ct[1]) ? ct[1].toLowerCase() : 'unknown/unknown'),
         filename: (filename ? filename : ''),
         extension: (ext && ext[1] ? ext[1].toLowerCase() : ''),
     });
-}
-
+};
 
 exports.hook_data = function (next, connection) {
     var plugin = this;
     var txn = connection.transaction;
     txn.parse_body = 1;
-    txn.notes.attachment_count = 0
+    txn.notes.attachment_count = 0;
     txn.notes.attachments = [];
     txn.notes.attachment_ctypes = [];
     txn.notes.attachment_files = [];
@@ -282,9 +305,10 @@ exports.hook_data = function (next, connection) {
         plugin.start_attachment(connection, ctype, filename, body, stream);
     });
     return next();
-}   
+};
 
 exports.check_attachments = function (next, connection) {
+    var plugin = this;
     var txn = connection.transaction;
     var ctype_config = this.config.get('attachment.ctype.regex','list');
     var file_config = this.config.get('attachment.filename.regex','list');
@@ -295,9 +319,9 @@ exports.check_attachments = function (next, connection) {
         var result = txn.notes.attachment_result;
         return next(result[0], result[1]);
     }
- 
+
     var ctypes = txn.notes.attachment_ctypes;
-    
+
     // Add in any content type from message body
     var body = txn.body;
     var body_ct;
