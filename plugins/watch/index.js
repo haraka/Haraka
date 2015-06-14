@@ -37,35 +37,28 @@ exports.load_watch_ini = function () {
     });
 };
 
-exports.hook_init_http = function (next, server, app) {
+exports.hook_init_http = function (next, server) {
     var plugin = this;
 
-    // var wss_url = 'ws[s]://' + wss_host + ':' + wss_port + '/';
-    app.use('/watch/wss_conf', function(req, res, app_next){
+    server.http.app.use('/watch/wss_conf', function(req, res, app_next) {
         // pass config information to the WS client
         var client = { sampling: plugin.cfg.main.sampling };
         if (plugin.cfg.wss.url) client.wss_url = plugin.cfg.wss.url;
         res.end(JSON.stringify(client));
     });
 
-    var express;
-    try { express = require('express'); }
-    catch (ignore) {
-        plugin.logerror("express not installed, try 'npm install express'");
-        return next();
-    }
+    var htdocs = plugin.cfg.wss.htdocs || __dirname + '/html';
+    server.http.app.use('/watch/', server.http.express.static(htdocs));
 
-    if (express) {
-        app.use('/watch/', express.static(__dirname + '/html'));
-    }
-
+    plugin.loginfo('watch init_http done');
     return next();
 };
 
-exports.hook_init_wss = function (next, server, new_wss) {
-    var plugin    = this;
+exports.hook_init_wss = function (next, server) {
+    var plugin = this;
+    plugin.loginfo('watch init_wss');
 
-    wss = new_wss;
+    wss = server.http.wss;
 
     wss.on('error', function(error) {
         plugin.loginfo("server error: " + error);
@@ -102,6 +95,7 @@ exports.hook_init_wss = function (next, server, new_wss) {
         }
     };
 
+    plugin.loginfo('watch init_wss done');
     return next();
 };
 
@@ -461,7 +455,7 @@ function get_mailfrom(txn) {
 function get_recipients(txn) {
 
     var d = [], t = [];
-    txn.rcpt_to.forEach(function (ea){
+    txn.rcpt_to.forEach(function (ea) {
         try { var rcpt = ea.address(); }
         catch (ignore) { }
         if (!rcpt) {
