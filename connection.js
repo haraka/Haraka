@@ -917,13 +917,18 @@ Connection.prototype.mail_respond = function(retval, msg) {
     ].join(' '));
 
     function store_results (action) {
-        var res = {
-            action: action,
-            sender: sender.format(),
-            code: constants.translate(retval),
-        };
-        if (msg && action !== 'accept') res.msg = msg;
-        self.transaction.results.add({name: 'mail_from'}, res);
+        var addr = sender.format();
+        if (addr.length > 2) {  // all but null sender
+            addr = addr.substr(1, addr.length -2); // trim off < >
+        }
+        var res_as = {name: 'mail_from'};
+        self.transaction.results.add(res_as, {address: addr});
+        if (action !== 'accept') {
+            self.transaction.results.add(res_as, {
+                fail: msg,
+                code: constants.translate(retval),
+            });
+        }
     }
 
     switch (retval) {
@@ -961,9 +966,10 @@ Connection.prototype.rcpt_incr = function(rcpt, action, msg, retval) {
     this.transaction.rcpt_count[action]++;
     this.rcpt_count[action]++;
 
+    var addr = rcpt.format();
     var recipient = {
         action : action,
-        recipient: rcpt.format(),
+        address: addr.substr(1, addr.length -2),
         code: constants.translate(retval),
     };
     if (msg && action !== 'accept') recipient.msg = msg;
@@ -1743,6 +1749,7 @@ Connection.prototype.queue_ok_respond = function (retval, msg, params) {
     // This hook is common to both hook_queue and hook_queue_outbound
     // retval and msg are ignored in this hook so we always log OK
     this.lognotice('queue code=OK' + ' msg="' + (params || '') + '"');
+
     this.respond(250, params, function() {
         self.msg_count.accept++;
         self.reset_transaction(function () { self.resume();});
