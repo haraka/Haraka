@@ -5,6 +5,7 @@
 
 function _set_up(done) {
     this.server = require('../server');
+    this.config = require('../config');
 
     done();
 }
@@ -30,7 +31,9 @@ exports.get_listen_addrs = {
     },
     'IPv4, custom port' : function (test) {
         test.expect(1);
-        var listeners = this.server.get_listen_addrs({listen: '127.0.0.1'}, 250);
+        var listeners = this.server.get_listen_addrs({
+            listen: '127.0.0.1'
+        }, 250);
         test.deepEqual(['127.0.0.1:250'], listeners);
         test.done();
     },
@@ -54,19 +57,25 @@ exports.get_listen_addrs = {
     },
     'IPv4 & IPv6 fully qualified' : function (test) {
         test.expect(1);
-        var listeners = this.server.get_listen_addrs({listen: '127.0.0.1:25,[::1]:25'});
+        var listeners = this.server.get_listen_addrs({
+            listen: '127.0.0.1:25,[::1]:25'
+        });
         test.deepEqual(['127.0.0.1:25','[::1]:25'], listeners);
         test.done();
     },
     'IPv4 & IPv6, default port' : function (test) {
         test.expect(1);
-        var listeners = this.server.get_listen_addrs({listen: '127.0.0.1:25,[::1]'});
+        var listeners = this.server.get_listen_addrs({
+            listen: '127.0.0.1:25,[::1]'
+        });
         test.deepEqual(['127.0.0.1:25','[::1]:25'], listeners);
         test.done();
     },
     'IPv4 & IPv6, custom port' : function (test) {
         test.expect(1);
-        var listeners = this.server.get_listen_addrs({listen: '127.0.0.1,[::1]'}, 250);
+        var listeners = this.server.get_listen_addrs({
+            listen: '127.0.0.1,[::1]'
+        }, 250);
         test.deepEqual(['127.0.0.1:250','[::1]:250'], listeners);
         test.done();
     },
@@ -114,5 +123,17 @@ exports.get_smtp_server = {
             test.equal(0, server.connections);
             test.done();
         }
+    },
+};
+
+
+exports.get_http_docroot = {
+    setUp : _set_up,
+    tearDown : _tear_down,
+    'gets a fs path': function (test) {
+        test.expect(1);
+        var path = this.server.get_http_docroot();
+        test.ok(path);
+        test.done();
     },
 };
