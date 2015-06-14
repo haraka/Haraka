@@ -36,23 +36,28 @@ Configuration
 -------------
 
 * attachment.ini
+    * default settings shown
 
-  - archive\_max\_depth
-    (default: 5)
+  - timeout=30
+
+    Timeout in seconds before the plugin will abort.
+
+  - disallowed_extensions=exe,com,pif,bat,scr,vbs,cmd,cpl,dll
+
+    File extensions that should be rejected when detected.
+
+    [archive]
+  - max\_depth=5
 
     The maximum level of nested archives that will be unpacked.
     If this is exceeded the message will be rejected.
 
-  - archive\_extns
-    (default: .zip,.tar,.tgz,.taz,.z,.gz,.rar,.7z) 
+    [archive]
+  - extensions=zip,tar,tgz,taz,z,gz,rar,7z
 
     File extensions that should be treated as archives.
     This can be any file type supported by bsdtar.
 
-  - timeout
-    (default: 30)
-
-    Timeout in seconds before the plugin will abort.
 
 * attachment.filename.regex
 
