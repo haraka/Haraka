@@ -123,6 +123,12 @@ exports.load_ini_config = {
         test.strictEqual(r.funnychars['results.auth/auth_base.fail'], 'fun');
         test.done();
     },
+    'test.ini, empty value' : function (test) {
+        test.expect(1);
+        var r = this.cfreader.load_ini_config('tests/config/test.ini');
+        test.deepEqual({ first: undefined, second: undefined}, r.empty_values);
+        test.done();
+    },
 };
 
 exports.get_filetype_reader  = {

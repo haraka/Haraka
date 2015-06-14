@@ -17,7 +17,7 @@ This will load the file config/rambling.paths in the Haraka directory.
 `type` can be one of:
 
 * 'value' - load a flat file containing a single value (default)
-* 'ini'   - load an "ini" style file
+* 'ini'   - load an ini file
 * 'json'  - load a json file
 * 'yaml'  - load a yaml file
 * 'list'  - load a flat file containing a list of values
@@ -71,8 +71,8 @@ boolean type keys. Default true or false can be specified.
 Ini Files
 ---------
 
-INI files had their heritage in early versions of Microsoft Windows products.  
-They are a simple format of key=value pairs, with an optional [section].
+INI files have their heritage in early versions of Microsoft Windows.
+Entries are a simple format of key=value pairs, with optional [sections].
 
 Here is a typical example:
 
@@ -82,6 +82,11 @@ Here is a typical example:
     [job]
     title=Senior Principal Software Engineer
     role=Architect
+
+    [projects]
+    haraka
+    qpsmtpd
+    spamassassin
 
 That produces the following Javascript object:
 
@@ -94,25 +99,30 @@ That produces the following Javascript object:
     job: {
         title: 'Senior Principal Software Engineer',
         role: 'Architect'
+    },
+    projects: {
+        haraka: undefined,
+        qpsmtpd: undefined,
+        spamassassin: undefined,
     }
 }
 ````
-The key point there is that items before any [section] marker go in the "main"
-section.
 
-Note that there is some auto-conversion of values on the right hand side of
+Items before any [section] marker are in the implicit [main] section.
+
+There is some auto-conversion of values on the right hand side of
 the equals: integers are converted to integers, floats are converted to
 floats.
 
-The key=value pairs also support continuation lines using the
+The key=value pairs support continuation lines using the
 backslash "\" character.
 
 The `options` object allows you to specify which keys are boolean:
 
     { booleans: ['reject','some_true_value'] }
 
-The key names should be in the format section.key, if the key name does not
-specify a section name then it will be presumed to be 'main'.
+On the options declarations, key names are formatted as section.key.
+If the key name does not specify a section, it is presumed to be [main].
 
 This ensures these values are converted to true Javascript booleans when parsed,
 and supports the following options for boolean values:
@@ -121,14 +131,15 @@ and supports the following options for boolean values:
 
 Anything else is treated as false.
 
-If you wish to default the boolean to true (e.g. when the key is undefined or
-the config file is missing) then prefix the key with +:
+To default a boolean as true (when the key is undefined or the config file is
+missing), prefix the key with +:
 
     { booleans: [ '+reject' ] }
 
 For completeness the inverse is also allowed:
 
     { booleans: [ '-reject' ] }
+
 
 Flat Files
 ----------
