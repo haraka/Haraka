@@ -32,12 +32,16 @@ exports.attachment_ini = {
         // console.log(this.plugin.cfg.archive.exts);
         test.done();
     },
-    'options_to_object': function (test) {
-        test.expect(1);
-        test.deepEqual(
-            {'.gz':true,'.zip':true}, 
-            this.plugin.options_to_object('gz zip')
-        );
+};
+
+exports.options_to_object = {
+    setUp : _set_up,
+    'converts string to object': function (test) {
+        test.expect(3);
+        var expected = {'.gz':true,'.zip':true};
+        test.deepEqual(expected, this.plugin.options_to_object('gz zip'));
+        test.deepEqual(expected, this.plugin.options_to_object('gz,zip'));
+        test.deepEqual(expected, this.plugin.options_to_object(' gz , zip '));
         test.done();
     },
 };
@@ -46,12 +50,30 @@ exports.attachment_ini = {
 exports.load_dissallowed_extns = {
     setUp : _set_up,
     'loads comma separated options': function (test) {
-        test.expect(3);
-        // setup
+        test.expect(2);
         this.plugin.cfg = { main: { disallowed_extensions: 'exe,scr' } };
+        this.plugin.load_dissallowed_extns();
 
+        test.ok(this.plugin.re.bad_extn);
+        test.ok(this.plugin.re.bad_extn.test('bad.scr'));
+        test.done();
+    },
+    'loads space separated options': function (test) {
+        test.expect(2);
+        this.plugin.cfg = { main: { disallowed_extensions: 'dll tnef' } };
         this.plugin.load_dissallowed_extns();
         test.ok(this.plugin.re.bad_extn);
+        test.ok(this.plugin.re.bad_extn.test('bad.dll'));
+        test.done();
+    },
+};
+
+exports.dissallowed_extns = {
+    setUp : _set_up,
+    'attachment_files': function (test) {
+        test.expect(2);
+        this.plugin.cfg = { main: { disallowed_extensions: 'exe;scr' } };
+        this.plugin.load_dissallowed_extns();
 
         var txn = this.connection.transaction;
         txn.notes.attachment_files = ['naughty.exe'];
@@ -61,12 +83,10 @@ exports.load_dissallowed_extns = {
         test.equal('exe', this.plugin.disallowed_extensions(txn));
         test.done();
     },
-    'loads space separated options': function (test) {
-        test.expect(4);
+    'attachment_archive_files': function (test) {
+        test.expect(3);
         this.plugin.cfg = { main: { disallowed_extensions: 'dll tnef' } };
-
         this.plugin.load_dissallowed_extns();
-        test.ok(this.plugin.re.bad_extn);
 
         var txn = this.connection.transaction;
         txn.notes.attachment_archive_files = ['icky.tnef'];
@@ -77,6 +97,45 @@ exports.load_dissallowed_extns = {
 
         txn.notes.attachment_archive_files = ['good.pdf', 'better.png'];
         test.equal(false, this.plugin.disallowed_extensions(txn));
+        test.done();
+    },
+};
+
+exports.load_n_compile_re = {
+    setUp : _set_up,
+    'loads regex lines from file, compiles to array': function (test) {
+        test.expect(2);
+
+        this.plugin.load_n_compile_re('test', 'attachment.filename.regex');
+        test.ok(this.plugin.re.test);
+        test.ok(this.plugin.re.test[0].test('foo.exe'));
+
+        test.done();
+    },
+};
+
+exports.check_items_against_regexps = {
+    setUp : _set_up,
+    'positive': function (test) {
+        test.expect(2);
+        this.plugin.load_n_compile_re('test', 'attachment.filename.regex');
+
+        test.ok(this.plugin.check_items_against_regexps(
+                    ['file.exe'], this.plugin.re.test));
+        test.ok(this.plugin.check_items_against_regexps(
+                    ['fine.pdf','awful.exe'], this.plugin.re.test));
+
+        test.done();
+    },
+    'negative': function (test) {
+        test.expect(2);
+        this.plugin.load_n_compile_re('test', 'attachment.filename.regex');
+
+        test.ok(!this.plugin.check_items_against_regexps(
+                    ['file.png'], this.plugin.re.test));
+        test.ok(!this.plugin.check_items_against_regexps(
+                    ['fine.pdf','godiva.chocolate'], this.plugin.re.test));
+
         test.done();
     },
 };
