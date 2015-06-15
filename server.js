@@ -41,7 +41,8 @@ Server.load_smtp_ini = function () {
 };
 
 Server.load_http_ini = function () {
-    Server.http_cfg = config.get('http.ini', function () {
+    Server.http = {};
+    Server.http.cfg = config.get('http.ini', function () {
         Server.load_http_ini();
     }).main;
 };
@@ -128,7 +129,6 @@ Server.createServer = function (params) {
     if (!cluster || !c.nodes) {
         Server.daemonize(c);
         Server.setup_smtp_listeners(plugins, 'master', inactivity_timeout);
-        Server.setup_http_listeners(plugins, 'master');
         return;
     }
 
@@ -138,7 +138,6 @@ Server.createServer = function (params) {
     // Cluster Workers
     if (!cluster.isMaster) {
         Server.setup_smtp_listeners(plugins, 'child', inactivity_timeout);
-        Server.setup_http_listeners(plugins, 'child');
         return;
     }
 
@@ -233,31 +232,26 @@ Server.setup_smtp_listeners = function (plugins, type, inactivity_timeout) {
     async.each(listeners, setupListener, runInitHooks);
 };
 
-Server.setup_http_listeners = function (plugins, type) {
-    if (!Server.http_cfg) return;
-    if (!Server.http_cfg.listen) return;
+Server.setup_http_listeners = function () {
+    if (!Server.http.cfg) return;
+    if (!Server.http.cfg.listen) return;
 
-    var listeners = Server.get_listen_addrs(Server.http_cfg, 80);
+    var listeners = Server.get_listen_addrs(Server.http.cfg, 80);
     if (!listeners.length) return;
 
-    var express;
     try {
-        express = require('express');
+        Server.http.express = require('express');
+        logger.loginfo('express loaded at Server.http.express');
     }
     catch (err) {
         logger.logerror('express failed to load. No http server. ' +
                 ' Try installing express with: npm install -g express');
         return;
     }
-    var app = express();
-    var server, wss;
 
-    Server.init_http_respond = function () {
-        // logger.loginfo(arguments);
-    };
-    Server.init_wss_respond = function () {
-        // logger.loginfo(arguments);
-    };
+    var app = Server.http.express();
+    Server.http.app = app;
+    logger.loginfo('express app is at Server.http.app');
 
     var setupListener = function (host_port, cb) {
         var hp = /^\[?([^\]]+)\]?:(\d+)$/.exec(host_port);
@@ -265,17 +259,20 @@ Server.setup_http_listeners = function (plugins, type) {
             return cb(new Error('Invalid format for listen in http.ini'));
         }
 
-        server = require('http').createServer(app);
+        Server.http.server = require('http').createServer(app);
 
-        server.on('listening', function () {
+        Server.http.server.on('listening', function () {
             var addr = this.address();
             logger.lognotice('Listening on ' + addr.address + ':' + addr.port);
             cb();
         });
 
-        server.on('error', function (e) { cb(e); });
+        Server.http.server.on('error', function (e) {
+            logger.logerror(e);
+            cb(e);
+        });
 
-        server.listen(hp[2], hp[1]);
+        Server.http.server.listen(hp[2], hp[1]);
     };
 
     var registerRoutes = function (err) {
@@ -283,21 +280,8 @@ Server.setup_http_listeners = function (plugins, type) {
             logger.logerror('Failed to setup http routes: ' + err.message);
         }
 
-        plugins.run_hooks('init_http', Server, app);
-
-        var WebSocketServer;
-        try { WebSocketServer = require('ws').Server; }
-        catch (e) {
-            logger.logerror('unable to load ws.\ndid you: npm install -g ws?');
-        }
-
-        if (WebSocketServer) {
-            wss = new WebSocketServer({ server: server });
-            plugins.run_hooks('init_wss', Server, wss);
-        }
-
         app.get('/plugins', Server.http_plugins);
-        app.use(express.static(Server.get_http_docroot()));
+        app.use(Server.http.express.static(Server.get_http_docroot()));
         app.use(Server.handle404);
     };
 
@@ -317,6 +301,8 @@ Server.init_master_respond = function (retval, msg) {
     // Load the queue if we're just one process
     if (!(cluster && c.nodes)) {
         out.load_queue();
+        Server.setup_http_listeners();
+        plugins.run_hooks('init_http', Server);
         return;
     }
 
@@ -329,8 +315,7 @@ Server.init_master_respond = function (retval, msg) {
         }
         Server.daemonize();
         // Fork workers
-        var workers = (c.nodes === 'cpus') ?
-            os.cpus().length : c.nodes;
+        var workers = (c.nodes === 'cpus') ? os.cpus().length : c.nodes;
         var new_workers = [];
         for (var i=0; i<workers; i++) {
             new_workers.push(cluster.fork({ CLUSTER_MASTER_PID: process.pid }));
@@ -362,7 +347,7 @@ Server.init_master_respond = function (retval, msg) {
                     CLUSTER_MASTER_PID: process.pid
                 });
                 new_worker.send({
-                    event: 'outbound.load_pid_queue', data: worker.process.pid
+                    event: 'outbound.load_pid_queue', data: worker.process.pid,
                 });
             }
         });
@@ -373,6 +358,8 @@ Server.init_child_respond = function (retval, msg) {
     switch (retval) {
         case constants.ok:
         case constants.cont:
+            Server.setup_http_listeners();
+            plugins.run_hooks('init_http', Server);
             return;
     }
 
@@ -408,15 +395,41 @@ Server.listening = function () {
     Server.ready = 1;
 };
 
-Server.get_http_docroot = function () {
-    if (Server.http_cfg.docroot) return Server.http_cfg.docroot;
+Server.init_http_respond = function () {
+    logger.loginfo('init_http_respond');
 
-    Server.http_cfg.docroot = path.join(
+    var WebSocketServer;
+    try { WebSocketServer = require('ws').Server; }
+    catch (e) {
+        logger.logerror('unable to load ws.\ndid you: npm install -g ws?');
+        return;
+    }
+
+    if (!WebSocketServer) {
+        logger.logerror('ws failed to load');
+        return;
+    }
+
+    Server.http.wss = new WebSocketServer({ server: Server.http.server });
+    logger.loginfo('Server.http.wss loaded');
+
+    plugins.run_hooks('init_wss', Server);
+};
+
+Server.init_wss_respond = function () {
+    logger.loginfo('init_wss_respond');
+    // logger.logdebug(arguments);
+};
+
+Server.get_http_docroot = function () {
+    if (Server.http.cfg.docroot) return Server.http.cfg.docroot;
+
+    Server.http.cfg.docroot = path.join(
         (process.env.HARAKA || __dirname),
         '/html'
     );
-    logger.loginfo('using html docroot: ' + Server.http_cfg.docroot);
-    return Server.http_cfg.docroot;
+    logger.loginfo('using html docroot: ' + Server.http.cfg.docroot);
+    return Server.http.cfg.docroot;
 };
 
 Server.handle404 = function(req, res){

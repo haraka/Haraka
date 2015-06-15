@@ -165,7 +165,8 @@ exports.get = {
             main: { bool_true: 'true', bool_false: 'false', str_true: 'true', str_false: 'false' },
             sect1: { bool_true: 'true', bool_false: 'false', str_true: 'true', str_false: 'false' },
             whitespace: { str_no_trail: 'true', str_trail: 'true' },
-            funnychars: { 'results.auth/auth_base.fail': 'fun' }
+            funnychars: { 'results.auth/auth_base.fail': 'fun' },
+            empty_values: { first: undefined, second: undefined }
         });
     },
 

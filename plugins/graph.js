@@ -54,11 +54,11 @@ exports.register = function () {
     plugin.register_hook('queue_ok',      'queue_ok');
 };
 
-exports.init_http = function (next, server, app) {
+exports.init_http = function (next, server) {
     var plugin = this;
 
-    app.use('/graph/data',  plugin.handle_data);
-    app.use('/graph/',      plugin.handle_root);
+    server.http.app.use('/graph/data',  plugin.handle_data);
+    server.http.app.use('/graph/',      plugin.handle_root);
 
     return next();
 };
