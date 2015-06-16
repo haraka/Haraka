@@ -86,8 +86,12 @@ exports.check_user = function (next, connection, credentials, method) {
     var passwd_ok = function (valid, message) {
         if (valid) {
             connection.relaying = true;
-            connection.results.add({name:'relay'}, {pass: 'auth'});
-            connection.results.add(plugin, {pass: method});
+            connection.results.add({name:'relay'}, {pass: plugin.name});
+            connection.results.add({name:'auth'}, {
+                pass: plugin.name,
+                method: method,
+                user: credentials[0],
+            });
             connection.respond(235, ((message) ? message : "Authentication successful"), function () {
                 connection.authheader = "(authenticated bits=0)\n";
                 connection.auth_results('auth=pass (' +
@@ -103,7 +107,9 @@ exports.check_user = function (next, connection, credentials, method) {
             connection.notes.auth_fails = 0;
         }
         connection.notes.auth_fails++;
-        connection.results.add(plugin, {fail: method});
+        connection.results.add({name: 'auth'}, {
+            fail: plugin.name + '/' + method,
+        });
 
         connection.notes.auth_login_userlogin = null;
         connection.notes.auth_login_asked_login = false;
