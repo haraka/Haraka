@@ -211,6 +211,7 @@ function Connection(client, server) {
     this.max_data_line_length = config.get('max_data_line_length') || 992;
     this.results = new ResultStore(this);
     this.errors = 0;
+    this.last_rcpt_msg = null;
     setupClient(this);
 }
 
@@ -985,6 +986,7 @@ Connection.prototype.rcpt_ok_respond = function (retval, msg) {
         this.results.add(this, {err: 'rcpt_ok_respond found no transaction'});
         return;
     }
+    if (!msg) msg = this.last_rcpt_msg;
     var rcpt = this.transaction.rcpt_to[this.transaction.rcpt_to.length - 1];
     var dmsg = "recipient " + rcpt.format();
     // Log OK instead of CONT as this hook only runs if hook_rcpt returns OK
@@ -1070,6 +1072,8 @@ Connection.prototype.rcpt_respond = function(retval, msg) {
             });
             break;
         case constants.ok:
+            // Store any msg for rcpt_ok
+            this.last_rcpt_msg = msg;
             plugins.run_hooks('rcpt_ok', this, rcpt);
             break;
         default:
