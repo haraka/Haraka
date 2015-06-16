@@ -352,7 +352,7 @@ plugins.run_next_hook = function (hook, object, params) {
     item = object.hooks_to_run.shift();
     item.push(cancel);
 
-    if (item[0].timeout && hook !== 'log') {
+    if (hook !== 'log' && item[0].timeout) {
         timeout_id = setTimeout(function () {
             timed_out = true;
             object.logcrit('Plugin ' + item[0].name + ' timed out on hook ' +
