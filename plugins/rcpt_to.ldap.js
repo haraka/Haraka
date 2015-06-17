@@ -4,7 +4,7 @@ var util = require('util');
 
 exports.register = function() {
     var plugin = this;
-    plugin.inherits('host_list_base');
+    plugin.inherits('rcpt_to.host_list_base');
 
     try {
         plugin.ldap = require('ldapjs');

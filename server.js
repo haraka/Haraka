@@ -280,7 +280,7 @@ Server.setup_http_listeners = function () {
             logger.logerror('Failed to setup http routes: ' + err.message);
         }
 
-        app.get('/plugins', Server.http_plugins);
+        plugins.run_hooks('init_http', Server);
         app.use(Server.http.express.static(Server.get_http_docroot()));
         app.use(Server.handle404);
     };
@@ -302,7 +302,6 @@ Server.init_master_respond = function (retval, msg) {
     if (!(cluster && c.nodes)) {
         out.load_queue();
         Server.setup_http_listeners();
-        plugins.run_hooks('init_http', Server);
         return;
     }
 
@@ -359,7 +358,6 @@ Server.init_child_respond = function (retval, msg) {
         case constants.ok:
         case constants.cont:
             Server.setup_http_listeners();
-            plugins.run_hooks('init_http', Server);
             return;
     }
 
@@ -449,8 +447,4 @@ Server.handle404 = function(req, res){
     }
 
     res.status(404).send('Not found!');
-};
-
-Server.http_plugins = function(req, res) {
-    return res.json({ plugins: Server.hooks_to_run });
 };

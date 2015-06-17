@@ -177,7 +177,7 @@ exports.hook_queue_outbound = function (next, connection) {
             domain = keydir.split('/').pop();
             connection.logdebug(plugin, 'dkim_domain: '+domain);
             private_key = plugin.load_key('dkim/'+domain+'/private');
-            selector    = plugin.load_key('dkim/'+domain+'/selector');
+            selector    = plugin.load_key('dkim/'+domain+'/selector').trim();
         }
 
         if (!plugin.has_key_data(connection,domain,selector,private_key)) {
