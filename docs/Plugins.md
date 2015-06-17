@@ -83,6 +83,11 @@ method and hook it:
 When the earlier hook calls `next()` (without parameters) it continues
 to the next registered hook.
 
+If you have a single hook function that runs on multiple hooks you can
+determine which hook it is running on when it is called by checking the
+`hook` property of the first argument received by that hook (this will
+typically be `connection` or `hmail`) e.g. `connection.hook`
+
 The Next Function
 =================
 
