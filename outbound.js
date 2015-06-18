@@ -633,7 +633,7 @@ function HMailItem (filename, path, notes) {
     this.file_size    = 0;
     this.next_cb      = dummy_func;
     this.bounce_error = null;
-
+    this.hook         = null;
     this.size_file();
 }
 

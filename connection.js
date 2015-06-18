@@ -212,6 +212,7 @@ function Connection(client, server) {
     this.results = new ResultStore(this);
     this.errors = 0;
     this.last_rcpt_msg = null;
+    this.hook = null;
     setupClient(this);
 }
 
