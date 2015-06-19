@@ -258,8 +258,7 @@ exports.add_headers = function (next, connection) {
     var received = [];
 
     var rh = plugin.received_headers(connection);
-    if ( rh) { received.push(rh); }
-    if (!rh) { plugin.user_agent(connection); } // No received headers.
+    if (rh) received.push(rh);
 
     var oh = plugin.originating_headers(connection);
     if (oh) { received.push(oh); }
@@ -351,10 +350,13 @@ exports.received_headers = function (connection) {
         if (net_utils.is_private_ip(match[1])) continue;  // exclude private IP
 
         var gi = plugin.get_geoip(match[1]);
-        var country = gi.countryCode || gi.code || 'UNKNOWN';
-        connection.loginfo(plugin, 'received=' + match[1] +
-                ' country=' + country);
-        results.push(match[1] + ':' + country);
+        var country = gi ? (gi.countryCode || gi.code) : '';
+        var logmsg = 'received=' + match[1];
+        if (country) {
+            logmsg += ' country=' + country;
+            results.push(match[1] + ':' + country);
+        }
+        connection.loginfo(plugin, logmsg);
     }
     return results;
 };
