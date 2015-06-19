@@ -192,9 +192,9 @@ exports.rdns_access = {
         this.plugin.init_config();
         this.plugin.init_lists();
         var cb = function (rc) {
-            // console.log(this.connection.results);
+            // console.log(this.connection.results.get('access'));
             test.equal(undefined, rc);
-            test.ok(this.connection.results.get('access').pass.length);
+            test.ok(this.connection.results.get('access').msg.length);
             test.done();
         }.bind(this);
         this.connection.remote_ip='1.1.1.1';
@@ -261,7 +261,7 @@ exports.helo_access = {
         var cb = function (rc) {
             var r = this.connection.results.get('access');
             test.equal(undefined, rc);
-            test.ok(r && r.pass && r.pass.length);
+            test.ok(r && r.msg && r.msg.length);
             test.done();
         }.bind(this);
         this.plugin.cfg.check.helo=true;
@@ -293,7 +293,7 @@ exports.mail_from_access = {
         this.plugin.init_lists();
         var cb = function (rc) {
             test.equal(undefined, rc);
-            test.ok(this.connection.transaction.results.get('access').pass.length);
+            test.ok(this.connection.transaction.results.get('access').msg.length);
             test.done();
         }.bind(this);
         this.plugin.mail_from_access(cb, this.connection, [new Address('<list@unknown.com>')]);
@@ -359,7 +359,7 @@ exports.rcpt_to_access = {
         this.plugin.init_lists();
         var cb = function (rc) {
             test.equal(undefined, rc);
-            test.ok(this.connection.transaction.results.get('access').pass.length);
+            test.ok(this.connection.transaction.results.get('access').msg.length);
             test.done();
         }.bind(this);
         this.plugin.rcpt_to_access(cb, this.connection, [new Address('<user@example.com>')]);

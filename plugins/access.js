@@ -126,45 +126,48 @@ exports.init_lists = function () {
     };
 };
 
+exports.get_domain = function (hook, connection, params) {
+
+    switch (hook) {
+        case 'connect':
+            if (!connection.remote_host) return;
+            if (connection.remote_host === 'DNSERROR') return;
+            if (connection.remote_host === 'Unknown') return;
+            return connection.remote_host;
+        case 'helo':
+            if (net_utils.is_ipv4_literal(params)) return;
+            return params;
+        case 'mail':
+        case 'rcpt':
+            if (params && params[0]) {
+                return params[0].host;
+            }
+    }
+    return;
+};
+
 exports.any = function (next, connection, params) {
     var plugin = this;
     if (!plugin.cfg.check.any) { return next(); }
 
-    // step 1: get a domain name from whatever info is available
-    var domain;
-    var email;
-    var hook = '';
-    try {
-        if (params === undefined) {              // connect
-            hook = 'connect';
-            var h = connection.remote_host;
-            if (!h) { return next(); }
-            if (h === 'DNSERROR' || h === 'Unknown') { return next(); }
-            domain = h;
-        }
-        else if (typeof params === 'string') {   // HELO/EHLO
-            hook = 'helo';
-            domain = params;
-            if (net_utils.is_ipv4_literal(domain)) { return next(); }
-        }
-        else if (Array.isArray(params)) {        // MAIL FROM / RCPT TO
-            hook = 'mf/rt';
-            email = params[0].address();
-            domain = params[0].host;
-        }
-    }
-    catch (e) {
-        connection.logerror(plugin, "oops: " + e);
+    var hook = connection.hook;
+    if (!hook) {
+        connection.logerror(plugin, "hook detection failed");
         return next();
     }
+
+    // step 1: get a domain name from whatever info is available
+    var domain = plugin.get_domain(hook, connection, params);
     if (!domain) {
-        connection.logerror(plugin, "no domain!");
+        connection.logdebug(plugin, "domain detect failed on hook: " + hook);
         return next();
     }
     if (!/\./.test(domain)) {
-        connection.loginfo(plugin, "invalid domain: " + domain);
+        connection.results.add(plugin, {
+            fail: 'invalid domain: ' + domain, emit: true});
         return next();
     }
+
     var org_domain = net_utils.get_organizational_domain(domain);
     if (!org_domain) {
         connection.logerror(plugin, "no org domain from " + domain);
@@ -178,28 +181,29 @@ exports.any = function (next, connection, params) {
         cr.add(plugin, {pass: file, whitelist: true, emit: true});
         return next();
     }
-    if (email) {
-        if (plugin.in_list('domain', 'any', '!'+email)) {
-            cr.add(plugin, {pass: file, whitelist: true, emit: true});
-            return next();
-        }
+
+    var email;
+    if (hook === 'mail' || hook === 'rcpt') { email = params[0].address(); }
+    if (email && plugin.in_list('domain', 'any', '!'+email)) {
+        cr.add(plugin, {pass: file, whitelist: true, emit: true});
+        return next();
     }
-    else {
-        if (plugin.in_list('domain', 'any', '!'+domain)) {
-            cr.add(plugin, {pass: file, whitelist: true, emit: true});
-            return next();
-        }
+
+    if (plugin.in_list('domain', 'any', '!'+domain)) {
+        cr.add(plugin, {pass: file, whitelist: true, emit: true});
+        return next();
     }
 
     // step 3: check for blacklist
     file = plugin.cfg.domain.any;
     if (plugin.in_list('domain', 'any', org_domain)) {
-        cr.add(plugin, {fail: file+'('+org_domain+')', blacklist: true, emit: true});
+        cr.add(plugin, {
+            fail: file+'('+org_domain+')', blacklist: true, emit: true});
         return next(DENY, "You are not welcome here.");
     }
 
     var pass_msg = hook ? (hook + ':any') : 'any';
-    cr.add(plugin, {pass: pass_msg, emit: true});
+    cr.add(plugin, {msg: 'unlisted(' + pass_msg + ')' });
     return next();
 };
 
@@ -207,9 +211,8 @@ exports.rdns_access = function(next, connection) {
     var plugin = this;
     if (!plugin.cfg.check.conn) { return next(); }
 
-    // TODO: can this really happen?
     if (!connection.remote_ip) {
-        connection.results.add(plugin, {err: 'no IP??', emit: true});
+        connection.results.add(plugin, {err: 'no IP?!' });
         return next();
     }
 
@@ -227,14 +230,16 @@ exports.rdns_access = function(next, connection) {
         file = plugin.cfg.white.conn;
         connection.logdebug(plugin, 'checking ' + addr + ' against ' + file);
         if (plugin.in_list('white', 'conn', addr)) {
-            connection.results.add(plugin, {pass: file, whitelist: true, emit: true});
+            connection.results.add(plugin, {
+                pass: file, whitelist: true, emit: true});
             return next();
         }
 
         file = plugin.cfg.re.white.conn;
         connection.logdebug(plugin, 'checking ' + addr + ' against ' + file);
         if (plugin.in_re_list('white', 'conn', addr)) {
-            connection.results.add(plugin, {pass: file, whitelist: true, emit: true});
+            connection.results.add(plugin, {
+                pass: file, whitelist: true, emit: true});
             return next();
         }
     }
@@ -248,18 +253,20 @@ exports.rdns_access = function(next, connection) {
         file = plugin.cfg.black.conn;
         if (plugin.in_list('black', 'conn', addr)) {
             connection.results.add(plugin, {fail: file, emit: true});
-            return next(DENYDISCONNECT, host + ' [' + r_ip + '] ' + plugin.cfg.deny_msg.conn);
+            return next(DENYDISCONNECT,
+                    host + ' [' + r_ip + '] ' + plugin.cfg.deny_msg.conn);
         }
 
         file = plugin.cfg.re.black.conn;
         connection.logdebug(plugin, 'checking ' + addr + ' against ' + file);
         if (plugin.in_re_list('black', 'conn', addr)) {
             connection.results.add(plugin, {fail: file, emit: true});
-            return next(DENYDISCONNECT, host + ' [' + r_ip + '] ' + plugin.cfg.deny_msg.conn);
+            return next(DENYDISCONNECT,
+                    host + ' [' + r_ip + '] ' + plugin.cfg.deny_msg.conn);
         }
     }
 
-    connection.results.add(plugin, {pass: 'unlisted(conn)', emit: true});
+    connection.results.add(plugin, {msg: 'unlisted(conn)' });
     return next();
 };
 
@@ -273,7 +280,7 @@ exports.helo_access = function(next, connection, helo) {
         return next(DENY, helo + ' ' + plugin.cfg.deny_msg.helo);
     }
 
-    connection.results.add(plugin, {pass: 'unlisted(helo)', emit: true});
+    connection.results.add(plugin, {msg: 'unlisted(helo)' });
     return next();
 };
 
@@ -283,7 +290,8 @@ exports.mail_from_access = function(next, connection, params) {
 
     var mail_from = params[0].address();
     if (!mail_from) {
-        connection.transaction.results.add(plugin, {skip: 'null sender', emit: true});
+        connection.transaction.results.add(plugin, {
+            skip: 'null sender', emit: true});
         return next();
     }
 
@@ -316,7 +324,7 @@ exports.mail_from_access = function(next, connection, params) {
         return next(DENY, mail_from + ' ' + plugin.cfg.deny_msg.mail);
     }
 
-    connection.transaction.results.add(plugin, {pass: 'unlisted(mail)', emit: true});
+    connection.transaction.results.add(plugin, {msg: 'unlisted(mail)' });
     return next();
 };
 
@@ -328,7 +336,8 @@ exports.rcpt_to_access = function(next, connection, params) {
 
     // address whitelist checks
     if (!rcpt_to) {
-        connection.transaction.results.add(plugin, {skip: 'null rcpt', emit: true});
+        connection.transaction.results.add(plugin, {
+            skip: 'null rcpt', emit: true});
         return next();
     }
 
@@ -357,7 +366,7 @@ exports.rcpt_to_access = function(next, connection, params) {
         return next(DENY, rcpt_to + ' ' + plugin.cfg.deny_msg.rcpt);
     }
 
-    connection.transaction.results.add(plugin, {pass: 'unlisted(rcpt)', emit: true});
+    connection.transaction.results.add(plugin, {msg: 'unlisted(rcpt)' });
     return next();
 };
 
@@ -370,7 +379,8 @@ exports.data_any = function(next, connection) {
 
     var hdr_from = connection.transaction.header.get('From');
     if (!hdr_from) {
-        connection.transaction.results.add(plugin, {fail: 'data(missing_from)'});
+        connection.transaction.results.add(plugin, {
+            fail: 'data(missing_from)'});
         return next();
     }
 
@@ -379,16 +389,18 @@ exports.data_any = function(next, connection) {
 
     var file = plugin.cfg.domain.any;
     if (plugin.in_list('domain', 'any', '!'+hdr_dom)) {
-        connection.results.add(plugin, {pass: file, whitelist: true, emit: true});
+        connection.results.add(plugin, {
+            pass: file, whitelist: true, emit: true});
         return next();
     }
 
     if (plugin.in_list('domain', 'any', hdr_dom)) {
-        connection.results.add(plugin, {fail: file+'('+hdr_dom+')', blacklist: true, emit: true});
+        connection.results.add(plugin, {
+            fail: file+'('+hdr_dom+')', blacklist: true, emit: true});
         return next(DENY, "Email from that domain is not accepted here.");
     }
 
-    connection.results.add(plugin, {pass: 'any', emit: true});
+    connection.results.add(plugin, {msg: 'unlisted(any)' });
     return next();
 };
 
@@ -419,8 +431,10 @@ exports.in_file = function (file_name, address, connection) {
     var plugin = this;
     // using indexOf on an array here is about 20x slower than testing against
     // a key in an object
-    connection.logdebug(plugin, 'checking ' + address + ' against ' + file_name);
-    return (plugin.config.get(file_name, 'list').indexOf(address) === -1) ? false : true;
+    connection.logdebug(plugin, 'checking ' + address +
+            ' against ' + file_name);
+    return (plugin.config.get(file_name, 'list')
+            .indexOf(address) === -1) ? false : true;
 };
 
 exports.in_re_file = function (file_name, address) {
@@ -428,9 +442,10 @@ exports.in_re_file = function (file_name, address) {
     // badly if affected performance. It took 8.5x longer to run than
     // in_re_list.
     this.logdebug(this, 'checking ' + address + ' against ' + file_name);
-    var re_list = utils.valid_regexes(this.config.get(file_name, 'list'), file_name);
+    var re_list = utils.valid_regexes(
+            this.config.get(file_name, 'list'), file_name);
     for (var i=0; i < re_list.length; i++) {
-        if (new RegExp('^' + re_list[i] + '$', 'i').test(address)) { return true; }
+        if (new RegExp('^' + re_list[i] + '$', 'i').test(address)) return true;
     }
     return false;
 };
@@ -511,6 +526,11 @@ exports.load_domain_file = function (type, phase) {
         // convert list items to LC at load (much faster than at run time)
         for (var i=0; i < list.length; i++) {
             if (list[i][0] === '!') {  // whitelist entry
+                plugin.list[type][phase][list[i].toLowerCase()] = true;
+                continue;
+            }
+
+            if (/@/.test(list[i][0])) {  // email address
                 plugin.list[type][phase][list[i].toLowerCase()] = true;
                 continue;
             }
