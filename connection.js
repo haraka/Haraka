@@ -372,7 +372,7 @@ Connection.prototype._process_data = function() {
                 this_line = this_line.toString().replace(/\r?\n/,'');
                 this.logdebug('[early_talker] state=' + this.state + ' esmtp=' + this.esmtp + ' line="' + this_line + '"');
             }
-            this.early_talker = 1;
+            this.early_talker = true;
             // If you talk early, we're going to give you a delay
             setTimeout(function() { self._process_data(); }, this.early_talker_delay);
             break;
