@@ -5,8 +5,9 @@ var utils     = require('./utils');
 exports.register = function() {
     var plugin = this;
 
-    plugin.init_config();
+    plugin.init_config();      // init plugin.cfg
     plugin.init_lists();
+    plugin.load_access_ini();  // update with *.ini settings
 
     var p;
     for (p in plugin.cfg.white)    { plugin.load_file('white', p); }
@@ -74,43 +75,45 @@ exports.init_config = function() {
             },
         },
     };
+};
 
-    var load_access_ini = function() {
-        var cfg = plugin.config.get('access.ini', {
-            booleans: [
-                '+check.any',
-                '+check.conn',
-                '-check.helo',
-                '+check.mail',
-                '+check.rcpt',
-            ],
-        }, load_access_ini);
+exports.load_access_ini = function () {
+    var plugin = this;
+    var cfg = plugin.config.get('access.ini', {
+        booleans: [
+            '+check.any',
+            '+check.conn',
+            '-check.helo',
+            '+check.mail',
+            '+check.rcpt',
+        ],
+    }, function () {
+        plugin.load_access_ini();
+    });
 
-        plugin.cfg.check = cfg.check;
-        if (cfg.deny_msg) {
-            var p;
-            for (p in plugin.cfg.deny_msg) {
-                if (cfg.deny_msg[p]) {
-                    plugin.cfg.deny_msg[p] = cfg.deny_msg[p];
-                }
+    plugin.cfg.check = cfg.check;
+    if (cfg.deny_msg) {
+        var p;
+        for (p in plugin.cfg.deny_msg) {
+            if (cfg.deny_msg[p]) {
+                plugin.cfg.deny_msg[p] = cfg.deny_msg[p];
             }
         }
+    }
 
-        // backwards compatibility
-        var mf_cfg = plugin.config.get('mail_from.access.ini');
-        if (mf_cfg && mf_cfg.general && mf_cfg.general.deny_msg) {
-            plugin.cfg.deny_msg.mail = mf_cfg.general.deny_msg;
-        }
-        var rcpt_cfg = plugin.config.get('rcpt_to.access.ini');
-        if (rcpt_cfg && rcpt_cfg.general && rcpt_cfg.general.deny_msg) {
-            plugin.cfg.deny_msg.rcpt = rcpt_cfg.general.deny_msg;
-        }
-        var rdns_cfg = plugin.config.get('connect.rdns_access.ini');
-        if (rdns_cfg && rdns_cfg.general && rdns_cfg.general.deny_msg) {
-            plugin.cfg.deny_msg.conn = rdns_cfg.general.deny_msg;
-        }
-    };
-    load_access_ini();
+    // backwards compatibility
+    var mf_cfg = plugin.config.get('mail_from.access.ini');
+    if (mf_cfg && mf_cfg.general && mf_cfg.general.deny_msg) {
+        plugin.cfg.deny_msg.mail = mf_cfg.general.deny_msg;
+    }
+    var rcpt_cfg = plugin.config.get('rcpt_to.access.ini');
+    if (rcpt_cfg && rcpt_cfg.general && rcpt_cfg.general.deny_msg) {
+        plugin.cfg.deny_msg.rcpt = rcpt_cfg.general.deny_msg;
+    }
+    var rdns_cfg = plugin.config.get('connect.rdns_access.ini');
+    if (rdns_cfg && rdns_cfg.general && rdns_cfg.general.deny_msg) {
+        plugin.cfg.deny_msg.conn = rdns_cfg.general.deny_msg;
+    }
 };
 
 exports.init_lists = function () {
@@ -456,26 +459,24 @@ exports.load_file = function (type, phase) {
         plugin.loginfo(plugin, "skipping " + plugin.cfg[type][phase]);
         return;
     }
-    function load_em_high () {
-        var file_name = plugin.cfg[type][phase];
 
-        // load config with a self-referential callback
-        var list = plugin.config.get(file_name, 'list', function () {
-            load_em_high();
-        });
+    var file_name = plugin.cfg[type][phase];
 
-        // init the list store, type is white or black
-        if (!plugin.list)       { plugin.list = { type: {} }; }
-        if (!plugin.list[type]) { plugin.list[type] = {}; }
+    // load config with a self-referential callback
+    var list = plugin.config.get(file_name, 'list', function () {
+        plugin.load_file(type, phase);
+    });
 
-        // toLower when loading spends a fraction of a second at load time
-        // to save millions of seconds during run time.
-        var i;
-        for (i=0; i<list.length; i++) {
-            plugin.list[type][phase][list[i].toLowerCase()] = true;
-        }
+    // init the list store, type is white or black
+    if (!plugin.list)       { plugin.list = { type: {} }; }
+    if (!plugin.list[type]) { plugin.list[type] = {}; }
+
+    // toLower when loading spends a fraction of a second at load time
+    // to save millions of seconds during run time.
+    var i;
+    for (i=0; i<list.length; i++) {
+        plugin.list[type][phase][list[i].toLowerCase()] = true;
     }
-    load_em_high();
 };
 
 exports.load_re_file = function (type, phase) {
@@ -484,26 +485,23 @@ exports.load_re_file = function (type, phase) {
         plugin.loginfo(plugin, "skipping " + plugin.cfg.re[type][phase]);
         return;
     }
-    var load_re = function () {
-        var file_name = plugin.cfg.re[type][phase];
 
-        var regex_list = utils.valid_regexes(
-                plugin.config.get(
-                    file_name,
-                    'list',
-                    function () { load_re(); }
-                    )
-                );
+    var regex_list = utils.valid_regexes(
+            plugin.config.get(
+                plugin.cfg.re[type][phase],
+                'list',
+                function () {
+                    plugin.load_re_file(type, phase);
+                })
+            );
 
-        // initialize the list store
-        if (!plugin.list_re)       { plugin.list_re = { type: {} }; }
-        if (!plugin.list_re[type]) { plugin.list_re[type] = {}; }
+    // initialize the list store
+    if (!plugin.list_re)       plugin.list_re = { type: {} };
+    if (!plugin.list_re[type]) plugin.list_re[type] = {};
 
-        // compile the regexes at the designated location
-        plugin.list_re[type][phase] =
-            new RegExp('^(' + regex_list.join('|') + ')$', 'i');
-    };
-    load_re();
+    // compile the regexes at the designated location
+    plugin.list_re[type][phase] =
+        new RegExp('^(' + regex_list.join('|') + ')$', 'i');
 };
 
 exports.load_domain_file = function (type, phase) {
@@ -512,33 +510,30 @@ exports.load_domain_file = function (type, phase) {
         plugin.loginfo(plugin, "skipping " + plugin.cfg[type][phase]);
         return;
     }
-    function load_domains () {
-        var file_name = plugin.cfg[type][phase];
 
-        var list = plugin.config.get(file_name, 'list', function () {
-            load_domains();
-        });
+    var file_name = plugin.cfg[type][phase];
+    var list = plugin.config.get(file_name, 'list', function () {
+        plugin.load_domain_file(type, phase);
+    });
 
-        // init the list store, if needed
-        if (!plugin.list)       { plugin.list = { type: {} }; }
-        if (!plugin.list[type]) { plugin.list[type] = {}; }
+    // init the list store, if needed
+    if (!plugin.list)       { plugin.list = { type: {} }; }
+    if (!plugin.list[type]) { plugin.list[type] = {}; }
 
-        // convert list items to LC at load (much faster than at run time)
-        for (var i=0; i < list.length; i++) {
-            if (list[i][0] === '!') {  // whitelist entry
-                plugin.list[type][phase][list[i].toLowerCase()] = true;
-                continue;
-            }
-
-            if (/@/.test(list[i][0])) {  // email address
-                plugin.list[type][phase][list[i].toLowerCase()] = true;
-                continue;
-            }
-
-            var d = net_utils.get_organizational_domain(list[i]);
-            if (!d) { continue; }
-            plugin.list[type][phase][d.toLowerCase()] = true;
+    // convert list items to LC at load (much faster than at run time)
+    for (var i=0; i < list.length; i++) {
+        if (list[i][0] === '!') {  // whitelist entry
+            plugin.list[type][phase][list[i].toLowerCase()] = true;
+            continue;
         }
+
+        if (/@/.test(list[i][0])) {  // email address
+            plugin.list[type][phase][list[i].toLowerCase()] = true;
+            continue;
+        }
+
+        var d = net_utils.get_organizational_domain(list[i]);
+        if (!d) { continue; }
+        plugin.list[type][phase][d.toLowerCase()] = true;
     }
-    load_domains();
 };
