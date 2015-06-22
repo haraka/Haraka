@@ -69,3 +69,6 @@ config.arrange_args = function (args) {
 
     return [fs_name, fs_type, cb, options];
 };
+
+// Load smtp.json or smtp.yaml as early as possible
+var cfg = config.get('smtp.json');
