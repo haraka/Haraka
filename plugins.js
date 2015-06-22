@@ -334,7 +334,7 @@ plugins.run_next_hook = function (hook, object, params) {
         }
 
         var respond_method = hook + '_respond';
-        if (item && is_deny_retval(retval)) {
+        if (item && is_deny_retval(retval) && hook.substr(0,5) !== 'init_') {
             object.deny_respond =
                 get_denyfn(object, hook, params, retval, msg, respond_method);
             plugins.run_hooks('deny', object,
@@ -368,6 +368,7 @@ plugins.run_next_hook = function (hook, object, params) {
 
     try {
         object.current_hook = item;
+        object.hook = hook;
         item[0][ item[1] ].call(item[0], callback, object, params);
     }
     catch (err) {

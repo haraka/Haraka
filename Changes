@@ -9,8 +9,20 @@
     * limit plugin (connection concurrency, errors, unrecognized commands)
     * plugins can now be npm packages (see also #946)
     * built-in HTTP server (Express backed)
+    * ESETS AV plugin
+    * DCC plugin (incomplete)
+    * Add LOGIN support to XCLIENT
+    * backscatterer plugin
 
 * Improvements
+    * 
+    * toobusy: only run checks if toobusy.js installed and loads
+    * HAProxy: set local_ip, local_port and remote_port
+    * save auth pass/fail/user to result_store
+    * ini files no longer require values (useful for storing lists) 
+    * connection: add MAIL and RCPT to results
+    * results_store: enable 'emit' feature for .push()
+    * add support for custom Outbound Received header value (@zombified)
     * save smtp_forward result to result_store 
     * auth_base: permit a return message (@DarkSorrow)
     * add DSN.create() and RFC 4954 support
@@ -36,6 +48,9 @@
     * updated ubuntu upstart script
 
 * Bug Fixes
+    * corrected hook_rcpt log code hook_rcpt_ok returns CONT
+    * fix crash bug when loglevel = LOGDEBUG
+    * corrected pathname in rcpt.ldap plugin (@abhas)
     * added helo.checks boolean for proto_mismatch
     * make rate_limit redis keys always expire @celesteking
     * dkim_sign: Buffer.concat expects an array of buffers
