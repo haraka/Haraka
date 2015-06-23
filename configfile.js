@@ -30,6 +30,7 @@ cfreader._watchers = {};
 cfreader._enoent_timer = false;
 cfreader._enoent_files = {};
 cfreader._sedation_timers = {};
+cfreader._overrides = {};
 
 cfreader.on_watch_event = function (name, type, options, cb) {
     return function (fse, filename) {
@@ -120,15 +121,25 @@ cfreader.watch_file = function (name, type, cb, options) {
 };
 
 cfreader.get_cache_key = function (name, options) {
-    // this ordering of objects isn't guaranteed to be consistent, but I've
-    // heard that it typically is.
-    if (options) return name + JSON.stringify(options);
+    var result;
 
-    if (cfreader._read_args[name] && cfreader._read_args[name].options) {
-        return name + JSON.stringify(cfreader._read_args[name].options);
+    // Ignore options etc. if this is an overriden value
+    if (cfreader._overrides[name]) {
+        result = name;
     }
-
-    return name;
+    else if (options) {
+        // this ordering of objects isn't guaranteed to be consistent, but I've
+        // heard that it typically is.
+        result = name + JSON.stringify(options);
+    }
+    else if (cfreader._read_args[name] && cfreader._read_args[name].options) {
+        result = name + JSON.stringify(cfreader._read_args[name].options);
+    }
+    else {
+        result = name;
+    }
+ 
+    return result;
 };
 
 cfreader.read_config = function(name, type, cb, options) {
@@ -145,7 +156,7 @@ cfreader.read_config = function(name, type, cb, options) {
     // Check cache first
     if (!process.env.WITHOUT_CONFIG_CACHE) {
         var cache_key = cfreader.get_cache_key(name, options);
-        if (cache_key in cfreader._config_cache) {
+        if (cfreader._config_cache[cache_key]) {
             //logger.logdebug('Returning cached file: ' + name);
             return cfreader._config_cache[cache_key];
         }
@@ -308,9 +319,14 @@ cfreader.process_file_overrides = function (name, result) {
     var keys = Object.keys(result);
     for (var i=0; i<keys.length; i++) {
         if (keys[i].substr(0,1) === '!') {
+            var ofp = path.join(cfreader.config_path, keys[i].substr(1));
+            cfreader._overrides[ofp] = true;
             // Overwrite the config cache for this filename
-            logger.logwarn('Overriding file ' + keys[i].substr(1) + ' with configuration from ' + name);
-            cfreader._config_cache[path.join(cfreader.config_path, keys[i].substr(1))] = result[keys[i]];
+            cfreader._config_cache[ofp] = result[keys[i]];
+            // Call any reload callbacks for the overriden filename
+            if (cfreader._read_args[ofp] && typeof cfreader._read_args[ofp].cb === 'function') {
+                cfreader._read_args[ofp].cb();
+            }
         }
     }
 };
