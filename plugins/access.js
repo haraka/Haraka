@@ -138,6 +138,7 @@ exports.get_domain = function (hook, connection, params) {
             if (connection.remote_host === 'Unknown') return;
             return connection.remote_host;
         case 'helo':
+        case 'ehlo':
             if (net_utils.is_ipv4_literal(params)) return;
             return params;
         case 'mail':
@@ -181,19 +182,19 @@ exports.any = function (next, connection, params) {
     var file = plugin.cfg.domain.any;
     var cr = connection.results;
     if (plugin.in_list('domain', 'any', '!'+org_domain)) {
-        cr.add(plugin, {pass: file, whitelist: true, emit: true});
+        cr.add(plugin, {pass: hook +':' + file, whitelist: true, emit: true});
         return next();
     }
 
     var email;
     if (hook === 'mail' || hook === 'rcpt') { email = params[0].address(); }
     if (email && plugin.in_list('domain', 'any', '!'+email)) {
-        cr.add(plugin, {pass: file, whitelist: true, emit: true});
+        cr.add(plugin, {pass: hook +':'+ file, whitelist: true, emit: true});
         return next();
     }
 
     if (plugin.in_list('domain', 'any', '!'+domain)) {
-        cr.add(plugin, {pass: file, whitelist: true, emit: true});
+        cr.add(plugin, {pass: hook +':'+ file, whitelist: true, emit: true});
         return next();
     }
 
@@ -375,7 +376,7 @@ exports.rcpt_to_access = function(next, connection, params) {
 
 exports.data_any = function(next, connection) {
     var plugin = this;
-    if (!plugin.cfg.check.data) {
+    if (!plugin.cfg.check.data && !plugin.cfg.check.any) {
         connection.transaction.results.add(plugin, {skip: 'data(disabled)'});
         return next();
     }
