@@ -22,7 +22,7 @@ exports.plugin = {
 
 var toPath = './config/' + piName + '.timeout';
 
-var toVals = [ '0', '3', '60', 'apple'];
+var toVals = [ 3, 0, 60, 'apple'];
 var getVal = function () {
     return toVals.shift();
 };
@@ -36,13 +36,13 @@ exports.get_timeout = {
     tearDown : function (done) {
         fs.unlink(toPath, done);
     },
-    '0s' : function (test) {
+    '3s' : function (test) {
         var pi = new plugin.Plugin(piName);
         test.expect(1);
         test.equal( pi.timeout, this.to );
         test.done();
     },
-    '3s' : function (test) {
+    '0s' : function (test) {
         var pi = new plugin.Plugin(piName);
         test.expect(1);
         test.equal( pi.timeout, this.to );

@@ -69,6 +69,7 @@ exports.load = function(name, options, regex) {
 };
 
 exports.empty = function (options) {
+    this.bool_matches = [];
     return this.init_booleans(options, { main: {} });
 };
 
