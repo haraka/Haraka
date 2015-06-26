@@ -271,5 +271,5 @@ successfully delivered.
 The callback parameter may be omitted if you don't need to handle errors
 should queueing to disk fail e.g:
 
-    outbound.send_email(form, to, contents);
+    outbound.send_email(from, to, contents);
 
