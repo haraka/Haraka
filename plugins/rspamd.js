@@ -159,6 +159,13 @@ exports.parse_response = function (rawData, connection) {
         return;
     }
 
+    if (Object.keys(data).length === 1 && data.error) {
+        connection.transaction.results.add(plugin, {
+            err: data.error
+        });
+        return;
+    }
+
     // copy those nested objects into a higher level object
     var dataClean = {};
     Object.keys(data.default).forEach(function (key) {
