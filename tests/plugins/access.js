@@ -11,6 +11,7 @@ var _set_up = function (done) {
 
     this.plugin = new Plugin('access');
     this.plugin.config = config;
+    this.plugin.register();
 
     this.connection = Connection.createConnection();
     this.connection.results = new ResultStore(this.connection);
@@ -21,6 +22,7 @@ var _set_up = function (done) {
     done();
 };
 
+/* jshint maxlen: 100 */
 exports.in_list = {
     setUp : _set_up,
     'white, mail': function (test) {
@@ -153,7 +155,6 @@ exports.load_re_file = {
     setUp : _set_up,
     'whitelist': function (test) {
         test.expect(3);
-        this.plugin.init_config();
         this.plugin.load_re_file('white', 'mail');
         test.ok(this.plugin.list_re);
         // console.log(this.plugin.temp);
@@ -189,12 +190,10 @@ exports.rdns_access = {
     setUp : _set_up,
     'no list': function (test) {
         test.expect(2);
-        this.plugin.init_config();
-        this.plugin.init_lists();
         var cb = function (rc) {
-            // console.log(this.connection.results);
+            // console.log(this.connection.results.get('access'));
             test.equal(undefined, rc);
-            test.ok(this.connection.results.get('access').pass.length);
+            test.ok(this.connection.results.get('access').msg.length);
             test.done();
         }.bind(this);
         this.connection.remote_ip='1.1.1.1';
@@ -203,8 +202,6 @@ exports.rdns_access = {
     },
     'whitelist': function (test) {
         test.expect(2);
-        this.plugin.init_config();
-        this.plugin.init_lists();
         var cb = function (rc) {
             // console.log(this.connection.results.get('access'));
             test.equal(undefined, rc);
@@ -219,8 +216,6 @@ exports.rdns_access = {
     },
     'blacklist': function (test) {
         test.expect(3);
-        this.plugin.init_config();
-        this.plugin.init_lists();
         var cb = function (rc, msg) {
             // console.log(this.connection.results.get('access'));
             test.equal(DENYDISCONNECT, rc);
@@ -235,8 +230,6 @@ exports.rdns_access = {
     },
     'blacklist regex': function (test) {
         test.expect(3);
-        this.plugin.init_config();
-        this.plugin.init_lists();
         var cb = function (rc, msg) {
             // console.log(this.connection.results.get('access'));
             test.equal(DENYDISCONNECT, rc);
@@ -256,12 +249,10 @@ exports.helo_access = {
     setUp : _set_up,
     'no list': function (test) {
         test.expect(2);
-        this.plugin.init_config();
-        this.plugin.init_lists();
         var cb = function (rc) {
             var r = this.connection.results.get('access');
             test.equal(undefined, rc);
-            test.ok(r && r.pass && r.pass.length);
+            test.ok(r && r.msg && r.msg.length);
             test.done();
         }.bind(this);
         this.plugin.cfg.check.helo=true;
@@ -269,8 +260,6 @@ exports.helo_access = {
     },
     'blacklisted regex': function (test) {
         test.expect(2);
-        this.plugin.init_config();
-        this.plugin.init_lists();
         var cb = function (rc) {
             test.equal(DENY, rc);
             var r = this.connection.results.get('access');
@@ -289,19 +278,15 @@ exports.mail_from_access = {
     setUp : _set_up,
     'no lists populated': function (test) {
         test.expect(2);
-        this.plugin.init_config();
-        this.plugin.init_lists();
         var cb = function (rc) {
             test.equal(undefined, rc);
-            test.ok(this.connection.transaction.results.get('access').pass.length);
+            test.ok(this.connection.transaction.results.get('access').msg.length);
             test.done();
         }.bind(this);
         this.plugin.mail_from_access(cb, this.connection, [new Address('<list@unknown.com>')]);
     },
     'whitelisted addr': function (test) {
         test.expect(2);
-        this.plugin.init_config();
-        this.plugin.init_lists();
         var cb = function (rc) {
             test.equal(undefined, rc);
             test.ok(this.connection.transaction.results.get('access').pass.length);
@@ -312,8 +297,6 @@ exports.mail_from_access = {
     },
     'blacklisted addr': function (test) {
         test.expect(2);
-        this.plugin.init_config();
-        this.plugin.init_lists();
         var cb = function (rc) {
             test.equal(DENY, rc);
             test.ok(this.connection.transaction.results.get('access').fail.length);
@@ -324,8 +307,6 @@ exports.mail_from_access = {
     },
     'blacklisted domain': function (test) {
         test.expect(2);
-        this.plugin.init_config();
-        this.plugin.init_lists();
         var cb = function (rc) {
             test.equal(DENY, rc);
             test.ok(this.connection.transaction.results.get('access').fail.length);
@@ -337,8 +318,6 @@ exports.mail_from_access = {
     },
     'blacklisted domain, white addr': function (test) {
         test.expect(2);
-        this.plugin.init_config();
-        this.plugin.init_lists();
         var cb = function (rc) {
             test.equal(undefined, rc);
             test.ok(this.connection.transaction.results.get('access').pass.length);
@@ -355,19 +334,15 @@ exports.rcpt_to_access = {
     setUp : _set_up,
     'no lists populated': function (test) {
         test.expect(2);
-        this.plugin.init_config();
-        this.plugin.init_lists();
         var cb = function (rc) {
             test.equal(undefined, rc);
-            test.ok(this.connection.transaction.results.get('access').pass.length);
+            test.ok(this.connection.transaction.results.get('access').msg.length);
             test.done();
         }.bind(this);
         this.plugin.rcpt_to_access(cb, this.connection, [new Address('<user@example.com>')]);
     },
     'whitelisted addr': function (test) {
         test.expect(2);
-        this.plugin.init_config();
-        this.plugin.init_lists();
         var cb = function (rc) {
             test.equal(undefined, rc);
             test.ok(this.connection.transaction.results.get('access').pass.length);
@@ -378,8 +353,6 @@ exports.rcpt_to_access = {
     },
     'blacklisted addr': function (test) {
         test.expect(2);
-        this.plugin.init_config();
-        this.plugin.init_lists();
         var cb = function (rc) {
             test.equal(DENY, rc);
             test.ok(this.connection.transaction.results.get('access').fail.length);
@@ -390,8 +363,6 @@ exports.rcpt_to_access = {
     },
     'blacklisted domain': function (test) {
         test.expect(2);
-        this.plugin.init_config();
-        this.plugin.init_lists();
         var cb = function (rc) {
             test.equal(DENY, rc);
             test.ok(this.connection.transaction.results.get('access').fail.length);
@@ -403,8 +374,6 @@ exports.rcpt_to_access = {
     },
     'blacklisted domain, white addr': function (test) {
         test.expect(2);
-        this.plugin.init_config();
-        this.plugin.init_lists();
         var cb = function (rc) {
             test.equal(undefined, rc);
             test.ok(this.connection.transaction.results.get('access').pass.length);
