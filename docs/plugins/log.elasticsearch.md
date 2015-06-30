@@ -193,7 +193,7 @@ curl -XPUT localhost:9200/_template/haraka_results -d '
                         }
                     }
                 },
-                "msg" : {
+                "message" : {
                     "properties" : {
                         "bytes" : { "type": "double" },
                         "envelope": {
@@ -239,7 +239,7 @@ curl -XPUT localhost:9200/_template/haraka_results -d '
                         }
                     }
                 },
-                "conn" : {
+                "connection" : {
                     "properties" : {
                         "count" : {
                             "properties" : {
