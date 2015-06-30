@@ -42,6 +42,19 @@ ResultStore.prototype.has = function (plugin_name, list, search) {
     return false;
 };
 
+ResultStore.prototype.redis_publish = function (name, obj) {
+    if (!this.conn.server || !this.conn.server.notes) return;
+    if (!this.conn.server.notes.redis) return;
+
+    var channel = 'result-' +
+        (this.conn.transaction ?
+         this.conn.transaction.uuid :
+         this.conn.uuid);
+
+    this.conn.server.notes.redis.publish(channel,
+            JSON.stringify({ plugin: name, result: obj }));
+};
+
 ResultStore.prototype.add = function (plugin, obj) {
     var name = plugin.name;
 
@@ -50,6 +63,8 @@ ResultStore.prototype.add = function (plugin, obj) {
         result = default_result();
         this.store[name] = result;
     }
+
+    this.redis_publish(name, obj);
 
     // these are arrays each invocation appends to
     for (var i=0; i < append_lists.length; i++) {
@@ -101,6 +116,8 @@ ResultStore.prototype.push = function (plugin, obj) {
         result = default_result();
         this.store[name] = result;
     }
+
+    this.redis_publish(name, obj);
 
     for (var key in obj) {
         if (!result[key]) result[key] = [];
