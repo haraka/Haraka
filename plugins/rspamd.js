@@ -115,8 +115,9 @@ exports.hook_data_post = function (next, connection) {
             res.on('end', function () {
                 var data = plugin.parse_response(rawData, connection);
                 if (!data) return next();
-
                 data.emit = true; // spit out a log entry
+
+                if (!connection.transaction) return next();
                 connection.transaction.results.add(plugin, data);
                 connection.transaction.results.add(plugin, {
                     time: (Date.now() - start)/1000,
@@ -154,6 +155,13 @@ exports.parse_response = function (rawData, connection) {
     catch (err) {
         connection.transaction.results.add(plugin, {
             err: 'parse failure: ' + err.message
+        });
+        return;
+    }
+
+    if (Object.keys(data).length === 1 && data.error) {
+        connection.transaction.results.add(plugin, {
+            err: data.error
         });
         return;
     }

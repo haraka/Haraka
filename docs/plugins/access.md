@@ -34,6 +34,13 @@ person you know that still uses it:
     aol.com
     !friend@aol.com
 
+### ANY results
+
+When a whitelisted email or domain matches, a `pass` result will be saved
+with the hook name (ex: connect:any). When a blacklisted email or domain
+matches, a `fail` result of the same syntax is stored. If neither match, a
+`msg` result is saved (ex: unlisted(connect:any)).
+
 ### ANY data
 
 In addition to checking for a domain in the envelope, ANY can also check in
