@@ -565,12 +565,16 @@ else if (parsed.configs) {
 
     var base_dir = process.argv[3];
     var err_msg = "Did you install a Haraka config? (haraka -i " + base_dir +")";
-    if ( !fs.existsSync(base_dir) )
+    if (!fs.existsSync(base_dir)) {
         fail( "No such directory: " + base_dir + "\n" + err_msg );
+    }
 
     var smtp_ini = path.join(base_dir,'config','smtp.ini');
-    if ( !fs.existsSync( smtp_ini ) )
+    var smtp_json = path.join(base_dir,'config','smtp.json');
+    var smtp_yaml = path.join(base_dir,'config','smtp.yaml');
+    if (!fs.existsSync(smtp_ini) && !fs.existsSync(smtp_json) && !fs.existsSync(smtp_yaml)) {
         fail( "No smtp.ini at: " + smtp_ini + "\n" + err_msg );
+    }
 
     process.argv[1] = haraka_path;
     process.env.HARAKA = parsed.configs;
