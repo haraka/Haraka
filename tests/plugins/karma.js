@@ -172,7 +172,7 @@ exports.get_award_location = {
     },
     'results.connect.geoip': function (test) {
         test.expect(1);
-        this.connection.results.add({name: 'connect.geoip'}, { country: 'US' });
+        this.connection.results.add('connect.geoip', { country: 'US' });
         var r = this.plugin.get_award_location(this.connection, 'results.connect.geoip');
         // console.log(r);
         test.equal('US', r.country);
@@ -180,7 +180,7 @@ exports.get_award_location = {
     },
     'results.karma': function (test) {
         test.expect(1);
-        this.connection.results.add({name: 'karma'}, { score: -1 });
+        this.connection.results.add('karma', { score: -1 });
         var r = this.plugin.get_award_location(this.connection, 'results.karma');
         // console.log(r);
         test.equal(-1, r.score);
@@ -189,7 +189,7 @@ exports.get_award_location = {
     'results.karma, txn': function (test) {
         // results should be found in conn or txn
         test.expect(1);
-        this.connection.transaction.results.add({name: 'karma'}, { score: -1 });
+        this.connection.transaction.results.add('karma', { score: -1 });
         var r = this.plugin.get_award_location(this.connection, 'results.karma');
         // console.log(r);
         test.equal(-1, r.score);
@@ -198,7 +198,7 @@ exports.get_award_location = {
     'txn.results.karma': function (test) {
         // these results shouldn't be found, b/c txn specified
         test.expect(1);
-        this.connection.results.add({name: 'karma'}, { score: -1 });
+        this.connection.results.add('karma', { score: -1 });
         var r = this.plugin.get_award_location(this.connection, 'transaction.results.karma');
         // console.log(r);
         test.equal(undefined, r);
@@ -206,7 +206,7 @@ exports.get_award_location = {
     },
     'results.auth/auth_base': function (test) {
         test.expect(1);
-        this.connection.results.add({name: 'auth/auth_base'}, { fail: 'PLAIN' });
+        this.connection.results.add('auth/auth_base', { fail: 'PLAIN' });
         var r = this.plugin.get_award_location(this.connection, 'results.auth/auth_base');
         test.equal('PLAIN', r.fail[0]);
         test.done();
@@ -244,7 +244,7 @@ exports.check_awards = {
     },
     'no todo': function (test) {
         test.expect(1);
-        this.connection.results.add({name: 'karma'}, { todo: { } });
+        this.connection.results.add('karma', { todo: { } });
         var r = this.plugin.check_awards(this.connection);
         test.equal(undefined, r);
         test.done();
@@ -253,17 +253,17 @@ exports.check_awards = {
         test.expect(2);
 
         // populate the karma result with a todo item
-        this.connection.results.add({name: 'karma'}, {
+        this.connection.results.add('karma', {
             todo: { 'results.connect.geoip.distance@4000': '-1 if gt 4000' }
         });
         // test a non-matching criteria
-        this.connection.results.add({name: 'connect.geoip'}, { distance: 4000 });
+        this.connection.results.add('connect.geoip', { distance: 4000 });
         // check awards
         this.plugin.check_awards(this.connection);
         test.equal(undefined, this.connection.results.get('karma').fail[0]);
 
         // test a matching criteria
-        this.connection.results.add({name: 'connect.geoip'}, { distance: 4001 });
+        this.connection.results.add('connect.geoip', { distance: 4001 });
         // check awards
         this.plugin.check_awards(this.connection);
         // test that the award was applied
@@ -273,10 +273,10 @@ exports.check_awards = {
     },
     'auth failure': function (test) {
         test.expect(2);
-        this.connection.results.add({name: 'karma'}, {
+        this.connection.results.add('karma', {
             todo: { 'results.auth/auth_base.fail@PLAIN': '-1 if in' }
         });
-        this.connection.results.add({name: 'auth/auth_base'},
+        this.connection.results.add('auth/auth_base',
                 {fail: 'PLAIN'});
         var r = this.plugin.check_awards(this.connection);
         test.equal(undefined, r);
@@ -285,10 +285,10 @@ exports.check_awards = {
     },
     'valid recipient': function (test) {
         test.expect(2);
-        this.connection.results.add({name: 'karma'}, {
+        this.connection.results.add('karma', {
             todo: { 'results.rcpt_to.qmd.pass@exist': '1 if in' }
         });
-        this.connection.results.add({name: 'rcpt_to.qmd'}, {pass: 'exist'});
+        this.connection.results.add('rcpt_to.qmd', {pass: 'exist'});
         var r = this.plugin.check_awards(this.connection);
         test.equal(undefined, r);
         test.equal('qmd.pass', this.connection.results.get('karma').pass[0]);
