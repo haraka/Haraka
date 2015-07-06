@@ -201,7 +201,7 @@ plugins._load_and_compile_plugin = function (name) {
         throw 'Loading plugin ' + name + ' failed: ' + last_err;
     }
     var custom_require = function _haraka_require (module) {
-        if (!/^\./.test(module)) {
+        if (hasPackageJson || !/^\./.test(module)) {
             return require(module);
         }
 
@@ -214,7 +214,7 @@ plugins._load_and_compile_plugin = function (name) {
     };
     var code;
     if (hasPackageJson) {
-        code = '"use strict"; require("' + name + '");';
+        code = '"use strict"; var p = require("' + name + '"); for (var attrname in p) { exports[attrname] = p[attrname];}';
     } else {
         code = '"use strict";' + rf;
     }
