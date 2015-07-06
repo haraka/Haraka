@@ -2,6 +2,7 @@
 
 var fs     = require('fs');
 var path   = require('path');
+var logger = require('../logger');
 var plugin = require('../plugins');
 
 var piName = 'testPlugin';
@@ -75,7 +76,10 @@ exports.get_plugin_paths = {
         test.expect(2);
         test.deepEqual(
             this.plugin._get_plugin_paths(),
-            [ path.join(__dirname, '../plugins') ],
+            [
+                path.join(__dirname, '../plugins'),
+                path.join(__dirname, '../node_modules'),
+            ],
             'default ./path'
         );
         test.deepEqual(
@@ -83,6 +87,10 @@ exports.get_plugin_paths = {
             [
                 path.join(__dirname, '../plugins/testPlugin.js'),
                 path.join(__dirname, '../plugins/testPlugin/index.js'),
+                path.join(__dirname, '../plugins/testPlugin/package.json'),
+                path.join(__dirname, '../node_modules/testPlugin.js'),
+                path.join(__dirname, '../node_modules/testPlugin/index.js'),
+                path.join(__dirname, '../node_modules/testPlugin/package.json'),
             ],
             'full_paths');
         test.done();
@@ -99,8 +107,10 @@ exports.get_plugin_paths = {
         test.deepEqual(
             this.plugin._get_plugin_paths(),
             [
-                path.join('/etc', '/haraka', '/plugins'),
-                path.join(__dirname, '../plugins')
+                path.join('/etc', 'haraka', 'plugins'),
+                path.join('/etc', 'haraka', 'node_modules'),
+                path.join(__dirname, '../plugins'),
+                path.join(__dirname, '../node_modules'),
             ],
             'default ./path'
         );
@@ -119,7 +129,8 @@ exports.get_plugin_paths = {
             this.plugin._get_plugin_paths(),
             [
                 path.join('/etc', '/haraka_plugins'),
-                path.join(__dirname, '../plugins')
+                path.join(__dirname, '../plugins'),
+                path.join(__dirname, '../node_modules'),
             ],
             'default + HARAKA_PLUGIN_PATH');
         test.done();
