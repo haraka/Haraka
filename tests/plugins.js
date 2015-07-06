@@ -135,5 +135,24 @@ exports.get_plugin_paths = {
             'default + HARAKA_PLUGIN_PATH');
         test.done();
     },
-};
 
+    'all of the above' : function (test) {
+
+        process.env.HARAKA = '/etc/haraka';
+        process.env.HARAKA_PLUGIN_PATH = '/etc/haraka_plugins';
+
+        test.expect(1);
+        test.deepEqual(
+            this.plugin._get_plugin_paths(),
+            [
+                path.join(process.env.HARAKA_PLUGIN_PATH),
+                path.join(process.env.HARAKA + '/plugins'),
+                path.join(process.env.HARAKA + '/node_modules'),
+                path.join(__dirname, '../plugins'),
+                path.join(__dirname, '../node_modules'),
+            ],
+            'all paths are ordered correctly'
+        );
+        test.done();
+    },
+};
