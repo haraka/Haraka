@@ -179,10 +179,13 @@ plugins.server = {};
 plugins._load_and_compile_plugin = function (name) {
     var plugin = new Plugin(name);
     var fp = plugin.full_paths;
-    var rf, last_err;
+    var rf, last_err, hasPackageJson;
     for (var i=0, j=fp.length; i<j; i++) {
         try {
             rf = fs.readFileSync(fp[i]);
+            if (/package.json$/.test(fp[i])) {
+                hasPackageJson = true;
+            }
             break;
         }
         catch (err) {
@@ -209,7 +212,12 @@ plugins._load_and_compile_plugin = function (name) {
 
         return require(path.dirname(fp[i]) + '/' + module);
     };
-    var code = '"use strict";' + rf;
+    var code;
+    if (hasPackageJson) {
+        code = '"use strict"; require("' + name + '");';
+    } else {
+        code = '"use strict";' + rf;
+    }
     var sandbox = {
         require: custom_require,
         __filename: fp[i],
