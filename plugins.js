@@ -24,6 +24,7 @@ function Plugin(name) {
     this._get_plugin_paths().forEach(function (pp) {
         full_paths.push(path.resolve(pp, name) + '.js');
         full_paths.push(path.resolve(pp, name) + '/index.js');
+        full_paths.push(path.resolve(pp, name) + '/package.json');
     });
     this.full_paths = full_paths;
     this.config = config;
@@ -48,7 +49,7 @@ Plugin.prototype.register_hook = function(hook_name, method_name, priority) {
     this.hooks[hook_name] = this.hooks[hook_name] || [];
     this.hooks[hook_name].push(method_name);
 
-    logger.logdebug("registered hook " + hook_name + 
+    logger.logdebug("registered hook " + hook_name +
                     " to " + this.name + '.' + method_name +
                     " priority " + priority);
 };
@@ -69,11 +70,7 @@ Plugin.prototype.inherits = function (parent_name) {
 };
 
 Plugin.prototype._get_plugin_paths = function () {
-    var paths = [ path.join(__dirname, './plugins') ];
-
-    if (process.env.HARAKA) {
-        paths.unshift(path.join(process.env.HARAKA, 'plugins'));
-    }
+    var paths = [];
 
     // Allow environment customized path to plugins in addition to defaults.
     // Multiple paths separated by (semi-)colon ':|;' depending on environment.
@@ -82,9 +79,17 @@ Plugin.prototype._get_plugin_paths = function () {
         process.env.HARAKA_PLUGIN_PATH.split(separator).map(function(p) {
             var pNorm = path.normalize(p);
             logger.logdebug('Adding plugin path: ' + pNorm);
-            paths.unshift(pNorm);
+            paths.push(pNorm);
         });
     }
+
+    if (process.env.HARAKA) {
+        paths.push(path.join(process.env.HARAKA, 'plugins'));
+        paths.push(path.join(process.env.HARAKA, 'node_modules'));
+    }
+
+    paths.push(path.join(__dirname, 'plugins'));
+    paths.push(path.join(__dirname, 'node_modules'));
 
     return paths;
 };
