@@ -178,8 +178,6 @@ function Connection(client, server) {
     this.transaction = null;
     this.tran_count = 0;
     this.capabilities = null;
-    this.early_talker_delay = config.get('early_talker.pause') ||
-                              config.get('early_talker_delay') || 1000;
     this.banner_includes_uuid =
         config.get('banner_includes_uuid') ? true : false;
     this.deny_includes_uuid = config.get('deny_includes_uuid') || null;
@@ -373,8 +371,7 @@ Connection.prototype._process_data = function() {
                 this.logdebug('[early_talker] state=' + this.state + ' esmtp=' + this.esmtp + ' line="' + this_line + '"');
             }
             this.early_talker = true;
-            // If you talk early, we're going to give you a delay
-            setTimeout(function() { self._process_data(); }, this.early_talker_delay);
+            self._process_data();
             break;
         }
         else if ((this.state === states.STATE_PAUSE || this.state === states.STATE_PAUSE_SMTP) && this.esmtp) {
@@ -415,9 +412,7 @@ Connection.prototype._process_data = function() {
                             ' esmtp=' + this.esmtp + ' line="' + this_line + '"');
                 }
                 this.early_talker = true;
-                setTimeout(function() {
-                    self._process_data();
-                }, this.early_talker_delay);
+                self._process_data();
             }
             break;
         }
