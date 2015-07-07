@@ -208,7 +208,7 @@ plugins._load_and_compile_plugin = function (name) {
         code = '"use strict";' + rf;
     }
     var sandbox = {
-        require: make_custom_require(fp[i], hasPackageJson),
+        require: this._make_custom_require(fp[i], hasPackageJson),
         __filename: fp[i],
         __dirname:  path.dirname(fp[i]),
         exports: plugin,
@@ -382,7 +382,7 @@ plugins.run_next_hook = function (hook, object, params) {
     }
 };
 
-function make_custom_require (file_path, hasPackageJson) {
+plugins._make_custom_require = function (file_path, hasPackageJson) {
     return function (module) {
         if (hasPackageJson) {
             return require(module);
