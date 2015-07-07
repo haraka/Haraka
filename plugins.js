@@ -200,18 +200,7 @@ plugins._load_and_compile_plugin = function (name) {
         }
         throw 'Loading plugin ' + name + ' failed: ' + last_err;
     }
-    var custom_require = function _haraka_require (module) {
-        if (hasPackageJson || !/^\./.test(module)) {
-            return require(module);
-        }
 
-        if (utils.existsSync(__dirname + '/' + module + '.js') ||
-            utils.existsSync(__dirname + '/' + module)) {
-            return require(module);
-        }
-
-        return require(path.dirname(fp[i]) + '/' + module);
-    };
     var code;
     if (hasPackageJson) {
         code = '"use strict"; var p = require("' + name + '"); for (var attrname in p) { exports[attrname] = p[attrname];}';
@@ -219,7 +208,7 @@ plugins._load_and_compile_plugin = function (name) {
         code = '"use strict";' + rf;
     }
     var sandbox = {
-        require: custom_require,
+        require: make_custom_require(fp[i], hasPackageJson),
         __filename: fp[i],
         __dirname:  path.dirname(fp[i]),
         exports: plugin,
@@ -391,6 +380,25 @@ plugins.run_next_hook = function (hook, object, params) {
         }
         callback();
     }
+};
+
+function make_custom_require (file_path, hasPackageJson) {
+    return function (module) {
+        if (hasPackageJson) {
+            return require(module);
+        }
+
+        if (!/^\./.test(module)) {
+            return require(module);
+        }
+
+        if (utils.existsSync(__dirname + '/' + module + '.js') ||
+            utils.existsSync(__dirname + '/' + module)) {
+            return require(module);
+        }
+
+        return require(path.dirname(file_path) + '/' + module);
+    };
 };
 
 function client_disconnected (object) {
