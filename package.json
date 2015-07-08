@@ -34,7 +34,8 @@
     "maxmind": "*",
     "redis": "~0.10.1",
     "tmp": "~0.0.24",
-    "haraka-nosql": "*"
+    "haraka-nosql": "*",
+    "elasticsearch": "*"
   },
   "devDependencies": {
     "nodeunit"      : "https://github.com/godsflaw/nodeunit/archive/master.tar.gz",
