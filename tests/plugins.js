@@ -68,7 +68,7 @@ exports.get_plugin_paths = {
     setUp : _setUp,
 
     './path' : function (test) {
-        
+
         ['HARAKA', 'HARAKA_PLUGIN_PATH'].forEach(function (env) {
             delete process.env[env];
         });
@@ -97,12 +97,12 @@ exports.get_plugin_paths = {
     },
 
     'HARAKA' : function (test) {
-        
+
         ['HARAKA_PLUGIN_PATH'].forEach(function (env) {
             delete process.env[env];
         });
         process.env.HARAKA = '/etc/haraka';
-        
+
         test.expect(1);
         test.deepEqual(
             this.plugin._get_plugin_paths(),
@@ -124,7 +124,7 @@ exports.get_plugin_paths = {
         });
         process.env.HARAKA_PLUGIN_PATH = '/etc/haraka_plugins';
 
-        test.expect(1);        
+        test.expect(1);
         test.deepEqual(
             this.plugin._get_plugin_paths(),
             [
@@ -155,4 +155,33 @@ exports.get_plugin_paths = {
         );
         test.done();
     },
+};
+
+exports.load_plugins = {
+
+    setUp: function (done) {
+        process.env.HARAKA = __dirname;
+
+        this.orig_make_custom_require = plugin._make_custom_require;
+        plugin._make_custom_require = function (filePath, hasPackageJson) {
+            return function (module) {
+                return require(path.join(__dirname, 'node_modules', module));
+            }
+        };
+
+        this.plugin = plugin.load_plugin('test-plugin');
+        done();
+    },
+
+    tearDown: function (done) {
+        plugin._make_custom_require = this.orig_make_custom_require;
+        done();
+    },
+
+    'load from install directory node_modules': function (test) {
+        test.expect(1);
+        test.ok(this.plugin.hasOwnProperty('hook_init_master'));
+        test.done();
+    },
+
 };
