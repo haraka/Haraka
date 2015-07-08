@@ -36,8 +36,16 @@ ResultStore.prototype.has = function (plugin, list, search) {
     if (Array.isArray(result[list])) {
         for (var i=0; i<result[list].length; i++) {
             var item = result[list][i];
-            if (typeof search === 'string' && search === item) return true;
-            if (typeof search === 'object' && item.match(search)) return true;
+            switch (typeof search) {
+                case 'string':
+                case 'number':
+                case 'boolean':
+                    if (search === item) return true;
+                    break;
+                case 'object':
+                    if (item.match(search)) return true;
+                    break;
+            }
         }
     }
     return false;
