@@ -4,8 +4,6 @@ var stub         = require('./fixtures/stub'),
     config       = require('../config'),
     ResultStore  = require('../result_store');
 
-var plugin = {name: 'test_plugin'};
-
 function _set_up(callback) {
     this.connection = Connection.createConnection();
     this.connection.results = new ResultStore(this.connection);
@@ -20,7 +18,7 @@ exports.default_result = {
     tearDown : _tear_down,
     'init add' : function (test) {
         test.expect(1);
-        this.connection.results.add(plugin, { pass: 'test pass' });
+        this.connection.results.add('test_plugin', { pass: 'test pass' });
         delete this.connection.results.store.test_plugin.human;
         delete this.connection.results.store.test_plugin.human_html;
         test.deepEqual(
@@ -31,8 +29,8 @@ exports.default_result = {
     },
     'init add array' : function (test) {
         test.expect(1);
-        this.connection.results.add(plugin, { pass: 1 });
-        this.connection.results.add(plugin, { pass: [2,3] });
+        this.connection.results.add('test_plugin', { pass: 1 });
+        this.connection.results.add('test_plugin', { pass: [2,3] });
         delete this.connection.results.store.test_plugin.human;
         delete this.connection.results.store.test_plugin.human_html;
         test.deepEqual(
@@ -43,7 +41,7 @@ exports.default_result = {
     },
     'init incr' : function (test) {
         test.expect(1);
-        this.connection.results.incr(plugin, { counter: 1 });
+        this.connection.results.incr('test_plugin', { counter: 1 });
         delete this.connection.results.store.test_plugin.human;
         delete this.connection.results.store.test_plugin.human_html;
         test.deepEqual(
@@ -54,7 +52,7 @@ exports.default_result = {
     },
     'init push' : function (test) {
         test.expect(1);
-        this.connection.results.push(plugin, { pass: 'test1' });
+        this.connection.results.push('test_plugin', { pass: 'test1' });
         delete this.connection.results.store.test_plugin.human;
         delete this.connection.results.store.test_plugin.human_html;
         test.deepEqual(
@@ -65,8 +63,9 @@ exports.default_result = {
     },
     'init push array' : function (test) {
         test.expect(1);
-        this.connection.results.push(plugin, { pass: 'test1' });
-        this.connection.results.push(plugin, { pass: ['test2'] });
+        /* jshint maxlen: 100 */
+        this.connection.results.push('test_plugin', { pass: 'test1' });
+        this.connection.results.push('test_plugin', { pass: ['test2'] });
         delete this.connection.results.store.test_plugin.human;
         delete this.connection.results.store.test_plugin.human_html;
         test.deepEqual(
@@ -77,11 +76,12 @@ exports.default_result = {
     },
     'init push, other' : function (test) {
         test.expect(1);
-        this.connection.results.push(plugin, { other: 'test2' });
+        this.connection.results.push('test_plugin', { other: 'test2' });
         delete this.connection.results.store.test_plugin.human;
         delete this.connection.results.store.test_plugin.human_html;
         test.deepEqual(
-                { pass: [], other: ['test2'], fail: [], msg: [], err: [], skip: [] },
+                { pass: [], other: ['test2'], fail: [], msg: [],
+                  err: [], skip: [] },
                 this.connection.results.get('test_plugin')
                 );
         test.done();
@@ -91,16 +91,31 @@ exports.default_result = {
 exports.has = {
     setUp : _set_up,
     tearDown : _tear_down,
+    /* jshint maxlen: 100 */
     'has, list, string' : function (test) {
         test.expect(2);
-        this.connection.results.add(plugin, { pass: 'test pass' });
+        this.connection.results.add('test_plugin', { pass: 'test pass' });
         test.equal(true, this.connection.results.has('test_plugin', 'pass', 'test pass'));
         test.equal(false, this.connection.results.has('test_plugin', 'pass', 'test miss'));
         test.done();
     },
+    'has, list, number' : function (test) {
+        test.expect(2);
+        this.connection.results.add('test_plugin', { msg: 1 });
+        test.equal(true, this.connection.results.has('test_plugin', 'msg', 1));
+        test.equal(false, this.connection.results.has('test_plugin', 'msg', 2));
+        test.done();
+    },
+    'has, list, boolean' : function (test) {
+        test.expect(2);
+        this.connection.results.add('test_plugin', { msg: true });
+        test.equal(true, this.connection.results.has('test_plugin', 'msg', true));
+        test.equal(false, this.connection.results.has('test_plugin', 'msg', false));
+        test.done();
+    },
     'has, list, regexp' : function (test) {
         test.expect(3);
-        this.connection.results.add(plugin, { pass: 'test pass' });
+        this.connection.results.add('test_plugin', { pass: 'test pass' });
         test.ok(this.connection.results.has('test_plugin', 'pass', /test/));
         test.ok(this.connection.results.has('test_plugin', 'pass', / pass/));
         test.equal(this.connection.results.has('test_plugin', 'pass', /not/), false);
@@ -108,16 +123,16 @@ exports.has = {
     },
     'has, string, string' : function (test) {
         test.expect(2);
-        this.connection.results.add(plugin, { random_key: 'string value' });
+        this.connection.results.add('test_plugin', { random_key: 'string value' });
         test.ok(this.connection.results.has('test_plugin', 'random_key', 'string value'));
         test.equal(false, this.connection.results.has('test_plugin', 'random_key', 'strings'));
         test.done();
     },
     'has, string, regex' : function (test) {
         test.expect(3);
-        this.connection.results.add(plugin, { random_key: 'string value' });
-        test.ok(this.connection.results.has('test_plugin', 'random_key', /string/));
-        test.ok(this.connection.results.has('test_plugin', 'random_key', /value/));
+        this.connection.results.add('test_plugin', { random_key: 'string value' });
+        test.ok(this.connection.results.has( 'test_plugin', 'random_key', /string/));
+        test.ok(this.connection.results.has( 'test_plugin', 'random_key', /value/));
         test.equal(false, this.connection.results.has('test_plugin', 'random_key', /miss/));
         test.done();
     },

@@ -2,6 +2,7 @@
 
 var fs     = require('fs');
 var path   = require('path');
+var logger = require('../logger');
 var plugin = require('../plugins');
 
 var piName = 'testPlugin';
@@ -67,7 +68,7 @@ exports.get_plugin_paths = {
     setUp : _setUp,
 
     './path' : function (test) {
-        
+
         ['HARAKA', 'HARAKA_PLUGIN_PATH'].forEach(function (env) {
             delete process.env[env];
         });
@@ -75,7 +76,10 @@ exports.get_plugin_paths = {
         test.expect(2);
         test.deepEqual(
             this.plugin._get_plugin_paths(),
-            [ path.join(__dirname, '../plugins') ],
+            [
+                path.join(__dirname, '../plugins'),
+                path.join(__dirname, '../node_modules'),
+            ],
             'default ./path'
         );
         test.deepEqual(
@@ -83,24 +87,30 @@ exports.get_plugin_paths = {
             [
                 path.join(__dirname, '../plugins/testPlugin.js'),
                 path.join(__dirname, '../plugins/testPlugin/index.js'),
+                path.join(__dirname, '../plugins/testPlugin/package.json'),
+                path.join(__dirname, '../node_modules/testPlugin.js'),
+                path.join(__dirname, '../node_modules/testPlugin/index.js'),
+                path.join(__dirname, '../node_modules/testPlugin/package.json'),
             ],
             'full_paths');
         test.done();
     },
 
     'HARAKA' : function (test) {
-        
+
         ['HARAKA_PLUGIN_PATH'].forEach(function (env) {
             delete process.env[env];
         });
         process.env.HARAKA = '/etc/haraka';
-        
+
         test.expect(1);
         test.deepEqual(
             this.plugin._get_plugin_paths(),
             [
-                path.join('/etc', '/haraka', '/plugins'),
-                path.join(__dirname, '../plugins')
+                path.join('/etc', 'haraka', 'plugins'),
+                path.join('/etc', 'haraka', 'node_modules'),
+                path.join(__dirname, '../plugins'),
+                path.join(__dirname, '../node_modules'),
             ],
             'default ./path'
         );
@@ -114,15 +124,64 @@ exports.get_plugin_paths = {
         });
         process.env.HARAKA_PLUGIN_PATH = '/etc/haraka_plugins';
 
-        test.expect(1);        
+        test.expect(1);
         test.deepEqual(
             this.plugin._get_plugin_paths(),
             [
                 path.join('/etc', '/haraka_plugins'),
-                path.join(__dirname, '../plugins')
+                path.join(__dirname, '../plugins'),
+                path.join(__dirname, '../node_modules'),
             ],
             'default + HARAKA_PLUGIN_PATH');
         test.done();
     },
+
+    'all of the above' : function (test) {
+
+        process.env.HARAKA = '/etc/haraka';
+        process.env.HARAKA_PLUGIN_PATH = '/etc/haraka_plugins';
+
+        test.expect(1);
+        test.deepEqual(
+            this.plugin._get_plugin_paths(),
+            [
+                path.join(process.env.HARAKA_PLUGIN_PATH),
+                path.join(process.env.HARAKA + '/plugins'),
+                path.join(process.env.HARAKA + '/node_modules'),
+                path.join(__dirname, '../plugins'),
+                path.join(__dirname, '../node_modules'),
+            ],
+            'all paths are ordered correctly'
+        );
+        test.done();
+    },
 };
 
+exports.load_plugins = {
+
+    setUp: function (done) {
+        process.env.HARAKA = __dirname;
+
+        this.orig_make_custom_require = plugin._make_custom_require;
+        plugin._make_custom_require = function (filePath, hasPackageJson) {
+            return function (module) {
+                return require(path.join(__dirname, 'node_modules', module));
+            }
+        };
+
+        this.plugin = plugin.load_plugin('test-plugin');
+        done();
+    },
+
+    tearDown: function (done) {
+        plugin._make_custom_require = this.orig_make_custom_require;
+        done();
+    },
+
+    'load from install directory node_modules': function (test) {
+        test.expect(1);
+        test.ok(this.plugin.hasOwnProperty('hook_init_master'));
+        test.done();
+    },
+
+};

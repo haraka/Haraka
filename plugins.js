@@ -24,6 +24,7 @@ function Plugin(name) {
     this._get_plugin_paths().forEach(function (pp) {
         full_paths.push(path.resolve(pp, name) + '.js');
         full_paths.push(path.resolve(pp, name) + '/index.js');
+        full_paths.push(path.resolve(pp, name) + '/package.json');
     });
     this.full_paths = full_paths;
     this.config = config;
@@ -48,7 +49,7 @@ Plugin.prototype.register_hook = function(hook_name, method_name, priority) {
     this.hooks[hook_name] = this.hooks[hook_name] || [];
     this.hooks[hook_name].push(method_name);
 
-    logger.logdebug("registered hook " + hook_name + 
+    logger.logdebug("registered hook " + hook_name +
                     " to " + this.name + '.' + method_name +
                     " priority " + priority);
 };
@@ -69,11 +70,7 @@ Plugin.prototype.inherits = function (parent_name) {
 };
 
 Plugin.prototype._get_plugin_paths = function () {
-    var paths = [ path.join(__dirname, './plugins') ];
-
-    if (process.env.HARAKA) {
-        paths.unshift(path.join(process.env.HARAKA, 'plugins'));
-    }
+    var paths = [];
 
     // Allow environment customized path to plugins in addition to defaults.
     // Multiple paths separated by (semi-)colon ':|;' depending on environment.
@@ -82,9 +79,17 @@ Plugin.prototype._get_plugin_paths = function () {
         process.env.HARAKA_PLUGIN_PATH.split(separator).map(function(p) {
             var pNorm = path.normalize(p);
             logger.logdebug('Adding plugin path: ' + pNorm);
-            paths.unshift(pNorm);
+            paths.push(pNorm);
         });
     }
+
+    if (process.env.HARAKA) {
+        paths.push(path.join(process.env.HARAKA, 'plugins'));
+        paths.push(path.join(process.env.HARAKA, 'node_modules'));
+    }
+
+    paths.push(path.join(__dirname, 'plugins'));
+    paths.push(path.join(__dirname, 'node_modules'));
 
     return paths;
 };
@@ -174,10 +179,13 @@ plugins.server = {};
 plugins._load_and_compile_plugin = function (name) {
     var plugin = new Plugin(name);
     var fp = plugin.full_paths;
-    var rf, last_err;
+    var rf, last_err, hasPackageJson;
     for (var i=0, j=fp.length; i<j; i++) {
         try {
             rf = fs.readFileSync(fp[i]);
+            if (/package.json$/.test(fp[i])) {
+                hasPackageJson = true;
+            }
             break;
         }
         catch (err) {
@@ -192,21 +200,15 @@ plugins._load_and_compile_plugin = function (name) {
         }
         throw 'Loading plugin ' + name + ' failed: ' + last_err;
     }
-    var custom_require = function _haraka_require (module) {
-        if (!/^\./.test(module)) {
-            return require(module);
-        }
 
-        if (utils.existsSync(__dirname + '/' + module + '.js') ||
-            utils.existsSync(__dirname + '/' + module)) {
-            return require(module);
-        }
-
-        return require(path.dirname(fp[i]) + '/' + module);
-    };
-    var code = '"use strict";' + rf;
+    var code;
+    if (hasPackageJson) {
+        code = '"use strict"; var p = require("' + name + '"); for (var attrname in p) { exports[attrname] = p[attrname];}';
+    } else {
+        code = '"use strict";' + rf;
+    }
     var sandbox = {
-        require: custom_require,
+        require: this._make_custom_require(fp[i], hasPackageJson),
         __filename: fp[i],
         __dirname:  path.dirname(fp[i]),
         exports: plugin,
@@ -378,6 +380,25 @@ plugins.run_next_hook = function (hook, object, params) {
         }
         callback();
     }
+};
+
+plugins._make_custom_require = function (file_path, hasPackageJson) {
+    return function (module) {
+        if (hasPackageJson) {
+            return require(module);
+        }
+
+        if (!/^\./.test(module)) {
+            return require(module);
+        }
+
+        if (utils.existsSync(__dirname + '/' + module + '.js') ||
+            utils.existsSync(__dirname + '/' + module)) {
+            return require(module);
+        }
+
+        return require(path.dirname(file_path) + '/' + module);
+    };
 };
 
 function client_disconnected (object) {

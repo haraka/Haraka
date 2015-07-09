@@ -323,6 +323,10 @@ cfreader.process_file_overrides = function (name, result) {
             cfreader._overrides[ofp] = true;
             // Overwrite the config cache for this filename
             cfreader._config_cache[ofp] = result[keys[i]];
+            // Make sure .ini overrides always have a main: {} element
+            if (ofp.substr(-4) === '.ini' && !result[keys[i]].main) {
+                result[keys[i]].main = {};
+            }
             // Call any reload callbacks for the overriden filename
             if (cfreader._read_args[ofp] && typeof cfreader._read_args[ofp].cb === 'function') {
                 cfreader._read_args[ofp].cb();
