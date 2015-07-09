@@ -99,6 +99,20 @@ exports.has = {
         test.equal(false, this.connection.results.has('test_plugin', 'pass', 'test miss'));
         test.done();
     },
+    'has, list, number' : function (test) {
+        test.expect(2);
+        this.connection.results.add('test_plugin', { msg: 1 });
+        test.equal(true, this.connection.results.has('test_plugin', 'msg', 1));
+        test.equal(false, this.connection.results.has('test_plugin', 'msg', 2));
+        test.done();
+    },
+    'has, list, boolean' : function (test) {
+        test.expect(2);
+        this.connection.results.add('test_plugin', { msg: true });
+        test.equal(true, this.connection.results.has('test_plugin', 'msg', true));
+        test.equal(false, this.connection.results.has('test_plugin', 'msg', false));
+        test.done();
+    },
     'has, list, regexp' : function (test) {
         test.expect(3);
         this.connection.results.add('test_plugin', { pass: 'test pass' });
