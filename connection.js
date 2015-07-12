@@ -970,11 +970,13 @@ Connection.prototype.rcpt_incr = function(rcpt, action, msg, retval) {
 
     var addr = rcpt.format();
     var recipient = {
-        action : action,
         address: addr.substr(1, addr.length -2),
-        code: constants.translate(retval),
     };
-    if (msg && action !== 'accept') recipient.msg = msg;
+    if (msg && action !== 'accept') {
+        recipient.msg  = msg;
+        recipient.code  = constants.translate(retval);
+        recipient.action = action;
+    }
 
     this.transaction.results.push({name: 'rcpt_to'}, {
         recipient: recipient,
