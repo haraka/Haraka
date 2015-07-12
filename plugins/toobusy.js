@@ -49,4 +49,5 @@ exports.check_busy = function (next, connection) {
     var maxLag = toobusy.maxLag();
     this.logcrit(
         'deferring connections: lag=' + currentLag + ' max=' + maxLag);
+    return next();
 };
