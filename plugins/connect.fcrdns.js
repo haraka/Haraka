@@ -147,12 +147,13 @@ exports.handle_a_error = function(connection, err, domain) {
 
     switch (err.code) {
         case 'ENOTFOUND':
+        case 'NXDOMAIN':
         case dns.NOTFOUND:
         case dns.NXDOMAIN:
             connection.results.add(plugin, {fail: 'ptr_valid('+domain+')' });
             break;
         default:
-            connection.results.add(plugin, {err: err});
+            connection.results.add(plugin, {err: err.message});
     }
 };
 
