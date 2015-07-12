@@ -96,7 +96,7 @@ exports.connect_first = function(next, connection) {
 
     plugin.first(remote_ip, plugin.zones, function (err, zone, a) {
         if (err) {
-            connection.results.add(plugin, {err: err});
+            connection.results.add(plugin, {err: err.message});
             return next();
         }
         if (!a) return next();
@@ -126,7 +126,7 @@ exports.connect_multi = function(next, connection) {
 
     plugin.multi(remote_ip, plugin.zones, function (err, zone, a, pending) {
         if (err) {
-            connection.results.add(plugin, {err: err});
+            connection.results.add(plugin, {err: err.message});
             if (pending) return;
             if (plugin.cfg.main.reject && hits.length) {
                 return next(DENY, get_deny_msg());
