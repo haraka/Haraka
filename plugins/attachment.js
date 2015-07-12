@@ -22,44 +22,102 @@ exports.register = function () {
             'filenames from archive files');
         return;
     }
-    this.load_archive_ini();
+
+    this.load_attachment_ini();
+    this.load_n_compile_re('file',    'attachment.filename.regex');
+    this.load_n_compile_re('ctype',   'attachment.ctype.regex');
+    this.load_n_compile_re('archive', 'attachment.archive.filename.regex');
 
     this.register_hook('data_post', 'wait_for_attachment_hooks');
     this.register_hook('data_post', 'check_attachments');
 };
 
-exports.load_archive_ini = function () {
+exports.load_attachment_ini = function () {
     var plugin = this;
 
     plugin.cfg = plugin.config.get('attachment.ini', function () {
-        plugin.load_archive_ini();
+        plugin.load_attachment_ini();
     });
 
     plugin.cfg.timeout = (plugin.cfg.main.timeout || 30) * 1000;
 
-    plugin.archive_max_depth = plugin.cfg.main.archive_max_depth || 5;
+    // repair a mismatch between legacy docs and code
+    var extns = (plugin.cfg.archive && plugin.cfg.archive.extensions) ?
+                plugin.cfg.archive.extensions :      // new
+                plugin.cfg.main.archive_extensions ? // old code
+                plugin.cfg.main.archive_extensions :
+                plugin.cfg.main.archive_extns ?      // old docs
+                plugin.cfg.main.archive_extns :
+                '';
 
-    plugin.archive_exts =
-        options_to_array(plugin.cfg.main.archive_extensions) ||
-        [ '.zip', '.tar', '.tgz', '.taz', '.z', '.gz', '.rar', '.7z' ];
+    var maxd = (plugin.cfg.archive && plugin.cfg.archive.max_depth) ?
+                plugin.cfg.main.archive.max_depth :   // new
+                plugin.cfg.main.archive_max_depth ?   // old
+                plugin.cfg.main.archive_max_depth :
+                5;                                    // default
 
+    plugin.cfg.archive = {
+        max_depth: maxd,
+        exts : plugin.options_to_object(extns) ||
+               plugin.options_to_object('zip tar tgz taz z gz rar 7z'),
+    };
+
+    plugin.load_dissallowed_extns();
 };
 
-function options_to_array(options) {
-    if (!options) return false;
-    var arr = options.toLowerCase().replace(/\s+/,' ').split(/[;, ]/);
-    var len = arr.length;
-    while (len--) {
-        // Remove any empty elements
-        if (arr[len] === "" || arr[len] === null) {
-            arr.splice(len, 1);
+exports.load_dissallowed_extns = function () {
+    var plugin = this;
+
+    if (!plugin.cfg.main.disallowed_extensions) return;
+
+    if (!plugin.re) plugin.re = {};
+    plugin.re.bad_extn = new RegExp(
+            '\\.(?:' +
+                (plugin.cfg.main.disallowed_extensions
+                .replace(/\s+/,' ')
+                .split(/[;, ]/)
+                .join('|')) +
+            ')$', 'i');
+};
+
+exports.load_n_compile_re = function (name, file) {
+    var plugin = this;
+    var valid_re = [];
+
+    var try_re = plugin.config.get(file, 'list', function () {
+        plugin.load_compile_re(name, file);
+    });
+
+    for (var r=0; r < try_re.length; r++) {
+        try {
+            var reg = new RegExp(try_re[r], 'i');
         }
-        else {
-            arr[len] = arr[len].trim();
+        catch (e) {
+            this.logerror('skipping invalid regexp: /' + try_re[r] +
+                    '/ (' + e + ')');
+            return;
         }
+        valid_re.push(reg);
     }
-    return (arr.length ? arr : false);
-}
+
+    if (!plugin.re) plugin.re = {};
+    plugin.re[name] = valid_re;
+};
+
+exports.options_to_object = function (options) {
+    if (!options) return false;
+
+    var res = {};
+    options.toLowerCase().replace(/\s+/,' ').split(/[;, ]/)
+        .forEach(function (opt) {
+            if (!opt) return;
+            if (opt[0] !== '.') opt = '.' + opt;
+            res[opt.trim()]=true;
+        });
+
+    if (Object.keys(res).length) return res;
+    return false;
+};
 
 exports.unarchive_recursive = function(connection, f, archive_file_name, cb) {
     var plugin = this;
@@ -98,7 +156,7 @@ exports.unarchive_recursive = function(connection, f, archive_file_name, cb) {
 
     function listFiles(in_file, prefix, depth) {
         if (!depth) depth = 0;
-        if (depth >= plugin.archive_max_depth || depth_exceeded) {
+        if (depth >= plugin.cfg.archive.max_depth || depth_exceeded) {
             if (count === 0) {
                 return do_cb(new Error('maximum archive depth exceeded'));
             }
@@ -129,8 +187,8 @@ exports.unarchive_recursive = function(connection, f, archive_file_name, cb) {
                 connection.logdebug(self, 'file: ' + file + ' depth=' + depth);
                 files.push((prefix ? prefix + '/' : '') + file);
                 var extn = path.extname(file.toLowerCase());
-                if (plugin.archive_exts.indexOf(extn) !== -1 ||
-                    plugin.archive_exts.indexOf(extn.substring(1)) !== -1)
+                if (plugin.cfg.archive.exts[extn] ||
+                    plugin.cfg.archive.exts[extn.substring(1)])
                 {
                     connection.logdebug(self, 'need to extract file: ' + file);
                     count++;
@@ -224,8 +282,8 @@ exports.start_attachment = function (connection, ctype, filename, body, stream) 
         txn.notes.attachment_files.push(filename);
         // See if filename extension matches archive extension list
         // We check with the dot prefixed and without
-        if (!archives_disabled && (plugin.archive_exts.indexOf(fileext) !== -1 ||
-            plugin.archive_exts.indexOf(fileext.substring(1)) !== -1))
+        if (!archives_disabled && (plugin.cfg.archive.exts[fileext] ||
+            plugin.cfg.archive.exts[fileext.substring(1)]))
         {
             connection.logdebug(plugin, 'found ' + fileext + ' on archive list');
             txn.notes.attachment_count++;
@@ -307,12 +365,28 @@ exports.hook_data = function (next, connection) {
     return next();
 };
 
+exports.disallowed_extensions = function (txn) {
+    var plugin = this;
+    if (!plugin.re.bad_extn) return false;
+
+    var bad = false;
+    [ txn.notes.attachment_files, txn.notes.attachment_archive_files ]
+    .forEach(function (items) {
+        if (bad) return;
+        if (!items || !Array.isArray(items)) return;
+        for (var i=0; i < items.length; i++) {
+            if (!plugin.re.bad_extn.test(items[i])) continue;
+            bad = items[i].split('.').slice(0).pop();
+            break;
+        }
+    });
+
+    return bad;
+};
+
 exports.check_attachments = function (next, connection) {
     var plugin = this;
     var txn = connection.transaction;
-    var ctype_config = this.config.get('attachment.ctype.regex','list');
-    var file_config = this.config.get('attachment.filename.regex','list');
-    var archive_config = this.config.get('attachment.archive.filename.regex','list');
 
     // Check for any stored errors from the attachment hooks
     if (txn.notes.attachment_result) {
@@ -323,38 +397,48 @@ exports.check_attachments = function (next, connection) {
     var ctypes = txn.notes.attachment_ctypes;
 
     // Add in any content type from message body
+    var ct_re = /^([^\/]+\/[^;\r\n ]+)/;
     var body = txn.body;
-    var body_ct;
-    if (body && (body_ct = /^([^\/]+\/[^;\r\n ]+)/.exec(body.header.get('content-type')))) {
-        connection.logdebug(this, 'found content type: ' + body_ct[1]);
-        ctypes.push(body_ct[1]);
+    if (body) {
+        var body_ct = ct_re.exec(body.header.get('content-type'));
+        if (body_ct) {
+            connection.logdebug(this, 'found content type: ' + body_ct[1]);
+            ctypes.push(body_ct[1]);
+        }
     }
     // MIME parts
     if (body && body.children) {
         for (var c=0; c<body.children.length; c++) {
-            var child_ct;
-            if (body.children[c] && (child_ct = /^([^\/]+\/[^;\r\n ]+)/.exec(body.children[c].header.get('content-type')))) {
-                connection.logdebug(this, 'found content type: ' + child_ct[1]);
-                ctypes.push(child_ct[1]);
-            }
+            if (!body.children[c]) continue;
+            var child_ct = ct_re.exec(
+                    body.children[c].header.get('content-type'));
+            if (!child_ct) continue;
+            connection.logdebug(this, 'found content type: ' + child_ct[1]);
+            ctypes.push(child_ct[1]);
         }
     }
 
-    var ctypes_result = this.check_items_against_regexps(ctypes, ctype_config);
+    var bad_extn = this.disallowed_extensions(txn);
+    if (bad_extn) {
+        return next(DENY, 'Message contains disallowed file extension (' +
+                    bad_extn + ')');
+    }
+
+    var ctypes_result = this.check_items_against_regexps(ctypes, plugin.re.ctype);
     if (ctypes_result) {
         connection.loginfo(this, 'match ctype="' + ctypes_result[0] + '" regexp=/' + ctypes_result[1] + '/');
         return next(DENY, 'Message contains unacceptable content type (' + ctypes_result[0] + ')');
     }
 
     var files = txn.notes.attachment_files;
-    var files_result = this.check_items_against_regexps(files, file_config);
+    var files_result = this.check_items_against_regexps(files, plugin.re.file);
     if (files_result) {
         connection.loginfo(this, 'match file="' + files_result[0] + '" regexp=/' + files_result[1] + '/');
         return next(DENY, 'Message contains unacceptable attachment (' + files_result[0] + ')');
     }
 
     var archive_files = txn.notes.attachment_archive_files;
-    var archives_result = this.check_items_against_regexps(archive_files, archive_config);
+    var archives_result = this.check_items_against_regexps(archive_files, plugin.re.archive);
     if (archives_result) {
         connection.loginfo(this, 'match file="' + archives_result[0] + '" regexp=/' + archives_result[1] + '/');
         return next(DENY, 'Message contains unacceptable attachment (' + archives_result[0] + ')');
@@ -364,23 +448,14 @@ exports.check_attachments = function (next, connection) {
 };
 
 exports.check_items_against_regexps = function (items, regexps) {
-    if ((regexps && Array.isArray(regexps) && regexps.length > 0) &&
-        (items && Array.isArray(items) && items.length > 0))
-    {
-        for (var r=0; r < regexps.length; r++) {
-            var reg;
-            try {
-                reg = new RegExp(regexps[r], 'i');
-            }
-            catch (e) {
-                this.logerror('skipping invalid regexp: /' + regexps[r] + '/ (' + e + ')');
-            }
-            if (reg) {
-                for (var i=0; i < items.length; i++) {
-                    if (reg.test(items[i])) {
-                        return [ items[i], regexps[r] ];
-                    }
-                }
+    if (!regexps || !items) return false;
+    if (!Array.isArray(regexps) || !Array.isArray(items)) return false;
+    if (!regexps.length || !items.length) return false;
+
+    for (var r=0; r < regexps.length; r++) {
+        for (var i=0; i < items.length; i++) {
+            if (regexps[r].test(items[i])) {
+                return [ items[i], regexps[r] ];
             }
         }
     }
