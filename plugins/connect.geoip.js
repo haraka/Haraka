@@ -105,7 +105,11 @@ exports.get_maxmind_asn = function (connection) {
         return;
     }
 
-    connection.results.add(plugin,
+    var report_as = plugin;
+    if (plugin.cfg.asn && plugin.cfg.asn.report_as) {
+        report_as = { name: plugin.cfg.asn.report_as };
+    }
+    connection.results.add(report_as,
             { emit: true, asn: match[1], org: match[2] });
 };
 
