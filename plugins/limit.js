@@ -172,19 +172,18 @@ exports.check_concurrency = function (next, connection) {
     var concurrent = parseInt(connection.notes.limit);
 
     if (concurrent <= max) {
-        connection.logdebug(plugin, 'concurrent ' + concurrent +
-            ' <= ' + max);
+        connection.results.add(plugin, { pass: concurrent + '/' + max});
         return next();
     }
-    connection.logdebug(plugin, 'concurrent ' + concurrent +
-            ' exceeds max ' + max);
+
+    connection.results.add(plugin, {
+        fail: 'concurrency: ' + concurrent + '/' + max,
+    });
 
     var delay = 3;
     if (plugin.cfg.concurrency.disconnect_delay) {
         delay = parseFloat(plugin.cfg.concurrency.disconnect_delay);
     }
-
-    connection.results.add(plugin, {fail: 'concurrency.max'});
 
     // Disconnect slowly.
     setTimeout(function () {
@@ -205,12 +204,12 @@ exports.get_concurrency_limit = function (connection) {
         connection.logerror(plugin, 'no ' + history_plugin + ' results,' +
                ' disabling history due to misconfiguration');
         delete plugin.cfg.concurrency.history;
-        return;
+        return plugin.cfg.concurrency.max;
     }
 
     if (results.history === undefined) {
-        connection.logerror(plugin, 'no history from : ' + history_plugin);
-        return;
+        connection.loginfo(plugin, 'no IP history from : ' + history_plugin);
+        return plugin.cfg.concurrency.max;
     }
 
     var history = parseFloat(results.history);

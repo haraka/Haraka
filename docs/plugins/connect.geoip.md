@@ -72,6 +72,9 @@ Set a connection result to true if the distance exceeds this many kilometers.
 
 - too\_far=4000
 
+- [asn]report_as
+
+Permits reporting the ASN as another plugin (such as connect.asn).
 
 # SPAM PREDICTION WITH DISTANCE
 
