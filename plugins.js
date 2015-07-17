@@ -15,6 +15,7 @@ var states      = require('./connection').states;
 exports.registered_hooks = {};
 exports.registered_plugins = {};
 exports.plugin_list = [];
+var order = 0;
 
 function Plugin(name) {
     this.name = name;
@@ -44,7 +45,8 @@ Plugin.prototype.register_hook = function(hook_name, method_name, priority) {
         plugin: this.name,
         method: method_name,
         priority: priority,
-        timeout: this.timeout
+        timeout: this.timeout,
+        order: order++
     });
     this.hooks[hook_name] = this.hooks[hook_name] || [];
     this.hooks[hook_name].push(method_name);
@@ -153,6 +155,10 @@ plugins.load_plugins = function (override) {
         plugins.registered_hooks[hook].sort(function (a, b) {
             if (a.priority < b.priority) return -1;
             if (a.priority > b.priority) return 1;
+            if (a.priority == b.priority) {
+                if (a.order > b.order) return 1;
+                return -1;
+            }
             return 0;
         });
     }
@@ -174,7 +180,7 @@ plugins.load_plugin = function (name) {
 
 // Set in server.js; initialized to empty object
 // to prevent it from blowing up any unit tests.
-plugins.server = {};
+plugins.server = { notes: {} };
 
 plugins._load_and_compile_plugin = function (name) {
     var plugin = new Plugin(name);
