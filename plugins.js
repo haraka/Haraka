@@ -23,8 +23,8 @@ function Plugin(name) {
     var full_paths = [];
     this._get_plugin_paths().forEach(function (pp) {
         full_paths.push(path.resolve(pp, name) + '.js');
-        full_paths.push(path.resolve(pp, name) + '/index.js');
-        full_paths.push(path.resolve(pp, name) + '/package.json');
+        full_paths.push(path.resolve(pp, name, 'index.js'));
+        full_paths.push(path.resolve(pp, name, 'package.json'));
     });
     this.full_paths = full_paths;
     this.config = config;
