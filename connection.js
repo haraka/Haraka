@@ -1540,6 +1540,7 @@ Connection.prototype.data_done = function() {
 };
 
 Connection.prototype.data_post_respond = function(retval, msg) {
+    if (!this.transaction) return;
     var mid = this.transaction.header.get('Message-ID') || '';
     this.lognotice([
         'message',
