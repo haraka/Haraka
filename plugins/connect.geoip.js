@@ -182,7 +182,7 @@ exports.lookup_geoip = function (next, connection) {
     }
 
     plugin.calculate_distance(connection, r.ll, function (err, distance) {
-        show.push(r.distance+'km');
+        show.push(distance+'km');
         connection.results.add(plugin, {human: show.join(', '), emit:true});
         return next();
     });
