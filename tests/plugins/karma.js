@@ -23,7 +23,7 @@ var _set_up = function (done) {
     this.plugin.deny_hooks = {'connect': true};
     this.plugin.tarpit_hooks = ['connect'];
 
-    this.connection = Connection.createConnection();
+    this.connection = Connection.createConnection({}, { notes: {} });
 
     this.connection.transaction = stub;
     this.connection.transaction.results = new ResultStore(this.plugin);
@@ -433,3 +433,151 @@ exports.should_we_deny = {
         this.plugin.should_we_deny(next, this.connection, 'connect');
     },
 };
+
+exports.check_result_equal = {
+    setUp : _set_up,
+    'equal match is scored': function (test) {
+        test.expect(2);
+        var award = {
+            id         : 1,           award      : 2,
+            operator   : 'equals',    value      : 'clean',
+            reason     : 'testing',   resolution : 'never',
+        };
+        this.plugin.check_result_equal(['clean'], award, this.connection);
+        test.equals(this.connection.results.store.karma.score, 2);
+        test.equals(this.connection.results.store.karma.awards[0], 1);
+        test.done();
+    },
+    'not equal match is not scored': function (test) {
+        test.expect(1);
+        var award = {
+            id         : 1,           award      : 2,
+            operator   : 'equals',    value      : 'dirty',
+            reason     : 'testing',   resolution : 'never',
+        };
+        this.plugin.check_result_equal(['clean'], award, this.connection);
+        test.equals(this.connection.results.store.karma, undefined);
+        test.done();
+    }
+};
+
+exports.check_result_gt = {
+    setUp : _set_up,
+    'gt match is scored': function (test) {
+        test.expect(2);
+        var award = {
+            id         : 5,           award      : 3,
+            operator   : 'gt',        value      : 3,
+            reason     : 'testing',   resolution : 'never',
+        };
+        this.plugin.check_result_gt([4], award, this.connection);
+        // console.log(this.connection.results.store);
+        test.equals(this.connection.results.store.karma.score, 3);
+        test.equals(this.connection.results.store.karma.awards[0], 5);
+        test.done();
+    }
+};
+
+exports.check_result_lt = {
+    setUp : _set_up,
+    'lt match is scored': function (test) {
+        test.expect(2);
+        var award = {
+            id         : 2,           award      : 3,
+            operator   : 'lt',        value      : 5,
+            reason     : 'testing',   resolution : 'never',
+        };
+        this.plugin.check_result_lt([4], award, this.connection);
+        // console.log(this.connection.results.store);
+        test.equals(this.connection.results.store.karma.score, 3);
+        test.equals(this.connection.results.store.karma.awards[0], 2);
+        test.done();
+    },
+    'lt match not scored': function (test) {
+        test.expect(1);
+        var award = {
+            id         : 3,           award      : 3,
+            operator   : 'lt',        value      : 3,
+            reason     : 'testing',   resolution : 'never',
+        };
+        this.plugin.check_result_lt([4], award, this.connection);
+        // console.log(this.connection.results.store);
+        test.equals(this.connection.results.store.karma, undefined);
+        test.done();
+    }
+};
+
+exports.check_result_match = {
+    setUp : _set_up,
+    'match pattern is scored': function (test) {
+        test.expect(2);
+        var award = {
+            id         : 1,           award      : 2,
+            operator   : 'match',     value      : 'phish',
+            reason     : 'testing',   resolution : 'never',
+        };
+        this.plugin.check_result_match(['isphishing'], award, this.connection);
+        // console.log(this.connection.results.store);
+        test.equals(this.connection.results.store.karma.score, 2);
+        test.equals(this.connection.results.store.karma.awards[0], 1);
+        test.done();
+    },
+    'mismatch is not scored': function (test) {
+        test.expect(1);
+        var award = {
+            id         : 1,           award      : 2,
+            operator   : 'match',     value      : 'dirty',
+            reason     : 'testing',   resolution : 'never',
+        };
+        this.plugin.check_result_match(['clean'], award, this.connection);
+        // console.log(this.connection.results.store);
+        test.equals(this.connection.results.store.karma, undefined);
+        test.done();
+    },
+    'FCrDNS match is scored': function (test) {
+        test.expect(2);
+        var award = {
+            id         : 089,         award      : 2,
+            operator   : 'match',     value      : 'google.com',
+            reason     : 'testing',   resolution : 'never',
+        };
+        this.plugin.check_result_match(['mail-yk0-f182.google.com'], award, this.connection);
+        // console.log(this.connection.results.store);
+        test.equals(this.connection.results.store.karma.score, 2);
+        test.equals(this.connection.results.store.karma.awards[0], 89);
+        test.done();
+    },
+};
+
+exports.check_result = {
+    setUp : _set_up,
+    'geoip country is scored': function (test) {
+        test.expect(2);
+        this.plugin.cfg.result_awards = {
+            1: 'connect.geoip | country | equals | CN | 2',
+        };
+        this.plugin.preparse_result_awards();
+        this.connection.results.add({name: 'connect.geoip'}, {country: 'CN'});
+        this.plugin.check_result(this.connection,
+                '{"plugin":"connect.geoip","result":{"country":"CN"}}');
+        // console.log(this.connection.results.store);
+        test.equals(this.connection.results.store.karma.score, 2);
+        test.equals(this.connection.results.store.karma.awards[0], 1);
+        test.done();
+    },
+    'dnsbl listing is scored': function (test) {
+        test.expect(2);
+        this.plugin.cfg.result_awards = {
+            2: 'dnsbl | fail | equals | dnsbl.sorbs.net | -5',
+        };
+        this.plugin.preparse_result_awards();
+        this.connection.results.add({name: 'dnsbl'}, {fail: 'dnsbl.sorbs.net'});
+        this.plugin.check_result(this.connection,
+                '{"plugin":"dnsbl","result":{"fail":"dnsbl.sorbs.net"}}');
+        // console.log(this.connection.results.store);
+        test.equals(this.connection.results.store.karma.score, -5);
+        test.equals(this.connection.results.store.karma.awards[0], 2);
+        test.done();
+    },
+};
+

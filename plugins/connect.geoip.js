@@ -221,14 +221,18 @@ exports.get_geoip_maxmind = function (ip) {
         result = ipv6 ? plugin.maxmind.getLocationV6(ip)
                       : plugin.maxmind.getLocation(ip);
     }
-    catch (e) { plugin.logerror(e); }
+    catch (e) { 
+        plugin.logerror(e.message); 
+    }
     if (!result) {
         try {
             // then try GeoIP country
             result = ipv6 ? plugin.maxmind.getCountryV6(ip)
                           : plugin.maxmind.getCountry(ip);
         }
-        catch (e) { plugin.logerror(e); }
+        catch (e) { 
+            plugin.logerror(e.message); 
+        }
     }
     return result;
 };

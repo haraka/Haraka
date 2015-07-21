@@ -158,7 +158,14 @@ cfreader.read_config = function(name, type, cb, options) {
         var cache_key = cfreader.get_cache_key(name, options);
         if (cfreader._config_cache[cache_key]) {
             //logger.logdebug('Returning cached file: ' + name);
-            return cfreader._config_cache[cache_key];
+            var cached = cfreader._config_cache[cache_key];
+            // Make sure that any .ini file booleans are applied
+            if (type === 'ini' && (options && options.booleans && 
+                Array.isArray(options.booleans))) 
+            {
+                cfreader.init_booleans(options, cached);
+            }
+            return cached;
         }
     }
 
@@ -357,10 +364,7 @@ cfreader.load_yaml_config = function(name) {
     return result;
 };
 
-cfreader.load_ini_config = function(name, options) {
-    var result       = cfreader.empty_config('ini');
-    var current_sect = result.main;
-    var current_sect_name = 'main';
+cfreader.init_booleans = function (options, result) {
     var bool_matches = [];
     if (options && options.booleans) bool_matches = options.booleans.slice();
 
@@ -374,8 +378,8 @@ cfreader.load_ini_config = function(name, options) {
             var key     = m[2];
 
             var bool_default = section[0] === '+' ? true
-                                :     key[0] === '+' ? true
-                                : false;
+                             :     key[0] === '+' ? true
+                             :     false;
 
             if (section.match(/^(\-|\+)/)) section = section.substr(1);
             if (    key.match(/^(\-|\+)/)) key     =     key.substr(1);
@@ -385,10 +389,18 @@ cfreader.load_ini_config = function(name, options) {
                 bool_matches.push(section+'.'+key);
             }
 
-            if (!result[section]) result[section] = {};
-            result[section][key] = bool_default;
+            if (result[section] === undefined) result[section] = {};
+            if (result[section][key] === undefined) result[section][key] = bool_default;
         }
     }
+    return bool_matches;
+}
+
+cfreader.load_ini_config = function(name, options) {
+    var result       = cfreader.empty_config('ini');
+    var current_sect = result.main;
+    var current_sect_name = 'main';
+    var bool_matches = cfreader.init_booleans(options, result);
 
     if (!utils.existsSync(name)) { return result; }
 
