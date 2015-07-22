@@ -34,6 +34,8 @@ function Transaction() {
         tempfail: 0,
         reject:   0,
     };
+    this.data_post_start = null;
+    this.data_post_delay = 0;
 }
 
 exports.Transaction = Transaction;

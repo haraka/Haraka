@@ -204,7 +204,6 @@ function Connection(client, server) {
         tempfail: 0,
         reject:   0,
     };
-    this.data_post_start = null;
     this.proxy = false;
     this.proxy_timer = false;
     this.max_line_length = config.get('max_line_length') || 512;
@@ -1536,13 +1535,14 @@ Connection.prototype.data_done = function() {
         // Record the start time of this hook as we can't take too long
         // as the client will typically hang up after 2 to 3 minutes
         // despite the RFC mandating that 10 minutes should be allowed.
-        self.data_post_start = Date.now();
+        self.transaction.data_post_start = Date.now();
         plugins.run_hooks('data_post', self);
     });
 };
 
 Connection.prototype.data_post_respond = function(retval, msg) {
     if (!this.transaction) return;
+    this.transaction.data_post_delay = (Date.now() - this.transaction.data_post_start)/1000;
     var mid = this.transaction.header.get('Message-ID') || '';
     this.lognotice([
         'message',
@@ -1551,7 +1551,7 @@ Connection.prototype.data_post_respond = function(retval, msg) {
         'rcpts=' + this.transaction.rcpt_count.accept + '/' +
                    this.transaction.rcpt_count.tempfail + '/' +
                    this.transaction.rcpt_count.reject,
-        'delay=' + (Date.now() - this.data_post_start)/1000,
+        'delay=' + this.transaction.data_post_delay,
         'code='  + constants.translate(retval),
         'msg="'  + (msg || '') + '"',
     ].join(' '));
