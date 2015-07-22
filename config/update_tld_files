@@ -1,6 +1,7 @@
 #!/bin/bash
 # Update Haraka TLD files
 
+DIR=`dirname $0`
 CURL=`which curl 2> /dev/null`
 
 if [ $? -ne 0 ]; then
@@ -8,6 +9,7 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
+cd $DIR
 $CURL -s https://data.iana.org/TLD/tlds-alpha-by-domain.txt > top-level-tlds
 $CURL -s http://george.surbl.org/two-level-tlds > two-level-tlds
 $CURL -s http://george.surbl.org/three-level-tlds > three-level-tlds
