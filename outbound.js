@@ -476,7 +476,7 @@ exports.send_trans_email = function (transaction, next) {
         }
 
         if (next) {
-            next(constants.ok, "Message Queued (" + transaction.uuid + ")");
+            next(constants.ok, "Message Queued");
         }
     });
 };
