@@ -84,7 +84,7 @@ exports.hook_helo = exports.hook_ehlo = function (next, connection, helo) {
         timeout = true;
         connection.logerror(plugin, 'timeout');
         return next();
-    }, 30 * 1000);
+    }, (plugin.timeout-1) * 1000);
     spf.hello_host = helo;
     spf.check_host(connection.remote_ip, helo, null, function (err, result) {
         if (timer) clearTimeout(timer);
@@ -145,7 +145,7 @@ exports.hook_mail = function (next, connection, params) {
         timeout = true;
         connection.logerror(plugin, 'timeout');
         return next();
-    }, 30 * 1000);
+    }, (plugin.timeout-1) * 1000);
 
     spf.helo = connection.hello_host;
 
@@ -184,18 +184,15 @@ exports.hook_mail = function (next, connection, params) {
         return spf.check_host(connection.remote_ip, host, mfrom, ch_cb);
     }
 
-    // outbound (relaying), context=myself, private IP
-    if (net_utils.is_private_ip(connection.remote_ip)) return next();
-
     // outbound (relaying), context=myself
-    net_utils.get_public_ip(function(e, sender_ip) {
+    net_utils.get_public_ip(function(e, my_public_ip) {
         if (e) {
             return ch_cb(e);
         }
-        if (!sender_ip) {
+        if (!my_public_ip) {
             return ch_cb(new Error("failed to discover public IP"));
         }
-        return spf.check_host(sender_ip, host, mfrom, ch_cb);
+        return spf.check_host(my_public_ip, host, mfrom, ch_cb);
     });
 };
 
