@@ -213,6 +213,7 @@ function Connection(client, server) {
     this.errors = 0;
     this.last_rcpt_msg = null;
     this.hook = null;
+    this.haproxy_ip = null;
     setupClient(this);
 }
 
@@ -1134,6 +1135,7 @@ Connection.prototype.cmd_proxy = function (line) {
         ' dst_ip=' + dst_ip + ':' + dst_port);
 
     this.reset_transaction(function () {
+        self.haproxy_ip = self.remote_ip;
         self.relaying = false;
         self.local_ip = dst_ip;
         self.local_port = dst_port;
