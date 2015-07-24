@@ -29,6 +29,11 @@ If you have specified multiple listen= ports this variable is useful
 if you only want a plugin to run when connections are made to a specific
 port
 
+* connection.haproxy\_ip
+
+If the connection is being proxied by HAProxy, this variable will
+contain the remote IP address of the HAProxy host.
+
 * connection.greeting
 
 Either 'EHLO' or 'HELO' whichever the remote end used
