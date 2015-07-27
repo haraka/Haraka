@@ -62,7 +62,7 @@ exports.early_talker = {
             test.ok(this.connection.results.has('early_talker', 'fail', 'early'));
             test.done();
         }.bind(this);
-        this.plugin.pause = 1000;
+        this.plugin.pause = 1001;
         this.plugin.cfg.main.reject = false;
         this.connection.early_talker = true;
         this.plugin.early_talker(next, this.connection);
