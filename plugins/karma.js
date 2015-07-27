@@ -408,19 +408,20 @@ exports.hook_deny = function (next, connection, params) {
         return next();
     }
 
-    // intercept any other denials
-    connection.results.add(plugin, {fail: 'deny:' + pi_name});
+    if (connection.results) {
+        connection.results.add(plugin, {fail: 'deny:' + pi_name});
 
-    if (pi_deny === DENY ||
-        pi_deny === DENYDISCONNECT ||
-        pi_deny === DISCONNECT) {
-        connection.results.incr(plugin, {score: -2});
-    }
-    else {
-        connection.results.incr(plugin, {score: -1});
+        if (pi_deny === DENY ||
+            pi_deny === DENYDISCONNECT ||
+            pi_deny === DISCONNECT) {
+                connection.results.incr(plugin, {score: -2});
+        }
+        else {
+            connection.results.incr(plugin, {score: -1});
+        }
     }
 
-    // let the connection continue
+    // intercept any other denials letting the connection continue
     return next(OK);
 };
 
