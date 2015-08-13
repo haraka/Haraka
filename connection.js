@@ -1132,9 +1132,9 @@ Connection.prototype.cmd_proxy = function (line) {
         self.haproxy_ip = self.remote_ip;
         self.relaying = false;
         self.local_ip = dst_ip;
-        self.local_port = dst_port;
+        self.local_port = parseInt(dst_port, 10);
         self.remote_ip = src_ip;
-        self.remote_port = src_port;
+        self.remote_port = parseInt(src_port, 10);
         self.remote_host = undefined;
         self.hello_host = undefined;
         plugins.run_hooks('connect_init', self);
