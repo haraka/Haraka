@@ -19,7 +19,7 @@ exports.register = function () {
     plugin.deny_exclude_hooks = utils.to_object('rcpt_to, queue');
     plugin.deny_exclude_plugins = utils.to_object(
             ['access', 'helo.checks', 'data.headers', 'spamassassin',
-            'mail_from.is_resolvable', 'clamd']
+            'mail_from.is_resolvable', 'clamd', 'tls']
     );
 
     plugin.load_karma_ini();
