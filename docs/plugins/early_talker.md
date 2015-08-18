@@ -1,20 +1,20 @@
 early\_talker
 ============
 
-Early talkers are violators of the SMTP specification, which demands that
-clients must wait for responses before sending the next command.
+Early talkers are violators of the SMTP specification, which require that
+clients must wait for certain responses before sending the next command.
 
-Early talker detection is handled internally by Haraka (in connection.js).
+This plugin introduces a configurable delay before the connection banner
+and after the DATA command for Haraka to detect if it talks early.
 
-At the DATA command, this plugin checks to see if an early talker was
-detected.
-
-Any plugin can detect early talkers by checking connection.early\_talker.
+If an early talker is detected at connection or DATA, then a DENY is
+returned with the message 'You talk too soon'.
 
 Configuration
 -------------
 
-* early\_talker.pause
+The config file early\_talker.ini has two options:
 
-  Specifies a delay in milliseconds to delay before each SMTP command before
-  sending the response, while waiting for early talkers. Default is no pause.
+- pause: the delay in seconds before each SMTP command. Default is no pause.
+
+- reject: whether or not to reject for early talkers. Default is true;

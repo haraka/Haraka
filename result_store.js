@@ -3,6 +3,7 @@
 'use strict';
 
 var config = require('./config');
+var util = require('util');
 
 // see docs in docs/Results.md
 var append_lists = ['msg','pass','fail','skip','err'];
@@ -165,7 +166,6 @@ ResultStore.prototype.get_all = function () {
 };
 
 ResultStore.prototype.private_collate = function (result, name) {
-
     var r = [], order = [], hide = [];
 
     if (cfg[name]) {
@@ -179,6 +179,7 @@ ResultStore.prototype.private_collate = function (result, name) {
         if (all_opts.indexOf(key) !== -1) continue;
         if (hide.length && hide.indexOf(key) !== -1) continue;
         if (Array.isArray(result[key]) && result[key].length === 0) continue;
+        if (typeof result[key] === 'object') continue;
         r.push(key + ': ' + result[key]);
     }
 
@@ -211,7 +212,15 @@ ResultStore.prototype._log = function (plugin, result, obj) {
 
     // logging results
     if (obj.emit) this.conn.loginfo(plugin, result.human);  // by request
-    if (obj.err)  this.conn.logerror(plugin, obj.err);      // by default
+    if (obj.err) {
+        // Handle error objects by logging the message
+        if (util.isError(obj.err)) {
+            this.conn.logerror(plugin, obj.err.message);
+        }
+        else {
+            this.conn.logerror(plugin, obj.err);
+        }
+    }
     if (!obj.emit && !obj.err) {                            // by config
         var pic = cfg[name];
         if (pic && pic.debug) this.conn.logdebug(plugin, result.human);

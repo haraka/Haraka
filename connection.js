@@ -178,8 +178,6 @@ function Connection(client, server) {
     this.transaction = null;
     this.tran_count = 0;
     this.capabilities = null;
-    this.early_talker_delay = config.get('early_talker.pause') ||
-                              config.get('early_talker_delay') || 1000;
     this.banner_includes_uuid =
         config.get('banner_includes_uuid') ? true : false;
     this.deny_includes_uuid = config.get('deny_includes_uuid') || null;
@@ -204,7 +202,6 @@ function Connection(client, server) {
         tempfail: 0,
         reject:   0,
     };
-    this.data_post_start = null;
     this.proxy = false;
     this.proxy_timer = false;
     this.max_line_length = config.get('max_line_length') || 512;
@@ -213,6 +210,7 @@ function Connection(client, server) {
     this.errors = 0;
     this.last_rcpt_msg = null;
     this.hook = null;
+    this.haproxy_ip = null;
     setupClient(this);
 }
 
@@ -373,8 +371,7 @@ Connection.prototype._process_data = function() {
                 this.logdebug('[early_talker] state=' + this.state + ' esmtp=' + this.esmtp + ' line="' + this_line + '"');
             }
             this.early_talker = true;
-            // If you talk early, we're going to give you a delay
-            setTimeout(function() { self._process_data(); }, this.early_talker_delay);
+            self._process_data();
             break;
         }
         else if ((this.state === states.STATE_PAUSE || this.state === states.STATE_PAUSE_SMTP) && this.esmtp) {
@@ -415,9 +412,7 @@ Connection.prototype._process_data = function() {
                             ' esmtp=' + this.esmtp + ' line="' + this_line + '"');
                 }
                 this.early_talker = true;
-                setTimeout(function() {
-                    self._process_data();
-                }, this.early_talker_delay);
+                self._process_data();
             }
             break;
         }
@@ -1134,11 +1129,12 @@ Connection.prototype.cmd_proxy = function (line) {
         ' dst_ip=' + dst_ip + ':' + dst_port);
 
     this.reset_transaction(function () {
+        self.haproxy_ip = self.remote_ip;
         self.relaying = false;
         self.local_ip = dst_ip;
-        self.local_port = dst_port;
+        self.local_port = parseInt(dst_port, 10);
         self.remote_ip = src_ip;
-        self.remote_port = src_port;
+        self.remote_port = parseInt(src_port, 10);
         self.remote_host = undefined;
         self.hello_host = undefined;
         plugins.run_hooks('connect_init', self);
@@ -1536,13 +1532,14 @@ Connection.prototype.data_done = function() {
         // Record the start time of this hook as we can't take too long
         // as the client will typically hang up after 2 to 3 minutes
         // despite the RFC mandating that 10 minutes should be allowed.
-        self.data_post_start = Date.now();
+        self.transaction.data_post_start = Date.now();
         plugins.run_hooks('data_post', self);
     });
 };
 
 Connection.prototype.data_post_respond = function(retval, msg) {
     if (!this.transaction) return;
+    this.transaction.data_post_delay = (Date.now() - this.transaction.data_post_start)/1000;
     var mid = this.transaction.header.get('Message-ID') || '';
     this.lognotice([
         'message',
@@ -1551,7 +1548,7 @@ Connection.prototype.data_post_respond = function(retval, msg) {
         'rcpts=' + this.transaction.rcpt_count.accept + '/' +
                    this.transaction.rcpt_count.tempfail + '/' +
                    this.transaction.rcpt_count.reject,
-        'delay=' + (Date.now() - this.data_post_start)/1000,
+        'delay=' + this.transaction.data_post_delay,
         'code='  + constants.translate(retval),
         'msg="'  + (msg || '') + '"',
     ].join(' '));

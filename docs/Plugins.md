@@ -322,7 +322,7 @@ them like a simple key/value store e.g.
 
     connection.transaction.notes.test = 'testing';
 
-## See also, [Results](Results)
+## See also, [Results](Results.md)
 
 
 Further Reading

@@ -8,6 +8,7 @@ var _set_up = function (callback) {
     
     this.plugin = new Plugin('early_talker');
     this.plugin.config = config;
+    this.plugin.cfg = { main: { reject: true } };
 
     this.connection = Connection.createConnection();
     callback();
@@ -48,6 +49,21 @@ exports.early_talker = {
             test.done();
         }.bind(this);
         this.plugin.pause = 1000;
+        this.connection.early_talker = true;
+        this.plugin.early_talker(next, this.connection);
+    },
+    'is an early talker, reject=false': function (test) {
+        test.expect(4);
+        var before = Date.now();
+        var next = function (rc, msg) {
+            test.ok(Date.now() >= before + 1000);
+            test.equal(undefined, rc);
+            test.equal(undefined, msg);
+            test.ok(this.connection.results.has('early_talker', 'fail', 'early'));
+            test.done();
+        }.bind(this);
+        this.plugin.pause = 1001;
+        this.plugin.cfg.main.reject = false;
         this.connection.early_talker = true;
         this.plugin.early_talker(next, this.connection);
     },
