@@ -88,10 +88,12 @@ exports.tls_unrecognized_command = function (next, connection, params) {
     connection.respond(220, "Go ahead.");
 
     var plugin = this;
+    var timed_out = false;
     // adjust plugin.timeout like so: echo '45' > config/tls.timeout
     var timeout = plugin.timeout - 1;
 
     var timer = setTimeout(function () {
+        timed_out = true;
         connection.logerror(plugin, 'timeout');
         return next(DENYSOFTDISCONNECT);
     }, timeout * 1000);
@@ -101,6 +103,7 @@ exports.tls_unrecognized_command = function (next, connection, params) {
     /* Upgrade the connection to TLS. */
     connection.client.upgrade(plugin.tls_opts, function (authorized,
             verifyError, cert, cipher) {
+        if (timed_out) { return; }
         clearTimeout(timer);
         connection.reset_transaction(function () {
             connection.hello_host = undefined;
