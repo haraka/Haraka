@@ -113,6 +113,10 @@ First clone the repository:
     $ git clone https://github.com/baudehlo/Haraka.git
     $ cd Haraka
 
+Install Haraka's node.js dependencies locally:
+
+    $ npm install
+
 Edit `config/plugins` and `config/smtp.ini` to specify the plugins and
 config you want.
 
