@@ -2,7 +2,12 @@
   "author": "Matt Sergeant <helpme@gmail.com> (http://baudehlo.com/)",
   "name": "Haraka",
   "description": "An SMTP Server project.",
-  "keywords": ["haraka", "smtp", "server", "email"],
+  "keywords": [
+    "haraka",
+    "smtp",
+    "server",
+    "email"
+  ],
   "version": "2.6.1",
   "homepage": "http://haraka.github.io",
   "repository": {
@@ -14,37 +19,38 @@
     "node": ">= v0.10.0"
   },
   "dependencies": {
-    "nopt"          : "~3.0.1",
-    "generic-pool"  : "~2.2.0",
-    "iconv"         : "~2.1.0",
-    "ipaddr.js"     : "~1.0.1",
-    "semver"        : "~2.2.1",
-    "async"         : "~1.1.0",
-    "daemon"        : "~1.1.0",
-    "npid"          : "~0.4.0",
-    "address-rfc2822":"~0.0.2",
-    "js-yaml"       : "~3.3.0",
-    "sprintf-js"    : "~1.0.2"
+    "address-rfc2822": "0.0.2",
+    "async": "^1.4.2",
+    "daemon": "^1.1.0",
+    "generic-pool": "^2.2.0",
+    "iconv": "^2.1.10",
+    "ipaddr.js": "^1.0.3",
+    "js-yaml": "^3.4.0",
+    "nopt": "^3.0.3",
+    "npid": "^0.4.0",
+    "semver": "^5.0.1",
+    "sprintf-js": "^1.0.3"
   },
   "optionalDependencies": {
-    "node-syslog": "~1.2.0",
-    "strong-fork-syslog": "~1.2.3",
-    "ldapjs": "~0.7.1",
-    "vs-stun": "~0.0.7",
-    "maxmind": "*",
-    "redis": "~0.10.1",
-    "tmp": "~0.0.24",
+    "elasticsearch": "*",
     "haraka-nosql": "*",
-    "elasticsearch": "*"
+    "hiredis": "^0.4.1",
+    "ioredis": "^1.7.6",
+    "ldapjs": "^0.7.1",
+    "maxmind": "*",
+    "modern-syslog": "^1.1.0",
+    "redis": "^1.0.0",
+    "tmp": "0.0.27",
+    "vs-stun": "0.0.7"
   },
   "devDependencies": {
-    "nodeunit"      : "https://github.com/godsflaw/nodeunit/archive/master.tar.gz",
-    "jscoverage"    : "*",
-    "coveralls"     : "*",
-    "grunt"         : "*",
-    "grunt-contrib-clean" : "*",
-    "grunt-contrib-jshint" : "*",
-    "grunt-version-check" : "*"
+    "nodeunit": "https://github.com/godsflaw/nodeunit/archive/master.tar.gz",
+    "jscoverage": "*",
+    "coveralls": "*",
+    "grunt": "*",
+    "grunt-contrib-clean": "*",
+    "grunt-contrib-jshint": "*",
+    "grunt-version-check": "*"
   },
   "licenses": [
     {

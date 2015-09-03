@@ -46,6 +46,10 @@
     * added utils.node_min()
     * added result_store.get_all()
     * updated ubuntu upstart script
+	* update dependency versions (@Dexus)
+	* update optionaldependency versions (@Dexus)
+	* replace node-syslog with modern-syslog (@Dexus)
+	* replace redis with more stable ioredis (@Dexus)
 
 * Bug Fixes
     * corrected hook_rcpt log code hook_rcpt_ok returns CONT
@@ -64,6 +68,8 @@
     * connection: return 450/550 for plugin DENY* (was 452/552)
     * spamassassin: don't call next() when transaction gone
     * outbound: fix crash when sending bounce mail
+	
+	
 
 2.6.1 - Mar 27, 2015
 

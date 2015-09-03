@@ -1,6 +1,6 @@
 'use strict';
 
-var redis  = require('redis');
+var redis  = require('ioredis');
 
 exports.register = function () {
     var plugin = this;

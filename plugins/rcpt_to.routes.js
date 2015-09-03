@@ -12,7 +12,7 @@ exports.register = function() {
 
     plugin.load_config();
 
-    try { redis = require('redis'); }
+    try { redis = require('ioredis'); }
     catch (e) {
         plugin.logerror("unable to load redis.\ndid you: npm install -g redis?");
     }

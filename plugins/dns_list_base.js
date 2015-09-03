@@ -82,7 +82,7 @@ exports.stats_incr_zone = function (err, zone, start) {
 exports.init_redis = function () {
     if (redis_client) { return; }
 
-    var redis = require('redis');
+    var redis = require('ioredis');
     var host_port = this.redis_host.split(':');
     var host = host_port[0] || '127.0.0.1';
     var port = parseInt(host_port[1], 10) || 6379;
