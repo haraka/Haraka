@@ -68,8 +68,10 @@
     * connection: return 450/550 for plugin DENY* (was 452/552)
     * spamassassin: don't call next() when transaction gone
     * outbound: fix crash when sending bounce mail
-	
-	
+	* fix some tests (@Dexus)
+	* fix load_flat_config (@Dexus)
+	* fix ioredis multi result (@Dexus)
+	* fix typo and until.debug (Deprecated) => console.error (@Dexus)
 
 2.6.1 - Mar 27, 2015
 

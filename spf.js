@@ -142,7 +142,7 @@ SPF.prototype.expand_macros = function (str) {
 };
 
 SPF.prototype.log_debug = function (str) {
-    console.error(str);
+    console.error('DEBUG:', str);
 };
 
 SPF.prototype.check_host = function (ip, domain, mail_from, cb) {
