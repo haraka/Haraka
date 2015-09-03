@@ -39,7 +39,6 @@
     "ldapjs": "^0.7.1",
     "maxmind": "*",
     "modern-syslog": "^1.1.0",
-    "redis": "^1.0.0",
     "tmp": "0.0.27",
     "vs-stun": "0.0.7"
   },
