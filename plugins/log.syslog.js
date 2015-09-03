@@ -6,7 +6,7 @@ exports.register = function() {
 
     try { plugin.Syslog = require('modern-syslog'); }
     catch (e) {
-        plugin.logerror('failed to load node-syslog');
+        plugin.logerror('failed to load modern-syslog');
         return;
     }
 

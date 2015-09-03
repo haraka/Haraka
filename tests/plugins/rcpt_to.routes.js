@@ -166,14 +166,15 @@ exports.get_mx_redis = {
     'email address redis hit' : function (test) {
         if (this.plugin.redis_pings) {
             var addr = new Address('<matt@example.com>');
-            test.expect(2);
             this.plugin.insert_route('matt@example.com','192.168.2.1');
-            this.plugin.get_mx(function (rc, mx) {
+            test.expect(2);
+            var cb = function (rc, mx) {
                 test.equal(rc, OK);
                 test.equal(mx, '192.168.2.1');
-                test.done();
+				test.done();
                 this.plugin.delete_route(addr.address());
-            }, hmail, addr.host).bind(this);
+            }.bind(this);
+			this.plugin.get_mx(cb, hmail, addr.host);
         }
         else {
             test.expect(0);
@@ -182,18 +183,21 @@ exports.get_mx_redis = {
     },
     'email domain redis hit' : function (test) {
         if (this.plugin.redis_pings) {
+			console.log('getmx',6);
             var addr = new Address('<matt@example.com>');
-            test.expect(2);
             this.plugin.insert_route(addr.address(),'192.168.2.2');
+			test.expect(2);
             var cb = function (rc, mx) {
+				console.log('getmx',7,rc, mx);
                 test.equal(rc, OK);
                 test.equal(mx, '192.168.2.2');
-                test.done();
-                this.plugin.delete_route(addr.address());
+				test.done();
+				this.plugin.delete_route(addr.address());
             }.bind(this);
             this.plugin.get_mx(cb, hmail, addr.host);
         }
         else {
+			console.log('getmx',9);
             test.expect(0);
             test.done();
         }
@@ -204,15 +208,15 @@ exports.get_mx_redis = {
             this.plugin.insert_route('matt@example.com','192.168.2.1');
             this.plugin.insert_route(     'example.com','192.168.2.2');
             var addr = new Address('<matt@example.com>');
-
+			console.log('getmx',10);
             var cb = function (rc, mx) {
+				console.log('getmx',11, rc, mx);
                 test.equal(rc, OK);
                 test.equal(mx, '192.168.2.1');
-                test.done();
-                this.plugin.delete_route('matt@example.com');
-                this.plugin.delete_route(     'example.com');
+				test.done();
+				this.plugin.delete_route('matt@example.com');
+				this.plugin.delete_route('example.com');
             }.bind(this);
-
             this.plugin.get_mx(cb, hmail, addr.host);
         }
         else {

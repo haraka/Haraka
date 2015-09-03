@@ -38,10 +38,10 @@ var _set_up = function (done) {
     }
 
     try {
-        this.plugin.Syslog = require('node-syslog');
+        this.plugin.Syslog = require('modern-syslog');
     }
     catch (e) {
-        console.log('unable to load node-syslog');
+        console.log('unable to load modern-syslog');
         return done();
     }
 
