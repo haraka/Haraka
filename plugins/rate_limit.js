@@ -1,6 +1,6 @@
 // rate_limit
 var ipaddr = require('ipaddr.js');
-var redis = require('redis');
+var redis = require('ioredis');
 var client;
 
 exports.register = function () {

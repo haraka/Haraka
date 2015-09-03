@@ -36,7 +36,7 @@ dnswl.ini - INI format with options described below:
 
 * enable\_stats
 
-    To use this feature you must have installed the 'redis' module and
+    To use this feature you must have installed the 'ioredis' module and
     have a redis server running.
       
     When enabled, this will record several list statistics to redis.
