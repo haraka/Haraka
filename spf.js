@@ -2,7 +2,6 @@
 // spf
 
 var dns = require('dns');
-var util = require('util');
 var ipaddr = require('ipaddr.js');
 
 // Constructor
@@ -143,7 +142,7 @@ SPF.prototype.expand_macros = function (str) {
 };
 
 SPF.prototype.log_debug = function (str) {
-    util.debug(str);
+    console.error('DEBUG:', str);
 };
 
 SPF.prototype.check_host = function (ip, domain, mail_from, cb) {

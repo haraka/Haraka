@@ -196,7 +196,7 @@ This is from the karma plugin, subscribing on the `connect_init` hook.
 ```js
 var redis = {
     patt: 'result-' + connection.uuid + '*',
-    conn: require('redis').createClient(),
+    conn: require('ioredis').createClient(),
 };
 redis.conn.on('psubscribe', function (pattern, count) {
     connection.loginfo(plugin, 'psubscribed to ' + pattern);

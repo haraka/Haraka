@@ -10,11 +10,11 @@ tarpit the connection by adding a delay before every response sent back to the
 client instead of sending a DENYSOFT.  To do this requires the 'tarpit' plugin 
 to run immediately after this plugin.
 
-To use this plugin you will need a Redis server and will need the redis, 
+To use this plugin you will need a Redis server and will need the ioredis, 
 hiredis and ipaddr.js packages installed via:
 
     cd /path/to/haraka/home
-    npm install redis hiredis ipaddr.js
+    npm install ioredis hiredis ipaddr.js
     
 Configuration
 -------------

@@ -71,7 +71,7 @@ a 92,000 key object on a Xeon E5-2620 @ 2.10GHz.
 
 ## Redis
 
-The benchmarks published by the author(s) of the Node 'redis' module are
+The benchmarks published by the author(s) of the Node 'ioredis' module are
 about 30,000 qps.
 
 # Author

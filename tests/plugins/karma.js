@@ -7,7 +7,7 @@ var config           = require('../../config');
 var ResultStore      = require("../../result_store");
 
 try {
-    var redis = require('redis');
+    var redis = require('ioredis');
 }
 catch (e) {
     console.log(e + "\nunable to load redis, skipping tests");
