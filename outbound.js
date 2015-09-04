@@ -27,7 +27,9 @@ var MAX_UNIQ = 10000;
 var host = require('os').hostname().replace(/\\/, '\\057').replace(/:/, '\\072');
 var fn_re = /^(\d+)_(\d+)_/; // I like how this looks like a person
 
+// TODO: For testability, this should be accessible
 var queue_dir = path.resolve(config.get('queue_dir') || (process.env.HARAKA + '/queue'));
+
 var uniq = Math.round(Math.random() * MAX_UNIQ);
 var cfg;
 exports.load_config = function () {
@@ -612,6 +614,9 @@ function TODOItem (domain, recipients, transaction) {
     return this;
 }
 
+// exported for testability
+exports.TODOItem = TODOItem;
+
 /////////////////////////////////////////////////////////////////////////////
 // HMailItem - encapsulates an individual outbound mail item
 
@@ -980,10 +985,18 @@ HMailItem.prototype.try_deliver_host = function (mx) {
     if (!mx.bind && this.todo.notes.outbound_ip) {
         mx.bind = this.todo.notes.outbound_ip;
     }
-    
+
     var host = this.hostlist.shift();
     var port            = mx.port || 25;
     var socket          = sock.connect({port: port, host: host, localAddress: mx.bind});
+
+    this.try_deliver_host_on_socket(mx, host, port, socket);
+}
+
+// Introduced for testability
+HMailItem.prototype.try_deliver_host_on_socket = function (mx, host, port, socket) {
+    // Args host and port are the same as used for socket. However, can't get them back from socket right now.
+
     var self            = this;
     var processing_mail = true;
 
