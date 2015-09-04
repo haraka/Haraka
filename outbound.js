@@ -1263,9 +1263,9 @@ HMailItem.prototype.try_deliver_host = function (mx) {
                         // EHLO command was rejected; fall-back to HELO
                         return send_command('HELO', config.get('me'));
                     }
+                    reason = code + ' ' + ((extc) ? extc + ' ' : '') + response.join(' ');
                     if (/^rcpt/.test(command) || command === 'dot_lmtp') {
                         if (command === 'dot_lmtp') last_recip = ok_recips.shift();
-                        reason = code + ' ' + ((extc) ? extc + ' ' : '') + response.join(' ');
                         self.lognotice('recipient ' + last_recip + ' rejected: ' + reason);
                         last_recip.reason = reason;
                         bounce_recips.push(last_recip);
@@ -1277,7 +1277,6 @@ HMailItem.prototype.try_deliver_host = function (mx) {
                         }
                     }
                     else {
-                        reason = response.join(' ');
                         send_command('QUIT');
                         processing_mail = false;
                         return self.bounce(reason, { mx: mx });
