@@ -1,6 +1,7 @@
 var dns       = require('dns'),
     net       = require('net'),
     utils     = require('./utils'),
+    async     = require('async'),
     net_utils = require('./net_utils');
 
 exports.register = function () {
@@ -88,24 +89,46 @@ exports.hook_lookup_rdns = function (next, connection) {
             }
 
             queries_run = true;
-            connection.logdebug(plugin, 'domain: ' + ptr_domain);
+			connection.logdebug(plugin, 'domain: ' + ptr_domain);
             pending_queries++;
             (function (ptr_domain) {  /* BEGIN BLOCK SCOPE */
-            dns.resolve(ptr_domain, function(err, ips_from_fwd) {
-                pending_queries--;
-                if (err) {
-                    plugin.handle_a_error(connection, err, ptr_domain);
-                }
-                else {
-                    connection.logdebug(plugin, ptr_domain + ' => ' + ips_from_fwd);
-                    results[ptr_domain] = ips_from_fwd;
-                }
-                if (pending_queries > 0) return;
+                async.parallel([
+                    function(callback){
+                        dns.resolve4(ptr_domain, function(err, ips_from_fwd) {
+                            if (err) {
+                                plugin.handle_a_error(connection, err, ptr_domain);
+                            }
+                            callback(err, ips_from_fwd);
+                        });
+                    },
+                    function(callback){
+                        dns.resolve6(ptr_domain, function(err, ips_from_fwd) {
+                            if (err) {
+                                plugin.handle_a_error(connection, err, ptr_domain);
+                            }
+                            callback(err, ips_from_fwd);
+                        });
+                    }
+                ],
+                function(err, async_results) {
+                    pending_queries--;
+                    var ips = [];
+                    // results is now equals to: {queryA: 1, queryAAAA: 2}
+                    for (var i=0; i<async_results.length; i++) {
+                        if(async_results[i]){
+                            ips = ips.concat(async_results[i]);
+                        }
+                    }
 
-                // Got all DNS results
-                connection.results.add(plugin, {ptr_name_to_ip: results});
-                return plugin.check_fcrdns(connection, results, do_next);
-            });
+                    connection.logdebug(plugin, ptr_domain + ' => ' + ips);
+                    results[ptr_domain] = ips;
+
+                    if (pending_queries > 0) return;
+
+                    // Got all DNS results
+                    connection.results.add(plugin, {ptr_name_to_ip: results});
+                    return plugin.check_fcrdns(connection, results, do_next);
+                });
             })(ptr_domain); /* END BLOCK SCOPE */
         }
 

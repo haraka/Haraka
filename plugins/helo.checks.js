@@ -1,9 +1,10 @@
 'use strict';
 // Check various bits of the HELO string
 
-var dns       = require('dns');
-var net_utils = require('./net_utils');
-var utils     = require('./utils');
+var dns       = require('dns'),
+    async     = require('async'),
+    net_utils = require('./net_utils'),
+    utils     = require('./utils');
 
 var checks = [
     'match_re',           // List of regexps
@@ -457,8 +458,8 @@ exports.proto_mismatch = function (next, connection, helo, proto) {
     var r = connection.results.get('helo.checks');
     if (!r || (r && !r.helo_host)) { return next(); }
 
-    if ((connection.esmtp && proto === 'smtp') || 
-        (!connection.esmtp && proto === 'esmtp')) 
+    if ((connection.esmtp && proto === 'smtp') ||
+        (!connection.esmtp && proto === 'esmtp'))
     {
         connection.results.add(plugin, {fail: 'proto_mismatch(' + proto + ')'});
         if (plugin.cfg.reject.proto_mismatch) {
@@ -523,12 +524,34 @@ exports.get_a_records = function (host, cb) {
     if (!/\.$/.test(host)) { host = host + '.'; }
 
     // do the queries
-    dns.resolve(host, function(err, ips) {
+    async.parallel([
+        function(callback){
+            dns.resolve4(host, function(err, ips_from_fwd) {
+                callback(err, ips_from_fwd);
+            });
+        },
+        function(callback){
+            dns.resolve6(host, function(err, ips_from_fwd) {
+                callback(err, ips_from_fwd);
+            });
+        }
+    ],
+    function(err, results) {
+        // results is now equals to: {queryA: 1, queryAAAA: 2}
+        var ips = [];
+        // results is now equals to: {queryA: 1, queryAAAA: 2}
+        for (var i=0; i<results.length; i++) {
+            if(results[i]){
+                ips = ips.concat(results[i]);
+            }
+        }
+
         if (timed_out) { return; }
         if (timer) { clearTimeout(timer); }
-        if (err) { return cb(err, ips); }
+        if (!ips.lenght && err) { return cb(err, ips); }
         // plugin.logdebug(plugin, host + ' => ' + ips);
         // return the DNS results
         return cb(null, ips);
     });
+
 };

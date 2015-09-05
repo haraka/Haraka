@@ -43,8 +43,9 @@ exports.load_maxmind = function () {
         return;
     }
 
-    var dbs = ['GeoIPCity', 'GeoIP', 'GeoIPv6',  'GeoIPASNum', 'GeoISP',
-               'GeoIPNetSpeedCell',  'GeoIPOrg', 'GeoLiteCityV6'];
+    var dbs = ['GeoIPCity', 'GeoIP', 'GeoIPASNum', 'GeoISP',
+               'GeoIPCityv6', 'GeoIPv6', 'GeoIPASNumv6',
+               'GeoIPNetSpeedCell', 'GeoIPOrg', 'GeoLiteCityV6', 'GeoLiteCity'];
     var dbsFound = [];
 
     var dbdir = plugin.cfg.main.dbdir || '/usr/local/share/GeoIP/';
@@ -221,8 +222,8 @@ exports.get_geoip_maxmind = function (ip) {
         result = ipv6 ? plugin.maxmind.getLocationV6(ip)
                       : plugin.maxmind.getLocation(ip);
     }
-    catch (e) { 
-        plugin.logerror(e.message); 
+    catch (e) {
+        plugin.logerror(e.message);
     }
     if (!result) {
         try {
@@ -230,8 +231,8 @@ exports.get_geoip_maxmind = function (ip) {
             result = ipv6 ? plugin.maxmind.getCountryV6(ip)
                           : plugin.maxmind.getCountry(ip);
         }
-        catch (e) { 
-            plugin.logerror(e.message); 
+        catch (e) {
+            plugin.logerror(e.message);
         }
     }
     return result;
@@ -353,7 +354,7 @@ exports.received_headers = function (connection) {
 
     // Try and parse each received header
     for (var i=0; i < received.length; i++) {
-        var match = /\[(\d+\.\d+\.\d+\.\d+)\]/.exec(received[i]);
+        var match = /\[(^\s*((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?))\s*$)|(^\s*((([0-9A-Fa-f]{1,4}:){7}([0-9A-Fa-f]{1,4}|:))|(([0-9A-Fa-f]{1,4}:){6}(:[0-9A-Fa-f]{1,4}|((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3})|:))|(([0-9A-Fa-f]{1,4}:){5}(((:[0-9A-Fa-f]{1,4}){1,2})|:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3})|:))|(([0-9A-Fa-f]{1,4}:){4}(((:[0-9A-Fa-f]{1,4}){1,3})|((:[0-9A-Fa-f]{1,4})?:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){3}(((:[0-9A-Fa-f]{1,4}){1,4})|((:[0-9A-Fa-f]{1,4}){0,2}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){2}(((:[0-9A-Fa-f]{1,4}){1,5})|((:[0-9A-Fa-f]{1,4}){0,3}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){1}(((:[0-9A-Fa-f]{1,4}){1,6})|((:[0-9A-Fa-f]{1,4}){0,4}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(:(((:[0-9A-Fa-f]{1,4}){1,7})|((:[0-9A-Fa-f]{1,4}){0,5}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:)))(%.+)?\s*$)\]/.exec(received[i]);
         if (!match) continue;
         if (net_utils.is_private_ip(match[1])) continue;  // exclude private IP
 
