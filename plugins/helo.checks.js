@@ -1,9 +1,10 @@
 'use strict';
 // Check various bits of the HELO string
 
-var dns       = require('dns');
-var net_utils = require('./net_utils');
-var utils     = require('./utils');
+var dns       = require('dns'),
+    async     = require('async'),
+    net_utils = require('./net_utils'),
+    utils     = require('./utils');
 
 var checks = [
     'match_re',           // List of regexps
@@ -522,13 +523,28 @@ exports.get_a_records = function (host, cb) {
     // fully qualify, to ignore any search options in /etc/resolv.conf
     if (!/\.$/.test(host)) { host = host + '.'; }
 
-    // do the queries
-    dns.resolve(host, function(err, ips) {
-        if (timed_out) { return; }
-        if (timer) { clearTimeout(timer); }
-        if (err) { return cb(err, ips); }
-        // plugin.logdebug(plugin, host + ' => ' + ips);
-        // return the DNS results
-        return cb(null, ips);
-    });
+	// do the queries
+	async.parallel({
+		queryA: function(callback){
+			dns.resolve4(host, function(err, ips_from_fwd) {
+				callback(err, ips_from_fwd);
+			});
+		},
+		queryAAAA: function(callback){
+			dns.resolve6(host, function(err, ips_from_fwd) {
+				callback(err, ips_from_fwd);
+			});
+		}
+	},
+	function(err, results) {
+		// results is now equals to: {queryA: 1, queryAAAA: 2}
+		for (var i=0; i<results.length; i++) {
+			if(results[i]){
+				// plugin.logdebug(plugin, host + ' => ' + ips);
+				// return the DNS results
+				return cb(null, results[i]);
+			}
+		}
+	});
+
 };
