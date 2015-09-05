@@ -523,35 +523,35 @@ exports.get_a_records = function (host, cb) {
     // fully qualify, to ignore any search options in /etc/resolv.conf
     if (!/\.$/.test(host)) { host = host + '.'; }
 
-	// do the queries
-	async.parallel([
-		function(callback){
-			dns.resolve4(host, function(err, ips_from_fwd) {
-				callback(err, ips_from_fwd);
-			});
-		},
-		function(callback){
-			dns.resolve6(host, function(err, ips_from_fwd) {
-				callback(err, ips_from_fwd);
-			});
-		}
-	],
-	function(err, results) {
-		// results is now equals to: {queryA: 1, queryAAAA: 2}
-		var ips = [];
-		// results is now equals to: {queryA: 1, queryAAAA: 2}
-		for (var i=0; i<results.length; i++) {
-			if(results[i]){
-				ips = ips.concat(results[i]);
-			}
-		}
-		
-		if (timed_out) { return; }
+    // do the queries
+    async.parallel([
+        function(callback){
+            dns.resolve4(host, function(err, ips_from_fwd) {
+                callback(err, ips_from_fwd);
+            });
+        },
+        function(callback){
+            dns.resolve6(host, function(err, ips_from_fwd) {
+                callback(err, ips_from_fwd);
+            });
+        }
+    ],
+    function(err, results) {
+        // results is now equals to: {queryA: 1, queryAAAA: 2}
+        var ips = [];
+        // results is now equals to: {queryA: 1, queryAAAA: 2}
+        for (var i=0; i<results.length; i++) {
+            if(results[i]){
+                ips = ips.concat(results[i]);
+            }
+        }
+        
+        if (timed_out) { return; }
         if (timer) { clearTimeout(timer); }
         if (!ips.lenght && err) { return cb(err, ips); }
-		// plugin.logdebug(plugin, host + ' => ' + ips);
-		// return the DNS results
-		return cb(null, ips);
-	});
+        // plugin.logdebug(plugin, host + ' => ' + ips);
+        // return the DNS results
+        return cb(null, ips);
+    });
 
 };
