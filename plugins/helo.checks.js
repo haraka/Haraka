@@ -524,18 +524,18 @@ exports.get_a_records = function (host, cb) {
     if (!/\.$/.test(host)) { host = host + '.'; }
 
 	// do the queries
-	async.parallel({
-		queryA: function(callback){
+	async.parallel([
+		function(callback){
 			dns.resolve4(host, function(err, ips_from_fwd) {
 				callback(err, ips_from_fwd);
 			});
 		},
-		queryAAAA: function(callback){
+		function(callback){
 			dns.resolve6(host, function(err, ips_from_fwd) {
 				callback(err, ips_from_fwd);
 			});
 		}
-	},
+	],
 	function(err, results) {
 		// results is now equals to: {queryA: 1, queryAAAA: 2}
 		var ips = [];
@@ -545,6 +545,10 @@ exports.get_a_records = function (host, cb) {
 				ips = ips.concat(results[i]);
 			}
 		}
+		
+		if (timed_out) { return; }
+        if (timer) { clearTimeout(timer); }
+        if (!ips.lenght && err) { return cb(err, ips); }
 		// plugin.logdebug(plugin, host + ' => ' + ips);
 		// return the DNS results
 		return cb(null, ips);

@@ -92,8 +92,8 @@ exports.hook_lookup_rdns = function (next, connection) {
             connection.logdebug(plugin, 'domain: ' + ptr_domain);
             pending_queries++;
             (function (ptr_domain) {  /* BEGIN BLOCK SCOPE */
-				async.parallel({
-					queryA: function(callback){
+				async.parallel([
+					function(callback){
 						dns.resolve4(ptr_domain, function(err, ips_from_fwd) {
 							if (err) {
 								plugin.handle_a_error(connection, err, ptr_domain);
@@ -109,7 +109,7 @@ exports.hook_lookup_rdns = function (next, connection) {
 							callback(err, ips_from_fwd);
 						});
 					}
-				},
+				],
 				function(err, results) {
 					pending_queries--;
 					var ips = [];
@@ -119,6 +119,7 @@ exports.hook_lookup_rdns = function (next, connection) {
 							ips = ips.concat(results[i]);
 						}
 					}
+					
 					connection.logdebug(plugin, ptr_domain + ' => ' + ips);
 					results[ptr_domain] = ips;
 					if (pending_queries > 0) return;
