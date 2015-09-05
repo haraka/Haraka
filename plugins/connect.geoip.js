@@ -43,8 +43,9 @@ exports.load_maxmind = function () {
         return;
     }
 
-    var dbs = ['GeoIPCity', 'GeoIP', 'GeoIPv6',  'GeoIPASNum', 'GeoISP',
-               'GeoIPNetSpeedCell',  'GeoIPOrg', 'GeoLiteCityV6'];
+    var dbs = ['GeoIPCity', 'GeoIP', 'GeoIPASNum', 'GeoISP',
+               'GeoIPCityv6', 'GeoIPv6', 'GeoIPASNumv6',
+               'GeoIPNetSpeedCell', 'GeoIPOrg', 'GeoLiteCityV6', 'GeoLiteCity'];
     var dbsFound = [];
 
     var dbdir = plugin.cfg.main.dbdir || '/usr/local/share/GeoIP/';
