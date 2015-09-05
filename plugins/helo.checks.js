@@ -538,13 +538,16 @@ exports.get_a_records = function (host, cb) {
 	},
 	function(err, results) {
 		// results is now equals to: {queryA: 1, queryAAAA: 2}
+		var ips = [];
+		// results is now equals to: {queryA: 1, queryAAAA: 2}
 		for (var i=0; i<results.length; i++) {
 			if(results[i]){
-				// plugin.logdebug(plugin, host + ' => ' + ips);
-				// return the DNS results
-				return cb(null, results[i]);
+				ips = ips.concat(results[i]);
 			}
 		}
+		// plugin.logdebug(plugin, host + ' => ' + ips);
+		// return the DNS results
+		return cb(null, ips);
 	});
 
 };

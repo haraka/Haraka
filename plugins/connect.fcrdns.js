@@ -112,19 +112,20 @@ exports.hook_lookup_rdns = function (next, connection) {
 				},
 				function(err, results) {
 					pending_queries--;
+					var ips = [];
 					// results is now equals to: {queryA: 1, queryAAAA: 2}
 					for (var i=0; i<results.length; i++) {
 						if(results[i]){
-							connection.logdebug(plugin, ptr_domain + ' => ' + results[i]);
-							results[ptr_domain] = results[i];
+							ips = ips.concat(results[i]);
 						}
 					}
-					
+					connection.logdebug(plugin, ptr_domain + ' => ' + ips);
+					results[ptr_domain] = ips;
 					if (pending_queries > 0) return;
 
 					// Got all DNS results
-					connection.results.add(plugin, {ptr_name_to_ip: results});
-					return plugin.check_fcrdns(connection, results, do_next);
+					connection.results.add(plugin, {ptr_name_to_ip: ips});
+					return plugin.check_fcrdns(connection, ips, do_next);
 				});
             })(ptr_domain); /* END BLOCK SCOPE */
         }
