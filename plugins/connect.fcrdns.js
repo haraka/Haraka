@@ -1,8 +1,8 @@
-var dns       = require('dns'),
-    net       = require('net'),
-    utils     = require('./utils'),
-    async     = require('async'),
-    net_utils = require('./net_utils');
+var dns       = require('dns');
+var net       = require('net');
+var utils     = require('./utils');
+var async     = require('async');
+var net_utils = require('./net_utils');
 
 exports.register = function () {
     var plugin = this;

@@ -1,10 +1,10 @@
 'use strict';
 // Check various bits of the HELO string
 
-var dns       = require('dns'),
-    async     = require('async'),
-    net_utils = require('./net_utils'),
-    utils     = require('./utils');
+var dns       = require('dns');
+var async     = require('async');
+var net_utils = require('./net_utils');
+var utils     = require('./utils');
 
 var checks = [
     'match_re',           // List of regexps
@@ -548,7 +548,7 @@ exports.get_a_records = function (host, cb) {
 
         if (timed_out) { return; }
         if (timer) { clearTimeout(timer); }
-        if (!ips.lenght && err) { return cb(err, ips); }
+        if (!ips.length && err) { return cb(err, ips); }
         // plugin.logdebug(plugin, host + ' => ' + ips);
         // return the DNS results
         return cb(null, ips);
