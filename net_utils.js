@@ -313,29 +313,6 @@ function load_public_suffix_list() {
     logger.loginfo('loaded '+ entries +' Public Suffixes');
 }
 
-exports.same_ipv4_network = function (ip, ipList) {
-    if (!ipList || !ipList.length) {
-        logger.logerror('same_ipv4_network, no ip list!');
-        return false;
-    }
-    if (!net.isIPv4(ip)) {
-        logger.logerror('same_ipv4_network, IP is not IPv4!');
-        return false;
-    }
-
-    var first3 = ip.split('.').slice(0,3).join('.');
-
-    for (var i=0; i < ipList.length; i++) {
-        if (!net.isIPv4(ipList[i])) {
-            logger.logerror('same_ipv4_network, IP in list is not IPv4!');
-            continue;
-        }
-        if (first3 === ipList[i].split('.').slice(0,3).join('.'))
-            return true;
-    }
-    return false;
-};
-
 function load_tld_files () {
     config.get('top-level-tlds','list').forEach(function (tld) {
         top_level_tlds[tld.toLowerCase()] = 1;
