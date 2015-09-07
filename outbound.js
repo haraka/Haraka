@@ -980,9 +980,11 @@ HMailItem.prototype.try_deliver_host = function (mx) {
     if (!mx.bind && this.todo.notes.outbound_ip) {
         mx.bind = this.todo.notes.outbound_ip;
     }
-	
-	// Allow transaction notes to set outbound IP helo
-    if (!mx.bind_helo) {
+    
+    // Allow transaction notes to set outbound IP helo
+    if (!mx.bind_helo && this.todo.notes.outbound_helo) {
+        mx.bind_helo = this.todo.notes.outbound_helo;
+    } else {
         mx.bind_helo = config.get('me');
     }
     
