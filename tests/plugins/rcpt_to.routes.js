@@ -174,7 +174,7 @@ exports.get_mx_redis = {
                 test.done();
                 this.plugin.delete_route(addr.address());
             }.bind(this);
-			this.plugin.get_mx(cb, hmail, addr.host);
+            this.plugin.get_mx(cb, hmail, addr.host);
         }
         else {
             test.expect(0);
