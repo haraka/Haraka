@@ -351,7 +351,7 @@ exports.received_headers = function (connection) {
     if (!received.length) return;
 
     var results = [];
-    var ipany_re = net_utils.get_ipany_re();
+    var ipany_re = net_utils.get_ipany_re('[\\[\\(](?:IPv6:)?', '[\\]\\)]');
 
     // Try and parse each received header
     for (var i=0; i < received.length; i++) {

@@ -413,7 +413,10 @@ exports.get_ipany_re = function (prefix, suffix) {
     if (suffix === undefined) suffix = '';
     return new RegExp(
         prefix +
-        '(\\d+\\.\\d+\\.\\d+\\.\\d+)' +
+        '(' +    // capture group
+        '(?:\\d{1,3}\\.){3}\\d{1,3}' +                  // simple IPv4
+        '|(?:[a-fA-F0-9]{0,4}:){2,7}[a-fA-F0-9]{1,4}' + // simple IPv6
+        ')' +    // end capture
         suffix,
         'mig'
     );
