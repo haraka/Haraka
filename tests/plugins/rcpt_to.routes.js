@@ -168,12 +168,13 @@ exports.get_mx_redis = {
             var addr = new Address('<matt@example.com>');
             test.expect(2);
             this.plugin.insert_route('matt@example.com','192.168.2.1');
-            this.plugin.get_mx(function (rc, mx) {
+            var cb = function (rc, mx) {
                 test.equal(rc, OK);
                 test.equal(mx, '192.168.2.1');
                 test.done();
                 this.plugin.delete_route(addr.address());
-            }, hmail, addr.host).bind(this);
+            }.bind(this);
+			this.plugin.get_mx(cb, hmail, addr.host);
         }
         else {
             test.expect(0);

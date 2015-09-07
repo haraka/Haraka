@@ -574,3 +574,33 @@ exports.is_local_ipv6 = {
         test.done();
     },
 };
+
+exports.get_ipany_re = {
+    /* jshint: maxlen: false */
+    'bare re, IPv4, single, bracketed': function (test) {
+        /* for x-*-ip headers */
+        test.expect(2);
+        var re = net_utils.get_ipany_re();
+        var match = re.exec('127.0.0.1');
+        test.equal(match[1], '127.0.0.1');
+        test.equal(match.length, 2);
+        test.done();
+    },
+    'bare re, IPv4, single, parens': function (test) {
+        test.expect(2);
+        var re = net_utils.get_ipany_re();
+        var match = re.exec('Received: from unknown (HELO mail.theartfarm.com) (127.0.0.30) by mail.theartfarm.com with SMTP; 5 Sep 2015 14:29:00 -0000');
+        test.equal(match[1], '127.0.0.30');
+        test.equal(match.length, 2);
+        test.done();
+    },
+    'bare re, IPv4, received header, bracketed IP': function (test) {
+        test.expect(2);
+        var re = net_utils.get_ipany_re();
+        var received_header = 'Received: from mta2.expediamail.com (mta2.expediamail.com [66.231.89.19]) by mail.theartfarm.com (Haraka/2.6.2-toaster) with ESMTPS id C669CF18-1C1C-484C-8A5B-A89088B048CB.1 envelope-from <bounce-857_HTML-202764435-1098240-260085-60@bounce.global.expediamail.com> (version=TLSv1/SSLv3 cipher=AES256-SHA verify=NO); Sat, 05 Sep 2015 07:28:57 -0700';
+        var match = re.exec(received_header);
+        test.equal(match[1], '66.231.89.19');
+        test.equal(match.length, 2);
+        test.done();
+    },
+};
