@@ -75,7 +75,7 @@ exports.top_level_tlds = top_level_tlds;
 exports.two_level_tlds = two_level_tlds;
 exports.three_level_tlds = three_level_tlds;
 
-exports.split_hostname = function(host,level) {
+exports.split_hostname = function (host,level) {
     if (!level || (level && !(level >= 1 && level <= 3))) {
         level = 2;
     }
@@ -149,7 +149,7 @@ exports.octets_in_string = function (str, oct1, oct2) {
     return true;
 };
 
-exports.is_ip_in_str = function(ip, str) {
+exports.is_ip_in_str = function (ip, str) {
     if (!str) { return false; }
     if (!ip) { return false; }
     if (!net.isIPv4(ip)) {
@@ -406,3 +406,18 @@ function get_stun_server () {
     ];
     return servers[Math.floor(Math.random()*servers.length)];
 }
+
+exports.get_ipany_re = function (prefix, suffix) {
+    /* jshint maxlen: false */
+    if (prefix === undefined) prefix = '';
+    if (suffix === undefined) suffix = '';
+    return new RegExp(
+        prefix +
+        '(' +    // capture group
+        '(?:\\d{1,3}\\.){3}\\d{1,3}' +                  // simple IPv4
+        '|(?:[a-fA-F0-9]{0,4}:){2,7}[a-fA-F0-9]{1,4}' + // simple IPv6
+        ')' +    // end capture
+        suffix,
+        'mg'
+    );
+};
