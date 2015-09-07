@@ -577,29 +577,64 @@ exports.is_local_ipv6 = {
 
 exports.get_ipany_re = {
     /* jshint: maxlen: false */
-    'bare re, IPv4, single, bracketed': function (test) {
+    'IPv4, single, bracketed': function (test) {
         /* for x-*-ip headers */
         test.expect(2);
-        var re = net_utils.get_ipany_re();
-        var match = re.exec('127.0.0.1');
+        var bare_re = net_utils.get_ipany_re();
+        var match = bare_re.exec('[127.0.0.1]');
+        // console.log(match);
         test.equal(match[1], '127.0.0.1');
         test.equal(match.length, 2);
         test.done();
     },
-    'bare re, IPv4, single, parens': function (test) {
+    'IPv4, Received header, parens, single': function (test) {
         test.expect(2);
-        var re = net_utils.get_ipany_re();
-        var match = re.exec('Received: from unknown (HELO mail.theartfarm.com) (127.0.0.30) by mail.theartfarm.com with SMTP; 5 Sep 2015 14:29:00 -0000');
+        var received_re = net_utils.get_ipany_re('^Received:.*?[\\[\\(]', '[\\]\\)]');
+        var match = received_re.exec('Received: from unknown (HELO mail.theartfarm.com) (127.0.0.30) by mail.theartfarm.com with SMTP; 5 Sep 2015 14:29:00 -0000');
+        // console.log(match);
         test.equal(match[1], '127.0.0.30');
         test.equal(match.length, 2);
         test.done();
     },
-    'bare re, IPv4, received header, bracketed IP': function (test) {
+    'IPv4, Received header, bracketed, single': function (test) {
         test.expect(2);
-        var re = net_utils.get_ipany_re();
         var received_header = 'Received: from mta2.expediamail.com (mta2.expediamail.com [66.231.89.19]) by mail.theartfarm.com (Haraka/2.6.2-toaster) with ESMTPS id C669CF18-1C1C-484C-8A5B-A89088B048CB.1 envelope-from <bounce-857_HTML-202764435-1098240-260085-60@bounce.global.expediamail.com> (version=TLSv1/SSLv3 cipher=AES256-SHA verify=NO); Sat, 05 Sep 2015 07:28:57 -0700';
-        var match = re.exec(received_header);
+        var received_re = net_utils.get_ipany_re('^Received:.*?[\\[\\(]', '[\\]\\)]');
+        var match = received_re.exec(received_header);
         test.equal(match[1], '66.231.89.19');
+        test.equal(match.length, 2);
+        test.done();
+    },
+    'IPv4, Received header, bracketed, single, 2': function (test) {
+        test.expect(2);
+        var received_re = net_utils.get_ipany_re('^Received:.*?[\\[\\(]', '[\\]\\)]');
+        var match = received_re.exec('Received: from github-smtp2a-ext-cp1-prd.iad.github.net (github-smtp2-ext5.iad.github.net [192.30.252.196])');
+        test.equal(match[1], '192.30.252.196');
+        test.equal(match.length, 2);
+        test.done();
+    },
+    'IPv6, Received header, bracketed, single': function (test) {
+        test.expect(2);
+        var received_header = 'Received: from ?IPv6:2601:184:c001:5cf7:a53f:baf7:aaf3:bce7? ([2601:184:c001:5cf7:a53f:baf7:aaf3:bce7])';
+        var received_re = net_utils.get_ipany_re('^Received:.*?[\\[\\(]', '[\\]\\)]');
+        var match = received_re.exec(received_header);
+        test.equal(match[1], '2601:184:c001:5cf7:a53f:baf7:aaf3:bce7');
+        test.equal(match.length, 2);
+        test.done();
+    },
+    'IPv6, Received header, bracketed, IPv6 prefix': function (test) {
+        test.expect(2);
+        var received_re = net_utils.get_ipany_re('^Received:.*?[\\[\\(](?:IPv6:)?', '[\\]\\)]');
+        var match = received_re.exec('Received: from hub.freebsd.org (hub.freebsd.org [IPv6:2001:1900:2254:206c::16:88])');
+        test.equal(match[1], '2001:1900:2254:206c::16:88');
+        test.equal(match.length, 2);
+        test.done();
+    },
+    'IPv6, Received header, bracketed, IPv6 prefix, localhost compressed': function (test) {
+        test.expect(2);
+        var received_re = net_utils.get_ipany_re('^Received:.*?[\\[\\(](?:IPv6:)?', '[\\]\\)]');
+        var match = received_re.exec('Received: from ietfa.amsl.com (localhost [IPv6:::1])');
+        test.equal(match[1], '::1');
         test.equal(match.length, 2);
         test.done();
     },
