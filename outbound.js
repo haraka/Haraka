@@ -30,6 +30,7 @@ var fn_re = /^(\d+)_(\d+)_/; // I like how this looks like a person
 var queue_dir = path.resolve(config.get('queue_dir') || (process.env.HARAKA + '/queue'));
 var uniq = Math.round(Math.random() * MAX_UNIQ);
 var cfg;
+var cfgrdns;
 exports.load_config = function () {
     cfg  = config.get('outbound.ini', {
         booleans: [
@@ -41,6 +42,9 @@ exports.load_config = function () {
     }, function () {
         exports.load_config();
     }).main;
+
+    // load rdns for outbound
+    cfgrdns = config.get('outbound.rdns.ini');
 
     // legacy config file support. Remove in Haraka 4.0
     if (!cfg.disabled && config.get('outbound.disabled')) {
@@ -189,7 +193,7 @@ exports._load_cur_queue = function (pid, cb_name, cb) {
             return self.logerror("Failed to load queue directory (" +
                 queue_dir + "): " + err);
         }
-        
+
         self.cur_time = new Date(); // set once so we're not calling it a lot
 
         self.load_queue_files(pid, cb_name, files);
@@ -416,7 +420,7 @@ exports.send_email = function () {
 
 exports.send_trans_email = function (transaction, next) {
     var self = this;
-    
+
     // add in potentially missing headers
     if (!transaction.header.get_all('Message-Id').length) {
         this.loginfo("Adding missing Message-Id header");
@@ -449,7 +453,7 @@ exports.send_trans_email = function (transaction, next) {
             deliveries.push({'domain': domain, 'rcpts': recips[domain]});
         });
     }
-    
+
     var hmails = [];
     var ok_paths = [];
 
@@ -460,7 +464,7 @@ exports.send_trans_email = function (transaction, next) {
         todo.uuid = todo.uuid + '.' + todo_index;
         todo_index++;
         self.process_delivery(ok_paths, todo, hmails, cb);
-    }, 
+    },
     function (err) {
         if (err) {
             for (var i=0,l=ok_paths.length; i<l; i++) {
@@ -533,7 +537,7 @@ exports.build_todo = function (todo, ws, write_more) {
     todo_length[2] = (todo_l >>  8) & 0xff;
     todo_length[1] = (todo_l >> 16) & 0xff;
     todo_length[0] = (todo_l >> 24) & 0xff;
-    
+
     var buf = Buffer.concat([todo_length, todo_str], todo_str.length + 4);
 
     var continue_writing = ws.write(buf);
@@ -801,7 +805,7 @@ HMailItem.prototype.get_mx_respond = function (retval, mx) {
 
 exports.lookup_mx = function lookup_mx (domain, cb) {
     var mxs = [];
-    
+
     // Possible DNS errors
     // NODATA
     // FORMERR
@@ -815,7 +819,7 @@ exports.lookup_mx = function lookup_mx (domain, cb) {
     // NOTIMP
     // EREFUSED
     // SERVFAIL
-    
+
     // default wrap_mx just returns our object with "priority" and "exchange" keys
     var wrap_mx = function (a) { return a; };
     var process_dns = function (err, addresses) {
@@ -841,12 +845,12 @@ exports.lookup_mx = function lookup_mx (domain, cb) {
         }
         return 1;
     };
-    
+
     dns.resolveMx(domain, function(err, addresses) {
         if (process_dns(err, addresses)) {
             return;
         }
-        
+
         // if MX lookup failed, we lookup an A record. To do that we change
         // wrap_mx() to return same thing as resolveMx() does.
         wrap_mx = function (a) { return {priority:0,exchange:a}; };
@@ -907,7 +911,7 @@ function sort_mx (mx_list) {
     var sorted = mx_list.sort(function (a,b) {
         return a.priority - b.priority;
     });
-    
+
     // This isn't a very good shuffle but it'll do for now.
     for (var i=0,l=sorted.length-1; i<l; i++) {
         if (sorted[i].priority === sorted[i+1].priority) {
@@ -916,7 +920,7 @@ function sort_mx (mx_list) {
                 sorted[i] = sorted[i+1];
                 sorted[i+1] = j;
             }
-        }        
+        }
     }
     return sorted;
 }
@@ -928,11 +932,11 @@ HMailItem.prototype.try_deliver = function () {
     if (this.mxlist.length === 0) {
         return this.temp_fail("Tried all MXs");
     }
-    
+
     var mx   = this.mxlist.shift();
     var host = mx.exchange;
 
-    // IP or IP:port 
+    // IP or IP:port
     if (net.isIP(host)) {
         self.hostlist = [ host ];
         return self.try_deliver_host(mx);
@@ -942,7 +946,7 @@ HMailItem.prototype.try_deliver = function () {
     var family = mx.family;
 
     this.loginfo("Looking up " + family + " records for: " + host);
- 
+
     // now we have a host, we have to lookup the addresses for that host
     // and try each one in order they appear
     dns.resolve(host, family, function (err, addresses) {
@@ -980,7 +984,11 @@ HMailItem.prototype.try_deliver_host = function (mx) {
     if (!mx.bind && this.todo.notes.outbound_ip) {
         mx.bind = this.todo.notes.outbound_ip;
     }
-    
+    var _helo;
+    if(cfgrdns && cfgrdns[mx.bind] && cfgrdns[mx.bind].rdns){
+        _helo = cfgrdns[mx.bind].rdns;
+    }
+
     var host = this.hostlist.shift();
     var port            = mx.port || 25;
     var socket          = sock.connect({port: port, host: host, localAddress: mx.bind});
@@ -1013,7 +1021,7 @@ HMailItem.prototype.try_deliver_host = function (mx) {
 
     var command = mx.using_lmtp ? 'connect_lmtp' : 'connect';
     var response = [];
-    
+
     var recip_index = 0;
     var recipients = this.todo.rcpt_to;
     var lmtp_rcpt_idx = 0;
@@ -1033,7 +1041,7 @@ HMailItem.prototype.try_deliver_host = function (mx) {
         "enh_status_codes": false,
         "auth": [],
     };
-    
+
     var send_command = function (cmd, data) {
         if (!socket.writable) {
             self.logerror("Socket writability went away");
@@ -1087,7 +1095,7 @@ HMailItem.prototype.try_deliver_host = function (mx) {
                 // Set this flag so we don't try STARTTLS again if it
                 // is incorrectly offered at EHLO once we are secured.
                 secured = true;
-                send_command(mx.using_lmtp ? 'LHLO' : 'EHLO', config.get('me'));
+                send_command(mx.using_lmtp ? 'LHLO' : 'EHLO', _helo || config.get('me'));
             });
             return send_command('STARTTLS');
         }
@@ -1097,7 +1105,7 @@ HMailItem.prototype.try_deliver_host = function (mx) {
             // We have AUTH credentials to send for this domain
             if (!(Array.isArray(smtp_properties.auth) && smtp_properties.auth.length)) {
                 // AUTH not offered
-                self.logwarn('AUTH configured for domain ' + self.todo.domain + 
+                self.logwarn('AUTH configured for domain ' + self.todo.domain +
                              ' but host ' + host + ' did not advertise AUTH capability');
                 // Try and send the message without authentication
                 return send_command('MAIL', 'FROM:' + self.todo.mail_from);
@@ -1122,8 +1130,8 @@ HMailItem.prototype.try_deliver_host = function (mx) {
 
             if (!mx.auth_type || (mx.auth_type && smtp_properties.auth.indexOf(mx.auth_type.toUpperCase()) === -1)) {
                 // No compatible authentication types offered by the server
-                self.logwarn('AUTH configured for domain ' + self.todo.domain + ' but host ' + host + 
-                             'did not offer any compatible types' + 
+                self.logwarn('AUTH configured for domain ' + self.todo.domain + ' but host ' + host +
+                             'did not offer any compatible types' +
                              ((mx.auth_type) ? ' (requested: ' + mx.auth_type + ')' : '') +
                              ' (offered: ' + smtp_properties.auth.join(',') + ')');
                 // Proceed without authentication
@@ -1169,7 +1177,7 @@ HMailItem.prototype.try_deliver_host = function (mx) {
         processing_mail = false;
         if (success) {
             var reason = response.join(' ');
-            self.delivered(host, port, (mx.using_lmtp ? 'LMTP' : 'SMTP'), mx.exchange, 
+            self.delivered(host, port, (mx.using_lmtp ? 'LMTP' : 'SMTP'), mx.exchange,
                            reason, ok_recips, fail_recips, bounce_recips, secured, authenticated);
         }
         else {
@@ -1186,7 +1194,7 @@ HMailItem.prototype.try_deliver_host = function (mx) {
             self.try_deliver_host(mx);
         }
     });
-    
+
     socket.on('line', function (line) {
         if (!processing_mail) {
             if (command !== 'quit') {
@@ -1226,7 +1234,7 @@ HMailItem.prototype.try_deliver_host = function (mx) {
                                 return send_command(cram_md5_response(mx.auth_user, mx.auth_pass, resp));
                             default:
                                 // This shouldn't happen...
-                        } 
+                        }
                     }
                     // Error
                     reason = response.join(' ');
@@ -1261,7 +1269,7 @@ HMailItem.prototype.try_deliver_host = function (mx) {
                     authenticating = false;
                     if (command === 'ehlo') {
                         // EHLO command was rejected; fall-back to HELO
-                        return send_command('HELO', config.get('me'));
+                        return send_command('HELO', _helo || config.get('me'));
                     }
                     reason = code + ' ' + ((extc) ? extc + ' ' : '') + response.join(' ');
                     if (/^rcpt/.test(command) || command === 'dot_lmtp') {
@@ -1284,10 +1292,10 @@ HMailItem.prototype.try_deliver_host = function (mx) {
                 }
                 switch (command) {
                     case 'connect':
-                        send_command('EHLO', config.get('me'));
+                        send_command('EHLO', _helo || config.get('me'));
                         break;
                     case 'connect_lmtp':
-                        send_command('LHLO', config.get('me'));
+                        send_command('LHLO', _helo || config.get('me'));
                         break;
                     case 'lhlo':
                     case 'ehlo':
@@ -1400,13 +1408,13 @@ function populate_bounce_message (from, to, reason, hmail, cb) {
         pid: process.pid,
         msgid: '<' + utils.uuid() + '@' + config.get('me') + '>',
     };
-    
+
     var bounce_msg_ = config.get('outbound.bounce_message', 'data');
-    
+
     var bounce_msg = bounce_msg_.map(function (item) {
         return item.replace(/\{(\w+)\}/g, function (i, word) { return values[word] || '?'; }) + '\n';
     });
-    
+
     var data_stream = hmail.data_stream();
     data_stream.on('data', function (data) {
         bounce_msg.push(data.toString().replace(/\r?\n/g, "\n"));
@@ -1454,7 +1462,7 @@ HMailItem.prototype.bounce_respond = function (retval, msg) {
         // double bounce - mail was already a bounce
         return this.double_bounce("Mail was already a bounce");
     }
-    
+
     var from = new Address ('<>');
     var recip = new Address (this.todo.mail_from.user, this.todo.mail_from.host);
     populate_bounce_message(from, recip, err, this, function (err, data_lines) {
@@ -1483,17 +1491,17 @@ HMailItem.prototype.double_bounce = function (err) {
 
 HMailItem.prototype.delivered = function (ip, port, mode, host, response, ok_recips, fail_recips, bounce_recips, secured, authenticated) {
     var delay = (Date.now() - this.todo.queue_time)/1000;
-    this.lognotice("delivered file=" + this.filename + 
+    this.lognotice("delivered file=" + this.filename +
                    ' domain="' + this.todo.domain + '"' +
                    ' host="' + host + '"' +
                    ' ip=' + ip +
                    ' port=' + port +
-                   ' mode=' + mode + 
+                   ' mode=' + mode +
                    ' tls=' + ((secured) ? 'Y' : 'N') +
                    ' auth=' + ((authenticated) ? 'Y' : 'N') +
                    ' response="' + response + '"' +
                    ' delay=' + delay +
-                   ' fails=' + this.num_failures + 
+                   ' fails=' + this.num_failures +
                    ' rcpts=' + ok_recips.length + '/' + fail_recips.length + '/' + bounce_recips.length);
     plugins.run_hooks("delivered", this, [host, ip, response, delay, port, mode, ok_recips, secured, authenticated]);
 };
@@ -1509,7 +1517,7 @@ HMailItem.prototype.discard = function () {
 
 HMailItem.prototype.temp_fail = function (err, extra) {
     this.num_failures++;
-    
+
     // Test for max failures which is configurable.
     if (this.num_failures >= (cfg.maxTempFailures)) {
         return this.bounce("Too many failures (" + err + ")", extra);
@@ -1517,12 +1525,12 @@ HMailItem.prototype.temp_fail = function (err, extra) {
 
     // basic strategy is we exponentially grow the delay to the power
     // two each time, starting at 2 ** 6 seconds
-    
+
     // Note: More advanced options should be explored in the future as the
     // last delay is 2**17 secs (1.5 days), which is a bit long... Exim has a max delay of
     // 6 hours (configurable) and the expire time is also configurable... But
     // this is good enough for now.
-    
+
     var delay = Math.pow(2, (this.num_failures + 5));
 
     plugins.run_hooks('deferred', this, {delay: delay, err: err});
@@ -1533,9 +1541,9 @@ HMailItem.prototype.deferred_respond = function (retval, msg, params) {
         this.loginfo("plugin responded with: " + retval + ". Not deferring. Deleting mail.");
         return this.discard(); // calls next_cb
     }
-    
+
     var delay = params.delay * 1000;
-    
+
     if (retval === constants.denysoft) {
         delay = parseInt(msg, 10) * 1000;
     }
@@ -1545,13 +1553,13 @@ HMailItem.prototype.deferred_respond = function (retval, msg, params) {
     this.loginfo("Temp failing " + this.filename + " for " + (delay/1000) + " seconds: " + params.err);
 
     var new_filename = this.filename.replace(/^(\d+)_(\d+)_/, until + '_' + this.num_failures + '_');
-    
+
     var hmail = this;
     fs.rename(this.path, path.join(queue_dir, new_filename), function (err) {
         if (err) {
             return hmail.bounce("Error re-queueing email: " + err);
         }
-        
+
         hmail.path = path.join(queue_dir, new_filename);
         hmail.filename = new_filename;
 
