@@ -981,6 +981,15 @@ HMailItem.prototype.try_deliver_host = function (mx) {
         mx.bind = this.todo.notes.outbound_ip;
     }
     
+    // Allow transaction notes to set outbound IP helo
+    if (!mx.bind_helo){
+        if (this.todo.notes.outbound_helo) {
+            mx.bind_helo = this.todo.notes.outbound_helo;
+        } else {
+            mx.bind_helo = config.get('me');
+        }
+    }
+    
     var host = this.hostlist.shift();
     var port            = mx.port || 25;
     var socket          = sock.connect({port: port, host: host, localAddress: mx.bind});
@@ -1087,7 +1096,7 @@ HMailItem.prototype.try_deliver_host = function (mx) {
                 // Set this flag so we don't try STARTTLS again if it
                 // is incorrectly offered at EHLO once we are secured.
                 secured = true;
-                send_command(mx.using_lmtp ? 'LHLO' : 'EHLO', config.get('me'));
+                send_command(mx.using_lmtp ? 'LHLO' : 'EHLO', mx.bind_helo);
             });
             return send_command('STARTTLS');
         }
@@ -1261,7 +1270,7 @@ HMailItem.prototype.try_deliver_host = function (mx) {
                     authenticating = false;
                     if (command === 'ehlo') {
                         // EHLO command was rejected; fall-back to HELO
-                        return send_command('HELO', config.get('me'));
+                        return send_command('HELO', mx.bind_helo);
                     }
                     reason = code + ' ' + ((extc) ? extc + ' ' : '') + response.join(' ');
                     if (/^rcpt/.test(command) || command === 'dot_lmtp') {
@@ -1284,10 +1293,10 @@ HMailItem.prototype.try_deliver_host = function (mx) {
                 }
                 switch (command) {
                     case 'connect':
-                        send_command('EHLO', config.get('me'));
+                        send_command('EHLO', mx.bind_helo);
                         break;
                     case 'connect_lmtp':
-                        send_command('LHLO', config.get('me'));
+                        send_command('LHLO', mx.bind_helo);
                         break;
                     case 'lhlo':
                     case 'ehlo':
