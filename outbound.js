@@ -6,6 +6,7 @@ var dns         = require('dns');
 var net         = require('net');
 var util        = require("util");
 var events      = require("events");
+var os          = require('os');
 var utils       = require('./utils');
 var sock        = require('./line_socket');
 var logger      = require('./logger');
@@ -485,7 +486,7 @@ exports.process_delivery = function (ok_paths, todo, hmails, cb) {
     var self = this;
     this.loginfo("Processing domain: " + todo.domain);
     var fname = _fname();
-    var tmp_path = path.join(queue_dir, '__tmp__.' + fname);
+    var tmp_path = path.join(queue_dir, ((['win32','win64'].indexOf( os.platform() ) !== -1) ? '' : '__tmp__') + '.' + fname);
     var ws = new FsyncWriteStream(tmp_path, { flags: WRITE_EXCL });
     // var ws = fs.createWriteStream(tmp_path, { flags: WRITE_EXCL });
     ws.on('close', function () {
@@ -549,7 +550,7 @@ exports.split_to_new_recipients = function (hmail, recipients, response, cb) {
         return cb(hmail);
     }
     var fname = _fname();
-    var tmp_path = path.join(queue_dir, '__tmp__.' + fname);
+    var tmp_path = path.join(queue_dir, ((['win32','win64'].indexOf( os.platform() ) !== -1) ? '' : '__tmp__') + '.' + fname);
     var ws = new FsyncWriteStream(tmp_path, { flags: WRITE_EXCL });
     // var ws = fs.createWriteStream(tmp_path, { flags: WRITE_EXCL });
     var err_handler = function (err, location) {
