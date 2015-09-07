@@ -982,10 +982,12 @@ HMailItem.prototype.try_deliver_host = function (mx) {
     }
     
     // Allow transaction notes to set outbound IP helo
-    if (!mx.bind_helo && this.todo.notes.outbound_helo) {
-        mx.bind_helo = this.todo.notes.outbound_helo;
-    } else {
-        mx.bind_helo = config.get('me');
+    if (!mx.bind_helo){
+        if (this.todo.notes.outbound_helo) {
+            mx.bind_helo = this.todo.notes.outbound_helo;
+        } else {
+            mx.bind_helo = config.get('me');
+        }
     }
     
     var host = this.hostlist.shift();
