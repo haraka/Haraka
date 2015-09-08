@@ -1,7 +1,7 @@
 'use strict';
 // karma - reward good and penalize bad mail senders
 
-var redis  = require('redis');
+var redis  = require('ioredis');
 
 var utils  = require('./utils');
 
@@ -85,7 +85,7 @@ exports.results_init = function (next, connection) {
     // result_store is publishing conn results, time to listen
     var redis = {
         patt: 'result-' + connection.uuid + '*',
-        conn: require('redis').createClient(),
+        conn: require('ioredis').createClient(),
     };
     redis.conn.on('psubscribe', function (pattern, count) {
         connection.logdebug(plugin, 'psubscribed to ' + pattern);

@@ -1,6 +1,6 @@
 # redis
 
-Connects to a local (by default) redis instance and stores a `redis`
+Connects to a local (by default) redis instance and stores a `ioredis`
 connection handle at `server.notes.redis`. 
 
 ## Config

@@ -31,7 +31,8 @@
     "ldapjs": "~0.7.1",
     "vs-stun": "~0.0.7",
     "maxmind": "*",
-    "redis": "~0.10.1",
+    "ioredis": "~1.7.6",
+    "hiredis": "~0.4.1",
     "tmp": "~0.0.24",
     "haraka-nosql": "*",
     "elasticsearch": "*"
