@@ -475,7 +475,7 @@ cfreader.load_flat_config = function(name, type) {
             var data   = fs.readFileSync(name, "UTF-8");
             if (type === 'data') {
                 while (data.length > 0) {
-                    var match = data.match(/^([^\n]*)\n?/);
+                    var match = data.match(/^([^\r\n]*)\r?\n?/);
                     result.push(match[1]);
                     data = data.slice(match[0].length);
                 }
