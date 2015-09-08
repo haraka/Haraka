@@ -270,7 +270,7 @@ exports.non_local_msgid = function (next, connection) {
 };
 
 // Lazy regexp to get IPs from Received: headers in bounces
-var received_re = net_utils.get_ipany_re('^Received:.*?[\\[\\(](?:IPv6:)?', '[\\]\\)]');
+var received_re = net_utils.get_ipany_re('^Received:[\\s\\S]*?[\\[\\(](?:IPv6:)?', '[\\]\\)]');
 
 function find_received_headers (ips, body, connection, self) {
     if (!body) return;

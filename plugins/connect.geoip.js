@@ -384,7 +384,9 @@ exports.originating_headers = function (connection) {
 
     var match = net_utils.get_ipany_re().exec(orig);
     if (!match) return;
+
     var found_ip = match[1];
+    if (net_utils.is_private_ip(found_ip)) return;
 
     var gi = plugin.get_geoip(found_ip);
     if (!gi) return;

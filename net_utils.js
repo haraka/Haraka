@@ -418,6 +418,6 @@ exports.get_ipany_re = function (prefix, suffix) {
         '|(?:[a-fA-F0-9]{0,4}:){2,7}[a-fA-F0-9]{1,4}' + // simple IPv6
         ')' +    // end capture
         suffix,
-        'mig'
+        'mg'
     );
 };
