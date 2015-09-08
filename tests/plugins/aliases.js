@@ -4,6 +4,7 @@ var stub             = require('../fixtures/stub');
 var Plugin           = require('../fixtures/stub_plugin');
 var Connection       = require('../fixtures/stub_connection');
 var Address          = require('../../address').Address;
+var _                = require('lodash');
 
 var _set_up = function (done) {
 
@@ -49,8 +50,8 @@ exports.aliases = {
     setUp : _set_up,
     'should have register function' : function (test) {
         test.expect(2);
-        test.isNotNull(this.plugin);
-        test.isFunction(this.plugin.register);
+        if (!_.isNull(this.plugin)){ test.ok(true); }
+        if (_.isFunction(this.plugin.register)){ test.ok(true); }
         test.done();
     },
     'register function should inherit from queue/discard' : function (test) {
@@ -72,14 +73,14 @@ exports.aliases = {
     'register_hook() should register available function' : function (test) {
         test.expect(3);
         test.equals(this.plugin.register_hook.args[1], 'aliases');
-        test.isNotNull(this.plugin.aliases);
-        test.isFunction(this.plugin.aliases);
+        if (!_.isNull(this.plugin.aliases)){ test.ok(true); }
+        if (_.isFunction(this.plugin.aliases)){ test.ok(true); }
         test.done();
     },
     'aliases hook always returns next()' : function (test) {
         var next = function (action) {
             test.expect(1);
-            test.isUndefined(action);
+            if (_.isUndefined(action)){ test.ok(true); }
             test.done();
         };
 
@@ -115,9 +116,9 @@ exports.aliases = {
 
         var next = function (action) {
             test.expect(4);
-            test.isUndefined(this.connection.transaction.notes.discard);
-            test.isNotNull(this.connection.transaction.rcpt_to);
-            test.isArray(this.connection.transaction.rcpt_to);
+            if (_.isUndefined(this.connection.transaction.notes.discard)){ test.ok(true); }
+            if (!_.isNull(this.connection.transaction.rcpt_to)){ test.ok(true); }
+            if (_.isArray(this.connection.transaction.rcpt_to)){ test.ok(true); }
             test.deepEqual(this.connection.transaction.rcpt_to.pop(), result);
             test.done();
         }.bind(this);
@@ -132,8 +133,8 @@ exports.aliases = {
 
         var next = function (action) {
             test.expect(3);
-            test.isNotNull(this.connection.transaction.rcpt_to);
-            test.isArray(this.connection.transaction.rcpt_to);
+            if (!_.isNull(this.connection.transaction.rcpt_to)){ test.ok(true); }
+            if (_.isArray(this.connection.transaction.rcpt_to)){ test.ok(true); }
             test.deepEqual(this.connection.transaction.rcpt_to.pop(), result);
             test.done();
         }.bind(this);
@@ -148,8 +149,8 @@ exports.aliases = {
 
         var next = function (action) {
             test.expect(3);
-            test.isNotNull(this.connection.transaction.rcpt_to);
-            test.isArray(this.connection.transaction.rcpt_to);
+            if (!_.isNull(this.connection.transaction.rcpt_to)){ test.ok(true); }
+            if (_.isArray(this.connection.transaction.rcpt_to)){ test.ok(true); }
             test.deepEqual(this.connection.transaction.rcpt_to.pop(), result);
             test.done();
         }.bind(this);
@@ -164,8 +165,8 @@ exports.aliases = {
 
         var next = function (action) {
             test.expect(3);
-            test.isNotNull(this.connection.transaction.rcpt_to);
-            test.isArray(this.connection.transaction.rcpt_to);
+            if (!_.isNull(this.connection.transaction.rcpt_to)){ test.ok(true); }
+            if (_.isArray(this.connection.transaction.rcpt_to)){ test.ok(true); }
             test.deepEqual(this.connection.transaction.rcpt_to.pop(), result);
             test.done();
         }.bind(this);
@@ -180,8 +181,8 @@ exports.aliases = {
 
         var next = function (action) {
             test.expect(3);
-            test.isNotNull(this.connection.transaction.rcpt_to);
-            test.isArray(this.connection.transaction.rcpt_to);
+            if (!_.isNull(this.connection.transaction.rcpt_to)){ test.ok(true); }
+            if (_.isArray(this.connection.transaction.rcpt_to)){ test.ok(true); }
             test.deepEqual(this.connection.transaction.rcpt_to.pop(), result);
             test.done();
         }.bind(this);
@@ -197,7 +198,7 @@ exports.aliases = {
 
         var next = function (action) {
             test.expect(1);
-            test.isUndefined(this.connection.transaction.notes.discard);
+            if (_.isUndefined(this.connection.transaction.notes.discard)){ test.ok(true); }
             test.done();
         }.bind(this);
 
@@ -212,7 +213,7 @@ exports.aliases = {
 
         var next = function (action) {
             test.expect(1);
-            test.isUndefined(this.connection.transaction.notes.discard);
+            if (_.isUndefined(this.connection.transaction.notes.discard)){ test.ok(true); }
             test.done();
         }.bind(this);
 

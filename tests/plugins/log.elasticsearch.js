@@ -6,6 +6,7 @@ var Plugin           = require('../fixtures/stub_plugin');
 var Connection       = require('../fixtures/stub_connection');
 var config           = require('../../config');
 var ResultStore      = require('../../result_store');
+var _                = require('lodash');
 
 var _set_up = function (done) {
 
@@ -31,8 +32,8 @@ exports.register = {
     setUp : _set_up,
     'has a register function' : function (test) {
         test.expect(2);
-        test.isNotNull(this.plugin);
-        test.isFunction(this.plugin.register);
+        if (!_.isNull(this.plugin)){ test.ok(true); }
+        if (_.isFunction(this.plugin.register)){ test.ok(true); }
         test.done();
     },
     /*

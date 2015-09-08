@@ -42,6 +42,7 @@
     "jscoverage"    : "*",
     "coveralls"     : "*",
     "grunt"         : "*",
+    "lodash"         : "*",
     "grunt-contrib-clean" : "*",
     "grunt-contrib-jshint" : "*",
     "grunt-version-check" : "*"

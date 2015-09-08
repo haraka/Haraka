@@ -6,6 +6,7 @@ var Connection   = require('../fixtures/stub_connection');
 var config       = require('../../config');
 var ResultStore  = require('../../result_store');
 var utils        = require('../../utils');
+var _                = require('lodash');
 
 var _set_up = function (done) {
 
@@ -24,18 +25,18 @@ exports.plugin = {
     setUp : _set_up,
     'should have function register' : function (test) {
         test.expect(2);
-        test.isNotNull(this.plugin);
-        test.isFunction(this.plugin.register);
+        if (!_.isNull(this.plugin)){ test.ok(true); }
+        if (_.isFunction(this.plugin.register)){ test.ok(true); }
         test.done();
     },
     'should have function tls_unrecognized_command' : function (test) {
         test.expect(1);
-        test.isFunction(this.plugin.tls_unrecognized_command);
+        if (_.isFunction(this.plugin.tls_unrecognized_command)){ test.ok(true); }
         test.done();
     },
     'should have function tls_capabilities' : function (test) {
         test.expect(1);
-        test.isFunction(this.plugin.tls_capabilities);
+        if (_.isFunction(this.plugin.tls_capabilities)){ test.ok(true); }
         test.done();
     },
 };
