@@ -16,7 +16,7 @@ var lists;
 var zones;
 var excludes = {};
 
-function check_excludes_list(host) {
+function check_excludes_list (host) {
     host = host.toLowerCase().split('.').reverse();
     for (var i=0; i < host.length; i++) {
         var check;
@@ -33,7 +33,7 @@ function check_excludes_list(host) {
     return false;
 }
 
-exports.register = function() {
+exports.register = function () {
     // Override regexps if top_level_tlds file is present
     if (!net_utils.top_level_tlds) return;
     if (!Object.keys(net_utils.top_level_tlds).length) return;
@@ -155,20 +155,20 @@ exports.do_lookups = function (connection, next, hosts, type) {
             queries_to_run.push( [ Object.keys(queries[Object.keys(queries)[j]])[k], Object.keys(queries)[j] ] );
         }
     }
-    // Randomize the order a bit
-    utils.shuffle(queries_to_run);
 
     if (!queries_to_run.length) {
         results.add(plugin, {skip: type + ' (no queries)' });
         return next();
     }
 
+    utils.shuffle(queries_to_run); // Randomize the order
+
     // Perform the lookups
     var pending_queries = 0;
     var called_next = false;
     var timer;
     function call_next (code, msg) {
-        if (timer) clearTimeout(timer);
+        clearTimeout(timer);
         if (called_next) return;
         called_next = true;
         next(code, msg);
@@ -178,9 +178,13 @@ exports.do_lookups = function (connection, next, hosts, type) {
         connection.logdebug(plugin, 'timeout');
         results.add(plugin, {err: type + ' timeout' });
         call_next();
-    }, ((lists.main && lists.main.timeout) ?
-        lists.main.timeout : 30) * 1000);
+    }, ((lists.main && lists.main.timeout) ? lists.main.timeout : 30) * 1000);
 
+    function conclude_if_no_pending () {
+        if (pending_queries !== 0) return;
+        results.add(plugin, {pass: type});
+        call_next();
+    }
 
     queries_to_run.forEach(function (query) {
         var lookup = query.join('.');
@@ -189,69 +193,65 @@ exports.do_lookups = function (connection, next, hosts, type) {
             lookup = lookup + '.';
         }
         pending_queries++;
-        dns.resolve4(lookup, function(err, addrs) {
+        dns.resolve4(lookup, function (err, addrs) {
             pending_queries--;
             connection.logdebug(plugin, lookup + ' => ' + ((err) ? err : addrs.join(', ')));
 
-            if (!err) {
-                var skip = false;
-                var do_reject = function (msg) {
-                    if (!skip && !called_next) {
-                        if (!msg) {
-                            msg = query[0] + ' blacklisted in ' + query[1];
-                        }
-                        // Check for custom message
-                        if (lists[query[1]] && lists[query[1]].custom_msg) {
-                            msg = lists[query[1]].custom_msg.replace(/\{uri\}/g, query[0]).replace(/\{zone\}/g, query[1]);
-                        }
-                        results.add(plugin, {fail:
-                            [type, query[0], query[1]].join('/') });
-                        call_next(DENY, msg);
-                    }
-                };
-                // Optionally validate first result against a regexp
-                if (lists[query[1]] && lists[query[1]].validate) {
-                    var re = new RegExp(lists[query[1]].validate);
-                    if (!re.test(addrs[0])) {
-                        connection.logdebug(plugin, 'ignoring result (' + addrs[0] + ') for: ' +
-                                lookup + ' as it did not match validation rule');
-                        skip = true;
-                    }
+            if (err) return conclude_if_no_pending();
+
+            var skip = false;
+            var do_reject = function (msg) {
+                if (skip) return;
+                if (called_next) return;
+                if (!msg) {
+                    msg = query[0] + ' blacklisted in ' + query[1];
                 }
-                // Check for optional bitmask
-                if (lists[query[1]] && lists[query[1]].bitmask) {
-                    // A bitmask zone should only return a single result
-                    // We only support a bitmask of up to 128 in a single octet
-                    var last_octet = Number((addrs[0].split('.'))[3]);
-                    var bitmask = Number(lists[query[1]].bitmask);
-                    if ((last_octet & bitmask) > 0) {
-                        connection.loginfo(plugin, 'found ' + query[0] + ' in zone ' + query[1] +
-                            ' (' + addrs.join(',') + '; bitmask=' + bitmask + ')');
-                        do_reject();
-                    } else {
-                        connection.logdebug(plugin, 'ignoring result (' + addrs[0] + ') for: ' +
-                                lookup + ' as the bitmask did not match');
-                        skip = true;
-                    }
+                // Check for custom message
+                if (lists[query[1]] && lists[query[1]].custom_msg) {
+                    msg = lists[query[1]].custom_msg
+                        .replace(/\{uri\}/g,  query[0])
+                        .replace(/\{zone\}/g, query[1]);
                 }
-                else {
+                results.add(plugin,
+                    {fail: [type, query[0], query[1]].join('/') });
+                call_next(DENY, msg);
+            };
+            // Optionally validate first result against a regexp
+            if (lists[query[1]] && lists[query[1]].validate) {
+                var re = new RegExp(lists[query[1]].validate);
+                if (!re.test(addrs[0])) {
+                    connection.logdebug(plugin, 'ignoring result (' + addrs[0] + ') for: ' +
+                            lookup + ' as it did not match validation rule');
+                    skip = true;
+                }
+            }
+            // Check for optional bitmask
+            if (lists[query[1]] && lists[query[1]].bitmask) {
+                // A bitmask zone should only return a single result
+                // We only support a bitmask of up to 128 in a single octet
+                var last_octet = Number((addrs[0].split('.'))[3]);
+                var bitmask = Number(lists[query[1]].bitmask);
+                if ((last_octet & bitmask) > 0) {
                     connection.loginfo(plugin, 'found ' + query[0] + ' in zone ' + query[1] +
-                        ' (' + addrs.join(',') + ')');
+                        ' (' + addrs.join(',') + '; bitmask=' + bitmask + ')');
                     do_reject();
+                } else {
+                    connection.logdebug(plugin, 'ignoring result (' + addrs[0] + ') for: ' +
+                            lookup + ' as the bitmask did not match');
+                    skip = true;
                 }
+            }
+            else {
+                connection.loginfo(plugin, 'found ' + query[0] + ' in zone ' + query[1] +
+                    ' (' + addrs.join(',') + ')');
+                do_reject();
             }
 
-            if (pending_queries === 0) {
-                results.add(plugin, {pass: type});
-                return call_next();
-            }
+            conclude_if_no_pending();
         });
     });
 
-    if (pending_queries === 0) {
-        results.add(plugin, {pass: type});
-        return call_next();
-    }
+    conclude_if_no_pending();
 };
 
 exports.hook_lookup_rdns = function (next, connection) {
