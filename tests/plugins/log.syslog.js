@@ -2,6 +2,7 @@
 
 var stub             = require('../fixtures/stub'),
     Plugin           = require('../fixtures/stub_plugin');
+var _                = require('lodash');
 
 var _set_up = function (done) {
     this.backup = { plugin: { Syslog: {} } };
@@ -53,8 +54,8 @@ exports.register = {
     'should have register function' : function (test) {
         if (this.plugin) {
             test.expect(2);
-            test.isNotNull(this.plugin);
-            test.isFunction(this.plugin.register);
+            if (!_.isNull(this.plugin)){ test.ok(true); }
+            if (_.isFunction(this.plugin.register)){ test.ok(true); }
         }
         test.done();
     },
@@ -79,8 +80,8 @@ exports.register = {
             this.plugin.register();
             test.expect(3);
             test.equals(this.plugin.register_hook.args[1], 'syslog');
-            test.isNotNull(this.plugin.syslog);
-            test.isFunction(this.plugin.syslog);
+            if (!_.isNull(this.plugin.syslog)){ test.ok(true); }
+            if (_.isFunction(this.plugin.syslog)){ test.ok(true); }
         }
         test.done();
     },
@@ -149,7 +150,7 @@ exports.hook = {
 
         var next = function (action) {
             test.expect(1);
-            test.isUndefined(action);
+            if (_.isUndefined(action)){ test.ok(true); }
             test.done();
         };
 
@@ -184,7 +185,7 @@ exports.hook = {
 
         var next = function (action) {
             test.expect(1);
-            test.isUndefined(action);
+            if (_.isUndefined(action)){ test.ok(true); }
             test.done();
         };
 
@@ -219,7 +220,7 @@ exports.hook = {
 
         var next = function (action) {
             test.expect(1);
-            test.isUndefined(action);
+            if (_.isUndefined(action)){ test.ok(true); }
             test.done();
         };
 

@@ -4,6 +4,7 @@ var Connection   = require('../fixtures/stub_connection'),
     Plugin       = require('../fixtures/stub_plugin'),
     config       = require('../../config'),
     ResultStore  = require("../../result_store");
+var _                = require('lodash');
 
 var _set_up = function (done) {
 
@@ -23,8 +24,8 @@ exports.plugin = {
     setUp : _set_up,
     'should have register function' : function (test) {
         test.expect(2);
-        test.isNotNull(this.plugin);
-        test.isFunction(this.plugin.register);
+        if (!_.isNull(this.plugin)){ test.ok(true); }
+        if (_.isFunction(this.plugin.register)){ test.ok(true); }
         test.done();
     },
     'register function should call register_hook()' : function (test) {
@@ -302,8 +303,8 @@ exports.all = {
     setUp : _set_up,
     'register_hook() should register available function' : function (test) {
         test.expect(3);
-        test.isNotNull(this.plugin.all);
-        test.isFunction(this.plugin.all);
+        if (!_.isNull(this.plugin.all)){ test.ok(true); }
+        if (_.isFunction(this.plugin.all)){ test.ok(true); }
         this.plugin.register();
         this.plugin.cfg.relay.all = true;
         this.plugin.register_hook('rcpt', 'all');  // register() doesn't b/c config is disabled
