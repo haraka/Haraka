@@ -391,7 +391,9 @@ plugins.run_next_hook = function (hook, object, params) {
 plugins._make_custom_require = function (file_path, hasPackageJson) {
     return function (module) {
         if (hasPackageJson) {
-            return require(module);
+            var mod = require(module);
+            constants.import(global);
+            return mod;
         }
 
         if (!/^\./.test(module)) {
