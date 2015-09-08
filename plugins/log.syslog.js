@@ -4,16 +4,11 @@
 exports.register = function() {
     var plugin = this;
 
-    try { plugin.Syslog = require('node-syslog'); }
+    try { plugin.Syslog = require('modern-syslog'); }
     catch (e) {
-        plugin.logerror('failed to load node-syslog');
-
-        try { plugin.Syslog = require('strong-fork-syslog'); }
-        catch (e) {
-            plugin.logerror("couldn't load strong-fork-syslog either");
-            plugin.logerror('try: npm i node-syslog strong-fork-syslog' );
-            return;
-        }
+        plugin.logerror('failed to load modern-syslog');
+        plugin.logerror('try: npm i modern-syslog' );
+        return;
     }
 
     var options   = 0;
