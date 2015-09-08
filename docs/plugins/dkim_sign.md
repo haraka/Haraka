@@ -94,3 +94,7 @@ are required.
 
         <selector>._domainkey.<domain>
 
+- dkim.private.key = filename
+
+    Create a file `dkim.private.key` in the config folder and paste
+    your private key in it.

@@ -6,6 +6,7 @@ var dns         = require('dns');
 var net         = require('net');
 var util        = require("util");
 var events      = require("events");
+var os          = require('os');
 var utils       = require('./utils');
 var sock        = require('./line_socket');
 var logger      = require('./logger');
@@ -30,6 +31,7 @@ var fn_re = /^(\d+)_(\d+)_/; // I like how this looks like a person
 var queue_dir = path.resolve(config.get('queue_dir') || (process.env.HARAKA + '/queue'));
 var uniq = Math.round(Math.random() * MAX_UNIQ);
 var cfg;
+var platformDOT = ((['win32','win64'].indexOf( os.platform() ) !== -1) ? '' : '__tmp__') + '.';
 exports.load_config = function () {
     cfg  = config.get('outbound.ini', {
         booleans: [
@@ -485,7 +487,7 @@ exports.process_delivery = function (ok_paths, todo, hmails, cb) {
     var self = this;
     this.loginfo("Processing domain: " + todo.domain);
     var fname = _fname();
-    var tmp_path = path.join(queue_dir, '.' + fname);
+    var tmp_path = path.join(queue_dir, platformDOT + fname);
     var ws = new FsyncWriteStream(tmp_path, { flags: WRITE_EXCL });
     // var ws = fs.createWriteStream(tmp_path, { flags: WRITE_EXCL });
     ws.on('close', function () {
@@ -549,7 +551,7 @@ exports.split_to_new_recipients = function (hmail, recipients, response, cb) {
         return cb(hmail);
     }
     var fname = _fname();
-    var tmp_path = path.join(queue_dir, '.' + fname);
+    var tmp_path = path.join(queue_dir, platformDOT + fname);
     var ws = new FsyncWriteStream(tmp_path, { flags: WRITE_EXCL });
     // var ws = fs.createWriteStream(tmp_path, { flags: WRITE_EXCL });
     var err_handler = function (err, location) {
@@ -981,6 +983,15 @@ HMailItem.prototype.try_deliver_host = function (mx) {
         mx.bind = this.todo.notes.outbound_ip;
     }
     
+    // Allow transaction notes to set outbound IP helo
+    if (!mx.bind_helo){
+        if (this.todo.notes.outbound_helo) {
+            mx.bind_helo = this.todo.notes.outbound_helo;
+        } else {
+            mx.bind_helo = config.get('me');
+        }
+    }
+    
     var host = this.hostlist.shift();
     var port            = mx.port || 25;
     var socket          = sock.connect({port: port, host: host, localAddress: mx.bind});
@@ -1087,7 +1098,7 @@ HMailItem.prototype.try_deliver_host = function (mx) {
                 // Set this flag so we don't try STARTTLS again if it
                 // is incorrectly offered at EHLO once we are secured.
                 secured = true;
-                send_command(mx.using_lmtp ? 'LHLO' : 'EHLO', config.get('me'));
+                send_command(mx.using_lmtp ? 'LHLO' : 'EHLO', mx.bind_helo);
             });
             return send_command('STARTTLS');
         }
@@ -1261,11 +1272,11 @@ HMailItem.prototype.try_deliver_host = function (mx) {
                     authenticating = false;
                     if (command === 'ehlo') {
                         // EHLO command was rejected; fall-back to HELO
-                        return send_command('HELO', config.get('me'));
+                        return send_command('HELO', mx.bind_helo);
                     }
+                    reason = code + ' ' + ((extc) ? extc + ' ' : '') + response.join(' ');
                     if (/^rcpt/.test(command) || command === 'dot_lmtp') {
                         if (command === 'dot_lmtp') last_recip = ok_recips.shift();
-                        reason = code + ' ' + ((extc) ? extc + ' ' : '') + response.join(' ');
                         self.lognotice('recipient ' + last_recip + ' rejected: ' + reason);
                         last_recip.reason = reason;
                         bounce_recips.push(last_recip);
@@ -1277,7 +1288,6 @@ HMailItem.prototype.try_deliver_host = function (mx) {
                         }
                     }
                     else {
-                        reason = response.join(' ');
                         send_command('QUIT');
                         processing_mail = false;
                         return self.bounce(reason, { mx: mx });
@@ -1285,10 +1295,10 @@ HMailItem.prototype.try_deliver_host = function (mx) {
                 }
                 switch (command) {
                     case 'connect':
-                        send_command('EHLO', config.get('me'));
+                        send_command('EHLO', mx.bind_helo);
                         break;
                     case 'connect_lmtp':
-                        send_command('LHLO', config.get('me'));
+                        send_command('LHLO', mx.bind_helo);
                         break;
                     case 'lhlo':
                     case 'ehlo':

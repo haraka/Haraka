@@ -206,17 +206,25 @@ exports.user_agent = function (next, connection) {
 
     var found_ua = 0;
 
-    // User-Agent: Thunderbird, Squirrelmail, Roundcube, Mutt, MacOutlook, Kmail, IMP
-    // X-Mailer: Apple Mail, swaks, Outlook (12-14), Yahoo Webmail, Cold Fusion, Zimbra, Evolution
+    // User-Agent: Thunderbird, Squirrelmail, Roundcube, Mutt, MacOutlook,
+    //             Kmail, IMP
+    // X-Mailer: Apple Mail, swaks, Outlook (12-14), Yahoo Webmail,
+    //           Cold Fusion, Zimbra, Evolution
+    // X-Yahoo-Newman-Property: Yahoo
+    // X-MS-Has-Attach: Outlook 15
 
     // Check for User-Agent
-    var headers = ['user-agent','x-mailer','x-mua'];
+    var headers = [
+        'user-agent','x-mailer','x-mua','x-yahoo-newman-property',
+        'x-ms-has-attach'
+    ];
     for (var i=0; i < headers.length; i++) {
         var name = headers[i];
         var header = connection.transaction.header.get(name);
         if (!header) { continue; }   // header not present
         found_ua++;
-        connection.transaction.results.add(plugin, {pass: 'UA('+header.substring(0,12)+')'});
+        connection.transaction.results.add(plugin,
+            {pass: 'UA('+header.substring(0,12)+')'});
     }
     if (found_ua) { return next(); }
 
@@ -347,6 +355,7 @@ exports.mailing_list = function (next, connection) {
     };
 
     var found_mlm = 0;
+    var txr = connection.transaction.results;
 
     Object.keys(mlms).forEach(function (name) {
         var header = connection.transaction.header.get(name);
@@ -355,7 +364,7 @@ exports.mailing_list = function (next, connection) {
             var j = mlms[name][i];
             if (j.start) {
                 if (header.substring(0,j.start.length) === j.start) {
-                    connection.transaction.results.add(plugin, {pass: 'MLM('+j.mlm+')'});
+                    txr.add(plugin, {pass: 'MLM('+j.mlm+')'});
                     found_mlm++;
                     continue;
                 }
@@ -363,24 +372,24 @@ exports.mailing_list = function (next, connection) {
             }
             if (j.match) {
                 if (header.match(new RegExp(j.match,'i'))) {
-                    connection.transaction.results.add(plugin, {pass: 'MLM('+j.mlm+')'});
+                    txr.add(plugin, {pass: 'MLM('+j.mlm+')'});
                     found_mlm++;
                     continue;
                 }
                 connection.logerror(plugin, "mlm match miss: " + name + ': ' + header);
             }
             if (name === 'X-Mailman-Version') {
-                connection.transaction.results.add(plugin, {pass: 'MLM('+j.mlm+')'});
+                txr.add(plugin, {pass: 'MLM('+j.mlm+')'});
                 found_mlm++;
                 continue;
             }
             if (name === 'X-Majordomo-Version') {
-                connection.transaction.results.add(plugin, {pass: 'MLM('+j.mlm+')'});
+                txr.add(plugin, {pass: 'MLM('+j.mlm+')'});
                 found_mlm++;
                 continue;
             }
             if (name === 'X-Google-Loop') {
-                connection.transaction.results.add(plugin, {pass: 'MLM('+j.mlm+')'});
+                txr.add(plugin, {pass: 'MLM('+j.mlm+')'});
                 found_mlm++;
                 continue;
             }
@@ -388,6 +397,6 @@ exports.mailing_list = function (next, connection) {
     });
     if (found_mlm) { return next(); }
 
-    connection.transaction.results.add(plugin, {fail: 'MLM'});
+    connection.transaction.results.add(plugin, {msg: 'not MLM'});
     return next();
 };

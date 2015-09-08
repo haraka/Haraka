@@ -75,7 +75,7 @@ exports.top_level_tlds = top_level_tlds;
 exports.two_level_tlds = two_level_tlds;
 exports.three_level_tlds = three_level_tlds;
 
-exports.split_hostname = function(host,level) {
+exports.split_hostname = function (host,level) {
     if (!level || (level && !(level >= 1 && level <= 3))) {
         level = 2;
     }
@@ -149,7 +149,7 @@ exports.octets_in_string = function (str, oct1, oct2) {
     return true;
 };
 
-exports.is_ip_in_str = function(ip, str) {
+exports.is_ip_in_str = function (ip, str) {
     if (!str) { return false; }
     if (!ip) { return false; }
     if (!net.isIPv4(ip)) {
@@ -313,29 +313,6 @@ function load_public_suffix_list() {
     logger.loginfo('loaded '+ entries +' Public Suffixes');
 }
 
-exports.same_ipv4_network = function (ip, ipList) {
-    if (!ipList || !ipList.length) {
-        logger.logerror('same_ipv4_network, no ip list!');
-        return false;
-    }
-    if (!net.isIPv4(ip)) {
-        logger.logerror('same_ipv4_network, IP is not IPv4!');
-        return false;
-    }
-
-    var first3 = ip.split('.').slice(0,3).join('.');
-
-    for (var i=0; i < ipList.length; i++) {
-        if (!net.isIPv4(ipList[i])) {
-            logger.logerror('same_ipv4_network, IP in list is not IPv4!');
-            continue;
-        }
-        if (first3 === ipList[i].split('.').slice(0,3).join('.'))
-            return true;
-    }
-    return false;
-};
-
 function load_tld_files () {
     config.get('top-level-tlds','list').forEach(function (tld) {
         top_level_tlds[tld.toLowerCase()] = 1;
@@ -429,3 +406,18 @@ function get_stun_server () {
     ];
     return servers[Math.floor(Math.random()*servers.length)];
 }
+
+exports.get_ipany_re = function (prefix, suffix) {
+    /* jshint maxlen: false */
+    if (prefix === undefined) prefix = '';
+    if (suffix === undefined) suffix = '';
+    return new RegExp(
+        prefix +
+        '(' +    // capture group
+        '(?:\\d{1,3}\\.){3}\\d{1,3}' +                  // simple IPv4
+        '|(?:[a-fA-F0-9]{0,4}:){2,7}[a-fA-F0-9]{1,4}' + // simple IPv6
+        ')' +    // end capture
+        suffix,
+        'mg'
+    );
+};

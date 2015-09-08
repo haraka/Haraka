@@ -43,8 +43,9 @@ exports.load_maxmind = function () {
         return;
     }
 
-    var dbs = ['GeoIPCity', 'GeoIP', 'GeoIPv6',  'GeoIPASNum', 'GeoISP',
-               'GeoIPNetSpeedCell',  'GeoIPOrg', 'GeoLiteCityV6'];
+    var dbs = ['GeoIPCity', 'GeoIP', 'GeoIPASNum', 'GeoISP',
+               'GeoIPCityv6', 'GeoIPv6', 'GeoIPASNumv6',
+               'GeoIPNetSpeedCell', 'GeoIPOrg', 'GeoLiteCityV6', 'GeoLiteCity'];
     var dbsFound = [];
 
     var dbdir = plugin.cfg.main.dbdir || '/usr/local/share/GeoIP/';
@@ -221,8 +222,8 @@ exports.get_geoip_maxmind = function (ip) {
         result = ipv6 ? plugin.maxmind.getLocationV6(ip)
                       : plugin.maxmind.getLocation(ip);
     }
-    catch (e) { 
-        plugin.logerror(e.message); 
+    catch (e) {
+        plugin.logerror(e.message);
     }
     if (!result) {
         try {
@@ -230,8 +231,8 @@ exports.get_geoip_maxmind = function (ip) {
             result = ipv6 ? plugin.maxmind.getCountryV6(ip)
                           : plugin.maxmind.getCountry(ip);
         }
-        catch (e) { 
-            plugin.logerror(e.message); 
+        catch (e) {
+            plugin.logerror(e.message);
         }
     }
     return result;
@@ -350,10 +351,11 @@ exports.received_headers = function (connection) {
     if (!received.length) return;
 
     var results = [];
+    var ipany_re = net_utils.get_ipany_re('[\\[\\(](?:IPv6:)?', '[\\]\\)]');
 
     // Try and parse each received header
     for (var i=0; i < received.length; i++) {
-        var match = /\[(\d+\.\d+\.\d+\.\d+)\]/.exec(received[i]);
+        var match = ipany_re.exec(received[i]);
         if (!match) continue;
         if (net_utils.is_private_ip(match[1])) continue;  // exclude private IP
 
@@ -380,9 +382,11 @@ exports.originating_headers = function (connection) {
 
     if (!orig) return;
 
-    var match = /(\d+\.\d+\.\d+\.\d+)/.exec(orig);
+    var match = net_utils.get_ipany_re().exec(orig);
     if (!match) return;
+
     var found_ip = match[1];
+    if (net_utils.is_private_ip(found_ip)) return;
 
     var gi = plugin.get_geoip(found_ip);
     if (!gi) return;
