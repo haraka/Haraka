@@ -63,8 +63,8 @@ exports.load_maxmind = function () {
 
     plugin.loginfo('provider maxmind with ' + dbsFound.length + ' DBs');
     plugin.maxmind.init(dbsFound, {indexCache: true, checkForUpdates: true});
-    plugin.register_hook('connect',     'lookup_maxmind');
-    plugin.register_hook('data_post',   'add_headers');
+    plugin.register_hook('connect',   'lookup_maxmind');
+    plugin.register_hook('data_post', 'add_headers');
 
     return true;
 };
@@ -88,8 +88,8 @@ exports.load_geoip_lite = function () {
     }
 
     plugin.loginfo('provider geoip-lite');
-    plugin.register_hook('connect',     'lookup_geoip');
-    plugin.register_hook('data_post',   'add_headers');
+    plugin.register_hook('connect',   'lookup_geoip');
+    plugin.register_hook('data_post', 'add_headers');
 
     return true;
 };
@@ -126,10 +126,14 @@ exports.lookup_maxmind = function (next, connection) {
 
     var loc = plugin.get_geoip_maxmind(connection.remote_ip);
     if (loc) {
-        connection.results.add(plugin, {continent: loc.continentCode});
-        connection.results.add(plugin, {country: loc.countryCode || loc.code});
-        show.push(loc.continentCode);
-        show.push(loc.countryCode);
+        if (loc.continentCode) {
+            connection.results.add(plugin, {continent: loc.continentCode});
+            show.push(loc.continentCode);
+        }
+        if (loc.countryCode || loc.code) {
+            connection.results.add(plugin, {country: loc.countryCode || loc.code});
+            show.push(loc.countryCode);
+        }
         if (loc.city) {
             connection.results.add(plugin, {region: loc.region});
             connection.results.add(plugin, {city: loc.city});
@@ -145,7 +149,9 @@ exports.lookup_maxmind = function (next, connection) {
     }
 
     plugin.calculate_distance(connection,
-            [loc.latitude, loc.longitude], function (err, distance) {
+                              [loc.latitude, loc.longitude], 
+                              function (err, distance) 
+    {
         if (err) { connection.results.add(plugin, {err: err}); }
         if (distance) { show.push(distance+'km'); }
         connection.results.add(plugin, {human: show.join(', '), emit:true});
@@ -199,6 +205,7 @@ exports.get_geoip = function (ip) {
     if (!res) {
         res = plugin.get_geoip_lite(ip);
     }
+    if (!res) return;
 
     var show = [];
     if (res.continentCode) show.push(res.continentCode);
