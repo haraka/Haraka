@@ -30,6 +30,7 @@ var _set_up = function (done) {
     done();
 };
 
+/* jshint maxlen: false */
 exports.invalid_date = {
     setUp : _set_up,
     'none': function (test) {
@@ -61,7 +62,7 @@ exports.user_agent = {
             test.equal(false, /UA/.test(r.fail));
         };
         outer.plugin.cfg.check.user_agent=true;
-        outer.connection.transaction.header.add_end('User-Agent', "Thunderbird");
+        outer.connection.transaction.header.add_end('User-Agent', 'Thunderbird');
         outer.plugin.user_agent(next_cb, outer.connection);
         test.done();
     },
@@ -74,7 +75,7 @@ exports.user_agent = {
             test.equal(false, /UA/.test(r.fail));
         };
         outer.plugin.cfg.check.user_agent=true;
-        outer.connection.transaction.header.add_end('X-Mailer', "Apple Mail");
+        outer.connection.transaction.header.add_end('X-Mailer', 'Apple Mail');
         outer.plugin.user_agent(next_cb, outer.connection);
         test.done();
     },
@@ -149,7 +150,7 @@ exports.from_match = {
         };
         this.plugin.cfg.check.from_match=true;
         this.connection.transaction.mail_from = new Address.Address('<test@example.com>');
-        this.connection.transaction.header.add_end('From', "test@example.com");
+        this.connection.transaction.header.add_end('From', 'test@example.com');
         this.plugin.from_match(next_cb, this.connection);
         test.done();
     },
@@ -214,8 +215,8 @@ exports.mailing_list = {
         var outer = this;
         var next_cb = function() {
             var r = outer.connection.transaction.results.get('data.headers');
-            test.ok(r.fail.length);
-            test.equal(false, /ezmlm/.test(r.pass));
+            test.equal(r.pass.length, 0);
+            test.equal(true, /not/.test(r.msg));
         };
         this.plugin.cfg.check.mailing_list=true;
         this.connection.transaction.header.add_end('Mailing-List', "blah blah random header tokens");
