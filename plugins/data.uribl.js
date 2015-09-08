@@ -158,7 +158,7 @@ exports.do_lookups = function (connection, next, hosts, type) {
     // Randomize the order a bit
     utils.shuffle(queries_to_run);
 
-    if(!queries_to_run.length) {
+    if (!queries_to_run.length) {
         results.add(plugin, {skip: type + ' (no queries)' });
         return next();
     }
@@ -166,16 +166,21 @@ exports.do_lookups = function (connection, next, hosts, type) {
     // Perform the lookups
     var pending_queries = 0;
     var called_next = false;
+    var timer;
+    function call_next (code, msg) {
+        if (called_next) return;
+        clearTimeout(timer);
+        called_next = true;
+        next(code, msg);
+    }
 
-    var timer = setTimeout(function () {
+    timer = setTimeout(function () {
         connection.logdebug(plugin, 'timeout');
-        if (!called_next) {
-            called_next = true;
-            results.add(plugin, {err: type + ' timeout' });
-            return next();
-        }
+        results.add(plugin, {err: type + ' timeout' });
+        call_next();
     }, ((lists.main && lists.main.timeout) ?
         lists.main.timeout : 30) * 1000);
+
 
     queries_to_run.forEach(function (query) {
         var lookup = query.join('.');
@@ -187,7 +192,8 @@ exports.do_lookups = function (connection, next, hosts, type) {
         dns.resolve4(lookup, function(err, addrs) {
             pending_queries--;
             connection.logdebug(plugin, lookup + ' => ' + ((err) ? err : addrs.join(', ')));
-            if (!err && !called_next) {
+
+            if (!err) {
                 var skip = false;
                 var do_reject = function (msg) {
                     if (!skip && !called_next) {
@@ -198,10 +204,9 @@ exports.do_lookups = function (connection, next, hosts, type) {
                         if (lists[query[1]] && lists[query[1]].custom_msg) {
                             msg = lists[query[1]].custom_msg.replace(/\{uri\}/g, query[0]).replace(/\{zone\}/g, query[1]);
                         }
-                        clearTimeout(timer);
-                        called_next = true;
-                        results.add(plugin, {fail: type });
-                        return next(DENY, msg);
+                        results.add(plugin, {fail:
+                            [type, query[0], query[1]].join('/') });
+                        call_next(DENY, msg);
                     }
                 };
                 // Optionally validate first result against a regexp
@@ -235,17 +240,17 @@ exports.do_lookups = function (connection, next, hosts, type) {
                     do_reject();
                 }
             }
-            if (!called_next && pending_queries === 0) {
-                clearTimeout(timer);
+
+            if (pending_queries === 0) {
                 results.add(plugin, {pass: type});
-                return next();
+                return call_next();
             }
         });
     });
 
     if (pending_queries === 0) {
         results.add(plugin, {pass: type});
-        return next();
+        return call_next();
     }
 };
 
