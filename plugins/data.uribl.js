@@ -168,8 +168,8 @@ exports.do_lookups = function (connection, next, hosts, type) {
     var called_next = false;
     var timer;
     function call_next (code, msg) {
+        if (timer) clearTimeout(timer);
         if (called_next) return;
-        clearTimeout(timer);
         called_next = true;
         next(code, msg);
     }
