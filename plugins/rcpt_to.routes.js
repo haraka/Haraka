@@ -12,7 +12,7 @@ exports.register = function() {
 
     plugin.load_config();
 
-    try { redis = require('redis'); }
+    try { redis = require('ioredis'); }
     catch (e) {
         plugin.logerror("unable to load redis.\ndid you: npm install -g redis?");
     }
@@ -84,11 +84,11 @@ exports.rcpt = function(next, connection, params) {
             }
 
             // got replies from Redis, any with an MX?
-            if (replies[0]) {
+            if (replies[0][1]) {
                 txn.results.add(plugin, {pass: 'redis.email'});
                 return next(OK);
             }
-            if (replies[1]) {
+            if (replies[1][1]) {
                 txn.results.add(plugin, {pass: 'redis.domain'});
                 return next(OK);
             }
@@ -138,8 +138,8 @@ exports.get_mx = function(next, hmail, domain) {
             }
 
             // got replies from Redis, any with an MX?
-            if (replies[0]) { return next(OK, replies[0]); }
-            if (replies[1]) { return next(OK, replies[1]); }
+            if (replies[0]) { return next(OK, replies[0][1]); }
+            if (replies[1]) { return next(OK, replies[1][1]); }
 
             return do_file_search(); // no redis record, try files
         });
