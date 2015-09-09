@@ -89,5 +89,74 @@ exports.implicit_mx = {
             test.done();
         });
     },
+    'mxs4am.josef-froehle.de': function (test) {
+        test.expect(1);
+        var t = this;
+        var txn = this.connection.transaction;
+        t.plugin.implicit_mx(t.connection, 'mxs4am.josef-froehle.de', function () {
+            //console.log(arguments);
+            var mf = txn.results.get('mail_from.is_resolvable');
+            //console.log(mf);
+            test.equal(mf.pass.length, 1);
+            test.done();
+        });
+    },
+    'mxs4am-a.josef-froehle.de': function (test) {
+        test.expect(1);
+        var t = this;
+        var txn = this.connection.transaction;
+        t.plugin.implicit_mx(t.connection, 'mxs4am-a.josef-froehle.de', function () {
+            //console.log(arguments);
+            var mf = txn.results.get('mail_from.is_resolvable');
+            //console.log(mf);
+            test.equal(mf.pass.length, 1);
+            test.done();
+        });
+    },
+    'mxs4am-aaaa.josef-froehle.de': function (test) {
+        test.expect(1);
+        var t = this;
+        var txn = this.connection.transaction;
+        t.plugin.implicit_mx(t.connection, 'mxs4am-aaaa.josef-froehle.de', function () {
+            //console.log(arguments);
+            var mf = txn.results.get('mail_from.is_resolvable');
+            //console.log(mf);
+            test.equal(mf.pass.length, 1);
+            test.done();
+        });
+    },
+    'resolve-fail-definitive.josef-froehle.de': function (test) {
+        test.expect(1);
+        var t = this;
+        var txn = this.connection.transaction;
+        t.plugin.implicit_mx(t.connection, 'resolve-fail-definitive.josef-froehle.de', function () {
+            var mf = txn.results.get('mail_from.is_resolvable');
+            //console.log(mf);
+            test.equal(mf.fail.length, 1);
+            test.done();
+        });
+    },
+    'resolve-fail-a.josef-froehle.de': function (test) {
+        test.expect(1);
+        var t = this;
+        var txn = this.connection.transaction;
+        t.plugin.implicit_mx(t.connection, 'resolve-fail-a.josef-froehle.de', function () {
+            var mf = txn.results.get('mail_from.is_resolvable');
+            //console.log(mf);
+            test.equal(mf.fail.length, 1);
+            test.done();
+        });
+    },
+    'resolve-fail-aaaa.josef-froehle.de': function (test) {
+        test.expect(1);
+        var t = this;
+        var txn = this.connection.transaction;
+        t.plugin.implicit_mx(t.connection, 'resolve-fail-aaaa.josef-froehle.de', function () {
+            var mf = txn.results.get('mail_from.is_resolvable');
+            //console.log(mf);
+            test.equal(mf.fail.length, 1);
+            test.done();
+        });
+    },
 };
 

@@ -11,6 +11,8 @@ var config = require('./config');
 // npm modules
 var async    = require('async');
 var punycode = require('punycode');
+var ipaddr    = require('ipaddr.js');
+var sprintf   = require('sprintf-js').sprintf;
 
 var public_suffix_list = {};
 load_public_suffix_list();
@@ -258,6 +260,10 @@ exports.is_private_ip = function (ip) {
 // backwards compatibility for non-public modules. Sunset: v3.0
 exports.is_rfc1918 = exports.is_private_ip;
 
+exports.is_ip_literal = function (host) {
+    return exports.get_ipany_re('^\\[','\\]$','').test(host) ? true : false;
+};
+
 exports.is_ipv4_literal = function (host) {
     return /^\[(\d{1,3}\.){3}\d{1,3}\]$/.test(host) ? true : false;
 };
@@ -467,4 +473,23 @@ exports.get_ips_by_host = function (hostname, done) {
             done(errors, ips);
         }
     );
+};
+
+exports.ipv6_reverse = function(ipv6){
+    var ipv6 = ipaddr.parse(ipv6);
+    return ipv6.toNormalizedString()
+        .split(':')
+        .map(function (n) {
+            return sprintf('%04x', parseInt(n, 16));
+        })
+        .join('')
+        .split('')
+        .reverse()
+        .join('.');
+};
+
+exports.ipv6_bogus = function(ipv6){
+    var ipCheck = ipaddr.parse(ipv6);
+    if(ipCheck.range() !== 'unicast') { return true; }
+    return false;
 };

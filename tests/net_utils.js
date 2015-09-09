@@ -1,5 +1,6 @@
 require('../configfile').watch_files = false;
 var net_utils = require('../net_utils');
+var net = require('net');
 
 function _check(test, ip, host, res) {
     test.expect(1);
@@ -487,6 +488,31 @@ exports.octets_in_string = {
         test.equal(net_utils.octets_in_string(str, 149, 213), true );
         test.equal(net_utils.octets_in_string(str, 210, 20), true );
         test.equal(net_utils.octets_in_string(str, 2, 7), false );
+        test.done();
+    }
+};
+
+exports.is_ip_literal = {
+    'ipv4 is_ip_literal': function (test) {
+        test.expect(6);
+        test.equal(net_utils.is_ip_literal('[127.0.0.0]'), true);
+        test.equal(net_utils.is_ip_literal('[127.0.0.1]'), true);
+        test.equal(net_utils.is_ip_literal('[127.1.0.255]'), true);
+        test.equal(net_utils.is_ip_literal('127.0.0.0'), false);
+        test.equal(net_utils.is_ip_literal('127.0.0.1'), false);
+        test.equal(net_utils.is_ip_literal('127.1.0.255'), false);
+
+        test.done();
+    },
+    'ipv6 is_ip_literal': function (test) {
+        test.expect(6);
+        test.equal(net_utils.is_ip_literal('[::5555:6666:7777:8888]'), true);
+        test.equal(net_utils.is_ip_literal('[1111::4444:5555:6666:7777:8888]'), true);
+        test.equal(net_utils.is_ip_literal('[2001:0:1234::C1C0:ABCD:876]'), true);
+        test.equal(net_utils.is_ip_literal('::5555:6666:7777:8888'), false);
+        test.equal(net_utils.is_ip_literal('1111::4444:5555:6666:7777:8888'), false);
+        test.equal(net_utils.is_ip_literal('2001:0:1234::C1C0:ABCD:876'), false);
+
         test.done();
     }
 };
@@ -1069,6 +1095,15 @@ var ip_fixtures = [
 
 exports.get_ipany_re = {
     /* jshint maxlen: false */
+    'IPv6, Prefix': function (test) {
+        /* for x-*-ip headers */
+        test.expect(2);
+        // it must fail as of not valide
+        test.ok(!net.isIPv6('IPv6:2001:db8:85a3::8a2e:370:7334'));
+        // must okay!
+        test.ok(net.isIPv6('2001:db8:85a3::8a2e:370:7334'));
+        test.done();
+    },
     'IP fixtures check': function (test) {
         test.expect(ip_fixtures.length);
         for(var i in ip_fixtures){

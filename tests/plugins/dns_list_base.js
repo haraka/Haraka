@@ -133,12 +133,12 @@ exports.multi = {
         var dnsbls = ['bl.spamcop.net','cbl.abuseat.org'];
         this.plugin.multi('127.0.0.1', dnsbls, cb);
     },
-    'IPv6 addresses not supported': function (test) { 
+    'IPv6 addresses supported': function (test) { 
         test.expect(12);
         var cb = function (err, zone, a, pending) {
             test.equal(null, a);
             if (pending) {
-                test.deepEqual(new Error('IPv6 not supported'), err);
+                test.deepEqual(null, err);
                 test.equal(true, pending);
                 test.ok(zone);
             }

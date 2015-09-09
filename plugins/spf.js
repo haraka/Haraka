@@ -73,8 +73,8 @@ exports.hook_helo = exports.hook_ehlo = function (next, connection, helo) {
 
     // RFC 4408, 2.1: "SPF clients must be prepared for the "HELO"
     //           identity to be malformed or an IP address literal.
-    if (net_utils.is_ipv4_literal(helo)) {
-        connection.results.add(plugin, {skip: 'ipv4_literal'});
+    if (net_utils.is_ip_literal(helo)) {
+        connection.results.add(plugin, {skip: 'ip_literal'});
         return next();
     }
 
