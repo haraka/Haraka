@@ -14,6 +14,7 @@ var config      = require('./config');
 var constants   = require('./constants');
 var trans       = require('./transaction');
 var plugins     = require('./plugins');
+var net_utils   = require('./net_utils');
 var async       = require('async');
 var Address     = require('./address').Address;
 var TimerQueue  = require('./timer_queue');
@@ -962,8 +963,6 @@ HMailItem.prototype.try_deliver = function () {
     });
 };
 
-var smtp_regexp = /^(\d{3})([ -])(?:(\d\.\d\.\d)\s)?(.*)/;
-
 var cram_md5_response = function (username, password, challenge) {
     var crypto = require('crypto');
     var c = utils.unbase64(challenge);
@@ -1206,7 +1205,7 @@ HMailItem.prototype.try_deliver_host = function (mx) {
             return;
         }
         self.logprotocol("S: " + line);
-        var matches = smtp_regexp.exec(line);
+        var matches = net_utils.smtp_regexp.exec(line);
         if (matches) {
             var reason;
             var code = matches[1],

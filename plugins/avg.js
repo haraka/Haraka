@@ -3,11 +3,10 @@
 
 // TODO: use pooled connections
 
-var fs   = require('fs');
-var path = require('path');
-
-var sock = require('./line_socket');
-var smtp_regexp = /^([0-9]{3})([ -])(.*)/;
+var fs        = require('fs');
+var path      = require('path');
+var sock      = require('./line_socket');
+var net_utils = require('./net_utils');
 
 exports.register = function () {
     var plugin = this;
@@ -89,7 +88,7 @@ exports.hook_data_post = function (next, connection) {
         });
 
         socket.on('line', function (line) {
-            var matches = smtp_regexp.exec(line);
+            var matches = net_utils.smtp_regexp.exec(line);
             connection.logprotocol(plugin, '< ' + line);
             if (!matches) {
                 connection.results.add(plugin,
