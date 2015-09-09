@@ -1012,7 +1012,6 @@ var ip_fixtures = [
     [true , "2::10"],
     [true , "3ffe:0b00:0000:0000:0001:0000:0000:000a"],
     [true , "3ffe:b00::1:0:0:a"],
-    [true , "::" ],
     [true , "::"],
     [true , "::0"],
     [true , "::0:0"],
@@ -1054,7 +1053,7 @@ var ip_fixtures = [
     [true , "FF01:0:0:0:0:0:0:101"],
     [true , "FF01::101"],
     [true , "FF02:0000:0000:0000:0000:0000:0000:0001"],
-    [true , "FF02::1" ],
+    [true , "FF02::1"],
     [true , "a:b:c:d:e:f:0::"],
     [true , "fe80:0000:0000:0000:0204:61ff:fe9d:f156"],
     [true , "fe80:0:0:0:204:61ff:254.157.241.86"],
@@ -1071,8 +1070,7 @@ var ip_fixtures = [
 exports.get_ipany_re = {
     /* jshint maxlen: false */
     'IP fixtures check': function (test) {
-        /* for x-*-ip headers */
-        test.expect(490);
+        test.expect(ip_fixtures.length);
         for(var i in ip_fixtures){
             var match = net_utils.get_ipany_re('^','$').test(ip_fixtures[i][1]);
             console.log('IP:', "'"+ip_fixtures[i][1]+"'" , 'Expected:', ip_fixtures[i][0] , 'Match:' , match);
