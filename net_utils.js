@@ -422,14 +422,12 @@ exports.get_ipany_re = function (prefix, suffix, modifier) {
     );
 };
 
-exports.smtp_regexp = function(){
-    // regexp from /outbound.js
-    return new RegExp('^(\\d{3})([ -])(?:(\\d\\.\\d\\.\\d)\\s)?(.*)','');
-    /*
-        /^([0-9]{3})([ -])(.*)/; 
-        this also found in 
-            - /plugins/auth/auth_proxy.js 
-            - /plugins/avg.js 
-            - /smtp_client.js
-    */
-}
+/*
+    /^([0-9]{3})([ -])(.*)/; 
+    this also found in 
+        - /plugins/auth/auth_proxy.js 
+        - /plugins/avg.js 
+        - /smtp_client.js
+*/
+// regexp from /outbound.js
+exports.smtp_regexp = new RegExp('^(\\d{3})([ -])(?:(\\d\\.\\d\\.\\d)\\s)?(.*)','')
