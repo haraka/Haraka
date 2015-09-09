@@ -1,7 +1,7 @@
 // Proxy AUTH requests selectively by domain
-var sock  = require('./line_socket');
-var utils = require('./utils');
-var smtp_regexp = /^([0-9]{3})([ -])(.*)/;
+var sock      = require('./line_socket');
+var utils     = require('./utils');
+var net_utils = require('./net_utils');
 
 exports.register = function () {
     this.inherits('auth/auth_base');
@@ -89,7 +89,7 @@ exports.try_auth_proxy = function (connection, hosts, user, passwd, cb) {
     socket.on('line', function (line) {
         var matches;
         connection.logprotocol(self, "S: " + line);
-        if (matches = smtp_regexp.exec(line)) {
+        if (matches = net_utils.smtp_regexp.exec(line)) {
             var code = matches[1],
                 cont = matches[2],
                 rest = matches[3];

@@ -3,15 +3,15 @@
 // protocol to be hooked for different levels of control, such as
 // smtp_forward and smtp_proxy queue plugins.
 
-var events = require('events');
-var util = require('util');
+var events       = require('events');
+var util         = require('util');
 var generic_pool = require('generic-pool');
-var line_socket = require('./line_socket');
-var logger = require('./logger');
-var uuid = require('./utils').uuid;
-var utils = require('./utils');
+var line_socket  = require('./line_socket');
+var logger       = require('./logger');
+var uuid         = require('./utils').uuid;
+var utils        = require('./utils');
+var net_utils    = require('./net_utils');
 
-var smtp_regexp = /^([0-9]{3})([ -])(.*)/;
 var STATE = {
     IDLE: 1,
     ACTIVE: 2,
@@ -39,7 +39,7 @@ function SMTPClient(port, host, connect_timeout, idle_timeout) {
 
     this.socket.on('line', function (line) {
         client.emit('server_protocol', line);
-        var matches = smtp_regexp.exec(line);
+        var matches = net_utils.smtp_regexp.exec(line);
         if (!matches) {
             client.emit('error', client.uuid + ': Unrecognised response from upstream server: ' + line);
             client.destroy();
