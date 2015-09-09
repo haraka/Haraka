@@ -424,7 +424,7 @@ exports.get_ipany_re = function (prefix, suffix, modifier) {
 
 exports.smtp_regexp = function(){
     // regexp from /outbound.js
-    return /^(\d{3})([ -])(?:(\d\.\d\.\d)\s)?(.*)/;
+    return new RegExp('^(\\d{3})([ -])(?:(\\d\\.\\d\\.\\d)\\s)?(.*)','');
     /*
         /^([0-9]{3})([ -])(.*)/; 
         this also found in 
