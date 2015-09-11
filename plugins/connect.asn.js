@@ -118,14 +118,16 @@ exports.lookup_asn = function (next, connection) {
     var ip = connection.remote_ip;
     if (net_utils.is_private_ip(ip)) return next();
 
-    function provIter (zone, cb) {
+    function provIter (zone, done) {
 
-        function result_cb (err, zone, r) {
+        connection.logdebug(plugin, "zone: " + zone);
+
+        plugin.get_dns_results(zone, ip, function result_cb (err, zone, r) {
             if (err) {
                 connection.logerror(plugin, err.message);
-                return cb();
+                return done();
             }
-            if (!r) return cb();
+            if (!r) return done();
 
             // store asn & net from any source
             if (r.asn) connection.results.add(plugin, {asn: r.asn});
@@ -141,15 +143,13 @@ exports.lookup_asn = function (next, connection) {
             else if (zone === 'origin.asn.spameatingmonkey.net') {
                 connection.results.add(plugin, { emit: true, monkey: r });
             }
-            return cb();
-        }
 
-        connection.logdebug(plugin, "zone: " + zone);
-        plugin.get_dns_results(zone, ip, result_cb);
+            return done();
+        });
     }
 
     function provDone (err) {
-        if (err) connection.logerror(plugin, err);
+        if (err) connection.results.add(plugin, { err: err });
         next();
     }
     async.each(providers, provIter, provDone);

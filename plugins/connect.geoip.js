@@ -43,8 +43,9 @@ exports.load_maxmind = function () {
         return;
     }
 
-    var dbs = ['GeoIPCity', 'GeoIP', 'GeoIPv6',  'GeoIPASNum', 'GeoISP',
-               'GeoIPNetSpeedCell',  'GeoIPOrg', 'GeoLiteCityV6'];
+    var dbs = ['GeoIPCity', 'GeoIP', 'GeoIPASNum', 'GeoISP',
+               'GeoIPCityv6', 'GeoIPv6', 'GeoIPASNumv6',
+               'GeoIPNetSpeedCell', 'GeoIPOrg', 'GeoLiteCityV6', 'GeoLiteCity'];
     var dbsFound = [];
 
     var dbdir = plugin.cfg.main.dbdir || '/usr/local/share/GeoIP/';
@@ -62,8 +63,8 @@ exports.load_maxmind = function () {
 
     plugin.loginfo('provider maxmind with ' + dbsFound.length + ' DBs');
     plugin.maxmind.init(dbsFound, {indexCache: true, checkForUpdates: true});
-    plugin.register_hook('connect',     'lookup_maxmind');
-    plugin.register_hook('data_post',   'add_headers');
+    plugin.register_hook('connect',   'lookup_maxmind');
+    plugin.register_hook('data_post', 'add_headers');
 
     return true;
 };
@@ -87,8 +88,8 @@ exports.load_geoip_lite = function () {
     }
 
     plugin.loginfo('provider geoip-lite');
-    plugin.register_hook('connect',     'lookup_geoip');
-    plugin.register_hook('data_post',   'add_headers');
+    plugin.register_hook('connect',   'lookup_geoip');
+    plugin.register_hook('data_post', 'add_headers');
 
     return true;
 };
@@ -125,10 +126,14 @@ exports.lookup_maxmind = function (next, connection) {
 
     var loc = plugin.get_geoip_maxmind(connection.remote_ip);
     if (loc) {
-        connection.results.add(plugin, {continent: loc.continentCode});
-        connection.results.add(plugin, {country: loc.countryCode || loc.code});
-        show.push(loc.continentCode);
-        show.push(loc.countryCode);
+        if (loc.continentCode) {
+            connection.results.add(plugin, {continent: loc.continentCode});
+            show.push(loc.continentCode);
+        }
+        if (loc.countryCode || loc.code) {
+            connection.results.add(plugin, {country: loc.countryCode || loc.code});
+            show.push(loc.countryCode);
+        }
         if (loc.city) {
             connection.results.add(plugin, {region: loc.region});
             connection.results.add(plugin, {city: loc.city});
@@ -144,7 +149,9 @@ exports.lookup_maxmind = function (next, connection) {
     }
 
     plugin.calculate_distance(connection,
-            [loc.latitude, loc.longitude], function (err, distance) {
+                              [loc.latitude, loc.longitude], 
+                              function (err, distance) 
+    {
         if (err) { connection.results.add(plugin, {err: err}); }
         if (distance) { show.push(distance+'km'); }
         connection.results.add(plugin, {human: show.join(', '), emit:true});
@@ -198,6 +205,7 @@ exports.get_geoip = function (ip) {
     if (!res) {
         res = plugin.get_geoip_lite(ip);
     }
+    if (!res) return;
 
     var show = [];
     if (res.continentCode) show.push(res.continentCode);
@@ -221,8 +229,8 @@ exports.get_geoip_maxmind = function (ip) {
         result = ipv6 ? plugin.maxmind.getLocationV6(ip)
                       : plugin.maxmind.getLocation(ip);
     }
-    catch (e) { 
-        plugin.logerror(e.message); 
+    catch (e) {
+        plugin.logerror(e.message);
     }
     if (!result) {
         try {
@@ -230,8 +238,8 @@ exports.get_geoip_maxmind = function (ip) {
             result = ipv6 ? plugin.maxmind.getCountryV6(ip)
                           : plugin.maxmind.getCountry(ip);
         }
-        catch (e) { 
-            plugin.logerror(e.message); 
+        catch (e) {
+            plugin.logerror(e.message);
         }
     }
     return result;
@@ -350,10 +358,11 @@ exports.received_headers = function (connection) {
     if (!received.length) return;
 
     var results = [];
+    var ipany_re = net_utils.get_ipany_re('[\\[\\(](?:IPv6:)?', '[\\]\\)]');
 
     // Try and parse each received header
     for (var i=0; i < received.length; i++) {
-        var match = /\[(\d+\.\d+\.\d+\.\d+)\]/.exec(received[i]);
+        var match = ipany_re.exec(received[i]);
         if (!match) continue;
         if (net_utils.is_private_ip(match[1])) continue;  // exclude private IP
 
@@ -380,9 +389,11 @@ exports.originating_headers = function (connection) {
 
     if (!orig) return;
 
-    var match = /(\d+\.\d+\.\d+\.\d+)/.exec(orig);
+    var match = net_utils.get_ipany_re().exec(orig);
     if (!match) return;
+
     var found_ip = match[1];
+    if (net_utils.is_private_ip(found_ip)) return;
 
     var gi = plugin.get_geoip(found_ip);
     if (!gi) return;

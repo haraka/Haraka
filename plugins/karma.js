@@ -409,19 +409,20 @@ exports.hook_deny = function (next, connection, params) {
     }
 
     if (connection.results) {
+        // intercept any other denials
         connection.results.add(plugin, {fail: 'deny:' + pi_name});
 
         if (pi_deny === DENY ||
             pi_deny === DENYDISCONNECT ||
             pi_deny === DISCONNECT) {
-                connection.results.incr(plugin, {score: -2});
+            connection.results.incr(plugin, {score: -2});
         }
         else {
             connection.results.incr(plugin, {score: -1});
         }
     }
 
-    // intercept any other denials letting the connection continue
+    // let the connection continue
     return next(OK);
 };
 
@@ -916,7 +917,7 @@ exports.check_asn = function (connection, asnkey) {
 exports.init_redis_connection = function (next, server) {
     var plugin = this;
     if (server.notes.redis) {
-        server.loginfo(plugin, 'karma: using server.notes.redis');
+        server.loginfo(plugin, 'using server.notes.redis');
         plugin.db = server.notes.redis;
     }
     if (plugin.db && plugin.db.ping()) { return next(); } // connection is good
@@ -942,7 +943,7 @@ exports.init_redis_connection = function (next, server) {
     }
 
     client.on('error', function (error) {
-        server.logerror(plugin, 'karma: redis error: ' + error.message);
+        server.logerror(plugin, 'redis error: ' + error.message);
         client = null;
         callNext();
     });

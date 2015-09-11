@@ -115,46 +115,6 @@ exports.handle_ptr_error = {
     },
 };
 
-exports.handle_a_error = {
-    setUp : _set_up,
-    'ENOTFOUND': function (test) {
-        test.expect(1);
-        this.plugin.refresh_config(this.connection);
-        var err = new Error("test error");
-        err.code = 'ENOTFOUND';
-        this.plugin.handle_a_error(this.connection, err, 'foo.com');
-        test.ok(this.connection.results.get('connect.fcrdns').fail.length);
-        test.done();
-    },
-    'dns.NOTFOUND': function (test) {
-        test.expect(1);
-        this.plugin.refresh_config(this.connection);
-        var err = new Error("test error");
-        err.code = dns.NOTFOUND;
-        this.plugin.handle_a_error(this.connection, err, 'foo.com');
-        test.ok(this.connection.results.get('connect.fcrdns').fail.length);
-        test.done();
-    },
-    'dns.NXDOMAIN': function (test) {
-        test.expect(1);
-        this.plugin.refresh_config(this.connection);
-        var err = new Error("test error");
-        err.code = dns.NXDOMAIN;
-        this.plugin.handle_a_error(this.connection, err, 'foo.com');
-        test.ok(this.connection.results.get('connect.fcrdns').fail.length);
-        test.done();
-    },
-    'default': function (test) {
-        test.expect(1);
-        this.plugin.refresh_config(this.connection);
-        var err = new Error("test error");
-        err.code = 'NA';
-        this.plugin.handle_a_error(this.connection, err, 'foo.com');
-        test.ok(this.connection.results.get('connect.fcrdns').err.length);
-        test.done();
-    },
-};
-
 exports.is_generic_rdns = {
     setUp : _set_up,
     'mail.theartfarm.com': function (test) {
