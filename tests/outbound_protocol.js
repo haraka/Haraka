@@ -1,3 +1,4 @@
+'use strict';
 
 require('../configfile').watch_files = false;
 var vm_harness = require('./fixtures/vm_harness');
@@ -27,7 +28,7 @@ var ensureTestQueueDirExists = function(done) {
 var removeTestQueueDir = function(done) {
     fs.exists(queue_dir, function (exists) {
         if (exists) {
-            files = fs.readdirSync(queue_dir);
+            var files = fs.readdirSync(queue_dir);
             files.forEach(function(file,index){
                 var curPath = queue_dir + "/" + file;
                 if (fs.lstatSync(curPath).isDirectory()) { // recurse

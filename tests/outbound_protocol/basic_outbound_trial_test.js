@@ -1,3 +1,4 @@
+'use strict';
 
 // This test file is executed by tests/outbound_protocol.js (see there)
 //
@@ -21,7 +22,10 @@ var mock_sock      = require('./../fixtures/line_socket');
 
 // create a dummy HMailItem for testing
 util_hmailitem.createHMailItem(
-    this, // outbound context
+    {
+        TODOItem: TODOItem,
+        exports: exports,
+    }, // outbound context
     {
 
     },
