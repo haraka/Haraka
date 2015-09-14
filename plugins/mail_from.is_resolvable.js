@@ -2,6 +2,8 @@
 // Check MAIL FROM domain is resolvable to an MX
 var dns = require('dns');
 
+var net_utils = require('./net_utils');
+
 exports.register = function () {
     this.load_ini();
 };
@@ -68,17 +70,17 @@ exports.hook_mail = function(next, connection, params) {
             a_records = Object.keys(a_records);
             if (a_records && a_records.length) {
                 connection.logdebug(plugin, domain + ': ' + a_records);
-                results.add(plugin, {pass: 'has_a_records'});
+                results.add(plugin, {pass: 'has_fwd_dns'});
                 return mxDone();
             }
-            results.add(plugin, {fail: 'has_a_records'});
+            results.add(plugin, {fail: 'has_fwd_dns'});
             return mxDone(((c.reject_no_mx) ? DENY : DENYSOFT),
                     'MX without A records');
         }
 
         addresses.forEach(function (addr) {
             // Handle MX records that are IP addresses
-            // This is invalid - but a lot of MTAs allow it.
+            // This is invalid - but some MTAs allow it.
             if (/^\d+\.\d+\.\d+\.\d+$/.test(addr.exchange)) {
                 connection.logwarn(plugin, domain + ': invalid MX ' +
                         addr.exchange);
@@ -88,14 +90,14 @@ exports.hook_mail = function(next, connection, params) {
                 return;
             }
             pending_queries++;
-            dns.resolve(addr.exchange, function(err, addresses) {
+            net_utils.get_ips_by_host(addr.exchange, function(err, addresses) {
                 pending_queries--;
                 if (!txn) return;
-                if (err) {
-                    results.add(plugin, {msg: err.message});
+                if (err && err.length) {
+                    results.add(plugin, {msg: err[0]});
                     connection.logdebug(plugin, domain + ': MX ' +
                             addr.priority + ' ' + addr.exchange +
-                            ' => ' + err.message);
+                            ' => ' + err[0]);
                     check_results();
                     return;
                 }
@@ -140,10 +142,8 @@ exports.mxErr = function (connection, domain, type, err, mxDone) {
 exports.implicit_mx = function (connection, domain, mxDone) {
     var plugin = this;
     var txn = connection.transaction;
-    dns.resolve(domain, 'A', function(err, addresses) {
+    net_utils.get_ips_by_host(domain, function(err, addresses) {
         if (!txn) return;
-        if (err && plugin.mxErr(connection, domain, 'A', err, mxDone)) return;
-
         if (!addresses || !addresses.length) {
             txn.results.add(plugin, {fail: 'has_a_records'});
             return mxDone(((plugin.cfg.main.reject_no_mx) ? DENY : DENYSOFT),

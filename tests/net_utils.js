@@ -1148,3 +1148,25 @@ exports.get_ipany_re = {
         test.done();
     },
 };
+
+exports.get_ips_by_host = {
+    'get_ips_by_host, servedby.tnpi.net': function (test) {
+        test.expect(2);
+        net_utils.get_ips_by_host('servedby.tnpi.net', function (err, res) {
+            console.log(arguments);
+            if (err) {
+                console.error(err);
+            }
+            test.deepEqual(err, []);
+            test.deepEqual(res.sort(), [
+                '192.48.85.146',
+                '192.48.85.147',
+                '192.48.85.148',
+                '192.48.85.149',
+                '2607:f060:b008:feed::2'
+                ].sort());
+            test.done();
+        });
+    },
+};
+

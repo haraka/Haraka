@@ -1,8 +1,15 @@
 'use strict';
 
+// node.js built-ins
+var dns    = require('dns');
+var net    = require('net');
+
+// haraka libraries
 var logger = require('./logger');
 var config = require('./config');
-var net    = require('net');
+
+// npm modules
+var async    = require('async');
 var punycode = require('punycode');
 
 var public_suffix_list = {};
@@ -419,5 +426,45 @@ exports.get_ipany_re = function (prefix, suffix, modifier) {
         ')' +    // end capture
         suffix,
         modifier
+    );
+};
+
+exports.get_ips_by_host = function (hostname, done) {
+    var ips = [];
+    var errors = [];
+
+    async.parallel(
+        [
+            function (iter_done) {
+                dns.resolve4(hostname, function resolve_cb (err, res) {
+                    if (err) {
+                        errors.push(err.message);
+                        return iter_done();
+                    }
+                    for (var i=0; i<res.length; i++) {
+                        ips.push(res[i]);
+                    }
+                    iter_done(null, true);
+                });
+            },
+            function (iter_done) {
+                dns.resolve6(hostname, function resolve_cb (err, res) {
+                    if (err) {
+                        errors.push(err.message);
+                        return iter_done();
+                    }
+                    for (var j=0; j<res.length; j++) {
+                        ips.push(res[j]);
+                    }
+                    iter_done(null, true);
+                });
+            },
+        ],
+        function (err, async_list) {
+            // if multiple IPs are included in the iterations, then the async
+            // result here will be an array of nested arrays. Not quite what
+            // we want. Return the merged ips array.
+            done(errors, ips);
+        }
     );
 };
