@@ -2,7 +2,7 @@
 
 // This test file is executed by tests/outbound_protocol.js (see there)
 //
-
+// Important to understand the code: This is file is - for running the test - appended to outbound.js.
 
 
 test.expect(5);
@@ -11,8 +11,6 @@ test.expect(5);
 // A simple SMTP conversation is made
 // At one point, the mocked remote SMTP says "5XX", and we test that the HMailItem.bounce function gets called
 
-
-// this is file is - for running the test - appended to outbound.js.
 // we copy over here "test_queue_dir" from vm-sandbox to the queue_dir back
 // (queue_dir is outbound-private var introduced at the beginning of outbound.js)
 var queue_dir = test_queue_dir;
@@ -48,10 +46,10 @@ HMailItem.prototype.bounce = function (err, opts) {
 function runBasicSmtpConversation(hmail) {
     if (!hmail.todo) {
         hmail.once('ready', function () {
-            //console.log('hmail ready called');
             _runBasicSmtpConversation(hmail);
         });
-    } else {
+    }
+    else {
         _runBasicSmtpConversation(hmail);
     }
 }
@@ -60,9 +58,9 @@ function _runBasicSmtpConversation(hmail) {
     mock_socket.writable = true;
 
     // The playbook
-    // remote: This line is to be sent (from an mocked remote SMTP) to haraka outbound. This is done in this test.
-    // haraka: This string is expected to come from haraka outbound to the mocked remote SMTP via socket.
-    //         Can hold a function(line) returning true for success
+    // from remote: This line is to be sent (from an mocked remote SMTP) to haraka outbound. This is done in this test.
+    // from haraka: Expected answer from haraka-outbound to the mocked remote SMTP.
+    //              'test' can hold a function(line) returning true for success, or a string tested for equality
     var testPlaybook = [
         // Haraka connects, we say first
         { 'from': 'remote', 'line': '220 testing-smtp' },

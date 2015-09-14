@@ -1,3 +1,4 @@
+'use strict';
 
 var Address = require('../../address').Address;
 var stub_connection = require('./../fixtures/stub_connection');
@@ -73,21 +74,6 @@ exports.createHMailItem = function (outbound_context, options, callback) {
  * @param playbook
  */
 exports.playTestSmtpConversation = function(hmail, socket, test, playbook, callback) {
-
-    /*hmail.loginfo =
-    hmail.logerror =
-    hmail.logprotocol =
-    hmail.logdata = function (msg) {
-        console.log(msg);
-    };*/
-
-    /*socket.end = function () {
-        console.log('close by socket end!!!');
-        this.emit('close');
-    };*/
-
-    // console.log(util.inspect(hmail));
-
     var testmx = {
         bind_helo: "haraka.test",
     };
@@ -132,8 +118,7 @@ function getNextEntryFromPlaybook(ofType, playbook) {
         return false;
     }
     if (playbook[0].from == ofType) {
-        entry = playbook.shift();
-        //console.log("next entry from playbook: " + ofType + ": " + entry);
+        var entry = playbook.shift();
         return entry;
     }
     return false;
