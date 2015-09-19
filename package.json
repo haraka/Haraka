@@ -27,8 +27,7 @@
     "sprintf-js"    : "~1.0.2"
   },
   "optionalDependencies": {
-    "node-syslog": "~1.2.0",
-    "strong-fork-syslog": "~1.2.3",
+    "modern-syslog": "~1.1.1",
     "ldapjs": "~0.7.1",
     "vs-stun": "~0.0.7",
     "maxmind": "*",
