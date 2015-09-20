@@ -393,6 +393,7 @@ plugins._make_custom_require = function (file_path, hasPackageJson) {
         if (hasPackageJson) {
             var mod = require(module);
             constants.import(global);
+            global.server = plugins.server;
             return mod;
         }
 
