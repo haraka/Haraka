@@ -857,7 +857,7 @@ exports.lookup_mx = function lookup_mx (domain, cb) {
         // if MX lookup failed, we lookup an A record. To do that we change
         // wrap_mx() to return same thing as resolveMx() does.
         wrap_mx = function (a) { return {priority:0,exchange:a}; };
-
+        // IS: IPv6 compatible
         dns.resolve(domain, function(err, addresses) {
             if (process_dns(err, addresses)) {
                 return;
@@ -952,6 +952,7 @@ HMailItem.prototype.try_deliver = function () {
 
     // now we have a host, we have to lookup the addresses for that host
     // and try each one in order they appear
+    // IS: IPv6 compatible
     dns.resolve(host, family, function (err, addresses) {
         if (err) {
             self.logerror("DNS lookup of " + host + " failed: " + err);

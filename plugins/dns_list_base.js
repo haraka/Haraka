@@ -1,7 +1,8 @@
 // DNS list module
-var dns   = require('dns');
-var net   = require('net');
-var async = require('async');
+var dns         = require('dns');
+var net         = require('net');
+var net_utils   = require('./net_utils');
+var async       = require('async');
 
 exports.enable_stats = false;
 exports.disable_allowed = false;
@@ -24,10 +25,7 @@ exports.lookup = function (lookup, zone, cb) {
         lookup = lookup.split('.').reverse().join('.');
     }
     else if (net.isIPv6(lookup)) {
-        // TODO: IPv6 not supported
-        return process.nextTick(function () {
-            return cb(new Error('IPv6 not supported'));
-        });
+        lookup = net_utils.ipv6_reverse(lookup);
     }
 
     if (this.enable_stats) {
@@ -40,6 +38,7 @@ exports.lookup = function (lookup, zone, cb) {
         query += '.';
     }
     this.logdebug('looking up: ' + query);
+    // IS: IPv6 compatible (maybe; only if BL return IPv4 answers)
     dns.resolve(query, 'A', function (err, a) {
         self.stats_incr_zone(err, zone, start);  // Statistics
 

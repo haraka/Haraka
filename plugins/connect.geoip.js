@@ -389,7 +389,7 @@ exports.originating_headers = function (connection) {
 
     if (!orig) return;
 
-    var match = net_utils.get_ipany_re().exec(orig);
+    var match = net_utils.get_ipany_re('(?:IPv6:)?').exec(orig);
     if (!match) return;
 
     var found_ip = match[1];

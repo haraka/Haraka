@@ -3,7 +3,7 @@
 
 var url       = require('url');
 var dns       = require('dns');
-var isIPv4    = require('net').isIPv4;
+var net       = require('net');
 var net_utils = require('./net_utils');
 var utils     = require('./utils');
 
@@ -64,6 +64,8 @@ exports.load_uri_config = function (next) {
     }
 };
 
+
+// IS: IPv6 compatible (maybe; if the BL is support IPv6 requests)
 exports.do_lookups = function (connection, next, hosts, type) {
     var plugin = this;
 
@@ -90,7 +92,7 @@ exports.do_lookups = function (connection, next, hosts, type) {
         var host = hosts[i].toLowerCase();
         connection.logdebug(plugin, '(' + type + ') checking: ' + host);
         // Make sure we have a valid TLD
-        if (!isIPv4(host) && !net_utils.top_level_tlds[(host.split('.').reverse())[0]]) {
+        if (!net.isIPv4(host) && !net.isIPv6(host) && !net_utils.top_level_tlds[(host.split('.').reverse())[0]]) {
             continue;
         }
         // Check the exclusion list
@@ -106,15 +108,21 @@ exports.do_lookups = function (connection, next, hosts, type) {
                 results.add(plugin, {skip: type + ' unsupported for ' + zone });
                 continue;
             }
-            // Convert in-addr.arpa into bare IPv4 lookup
+            // Convert in-addr.arpa into bare IPv4/v6 lookup
             var arpa = host.split(/\./).reverse();
-            if (arpa.shift() === 'arpa' && arpa.shift() === 'in-addr') {
-                if (arpa.length < 4) continue; // Only full IP addresses
-                host = arpa.join('.');
+            if (arpa.shift() === 'arpa'){
+                var ip_format = arpa.shift();
+                if ( ip_format === 'in-addr') {
+                    if (arpa.length < 4) continue; // Only full IP addresses
+                    host = arpa.join('.');
+                } else if ( ip_format === 'ip6') {
+                    if (arpa.length < 32) continue; // Only full IP addresses
+                    host = arpa.join('.');
+                }
             }
             var lookup;
             // Handle zones that do not allow IP queries (e.g. Spamhaus DBL)
-            if (isIPv4(host)) {
+            if (net.isIPv4(host)) {
                 if (/^(?:1|true|yes|enabled|on)$/i.test(lists[zone].no_ip_lookups)) {
                     results.add(plugin, {skip: 'IP (' + host + ') not supported for ' + zone });
                     continue;
@@ -126,6 +134,19 @@ exports.do_lookups = function (connection, next, hosts, type) {
                 }
                 // Reverse IP for lookup
                 lookup = host.split(/\./).reverse().join('.');
+            }
+            if (net.isIPv6(host)) {
+                if (/^(?:1|true|yes|enabled|on)$/i.test(lists[zone].not_ipv6_compatible) || /^(?:1|true|yes|enabled|on)$/i.test(lists[zone].no_ip_lookups)) {
+                    results.add(plugin, {skip: 'IP (' + host + ') not supported for ' + zone });
+                    continue;
+                }
+                // Skip any private IPs
+                if (net_utils.is_private_ip(host)) {
+                    results.add(plugin, {skip: 'private IP' });
+                    continue;
+                }
+                // Reverse IP for lookup
+                lookup = net_utils.ipv6_reverse(host);
             }
             // Handle zones that require host to be stripped to a domain boundary
             else if (/^(?:1|true|yes|enabled|on)$/i.test(lists[zone].strip_to_domain)) {
@@ -274,7 +295,7 @@ exports.hook_ehlo = function (next, connection, helo) {
     this.load_uri_config(next);
     // Handle IP literals
     var literal;
-    if ((literal = /^\[(\d+\.\d+\.\d+\.\d+)\]$/.exec(helo))) {
+    if ((literal = net_utils.get_ipany_re('^\\[(?:IPv6:)?', '\\]$','').exec(helo))) {
         this.do_lookups(connection, next, literal[1], 'helo');
     } else {
         this.do_lookups(connection, next, helo, 'helo');
