@@ -11,7 +11,7 @@
   },
   "main": "haraka.js",
   "engines": {
-    "node": ">= v0.10.0"
+    "node": ">= v0.10.36"
   },
   "dependencies": {
     "address-rfc2822"       : "~0.0.2",
