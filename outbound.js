@@ -354,7 +354,10 @@ exports.send_email = function () {
     var from = arguments[0],
         to   = arguments[1],
         contents = arguments[2];
-        var next = arguments[3];
+    var next = arguments[3];
+    var options = arguments[4];
+
+    var dot_stuffed = ((options && options.dot_stuffed) ? options.dot_stuffed : false);
 
     this.loginfo("Sending email via params");
 
@@ -408,6 +411,9 @@ exports.send_email = function () {
     while (match = re.exec(contents)) {
         var line = match[1];
         line = line.replace(/\r?\n?$/, '\r\n'); // make sure it ends in \r\n
+        if (dot_stuffed === false && line.length > 3 && line.substr(0,1) === '.') {
+            line = "." + line;
+        }
         transaction.add_data(new Buffer(line));
         contents = contents.substr(match[1].length);
         if (contents.length === 0) {
