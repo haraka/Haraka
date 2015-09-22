@@ -5,7 +5,7 @@ exports.register = function() {
     var config = this.config.get('mail_from.access.ini');
     this.wl = this.config.get('mail_from.access.whitelist', 'list');
     this.bl = this.config.get('mail_from.access.blacklist', 'list');
-    this.deny_msg = config.general && (config.general['deny_msg'] ||
+    this.deny_msg = config.general && (config.general.deny_msg ||
         'Connection rejected.');
     var white_regex =
         this.config.get('mail_from.access.whitelist_regex', 'list');

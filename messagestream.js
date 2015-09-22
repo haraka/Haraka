@@ -71,9 +71,9 @@ MessageStream.prototype.add_line = function (line) {
     if (this.state === STATE_HEADERS) {
         // Look for end of headers line
         if (line.length === 2 && line[0] === 0x0d && line[1] === 0x0a) {
-            this.idx['headers'] = { start: 0, end: this.bytes_read-line.length };
+            this.idx.headers = { start: 0, end: this.bytes_read-line.length };
             this.state = STATE_BODY;
-            this.idx['body'] = { start: this.bytes_read };
+            this.idx.body = { start: this.bytes_read };
         }
     }
 
@@ -85,7 +85,7 @@ MessageStream.prototype.add_line = function (line) {
                 // End of boundary?
                 boundary = boundary.slice(0, -2);
                 if (this.idx[boundary]) {
-                    this.idx[boundary]['end'] = this.bytes_read;
+                    this.idx[boundary].end = this.bytes_read;
                 }
             }
             else {
@@ -102,8 +102,8 @@ MessageStream.prototype.add_line = function (line) {
 
 MessageStream.prototype.add_line_end = function (cb) {
     // Record body end position
-    if (this.idx['body']) {
-        this.idx['body']['end'] = this.bytes_read;
+    if (this.idx.body) {
+        this.idx.body.end = this.bytes_read;
     }
     this.end_called = true;
     if (cb && typeof cb === 'function') {

@@ -214,39 +214,39 @@ exports.hook_data_post = function (next, connection) {
                     // Handle result
                     var action;
                     if (cfg.message) {
-                        if (code === 0 && cfg.message['white']) {
-                            action = cfg.message['white'];
+                        if (code === 0 && cfg.message.white) {
+                            action = cfg.message.white;
                         }
                         else if (code === 1) {
-                            if (cfg.message['local_white']) {
-                                action = cfg.message['local_white'];
+                            if (cfg.message.local_white) {
+                                action = cfg.message.local_white;
                             }
                             else {
                                 return next(OK);
                             }
                         }
                         else if (code === 20) {
-                            if (cfg.message['truncate']) {
-                                action = cfg.message['truncate'];
+                            if (cfg.message.truncate) {
+                                action = cfg.message.truncate;
                             }
                             else {
                                 return next(DENY, 'Poor GBUdb reputation for IP [' + connection.remote_ip + ']');
                             }
                         }
-                        else if (code === 40 && cfg.message['caution']) {
-                            action = cfg.message['caution'];
+                        else if (code === 40 && cfg.message.caution) {
+                            action = cfg.message.caution;
                         }
-                        else if (code === 63 && cfg.message['black']) {
-                            action = cfg.message['black'];
+                        else if (code === 63 && cfg.message.black) {
+                            action = cfg.message.black;
                         }
                         else {
-                            if (cfg.message["code_" + code]) {
-                                action = cfg.message["code_" + code];
+                            if (cfg.message['code_' + code]) {
+                                action = cfg.message['code_' + code];
                             }
                             else {
                                 if (code > 1 && code !== 40) {
-                                    if (cfg.message['nonzero']) {
-                                        action = cfg.message['nonzero'];
+                                    if (cfg.message.nonzero) {
+                                        action = cfg.message.nonzero;
                                     }
                                     else {
                                         return next(DENY, 'Spam detected by MessageSniffer' +
