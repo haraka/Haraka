@@ -49,7 +49,7 @@ function Buf() {
 
 // There is one DKIMObject created for each signature found
 
-function DKIMObject(header, header_idx, cb, timeout) {
+function DKIMObject (header, header_idx, cb, timeout) {
     this.cb = cb;
     this.sig = header;
     this.sig_md5 = md5(header);
@@ -339,7 +339,7 @@ DKIMObject.prototype.end = function () {
                 return self.result('invalid version', 'invalid');
             }
             if (self.dns_fields.g) {
-               if (self.dns_fields.g !== '*') {
+                if (self.dns_fields.g !== '*') {
                     var s = self.dns_fields.g;
                     // Escape any special regexp characters
                     s = s.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
@@ -357,13 +357,13 @@ DKIMObject.prototype.end = function () {
                 return self.result('inapplicable key', 'invalid');
             }
             if (self.dns_fields.h) {
-               var hashes = self.dns_fields.h.split(':');
-               for (var h=0; h<hashes.length; h++) {
-                   var hash = hashes[h].trim();
-                   if (self.fields.a.indexOf(hash) === -1) {
-                       return self.result('inappropriate hash algorithm', 'invalid');
-                   }
-               }
+                var hashes = self.dns_fields.h.split(':');
+                for (var h=0; h<hashes.length; h++) {
+                    var hash = hashes[h].trim();
+                    if (self.fields.a.indexOf(hash) === -1) {
+                        return self.result('inappropriate hash algorithm', 'invalid');
+                    }
+                }
             }
             if (self.dns_fields.k) {
                 if (self.fields.a.indexOf(self.dns_fields.k) === -1) {

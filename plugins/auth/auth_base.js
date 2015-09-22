@@ -62,7 +62,7 @@ exports.check_cram_md5_passwd = function (connection, user, passwd, cb) {
         }
 
         var hmac = crypto.createHmac('md5', plain_pw);
-            hmac.update(connection.notes.auth_ticket);
+        hmac.update(connection.notes.auth_ticket);
 
         if (hmac.digest('hex') === passwd) {
             return cb(true);
@@ -184,7 +184,7 @@ exports.auth_login = function(next, connection, params) {
          !connection.notes.auth_login_userlogin))
     {
         if (!params[0]){
-             return next(DENYDISCONNECT, 'bad protocol');
+            return next(DENYDISCONNECT, 'bad protocol');
         }
 
         var login = utils.unbase64(params[0]);
@@ -198,9 +198,9 @@ exports.auth_login = function(next, connection, params) {
 
     if (connection.notes.auth_login_userlogin) {
         var credentials = [
-                connection.notes.auth_login_userlogin,
-                utils.unbase64(params[0])
-            ];
+            connection.notes.auth_login_userlogin,
+            utils.unbase64(params[0])
+        ];
         return plugin.check_user(next, connection, credentials,
                 AUTH_METHOD_LOGIN);
     }

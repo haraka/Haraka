@@ -18,12 +18,12 @@
 
 	// Returns true if it is a DOM element
 	// http://stackoverflow.com/a/384380/999
-	function isElement(o){
-		return (
+    function isElement(o){
+        return (
 			typeof HTMLElement === "object" ? o instanceof HTMLElement : //DOM2
 			o && typeof o === "object" && o.nodeType === 1 && typeof o.nodeName==="string"
 		);	
-	}
+    }
 
     var tipsyIDcounter = 0;
     function tipsyID() {
@@ -274,12 +274,12 @@
     };
 
     $.fn.tipsy.revalidate = function() {
-      $('.tipsy').each(function() {
-        var pointee = $.data(this, 'tipsy-pointee');
-        if (!pointee || !isElementInDOM(pointee)) {
-          $(this).remove();
-        }
-      });
+        $('.tipsy').each(function() {
+            var pointee = $.data(this, 'tipsy-pointee');
+            if (!pointee || !isElementInDOM(pointee)) {
+                $(this).remove();
+            }
+        });
     };
 
     $.fn.tipsy.enable = function() {

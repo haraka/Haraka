@@ -211,23 +211,23 @@ exports.get_data = function (res, earliest, today, group_by) {
             return plugin.logerror("SELECT failed: " + err);
         }
         plugin.loginfo("got: " + row.hits + ", " + row.plugin + " next_stop: " + next_stop);
-
         aggregate[row.plugin] = row.hits;
     },
     function (err, rows ) {
-            write_to(utils.ISODate(new Date(next_stop)) + ',' + 
-                utils.sort_keys(plugins).map(function(i){ return 1000 * 60 * (aggregate[i]/group_by); }).join(',')
-            );
-            if (next_stop >= today) {
-                return res.end();
-            }
-            else {
-                return process.nextTick(function () {
-                    plugin.get_data(res, next_stop, today, group_by);
-                });
-            }
+        write_to(utils.ISODate(new Date(next_stop)) + ',' + 
+            utils.sort_keys(plugins).map(function(i) {
+                return 1000 * 60 * (aggregate[i]/group_by);
+            }).join(',')
+        );
+        if (next_stop >= today) {
+            return res.end();
         }
-    );
+        else {
+            return process.nextTick(function () {
+                plugin.get_data(res, next_stop, today, group_by);
+            });
+        }
+    });
 };
 
 var reset_agg = function () {

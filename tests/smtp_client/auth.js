@@ -64,7 +64,7 @@ exports.get_client(server, function(err, smtp_client) {
         test.equals(smtp_client.response[0], 'go ahead');
         smtp_client.start_data(message_stream);
         message_stream.on('end', function () {
-          smtp_client.socket.write('.\r\n');
+            smtp_client.socket.write('.\r\n');
         });
         message_stream.add_line('Header: test\r\n');
         message_stream.add_line('\r\n');
@@ -72,8 +72,8 @@ exports.get_client(server, function(err, smtp_client) {
         message_stream.add_line_end();
     });
 
-     data.push('.');
-     data.push('250 message queued');
+    data.push('.');
+    data.push('250 message queued');
 
     smtp_client.on('dot', function () {
         test.equals(smtp_client.response[0], 'message queued');

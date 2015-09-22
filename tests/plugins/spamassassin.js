@@ -79,12 +79,12 @@ exports.get_spamd_headers = {
         this.connection.transaction.uuid = 'THIS-IS-A-TEST-UUID';
         var headers = this.plugin.get_spamd_headers(this.connection, 'test_user');
         var expected_headers = [
-                'HEADERS SPAMC/1.3',
-                'User: test_user',
-                '',
-                'X-Envelope-From: matt@example.com',
-                'X-Haraka-UUID: THIS-IS-A-TEST-UUID'
-            ];
+            'HEADERS SPAMC/1.3',
+            'User: test_user',
+            '',
+            'X-Envelope-From: matt@example.com',
+            'X-Haraka-UUID: THIS-IS-A-TEST-UUID'
+        ];
         test.deepEqual(headers, expected_headers);
         test.done();
     },

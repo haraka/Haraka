@@ -13,7 +13,7 @@ exports.load_config = function () {
     plugin.cfg = plugin.config.get('early_talker.ini', {
         booleans: [
             '+main.reject',
-            ]
+        ]
     },
     function () {
         plugin.load_config();

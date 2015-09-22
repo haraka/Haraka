@@ -141,11 +141,11 @@ exports.register = function () {
 exports.load_dkim_sign_ini = function () {
     var plugin = this;
     plugin.cfg = plugin.config.get('dkim_sign.ini', {
-            booleans: [
-                '-disabled',
-            ]
-        },
-        function () { plugin.load_dkim_sign_ini(); }
+        booleans: [
+            '-disabled',
+        ]
+    },
+    function () { plugin.load_dkim_sign_ini(); }
     );
 };
 
@@ -186,13 +186,7 @@ exports.hook_queue_outbound = function (next, connection) {
 
         var headers_to_sign = plugin.get_headers_to_sign();
         var txn = connection.transaction;
-        var dkim_sign = new DKIMSignStream(selector,
-                                        domain,
-                                        private_key,
-                                        headers_to_sign,
-                                        txn.header,
-                                        function (err, dkim_header)
-        {
+        var dkimCallback = function (err, dkim_header) {
             if (err) {
                 txn.results.add(plugin, {err: err.message});
             }
@@ -202,8 +196,10 @@ exports.hook_queue_outbound = function (next, connection) {
                 txn.add_header('DKIM-Signature', dkim_header);
             }
             return next();
-        });
-        txn.message_stream.pipe(dkim_sign);
+        };
+        txn.message_stream.pipe(new DKIMSignStream(
+            selector, domain, private_key, headers_to_sign,
+            txn.header, dkimCallback));
     });
 };
 

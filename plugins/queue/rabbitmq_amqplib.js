@@ -32,7 +32,7 @@ exports.init_amqp_connection = function() {
         durable = cfg.durable === "true" || true,
         // confirm = cfg.confirm === "true" || true,
         autoDelete = cfg.autoDelete === "true" || false;
-        deliveryMode = cfg.deliveryMode || 2;
+    deliveryMode = cfg.deliveryMode || 2;
 
     amqp.connect("amqp://"+user+":"+password+"@"+host+":"+port, function(err, conn){
         if(err) 

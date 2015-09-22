@@ -11,8 +11,8 @@ exports.register = function () {
     var load_config = function () {
         plugin.cfg = plugin.config.get('smtp_forward.ini', {
             booleans: [
-                  '-main.enable_tls',
-                ],
+                '-main.enable_tls',
+            ],
         },
         load_config);
     };

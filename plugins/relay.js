@@ -11,8 +11,8 @@ exports.register = function() {
     plugin.load_relay_ini();             // plugin.cfg = { }
 
     if (plugin.cfg.relay.acl) {
-         plugin.load_acls();             // plugin.acl_allow = [..]
-         plugin.register_hook('connect', 'acl');
+        plugin.load_acls();             // plugin.acl_allow = [..]
+        plugin.register_hook('connect', 'acl');
     }
 
     if (plugin.cfg.relay.force_routing || plugin.cfg.relay.dest_domains) {

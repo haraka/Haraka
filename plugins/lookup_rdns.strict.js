@@ -24,14 +24,14 @@ function _dns_error(connection, next, err, host, plugin, nxdomain, dnserror) {
                 '. Disconnecting.');
             next(DENYDISCONNECT, 'Sorry we could not find address for ' +
                 host + '. ' + nxdomain);
-        break;
+            break;
     
         default:
             connection.loginfo(plugin, 'encountered an error when looking up ' +
                 host + '. Disconnecting.');
             next(DENYDISCONNECT, 'Sorry we encountered an error when ' +
                 'looking up ' + host + '. ' + dnserror);
-        break;
+            break;
     }
 }
 

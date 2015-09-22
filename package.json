@@ -40,10 +40,12 @@
     "nodeunit"              : "https://github.com/godsflaw/nodeunit/archive/master.tar.gz",
     "jscoverage"            : "*",
     "coveralls"             : "*",
+    "eslint"                : "^1.5.0",
     "grunt"                 : "*",
     "grunt-contrib-clean"   : "*",
     "grunt-contrib-jshint"  : "*",
-    "grunt-version-check"   : "*"
+    "grunt-version-check"   : "*",
+    "grunt-eslint"          : "*"
   },
   "licenses": [
     {

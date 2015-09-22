@@ -76,8 +76,8 @@ exports.should_skip = function (connection) {
     var rip = connection.remote_ip;
 
     if (net_utils.is_private_ip(rip)) {
-         connection.logdebug(plugin, 'skipping private IP: ' + rip);
-         return true;
+        connection.logdebug(plugin, 'skipping private IP: ' + rip);
+        return true;
     }
 
     if (!plugin.zones || !plugin.zones.length) {

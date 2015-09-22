@@ -587,18 +587,18 @@ Connection.prototype.reset_transaction_respond = function (retval, msg, cb) {
 };
 
 Connection.prototype.init_transaction = function(cb) {
-   var self = this;
-   this.reset_transaction(function () {
-       self.transaction = trans.createTransaction(self.tran_uuid());
-       // Catch any errors from the message_stream
-       self.transaction.message_stream.on('error', function (err) {
-           self.logcrit('message_stream error: ' + err.message);
-           self.respond('421', 'Internal Server Error', function () {
-               self.disconnect();
-           });
-       });
-       self.transaction.results = new ResultStore(self);
-       if (cb) cb();
+    var self = this;
+    this.reset_transaction(function () {
+        self.transaction = trans.createTransaction(self.tran_uuid());
+        // Catch any errors from the message_stream
+        self.transaction.message_stream.on('error', function (err) {
+            self.logcrit('message_stream error: ' + err.message);
+            self.respond('421', 'Internal Server Error', function () {
+                self.disconnect();
+            });
+        });
+        self.transaction.results = new ResultStore(self);
+        if (cb) cb();
     });
 };
 

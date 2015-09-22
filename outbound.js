@@ -41,7 +41,7 @@ exports.load_config = function () {
             '-always_split',
             '-enable_tls',    // TODO: default to enabled in Haraka 3.0
             '-ipv6_enabled',
-            ],
+        ],
     }, function () {
         exports.load_config();
     }).main;
@@ -354,7 +354,7 @@ exports.send_email = function () {
     var from = arguments[0],
         to   = arguments[1],
         contents = arguments[2];
-        var next = arguments[3];
+    var next = arguments[3];
 
     this.loginfo("Sending email via params");
 
@@ -774,29 +774,29 @@ HMailItem.prototype.get_mx = function () {
 HMailItem.prototype.get_mx_respond = function (retval, mx) {
     switch(retval) {
         case constants.ok:
-                var mx_list;
-                if (Array.isArray(mx)) {
-                    mx_list = mx;
+            var mx_list;
+            if (Array.isArray(mx)) {
+                mx_list = mx;
+            }
+            else if (typeof mx === "object") {
+                mx_list = [mx];
+            }
+            else {
+                // assume string
+                var matches = /^(.*?)(:(\d+))?$/.exec(mx);
+                if (!matches) {
+                    throw("get_mx returned something that doesn't match hostname or hostname:port");
                 }
-                else if (typeof mx === "object") {
-                    mx_list = [mx];
-                }
-                else {
-                    // assume string
-                    var matches = /^(.*?)(:(\d+))?$/.exec(mx);
-                    if (!matches) {
-                        throw("get_mx returned something that doesn't match hostname or hostname:port");
-                    }
-                    mx_list = [{priority: 0, exchange: matches[1], port: matches[3]}];
-                }
-                this.logdebug("Got an MX from Plugin: " + this.todo.domain + " => 0 " + mx);
-                return this.found_mx(null, mx_list);
+                mx_list = [{priority: 0, exchange: matches[1], port: matches[3]}];
+            }
+            this.logdebug("Got an MX from Plugin: " + this.todo.domain + " => 0 " + mx);
+            return this.found_mx(null, mx_list);
         case constants.deny:
-                this.logwarn("get_mx plugin returned DENY: " + mx);
-                return this.bounce("No MX for " + this.domain);
+            this.logwarn("get_mx plugin returned DENY: " + mx);
+            return this.bounce("No MX for " + this.domain);
         case constants.denysoft:
-                this.logwarn("get_mx plugin returned DENYSOFT: " + mx);
-                return this.temp_fail("Temporary MX lookup error for " + this.domain);
+            this.logwarn("get_mx plugin returned DENYSOFT: " + mx);
+            return this.temp_fail("Temporary MX lookup error for " + this.domain);
     }
 
     var hmail = this;
@@ -945,7 +945,7 @@ HMailItem.prototype.try_deliver = function () {
         return self.try_deliver_host(mx);
     }
 
-        host   = mx.exchange;
+    host   = mx.exchange;
     var family = mx.family;
 
     this.loginfo("Looking up " + family + " records for: " + host);

@@ -2,7 +2,7 @@
 // This is a simple, primitive form of anti-phishing.
 
 function escapeRegExp(str) {
-  return str.replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, "\\$&");
+    return str.replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, "\\$&");
 }
 
 exports.hook_data = function (next, connection) {
@@ -43,7 +43,7 @@ exports.hook_data_post = function (next, connection) {
 
 function look_for_credentials (user_regexp, passwd_regexp, body) {
     if (user_regexp.test(body.bodytext) && passwd_regexp.test(body.bodytext)) {
-       return true;
+        return true;
     }
 
     // Check all child parts

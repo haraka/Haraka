@@ -19,15 +19,15 @@ exports.register = function () {
 exports.load_geoip_ini = function () {
     var plugin = this;
     plugin.cfg = plugin.config.get('connect.geoip.ini', {
-            booleans: [
-                '+main.show_city',
-                '+main.show_region',
-                '-main.calc_distance',
-            ],
-        },
-        function () {
-            plugin.load_geoip_ini();
-        });
+        booleans: [
+            '+main.show_city',
+            '+main.show_region',
+            '-main.calc_distance',
+        ],
+    },
+    function () {
+        plugin.load_geoip_ini();
+    });
 };
 
 exports.load_maxmind = function () {
@@ -148,15 +148,14 @@ exports.lookup_maxmind = function (next, connection) {
         return next();
     }
 
-    plugin.calculate_distance(connection,
-                              [loc.latitude, loc.longitude], 
-                              function (err, distance) 
-    {
+    function calcDone (err, distance) {
         if (err) { connection.results.add(plugin, {err: err}); }
         if (distance) { show.push(distance+'km'); }
         connection.results.add(plugin, {human: show.join(', '), emit:true});
         return next();
-    });
+    }
+    plugin.calculate_distance(connection,
+              [loc.latitude, loc.longitude], calcDone);
 };
 
 exports.lookup_geoip = function (next, connection) {
@@ -299,7 +298,7 @@ exports.get_local_geo = function (ip, connection) {
     }
 
     if (!plugin.local_geoip) {
-         plugin.local_geoip = plugin.get_geoip(plugin.local_ip);
+        plugin.local_geoip = plugin.get_geoip(plugin.local_ip);
     }
 
     if (!plugin.local_geoip) {
@@ -341,8 +340,8 @@ exports.haversine = function (lat1, lon1, lat2, lon2) {
     function toRadians(v) { return v * Math.PI / 180; }
     var deltaLat = toRadians(lat2 - lat1);
     var deltaLon = toRadians(lon2 - lon1);
-            lat1 = toRadians(lat1);
-            lat2 = toRadians(lat2);
+    lat1 = toRadians(lat1);
+    lat2 = toRadians(lat2);
 
     var a = Math.sin(deltaLat/2) * Math.sin(deltaLat/2) +
             Math.sin(deltaLon/2) * Math.sin(deltaLon/2) *

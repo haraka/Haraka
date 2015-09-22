@@ -94,7 +94,7 @@ exports.unarchive_recursive = function(connection, f, archive_file_name, cb) {
                 });
             });
         });
-     }
+    }
 
     function listFiles(in_file, prefix, depth) {
         if (!depth) depth = 0;
@@ -136,27 +136,27 @@ exports.unarchive_recursive = function(connection, f, archive_file_name, cb) {
                     count++;
                     depth++;
                     (function (file, depth) {
-                    tmp.file(function (err, tmpfile, fd) {
-                        count--;
-                        if (err) return do_cb(err.message);
-                        connection.logdebug(self, 'created tmp file: ' + tmpfile + '(fd=' + fd + ') for file ' + (prefix ? prefix + '/' : '') + file);
-                        // Extract this file from the archive
-                        var cmd = 'LANG=C bsdtar -Oxf ' + in_file + ' --include="' + file + '" > ' + tmpfile;
-                        tmpfiles.push([fd, tmpfile]);
-                        connection.logdebug(self, 'running command: ' + cmd);
-                        count++;
-                        exec(cmd, { timeout: plugin.cfg.timeout }, function (error, stdout, stderr) {
+                        tmp.file(function (err, tmpfile, fd) {
                             count--;
-                            if (error) {
-                                connection.logdebug(self, 'error: return code ' + error.code + ': ' + stderr.toString('utf-8'));
-                                return do_cb(new Error(stderr.toString('utf-8').replace(/\r?\n/g,' ')));
-                            }
-                            else {
-                                // Recurse
-                                return listFiles(tmpfile, (prefix ? prefix + '/' : '') + file, depth);
-                            }
+                            if (err) return do_cb(err.message);
+                            connection.logdebug(self, 'created tmp file: ' + tmpfile + '(fd=' + fd + ') for file ' + (prefix ? prefix + '/' : '') + file);
+                            // Extract this file from the archive
+                            var cmd = 'LANG=C bsdtar -Oxf ' + in_file + ' --include="' + file + '" > ' + tmpfile;
+                            tmpfiles.push([fd, tmpfile]);
+                            connection.logdebug(self, 'running command: ' + cmd);
+                            count++;
+                            exec(cmd, { timeout: plugin.cfg.timeout }, function (error, stdout, stderr) {
+                                count--;
+                                if (error) {
+                                    connection.logdebug(self, 'error: return code ' + error.code + ': ' + stderr.toString('utf-8'));
+                                    return do_cb(new Error(stderr.toString('utf-8').replace(/\r?\n/g,' ')));
+                                }
+                                else {
+                                    // Recurse
+                                    return listFiles(tmpfile, (prefix ? prefix + '/' : '') + file, depth);
+                                }
+                            });
                         });
-                    });
                     })(file, depth);
                 }
             }
@@ -198,11 +198,11 @@ exports.start_attachment = function (connection, ctype, filename, body, stream) 
         digest = md5.digest('hex');
         var ca = ctype.match(/^(.*)?;\s+name="(.*)?"/);
         txn.results.push(plugin, { attach: {
-                file: filename,
-                ctype: (ca && ca[2] === filename) ? ca[1] : ctype,
-                md5: digest,
-                bytes: bytes,
-            },
+            file: filename,
+            ctype: (ca && ca[2] === filename) ? ca[1] : ctype,
+            md5: digest,
+            bytes: bytes,
+        },
         });
         connection.loginfo(plugin, 'file="' + filename + '" ctype="' +
                 ctype + '" md5=' + digest);
