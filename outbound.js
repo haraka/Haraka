@@ -772,7 +772,7 @@ HMailItem.prototype.get_mx = function () {
 };
 
 HMailItem.prototype.get_mx_respond = function (retval, mx) {
-    switch(retval) {
+    switch (retval) {
         case constants.ok:
             var mx_list;
             if (Array.isArray(mx)) {

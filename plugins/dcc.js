@@ -8,7 +8,7 @@ exports.hook_data_post = function (next, connection) {
 
     // Fix-up rDNS for DCC
     var host;
-    switch(connection.remote_host) {
+    switch (connection.remote_host) {
         case 'Unknown':
         case 'NXDOMAIN':
         case 'DNSERROR':
@@ -59,7 +59,7 @@ exports.hook_data_post = function (next, connection) {
         connection.logdebug(self, 'got response: ' + response);
         // Get result code
         var result = rl.shift();
-        switch(result) {
+        switch (result) {
             case 'A':
                 // Accept
             case 'G':

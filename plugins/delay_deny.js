@@ -51,7 +51,7 @@ exports.hook_deny = function (next, connection, params) {
         }
     }
 
-    switch(pi_hook) {
+    switch (pi_hook) {
         // Pre-DATA connection delays
         case 'lookup_rdns':
         case 'connect':

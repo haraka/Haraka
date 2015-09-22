@@ -35,7 +35,7 @@ exports.init_amqp_connection = function() {
     deliveryMode = cfg.deliveryMode || 2;
 
     amqp.connect("amqp://"+user+":"+password+"@"+host+":"+port, function(err, conn){
-        if(err)
+        if (err)
             return conn.close();
         // TODO: if !confirm conn.createChannel...
         conn.createConfirmChannel(function (err, ch) {

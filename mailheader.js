@@ -78,7 +78,7 @@ function try_convert(data, encoding) {
 function _decode_header (matched, encoding, cte, data) {
     cte = cte.toUpperCase();
 
-    switch(cte) {
+    switch (cte) {
         case 'Q':
             data = utils.decode_qp(data.replace(/_/g, ' '));
             break;

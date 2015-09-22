@@ -90,7 +90,7 @@ exports.hook_init_wss = function (next, server) {
 
     wss.broadcast = function(data) {
         var f = JSON.stringify(data);
-        for(var i in this.clients) {
+        for (var i in this.clients) {
             this.clients[i].send(f);
         }
     };
@@ -348,7 +348,7 @@ exports.get_value = function (pi_name, r) {
     var plugin = this;
 
     // replace the plugin name shown with...
-    switch(pi_name) {
+    switch (pi_name) {
         case 'connect.asn':
             return r.asn;
         case 'connect.p0f':

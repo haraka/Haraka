@@ -4,6 +4,7 @@
   },
   "rules": {
     "indent": [2, 4, {"SwitchCase": 1}],
+    "space-after-keywords": [2, "always"],
     "no-trailing-spaces": [2, { "skipBlankLines": false }],
   }
 }
