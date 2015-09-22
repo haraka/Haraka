@@ -9,15 +9,22 @@ hook accepts the connection, it will be rejected.
 ## Configuration
 
 * host\_list
-  
+
   Specifies the list of hosts that are local to this server.
 
 * host\_list\_regex
-  
+
   Specifies the list of regexes that are local to this server.  Note
   all these regexes are anchored with ^regex$. One can choose not to
   anchor with .\*. There is the potential for bad regexes to be
   too permissive if we don't anchor.
+
+* host\_list.anti\_spoof
+
+  When enabled, this will cause Haraka to reject any MAIL FROM where 
+  the host appears within the host list but the connected host is not
+  a relay, e.g. connection.relaying is not set either by SMTP AUTH or
+  another plugin like 'relay'.
 
 ## Relaying
 
