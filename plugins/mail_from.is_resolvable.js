@@ -71,7 +71,7 @@ exports.hook_mail = function(next, connection, params) {
             if (pending_queries !== 0) return;
 
             records = Object.keys(records);
-            if (records && a_records.length) {
+            if (records && records.length) {
                 connection.logdebug(plugin, domain + ': ' + records);
                 results.add(plugin, {pass: 'has_fwd_dns'});
                 return mxDone();
