@@ -28,7 +28,7 @@ exports.get_plain_passwd = function (user, cb) {
 
 exports.hook_unrecognized_command = function (next, connection, params) {
     var plugin = this;
-    if(params[0].toUpperCase() === AUTH_COMMAND && params[1]) {
+    if (params[0].toUpperCase() === AUTH_COMMAND && params[1]) {
         return plugin.select_auth_method(next, connection,
                 params.slice(1).join(' '));
     }

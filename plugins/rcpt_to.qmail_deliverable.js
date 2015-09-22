@@ -145,7 +145,7 @@ exports.check_qmd_response = function (connection, hexnum) {
     var plugin = this;
     connection.logprotocol(plugin,"HEXRV: " + hexnum );
 
-    switch(hexnum) {
+    switch (hexnum) {
         case '11':
             return [ DENYSOFT, "permission failure" ];
         case '12':

@@ -231,7 +231,7 @@ SPF.prototype.check_host = function (ip, domain, mail_from, cb) {
                 if (match[2] === 'ip4' || match[2] === 'ip6') {
                     var ip_split = /^:([^\/ ]+)(?:\/([^ ]+))?$/.exec(match[3]);
                     // Make sure the IP address is valid
-                    if(!ip_split || (ip_split && !ipaddr.isValid(ip_split[1]))) {
+                    if (!ip_split || (ip_split && !ipaddr.isValid(ip_split[1]))) {
                         self.log_debug('invalid IP address: ' + ip_split[1]);
                         return cb(null, self.SPF_PERMERROR);
                     }

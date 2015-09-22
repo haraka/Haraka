@@ -58,7 +58,7 @@ exports.relay_dest_domains = function (next, connection, params) {
     var action = JSON.parse(dst_cfg).action;
     connection.logdebug(plugin, 'found config for ' + dest_domain + ': ' + action);
 
-    switch(action) {
+    switch (action) {
         case "accept":
             connection.relaying = true;
             transaction.results.add(plugin, {pass: 'relay_dest_domain'});

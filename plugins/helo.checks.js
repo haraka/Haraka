@@ -251,7 +251,7 @@ exports.bare_ip = function (next, connection, helo) {
 
     // RFC 2821, 4.1.1.1  Address literals must be in brackets
     // RAW IPs must be formatted: "[1.2.3.4]" not "1.2.3.4" in HELO
-    if(net_utils.get_ipany_re('^(?:IPv6:)?','$','').test(helo)) {
+    if (net_utils.get_ipany_re('^(?:IPv6:)?','$','').test(helo)) {
         connection.results.add(plugin, {fail: 'bare_ip(invalid literal)'});
         if (plugin.cfg.reject.bare_ip) {
             return next(DENY, "Invalid address format in HELO");
@@ -541,7 +541,7 @@ exports.get_a_records = function (host, cb) {
         var ips = [];
         // results is now equals to: {queryA: 1, queryAAAA: 2}
         for (var i=0; i<results.length; i++) {
-            if(results[i]){
+            if (results[i]){
                 ips = ips.concat(results[i]);
             }
         }
@@ -553,5 +553,4 @@ exports.get_a_records = function (host, cb) {
         // return the DNS results
         return cb(null, ips);
     });
-
 };

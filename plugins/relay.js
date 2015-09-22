@@ -151,7 +151,7 @@ exports.dest_domains = function (next, connection, params) {
     var action = JSON.parse(dst_cfg).action;
     connection.logdebug(plugin, 'found config for ' + dest_domain + ': ' + action);
 
-    switch(action) {
+    switch (action) {
         case "accept":
             // why enable relaying here? Returning next(OK) will allow the
             // address to be considered 'local'. What advantage does relaying

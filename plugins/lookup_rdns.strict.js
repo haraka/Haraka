@@ -123,7 +123,7 @@ exports.hook_lookup_rdns = function (next, connection) {
         total_checks = domains.length;
 
         // Check whitelist before we start doing a bunch more DNS queries.
-        for(var i = 0; i < domains.length; i++) {
+        for (var i = 0; i < domains.length; i++) {
             if (_in_whitelist(connection, plugin, domains[i])) {
                 return call_next(OK, domains[i]);
             }

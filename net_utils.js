@@ -33,7 +33,7 @@ exports.is_public_suffix = function (host) {
 
     var puny;
     try { puny = punycode.toUnicode(host); }
-    catch(e) {}
+    catch (e) {}
     if (puny && public_suffix_list[puny]) return true;
 
     return false;
@@ -490,6 +490,6 @@ exports.ipv6_reverse = function(ipv6){
 
 exports.ipv6_bogus = function(ipv6){
     var ipCheck = ipaddr.parse(ipv6);
-    if(ipCheck.range() !== 'unicast') { return true; }
+    if (ipCheck.range() !== 'unicast') { return true; }
     return false;
 };

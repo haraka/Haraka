@@ -45,7 +45,7 @@ exports.hook_unrecognized_command = function (next, connection, params) {
         var match = /^([^=]+)=([^ ]+)/.exec(args[a]);
         if (match) {
             connection.logdebug(this, 'found key=' + match[1] + ' value=' + match[2]);
-            switch(match[1]) {
+            switch (match[1]) {
                 case 'addr':
                     // IPv6 is prefixed in the XCLIENT protocol
                     var ipv6;

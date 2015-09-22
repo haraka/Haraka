@@ -1106,7 +1106,7 @@ exports.get_ipany_re = {
     },
     'IP fixtures check': function (test) {
         test.expect(ip_fixtures.length);
-        for(var i in ip_fixtures){
+        for (var i in ip_fixtures) {
             var match = net_utils.get_ipany_re('^','$').test(ip_fixtures[i][1]);
             console.log('IP:', "'"+ip_fixtures[i][1]+"'" , 'Expected:', ip_fixtures[i][0] , 'Match:' , match);
             test.ok((match===ip_fixtures[i][0]), ip_fixtures[i][1] + ' - Expected: ' + ip_fixtures[i][0] + ' - Match: ' + match);
