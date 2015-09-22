@@ -128,7 +128,7 @@ exports.dest_domains = function (next, connection, params) {
         transaction.results.add(plugin, {skip: 'relay_dest_domain(relay)'});
         return next();
     }
- 
+
     if (!plugin.dest) {
         transaction.results.add(plugin, {err: 'relay_dest_domain(no config!)'});
         return next();

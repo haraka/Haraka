@@ -7,7 +7,7 @@ var config           = require('../../config');
 var _set_up = function (done) {
     this.plugin = new Plugin('connect.geoip');
     this.plugin.config = config;
-    
+
     this.plugin.load_geoip_ini();
 
     this.connection = Connection.createConnection();

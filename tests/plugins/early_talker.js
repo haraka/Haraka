@@ -5,7 +5,7 @@ var Connection   = require('../fixtures/stub_connection');
 var config       = require('../../config');
 
 var _set_up = function (callback) {
-    
+
     this.plugin = new Plugin('early_talker');
     this.plugin.config = config;
     this.plugin.cfg = { main: { reject: true } };

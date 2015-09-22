@@ -28,7 +28,7 @@ exports.return_results = {
             test.done();
         };
         test.expect(1);
-        this.plugin.return_results(next, this.connection, 
+        this.plugin.return_results(next, this.connection,
             spf, 'mfrom', spf.NONE, 'test@example.com');
     },
     'result, neutral': function (test) {

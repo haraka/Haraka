@@ -11,7 +11,7 @@ exports.register = function () {
 exports.hook_connect = function (next, connection) {
     var deny_list = this.config.get('rdns.deny_regexps', 'list');
     var allow_list = this.config.get('rdns.allow_regexps', 'list');
-    
+
     for (var i=0,l=deny_list.length; i < l; i++) {
         var re = new RegExp(deny_list[i]);
         if (re.test(connection.remote_host)) {

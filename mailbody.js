@@ -90,8 +90,8 @@ Body.prototype.parse_start = function (line) {
     if (/text\/html/i.test(ct)) {
         this.is_html = true;
     }
-   
-    enc = enc.toLowerCase().split("\n").pop().trim(); 
+
+    enc = enc.toLowerCase().split("\n").pop().trim();
     if (!enc.match(/^base64|quoted-printable|[78]bit$/i)) {
         logger.logerror("Invalid CTE on email: " + enc + ", using 8bit");
         enc = '8bit';
@@ -104,7 +104,7 @@ Body.prototype.parse_start = function (line) {
         this.decode_function = this.decode_8bit;
     }
     this.ct = ct;
-    
+
     if (/^(?:text|message)\//i.test(ct) && !/^attachment/i.test(cd) ) {
         this.state = 'body';
     }
@@ -124,7 +124,7 @@ Body.prototype.parse_start = function (line) {
         this.buf_fill = 0;
         this.state = 'attachment';
     }
-    
+
     return this["parse_" + this.state](line);
 }
 
@@ -221,7 +221,7 @@ Body.prototype.parse_end = function (line) {
     if (!line) {
         line = '';
     }
-    
+
     if (this.state === 'attachment') {
         if (this.buf_fill > 0) {
             // see below for why we create a new buffer here.
@@ -283,7 +283,7 @@ Body.prototype.parse_end = function (line) {
                     // EINVAL is returned when the encoding type is not recognised/supported (e.g. ANSI_X3)
                     if (err.code !== 'EINVAL') {
                         // Perform the conversion again, but ignore any errors
-                        try { 
+                        try {
                             var converter = new Iconv(enc, 'UTF-8//TRANSLIT//IGNORE');
                             this.bodytext = converter.convert(buf).toString();
                         }

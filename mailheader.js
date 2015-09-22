@@ -31,13 +31,13 @@ Header.prototype.parse = function (lines) {
             this.header_list.push(line);
         }
     }
-        
+
     for (var i=0,l=this.header_list.length; i < l; i++) {
         var match = this.header_list[i].match(/^([^:]*):\s*([\s\S]*)$/);
         if (match) {
             var key = match[1].toLowerCase();
             var val = match[2];
-            
+
             this._add_header(key, val, "push");
         }
         else {
@@ -77,7 +77,7 @@ function try_convert(data, encoding) {
 
 function _decode_header (matched, encoding, cte, data) {
     cte = cte.toUpperCase();
-    
+
     switch(cte) {
         case 'Q':
             data = utils.decode_qp(data.replace(/_/g, ' '));
@@ -88,22 +88,22 @@ function _decode_header (matched, encoding, cte, data) {
         default:
             logger.logerror("Invalid header encoding type: " + cte);
     }
-    
+
     // convert with iconv if encoding != UTF-8
     if (Iconv && !(/UTF-?8/i.test(encoding))) {
         data = try_convert(data, encoding);
     }
-    
+
     return data.toString();
 }
 
 Header.prototype.decode_header = function decode_header (val) {
     // Fold continuations
     val = val.replace(/\n[ \t]+/g, "\n ");
-    
+
     // remove end carriage return
     val = val.replace(/\r?\n$/, '');
-    
+
     if (Iconv && !/^[\x00-\x7f]*$/.test(val)) {
         // 8 bit values in the header
         var matches = /\bcharset\s*=\s*["']?([\w_\-]*)/.exec(this.get('content-type'));
@@ -118,9 +118,9 @@ Header.prototype.decode_header = function decode_header (val) {
         // no encoded stuff
         return val;
     }
-    
+
     val = val.replace(/=\?([\w_-]+)\?([bqBQ])\?(.*?)\?=/g, _decode_header);
-    
+
     return val;
 }
 
@@ -140,7 +140,7 @@ Header.prototype.remove = function (key) {
     key = key.toLowerCase();
     delete this.headers[key];
     delete this.headers_decoded[key];
-    
+
     this._remove_more(key);
 }
 

@@ -35,21 +35,21 @@ exports.init_amqp_connection = function() {
     deliveryMode = cfg.deliveryMode || 2;
 
     amqp.connect("amqp://"+user+":"+password+"@"+host+":"+port, function(err, conn){
-        if(err) 
+        if(err)
             return conn.close();
         // TODO: if !confirm conn.createChannel...
         conn.createConfirmChannel(function (err, ch) {
-            if(err) 
-                return conn.close();
+            if (err) return conn.close();
             ch.assertExchange(exchangeName, exchangeType, {durable: durable}, function(err, ok){
-                if(err) 
-                    return conn.close();
-                ch.assertQueue(queueName, {durable: durable, autoDelete: autoDelete}, function(err, ok){
-                    if(err)
-                        return conn.close();
-                    queue = ok.queue;
-                    channel = ch;
-                });
+                if (err) return conn.close();
+                ch.assertQueue(queueName,
+                    {durable: durable, autoDelete: autoDelete},
+                    function (err, ok) {
+                        if (err) return conn.close();
+                        queue = ok.queue;
+                        channel = ch;
+                    }
+                );
             });
         });
     });

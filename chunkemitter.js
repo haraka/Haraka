@@ -90,7 +90,7 @@ ChunkEmitter.prototype.end = function (cb) {
     if (this.bufs_size > 0) {
         this.emit('data', Buffer.concat(this.bufs, this.bufs_size));
         emitted = true;
-    } 
+    }
     else if (this.pos > 0) {
         this.emit('data', this.buf.slice(0, this.pos));
         emitted = true;

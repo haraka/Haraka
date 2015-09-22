@@ -30,7 +30,7 @@ exports.parse = function(type, line, strict) {
     else {
         line = line.replace(strict ? /to:/i : /to:\s*/i, "");
     }
-    
+
     while (1) {
         var old_length = line.length;
         line = line.replace(chew_regexp, function repl(str, p1) {
@@ -41,22 +41,22 @@ exports.parse = function(type, line, strict) {
             break;
         }
     }
-    
+
     params = params.reverse();
-    
-    // the above will "fail" (i.e. all of the line in params) on 
+
+    // the above will "fail" (i.e. all of the line in params) on
     // some addresses without <> like
     //    MAIL FROM: user=name@example.net
     // or RCPT TO: postmaster
 
     // let's see if $line contains nothing and use the first value as address:
     if (line.length) {
-        // parameter syntax error, i.e. not all of the arguments were 
+        // parameter syntax error, i.e. not all of the arguments were
         // stripped by the while() loop:
         if (line.match(/\@.*\s/)) {
             throw new Error("Syntax error in parameters (" + line + ")");
         }
-        
+
         params.unshift(line);
     }
 
@@ -79,7 +79,7 @@ exports.parse = function(type, line, strict) {
         // console.log("Looking at " + line);
         if (line.match(/\@.*\s/)) {
             throw new Error("Syntax error in parameters");
-        } 
+        }
         else {
             if (line.match(/\s/)) {
                 throw new Error("Syntax error in parameters");
@@ -94,8 +94,8 @@ exports.parse = function(type, line, strict) {
             }
         }
     }
-    
+
     params.unshift(line);
-    
+
     return params;
 }

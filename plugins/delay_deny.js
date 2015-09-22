@@ -79,7 +79,7 @@ exports.hook_deny = function (next, connection, params) {
             }
             transaction.notes.delay_deny_pre_fail[pi_name] = 1;
             return next(OK);
-        // Post-DATA delays 
+        // Post-DATA delays
         case 'data':
         case 'data_post':
             /*  Delays disabled for now

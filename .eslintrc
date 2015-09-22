@@ -4,5 +4,6 @@
   },
   "rules": {
     "indent": [2, 4, {"SwitchCase": 1}],
+    "no-trailing-spaces": [2, { "skipBlankLines": false }],
   }
 }

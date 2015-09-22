@@ -31,7 +31,7 @@ else {
         'tests/plugins',
         'tests/plugins/auth',
         'tests/plugins/queue'
-        ], undefined, function (err) {
+    ], undefined, function (err) {
         process.exit(((err) ? 1 : 0));
     });
 }

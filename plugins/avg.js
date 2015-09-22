@@ -140,7 +140,7 @@ exports.hook_data_post = function (next, connection) {
                             });
                             socket.send_command('QUIT');
                             return do_next(DENY, response.join(' '));
-                        default:  
+                        default:
                             // Any other result is an error
                             connection.results.add(plugin, {
                                 err: 'Bad response: ' + response.join(' ')

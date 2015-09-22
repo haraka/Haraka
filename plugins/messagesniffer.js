@@ -39,7 +39,7 @@ exports.hook_connect = function (next, connection) {
             }
             // Set notes for other plugins
             connection.notes.gbudb = gbudb;
-            // Handle result 
+            // Handle result
             switch (gbudb.range) {
                 case 'new':
                 case 'normal':
@@ -204,7 +204,7 @@ exports.hook_data_post = function (next, connection) {
                 }
                 // Summary log
                 connection.loginfo(self, 'result: time=' + elapsed + 'ms code=' + code +
-                                         (gbudb_ip ? ' ip="' + gbudb_ip + '"' : '') + 
+                                         (gbudb_ip ? ' ip="' + gbudb_ip + '"' : '') +
                                          (group ? ' group="' + group + '"' : '') +
                                          (rules ? ' rule_count=' + rules.split(/\s+/).length : '') +
                                          (rules ? ' rules="' + rules + '"' : ''));
@@ -244,7 +244,7 @@ exports.hook_data_post = function (next, connection) {
                                 action = cfg.message["code_" + code];
                             }
                             else {
-                                if (code > 1 && code !== 40) { 
+                                if (code > 1 && code !== 40) {
                                     if (cfg.message['nonzero']) {
                                         action = cfg.message['nonzero'];
                                     }
@@ -335,7 +335,7 @@ exports.hook_disconnect = function (next, connection) {
 
     // Train GBUdb on rejected messages and recipients
     if (cfg.main.gbudb_report_deny && !connection.notes.snf_run &&
-        (connection.rcpt_count.reject > 1 || connection.msg_count.reject > 1)) 
+        (connection.rcpt_count.reject > 1 || connection.msg_count.reject > 1))
     {
         SNFClient("<snf><xci><gbudb><bad ip='" + connection.remote_ip + "'/></gbudb></xci></snf>", function (err, result) {
             if (err) {

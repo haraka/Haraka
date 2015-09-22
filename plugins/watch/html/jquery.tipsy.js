@@ -16,13 +16,13 @@
         return false;
     }
 
-	// Returns true if it is a DOM element
-	// http://stackoverflow.com/a/384380/999
+    // Returns true if it is a DOM element
+    // http://stackoverflow.com/a/384380/999
     function isElement(o){
         return (
-			typeof HTMLElement === "object" ? o instanceof HTMLElement : //DOM2
-			o && typeof o === "object" && o.nodeType === 1 && typeof o.nodeName==="string"
-		);	
+            typeof HTMLElement === "object" ? o instanceof HTMLElement : //DOM2
+            o && typeof o === "object" && o.nodeType === 1 && typeof o.nodeName==="string"
+        );
     }
 
     var tipsyIDcounter = 0;
@@ -43,10 +43,10 @@
                 return;
             }
 
-            if (isElement(this.$element) && !this.$element.is(':visible')) { 
-                return; 
+            if (isElement(this.$element) && !this.$element.is(':visible')) {
+                return;
             }
-            
+
             var title;
             if (this.enabled && (title = this.getTitle())) {
                 var $tip = this.tip();
@@ -257,7 +257,7 @@
         delayOut: 0,
         fade: false,
         fadeInTime: 400,
-        fadeOutTime: 400, 
+        fadeOutTime: 400,
         shadow: false,
         shadowBlur: 8,
         shadowOpacity: 1,
@@ -383,5 +383,5 @@
             return dir.ew;
         }
     };
-    
+
 })(jQuery, window);
