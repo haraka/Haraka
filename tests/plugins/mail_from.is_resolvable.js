@@ -1,10 +1,10 @@
 'use strict';
 
-var stub         = require('../fixtures/stub'),
-    Plugin       = require('../fixtures/stub_plugin'),
-    Connection   = require('../fixtures/stub_connection'),
-    config       = require('../../config'),
-    ResultStore  = require('../../result_store');
+var stub         = require('../fixtures/stub');
+var Plugin       = require('../fixtures/stub_plugin');
+var Connection   = require('../fixtures/stub_connection');
+var config       = require('../../config');
+var ResultStore  = require('../../result_store');
 
 var _set_up = function (done) {
 

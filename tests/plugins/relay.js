@@ -1,9 +1,9 @@
 'use strict';
 
-var Connection   = require('../fixtures/stub_connection'),
-    Plugin       = require('../fixtures/stub_plugin'),
-    config       = require('../../config'),
-    ResultStore  = require("../../result_store");
+var Connection   = require('../fixtures/stub_connection');
+var Plugin       = require('../fixtures/stub_plugin');
+var config       = require('../../config');
+var ResultStore  = require('../../result_store');
 
 var _set_up = function (done) {
 

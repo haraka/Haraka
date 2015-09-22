@@ -166,8 +166,12 @@
 //
 /** @constructor */
     function ARC4(key) {
-        var t, u, me = this, keylen = key.length;
-        var i = 0, j = me.i = me.j = me.m = 0;
+        var t;
+        var u;
+        var me = this;
+        var keylen = key.length;
+        var i = 0;
+        var j = me.i = me.j = me.m = 0;
         me.S = [];
         me.c = [];
 

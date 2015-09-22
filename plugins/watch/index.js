@@ -456,7 +456,8 @@ function get_mailfrom(txn) {
 
 function get_recipients(txn) {
 
-    var d = [], t = [];
+    var d = [];
+    var t = [];
     txn.rcpt_to.forEach(function (ea) {
         try { var rcpt = ea.address(); }
         catch (ignore) { }

@@ -134,7 +134,8 @@ exports.ip_to_long = function (ip) {
 };
 
 exports.octets_in_string = function (str, oct1, oct2) {
-    var oct1_idx, oct2_idx;
+    var oct1_idx;
+    var oct2_idx;
 
     // test the largest of the two octets first
     if (oct2.length >= oct1.length) {

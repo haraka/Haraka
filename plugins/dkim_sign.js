@@ -1,13 +1,13 @@
 // dkim_signer
 // Implements DKIM core as per www.dkimcore.org
 
-var addrparser = require('address-rfc2822'),
-    async      = require('async'),
-    crypto     = require('crypto'),
-    fs         = require('fs'),
-    Stream     = require('stream').Stream,
-    util       = require('util'),
-    utils      = require('./utils');
+var addrparser = require('address-rfc2822');
+var async      = require('async');
+var crypto     = require('crypto');
+var fs         = require('fs');
+var Stream     = require('stream').Stream;
+var util       = require('util');
+var utils      = require('./utils');
 
 function DKIMSignStream(selector, domain, private_key, headers_to_sign, header, end_callback) {
     Stream.call(this);
@@ -167,7 +167,9 @@ exports.hook_queue_outbound = function (next, connection) {
     if (plugin.cfg.main.disabled) { return next(); }
 
     plugin.get_key_dir(connection, function(keydir) {
-        var domain, selector, private_key;
+        var domain;
+        var selector;
+        var private_key;
         if (!keydir) {
             domain = plugin.cfg.main.domain;
             private_key = plugin.private_key;

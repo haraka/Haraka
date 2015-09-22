@@ -2,8 +2,15 @@
 /* jshint jquery: true, maxlen: 130 */
 /* global window, XMLHttpRequest, WebSocket */
 
-var ws, connect_cols, helo_cols, mail_from_cols, rcpt_to_cols, data_cols, total_cols;
-var cxn_cols, txn_cols;
+var ws;
+var connect_cols;
+var helo_cols;
+var mail_from_cols;
+var rcpt_to_cols;
+var data_cols;
+var total_cols;
+var cxn_cols;
+var txn_cols;
 
 var connect_plugins  = ['connect.geoip','connect.p0f','connect.asn','dnsbl', 'early', 'connect.fcrdns'];
 var helo_plugins     = ['helo.checks','tls','auth','relay','spf'];
@@ -48,7 +55,8 @@ function newRowConnectRow2 (data, uuid, txnId) {
     var res = [];
     connect_plugins.forEach(function(plugin) {
         var nv = shorten_pi(plugin);
-        var newc = '', tit = '';
+        var newc = '';
+        var tit = '';
         if (data[plugin]) {       // not always updated
             if (data[plugin].classy) newc = data[plugin].classy;
             if (data[plugin].newval) nv   = data[plugin].newval;

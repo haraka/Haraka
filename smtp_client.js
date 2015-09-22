@@ -46,9 +46,9 @@ function SMTPClient(port, host, connect_timeout, idle_timeout) {
             return;
         }
 
-        var code = matches[1],
-            cont = matches[2],
-            msg = matches[3];
+        var code = matches[1];
+        var cont = matches[2];
+        var msg = matches[3];
 
         client.response.push(msg);
         if (cont !== ' ') {

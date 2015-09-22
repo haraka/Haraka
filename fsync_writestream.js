@@ -13,9 +13,9 @@ function FsyncWriteStream (path, options) {
 
 util.inherits(FsyncWriteStream, fs.WriteStream);
 
-var versions   = process.version.split('.'),
-    version    = Number(versions[0].substring(1)),
-    subversion = Number(versions[1]);
+var versions   = process.version.split('.');
+var version    = Number(versions[0].substring(1));
+var subversion = Number(versions[1]);
 
 if (version > 0 || subversion >= 10) {
     // for v0.10+ compat
@@ -66,8 +66,8 @@ else {
 
         this.busy = true;
 
-        var method = args.shift(),
-            cb = args.pop();
+        var method = args.shift();
+        var cb = args.pop();
 
         args.push(function(err) {
             self.busy = false;
