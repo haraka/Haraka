@@ -19,6 +19,13 @@ hook accepts the connection, it will be rejected.
   anchor with .\*. There is the potential for bad regexes to be
   too permissive if we don't anchor.
 
+* host\_list.anti\_spoof
+
+  When enabled, this will cause Haraka to reject any MAIL FROM where 
+  the host appears within the host list but the connected host is not
+  a relay, e.g. connection.relaying is not set either by SMTP AUTH or
+  another plugin like 'relay'.
+
 ## Relaying
 
 This plugin checks to see if the MAIL FROM domain is local. When

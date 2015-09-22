@@ -41,14 +41,14 @@ exports.hook_mail = function(next, connection, params) {
     }
 
     var domain = params[0].host.toLowerCase();
+    var anti_spoof = plugin.config.get('host_list.anti_spoof');
 
-    if (plugin.in_host_list(domain)) {
-        txn.results.add(plugin, {pass: 'mail_from'});
-        txn.notes.local_sender = true;
-        return next();
-    }
-
-    if (plugin.in_host_regex(domain)) {
+    if (plugin.in_host_list(domain) || plugin.in_host_regex(domain)) {
+        if (anti_spoof && !connection.relaying) {
+            txn.results.add(plugin, {fail: 'mail_from.anti_spoof'});
+            return next(DENY, "Mail from domain '" + domain + "'" + 
+                              " is not allowed from your host");
+        }
         txn.results.add(plugin, {pass: 'mail_from'});
         txn.notes.local_sender = true;
         return next();
