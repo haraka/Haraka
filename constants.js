@@ -1,4 +1,4 @@
-"use strict";
+'use strict';
 // Constants
 
 exports.cont               = 900;
@@ -18,7 +18,7 @@ exports.import = function (object) {
             object[k.toUpperCase()] = exports[k];
         }
     }
-}
+};
 
 exports.translate = function (value) {
     var t = {};
@@ -29,4 +29,4 @@ exports.translate = function (value) {
     }
     if (t[value]) return t[value];
     return 'UNKNOWN';
-}
+};

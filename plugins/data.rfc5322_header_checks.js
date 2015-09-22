@@ -12,8 +12,7 @@ exports.hook_data_post = function (next, connection) {
     var header = connection.transaction.header;
     // Headers that MUST be present
     for (var i=0,l=required_headers.length; i < l; i++) {
-        if (header.get_all(required_headers[i]).length === 0)
-        {
+        if (header.get_all(required_headers[i]).length === 0) {
             return next(DENY, "Required header '" + required_headers[i] +
                                 "' missing");
         }

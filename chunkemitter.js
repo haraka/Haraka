@@ -21,7 +21,8 @@ if (!Buffer.concat) {
 
         if (list.length === 0) {
             return new Buffer(0);
-        } else if (list.length === 1) {
+        }
+        else if (list.length === 1) {
             return list[0];
         }
 

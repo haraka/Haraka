@@ -11,7 +11,8 @@ exports.sandbox_require = function (id) {
             var override = __dirname + '/' + id + '.js';
             fs.statSync(override);
             id = override;
-        } catch (e) {
+        }
+        catch (e) {
             id = '../../' + id;
         }
     }

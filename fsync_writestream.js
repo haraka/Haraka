@@ -88,19 +88,22 @@ else {
                     cb(null, arguments[1]);
                 }
 
-            } else if (method === self._open) {
+            }
+            else if (method === self._open) {
                 // save reference for file pointer
                 self.fd = arguments[1];
                 self.emit('open', self.fd);
 
-            } else if (method === fs.close) {
+            }
+            else if (method === fs.close) {
                 // stop flushing after close
                 if (cb) {
                     cb(null);
                 }
                 self.emit('close');
                 return;
-            } else if (method === fs.fsync) {
+            }
+            else if (method === fs.fsync) {
                 // XXX: New code compared to WriteStream.flush
                 // stop flushing after fsync
                 if (cb) {
@@ -123,10 +126,12 @@ else {
     FsyncWriteStream.prototype.end = function(data, encoding, cb) {
         if (typeof(data) === 'function') {
             cb = data;
-        } else if (typeof(encoding) === 'function') {
+        }
+        else if (typeof(encoding) === 'function') {
             cb = encoding;
             this.write(data);
-        } else if (arguments.length > 0) {
+        }
+        else if (arguments.length > 0) {
             this.write(data, encoding);
         }
         this.writable = false;
@@ -136,7 +141,7 @@ else {
             if (err) return cb(err);
             self._queue.push([fs.close, cb]);
             self.flush();
-        }
+        };
         this._queue.push([fs.fsync, fsync_cb]);
         this.flush();
     };

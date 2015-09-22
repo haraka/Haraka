@@ -394,7 +394,7 @@ cfreader.init_booleans = function (options, result) {
         }
     }
     return bool_matches;
-}
+};
 
 cfreader.load_ini_config = function(name, options) {
     var result       = cfreader.empty_config('ini');

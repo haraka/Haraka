@@ -265,8 +265,9 @@ exports.add_headers = function (next, connection) {
     txn.remove_header('X-Haraka-GeoIP');
     txn.remove_header('X-Haraka-GeoIP-Received');
     var r = connection.results.get('connect.geoip');
-    if (r) {             txn.add_header('X-Haraka-GeoIP',   r.human  );
-        if (r.asn)     { txn.add_header('X-Haraka-ASN',     r.asn    ); }
+    if (r) {
+        txn.add_header('X-Haraka-GeoIP',   r.human  );
+        if (r.asn) { txn.add_header('X-Haraka-ASN',     r.asn    ); }
         if (r.asn_org) { txn.add_header('X-Haraka-ASN-Org', r.asn_org); }
     }
 

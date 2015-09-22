@@ -150,7 +150,8 @@ Transaction.prototype.end_data = function(cb) {
 
     if (!this.discard_data) {
         this.message_stream.add_line_end(cb);
-    } else {
+    }
+    else {
         cb();
     }
 };

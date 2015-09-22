@@ -7,13 +7,13 @@ function TQTimer (fire_time, cb) {
 
 TQTimer.prototype.cancel = function () {
     this.cb = null;
-}
+};
 
 function TimerQueue (interval) {
     var self = this;
     interval = interval || 1000;
     this.queue = [];
-    setInterval(function () { self.fire() }, interval);
+    setInterval(function () { self.fire(); }, interval);
 }
 
 module.exports = TimerQueue;
@@ -23,7 +23,8 @@ TimerQueue.prototype.add = function (ms, cb) {
 
     var timer = new TQTimer(fire_time, cb);
 
-    if ((this.queue.length === 0) || fire_time >= this.queue[this.queue.length - 1].fire_time) {
+    if ((this.queue.length === 0) ||
+        fire_time >= this.queue[this.queue.length - 1].fire_time) {
         this.queue.push(timer);
         return timer;
     }
@@ -36,7 +37,7 @@ TimerQueue.prototype.add = function (ms, cb) {
     }
 
     throw "Should never get here";
-}
+};
 
 TimerQueue.prototype.fire = function () {
     if (this.queue.length === 0) return;
@@ -47,11 +48,11 @@ TimerQueue.prototype.fire = function () {
         var to_run = this.queue.shift();
         if (to_run.cb) to_run.cb();
     }
-}
+};
 
 TimerQueue.prototype.length = function () {
     return this.queue.length;
-}
+};
 
 TimerQueue.prototype.drain = function () {
     if (this.queue.length === 0) return;
@@ -60,4 +61,4 @@ TimerQueue.prototype.drain = function () {
         var to_run = this.queue.shift();
         if (to_run.cb) to_run.cb();
     }
-}
+};

@@ -469,7 +469,8 @@ Connection.prototype.respond = function(code, msg, func) {
         messages = msg.toString().split(/\n/).filter(function (msg) {
             return /\S/.test(msg);
         });
-    } else {
+    }
+    else {
         // copy
         messages = msg.slice().filter(function (msg) { return /\S/.test(msg);});
     }
