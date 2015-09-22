@@ -7,6 +7,7 @@ install:
   - ps: Install-Product node $env:nodejs_version
   # install modules
   - npm install
+  - npm install -g grunt-cli
 
 # Post-install test scripts.
 test_script:
@@ -14,7 +15,8 @@ test_script:
   - node --version
   - npm --version
   # run tests
-  - npm test
+  #- grunt lint  # no need to run lint tests here too
+  - node run_tests
 
 # Don't actually build.
 build: off
