@@ -20,7 +20,14 @@ addons:
 env:
   - "CXX=g++-4.8"
 # end: these are required for building on node.js 4.0 / io.js v3
-  
+
+before_script:
+    - npm install -g grunt-cli
+
+script:
+    - grunt lint
+    - node run_tests
+
 after_success:
     - npm run coveralls
 

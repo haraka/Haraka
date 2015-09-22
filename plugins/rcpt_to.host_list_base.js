@@ -47,7 +47,7 @@ exports.hook_mail = function(next, connection, params) {
     if (plugin.in_host_list(domain) || plugin.in_host_regex(domain)) {
         if (anti_spoof && !connection.relaying) {
             txn.results.add(plugin, {fail: 'mail_from.anti_spoof'});
-            return next(DENY, "Mail from domain '" + domain + "'" + 
+            return next(DENY, "Mail from domain '" + domain + "'" +
                               " is not allowed from your host");
         }
         txn.results.add(plugin, {pass: 'mail_from'});
