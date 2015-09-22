@@ -5,12 +5,13 @@ var Plugin           = require('../fixtures/stub_plugin');
 var Connection       = require('../fixtures/stub_connection');
 var Address          = require('../../address').Address;
 var ResultStore      = require('../../result_store');
+var config           = require('../../config');
 
 var _set_up = function (done) {
 
     this.plugin = new Plugin('rcpt_to.in_host_list');
     this.plugin.inherits('rcpt_to.host_list_base');
-
+    this.plugin.config = config;
     this.plugin.cfg = {};
     this.plugin.host_list = {};
 

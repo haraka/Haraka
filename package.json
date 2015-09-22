@@ -1,6 +1,7 @@
 {
   "author": "Matt Sergeant <helpme@gmail.com> (http://baudehlo.com/)",
   "name": "Haraka",
+  "license": "MIT",
   "description": "An SMTP Server project.",
   "keywords": ["haraka", "smtp", "server", "email"],
   "version": "2.6.1",
@@ -47,12 +48,6 @@
     "grunt-version-check"   : "*",
     "grunt-eslint"          : "*"
   },
-  "licenses": [
-    {
-      "type": "MIT",
-      "url": "https://github.com/baudehlo/Haraka/blob/master/LICENSE"
-    }
-  ],
   "bugs": {
     "mail": "helpme@gmail.com",
     "url": "https://github.com/baudehlo/Haraka/issues"
