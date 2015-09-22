@@ -18,9 +18,9 @@ exports.hook_data_post = function (next, connection) {
             host = connection.remote_host;
             break;
     }
-    
+
     var rcpts = txn.rcpt_to.map(function (rcpt) { return rcpt.address(); });
-    var training = (txn.notes.training_mode && txn.notes.training_mode === 'spam') 
+    var training = (txn.notes.training_mode && txn.notes.training_mode === 'spam')
                    ? true : false;
     var response = '';
     var client = net.createConnection({
@@ -108,7 +108,7 @@ exports.hook_data_post = function (next, connection) {
                 connection.logerror(this, 'header did not match regexp: ' + header);
             }
         }
-        connection.loginfo(self, 'training=' + (training ? 'Y' : 'N') + ' result=' + result + 
+        connection.loginfo(self, 'training=' + (training ? 'Y' : 'N') + ' result=' + result +
                                  ' disposition=' + disposition + ' headers=' + headers.length);
         return next();
     });

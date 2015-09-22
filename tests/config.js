@@ -115,7 +115,7 @@ exports.arrange_args = {
 };
 
 var jsonRes = {
-    matt: 'waz here', 
+    matt: 'waz here',
     array: [ 'has an element' ],
     objecty: { 'has a property': 'with a value' }
 };

@@ -29,9 +29,9 @@ exports.hook_data_post = function (next, connection) {
     var passwd        = connection.notes.auth_passwd;
     var bound_regexp  = "(?:\\b|\\B)";
     var passwd_regexp = new RegExp(bound_regexp + escapeRegExp(passwd) + bound_regexp, 'm');
-    var user_regexp   = new RegExp(bound_regexp + 
-                                   escapeRegExp(user) + 
-                                   (domain ? '(?:' + escapeRegExp(domain) + ')?' : '') + 
+    var user_regexp   = new RegExp(bound_regexp +
+                                   escapeRegExp(user) +
+                                   (domain ? '(?:' + escapeRegExp(domain) + ')?' : '') +
                                    bound_regexp, 'im');
 
     if (look_for_credentials(user_regexp, passwd_regexp, connection.transaction.body)) {

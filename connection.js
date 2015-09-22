@@ -250,7 +250,7 @@ Connection.prototype.process_line = function (line) {
     if (/[^\x00-\x7F]/.test(this.current_line)) {
         // See if this is a TLS handshake
         var buf = new Buffer(this.current_line.substr(0,3), 'binary');
-        if (buf[0] === 0x16 && buf[1] === 0x03 && 
+        if (buf[0] === 0x16 && buf[1] === 0x03 &&
            (buf[2] === 0x00 || buf[2] === 0x01)) // SSLv3/TLS1.x format
         {
             // Nuke the current input buffer to prevent processing further input

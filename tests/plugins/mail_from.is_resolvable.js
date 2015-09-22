@@ -7,7 +7,7 @@ var stub         = require('../fixtures/stub'),
     ResultStore  = require('../../result_store');
 
 var _set_up = function (done) {
-    
+
     this.plugin = new Plugin('mail_from.is_resolvable');
     this.plugin.config = config;
     this.plugin.register();

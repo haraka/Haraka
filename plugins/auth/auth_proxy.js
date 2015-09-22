@@ -154,7 +154,7 @@ exports.try_auth_proxy = function (connection, hosts, user, passwd, cb) {
                     }
                     if (code[0] === '5') {
                         // Initial attempt failed; strip domain and retry.
-                        var u; 
+                        var u;
                         if ((u = /^([^@]+)@.+$/.exec(user))) {
                             user = u[1];
                             if (methods.indexOf('PLAIN') !== -1) {

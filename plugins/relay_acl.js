@@ -40,7 +40,7 @@ exports.relay_dest_domains = function (next, connection, params) {
         transaction.results.add(plugin, {skip: 'relay_dest_domain(relay)'});
         return next();
     }
- 
+
     if (!plugin.cfg.domains) {
         transaction.results.add(plugin, {skip: 'relay_dest_domain(config)'});
         return next();

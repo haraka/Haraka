@@ -23,10 +23,10 @@ function MessageStream (config, id, headers) {
     this.buffered = 0;
     this._queue = [];
     this.max_data_inflight = 0;
-    this.buffer_max = (!isNaN(config.main.spool_after) ? 
+    this.buffer_max = (!isNaN(config.main.spool_after) ?
                        Number(config.main.spool_after) : -1);
     this.spooling = false;
-    this.fd = null;    
+    this.fd = null;
     this.open_pending = false;
     this.spool_dir = config.main.spool_dir || '/tmp';
     this.filename = this.spool_dir + '/' + id + '.eml';
@@ -96,7 +96,7 @@ MessageStream.prototype.add_line = function (line) {
             }
         }
     }
- 
+
     this.write_ce.fill(line);
 }
 
@@ -123,7 +123,7 @@ MessageStream.prototype._write = function (data) {
         this.buffered += data.length;
         this._queue.push(data);
     }
-    // Stats 
+    // Stats
     if (this.buffered > this.max_data_inflight) {
         this.max_data_inflight = this.buffered;
     }
@@ -159,7 +159,7 @@ MessageStream.prototype._write = function (data) {
         }
     }
 
-    // Open file descriptor if needed 
+    // Open file descriptor if needed
     if (!this.fd && !this.open_pending) {
         this.open_pending = true;
         this.ws = fs.createWriteStream(this.filename, { flags: 'wx+', end: false })
@@ -172,7 +172,7 @@ MessageStream.prototype._write = function (data) {
         });
         this.ws.on('error', function (error) {
             self.emit('error', error);
-        }); 
+        });
     }
 
     if (!this.fd) return false;
@@ -229,21 +229,21 @@ MessageStream.prototype._read = function () {
         this.read_ce.fill(this.line_endings);
         // Loop
         process.nextTick(function () {
-            if (self.readable && !self.paused) 
+            if (self.readable && !self.paused)
                 self._read();
         });
     }
     else {
         // Read the message body by line
-        // If we have queued entries, then we didn't 
+        // If we have queued entries, then we didn't
         // create a queue file, so we read from memory.
         if (this._queue.length > 0) {
             // TODO: implement start/end offsets
             for (var i=0; i<this._queue.length; i++) {
                 this.process_buf(this._queue[i].slice(0));
             }
-            this._read_finish();       
-        } 
+            this._read_finish();
+        }
         else {
             this.rs = fs.createReadStream(null, { fd: this.fd, start: 0 });
             // Prevent the file descriptor from being closed
@@ -263,14 +263,14 @@ MessageStream.prototype._read = function () {
 
 MessageStream.prototype.process_buf = function (buf) {
     var offset = 0;
-    while ((offset = indexOfLF(buf)) !== -1) { 
+    while ((offset = indexOfLF(buf)) !== -1) {
         var line = buf.slice(0, offset+1);
         buf = buf.slice(line.length);
         // Don't output headers if they where sent already
         if (this.headers_done && !this.headers_found_eoh) {
             // Allow \r\n or \n here...
             if ((line.length === 2 && line[0] === 0x0d && line[1] === 0x0a) ||
-                (line.length === 1 && line[0] === 0x0a)) 
+                (line.length === 1 && line[0] === 0x0a))
             {
                 this.headers_found_eoh = true;
             }
@@ -310,7 +310,7 @@ MessageStream.prototype._read_finish = function () {
     this.read_ce.end(function () {
         if (self.clamd_style) {
             // Add 0 length to notify end
-            var buf = new Buffer(4); 
+            var buf = new Buffer(4);
             buf.writeUInt32BE(0, 0);
             self.emit('data', buf);
         }
@@ -332,7 +332,7 @@ MessageStream.prototype.pipe = function (destination, options) {
     this.clamd_style  = ((options && options.clamd_style) ? true : false);
     this.buffer_size  = ((options && options.buffer_size) ? options.buffer_size : 1024 * 64);
     this.start        = ((options && parseInt(options.start)) ? parseInt(options.start) : 0);
-    // Reset 
+    // Reset
     this.in_pipe = true;
     this.readable = true;
     this.paused = false;
@@ -389,7 +389,7 @@ MessageStream.prototype.resume = function () {
 MessageStream.prototype.destroy = function () {
     var self = this;
     try {
-        if (this.fd) { 
+        if (this.fd) {
             fs.close(this.fd, function (err) {
                 fs.unlink(self.filename, function () {});
             });

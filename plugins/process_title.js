@@ -98,14 +98,14 @@ exports.hook_connect_init = function (next, connection) {
     }
     server.notes.pt_connections++;
     server.notes.pt_concurrent++;
-    return next(); 
+    return next();
 };
 
 exports.hook_disconnect = function (next, connection) {
     var server = connection.server;
     // Check that the hook above ran
     // It might not if the disconnection is immediate
-    // echo "QUIT" | nc localhost 25 
+    // echo "QUIT" | nc localhost 25
     // will exhibit this behaviour.
     var worker;
     if (!connection.notes.pt_connect_run) {
@@ -153,7 +153,7 @@ var setupInterval = function (title, server) {
             process.send({event: 'process_title.outbound_stats', data: out});
         }
         // Update title
-        var new_title = title + ' cn=' + server.notes.pt_connections + 
+        var new_title = title + ' cn=' + server.notes.pt_connections +
             ' cc=' + server.notes.pt_concurrent + ' cps=' + cps + '/' + av_cps +
             '/' + server.notes.pt_cps_max + ' msgs=' + server.notes.pt_messages +
             ' mps=' + mps + '/' + av_mps + '/' +

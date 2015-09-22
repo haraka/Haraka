@@ -8,7 +8,7 @@ exports.register = function () {
 exports.discard = function (next, connection) {
     var transaction = connection.transaction;
     if (connection.notes.discard ||
-        transaction.notes.discard) 
+        transaction.notes.discard)
     {
         connection.loginfo(this, 'discarding message');
         // Pretend we delivered the message

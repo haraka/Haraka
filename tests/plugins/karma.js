@@ -15,7 +15,7 @@ catch (e) {
 }
 
 var _set_up = function (done) {
-    
+
     this.plugin = new Plugin('karma');
 
     this.plugin.config = config;

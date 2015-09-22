@@ -10,7 +10,7 @@ try {
     require.paths.push(path.join(process.env.HARAKA, 'node_modules'));
 }
 catch(e) {
-    process.env.NODE_PATH = process.env.NODE_PATH ? 
+    process.env.NODE_PATH = process.env.NODE_PATH ?
             (process.env.NODE_PATH + ':' + path.join(process.env.HARAKA, 'node_modules'))
             :
             (path.join(process.env.HARAKA, 'node_modules'));

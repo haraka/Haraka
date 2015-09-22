@@ -40,17 +40,14 @@ exports.hook_queue = function(next, connection) {
                     logger.logdebug( "queueSuccess");
                     return next(OK,"Successfully Queued! in rabbitmq");
                 }
-                
-                
             });
-
         }
         else {
             //Seems like connExchange is not defined , lets create one for next call
             exports.init_rabbitmq_server();
             return next();
         }
-    });   
+    });
 };
 
 //This initializes the connection to rabbitmq server, It reads values from rabbitmq.ini file in config directory.

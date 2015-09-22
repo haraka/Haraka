@@ -32,7 +32,7 @@ exports.lookup_host_key = function (type, args, cb) {
     var remote_ip = args[0];
     var remote_host = args[1];
     var config = this.config.get('rate_limit.ini');
-    if (!config[type]) {  
+    if (!config[type]) {
         return cb(new Error(type + ': not configured'));
     }
     var ip;
@@ -98,7 +98,7 @@ exports.lookup_mail_key = function (type, args, cb) {
             var part = rhs_split.join('.');
             if (config[type][part] || config[type][part] === 0) {
                 return cb(null, part, config[type][part]);
-            }   
+            }
             rhs_split.pop();
         }
     }
@@ -127,14 +127,14 @@ exports.rate_limit = function (connection, key, value, cb) {
             switch (match[3].toLowerCase()) {
                 case 's':
                     // Default is seconds
-                    break; 
-                case 'm':   
+                    break;
+                case 'm':
                     ttl *= 60;
                     break;
-                case 'h':   
+                case 'h':
                     ttl *= (60*60);
                     break;
-                case 'd':   
+                case 'd':
                     ttl *= (60*60*24);
                     break;
                 default:
@@ -214,8 +214,8 @@ exports.incr_concurrency = function (next, connection) {
         }
         return next();
     };
-    
-    // Concurrency 
+
+    // Concurrency
     this.lookup_host_key('concurrency',
         [connection.remote_ip, connection.remote_host],
         lookup_cb);
@@ -288,11 +288,11 @@ exports.hook_connect = function (next, connection) {
                         return next();
                     }
                 });
-            } 
+            }
             else {
                 return next();
             }
-        }); 
+        });
     });
 };
 
@@ -305,7 +305,7 @@ exports.hook_rcpt = function (next, connection, params) {
         {
             name:           'rate_rcpt_host',
             lookup_func:    'lookup_host_key',
-            lookup_args:    [connection.remote_ip, connection.remote_host], 
+            lookup_args:    [connection.remote_ip, connection.remote_host],
         },
         {
             name:           'rate_rcpt_sender',
@@ -357,8 +357,8 @@ exports.hook_rcpt = function (next, connection, params) {
                 }
                 if (over) {
                     // Delay this response if we are not already tarpitting
-                    if (config.main.tarpit_delay && 
-                        !(connection.notes.tarpit || (transaction && transaction.notes.tarpit))) 
+                    if (config.main.tarpit_delay &&
+                        !(connection.notes.tarpit || (transaction && transaction.notes.tarpit)))
                     {
                         connection.loginfo(self, 'tarpitting response for ' + config.main.tarpit + 's');
                         setTimeout(function () {

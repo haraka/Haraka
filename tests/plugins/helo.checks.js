@@ -7,7 +7,7 @@ var config       = require('../../config');
 var Address      = require('../../address');
 
 var _set_up = function (done) {
-    
+
     this.plugin = new Plugin('helo.checks');
     this.plugin.config = config;
 

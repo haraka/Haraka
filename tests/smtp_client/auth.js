@@ -37,10 +37,10 @@ exports.get_client(server, function(err, smtp_client) {
         smtp_client.send_command('AUTH', 'PLAIN AHRlc3QAdGVzdHBhc3M=');
         smtp_client.send_command('MAIL', 'FROM: me@example.com');
     });
-    
+
     data.push('AUTH PLAIN AHRlc3QAdGVzdHBhc3M='); // test/testpass
     data.push('235 Authentication successful.');
-    
+
     data.push('MAIL FROM: me@example.com');
     data.push('250 sender ok');
 

@@ -195,7 +195,7 @@ SPF.prototype.check_host = function (ip, domain, mail_from, cb) {
                     // We've already found an MX record
                     self.log_debug('found additional SPF record for domain ' + domain + ': ' + match[1]);
                     return cb(null, self.SPF_PERMERROR);
-                }                
+                }
             }
             else {
                 self.log_debug('discarding TXT record: ' + txt_rrs[i]);
@@ -225,7 +225,7 @@ SPF.prototype.check_host = function (ip, domain, mail_from, cb) {
                 // match[1] = qualifier
                 // match[2] = mechanism
                 // match[3] = optional args
-                if (!match[1]) match[1] = '+'; 
+                if (!match[1]) match[1] = '+';
                 self.log_debug('found mechanism: ' + match);
                 // Validate IP addresses
                 if (match[2] === 'ip4' || match[2] === 'ip6') {
@@ -282,7 +282,7 @@ SPF.prototype.check_host = function (ip, domain, mail_from, cb) {
             if (self.count > self.LIMIT) {
                 self.log_debug('lookup limit reached');
                 return cb(null, self.SPF_PERMERROR);
-            } 
+            }
             // Return any result that is not SPF_NONE
             if (result && result !== self.SPF_NONE) {
                 return cb(err, result);
@@ -433,7 +433,7 @@ SPF.prototype.mech_a = function (qualifier, args, cb) {
             else {
                 if (addrs[a] === self.ip) {
                     return cb(null, self.return_const(qualifier));
-                } 
+                }
                 else {
                     self.log_debug('mech_a: ' + self.ip + ' => ' + addrs[a] + ': NO MATCH');
                 }
@@ -517,7 +517,7 @@ SPF.prototype.mech_mx = function (qualifier, args, cb) {
                         }
                         // No matches
                         return cb(null, self.SPF_NONE);
-                    } 
+                    }
                     else {
                         if (addresses.indexOf(self.ip) !== -1) {
                             self.log_debug('mech_mx: ' + self.ip + ' => ' + addresses.join(',') + ': MATCH!');
@@ -595,7 +595,7 @@ SPF.prototype.mech_ptr = function (qualifier, args, cb) {
                         catch (e) {
                             self.log_debug('mech_ptr: domain="' + self.domain + '" err="' + e.message + '"');
                             return cb(null, self.SPF_PERMERROR);
-                        } 
+                        }
                         for (var t=0; t<names.length; t++) {
                             if (re.test(names[t])) {
                                 self.log_debug('mech_ptr: ' + names[t] + ' => ' + domain + ': MATCH!');
@@ -639,7 +639,7 @@ SPF.prototype.mech_ip = function (qualifier, args, cb) {
         if (this.ipaddr.match(range, match[2])) {
             this.log_debug('mech_ip: ' + this.ip + ' => ' + cidr + ': MATCH!');
             return cb(null, this.return_const(qualifier));
-        } 
+        }
         else {
             this.log_debug('mech_ip: ' + this.ip + ' => ' + cidr + ': NO MATCH');
         }
@@ -659,7 +659,7 @@ SPF.prototype.mod_redirect = function (domain, cb) {
     if (this.been_there[domain]) {
         this.log_debug('circular reference detected: ' + domain);
         return cb(null, this.SPF_NONE);
-    } 
+    }
     this.count++;
     this.been_there[domain] = 1;
     return this.check_host(this.ip, domain, this.mail_from, cb);

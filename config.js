@@ -17,7 +17,7 @@ config.get = function(name, type, cb, options) {
     // Pass arrays by value to prevent config being modified accidentally.
     if (Array.isArray(results)) {
         return results.slice();
-    } 
+    }
 
     return results;
 };

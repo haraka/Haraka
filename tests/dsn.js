@@ -29,7 +29,7 @@ exports.dsn = {
         this.DSN.create(200)
         );
         test.done();
-    }, 
+    },
     'create, code w/msg' : function (test) {
         test.expect(1);
         test.deepEqual({
@@ -40,7 +40,7 @@ exports.dsn = {
         this.DSN.create(200, 'test msg')
         );
         test.done();
-    }, 
+    },
     'create, code w/msg & subject' : function (test) {
         test.expect(1);
         test.deepEqual({
@@ -51,5 +51,5 @@ exports.dsn = {
         this.DSN.create(200, 'test msg', 7)
         );
         test.done();
-    }, 
+    },
 };

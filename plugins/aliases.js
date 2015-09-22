@@ -18,7 +18,7 @@ exports.aliases = function (next, connection, params) {
     var action = "<missing>";
 
     if (config[rcpt]) {
-       
+
         action = config[rcpt].action || action;
         match  = rcpt;
 
@@ -33,9 +33,9 @@ exports.aliases = function (next, connection, params) {
                 connection.loginfo(plugin, "unknown action: " + action);
         }
     }
-    
+
     if (config['@'+host]) {
-       
+
         action = config['@'+host].action || action;
         match  = '@'+host;
 
@@ -50,7 +50,7 @@ exports.aliases = function (next, connection, params) {
                 connection.loginfo(plugin, "unknown action: " + action);
         }
     }
-    
+
     if (config[user] || config[match[0]]) {
         if (config[user]) {
             action = config[user].action || action;

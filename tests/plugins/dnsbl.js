@@ -59,7 +59,7 @@ exports.should_skip = {
     },
     'no remote_ip': function (test) {
         test.expect(1);
-        
+
         test.equal(true, this.plugin.should_skip(this.connection));
         test.done();
     },
