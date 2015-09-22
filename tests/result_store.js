@@ -1,8 +1,8 @@
-var stub         = require('./fixtures/stub'),
-    Connection   = require('./fixtures/stub_connection'),
-    configfile   = require('../configfile'),
-    config       = require('../config'),
-    ResultStore  = require('../result_store');
+var stub         = require('./fixtures/stub');
+var Connection   = require('./fixtures/stub_connection');
+var configfile   = require('../configfile');
+var config       = require('../config');
+var ResultStore  = require('../result_store');
 
 function _set_up(callback) {
     this.connection = Connection.createConnection();

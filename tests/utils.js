@@ -1,7 +1,7 @@
-var stub      = require('./fixtures/stub'),
-    constants = require('./../constants'),
-    Logger    = require('./fixtures/stub_logger'),
-    utils     = require('./../utils');
+var stub      = require('./fixtures/stub');
+var constants = require('./../constants');
+var Logger    = require('./fixtures/stub_logger');
+var utils     = require('./../utils');
 
 // huge hack here, but plugin tests need constants
 constants.import(global);

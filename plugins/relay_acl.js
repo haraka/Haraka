@@ -2,8 +2,8 @@
 
 // documentation via: haraka -h plugins/relay_acl
 
-var ipaddr = require('ipaddr.js'),
-    net    = require('net');
+var ipaddr = require('ipaddr.js');
+var net    = require('net');
 
 exports.register = function() {
     this.logerror(this, "deprecated. see 'haraka -h relay'");

@@ -5,7 +5,10 @@ var CHARS = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'
     .split('');
 
 exports.uuid = function () {
-    var chars = CHARS, uuid = new Array(36), rnd=0, r;
+    var chars = CHARS;
+    var uuid = new Array(36);
+    var rnd=0;
+    var r;
     for (var i = 0; i < 36; i++) {
         if (i===8 || i===13 || i===18 || i===23) {
             uuid[i] = '-';
@@ -251,7 +254,9 @@ exports.unbase64 = function (str) {
 // Fisher-Yates shuffle
 // http://bost.ocks.org/mike/shuffle/
 exports.shuffle = function(array) {
-    var m = array.length, t, i;
+    var m = array.length;
+    var t;
+    var i;
 
     // While there remain elements to shuffle…
     while (m) {
