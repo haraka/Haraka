@@ -75,7 +75,7 @@ exports.get_organizational_domain = {
 
     // Unlisted TLD.
     'example': function (test) {
-         _org_domain(test, 'example', null);
+        _org_domain(test, 'example', null);
     },
     'example.example': function (test) {
         _org_domain(test, 'example.example', null);
@@ -1199,7 +1199,7 @@ exports.get_ips_by_host = {
                 '192.48.85.148',
                 '192.48.85.149',
                 '2607:f060:b008:feed::2'
-                ].sort());
+            ].sort());
             test.done();
         });
     },

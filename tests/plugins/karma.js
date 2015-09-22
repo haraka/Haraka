@@ -537,7 +537,7 @@ exports.check_result_match = {
     'FCrDNS match is scored': function (test) {
         test.expect(2);
         var award = {
-            id         : 089,         award      : 2,
+            id         : 89,         award      : 2,
             operator   : 'match',     value      : 'google.com',
             reason     : 'testing',   resolution : 'never',
         };

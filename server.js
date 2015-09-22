@@ -23,7 +23,7 @@ Server.load_smtp_ini = function () {
     Server.cfg = config.get('smtp.ini', {
         booleans: [
             '-main.daemonize',
-            ],
+        ],
     }, function () {
         Server.load_smtp_ini();
     });

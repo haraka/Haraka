@@ -21,8 +21,7 @@ function pluggableStream(socket) {
     this._writeState = true;
     this._pending = [];
     this._pendingCallbacks = [];
-    if (socket)
-        this.attach(socket);
+    if (socket) this.attach(socket);
 }
 
 util.inherits(pluggableStream, stream.Stream);
@@ -169,7 +168,7 @@ function createServer(cb) {
         var socket = new pluggableStream(cryptoSocket);
 
         socket.upgrade = function (options, cb) {
-            log.logdebug("Upgrading to TLS");
+            log.logdebug('Upgrading to TLS');
 
             socket.clean();
             cryptoSocket.removeAllListeners('data');
@@ -191,8 +190,12 @@ function createServer(cb) {
             var requestCert = true;
             var rejectUnauthorized = false;
             if (options) {
-                if (options.requestCert !== undefined) { requestCert = options.requestCert; }
-                if (options.rejectUnauthorized !== undefined) { rejectUnauthorized = options.rejectUnauthorized; }
+                if (options.requestCert !== undefined) {
+                    requestCert = options.requestCert;
+                }
+                if (options.rejectUnauthorized !== undefined) {
+                    rejectUnauthorized = options.rejectUnauthorized;
+                }
             }
             var sslcontext = (tls.createSecureContext || crypto.createCredentials)(options);
 
@@ -208,11 +211,12 @@ function createServer(cb) {
             pair.on('secure', function() {
                 var verifyError = (pair.ssl || pair._ssl).verifyError();
 
-                log.logdebug("TLS secured.");
+                log.logdebug('TLS secured.');
                 if (verifyError) {
                     cleartext.authorized = false;
                     cleartext.authorizationError = verifyError;
-                } else {
+                }
+                else {
                     cleartext.authorized = true;
                 }
                 var cert = pair.cleartext.getPeerCertificate();
@@ -297,11 +301,12 @@ function connect(port, host, cb) {
         pair.on('secure', function() {
             var verifyError = (pair.ssl || pair._ssl).verifyError();
 
-            log.logdebug("client TLS secured.");
+            log.logdebug('client TLS secured.');
             if (verifyError) {
                 cleartext.authorized = false;
                 cleartext.authorizationError = verifyError;
-            } else {
+            }
+            else {
                 cleartext.authorized = true;
             }
             var cert = pair.cleartext.getPeerCertificate();
@@ -325,7 +330,7 @@ function connect(port, host, cb) {
 
         socket.attach(socket.cleartext);
 
-        log.logdebug("client TLS upgrade in progress, awaiting secured.");
+        log.logdebug('client TLS upgrade in progress, awaiting secured.');
     };
 
     return (socket);

@@ -61,7 +61,7 @@ config.arrange_args = function (args) {
     }
 
     if (!fs_type) {
-             if (/\.json$/.test(fs_name)) fs_type = 'json';
+        if (/\.json$/.test(fs_name))      fs_type = 'json';
         else if (/\.yaml$/.test(fs_name)) fs_type = 'yaml';
         else if (/\.ini$/.test(fs_name))  fs_type = 'ini';
         else                              fs_type = 'value';

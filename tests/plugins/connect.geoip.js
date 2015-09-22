@@ -260,10 +260,10 @@ exports.calculate_distance = {
                 this.connection,
                 [38, -97],
                 function (err, d) {
-            test.expect(1);
-            test.ok(d);
-            test.done();
-        });
+                    test.expect(1);
+                    test.ok(d);
+                    test.done();
+                });
     },
 };
 

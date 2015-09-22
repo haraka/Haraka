@@ -2,7 +2,7 @@
 
 exports.register = function() {
     this.inherits('dns_list_base');
-}
+};
 
 exports.hook_mail = function (next, connection, params) {
     var txn = connection.transaction;
@@ -11,10 +11,8 @@ exports.hook_mail = function (next, connection, params) {
     if (!(!user || user === 'postmaster')) return next();
     // Check remote IP on ips.backscatterer.org
     var plugin = this;
-    this.first(connection.remote_ip, 
-               [ 'ips.backscatterer.org' ], 
-               function (err, zone, a) 
-    {
+
+    function resultCb (err, zone, a) {
         if (err) {
             connection.logerror(plugin, err);
             return next();
@@ -24,5 +22,7 @@ exports.hook_mail = function (next, connection, params) {
                   ' [' + connection.remote_ip + ']' + 
                   ' is blacklisted by ' + zone;
         return next(DENY, msg);
-    });
-}
+    }
+
+    this.first(connection.remote_ip, [ 'ips.backscatterer.org' ], resultCb);
+};

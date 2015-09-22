@@ -23,14 +23,14 @@ exports.aliases = function (next, connection, params) {
         match  = rcpt;
 
         switch (action.toLowerCase()) {
-          case 'drop':
-              _drop(plugin, connection, rcpt);
-              break;
-          case 'alias':
-              _alias(plugin, connection, match, config[match], host);
-              break;
-          default:
-             connection.loginfo(plugin, "unknown action: " + action);
+            case 'drop':
+                _drop(plugin, connection, rcpt);
+                break;
+            case 'alias':
+                _alias(plugin, connection, match, config[match], host);
+                break;
+            default:
+                connection.loginfo(plugin, "unknown action: " + action);
         }
     }
     
@@ -40,14 +40,14 @@ exports.aliases = function (next, connection, params) {
         match  = '@'+host;
 
         switch (action.toLowerCase()) {
-          case 'drop':
-              _drop(plugin, connection, '@'+host);
-              break;
-          case 'alias':
-              _alias(plugin, connection, match, config[match], host);
-              break;
-          default:
-             connection.loginfo(plugin, "unknown action: " + action);
+            case 'drop':
+                _drop(plugin, connection, '@'+host);
+                break;
+            case 'alias':
+                _alias(plugin, connection, match, config[match], host);
+                break;
+            default:
+                connection.loginfo(plugin, "unknown action: " + action);
         }
     }
     
@@ -62,14 +62,14 @@ exports.aliases = function (next, connection, params) {
         }
 
         switch (action.toLowerCase()) {
-          case 'drop':
-              _drop(plugin, connection, rcpt);
-              break;
-          case 'alias':
-              _alias(plugin, connection, match, config[match], host);
-              break;
-          default:
-             connection.loginfo(plugin, "unknown action: " + action);
+            case 'drop':
+                _drop(plugin, connection, rcpt);
+                break;
+            case 'alias':
+                _alias(plugin, connection, match, config[match], host);
+                break;
+            default:
+                connection.loginfo(plugin, "unknown action: " + action);
         }
     }
 

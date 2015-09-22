@@ -347,7 +347,7 @@ exports.hook_data_post = function (next, connection) {
         if (mmatch) {
             return plugin.do_lookups(connection, cb, mmatch[1], 'msgid');
         }
-         cb();
+        cb();
     };
 
     // Body

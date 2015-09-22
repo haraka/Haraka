@@ -30,7 +30,7 @@ exports.register = function() {
 
         // undocumented params are appended to the query string
         hello: "elasticsearch!"
-        }, function (error) {
+    }, function (error) {
         if (error) {
             // we don't bother error handling hear b/c the ES library does
             // that for us.
@@ -408,8 +408,8 @@ exports.prune_empty = function (pi) {
 
         if (typeof val === 'string') {
             if (val === '') {
-               delete pi[e];
-               continue;
+                delete pi[e];
+                continue;
             }
         }
         else if (Array.isArray(val)) {
