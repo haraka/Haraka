@@ -111,7 +111,8 @@ exports.lookup_mail_key = function (type, args, cb) {
 
 exports.rate_limit = function (connection, key, value, cb) {
     var self = this;
-    var limit, ttl;
+    var limit;
+    var ttl;
     if (!key || !value) return cb();
     if (value === 0) {
         // Limit disabled for this host

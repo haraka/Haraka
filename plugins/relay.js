@@ -2,8 +2,8 @@
 //
 // documentation via: haraka -h relay
 
-var ipaddr = require('ipaddr.js'),
-    net    = require('net');
+var ipaddr = require('ipaddr.js');
+var net    = require('net');
 
 exports.register = function() {
     var plugin = this;

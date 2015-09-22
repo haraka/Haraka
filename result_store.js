@@ -166,7 +166,9 @@ ResultStore.prototype.get_all = function () {
 };
 
 ResultStore.prototype.private_collate = function (result, name) {
-    var r = [], order = [], hide = [];
+    var r = [];
+    var order = [];
+    var hide = [];
 
     if (cfg[name]) {
         if (cfg[name].hide)  hide  = cfg[name].hide.trim().split(/[,; ]+/);

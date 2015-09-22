@@ -1,6 +1,6 @@
-var stub         = require('./fixtures/stub'),
-    configfile   = require('./../configfile'), // To prevent compile errors in transaction.js.
-    Transaction  = require('../transaction');
+var stub         = require('./fixtures/stub');
+var configfile   = require('./../configfile'); // prevent compile errors in transaction.js.
+var Transaction  = require('../transaction');
 
 function _set_up(callback) {
     this.transaction = Transaction.createTransaction();

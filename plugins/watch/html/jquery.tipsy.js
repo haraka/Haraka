@@ -72,9 +72,9 @@
                     });
                 }
 
-                var actualWidth = $tip[0].offsetWidth,
-                    actualHeight = $tip[0].offsetHeight,
-                    gravity = maybeCall(this.options.gravity, this.$element[0]);
+                var actualWidth = $tip[0].offsetWidth;
+                var actualHeight = $tip[0].offsetHeight;
+                var gravity = maybeCall(this.options.gravity, this.$element[0]);
 
                 var tp;
                 switch (gravity.charAt(0)) {
@@ -141,7 +141,9 @@
         },
 
         getTitle: function() {
-            var title, $e = this.$element, o = this.options;
+            var title;
+            var $e = this.$element;
+            var o = this.options;
             this.fixTitle();
             if (typeof o.title == 'string') {
                 title = $e.attr(o.title == 'title' ? 'original-title' : o.title);
@@ -230,8 +232,8 @@
         if (!options.live) this.each(function() { get(this); });
 
         if (options.trigger != 'manual') {
-            var eventIn  = options.trigger == 'hover' ? 'mouseenter mouseover' : 'focus',
-                eventOut = options.trigger == 'hover' ? 'mouseleave mouseout' : 'blur';
+            var eventIn  = options.trigger == 'hover' ? 'mouseenter mouseover' : 'focus';
+            var eventOut = options.trigger == 'hover' ? 'mouseleave mouseout' : 'blur';
 
             if (options.live && options.live !== true) {
                 $(this).on(eventIn, options.live, enter);
@@ -331,10 +333,10 @@
      */
     $.fn.tipsy.autoBounds = function(marginNorth, marginEast, prefer) {
         return function() {
-            var dir = {ns: prefer[0], ew: (prefer.length > 1 ? prefer[1] : false)},
-                boundTop = $(document).scrollTop() + marginNorth,
-                boundLeft = $(document).scrollLeft() + marginEast,
-                $this = $(this);
+            var dir = {ns: prefer[0], ew: (prefer.length > 1 ? prefer[1] : false)};
+            var boundTop = $(document).scrollTop() + marginNorth;
+            var boundLeft = $(document).scrollLeft() + marginEast;
+            var $this = $(this);
 
             if ($this.offset().top < boundTop) dir.ns = 'n';
             if ($this.offset().left < boundLeft) dir.ew = 'w';
@@ -354,10 +356,10 @@
      */
     $.fn.tipsy.autoBounds2 = function(margin, prefer) {
         return function() {
-            var dir = {},
-                boundTop = $(document).scrollTop() + margin,
-                boundLeft = $(document).scrollLeft() + margin,
-                $this = $(this);
+            var dir = {};
+            var boundTop = $(document).scrollTop() + margin;
+            var boundLeft = $(document).scrollLeft() + margin;
+            var $this = $(this);
 
             // bi-directional string (ne, se, sw, etc...)
             if (prefer.length > 1) {
