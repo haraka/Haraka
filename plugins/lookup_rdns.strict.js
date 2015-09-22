@@ -6,7 +6,7 @@
 //
 //         To achieve the same results using FCrDNS (in addition to
 //         the additional features), set [reject] no_rdns=true in
-//         connect.fcrdns.ini. 
+//         connect.fcrdns.ini.
 //
 //         The FCrDNS plugin uses the white/blacklist functionality in the
 //         access plugin.
@@ -24,14 +24,14 @@ function _dns_error(connection, next, err, host, plugin, nxdomain, dnserror) {
                 '. Disconnecting.');
             next(DENYDISCONNECT, 'Sorry we could not find address for ' +
                 host + '. ' + nxdomain);
-        break;
-    
+            break;
+
         default:
             connection.loginfo(plugin, 'encountered an error when looking up ' +
                 host + '. Disconnecting.');
             next(DENYDISCONNECT, 'Sorry we encountered an error when ' +
                 'looking up ' + host + '. ' + dnserror);
-        break;
+            break;
     }
 }
 
@@ -41,7 +41,7 @@ function _in_whitelist(connection, plugin, address) {
         plugin.config.get('lookup_rdns.strict.whitelist', 'list');
     var host_list_regex =
         plugin.config.get('lookup_rdns.strict.whitelist_regex', 'list');
-    
+
     connection.logdebug(plugin, "Checking if " + address + " is in the " +
         "lookup_rdns.strict.whitelist files");
 
@@ -67,7 +67,7 @@ function _in_whitelist(connection, plugin, address) {
             return 1;
         }
     }
-    
+
     return 0;
 }
 
@@ -123,7 +123,7 @@ exports.hook_lookup_rdns = function (next, connection) {
         total_checks = domains.length;
 
         // Check whitelist before we start doing a bunch more DNS queries.
-        for(var i = 0; i < domains.length; i++) {
+        for (var i = 0; i < domains.length; i++) {
             if (_in_whitelist(connection, plugin, domains[i])) {
                 return call_next(OK, domains[i]);
             }

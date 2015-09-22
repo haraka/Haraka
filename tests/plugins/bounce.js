@@ -133,9 +133,9 @@ exports.single_recipient = {
         test.expect(1);
         this.connection.transaction.mail_from= new Address.Address('<>');
         this.connection.transaction.rcpt_to= [
-                new Address.Address('test@good.com'),
-                new Address.Address('test2@good.com')
-            ];
+            new Address.Address('test@good.com'),
+            new Address.Address('test2@good.com')
+        ];
         var cb = function () {
             test.equal(DENY, arguments[0]);
         };
@@ -156,9 +156,9 @@ exports.single_recipient = {
         test.expect(1);
         this.connection.transaction.mail_from= new Address.Address('<>');
         this.connection.transaction.rcpt_to= [
-                new Address.Address('test1@example.com'),
-                new Address.Address('test2@example.com'),
-            ];
+            new Address.Address('test1@example.com'),
+            new Address.Address('test2@example.com'),
+        ];
         var cb = function () {
             test.equal(DENY, arguments[0]);
         };
@@ -194,9 +194,9 @@ exports.bad_rcpt = {
         test.expect(1);
         this.connection.transaction.mail_from= new Address.Address('<>');
         this.connection.transaction.rcpt_to= [
-                new Address.Address('test@bad1.com'),
-                new Address.Address('test@bad2.com')
-                ];
+            new Address.Address('test@bad1.com'),
+            new Address.Address('test@bad2.com')
+        ];
         var cb = function (rc) {
             test.equal(DENY, rc);
         };
@@ -208,9 +208,9 @@ exports.bad_rcpt = {
         test.expect(1);
         this.connection.transaction.mail_from= new Address.Address('<>');
         this.connection.transaction.rcpt_to= [
-                new Address.Address('test@good.com'),
-                new Address.Address('test@bad2.com')
-                ];
+            new Address.Address('test@good.com'),
+            new Address.Address('test@bad2.com')
+        ];
         var cb = function (rc) {
             test.equal(DENY, rc);
         };

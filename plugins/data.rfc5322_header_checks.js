@@ -6,7 +6,7 @@ var singular_headers =  ['Date', 'From', 'Sender', 'Reply-To', 'To', 'Cc',
 
 exports.register = function () {
     this.logwarn("NOTICE: plugin deprecated, use 'data.headers' instead!");
-}
+};
 
 exports.hook_data_post = function (next, connection) {
     var header = connection.transaction.header;
@@ -22,10 +22,10 @@ exports.hook_data_post = function (next, connection) {
     // Headers that MUST be unique if present
     for (var i=0,l=singular_headers.length; i < l; i++) {
         if (header.get_all(singular_headers[i]).length > 1) {
-             return next(DENY, "Message contains non-unique '" +
+            return next(DENY, "Message contains non-unique '" +
                                 singular_headers[i] + "' header");
         }
     }
 
     return next();
-}
+};

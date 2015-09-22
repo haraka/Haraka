@@ -129,7 +129,7 @@ exports.get_recipient_limit = function (connection) {
 
     if (history > 0) return plugin.cfg.recipients.history_good || 50;
     if (history < 0) return plugin.cfg.recipients.history_bad  || 2;
-                     return plugin.cfg.recipients.history_none || 15;
+    return plugin.cfg.recipients.history_none || 15;
 };
 
 exports.incr_concurrency = function (next, connection) {
@@ -218,7 +218,7 @@ exports.get_concurrency_limit = function (connection) {
 
     if (history < 0) { return plugin.cfg.concurrency.history_bad  || 1; }
     if (history > 0) { return plugin.cfg.concurrency.history_good || 5; }
-                       return plugin.cfg.concurrency.history_none || 3;
+    return plugin.cfg.concurrency.history_none || 3;
 };
 
 exports.decr_concurrency = function (next, connection) {

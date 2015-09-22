@@ -35,18 +35,21 @@ if (version > 0 || subversion >= 10) {
 
         function close(fd) {
             fs.fsync(fd || self.fd, function(er) {
-                if (er)
-                self.emit('error', er);
+                if (er) {
+                    self.emit('error', er);
+                }
                 else {
                     fs.close(fd || self.fd, function(er) {
-                        if (er)
-                        self.emit('error', er);
-                        else
-                        self.emit('close');
+                        if (er) {
+                            self.emit('error', er);
+                        }
+                        else {
+                            self.emit('close');
+                        }
                     });
                     self.fd = null;
                 }
-            })
+            });
         }
     };
 }

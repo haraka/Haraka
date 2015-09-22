@@ -7,7 +7,7 @@ var config           = require('../../config');
 var ResultStore      = require('../../result_store');
 
 var _set_up = function (done) {
-    
+
     this.plugin = new Plugin('limit');
 
     this.plugin.config = config;

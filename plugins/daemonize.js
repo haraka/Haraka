@@ -1,4 +1,4 @@
-// daemonize 
+// daemonize
 
 // This plugin should not be used any more
 // Daemonization is now built-in to Haraka.
@@ -21,9 +21,9 @@ exports.hook_init_master = function (next) {
         this.lognotice('daemon library not found, run \'npm install daemon\' in your configuration directory to install it');
         return next();
     }
-    var log = (cfg.main.log_file) 
+    var log = (cfg.main.log_file)
         ? cfg.main.log_file : '/var/log/haraka.log';
-    var pid = (cfg.main.pid_file) 
+    var pid = (cfg.main.pid_file)
         ? cfg.main.pid_file : '/var/run/haraka.pid';
     var self = this;
     daemon.daemonize(log, pid, function (err, pid) {

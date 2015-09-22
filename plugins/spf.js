@@ -17,31 +17,31 @@ exports.register = function () {
 
 exports.load_config = function () {
     plugin.cfg = plugin.config.get('spf.ini', {
-            booleans: [
-                '-defer.helo_temperror',
-                '-defer.mfrom_temperror',
+        booleans: [
+            '-defer.helo_temperror',
+            '-defer.mfrom_temperror',
 
-                '-defer_relay.helo_temperror',
-                '-defer_relay.mfrom_temperror',
+            '-defer_relay.helo_temperror',
+            '-defer_relay.mfrom_temperror',
 
-                '-deny.helo_softfail',
-                '-deny.helo_fail',
-                '-deny.helo_permerror',
+            '-deny.helo_softfail',
+            '-deny.helo_fail',
+            '-deny.helo_permerror',
 
-                '-deny.mfrom_softfail',
-                '-deny.mfrom_fail',
-                '-deny.mfrom_permerror',
+            '-deny.mfrom_softfail',
+            '-deny.mfrom_fail',
+            '-deny.mfrom_permerror',
 
-                '-deny_relay.helo_softfail',
-                '-deny_relay.helo_fail',
-                '-deny_relay.helo_permerror',
+            '-deny_relay.helo_softfail',
+            '-deny_relay.helo_fail',
+            '-deny_relay.helo_permerror',
 
-                '-deny_relay.mfrom_softfail',
-                '-deny_relay.mfrom_fail',
-                '-deny_relay.mfrom_permerror',
-            ]
-        },
-        function () { plugin.load_config(); }
+            '-deny_relay.mfrom_softfail',
+            '-deny_relay.mfrom_fail',
+            '-deny_relay.mfrom_permerror',
+        ]
+    },
+    function () { plugin.load_config(); }
     );
 
     // when set, preserve legacy config settings
@@ -203,7 +203,7 @@ exports.log_result = function (connection, scope, host, mfrom, result) {
         'domain="' + host + '"',
         'mfrom=<' + mfrom + '>',
         'result=' + result
-        ].join(' '));
+    ].join(' '));
 };
 
 exports.return_results = function(next, connection, spf, scope, result, sender) {

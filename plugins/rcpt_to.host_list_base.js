@@ -12,7 +12,7 @@ exports.load_host_list = function () {
     for (var i in raw_list) {
         lowered_list[raw_list[i].toLowerCase()] = true;
     }
-    
+
     plugin.host_list = lowered_list;
 };
 
@@ -25,7 +25,7 @@ exports.load_host_list_regex = function () {
             function () { plugin.load_host_list_regex(); }
             );
 
-    plugin.hl_re = new RegExp ('^(?:' + 
+    plugin.hl_re = new RegExp ('^(?:' +
                 plugin.host_list_regex.join('|') + ')$', 'i');
 };
 

@@ -195,7 +195,7 @@ exports.aliases = {
     'should drop @example.co' : function (test) {
         this.recip = new Address('<oc.elpmaxe@example.co>');
         this.params = [this.recip];
-        
+
         var next = function (action) {
             test.expect(1);
             test.ok(this.connection.transaction.notes.discard);
@@ -207,7 +207,7 @@ exports.aliases = {
     'should drop test11@example.com' : function (test) {
         this.recip = new Address('<test11@example.org>');
         this.params = [this.recip];
-        
+
         var next = function (action) {
             test.expect(1);
             test.ok(this.connection.transaction.notes.discard);

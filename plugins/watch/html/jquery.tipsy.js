@@ -16,14 +16,14 @@
         return false;
     }
 
-	// Returns true if it is a DOM element
-	// http://stackoverflow.com/a/384380/999
-	function isElement(o){
-		return (
-			typeof HTMLElement === "object" ? o instanceof HTMLElement : //DOM2
-			o && typeof o === "object" && o.nodeType === 1 && typeof o.nodeName==="string"
-		);	
-	}
+    // Returns true if it is a DOM element
+    // http://stackoverflow.com/a/384380/999
+    function isElement(o){
+        return (
+            typeof HTMLElement === "object" ? o instanceof HTMLElement : //DOM2
+            o && typeof o === "object" && o.nodeType === 1 && typeof o.nodeName==="string"
+        );
+    }
 
     var tipsyIDcounter = 0;
     function tipsyID() {
@@ -43,10 +43,10 @@
                 return;
             }
 
-            if (isElement(this.$element) && !this.$element.is(':visible')) { 
-                return; 
+            if (isElement(this.$element) && !this.$element.is(':visible')) {
+                return;
             }
-            
+
             var title;
             if (this.enabled && (title = this.getTitle())) {
                 var $tip = this.tip();
@@ -107,7 +107,7 @@
                 $tip.css({width: (actualWidth - 10) + 'px'});
 
                 if (this.options.fade) {
-                    if(this.options.shadow)
+                    if (this.options.shadow)
                         $(".tipsy-inner").css({'box-shadow': '0px 0px '+this.options.shadowBlur+'px '+this.options.shadowSpread+'px rgba(0, 0, 0, '+this.options.shadowOpacity+')', '-webkit-box-shadow': '0px 0px '+this.options.shadowBlur+'px '+this.options.shadowSpread+'px rgba(0, 0, 0, '+this.options.shadowOpacity+')'});
                     $tip.stop().css({opacity: 0, display: 'block', visibility: 'visible'}).animate({opacity: this.options.opacity}, this.options.fadeInTime);
                 } else {
@@ -257,7 +257,7 @@
         delayOut: 0,
         fade: false,
         fadeInTime: 400,
-        fadeOutTime: 400, 
+        fadeOutTime: 400,
         shadow: false,
         shadowBlur: 8,
         shadowOpacity: 1,
@@ -274,12 +274,12 @@
     };
 
     $.fn.tipsy.revalidate = function() {
-      $('.tipsy').each(function() {
-        var pointee = $.data(this, 'tipsy-pointee');
-        if (!pointee || !isElementInDOM(pointee)) {
-          $(this).remove();
-        }
-      });
+        $('.tipsy').each(function() {
+            var pointee = $.data(this, 'tipsy-pointee');
+            if (!pointee || !isElementInDOM(pointee)) {
+                $(this).remove();
+            }
+        });
     };
 
     $.fn.tipsy.enable = function() {
@@ -383,5 +383,5 @@
             return dir.ew;
         }
     };
-    
+
 })(jQuery, window);

@@ -63,7 +63,7 @@ exports.load = {
     'test.ini, sect1, opts, w/defaults' : function (test) {
         test.expect(6);
         var r = this.ini.load('tests/config/test.ini', {
-            booleans: ['+sect1.bool_true','-sect1.bool_false', 
+            booleans: ['+sect1.bool_true','-sect1.bool_false',
             '+sect1.bool_true_default', 'sect1.-bool_false_default']
         }, regex);
         test.strictEqual(r.sect1.bool_true, true);

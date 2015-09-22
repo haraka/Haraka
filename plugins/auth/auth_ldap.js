@@ -19,7 +19,7 @@ exports.register = function () {
 }
 
 exports.check_plain_passwd = function (connection, user, passwd, cb) {
-    // Get LDAP config 
+    // Get LDAP config
     var config = this.config.get('auth_ldap.ini');
     var ldap_url = 'ldap://127.0.0.1';
     if (config.core.server) {

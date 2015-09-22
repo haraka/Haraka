@@ -90,7 +90,7 @@ exports.hook_init_wss = function (next, server) {
 
     wss.broadcast = function(data) {
         var f = JSON.stringify(data);
-        for(var i in this.clients) {
+        for (var i in this.clients) {
             this.clients[i].send(f);
         }
     };
@@ -348,7 +348,7 @@ exports.get_value = function (pi_name, r) {
     var plugin = this;
 
     // replace the plugin name shown with...
-    switch(pi_name) {
+    switch (pi_name) {
         case 'connect.asn':
             return r.asn;
         case 'connect.p0f':
@@ -406,6 +406,7 @@ function get_local_port (connection) {
 function get_remote_host (connection) {
     var host  = connection.remote_host || '';
     var ip    = connection.remote_ip || '';
+    var hostShort = host;
 
     if (host) {
         switch (host) {
@@ -414,12 +415,13 @@ function get_remote_host (connection) {
                 host = '';
                 break;
         }
+        if (host.length > 22) {
+            hostShort = '...' + host.substring(host.length-20);
+        }
     }
 
     return {
-        newval: host ? (host.length > 22 ?
-                       ('...'+host.substring(host.length-20) + ' / ' + ip)
-                     : host + ' / ' + ip) : ip,
+        newval: host ? (hostShort + ' / ' + ip) : ip,
         title: host ? (host + ' / ' + ip) : ip,
     };
 }

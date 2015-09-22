@@ -84,8 +84,8 @@ logger.log = function (level, data) {
     var item = { 'level' : level, 'data'  : data };
 
     // buffer until plugins are loaded
-    if (!plugins || (Array.isArray(plugins.plugin_list) && 
-                     !plugins.plugin_list.length)) 
+    if (!plugins || (Array.isArray(plugins.plugin_list) &&
+                     !plugins.plugin_list.length))
     {
         logger.deferred_logs.push(item);
         return true;
@@ -147,7 +147,7 @@ logger._init_timestamps = function () {
     var _timestamps = config.get('log_timestamps', 'value', function () {
         self._init_timestamps();
     });
-    
+
     if (_timestamps) {
         console.log = function() {
             var new_arguments = [new Date().toISOString()];

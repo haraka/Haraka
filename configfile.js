@@ -41,7 +41,7 @@ cfreader.on_watch_event = function (name, type, options, cb) {
             logger.loginfo('Reloading file: ' + name);
             cfreader.load_config(name, type, options);
             delete cfreader._sedation_timers[name];
-            if (typeof cb === 'function') cb(); 
+            if (typeof cb === 'function') cb();
         }, 5 * 1000);
         logger.logdebug('Detected ' + fse + ' on ' + name);
         if (fse !== 'rename') return;
@@ -138,7 +138,7 @@ cfreader.get_cache_key = function (name, options) {
     else {
         result = name;
     }
- 
+
     return result;
 };
 
@@ -160,8 +160,8 @@ cfreader.read_config = function(name, type, cb, options) {
             //logger.logdebug('Returning cached file: ' + name);
             var cached = cfreader._config_cache[cache_key];
             // Make sure that any .ini file booleans are applied
-            if (type === 'ini' && (options && options.booleans && 
-                Array.isArray(options.booleans))) 
+            if (type === 'ini' && (options && options.booleans &&
+                Array.isArray(options.booleans)))
             {
                 cfreader.init_booleans(options, cached);
             }

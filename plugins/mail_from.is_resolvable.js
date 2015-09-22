@@ -15,7 +15,7 @@ exports.load_ini = function () {
         booleans: [
             '-main.allow_mx_ip',
             '+main.reject_no_mx',
-            ],
+        ],
     }, function () {
         plugin.load_ini();
     });

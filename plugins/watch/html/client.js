@@ -32,12 +32,12 @@ function newRowConnectRow1 (data, uuid, txnId) {
     }
 
     return [
-    '<tr class="spacer"><td colspan="'+total_cols+'"></td></tr>',
-    '<tr class="'+uuid+'">',
-    '<td class="uuid uuid_tiny got" rowspan=2 title='+data.uuid+'>'+ data.uuid+'</td>',
-    '<td class="remote_host got" colspan=' + (connect_cols - 1) +' title="'+ host.title+'">'+host.newval+'</td>',
-    '<td class="local_port bg_dgreen" title="connected">'+port+'</td>',
-    '<td class="helo lgrey" colspan="' + helo_cols + '"></td>',
+        '<tr class="spacer"><td colspan="'+total_cols+'"></td></tr>',
+        '<tr class="'+uuid+'">',
+        '<td class="uuid uuid_tiny got" rowspan=2 title='+data.uuid+'>'+ data.uuid+'</td>',
+        '<td class="remote_host got" colspan=' + (connect_cols - 1) +' title="'+ host.title+'">'+host.newval+'</td>',
+        '<td class="local_port bg_dgreen" title="connected">'+port+'</td>',
+        '<td class="helo lgrey" colspan="' + helo_cols + '"></td>',
     ];
 }
 
@@ -80,9 +80,9 @@ function newRow(data, uuid) {
         '<td class="rcpt_to" colspan=' + rcpt_to_cols + '></td>'
     );
     data_plugins.slice(0,data_cols).forEach(function(plugin) {
-            rowResult.push('<td class=' +css_safe(plugin)+ '>' +
-                    shorten_pi(plugin) + '</td>');
-        });
+        rowResult.push('<td class=' +css_safe(plugin)+ '>' +
+            shorten_pi(plugin) + '</td>');
+    });
 
     rowResult.push(
         '<td class=queue title="not queued" rowspan=2></td></tr>',
@@ -328,7 +328,7 @@ function display_th() {
         '<th id=rcpt_to   colspan='+rcpt_to_cols+' title="Envelope Recipient / RFC5321.RcptTo / Forward Path">RCPT TO</th>',
         '<th id=data      colspan='+data_cols+' title="DATA, the message content, comprised of the headers and body).">DATA</th>',
         '<th id=queue title="When a message is accepted, it is delivered into the local mail queue.">QUEUE</th>',
-        ].join('\n\t')
+    ].join('\n\t')
     ).tipsy();
     $('table#connections > thead > tr#labels > th').tipsy();
     $('table#connections > tfoot > tr#helptext')

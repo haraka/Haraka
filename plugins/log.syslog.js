@@ -52,7 +52,7 @@ exports.register = function() {
         options |= plugin.Syslog.LOG_NOWAIT;
     }
 
-    switch(facility.toUpperCase()) {
+    switch (facility.toUpperCase()) {
         case 'MAIL':
             plugin.Syslog.init(name, options, plugin.Syslog.LOG_MAIL);
             break;
@@ -114,7 +114,7 @@ exports.register = function() {
 exports.syslog = function (next, logger, log) {
     var plugin = this;
 
-    switch(log.level.toUpperCase()) {
+    switch (log.level.toUpperCase()) {
         case 'INFO':
             plugin.Syslog.log(plugin.Syslog.LOG_INFO, log.data);
             break;

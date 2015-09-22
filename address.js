@@ -50,21 +50,21 @@ exports.compile_re = function () {
                                          exports.subdomain_expr.source +
                                          '(?:\\.' + exports.subdomain_expr.source + ')*'
                                          );
-    
+
     if (!exports.domain_expr && exports.address_literal_expr) {
         // if address_literal_expr is set, add it in
         domain_re = new RegExp('(?:' + exports.address_literal_expr.source +
                                '|'   + domain_re.source + ')');
     }
-    
+
     source_route_re = new RegExp('^@' + domain_re.source +
                                  '(?:,@' + domain_re.source + ')*:');
-    
+
     user_host_re = new RegExp('^(.*)@(' + domain_re.source + ')$');
-    
+
     atoms_re = new RegExp('^' + exports.atom_expr.source +
                           '(\\.' + exports.atom_expr.source + ')*');
-    
+
     qt_re = new RegExp('^"((' + exports.qtext_expr.source +
                        '|' + exports.text_expr.source + ')*)"$');
 }
@@ -74,7 +74,7 @@ exports.compile_re();
 Address.prototype.parse = function (addr) {
     // strip source route
     addr = addr.replace(source_route_re, '');
-    
+
     // empty addr is ok
     if (addr === '') {
         this.user = null;
@@ -90,11 +90,11 @@ Address.prototype.parse = function (addr) {
     }
 
     var matches;
-    
+
     if (!(matches = user_host_re.exec(addr))) {
         throw new Error("Invalid domain in address: " + addr);
     }
-    
+
     var localpart  = matches[1];
     var domainpart = matches[2];
 
@@ -126,7 +126,7 @@ Address.prototype.format = function () {
     if (this.isNull()) {
         return '<>';
     }
-    
+
     var user = this.user.replace(qchar, '\\$1', 'g');
     if (user !== this.user) {
         return '<"' + user + '"' + (this.host ? ('@' + this.host) : '') + '>';

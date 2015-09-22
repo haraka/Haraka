@@ -93,7 +93,7 @@ exports.hook_lookup_rdns = function (next, connection) {
             }
 
             queries_run = true;
-			connection.logdebug(plugin, 'domain: ' + ptr_domain);
+            connection.logdebug(plugin, 'domain: ' + ptr_domain);
             pending_queries++;
             net_utils.get_ips_by_host(ptr_domain, function (err, ips) {
                 pending_queries--;
