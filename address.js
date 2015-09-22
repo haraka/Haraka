@@ -43,7 +43,11 @@ exports.domain_expr = undefined; // so you can override this when loading and re
 exports.qtext_expr = /[\x01-\x08\x0B\x0C\x0E-\x1F\x21\x23-\x5B\x5D-\x7F]/;
 exports.text_expr  = /\\([\x01-\x09\x0B\x0C\x0E-\x7F])/;
 
-var domain_re, source_route_re, user_host_re, atoms_re, qt_re;
+var domain_re;
+var source_route_re;
+var user_host_re;
+var atoms_re;
+var qt_re;
 
 exports.compile_re = function () {
     domain_re = exports.domain_expr || new RegExp (

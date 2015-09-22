@@ -36,7 +36,8 @@ config.get('thing', type, cb, options);
 config.arrange_args = function (args) {
     var fs_name = args.shift();
     var fs_type = null;
-    var cb, options;
+    var cb;
+    var options;
 
     for (var i=0; i < args.length; i++) {
         if (args[i] === undefined) continue;

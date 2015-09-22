@@ -90,9 +90,9 @@ exports.try_auth_proxy = function (connection, hosts, user, passwd, cb) {
         var matches;
         connection.logprotocol(self, "S: " + line);
         if (matches = smtp_regexp.exec(line)) {
-            var code = matches[1],
-                cont = matches[2],
-                rest = matches[3];
+            var code = matches[1];
+            var cont = matches[2];
+            var rest = matches[3];
             response.push(rest);
             if (cont === ' ') {
                 connection.logdebug(self, 'command state: ' + command);

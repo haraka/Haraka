@@ -222,8 +222,8 @@ exports.hook_data_post = function (next, connection) {
         socket.on('connect', function () {
             connected = true;
             socket.setTimeout((cfg.main.timeout || 30) * 1000);
-            var hp = socket.address(),
-                addressInfo = hp === null ? '' : ' ' + hp.address + ':' + hp.port;
+            var hp = socket.address();
+            var addressInfo = hp === null ? '' : ' ' + hp.address + ':' + hp.port;
             connection.logdebug(plugin, 'connected to host' + addressInfo);
             socket.write("zINSTREAM\0", function () {
                 txn.message_stream.pipe(socket, { clamd_style: true });

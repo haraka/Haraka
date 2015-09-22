@@ -88,7 +88,8 @@ SPF.prototype.expand_macros = function (str) {
             strip = strip[1];
         }
         var reverse = ((('' + match[2]).indexOf('r')) !== -1 ? true : false);
-        var replace, kind;
+        var replace;
+        var kind;
         switch (match[1]) {
             case 's':   // sender
                 replace = this.mail_from;
@@ -179,7 +180,9 @@ SPF.prototype.check_host = function (ip, domain, mail_from, cb) {
             }
         }
 
-        var i, spf_record, match;
+        var i;
+        var spf_record;
+        var match;
         for (i=0; i < txt_rrs.length; i++) {
             // Node 0.11.x compatibility
             if (Array.isArray(txt_rrs[i])) {
@@ -387,12 +390,15 @@ SPF.prototype.mech_a = function (qualifier, args, cb) {
     var self = this;
     this.count++;
     // Parse any arguments
-    var cm, cidr4, cidr6;
+    var cm;
+    var cidr4;
+    var cidr6;
     if (args && (cm = /\/(\d+)(?:\/\/(\d+))?$/.exec(args))) {
         cidr4 = cm[1];
         cidr6 = cm[2];
     }
-    var dm, domain = this.domain;
+    var dm;
+    var domain = this.domain;
     if (args && (dm = /^:([^\/ ]+)/.exec(args))) {
         domain = dm[1];
     }
@@ -447,12 +453,15 @@ SPF.prototype.mech_mx = function (qualifier, args, cb) {
     var self = this;
     this.count++;
     // Parse any arguments
-    var cm, cidr4, cidr6;
+    var cm;
+    var cidr4;
+    var cidr6;
     if (args && (cm = /\/(\d+)((?:\/\/(\d+))?)$/.exec(args))) {
         cidr4 = cm[1];
         cidr6 = cm[2];
     }
-    var dm, domain = this.domain;
+    var dm;
+    var domain = this.domain;
     if (args && (dm = /^:([^\/ ]+)/.exec(args))) {
         domain = dm[1];
     }
@@ -544,7 +553,8 @@ SPF.prototype.mech_mx = function (qualifier, args, cb) {
 SPF.prototype.mech_ptr = function (qualifier, args, cb) {
     var self = this;
     this.count++;
-    var dm, domain = this.domain;
+    var dm;
+    var domain = this.domain;
     if (args && (dm = /^:([^\/ ]+)/.exec(args))) {
         domain = dm[1];
     }

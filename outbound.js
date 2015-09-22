@@ -351,9 +351,9 @@ exports.send_email = function () {
         return this.send_trans_email(arguments[0], arguments[1]);
     }
 
-    var from = arguments[0],
-        to   = arguments[1],
-        contents = arguments[2];
+    var from = arguments[0];
+    var to   = arguments[1];
+    var contents = arguments[2];
     var next = arguments[3];
     var options = arguments[4];
 
@@ -1229,10 +1229,10 @@ HMailItem.prototype.try_deliver_host_on_socket = function (mx, host, port, socke
         var matches = smtp_regexp.exec(line);
         if (matches) {
             var reason;
-            var code = matches[1],
-                cont = matches[2],
-                extc = matches[3],
-                rest = matches[4];
+            var code = matches[1];
+            var cont = matches[2];
+            var extc = matches[3];
+            var rest = matches[4];
             response.push(rest);
             if (cont === ' ') {
                 if (code.match(/^2/)) {

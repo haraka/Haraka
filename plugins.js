@@ -185,7 +185,9 @@ plugins.server = { notes: {} };
 plugins._load_and_compile_plugin = function (name) {
     var plugin = new Plugin(name);
     var fp = plugin.full_paths;
-    var rf, last_err, hasPackageJson;
+    var rf;
+    var last_err;
+    var hasPackageJson;
     for (var i=0, j=fp.length; i<j; i++) {
         try {
             rf = fs.readFileSync(fp[i]);

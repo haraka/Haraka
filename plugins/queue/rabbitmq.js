@@ -123,7 +123,8 @@ exports.init_rabbitmq_server = function() {
                 logger.logdebug("connQueue with server "+connQueue);
 
                 //Creating the Routing key to bind the queue and exchange.
-                var key, routing;
+                var key;
+                var routing;
                 routing = "" + queueName + "Routing";
 
                 // Will try to bing queue and exchange which was created above.
