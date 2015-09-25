@@ -72,10 +72,12 @@ exports.lookup_host_key = function (type, args, cb) {
         }
     }
 
-    // Default
+    // Custom Default
     if (config[type].default) {
         return cb(null, ip, config[type].default);
     }
+    // Default 0 = unlimited
+    return cb(null, ip, 0);
 };
 
 exports.lookup_mail_key = function (type, args, cb) {
@@ -103,10 +105,12 @@ exports.lookup_mail_key = function (type, args, cb) {
         }
     }
 
-    // Default
+    // Custom Default
     if (config[type].default) {
         return cb(null, email, config[type].default);
     }
+    // Default 0 = unlimited
+    return cb(null, email, 0);
 };
 
 exports.rate_limit = function (connection, key, value, cb) {
