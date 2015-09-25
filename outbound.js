@@ -224,7 +224,6 @@ exports.load_queue_files = function (pid, cb_name, files) {
             if (match && match[3] === pid) {
                 var next_process = match[1];
                 var new_filename = match[1] + match[2] + process.pid + match[4];
-                // self.loginfo("Renaming: " + file + " to " + new_filename);
                 fs.rename(queue_dir + '/' + file, queue_dir + '/' + new_filename, function (err) {
                     if (err) {
                         self.logerror("Unable to rename queue file: " + file +
@@ -239,7 +238,6 @@ exports.load_queue_files = function (pid, cb_name, files) {
                             load_queue.push(new_filename);
                         });
                     }
-                    // self.loginfo("Done");
                     cb();
                 });
             }
@@ -302,7 +300,6 @@ exports.load_queue_files = function (pid, cb_name, files) {
 
 exports._add_file = function (hmail) {
     var self = this;
-    // this.loginfo("Adding file: " + hmail.filename);
     if (hmail.next_process < this.cur_time) {
         delivery_queue.push(hmail);
     }
@@ -499,7 +496,6 @@ exports.process_delivery = function (ok_paths, todo, hmails, cb) {
     var fname = _fname();
     var tmp_path = path.join(queue_dir, platformDOT + fname);
     var ws = new FsyncWriteStream(tmp_path, { flags: WRITE_EXCL });
-    // var ws = fs.createWriteStream(tmp_path, { flags: WRITE_EXCL });
     ws.on('close', function () {
         var dest_path = path.join(queue_dir, fname);
         fs.rename(tmp_path, dest_path, function (err) {
@@ -563,7 +559,6 @@ exports.split_to_new_recipients = function (hmail, recipients, response, cb) {
     var fname = _fname();
     var tmp_path = path.join(queue_dir, platformDOT + fname);
     var ws = new FsyncWriteStream(tmp_path, { flags: WRITE_EXCL });
-    // var ws = fs.createWriteStream(tmp_path, { flags: WRITE_EXCL });
     var err_handler = function (err, location) {
         self.logerror("Error while splitting to new recipients (" + location + "): " + err);
         hmail.todo.rcpt_to.forEach(function (rcpt) {
@@ -857,7 +852,6 @@ exports.lookup_mx = function lookup_mx (domain, cb) {
         else if (addresses && addresses.length) {
             for (var i=0,l=addresses.length; i < l; i++) {
                 var mx = wrap_mx(addresses[i]);
-                // hmail.logdebug("Got an MX from DNS: " + hmail.todo.domain + " => " + mx.priority + " " + mx.exchange);
                 mxs.push(mx);
             }
             cb(null, mxs);
@@ -898,7 +892,6 @@ HMailItem.prototype.found_mx = function (err, mxs) {
                 hmail.extend_rcpt_with_dsn(rcpt, DSN.addr_bad_dest_system("No Such Domain: " + hmail.todo.domain));
             });
             this.bounce("No Such Domain: " + this.todo.domain);
-            //this.bounce(DSN.addr_bad_dest_system("unknown host or domain: " + this.todo.domain));
         }
         else if (err.code === 'NOMX') {
             this.todo.rcpt_to.forEach(function (rcpt) {
