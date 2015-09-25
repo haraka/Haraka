@@ -8,7 +8,7 @@ exports.load = function(name, type, options, regex) {
     var data = fs.readFileSync(name, "UTF-8");
     if (type === 'data') {
         while (data.length > 0) {
-            var match = data.match(/^([^\n]*)\n?/);
+            var match = data.match(/^([^\r\n]*)\r?\n?/);
             result.push(match[1]);
             data = data.slice(match[0].length);
         }
@@ -57,8 +57,8 @@ exports.load = function(name, type, options, regex) {
 
 exports.empty = function (options, type) {
     if (type) {
-        if (type === 'flat') return null;
-        if (type === 'value') return null;
+        if (type === 'flat') { return null; }
+        if (type === 'value') { return null; }
     }
     return [];
 };
