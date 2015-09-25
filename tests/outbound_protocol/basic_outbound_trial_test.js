@@ -5,7 +5,7 @@
 // Important to understand the code: This is file is - for running the test - appended to outbound.js.
 
 
-test.expect(5);
+test.expect(4);
 
 // What is tested:
 // A simple SMTP conversation is made
@@ -37,10 +37,9 @@ util_hmailitem.createHMailItem(
     }
 );
 
-var bounce_func_called = false;
 HMailItem.prototype.bounce = function (err, opts) {
     test.ok(true, 'HMail bounce called');
-    bounce_func_called = true;
+    test.done();
 }
 
 function runBasicSmtpConversation(hmail) {
@@ -76,8 +75,7 @@ function _runBasicSmtpConversation(hmail) {
     ];
 
     util_hmailitem.playTestSmtpConversation(hmail, mock_socket, test, testPlaybook, function() {
-        test.ok(bounce_func_called, 'bounce function was called');
-        test.done();
+        // test done covered in stubbed HMailItem.bounce
     });
 
 }

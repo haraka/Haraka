@@ -5,6 +5,38 @@ var stub_connection = require('./../fixtures/stub_connection');
 var transaction = require('../../transaction');
 var util = require('util');
 
+
+/**
+ * Creates a HMailItem instance, which is passed to callback. Reports error on test param if creation fails.
+ *
+ * @param outbound_context
+ * @param test
+ * @param options
+ * @param callback
+ */
+exports.newMockHMailItem = function (outbound_context, test, options, callback) {
+    var opts = options || {};
+    exports.createHMailItem(
+        outbound_context,
+        opts,
+        function (err, hmail) {
+            if (err) {
+                test.ok(false, 'Could not create HMailItem: ' + err);
+                test.done();
+                return;
+            }
+            if (!hmail.todo) {
+                hmail.once('ready', function () {
+                    process.nextTick(function(){callback(hmail);});
+                });
+            }
+            else {
+                callback(hmail);
+            }
+        }
+    );
+}
+
 /**
  * Creates a HMailItem instance for testing purpose
  *
@@ -76,6 +108,7 @@ exports.createHMailItem = function (outbound_context, options, callback) {
 exports.playTestSmtpConversation = function(hmail, socket, test, playbook, callback) {
     var testmx = {
         bind_helo: "haraka.test",
+        exchange: "remote.testhost",
     };
     hmail.try_deliver_host_on_socket(testmx, 'testhost', 'testport', socket);
 

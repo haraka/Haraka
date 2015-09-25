@@ -17,6 +17,8 @@ var plugins     = require('./plugins');
 var async       = require('async');
 var Address     = require('./address').Address;
 var TimerQueue  = require('./timer_queue');
+var Header      = require('./mailheader').Header;
+var DSN         = require('./dsn');
 var date_to_str = utils.date_to_str;
 var existsSync  = utils.existsSync;
 var FsyncWriteStream = require('./fsync_writestream');
@@ -564,6 +566,9 @@ exports.split_to_new_recipients = function (hmail, recipients, response, cb) {
     // var ws = fs.createWriteStream(tmp_path, { flags: WRITE_EXCL });
     var err_handler = function (err, location) {
         self.logerror("Error while splitting to new recipients (" + location + "): " + err);
+        hmail.todo.rcpt_to.forEach(function (rcpt) {
+            hmail.extend_rcpt_with_dsn(rcpt, DSN.sys_unspecified("Error splitting to new recipients: " + err));
+        });
         hmail.bounce("Error splitting to new recipients: " + err);
     };
 
@@ -602,6 +607,9 @@ exports.split_to_new_recipients = function (hmail, recipients, response, cb) {
     ws.on('error', function (err) {
         self.logerror("Unable to write queue file (" + fname + "): " + err);
         ws.destroy();
+        hmail.todo.rcpt_to.forEach(function (rcpt) {
+            hmail.extend_rcpt_with_dsn(rcpt, DSN.sys_unspecified("Error re-queueing some recipients: " + err));
+        });
         hmail.bounce("Error re-queueing some recipients: " + err);
     });
 
@@ -778,6 +786,7 @@ HMailItem.prototype.get_mx = function () {
 };
 
 HMailItem.prototype.get_mx_respond = function (retval, mx) {
+    var hmail = this;
     switch (retval) {
         case constants.ok:
             var mx_list;
@@ -799,13 +808,18 @@ HMailItem.prototype.get_mx_respond = function (retval, mx) {
             return this.found_mx(null, mx_list);
         case constants.deny:
             this.logwarn("get_mx plugin returned DENY: " + mx);
+            this.todo.rcpt_to.forEach(function (rcpt) {
+                hmail.extend_rcpt_with_dsn(rcpt, DSN.addr_bad_dest_system("No MX for " + hmail.domain));
+            });
             return this.bounce("No MX for " + this.domain);
         case constants.denysoft:
             this.logwarn("get_mx plugin returned DENYSOFT: " + mx);
+            this.todo.rcpt_to.forEach(function (rcpt) {
+                hmail.extend_rcpt_with_dsn(rcpt, DSN.addr_bad_dest_system("Temporary MX lookup error for " + hmail.domain, 450));
+            });
             return this.temp_fail("Temporary MX lookup error for " + this.domain);
     }
 
-    var hmail = this;
     // if none of the above return codes, drop through to this...
     exports.lookup_mx(this.todo.domain, function (err, mxs) {
         hmail.found_mx(err, mxs);
@@ -876,16 +890,27 @@ exports.lookup_mx = function lookup_mx (domain, cb) {
 };
 
 HMailItem.prototype.found_mx = function (err, mxs) {
+    var hmail = this;
     if (err) {
         this.logerror("MX Lookup for " + this.todo.domain + " failed: " + err);
         if (err.code === dns.NXDOMAIN || err.code === 'ENOTFOUND') {
+            this.todo.rcpt_to.forEach(function (rcpt) {
+                hmail.extend_rcpt_with_dsn(rcpt, DSN.addr_bad_dest_system("No Such Domain: " + hmail.todo.domain));
+            });
             this.bounce("No Such Domain: " + this.todo.domain);
+            //this.bounce(DSN.addr_bad_dest_system("unknown host or domain: " + this.todo.domain));
         }
         else if (err.code === 'NOMX') {
-            this.bounce("Nowhere to deliver mail to for domain: " + this.todo.domain);
+            this.todo.rcpt_to.forEach(function (rcpt) {
+                hmail.extend_rcpt_with_dsn(rcpt, DSN.addr_bad_dest_system("Nowhere to deliver mail to for domain: " + hmail.todo.domain));
+            });
+            this.bounce("Nowhere to deliver mail to for domain: " + hmail.todo.domain);
         }
         else {
             // every other error is transient
+            this.todo.rcpt_to.forEach(function (rcpt) {
+                hmail.extend_rcpt_with_dsn(rcpt, DSN.addr_unspecified("DNS lookup failure: " + hmail.todo.domain));
+            });
             this.temp_fail("DNS lookup failure: " + err);
         }
     }
@@ -894,6 +919,9 @@ HMailItem.prototype.found_mx = function (err, mxs) {
         var mxlist = sort_mx(mxs);
         // support draft-delany-nullmx-02
         if (mxlist.length === 1 && mxlist[0].priority === 0 && mxlist[0].exchange === '') {
+            this.todo.rcpt_to.forEach(function (rcpt) {
+                hmail.extend_rcpt_with_dsn(rcpt, DSN.addr_bad_dest_system("Domain " + hmail.todo.domain + " sends and receives no email (NULL MX)"));
+            });
             return this.bounce("Domain " + this.todo.domain + " sends and receives no email (NULL MX)");
         }
         // duplicate each MX for each ip address family
@@ -939,6 +967,9 @@ HMailItem.prototype.try_deliver = function () {
 
     // check if there are any MXs left
     if (this.mxlist.length === 0) {
+        this.todo.rcpt_to.forEach(function (rcpt) {
+            self.extend_rcpt_with_dsn(rcpt, DSN.addr_bad_dest_system("Tried all MXs" + self.todo.domain));
+        });
         return this.temp_fail("Tried all MXs");
     }
 
@@ -1261,6 +1292,14 @@ HMailItem.prototype.try_deliver_host_on_socket = function (mx, host, port, socke
                     }
                     // Error
                     reason = response.join(' ');
+                    recipients.forEach(function (rcpt) {
+                        rcpt.dsn_action = 'delayed';
+                        rcpt.dsn_smtp_code = code;
+                        rcpt.dsn_smtp_extc = extc;
+                        rcpt.dsn_status = extc;
+                        rcpt.dsn_smtp_response = response.join(' ');
+                        rcpt.dsn_remote_mta = mx.exchange;
+                    });
                     send_command('QUIT');
                     processing_mail = false;
                     return self.temp_fail("Upstream error: " + code + " " + ((extc) ? extc + ' ' : '') + reason);
@@ -1273,6 +1312,14 @@ HMailItem.prototype.try_deliver_host_on_socket = function (mx, host, port, socke
                         reason = code + ' ' + ((extc) ? extc + ' ' : '') + response.join(' ');
                         self.lognotice('recipient ' + last_recip + ' deferred: ' + reason);
                         last_recip.reason = reason;
+
+                        last_recip.dsn_action = 'delayed';
+                        last_recip.dsn_smtp_code = code;
+                        last_recip.dsn_smtp_extc = extc;
+                        last_recip.dsn_status = extc;
+                        last_recip.dsn_smtp_response = response.join(' ');
+                        last_recip.dsn_remote_mta = mx.exchange;
+
                         fail_recips.push(last_recip);
                         if (command === 'dot_lmtp') {
                             response = [];
@@ -1283,6 +1330,14 @@ HMailItem.prototype.try_deliver_host_on_socket = function (mx, host, port, socke
                     }
                     else {
                         reason = response.join(' ');
+                        recipients.forEach(function (rcpt) {
+                            rcpt.dsn_action = 'delayed';
+                            rcpt.dsn_smtp_code = code;
+                            rcpt.dsn_smtp_extc = extc;
+                            rcpt.dsn_status = extc;
+                            rcpt.dsn_smtp_response = response.join(' ');
+                            rcpt.dsn_remote_mta = mx.exchange;
+                        });
                         send_command('QUIT');
                         processing_mail = false;
                         return self.temp_fail("Upstream error: " + code + " " + ((extc) ? extc + ' ' : '') + reason);
@@ -1299,6 +1354,14 @@ HMailItem.prototype.try_deliver_host_on_socket = function (mx, host, port, socke
                         if (command === 'dot_lmtp') last_recip = ok_recips.shift();
                         self.lognotice('recipient ' + last_recip + ' rejected: ' + reason);
                         last_recip.reason = reason;
+
+                        last_recip.dsn_action = 'failed';
+                        last_recip.dsn_smtp_code = code;
+                        last_recip.dsn_smtp_extc = extc;
+                        last_recip.dsn_status = extc;
+                        last_recip.dsn_smtp_response = response.join(' ');
+                        last_recip.dsn_remote_mta = mx.exchange;
+
                         bounce_recips.push(last_recip);
                         if (command === 'dot_lmtp') {
                             response = [];
@@ -1308,6 +1371,14 @@ HMailItem.prototype.try_deliver_host_on_socket = function (mx, host, port, socke
                         }
                     }
                     else {
+                        recipients.forEach(function (rcpt) {
+                            rcpt.dsn_action = 'failed';
+                            rcpt.dsn_smtp_code = code;
+                            rcpt.dsn_smtp_extc = extc;
+                            rcpt.dsn_status = extc;
+                            rcpt.dsn_smtp_response = response.join(' ');
+                            rcpt.dsn_remote_mta = mx.exchange;
+                        });
                         send_command('QUIT');
                         processing_mail = false;
                         return self.bounce(reason, { mx: mx });
@@ -1410,20 +1481,237 @@ HMailItem.prototype.try_deliver_host_on_socket = function (mx, host, port, socke
             self.logerror("Unrecognised response from upstream server: " + line);
             processing_mail = false;
             socket.end();
+            self.todo.rcpt_to.forEach(function (rcpt) {
+                self.extend_rcpt_with_dsn(rcpt, DSN.proto_invalid_command("Unrecognised response from upstream server: " + line));
+            });
             return self.bounce("Unrecognised response from upstream server: " + line, {mx: mx});
         }
     });
 };
 
-function populate_bounce_message (from, to, reason, hmail, cb) {
+HMailItem.prototype.extend_rcpt_with_dsn = function(rcpt, dsn) {
+    rcpt.dsn_code = dsn.code;
+    rcpt.dsn_msg = dsn.msg;
+    rcpt.dsn_status = "" + dsn.cls + "." + dsn.sub + "." + dsn.det;
+    if (dsn.cls == 4) {
+        rcpt.dsn_action = 'delayed';
+    }
+    else if (dsn.cls == 5) {
+        rcpt.dsn_action = 'failed';
+    }
+};
+
+HMailItem.prototype.populate_bounce_message = function (from, to, reason, cb) {
+    var self = this;
+
+    var buf = '';
+    var original_header_lines = [];
+    var headers_done = false;
+    var header = new Header();
+    var line_regexp = /^([^\n]*\n)/;
+
+    try {
+        var data_stream = this.data_stream();
+        data_stream.on('data', function (data) {
+            if (headers_done === false) {
+                buf += data;
+                var results;
+                while (results = line_regexp.exec(buf)) {
+                    var this_line = results[1];
+                    if (this_line === '\n' || this_line == '\r\n') {
+                        headers_done = true;
+                        break;
+                    }
+                    buf = buf.slice(this_line.length);
+                    original_header_lines.push(this_line);
+                }
+            }
+        });
+        data_stream.on('end', function () {
+            if (original_header_lines.length > 0) {
+                header.parse(original_header_lines);
+            }
+            self.populate_bounce_message_with_headers(from, to, reason, header, cb);
+        });
+        data_stream.on('error', function (err) {
+            cb(err);
+        });
+    } catch (err) {
+        self.populate_bounce_message_with_headers(from, to, reason, header, cb);
+    }
+}
+
+/**
+ * Generates a bounce message
+ *
+ * hmail.todo.rcpt_to objects should be extended as follows:
+ * - dsn_action
+ * - dsn_status
+ * - dsn_code
+ * - dsn_msg
+ *
+ * - dsn_remote_mta
+ *
+ * Upstream code/message goes here:
+ * - dsn_smtp_code
+ * - dsn_smtp_extc
+ * - dsn_smtp_response
+ *
+ * @param from
+ * @param to
+ * @param reason
+ * @param header
+ * @param cb - a callback for fn(err, message_body_lines)
+ */
+HMailItem.prototype.populate_bounce_message_with_headers = function(from, to, reason, header, cb) {
+    var self = this;
+    var CRLF = '\r\n';
+
+    var originalMessageId = header.get('Message-Id');
+
+    var bounce_msg_ = config.get('outbound.bounce_message', 'data');
+    var bounce_header_lines = [];
+    var bounce_body_lines = [];
+    var bounce_headers_done = false;
+    bounce_msg_.forEach(function (line) {
+        if (bounce_headers_done == false && line == '') {
+            bounce_headers_done = true;
+        }
+        else if (bounce_headers_done == false) {
+            bounce_header_lines.push(line);
+        }
+        else if (bounce_headers_done == true) {
+            bounce_body_lines.push(line);
+        }
+    });
+
+
+    var boundary = 'boundary_' + utils.uuid();
+    var bounce_body = [];
+
+    bounce_header_lines.forEach(function (line) {
+        bounce_body.push(line + CRLF);
+    });
+    bounce_body.push('Content-Type: multipart/report; report-type=delivery-status;' + CRLF +
+        '    boundary="' + boundary + '"' + CRLF);
+    // Adding references to original msg id
+    if (originalMessageId != '') {
+        bounce_body.push('References: ' + originalMessageId.replace(/(\r?\n)*$/, '') + CRLF);
+    }
+
+    bounce_body.push(CRLF);
+    bounce_body.push('This is a MIME-encapsulated message.' + CRLF);
+    bounce_body.push(CRLF);
+
+    bounce_body.push('--' + boundary + CRLF);
+    bounce_body.push('Content-Type: text/plain; charset=us-ascii' + CRLF);
+    bounce_body.push(CRLF);
+    bounce_body_lines.forEach(function (line) {
+        bounce_body.push(line + CRLF);
+    });
+    bounce_body.push(CRLF);
+
+    bounce_body.push('--' + boundary + CRLF);
+    bounce_body.push('Content-type: message/delivery-status' + CRLF);
+    bounce_body.push(CRLF);
+    if (originalMessageId != '') {
+        bounce_body.push('Original-Envelope-Id: ' + originalMessageId.replace(/(\r?\n)*$/, '') + CRLF);
+    }
+    bounce_body.push('Reporting-MTA: dns;' + config.get('me') + CRLF);
+    if (self.todo.queue_time) {
+        bounce_body.push('Arrival-Date: ' + utils.date_to_str(new Date(self.todo.queue_time)) + CRLF);
+    }
+    self.todo.rcpt_to.forEach(function (rcpt_to) {
+        bounce_body.push(CRLF);
+        bounce_body.push('Final recipient: rfc822;' + rcpt_to.address() + CRLF);
+        var dsn_action = null;
+        if (rcpt_to.dsn_action) {
+            dsn_action = rcpt_to.dsn_action;
+        }
+        else if (rcpt_to.dsn_code) {
+            if (/^5/.exec(rcpt_to.dsn_code)) {
+                dsn_action = 'failed';
+            }
+            else if (/^4/.exec(rcpt_to.dsn_code)) {
+                dsn_action = 'delayed';
+            }
+            else if (/^2/.exec(rcpt_to.dsn_code)) {
+                dsn_action = 'delivered';
+            }
+        }
+        else if (rcpt_to.dsn_smtp_code) {
+            if (/^5/.exec(rcpt_to.dsn_smtp_code)) {
+                dsn_action = 'failed';
+            }
+            else if (/^4/.exec(rcpt_to.dsn_smtp_code)) {
+                dsn_action = 'delayed';
+            }
+            else if (/^2/.exec(rcpt_to.dsn_smtp_code)) {
+                dsn_action = 'delivered';
+            }
+        }
+        if (dsn_action != null) {
+            bounce_body.push('Action: ' + dsn_action + CRLF);
+        }
+        if (rcpt_to.dsn_status) {
+            var dsn_status = rcpt_to.dsn_status;
+            if (rcpt_to.dsn_code || rcpt_to.dsn_msg) {
+                dsn_status += " (";
+                if (rcpt_to.dsn_code) {
+                    dsn_status += rcpt_to.dsn_code;
+                }
+                if (rcpt_to.dsn_code || rcpt_to.dsn_msg) {
+                    dsn_status += " ";
+                }
+                if (rcpt_to.dsn_msg) {
+                    dsn_status += rcpt_to.dsn_msg;
+                }
+                dsn_status += ")";
+            }
+            bounce_body.push('Status: ' + dsn_status + CRLF);
+        }
+        if (rcpt_to.dsn_remote_mta) {
+            bounce_body.push('Remote-MTA: ' + rcpt_to.dsn_remote_mta + CRLF);
+        }
+        var diag_code = null;
+        if (rcpt_to.dsn_smtp_code || rcpt_to.dsn_smtp_extc || rcpt_to.dsn_smtp_response) {
+            diag_code = "smtp;";
+            if (rcpt_to.dsn_smtp_code) {
+                diag_code += rcpt_to.dsn_smtp_code + " ";
+            }
+            if (rcpt_to.dsn_smtp_extc) {
+                diag_code += rcpt_to.dsn_smtp_extc + " ";
+            }
+            if (rcpt_to.dsn_smtp_response) {
+                diag_code += rcpt_to.dsn_smtp_response + " ";
+            }
+        }
+        if (diag_code != null) {
+            bounce_body.push('Diagnostic-Code: ' + diag_code + CRLF);
+        }
+    });
+    bounce_body.push(CRLF);
+
+    bounce_body.push('--' + boundary + CRLF);
+    bounce_body.push('Content-Description: Undelivered Message Headers' + CRLF);
+    bounce_body.push('Content-Type: text/rfc822-headers' + CRLF);
+    bounce_body.push(CRLF);
+    header.header_list.forEach(function (line) {
+        bounce_body.push(line);
+    });
+    bounce_body.push(CRLF);
+
+    bounce_body.push('--' + boundary + '--' + CRLF);
+
+
     var values = {
         date: utils.date_to_str(new Date()),
         me:   config.get('me'),
         from: from,
         to:   to,
-        recipients: hmail.todo.rcpt_to.join(', '),
+        recipients: this.todo.rcpt_to.join(', '),
         reason: reason,
-        extended_reason: hmail.todo.rcpt_to.map(function (recip) {
+        extended_reason: this.todo.rcpt_to.map(function (recip) {
             if (recip.reason) {
                 return recip.original + ': ' + recip.reason;
             }
@@ -1432,22 +1720,9 @@ function populate_bounce_message (from, to, reason, hmail, cb) {
         msgid: '<' + utils.uuid() + '@' + config.get('me') + '>',
     };
 
-    var bounce_msg_ = config.get('outbound.bounce_message', 'data');
-
-    var bounce_msg = bounce_msg_.map(function (item) {
-        return item.replace(/\{(\w+)\}/g, function (i, word) { return values[word] || '?'; }) + '\n';
-    });
-
-    var data_stream = hmail.data_stream();
-    data_stream.on('data', function (data) {
-        bounce_msg.push(data.toString().replace(/\r?\n/g, "\n"));
-    });
-    data_stream.on('end', function () {
-        cb(null, bounce_msg);
-    });
-    data_stream.on('error', function (err) {
-        cb(err);
-    });
+    cb(null, bounce_body.map(function (item) {
+        return item.replace(/\{(\w+)\}/g, function (i, word) { return values[word] || '?'; });
+    }));
 }
 
 HMailItem.prototype.bounce = function (err, opts) {
@@ -1488,7 +1763,7 @@ HMailItem.prototype.bounce_respond = function (retval, msg) {
 
     var from = new Address ('<>');
     var recip = new Address (this.todo.mail_from.user, this.todo.mail_from.host);
-    populate_bounce_message(from, recip, err, this, function (err, data_lines) {
+    this.populate_bounce_message(from, recip, err, function (err, data_lines) {
         if (err) {
             return self.double_bounce("Error populating bounce message: " + err);
         }
@@ -1538,12 +1813,22 @@ HMailItem.prototype.discard = function () {
     }
 };
 
+HMailItem.prototype.convert_temp_failed_to_bounce = function (err, extra) {
+    this.todo.rcpt_to.forEach(function (rcpt_to) {
+        rcpt_to.dsn_action = 'failed';
+        if (rcpt_to.dsn_status) {
+            rcpt_to.dsn_status = ("" + rcpt_to.dsn_status).replace(/^4/, '5');
+        }
+    });
+    return this.bounce(err, extra);
+}
+
 HMailItem.prototype.temp_fail = function (err, extra) {
     this.num_failures++;
 
     // Test for max failures which is configurable.
     if (this.num_failures >= (cfg.maxTempFailures)) {
-        return this.bounce("Too many failures (" + err + ")", extra);
+        return this.convert_temp_failed_to_bounce("Too many failures (" + err + ")", extra);
     }
 
     // basic strategy is we exponentially grow the delay to the power
