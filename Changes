@@ -1,5 +1,4 @@
 
-
 2.7.0 - Jun NN, 2015
 
 * New Features
@@ -13,9 +12,21 @@
     * DCC plugin (incomplete)
     * Add LOGIN support to XCLIENT
     * backscatterer plugin
+    * full IPv4 & IPv6 compatibility inbound #1120, #1123, #1154 (@Dexus)
+    * Early talker #1075 (@smfreegard, @msimerson)
+    * permit loading of plugins in node_modules #1056 (@msimerson)
 
 * Improvements
-    * 
+    * Fix anti_spoof by use config #1171
+    * Add license clause #1170
+    * package.json dependencies and travis update #1147, #1168 (@Dexus)
+    * logging: remove node-syslog and strong-fork-syslog with modern-syslog #1145 (@Dexus)
+    * aliases: support for email, user and host aliases #1149 (@Dexus)
+    * add docs for use private key with TLS #1130 (@Dexus)
+    * outbound: ENOENT on dotfile - compatibility for windows #1129 (@Dexus)
+    * plugin/attachment: block more attachment file types #1191 (@Dexus)
+    * remove double functions #1126 (@Dexus)
+    * Outbound Bounce messages according to RFC3464 #1189 (@hatsebutz)
     * toobusy: only run checks if toobusy.js installed and loads
     * HAProxy: set local_ip, local_port and remote_port
     * save auth pass/fail/user to result_store
@@ -46,8 +57,28 @@
     * added utils.node_min()
     * added result_store.get_all()
     * updated ubuntu upstart script
+    * plugin/rate_limit: return in no custom default is set 0 = unlimited #1186, #1185
+    * Outbound.send_email: added dot-stuffing #1176, #1165 (@hatsebutz)
+    * make sure server object is availabe to plugins loaded from node_modules #1162 (@bmonty)
+    * Net_utils.get_ips_by_host #1160 (@msimerson)
+    * fcrdns: don't log error for ENODATA #1140 (@msimerson)
+    * improve MUA detection #1137 (@msimerson)
+    * tls: tmp disable for hosts that fail STARTTLS #1136 (@msimerson)
+    * karma: skip deny on outbound hooks #1100 (@msimerson)
+    * Store HAProxy IP in connection object #1097 (@smfreegard)
+    * Remove UUID from queued message #1092 (@smfreegard)
 
 * Bug Fixes
+    * fix windows build and test failures #1076 (@msimerson)
+    * Fix plugin ordering #1081 (@smfreegard)
+    * Fix distance reporting to X-Haraka-GeoIP for geoip-lite #1086 (@smfreegard)
+    * uribl: prevent calling next() more than 1x #1138 (@msimerson)
+    * Fix so constants are imported when plugin is loaded from node_modules. #1133 (@bmonty)
+    * Include STMP-code in bounce-reason string for upstream 5XX responses #1117 (@hatsebutz)
+    * TLS fixes: add timed_out flag and karma should not run deny hook on it. #1109 (@smfreegard)
+    * Fix port to number instead of string for HAProxy #1108 (@DarkSorrow)
+    * Plugin dcc: fixed syntax error #1164 (@hatsebutz)
+    * config: fix flat files if \r\n lines #1187 (@Dexus)
     * corrected hook_rcpt log code hook_rcpt_ok returns CONT
     * fix crash bug when loglevel = LOGDEBUG
     * corrected pathname in rcpt.ldap plugin (@abhas)
@@ -64,6 +95,10 @@
     * connection: return 450/550 for plugin DENY* (was 452/552)
     * spamassassin: don't call next() when transaction gone
     * outbound: fix crash when sending bounce mail
+    * auth_base: fix bad protocol in auth_base.js #1121 (@Dexus)
+    * outbound: Fix HELO/rDNS issue while using multiple outbound ip #1128 (@Dexus)
+    * connection: Fix bug when client disconnect after sending data #1193
+    * Fix connect.geoip bug #1144 (@smfreegard)
 
 2.6.1 - Mar 27, 2015
 
