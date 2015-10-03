@@ -123,7 +123,8 @@ exports.playTestSmtpConversation = function(hmail, socket, test, playbook, callb
         while (false != (expected = getNextEntryFromPlaybook('haraka', playbook))) {
             if (typeof expected.test === 'function') {
                 test.ok(expected.test(line), expected.description || 'Expected that line works with func: ' + expected.test);
-            } else {
+            }
+            else {
                 test.equals(expected.test + '\r\n', line, expected.description || 'Expected that line equals: ' + expected.test);
             }
             if (expected.end_test === true) {

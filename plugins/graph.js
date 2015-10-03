@@ -82,7 +82,8 @@ exports.deny = function (next, connection, params) {
             if (err) {
                 plugin.logerror("Insert failed: " + err);
             }
-            try { insert.reset(); } catch (e) {}
+            try { insert.reset(); }
+            catch (e) {}
             next();
         });
     });
@@ -99,7 +100,8 @@ exports.queue_ok = function (next, connection, params) {
             if (err) {
                 plugin.logerror("Insert failed: " + err);
             }
-            try { insert.reset(); } catch (ignore) {}
+            try { insert.reset(); }
+            catch (ignore) {}
             next();
         });
     });

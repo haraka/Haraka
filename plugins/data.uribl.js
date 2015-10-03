@@ -115,7 +115,8 @@ exports.do_lookups = function (connection, next, hosts, type) {
                 if ( ip_format === 'in-addr') {
                     if (arpa.length < 4) continue; // Only full IP addresses
                     host = arpa.join('.');
-                } else if ( ip_format === 'ip6') {
+                }
+                else if ( ip_format === 'ip6') {
                     if (arpa.length < 32) continue; // Only full IP addresses
                     host = arpa.join('.');
                 }
@@ -256,7 +257,8 @@ exports.do_lookups = function (connection, next, hosts, type) {
                     connection.loginfo(plugin, 'found ' + query[0] + ' in zone ' + query[1] +
                         ' (' + addrs.join(',') + '; bitmask=' + bitmask + ')');
                     do_reject();
-                } else {
+                }
+                else {
                     connection.logdebug(plugin, 'ignoring result (' + addrs[0] + ') for: ' +
                             lookup + ' as the bitmask did not match');
                     skip = true;
@@ -297,7 +299,8 @@ exports.hook_ehlo = function (next, connection, helo) {
     var literal;
     if ((literal = net_utils.get_ipany_re('^\\[(?:IPv6:)?', '\\]$','').exec(helo))) {
         this.do_lookups(connection, next, literal[1], 'helo');
-    } else {
+    }
+    else {
         this.do_lookups(connection, next, helo, 'helo');
     }
 };

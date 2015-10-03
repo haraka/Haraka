@@ -8,7 +8,7 @@ var existsSync = require('./utils').existsSync;
 exports.register = function () {
     this.register_hook('queue','quarantine');
     this.register_hook('queue_outbound','quarantine');
-}
+};
 
 // http://unknownerror.net/2011-05/16260-nodejs-mkdirs-recursion-create-directory.html
 var mkdirs = exports.mkdirs = function(dirpath, mode, callback) {
@@ -18,7 +18,7 @@ var mkdirs = exports.mkdirs = function(dirpath, mode, callback) {
     mkdirs(path.dirname(dirpath), mode, function() {
         fs.mkdir(dirpath, mode, callback);
     });
-}
+};
 
 var zeroPad = exports.zeroPad = function (n, digits) {
     n = n.toString();
@@ -26,7 +26,7 @@ var zeroPad = exports.zeroPad = function (n, digits) {
         n = '0' + n;
     }
     return n;
-}
+};
 
 exports.hook_init_master = function (next) {
     // At start-up; delete any files in the temporary directory
@@ -45,7 +45,7 @@ exports.hook_init_master = function (next) {
         }
     }
     return next();
-}
+};
 
 exports.quarantine = function (next, connection) {
     var transaction = connection.transaction;
@@ -76,7 +76,8 @@ exports.quarantine = function (next, connection) {
         }
         if (!dir) {
             dir = yyyymmdd;
-        } else {
+        }
+        else {
             dir = [ dir, yyyymmdd ].join('/');
         }
         var plugin = this;

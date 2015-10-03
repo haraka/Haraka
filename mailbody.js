@@ -34,15 +34,15 @@ exports.Body = Body;
 
 Body.prototype.add_filter = function (filter) {
     this.filters.push(filter);
-}
+};
 
 Body.prototype.set_banner = function (banners) {
     this.add_filter(function (ct, enc, buf) { return insert_banner(ct, enc, buf, banners); });
-}
+};
 
 Body.prototype.parse_more = function (line) {
     return this["parse_" + this.state](line);
-}
+};
 
 Body.prototype.parse_child = function (line) {
     // check for MIME boundary
@@ -67,7 +67,7 @@ Body.prototype.parse_child = function (line) {
     }
     // Pass data into last child
     return this.children[this.children.length - 1].parse_more(line);
-}
+};
 
 Body.prototype.parse_headers = function (line) {
     if (/^\s*$/.test(line)) {
@@ -80,7 +80,7 @@ Body.prototype.parse_headers = function (line) {
         this.header_lines.push(line);
     }
     return line;
-}
+};
 
 Body.prototype.parse_start = function (line) {
     var ct = this.header.get_decoded('content-type') || 'text/plain';
@@ -126,7 +126,7 @@ Body.prototype.parse_start = function (line) {
     }
 
     return this["parse_" + this.state](line);
-}
+};
 
 function _get_html_insert_position (buf) {
     // TODO: consider re-writing this to go backwards from the end

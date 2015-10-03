@@ -212,7 +212,8 @@ plugins._load_and_compile_plugin = function (name) {
     var code;
     if (hasPackageJson) {
         code = '"use strict"; var p = require("' + name + '"); for (var attrname in p) { exports[attrname] = p[attrname];}';
-    } else {
+    }
+    else {
         code = '"use strict";' + rf;
     }
     var sandbox = {

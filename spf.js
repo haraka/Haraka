@@ -238,7 +238,8 @@ SPF.prototype.check_host = function (ip, domain, mail_from, cb) {
                         self.log_debug('invalid IP address: ' + ip_split[1]);
                         return cb(null, self.SPF_PERMERROR);
                     }
-                } else {
+                }
+                else {
                     // Validate macro strings
                     if (match[3] && /%[^{%+-]/.exec(match[3])) {
                         self.log_debug('invalid macro string');

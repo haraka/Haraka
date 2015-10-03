@@ -65,7 +65,8 @@
                 // If the element is contained in a SVG object, use getBBox
                 if (this.$element.parents('svg').size() > 0) {
                     pos = $.extend(pos, this.$element[0].getBBox());
-                } else {
+                }
+                else {
                     pos = $.extend(pos, {
                         width: this.$element[0].offsetWidth || 0,
                         height: this.$element[0].offsetHeight || 0
@@ -97,7 +98,8 @@
                 if (gravity.length == 2) {
                     if (gravity.charAt(1) == 'w') {
                         tp.left = pos.left + pos.width / 2 - 15;
-                    } else {
+                    }
+                    else {
                         tp.left = pos.left + pos.width / 2 - actualWidth + 15;
                     }
                 }
@@ -110,7 +112,8 @@
                     if (this.options.shadow)
                         $(".tipsy-inner").css({'box-shadow': '0px 0px '+this.options.shadowBlur+'px '+this.options.shadowSpread+'px rgba(0, 0, 0, '+this.options.shadowOpacity+')', '-webkit-box-shadow': '0px 0px '+this.options.shadowBlur+'px '+this.options.shadowSpread+'px rgba(0, 0, 0, '+this.options.shadowOpacity+')'});
                     $tip.stop().css({opacity: 0, display: 'block', visibility: 'visible'}).animate({opacity: this.options.opacity}, this.options.fadeInTime);
-                } else {
+                }
+                else {
                     $tip.css({visibility: 'visible', opacity: this.options.opacity});
                 }
 
@@ -125,7 +128,8 @@
         hide: function() {
             if (this.options.fade) {
                 this.tip().stop().fadeOut(this.options.fadeOutTime, function() { $(this).remove(); });
-            } else {
+            }
+            else {
                 this.tip().remove();
             }
             if (this.options.aria) {
@@ -147,7 +151,8 @@
             this.fixTitle();
             if (typeof o.title == 'string') {
                 title = $e.attr(o.title == 'title' ? 'original-title' : o.title);
-            } else if (typeof o.title == 'function') {
+            }
+            else if (typeof o.title == 'function') {
                 title = o.title.call($e[0]);
             }
             title = ('' + title).replace(/(^\s*|\s*$)/, "");
@@ -181,7 +186,8 @@
 
         if (options === true) {
             return this.data('tipsy');
-        } else if (typeof options == 'string') {
+        }
+        else if (typeof options == 'string') {
             var tipsy = this.data('tipsy');
             if (tipsy) tipsy[options]();
             return this;
@@ -209,7 +215,8 @@
             tipsy.hoverState = 'in';
             if (options.delayIn === 0) {
                 tipsy.show();
-            } else {
+            }
+            else {
                 tipsy.fixTitle();
                 setTimeout(function() {
                     if (tipsy.hoverState == 'in' && isElementInDOM(tipsy.$element)) {
@@ -224,7 +231,8 @@
             tipsy.hoverState = 'out';
             if (options.delayOut === 0) {
                 tipsy.hide();
-            } else {
+            }
+            else {
                 setTimeout(function() { if (tipsy.hoverState == 'out' || !tipsy.$element || !tipsy.$element.is(':visible')) tipsy.hide(); }, options.delayOut);
             }
         }
@@ -238,7 +246,8 @@
             if (options.live && options.live !== true) {
                 $(this).on(eventIn, options.live, enter);
                 $(this).on(eventOut, options.live, leave);
-            } else {
+            }
+            else {
                 if (options.live && !$.live) {
                     //live === true and using jQuery >= 1.9
                     throw "Since jQuery 1.9, pass selector as live argument. eg. $(document).tipsy({live: 'a.live'});";
@@ -365,11 +374,13 @@
             if (prefer.length > 1) {
                 dir.ns = prefer[0];
                 dir.ew = prefer[1];
-            } else {
+            }
+            else {
                 // single direction string (e, w, n or s)
                 if (prefer[0] == 'e' || prefer[0] == 'w') {
                     dir.ew = prefer[0];
-                } else {
+                }
+                else {
                     dir.ns = prefer[0];
                 }
             }

@@ -13,7 +13,8 @@ exports.hook_get_mx = function (next, hmail, domain) {
     if (force_route != 'NOTFOUND' ){
         this.logdebug('using ' + force_route + ' for: ' + domain);
         next(OK, force_route);
-    } else {
+    }
+    else {
         this.logdebug('using normal MX lookup for: ' + domain);
         next(CONT);
     }

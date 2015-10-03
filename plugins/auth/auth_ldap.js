@@ -45,7 +45,8 @@ exports.check_plain_passwd = function (connection, user, passwd, cb) {
             if (err) {
                 connection.loginfo("auth_ldap: (" + dn + ") " + err.message);
                 return callback(false);
-            } else {
+            }
+            else {
                 client.unbind();
                 return callback(true);
             }

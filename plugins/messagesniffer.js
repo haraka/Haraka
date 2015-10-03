@@ -327,7 +327,7 @@ exports.hook_data_post = function (next, connection) {
 
     // TODO: we only need the first 64Kb of the message
     txn.message_stream.pipe(ws, { line_endings: '\r\n' });
-}
+};
 
 exports.hook_disconnect = function (next, connection) {
     var self = this;
@@ -337,7 +337,8 @@ exports.hook_disconnect = function (next, connection) {
     if (cfg.main.gbudb_report_deny && !connection.notes.snf_run &&
         (connection.rcpt_count.reject > 0 || connection.msg_count.reject > 0))
     {
-        SNFClient("<snf><xci><gbudb><bad ip='" + connection.remote_ip + "'/></gbudb></xci></snf>", function (err, result) {
+        var snfreq = "<snf><xci><gbudb><bad ip='" + connection.remote_ip + "'/></gbudb></xci></snf>";
+        SNFClient(snfreq, function (err, result) {
             if (err) {
                 connection.logerror(self, err.message);
             }

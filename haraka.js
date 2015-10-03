@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-"use strict";
+'use strict';
 
 var path = require('path');
 
@@ -11,7 +11,8 @@ try {
 }
 catch (e) {
     process.env.NODE_PATH = process.env.NODE_PATH ?
-            (process.env.NODE_PATH + ':' + path.join(process.env.HARAKA, 'node_modules'))
+            (process.env.NODE_PATH + ':' +
+             path.join(process.env.HARAKA, 'node_modules'))
             :
             (path.join(process.env.HARAKA, 'node_modules'));
     require('module')._initPaths(); // Horrible hack
@@ -50,7 +51,7 @@ process.on('uncaughtException', function (err) {
 process.on('SIGHUP', function () {
     logger.lognotice("Flushing the temp fail queue");
     server.flushQueue();
-})
+});
 
 process.on('exit', function() {
     process.title = path.basename(process.argv[1], '.js');

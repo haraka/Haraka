@@ -1023,7 +1023,8 @@ HMailItem.prototype.try_deliver_host = function (mx) {
     if (!mx.bind_helo){
         if (this.todo.notes.outbound_helo) {
             mx.bind_helo = this.todo.notes.outbound_helo;
-        } else {
+        }
+        else {
             mx.bind_helo = config.get('me');
         }
     }

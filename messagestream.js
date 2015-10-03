@@ -98,7 +98,7 @@ MessageStream.prototype.add_line = function (line) {
     }
 
     this.write_ce.fill(line);
-}
+};
 
 MessageStream.prototype.add_line_end = function (cb) {
     // Record body end position
@@ -115,7 +115,7 @@ MessageStream.prototype.add_line_end = function (cb) {
     if (!this.write_ce.end()) {
         this._write();
     }
-}
+};
 
 MessageStream.prototype._write = function (data) {
     var self = this;
@@ -195,7 +195,7 @@ MessageStream.prototype._write = function (data) {
         }
         return true;
     }
-}
+};
 
 /*
 ** READABLE STREAM
@@ -259,7 +259,7 @@ MessageStream.prototype._read = function () {
             });
         }
     }
-}
+};
 
 MessageStream.prototype.process_buf = function (buf) {
     var offset = 0;
@@ -297,7 +297,7 @@ MessageStream.prototype.process_buf = function (buf) {
     if (buf.length > 0) {
         this.read_ce.fill(buf);
     }
-}
+};
 
 MessageStream.prototype._read_finish = function () {
     var self = this;
@@ -317,7 +317,7 @@ MessageStream.prototype._read_finish = function () {
         self.in_pipe = false;
         self.emit('end');
     });
-}
+};
 
 MessageStream.prototype.pipe = function (destination, options) {
     var self = this;
@@ -369,12 +369,12 @@ MessageStream.prototype.pipe = function (destination, options) {
         self._read();
     }
     return destination;
-}
+};
 
 MessageStream.prototype.pause = function () {
     this.paused = true;
     if (this.rs) this.rs.pause();
-}
+};
 
 MessageStream.prototype.resume = function () {
     this.paused = false;
@@ -384,7 +384,7 @@ MessageStream.prototype.resume = function () {
     else {
         this._read();
     }
-}
+};
 
 MessageStream.prototype.destroy = function () {
     var self = this;
@@ -401,7 +401,7 @@ MessageStream.prototype.destroy = function () {
     catch (err) {
         // Ignore any errors
     }
-}
+};
 
 MessageStream.prototype.get_data = function (cb) { // Or: (options, cb)
     var options = {};
@@ -411,7 +411,7 @@ MessageStream.prototype.get_data = function (cb) { // Or: (options, cb)
     }
     var ws = new GetDataStream(cb);
     this.pipe(ws, options);
-}
+};
 
 module.exports = MessageStream;
 
@@ -427,18 +427,18 @@ util.inherits(GetDataStream, Stream);
 GetDataStream.prototype.write = function (obj, enc) {
     this.buf += obj;
     return true;
-}
+};
 
 GetDataStream.prototype.end = function (obj, enc) {
     if (obj)
         this.buf += obj;
     this.cb(this.buf);
-}
+};
 
 GetDataStream.prototype.destroy = function () {
     // ignore
-}
+};
 
 GetDataStream.prototype.destroySoon = function () {
     // ignore
-}
+};
