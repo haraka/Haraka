@@ -99,6 +99,7 @@
     * outbound: Fix HELO/rDNS issue while using multiple outbound ip #1128 (@Dexus)
     * connection: Fix bug when client disconnect after sending data #1193
     * Fix connect.geoip bug #1144 (@smfreegard)
+    * Fix tiny bug in messagesniffer #1198 (@smfreegard)
 
 2.6.1 - Mar 27, 2015
 
