@@ -166,7 +166,8 @@ exports.get = {
             sect1: { bool_true: 'true', bool_false: 'false', str_true: 'true', str_false: 'false' },
             whitespace: { str_no_trail: 'true', str_trail: 'true' },
             funnychars: { 'results.auth/auth_base.fail': 'fun' },
-            empty_values: { first: undefined, second: undefined }
+            empty_values: { first: undefined, second: undefined },
+            has_ipv6: { '2605:ae00:329::2': undefined }
         });
     },
 
