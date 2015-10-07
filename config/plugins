@@ -32,7 +32,7 @@ helo.checks
 # tls
 #
 # AUTH plugins require TLS before AUTH is advertised, see
-#     https://github.com/baudehlo/Haraka/wiki/Require-SSL-TLS
+#     https://github.com/haraka/Haraka/wiki/Require-SSL-TLS
 # auth/flat_file
 # auth/auth_proxy
 # auth/auth_ldap

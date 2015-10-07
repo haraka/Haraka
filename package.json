@@ -8,7 +8,7 @@
   "homepage": "http://haraka.github.io",
   "repository": {
     "type": "git",
-    "url": "git://github.com/baudehlo/Haraka.git"
+    "url": "git://github.com/haraka/Haraka.git"
   },
   "main": "haraka.js",
   "engines": {
@@ -50,7 +50,7 @@
   },
   "bugs": {
     "mail": "helpme@gmail.com",
-    "url": "https://github.com/baudehlo/Haraka/issues"
+    "url": "https://github.com/haraka/Haraka/issues"
   },
   "bin": {
     "haraka": "./bin/haraka",
