@@ -123,6 +123,12 @@ exports.load_ini_config = {
         test.strictEqual(r.funnychars['results.auth/auth_base.fail'], 'fun');
         test.done();
     },
+    'test.ini, ipv6 addr, :' : function (test) {
+        test.expect(1);
+        var r = this.cfreader.load_ini_config('tests/config/test.ini');
+        test.ok( '2605:ae00:329::2' in r.has_ipv6 );
+        test.done();
+    },
     'test.ini, empty value' : function (test) {
         test.expect(1);
         var r = this.cfreader.load_ini_config('tests/config/test.ini');
