@@ -148,10 +148,10 @@ exports.get_organizational_domain = {
         _org_domain(test, 'c.cy', null);
     },
     'b.c.cy': function (test) {
-        _org_domain(test, 'b.c.cy', 'b.c.cy');
+        _org_domain(test, 'b.c.cy', null);
     },
     'a.b.c.cy': function (test) {
-        _org_domain(test, 'a.b.c.cy', 'b.c.cy');
+        _org_domain(test, 'a.b.c.cy', null);
     },
 
     // More complex TLD.
