@@ -175,7 +175,7 @@ If http listeners are are enabled in http.ini and the express module loaded, the
 
 ### hook_init_wss (next, Server)
 
-If express loaded, an attempt is made to load [ws](https://www.npmjs.com/package/ws), the websocket server. If it succeeds, the wss server will be located at Server.http.wss. Because of how websockets work, only one websocket plugin will work at a time. One plugin using wss is [watch](https://github.com/baudehlo/Haraka/tree/master/plugins/watch).
+If express loaded, an attempt is made to load [ws](https://www.npmjs.com/package/ws), the websocket server. If it succeeds, the wss server will be located at Server.http.wss. Because of how websockets work, only one websocket plugin will work at a time. One plugin using wss is [watch](https://github.com/haraka/Haraka/tree/master/plugins/watch).
 
 
 ## Hook Order

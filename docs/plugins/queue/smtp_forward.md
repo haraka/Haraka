@@ -86,6 +86,6 @@ directly to the specified host. Messages with recipients only in the domains
 example1.com and example2.com will get delivered directly to 1.2.3.5.
 Everything else gets delivered to 1.2.3.4.
 
-See [GitHub Issue #573](https://github.com/baudehlo/Haraka/issues/573) for
+See [GitHub Issue #573](https://github.com/haraka/Haraka/issues/573) for
 background on the limitations of smtp-forward with recipients in different
 domains.

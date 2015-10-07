@@ -1,7 +1,7 @@
 # This file describes how to build Haraka into a runnable linux container with all dependencies installed
 # To build:
 # 1.) Install docker (http://docker.io)
-# 2.) Clone Haraka repo if you haven't already: git clone https://github.com/baudehlo/Haraka.git
+# 2.) Clone Haraka repo if you haven't already: git clone https://github.com/haraka/Haraka.git
 # 3.) Modify config/host_list with the domain(s) that you'd like to receive mail to
 # 4.) Build: cd Haraka && docker build .
 # 5.) Run:

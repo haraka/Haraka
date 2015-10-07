@@ -28,7 +28,7 @@ queued for outbound delivery.
 
 * [Join the mailing list][8] (implemented as a Haraka plugin)
 * Join us on IRC at `#haraka` on [freenode][14]
-* [GitHub Issues](https://github.com/baudehlo/Haraka/issues)
+* [GitHub Issues](https://github.com/haraka/Haraka/issues)
 
 
 ### Screencast
@@ -110,7 +110,7 @@ following these steps:
 
 First clone the repository:
 
-    $ git clone https://github.com/baudehlo/Haraka.git
+    $ git clone https://github.com/haraka/Haraka.git
     $ cd Haraka
 
 Install Haraka's node.js dependencies locally:
@@ -137,19 +137,19 @@ SpamAssassin and a hacker on [Qpsmtpd][13].
 [3]: http://en.wikipedia.org/wiki/Message_transfer_agent
 [4]: https://haraka.github.io/manual.html
 [5]: http://en.wikipedia.org/wiki/Mail_submission_agent
-[6]: https://github.com/baudehlo/Haraka/blob/master/docs/plugins/dkim_sign.md
+[6]: https://github.com/haraka/Haraka/blob/master/docs/plugins/dkim_sign.md
 [7]: https://en.wikipedia.org/wiki/Mail_delivery_agent
 [8]: mailto:haraka-sub@harakamail.com
 [9]: https://haraka.github.io/manual/plugins/spamassassin.html
 [10]: https://haraka.github.io/manual/plugins/helo.checks.html
 [11]: https://haraka.github.io/manual/plugins/dnsbl.html
-[12]: https://github.com/baudehlo/Haraka/tree/master/plugins
+[12]: https://github.com/haraka/Haraka/tree/master/plugins
 [13]: https://github.com/smtpd/qpsmtpd/
 [14]: https://freenode.net/irc_servers.shtml
 
-[ci-img]: https://travis-ci.org/baudehlo/Haraka.svg?branch=master
-[ci-url]: https://travis-ci.org/baudehlo/Haraka
-[cov-img]: https://coveralls.io/repos/baudehlo/Haraka/badge.png
-[cov-url]: https://coveralls.io/r/baudehlo/Haraka
+[ci-img]: https://travis-ci.org/haraka/Haraka.svg?branch=master
+[ci-url]: https://travis-ci.org/haraka/Haraka
+[cov-img]: https://coveralls.io/repos/haraka/Haraka/badge.png
+[cov-url]: https://coveralls.io/r/haraka/Haraka
 [ci-win-img]: https://ci.appveyor.com/api/projects/status/g29l24w7qwoam47f?svg=true
 [ci-win-url]: https://ci.appveyor.com/project/msimerson/haraka-pa8a5
