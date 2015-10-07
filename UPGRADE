@@ -1,4 +1,27 @@
 
+
+v3.0.0
+
+   2015.10.07
+
+   deprecated plugins/graph
+   deprecated rdns.regexp
+   deprecated data.nomsgid         (subsumed into data.headers.js)
+   deprecated data.noreceived               ""
+   deprecated data.rfc5322_header_checks    ""
+   deprecated daemonize
+   deprecated mail_from.nobounces  (subsumed into bounce.js)
+   deprecated mail_from.blocklist
+   deprecated rcpt_to.blocklist
+   deprecated lookup_rdns_strict
+   deprecated mail_from.access     (replaced by access.js)
+   deprecated rcpt_to.access                 ""
+   deprecated connect.rdns_access            ""
+   deprecated relay_acl            (replaced by relay.js)
+   deprecated relay_all                      ""
+   deprecated relay_force_routing            "
+
+
 2013.12.27
 
 new plugin: data.headers
