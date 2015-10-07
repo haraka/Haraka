@@ -8,7 +8,7 @@ var ResultStore  = require('../../result_store');
 
 var _set_up = function (done) {
 
-    this.plugin = new Plugin('clamd');
+    this.plugin = new Plugin('data.clamd');
     this.plugin.config = config;
     this.plugin.register();
 
@@ -97,7 +97,7 @@ exports.hook_data_post = {
         this.plugin.cfg.main.only_with_attachments=true;
         test.expect(1);
         var next = function () {
-            test.ok(this.connection.transaction.results.get('clamd').skip);
+            test.ok(this.connection.transaction.results.get('data.clamd').skip);
             test.done();
         }.bind(this);
         this.plugin.hook_data_post(next, this.connection);
@@ -107,7 +107,7 @@ exports.hook_data_post = {
         this.plugin.cfg.main.max_size=512;
         test.expect(1);
         var next = function () {
-            test.ok(this.connection.transaction.results.get('clamd').skip);
+            test.ok(this.connection.transaction.results.get('data.clamd').skip);
             test.done();
         }.bind(this);
         this.plugin.hook_data_post(next, this.connection);

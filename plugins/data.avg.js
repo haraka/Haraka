@@ -18,7 +18,7 @@ exports.register = function () {
 exports.load_avg_ini = function () {
     var plugin = this;
 
-    plugin.cfg = plugin.config.get('avg.ini', {
+    plugin.cfg = plugin.config.get('data.avg.ini', {
         booleans: [
             '+defer.timeout',
             '+defer.error',

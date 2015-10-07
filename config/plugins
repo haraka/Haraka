@@ -12,7 +12,7 @@
 # log.syslog
 
 # CONNECT
-#toobusy
+#connect.toobusy
 #relay
 # control which IPs, rDNS hostnames, HELO hostnames, MAIL FROM addresses, and
 # RCPT TO address you accept mail from. See 'haraka -h access'.
@@ -55,9 +55,9 @@ rcpt_to.in_host_list
 # Check mail headers are valid
 data.headers
 #data.uribl
-#attachment
-#clamd
-#spamassassin
+#data.attachment
+#data.clamd
+#data.spamassassin
 #dkim_sign
 #karma
 

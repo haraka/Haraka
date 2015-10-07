@@ -35,7 +35,7 @@ The MD5 checksum is useful to check against www.virustotal.com
 Configuration
 -------------
 
-* attachment.ini
+* data.attachment.ini
 
   - archive\_max\_depth
     (default: 5)
@@ -54,23 +54,27 @@ Configuration
 
     Timeout in seconds before the plugin will abort.
 
-* attachment.filename.regex
+  - [filename\_regex]
+    0=\.(?:ade|adp|bat|chm|cmd|com|cpl|dll|exe|hta|ins|isp|jar|jse|lib|lnk|mde|msc|msp|mst|pif|scr|sct|shb|sys|vb|vbe|vbs|vxd|wsc|wsf|wsh)$
 
-  This file contains a list of regular expressions, one per line that 
-  will be tested against each filename found within a message.
-  The first regexp to match will cause the message to be rejected.  
-  Any invalid regexps will be detected, reported and skipped.
+    This file contains a list of regular expressions, one per line that 
+    will be tested against each filename found within a message.
+    The first regexp to match will cause the message to be rejected.  
+    Any invalid regexps will be detected, reported and skipped.
 
-* attachment.archive.filename.regex
+  - [archive\_filename\_regex]
+    0=\.(?:7z|rar|arj)$
+  
+    This file contains a list of regular expressions, one per line that
+    will be tested against each filename found within an archive file.
+    The first regexp to match will cause the message to be rejected.
+    Any invalid regexps will be detected, reported and skipped.
 
-  This file contains a list of regular expressions, one per line that
-  will be tested against each filename found within an archive file.
-  The first regexp to match will cause the message to be rejected.
-  Any invalid regexps will be detected, reported and skipped.
-
-* attachment.ctype.regex
-
-  This file contains a list of regular expressions, one per line that
-  will be tested against each MIME Content-Type header in the message.
-  The first regexp to match will cause the message to be rejected.
-  Any invalid regexps will be detected, reported and skipped.
+  - [ctype\_regex]
+    0=executable
+    1=partial
+    
+    This file contains a list of regular expressions, one per line that
+    will be tested against each MIME Content-Type header in the message.
+    The first regexp to match will cause the message to be rejected.
+    Any invalid regexps will be detected, reported and skipped.

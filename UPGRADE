@@ -2,6 +2,21 @@
 
 v3.0.0
 
+   2015.10.08
+   create config/data.attachment.ini
+   rename plugins/toobusy.js to plugins/connect.toobusy.js
+   rename plugins/attachment.js to plugins/data.attachment.js
+   rename plugins/avg.js to plugins/data.avg.js
+   rename plugins/clamd.js to plugins/data.clamd.js
+   rename plugins/spamassassin.js to plugins/data.spamassassin.js
+   rename config/avg.ini to config/data.avg.ini
+   rename config/spamassassin.ini to config/data.spamassassin.ini
+   rename test/plugins/clamd.js to test/plugins/data.clamd.js
+   rename test/plugins/spamassassin.js to test/plugins/data.spamassassin.js
+   delete config/attachment.ctype.regex moved into config/attachment.ini file
+   delete config/attachment.filename.regex moved into config/attachment.ini file
+   
+
    2015.10.07
 
    deprecated plugins/graph
@@ -22,6 +37,7 @@ v3.0.0
    deprecated relay_force_routing            "
 
 
+--OLD--
 2013.12.27
 
 new plugin: data.headers
