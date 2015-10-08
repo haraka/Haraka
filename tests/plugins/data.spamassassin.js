@@ -8,7 +8,7 @@ var config       = require('../../config');
 
 var _set_up = function (done) {
 
-    this.plugin = new Plugin('spamassassin');
+    this.plugin = new Plugin('data.spamassassin');
     this.plugin.config = config;
     this.plugin.cfg = { main: { } };
 
@@ -23,7 +23,7 @@ exports.register = {
     setUp : _set_up,
     'loads the spamassassin plugin': function (test) {
         test.expect(1);
-        test.equal('spamassassin', this.plugin.name);
+        test.equal('data.spamassassin', this.plugin.name);
         test.done();
     },
     'register loads spamassassin.ini': function (test) {

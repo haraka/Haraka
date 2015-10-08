@@ -10,7 +10,7 @@ message will be deferred with a temporary failure.
 
 ## Configuration
 
-The following options can be defined in clamd.ini;
+The following options can be defined in data.clamd.ini;
 
 ### clamd\_socket (default: localhost:3310)
 

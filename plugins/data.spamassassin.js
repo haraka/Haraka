@@ -11,7 +11,7 @@ exports.register = function () {
 
 exports.load_spamassassin_ini = function () {
     var plugin = this;
-    plugin.cfg = plugin.config.get('spamassassin.ini', function () {
+    plugin.cfg = plugin.config.get('data.spamassassin.ini', function () {
         plugin.load_spamassassin_ini();
     });
 

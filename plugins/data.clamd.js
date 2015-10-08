@@ -7,7 +7,7 @@ exports.load_excludes = function() {
     var plugin = this;
 
     plugin.loginfo('Loading excludes file');
-    var list = plugin.config.get('clamd.excludes','list', function () {
+    var list = plugin.config.get('data.clamd.excludes','list', function () {
         plugin.load_excludes();
     });
 
@@ -70,7 +70,7 @@ exports.load_excludes = function() {
 exports.load_clamd_ini = function() {
     var plugin = this;
 
-    plugin.cfg = plugin.config.get('clamd.ini', {
+    plugin.cfg = plugin.config.get('data.clamd.ini', {
         booleans: [
             '-main.randomize_host_order',
             '-main.only_with_attachments',

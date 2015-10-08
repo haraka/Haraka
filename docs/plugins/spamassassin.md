@@ -7,7 +7,7 @@ spamd for scoring.
 Configuration
 -------------
 
-spamassassin.ini
+data.spamassassin.ini
 
 - spamd\_socket = \[host:port | /path/to/socket\]  *optional*
 

@@ -6,7 +6,7 @@ Messages that AVG detects as infected are rejected. Errors will cause the plugin
 
 ## Configuration
 
-The following options can be set in avg.ini:
+The following options can be set in data.avg.ini:
 
 * port (default: 54322)
 
