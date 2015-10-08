@@ -50,7 +50,7 @@ exports.hook_queue = function (next, connection) {
 
     var smc_cb = function (err, smtp_client) {
         smtp_client.next = next;
-        
+
         var config = plugin.cfg;
         if (config.auth.user) {
             connection.loginfo(plugin, "Configuring authentication for SMTP server " + config.main.host + ":" + config.main.port);
@@ -78,7 +78,7 @@ exports.hook_queue = function (next, connection) {
                 }
             });
         }
-        
+
         var rcpt = 0;
 
         var dead_sender = function () {
