@@ -721,10 +721,11 @@ exports.ip_in_list = function (ip) {
 
         for (var i = 0; i < list.length; i++) {
             if (ipobj.match(list[i])) {
+                console.log('true', ipobj, list[i]);
                 return true;
             } 
             else {
-                console.log(ipobj, list[i])
+                console.log('false', ipobj, list[i]);
             }
         }
     } catch (e) {
