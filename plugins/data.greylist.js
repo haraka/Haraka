@@ -720,12 +720,13 @@ exports.ip_in_list = function (ip) {
         var list = plugin.whitelist.ip;
 
         for (var i = 0; i < list.length; i++) {
-            if (ipobj.match(list[i])) {
-                console.log('true', ipobj, list[i]);
-                return true;
-            }
-            else {
-                console.log('false', ipobj, list[i]);
+            try {
+                if (ipobj.match(list[i])) {
+                    return true;
+                }
+            } catch (e) {
+                console.log('some error: ' + e.message + ' bt: ' + e.stack);
+                plugin.logwarn('some warning: ' + e.message + ' bt: ' + e.stack);
             }
         }
     } catch (e) {
