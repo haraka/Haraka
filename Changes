@@ -1,5 +1,15 @@
 
-2.7.0 - Jun NN, 2015
+N.N.N - Mon NN, 2015
+
+* New Features
+
+* Improvements
+    * smtp_forward auth settings now work (#430)
+
+* Bug Fixes
+
+
+2.7.0 - Oct 07, 2015
 
 * New Features
     * SPF bounce check
