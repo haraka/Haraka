@@ -723,12 +723,13 @@ exports.ip_in_list = function (ip) {
             if (ipobj.match(list[i])) {
                 console.log('true', ipobj, list[i]);
                 return true;
-            } 
+            }
             else {
                 console.log('false', ipobj, list[i]);
             }
         }
     } catch (e) {
+        console.log('some error: ' + e.message + ' bt: ' + e.stack);
         plugin.logwarn('some error: ' + e.message + ' bt: ' + e.stack);
     }
 
