@@ -2,6 +2,12 @@
 
 v3.0.0
 
+   2015.10.09
+   create config/data.attachment.ini
+   rename plugins/attachment.js to plugins/data.attachment.js
+   delete config/attachment.ctype.regex moved into config/attachment.ini file
+   delete config/attachment.filename.regex moved into config/attachment.ini file
+   
    2015.10.07
 
    deprecated plugins/graph

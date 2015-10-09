@@ -31,7 +31,7 @@ exports.register = function () {
 exports.load_archive_ini = function () {
     var plugin = this;
 
-    plugin.cfg = plugin.config.get('attachment.ini', function () {
+    plugin.cfg = plugin.config.get('data.attachment.ini', function () {
         plugin.load_archive_ini();
     });
 
@@ -310,9 +310,9 @@ exports.hook_data = function (next, connection) {
 exports.check_attachments = function (next, connection) {
     var plugin = this;
     var txn = connection.transaction;
-    var ctype_config = this.config.get('attachment.ctype.regex','list');
-    var file_config = this.config.get('attachment.filename.regex','list');
-    var archive_config = this.config.get('attachment.archive.filename.regex','list');
+    var ctype_config = this.cfg.ctype_regex;
+    var file_config = this.cfg.filename_regex;
+    var archive_config = this.cfg.archive_filename_regex;
 
     // Check for any stored errors from the attachment hooks
     if (txn.notes.attachment_result) {
