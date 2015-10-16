@@ -238,9 +238,13 @@ Body.prototype.parse_end = function (line) {
 
         var ct = this.header.get_decoded('content-type') || 'text/plain';
         var enc = 'UTF-8';
+        var pre_enc = '';
         var matches = /\bcharset\s*=\s*(?:\"|3D|')?([\w_\-]*)(?:\"|3D|')?/.exec(ct);
         if (matches) {
-            enc = matches[1];
+            pre_enc = (matches[1]).trim();
+            if (pre_enc.length > 0) {
+                enc = pre_enc;
+            }
         }
         this.body_encoding = enc;
 
