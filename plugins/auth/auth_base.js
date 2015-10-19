@@ -61,7 +61,7 @@ exports.check_cram_md5_passwd = function (connection, user, passwd, cb) {
             return cb(false);
         }
 
-        var hmac = crypto.createHmac('md5', plain_pw);
+        var hmac = crypto.createHmac('md5', plain_pw.toString());
         hmac.update(connection.notes.auth_ticket);
 
         if (hmac.digest('hex') === passwd) {
