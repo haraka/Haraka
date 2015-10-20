@@ -17,7 +17,7 @@ exports.hook_queue = function (next, connection) {
         [],              // arguments
         { stdio: ['pipe', 'pipe', process.stderr] }
     );
-    
+
     var finished = function (code) {
         if (code !== 0) {
             connection.logerror(plugin, "Unable to queue message to qmail-queue: " + code);
@@ -27,9 +27,9 @@ exports.hook_queue = function (next, connection) {
             next(OK, "Queued!");
         }
     };
-    
+
     qmail_queue.on('exit', finished);
-    
+
     connection.transaction.message_stream.pipe(qmail_queue.stdin);
 
     qmail_queue.stdin.on('close', function () {

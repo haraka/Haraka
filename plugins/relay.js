@@ -2,8 +2,8 @@
 //
 // documentation via: haraka -h relay
 
-var ipaddr = require('ipaddr.js'),
-    net    = require('net');
+var ipaddr = require('ipaddr.js');
+var net    = require('net');
 
 exports.register = function() {
     var plugin = this;
@@ -11,8 +11,8 @@ exports.register = function() {
     plugin.load_relay_ini();             // plugin.cfg = { }
 
     if (plugin.cfg.relay.acl) {
-         plugin.load_acls();             // plugin.acl_allow = [..]
-         plugin.register_hook('connect', 'acl');
+        plugin.load_acls();             // plugin.acl_allow = [..]
+        plugin.register_hook('connect', 'acl');
     }
 
     if (plugin.cfg.relay.force_routing || plugin.cfg.relay.dest_domains) {
@@ -128,7 +128,7 @@ exports.dest_domains = function (next, connection, params) {
         transaction.results.add(plugin, {skip: 'relay_dest_domain(relay)'});
         return next();
     }
- 
+
     if (!plugin.dest) {
         transaction.results.add(plugin, {err: 'relay_dest_domain(no config!)'});
         return next();
@@ -151,7 +151,7 @@ exports.dest_domains = function (next, connection, params) {
     var action = JSON.parse(dst_cfg).action;
     connection.logdebug(plugin, 'found config for ' + dest_domain + ': ' + action);
 
-    switch(action) {
+    switch (action) {
         case "accept":
             // why enable relaying here? Returning next(OK) will allow the
             // address to be considered 'local'. What advantage does relaying

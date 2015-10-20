@@ -1,10 +1,10 @@
 'use strict';
 
-var stub         = require('../fixtures/stub'),
-    Plugin       = require('../fixtures/stub_plugin');
+var stub         = require('../fixtures/stub');
+var Plugin       = require('../fixtures/stub_plugin');
 
 var _set_up = function (done) {
-    
+
     this.plugin = new Plugin('dns_list_base');
 
     done();
@@ -133,12 +133,12 @@ exports.multi = {
         var dnsbls = ['bl.spamcop.net','cbl.abuseat.org'];
         this.plugin.multi('127.0.0.1', dnsbls, cb);
     },
-    'IPv6 addresses not supported': function (test) { 
+    'IPv6 addresses supported': function (test) {
         test.expect(12);
         var cb = function (err, zone, a, pending) {
             test.equal(null, a);
             if (pending) {
-                test.deepEqual(new Error('IPv6 not supported'), err);
+                test.deepEqual(null, err);
                 test.equal(true, pending);
                 test.ok(zone);
             }
@@ -190,7 +190,7 @@ exports.first = {
             test.equal(null, err);
             test.ok(zone);
             test.ok((Array.isArray(a) && a.length > 0));
-            if (pending === 0) test.done(); 
+            if (pending === 0) test.done();
         };
         this.plugin.first('127.0.0.2', dnsbls, cb, cb_each);
     }

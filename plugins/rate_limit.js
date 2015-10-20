@@ -32,7 +32,7 @@ exports.lookup_host_key = function (type, args, cb) {
     var remote_ip = args[0];
     var remote_host = args[1];
     var config = this.config.get('rate_limit.ini');
-    if (!config[type]) {  
+    if (!config[type]) {
         return cb(new Error(type + ': not configured'));
     }
     var ip;
@@ -72,10 +72,12 @@ exports.lookup_host_key = function (type, args, cb) {
         }
     }
 
-    // Default
+    // Custom Default
     if (config[type].default) {
         return cb(null, ip, config[type].default);
     }
+    // Default 0 = unlimited
+    return cb(null, ip, 0);
 };
 
 exports.lookup_mail_key = function (type, args, cb) {
@@ -98,20 +100,23 @@ exports.lookup_mail_key = function (type, args, cb) {
             var part = rhs_split.join('.');
             if (config[type][part] || config[type][part] === 0) {
                 return cb(null, part, config[type][part]);
-            }   
+            }
             rhs_split.pop();
         }
     }
 
-    // Default
+    // Custom Default
     if (config[type].default) {
         return cb(null, email, config[type].default);
     }
+    // Default 0 = unlimited
+    return cb(null, email, 0);
 };
 
 exports.rate_limit = function (connection, key, value, cb) {
     var self = this;
-    var limit, ttl;
+    var limit;
+    var ttl;
     if (!key || !value) return cb();
     if (value === 0) {
         // Limit disabled for this host
@@ -126,17 +131,17 @@ exports.rate_limit = function (connection, key, value, cb) {
             // Unit
             switch (match[3].toLowerCase()) {
                 case 's':
-                        // Default is seconds
-                        break; 
-                case 'm':   
-                        ttl *= 60;
-                        break;
-                case 'h':   
-                        ttl *= (60*60);
-                        break;
-                case 'd':   
-                        ttl *= (60*60*24);
-                        break;
+                    // Default is seconds
+                    break;
+                case 'm':
+                    ttl *= 60;
+                    break;
+                case 'h':
+                    ttl *= (60*60);
+                    break;
+                case 'd':
+                    ttl *= (60*60*24);
+                    break;
                 default:
                     // Unknown time unit
                     return cb(new Error('unknown time unit \'' + match[3] + '\' key=' + key));
@@ -185,11 +190,7 @@ exports.incr_concurrency = function (next, connection) {
     var config = this.config.get('rate_limit.ini');
     var snotes = connection.server.notes;
 
-    // Concurrency 
-    this.lookup_host_key('concurrency',
-            [connection.remote_ip, connection.remote_host],
-            function (err, key, value)
-    {
+    var lookup_cb = function (err, key, value) {
         if (err) {
             connection.logerror(self, err);
             return next();
@@ -217,7 +218,12 @@ exports.incr_concurrency = function (next, connection) {
             }
         }
         return next();
-    });
+    };
+
+    // Concurrency
+    this.lookup_host_key('concurrency',
+        [connection.remote_ip, connection.remote_host],
+        lookup_cb);
 };
 
 exports.decr_concurrency = function (next, connection) {
@@ -287,11 +293,11 @@ exports.hook_connect = function (next, connection) {
                         return next();
                     }
                 });
-            } 
+            }
             else {
                 return next();
             }
-        }); 
+        });
     });
 };
 
@@ -304,7 +310,7 @@ exports.hook_rcpt = function (next, connection, params) {
         {
             name:           'rate_rcpt_host',
             lookup_func:    'lookup_host_key',
-            lookup_args:    [connection.remote_ip, connection.remote_host], 
+            lookup_args:    [connection.remote_ip, connection.remote_host],
         },
         {
             name:           'rate_rcpt_sender',
@@ -356,8 +362,8 @@ exports.hook_rcpt = function (next, connection, params) {
                 }
                 if (over) {
                     // Delay this response if we are not already tarpitting
-                    if (config.main.tarpit_delay && 
-                        !(connection.notes.tarpit || (transaction && transaction.notes.tarpit))) 
+                    if (config.main.tarpit_delay &&
+                        !(connection.notes.tarpit || (transaction && transaction.notes.tarpit)))
                     {
                         connection.loginfo(self, 'tarpitting response for ' + config.main.tarpit + 's');
                         setTimeout(function () {

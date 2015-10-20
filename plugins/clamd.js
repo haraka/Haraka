@@ -16,49 +16,49 @@ exports.load_excludes = function() {
     for (var i=0; i < list.length; i++) {
         var re;
         switch (list[i][0]) {
-        case '!':
+            case '!':
 
-            if (list[i][1] === '/') {
-                // Regexp exclude
+                if (list[i][1] === '/') {
+                    // Regexp exclude
+                    try {
+                        re = new RegExp(list[i].substr(2, list[i].length-2),'i');
+                        new_skip_list_exclude.push(re);
+                    }
+                    catch (e) {
+                        plugin.logerror(e.message + ' (entry: ' + list[i] + ')');
+                    }
+                }
+                else {
+                    // Wildcard exclude
+                    try {
+                        re = new RegExp(
+                                utils.wildcard_to_regexp(list[i].substr(1)),'i');
+                        new_skip_list_exclude.push(re);
+                    }
+                    catch (e) {
+                        plugin.logerror(e.message + ' (entry: ' + list[i] + ')');
+                    }
+                }
+                break;
+            case '/':
+                // Regexp skip
                 try {
-                    re = new RegExp(list[i].substr(2, list[i].length-2),'i');
-                    new_skip_list_exclude.push(re);
+                    re = new RegExp(list[i].substr(1, list[i].length-2),'i');
+                    new_skip_list.push(re);
                 }
                 catch (e) {
                     plugin.logerror(e.message + ' (entry: ' + list[i] + ')');
                 }
-            }
-            else {
-                // Wildcard exclude
+                break;
+            default:
+                // Wildcard skip
                 try {
-                    re = new RegExp(
-                            utils.wildcard_to_regexp(list[i].substr(1)),'i');
-                    new_skip_list_exclude.push(re);
+                    re = new RegExp(utils.wildcard_to_regexp(list[i]),'i');
+                    new_skip_list.push(re);
                 }
                 catch (e) {
                     plugin.logerror(e.message + ' (entry: ' + list[i] + ')');
                 }
-            }
-            break;
-        case '/':
-            // Regexp skip
-            try {
-                re = new RegExp(list[i].substr(1, list[i].length-2),'i');
-                new_skip_list.push(re);
-            }
-            catch (e) {
-                plugin.logerror(e.message + ' (entry: ' + list[i] + ')');
-            }
-            break;
-        default:
-            // Wildcard skip
-            try {
-                re = new RegExp(utils.wildcard_to_regexp(list[i]),'i');
-                new_skip_list.push(re);
-            }
-            catch (e) {
-                plugin.logerror(e.message + ' (entry: ' + list[i] + ')');
-            }
         }
     }
 
@@ -222,8 +222,8 @@ exports.hook_data_post = function (next, connection) {
         socket.on('connect', function () {
             connected = true;
             socket.setTimeout((cfg.main.timeout || 30) * 1000);
-            var hp = socket.address(),
-              addressInfo = hp === null ? '' : ' ' + hp.address + ':' + hp.port;
+            var hp = socket.address();
+            var addressInfo = hp === null ? '' : ' ' + hp.address + ':' + hp.port;
             connection.logdebug(plugin, 'connected to host' + addressInfo);
             socket.write("zINSTREAM\0", function () {
                 txn.message_stream.pipe(socket, { clamd_style: true });
@@ -257,7 +257,7 @@ exports.hook_data_post = function (next, connection) {
                 if (virus && plugin.rejectRE &&       // enabled
                     plugin.allRE.test(virus) &&       // has a reject option
                     !plugin.rejectRE.test(virus)) {   // reject=false set
-                        return next();
+                    return next();
                 }
                 if (!plugin.cfg.reject.virus) { return next(); }
 

@@ -2,8 +2,8 @@
 
 // documentation via: haraka -h plugins/relay_acl
 
-var ipaddr = require('ipaddr.js'),
-    net    = require('net');
+var ipaddr = require('ipaddr.js');
+var net    = require('net');
 
 exports.register = function() {
     this.logerror(this, "deprecated. see 'haraka -h relay'");
@@ -40,7 +40,7 @@ exports.relay_dest_domains = function (next, connection, params) {
         transaction.results.add(plugin, {skip: 'relay_dest_domain(relay)'});
         return next();
     }
- 
+
     if (!plugin.cfg.domains) {
         transaction.results.add(plugin, {skip: 'relay_dest_domain(config)'});
         return next();
@@ -58,7 +58,7 @@ exports.relay_dest_domains = function (next, connection, params) {
     var action = JSON.parse(dst_cfg).action;
     connection.logdebug(plugin, 'found config for ' + dest_domain + ': ' + action);
 
-    switch(action) {
+    switch (action) {
         case "accept":
             connection.relaying = true;
             transaction.results.add(plugin, {pass: 'relay_dest_domain'});

@@ -1,10 +1,12 @@
-var stub         = require('./fixtures/stub'),
-    constants    = require('./../constants'),
-//  Logger       = require('./fixtures/stub_logger'),
-    configfile   = require('./../configfile'),
-    config       = require('./../config'),
-//  ResultStore  = require('../../result_store'),
-    connection   = require('./../connection');
+var stub         = require('./fixtures/stub');
+var constants    = require('./../constants');
+// var Logger       = require('./fixtures/stub_logger');
+var configfile   = require('./../configfile');
+var config       = require('./../config');
+var config       = require('./../config');
+// var ResultStore  = require('../../result_store');
+var config       = require('./../config');
+var connection   = require('./../connection');
 
 // huge hack here, but plugin tests need constants
 constants.import(global);

@@ -79,7 +79,7 @@ Transaction.prototype.add_data = function(line) {
     if (typeof line === 'string') { // This shouldn't ever really happen...
         line = new Buffer(line, 'binary');
     }
-    // check if this is the end of headers line  
+    // check if this is the end of headers line
     if (this.header_pos === 0 &&
         (line[0] === 0x0A || (line[0] === 0x0D && line[1] === 0x0A)) ) {
         this.header.parse(this.header_lines);
@@ -100,7 +100,7 @@ Transaction.prototype.add_data = function(line) {
         if (line[0] === 0x2E) line = line.slice(1); // Strip leading "."
         var new_line = this.body.parse_more(
                 line.toString('binary').replace(/\r\n$/, '\n'));
-        
+
         if (!new_line.length) {
             return; // buffering for banners
         }
@@ -150,7 +150,8 @@ Transaction.prototype.end_data = function(cb) {
 
     if (!this.discard_data) {
         this.message_stream.add_line_end(cb);
-    } else {
+    }
+    else {
         cb();
     }
 };

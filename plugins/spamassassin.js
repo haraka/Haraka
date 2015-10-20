@@ -97,7 +97,7 @@ exports.hook_data_post = function (next, connection) {
             if (spamd_response.headers && spamd_response.headers.Status) {
                 // SpamAssassin appears to have a bug that causes a space not to
                 // be added before autolearn= when the header line has been folded.
-                // So we modify the regexp here not to match autolearn onwards. 
+                // So we modify the regexp here not to match autolearn onwards.
                 var tests = /tests=((?:(?!autolearn)[^ ])+)/.exec(
                         spamd_response.headers.Status.replace(/\r?\n\t/g,'')
                     );

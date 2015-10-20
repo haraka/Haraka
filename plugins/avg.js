@@ -100,9 +100,9 @@ exports.hook_data_post = function (next, connection) {
                 return do_next(DENYSOFT, 'Virus scanner error (AVG)');
             }
 
-            var code = matches[1],
-                cont = matches[2],
-                rest = matches[3];
+            var code = matches[1];
+            var cont = matches[2];
+            var rest = matches[3];
             response.push(rest);
             if (cont !== ' ') { return; }
 
@@ -140,7 +140,7 @@ exports.hook_data_post = function (next, connection) {
                             });
                             socket.send_command('QUIT');
                             return do_next(DENY, response.join(' '));
-                        default:  
+                        default:
                             // Any other result is an error
                             connection.results.add(plugin, {
                                 err: 'Bad response: ' + response.join(' ')

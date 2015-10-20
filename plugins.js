@@ -185,7 +185,9 @@ plugins.server = { notes: {} };
 plugins._load_and_compile_plugin = function (name) {
     var plugin = new Plugin(name);
     var fp = plugin.full_paths;
-    var rf, last_err, hasPackageJson;
+    var rf;
+    var last_err;
+    var hasPackageJson;
     for (var i=0, j=fp.length; i<j; i++) {
         try {
             rf = fs.readFileSync(fp[i]);
@@ -210,7 +212,8 @@ plugins._load_and_compile_plugin = function (name) {
     var code;
     if (hasPackageJson) {
         code = '"use strict"; var p = require("' + name + '"); for (var attrname in p) { exports[attrname] = p[attrname];}';
-    } else {
+    }
+    else {
         code = '"use strict";' + rf;
     }
     var sandbox = {
@@ -393,6 +396,7 @@ plugins._make_custom_require = function (file_path, hasPackageJson) {
         if (hasPackageJson) {
             var mod = require(module);
             constants.import(global);
+            global.server = plugins.server;
             return mod;
         }
 

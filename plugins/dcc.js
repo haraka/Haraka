@@ -8,7 +8,7 @@ exports.hook_data_post = function (next, connection) {
 
     // Fix-up rDNS for DCC
     var host;
-    switch(connection.remote_host) {
+    switch (connection.remote_host) {
         case 'Unknown':
         case 'NXDOMAIN':
         case 'DNSERROR':
@@ -18,10 +18,10 @@ exports.hook_data_post = function (next, connection) {
             host = connection.remote_host;
             break;
     }
-    
+
     var rcpts = txn.rcpt_to.map(function (rcpt) { return rcpt.address(); });
-    var training = (txn.notes.training_mode && txn.notes.training_mode === 'spam') 
-                   ? true : false);
+    var training = (txn.notes.training_mode && txn.notes.training_mode === 'spam')
+                   ? true : false;
     var response = '';
     var client = net.createConnection({
         path: '/var/dcc/dccifd'
@@ -59,7 +59,7 @@ exports.hook_data_post = function (next, connection) {
         connection.logdebug(self, 'got response: ' + response);
         // Get result code
         var result = rl.shift();
-        switch(result) {
+        switch (result) {
             case 'A':
                 // Accept
             case 'G':
@@ -108,7 +108,7 @@ exports.hook_data_post = function (next, connection) {
                 connection.logerror(this, 'header did not match regexp: ' + header);
             }
         }
-        connection.loginfo(self, 'training=' + (training ? 'Y' : 'N') + ' result=' + result + 
+        connection.loginfo(self, 'training=' + (training ? 'Y' : 'N') + ' result=' + result +
                                  ' disposition=' + disposition + ' headers=' + headers.length);
         return next();
     });

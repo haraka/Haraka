@@ -9,11 +9,11 @@ hook accepts the connection, it will be rejected.
 ## Configuration
 
 * host\_list
-  
+
   Specifies the list of hosts that are local to this server.
 
 * host\_list\_regex
-  
+
   Specifies the list of regexes that are local to this server.  Note
   all these regexes are anchored with ^regex$. One can choose not to
   anchor with .\*. There is the potential for bad regexes to be

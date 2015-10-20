@@ -15,30 +15,30 @@ Configuration
 -------------
 
 * smtp\_forward.ini
-  
+
   Configuration is stored in this file in the following keys:
-  
+
   * host=HOST
-    
+
     The host to connect to.
-    
+
   * port=PORT
-    
+
     The port to connect to. Default: 25
- 
+
   * connect\_timeout=SECONDS
 
     The maximum amount of time to wait when creating a new connection
     to the host.  Default: 30 seconds.
 
   * timeout=SECONDS
-    
+
     The amount of seconds to let a backend connection live idle in the
     connection pool.  This should always be less than the global plugin
     timeout, which should in turn be less than the connection timeout.
 
   * max\_connections=NUMBER
-   
+
     Maximum number of connections at any given time. Default: 1000
 
   * enable\_tls=[true]
@@ -86,6 +86,6 @@ directly to the specified host. Messages with recipients only in the domains
 example1.com and example2.com will get delivered directly to 1.2.3.5.
 Everything else gets delivered to 1.2.3.4.
 
-See [GitHub Issue #573](https://github.com/baudehlo/Haraka/issues/573) for
+See [GitHub Issue #573](https://github.com/haraka/Haraka/issues/573) for
 background on the limitations of smtp-forward with recipients in different
 domains.

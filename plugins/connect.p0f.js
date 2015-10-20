@@ -15,7 +15,7 @@ function P0FClient(path) {
     this.socket_has_error = false;
     this.restart_interval = false;
 
-    var connect = function () {    
+    var connect = function () {
         self.sock = net.createConnection(path);
         self.sock.setTimeout(5 * 1000);
 

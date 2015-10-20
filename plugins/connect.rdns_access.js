@@ -7,7 +7,7 @@ exports.register = function() {
     var config = this.config.get('connect.rdns_access.ini');
     this.wl = this.config.get('connect.rdns_access.whitelist', 'list');
     this.bl = this.config.get('connect.rdns_access.blacklist', 'list');
-    this.deny_msg = config.general && (config.general['deny_msg'] ||
+    this.deny_msg = config.general && (config.general.deny_msg ||
         'Connection rejected.');
     var white_regex =
         this.config.get('connect.rdns_access.whitelist_regex', 'list');

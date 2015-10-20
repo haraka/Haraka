@@ -161,18 +161,18 @@ exports.check_result = function (connection, message) {
             // { id: '011', operator: 'equals', value: 'all_bad', award: '-2'}
             var thisResArr = plugin.result_as_array(thisResult);
             switch (thisAward.operator) {
-            case 'equals':
-                plugin.check_result_equal(thisResArr, thisAward, connection);
-                break;
-            case 'match':
-                plugin.check_result_match(thisResArr, thisAward, connection);
-                break;
-            case 'lt':
-                plugin.check_result_lt(thisResArr, thisAward, connection);
-                break;
-            case 'gt':
-                plugin.check_result_gt(thisResArr, thisAward, connection);
-                break;
+                case 'equals':
+                    plugin.check_result_equal(thisResArr, thisAward, connection);
+                    break;
+                case 'match':
+                    plugin.check_result_match(thisResArr, thisAward, connection);
+                    break;
+                case 'lt':
+                    plugin.check_result_lt(thisResArr, thisAward, connection);
+                    break;
+                case 'gt':
+                    plugin.check_result_gt(thisResArr, thisAward, connection);
+                    break;
             }
         }
     });

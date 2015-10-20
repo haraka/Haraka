@@ -11,7 +11,7 @@
 var qchar = /([^a-zA-Z0-9!#\$\%\&\x27\*\+\x2D\/=\?\^_`{\|}~.])/;
 
 function Address (user, host) {
-    if (typeof user == 'object' && user.original) {
+    if (typeof user === 'object' && user.original) {
         // Assume reconstructing from JSON parse
         for (var k in user) {
             this[k] = user[k];
@@ -43,38 +43,42 @@ exports.domain_expr = undefined; // so you can override this when loading and re
 exports.qtext_expr = /[\x01-\x08\x0B\x0C\x0E-\x1F\x21\x23-\x5B\x5D-\x7F]/;
 exports.text_expr  = /\\([\x01-\x09\x0B\x0C\x0E-\x7F])/;
 
-var domain_re, source_route_re, user_host_re, atoms_re, qt_re;
+var domain_re;
+var source_route_re;
+var user_host_re;
+var atoms_re;
+var qt_re;
 
 exports.compile_re = function () {
     domain_re = exports.domain_expr || new RegExp (
                                          exports.subdomain_expr.source +
                                          '(?:\\.' + exports.subdomain_expr.source + ')*'
                                          );
-    
+
     if (!exports.domain_expr && exports.address_literal_expr) {
         // if address_literal_expr is set, add it in
         domain_re = new RegExp('(?:' + exports.address_literal_expr.source +
                                '|'   + domain_re.source + ')');
     }
-    
+
     source_route_re = new RegExp('^@' + domain_re.source +
                                  '(?:,@' + domain_re.source + ')*:');
-    
+
     user_host_re = new RegExp('^(.*)@(' + domain_re.source + ')$');
-    
+
     atoms_re = new RegExp('^' + exports.atom_expr.source +
                           '(\\.' + exports.atom_expr.source + ')*');
-    
+
     qt_re = new RegExp('^"((' + exports.qtext_expr.source +
                        '|' + exports.text_expr.source + ')*)"$');
-}
+};
 
 exports.compile_re();
 
 Address.prototype.parse = function (addr) {
     // strip source route
     addr = addr.replace(source_route_re, '');
-    
+
     // empty addr is ok
     if (addr === '') {
         this.user = null;
@@ -90,11 +94,11 @@ Address.prototype.parse = function (addr) {
     }
 
     var matches;
-    
+
     if (!(matches = user_host_re.exec(addr))) {
         throw new Error("Invalid domain in address: " + addr);
     }
-    
+
     var localpart  = matches[1];
     var domainpart = matches[2];
 
@@ -116,23 +120,23 @@ Address.prototype.parse = function (addr) {
     else {
         throw new Error("Invalid local part in address: " + addr);
     }
-}
+};
 
 Address.prototype.isNull = function () {
     return this.user ? 0 : 1;
-}
+};
 
 Address.prototype.format = function () {
     if (this.isNull()) {
         return '<>';
     }
-    
+
     var user = this.user.replace(qchar, '\\$1', 'g');
     if (user !== this.user) {
         return '<"' + user + '"' + (this.host ? ('@' + this.host) : '') + '>';
     }
     return '<' + this.address() + '>';
-}
+};
 
 Address.prototype.address = function (set) {
     if (set) {
@@ -140,10 +144,10 @@ Address.prototype.address = function (set) {
         this.parse(set);
     }
     return (this.user || '') + (this.host ? ('@' + this.host) : '');
-}
+};
 
 Address.prototype.toString = function () {
     return this.format();
-}
+};
 
 exports.Address = Address;

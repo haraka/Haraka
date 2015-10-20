@@ -39,7 +39,7 @@ exports.hook_connect = function (next, connection) {
             }
             // Set notes for other plugins
             connection.notes.gbudb = gbudb;
-            // Handle result 
+            // Handle result
             switch (gbudb.range) {
                 case 'new':
                 case 'normal':
@@ -204,7 +204,7 @@ exports.hook_data_post = function (next, connection) {
                 }
                 // Summary log
                 connection.loginfo(self, 'result: time=' + elapsed + 'ms code=' + code +
-                                         (gbudb_ip ? ' ip="' + gbudb_ip + '"' : '') + 
+                                         (gbudb_ip ? ' ip="' + gbudb_ip + '"' : '') +
                                          (group ? ' group="' + group + '"' : '') +
                                          (rules ? ' rule_count=' + rules.split(/\s+/).length : '') +
                                          (rules ? ' rules="' + rules + '"' : ''));
@@ -214,39 +214,39 @@ exports.hook_data_post = function (next, connection) {
                     // Handle result
                     var action;
                     if (cfg.message) {
-                        if (code === 0 && cfg.message['white']) {
-                            action = cfg.message['white'];
+                        if (code === 0 && cfg.message.white) {
+                            action = cfg.message.white;
                         }
                         else if (code === 1) {
-                            if (cfg.message['local_white']) {
-                                action = cfg.message['local_white'];
+                            if (cfg.message.local_white) {
+                                action = cfg.message.local_white;
                             }
                             else {
                                 return next(OK);
                             }
                         }
                         else if (code === 20) {
-                            if (cfg.message['truncate']) {
-                                action = cfg.message['truncate'];
+                            if (cfg.message.truncate) {
+                                action = cfg.message.truncate;
                             }
                             else {
                                 return next(DENY, 'Poor GBUdb reputation for IP [' + connection.remote_ip + ']');
                             }
                         }
-                        else if (code === 40 && cfg.message['caution']) {
-                            action = cfg.message['caution'];
+                        else if (code === 40 && cfg.message.caution) {
+                            action = cfg.message.caution;
                         }
-                        else if (code === 63 && cfg.message['black']) {
-                            action = cfg.message['black'];
+                        else if (code === 63 && cfg.message.black) {
+                            action = cfg.message.black;
                         }
                         else {
-                            if (cfg.message["code_" + code]) {
-                                action = cfg.message["code_" + code];
+                            if (cfg.message['code_' + code]) {
+                                action = cfg.message['code_' + code];
                             }
                             else {
-                                if (code > 1 && code !== 40) { 
-                                    if (cfg.message['nonzero']) {
-                                        action = cfg.message['nonzero'];
+                                if (code > 1 && code !== 40) {
+                                    if (cfg.message.nonzero) {
+                                        action = cfg.message.nonzero;
                                     }
                                     else {
                                         return next(DENY, 'Spam detected by MessageSniffer' +
@@ -327,7 +327,7 @@ exports.hook_data_post = function (next, connection) {
 
     // TODO: we only need the first 64Kb of the message
     txn.message_stream.pipe(ws, { line_endings: '\r\n' });
-}
+};
 
 exports.hook_disconnect = function (next, connection) {
     var self = this;
@@ -335,9 +335,10 @@ exports.hook_disconnect = function (next, connection) {
 
     // Train GBUdb on rejected messages and recipients
     if (cfg.main.gbudb_report_deny && !connection.notes.snf_run &&
-        (connection.rcpt_count.reject > 1 || connection.msg_count.reject > 1)) 
+        (connection.rcpt_count.reject > 0 || connection.msg_count.reject > 0))
     {
-        SNFClient("<snf><xci><gbudb><bad ip='" + connection.remote_ip + "'/></gbudb></xci></snf>", function (err, result) {
+        var snfreq = "<snf><xci><gbudb><bad ip='" + connection.remote_ip + "'/></gbudb></xci></snf>";
+        SNFClient(snfreq, function (err, result) {
             if (err) {
                 connection.logerror(self, err.message);
             }

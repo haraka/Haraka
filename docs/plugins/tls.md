@@ -22,7 +22,7 @@ Example:
 
     cat mail.example.com.crt intermediary_cert.crt ca-cert.crt > config/tls_cert.pem
 
-See also [Setting Up TLS](https://github.com/baudehlo/Haraka/wiki/Setting-up-TLS-with-CA-certificates)
+See also [Setting Up TLS](https://github.com/haraka/Haraka/wiki/Setting-up-TLS-with-CA-certificates)
 
 ## Self Issued (unsigned) Certificate
 

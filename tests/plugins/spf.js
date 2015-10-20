@@ -1,10 +1,10 @@
 'use strict';
 
-var Connection   = require('../fixtures/stub_connection'),
-    Plugin       = require('../fixtures/stub_plugin'),
-    SPF          = require('../../spf').SPF,
-    config       = require('../../config'),
-    Address      = require('../../address').Address;
+var Connection   = require('../fixtures/stub_connection');
+var Plugin       = require('../fixtures/stub_plugin');
+var SPF          = require('../../spf').SPF;
+var config       = require('../../config');
+var Address      = require('../../address').Address;
 
 var spf = new SPF();
 
@@ -28,7 +28,7 @@ exports.return_results = {
             test.done();
         };
         test.expect(1);
-        this.plugin.return_results(next, this.connection, 
+        this.plugin.return_results(next, this.connection,
             spf, 'mfrom', spf.NONE, 'test@example.com');
     },
     'result, neutral': function (test) {

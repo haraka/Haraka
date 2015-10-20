@@ -21,7 +21,8 @@ exports.check_plain_passwd = function (connection, user, passwd, cb) {
     var domain;
     if ((domain = /@([^@]+)$/.exec(user))) {
         domain = domain[1].toLowerCase();
-    } else {
+    }
+    else {
         // AUTH user not in user@domain.com format
         connection.logerror(this, 'AUTH user="' + user + '" error="not in required format"');
         return cb(false);
@@ -90,9 +91,9 @@ exports.try_auth_proxy = function (connection, hosts, user, passwd, cb) {
         var matches;
         connection.logprotocol(self, "S: " + line);
         if (matches = smtp_regexp.exec(line)) {
-            var code = matches[1],
-                cont = matches[2],
-                rest = matches[3];
+            var code = matches[1];
+            var cont = matches[2];
+            var rest = matches[3];
             response.push(rest);
             if (cont === ' ') {
                 connection.logdebug(self, 'command state: ' + command);
@@ -147,23 +148,26 @@ exports.try_auth_proxy = function (connection, hosts, user, passwd, cb) {
                         this.write(utils.base64(user) + "\r\n");
                         response = [];
                         return;
-                    } else if (code[0] === '3' && response[0] === 'UGFzc3dvcmQ6') {
+                    }
+                    else if (code[0] === '3' && response[0] === 'UGFzc3dvcmQ6') {
                         this.write(utils.base64(passwd) + "\r\n");
                         response = [];
                         return;
                     }
                     if (code[0] === '5') {
                         // Initial attempt failed; strip domain and retry.
-                        var u; 
+                        var u;
                         if ((u = /^([^@]+)@.+$/.exec(user))) {
                             user = u[1];
                             if (methods.indexOf('PLAIN') !== -1) {
                                 socket.send_command('AUTH', 'PLAIN ' + utils.base64("\0" + user + "\0" + passwd));
-                            } else if (methods.indexOf('LOGIN') !== -1) {
+                            }
+                            else if (methods.indexOf('LOGIN') !== -1) {
                                 socket.send_command('AUTH', 'LOGIN');
                             }
                             return;
-                        } else {
+                        }
+                        else {
                             // Don't attempt any other hosts
                             auth_complete = true;
                         }

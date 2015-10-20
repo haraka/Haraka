@@ -1,9 +1,9 @@
-var stub         = require('./fixtures/stub'),
-    Plugin       = require('./fixtures/stub_plugin'),
-    Connection   = require('./fixtures/stub_connection'),
-    configfile   = require('../configfile'),
-    config       = require('../config'),
-    util         = require('util');
+var stub         = require('./fixtures/stub');
+var Plugin       = require('./fixtures/stub_plugin');
+var Connection   = require('./fixtures/stub_connection');
+var configfile   = require('../configfile');
+var config       = require('../config');
+var util         = require('util');
 
 function _set_up(callback) {
     // this.connection = Connection.createConnection();

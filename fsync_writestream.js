@@ -13,9 +13,9 @@ function FsyncWriteStream (path, options) {
 
 util.inherits(FsyncWriteStream, fs.WriteStream);
 
-var versions   = process.version.split('.'),
-    version    = Number(versions[0].substring(1)),
-    subversion = Number(versions[1]);
+var versions   = process.version.split('.');
+var version    = Number(versions[0].substring(1));
+var subversion = Number(versions[1]);
 
 if (version > 0 || subversion >= 10) {
     // for v0.10+ compat
@@ -35,18 +35,21 @@ if (version > 0 || subversion >= 10) {
 
         function close(fd) {
             fs.fsync(fd || self.fd, function(er) {
-                if (er)
-                self.emit('error', er);
+                if (er) {
+                    self.emit('error', er);
+                }
                 else {
                     fs.close(fd || self.fd, function(er) {
-                        if (er)
-                        self.emit('error', er);
-                        else
-                        self.emit('close');
+                        if (er) {
+                            self.emit('error', er);
+                        }
+                        else {
+                            self.emit('close');
+                        }
                     });
                     self.fd = null;
                 }
-            })
+            });
         }
     };
 }
@@ -63,8 +66,8 @@ else {
 
         this.busy = true;
 
-        var method = args.shift(),
-            cb = args.pop();
+        var method = args.shift();
+        var cb = args.pop();
 
         args.push(function(err) {
             self.busy = false;
@@ -85,19 +88,22 @@ else {
                     cb(null, arguments[1]);
                 }
 
-            } else if (method === self._open) {
+            }
+            else if (method === self._open) {
                 // save reference for file pointer
                 self.fd = arguments[1];
                 self.emit('open', self.fd);
 
-            } else if (method === fs.close) {
+            }
+            else if (method === fs.close) {
                 // stop flushing after close
                 if (cb) {
                     cb(null);
                 }
                 self.emit('close');
                 return;
-            } else if (method === fs.fsync) {
+            }
+            else if (method === fs.fsync) {
                 // XXX: New code compared to WriteStream.flush
                 // stop flushing after fsync
                 if (cb) {
@@ -120,10 +126,12 @@ else {
     FsyncWriteStream.prototype.end = function(data, encoding, cb) {
         if (typeof(data) === 'function') {
             cb = data;
-        } else if (typeof(encoding) === 'function') {
+        }
+        else if (typeof(encoding) === 'function') {
             cb = encoding;
             this.write(data);
-        } else if (arguments.length > 0) {
+        }
+        else if (arguments.length > 0) {
             this.write(data, encoding);
         }
         this.writable = false;
@@ -133,7 +141,7 @@ else {
             if (err) return cb(err);
             self._queue.push([fs.close, cb]);
             self.flush();
-        }
+        };
         this._queue.push([fs.fsync, fsync_cb]);
         this.flush();
     };

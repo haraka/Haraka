@@ -6,12 +6,14 @@
 //
 //         To achieve the same results using FCrDNS (in addition to
 //         the additional features), set [reject] no_rdns=true in
-//         connect.fcrdns.ini. 
+//         connect.fcrdns.ini.
 //
 //         The FCrDNS plugin uses the white/blacklist functionality in the
 //         access plugin.
 
 var dns = require('dns');
+
+var net_utils = require('./net_utils');
 
 // _dns_error handles err from node.dns callbacks.  It will always call next()
 // with a DENYDISCONNECT for this plugin.
@@ -22,14 +24,14 @@ function _dns_error(connection, next, err, host, plugin, nxdomain, dnserror) {
                 '. Disconnecting.');
             next(DENYDISCONNECT, 'Sorry we could not find address for ' +
                 host + '. ' + nxdomain);
-        break;
-    
+            break;
+
         default:
             connection.loginfo(plugin, 'encountered an error when looking up ' +
                 host + '. Disconnecting.');
             next(DENYDISCONNECT, 'Sorry we encountered an error when ' +
                 'looking up ' + host + '. ' + dnserror);
-        break;
+            break;
     }
 }
 
@@ -39,13 +41,14 @@ function _in_whitelist(connection, plugin, address) {
         plugin.config.get('lookup_rdns.strict.whitelist', 'list');
     var host_list_regex =
         plugin.config.get('lookup_rdns.strict.whitelist_regex', 'list');
-    
+
     connection.logdebug(plugin, "Checking if " + address + " is in the " +
         "lookup_rdns.strict.whitelist files");
 
     var i;
     for (i in host_list) {
-        connection.logdebug(plugin, "checking " + domain + " against " + host_list[i]);
+        connection.logdebug(plugin, "checking " + domain + " against " +
+                host_list[i]);
 
         if (host_list[i].toLowerCase() === domain) {
             connection.logdebug(plugin, "Allowing " + domain);
@@ -56,14 +59,15 @@ function _in_whitelist(connection, plugin, address) {
     if (host_list_regex.length) {
         var regex = new RegExp ('^(?:' + host_list_regex.join('|') + ')$', 'i');
 
-        connection.logdebug(plugin, "checking " + domain + " against " + regex.source);
+        connection.logdebug(plugin, "checking " + domain + " against " +
+                regex.source);
 
         if (domain.match(regex)) {
             connection.logdebug(plugin, "Allowing " + domain);
             return 1;
         }
     }
-    
+
     return 0;
 }
 
@@ -74,94 +78,89 @@ exports.hook_lookup_rdns = function (next, connection) {
     var timeout_id   = 0;
     var config       = this.config.get('lookup_rdns.strict.ini');
     var rdns         = '';
-    var fwd_nxdomain = config.forward && (config.forward['nxdomain']    || '');
-    var fwd_dnserror = config.forward && (config.forward['dnserror']    || '');
-    var rev_nxdomain = config.reverse && (config.reverse['nxdomain']    || '');
-    var rev_dnserror = config.reverse && (config.reverse['dnserror']    || '');
-    var nomatch      = config.general && (config.general['nomatch']     || '');
-    var timeout      = config.general && (config.general['timeout']     || 60);
-    var timeout_msg  = config.general && (config.general['timeout_msg'] || '');
+    var fwd_nxdomain = config.forward && (config.forward.nxdomain    || '');
+    var fwd_dnserror = config.forward && (config.forward.dnserror    || '');
+    var rev_nxdomain = config.reverse && (config.reverse.nxdomain    || '');
+    var rev_dnserror = config.reverse && (config.reverse.dnserror    || '');
+    var nomatch      = config.general && (config.general.nomatch     || '');
+    var timeout      = config.general && (config.general.timeout     || 60);
+    var timeout_msg  = config.general && (config.general.timeout_msg || '');
 
     if (_in_whitelist(connection, plugin, connection.remote_ip)) {
         called_next++;
         return next(OK, connection.remote_ip);
     }
 
+    var call_next = function (code, msg) {
+        clearTimeout(timeout_id);
+        if (called_next) return;
+        called_next++;
+        next(code, msg);
+    };
+
     timeout_id = setTimeout(function () {
-        if (!called_next) {
-            connection.loginfo(plugin, 'timed out when looking up ' +
-                connection.remote_ip + '. Disconnecting.');
-            called_next++;
-            next(DENYDISCONNECT, '[' + connection.remote_ip + '] ' +
-                timeout_msg);
-        }
+        connection.loginfo(plugin, 'timed out when looking up ' +
+            connection.remote_ip + '. Disconnecting.');
+        call_next(DENYDISCONNECT,
+            '[' + connection.remote_ip + '] ' + timeout_msg);
     }, timeout * 1000);
 
     dns.reverse(connection.remote_ip, function (err, domains) {
         if (err) {
             if (!called_next) {
-                called_next++;
-                clearTimeout(timeout_id);
                 connection.auth_results("iprev=permerror");
-                _dns_error(connection, next, err, connection.remote_ip, plugin,
-                    rev_nxdomain, rev_dnserror);
+                _dns_error(connection, call_next, err, connection.remote_ip,
+                    plugin, rev_nxdomain, rev_dnserror);
             }
-        } else {
-            // Anything this strange needs documentation.  Since we are
-            // checking M (A) addresses for N (PTR) records, we need to
-            // keep track of our total progress.  That way, at the end,
-            // we know to send an error of nothing has been found.  Also,
-            // on err, this helps us figure out if we still have more to check.
-            total_checks = domains.length;
+            return;
+        }
 
-            // Check whitelist before we start doing a bunch more DNS queries.
-            for(var i = 0; i < domains.length; i++) {
-                if (_in_whitelist(connection, plugin, domains[i])) {
-                    called_next++;
-                    clearTimeout(timeout_id);
-                    return next(OK, domains[i]);
+        // Anything this strange needs documentation.  Since we are
+        // checking M (A) addresses for N (PTR) records, we need to
+        // keep track of our total progress.  That way, at the end,
+        // we know to send an error of nothing has been found.  Also,
+        // on err, this helps us figure out if we still have more to check.
+        total_checks = domains.length;
+
+        // Check whitelist before we start doing a bunch more DNS queries.
+        for (var i = 0; i < domains.length; i++) {
+            if (_in_whitelist(connection, plugin, domains[i])) {
+                return call_next(OK, domains[i]);
+            }
+        }
+
+        // Now we should make sure that the reverse response matches
+        // the forward address.  Almost no one will have more than one
+        // PTR record for a domain, however, DNS protocol does not
+        // restrict one from having multiple PTR records for the same
+        // address.  So here we are, dealing with that case.
+        domains.forEach(function (rdns) {
+            net_utils.get_ips_by_host(rdns, function (err, addresses) {
+                total_checks--;
+
+                if (err && err.length) {
+                    if (!called_next && !total_checks) {
+                        connection.auth_results("iprev=fail");
+                        _dns_error(connection, call_next, err[0], rdns, plugin,
+                            fwd_nxdomain, fwd_dnserror);
+                    }
+                    return;
                 }
-            }
-
-            // Now we should make sure that the reverse response matches
-            // the forward address.  Almost no one will have more than one
-            // PTR record for a domain, however, DNS protocol does not
-            // restrict one from having multiple PTR records for the same
-            // address.  So here we are, dealing with that case.
-            domains.forEach(function (rdns) {
-                dns.resolve4(rdns, function (err, addresses) {
-                    total_checks--;
-
-                    if (err) {
-                        if (!called_next && !total_checks) {
-                            called_next++;
-                            clearTimeout(timeout_id);
-                            connection.auth_results("iprev=fail");
-                            _dns_error(connection, next, err, rdns, plugin,
-                                fwd_nxdomain, fwd_dnserror);
-                        }
-                    } else {
-                        for (var i = 0; i < addresses.length ; i++) {
-                            if (addresses[i] === connection.remote_ip) {
-                                // We found a match, call next() and return
-                                if (!called_next) {
-                                    called_next++;
-                                    clearTimeout(timeout_id);
-                                    connection.auth_results("iprev=pass");
-                                    return next(OK, rdns);
-                                }
-                            }
-                        }
-
-                        if (!called_next && !total_checks) {
-                            called_next++;
-                            clearTimeout(timeout_id);
-                            next(DENYDISCONNECT, rdns + ' [' +
-                                connection.remote_ip + '] ' + nomatch);
+                for (var i = 0; i < addresses.length ; i++) {
+                    if (addresses[i] === connection.remote_ip) {
+                        // We found a match, call next() and return
+                        if (!called_next) {
+                            connection.auth_results("iprev=pass");
+                            return call_next(OK, rdns);
                         }
                     }
-                });
+                }
+
+                if (!called_next && !total_checks) {
+                    call_next(DENYDISCONNECT, rdns + ' [' +
+                        connection.remote_ip + '] ' + nomatch);
+                }
             });
-        }
+        });
     });
 };

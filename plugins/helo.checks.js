@@ -161,7 +161,7 @@ exports.valid_hostname = function (next, connection, helo) {
 
     if (plugin.should_skip(connection, 'valid_hostname')) { return next(); }
 
-    if (net_utils.is_ipv4_literal(helo)) {
+    if (net_utils.is_ip_literal(helo)) {
         connection.results.add(plugin, {skip: 'valid_hostname(literal)'});
         return next();
     }
@@ -220,7 +220,7 @@ exports.rdns_match = function (next, connection, helo) {
         return next();
     }
 
-    if (net_utils.is_ipv4_literal(helo)) {
+    if (net_utils.is_ip_literal(helo)) {
         connection.results.add(plugin, {fail: 'rdns_match(literal)'});
         return next();
     }
@@ -251,7 +251,7 @@ exports.bare_ip = function (next, connection, helo) {
 
     // RFC 2821, 4.1.1.1  Address literals must be in brackets
     // RAW IPs must be formatted: "[1.2.3.4]" not "1.2.3.4" in HELO
-    if(/^\d+\.\d+\.\d+\.\d+$/.test(helo)) {
+    if (net_utils.get_ipany_re('^(?:IPv6:)?','$','').test(helo)) {
         connection.results.add(plugin, {fail: 'bare_ip(invalid literal)'});
         if (plugin.cfg.reject.bare_ip) {
             return next(DENY, "Invalid address format in HELO");
@@ -274,7 +274,7 @@ exports.dynamic = function (next, connection, helo) {
         return next();
     }
 
-    if (/^\[?\d+\.\d+\.\d+\.\d+\]?$/.test(helo)) {
+    if (net_utils.get_ipany_re('^\\[?(?:IPv6:)?','\\]?$','').test(helo)) {
         connection.results.add(plugin, {skip: 'dynamic(literal)'});
         return next();
     }
@@ -296,7 +296,7 @@ exports.big_company = function (next, connection, helo) {
 
     if (plugin.should_skip(connection, 'big_company')) { return next(); }
 
-    if (net_utils.is_ipv4_literal(helo)) {
+    if (net_utils.is_ip_literal(helo)) {
         connection.results.add(plugin, {skip: 'big_co(literal)'});
         return next();
     }
@@ -341,7 +341,7 @@ exports.literal_mismatch = function (next, connection, helo) {
 
     if (plugin.should_skip(connection, 'literal_mismatch')) { return next(); }
 
-    var literal = /^\[(\d+\.\d+\.\d+\.\d+)\]$/.exec(helo);
+    var literal = net_utils.get_ipany_re('^\\[(?:IPv6:)?','\\]$','').exec(helo);
     if (!literal) {
         connection.results.add(plugin, {pass: 'literal_mismatch'});
         return next();
@@ -396,7 +396,7 @@ exports.forward_dns = function (next, connection, helo) {
         return next();
     }
 
-    if (net_utils.is_ipv4_literal(helo)) {
+    if (net_utils.is_ip_literal(helo)) {
         connection.results.add(plugin, {skip: 'forward_dns(literal)'});
         return next();
     }
@@ -541,7 +541,7 @@ exports.get_a_records = function (host, cb) {
         var ips = [];
         // results is now equals to: {queryA: 1, queryAAAA: 2}
         for (var i=0; i<results.length; i++) {
-            if(results[i]){
+            if (results[i]){
                 ips = ips.concat(results[i]);
             }
         }
@@ -553,5 +553,4 @@ exports.get_a_records = function (host, cb) {
         // return the DNS results
         return cb(null, ips);
     });
-
 };

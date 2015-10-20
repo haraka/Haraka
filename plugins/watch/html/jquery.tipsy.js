@@ -16,14 +16,14 @@
         return false;
     }
 
-	// Returns true if it is a DOM element
-	// http://stackoverflow.com/a/384380/999
-	function isElement(o){
-		return (
-			typeof HTMLElement === "object" ? o instanceof HTMLElement : //DOM2
-			o && typeof o === "object" && o.nodeType === 1 && typeof o.nodeName==="string"
-		);	
-	}
+    // Returns true if it is a DOM element
+    // http://stackoverflow.com/a/384380/999
+    function isElement(o){
+        return (
+            typeof HTMLElement === "object" ? o instanceof HTMLElement : //DOM2
+            o && typeof o === "object" && o.nodeType === 1 && typeof o.nodeName==="string"
+        );
+    }
 
     var tipsyIDcounter = 0;
     function tipsyID() {
@@ -43,10 +43,10 @@
                 return;
             }
 
-            if (isElement(this.$element) && !this.$element.is(':visible')) { 
-                return; 
+            if (isElement(this.$element) && !this.$element.is(':visible')) {
+                return;
             }
-            
+
             var title;
             if (this.enabled && (title = this.getTitle())) {
                 var $tip = this.tip();
@@ -65,16 +65,17 @@
                 // If the element is contained in a SVG object, use getBBox
                 if (this.$element.parents('svg').size() > 0) {
                     pos = $.extend(pos, this.$element[0].getBBox());
-                } else {
+                }
+                else {
                     pos = $.extend(pos, {
                         width: this.$element[0].offsetWidth || 0,
                         height: this.$element[0].offsetHeight || 0
                     });
                 }
 
-                var actualWidth = $tip[0].offsetWidth,
-                    actualHeight = $tip[0].offsetHeight,
-                    gravity = maybeCall(this.options.gravity, this.$element[0]);
+                var actualWidth = $tip[0].offsetWidth;
+                var actualHeight = $tip[0].offsetHeight;
+                var gravity = maybeCall(this.options.gravity, this.$element[0]);
 
                 var tp;
                 switch (gravity.charAt(0)) {
@@ -97,7 +98,8 @@
                 if (gravity.length == 2) {
                     if (gravity.charAt(1) == 'w') {
                         tp.left = pos.left + pos.width / 2 - 15;
-                    } else {
+                    }
+                    else {
                         tp.left = pos.left + pos.width / 2 - actualWidth + 15;
                     }
                 }
@@ -107,10 +109,11 @@
                 $tip.css({width: (actualWidth - 10) + 'px'});
 
                 if (this.options.fade) {
-                    if(this.options.shadow)
+                    if (this.options.shadow)
                         $(".tipsy-inner").css({'box-shadow': '0px 0px '+this.options.shadowBlur+'px '+this.options.shadowSpread+'px rgba(0, 0, 0, '+this.options.shadowOpacity+')', '-webkit-box-shadow': '0px 0px '+this.options.shadowBlur+'px '+this.options.shadowSpread+'px rgba(0, 0, 0, '+this.options.shadowOpacity+')'});
                     $tip.stop().css({opacity: 0, display: 'block', visibility: 'visible'}).animate({opacity: this.options.opacity}, this.options.fadeInTime);
-                } else {
+                }
+                else {
                     $tip.css({visibility: 'visible', opacity: this.options.opacity});
                 }
 
@@ -125,7 +128,8 @@
         hide: function() {
             if (this.options.fade) {
                 this.tip().stop().fadeOut(this.options.fadeOutTime, function() { $(this).remove(); });
-            } else {
+            }
+            else {
                 this.tip().remove();
             }
             if (this.options.aria) {
@@ -141,11 +145,14 @@
         },
 
         getTitle: function() {
-            var title, $e = this.$element, o = this.options;
+            var title;
+            var $e = this.$element;
+            var o = this.options;
             this.fixTitle();
             if (typeof o.title == 'string') {
                 title = $e.attr(o.title == 'title' ? 'original-title' : o.title);
-            } else if (typeof o.title == 'function') {
+            }
+            else if (typeof o.title == 'function') {
                 title = o.title.call($e[0]);
             }
             title = ('' + title).replace(/(^\s*|\s*$)/, "");
@@ -179,7 +186,8 @@
 
         if (options === true) {
             return this.data('tipsy');
-        } else if (typeof options == 'string') {
+        }
+        else if (typeof options == 'string') {
             var tipsy = this.data('tipsy');
             if (tipsy) tipsy[options]();
             return this;
@@ -207,7 +215,8 @@
             tipsy.hoverState = 'in';
             if (options.delayIn === 0) {
                 tipsy.show();
-            } else {
+            }
+            else {
                 tipsy.fixTitle();
                 setTimeout(function() {
                     if (tipsy.hoverState == 'in' && isElementInDOM(tipsy.$element)) {
@@ -222,7 +231,8 @@
             tipsy.hoverState = 'out';
             if (options.delayOut === 0) {
                 tipsy.hide();
-            } else {
+            }
+            else {
                 setTimeout(function() { if (tipsy.hoverState == 'out' || !tipsy.$element || !tipsy.$element.is(':visible')) tipsy.hide(); }, options.delayOut);
             }
         }
@@ -230,13 +240,14 @@
         if (!options.live) this.each(function() { get(this); });
 
         if (options.trigger != 'manual') {
-            var eventIn  = options.trigger == 'hover' ? 'mouseenter mouseover' : 'focus',
-                eventOut = options.trigger == 'hover' ? 'mouseleave mouseout' : 'blur';
+            var eventIn  = options.trigger == 'hover' ? 'mouseenter mouseover' : 'focus';
+            var eventOut = options.trigger == 'hover' ? 'mouseleave mouseout' : 'blur';
 
             if (options.live && options.live !== true) {
                 $(this).on(eventIn, options.live, enter);
                 $(this).on(eventOut, options.live, leave);
-            } else {
+            }
+            else {
                 if (options.live && !$.live) {
                     //live === true and using jQuery >= 1.9
                     throw "Since jQuery 1.9, pass selector as live argument. eg. $(document).tipsy({live: 'a.live'});";
@@ -257,7 +268,7 @@
         delayOut: 0,
         fade: false,
         fadeInTime: 400,
-        fadeOutTime: 400, 
+        fadeOutTime: 400,
         shadow: false,
         shadowBlur: 8,
         shadowOpacity: 1,
@@ -274,12 +285,12 @@
     };
 
     $.fn.tipsy.revalidate = function() {
-      $('.tipsy').each(function() {
-        var pointee = $.data(this, 'tipsy-pointee');
-        if (!pointee || !isElementInDOM(pointee)) {
-          $(this).remove();
-        }
-      });
+        $('.tipsy').each(function() {
+            var pointee = $.data(this, 'tipsy-pointee');
+            if (!pointee || !isElementInDOM(pointee)) {
+                $(this).remove();
+            }
+        });
     };
 
     $.fn.tipsy.enable = function() {
@@ -331,10 +342,10 @@
      */
     $.fn.tipsy.autoBounds = function(marginNorth, marginEast, prefer) {
         return function() {
-            var dir = {ns: prefer[0], ew: (prefer.length > 1 ? prefer[1] : false)},
-                boundTop = $(document).scrollTop() + marginNorth,
-                boundLeft = $(document).scrollLeft() + marginEast,
-                $this = $(this);
+            var dir = {ns: prefer[0], ew: (prefer.length > 1 ? prefer[1] : false)};
+            var boundTop = $(document).scrollTop() + marginNorth;
+            var boundLeft = $(document).scrollLeft() + marginEast;
+            var $this = $(this);
 
             if ($this.offset().top < boundTop) dir.ns = 'n';
             if ($this.offset().left < boundLeft) dir.ew = 'w';
@@ -354,20 +365,22 @@
      */
     $.fn.tipsy.autoBounds2 = function(margin, prefer) {
         return function() {
-            var dir = {},
-                boundTop = $(document).scrollTop() + margin,
-                boundLeft = $(document).scrollLeft() + margin,
-                $this = $(this);
+            var dir = {};
+            var boundTop = $(document).scrollTop() + margin;
+            var boundLeft = $(document).scrollLeft() + margin;
+            var $this = $(this);
 
             // bi-directional string (ne, se, sw, etc...)
             if (prefer.length > 1) {
                 dir.ns = prefer[0];
                 dir.ew = prefer[1];
-            } else {
+            }
+            else {
                 // single direction string (e, w, n or s)
                 if (prefer[0] == 'e' || prefer[0] == 'w') {
                     dir.ew = prefer[0];
-                } else {
+                }
+                else {
                     dir.ns = prefer[0];
                 }
             }
@@ -383,5 +396,5 @@
             return dir.ew;
         }
     };
-    
+
 })(jQuery, window);

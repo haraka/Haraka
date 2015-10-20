@@ -29,6 +29,14 @@ Configuration
     In the above example the "test3" alias has an action of "alias", and
     a required "to" field.  If this "to" field were missing the alias would
     fail to run, and an error would be printed in the logs.
+    
+    Now aliases of 'user', '@host' and 'user@host' possible:
+    
+        { "demo" : { "action" : "drop" } }
+        or
+        { "@example.com" : { "action" : "drop" } } 
+        or
+        { "demo@example.com" : { "action" : "drop" } } 
 
     * wildcard '-' notation
 

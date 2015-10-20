@@ -4,16 +4,11 @@
 exports.register = function() {
     var plugin = this;
 
-    try { plugin.Syslog = require('node-syslog'); }
+    try { plugin.Syslog = require('modern-syslog'); }
     catch (e) {
-        plugin.logerror('failed to load node-syslog');
-
-        try { plugin.Syslog = require('strong-fork-syslog'); }
-        catch (e) {
-            plugin.logerror("couldn't load strong-fork-syslog either");
-            plugin.logerror('try: npm i node-syslog strong-fork-syslog' );
-            return;
-        }
+        plugin.logerror('failed to load modern-syslog');
+        plugin.logerror('try: npm i modern-syslog' );
+        return;
     }
 
     var options   = 0;
@@ -57,7 +52,7 @@ exports.register = function() {
         options |= plugin.Syslog.LOG_NOWAIT;
     }
 
-    switch(facility.toUpperCase()) {
+    switch (facility.toUpperCase()) {
         case 'MAIL':
             plugin.Syslog.init(name, options, plugin.Syslog.LOG_MAIL);
             break;
@@ -119,7 +114,7 @@ exports.register = function() {
 exports.syslog = function (next, logger, log) {
     var plugin = this;
 
-    switch(log.level.toUpperCase()) {
+    switch (log.level.toUpperCase()) {
         case 'INFO':
             plugin.Syslog.log(plugin.Syslog.LOG_INFO, log.data);
             break;

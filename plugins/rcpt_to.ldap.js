@@ -9,7 +9,7 @@ exports.register = function() {
     try {
         plugin.ldap = require('ldapjs');
     }
-    catch(e) {
+    catch (e) {
         plugin.logerror("failed to load ldapjs, " +
             " try installing it: npm install ldapjs");
         return;

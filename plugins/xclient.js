@@ -45,7 +45,7 @@ exports.hook_unrecognized_command = function (next, connection, params) {
         var match = /^([^=]+)=([^ ]+)/.exec(args[a]);
         if (match) {
             connection.logdebug(this, 'found key=' + match[1] + ' value=' + match[2]);
-            switch(match[1]) {
+            switch (match[1]) {
                 case 'addr':
                     // IPv6 is prefixed in the XCLIENT protocol
                     var ipv6;
@@ -66,7 +66,7 @@ exports.hook_unrecognized_command = function (next, connection, params) {
                     // SMTP or ESMTP
                     if (/^e?smtp/i.test(match[2])) {
                         xclient[match[1]] = match[2];
-                    } 
+                    }
                     break;
                 case 'name':
                 case 'port':
@@ -79,7 +79,7 @@ exports.hook_unrecognized_command = function (next, connection, params) {
                 default:
                     connection.logwarn(this, 'unknown argument: ' + args[a]);
             }
-        } 
+        }
         else {
             connection.logwarn(this, 'unknown argument: ' + args[a]);
         }

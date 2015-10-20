@@ -3,7 +3,7 @@
 
 var url       = require('url');
 var dns       = require('dns');
-var isIPv4    = require('net').isIPv4;
+var net       = require('net');
 var net_utils = require('./net_utils');
 var utils     = require('./utils');
 
@@ -16,7 +16,7 @@ var lists;
 var zones;
 var excludes = {};
 
-function check_excludes_list(host) {
+function check_excludes_list (host) {
     host = host.toLowerCase().split('.').reverse();
     for (var i=0; i < host.length; i++) {
         var check;
@@ -33,7 +33,7 @@ function check_excludes_list(host) {
     return false;
 }
 
-exports.register = function() {
+exports.register = function () {
     // Override regexps if top_level_tlds file is present
     if (!net_utils.top_level_tlds) return;
     if (!Object.keys(net_utils.top_level_tlds).length) return;
@@ -64,6 +64,8 @@ exports.load_uri_config = function (next) {
     }
 };
 
+
+// IS: IPv6 compatible (maybe; if the BL is support IPv6 requests)
 exports.do_lookups = function (connection, next, hosts, type) {
     var plugin = this;
 
@@ -90,7 +92,7 @@ exports.do_lookups = function (connection, next, hosts, type) {
         var host = hosts[i].toLowerCase();
         connection.logdebug(plugin, '(' + type + ') checking: ' + host);
         // Make sure we have a valid TLD
-        if (!isIPv4(host) && !net_utils.top_level_tlds[(host.split('.').reverse())[0]]) {
+        if (!net.isIPv4(host) && !net.isIPv6(host) && !net_utils.top_level_tlds[(host.split('.').reverse())[0]]) {
             continue;
         }
         // Check the exclusion list
@@ -106,15 +108,22 @@ exports.do_lookups = function (connection, next, hosts, type) {
                 results.add(plugin, {skip: type + ' unsupported for ' + zone });
                 continue;
             }
-            // Convert in-addr.arpa into bare IPv4 lookup
+            // Convert in-addr.arpa into bare IPv4/v6 lookup
             var arpa = host.split(/\./).reverse();
-            if (arpa.shift() === 'arpa' && arpa.shift() === 'in-addr') {
-                if (arpa.length < 4) continue; // Only full IP addresses
-                host = arpa.join('.');
+            if (arpa.shift() === 'arpa'){
+                var ip_format = arpa.shift();
+                if ( ip_format === 'in-addr') {
+                    if (arpa.length < 4) continue; // Only full IP addresses
+                    host = arpa.join('.');
+                }
+                else if ( ip_format === 'ip6') {
+                    if (arpa.length < 32) continue; // Only full IP addresses
+                    host = arpa.join('.');
+                }
             }
             var lookup;
             // Handle zones that do not allow IP queries (e.g. Spamhaus DBL)
-            if (isIPv4(host)) {
+            if (net.isIPv4(host)) {
                 if (/^(?:1|true|yes|enabled|on)$/i.test(lists[zone].no_ip_lookups)) {
                     results.add(plugin, {skip: 'IP (' + host + ') not supported for ' + zone });
                     continue;
@@ -126,6 +135,19 @@ exports.do_lookups = function (connection, next, hosts, type) {
                 }
                 // Reverse IP for lookup
                 lookup = host.split(/\./).reverse().join('.');
+            }
+            if (net.isIPv6(host)) {
+                if (/^(?:1|true|yes|enabled|on)$/i.test(lists[zone].not_ipv6_compatible) || /^(?:1|true|yes|enabled|on)$/i.test(lists[zone].no_ip_lookups)) {
+                    results.add(plugin, {skip: 'IP (' + host + ') not supported for ' + zone });
+                    continue;
+                }
+                // Skip any private IPs
+                if (net_utils.is_private_ip(host)) {
+                    results.add(plugin, {skip: 'private IP' });
+                    continue;
+                }
+                // Reverse IP for lookup
+                lookup = net_utils.ipv6_reverse(host);
             }
             // Handle zones that require host to be stripped to a domain boundary
             else if (/^(?:1|true|yes|enabled|on)$/i.test(lists[zone].strip_to_domain)) {
@@ -155,27 +177,36 @@ exports.do_lookups = function (connection, next, hosts, type) {
             queries_to_run.push( [ Object.keys(queries[Object.keys(queries)[j]])[k], Object.keys(queries)[j] ] );
         }
     }
-    // Randomize the order a bit
-    utils.shuffle(queries_to_run);
 
-    if(!queries_to_run.length) {
+    if (!queries_to_run.length) {
         results.add(plugin, {skip: type + ' (no queries)' });
         return next();
     }
 
+    utils.shuffle(queries_to_run); // Randomize the order
+
     // Perform the lookups
     var pending_queries = 0;
     var called_next = false;
+    var timer;
+    function call_next (code, msg) {
+        clearTimeout(timer);
+        if (called_next) return;
+        called_next = true;
+        next(code, msg);
+    }
 
-    var timer = setTimeout(function () {
+    timer = setTimeout(function () {
         connection.logdebug(plugin, 'timeout');
-        if (!called_next) {
-            called_next = true;
-            results.add(plugin, {err: type + ' timeout' });
-            return next();
-        }
-    }, ((lists.main && lists.main.timeout) ?
-        lists.main.timeout : 30) * 1000);
+        results.add(plugin, {err: type + ' timeout' });
+        call_next();
+    }, ((lists.main && lists.main.timeout) ? lists.main.timeout : 30) * 1000);
+
+    function conclude_if_no_pending () {
+        if (pending_queries !== 0) return;
+        results.add(plugin, {pass: type});
+        call_next();
+    }
 
     queries_to_run.forEach(function (query) {
         var lookup = query.join('.');
@@ -184,69 +215,66 @@ exports.do_lookups = function (connection, next, hosts, type) {
             lookup = lookup + '.';
         }
         pending_queries++;
-        dns.resolve4(lookup, function(err, addrs) {
+        dns.resolve4(lookup, function (err, addrs) {
             pending_queries--;
             connection.logdebug(plugin, lookup + ' => ' + ((err) ? err : addrs.join(', ')));
-            if (!err && !called_next) {
-                var skip = false;
-                var do_reject = function (msg) {
-                    if (!skip && !called_next) {
-                        if (!msg) {
-                            msg = query[0] + ' blacklisted in ' + query[1];
-                        }
-                        // Check for custom message
-                        if (lists[query[1]] && lists[query[1]].custom_msg) {
-                            msg = lists[query[1]].custom_msg.replace(/\{uri\}/g, query[0]).replace(/\{zone\}/g, query[1]);
-                        }
-                        clearTimeout(timer);
-                        called_next = true;
-                        results.add(plugin, {fail: type });
-                        return next(DENY, msg);
-                    }
-                };
-                // Optionally validate first result against a regexp
-                if (lists[query[1]] && lists[query[1]].validate) {
-                    var re = new RegExp(lists[query[1]].validate);
-                    if (!re.test(addrs[0])) {
-                        connection.logdebug(plugin, 'ignoring result (' + addrs[0] + ') for: ' +
-                                lookup + ' as it did not match validation rule');
-                        skip = true;
-                    }
+
+            if (err) return conclude_if_no_pending();
+
+            var skip = false;
+            var do_reject = function (msg) {
+                if (skip) return;
+                if (called_next) return;
+                if (!msg) {
+                    msg = query[0] + ' blacklisted in ' + query[1];
                 }
-                // Check for optional bitmask
-                if (lists[query[1]] && lists[query[1]].bitmask) {
-                    // A bitmask zone should only return a single result
-                    // We only support a bitmask of up to 128 in a single octet
-                    var last_octet = Number((addrs[0].split('.'))[3]);
-                    var bitmask = Number(lists[query[1]].bitmask);
-                    if ((last_octet & bitmask) > 0) {
-                        connection.loginfo(plugin, 'found ' + query[0] + ' in zone ' + query[1] +
-                            ' (' + addrs.join(',') + '; bitmask=' + bitmask + ')');
-                        do_reject();
-                    } else {
-                        connection.logdebug(plugin, 'ignoring result (' + addrs[0] + ') for: ' +
-                                lookup + ' as the bitmask did not match');
-                        skip = true;
-                    }
+                // Check for custom message
+                if (lists[query[1]] && lists[query[1]].custom_msg) {
+                    msg = lists[query[1]].custom_msg
+                        .replace(/\{uri\}/g,  query[0])
+                        .replace(/\{zone\}/g, query[1]);
                 }
-                else {
+                results.add(plugin,
+                    {fail: [type, query[0], query[1]].join('/') });
+                call_next(DENY, msg);
+            };
+            // Optionally validate first result against a regexp
+            if (lists[query[1]] && lists[query[1]].validate) {
+                var re = new RegExp(lists[query[1]].validate);
+                if (!re.test(addrs[0])) {
+                    connection.logdebug(plugin, 'ignoring result (' + addrs[0] + ') for: ' +
+                            lookup + ' as it did not match validation rule');
+                    skip = true;
+                }
+            }
+            // Check for optional bitmask
+            if (lists[query[1]] && lists[query[1]].bitmask) {
+                // A bitmask zone should only return a single result
+                // We only support a bitmask of up to 128 in a single octet
+                var last_octet = Number((addrs[0].split('.'))[3]);
+                var bitmask = Number(lists[query[1]].bitmask);
+                if ((last_octet & bitmask) > 0) {
                     connection.loginfo(plugin, 'found ' + query[0] + ' in zone ' + query[1] +
-                        ' (' + addrs.join(',') + ')');
+                        ' (' + addrs.join(',') + '; bitmask=' + bitmask + ')');
                     do_reject();
                 }
+                else {
+                    connection.logdebug(plugin, 'ignoring result (' + addrs[0] + ') for: ' +
+                            lookup + ' as the bitmask did not match');
+                    skip = true;
+                }
             }
-            if (!called_next && pending_queries === 0) {
-                clearTimeout(timer);
-                results.add(plugin, {pass: type});
-                return next();
+            else {
+                connection.loginfo(plugin, 'found ' + query[0] + ' in zone ' + query[1] +
+                    ' (' + addrs.join(',') + ')');
+                do_reject();
             }
+
+            conclude_if_no_pending();
         });
     });
 
-    if (pending_queries === 0) {
-        results.add(plugin, {pass: type});
-        return next();
-    }
+    conclude_if_no_pending();
 };
 
 exports.hook_lookup_rdns = function (next, connection) {
@@ -269,9 +297,10 @@ exports.hook_ehlo = function (next, connection, helo) {
     this.load_uri_config(next);
     // Handle IP literals
     var literal;
-    if ((literal = /^\[(\d+\.\d+\.\d+\.\d+)\]$/.exec(helo))) {
+    if ((literal = net_utils.get_ipany_re('^\\[(?:IPv6:)?', '\\]$','').exec(helo))) {
         this.do_lookups(connection, next, literal[1], 'helo');
-    } else {
+    }
+    else {
         this.do_lookups(connection, next, helo, 'helo');
     }
 };
@@ -321,7 +350,7 @@ exports.hook_data_post = function (next, connection) {
         if (mmatch) {
             return plugin.do_lookups(connection, cb, mmatch[1], 'msgid');
         }
-         cb();
+        cb();
     };
 
     // Body

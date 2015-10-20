@@ -46,13 +46,24 @@ function SMTPClient(port, host, connect_timeout, idle_timeout) {
             return;
         }
 
-        var code = matches[1],
-            cont = matches[2],
-            msg = matches[3];
+        var code = matches[1];
+        var cont = matches[2];
+        var msg = matches[3];
 
         client.response.push(msg);
         if (cont !== ' ') {
             return;
+        }
+
+        if (client.command === 'auth') {
+            if (code.match(/^3/) && cont === 'VXNlcm5hbWU6') {
+                client.emit('auth_username');
+                return;
+            }
+            else if (code.match(/^3/) && cont === 'UGFzc3dvcmQ6') {
+                client.emit('auth_password');
+                return;
+            }
         }
 
         if (client.command === 'ehlo') {

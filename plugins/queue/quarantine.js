@@ -8,7 +8,7 @@ var existsSync = require('./utils').existsSync;
 exports.register = function () {
     this.register_hook('queue','quarantine');
     this.register_hook('queue_outbound','quarantine');
-}
+};
 
 // http://unknownerror.net/2011-05/16260-nodejs-mkdirs-recursion-create-directory.html
 var mkdirs = exports.mkdirs = function(dirpath, mode, callback) {
@@ -18,7 +18,7 @@ var mkdirs = exports.mkdirs = function(dirpath, mode, callback) {
     mkdirs(path.dirname(dirpath), mode, function() {
         fs.mkdir(dirpath, mode, callback);
     });
-}
+};
 
 var zeroPad = exports.zeroPad = function (n, digits) {
     n = n.toString();
@@ -26,7 +26,7 @@ var zeroPad = exports.zeroPad = function (n, digits) {
         n = '0' + n;
     }
     return n;
-}
+};
 
 exports.hook_init_master = function (next) {
     // At start-up; delete any files in the temporary directory
@@ -45,17 +45,17 @@ exports.hook_init_master = function (next) {
         }
     }
     return next();
-}
+};
 
 exports.quarantine = function (next, connection) {
     var transaction = connection.transaction;
     if ((connection.notes.quarantine || transaction.notes.quarantine)) {
         // Calculate date in YYYYMMDD format
         var d = new Date();
-        var yyyymmdd = d.getFullYear() + zeroPad(d.getMonth()+1, 2) 
+        var yyyymmdd = d.getFullYear() + zeroPad(d.getMonth()+1, 2)
             + this.zeroPad(d.getDate(), 2);
         var config = this.config.get('quarantine.ini');
-        var base_dir = (config.main.quarantine_path) ? 
+        var base_dir = (config.main.quarantine_path) ?
                         config.main.quarantine_path  :
                         '/var/spool/haraka/quarantine';
         var dir;
@@ -76,14 +76,15 @@ exports.quarantine = function (next, connection) {
         }
         if (!dir) {
             dir = yyyymmdd;
-        } else {
+        }
+        else {
             dir = [ dir, yyyymmdd ].join('/');
         }
         var plugin = this;
         // Create all the directories recursively if they do not exist first.
-        // Then write the file to a temporary directory first, once this is 
-        // successful we hardlink the file to the final destination and then 
-        // remove the temporary file to guarantee a complete file in the 
+        // Then write the file to a temporary directory first, once this is
+        // successful we hardlink the file to the final destination and then
+        // remove the temporary file to guarantee a complete file in the
         // final destination.
         mkdirs([ base_dir, 'tmp' ].join('/'), parseInt('0770', 8), function () {
             mkdirs([ base_dir, dir ].join('/'), parseInt('0770', 8), function () {
@@ -93,7 +94,7 @@ exports.quarantine = function (next, connection) {
                     return next();
                 });
                 ws.on('close', function () {
-                    fs.link([ base_dir, 'tmp', transaction.uuid ].join('/'), 
+                    fs.link([ base_dir, 'tmp', transaction.uuid ].join('/'),
                             [ base_dir, dir, transaction.uuid ].join('/'),
                             function (err) {
                                 if (err) {
@@ -102,14 +103,14 @@ exports.quarantine = function (next, connection) {
                                 else {
                                     // Add a note to where we stored the message
                                     transaction.notes.quarantined = [ base_dir, dir, transaction.uuid ].join('/');
-                                    connection.loginfo(plugin, 'Stored copy of message in quarantine: ' + 
+                                    connection.loginfo(plugin, 'Stored copy of message in quarantine: ' +
                                                    [ base_dir, dir, transaction.uuid ].join('/'));
                                     // Now delete the temporary file
                                     fs.unlink([ base_dir, 'tmp', transaction.uuid ].join('/'), function () {});
                                 }
                                 // Using notes.quarantine_action to decide what to do after the message is quarantined.
-                                // Format can be either action = [ code, msg ] or action = code 
-                                var action = (connection.notes.quarantine_action || transaction.notes.quarantine_action); 
+                                // Format can be either action = [ code, msg ] or action = code
+                                var action = (connection.notes.quarantine_action || transaction.notes.quarantine_action);
                                 if (Array.isArray(action)) {
                                     return next(action[0], action[1]);
                                 }
@@ -125,8 +126,7 @@ exports.quarantine = function (next, connection) {
                 transaction.message_stream.pipe(ws, { line_endings: '\n' });
             });
         });
-        
-    } 
+    }
     else {
         return next();
     }

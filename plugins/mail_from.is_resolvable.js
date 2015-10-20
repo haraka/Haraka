@@ -1,6 +1,9 @@
 'use strict';
 // Check MAIL FROM domain is resolvable to an MX
 var dns = require('dns');
+var net = require('net');
+
+var net_utils = require('./net_utils');
 
 exports.register = function () {
     this.load_ini();
@@ -12,7 +15,7 @@ exports.load_ini = function () {
         booleans: [
             '-main.allow_mx_ip',
             '+main.reject_no_mx',
-            ],
+        ],
     }, function () {
         plugin.load_ini();
     });
@@ -51,6 +54,7 @@ exports.hook_mail = function(next, connection, params) {
         next(code, reply);
     };
 
+    // IS: IPv6 compatible
     dns.resolveMx(domain, function(err, addresses) {
         if (!txn) return;
         if (err && plugin.mxErr(connection, domain, 'MX', err, mxDone)) return;
@@ -61,41 +65,42 @@ exports.hook_mail = function(next, connection, params) {
         }
 
         // Verify that the MX records resolve to valid addresses
-        var a_records = {};
+        var records = {};
         var pending_queries = 0;
         function check_results () {
             if (pending_queries !== 0) return;
-            a_records = Object.keys(a_records);
-            if (a_records && a_records.length) {
-                connection.logdebug(plugin, domain + ': ' + a_records);
-                results.add(plugin, {pass: 'has_a_records'});
+
+            records = Object.keys(records);
+            if (records && records.length) {
+                connection.logdebug(plugin, domain + ': ' + records);
+                results.add(plugin, {pass: 'has_fwd_dns'});
                 return mxDone();
             }
-            results.add(plugin, {fail: 'has_a_records'});
+            results.add(plugin, {fail: 'has_fwd_dns'});
             return mxDone(((c.reject_no_mx) ? DENY : DENYSOFT),
-                    'MX without A records');
+                    'MX without A/AAAA records');
         }
 
         addresses.forEach(function (addr) {
             // Handle MX records that are IP addresses
             // This is invalid - but a lot of MTAs allow it.
-            if (/^\d+\.\d+\.\d+\.\d+$/.test(addr.exchange)) {
+            if (net_utils.get_ipany_re('^\\[','\\]$','').test(addr.exchange)) {
                 connection.logwarn(plugin, domain + ': invalid MX ' +
                         addr.exchange);
                 if (c.allow_mx_ip) {
-                    a_records[addr.exchange] = 1;
+                    records[addr.exchange] = 1;
                 }
                 return;
             }
             pending_queries++;
-            dns.resolve(addr.exchange, function(err, addresses) {
+            net_utils.get_ips_by_host(addr.exchange, function(err, addresses) {
                 pending_queries--;
                 if (!txn) return;
-                if (err) {
-                    results.add(plugin, {msg: err.message});
+                if (err && err.length === 2) {
+                    results.add(plugin, {msg: err[0]});
                     connection.logdebug(plugin, domain + ': MX ' +
                             addr.priority + ' ' + addr.exchange +
-                            ' => ' + err.message);
+                            ' => ' + err[0]);
                     check_results();
                     return;
                 }
@@ -103,12 +108,21 @@ exports.hook_mail = function(next, connection, params) {
                         ' ' + addr.exchange + ' => ' + addresses);
                 for (var i=0; i < addresses.length; i++) {
                     // Ignore anything obviously bogus
-                    if (plugin.re_bogus_ip.test(addresses[i])) {
-                        connection.logdebug(plugin, addr.exchange +
-                                ': discarding ' + addresses[i]);
-                        continue;
+                    if (net.isIPv4(addresses[i])){
+                        if (plugin.re_bogus_ip.test(addresses[i])) {
+                            connection.logdebug(plugin, addr.exchange +
+                                    ': discarding ' + addresses[i]);
+                            continue;
+                        }
                     }
-                    a_records[addresses[i]] = 1;
+                    if (net.isIPv6(addresses[i])){
+                        if (net_utils.ipv6_bogus(addresses[i])) {
+                            connection.logdebug(plugin, addr.exchange +
+                                    ': discarding ' + addresses[i]);
+                            continue;
+                        }
+                    }
+                    records[addresses[i]] = 1;
                 }
                 check_results();
             });
@@ -137,33 +151,41 @@ exports.mxErr = function (connection, domain, type, err, mxDone) {
     return false;
 };
 
+// IS: IPv6 compatible
 exports.implicit_mx = function (connection, domain, mxDone) {
     var plugin = this;
     var txn = connection.transaction;
-    dns.resolve(domain, 'A', function(err, addresses) {
-        if (!txn) return;
-        if (err && plugin.mxErr(connection, domain, 'A', err, mxDone)) return;
 
+    net_utils.get_ips_by_host(domain, function(err, addresses) {
+        if (!txn) return;
         if (!addresses || !addresses.length) {
-            txn.results.add(plugin, {fail: 'has_a_records'});
+            txn.results.add(plugin, {fail: 'has_fwd_dns'});
             return mxDone(((plugin.cfg.main.reject_no_mx) ? DENY : DENYSOFT),
                     'No MX for your FROM address');
         }
 
-        connection.logdebug(plugin, domain + ': A => ' + addresses);
-        var a_records = {};
+        connection.logdebug(plugin, domain + ': A/AAAA => ' + addresses);
+        var records = {};
         for (var i=0; i < addresses.length; i++) {
             var addr = addresses[i];
             // Ignore anything obviously bogus
-            if (plugin.re_bogus_ip.test(addr)) {
-                connection.logdebug(plugin, domain + ': discarding ' + addr);
-                continue;
+            if (net.isIPv4(addr)){
+                if (plugin.re_bogus_ip.test(addr)) {
+                    connection.logdebug(plugin, domain + ': discarding ' + addr);
+                    continue;
+                }
             }
-            a_records[addr] = true;
+            if (net.isIPv6(addr)){
+                if (net_utils.ipv6_bogus(addr)) {
+                    connection.logdebug(plugin, domain + ': discarding ' + addr);
+                    continue;
+                }
+            }
+            records[addr] = true;
         }
 
-        a_records = Object.keys(a_records);
-        if (a_records && a_records.length) {
+        records = Object.keys(records);
+        if (records && records.length) {
             txn.results.add(plugin, {pass: 'implicit_mx'});
             return mxDone();
         }

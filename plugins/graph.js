@@ -23,9 +23,9 @@ exports.register = function () {
     config  = plugin.config.get('graph.ini');
     var ignore_re = config.main.ignore_re || plugin.config.get('grapher.ignore_re') || 'queue|graph|relay';
     ignore_re = new RegExp(ignore_re);
-    
+
     plugins = {accepted: 0, disconnect_early: 0};
-    
+
     plugin.config.get('plugins', 'list').forEach(
         function (p) {
             if (!p.match(ignore_re)) {
@@ -82,7 +82,8 @@ exports.deny = function (next, connection, params) {
             if (err) {
                 plugin.logerror("Insert failed: " + err);
             }
-            try { insert.reset(); } catch (e) {}
+            try { insert.reset(); }
+            catch (e) {}
             next();
         });
     });
@@ -99,7 +100,8 @@ exports.queue_ok = function (next, connection, params) {
             if (err) {
                 plugin.logerror("Insert failed: " + err);
             }
-            try { insert.reset(); } catch (ignore) {}
+            try { insert.reset(); }
+            catch (ignore) {}
             next();
         });
     });
@@ -185,13 +187,13 @@ exports.handle_data = function (req, res) {
         default:
             distance = 86400000;
     }
-    
+
     var today    = new Date().getTime();
     var earliest = today - distance;
     var group_by = distance/width; // one data point per pixel
-    
+
     res.write("Date," + utils.sort_keys(plugins).join(',') + "\n");
-    
+
     this.get_data(res, earliest, today, group_by);
 };
 
@@ -199,35 +201,35 @@ exports.get_data = function (res, earliest, today, group_by) {
     var next_stop = earliest + group_by;
     var aggregate = reset_agg();
     var plugin = this;
-    
+
     function write_to (data) {
         // plugin.loginfo(data);
         res.write(data + "\n");
     }
-    
+
     db.each(select, [earliest, next_stop], function (err, row) {
         if (err) {
             res.end();
             return plugin.logerror("SELECT failed: " + err);
         }
         plugin.loginfo("got: " + row.hits + ", " + row.plugin + " next_stop: " + next_stop);
-
         aggregate[row.plugin] = row.hits;
     },
     function (err, rows ) {
-            write_to(utils.ISODate(new Date(next_stop)) + ',' + 
-                utils.sort_keys(plugins).map(function(i){ return 1000 * 60 * (aggregate[i]/group_by); }).join(',')
-            );
-            if (next_stop >= today) {
-                return res.end();
-            }
-            else {
-                return process.nextTick(function () {
-                    plugin.get_data(res, next_stop, today, group_by);
-                });
-            }
+        write_to(utils.ISODate(new Date(next_stop)) + ',' +
+            utils.sort_keys(plugins).map(function(i) {
+                return 1000 * 60 * (aggregate[i]/group_by);
+            }).join(',')
+        );
+        if (next_stop >= today) {
+            return res.end();
         }
-    );
+        else {
+            return process.nextTick(function () {
+                plugin.get_data(res, next_stop, today, group_by);
+            });
+        }
+    });
 };
 
 var reset_agg = function () {

@@ -17,7 +17,7 @@ config.get = function(name, type, cb, options) {
     // Pass arrays by value to prevent config being modified accidentally.
     if (Array.isArray(results)) {
         return results.slice();
-    } 
+    }
 
     return results;
 };
@@ -36,7 +36,8 @@ config.get('thing', type, cb, options);
 config.arrange_args = function (args) {
     var fs_name = args.shift();
     var fs_type = null;
-    var cb, options;
+    var cb;
+    var options;
 
     for (var i=0; i < args.length; i++) {
         if (args[i] === undefined) continue;
@@ -61,7 +62,7 @@ config.arrange_args = function (args) {
     }
 
     if (!fs_type) {
-             if (/\.json$/.test(fs_name)) fs_type = 'json';
+        if (/\.json$/.test(fs_name))      fs_type = 'json';
         else if (/\.yaml$/.test(fs_name)) fs_type = 'yaml';
         else if (/\.ini$/.test(fs_name))  fs_type = 'ini';
         else                              fs_type = 'value';

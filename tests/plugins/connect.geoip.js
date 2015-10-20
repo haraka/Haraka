@@ -7,7 +7,7 @@ var config           = require('../../config');
 var _set_up = function (done) {
     this.plugin = new Plugin('connect.geoip');
     this.plugin.config = config;
-    
+
     this.plugin.load_geoip_ini();
 
     this.connection = Connection.createConnection();
@@ -260,10 +260,10 @@ exports.calculate_distance = {
                 this.connection,
                 [38, -97],
                 function (err, d) {
-            test.expect(1);
-            test.ok(d);
-            test.done();
-        });
+                    test.expect(1);
+                    test.ok(d);
+                    test.done();
+                });
     },
 };
 

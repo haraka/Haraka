@@ -139,7 +139,7 @@ exports.get_domain = function (hook, connection, params) {
             return connection.remote_host;
         case 'helo':
         case 'ehlo':
-            if (net_utils.is_ipv4_literal(params)) return;
+            if (net_utils.is_ip_literal(params)) return;
             return params;
         case 'mail':
         case 'rcpt':

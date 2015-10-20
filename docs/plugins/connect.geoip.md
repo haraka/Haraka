@@ -25,7 +25,7 @@ npm install -g maxmind-geolite-mirror
 
 # DESCRIPTION
 
-GeoIP results are stored in connection.notes.geoip and connection.[results](https://github.com/baudehlo/Haraka/blob/master/docs/Results.md).connect.geoip. The following information is typically available:
+GeoIP results are stored in connection.notes.geoip and connection.[results](https://github.com/haraka/Haraka/blob/master/docs/Results.md).connect.geoip. The following information is typically available:
 
     continent: NA,
     country:   US,

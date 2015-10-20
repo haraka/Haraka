@@ -1,7 +1,11 @@
+'use strict';
+
 var dns       = require('dns');
 var net       = require('net');
-var utils     = require('./utils');
+
 var async     = require('async');
+
+var utils     = require('./utils');
 var net_utils = require('./net_utils');
 
 exports.register = function () {
@@ -71,7 +75,7 @@ exports.hook_lookup_rdns = function (next, connection) {
         connection.results.add(plugin, {ptr_names: ptr_names});
         connection.results.add(plugin, {has_rdns: true});
 
-        // Fetch A records for each PTR host name
+        // Fetch A & AAAA records for each PTR host name
         var pending_queries = 0;
         var queries_run = false;
         var results = {};
@@ -89,47 +93,29 @@ exports.hook_lookup_rdns = function (next, connection) {
             }
 
             queries_run = true;
-			connection.logdebug(plugin, 'domain: ' + ptr_domain);
+            connection.logdebug(plugin, 'domain: ' + ptr_domain);
             pending_queries++;
-            (function (ptr_domain) {  /* BEGIN BLOCK SCOPE */
-                async.parallel([
-                    function(callback){
-                        dns.resolve4(ptr_domain, function(err, ips_from_fwd) {
-                            if (err) {
-                                plugin.handle_a_error(connection, err, ptr_domain);
-                            }
-                            callback(err, ips_from_fwd);
-                        });
-                    },
-                    function(callback){
-                        dns.resolve6(ptr_domain, function(err, ips_from_fwd) {
-                            if (err) {
-                                plugin.handle_a_error(connection, err, ptr_domain);
-                            }
-                            callback(err, ips_from_fwd);
-                        });
-                    }
-                ],
-                function(err, async_results) {
-                    pending_queries--;
-                    var ips = [];
-                    // results is now equals to: {queryA: 1, queryAAAA: 2}
-                    for (var i=0; i<async_results.length; i++) {
-                        if(async_results[i]){
-                            ips = ips.concat(async_results[i]);
-                        }
-                    }
+            net_utils.get_ips_by_host(ptr_domain, function (err, ips) {
+                pending_queries--;
 
-                    connection.logdebug(plugin, ptr_domain + ' => ' + ips);
-                    results[ptr_domain] = ips;
+                if (err && err.length) {
+                    connection.results.add(plugin, {err: err[0]});
+                }
 
-                    if (pending_queries > 0) return;
+                connection.logdebug(plugin, ptr_domain + ' => ' + ips);
+                results[ptr_domain] = ips;
 
-                    // Got all DNS results
-                    connection.results.add(plugin, {ptr_name_to_ip: results});
-                    return plugin.check_fcrdns(connection, results, do_next);
-                });
-            })(ptr_domain); /* END BLOCK SCOPE */
+                if (pending_queries > 0) return;
+
+                if (ips.length === 0) {
+                    connection.results.add(plugin,
+                        { fail: 'ptr_valid('+ptr_domain+')' });
+                }
+
+                // Got all DNS results
+                connection.results.add(plugin, {ptr_name_to_ip: results});
+                return plugin.check_fcrdns(connection, results, do_next);
+            });
         }
 
         // No valid PTR
@@ -165,23 +151,7 @@ exports.hook_data_post = function (next, connection) {
     return next();
 };
 
-exports.handle_a_error = function(connection, err, domain) {
-    var plugin = this;
-
-    switch (err.code) {
-        case 'ENOTFOUND':
-        case 'NXDOMAIN':
-        case 'ENODATA':
-        case dns.NOTFOUND:
-        case dns.NXDOMAIN:
-            connection.results.add(plugin, {fail: 'ptr_valid('+domain+')' });
-            break;
-        default:
-            connection.results.add(plugin, {err: err.message});
-    }
-};
-
-exports.handle_ptr_error = function(connection, err, do_next) {
+exports.handle_ptr_error = function (connection, err, do_next) {
     var plugin = this;
     var rip = connection.remote_ip;
 
@@ -203,7 +173,7 @@ exports.handle_ptr_error = function(connection, err, do_next) {
     }
 };
 
-exports.check_fcrdns = function(connection, results, do_next) {
+exports.check_fcrdns = function (connection, results, do_next) {
     var plugin = this;
 
     for (var fdom in results) {    // mail.example.com

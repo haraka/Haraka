@@ -87,7 +87,8 @@ function DSN(code, msg, def, subject, detail) {
         while (m = this.msg.shift()) {
             this.reply.push([this.cls, this.sub, this.det].join('.') + ' ' + m);
         }
-    } else {
+    }
+    else {
         this.reply = [this.cls, this.sub, this.det].join('.') + ' ' + (this.msg || this.default_msg);
     }
 }

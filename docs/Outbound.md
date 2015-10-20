@@ -276,3 +276,10 @@ should queueing to disk fail e.g:
 
     outbound.send_email(from, to, contents);
 
+
+In case you are passing your content dot-stuffed (a dot at the start of a line
+is doubled, like it is in SMTP conversation, 
+see https://tools.ietf.org/html/rfc2821#section-4.5.2), you should pass the
+```dot_stuffed: true``` option, like so:
+    
+    outbound.send_email(from, to, contents, outnext, { dot_stuffed: true });

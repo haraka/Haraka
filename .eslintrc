@@ -1,0 +1,12 @@
+{
+  "env": {
+    "node": true
+  },
+  "rules": {
+    "dot-notation": 2,
+    "indent": [2, 4, {"SwitchCase": 1}],
+    "one-var": [2, "never"],
+    "no-trailing-spaces": [2, { "skipBlankLines": false }],
+    "space-after-keywords": [2, "always"],
+  }
+}

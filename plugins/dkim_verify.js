@@ -22,28 +22,28 @@ exports.hook_data_post = function(next, connection) {
         if (!results) return next();
         results.forEach(function (res) {
             connection.auth_results(
-              'dkim=' + res.result + 
-              ((res.error) ? ' (' + res.error + ')' : '') + 
+              'dkim=' + res.result +
+              ((res.error) ? ' (' + res.error + ')' : '') +
               ' header.i=' + res.identity
             );
             connection.loginfo(self, 'identity="' + res.identity + '" ' +
                                      'domain="' + res.domain + '" ' +
-                                     'selector="' + res.selector + '" ' + 
+                                     'selector="' + res.selector + '" ' +
                                      'result=' + res.result + ' ' +
                                      ((res.error) ? '(' + res.error + ')' : ''));
             // Add individual results to ResultStore
-            if (res.result === 'pass') { 
-                txn.results.add(self, { pass: res.domain }); 
+            if (res.result === 'pass') {
+                txn.results.add(self, { pass: res.domain });
             }
-            else if (res.result === 'fail') { 
+            else if (res.result === 'fail') {
                 txn.results.add(self, {
-                    fail: res.domain + ((res.error) ? '(' + res.error + ')' : '') 
-                }); 
+                    fail: res.domain + ((res.error) ? '(' + res.error + ')' : '')
+                });
             }
-            else { 
-                txn.results.add(self, { 
-                    err: res.domain + ((res.error) ? '(' + res.error + ')' : '') 
-                }); 
+            else {
+                txn.results.add(self, {
+                    err: res.domain + ((res.error) ? '(' + res.error + ')' : '')
+                });
             }
         });
         connection.logdebug(self, JSON.stringify(results));
