@@ -33,7 +33,7 @@ Header.prototype.parse = function (lines) {
     }
 
     for (var i=0,l=this.header_list.length; i < l; i++) {
-        var match = this.header_list[i].match(/^([^:]*):\s*([\s\S]*)$/);
+        var match = this.header_list[i].match(/^([^\s:]*):\s*([\s\S]*)$/);
         if (match) {
             var key = match[1].toLowerCase();
             var val = match[2];
