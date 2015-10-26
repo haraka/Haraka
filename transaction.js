@@ -22,6 +22,7 @@ function Transaction() {
     this.body_filters = [];
     this.data_bytes = 0;
     this.header_pos = 0;
+    this.found_hb_sep = false;
     this.body = null;
     this.parse_body = false;
     this.notes = {};
@@ -84,6 +85,7 @@ Transaction.prototype.add_data = function(line) {
         (line[0] === 0x0A || (line[0] === 0x0D && line[1] === 0x0A)) ) {
         this.header.parse(this.header_lines);
         this.header_pos = this.header_lines.length;
+        this.found_hb_sep = true;
         if (this.parse_body) {
             this.ensure_body();
         }
@@ -113,20 +115,19 @@ Transaction.prototype.add_data = function(line) {
 };
 
 Transaction.prototype.end_data = function(cb) {
-    if (this.header_lines.length && this.header.header_list.length === 0) {
+    if (!this.found_hb_sep && this.header_lines.length) {
         // Headers not parsed yet - must be a busted email
-        // Strategy: Find first blank line, parse up to that as headers.
-        //           Rest as body.
+        // Strategy: Find the first line that doesn't look like a header.
+        // Treat anything before that as headers, anything after as body.
         var header_pos = 0;
         for (var i = 0; i < this.header_lines.length; i++) {
-            header_pos = i;
-            if (/^\s*$/.test(this.header_lines[i])) {
-                this.header_lines[i] = '\n';
+            // Anything that doesn't match a header or continuation
+            if (!/^(?:([^\s:]*):\s*([\s\S]*)$|[ \t])/.test(this.header_lines[i])) {
                 break;
             }
+            header_pos = i;
         }
         var body_lines = this.header_lines.splice(header_pos + 1);
-        this.header_lines = this.header_lines.splice(0, header_pos);
         this.header.parse(this.header_lines);
         this.header_pos = header_pos;
         if (this.parse_body) {
