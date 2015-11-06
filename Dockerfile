@@ -11,7 +11,7 @@
 # DOCKER-VERSION    0.5.3
 
 # See http://phusion.github.io/baseimage-docker/
-FROM phusion/baseimage:0.9.13 
+FROM phusion/baseimage:latest
 
 MAINTAINER Justin Plock <jplock@gmail.com>
 
@@ -22,9 +22,9 @@ RUN /etc/my_init.d/00_regen_ssh_host_keys.sh
 RUN sed 's/main$/main universe/' -i /etc/apt/sources.list
 RUN DEBIAN_FRONTEND=noninteractive apt-get -y -q update
 RUN DEBIAN_FRONTEND=noninteractive apt-get -y -q install python-software-properties g++ make git curl
-RUN curl -sL https://deb.nodesource.com/setup | sudo bash -
-RUN DEBIAN_FRONTEND=noninteractive apt-get -y -q install nodejs
-RUN apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+RUN curl -sL https://deb.nodesource.com/setup_5.x | sudo bash -
+RUN DEBIAN_FRONTEND=noninteractive apt-get -y -q install nodejs && \
+    apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # Optional, useful for development
 # See https://github.com/phusion/baseimage-docker#login_ssh
