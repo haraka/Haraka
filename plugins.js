@@ -202,7 +202,7 @@ plugins._load_and_compile_plugin = function (name) {
             continue;
         }
     }
-    if (!(rf || hasPackageJson) {
+    if (!(rf || hasPackageJson)) {
         if (config.get('smtp.ini').main.ignore_bad_plugins) {
             logger.logcrit('Loading plugin ' + name + ' failed: ' + last_err);
             return;
