@@ -116,10 +116,10 @@ exports.get_maxmind_asn = function (connection) {
 };
 
 function isAscii7Bit(text) {
-  var result = text.split('')
-                   .map(c => (c.charCodeAt(0) < 128))
-                   .reduce((a,b) => (a && b), true);
-  return result;
+    var result = text.split('')
+                     .map(function (c) { return (c.charCodeAt(0) < 128); })
+                     .reduce(function (a,b) { return (a && b); }, true);
+    return result;
 };
 
 exports.lookup_maxmind = function (next, connection) {
@@ -148,8 +148,8 @@ exports.lookup_maxmind = function (next, connection) {
             connection.results.add(plugin, {ll: [loc.latitude, loc.longitude]});
             if (plugin.cfg.main.show_region) { show.push(loc.region); }
             if (plugin.cfg.main.show_city  ) {
-              show.push(isAscii7Bit(loc.city) ? loc.city
-                                              : mimelib.encodeMimeWord(loc.city));
+                show.push(isAscii7Bit(loc.city) ? loc.city
+                                                : mimelib.encodeMimeWord(loc.city));
             }
         }
     }
