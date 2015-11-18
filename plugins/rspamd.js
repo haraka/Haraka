@@ -56,7 +56,7 @@ exports.get_options = function (connection) {
     if (connection.remote_ip) options.headers.IP = connection.remote_ip;
 
     var fcrdns = connection.results.get('connect.fcrdns');
-    if (fcrdns && fcrdns.fcrdns) {
+    if (fcrdns && fcrdns.fcrdns && fcrdns.fcrdns[0]) {
         options.headers.Hostname = fcrdns.fcrdns[0];
     }
     else {
@@ -68,8 +68,10 @@ exports.get_options = function (connection) {
     if (connection.hello_host) options.headers.Helo = connection.hello_host;
 
     if (connection.transaction.mail_from) {
-        options.headers.From =
-            connection.transaction.mail_from.address().toString();
+        var mfaddr = connection.transaction.mail_from.address().toString();
+        if (mfaddr) {
+            options.headers.From = mfaddr;
+        }
     }
 
     var rcpts = connection.transaction.rcpt_to;
