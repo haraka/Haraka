@@ -4,7 +4,7 @@ var async     = require('async');
 var fs        = require('fs');
 var net       = require('net');
 var net_utils = require('./net_utils');
-var mimelib   = require('mimelib');
+var utils     = require('./utils');
 
 exports.register = function () {
     var plugin = this;
@@ -115,13 +115,6 @@ exports.get_maxmind_asn = function (connection) {
             { emit: true, asn: match[1], org: match[2] });
 };
 
-function isAscii7Bit(text) {
-    var result = text.split('')
-                     .map(function (c) { return (c.charCodeAt(0) < 128); })
-                     .reduce(function (a,b) { return (a && b); }, true);
-    return result;
-};
-
 exports.lookup_maxmind = function (next, connection) {
     var plugin = this;
 
@@ -148,8 +141,19 @@ exports.lookup_maxmind = function (next, connection) {
             connection.results.add(plugin, {ll: [loc.latitude, loc.longitude]});
             if (plugin.cfg.main.show_region) { show.push(loc.region); }
             if (plugin.cfg.main.show_city  ) {
-                show.push(isAscii7Bit(loc.city) ? loc.city
-                                                : mimelib.encodeMimeWord(loc.city));
+
+                function isSevenBitAscii(text) {
+                    var result = text.split('')
+                                     .map(function (c) { return (c.charCodeAt(0) < 128); })
+                                     .reduce(function (a,b) { return (a && b); }, true);
+                    return result;
+                };
+
+                if (isSevenBitAscii(loc.city)) {
+                    show.push(loc.city);
+                } else {
+                    show.push(utils.encode_qp(loc.city));
+                }
             }
         }
     }
