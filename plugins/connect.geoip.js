@@ -116,6 +116,13 @@ exports.get_maxmind_asn = function (connection) {
 };
 
 exports.lookup_maxmind = function (next, connection) {
+    function isSevenBitAscii(text) {
+        var result = text.split('')
+                         .map(function (c) { return (c.charCodeAt(0) < 128); })
+                         .reduce(function (a,b) { return (a && b); }, true);
+        return result;
+    };
+
     var plugin = this;
 
     if (!plugin.maxmind) { return next(); }
@@ -141,14 +148,6 @@ exports.lookup_maxmind = function (next, connection) {
             connection.results.add(plugin, {ll: [loc.latitude, loc.longitude]});
             if (plugin.cfg.main.show_region) { show.push(loc.region); }
             if (plugin.cfg.main.show_city  ) {
-
-                function isSevenBitAscii(text) {
-                    var result = text.split('')
-                                     .map(function (c) { return (c.charCodeAt(0) < 128); })
-                                     .reduce(function (a,b) { return (a && b); }, true);
-                    return result;
-                };
-
                 if (isSevenBitAscii(loc.city)) {
                     show.push(loc.city);
                 } else {
