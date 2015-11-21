@@ -527,7 +527,7 @@ exports.get_a_records = function (host, cb) {
     async.parallel([
         function(callback){
             dns.resolve4(host, function(err, ips_from_fwd) {
-                if (err.code === 'ENODATA') {
+                if (err !== null && err.code === 'ENODATA') {
                     callback(null, ips_from_fwd);
                 } else {
                     callback(err, ips_from_fwd);
@@ -536,7 +536,7 @@ exports.get_a_records = function (host, cb) {
         },
         function(callback){
             dns.resolve6(host, function(err, ips_from_fwd) {
-                if (err.code === 'ENODATA') {
+                if (err !== null && err.code === 'ENODATA') {
                     callback(null, ips_from_fwd);
                 } else {
                     callback(err, ips_from_fwd);
