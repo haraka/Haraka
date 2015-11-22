@@ -149,7 +149,7 @@ SpamAssassin and a hacker on [Qpsmtpd][13].
 
 [ci-img]: https://travis-ci.org/haraka/Haraka.svg?branch=master
 [ci-url]: https://travis-ci.org/haraka/Haraka
-[cov-img]: https://coveralls.io/repos/haraka/Haraka/badge.png
-[cov-url]: https://coveralls.io/r/haraka/Haraka
+[cov-img]: https://codecov.io/github/haraka/Haraka/coverage.svg
+[cov-url]: https://codecov.io/github/haraka/Haraka?branch=master
 [ci-win-img]: https://ci.appveyor.com/api/projects/status/g29l24w7qwoam47f?svg=true
 [ci-win-url]: https://ci.appveyor.com/project/msimerson/haraka-pa8a5
