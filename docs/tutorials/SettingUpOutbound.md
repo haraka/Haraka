@@ -42,7 +42,7 @@ Let's create a new Haraka instance:
 
 Now edit config/smtp.ini - change the port to 587.
 
-Next we setup our plugins. We need the tls and auth plugin. TLS is required, since auth does not advertise AUTH capability on unencrypted connections from other than localhost:
+Next we setup our plugins. We need the tls and auth plugin. AUTH capability is only advertised after TLS/SSL negotiation (except for connections from the local host):
 
     echo "tls
     auth/flat_file" > config/plugins
