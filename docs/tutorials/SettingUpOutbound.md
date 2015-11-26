@@ -42,9 +42,10 @@ Let's create a new Haraka instance:
 
 Now edit config/smtp.ini - change the port to 587.
 
-Next we setup our plugins - all we need is the auth plugin:
+Next we setup our plugins. We need the tls and auth plugin. TLS is required, since auth does not advertise AUTH capability on unencrypted connections from other than localhost:
 
-    echo "auth/flat_file" > config/plugins
+    echo "tls
+    auth/flat_file" > config/plugins
 
 Now edit the flat file password file, and put in an appropriate username
 and password:
