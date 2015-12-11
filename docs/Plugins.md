@@ -4,7 +4,7 @@ All aspects of receiving an email in Haraka are controlled via plugins. No
 mail can even be received unless at least a 'rcpt' and 'queue' plugin are
 enabled.
 
-Recipient (*rcpt*) plugins determine if a particular recipient is allowed to be relayed or received for. A *queue* plugin queue's the message somewhere - normally to disk or to an another SMTP server.
+Recipient (*rcpt*) plugins determine if a particular recipient is allowed to be relayed or received for. A *queue* plugin queues the message somewhere - normally to disk or to an another SMTP server.
 
 Get a list of built-in plugins by running:
 

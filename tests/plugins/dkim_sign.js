@@ -50,9 +50,23 @@ exports.get_sender_domain = {
         test.equal('example.com', r);
         test.done();
     },
+    'env MAIL FROM, case insensitive': function (test) {
+        test.expect(1);
+        this.connection.transaction.mail_from = new Address.Address('<test@Example.cOm>');
+        var r = this.plugin.get_sender_domain(this.connection.transaction);
+        test.equal('example.com', r);
+        test.done();
+    },
     'from header, simple': function (test) {
         test.expect(1);
         this.connection.transaction.header.add('From', 'John Doe <jdoe@example.com>');
+        var r = this.plugin.get_sender_domain(this.connection.transaction);
+        test.equal('example.com', r);
+        test.done();
+    },
+    'from header, case insensitive': function (test) {
+        test.expect(1);
+        this.connection.transaction.header.add('From', 'John Doe <jdoe@Example.Com>');
         var r = this.plugin.get_sender_domain(this.connection.transaction);
         test.equal('example.com', r);
         test.done();
