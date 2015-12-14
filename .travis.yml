@@ -1,11 +1,10 @@
 language: node_js
 node_js:
-#   - "0.8"     # no longer supported by iconv
 #   - "0.6"     # no longer supported by async
+#   - "0.8"     # no longer supported by iconv
     - "0.10"
     - "0.12"
-    - "iojs-v3"
-    - "stable"
+    - "4.2"
 
 services:
     - redis-server
@@ -29,6 +28,8 @@ script:
     - node run_tests
 
 after_success:
-    - npm run coveralls
+    - npm install istanbul codecov.io
+    - ./node_modules/istanbul/lib/cli.js cov run_tests
+    - cat ./coverage/coverage.json | ./node_modules/codecov.io/bin/codecov.io.js
 
 sudo: false

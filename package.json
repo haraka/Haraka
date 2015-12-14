@@ -39,9 +39,7 @@
   },
   "devDependencies": {
     "nodeunit"              : "https://github.com/godsflaw/nodeunit/archive/master.tar.gz",
-    "jscoverage"            : "*",
-    "coveralls"             : "*",
-    "eslint"                : "^1.6.0",
+    "eslint"                : "*",
     "grunt"                 : "*",
     "grunt-contrib-clean"   : "*",
     "grunt-contrib-jshint"  : "*",
@@ -59,7 +57,6 @@
     "haraka_grep": "./bin/haraka_grep"
   },
   "scripts": {
-    "test": "node run_tests",
-    "coveralls": "jscoverage plugins && QUICKSORT_COV=1 ./node_modules/nodeunit/bin/nodeunit --reporter=lcov tests | coveralls"
+    "test": "node run_tests"
   }
 }

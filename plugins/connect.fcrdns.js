@@ -27,7 +27,7 @@ exports.load_fcrdns_ini = function () {
     });
 };
 
-exports.hook_lookup_rdns = function (next, connection) {
+exports.hook_connect_init = function (next, connection) {
     var plugin = this;
 
     // always init, so results.get is deterministic
@@ -42,9 +42,15 @@ exports.hook_lookup_rdns = function (next, connection) {
         ptr_name_to_ip: {},       // host names and their IP addresses
     });
 
+    next();
+};
+
+exports.hook_lookup_rdns = function (next, connection) {
+    var plugin = this;
+
     var rip = connection.remote_ip;
     if (net_utils.is_private_ip(rip)) {
-        connection.results.add(plugin, {skip: "private_ip"});
+        connection.results.add(plugin, {skip: 'private_ip'});
         return next();
     }
 
@@ -98,8 +104,16 @@ exports.hook_lookup_rdns = function (next, connection) {
             net_utils.get_ips_by_host(ptr_domain, function (err, ips) {
                 pending_queries--;
 
-                if (err && err.length) {
-                    connection.results.add(plugin, {err: err[0]});
+                if (err) {
+                    for (var e=0; e < err.length; e++) {
+                        switch (err[e]) {
+                            case 'queryAaaa ENODATA':
+                            case 'queryAaaa ENOTFOUND':
+                                break;
+                            default:
+                                connection.results.add(plugin, {err: err[e]});
+                        }
+                    }
                 }
 
                 connection.logdebug(plugin, ptr_domain + ' => ' + ips);

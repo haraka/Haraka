@@ -276,7 +276,7 @@ exports.get_sender_domain = function (txn) {
 
     // a fallback, when header parsing fails
     var domain;
-    try { domain = txn.mail_from.host; }
+    try { domain = txn.mail_from.host.toLowerCase(); }
     catch (e) {
         plugin.logerror(e);
     }
@@ -294,7 +294,7 @@ exports.get_sender_domain = function (txn) {
     if (!addrs || ! addrs.length) { return domain; }
 
     // If From has a single address, we're done
-    if (addrs.length === 1) { return addrs[0].host(); }
+    if (addrs.length === 1) { return addrs[0].host().toLowerCase(); }
 
     // If From has multiple-addresses, we must parse and
     // use the domain in the Sender header.
@@ -304,5 +304,5 @@ exports.get_sender_domain = function (txn) {
     catch (e) {
         plugin.logerror(e);
     }
-    return domain;
+    return domain.toLowerCase();
 };
