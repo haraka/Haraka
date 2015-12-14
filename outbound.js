@@ -475,7 +475,7 @@ exports.send_trans_email = function (transaction, next) {
             for (var i=0,l=ok_paths.length; i<l; i++) {
                 fs.unlink(ok_paths[i], function () {});
             }
-            if (next) next(constants.deny, err);
+            if (next) next(constants.denysoft, err);
             return;
         }
 
