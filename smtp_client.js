@@ -354,7 +354,13 @@ exports.get_client_plugin = function (plugin, connection, config, callback) {
                     if (c.enable_tls) {
                         tls_key = plugin.config.get('tls_key.pem', 'binary');
                         tls_cert = plugin.config.get('tls_cert.pem', 'binary');
-                        if (tls_key && tls_cert) {
+                        if (!tls_key) {
+                            logger.logerror('skipping TLS, tls_key.pem does not exist');
+                        }
+                        else if (!tls_cert) {
+                            logger.logerror('skipping TLS, tls_cert.pem does not exist');
+                        }
+                        else {
                             smtp_client.socket.on('secure', on_secured);
                             smtp_client.send_command('STARTTLS');
                             return;
