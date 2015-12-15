@@ -89,7 +89,6 @@ leasing.aero
 logistics.aero
 magazine.aero
 maintenance.aero
-marketplace.aero
 media.aero
 microlight.aero
 modelling.aero
@@ -112,7 +111,6 @@ show.aero
 skydiving.aero
 software.aero
 student.aero
-taxi.aero
 trader.aero
 trading.aero
 trainer.aero
@@ -154,13 +152,6 @@ org.al
 
 // am : http://en.wikipedia.org/wiki/.am
 am
-
-// an : http://www.una.an/an_domreg/default.asp
-an
-com.an
-net.an
-org.an
-edu.an
 
 // ao : http://en.wikipedia.org/wiki/.ao
 // http://www.dns.ao/REGISTR.DOC
@@ -1157,7 +1148,7 @@ tv.im
 
 // in : http://en.wikipedia.org/wiki/.in
 // see also: https://registry.in/Policies
-// Please note, that nic.in is not an offical eTLD, but used by most
+// Please note, that nic.in is not an official eTLD, but used by most
 // government institutions.
 in
 co.in
@@ -4437,8 +4428,21 @@ gov.ng
 mil.ng
 mobi.ng
 
-// ni : http://www.nic.ni/dominios.htm
-*.ni
+// ni : http://www.nic.ni/
+com.ni
+gob.ni
+edu.ni
+org.ni
+nom.ni
+net.ni
+mil.ni
+co.ni
+biz.ni
+web.ni
+int.ni
+ac.ni
+in.ni
+info.ni
 
 // nl : http://en.wikipedia.org/wiki/.nl
 //      https://www.sidn.nl/
@@ -5783,7 +5787,6 @@ kms.ru
 k-uralsk.ru
 kustanai.ru
 kuzbass.ru
-magnitka.ru
 mytis.ru
 nakhodka.ru
 nkz.ru
@@ -6927,7 +6930,7 @@ web.za
 *.zw
 
 
-// List of new gTLDs imported from https://newgtlds.icann.org/newgtlds.csv on 2015-09-25T01:37:01Z
+// List of new gTLDs imported from https://newgtlds.icann.org/newgtlds.csv on 2015-11-12T22:43:48Z
 
 // aaa : 2015-02-26 American Automobile Association, Inc.
 aaa
@@ -7196,6 +7199,9 @@ barefoot
 // bargains : 2013-11-14 Half Hallow, LLC
 bargains
 
+// baseball : 2015-10-29 MLB Advanced Media DH, LLC
+baseball
+
 // basketball : 2015-08-20 Fédération Internationale de Basketball (FIBA)
 basketball
 
@@ -7454,6 +7460,9 @@ casino
 // catering : 2013-12-05 New Falls. LLC
 catering
 
+// catholic : 2015-10-21 Pontificium Consilium de Comunicationibus Socialibus (PCCS) (Pontifical Council for Social Communication)
+catholic
+
 // cba : 2014-06-26 COMMONWEALTH BANK OF AUSTRALIA
 cba
 
@@ -7553,6 +7562,9 @@ click
 // clinic : 2014-03-20 Goose Park, LLC
 clinic
 
+// clinique : 2015-10-01 The Estée Lauder Companies Inc.
+clinique
+
 // clothing : 2013-08-27 Steel Lake, LLC
 clothing
 
@@ -7591,6 +7603,9 @@ community
 
 // company : 2013-11-07 Silver Avenue, LLC
 company
+
+// compare : 2015-10-08 iSelect Ltd
+compare
 
 // computer : 2013-10-24 Pine Mill, LLC
 computer
@@ -7765,6 +7780,9 @@ discover
 
 // dish : 2015-07-30 Dish DBS Corporation
 dish
+
+// diy : 2015-11-05 Lifestyle Domain Holdings, Inc.
+diy
 
 // dnp : 2013-12-13 Dai Nippon Printing Co., Ltd.
 dnp
@@ -8588,6 +8606,9 @@ ladbrokes
 // lamborghini : 2015-06-04 Automobili Lamborghini S.p.A.
 lamborghini
 
+// lamer : 2015-10-01 The Estée Lauder Companies Inc.
+lamer
+
 // lancaster : 2015-02-12 LANCASTER
 lancaster
 
@@ -9029,6 +9050,9 @@ ninja
 // nissan : 2014-03-27 NISSAN MOTOR CO., LTD.
 nissan
 
+// nissay : 2015-10-29 Nippon Life Insurance Company
+nissay
+
 // nokia : 2015-01-08 Nokia Corporation
 nokia
 
@@ -9121,6 +9145,9 @@ organic
 
 // orientexpress : 2015-02-05 Belmond Ltd.
 orientexpress
+
+// origins : 2015-10-01 The Estée Lauder Companies Inc.
+origins
 
 // osaka : 2014-09-04 Interlink Co., Ltd.
 osaka
@@ -9301,6 +9328,9 @@ prudential
 
 // pub : 2013-12-12 United TLD Holdco Ltd.
 pub
+
+// pwc : 2015-10-29 PricewaterhouseCoopers LLP
+pwc
 
 // qpon : 2013-11-14 dotCOOL, Inc.
 qpon
@@ -9548,6 +9578,9 @@ security
 // seek : 2014-12-04 Seek Limited
 seek
 
+// select : 2015-10-08 iSelect Ltd
+select
+
 // sener : 2014-10-24 Sener Ingeniería y Sistemas, S.A.
 sener
 
@@ -9698,7 +9731,7 @@ staples
 // star : 2015-01-08 Star India Private Limited
 star
 
-// starhub : 2015-02-05 StarHub Limited
+// starhub : 2015-02-05 StarHub Ltd
 starhub
 
 // statebank : 2015-03-12 STATE BANK OF INDIA
@@ -9962,6 +9995,9 @@ ubs
 // uconnect : 2015-07-30 FCA US LLC.
 uconnect
 
+// unicom : 2015-10-15 China United Network Communications Corporation Limited
+unicom
+
 // university : 2014-03-06 Little Station, LLC
 university
 
@@ -10157,6 +10193,9 @@ works
 // world : 2014-06-12 Bitter Fields, LLC
 world
 
+// wow : 2015-10-08 Amazon EU S.à r.l.
+wow
+
 // wtc : 2013-12-19 World Trade Centers Association, Inc.
 wtc
 
@@ -10234,6 +10273,9 @@ xin
 
 // xn--80adxhks : 2013-12-19 Foundation for Assistance for Internet Technologies and Infrastructure Development (FAITID)
 москва
+
+// xn--80aqecdr1a : 2015-10-21 Pontificium Consilium de Comunicationibus Socialibus (PCCS) (Pontifical Council for Social Communication)
+католик
 
 // xn--80asehdb : 2013-07-14 CORE Association
 онлайн
@@ -10319,6 +10361,9 @@ xin
 // xn--gckr3f0f : 2015-02-26 Amazon EU S.à r.l.
 クラウド
 
+// xn--gk3at1e : 2015-10-08 Amazon EU S.à r.l.
+通販
+
 // xn--hxt814e : 2014-05-15 Zodiac Libra Limited
 网店
 
@@ -10366,6 +10411,9 @@ xin
 
 // xn--mgbca7dzdo : 2015-07-30 Abu Dhabi Systems and Information Centre
 ابوظبي
+
+// xn--mgbi4ecexp : 2015-10-21 Pontificium Consilium de Comunicationibus Socialibus (PCCS) (Pontifical Council for Social Communication)
+كاثوليك
 
 // xn--mgbt3dhd : 2014-09-04 Asia Green IT System Bilgisayar San. ve Tic. Ltd. Sti.
 همراه
@@ -10420,6 +10468,9 @@ xin
 
 // xn--tckwe : 2015-01-15 VeriSign Sarl
 コム
+
+// xn--tiq49xqyj : 2015-10-21 Pontificium Consilium de Comunicationibus Socialibus (PCCS) (Pontifical Council for Social Communication)
+天主教
 
 // xn--unup4y : 2013-07-14 Spring Fields, LLC
 游戏
@@ -11107,6 +11158,10 @@ pagespeedmobilizer.com
 withgoogle.com
 withyoutube.com
 
+// Hashbang : https://hashbang.sh
+// Hashbang is a non-profit that provides shells and various other services.
+hashbang.sh
+
 // Heroku : https://www.heroku.com/
 // Submitted by Tom Maher <tmaher@heroku.com> 2013-05-02
 herokuapp.com
@@ -11137,6 +11192,10 @@ bmoattachments.org
 // Submitted by Trung Tran <Trung.Tran@neustar.biz> 2015-04-23
 4u.com
 
+// ngrok : https://ngrok.com/
+// Submitted by Alan Shreve <alan@ngrok.com> 2015-11-10
+ngrok.io
+
 // NFSN, Inc. : https://www.NearlyFreeSpeech.NET/
 // Submitted by Jeff Wheelhouse <support@nearlyfreespeech.net> 2014-02-02
 nfshost.com
@@ -11156,6 +11215,10 @@ operaunite.com
 // OutSystems
 // Submitted by Duarte Santos <domain-admin@outsystemscloud.com> 2014-03-11
 outsystemscloud.com
+
+// Pagefront : https://www.pagefronthq.com/
+// Submitted by Jason Kriss <jason@pagefronthq.com> 2015-12-02
+pagefrontapp.com
 
 // .pl domains (grandfathered)
 art.pl
@@ -11178,6 +11241,11 @@ priv.at
 // Submitted by Daniel Dent (https://www.danieldent.com/) 2015-07-16
 qa2.com
 
+// Rackmaze LLC : https://www.rackmaze.com
+// Submitted by Kirill Pertsev <kika@rackmaze.com> 2015-12-02
+rackmaze.com
+rackmaze.net
+
 // Red Hat, Inc. OpenShift : https://openshift.redhat.com/
 // Submitted by Tim Kramer <tkramer@rhcloud.com> 2012-10-24
 rhcloud.com
@@ -11197,6 +11265,22 @@ pp.ua
 sinaapp.com
 vipsinaapp.com
 1kapp.com
+
+// Synology, Inc. : https://www.synology.com/
+// Submitted by Rony Weng <ronyweng@synology.com> 2015-12-02
+synology.me
+diskstation.me
+i234.me
+myds.me
+dscloud.biz
+dscloud.me
+dscloud.mobi
+dsmynas.com
+dsmynas.net
+dsmynas.org
+familyds.com
+familyds.net
+familyds.org
 
 // TASK geographical domains (www.task.gda.pl/uslugi/dns)
 gda.pl
