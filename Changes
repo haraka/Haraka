@@ -5,6 +5,11 @@
 * Improvements
 * Bug Fixes
 
+2.7.2 - Dec 15, 2015
+
+* Bug Fixes
+    * Revert a change that broke plugin loading
+
 
 2.7.1 - Dec 14, 2015
 
