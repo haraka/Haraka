@@ -19,7 +19,10 @@ exports.load_redis_ini = function () {
     });
 
     if (!plugin.cfg.server) plugin.cfg.server = {};
-    if (!plugin.cfg.server.ip) plugin.cfg.server.ip = '127.0.0.1';
+    if (plugin.cfg.server.ip && !plugin.cfg.server.host) {
+        plugin.cfg.server.host = plugin.cfg.server.ip;
+    }
+    if (!plugin.cfg.server.host) plugin.cfg.server.host = '127.0.0.1';
     if (!plugin.cfg.server.port) plugin.cfg.server.port = '6379';
 
     if (!plugin.cfg.redisOpts) plugin.cfg.redisOpts = {};
@@ -42,7 +45,7 @@ exports.init_redis_connection = function (next, server) {
 
     var cfg = plugin.cfg.server;
     var client = redis
-        .createClient(cfg.port, cfg.ip, plugin.cfg.redisOpts)
+        .createClient(cfg.port, cfg.host, plugin.cfg.redisOpts)
         .on('error', function (error) {
             plugin.logerror('Redis error: ' + error.message);
             callNext();
@@ -55,7 +58,7 @@ exports.init_redis_connection = function (next, server) {
                     );
             server.notes.redis = client;
             if (cfg.db) {
-                server.redis.select(cfg.db);
+                server.notes.redis.select(cfg.db);
                 plugin.loginfo('dbid ' + cfg.db + ' selected');
             }
             callNext();
