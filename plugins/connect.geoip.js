@@ -4,6 +4,7 @@ var async     = require('async');
 var fs        = require('fs');
 var net       = require('net');
 var net_utils = require('./net_utils');
+var utils     = require('./utils');
 
 exports.register = function () {
     var plugin = this;
@@ -115,6 +116,13 @@ exports.get_maxmind_asn = function (connection) {
 };
 
 exports.lookup_maxmind = function (next, connection) {
+    function isSevenBitAscii(text) {
+        var result = text.split('')
+                         .map(function (c) { return (c.charCodeAt(0) < 128); })
+                         .reduce(function (a,b) { return (a && b); }, true);
+        return result;
+    };
+
     var plugin = this;
 
     if (!plugin.maxmind) { return next(); }
@@ -139,7 +147,13 @@ exports.lookup_maxmind = function (next, connection) {
             connection.results.add(plugin, {city: loc.city});
             connection.results.add(plugin, {ll: [loc.latitude, loc.longitude]});
             if (plugin.cfg.main.show_region) { show.push(loc.region); }
-            if (plugin.cfg.main.show_city  ) { show.push(loc.city); }
+            if (plugin.cfg.main.show_city  ) {
+                if (isSevenBitAscii(loc.city)) {
+                    show.push(loc.city);
+                } else {
+                    show.push(utils.encode_qp(loc.city));
+                }
+            }
         }
     }
 
