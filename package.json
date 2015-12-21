@@ -4,7 +4,7 @@
   "license": "MIT",
   "description": "An SMTP Server project.",
   "keywords": ["haraka", "smtp", "server", "email"],
-  "version": "2.7.0",
+  "version": "2.7.2",
   "homepage": "http://haraka.github.io",
   "repository": {
     "type": "git",

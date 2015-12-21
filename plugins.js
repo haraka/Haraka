@@ -190,11 +190,10 @@ plugins._load_and_compile_plugin = function (name) {
     var hasPackageJson;
     for (var i=0, j=fp.length; i<j; i++) {
         try {
+            rf = fs.readFileSync(fp[i]);
             if (/package.json$/.test(fp[i])) {
                 hasPackageJson = true;
-                break;
             }
-            rf = fs.readFileSync(fp[i]);
             break;
         }
         catch (err) {
@@ -202,7 +201,7 @@ plugins._load_and_compile_plugin = function (name) {
             continue;
         }
     }
-    if (!(rf || hasPackageJson)) {
+    if (!rf) {
         if (config.get('smtp.ini').main.ignore_bad_plugins) {
             logger.logcrit('Loading plugin ' + name + ' failed: ' + last_err);
             return;
@@ -212,7 +211,7 @@ plugins._load_and_compile_plugin = function (name) {
 
     var code;
     if (hasPackageJson) {
-        code = 'var p = require("' + name + '"); for (var attrname in p) { exports[attrname] = p[attrname];}';
+        code = '"use strict"; var p = require("' + name + '"); for (var attrname in p) { exports[attrname] = p[attrname];}';
     }
     else {
         code = '"use strict";' + rf;

@@ -1,12 +1,38 @@
 
-N.N.N - Mon NN, 2015
+2.N.N - Jan NN, 2016
 
 * New Features
+* Improvements
+* Bug Fixes
+
+2.7.2 - Dec 15, 2015
+
+* Bug Fixes
+    * Revert a change that broke plugin loading
+
+
+2.7.1 - Dec 14, 2015
+
+* New Features
+    * added debian init.d file (#1255) @slattery
 
 * Improvements
     * smtp_forward auth settings now work (#430)
+    * better handling of broken messages (#1234)
+    * Docker: use latest Phusion image && stdout (#1238, #1239)
+    * Clean up plugin loading a tiny bit (#1242)
+    * make dkim keydir case insensitive (1251)
+    * ignore DNS errors that aren't errors (#1247)
+    * outbound doc updates (#1258) @Currerius
+    * outbound: return DENYSOFT on queue error (#1264)
+    * smtp_client: if enable_tls is set and TLS files missing, warn (#1266)
 
 * Bug Fixes
+    * Don't sent empty headers to rspamd (#1230)
+    * Fix auth_base.js key need to be a string - number.toString() (#1228)
+    * fix bug with empty charset= on mime parts … (#1225)
+    * Fix "passwd" check crash with numeric password. (#1254)
+    * result_store: show arrays when not empty (#1261)
 
 
 2.7.0 - Oct 07, 2015
@@ -40,11 +66,11 @@ N.N.N - Mon NN, 2015
     * toobusy: only run checks if toobusy.js installed and loads
     * HAProxy: set local_ip, local_port and remote_port
     * save auth pass/fail/user to result_store
-    * ini files no longer require values (useful for storing lists) 
+    * ini files no longer require values (useful for storing lists)
     * connection: add MAIL and RCPT to results
     * results_store: enable 'emit' feature for .push()
     * add support for custom Outbound Received header value (@zombified)
-    * save smtp_forward result to result_store 
+    * save smtp_forward result to result_store
     * auth_base: permit a return message (@DarkSorrow)
     * add DSN.create() and RFC 4954 support
     * enhanced pipelining support
@@ -146,7 +172,7 @@ N.N.N - Mon NN, 2015
 * removed contrib/geolite-mirror-simple.pl (replaced by
   docs update pointing to maxmind-geolite-mirror)
 * rcpt.routes: new plugin by @msimerson
-* make haproxy IPv6 compatible 
+* make haproxy IPv6 compatible
 * record_envelope_addresses: new plugin by @deburau
 * prevent_credential_leaks: new plugin by @smfreegard
 * config:

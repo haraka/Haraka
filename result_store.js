@@ -178,10 +178,16 @@ ResultStore.prototype.private_collate = function (result, name) {
     // anything not predefined in the result was purposeful, show it first
     for (var key in result) {
         if (key[0] === '_') continue;  // ignore 'private' keys
-        if (all_opts.indexOf(key) !== -1) continue;
+        if (all_opts.indexOf(key) !== -1) continue;  // these get shown later.
         if (hide.length && hide.indexOf(key) !== -1) continue;
-        if (Array.isArray(result[key]) && result[key].length === 0) continue;
-        if (typeof result[key] === 'object') continue;
+        if (typeof result[key] === 'object') {
+            if (Array.isArray(result[key])) {
+                if (result[key].length === 0) continue;
+            }
+            else {
+                continue;
+            }
+        }
         r.push(key + ': ' + result[key]);
     }
 
