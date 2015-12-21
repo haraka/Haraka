@@ -1414,10 +1414,10 @@ Connection.prototype.cmd_data = function(args) {
         return this.respond(503, "MAIL required first");
     }
     if (!this.transaction.rcpt_to.length) {
-        this.errors++;
         if (this.pipelining) {
             return this.respond(554, "No valid recipients");
         }
+        this.errors++;
         return this.respond(503, "RCPT required first");
     }
 
