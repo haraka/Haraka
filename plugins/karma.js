@@ -23,6 +23,7 @@ exports.register = function () {
     );
 
     plugin.load_karma_ini();
+    plugin.load_redis_ini();
 
     plugin.register_hook('init_master',  'init_redis_connection');
     plugin.register_hook('init_child',   'init_redis_connection');
@@ -60,6 +61,21 @@ exports.load_karma_ini = function () {
     }
 };
 
+exports.load_redis_ini = function () {
+    var plugin = this;
+
+    // these are the settings used by ResultStore to publish events
+    plugin.redisPubCfg = plugin.config.get('redis.ini', {
+    }, function () {
+        plugin.load_redis_ini();
+    });
+
+    if (!plugin.redisPubCfg.server) plugin.redisPubCfg.server = {};
+    var c = plugin.redisPubCfg.server;
+    if (!c.host) c.host = '127.0.0.1';
+    if (!c.port) c.port = 6379;
+};
+
 exports.results_init = function (next, connection) {
     var plugin = this;
 
@@ -85,7 +101,10 @@ exports.results_init = function (next, connection) {
     // result_store is publishing conn results, time to listen
     var redis = {
         patt: 'result-' + connection.uuid + '*',
-        conn: require('redis').createClient(),
+        conn: require('redis').createClient(
+            plugin.redisPubCfg.server.port,
+            plugin.redisPubCfg.server.host
+            ),
     };
     redis.conn.on('psubscribe', function (pattern, count) {
         connection.logdebug(plugin, 'psubscribed to ' + pattern);
@@ -916,17 +935,23 @@ exports.check_asn = function (connection, asnkey) {
 // Redis DB functions
 exports.init_redis_connection = function (next, server) {
     var plugin = this;
-    if (server.notes.redis) {
-        server.loginfo(plugin, 'using server.notes.redis');
-        plugin.db = server.notes.redis;
+
+    // use existing redis connection only when using default DB id
+    if (!plugin.cfg.redis.dbid) {
+        if (server.notes.redis) {
+            server.loginfo(plugin, 'using server.notes.redis');
+            plugin.db = server.notes.redis;
+        }
+        if (plugin.db && plugin.db.ping()) {  // connection is good
+            return next();
+        }
     }
-    if (plugin.db && plugin.db.ping()) { return next(); } // connection is good
 
     var redis_ip  = '127.0.0.1';
     var redis_port = '6379';
     if (plugin.cfg.redis) {
         if (plugin.cfg.redis.server_ip  ) {
-            redis_ip   = plugin.cfg.redis.server_ip;
+            redis_ip = plugin.cfg.redis.server_ip;
         }
         if (plugin.cfg.redis.server_port) {
             redis_port = plugin.cfg.redis.server_port;
