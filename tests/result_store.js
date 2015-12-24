@@ -144,7 +144,7 @@ exports.private_collate = {
     'collate, arrays are shown in output' : function (test) {
         test.expect(2);
         this.connection.results.push('test_plugin', { foo: 'bar' });
-        console.log(this.connection.results);
+        // console.log(this.connection.results);
         test.equal(true, this.connection.results.has('test_plugin', 'foo', /bar/));
         test.ok(/bar/.test(this.connection.results.get('test_plugin').human));
         test.done();
