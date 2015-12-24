@@ -11,6 +11,7 @@ var phase_prefixes = utils.to_object(
 
 exports.register = function () {
     var plugin = this;
+    plugin.inherits('redis');
 
     // set up defaults
     plugin.deny_hooks = utils.to_object(
@@ -25,8 +26,8 @@ exports.register = function () {
     plugin.load_karma_ini();
     plugin.load_redis_ini();
 
-    plugin.register_hook('init_master',  'init_redis_connection');
-    plugin.register_hook('init_child',   'init_redis_connection');
+    plugin.register_hook('init_master',  'init_redis_karma');
+    plugin.register_hook('init_child',   'init_redis_karma');
 
     plugin.register_hook('connect_init', 'results_init');
     plugin.register_hook('connect_init', 'history_from_redis');
@@ -43,11 +44,12 @@ exports.load_karma_ini = function () {
         plugin.load_karma_ini();
     });
 
-    if (plugin.cfg.deny && plugin.cfg.deny.hooks) {
-        plugin.deny_hooks = utils.to_object(plugin.cfg.deny.hooks);
+    var cfg = plugin.cfg;
+    if (cfg.deny && cfg.deny.hooks) {
+        plugin.deny_hooks = utils.to_object(cfg.deny.hooks);
     }
 
-    var e = plugin.cfg.deny_excludes;
+    var e = cfg.deny_excludes;
     if (e && e.hooks) {
         plugin.deny_exclude_hooks = utils.to_object(e.hooks);
     }
@@ -56,24 +58,19 @@ exports.load_karma_ini = function () {
         plugin.deny_exclude_plugins = utils.to_object(e.plugins);
     }
 
-    if (plugin.cfg.result_awards) {
+    if (cfg.result_awards) {
         plugin.preparse_result_awards();
     }
-};
 
-exports.load_redis_ini = function () {
-    var plugin = this;
-
-    // these are the settings used by ResultStore to publish events
-    plugin.redisPubCfg = plugin.config.get('redis.ini', {
-    }, function () {
-        plugin.load_redis_ini();
-    });
-
-    if (!plugin.redisPubCfg.server) plugin.redisPubCfg.server = {};
-    var c = plugin.redisPubCfg.server;
-    if (!c.host) c.host = '127.0.0.1';
-    if (!c.port) c.port = 6379;
+    if (!cfg.redis) cfg.redis = {};
+    if (!cfg.redis.host && cfg.redis.server_ip) {
+        cfg.redis.host = cfg.redis.server_ip; // backwards compat
+    }
+    if (!cfg.redis.port && cfg.redis.server_port) {
+        cfg.redis.port = cfg.redis.server_port; // backwards compat
+    }
+    if (!cfg.redis.host) cfg.redis.host = '127.0.0.1';
+    if (!cfg.redis.port) cfg.redis.port = 6379;
 };
 
 exports.results_init = function (next, connection) {
@@ -98,26 +95,13 @@ exports.results_init = function (next, connection) {
     if (!connection.server.notes.redis) return next();
     if (!plugin.result_awards) return next();  // not configured
 
-    // result_store is publishing conn results, time to listen
-    var redis = {
-        patt: 'result-' + connection.uuid + '*',
-        conn: require('redis').createClient(
-            plugin.redisPubCfg.server.port,
-            plugin.redisPubCfg.server.host
-            ),
-    };
-    redis.conn.on('psubscribe', function (pattern, count) {
-        connection.logdebug(plugin, 'psubscribed to ' + pattern);
+    // subscribe to result_store publish messages
+    plugin.redis_subscribe(connection, function () {
+        connection.notes.redis.on('pmessage', function (pattern, channel, message) {
+            plugin.check_result(connection, message);
+        });
         next();
     });
-    redis.conn.on('pmessage', function (pattern, channel, message) {
-        plugin.check_result(connection, message);
-    });
-    redis.conn.on('punsubscribe', function (pattern, count) {
-        connection.logdebug(plugin, 'unsubsubscribed from ' + pattern);
-    });
-    redis.conn.psubscribe(redis.patt);
-    connection.redis = redis;
 };
 
 exports.preparse_result_awards = function () {
@@ -606,9 +590,7 @@ exports.increment = function (connection, key, val) {
 exports.hook_disconnect = function (next, connection) {
     var plugin = this;
 
-    if (connection.redis) {
-        connection.redis.conn.punsubscribe(connection.redis.patt);
-    }
+    plugin.redis_unsubscribe(connection);
 
     var k = connection.results.get('karma');
     if (!k || k.score === undefined) {
@@ -933,7 +915,7 @@ exports.check_asn = function (connection, asnkey) {
 };
 
 // Redis DB functions
-exports.init_redis_connection = function (next, server) {
+exports.init_redis_karma = function (next, server) {
     var plugin = this;
 
     // use existing redis connection only when using default DB id
@@ -947,19 +929,6 @@ exports.init_redis_connection = function (next, server) {
         }
     }
 
-    var redis_ip  = '127.0.0.1';
-    var redis_port = '6379';
-    if (plugin.cfg.redis) {
-        if (plugin.cfg.redis.server_ip  ) {
-            redis_ip = plugin.cfg.redis.server_ip;
-        }
-        if (plugin.cfg.redis.server_port) {
-            redis_port = plugin.cfg.redis.server_port;
-        }
-    }
-
-    var client = redis.createClient(redis_port, redis_ip);
-
     var calledNext=false;
     function callNext () {
         if (calledNext) return;
@@ -967,23 +936,7 @@ exports.init_redis_connection = function (next, server) {
         next();
     }
 
-    client.on('error', function (error) {
-        server.logerror(plugin, 'redis error: ' + error.message);
-        client = null;
-        callNext();
-    });
-
-    client.on('connect', function () {
-        server.loginfo(plugin, 'karma redis connected');
-        plugin.db = client;
-        var dbid = plugin.cfg.redis.dbid;
-        if (dbid) {
-            server.loginfo(plugin, 'karma redis db ' + dbid + ' selected');
-            client.select(dbid);
-            return callNext();
-        }
-        callNext();
-    });
+    plugin.db = plugin.get_redis_client(plugin.cfg.redis, callNext);
 };
 
 exports.init_ip = function (dbkey, rip, expire) {
