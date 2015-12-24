@@ -45,6 +45,7 @@ exports.hook_data_post = function (next, connection) {
     var spamd_response = { headers: {} };
     var state = 'line0';
     var last_header;
+    var start = Date.now();
 
     socket.on('line', function (line) {
         connection.logprotocol(plugin, "Spamd C: " + line + ' state=' + state);
@@ -107,6 +108,11 @@ exports.hook_data_post = function (next, connection) {
 
         // do stuff with the results...
         connection.transaction.notes.spamassassin = spamd_response;
+        connection.results.add(plugin, {
+            time: (Date.now() - start)/1000,
+            hits: spamd_response.hits,
+            flag: spamd_response.flag,
+        });
 
         plugin.fixup_old_headers(connection.transaction);
         plugin.do_header_updates(connection, spamd_response);
