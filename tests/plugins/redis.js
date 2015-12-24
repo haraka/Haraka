@@ -31,7 +31,7 @@ exports.redis = {
         this.plugin.init_redis_connection(function () {
             test.ok(server.notes.redis);
             test.done();
-        }.bind(this), server);
+        }, server);
     },
 };
 
