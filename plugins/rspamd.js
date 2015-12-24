@@ -106,6 +106,22 @@ exports.hook_data_post = function (next, connection) {
         return next();
     }
 
+    var timer;
+    var timeout = plugin.cfg.timeout || plugin.timeout - 1;
+
+    var calledNext=false;
+    var callNext = function (code, msg) {
+        clearTimeout(timer);
+        if (calledNext) return;
+        calledNext=true;
+        next(code, msg);
+    }
+
+    timer = setTimeout(function () {
+        connection.transaction.results.add(plugin, {err: 'timeout'});
+        callNext();
+    }, timeout * 1000);
+
     var options = plugin.get_options(connection);
 
     var req;
@@ -116,10 +132,10 @@ exports.hook_data_post = function (next, connection) {
             res.on('data', function (chunk) { rawData += chunk; });
             res.on('end', function () {
                 var data = plugin.parse_response(rawData, connection);
-                if (!data) return next();
+                if (!data) return callNext();
                 data.emit = true; // spit out a log entry
 
-                if (!connection.transaction) return next();
+                if (!connection.transaction) return callNext();
                 connection.transaction.results.add(plugin, data);
                 connection.transaction.results.add(plugin, {
                     time: (Date.now() - start)/1000,
@@ -130,21 +146,22 @@ exports.hook_data_post = function (next, connection) {
                         cfg.main.always_add_headers) {
                         plugin.add_headers(connection, data);
                     }
-                    return next();
+                    return callNext();
                 }
 
                 if (data.action !== 'reject') return no_reject();
 
                 if (!authed && !cfg.reject.spam) return no_reject();
                 if (authed && !cfg.reject.authenticated) return no_reject();
-                return next(DENY, cfg.reject.message);
+                return callNext(DENY, cfg.reject.message);
             });
         })
     );
 
     req.on('error', function (err) {
-        connection.logerror(plugin, 'query failed: ' + err.message);
-        return next();
+        if (!connection || !connection.transaction) return;
+        connection.transaction.results.add(plugin, err.message);
+        return callNext();
     });
 };
 
