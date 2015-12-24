@@ -3,8 +3,6 @@
 
 var util    = require('util');
 
-var utils   = require('./utils');
-
 var wss = { broadcast: function () {} };
 var watchers = 0;
 
@@ -24,6 +22,8 @@ exports.register = function () {
     plugin.register_hook('queue_ok',     'queue_ok');
     plugin.register_hook('deny',         'w_deny');
     plugin.register_hook('disconnect',   'disconnect');
+
+    plugin.utils = plugin.core_require('utils');
 };
 
 exports.load_watch_ini = function () {
@@ -217,7 +217,7 @@ exports.get_connection_results = function (connection) {
         relay      : get_relay(connection),
         helo       : get_helo(connection),
         early      : get_early,
-        queue      : { newval: utils.elapsed(connection.start_time) },
+        queue      : { newval: plugin.utils.elapsed(connection.start_time) },
     };
 
     // see if changed since we last sent

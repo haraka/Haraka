@@ -12,6 +12,37 @@ var _setUp = function (done) {
     done();
 };
 
+/*
+
+From: https://github.com/haraka/Haraka/pull/1278#issuecomment-172134064
+
+    * Need to test installed mode + core mode
+    * Need to test each variation of loading plugins
+        INSTALLED MODE
+            * Create tests/installation/ with config/, plugins/, and node_modules
+            * Plugin in <install_dir>/plugins/<name>.js
+            * Plugin in <install_dir>/plugins/<name>/ with package.json
+            * Plugin in <install_dir>/node_modules/<name>/ with package.json
+        CORE MODE + INSTALLED MODE
+            * Plugin in <core>/plugins/<name>.js
+            * Plugin in <core>/plugins/<name>/ with package.json
+            * Plugin in <core>/node_modules/<name>/ with package.json
+    * Need to test conflict on name in various forms
+        * Check plugins/<name>.js loads, not node_modules/<name>/package.json
+        * Should be enough of a check(?)
+    * Need to test plugin not existing
+        * Check <bogus_name_guaranteed_to_not_exist> fails
+    * Need to test plugin existing and failing to compile
+        * Create bad plugin in tests/installation/plugins/bad_plugin.js
+    * Need to test plugin inheritance
+        * Base plugin in tests/installation/plugins/base_plugin.js
+        * Real plugin in tests/installation/plugins/inherits.js
+        * Check base methods work
+        * Check plugin.base.base_plugin is set/correct
+    * Plugin timeouts (already tested)
+
+*/
+
 exports.plugin = {
     'new Plugin() object': function (test) {
         var pi = new plugin.Plugin(piName);
@@ -63,125 +94,132 @@ exports.get_timeout = {
     },
 };
 
-exports.get_plugin_paths = {
+exports.plugin_paths = {
 
     /* jshint maxlen: 90 */
-    setUp : _setUp,
 
-    './path' : function (test) {
+    'CORE plugin: (tls)' : function (test) {
+        delete process.env.HARAKA;
 
-        ['HARAKA', 'HARAKA_PLUGIN_PATH'].forEach(function (env) {
-            delete process.env[env];
-        });
+        var p = new plugin.Plugin('tls');
+
+        test.expect(1);
+        test.equal(p.plugin_path, path.resolve(__dirname, '..', 'plugins', 'tls.js'));
+        test.done();
+    },
+
+    'INSTALLED override: (tls)': function (test) {
+        process.env.HARAKA = path.resolve(__dirname, '..', 'tests', 'installation');
+
+        var p = new plugin.Plugin('tls');
+
+        test.expect(1);
+        test.equal(p.plugin_path, path.resolve(__dirname, 'installation', 'plugins', 'tls.js'));
+        test.done();
+    },
+
+    'CORE package plugin: (watch)': function (test) {
+        delete process.env.HARAKA;
+
+        var p = new plugin.Plugin('watch');
+
+        test.expect(3);
+        test.equal(p.plugin_path, path.resolve(__dirname, '..', 'plugins', 'watch', 'package.json'));
+        test.ok(p.hasPackageJson);
+        try {
+            p._compile();
+            test.ok(true, "compiles OK");
+        }
+        catch (e) {
+            console.error(e.stack);
+            test.ok(false, "compiles OK");
+        }
+        test.done();
+    },
+
+    'INSTALLED node_modules package plugin: (test-plugin)': function (test) {
+        process.env.HARAKA = path.resolve(__dirname, '..', 'tests', 'installation');
+
+        var p = new plugin.Plugin('test-plugin');
+
+        test.expect(3);
+        test.equal(p.plugin_path, path.resolve(__dirname, 'installation', 'node_modules', 'test-plugin', 'package.json'));
+        test.ok(p.hasPackageJson);
+        try {
+            p._compile();
+            test.ok(true, "compiles OK");
+        }
+        catch (e) {
+            console.error(e.stack);
+            test.ok(false, "compiles OK");
+        }
+        test.done();
+    },
+
+    'CORE package plugin: (faked using address-rfc2822)': function (test) {
+        var p = new plugin.Plugin('address-rfc2822');
 
         test.expect(2);
-        test.deepEqual(
-            this.plugin._get_plugin_paths(),
-            [
-                path.join(__dirname, '../plugins'),
-                path.join(__dirname, '../node_modules'),
-            ],
-            'default ./path'
-        );
-        test.deepEqual(
-            this.plugin.full_paths,
-            [
-                path.join(__dirname, '../plugins', 'testPlugin.js'),
-                path.join(__dirname, '../plugins', 'testPlugin','index.js'),
-                path.join(__dirname, '../plugins', 'testPlugin','package.json'),
-                path.join(__dirname, '../node_modules', 'testPlugin.js'),
-                path.join(__dirname, '../node_modules', 'testPlugin','index.js'),
-                path.join(__dirname, '../node_modules', 'testPlugin','package.json'),
-            ],
-            'full_paths');
+        test.equal(p.plugin_path, path.resolve(__dirname, '..', 'node_modules', 'address-rfc2822', 'package.json'));
+        test.ok(p.hasPackageJson);
         test.done();
     },
 
-    'HARAKA' : function (test) {
+    'plugins overrides node_modules': function (test) {
+        process.env.HARAKA = path.resolve(__dirname, '..', 'tests', 'installation');
 
-        ['HARAKA_PLUGIN_PATH'].forEach(function (env) {
-            delete process.env[env];
-        });
-        process.env.HARAKA = '/etc/haraka';
+        var p = new plugin.Plugin('load_first');
 
-        test.expect(1);
-        test.deepEqual(
-            this.plugin._get_plugin_paths(),
-            [
-                path.join('/etc', 'haraka', 'plugins'),
-                path.join('/etc', 'haraka', 'node_modules'),
-                path.join(__dirname, '..', 'plugins'),
-                path.join(__dirname, '..', 'node_modules'),
-            ],
-            'default ./path'
-        );
+        test.expect(3);
+        test.equal(p.plugin_path, path.resolve(__dirname, 'installation', 'plugins', 'load_first.js'));
+        try {
+            p._compile();
+            test.ok(true, "compiles OK");
+        }
+        catch (e) {
+            console.error(e.stack);
+            test.ok(false, "compiles OK");
+        }
+        test.ok(p.loaded_first);
         test.done();
     },
 
-    'HARAKA_PLUGIN_PATH' : function (test) {
+    'INSTALLED plugins folder plugin: (folder_plugin)': function (test) {
+        process.env.HARAKA = path.resolve(__dirname, '..', 'tests', 'installation');
 
-        ['HARAKA'].forEach(function (env) {
-            delete process.env[env];
-        });
-        process.env.HARAKA_PLUGIN_PATH = '/etc/haraka_plugins';
+        var p = new plugin.Plugin('folder_plugin');
 
-        test.expect(1);
-        test.deepEqual(
-            this.plugin._get_plugin_paths(),
-            [
-                path.join('/etc', '/haraka_plugins'),
-                path.join(__dirname, '../plugins'),
-                path.join(__dirname, '../node_modules'),
-            ],
-            'default + HARAKA_PLUGIN_PATH');
+        test.expect(3);
+        test.equal(p.plugin_path, path.resolve(__dirname, 'installation', 'plugins', 'folder_plugin', 'package.json'));
+        test.ok(p.hasPackageJson);
+        try {
+            p._compile();
+            test.ok(true, "compiles OK");
+        }
+        catch (e) {
+            console.error(e.stack);
+            test.ok(false, "compiles OK");
+        }
         test.done();
     },
 
-    'all of the above' : function (test) {
+    'Inheritance: (inherits)': function (test) {
+        process.env.HARAKA = path.resolve(__dirname, '..', 'tests', 'installation');
 
-        process.env.HARAKA = '/etc/haraka';
-        process.env.HARAKA_PLUGIN_PATH = '/etc/haraka_plugins';
+        var p = new plugin.Plugin('inherits');
 
-        test.expect(1);
-        test.deepEqual(
-            this.plugin._get_plugin_paths(),
-            [
-                path.join(process.env.HARAKA_PLUGIN_PATH),
-                path.join(process.env.HARAKA + '/plugins'),
-                path.join(process.env.HARAKA + '/node_modules'),
-                path.join(__dirname, '../plugins'),
-                path.join(__dirname, '../node_modules'),
-            ],
-            'all paths are ordered correctly'
-        );
-        test.done();
-    },
-};
-
-exports.load_plugins = {
-
-    setUp: function (done) {
-        process.env.HARAKA = __dirname;
-
-        this.orig_make_custom_require = plugin._make_custom_require;
-        plugin._make_custom_require = function (filePath, hasPackageJson) {
-            return function (module) {
-                return require(path.join(__dirname, 'node_modules', module));
-            };
-        };
-
-        this.plugin = plugin.load_plugin('test-plugin');
-        done();
-    },
-
-    tearDown: function (done) {
-        plugin._make_custom_require = this.orig_make_custom_require;
-        done();
-    },
-
-    'load from install directory node_modules': function (test) {
-        test.expect(1);
-        test.ok(this.plugin.hasOwnProperty('hook_init_master'));
+        test.expect(3);
+        test.equal(p.plugin_path, path.resolve(__dirname, 'installation', 'plugins', 'inherits.js'));
+        try {
+            p._compile();
+            test.ok(true, "compiles OK");
+        }
+        catch (e) {
+            console.error(e.stack);
+            test.ok(false, "compiles OK");
+        }
+        p.register();
+        test.ok(p.base.base_plugin);
         test.done();
     },
 
