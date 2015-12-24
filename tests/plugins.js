@@ -86,12 +86,12 @@ exports.get_plugin_paths = {
         test.deepEqual(
             this.plugin.full_paths,
             [
+                path.join(__dirname, '../plugins', 'testPlugin','package.json'),
                 path.join(__dirname, '../plugins', 'testPlugin.js'),
                 path.join(__dirname, '../plugins', 'testPlugin','index.js'),
-                path.join(__dirname, '../plugins', 'testPlugin','package.json'),
+                path.join(__dirname, '../node_modules', 'testPlugin','package.json'),
                 path.join(__dirname, '../node_modules', 'testPlugin.js'),
                 path.join(__dirname, '../node_modules', 'testPlugin','index.js'),
-                path.join(__dirname, '../node_modules', 'testPlugin','package.json'),
             ],
             'full_paths');
         test.done();
