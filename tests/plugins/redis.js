@@ -21,8 +21,8 @@ exports.redis = {
     },
     'config defaults' : function (test) {
         test.expect(2);
-        test.equal(this.plugin.cfg.server.host, '127.0.0.1');
-        test.equal(this.plugin.cfg.server.port, 6379);
+        test.equal(this.plugin.redisCfg.server.host, '127.0.0.1');
+        test.equal(this.plugin.redisCfg.server.port, 6379);
         test.done();
     },
     'pings' : function (test) {

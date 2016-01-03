@@ -10,6 +10,7 @@ var watchers = 0;
 
 exports.register = function () {
     var plugin = this;
+    plugin.inherits('redis');
 
     plugin.load_watch_ini();
 
@@ -97,6 +98,37 @@ exports.hook_init_wss = function (next, server) {
     return next();
 };
 
+exports.hook_connect_init = function (next, connection) {
+    var plugin = this;
+
+    if (!server.notes.redis) {
+        connection.logerror(plugin, "no server.notes.redis!");
+        return next();
+    }
+
+    plugin.redis_subscribe(connection, function () {
+        connection.notes.redis.on('pmessage', function (pattern, channel, message) {
+            plugin.check_redis_sub_msg(connection, message);
+        });
+        next();
+    });
+};
+
+exports.check_redis_sub_msg = function (connection, message) {
+    var plugin = this;
+    // connection.loginfo(plugin, message);
+    // {"plugin":"karma","result":{"fail":"spamassassin.hits"}}
+    // {"plugin":"connect.geoip","result":{"country":"CN"}}
+
+    var m = JSON.parse(message);
+    connection.logprotocol(plugin, message);
+
+    var req = { uuid : connection.uuid };
+    req[m.plugin] = m.result;
+
+    wss.broadcast(req);
+};
+
 exports.get_incremental_results = function (next, connection) {
     var plugin = this;
 
@@ -168,6 +200,7 @@ exports.disconnect = function (next, connection) {
     };
 
     this.get_incremental_results(incrDone, connection);
+    this.redis_unsubscribe(connection);
 };
 
 exports.get_connection_results = function (connection) {
