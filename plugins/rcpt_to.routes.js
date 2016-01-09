@@ -3,31 +3,36 @@
 // validates incoming recipients against flat file & Redis
 // routes mail based on per-email or per-domain specified routes
 
-var redis;
-
 exports.register = function() {
     var plugin = this;
+    plugin.inherits('redis');
+
     plugin.cfg = {};
     plugin.route_list={};
 
-    plugin.load_config();
+    plugin.load_rcpt_to_routes_ini();
+    plugin.load_redis_ini();
 
-    try { redis = require('redis'); }
-    catch (e) {
-        plugin.logerror("unable to load redis.\ndid you: npm install -g redis?");
-    }
-
-    if (redis) { plugin.init_redis_connection(); }
+    plugin.register_hook('init_master',  'init_redis_plugin');
+    plugin.register_hook('init_child',   'init_redis_plugin');
 
     plugin.register_hook('rcpt',   'rcpt');
     plugin.register_hook('get_mx', 'get_mx');
 };
 
-exports.load_config = function () {
+exports.load_rcpt_to_routes_ini = function () {
     var plugin = this;
     plugin.cfg = plugin.config.get('rcpt_to.routes.ini', function () {
-        plugin.load_config();
+        plugin.load_rcpt_to_routes_ini();
     });
+
+    if (!plugin.cfg.redis) plugin.cfg.redis = {};
+    var r = plugin.cfg.redis;
+
+    plugin.cfg.redis.opts = {
+        host: r.server_ip || r.host || '127.0.0.1',
+        port: r.server_port || r.port || 6379,
+    };
 
     var lowered = {};
     if (plugin.cfg.routes) {
@@ -71,7 +76,7 @@ exports.rcpt = function(next, connection, params) {
     };
 
     // if we can't use redis, try files and return
-    if (!redis || !plugin.redis_pings) { return do_file_search(); }
+    if (!plugin.redis_pings) { return do_file_search(); }
 
     // redis connection open, try it
     plugin.db.multi()
@@ -125,7 +130,7 @@ exports.get_mx = function(next, hmail, domain) {
     };
 
     // if we can't use redis, try files and return
-    if (!redis || !plugin.redis_pings) { return do_file_search(); }
+    if (!plugin.redis_pings) { return do_file_search(); }
 
     // redis connection open, try it
     plugin.db.multi()
@@ -145,54 +150,6 @@ exports.get_mx = function(next, hmail, domain) {
         });
 };
 
-// Redis DB functions
-exports.init_redis_connection = function () {
-    var plugin = this;
-    if (plugin.db) {
-        return true;
-    }
-
-    var redis_ip  = '127.0.0.1';
-    var redis_port = 6379;
-    var redis_db  = 0;  // default
-
-    if (plugin.cfg.redis) {
-        redis_ip = plugin.cfg.redis.server_ip || '127.0.0.1';
-        redis_port = plugin.cfg.redis.server_port || 6379;
-        redis_db  = plugin.cfg.redis.db || 0;
-    }
-
-    plugin.db = redis.createClient(redis_port, redis_ip);
-    plugin.db.on('error', function (error) {
-        plugin.logerror(plugin, 'Redis error: ' + error.message);
-        plugin.db = null;
-        return false;
-    });
-    if (redis_db) { plugin.db.select(redis_db); }
-    // plugin.db.on('connect', function () {
-    //     maybe do stuff here when the Redis connection is completed
-    // });
-};
-
-exports.redis_ping = function(cb) {
-    var plugin = this;
-    var nope = function () {
-        cb();
-        plugin.redis_pings=false;
-        return false;
-    };
-
-    if (!plugin.db) { return nope(); }
-
-    plugin.db.ping(function (err, res) {
-        if (err           ) { return nope(); }
-        if (res !== 'PONG') { return nope(); }
-        plugin.redis_pings=true;
-        cb();
-        return true;
-    });
-};
-
 exports.insert_route = function (email, route) {
     // for importing, see http://redis.io/topics/mass-insert
     if (!this.db || !this.redis_pings) { return false; }
@@ -200,7 +157,7 @@ exports.insert_route = function (email, route) {
 };
 
 exports.delete_route = function (email, cb) {
-    if (!this.db || !this.redis_pings) {
+    if (!this.redis_pings) {
         if (cb) cb();
         return false;
     }
