@@ -357,12 +357,18 @@ exports.send_email = function () {
     var options = arguments[4];
 
     var dot_stuffed = ((options && options.dot_stuffed) ? options.dot_stuffed : false);
+    var notes = ((options && options.notes) ? options.notes : null);
 
     this.loginfo("Sending email via params");
 
     var transaction = trans.createTransaction();
 
     this.loginfo("Created transaction: " + transaction.uuid);
+
+    //Adding notes passed as parameter
+    if (notes) {
+        transaction.notes = notes;
+    }
 
     // set MAIL FROM address, and parse if it's not an Address object
     if (from instanceof Address) {
