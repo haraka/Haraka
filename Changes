@@ -1,9 +1,29 @@
 
-2.N.N - Jan NN, 2016
+2.N.N - Feb NN, 2016
+
+2.7.3 - Jan 16, 2016
 
 * New Features
+    * outbound: allow passing notes to send_email (#1295)
+
 * Improvements
+    * logging: emit log message queue before shutting down (#1296)
+    * result_store: permit redis pub/sub to work when host != localhost (#1277)
+    * tests: quiet the extremely verbose messages (#1282)
+    * rspamd: add timeout error handling (#1276)
+    * watch: fix display of early_talker results (#1281)
+    * spamassassin: publish results to result_store (#1280)
+    * karma: can now connect to redis on hosts other than localhost (#1275)
+    * geoip & p0f: don't log empty/null values from RFC 1918 connects (#1267)
+    * redis: make plugin params match docs (#1273)
+
 * Bug Fixes
+    * redis: use correct path for db.select (#1273)
+    * count errors correctly (#1274)
+    * logger: ignore null arguments (#1299)
+    * connection: pause for hook_reset_transaction (#1303)
+    * rcpt_to.routes: update redis usage for compat with redis plugin (#1302)
+
 
 2.7.2 - Dec 15, 2015
 
