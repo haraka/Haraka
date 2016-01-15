@@ -171,10 +171,11 @@ logger.log_if_level = function (level, key, plugin) {
         var pluginstr = '[' + (plugin || 'core') + ']';
         for (var i=0; i < arguments.length; i++) {
             var data = arguments[i];
-            if (typeof(data) !== 'object') {
+            if (typeof data !== 'object') {
                 str += data;
                 continue;
             }
+            if (!data) continue;
 
             // if the object is a connection, add the connection id
             if (data instanceof connection.Connection) {
@@ -187,7 +188,7 @@ logger.log_if_level = function (level, key, plugin) {
             else if (data instanceof plugins.Plugin) {
                 pluginstr = '[' + data.name + ']';
             }
-            else if (typeof data === 'object' && data.name) {
+            else if (data.name) {
                 pluginstr = '[' + data.name + ']';
             }
             else if (data instanceof outbound.HMailItem) {
