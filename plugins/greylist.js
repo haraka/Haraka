@@ -5,6 +5,7 @@ var version = '0.1.3';
 var util = require('util');
 var redis = require('redis');
 var async = require('async');
+var tlds  = require('haraka-tld');
 var isIPv6 = require('net').isIPv6;
 
 var ipaddr = require('ipaddr.js');
@@ -464,7 +465,7 @@ exports.craft_hostid = function (connection) {
         return chsit(null, 'invalid org domain in rDNS');
 
     // strip first label up until the tld boundary.
-    var decoupled = net_utils.split_hostname(rdns, 3);
+    var decoupled = tlds.split_hostname(rdns, 3);
     var vardom = decoupled[0]; // "variable" portion of domain
     var dom = decoupled[1]; // "static" portion of domain
 

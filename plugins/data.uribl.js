@@ -4,6 +4,8 @@
 var url       = require('url');
 var dns       = require('dns');
 var net       = require('net');
+var tlds      = require('haraka-tld');
+
 var net_utils = require('./net_utils');
 var utils     = require('./utils');
 
@@ -151,7 +153,7 @@ exports.do_lookups = function (connection, next, hosts, type) {
             }
             // Handle zones that require host to be stripped to a domain boundary
             else if (/^(?:1|true|yes|enabled|on)$/i.test(lists[zone].strip_to_domain)) {
-                lookup = (net_utils.split_hostname(host, 3))[1];
+                lookup = (tlds.split_hostname(host, 3))[1];
             }
             // Anything else..
             else {
