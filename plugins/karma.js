@@ -26,8 +26,8 @@ exports.register = function () {
     plugin.load_karma_ini();
     plugin.load_redis_ini();
 
-    plugin.register_hook('init_master',  'init_redis_karma');
-    plugin.register_hook('init_child',   'init_redis_karma');
+    plugin.register_hook('init_master',  'init_redis_plugin');
+    plugin.register_hook('init_child',   'init_redis_plugin');
 
     plugin.register_hook('connect_init', 'results_init');
     plugin.register_hook('connect_init', 'history_from_redis');
@@ -915,30 +915,6 @@ exports.check_asn = function (connection, asnkey) {
 };
 
 // Redis DB functions
-exports.init_redis_karma = function (next, server) {
-    var plugin = this;
-
-    // use existing redis connection only when using default DB id
-    if (!plugin.cfg.redis.dbid) {
-        if (server.notes.redis) {
-            server.loginfo(plugin, 'using server.notes.redis');
-            plugin.db = server.notes.redis;
-        }
-        if (plugin.db && plugin.db.ping()) {  // connection is good
-            return next();
-        }
-    }
-
-    var calledNext=false;
-    function callNext () {
-        if (calledNext) return;
-        calledNext = true;
-        next();
-    }
-
-    plugin.db = plugin.get_redis_client(plugin.cfg.redis, callNext);
-};
-
 exports.init_ip = function (dbkey, rip, expire) {
     var plugin = this;
     plugin.db.multi()
