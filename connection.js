@@ -572,6 +572,8 @@ Connection.prototype.tran_uuid = function () {
 
 Connection.prototype.reset_transaction = function(cb) {
     if (this.transaction && this.transaction.resetting === false) {
+        // Pause connection to allow the hook to complete
+        this.pause();
         this.transaction.resetting = true;
         plugins.run_hooks('reset_transaction', this, cb);
     }
@@ -587,6 +589,8 @@ Connection.prototype.reset_transaction_respond = function (retval, msg, cb) {
         this.transaction = null;
     }
     if (cb) cb();
+    // Allow the connection to continue
+    this.resume();
 };
 
 Connection.prototype.init_transaction = function(cb) {
