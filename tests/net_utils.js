@@ -1108,7 +1108,7 @@ exports.get_ipany_re = {
         test.expect(ip_fixtures.length);
         for (var i in ip_fixtures) {
             var match = net_utils.get_ipany_re('^','$').test(ip_fixtures[i][1]);
-            console.log('IP:', "'"+ip_fixtures[i][1]+"'" , 'Expected:', ip_fixtures[i][0] , 'Match:' , match);
+            // console.log('IP:', "'"+ip_fixtures[i][1]+"'" , 'Expected:', ip_fixtures[i][0] , 'Match:' , match);
             test.ok((match===ip_fixtures[i][0]), ip_fixtures[i][1] + ' - Expected: ' + ip_fixtures[i][0] + ' - Match: ' + match);
         }
         test.done();
@@ -1188,7 +1188,7 @@ exports.get_ips_by_host = {
     'get_ips_by_host, servedby.tnpi.net': function (test) {
         test.expect(2);
         net_utils.get_ips_by_host('servedby.tnpi.net', function (err, res) {
-            console.log(arguments);
+            // console.log(arguments);
             if (err) {
                 console.error(err);
             }

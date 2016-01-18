@@ -357,12 +357,18 @@ exports.send_email = function () {
     var options = arguments[4];
 
     var dot_stuffed = ((options && options.dot_stuffed) ? options.dot_stuffed : false);
+    var notes = ((options && options.notes) ? options.notes : null);
 
     this.loginfo("Sending email via params");
 
     var transaction = trans.createTransaction();
 
     this.loginfo("Created transaction: " + transaction.uuid);
+
+    //Adding notes passed as parameter
+    if (notes) {
+        transaction.notes = notes;
+    }
 
     // set MAIL FROM address, and parse if it's not an Address object
     if (from instanceof Address) {
@@ -475,7 +481,7 @@ exports.send_trans_email = function (transaction, next) {
             for (var i=0,l=ok_paths.length; i<l; i++) {
                 fs.unlink(ok_paths[i], function () {});
             }
-            if (next) next(constants.deny, err);
+            if (next) next(constants.denysoft, err);
             return;
         }
 

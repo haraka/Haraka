@@ -47,8 +47,8 @@ The following options can be specified in `config/rcpt_to.routes.ini`:
 The [redis] section has three optional settings (defaults shown):
 
     [redis]
-    server_ip=127.0.0.1
-    server_port=6379
+    host=127.0.0.1
+    port=6379
     db=0
 
 ### Routes

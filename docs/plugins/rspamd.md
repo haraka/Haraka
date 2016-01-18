@@ -95,3 +95,9 @@ rspamd.ini
 
     Used as character for visual spam-level where score is zero.
 
+- timeout (in seconds)
+
+    Default: 29 seconds
+
+    How long to wait for a response from rspamd.
+

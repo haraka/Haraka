@@ -10,11 +10,10 @@ var watchers = 0;
 
 exports.register = function () {
     var plugin = this;
+    plugin.inherits('redis');
 
     plugin.load_watch_ini();
 
-    // this.register_hook('init_master',  'init');
-    // this.register_hook('init_child',   'init');
     [
         'lookup_rdns', 'connect', 'helo', 'ehlo', 'mail', 'rcpt', 'rcpt_ok',
         'data', 'data_post', 'reset_transaction'
@@ -40,7 +39,7 @@ exports.load_watch_ini = function () {
 exports.hook_init_http = function (next, server) {
     var plugin = this;
 
-    server.http.app.use('/watch/wss_conf', function(req, res, app_next) {
+    server.http.app.use('/watch/wss_conf', function (req, res, app_next) {
         // pass config information to the WS client
         var client = { sampling: plugin.cfg.main.sampling };
         if (plugin.cfg.wss.url) client.wss_url = plugin.cfg.wss.url;
@@ -60,11 +59,11 @@ exports.hook_init_wss = function (next, server) {
 
     wss = server.http.wss;
 
-    wss.on('error', function(error) {
+    wss.on('error', function (error) {
         plugin.loginfo("server error: " + error);
     });
 
-    wss.on('connection', function(ws) {
+    wss.on('connection', function (ws) {
         watchers++;
         // broadcast updated watcher count
         wss.broadcast({ watchers: watchers });
@@ -74,21 +73,21 @@ exports.hook_init_wss = function (next, server) {
         // send message to just this websocket
         // ws.send('welcome!');
 
-        ws.on('error', function(error) {
+        ws.on('error', function (error) {
             // plugin.loginfo("client error: " + error);
         });
 
-        ws.on('close', function(code, message) {
+        ws.on('close', function (code, message) {
             // plugin.loginfo("client closed: " + message + '('+code+')');
             watchers--;
         });
 
-        ws.on('message', function(message) {
+        ws.on('message', function (message) {
             // plugin.loginfo("received from client: " + message);
         });
     });
 
-    wss.broadcast = function(data) {
+    wss.broadcast = function (data) {
         var f = JSON.stringify(data);
         for (var i in this.clients) {
             this.clients[i].send(f);
@@ -99,12 +98,45 @@ exports.hook_init_wss = function (next, server) {
     return next();
 };
 
+exports.hook_connect_init = function (next, connection) {
+    var plugin = this;
+
+    if (!server.notes.redis) {
+        connection.logerror(plugin, "no server.notes.redis!");
+        return next();
+    }
+
+    plugin.redis_subscribe(connection, function () {
+        connection.notes.redis.on('pmessage', function (pattern, channel, message) {
+            plugin.check_redis_sub_msg(connection, message);
+        });
+        next();
+    });
+};
+
+exports.check_redis_sub_msg = function (connection, message) {
+    var plugin = this;
+    // connection.loginfo(plugin, message);
+    // {"plugin":"karma","result":{"fail":"spamassassin.hits"}}
+    // {"plugin":"connect.geoip","result":{"country":"CN"}}
+
+    var m = JSON.parse(message);
+    connection.logprotocol(plugin, message);
+
+    var req = { uuid : connection.uuid };
+    req[m.plugin] = m.result;
+
+    wss.broadcast(req);
+};
+
 exports.get_incremental_results = function (next, connection) {
     var plugin = this;
+
     plugin.get_connection_results(connection);
     if (connection.transaction) {
         plugin.get_transaction_results(connection.transaction);
     }
+
     return next();
 };
 
@@ -122,7 +154,7 @@ exports.queue_ok = function (next, connection, msg) {
     this.get_incremental_results(incrDone, connection);
 };
 
-exports.w_deny = function(next, connection, params) {
+exports.w_deny = function (next, connection, params) {
     var plugin = this;
     // this.loginfo(this, params);
     var pi_code   = params[0];  // deny code?
@@ -168,6 +200,7 @@ exports.disconnect = function (next, connection) {
     };
 
     this.get_incremental_results(incrDone, connection);
+    this.redis_unsubscribe(connection);
 };
 
 exports.get_connection_results = function (connection) {
@@ -205,6 +238,7 @@ exports.get_connection_results = function (connection) {
     for (var name in result_store) {
         plugin.get_plugin_result(req, result_store, name);
     }
+
     wss.broadcast(req);
 };
 
@@ -222,6 +256,7 @@ exports.get_transaction_results = function (txn) {
     for (var name in result_store) {
         plugin.get_plugin_result(req, result_store, name);
     }
+
     wss.broadcast(req);
 };
 
@@ -289,6 +324,8 @@ exports.get_class = function (pi_name, r) {
                            r.reason[0].comment : '';
             return r.result === 'pass'      ? 'bg_green' :
                     comment === 'no policy' ? 'bg_yellow' : 'bg_red';
+        case 'data.uribl':
+            return r.fail.length ? 'bg_red' : 'bg_lgreen';
         case 'dnsbl':
             return r.fail.length ? 'bg_red' :
                    r.pass.length ? 'bg_green' : 'bg_lgreen';

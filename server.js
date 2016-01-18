@@ -13,6 +13,7 @@ var cluster     = require('cluster');
 var async       = require('async');
 var daemon      = require('daemon');
 var path        = require('path');
+var exit        = require('exit');
 
 // Need these here so we can run hooks
 logger.add_log_methods(exports, 'server');
@@ -71,7 +72,7 @@ Server.daemonize = function () {
     }
     catch (err) {
         logger.logerror(err.message);
-        process.exit(1);
+        exit(1);
     }
 };
 
@@ -184,7 +185,8 @@ Server.setup_smtp_listeners = function (plugins, type, inactivity_timeout) {
     var runInitHooks = function (err) {
         if (err) {
             logger.logerror("Failed to setup listeners: " + err.message);
-            return process.exit(-1);
+            logger.dump_logs();
+            exit(-1);
         }
         Server.listening();
         plugins.run_hooks('init_' + type, Server);
@@ -292,7 +294,7 @@ Server.init_master_respond = function (retval, msg) {
     if (!(retval === constants.ok || retval === constants.cont)) {
         Server.logerror("init_master returned error" +
                 ((msg) ? ': ' + msg : ''));
-        process.exit(1);
+        exit(1);
     }
 
     var c = Server.cfg.main;
@@ -310,7 +312,7 @@ Server.init_master_respond = function (retval, msg) {
     out.scan_queue_pids(function (err, pids) {
         if (err) {
             Server.logcrit("Scanning queue failed. Shutting down.");
-            process.exit(1);
+            exit(1);
         }
         Server.daemonize();
         // Fork workers
@@ -372,7 +374,7 @@ Server.init_child_respond = function (retval, msg) {
     catch (err) {
         Server.logerror('Terminating child');
     }
-    process.exit(1);
+    exit(1);
 };
 
 Server.listening = function () {

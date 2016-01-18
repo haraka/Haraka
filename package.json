@@ -4,7 +4,7 @@
   "license": "MIT",
   "description": "An SMTP Server project.",
   "keywords": ["haraka", "smtp", "server", "email"],
-  "version": "2.7.0",
+  "version": "2.7.2",
   "homepage": "http://haraka.github.io",
   "repository": {
     "type": "git",
@@ -25,7 +25,8 @@
     "nopt"                  : "~3.0.4",
     "npid"                  : "~0.4.0",
     "semver"                : "~5.0.3",
-    "sprintf-js"            : "~1.0.3"
+    "sprintf-js"            : "~1.0.3",
+    "exit"                  : "~0.1.2"
   },
   "optionalDependencies": {
     "elasticsearch"         : "*",
@@ -33,7 +34,7 @@
     "ldapjs"                : "~0.7.1",
     "maxmind"               : "*",
     "modern-syslog"         : "~1.1.1",
-    "redis"                 : "~2.1.0",
+    "redis"                 : "~2.4.2",
     "tmp"                   : "~0.0.28",
     "vs-stun"               : "~0.0.7"
   },

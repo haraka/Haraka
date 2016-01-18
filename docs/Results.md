@@ -180,7 +180,7 @@ human_html output, prefix the name of the key with an underscore.
 Example:
 
 ```js
-connection.results.add(plugin, { _hidden: "some data' });
+connection.results.add(plugin, { _hidden: 'some data' });
 ```
 
 ## Redis Pub/Sub
@@ -194,30 +194,26 @@ connection UUID.
 This is from the karma plugin, subscribing on the `connect_init` hook.
 
 ```js
-var redis = {
-    patt: 'result-' + connection.uuid + '*',
-    conn: require('redis').createClient(),
-};
-redis.conn.on('psubscribe', function (pattern, count) {
-    connection.loginfo(plugin, 'psubscribed to ' + pattern);
-    next();
-});
-redis.conn.on('pmessage', function (pattern, channel, message) {
-    // do fun stuff with messages that look like this
-    // {"plugin":"karma","result":{"fail":"spamassassin.hits"}}
-    // {"plugin":"connect.geoip","result":{"country":"CN"}}
-}); 
-redis.conn.on('punsubscribe', function (pattern, count) {
-    connection.loginfo(plugin, 'unsubsubscribed from ' + pattern);
-});
-redis.conn.psubscribe(redis.patt);
-connection.redis = redis;
+exports.register = function (next, server) {
+    this.inherits('redis');
+}
+exports.hook_connect_init = function (next, connection) {
+    var plugin = this;
+    plugin.redis_subscribe(connection, function () {
+        connection.notes.redis.on('pmessage', function (pattern, channel, message) {
+            // do fun stuff with messages that look like this
+            // {"plugin":"karma","result":{"fail":"spamassassin.hits"}}
+            // {"plugin":"connect.geoip","result":{"country":"CN"}}
+        });
+        next();
+    });
+}
 ```
 
 It's also wise to unsubscribe. It's easy to do on the `disconnect` hook:
 
 ```js
-if (connection.redis) {
-    connection.redis.conn.punsubscribe(connection.redis.patt);
-}
+    exports.hook_disconnect = function (next, connection) {
+        this.redis_unsubscribe(connection);
+    }
 ```
