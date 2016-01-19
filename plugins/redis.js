@@ -37,6 +37,8 @@ exports.load_redis_ini = function () {
 exports.init_redis_connection = function (next, server) {
     var plugin = this;
 
+    // this is the server-wide redis, shared by plugins that don't
+    // set a specific db ID.
     if (server.notes.redis && server.notes.redis.ping()) {
         plugin.loginfo('already connected');
         return next(); // connection is good
@@ -53,6 +55,52 @@ exports.init_redis_connection = function (next, server) {
     opts.host = plugin.redisCfg.server.host;
     opts.port = plugin.redisCfg.server.port;
     server.notes.redis = plugin.get_redis_client(opts, callNext);
+};
+
+exports.init_redis_plugin = function (next, server) {
+    var plugin = this;
+
+    // this function is called by plugins at init_*, and establishes their
+    // shared or unique redis db handle.
+
+    // use server-wide redis connection only when using default DB id
+    if (!plugin.cfg.redis.db) {
+        if (server.notes.redis) {
+            server.loginfo(plugin, 'using server.notes.redis');
+            plugin.db = server.notes.redis;
+        }
+        if (plugin.db && plugin.db.ping()) {  // connection is good
+            return next();
+        }
+    }
+
+    var calledNext=false;
+    function callNext () {
+        if (calledNext) return;
+        calledNext = true;
+        next();
+    }
+
+    plugin.db = plugin.get_redis_client(plugin.cfg.redis, callNext);
+};
+
+exports.redis_ping = function(done) {
+    var plugin = this;
+    var nope = function (err) {
+        plugin.redis_pings=false;
+        done(err);
+    };
+
+    if (!plugin.db) {
+        return nope(new Error('redis not initialized'));
+    }
+
+    plugin.db.ping(function (err, res) {
+        if (err           ) { return nope(err); }
+        if (res !== 'PONG') { return nope(new Error('not PONG')); }
+        plugin.redis_pings=true;
+        done(null, true);
+    });
 };
 
 exports.get_redis_client = function (opts, next) {

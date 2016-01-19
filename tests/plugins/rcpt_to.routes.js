@@ -23,8 +23,10 @@ var hmail = {
 
 var _set_up_file = function (done) {
 
+    this.server = {};
     this.plugin = new Plugin('rcpt_to.routes');
     this.plugin.config = config;
+
     this.plugin.register();
     this.connection = Connection.createConnection();
     this.connection.transaction = {
@@ -37,16 +39,37 @@ var _set_up_file = function (done) {
 
 var _set_up_redis = function (done) {
 
+    this.server = {};
     this.plugin = new Plugin('rcpt_to.routes');
-    this.plugin.config = config;
-    this.plugin.register();
+
     this.connection = Connection.createConnection();
     this.connection.transaction = {
         results: new ResultStore(this.connection),
         notes: {},
     };
 
-    this.plugin.redis_ping(done);
+    this.plugin.config = config;
+    this.plugin.register();
+    this.plugin.server = { notes: { } };
+    this.plugin.redisCfg.opts.max_attempts = 1;
+    this.plugin.redisCfg.opts.connect_timeout = 1000;
+    var t = this;
+
+    this.plugin.init_redis_connection(function (err) {
+        if (err) {
+            console.error(err.message);
+            return done();
+        }
+
+        t.plugin.db = t.plugin.server.notes.redis;
+        t.plugin.redis_ping(function (err, result) {
+            if (err) {
+                console.error(err);
+                return done(err);
+            }
+            done(err, result);
+        });
+    }, this.plugin.server);
 };
 
 var _tear_down_redis = function (done) {
@@ -94,6 +117,7 @@ exports.rcpt_redis = {
             this.plugin.rcpt(cb, this.connection, [addr]);
         }
         else {
+            console.error('ERROR: no redis available!');
             test.expect(0);
             test.done();
         }
