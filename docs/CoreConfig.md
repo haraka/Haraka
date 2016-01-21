@@ -149,3 +149,7 @@ will not include a timestamp.
   to enable:   `echo 1 > /path/to/haraka/config/strict_rfc1869`
   to disable:  `echo 0 > /path/to/haraka/config/strict_rfc1869`
 
+
+* remove_carriage_return
+
+  By default Haraka removes the carriage return character `\r` when parsing the email lines. This setting can contain `true` or `false` to change this behavior. You can disable this behavior to keep the body identical to the SMTP stream.
