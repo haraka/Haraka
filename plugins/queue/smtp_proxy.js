@@ -8,15 +8,26 @@ var smtp_client_mod = require('./smtp_client');
 
 exports.register = function () {
     var plugin = this;
-    var load_config = function () {
-        plugin.cfg = plugin.config.get('smtp_proxy.ini', {
-            booleans: [
-                '-main.enable_tls',
-            ],
-        },
-        load_config);
-    };
-    load_config();
+
+    plugin.load_smtp_proxy_ini();
+
+    if (plugin.cfg.main.enable_outbound) {
+        plugin.register_hook('queue_outbound', 'hook_queue');
+    }
+};
+
+exports.load_smtp_proxy_ini = function () {
+    var plugin = this;
+
+    plugin.cfg = plugin.config.get('smtp_proxy.ini', {
+        booleans: [
+            '-main.enable_tls',
+            '+main.enable_outbound',
+        ],
+    },
+    function () {
+        plugin.load_smtp_proxy_ini();
+    });
 };
 
 exports.hook_mail = function (next, connection, params) {

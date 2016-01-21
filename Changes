@@ -1,7 +1,11 @@
 
 2.N.N - Feb NN, 2016
 
-2.7.3 - Jan 16, 2016
+2.7.3 - Jan 22, 2016
+
+* Changes
+    * smtp_proxy & qmail-queue: default to enabled for outbound deliveries
+      (previously used Outbound), to better matches user expectations.
 
 * New Features
     * outbound: allow passing notes to send_email (#1295)
