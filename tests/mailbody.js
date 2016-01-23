@@ -1,7 +1,7 @@
-var Body   = require("../mailbody").Body;
+var Body   = require('../mailbody').Body;
 var Header = require('../mailheader').Header;
 
-function _fill_body(body) {
+function _fill_body (body) {
     // Body.bodytext retains the original received text before filters are
     // applied so the filtered text isn't tested against URIBLs, etc.  Since we
     // want to test filter output, we use this hack to pull out the parsed body
@@ -125,7 +125,7 @@ exports.filters = {
             });
         }
 
-        test.ok(!dupe, "no duplicate lines found");
+        test.ok(!dupe, 'no duplicate lines found');
         test.done();
     },
 };
