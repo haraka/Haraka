@@ -5,7 +5,7 @@
 	"password":"guest",
 	"exchangeName":"email_messages",
 	"exchangeType":"direct",
-	"queueName":"emails",
+	"queueName":[[".*","emails"]],
 	"deliveryMode":"2",
 	"confirm":true,
 	"durable":true,

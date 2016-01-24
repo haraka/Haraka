@@ -5,6 +5,7 @@ var amqp = require("amqplib/callback_api");
 var channel;
 var queue;
 var deliveryMode;
+var logger = require('./logger');
 
 exports.register = function () {
     this.init_amqp_connection();
@@ -20,7 +21,7 @@ exports.hook_queue = function(next, connection) {
 };
 
 exports.init_amqp_connection = function() {
-    var cfg = this.config.get("rabbitmq_amqplib_queue.json").rabbitmq;
+    var cfg = this.config.get("rabbitmq_amqplib_queue.json");
 
     var host = cfg.host || "127.0.0.1";
     var port = cfg.port || "5672";
@@ -28,7 +29,7 @@ exports.init_amqp_connection = function() {
     var password = cfg.password || "guest";
     var exchangeName = cfg.exchangeName || "emailMessages";
     var exchangeType = cfg.exchangeType || "direct";
-    var queueName = cfg.queueName || "emails";
+    var queueName = cfg.queueName || [[".*","emails"]];
     var durable = cfg.durable === "true" || true;
     // var confirm = cfg.confirm === "true" || true;
     var autoDelete = cfg.autoDelete === "true" || false;
