@@ -65,7 +65,7 @@ exports.init_amqp_connection = function() {
     queueRCPTReplace = cfg.queueRCPTReplace || [[".*","emails"]];
     var l = queueRCPTReplace.length;
     for (var i = 0; i < l; i ++) {
-        queueRCPTReplace[i][0] = new Regex(queueRCPTReplace[i][0]);
+        queueRCPTReplace[i][0] = new Regexp("^" +  queueRCPTReplace[i][0] + "$");
     };
 
     deliveryMode = cfg.deliveryMode || 2;
