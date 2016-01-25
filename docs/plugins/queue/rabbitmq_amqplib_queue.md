@@ -3,7 +3,7 @@ queue/rabbitmq\_amqplib
 
 This plugin delivers emails to RabbitMQ queue for further processing. Based on `queue/rabbitmq_ampqlib` but will route to different RabbitMQ Queues based on rcpt\_to.
 
-queueRCTPReaplce is an array of and array of 2 strings, the first is a RegExp that will be wrapped with "^regex$" and with each rctp\_to. This gives a list of queue names. The email will be delivered to each one once.
+queueRCTPReaplce is an array of and array of 2 strings, the first is a RegExp that will be wrapped with "^regex$" and matched with each rctp\_to. This gives a list of queue names. The email will be delivered to each one once.
 
 Dependency
 ----------
