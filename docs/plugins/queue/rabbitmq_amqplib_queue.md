@@ -12,10 +12,10 @@ Dependency
 Configuration
 -------------
 
-* `config/rabbitmq_amqplib.ini` - Connection, exchange and queue settings
+* `config/rabbitmq_amqplib_queue.json` - Connection, exchange and queue settings
     
     Example:
-
+```
     {
         "host":"localhost",
         "port":5672,
@@ -29,6 +29,7 @@ Configuration
         "durable":true,
         "autoDelete":false
     }
+```
 
     
  More information about RabbitMQ can be found at https://www.rabbitmq.com/
