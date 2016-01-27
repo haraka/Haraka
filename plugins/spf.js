@@ -170,7 +170,7 @@ exports.hook_mail = function (next, connection, params) {
             domain: host,
             emit: true,
         });
-        return plugin.return_results(next, connection, spf, 'mail', result,
+        return plugin.return_results(next, connection, spf, 'mfrom', result,
             '<'+mfrom+'>');
     };
 
