@@ -357,12 +357,18 @@ exports.send_email = function () {
     var options = arguments[4];
 
     var dot_stuffed = ((options && options.dot_stuffed) ? options.dot_stuffed : false);
+    var notes = ((options && options.notes) ? options.notes : null);
 
     this.loginfo("Sending email via params");
 
     var transaction = trans.createTransaction();
 
     this.loginfo("Created transaction: " + transaction.uuid);
+
+    //Adding notes passed as parameter
+    if (notes) {
+        transaction.notes = notes;
+    }
 
     // set MAIL FROM address, and parse if it's not an Address object
     if (from instanceof Address) {
@@ -1617,7 +1623,7 @@ HMailItem.prototype.populate_bounce_message_with_headers = function(from, to, re
     }
     self.todo.rcpt_to.forEach(function (rcpt_to) {
         bounce_body.push(CRLF);
-        bounce_body.push('Final recipient: rfc822;' + rcpt_to.address() + CRLF);
+        bounce_body.push('Final-Recipient: rfc822;' + rcpt_to.address() + CRLF);
         var dsn_action = null;
         if (rcpt_to.dsn_action) {
             dsn_action = rcpt_to.dsn_action;

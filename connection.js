@@ -572,6 +572,8 @@ Connection.prototype.tran_uuid = function () {
 
 Connection.prototype.reset_transaction = function(cb) {
     if (this.transaction && this.transaction.resetting === false) {
+        // Pause connection to allow the hook to complete
+        this.pause();
         this.transaction.resetting = true;
         plugins.run_hooks('reset_transaction', this, cb);
     }
@@ -587,6 +589,8 @@ Connection.prototype.reset_transaction_respond = function (retval, msg, cb) {
         this.transaction = null;
     }
     if (cb) cb();
+    // Allow the connection to continue
+    this.resume();
 };
 
 Connection.prototype.init_transaction = function(cb) {
@@ -1414,10 +1418,10 @@ Connection.prototype.cmd_data = function(args) {
         return this.respond(503, "MAIL required first");
     }
     if (!this.transaction.rcpt_to.length) {
-        this.errors++;
         if (this.pipelining) {
             return this.respond(554, "No valid recipients");
         }
+        this.errors++;
         return this.respond(503, "RCPT required first");
     }
 

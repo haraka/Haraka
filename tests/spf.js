@@ -1,8 +1,8 @@
 var SPF = require('../spf').SPF;
+SPF.prototype.log_debug = function () {};  // noop, hush debug output
 
 function _set_up(done) {
     this.SPF = new SPF();
-    this.SPF.log_debug = function () {};  // noop, hush debug output
     done();
 }
 

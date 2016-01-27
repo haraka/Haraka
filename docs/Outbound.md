@@ -283,3 +283,9 @@ see https://tools.ietf.org/html/rfc2821#section-4.5.2), you should pass the
 ```dot_stuffed: true``` option, like so:
     
     outbound.send_email(from, to, contents, outnext, { dot_stuffed: true });
+
+
+In case you need notes in the new transaction that `send_email()` creates, you should pass the
+```notes``` option, like so:
+
+    outbound.send_email(from, to, contents, outnext, { notes: transaction.notes });

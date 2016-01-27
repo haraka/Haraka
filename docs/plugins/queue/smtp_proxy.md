@@ -18,7 +18,12 @@ Configuration
 * smtp\_proxy.ini
   
   Configuration is stored in this file in the following keys:
-  
+
+    * enable\_outbound=[true]
+
+    SMTP proxy outbound messages (set to false to enable Haraka's
+    separate Outbound mail routing (MX based delivery)).
+
   * host=HOST
     
     The host to connect to.

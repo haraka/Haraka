@@ -207,14 +207,14 @@ exports.hook_lookup_rdns = function onLookup(next, connection) {
     });
 };
 
-function format_results(result) {
-    return [
-        'os="' + result.os_name + ' ' + result.os_flavor + '"',
-        'link_type="' + result.link_type + '"',
-        'distance=' + result.distance,
-        'total_conn=' + result.total_conn,
-        'shared_ip=' + ((result.last_nat === 0) ? 'N' : 'Y'),
-    ].join(' ');
+function format_results(r) {
+    var data = [];
+    if (r.os_name) data.push('os="' + r.os_name + ' ' + r.os_flavor + '"');
+    if (r.link_type) data.push('link_type="' + r.link_type + '"');
+    if (r.distance) data.push('distance=' + r.distance);
+    if (r.total_conn) data.push('total_conn=' + r.total_conn);
+    if (r.last_nat) data.push('shared_ip=' + ((r.last_nat === 0) ? 'N' : 'Y'));
+    return data.join(' ');
 }
 
 exports.hook_data_post = function (next, connection) {
@@ -227,7 +227,7 @@ exports.hook_data_post = function (next, connection) {
 
     connection.transaction.remove_header(header_name);
     var result = connection.results.get('connect.p0f');
-    if (!result) {
+    if (!result || !result.os) {
         connection.results.add(plugin, {err: 'no p0f note'});
         return next();
     }

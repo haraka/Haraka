@@ -125,25 +125,32 @@ exports.lookup_maxmind = function (next, connection) {
     plugin.get_maxmind_asn(connection);
 
     var loc = plugin.get_geoip_maxmind(connection.remote_ip);
-    if (loc) {
-        if (loc.continentCode) {
-            connection.results.add(plugin, {continent: loc.continentCode});
-            show.push(loc.continentCode);
-        }
-        if (loc.countryCode || loc.code) {
-            connection.results.add(plugin, {country: loc.countryCode || loc.code});
-            show.push(loc.countryCode);
-        }
-        if (loc.city) {
-            connection.results.add(plugin, {region: loc.region});
-            connection.results.add(plugin, {city: loc.city});
-            connection.results.add(plugin, {ll: [loc.latitude, loc.longitude]});
-            if (plugin.cfg.main.show_region) { show.push(loc.region); }
-            if (plugin.cfg.main.show_city  ) { show.push(loc.city); }
-        }
+    if (!loc) return next();
+
+    if (loc.continentCode && loc.continentCode !== '--') {
+        connection.results.add(plugin, {continent: loc.continentCode});
+        show.push(loc.continentCode);
+    }
+    var cc = loc.countryCode || loc.code;
+    if (cc && cc !== '--') {
+        connection.results.add(plugin, {country: cc});
+        show.push(cc);
+    }
+    if (loc.city && loc.city !== '--') {
+        connection.results.add(plugin, {city: loc.city});
+        if (plugin.cfg.main.show_city) show.push(loc.city);
+    }
+    if (loc.region && loc.region !== '--') {
+        connection.results.add(plugin, {region: loc.region});
+        if (plugin.cfg.main.show_region) show.push(loc.region);
+    }
+    if (loc.latitude) {
+        connection.results.add(plugin, {ll: [loc.latitude, loc.longitude]});
     }
 
-    if (!loc || !plugin.cfg.main.calc_distance) {
+    if (show.length === 0) return next();
+
+    if (!plugin.cfg.main.calc_distance) {
         connection.results.add(plugin, {human: show.join(', '), emit:true});
         return next();
     }
@@ -178,9 +185,12 @@ exports.lookup_geoip = function (next, connection) {
 
     connection.results.add(plugin, r);
 
-    var show = [ r.country ];
+    var show = [];
+    if (r.country  && r.country !== '--') show.push(r.country);
     if (r.region   && plugin.cfg.main.show_region) { show.push(r.region); }
     if (r.city     && plugin.cfg.main.show_city  ) { show.push(r.city); }
+
+    if (show.length === 0) return next();
 
     if (!plugin.cfg.main.calc_distance) {
         connection.results.add(plugin, {human: show.join(', '), emit:true});
@@ -188,7 +198,7 @@ exports.lookup_geoip = function (next, connection) {
     }
 
     plugin.calculate_distance(connection, r.ll, function (err, distance) {
-        show.push(distance+'km');
+        if (distance) show.push(distance+'km');
         connection.results.add(plugin, {human: show.join(', '), emit:true});
         return next();
     });
@@ -266,18 +276,18 @@ exports.add_headers = function (next, connection) {
     txn.remove_header('X-Haraka-GeoIP-Received');
     var r = connection.results.get('connect.geoip');
     if (r) {
-        txn.add_header('X-Haraka-GeoIP',   r.human  );
-        if (r.asn) { txn.add_header('X-Haraka-ASN',     r.asn    ); }
-        if (r.asn_org) { txn.add_header('X-Haraka-ASN-Org', r.asn_org); }
+        if (r.country) txn.add_header('X-Haraka-GeoIP',   r.human  );
+        if (r.asn)     txn.add_header('X-Haraka-ASN',     r.asn    );
+        if (r.asn_org) txn.add_header('X-Haraka-ASN-Org', r.asn_org);
     }
 
     var received = [];
 
     var rh = plugin.received_headers(connection);
-    if (rh) received.push(rh);
+    if (rh && rh.length) received.push(rh);
 
     var oh = plugin.originating_headers(connection);
-    if (oh) { received.push(oh); }
+    if (oh) received.push(oh);
 
     // Add any received results to a trace header
     if (received.length) {
@@ -321,6 +331,8 @@ exports.calculate_distance = function (connection, rll, done) {
 
         var gl = plugin.local_geoip;
         var gcd = plugin.haversine(gl.latitude, gl.longitude, rll[0], rll[1]);
+        if (gcd && isNaN(gcd)) return done();
+
         connection.results.add(plugin, {distance: gcd});
 
         if (plugin.cfg.main.too_far &&
