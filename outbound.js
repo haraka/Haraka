@@ -1623,7 +1623,7 @@ HMailItem.prototype.populate_bounce_message_with_headers = function(from, to, re
     }
     self.todo.rcpt_to.forEach(function (rcpt_to) {
         bounce_body.push(CRLF);
-        bounce_body.push('Final recipient: rfc822;' + rcpt_to.address() + CRLF);
+        bounce_body.push('Final-Recipient: rfc822;' + rcpt_to.address() + CRLF);
         var dsn_action = null;
         if (rcpt_to.dsn_action) {
             dsn_action = rcpt_to.dsn_action;
