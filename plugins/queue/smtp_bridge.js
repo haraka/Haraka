@@ -25,7 +25,7 @@ exports.hook_get_mx = function (next, hmail, domain) {
     if (this.cfg.main.priority) {
         priority = this.cfg.main.priority;
     } 
-    var authType = 'PLAIN';
+    var authType = null;
     if (this.cfg.main.auth_type) {
         authType = this.cfg.main.auth_type;
     }
