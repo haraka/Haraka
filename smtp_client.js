@@ -2,6 +2,10 @@
 // SMTP client object and class. This allows every part of the client
 // protocol to be hooked for different levels of control, such as
 // smtp_forward and smtp_proxy queue plugins.
+// This newer version can use HostPool to get a connection to a pool of
+// possible hosts in the configuration value "forwarding_host_pool", rather
+// than a bunch of connections to a single host from the configuration values
+// in "host" and "port" (see host_pool.js).
 
 // node.js builtins
 var events       = require('events');
@@ -17,6 +21,7 @@ var logger      = require('./logger');
 var utils       = require('./utils');
 var config      = require('./config');
 var tls_socket  = require('./tls_socket');
+var HostPool    = require('./host_pool');
 
 var smtp_regexp = /^([0-9]{3})([ -])(.*)/;
 var STATE = {
@@ -39,6 +44,8 @@ function SMTPClient (port, host, connect_timeout, idle_timeout) {
     this.connected = false;
     this.authenticated = false;
     this.auth_capabilities = [];
+    this.host = host;
+    this.port = port;
     var client = this;
 
     this.socket.on('line', function (line) {
@@ -142,7 +149,11 @@ function SMTPClient (port, host, connect_timeout, idle_timeout) {
             if (!error) {
                 error = '';
             }
-            var errMsg = client.uuid + ': SMTP connection ' + msg + ' ' + error;
+            // msg is e.g. "errored" or "timed out"
+            // error is e.g. "Error: connect ECONNREFUSE"
+            var errMsg = client.uuid +
+                ': [' + client.host + ':' + client.port + '] ' +
+                'SMTP connection ' + msg + ' ' + error;
             switch (client.state) {
                 case STATE.ACTIVE:
                 case STATE.IDLE:
@@ -155,6 +166,11 @@ function SMTPClient (port, host, connect_timeout, idle_timeout) {
                 client.emit('error', errMsg);
                 return;
             }
+            if ((msg === 'errored' || msg === 'timed out')
+                  && client.state === STATE.DESTROYED){
+                client.emit('connection-error', errMsg);
+            } // don't return, continue (original behavior)
+
             logger.logdebug('[smtp_client_pool] ' + errMsg + ' (state=' + client.state + ')');
         };
     };
@@ -336,8 +352,12 @@ exports.get_client_plugin = function (plugin, connection, c, callback) {
             pass: c.auth_pass
         }
     }
-    var pool = exports.get_pool(connection.server, c.port, c.host,
+
+    var hostport = get_hostport(connection, connection.server.notes, config);
+
+    var pool = exports.get_pool(connection.server, hostport.port, hostport.host,
                                 c.connect_timeout, c.timeout, c.max_connections);
+
     pool.acquire(function (err, smtp_client) {
         connection.logdebug(plugin, 'Got smtp_client: ' + smtp_client.uuid);
 
@@ -445,8 +465,21 @@ exports.get_client_plugin = function (plugin, connection, c, callback) {
             smtp_client.send_command('MAIL', 'FROM:' + connection.transaction.mail_from);
         });
 
+        // these errors only get thrown when the connection is still active
         smtp_client.on('error', function (msg) {
             connection.logwarn(plugin, msg);
+            smtp_client.call_next();
+        });
+
+        // these are the errors thrown when the connection is dead
+        smtp_client.on('connection-error', function (error){
+            // error contains e.g. "Error: connect ECONNREFUSE"
+            logger.logerror("backend failure: " + smtp_client.host + ':' + smtp_client.port + ' - ' + error);
+            var host_pool = connection.server.notes.host_pool;
+            // only exists for if forwarding_host_pool is set in the config
+            if (host_pool){
+                host_pool.failed(smtp_client.host, smtp_client.port);
+            }
             smtp_client.call_next();
         });
 
@@ -462,3 +495,36 @@ exports.get_client_plugin = function (plugin, connection, c, callback) {
         callback(err, smtp_client);
     });
 };
+
+function get_hostport (connection, server_notes, config) {
+
+    var c = config;
+    if (c.forwarding_host_pool){
+        if (! server_notes.host_pool){
+            connection.logwarn("creating a new host_pool from " + c.forwarding_host_pool);
+            server_notes.host_pool =
+                new HostPool(
+                    c.forwarding_host_pool, // "1.2.3.4:420,  5.6.7.8:420
+                    c.dead_forwarding_host_retry_secs
+                );
+        }
+        var host_pool = server_notes.host_pool;
+
+        var host = host_pool.get_host();
+        if (! host){
+            logger.logerror('[smtp_client_pool] no backend hosts in pool!');
+            throw new Error("no backend hosts found in pool!");
+        }
+
+        return host; // { host: 1.2.3.4, port: 567 }
+    }
+    else if (c.host && c.port){
+        return { host: c.host, port: c.port };
+    }
+    else {
+        // current behavior in get_pool is to default to localhost:25
+        logger.logwarn("[smtp_client_pool] neither forwarding_host_pool nor host, port" +
+                       "found in config file, defaulting to localhost:25");
+        return { host: 'localhost', port: 25 };
+    }
+}

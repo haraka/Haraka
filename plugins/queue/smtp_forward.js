@@ -57,7 +57,9 @@ exports.hook_queue = function (next, connection) {
     var cfg = plugin.get_config(connection);
     var txn = connection.transaction;
 
-    connection.loginfo(plugin, 'forwarding to ' + cfg.host + ':' + cfg.port);
+    connection.loginfo(plugin, 'forwarding to ' +
+            (cfg.forwarding_host_pool ? "configured forwarding_host_pool" : cfg.host + ':' + cfg.port)
+        );
 
     var smc_cb = function (err, smtp_client) {
         smtp_client.next = next;
