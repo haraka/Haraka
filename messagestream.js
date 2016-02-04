@@ -403,11 +403,10 @@ MessageStream.prototype.destroy = function () {
     }
 };
 
-MessageStream.prototype.get_data = function (cb) { // Or: (options, cb)
-    var options = {};
-    if (arguments.length === 2) {
-        cb = arguments[1];
-        options = arguments[0];
+MessageStream.prototype.get_data = function (options, cb) { // Or: (cb)
+    if (arguments.length === 1) {
+        cb = arguments[0];
+        options = {};
     }
     var ws = new GetDataStream(cb);
     this.pipe(ws, options);
