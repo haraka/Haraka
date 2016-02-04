@@ -1,4 +1,4 @@
-// Bridge to an SMTP server 
+// Bridge to an SMTP server
 // Overrides the MX and sets the same AUTH user and password
 
 exports.register = function () {
@@ -24,7 +24,7 @@ exports.hook_get_mx = function (next, hmail, domain) {
     var priority = 10;
     if (this.cfg.main.priority) {
         priority = this.cfg.main.priority;
-    } 
+    }
     var authType = null;
     if (this.cfg.main.auth_type) {
         authType = this.cfg.main.auth_type;
