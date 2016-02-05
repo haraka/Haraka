@@ -1,7 +1,7 @@
 
-2.N.N - Feb NN, 2016
+2.N.N - Mar NN, 2016
 
-2.7.3 - Jan 22, 2016
+2.7.3 - Feb 04, 2016
 
 * Changes
     * smtp_proxy & qmail-queue: default to enabled for outbound deliveries
@@ -20,6 +20,8 @@
     * karma: can now connect to redis on hosts other than localhost (#1275)
     * geoip & p0f: don't log empty/null values from RFC 1918 connects (#1267)
     * redis: make plugin params match docs (#1273)
+    * mailbody: small refactoring (#1315)
+    * smtp_proxy & qmail-queue: default to enabled for outbound (#1308)
 
 * Bug Fixes
     * redis: use correct path for db.select (#1273)
@@ -27,6 +29,10 @@
     * logger: ignore null arguments (#1299)
     * connection: pause for hook_reset_transaction (#1303)
     * rcpt_to.routes: update redis usage for compat with redis plugin (#1302)
+    * smtp_forward: use correct config path to auth settings (#1327)
+    * messagestream: correctly pass options parameter to get_data (#1316) 
+    * spf: honour configuration for mfrom scope (#1322)
+    * outbound: Add missing dash to 'Final-Recipient' header name (#1320)
 
 
 2.7.2 - Dec 15, 2015
