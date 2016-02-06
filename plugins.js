@@ -17,22 +17,74 @@ exports.registered_plugins = {};
 exports.plugin_list = [];
 var order = 0;
 
-function Plugin(name) {
+function Plugin (name) {
+    var plugin = this;
     this.name = name;
     this.base = {};
     this.timeout = get_timeout(name);
-    var full_paths = [];
-    this._get_plugin_paths().forEach(function (pp) {
-        full_paths.push(path.resolve(pp, name) + '.js');
-        full_paths.push(path.resolve(pp, name, 'index.js'));
-        full_paths.push(path.resolve(pp, name, 'package.json'));
-    });
-    this.full_paths = full_paths;
+    this._get_plugin_path();
     this.config = config;
     this.hooks = {};
 }
 
-Plugin.prototype.register_hook = function(hook_name, method_name, priority) {
+Plugin.prototype.core_require = function (name) {
+    return require('./' + name);
+}
+
+Plugin.prototype._get_plugin_path = function () {
+    var plugin = this;
+    /* From https://github.com/haraka/Haraka/pull/1278#issuecomment-168856528
+    In Development mode, or install via a plain "git clone":
+
+        Plain plugin in plugins/ folder
+        Plugin in a folder in plugins/<name>/ folder. Contains a package.json.
+        Plugin in node_modules. Contains a package.json file.
+
+    In "installed" mode (via haraka -i <path>):
+
+        Plain plugin in <path>/plugins/ folder
+        Plugin in a folder in <path>/plugins/<name>/folder. (same concept as above)
+        Plugin in <path>/node_modules. Contains a package.json file.
+        Core plugin in <core_haraka_dir>/plugins/ folder
+        Plugin in a folder in <core_haraka_dir>/plugins/<name>/ folder. (same concept as above)
+        Plugin in <core_haraka_dir>/node_modules.
+    */
+
+    plugin.hasPackageJson = false;
+    var name = plugin.name;
+
+    var paths = [];
+    if (process.env.HARAKA) {
+        // Installed mode - started via bin/haraka
+        paths.push(
+            path.resolve(process.env.HARAKA, 'plugins', name + '.js'),
+            path.resolve(process.env.HARAKA, 'plugins', name, 'package.json'),
+            path.resolve(process.env.HARAKA, 'node_modules', name, 'package.json')
+        );
+    }
+
+    paths.push(
+        path.resolve(__dirname, 'plugins', name + '.js'),
+        path.resolve(__dirname, 'plugins', name, 'package.json'),
+        path.resolve(__dirname, 'node_modules', name, 'package.json')
+    );
+
+    paths.forEach(function (pp) {
+        if (plugin.plugin_path) return;
+        try {
+            fs.statSync(pp);
+            plugin.plugin_path = pp;
+            if (/\/package\.json$/.test(pp)) {
+                plugin.hasPackageJson = true;
+            }
+        }
+        catch (e) {
+            // ignore error
+        }
+    });
+}
+
+Plugin.prototype.register_hook = function (hook_name, method_name, priority) {
     priority = parseInt(priority);
     if (!priority) priority = 0;
     if (priority > 100) priority = 100;
@@ -71,29 +123,61 @@ Plugin.prototype.inherits = function (parent_name) {
     this.base[parent_name] = parent_plugin;
 };
 
-Plugin.prototype._get_plugin_paths = function () {
-    var paths = [];
-
-    // Allow environment customized path to plugins in addition to defaults.
-    // Multiple paths separated by (semi-)colon ':|;' depending on environment.
-    if (process.env.HARAKA_PLUGIN_PATH) {
-        var separator = /^win/.test(os.platform()) ? ';' : ':';
-        process.env.HARAKA_PLUGIN_PATH.split(separator).map(function(p) {
-            var pNorm = path.normalize(p);
-            logger.logdebug('Adding plugin path: ' + pNorm);
-            paths.push(pNorm);
-        });
+Plugin.prototype._compile = function () {
+    var plugin = this;
+    var name = plugin.name;
+    var rf;
+    var last_err;
+    try {
+        rf = fs.readFileSync(plugin.plugin_path);
+    }
+    catch (err) {
+        if (config.get('smtp.ini').main.ignore_bad_plugins) {
+            logger.logcrit('Loading plugin ' + name + ' failed: ' + last_err);
+            return;
+        }
+        throw 'Loading plugin ' + name + ' failed: ' + err;
     }
 
-    if (process.env.HARAKA) {
-        paths.push(path.join(process.env.HARAKA, 'plugins'));
-        paths.push(path.join(process.env.HARAKA, 'node_modules'));
+    var code;
+    if (plugin.hasPackageJson) {
+        code = 'exports = require("' + path.dirname(plugin.plugin_path) + '");';
+    }
+    else {
+        code = '"use strict";' + rf;
+    }
+    var sandbox = {
+        require: exports._make_custom_require(plugin.plugin_path, plugin.hasPackageJson),
+        __filename: plugin.plugin_path,
+        __dirname:  path.dirname(plugin.plugin_path),
+        exports: plugin,
+        setTimeout: setTimeout,
+        clearTimeout: clearTimeout,
+        setInterval: setInterval,
+        clearInterval: clearInterval,
+        process: process,
+        Buffer: Buffer,
+        Math: Math,
+        server: plugins.server,
+    };
+    if (plugin.hasPackageJson) {
+        delete sandbox.__filename;
+    }
+    constants.import(sandbox);
+    try {
+        vm.runInNewContext(code, sandbox, plugin.plugin_path);
+    }
+    catch (err) {
+        logger.logcrit('Compiling plugin: ' + name + ' failed');
+        if (config.get('smtp.ini').main.ignore_bad_plugins) {
+            logger.logcrit('Loading plugin ' + name + ' failed: ', err.message +
+                           ' - will skip this plugin and continue');
+            return;
+        }
+        throw err; // default is to re-throw and stop Haraka
     }
 
-    paths.push(path.join(__dirname, 'plugins'));
-    paths.push(path.join(__dirname, 'node_modules'));
-
-    return paths;
+    return plugin;
 };
 
 function get_timeout (name) {
@@ -184,66 +268,15 @@ plugins.server = { notes: {} };
 
 plugins._load_and_compile_plugin = function (name) {
     var plugin = new Plugin(name);
-    var fp = plugin.full_paths;
-    var rf;
-    var last_err;
-    var hasPackageJson;
-    for (var i=0, j=fp.length; i<j; i++) {
-        try {
-            rf = fs.readFileSync(fp[i]);
-            if (/package.json$/.test(fp[i])) {
-                hasPackageJson = true;
-            }
-            break;
-        }
-        catch (err) {
-            last_err = err;
-            continue;
-        }
-    }
-    if (!rf) {
+    if (!plugin.plugin_path) {
+        var err = 'Loading plugin ' + plugin.name + ' failed: No plugin with this name found';
         if (config.get('smtp.ini').main.ignore_bad_plugins) {
-            logger.logcrit('Loading plugin ' + name + ' failed: ' + last_err);
+            logger.logcrit(err);
             return;
         }
-        throw 'Loading plugin ' + name + ' failed: ' + last_err;
+        throw err;
     }
-
-    var code;
-    if (hasPackageJson) {
-        code = '"use strict"; var p = require("' + name + '"); for (var attrname in p) { exports[attrname] = p[attrname];}';
-    }
-    else {
-        code = '"use strict";' + rf;
-    }
-    var sandbox = {
-        require: this._make_custom_require(fp[i], hasPackageJson),
-        __filename: fp[i],
-        __dirname:  path.dirname(fp[i]),
-        exports: plugin,
-        setTimeout: setTimeout,
-        clearTimeout: clearTimeout,
-        setInterval: setInterval,
-        clearInterval: clearInterval,
-        process: process,
-        Buffer: Buffer,
-        Math: Math,
-        server: plugins.server,
-    };
-    constants.import(sandbox);
-    try {
-        vm.runInNewContext(code, sandbox, fp[i]);
-    }
-    catch (err) {
-        logger.logcrit('Compiling plugin: ' + name + ' failed');
-        if (config.get('smtp.ini').main.ignore_bad_plugins) {
-            logger.logcrit('Loading plugin ' + name + ' failed: ', err.message +
-                           ' - will skip this plugin and continue');
-            return;
-        }
-        throw err; // default is to re-throw and stop Haraka
-    }
-
+    plugin._compile();
     return plugin;
 };
 
@@ -478,4 +511,3 @@ function get_denyfn (object, hook, params, retval, msg, respond_method) {
         }
     };
 }
-

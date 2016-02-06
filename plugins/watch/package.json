@@ -1,0 +1,25 @@
+{
+  "name": "watch",
+  "version": "1.0.0",
+  "description": "Watch SMTP transactions in real time via web UI",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/haraka/Haraka.git"
+  },
+  "keywords": [
+    "smtp",
+    "websockets",
+    "web",
+    "email"
+  ],
+  "author": "Matt Simerson",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/haraka/Haraka/issues"
+  },
+  "homepage": "https://github.com/haraka/Haraka#readme"
+}
