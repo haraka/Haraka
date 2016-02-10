@@ -1,4 +1,6 @@
 // bounce tests
+var tlds = require('haraka-tld');
+
 var net_utils = require('./net_utils');
 var SPF = require('./spf').SPF;
 
@@ -250,7 +252,7 @@ exports.non_local_msgid = function (next, connection) {
 
     var valid_domains=[];
     for (var j=0; j < domains.length; j++) {
-        var org_dom = net_utils.get_organizational_domain(domains[j]);
+        var org_dom = tlds.get_organizational_domain(domains[j]);
         if (!org_dom) { continue; }
         valid_domains.push(org_dom);
     }

@@ -10,104 +10,9 @@ var config = require('./config');
 
 // npm modules
 var async    = require('async');
-var punycode = require('punycode');
 var ipaddr    = require('ipaddr.js');
 var sprintf   = require('sprintf-js').sprintf;
-
-var public_suffix_list = {};
-load_public_suffix_list();
-
-exports.is_public_suffix = function (host) {
-    if (!host) return false;
-    host = host.toLowerCase();
-    if (public_suffix_list[host]) return true;
-
-    var up_one_level = host.split('.').slice(1).join('.'); // co.uk -> uk
-    if (!up_one_level) return false;   // no dot?
-
-    var wildHost = '*.' + up_one_level;
-    if (public_suffix_list[wildHost]) {
-        if (public_suffix_list['!'+host]) return false; // on exception list
-        return true;           // matched a wildcard, ex: *.uk
-    }
-
-    var puny;
-    try { puny = punycode.toUnicode(host); }
-    catch (e) {}
-    if (puny && public_suffix_list[puny]) return true;
-
-    return false;
-};
-
-exports.get_organizational_domain = function (host) {
-    // the domain that was registered with a domain name registrar. See
-    // https://datatracker.ietf.org/doc/draft-kucherawy-dmarc-base/?include_text=1
-    //   section 3.2
-
-    if (!host) return null;
-    host = host.toLowerCase();
-
-    // www.example.com -> [ com, example, www ]
-    var labels = host.split('.').reverse();
-
-    // 4.3 Search the public suffix list for the name that matches the
-    //     largest number of labels found in the subject DNS domain.
-    var greatest = 0;
-    for (var i = 1; i <= labels.length; i++) {
-        if (!labels[i-1]) return null;                   // dot w/o label
-        var tld = labels.slice(0,i).reverse().join('.');
-        if (this.is_public_suffix(tld)) {
-            greatest = +(i + 1);
-        }
-        else if (public_suffix_list['!'+tld]) {
-            greatest = i;
-        }
-    }
-
-    // 4.4 Construct a new DNS domain name using the name that matched
-    //     from the public suffix list and prefixing to it the "x+1"th
-    //     label from the subject domain.
-    if (greatest === 0) return null;             // no valid TLD
-    if (greatest  >  labels.length) return null; // not enough labels
-    if (greatest === labels.length) return host; // same
-
-    var orgName = labels.slice(0,greatest).reverse().join('.');
-    return orgName;
-};
-
-var top_level_tlds = {};
-var two_level_tlds = {};
-var three_level_tlds = {};
-load_tld_files();
-
-exports.top_level_tlds = top_level_tlds;
-exports.two_level_tlds = two_level_tlds;
-exports.three_level_tlds = three_level_tlds;
-
-exports.split_hostname = function (host,level) {
-    if (!level || (level && !(level >= 1 && level <= 3))) {
-        level = 2;
-    }
-    var split = host.toLowerCase().split(/\./).reverse();
-    var domain = "";
-    // TLD
-    if (level >= 1 && split[0] && top_level_tlds[split[0]]) {
-        domain = split.shift() + domain;
-    }
-    // 2nd TLD
-    if (level >= 2 && split[0] && two_level_tlds[split[0] + '.' + domain]) {
-        domain = split.shift() + '.' + domain;
-    }
-    // 3rd TLD
-    if (level >= 3 && split[0] && three_level_tlds[split[0] + '.' + domain]) {
-        domain = split.shift() + '.' + domain;
-    }
-    // Domain
-    if (split[0]) {
-        domain = split.shift() + '.' + domain;
-    }
-    return [split.reverse().join('.'), domain];
-};
+var tlds      = require('haraka-tld');
 
 exports.long_to_ip = function (n) {
     var d = n%256;
@@ -166,7 +71,7 @@ exports.is_ip_in_str = function (ip, str) {
         return false;   // IPv4 only, for now
     }
 
-    var host_part = (this.split_hostname(str,1))[0].toString();
+    var host_part = (tlds.split_hostname(str,1))[0].toString();
     var octets = ip.split('.');
     // See if the 3rd and 4th octets appear in the string
     if (this.octets_in_string(host_part, octets[2], octets[3])) {
@@ -291,71 +196,6 @@ exports.same_ipv4_network = function (ip, ipList) {
     }
     return false;
 };
-
-function load_public_suffix_list() {
-    config.get('public-suffix-list','list').forEach(function (entry) {
-        // Parsing rules: http://publicsuffix.org/list/
-        // Each line is only read up to the first whitespace
-        var suffix = entry.split(/\s/).shift().toLowerCase();
-
-        // Each line which is not entirely whitespace or begins with a comment
-        // contains a rule.
-        if (!suffix) return;                            // empty string
-        if ('/' === suffix.substring(0,1)) return;      // comment
-
-        // A rule may begin with a "!" (exclamation mark). If it does, it is
-        // labelled as a "exception rule" and then treated as if the exclamation
-        // mark is not present.
-        if ('!' === suffix.substring(0,1)) {
-            var eName = suffix.substring(1);   // remove ! prefix
-            // bbc.co.uk -> co.uk
-            var up_one = suffix.split('.').slice(1).join('.');
-            if (public_suffix_list[up_one]) {
-                public_suffix_list[up_one].push(eName);
-            }
-            else if (public_suffix_list['*.'+up_one]) {
-                public_suffix_list['*.'+up_one].push(eName);
-            }
-            else {
-                logger.logerror("unable to find parent for exception: "+eName);
-            }
-        }
-
-        public_suffix_list[suffix] = [];
-    });
-    var entries = Object.keys(public_suffix_list).length;
-    logger.loginfo('loaded '+ entries +' Public Suffixes');
-}
-
-function load_tld_files () {
-    config.get('top-level-tlds','list').forEach(function (tld) {
-        top_level_tlds[tld.toLowerCase()] = 1;
-    });
-
-    config.get('two-level-tlds', 'list').forEach(function (tld) {
-        two_level_tlds[tld.toLowerCase()] = 1;
-    });
-
-    config.get('three-level-tlds', 'list').forEach(function (tld) {
-        three_level_tlds[tld.toLowerCase()] = 1;
-    });
-
-    config.get('extra-tlds', 'list').forEach(function (tld) {
-        var s = tld.split(/\./);
-        if (s.length === 2) {
-            two_level_tlds[tld.toLowerCase()] = 1;
-        }
-        else if (s.length === 3) {
-            three_level_tlds[tld.toLowerCase()] = 1;
-        }
-    });
-
-    logger.loginfo('loaded TLD files:' +
-    ' 1=' + Object.keys(top_level_tlds).length +
-    ' 2=' + Object.keys(two_level_tlds).length +
-    ' 3=' + Object.keys(three_level_tlds).length
-    );
-}
 
 exports.get_public_ip = function (cb) {
     var nu = this;
