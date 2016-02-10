@@ -142,7 +142,7 @@ cfreader.get_cache_key = function (name, options) {
     return result;
 };
 
-cfreader.read_config = function(name, type, cb, options) {
+cfreader.read_config = function(name, type, cb, options, alt_path) {
     // Store arguments used so we can re-use them by filename later
     // and so we know which files we've attempted to read so that
     // we can ignore any other files written to the same directory.

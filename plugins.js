@@ -23,7 +23,7 @@ function Plugin (name) {
     this.base = {};
     this.timeout = get_timeout(name);
     this._get_plugin_path();
-    this.config = config;
+    this._get_config();
     this.hooks = {};
 }
 
@@ -82,6 +82,21 @@ Plugin.prototype._get_plugin_path = function () {
             // ignore error
         }
     });
+}
+
+Plugin.prototype._get_config = function () {
+    if (this.hasPackageJson) {
+        // It's a package/folder plugin - look in plugin folder for defaults, haraka/config folder for overrides
+        this.config = config.module_plugin(path.dirname(this.plugin_path), process.env.HARAKA || __dirname);
+    }
+    else if (process.env.HARAKA) {
+        // Plain .js file, installed mode - look in core folder for defaults, install dir for overrides
+        this.config = config.module_plugin(__dirname, process.env.HARAKA);
+    }
+    else {
+        // Plain .js file, git mode - just look in this folder
+        this.config = config.module_plugin(__dirname);
+    }    
 }
 
 Plugin.prototype.register_hook = function (hook_name, method_name, priority) {
