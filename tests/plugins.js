@@ -103,8 +103,9 @@ exports.plugin_paths = {
 
         var p = new plugin.Plugin('tls');
 
-        test.expect(1);
+        test.expect(2);
         test.equal(p.plugin_path, path.resolve(__dirname, '..', 'plugins', 'tls.js'));
+        test.equal(p.config.root_path, path.resolve(__dirname, '..', 'config'));
         test.done();
     },
 

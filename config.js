@@ -9,10 +9,17 @@ module.exports = new Config();
 function Config (path) {
     this.root_path = path || cfreader.config_path;
     this.module_config = function (defaults_path, overrides_path) {
+        var path = require('path'); // This can be called somehow before "path" at file top is loaded??
         var cfg = new Config(path.join(defaults_path, 'config'));
-        cfg.overrides_path = path.join(overrides_path, 'config');
+        if (overrides_path) {
+            cfg.overrides_path = path.join(overrides_path, 'config');
+        }
         return cfg;
     }
+}
+
+Config.prototype.module_config = function () {
+    console.log("module config!")
 }
 
 Config.prototype.get = function(name, type, cb, options) {
