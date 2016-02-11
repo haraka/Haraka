@@ -133,6 +133,13 @@ Body.prototype.parse_start = function (line) {
 };
 
 function _get_html_insert_position (buf) {
+
+    // otherwise, if we return -1 then the buf.copy will die with
+    // RangeError: out of range index
+    if (buf.length === 0){
+        return 0;
+    }
+
     // TODO: consider re-writing this to go backwards from the end
     for (var i=0,l=buf.length; i<l; i++) {
         if (buf[i] === 60 && buf[i+1] === 47) { // found: "</"
