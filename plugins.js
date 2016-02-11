@@ -96,7 +96,7 @@ Plugin.prototype._get_config = function () {
     else {
         // Plain .js file, git mode - just look in this folder
         this.config = config.module_plugin(__dirname);
-    }    
+    }
 }
 
 Plugin.prototype.register_hook = function (hook_name, method_name, priority) {

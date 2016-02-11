@@ -22,12 +22,12 @@ Config.prototype.get = function(name, type, cb, options) {
     var full_path = path.resolve(this.root_path, a[0]);
 
     var results = cfreader.read_config(full_path, a[1], a[2], a[3], this.alt_path);
-    
+
     if (this.overrides_path) {
         full_path = path.resolve(this.overrides_path, a[0]);
-        
+
         var overrides = cfreader.read_config(full_path, a[1], a[2], a[3], this.alt_path);
-        
+
         results = merge_config(results, overrides, a[1]);
     }
 
