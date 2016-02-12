@@ -18,22 +18,18 @@ function Config (path) {
     }
 }
 
-Config.prototype.module_config = function () {
-    console.log("module config!")
-}
-
 Config.prototype.get = function(name, type, cb, options) {
     var a = this.arrange_args([name, type, cb, options]);
     if (!a[1]) a[1] = 'value';
 
     var full_path = path.resolve(this.root_path, a[0]);
 
-    var results = cfreader.read_config(full_path, a[1], a[2], a[3], this.alt_path);
+    var results = cfreader.read_config(full_path, a[1], a[2], a[3]);
 
     if (this.overrides_path) {
-        full_path = path.resolve(this.overrides_path, a[0]);
+        var overrides_path = path.resolve(this.overrides_path, a[0]);
 
-        var overrides = cfreader.read_config(full_path, a[1], a[2], a[3], this.alt_path);
+        var overrides = cfreader.read_config(overrides_path, a[1], a[2], a[3]);
 
         results = merge_config(results, overrides, a[1]);
     }
@@ -48,7 +44,7 @@ Config.prototype.get = function(name, type, cb, options) {
 
 function merge_config (defaults, overrides, type) {
     if (type == 'ini' || type == 'json' || type == 'yaml') {
-        return merge_struct(JSON.parse(JSON.stringify(defaults)), JSON.parse(JSON.stringify(overrides)));
+        return merge_struct(JSON.parse(JSON.stringify(defaults)), overrides);
     }
     else if (Array.isArray(overrides) && Array.isArray(defaults) && overrides.length > 0) {
         return overrides;
@@ -64,13 +60,11 @@ function merge_config (defaults, overrides, type) {
 function merge_struct (defaults, overrides) {
     for (var k in overrides) {
         if (k in defaults) {
-            if (typeof overrides[k] == 'object') {
-                if (typeof defaults[k] == 'object') {
-                    defaults[k] = merge_struct(defaults[k], overrides[k]);
-                }
-                else {
-                    defaults[k] = overrides[k];
-                }
+            if (typeof overrides[k] == 'object' && typeof defaults[k] == 'object') {
+                defaults[k] = merge_struct(defaults[k], overrides[k]);
+            }
+            else {
+                defaults[k] = overrides[k];
             }
         }
         else {
