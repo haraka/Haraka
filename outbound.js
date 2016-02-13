@@ -1709,6 +1709,7 @@ HMailItem.prototype.populate_bounce_message_with_headers = function(from, to, re
         me:   config.get('me'),
         from: from,
         to:   to,
+        subject: header.get_decoded('Subject').trim(),
         recipients: this.todo.rcpt_to.join(', '),
         reason: reason,
         extended_reason: this.todo.rcpt_to.map(function (recip) {
