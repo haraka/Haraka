@@ -329,6 +329,9 @@ which provides some security benefits, but also blocks access to certain globals
 and provides a global `server` object. To access the `server` object, use
 `connection.server` instead.
 
+Module plugins support default config in their local `config` directory. See the
+"Default Config and Overrides" section in [Config](Config.md).
+
 ## See also, [Results](Results.md)
 
 
