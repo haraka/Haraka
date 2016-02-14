@@ -1,4 +1,10 @@
 
+# 2016.02.13
+
+* updated for compat with eslint 2. Developers will likely need to:
+
+    cd haraka && npm install && sudo npm install -g eslint
+
 # 2016.01.21
 
 * smtp\_proxy & qmail-queue: default to enabled for outbound deliveries
