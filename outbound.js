@@ -801,7 +801,7 @@ HMailItem.prototype.get_mx_respond = function (retval, mx) {
                 // assume string
                 var matches = /^(.*?)(:(\d+))?$/.exec(mx);
                 if (!matches) {
-                    throw("get_mx returned something that doesn't match hostname or hostname:port");
+                    throw ("get_mx returned something that doesn't match hostname or hostname:port");
                 }
                 mx_list = [{priority: 0, exchange: matches[1], port: matches[3]}];
             }
