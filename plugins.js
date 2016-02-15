@@ -23,7 +23,7 @@ function Plugin (name) {
     this.base = {};
     this.timeout = get_timeout(name);
     this._get_plugin_path();
-    this.config = config;
+    this.config = this._get_config();
     this.hooks = {};
 }
 
@@ -84,6 +84,21 @@ Plugin.prototype._get_plugin_path = function () {
     });
 }
 
+Plugin.prototype._get_config = function () {
+    if (this.hasPackageJson) {
+        // It's a package/folder plugin - look in plugin folder for defaults, haraka/config folder for overrides
+        return config.module_config(path.dirname(this.plugin_path), process.env.HARAKA || __dirname);
+    }
+    else if (process.env.HARAKA) {
+        // Plain .js file, installed mode - look in core folder for defaults, install dir for overrides
+        return config.module_config(__dirname, process.env.HARAKA);
+    }
+    else {
+        // Plain .js file, git mode - just look in this folder
+        return config.module_config(__dirname);
+    }
+}
+
 Plugin.prototype.register_hook = function (hook_name, method_name, priority) {
     priority = parseInt(priority);
     if (!priority) priority = 0;
@@ -123,6 +138,35 @@ Plugin.prototype.inherits = function (parent_name) {
     this.base[parent_name] = parent_plugin;
 };
 
+Plugin.prototype._make_custom_require = function () {
+    var plugin = this;
+    return function (module) {
+        if (plugin.hasPackageJson) {
+            var mod = require(module);
+            constants.import(global);
+            global.server = plugins.server;
+            return mod;
+        }
+
+        if (module == './config') {
+            return plugin.config;
+        }
+
+        if (!/^\./.test(module)) {
+            return require(module);
+        }
+
+        if (utils.existsSync(__dirname + '/' + module + '.js') ||
+            utils.existsSync(__dirname + '/' + module)) {
+            return require(module);
+        }
+
+        return require(path.dirname(plugin.plugin_path) + '/' + module);
+    };
+};
+
+
+
 Plugin.prototype._compile = function () {
     var plugin = this;
     var name = plugin.name;
@@ -147,7 +191,7 @@ Plugin.prototype._compile = function () {
         code = '"use strict";' + rf;
     }
     var sandbox = {
-        require: exports._make_custom_require(plugin.plugin_path, plugin.hasPackageJson),
+        require: plugin._make_custom_require(),
         __filename: plugin.plugin_path,
         __dirname:  path.dirname(plugin.plugin_path),
         exports: plugin,
@@ -422,28 +466,6 @@ plugins.run_next_hook = function (hook, object, params) {
         }
         callback();
     }
-};
-
-plugins._make_custom_require = function (file_path, hasPackageJson) {
-    return function (module) {
-        if (hasPackageJson) {
-            var mod = require(module);
-            constants.import(global);
-            global.server = plugins.server;
-            return mod;
-        }
-
-        if (!/^\./.test(module)) {
-            return require(module);
-        }
-
-        if (utils.existsSync(__dirname + '/' + module + '.js') ||
-            utils.existsSync(__dirname + '/' + module)) {
-            return require(module);
-        }
-
-        return require(path.dirname(file_path) + '/' + module);
-    };
 };
 
 function client_disconnected (object) {

@@ -224,3 +224,53 @@ exports.plugin_paths = {
     },
 
 };
+
+exports.plugin_config = {
+    /* jshint maxlen: 90 */
+
+    'CORE plugin: (tls)' : function (test) {
+        delete process.env.HARAKA;
+
+        var p = new plugin.Plugin('tls');
+
+        test.expect(2);
+        test.equal(p.config.root_path, path.resolve(__dirname, '..', 'config'));
+        test.equal(p.config.overrides_path, undefined);
+        test.done();
+    },
+
+    'INSTALLED override: (tls)': function (test) {
+        process.env.HARAKA = path.resolve(__dirname, '..', 'tests', 'installation');
+
+        var p = new plugin.Plugin('tls');
+
+        test.expect(2);
+        test.equal(p.config.root_path, path.resolve(__dirname, '..', 'config'));
+        test.equal(p.config.overrides_path, path.resolve(__dirname, 'installation', 'config'));
+        test.done();
+    },
+
+    'CORE package plugin: (watch)': function (test) {
+        delete process.env.HARAKA;
+
+        var p = new plugin.Plugin('watch');
+
+        test.expect(2);
+        test.equal(p.config.root_path, path.resolve(__dirname, '..', 'plugins', 'watch', 'config'));
+        test.equal(p.config.overrides_path, path.resolve(__dirname, '..', 'config'));
+        test.done();
+    },
+
+    'INSTALLED node_modules package plugin: (test-plugin)': function (test) {
+        process.env.HARAKA = path.resolve(__dirname, '..', 'tests', 'installation');
+
+        var p = new plugin.Plugin('test-plugin');
+
+        test.expect(2);
+        test.equal(p.config.root_path, path.resolve(__dirname, 'installation', 'node_modules', 'test-plugin', 'config'));
+        test.equal(p.config.overrides_path, path.resolve(__dirname, 'installation', 'config'));
+        test.done();
+    },
+
+}
+
