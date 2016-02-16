@@ -14,6 +14,7 @@ var config      = require('./config');
 var constants   = require('./constants');
 var trans       = require('./transaction');
 var plugins     = require('./plugins');
+var tls_socket  = require('./tls_socket');
 var async       = require('async');
 var Address     = require('./address').Address;
 var TimerQueue  = require('./timer_queue');
@@ -41,7 +42,7 @@ exports.load_config = function () {
         booleans: [
             '-disabled',
             '-always_split',
-            '-enable_tls',    // TODO: default to enabled in Haraka 3.0
+            '+enable_tls',
             '-ipv6_enabled',
         ],
     }, function () {
@@ -1096,6 +1097,8 @@ HMailItem.prototype.try_deliver_host_on_socket = function (mx, host, port, socke
         "auth": [],
     };
 
+    var tls_config = tls_socket.load_tls_ini();
+
     var send_command = function (cmd, data) {
         if (!socket.writable) {
             self.logerror("Socket writability went away");
@@ -1144,7 +1147,12 @@ HMailItem.prototype.try_deliver_host_on_socket = function (mx, host, port, socke
         }
 
         // TLS
-        if (smtp_properties.tls && cfg.enable_tls && !secured) {
+        if (!(self.todo.domain in tls_config.no_tls_hosts) &&
+            !(host in tls_config.no_tls_hosts) &&
+            smtp_properties.tls && cfg.enable_tls && !secured)
+        {
+            console.log(tls_config.no_tls_hosts);
+            console.log("domain:", self.todo.domain, "host:", host);
             socket.on('secure', function () {
                 // Set this flag so we don't try STARTTLS again if it
                 // is incorrectly offered at EHLO once we are secured.
@@ -1398,7 +1406,14 @@ HMailItem.prototype.try_deliver_host_on_socket = function (mx, host, port, socke
                     case 'starttls':
                         var key = config.get('tls_key.pem', 'binary');
                         var cert = config.get('tls_cert.pem', 'binary');
-                        var tls_options = { key: key, cert: cert };
+                        var tls_options = (key && cert) ? { key: key, cert: cert } : {};
+                        var config_options = ['ciphers','requestCert','rejectUnauthorized'];
+
+                        for (var i = 0; i < config_options.length; i++) {
+                            var opt = config_options[i];
+                            if (tls_config.main[opt] === undefined) { continue; }
+                            tls_options[opt] = tls_config.main[opt];
+                        }
 
                         smtp_properties = {};
                         socket.upgrade(tls_options, function (authorized, verifyError, cert, cipher) {
