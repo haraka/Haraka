@@ -191,15 +191,6 @@ function copyFile (srcFile, dstFile) {
 
 function setupHostname(confPath) {
     var hostname = os.hostname() + "\n";
-    
-    try {
-        var fd = fs.openSync(path.join(confPath, 'me'), 'w');
-        fs.writeSync(fd, hostname, null);
-    }
-    catch (e) {
-        warning("Unable to write config/me file: " + e);
-    }
-    
     try {
         var fd = fs.openSync(path.join(confPath, 'host_list'), 'w');
         fs.writeSync(fd, hostname, null);
