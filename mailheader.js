@@ -75,7 +75,7 @@ function try_convert(data, encoding) {
     return data;
 }
 
-function _decode_header (matched, encoding, cte, data) {
+function _decode_header (matched, encoding, lang, cte, data) {
     cte = cte.toUpperCase();
 
     switch (cte) {
@@ -97,9 +97,65 @@ function _decode_header (matched, encoding, cte, data) {
     return data.toString();
 }
 
+function _decode_rfc2231 (params) {
+    return function (matched, str) {
+        var sub_matches = /([^=]*)=(\s*".*?[^\\]";?|\S*)\s*/.exec(str);
+        if (!sub_matches) {
+            return "\n " + str;
+        }
+        var key = sub_matches[1];
+        var key_extract = /^(.*?)(\*(\d+)(\*)?)?$/.exec(key);
+        if (!key_extract) {
+            return "\n " + str;
+        }
+        var key_actual = key_extract[1];
+        var has_enc_lang = key_extract[4] ? true : false;
+        var value = sub_matches[2].replace(/;$/, '');
+        var quote = /^\s*"(.*)"$/.test(value);
+        if (quote) {
+            value = value.replace(/^\s*"(.*)"$/, '$1');
+        }
+        var lang_match = /^(.*?)'(.*?)'(.*)/.exec(value);
+        if (lang_match) {
+            if (key_actual == params.cur_key && lang_match[2] != params.cur_lang) {
+                return ''; // same key, different lang, throw it away
+            }
+            params.cur_enc = lang_match[1];
+            params.cur_lang = lang_match[2];
+            value = lang_match[3];
+        }
+        else if (key_actual != params.cur_key) {
+            params.cur_lang = '';
+            params.cur_enc = '';
+        }
+
+        params.cur_key = key_actual;
+        params.keys[key_actual] = '';
+        value = decodeURIComponent(value);
+        params.kv[key] = params.cur_enc ? try_convert(value, params.cur_enc) : value;
+        return '';
+    }
+}
+
 Header.prototype.decode_header = function decode_header (val) {
     // Fold continuations
-    val = val.replace(/\n[ \t]+/g, "\n ");
+    var rfc2231_params = {
+        kv: {},
+        keys: {},
+        cur_key: '',
+        cur_enc: '',
+        cur_lang: '', // Secondary languages are ignored for our purposes
+    };
+    val = val.replace(/\n[ \t]+([^\n]*)/g, _decode_rfc2231(rfc2231_params));
+    for (var key in rfc2231_params.keys) {
+        val = val + ' ' + key + '=';
+        for (var i=0; true; i++) {
+            var _val = rfc2231_params.kv[key + '*' + i + '*'];
+            if (_val === undefined) break;
+            val = val + _val;
+        }
+        val = val + ';';
+    }
 
     // remove end carriage return
     val = val.replace(/\r?\n$/, '');
@@ -119,7 +175,7 @@ Header.prototype.decode_header = function decode_header (val) {
         return val;
     }
 
-    val = val.replace(/=\?([\w_-]+)\?([bqBQ])\?(.*?)\?=/g, _decode_header);
+    val = val.replace(/=\?([\w_-]+)(\*[\w_-]+)?\?([bqBQ])\?(.*?)\?=/g, _decode_header);
 
     return val;
 }
