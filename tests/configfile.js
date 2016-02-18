@@ -135,6 +135,13 @@ exports.load_ini_config = {
         test.deepEqual({ first: undefined, second: undefined}, r.empty_values);
         test.done();
     },
+    'test.ini, array' : function(test){
+        test.expect(2);
+        var r = this.cfreader.load_ini_config('tests/config/test.ini');
+        test.deepEqual(['first_host', 'second_host', 'third_host'], r.array_test.hostlist);
+        test.deepEqual([123, 456, 789], r.array_test.intlist);
+        test.done();
+    },
 };
 
 exports.get_filetype_reader  = {
