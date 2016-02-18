@@ -8,7 +8,7 @@ var yaml = require('js-yaml');
 // for "ini" type files
 var regex = exports.regex = {
     section:        /^\s*\[\s*([^\]]*?)\s*\]\s*$/,
-    param:          /^\s*([\w@:\._\-\/]+)\s*(?:=\s*(.*?)\s*)?$/,
+    param:          /^\s*([\w@:\._\-\/\[\]]+)\s*(?:=\s*(.*?)\s*)?$/,
     comment:        /^\s*[;#].*$/,
     line:           /^\s*(.*?)\s*$/,
     blank:          /^\s*$/,
@@ -16,6 +16,7 @@ var regex = exports.regex = {
     is_integer:     /^-?\d+$/,
     is_float:       /^-?\d+\.\d+$/,
     is_truth:       /^(?:true|yes|ok|enabled|on|1)$/i,
+    is_array:       /(.+)\[\]$/,
 };
 
 var cfreader = exports;
@@ -408,6 +409,8 @@ cfreader.load_ini_config = function(name, options) {
         var data = fs.readFileSync(name, 'UTF-8');
         var lines = data.split(/\r\n|\r|\n/);
         var match;
+        var is_array_match;
+        var setter;
         var pre = '';
 
         lines.forEach(function(line) {
@@ -432,21 +435,31 @@ cfreader.load_ini_config = function(name, options) {
             pre = '';
             match = regex.param.exec(line);
             if (match) {
+                is_array_match = regex.is_array.exec(match[1]);
+                if (is_array_match){
+                    setter = function(key, value){
+                        key = key.replace('[]', '');
+                        if (! current_sect[key]) current_sect[key] = [];
+                        current_sect[key].push(value) };
+                }
+                else {
+                    setter = function(key, value) { current_sect[key] = value };
+                }
                 if (options && Array.isArray(options.booleans) &&
                     bool_matches.indexOf(current_sect_name + '.' + match[1]) !== -1)
                 {
-                    current_sect[match[1]] = regex.is_truth.test(match[2]);
+                    setter(match[1], regex.is_truth.test(match[2]));
                     logger.logdebug('Returning boolean ' + current_sect[match[1]] +
                                     ' for ' + current_sect_name + '.' + match[1] + '=' + match[2]);
                 }
                 else if (regex.is_integer.test(match[2])) {
-                    current_sect[match[1]] = parseInt(match[2], 10);
+                    setter(match[1], parseInt(match[2], 10));
                 }
                 else if (regex.is_float.test(match[2])) {
-                    current_sect[match[1]] = parseFloat(match[2]);
+                    setter(match[1], parseFloat(match[2]));
                 }
                 else {
-                    current_sect[match[1]] = match[2];
+                    setter(match[1], match[2]);
                 }
                 return;
             }
