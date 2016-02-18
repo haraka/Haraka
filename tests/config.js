@@ -169,7 +169,11 @@ exports.get = {
             whitespace: { str_no_trail: 'true', str_trail: 'true' },
             funnychars: { 'results.auth/auth_base.fail': 'fun' },
             empty_values: { first: undefined, second: undefined },
-            has_ipv6: { '2605:ae00:329::2': undefined }
+            has_ipv6: { '2605:ae00:329::2': undefined },
+            array_test: {
+                hostlist: [ 'first_host', 'second_host', 'third_host' ],
+                intlist: [ '123', '456', '789' ],
+            }
         });
     },
 
