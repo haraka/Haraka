@@ -442,7 +442,7 @@ cfreader.load_ini_config = function(name, options) {
                         if (! current_sect[key]) current_sect[key] = [];
                         current_sect[key].push(value) };
                 }
-                else{
+                else {
                     setter = function(key, value) { current_sect[key] = value };
                 }
                 if (options && Array.isArray(options.booleans) &&
