@@ -194,6 +194,16 @@ For completeness the inverse is also allowed:
 
     { booleans: [ '-reject' ] }
 
+Lists are supported using this syntax:
+
+    hosts[] = first_host
+    hosts[] = second_host
+    hosts[] = third_host
+
+which produces this javascript array:
+
+    ['first_host', 'second_host', 'third_host']
+
 
 Flat Files
 ----------
