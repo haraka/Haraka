@@ -99,12 +99,12 @@ function _decode_header (matched, encoding, lang, cte, data) {
 
 function _decode_rfc2231 (params) {
     return function (matched, str) {
-        var sub_matches = /([^=]*)=(\s*".*?[^\\]";?|\S*)\s*/.exec(str);
+        var sub_matches = /([^=]*)\*=(\s*".*?[^\\]";?|\S*)\s*/.exec(str);
         if (!sub_matches) {
             return "\n " + str;
         }
         var key = sub_matches[1];
-        var key_extract = /^(.*?)(\*(\d+)(\*)?)?$/.exec(key);
+        var key_extract = /^(.*?)(\*(\d+)?$/.exec(key);
         if (!key_extract) {
             return "\n " + str;
         }
@@ -159,6 +159,7 @@ Header.prototype.decode_header = function decode_header (val) {
 
     // remove end carriage return
     val = val.replace(/\r?\n$/, '');
+    val = val.replace(/\([^\)]*\)/, ''); // strip 822 comments in the most basic way - does not support nested comments
 
     if (Iconv && !/^[\x00-\x7f]*$/.test(val)) {
         // 8 bit values in the header
