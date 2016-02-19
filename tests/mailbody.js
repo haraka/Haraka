@@ -9,15 +9,22 @@ function _fill_body (body) {
 
     body.state = 'headers';
     body.parse_more("Content-Type: multipart/alternative; boundary=abcdef\n");
+    body.parse_more("From: =?US-ASCII*EN?Q?Keith_Moore?= <moore@cs.utk.edu>");
     body.parse_more("\n");
     body.parse_more("--abcdef\n");
-    body.parse_more("Content-Type: text/plain; charset=UTF-8; format=flowed\n");
+    body.parse_more("Content-Type: text/plain; charset=UTF-8; format=flowed;\n");
+    body.parse_more(" URL*0=\"ftp://\"\n");
+    body.parse_more(" URL*1=\"cs.utk.edu/pub/moore/bulk-mailer/bulk-mailer.tar\"\n");
+    body.parse_more(" title*=us-ascii'en-us'This%20is%20%2A%2A%2Afun%2A%2A%2A\n");
     body.parse_more("\n");
     body.parse_more("Some text for your testing pleasure.\n");
     body.parse_more("Yup that was some text all right.\n");
     body.parse_more("\n");
     var text = body.parse_more("--abcdef\n");
-    body.parse_more("Content-Type: text/html; charset=UTF-8\n");
+    body.parse_more("Content-Type: text/html; charset=UTF-8;\n");
+    body.parse_more(" title*0*=us-ascii'en'This%20is%20even%20more%20\n");
+    body.parse_more(" title*1*=%2A%2A%2Afun%2A%2A%2A%20\n");
+    body.parse_more(" title*2=\"isn't it!\"\n");
     body.parse_more("\n");
     body.parse_more("<p>This is some HTML, yo.<br>\n");
     body.parse_more("It's pretty rad.</p>\n");
@@ -193,4 +200,36 @@ exports.filters = {
         test.ok(!dupe, 'no duplicate lines found');
         test.done();
     },
+};
+
+exports.rfc2231 = {
+    'multi-value': function (test) {
+        test.expect(1);
+
+        var body = new Body();
+        _fill_body(body);
+
+        test.ok(body.children[0].header.get_decoded('content-type').indexOf('URL="ftp://cs.utk.edu/pub/moore/bulk-mailer/bulk-mailer.tar";') > 0);
+        test.done();
+    },
+
+    'enc-and-lang': function (test) {
+        test.expect(1);
+
+        var body = new Body();
+        _fill_body(body);
+
+        test.ok(body.children[0].header.get_decoded('content-type').indexOf('title="This is ***fun***";') > 0);
+        test.done();
+    },
+
+    'multi-value-enc-and-lang': function (test) {
+        test.expect(1);
+
+        var body = new Body();
+        _fill_body(body);
+
+        test.ok(body.children[1].header.get_decoded('content-type').indexOf('title="This is even more ***fun*** isn\'t it!";') > 0);
+        test.done();
+    }
 };
