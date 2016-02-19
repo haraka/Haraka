@@ -99,22 +99,26 @@ function _decode_header (matched, encoding, lang, cte, data) {
 
 function _decode_rfc2231 (params) {
     return function (matched, str) {
-        var sub_matches = /([^=]*)\*=(\s*".*?[^\\]";?|\S*)\s*/.exec(str);
+        var sub_matches = /^(([^=]*)\*)(\d*)=(\s*".*?[^\\]";?|\S*)\s*$/.exec(str);
         if (!sub_matches) {
             return "\n " + str;
         }
         var key = sub_matches[1];
-        var key_extract = /^(.*?)(\*(\d+)?$/.exec(key);
-        if (!key_extract) {
-            return "\n " + str;
+        var key_actual = sub_matches[2];
+        var key_id = sub_matches[3] || '0';
+        var value = sub_matches[4].replace(/;$/, '');
+
+        var key_extract = /^(.*?)(\*(\d+)\*)$/.exec(key);
+        if (key_extract) {
+            key_actual = key_extract[1];
+            key_id = key_extract[3];
         }
-        var key_actual = key_extract[1];
-        var has_enc_lang = key_extract[4] ? true : false;
-        var value = sub_matches[2].replace(/;$/, '');
-        var quote = /^\s*"(.*)"$/.test(value);
+
+        var quote = /^\s*"(.*)"$/.exec(value);
         if (quote) {
-            value = value.replace(/^\s*"(.*)"$/, '$1');
+            value = quote[1];
         }
+
         var lang_match = /^(.*?)'(.*?)'(.*)/.exec(value);
         if (lang_match) {
             if (key_actual == params.cur_key && lang_match[2] != params.cur_lang) {
@@ -132,7 +136,7 @@ function _decode_rfc2231 (params) {
         params.cur_key = key_actual;
         params.keys[key_actual] = '';
         value = decodeURIComponent(value);
-        params.kv[key] = params.cur_enc ? try_convert(value, params.cur_enc) : value;
+        params.kv[key_actual + '*' + key_id] = params.cur_enc ? try_convert(value, params.cur_enc) : value;
         return '';
     }
 }
@@ -148,13 +152,14 @@ Header.prototype.decode_header = function decode_header (val) {
     };
     val = val.replace(/\n[ \t]+([^\n]*)/g, _decode_rfc2231(rfc2231_params));
     for (var key in rfc2231_params.keys) {
-        val = val + ' ' + key + '=';
+        val = val + ' ' + key + '="';
         for (var i=0; true; i++) {
-            var _val = rfc2231_params.kv[key + '*' + i + '*'];
+            var _key = key + '*' + i;
+            var _val = rfc2231_params.kv[_key];
             if (_val === undefined) break;
             val = val + _val;
         }
-        val = val + ';';
+        val = val + '";';
     }
 
     // remove end carriage return
@@ -218,8 +223,10 @@ Header.prototype._add_header = function (key, value, method) {
 };
 
 Header.prototype._add_header_decode = function (key, value, method) {
+    var val = this.decode_header(value);
+    // console.log(key + ': ' + val);
     this.headers_decoded[key] = this.headers_decoded[key] || [];
-    this.headers_decoded[key][method](this.decode_header(value));
+    this.headers_decoded[key][method](val);
 }
 
 Header.prototype.add = function (key, value) {
