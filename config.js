@@ -9,13 +9,14 @@ module.exports = new Config();
 function Config (path) {
     this.root_path = path || cfreader.config_path;
     this.module_config = function (defaults_path, overrides_path) {
-        var path = require('path'); // This can be called somehow before "path" at file top is loaded??
+        // This can be called somehow before "path" at file top is loaded??
+        var path = require('path');
         var cfg = new Config(path.join(defaults_path, 'config'));
         if (overrides_path) {
             cfg.overrides_path = path.join(overrides_path, 'config');
         }
         return cfg;
-    }
+    };
 }
 
 Config.prototype.get = function(name, type, cb, options) {
@@ -43,10 +44,11 @@ Config.prototype.get = function(name, type, cb, options) {
 };
 
 function merge_config (defaults, overrides, type) {
-    if (type == 'ini' || type == 'json' || type == 'yaml') {
+    if (type === 'ini' || type === 'json' || type === 'yaml') {
         return merge_struct(JSON.parse(JSON.stringify(defaults)), overrides);
     }
-    else if (Array.isArray(overrides) && Array.isArray(defaults) && overrides.length > 0) {
+    else if (Array.isArray(overrides) && Array.isArray(defaults) &&
+        overrides.length > 0) {
         return overrides;
     }
     else if (overrides != null) {
@@ -60,7 +62,8 @@ function merge_config (defaults, overrides, type) {
 function merge_struct (defaults, overrides) {
     for (var k in overrides) {
         if (k in defaults) {
-            if (typeof overrides[k] == 'object' && typeof defaults[k] == 'object') {
+            if (typeof overrides[k] === 'object' &&
+                typeof defaults[k] === 'object') {
                 defaults[k] = merge_struct(defaults[k], overrides[k]);
             }
             else {

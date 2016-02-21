@@ -2,7 +2,6 @@
 // Config file loader
 
 var path = require('path');
-var platform = process.platform;
 var yaml = require('js-yaml');
 
 // for "ini" type files
@@ -176,7 +175,8 @@ cfreader.read_config = function(name, type, cb, options) {
 
     // We can watch the directory on these platforms which
     // allows us to notice when files are newly created.
-    if (platform === 'linux' || platform === 'win32') {
+    var os = process.platform;
+    if (os === 'linux' || os === 'win32') {
         cfreader.watch_dir();
     }
     else {
