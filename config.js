@@ -1,16 +1,15 @@
 'use strict';
 
-var cfreader     = require('./configfile');
 var path         = require('path');
+
+var cfreader     = require('./configfile');
 var logger       = require('./logger');
 
 module.exports = new Config();
 
-function Config (path) {
-    this.root_path = path || cfreader.config_path;
+function Config (root_path) {
+    this.root_path = root_path || cfreader.config_path;
     this.module_config = function (defaults_path, overrides_path) {
-        // This can be called somehow before "path" at file top is loaded??
-        var path = require('path');
         var cfg = new Config(path.join(defaults_path, 'config'));
         if (overrides_path) {
             cfg.overrides_path = path.join(overrides_path, 'config');
