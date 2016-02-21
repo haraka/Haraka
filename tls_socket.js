@@ -10,6 +10,7 @@ var util = require('util');
 var net = require('net');
 var stream = require('stream');
 var log = require('./logger');
+var config = require('./config');
 
 // provides a common socket for attaching
 // and detaching from either main socket, or crypto socket
@@ -334,6 +335,22 @@ function connect(port, host, cb) {
     };
 
     return (socket);
+}
+
+exports.load_tls_ini = function (cb) {
+    var cfg = config.get('tls.ini', {
+        booleans: [
+            '+main.requestCert',
+            '-main.rejectUnauthorized',
+            '-redis.disable_for_failed_hosts',
+        ]
+    }, cb);
+
+    if (!cfg.no_tls_hosts) {
+        cfg.no_tls_hosts = {};
+    }
+
+    return cfg;
 }
 
 exports.connect = connect;
