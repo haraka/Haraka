@@ -165,37 +165,32 @@ function copyDir(srcPath, dstPath) {
         // Copy to dstPath if file
         else if (srcStat.isFile()) {
             // NOT overwrite file
-            try {
-                var dstStat = fs.statSync(dstFile);
-                // File exists
-                warning("EEXIST, File exists '" + dstFile + "'");
-            }
-            catch (e) {
-                // File NOT exists
-                if (e.errno = 2) {
-                    var data = fs.readFileSync(srcFile);
-                    fs.writeFileSync(dstFile, data);
-                    create(dstFile)
-                }
-                else {
-                    throw e;
-                }
-            }
+            copyFile(srcFile, dstFile);
+        }
+    }
+}
+
+function copyFile (srcFile, dstFile) {
+    try {
+        var dstStat = fs.statSync(dstFile);
+        // File exists
+        warning("EEXIST, File exists '" + dstFile + "'");
+    }
+    catch (e) {
+        // File NOT exists
+        if (e.errno = 2) {
+            var data = fs.readFileSync(srcFile);
+            fs.writeFileSync(dstFile, data);
+            create(dstFile)
+        }
+        else {
+            throw e;
         }
     }
 }
 
 function setupHostname(confPath) {
     var hostname = os.hostname() + "\n";
-    
-    try {
-        var fd = fs.openSync(path.join(confPath, 'me'), 'w');
-        fs.writeSync(fd, hostname, null);
-    }
-    catch (e) {
-        warning("Unable to write config/me file: " + e);
-    }
-    
     try {
         var fd = fs.openSync(path.join(confPath, 'host_list'), 'w');
         fs.writeSync(fd, hostname, null);
@@ -203,6 +198,11 @@ function setupHostname(confPath) {
     catch (e) {
         warning("Unable to write config/host_list file: " + e);
     }
+}
+
+function setupBaseConfig(confPath) {
+    copyFile(path.join(base, 'config', 'smtp.ini'), path.join(confPath, 'smtp.ini'));
+    copyFile(path.join(base, 'config', 'loglevel'), path.join(confPath, 'loglevel'));
 }
 
 var readme = [
@@ -588,10 +588,11 @@ else if (parsed.install) {
     mkDir(path.join(pa, 'docs'));
     mkDir(path.join(pa, 'docs/plugins'));
     mkDir(path.join(pa, 'docs/plugins/auth'));
-    copyDir(path.join(base, 'config'), path.join(pa, 'config'));
+    mkDir(path.join(pa, 'config'));
     createFile(path.join(pa, 'README'), readme);
     createFile(path.join(pa, 'package.json'), packageJson);
     setupHostname(path.join(pa, 'config'));
+    setupBaseConfig(path.join(pa, 'config'));
 }
 else {
     console.log("\033[31;40mError\033[0m: Undefined or erroneous arguments\n");
