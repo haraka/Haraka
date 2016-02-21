@@ -86,7 +86,7 @@ exports.get_timeout = {
         test.equal( pi.timeout, this.to );
         test.done();
     },
-    '30s default' : function (test) {
+    '30s default (overrides NaN apple)' : function (test) {
         var pi = new plugin.Plugin(piName);
         test.expect(1);
         test.equal( pi.timeout, 30 );

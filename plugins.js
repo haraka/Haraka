@@ -29,7 +29,7 @@ function Plugin (name) {
 
 Plugin.prototype.core_require = function (name) {
     return require('./' + name);
-}
+};
 
 Plugin.prototype._get_plugin_path = function () {
     var plugin = this;
@@ -82,7 +82,7 @@ Plugin.prototype._get_plugin_path = function () {
             // ignore error
         }
     });
-}
+};
 
 Plugin.prototype._get_config = function () {
     if (this.hasPackageJson) {
@@ -97,7 +97,7 @@ Plugin.prototype._get_config = function () {
         // Plain .js file, git mode - just look in this folder
         return config.module_config(__dirname);
     }
-}
+};
 
 Plugin.prototype.register_hook = function (hook_name, method_name, priority) {
     priority = parseInt(priority);
@@ -148,7 +148,7 @@ Plugin.prototype._make_custom_require = function () {
             return mod;
         }
 
-        if (module == './config') {
+        if (module === './config') {
             return plugin.config;
         }
 
@@ -313,7 +313,8 @@ plugins.server = { notes: {} };
 plugins._load_and_compile_plugin = function (name) {
     var plugin = new Plugin(name);
     if (!plugin.plugin_path) {
-        var err = 'Loading plugin ' + plugin.name + ' failed: No plugin with this name found';
+        var err = 'Loading plugin ' + plugin.name +
+            ' failed: No plugin with this name found';
         if (config.get('smtp.ini').main.ignore_bad_plugins) {
             logger.logcrit(err);
             return;
