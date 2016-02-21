@@ -1,8 +1,6 @@
 'use strict';
 // karma - reward good and penalize bad mail senders
 
-var redis  = require('redis');
-
 var utils  = require('./utils');
 
 var phase_prefixes = utils.to_object(
