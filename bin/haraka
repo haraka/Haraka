@@ -444,7 +444,7 @@ else if (parsed.test) {
     var Connection = require(path.join(base, "connection"));
     var Transaction = require(path.join(base, "transaction"));
     var Address = require(path.join(base, 'address')).Address;
-    var constants = require(path.join(base, 'constants'));
+    var constants = require('haraka-constants');
     var client = {
         remoteAddress: ((parsed.ip) ? parsed.ip : '1.2.3.4'),
         remotePort: 1234,

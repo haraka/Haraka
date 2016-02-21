@@ -4,9 +4,10 @@ var fs         = require('fs');
 var path       = require('path');
 var vm         = require('vm');
 
+var constants  = require('haraka-constants');
+
 var stub       = require('./stub');
 var vm_harness = require('./vm_harness');
-var constants  = require('../../constants');
 var logger     = require('../../logger');
 
 function Plugin(name) {

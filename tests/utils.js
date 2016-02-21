@@ -1,9 +1,9 @@
+var constants = require('haraka-constants');
+
 var stub      = require('./fixtures/stub');
-var constants = require('./../constants');
 var Logger    = require('./fixtures/stub_logger');
 var utils     = require('./../utils');
 
-// huge hack here, but plugin tests need constants
 constants.import(global);
 
 function _set_up(callback) {

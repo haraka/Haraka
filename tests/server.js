@@ -1,7 +1,3 @@
-// var stub      = require('./fixtures/stub');
-// var constants = require('./../constants');
-// var Logger    = require('./fixtures/stub_logger');
-// var utils     = require('./../utils');
 
 function _set_up(done) {
     this.server = require('../server');

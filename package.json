@@ -27,6 +27,7 @@
     "semver"                : "~5.0.3",
     "sprintf-js"            : "~1.0.3",
     "haraka-tld"            : "*",
+    "haraka-constants"      : "*",
     "exit"                  : "~0.1.2"
   },
   "optionalDependencies": {
