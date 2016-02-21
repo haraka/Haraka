@@ -223,13 +223,6 @@ cfreader.empty_config = function(type) {
     }
 };
 
-cfreader.get_filetype_reader = function (type) {
-    if (type === 'value') return require('./cfreader/flat');
-    if (type === 'list' ) return require('./cfreader/flat');
-
-    return require('./cfreader/' + type);
-};
-
 cfreader.load_config = function(name, type, options) {
     var result;
 
