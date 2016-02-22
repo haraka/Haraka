@@ -4,12 +4,10 @@
 var logger      = require('./logger');
 var config      = require('./config');
 var constants   = require('haraka-constants');
-var os          = require('os');
 var path        = require('path');
 var vm          = require('vm');
 var fs          = require('fs');
 var utils       = require('./utils');
-var util        = require('util');
 var states      = require('./connection').states;
 
 exports.registered_hooks = {};
@@ -18,7 +16,6 @@ exports.plugin_list = [];
 var order = 0;
 
 function Plugin (name) {
-    var plugin = this;
     this.name = name;
     this.base = {};
     this.timeout = get_timeout(name);

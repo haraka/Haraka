@@ -1,6 +1,5 @@
 var dkim = require('./dkim');
 var DKIMVerifyStream = dkim.DKIMVerifyStream;
-var util = require('util');
 
 var plugin = exports;
 

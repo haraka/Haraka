@@ -529,8 +529,6 @@ cfreader.load_flat_config = function(name, type) {
 };
 
 cfreader.load_binary_config = function(name, type) {
-    var result = cfreader.empty_config();
-
     try {
         if (utils.existsSync(name)) {
             return fs.readFileSync(name);

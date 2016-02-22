@@ -136,7 +136,6 @@ exports.refresh_config = {
     setUp : _set_up,
     'callback' : function (test) {
         test.expect(1);
-        var outer = this;
         var next = function() {
             test.equal(undefined, arguments[0]);
             test.done();

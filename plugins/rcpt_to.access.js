@@ -2,7 +2,6 @@
 // rcpt_to.access plugin
 
 exports.register = function() {
-    var i;
     var config = this.config.get('rcpt_to.access.ini');
     this.wl = this.config.get('rcpt_to.access.whitelist', 'list');
     this.bl = this.config.get('rcpt_to.access.blacklist', 'list');

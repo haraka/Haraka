@@ -1,7 +1,6 @@
 // mail_from.access plugin
 
 exports.register = function() {
-    var i;
     var config = this.config.get('mail_from.access.ini');
     this.wl = this.config.get('mail_from.access.whitelist', 'list');
     this.bl = this.config.get('mail_from.access.blacklist', 'list');

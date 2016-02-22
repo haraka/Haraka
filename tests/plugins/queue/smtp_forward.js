@@ -1,19 +1,10 @@
 'use strict';
 
-var stub         = require('../../fixtures/stub');
 var Connection   = require('../../fixtures/stub_connection');
 var Plugin       = require('../../fixtures/stub_plugin');
 
 var config       = require('../../../config');
 var Address      = require('address-rfc2821').Address;
-
-var _set_up = function (done) {
-
-    this.plugin = new Plugin('queue/smtp_forward');
-    this.plugin.config = config;
-
-    done();
-};
 
 exports.register = {
     setUp : function (done) {

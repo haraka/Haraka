@@ -1,4 +1,3 @@
-var stub         = require('./fixtures/stub');
 var configfile   = require('./../configfile'); // prevent compile errors in transaction.js.
 var Transaction  = require('../transaction');
 

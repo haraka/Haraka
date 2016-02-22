@@ -1,7 +1,6 @@
 // TLS is built into Haraka. Enabling this plugin advertises STARTTLS.
 // see 'haraka -h tls' for help
 
-var utils = require('./utils');
 var tls_socket = require('./tls_socket');
 
 // To create a key:

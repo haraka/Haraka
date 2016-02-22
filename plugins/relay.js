@@ -185,7 +185,6 @@ exports.force_routing = function (next, hmail, domain) {
         return next();
     }
 
-    var c = JSON.parse(route);
     var nexthop = JSON.parse(route).nexthop;
     if (!nexthop) {
         plugin.logdebug(plugin, 'using normal MX lookup for: ' + domain);

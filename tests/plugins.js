@@ -2,15 +2,9 @@
 
 var fs     = require('fs');
 var path   = require('path');
-var logger = require('../logger');
 var plugin = require('../plugins');
 
 var piName = 'testPlugin';
-
-var _setUp = function (done) {
-    this.plugin = new plugin.Plugin(piName);
-    done();
-};
 
 /*
 

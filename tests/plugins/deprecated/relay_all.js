@@ -1,6 +1,5 @@
 'use strict';
 
-var stub             = require('../../fixtures/stub');
 var Connection       = require('../../fixtures/stub_connection');
 var Plugin           = require('../../fixtures/stub_plugin');
 

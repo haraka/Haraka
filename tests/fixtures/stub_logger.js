@@ -1,6 +1,4 @@
-"use strict";
-
-var stub = require('./stub');
+'use strict';
 
 var logger = exports;
 

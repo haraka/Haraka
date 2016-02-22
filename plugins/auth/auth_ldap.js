@@ -1,7 +1,6 @@
 // auth/auth_ldap
 
-var ldap = require('ldapjs');
-var crypto = require('crypto');
+var ldap  = require('ldapjs');
 var async = require('async');
 
 exports.hook_capabilities = function (next, connection) {

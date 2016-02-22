@@ -1,11 +1,7 @@
 var constants    = require('haraka-constants');
 
 var stub         = require('./fixtures/stub');
-// var Logger       = require('./fixtures/stub_logger');
 var configfile   = require('./../configfile');
-var config       = require('./../config');
-var config       = require('./../config');
-// var ResultStore  = require('../../result_store');
 var config       = require('./../config');
 var connection   = require('./../connection');
 
@@ -15,7 +11,7 @@ constants.import(global);
 function _set_up(callback) {
     this.backup = {};
     var client = {
-        destroy: function () { var foo = 1; }
+        destroy: function () { true; }
     };
     this.connection = connection.createConnection(client, {});  // this.server);
     callback();

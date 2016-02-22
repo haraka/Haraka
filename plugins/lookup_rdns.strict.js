@@ -77,7 +77,6 @@ exports.hook_lookup_rdns = function (next, connection) {
     var called_next  = 0;
     var timeout_id   = 0;
     var config       = this.config.get('lookup_rdns.strict.ini');
-    var rdns         = '';
     var fwd_nxdomain = config.forward && (config.forward.nxdomain    || '');
     var fwd_dnserror = config.forward && (config.forward.dnserror    || '');
     var rev_nxdomain = config.reverse && (config.reverse.nxdomain    || '');
