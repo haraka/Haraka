@@ -83,8 +83,8 @@ exports.ldap_rcpt = function(next, connection, params) {
             items.push(entry.object);
         });
 
-        res.on('error', function(err) {
-            connection.logerror(plugin, 'LDAP search error: ' + err);
+        res.on('error', function(err2) {
+            connection.logerror(plugin, 'LDAP search error: ' + err2);
         });
 
         res.on('end', function(result) {

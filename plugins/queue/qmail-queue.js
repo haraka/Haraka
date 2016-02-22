@@ -72,8 +72,8 @@ exports.hook_queue = function (next, connection) {
         connection.transaction.rcpt_to.forEach(function (rcpt) {
             buf[p++] = 84;
             var rcpt_to = rcpt.address();
-            for (var i = 0; i < rcpt_to.length; i++) {
-                buf[p++] = rcpt_to.charCodeAt(i);
+            for (var j = 0; j < rcpt_to.length; j++) {
+                buf[p++] = rcpt_to.charCodeAt(j);
             }
             buf[p++] = 0;
         });

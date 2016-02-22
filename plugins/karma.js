@@ -488,8 +488,8 @@ exports.history_from_redis = function (next, connection) {
         plugin.db.multi()
             .hincrby(dbkey, 'connections', 1)  // increment total conn
             .expire(dbkey, expire)             // extend expiration
-            .exec(function (err, replies) {
-                if (err) connection.results.add(plugin, {err: err});
+            .exec(function (err2, replies) {
+                if (err2) connection.results.add(plugin, {err: err2});
             });
 
         // Careful: don't become self-fulfilling prophecy.

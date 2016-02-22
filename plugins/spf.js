@@ -4,7 +4,7 @@ var SPF = require('./spf').SPF;
 var net_utils = require('./net_utils');
 
 // Override logging in SPF module
-var plugin = exports;
+var plugin_ignore = exports;
 SPF.prototype.log_debug = function (str) {
     return plugin.logdebug(str);
 };
@@ -159,7 +159,7 @@ exports.hook_mail = function (next, connection, params) {
         plugin.log_result(connection, 'mfrom', host, mfrom, spf.result(result));
         plugin.save_to_header(connection, spf, result, mfrom, host, 'mailfrom');
 
-        var auth_result = spf.result(result).toLowerCase();
+        auth_result = spf.result(result).toLowerCase();
         connection.auth_results( "spf="+auth_result+" smtp.mailfrom="+host);
 
         txn.notes.spf_mail_result = spf.result(result);

@@ -3,14 +3,14 @@
 /* Obtained and modified from http://js.5sh.net/starttls.js on 8/18/2011.                       */
 /*----------------------------------------------------------------------------------------------*/
 
-var tls = require('tls');
+var tls       = require('tls');
 var constants = require('constants');
-var crypto = require('crypto');
-var util = require('util');
-var net = require('net');
-var stream = require('stream');
-var log = require('./logger');
-var config = require('./config');
+var crypto    = require('crypto');
+var util      = require('util');
+var net       = require('net');
+var stream    = require('stream');
+var log       = require('./logger');
+var config    = require('./config');
 
 // provides a common socket for attaching
 // and detaching from either main socket, or crypto socket
@@ -168,7 +168,7 @@ function createServer(cb) {
 
         var socket = new pluggableStream(cryptoSocket);
 
-        socket.upgrade = function (options, cb) {
+        socket.upgrade = function (options, cb2) {
             log.logdebug('Upgrading to TLS');
 
             socket.clean();
@@ -225,7 +225,7 @@ function createServer(cb) {
                     var cipher = pair.cleartext.getCipher();
                 }
                 socket.emit('secure');
-                if (cb) cb(cleartext.authorized, verifyError, cert, cipher);
+                if (cb2) cb2(cleartext.authorized, verifyError, cert, cipher);
             });
 
             cleartext._controlReleased = true;
@@ -258,22 +258,22 @@ else {
     };
 }
 
-function connect(port, host, cb) {
-    var options = {};
+function connect (port, host, cb) {
+    var conn_options = {};
     if (typeof port === 'object') {
-        options = port;
+        conn_options = port;
         cb = host;
     }
     else {
-        options.port = port;
-        options.host = host;
+        conn_options.port = port;
+        conn_options.host = host;
     }
 
-    var cryptoSocket = _net_connect(options);
+    var cryptoSocket = _net_connect(conn_options);
 
     var socket = new pluggableStream(cryptoSocket);
 
-    socket.upgrade = function (options, cb) {
+    socket.upgrade = function (options, cb2) {
         socket.clean();
         cryptoSocket.removeAllListeners('data');
 
@@ -315,7 +315,7 @@ function connect(port, host, cb) {
                 var cipher = pair.cleartext.getCipher();
             }
 
-            if (cb) cb(cleartext.authorized, verifyError, cert, cipher);
+            if (cb2) cb2(cleartext.authorized, verifyError, cert, cipher);
 
             socket.emit('secure');
         });

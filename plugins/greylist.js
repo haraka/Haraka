@@ -218,9 +218,9 @@ exports.hook_rcpt_ok = function (next, connection, rcpt) {
         }
         else {
 
-            return plugin.process_tuple(connection, mail_from.address(), rcpt.address(), function (err, white_promo_rec) {
-                if (err) {
-                    if (err instanceof Error && err.notanerror) {
+            return plugin.process_tuple(connection, mail_from.address(), rcpt.address(), function (err2, white_promo_rec) {
+                if (err2) {
+                    if (err2 instanceof Error && err2.notanerror) {
                         plugin.logdebug(connection, 'host in GREY zone');
 
                         ctr.add(plugin, {
@@ -228,7 +228,7 @@ exports.hook_rcpt_ok = function (next, connection, rcpt) {
                         });
                         ctr.push(plugin, {
                             stats : {
-                                rcpt : err.record
+                                rcpt : err2.record
                             },
                             stage : 'rcpt'
                         });
@@ -236,7 +236,7 @@ exports.hook_rcpt_ok = function (next, connection, rcpt) {
                         return plugin.invoke_outcome_cb(next, false);
                     }
 
-                    throw err;
+                    throw err2;
                 }
 
                 if (!white_promo_rec) {
@@ -289,11 +289,11 @@ exports.process_tuple = function (connection, sender, rcpt, cb) {
             return plugin.promote_to_white(connection, record, cb);
         }
 
-        return plugin.update_grey(key, !record, function (err, created_record) {
-            var err = new Error('in black zone');
-            err.record = created_record || record;
-            err.notanerror = true;
-            return cb(err, null);
+        return plugin.update_grey(key, !record, function (err2, created_record) {
+            var err2 = new Error('in black zone');
+            err2.record = created_record || record;
+            err2.notanerror = true;
+            return cb(err2, null);
         });
     });
 };
@@ -575,9 +575,9 @@ exports.promote_to_white = function (connection, grey_rec, cb) {
             err.what = 'db_error';
             throw err;
         }
-        plugin.redis.expire(white_key, white_ttl, function (err, result) {
-            plugin.lognotice("DB error: " + util.inspect(err));
-            return cb(err, result);
+        plugin.redis.expire(white_key, white_ttl, function (err2, result2) {
+            plugin.lognotice("DB error: " + util.inspect(err2));
+            return cb(err2, result2);
         });
     });
 };
@@ -596,13 +596,13 @@ exports.update_white_record = function (key, record, cb) {
     });
     multi.expire(key, record.lifetime);
 
-    return multi.exec(function (err, record) {
-        if (err) {
-            plugin.lognotice("DB error: " + util.inspect(err));
-            err.what = 'db_error';
-            throw err;
+    return multi.exec(function (err2, record2) {
+        if (err2) {
+            plugin.lognotice("DB error: " + util.inspect(err2));
+            err2.what = 'db_error';
+            throw err2;
         }
-        return cb(null, record);
+        return cb(null, record2);
     });
 };
 

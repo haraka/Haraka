@@ -70,8 +70,8 @@ exports.stats_incr_zone = function (err, zone, start) {
     redis_client.hincrby(rkey, 'TOTAL', 1);
     var foo = (err) ? err.code : 'LISTED';
     redis_client.hincrby(rkey, foo, 1);
-    redis_client.hget(rkey, 'AVG_RT', function (err, rt) {
-        if (err) return;
+    redis_client.hget(rkey, 'AVG_RT', function (err2, rt) {
+        if (err2) return;
         var avg = parseInt(rt) ? (parseInt(elapsed) + parseInt(rt))/2
                                : parseInt(elapsed);
         redis_client.hset(rkey, 'AVG_RT', avg);
@@ -168,11 +168,11 @@ exports.check_zones = function (interval) {
             }
 
             // Try the test point
-            self.lookup('127.0.0.2', zone, function (err, a) {
-                if (!a) {
+            self.lookup('127.0.0.2', zone, function (err2, a2) {
+                if (!a2) {
                     self.logwarn('zone \'' + zone +
-                    '\' did not respond to test point (' + err + ')');
-                    return self.disable_zone(zone, a);
+                    '\' did not respond to test point (' + err2 + ')');
+                    return self.disable_zone(zone, a2);
                 }
                 // Was this zone previously disabled?
                 if (self.zones.indexOf(zone) === -1) {

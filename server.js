@@ -179,7 +179,7 @@ Server.get_smtp_server = function (host, port, inactivity_timeout) {
     return server;
 };
 
-Server.setup_smtp_listeners = function (plugins, type, inactivity_timeout) {
+Server.setup_smtp_listeners = function (plugins2, type, inactivity_timeout) {
     var listeners = Server.get_listen_addrs(Server.cfg.main);
 
     var runInitHooks = function (err) {
@@ -189,7 +189,7 @@ Server.setup_smtp_listeners = function (plugins, type, inactivity_timeout) {
             exit(-1);
         }
         Server.listening();
-        plugins.run_hooks('init_' + type, Server);
+        plugins2.run_hooks('init_' + type, Server);
     };
 
     var setupListener = function (host_port, cb) {

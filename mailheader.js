@@ -46,9 +46,9 @@ Header.prototype.parse = function (lines) {
     }
 
     // Now add decoded versions
-    Object.keys(this.headers).forEach(function (key) {
-        self.headers[key].forEach(function (val) {
-            self._add_header_decode(key, val, "push");
+    Object.keys(this.headers).forEach(function (key2) {
+        self.headers[key2].forEach(function (val2) {
+            self._add_header_decode(key2, val2, 'push');
         })
     })
 };

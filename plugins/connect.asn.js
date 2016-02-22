@@ -122,7 +122,7 @@ exports.lookup_asn = function (next, connection) {
 
         connection.logdebug(plugin, "zone: " + zone);
 
-        plugin.get_dns_results(zone, ip, function result_cb (err, zone, r) {
+        plugin.get_dns_results(zone, ip, function result_cb (err, zone2, r) {
             if (err) {
                 connection.logerror(plugin, err.message);
                 return done();

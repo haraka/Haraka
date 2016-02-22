@@ -102,17 +102,17 @@ exports.hook_lookup_rdns = function (next, connection) {
             queries_run = true;
             connection.logdebug(plugin, 'domain: ' + ptr_domain);
             pending_queries++;
-            net_utils.get_ips_by_host(ptr_domain, function (err, ips) {
+            net_utils.get_ips_by_host(ptr_domain, function (err2, ips) {
                 pending_queries--;
 
-                if (err) {
-                    for (var e=0; e < err.length; e++) {
+                if (err2) {
+                    for (var e=0; e < err2.length; e++) {
                         switch (err[e]) {
                             case 'queryAaaa ENODATA':
                             case 'queryAaaa ENOTFOUND':
                                 break;
                             default:
-                                connection.results.add(plugin, {err: err[e]});
+                                connection.results.add(plugin, {err: err2[e]});
                         }
                     }
                 }

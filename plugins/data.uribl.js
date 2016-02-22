@@ -211,7 +211,7 @@ exports.do_lookups = function (connection, next, hosts, type) {
     }
 
     queries_to_run.forEach(function (query) {
-        var lookup = query.join('.');
+        lookup = query.join('.');
         // Add root dot if necessary
         if (lookup[lookup.length-1] !== '.') {
             lookup = lookup + '.';

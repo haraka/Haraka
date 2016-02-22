@@ -4,9 +4,10 @@ var fs          = require('fs');
 var path        = require('path');
 var dns         = require('dns');
 var net         = require('net');
-var util        = require("util");
-var events      = require("events");
+var util        = require('util');
+var events      = require('events');
 var os          = require('os');
+
 var utils       = require('./utils');
 var sock        = require('./line_socket');
 var logger      = require('./logger');
@@ -28,7 +29,7 @@ var core_consts = require('constants');
 var WRITE_EXCL  = core_consts.O_CREAT | core_consts.O_TRUNC | core_consts.O_WRONLY | core_consts.O_EXCL;
 
 var MAX_UNIQ = 10000;
-var host = require('os').hostname().replace(/\\/, '\\057').replace(/:/, '\\072');
+var my_hostname = require('os').hostname().replace(/\\/, '\\057').replace(/:/, '\\072');
 var fn_re = /^(\d+)_(\d+)_/; // I like how this looks like a person
 
 // TODO: For testability, this should be accessible
@@ -340,7 +341,7 @@ function _next_uniq () {
 
 function _fname () {
     var time = new Date().getTime();
-    return time + '_0_' + process.pid + "_" + _next_uniq() + '.' + host;
+    return time + '_0_' + process.pid + "_" + _next_uniq() + '.' + my_hostname;
 }
 
 exports.send_email = function () {
@@ -640,13 +641,13 @@ exports.TODOItem = TODOItem;
 
 var dummy_func = function () {};
 
-function HMailItem (filename, path, notes) {
+function HMailItem (filename, filePath, notes) {
     events.EventEmitter.call(this);
     var matches = filename.match(fn_re);
     if (!matches) {
         throw new Error("Bad filename: " + filename);
     }
-    this.path         = path;
+    this.path         = filePath;
     this.filename     = filename;
     this.next_process = matches[1];
     this.num_failures = matches[2];
@@ -666,22 +667,22 @@ exports.HMailItem = HMailItem;
 // populate log functions - so we can use hooks
 for (var key in logger) {
     if (key.match(/^log\w/)) {
-        exports[key] = (function (key) {
+        exports[key] = (function (key2) {
             return function () {
                 var args = ["[outbound] "];
                 for (var i=0, l=arguments.length; i<l; i++) {
                     args.push(arguments[i]);
                 }
-                logger[key].apply(logger, args);
+                logger[key2].apply(logger, args);
             };
         })(key);
-        HMailItem.prototype[key] = (function (key) {
+        HMailItem.prototype[key] = (function (key2) {
             return function () {
                 var args = [ this ];
                 for (var i=0, l=arguments.length; i<l; i++) {
                     args.push(arguments[i]);
                 }
-                logger[key].apply(logger, args);
+                logger[key2].apply(logger, args);
             };
         })(key);
     }
@@ -879,13 +880,13 @@ exports.lookup_mx = function lookup_mx (domain, cb) {
         // wrap_mx() to return same thing as resolveMx() does.
         wrap_mx = function (a) { return {priority:0,exchange:a}; };
         // IS: IPv6 compatible
-        dns.resolve(domain, function(err, addresses) {
-            if (process_dns(err, addresses)) {
+        dns.resolve(domain, function(err2, addresses2) {
+            if (process_dns(err2, addresses2)) {
                 return;
             }
-            err = new Error("Found nowhere to deliver to");
-            err.code = 'NOMX';
-            cb(err);
+            err2 = new Error("Found nowhere to deliver to");
+            err2.code = 'NOMX';
+            cb(err2);
         });
     });
 };
@@ -987,8 +988,8 @@ HMailItem.prototype.try_deliver = function () {
 
     this.loginfo("Looking up " + family + " records for: " + host);
 
-    // now we have a host, we have to lookup the addresses for that host
-    // and try each one in order they appear
+    // we have a host, look up the addresses for the host
+    // and try each in order they appear
     // IS: IPv6 compatible
     dns.resolve(host, family, function (err, addresses) {
         if (err) {
@@ -1050,7 +1051,9 @@ HMailItem.prototype.try_deliver_host_on_socket = function (mx, host, port, socke
     var self            = this;
     var processing_mail = true;
 
-    this.loginfo("Attempting to deliver to: " + host + ":" + port + (mx.using_lmtp ? " using LMTP" : "") + " (" + delivery_queue.length() + ") (" + temp_fail_queue.length() + ")");
+    this.loginfo("Attempting to deliver to: " + host + ":" + port +
+        (mx.using_lmtp ? " using LMTP" : "") + " (" + delivery_queue.length() +
+        ") (" + temp_fail_queue.length() + ")");
 
     socket.on('error', function (err) {
         if (processing_mail) {
@@ -1192,8 +1195,8 @@ HMailItem.prototype.try_deliver_host_on_socket = function (mx, host, port, socke
 
             if (!mx.auth_type || (mx.auth_type && smtp_properties.auth.indexOf(mx.auth_type.toUpperCase()) === -1)) {
                 // No compatible authentication types offered by the server
-                self.logwarn('AUTH configured for domain ' + self.todo.domain + ' but host ' + host +
-                             'did not offer any compatible types' +
+                self.logwarn('AUTH configured for domain ' + self.todo.domain + ' but host ' +
+                             host + 'did not offer any compatible types' +
                              ((mx.auth_type) ? ' (requested: ' + mx.auth_type + ')' : '') +
                              ' (offered: ' + smtp_properties.auth.join(',') + ')');
                 // Proceed without authentication
@@ -1404,9 +1407,9 @@ HMailItem.prototype.try_deliver_host_on_socket = function (mx, host, port, socke
                         process_ehlo_data();
                         break;
                     case 'starttls':
-                        var key = config.get('tls_key.pem', 'binary');
-                        var cert = config.get('tls_cert.pem', 'binary');
-                        var tls_options = (key && cert) ? { key: key, cert: cert } : {};
+                        var tkey = config.get('tls_key.pem', 'binary');
+                        var tcert = config.get('tls_cert.pem', 'binary');
+                        var tls_options = (tkey && tcert) ? { key: tkey, cert: tcert } : {};
                         var config_options = ['ciphers','requestCert','rejectUnauthorized'];
 
                         for (var i = 0; i < config_options.length; i++) {
@@ -1779,12 +1782,12 @@ HMailItem.prototype.bounce_respond = function (retval, msg) {
 
     var from = new Address ('<>');
     var recip = new Address (this.todo.mail_from.user, this.todo.mail_from.host);
-    this.populate_bounce_message(from, recip, err, function (err, data_lines) {
-        if (err) {
-            return self.double_bounce("Error populating bounce message: " + err);
+    this.populate_bounce_message(from, recip, err, function (err2, data_lines) {
+        if (err2) {
+            return self.double_bounce("Error populating bounce message: " + err2);
         }
 
-        exports.send_email(from, recip, data_lines.join(''), function (code, msg) {
+        exports.send_email(from, recip, data_lines.join(''), function (code, msg2) {
             if (code === constants.deny) {
                 // failed to even queue the mail
                 return self.double_bounce("Unable to queue the bounce message. Not sending bounce!");
