@@ -443,7 +443,7 @@ else if (parsed.test) {
     plugins.load_plugins((parsed.test && parsed.test[0] !== 'all') ? parsed.test : null);
     var Connection = require(path.join(base, "connection"));
     var Transaction = require(path.join(base, "transaction"));
-    var Address = require(path.join(base, 'address')).Address;
+    var Address = require('address-rfc2821').Address;
     var constants = require('haraka-constants');
     var client = {
         remoteAddress: ((parsed.ip) ? parsed.ip : '1.2.3.4'),
