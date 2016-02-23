@@ -51,6 +51,14 @@ exports.load_tls_ini = function () {
         if (plugin.cfg.main[opt] === undefined) { continue; }
         plugin.tls_opts[opt] = plugin.cfg.main[opt];
     }
+
+    if (plugin.cfg.inbound) {
+        for (var i = 0; i < config_options.length; i++) {
+            var opt = config_options[i];
+            if (plugin.cfg.inbound[opt] === undefined) { continue; }
+            plugin.tls_opts[opt] = plugin.cfg.inbound[opt];
+        }
+    }
 };
 
 exports.tls_capabilities = function (next, connection) {

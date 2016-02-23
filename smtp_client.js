@@ -37,18 +37,6 @@ function SMTPClient(port, host, connect_timeout, idle_timeout) {
     this.auth_capabilities = [];
     var client = this;
 
-    var key = config.get('tls_key.pem', 'binary');
-    var cert = config.get('tls_cert.pem', 'binary');
-    var tls_options = (key && cert) ? { key: key, cert: cert } : {};
-    this.tls_config = tls_socket.load_tls_ini();
-    var config_options = ['ciphers','requestCert','rejectUnauthorized'];
-
-    for (var i = 0; i < config_options.length; i++) {
-        var opt = config_options[i];
-        if (this.tls_config.main[opt] === undefined) { continue; }
-        tls_options[opt] = this.tls_config.main[opt];
-    }
-
     this.socket.on('line', function (line) {
         client.emit('server_protocol', line);
         var matches = smtp_regexp.exec(line);
@@ -106,7 +94,7 @@ function SMTPClient(port, host, connect_timeout, idle_timeout) {
                 client.emit('xclient', 'EHLO');
                 break;
             case 'starttls':
-                this.upgrade(tls_options);
+                this.upgrade(this.tls_options);
                 break;
             case 'greeting':
                 client.connected = true;
@@ -168,6 +156,30 @@ function SMTPClient(port, host, connect_timeout, idle_timeout) {
 }
 
 util.inherits(SMTPClient, events.EventEmitter);
+
+SMTPClient.prototype.load_tls_config = function (plugin) {
+    var key = config.get('tls_key.pem', 'binary');
+    var cert = config.get('tls_cert.pem', 'binary');
+    var tls_options = (key && cert) ? { key: key, cert: cert } : {};
+    this.tls_config = tls_socket.load_tls_ini();
+    var config_options = ['ciphers','requestCert','rejectUnauthorized'];
+
+    for (var i = 0; i < config_options.length; i++) {
+        var opt = config_options[i];
+        if (this.tls_config.main[opt] === undefined) { continue; }
+        tls_options[opt] = this.tls_config.main[opt];
+    }
+
+    if (this.tls_config[plugin.name]) {
+        for (var i = 0; i < config_options.length; i++) {
+            var opt = config_options[i];
+            if (this.tls_config[plugin.name][opt] === undefined) { continue; }
+            tls_options[opt] = this.tls_config[plugin.name][opt];
+        }
+    }
+
+    this.tls_options = tls_options;
+}
 
 SMTPClient.prototype.send_command = function (command, data) {
     var line = (command === 'dot') ? '.' : command + (data ? (' ' + data) : '');
@@ -320,6 +332,8 @@ exports.get_client_plugin = function (plugin, connection, c, callback) {
         connection.logdebug(plugin, 'Got smtp_client: ' + smtp_client.uuid);
 
         var secured = false;
+
+        smtp_client.load_tls_config(plugin);
 
         smtp_client.call_next = function (retval, msg) {
             if (this.next) {

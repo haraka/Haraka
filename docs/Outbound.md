@@ -40,9 +40,18 @@ Default: false. Switch to true to enable TLS for outbound mail when the
 remote end is capable.
 
 This uses the same `tls_key.pem` and `tls_cert.pem` files that the `tls`
-plugin uses. See the [tls plugin
+plugin uses, along with other values in `tls.ini`. See the [tls plugin
 docs](http://haraka.github.io/manual/plugins/tls.html) for information on generating those
 files.
+
+Within `tls.ini` you can specify global options for the values `ciphers`,
+`requestCert` and `rejectUnauthorized`, alternatively you can provide
+separate values by putting them under a key: `[outbound]`, such as:
+
+```
+[outbound]
+ciphers=!DES
+```
 
 * `ipv6_enabled`
 
