@@ -3,7 +3,7 @@
 
 var logger      = require('./logger');
 var config      = require('./config');
-var constants   = require('./constants');
+var constants   = require('haraka-constants');
 var os          = require('os');
 var path        = require('path');
 var vm          = require('vm');

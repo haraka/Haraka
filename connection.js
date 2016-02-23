@@ -10,13 +10,13 @@ var path        = require('path');
 
 // npm libs
 var ipaddr      = require('ipaddr.js');
+var constants   = require('haraka-constants');
 
 // Haraka libs
 var config      = require('./config');
 var logger      = require('./logger');
 var trans       = require('./transaction');
 var plugins     = require('./plugins');
-var constants   = require('./constants');
 var rfc1869     = require('./rfc1869');
 var Address     = require('./address').Address;
 var uuid        = require('./utils').uuid;

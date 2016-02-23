@@ -1,11 +1,12 @@
 'use strict';
 // Log class
 
+var constants = require('haraka-constants');
+
 var config    = require('./config');
 var plugins;
 var connection;
 var outbound;
-var constants = require('./constants');
 var util      = require('util');
 var tty       = require('tty');
 

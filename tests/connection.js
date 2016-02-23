@@ -1,5 +1,6 @@
+var constants    = require('haraka-constants');
+
 var stub         = require('./fixtures/stub');
-var constants    = require('./../constants');
 // var Logger       = require('./fixtures/stub_logger');
 var configfile   = require('./../configfile');
 var config       = require('./../config');
