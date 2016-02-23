@@ -193,7 +193,6 @@ cfreader.ensure_enoent_timer = function () {
     cfreader._enoent_timer = setInterval(function () {
         var files = Object.keys(cfreader._enoent_files);
         for (var i=0; i<files.length; i++) {
-            var file = files[i];
             /* BLOCK SCOPE */
             (function (file) {
                 fs.stat(file, function (err) {
@@ -206,7 +205,7 @@ cfreader.ensure_enoent_timer = function () {
                         file, {persistent: false},
                         cfreader.on_watch_event(file, args.type, args.options, args.cb));
                 });
-            })(file); // END BLOCK SCOPE
+            })(files[i]); // END BLOCK SCOPE
         }
     }, 60 * 1000);
 };

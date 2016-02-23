@@ -303,8 +303,8 @@ exports.get_client = function (server, callback, port, host, connect_timeout, po
 // Get a smtp_client for the given attributes and set up the common
 // config and listeners for plugins. This is what smtp_proxy and
 // smtp_forward have in common.
-exports.get_client_plugin = function (plugin, connection, config, callback) {
-    var c = config;
+exports.get_client_plugin = function (plugin, connection, c, callback) {
+    // c = config
     // Merge in authentication settings from smtp_forward/proxy.ini if present
     // FIXME: config.auth could be changed when API isn't frozen
     if (c.auth_type || c.auth_user || c.auth_pass) {

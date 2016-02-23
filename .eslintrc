@@ -8,6 +8,9 @@
     "one-var": [2, "never"],
     "no-trailing-spaces": [2, { "skipBlankLines": false }],
     "keyword-spacing": [2, {"overrides": {
-      }}]
+      }}],
+    "no-delete-var": 2,
+    "no-label-var": 2,
+    "no-shadow": 2,
   }
 }

@@ -244,13 +244,13 @@ for (var key in logger) {
     if (!/^log\w/.test(key)) continue;
     // console.log('adding Plugin.' + key + ' method');
     /* jshint loopfunc: true */
-    Plugin.prototype[key] = (function (key) {
+    Plugin.prototype[key] = (function (lev) {
         return function () {
             var args = [this];
             for (var i=0, l=arguments.length; i<l; i++) {
                 args.push(arguments[i]);
             }
-            logger[key].apply(logger, args);
+            logger[lev].apply(logger, args);
         };
     })(key);
 }

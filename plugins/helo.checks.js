@@ -532,13 +532,13 @@ exports.get_a_records = function (host, cb) {
         if (timer) { clearTimeout(timer); }
         if (errs) {
             var err = '';
-            for (var e=0; e < errs.length; e++) {
-                switch (errs[e]) {
+            for (var f=0; f < errs.length; f++) {
+                switch (errs[f]) {
                     case 'queryAaaa ENODATA':
                     case 'queryAaaa ENOTFOUND':
                         break;
                     default:
-                        err += errs[e];
+                        err += errs[f];
                 }
             }
         }

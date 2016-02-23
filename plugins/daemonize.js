@@ -26,12 +26,12 @@ exports.hook_init_master = function (next) {
     var pid = (cfg.main.pid_file)
         ? cfg.main.pid_file : '/var/run/haraka.pid';
     var self = this;
-    daemon.daemonize(log, pid, function (err, pid) {
+    daemon.daemonize(log, pid, function (err, pid2) {
         if (err) {
             self.logcrit('error starting daemon: ' + err);
             return next(DENY, err);
         }
-        self.lognotice('daemon started with pid: ' + pid);
+        self.lognotice('daemon started with pid: ' + pid2);
         return next();
     });
 }

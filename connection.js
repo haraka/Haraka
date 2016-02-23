@@ -19,7 +19,7 @@ var trans       = require('./transaction');
 var plugins     = require('./plugins');
 var rfc1869     = require('./rfc1869');
 var Address     = require('./address').Address;
-var uuid        = require('./utils').uuid;
+var utils       = require('./utils');
 var outbound    = require('./outbound');
 var date_to_str = require('./utils').date_to_str;
 var indexOfLF   = require('./utils').indexOfLF;
@@ -49,14 +49,14 @@ var nextTick = setImmediate || process.nextTick;
 // copy logger methods into Connection:
 for (var key in logger) {
     if (!/^log\w/.test(key)) continue;
-    Connection.prototype[key] = (function (key) {
+    Connection.prototype[key] = (function (level) {
         return function () {
             // pass the connection instance to logger
             var args = [ this ];
             for (var i=0, l=arguments.length; i<l; i++) {
                 args.push(arguments[i]);
             }
-            logger[key].apply(logger, args);
+            logger[level].apply(logger, args);
         };
     })(key);
 }
@@ -175,7 +175,7 @@ function Connection(client, server) {
     this.prev_state = null;
     this.loop_code = null;
     this.loop_msg = null;
-    this.uuid = uuid();
+    this.uuid = utils.uuid();
     this.notes = {};
     this.transaction = null;
     this.tran_count = 0;
@@ -466,13 +466,15 @@ Connection.prototype.respond = function(code, msg, func) {
     }
     if (!(Array.isArray(msg))) {
         // msg not an array, make it so:
-        messages = msg.toString().split(/\n/).filter(function (msg) {
-            return /\S/.test(msg);
+        messages = msg.toString().split(/\n/).filter(function (msg2) {
+            return /\S/.test(msg2);
         });
     }
     else {
         // copy
-        messages = msg.slice().filter(function (msg) { return /\S/.test(msg);});
+        messages = msg.slice().filter(function (msg2) {
+            return /\S/.test(msg2);
+        });
     }
 
     if (code >= 400) {
@@ -1643,7 +1645,7 @@ Connection.prototype.store_queue_result = function (retval, msg) {
     }
 };
 
-Connection.prototype.queue_outbound_respond = function(retval, msg) {
+Connection.prototype.queue_outbound_respond = function (retval, msg) {
     var self = this;
     if (!msg) msg = this.queue_msg(retval, msg);
     this.store_queue_result(retval, msg);
@@ -1680,16 +1682,16 @@ Connection.prototype.queue_outbound_respond = function(retval, msg) {
             });
             break;
         default:
-            outbound.send_email(this.transaction, function(retval, msg) {
-                if (!msg) msg = self.queue_msg(retval, msg);
-                switch (retval) {
+            outbound.send_email(this.transaction, function(retval2, msg2) {
+                if (!msg2) msg2 = self.queue_msg(retval2, msg2);
+                switch (retval2) {
                     case constants.ok:
-                        if (!msg) msg = self.queue_msg(retval, msg);
-                        plugins.run_hooks('queue_ok', self, msg);
+                        if (!msg2) msg2 = self.queue_msg(retval2, msg2);
+                        plugins.run_hooks('queue_ok', self, msg2);
                         break;
                     case constants.deny:
-                        if (!msg) msg = self.queue_msg(retval, msg);
-                        self.respond(550, msg, function() {
+                        if (!msg2) msg2 = self.queue_msg(retval2, msg2);
+                        self.respond(550, msg2, function() {
                             self.msg_count.reject++;
                             self.reset_transaction(function () {
                                 self.resume();
@@ -1697,8 +1699,8 @@ Connection.prototype.queue_outbound_respond = function(retval, msg) {
                         });
                         break;
                     default:
-                        self.logerror("Unrecognised response from outbound layer: " + retval + " : " + msg);
-                        self.respond(550, msg || "Internal Server Error", function() {
+                        self.logerror("Unrecognised response from outbound layer: " + retval2 + " : " + msg2);
+                        self.respond(550, msg2 || "Internal Server Error", function() {
                             self.msg_count.reject++;
                             self.reset_transaction(function () {
                                 self.resume();

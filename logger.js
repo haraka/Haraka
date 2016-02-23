@@ -25,8 +25,8 @@ logger.levels = {
     EMERG:    0,
 };
 
-for (var level in logger.levels) {
-    logger['LOG' + level] = logger.levels[level];
+for (var le in logger.levels) {
+    logger['LOG' + le] = logger.levels[le];
 }
 
 logger.loglevel     = logger.LOGWARN;

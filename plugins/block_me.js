@@ -51,14 +51,13 @@ exports.hook_data_post = function (next, connection) {
 
     // add to mail_from.blocklist
     fs.open('./config/mail_from.blocklist', 'a', function (err, fd) {
-        if (!err) {
-            fs.write(fd, to_block + "\n", null, 'UTF-8', function (err, written) {
-                fs.close(fd);
-            });
-        }
-        else {
+        if (err) {
             connection.logerror(self, "Unable to append to mail_from.blocklist: " + err);
+            return;
         }
+        fs.write(fd, to_block + "\n", null, 'UTF-8', function (err2, written) {
+            fs.close(fd);
+        });
     });
 
     next();

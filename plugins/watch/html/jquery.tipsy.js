@@ -199,7 +199,7 @@
         options.theme = (options.theme && options.theme !== '') ? '-' + options.theme : '';
 
         function get(ele) {
-            var tipsy = $.data(ele, 'tipsy');
+            tipsy = $.data(ele, 'tipsy');
             if (!tipsy) {
                 tipsy = new Tipsy(ele, $.fn.tipsy.elementOptions(ele, options));
                 $.data(ele, 'tipsy', tipsy);
@@ -211,7 +211,7 @@
             if ($.fn.tipsy.enabled !== true) {
                 return;
             }
-            var tipsy = get(this);
+            tipsy = get(this);
             tipsy.hoverState = 'in';
             if (options.delayIn === 0) {
                 tipsy.show();
@@ -227,7 +227,7 @@
         }
 
         function leave() {
-            var tipsy = get(this);
+            tipsy = get(this);
             tipsy.hoverState = 'out';
             if (options.delayOut === 0) {
                 tipsy.hide();

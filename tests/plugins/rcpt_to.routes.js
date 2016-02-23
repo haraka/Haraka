@@ -62,12 +62,12 @@ var _set_up_redis = function (done) {
         }
 
         t.plugin.db = t.plugin.server.notes.redis;
-        t.plugin.redis_ping(function (err, result) {
-            if (err) {
-                console.error(err);
-                return done(err);
+        t.plugin.redis_ping(function (err2, result) {
+            if (err2) {
+                console.error(err2);
+                return done(err2);
             }
-            done(err, result);
+            done(err2, result);
         });
     }, this.plugin.server);
 };

@@ -191,8 +191,8 @@
         // The "g" method returns the next (count) outputs as one number.
         me.g = function getnext(count) {
             var s = me.S;
-            var i = lowbits(me.i + 1); var t = s[i];
-            var j = lowbits(me.j + t); var u = s[j];
+            i = lowbits(me.i + 1); t = s[i];
+            j = lowbits(me.j + t); u = s[j];
             s[i] = u;
             s[j] = t;
             var r = s[lowbits(t + u)];

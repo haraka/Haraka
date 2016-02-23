@@ -329,8 +329,8 @@ DKIMObject.prototype.end = function () {
             self.debug(self.identity + ': got DNS record: ' + record);
             var rec = record.replace(/\r?\n/g, '').replace(/\s+/g,'');
             var split = rec.split(';');
-            for (var i=0; i<split.length; i++) {
-                var split2 = split[i].split('=');
+            for (var j=0; j<split.length; j++) {
+                var split2 = split[j].split('=');
                 if (split2[0]) self.dns_fields[split2[0]] = split2[1];
             }
 
@@ -358,8 +358,8 @@ DKIMObject.prototype.end = function () {
             }
             if (self.dns_fields.h) {
                 var hashes = self.dns_fields.h.split(':');
-                for (var h=0; h<hashes.length; h++) {
-                    var hash = hashes[h].trim();
+                for (var k=0; k<hashes.length; k++) {
+                    var hash = hashes[k].trim();
                     if (self.fields.a.indexOf(hash) === -1) {
                         return self.result('inappropriate hash algorithm', 'invalid');
                     }
