@@ -1152,8 +1152,6 @@ HMailItem.prototype.try_deliver_host_on_socket = function (mx, host, port, socke
             !(host in tls_config.no_tls_hosts) &&
             smtp_properties.tls && cfg.enable_tls && !secured)
         {
-            console.log(tls_config.no_tls_hosts);
-            console.log("domain:", self.todo.domain, "host:", host);
             socket.on('secure', function () {
                 // Set this flag so we don't try STARTTLS again if it
                 // is incorrectly offered at EHLO once we are secured.
@@ -1414,6 +1412,14 @@ HMailItem.prototype.try_deliver_host_on_socket = function (mx, host, port, socke
                             var opt = config_options[i];
                             if (tls_config.main[opt] === undefined) { continue; }
                             tls_options[opt] = tls_config.main[opt];
+                        }
+
+                        if (tls_config.outbound) {
+                            for (var i = 0; i < config_options.length; i++) {
+                                var opt = config_options[i];
+                                if (tls_config.outbound[opt] === undefined) { continue; }
+                                tls_options[opt] = tls_config.outbound[opt];
+                            }
                         }
 
                         smtp_properties = {};
