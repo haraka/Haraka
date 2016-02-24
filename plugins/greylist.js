@@ -13,7 +13,7 @@ var ipaddr = require('ipaddr.js');
 var DSN = require('./dsn');
 var net_utils = require('./net_utils');
 var utils = require('./utils');
-var Address = require('./address').Address;
+var Address = require('address-rfc2821').Address;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 exports.register = function (next) {

@@ -1,6 +1,6 @@
 'use strict';
 
-var Address = require('../../address').Address;
+var Address = require('address-rfc2821').Address;
 var stub_connection = require('./../fixtures/stub_connection');
 var transaction = require('../../transaction');
 var util = require('util');

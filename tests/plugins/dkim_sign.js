@@ -3,7 +3,7 @@
 var Plugin       = require('../fixtures/stub_plugin');
 var Connection   = require('../fixtures/stub_connection');
 var config       = require('../../config');
-var Address      = require('../../address');
+var Address      = require('address-rfc2821');
 var Header       = require('../../mailheader').Header;
 var utils        = require('../../utils');
 

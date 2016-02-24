@@ -1,6 +1,6 @@
 // This is the aliases plugin
 // One must not run this plugin with the queue/smtp_proxy plugin.
-var Address = require('./address').Address;
+var Address = require('address-rfc2821').Address;
 
 exports.register = function () {
     this.inherits('queue/discard');

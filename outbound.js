@@ -8,6 +8,8 @@ var util        = require('util');
 var events      = require('events');
 var os          = require('os');
 
+var Address     = require('address-rfc2821').Address;
+
 var utils       = require('./utils');
 var sock        = require('./line_socket');
 var logger      = require('./logger');
@@ -17,7 +19,6 @@ var trans       = require('./transaction');
 var plugins     = require('./plugins');
 var tls_socket  = require('./tls_socket');
 var async       = require('async');
-var Address     = require('./address').Address;
 var TimerQueue  = require('./timer_queue');
 var Header      = require('./mailheader').Header;
 var DSN         = require('./dsn');
