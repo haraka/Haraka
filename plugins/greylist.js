@@ -4,7 +4,6 @@ var version = '0.1.3';
 
 var util = require('util');
 var redis = require('redis');
-var async = require('async');
 var tlds  = require('haraka-tld');
 var isIPv6 = require('net').isIPv6;
 
@@ -12,7 +11,6 @@ var ipaddr = require('ipaddr.js');
 
 var DSN = require('./dsn');
 var net_utils = require('./net_utils');
-var utils = require('./utils');
 var Address = require('address-rfc2821').Address;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -106,9 +104,11 @@ exports.redis_onInit = function (next, server) {
     if (plugin.redis)
         return next();
 
+    /*
     var r_opts = {
-        //connect_timeout: 1000
+        connect_timeout: 1000
     };
+    */
 
     var next_called;
 
@@ -178,18 +178,19 @@ exports.hook_mail = function (next, connection, params) {
 //
 exports.hook_rcpt_ok = function (next, connection, rcpt) {
     var plugin = this;
-    var ctr = connection.transaction.results;
-    var mail_from = connection.transaction.mail_from;
 
-    if (plugin.should_skip_check(connection))
-        return next();
+    if (plugin.should_skip_check(connection)) return next();
 
     if (plugin.was_whitelisted_in_session(connection)) {
         plugin.logdebug(connection, 'host already whitelisted in this session');
         return next();
     }
 
-    if (plugin.addr_in_list('rcpt', rcpt.address().toLowerCase())) { // check rcpt in whitelist (email & domain)
+    var ctr = connection.transaction.results;
+    var mail_from = connection.transaction.mail_from;
+
+    // check rcpt in whitelist (email & domain)
+    if (plugin.addr_in_list('rcpt', rcpt.address().toLowerCase())) {
         plugin.loginfo(connection, 'RCPT was whitelisted via config');
         ctr.add(plugin, {
             skip : 'config-whitelist(recipient)'

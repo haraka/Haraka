@@ -3,7 +3,6 @@
 var path         = require('path');
 
 var cfreader     = require('./configfile');
-var logger       = require('./logger');
 
 module.exports = new Config();
 
@@ -95,7 +94,6 @@ Config.prototype.arrange_args = function (args) {
 
     for (var i=0; i < args.length; i++) {
         if (args[i] === undefined) continue;
-        var what_is_it = args[i];
         switch (typeof args[i]) {   // what is it?
             case 'function':
                 cb = args[i];
@@ -124,6 +122,3 @@ Config.prototype.arrange_args = function (args) {
 
     return [fs_name, fs_type, cb, options];
 };
-
-// Load smtp.json or smtp.yaml as early as possible
-var cfg = module.exports.get('smtp.json');

@@ -1,7 +1,4 @@
-var stub         = require('./fixtures/stub');
 var Connection   = require('./fixtures/stub_connection');
-var configfile   = require('../configfile');
-var config       = require('../config');
 var ResultStore  = require('../result_store');
 
 function _set_up(callback) {

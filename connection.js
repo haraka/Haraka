@@ -29,10 +29,6 @@ var hostname    = (os.hostname().split(/\./))[0];
 var version     = JSON.parse(
         fs.readFileSync(path.join(__dirname, 'package.json'))).version;
 
-var line_regexp = /^([^\n]*\n)/;
-
-var connection = exports;
-
 var states = exports.states = {
     STATE_CMD:             1,
     STATE_LOOP:            2,

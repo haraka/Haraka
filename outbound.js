@@ -302,7 +302,6 @@ exports.load_queue_files = function (pid, cb_name, files) {
 };
 
 exports._add_file = function (hmail) {
-    var self = this;
     if (hmail.next_process < this.cur_time) {
         delivery_queue.push(hmail);
     }
@@ -346,7 +345,6 @@ function _fname () {
 }
 
 exports.send_email = function () {
-    var self = this;
 
     if (arguments.length === 2) {
         this.loginfo("Sending email as a transaction");
@@ -1085,7 +1083,6 @@ HMailItem.prototype.try_deliver_host_on_socket = function (mx, host, port, socke
     var recipients = this.todo.rcpt_to;
     var lmtp_rcpt_idx = 0;
 
-    var data_marker = 0;
     var last_recip = null;
     var ok_recips = [];
     var fail_recips = [];

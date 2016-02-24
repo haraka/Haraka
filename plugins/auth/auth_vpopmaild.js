@@ -1,7 +1,6 @@
 // Auth against vpopmaild
 
 var net    = require('net');
-var crypto = require('crypto');
 
 exports.register = function () {
     var plugin = this;

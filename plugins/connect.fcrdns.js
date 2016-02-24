@@ -1,12 +1,9 @@
 'use strict';
 
 var dns       = require('dns');
-var net       = require('net');
 
-var async     = require('async');
 var tlds      = require('haraka-tld');
 
-var utils     = require('./utils');
 var net_utils = require('./net_utils');
 
 exports.register = function () {

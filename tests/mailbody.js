@@ -1,5 +1,4 @@
 var Body   = require('../mailbody').Body;
-var Header = require('../mailheader').Header;
 
 function _fill_body (body) {
     // Body.bodytext retains the original received text before filters are

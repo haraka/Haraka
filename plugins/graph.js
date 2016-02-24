@@ -1,7 +1,6 @@
 // log our denys
 /* jshint multistr: true */
 
-var http  = require('http');
 var urlp  = require('url');
 var utils = require('./utils');
 

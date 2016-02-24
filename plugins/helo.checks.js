@@ -1,8 +1,6 @@
 'use strict';
 // Check various bits of the HELO string
 
-var dns       = require('dns');
-var async     = require('async');
 var tlds      = require('haraka-tld');
 
 var net_utils = require('./net_utils');

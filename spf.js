@@ -2,7 +2,6 @@
 // spf
 
 var dns = require('dns');
-var util = require('util');
 var ipaddr = require('ipaddr.js');
 
 // Constructor

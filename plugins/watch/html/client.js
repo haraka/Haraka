@@ -158,14 +158,6 @@ function updateRow(row_data, selector) {
     $(selector + ' > td').tipsy();
 }
 
-function httpGet(theUrl) {
-    var xmlHttp = null;
-    xmlHttp = new XMLHttpRequest();
-    xmlHttp.open("GET", theUrl, false);
-    xmlHttp.send(null);
-    return xmlHttp.responseText;
-}
-
 function httpGetJSON(theUrl) {
     var xmlHttp = null;
     xmlHttp = new XMLHttpRequest();
@@ -255,10 +247,6 @@ function ws_connect() {
         prune_table();
         last_insert = now;
     };
-}
-
-function ws_disconnect() {
-    if (ws) ws.close();
 }
 
 function reconnect() {

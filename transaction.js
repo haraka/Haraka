@@ -7,8 +7,6 @@ var body   = require('./mailbody');
 var utils  = require('./utils');
 var MessageStream = require('./messagestream');
 
-var trans = exports;
-
 var MAX_HEADER_LINES = config.get('max_header_lines') || 1000;
 
 function Transaction() {

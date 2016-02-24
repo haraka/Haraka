@@ -54,10 +54,6 @@ logger.colorize = function (color, str) {
            '\u001b[' + util.inspect.colors[color][1] + 'm';
 };
 
-var loglevel = logger.LOGWARN;
-
-var deferred_logs = [];
-
 logger.dump_logs = function () {
     while (logger.deferred_logs.length > 0) {
         var log_item = logger.deferred_logs.shift();

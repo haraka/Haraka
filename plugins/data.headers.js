@@ -1,8 +1,6 @@
 // validate message headers and some fields
 var tlds = require('haraka-tld');
 
-var net_utils  = require('./net_utils');
-
 exports.register = function () {
     var plugin = this;
 

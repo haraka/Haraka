@@ -21,7 +21,6 @@ catch (e) {
 
 var fs     = require('fs');
 var logger = require('./logger');
-var config = require('./config');
 var server = require('./server');
 
 exports.version = JSON.parse(

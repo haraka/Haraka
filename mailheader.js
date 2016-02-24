@@ -208,7 +208,6 @@ Header.prototype.remove = function (key) {
 
 Header.prototype._remove_more = function (key) {
     var key_len = key.length;
-    var to_remove;
     for (var i=0,l=this.header_list.length; i < l; i++) {
         if (this.header_list[i].substring(0, key_len).toLowerCase() === key) {
             this.header_list.splice(i, 1);

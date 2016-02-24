@@ -1,12 +1,9 @@
 // attachment
 
 var fs     = require('fs');
-var spawn  = require('child_process').spawn;
 var exec   = require('child_process').exec;
 var path   = require('path');
 var crypto = require('crypto');
-
-var utils = require('./utils');
 
 var tmp;
 var archives_disabled = false;
@@ -106,7 +103,7 @@ exports.unarchive_recursive = function(connection, f, archive_file_name, cb) {
         }
         count++;
         var cmd = 'LANG=C bsdtar -tf ' + in_file;
-        var bsdtar = exec(cmd, { timeout: plugin.cfg.timeout },  function (err, stdout, stderr) {
+        exec(cmd, { timeout: plugin.cfg.timeout },  function (err, stdout, stderr) {
             count--;
             if (err) {
                 if (err.code === 127) {
@@ -308,7 +305,6 @@ exports.hook_data = function (next, connection) {
 };
 
 exports.check_attachments = function (next, connection) {
-    var plugin = this;
     var txn = connection.transaction;
     var ctype_config = this.config.get('attachment.ctype.regex','list');
     var file_config = this.config.get('attachment.filename.regex','list');
