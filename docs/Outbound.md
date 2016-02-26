@@ -40,9 +40,18 @@ Default: false. Switch to true to enable TLS for outbound mail when the
 remote end is capable.
 
 This uses the same `tls_key.pem` and `tls_cert.pem` files that the `tls`
-plugin uses. See the [tls plugin
+plugin uses, along with other values in `tls.ini`. See the [tls plugin
 docs](http://haraka.github.io/manual/plugins/tls.html) for information on generating those
 files.
+
+Within `tls.ini` you can specify global options for the values `ciphers`,
+`requestCert` and `rejectUnauthorized`, alternatively you can provide
+separate values by putting them under a key: `[outbound]`, such as:
+
+```
+[outbound]
+ciphers=!DES
+```
 
 * `ipv6_enabled`
 
@@ -65,6 +74,40 @@ all outbound mail just before it is queued.
 ### outbound.bounce\_message
 
 See "Bounce Messages" below for details.
+
+The HMail Object
+----------------
+
+Many hooks (see below) pass in a `hmail` object.
+
+You likely won't ever need to call methods on this object, so they are left
+undocumented here.
+
+The attributes of an `hmail` object that may be of use are:
+
+* path - the full path to the queue file
+* filename - the filename within the queue dir
+* num_failures - the number of times this mail has been temp failed
+* notes - notes you can store on a hmail object (similar to `transaction.notes`)
+  to allow you to pass information between outbound hooks
+* todo - see below
+
+The ToDo Object
+---------------
+
+The `todo` object contains information about how to deliver this mail. Keys
+you may be interested in are:
+
+* rcpt_to - an Array of Address objects - the rfc.2821 recipients of this mail
+* mail_from - an Address object - the rfc.2821 sender of this mail
+* domain - the domain this mail is going to (see `always_split` above)
+* notes - the original transaction.notes for this mail, also contains the
+  following useful keys:
+** outbound_ip - the IP address to bind to (note do not set this manually,
+  use the `get_mx` hook)
+** outbound_helo - the EHLO domain to use (again, do not set manually)
+* queue_time - the epoch milliseconds time when this mail was queued
+* uuid - the original transaction.uuid
 
 Outbound Mail Hooks
 -------------------

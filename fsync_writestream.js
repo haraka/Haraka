@@ -39,9 +39,9 @@ if (version > 0 || subversion >= 10) {
                     self.emit('error', er);
                 }
                 else {
-                    fs.close(fd || self.fd, function(er) {
-                        if (er) {
-                            self.emit('error', er);
+                    fs.close(fd || self.fd, function(err) {
+                        if (err) {
+                            self.emit('error', err);
                         }
                         else {
                             self.emit('close');

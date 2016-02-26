@@ -1,6 +1,5 @@
 'use strict';
 
-var stub = require('./stub');
 var logger = require('../../logger');
 var ResultStore  = require('../../result_store');
 

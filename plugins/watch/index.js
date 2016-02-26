@@ -1,10 +1,6 @@
 'use strict';
 /* jshint maxdepth: 5 */
 
-var util    = require('util');
-
-var utils   = require('./utils');
-
 var wss = { broadcast: function () {} };
 var watchers = 0;
 
@@ -24,6 +20,8 @@ exports.register = function () {
     plugin.register_hook('queue_ok',     'queue_ok');
     plugin.register_hook('deny',         'w_deny');
     plugin.register_hook('disconnect',   'disconnect');
+
+    plugin.utils = plugin.core_require('utils');
 };
 
 exports.load_watch_ini = function () {
@@ -39,7 +37,8 @@ exports.load_watch_ini = function () {
 exports.hook_init_http = function (next, server) {
     var plugin = this;
 
-    server.http.app.use('/watch/wss_conf', function (req, res, app_next) {
+    server.http.app.use('/watch/wss_conf', function (req, res) {
+        // app.use args: request, response, app_next
         // pass config information to the WS client
         var client = { sampling: plugin.cfg.main.sampling };
         if (plugin.cfg.wss.url) client.wss_url = plugin.cfg.wss.url;
@@ -74,16 +73,16 @@ exports.hook_init_wss = function (next, server) {
         // ws.send('welcome!');
 
         ws.on('error', function (error) {
-            // plugin.loginfo("client error: " + error);
+            plugin.logdebug("client error: " + error);
         });
 
         ws.on('close', function (code, message) {
-            // plugin.loginfo("client closed: " + message + '('+code+')');
+            plugin.logdebug("client closed: " + message + '('+code+')');
             watchers--;
         });
 
         ws.on('message', function (message) {
-            // plugin.loginfo("received from client: " + message);
+            plugin.logdebug("received from client: " + message);
         });
     });
 
@@ -140,7 +139,8 @@ exports.get_incremental_results = function (next, connection) {
     return next();
 };
 
-exports.queue_ok = function (next, connection, msg) {
+exports.queue_ok = function (next, connection) {
+    // queue_ok arguments: next, connection, msg
     // ok 1390590369 qp 634 (F82E2DD5-9238-41DC-BC95-9C3A02716AD2.1)
 
     var incrDone = function () {
@@ -158,10 +158,10 @@ exports.w_deny = function (next, connection, params) {
     var plugin = this;
     // this.loginfo(this, params);
     var pi_code   = params[0];  // deny code?
-    var pi_msg    = params[1];  // deny error
+    // var pi_msg    = params[1];  // deny error
     var pi_name   = params[2];  // plugin name
-    var pi_function = params[3];
-    var pi_params   = params[4];
+    // var pi_function = params[3];
+    // var pi_params   = params[4];
     var pi_hook   = params[5];
 
     connection.loginfo(this, "watch deny saw: " + pi_name +
@@ -217,7 +217,7 @@ exports.get_connection_results = function (connection) {
         relay      : get_relay(connection),
         helo       : get_helo(connection),
         early      : get_early,
-        queue      : { newval: utils.elapsed(connection.start_time) },
+        queue      : { newval: plugin.utils.elapsed(connection.start_time) },
     };
 
     // see if changed since we last sent
@@ -303,7 +303,6 @@ exports.format_results = function (pi_name, r) {
 };
 
 exports.get_class = function (pi_name, r) {
-    var plugin = this;
 
     switch (pi_name) {
         case 'bounce':
@@ -382,7 +381,6 @@ exports.get_class = function (pi_name, r) {
 };
 
 exports.get_value = function (pi_name, r) {
-    var plugin = this;
 
     // replace the plugin name shown with...
     switch (pi_name) {
@@ -398,7 +396,6 @@ exports.get_value = function (pi_name, r) {
 };
 
 exports.get_title = function (pi_name, r) {
-    var plugin = this;
     // title: the value shown in the HTML tooltip
 
     switch (pi_name) {

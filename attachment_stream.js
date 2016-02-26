@@ -4,7 +4,6 @@ var Stream = require('stream');
 var util   = require('util');
 
 function AttachmentStream (header) {
-    var self = this;
     Stream.call(this);
     this.header = header;
     this.encoding = null;

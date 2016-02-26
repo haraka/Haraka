@@ -38,15 +38,15 @@ exports.init_amqp_connection = function() {
         if (err)
             return conn.close();
         // TODO: if !confirm conn.createChannel...
-        conn.createConfirmChannel(function (err, ch) {
-            if (err) return conn.close();
-            ch.assertExchange(exchangeName, exchangeType, {durable: durable}, function(err, ok){
-                if (err) return conn.close();
+        conn.createConfirmChannel(function (err2, ch) {
+            if (err2) return conn.close();
+            ch.assertExchange(exchangeName, exchangeType, {durable: durable}, function(err3, ok){
+                if (err3) return conn.close();
                 ch.assertQueue(queueName,
                     {durable: durable, autoDelete: autoDelete},
-                    function (err, ok) {
-                        if (err) return conn.close();
-                        queue = ok.queue;
+                    function (err4, ok2) {
+                        if (err4) return conn.close();
+                        queue = ok2.queue;
                         channel = ch;
                     }
                 );

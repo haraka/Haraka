@@ -1,6 +1,5 @@
 'use strict';
 
-var async     = require('async');
 var fs        = require('fs');
 var net       = require('net');
 var net_utils = require('./net_utils');

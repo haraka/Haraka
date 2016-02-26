@@ -63,7 +63,7 @@ exports.hook_queue = function (next, connection) {
         smtp_client.next = next;
 
         if (cfg.auth_user) {
-            connection.loginfo(plugin, 'Configuring authentication for SMTP server ' + cfg.main.host + ':' + cfg.main.port);
+            connection.loginfo(plugin, 'Configuring authentication for SMTP server ' + cfg.host + ':' + cfg.port);
             smtp_client.on('greeting', function() {
 
                 var base64 = function(str) {

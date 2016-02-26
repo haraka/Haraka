@@ -2,7 +2,6 @@
 // spf
 
 var dns = require('dns');
-var util = require('util');
 var ipaddr = require('ipaddr.js');
 
 // Constructor
@@ -279,9 +278,9 @@ SPF.prototype.check_host = function (ip, domain, mail_from, cb) {
         self.log_debug('SPF record for \'' + self.domain + '\' validated OK');
 
         // Set-up modifier run chain
-        var mod_chain_caller = function (err, result) {
+        var mod_chain_caller = function (err2, result) {
             // Throw any errors
-            if (err) throw err;
+            if (err2) throw err2;
             // Check limits
             if (self.count > self.LIMIT) {
                 self.log_debug('lookup limit reached');
@@ -289,7 +288,7 @@ SPF.prototype.check_host = function (ip, domain, mail_from, cb) {
             }
             // Return any result that is not SPF_NONE
             if (result && result !== self.SPF_NONE) {
-                return cb(err, result);
+                return cb(err2, result);
             }
             if (!mod_array.length) {
                 return cb(null, self.SPF_NEUTRAL);
@@ -302,9 +301,9 @@ SPF.prototype.check_host = function (ip, domain, mail_from, cb) {
         };
 
         // Run all the mechanisms first
-        var mech_chain_caller = function (err, result) {
+        var mech_chain_caller = function (err3, result) {
             // Throw any errors
-            if (err) throw err;
+            if (err3) throw err3;
             // Check limits
             if (self.count > self.LIMIT) {
                 self.log_debug('lookup limit reached');
@@ -312,7 +311,7 @@ SPF.prototype.check_host = function (ip, domain, mail_from, cb) {
             }
             // If we have a result other than SPF_NONE
             if (result && result !== self.SPF_NONE) {
-                return cb(err, result);
+                return cb(err3, result);
             }
             // Return default if no more mechanisms to run
             if (!mech_array.length) {
@@ -496,10 +495,10 @@ SPF.prototype.mech_mx = function (qualifier, args, cb) {
                 cidr = cidr6;
                 resolve_method = 'resolve6';
             }
-            dns[resolve_method](mx, function (err, addrs) {
+            dns[resolve_method](mx, function (err4, addrs) {
                 pending--;
-                if (err) {
-                    switch (err.code) {
+                if (err4) {
+                    switch (err4.code) {
                         case 'ENOTFOUND':
                         case 'ENODATA':
                         case dns.NXDOMAIN:  break;
@@ -578,11 +577,11 @@ SPF.prototype.mech_ptr = function (qualifier, args, cb) {
             for (var i=0; i<ptrs.length; i++) {
                 var ptr = ptrs[i];
                 pending++;
-                dns[resolve_method](ptr, function (err, addrs) {
+                dns[resolve_method](ptr, function (err3, addrs) {
                     pending--;
-                    if (err) {
+                    if (err3) {
                         // Skip on error
-                        self.log_debug('mech_ptr: lookup=' + ptr + ' => ' + err);
+                        self.log_debug('mech_ptr: lookup=' + ptr + ' => ' + err3);
                     }
                     else {
                         for (var a=0; a<addrs.length; a++) {

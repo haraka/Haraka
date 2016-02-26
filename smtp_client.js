@@ -10,6 +10,9 @@ var line_socket = require('./line_socket');
 var logger = require('./logger');
 var uuid = require('./utils').uuid;
 var utils = require('./utils');
+var config = require('./config');
+var tls_socket = require('./tls_socket');
+var ipaddr      = require('ipaddr.js');
 
 var smtp_regexp = /^([0-9]{3})([ -])(.*)/;
 var STATE = {
@@ -18,9 +21,6 @@ var STATE = {
     RELEASED: 3,
     DESTROYED: 4,
 };
-
-var tls_key;
-var tls_cert;
 
 function SMTPClient(port, host, connect_timeout, idle_timeout) {
     events.EventEmitter.call(this);
@@ -94,9 +94,7 @@ function SMTPClient(port, host, connect_timeout, idle_timeout) {
                 client.emit('xclient', 'EHLO');
                 break;
             case 'starttls':
-                if (tls_key && tls_cert) {
-                    this.upgrade({key: tls_key, cert: tls_cert});
-                }
+                this.upgrade(this.tls_options);
                 break;
             case 'greeting':
                 client.connected = true;
@@ -126,6 +124,7 @@ function SMTPClient(port, host, connect_timeout, idle_timeout) {
     this.socket.on('connect', function () {
         // Remove connection timeout and set idle timeout
         client.socket.setTimeout(((idle_timeout) ? idle_timeout : 300) * 1000);
+        client.remote_ip = ipaddr.process(client.socket.remoteAddress).toString();
     });
 
     var closed = function (msg) {
@@ -157,6 +156,30 @@ function SMTPClient(port, host, connect_timeout, idle_timeout) {
 }
 
 util.inherits(SMTPClient, events.EventEmitter);
+
+SMTPClient.prototype.load_tls_config = function (plugin) {
+    var key = config.get('tls_key.pem', 'binary');
+    var cert = config.get('tls_cert.pem', 'binary');
+    var tls_options = (key && cert) ? { key: key, cert: cert } : {};
+    this.tls_config = tls_socket.load_tls_ini();
+    var config_options = ['ciphers','requestCert','rejectUnauthorized'];
+
+    for (var i = 0; i < config_options.length; i++) {
+        var opt = config_options[i];
+        if (this.tls_config.main[opt] === undefined) { continue; }
+        tls_options[opt] = this.tls_config.main[opt];
+    }
+
+    if (this.tls_config[plugin.name]) {
+        for (var i = 0; i < config_options.length; i++) {
+            var opt = config_options[i];
+            if (this.tls_config[plugin.name][opt] === undefined) { continue; }
+            tls_options[opt] = this.tls_config[plugin.name][opt];
+        }
+    }
+
+    this.tls_options = tls_options;
+}
 
 SMTPClient.prototype.send_command = function (command, data) {
     var line = (command === 'dot') ? '.' : command + (data ? (' ' + data) : '');
@@ -292,8 +315,8 @@ exports.get_client = function (server, callback, port, host, connect_timeout, po
 // Get a smtp_client for the given attributes and set up the common
 // config and listeners for plugins. This is what smtp_proxy and
 // smtp_forward have in common.
-exports.get_client_plugin = function (plugin, connection, config, callback) {
-    var c = config;
+exports.get_client_plugin = function (plugin, connection, c, callback) {
+    // c = config
     // Merge in authentication settings from smtp_forward/proxy.ini if present
     // FIXME: config.auth could be changed when API isn't frozen
     if (c.auth_type || c.auth_user || c.auth_pass) {
@@ -309,6 +332,8 @@ exports.get_client_plugin = function (plugin, connection, config, callback) {
         connection.logdebug(plugin, 'Got smtp_client: ' + smtp_client.uuid);
 
         var secured = false;
+
+        smtp_client.load_tls_config(plugin);
 
         smtp_client.call_next = function (retval, msg) {
             if (this.next) {
@@ -351,20 +376,13 @@ exports.get_client_plugin = function (plugin, connection, config, callback) {
                 }
 
                 if (smtp_client.response[line].match(/^STARTTLS/) && !secured) {
-                    if (c.enable_tls) {
-                        tls_key = plugin.config.get('tls_key.pem', 'binary');
-                        tls_cert = plugin.config.get('tls_cert.pem', 'binary');
-                        if (!tls_key) {
-                            logger.logerror('skipping TLS, tls_key.pem does not exist');
-                        }
-                        else if (!tls_cert) {
-                            logger.logerror('skipping TLS, tls_cert.pem does not exist');
-                        }
-                        else {
-                            smtp_client.socket.on('secure', on_secured);
-                            smtp_client.send_command('STARTTLS');
-                            return;
-                        }
+                    if (!(c.host in smtp_client.tls_config.no_tls_hosts) &&
+                        !(smtp_client.remote_ip in smtp_client.tls_config.no_tls_hosts) &&
+                        c.enable_tls)
+                    {
+                        smtp_client.socket.on('secure', on_secured);
+                        smtp_client.send_command('STARTTLS');
+                        return;
                     }
                 }
 

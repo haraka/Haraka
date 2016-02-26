@@ -1,8 +1,9 @@
 'use strict';
 
-var stub      = require('./fixtures/stub');
 var Plugin    = require('./fixtures/stub_plugin');
 var config    = require('../config');
+var plugin    = require('../plugins');
+var path      = require('path');
 
 var cb = function () { return false; };
 var opts = { booleans: ['arg1'] };
@@ -167,7 +168,11 @@ exports.get = {
             whitespace: { str_no_trail: 'true', str_trail: 'true' },
             funnychars: { 'results.auth/auth_base.fail': 'fun' },
             empty_values: { first: undefined, second: undefined },
-            has_ipv6: { '2605:ae00:329::2': undefined }
+            has_ipv6: { '2605:ae00:329::2': undefined },
+            array_test: {
+                hostlist: [ 'first_host', 'second_host', 'third_host' ],
+                intlist: [ '123', '456', '789' ],
+            }
         });
     },
 
@@ -230,3 +235,23 @@ exports.get = {
         test.done();
     },
 };
+
+exports.plugin_get_merge = {
+    'INSTALLED node_modules package plugin: (test-plugin)': function (test) {
+        process.env.HARAKA = path.resolve(__dirname, '..', 'tests', 'installation');
+
+        var p = new plugin.Plugin('test-plugin');
+
+        test.expect(2);
+        var flat_config = p.config.get('test-plugin-flat');
+        test.equal(flat_config, 'flatisloaded');
+        var ini_config = p.config.get('test-plugin.ini', 'ini');
+        test.deepEqual(ini_config, {
+            main: { main1: 'foo', main2: 'blah' },
+            sub1: { sub1: 'foo', sub2: 'blah' },
+            sub2: { sub1: 'foo', sub2: 'foo' },
+            sub3: { new: 'foo' }
+        });
+        test.done();
+    },
+}

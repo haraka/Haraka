@@ -63,10 +63,10 @@ function P0FClient(path) {
 }
 
 P0FClient.prototype.decode_response = function (data) {
-    var decode_string = function (data, start, end) {
+    var decode_string = function (data2, start, end) {
         var str = '';
         for (var a=start; a<end; a++) {
-            var b = data.readUInt8(a);
+            var b = data2.readUInt8(a);
             if (b === 0x0) break;
             str = str + String.fromCharCode(b);
         }

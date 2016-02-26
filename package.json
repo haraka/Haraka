@@ -3,7 +3,7 @@
   "name": "Haraka",
   "license": "MIT",
   "description": "An SMTP Server project.",
-  "keywords": ["haraka", "smtp", "server", "email"],
+  "keywords": [ "haraka", "smtp", "server", "email" ],
   "version": "2.7.3",
   "homepage": "http://haraka.github.io",
   "repository": {
@@ -15,7 +15,8 @@
     "node": ">= v0.10.41"
   },
   "dependencies": {
-    "address-rfc2822"       : "~0.0.2",
+    "address-rfc2821"       : "*",
+    "address-rfc2822"       : "*",
     "async"                 : "~1.5.2",
     "daemon"                : "~1.1.0",
     "generic-pool"          : "~2.3.1",
@@ -26,6 +27,8 @@
     "npid"                  : "~0.4.0",
     "semver"                : "~5.0.3",
     "sprintf-js"            : "~1.0.3",
+    "haraka-tld"            : "*",
+    "haraka-constants"      : "*",
     "exit"                  : "~0.1.2"
   },
   "optionalDependencies": {
@@ -40,7 +43,7 @@
   },
   "devDependencies": {
     "nodeunit"              : "https://github.com/godsflaw/nodeunit/archive/master.tar.gz",
-    "eslint"                : "*",
+    "eslint"                : ">=2.0.0",
     "grunt"                 : "*",
     "grunt-contrib-clean"   : "*",
     "grunt-contrib-jshint"  : "*",

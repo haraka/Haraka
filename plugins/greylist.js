@@ -4,15 +4,14 @@ var version = '0.1.3';
 
 var util = require('util');
 var redis = require('redis');
-var async = require('async');
+var tlds  = require('haraka-tld');
 var isIPv6 = require('net').isIPv6;
 
 var ipaddr = require('ipaddr.js');
 
 var DSN = require('./dsn');
 var net_utils = require('./net_utils');
-var utils = require('./utils');
-var Address = require('./address').Address;
+var Address = require('address-rfc2821').Address;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 exports.register = function (next) {
@@ -105,9 +104,11 @@ exports.redis_onInit = function (next, server) {
     if (plugin.redis)
         return next();
 
+    /*
     var r_opts = {
-        //connect_timeout: 1000
+        connect_timeout: 1000
     };
+    */
 
     var next_called;
 
@@ -177,18 +178,19 @@ exports.hook_mail = function (next, connection, params) {
 //
 exports.hook_rcpt_ok = function (next, connection, rcpt) {
     var plugin = this;
-    var ctr = connection.transaction.results;
-    var mail_from = connection.transaction.mail_from;
 
-    if (plugin.should_skip_check(connection))
-        return next();
+    if (plugin.should_skip_check(connection)) return next();
 
     if (plugin.was_whitelisted_in_session(connection)) {
         plugin.logdebug(connection, 'host already whitelisted in this session');
         return next();
     }
 
-    if (plugin.addr_in_list('rcpt', rcpt.address().toLowerCase())) { // check rcpt in whitelist (email & domain)
+    var ctr = connection.transaction.results;
+    var mail_from = connection.transaction.mail_from;
+
+    // check rcpt in whitelist (email & domain)
+    if (plugin.addr_in_list('rcpt', rcpt.address().toLowerCase())) {
         plugin.loginfo(connection, 'RCPT was whitelisted via config');
         ctr.add(plugin, {
             skip : 'config-whitelist(recipient)'
@@ -217,9 +219,9 @@ exports.hook_rcpt_ok = function (next, connection, rcpt) {
         }
         else {
 
-            return plugin.process_tuple(connection, mail_from.address(), rcpt.address(), function (err, white_promo_rec) {
-                if (err) {
-                    if (err instanceof Error && err.notanerror) {
+            return plugin.process_tuple(connection, mail_from.address(), rcpt.address(), function (err2, white_promo_rec) {
+                if (err2) {
+                    if (err2 instanceof Error && err2.notanerror) {
                         plugin.logdebug(connection, 'host in GREY zone');
 
                         ctr.add(plugin, {
@@ -227,7 +229,7 @@ exports.hook_rcpt_ok = function (next, connection, rcpt) {
                         });
                         ctr.push(plugin, {
                             stats : {
-                                rcpt : err.record
+                                rcpt : err2.record
                             },
                             stage : 'rcpt'
                         });
@@ -235,7 +237,7 @@ exports.hook_rcpt_ok = function (next, connection, rcpt) {
                         return plugin.invoke_outcome_cb(next, false);
                     }
 
-                    throw err;
+                    throw err2;
                 }
 
                 if (!white_promo_rec) {
@@ -288,11 +290,11 @@ exports.process_tuple = function (connection, sender, rcpt, cb) {
             return plugin.promote_to_white(connection, record, cb);
         }
 
-        return plugin.update_grey(key, !record, function (err, created_record) {
-            var err = new Error('in black zone');
-            err.record = created_record || record;
-            err.notanerror = true;
-            return cb(err, null);
+        return plugin.update_grey(key, !record, function (err2, created_record) {
+            var err2 = new Error('in black zone');
+            err2.record = created_record || record;
+            err2.notanerror = true;
+            return cb(err2, null);
         });
     });
 };
@@ -464,7 +466,7 @@ exports.craft_hostid = function (connection) {
         return chsit(null, 'invalid org domain in rDNS');
 
     // strip first label up until the tld boundary.
-    var decoupled = net_utils.split_hostname(rdns, 3);
+    var decoupled = tlds.split_hostname(rdns, 3);
     var vardom = decoupled[0]; // "variable" portion of domain
     var dom = decoupled[1]; // "static" portion of domain
 
@@ -574,9 +576,9 @@ exports.promote_to_white = function (connection, grey_rec, cb) {
             err.what = 'db_error';
             throw err;
         }
-        plugin.redis.expire(white_key, white_ttl, function (err, result) {
-            plugin.lognotice("DB error: " + util.inspect(err));
-            return cb(err, result);
+        plugin.redis.expire(white_key, white_ttl, function (err2, result2) {
+            plugin.lognotice("DB error: " + util.inspect(err2));
+            return cb(err2, result2);
         });
     });
 };
@@ -595,13 +597,13 @@ exports.update_white_record = function (key, record, cb) {
     });
     multi.expire(key, record.lifetime);
 
-    return multi.exec(function (err, record) {
-        if (err) {
-            plugin.lognotice("DB error: " + util.inspect(err));
-            err.what = 'db_error';
-            throw err;
+    return multi.exec(function (err2, record2) {
+        if (err2) {
+            plugin.lognotice("DB error: " + util.inspect(err2));
+            err2.what = 'db_error';
+            throw err2;
         }
-        return cb(null, record);
+        return cb(null, record2);
     });
 };
 

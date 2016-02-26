@@ -1,12 +1,9 @@
 // attachment
 
 var fs     = require('fs');
-var spawn  = require('child_process').spawn;
 var exec   = require('child_process').exec;
 var path   = require('path');
 var crypto = require('crypto');
-
-var utils = require('./utils');
 
 var tmp;
 var archives_disabled = false;
@@ -77,12 +74,12 @@ exports.unarchive_recursive = function(connection, f, archive_file_name, cb) {
     var done_cb = false;
     var timer;
 
-    function do_cb(err, files) {
+    function do_cb(err, files2) {
         if (timer) clearTimeout(timer);
         if (done_cb) return;
         done_cb = true;
         deleteTempFiles();
-        return cb(err, files);
+        return cb(err, files2);
     }
 
     function deleteTempFiles() {
@@ -106,7 +103,7 @@ exports.unarchive_recursive = function(connection, f, archive_file_name, cb) {
         }
         count++;
         var cmd = 'LANG=C bsdtar -tf ' + in_file;
-        var bsdtar = exec(cmd, { timeout: plugin.cfg.timeout },  function (err, stdout, stderr) {
+        exec(cmd, { timeout: plugin.cfg.timeout },  function (err, stdout, stderr) {
             count--;
             if (err) {
                 if (err.code === 127) {
@@ -121,9 +118,9 @@ exports.unarchive_recursive = function(connection, f, archive_file_name, cb) {
                 }
                 return do_cb(err);
             }
-            var f = stdout.split(/\r?\n/);
-            for (var i=0; i<f.length; i++) {
-                var file = f[i];
+            var f2 = stdout.split(/\r?\n/);
+            for (var i=0; i<f2.length; i++) {
+                var file = f2[i];
                 // Skip any blank lines
                 if (!file) continue;
                 connection.logdebug(self, 'file: ' + file + ' depth=' + depth);
@@ -135,25 +132,25 @@ exports.unarchive_recursive = function(connection, f, archive_file_name, cb) {
                     connection.logdebug(self, 'need to extract file: ' + file);
                     count++;
                     depth++;
-                    (function (file, depth) {
-                        tmp.file(function (err, tmpfile, fd) {
+                    (function (file2, depth2) {
+                        tmp.file(function (err2, tmpfile, fd) {
                             count--;
-                            if (err) return do_cb(err.message);
-                            connection.logdebug(self, 'created tmp file: ' + tmpfile + '(fd=' + fd + ') for file ' + (prefix ? prefix + '/' : '') + file);
+                            if (err2) return do_cb(err2.message);
+                            connection.logdebug(self, 'created tmp file: ' + tmpfile + '(fd=' + fd + ') for file ' + (prefix ? prefix + '/' : '') + file2);
                             // Extract this file from the archive
-                            var cmd = 'LANG=C bsdtar -Oxf ' + in_file + ' --include="' + file + '" > ' + tmpfile;
+                            var cmd2 = 'LANG=C bsdtar -Oxf ' + in_file + ' --include="' + file2 + '" > ' + tmpfile;
                             tmpfiles.push([fd, tmpfile]);
-                            connection.logdebug(self, 'running command: ' + cmd);
+                            connection.logdebug(self, 'running command: ' + cmd2);
                             count++;
-                            exec(cmd, { timeout: plugin.cfg.timeout }, function (error, stdout, stderr) {
+                            exec(cmd2, { timeout: plugin.cfg.timeout }, function (error, stdout2, stderr2) {
                                 count--;
                                 if (error) {
-                                    connection.logdebug(self, 'error: return code ' + error.code + ': ' + stderr.toString('utf-8'));
-                                    return do_cb(new Error(stderr.toString('utf-8').replace(/\r?\n/g,' ')));
+                                    connection.logdebug(self, 'error: return code ' + error.code + ': ' + stderr2.toString('utf-8'));
+                                    return do_cb(new Error(stderr2.toString('utf-8').replace(/\r?\n/g,' ')));
                                 }
                                 else {
                                     // Recurse
-                                    return listFiles(tmpfile, (prefix ? prefix + '/' : '') + file, depth);
+                                    return listFiles(tmpfile, (prefix ? prefix + '/' : '') + file2, depth2);
                                 }
                             });
                         });
@@ -261,15 +258,15 @@ exports.start_attachment = function (connection, ctype, filename, body, stream) 
                 });
                 ws.on('close', function() {
                     connection.logdebug(plugin, 'end of stream reached');
-                    plugin.unarchive_recursive(connection, fn, filename, function (err, files) {
+                    plugin.unarchive_recursive(connection, fn, filename, function (err2, files) {
                         txn.notes.attachment_count--;
                         cleanup();
-                        if (err) {
-                            connection.logerror(plugin, err.message);
-                            if (err.message === 'maximum archive depth exceeded') {
+                        if (err2) {
+                            connection.logerror(plugin, err2.message);
+                            if (err2.message === 'maximum archive depth exceeded') {
                                 txn.notes.attachment_result = [ DENY, 'Message contains nested archives exceeding the maximum depth' ];
                             }
-                            else if (/Encrypted file is unsupported/i.test(err.message)) {
+                            else if (/Encrypted file is unsupported/i.test(err2.message)) {
                                 txn.notes.attachment_result = [ DENY, 'Message contains encrypted archive' ];
                             }
                             else {
@@ -308,7 +305,6 @@ exports.hook_data = function (next, connection) {
 };
 
 exports.check_attachments = function (next, connection) {
-    var plugin = this;
     var txn = connection.transaction;
     var ctype_config = this.config.get('attachment.ctype.regex','list');
     var file_config = this.config.get('attachment.filename.regex','list');

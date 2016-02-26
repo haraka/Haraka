@@ -1,11 +1,12 @@
 'use strict';
 // Log class
 
+var constants = require('haraka-constants');
+
 var config    = require('./config');
 var plugins;
 var connection;
 var outbound;
-var constants = require('./constants');
 var util      = require('util');
 var tty       = require('tty');
 
@@ -24,8 +25,8 @@ logger.levels = {
     EMERG:    0,
 };
 
-for (var level in logger.levels) {
-    logger['LOG' + level] = logger.levels[level];
+for (var le in logger.levels) {
+    logger['LOG' + le] = logger.levels[le];
 }
 
 logger.loglevel     = logger.LOGWARN;
@@ -52,10 +53,6 @@ logger.colorize = function (color, str) {
     return '\u001b[' + util.inspect.colors[color][0] + 'm' + str +
            '\u001b[' + util.inspect.colors[color][1] + 'm';
 };
-
-var loglevel = logger.LOGWARN;
-
-var deferred_logs = [];
 
 logger.dump_logs = function () {
     while (logger.deferred_logs.length > 0) {

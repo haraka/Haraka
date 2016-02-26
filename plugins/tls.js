@@ -1,7 +1,7 @@
 // TLS is built into Haraka. Enabling this plugin advertises STARTTLS.
 // see 'haraka -h tls' for help
 
-var utils = require('./utils');
+var tls_socket = require('./tls_socket');
 
 // To create a key:
 // openssl req -x509 -nodes -days 2190 -newkey rsa:2048 \
@@ -40,19 +40,9 @@ exports.load_pem = function (file) {
 
 exports.load_tls_ini = function () {
     var plugin = this;
-    plugin.cfg = plugin.config.get('tls.ini', {
-        booleans: [
-            '+main.requestCert',
-            '-main.rejectUnauthorized',
-            '-redis.disable_for_failed_hosts',
-        ]
-    }, function () {
+    plugin.cfg = tls_socket.load_tls_ini(function () {
         plugin.load_tls_ini();
     });
-
-    if (!plugin.cfg.no_tls_hosts) {
-        plugin.cfg.no_tls_hosts = {};
-    }
 
     var config_options = ['ciphers','requestCert','rejectUnauthorized'];
 
@@ -60,6 +50,14 @@ exports.load_tls_ini = function () {
         var opt = config_options[i];
         if (plugin.cfg.main[opt] === undefined) { continue; }
         plugin.tls_opts[opt] = plugin.cfg.main[opt];
+    }
+
+    if (plugin.cfg.inbound) {
+        for (var i = 0; i < config_options.length; i++) {
+            var opt = config_options[i];
+            if (plugin.cfg.inbound[opt] === undefined) { continue; }
+            plugin.tls_opts[opt] = plugin.cfg.inbound[opt];
+        }
     }
 };
 

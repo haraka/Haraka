@@ -6,14 +6,6 @@ var Plugin           = require('../fixtures/stub_plugin');
 var config           = require('../../config');
 var ResultStore      = require("../../result_store");
 
-try {
-    var redis = require('redis');
-}
-catch (e) {
-    console.log(e + "\nunable to load redis, skipping tests");
-    return;
-}
-
 var _set_up = function (done) {
 
     this.plugin = new Plugin('karma');

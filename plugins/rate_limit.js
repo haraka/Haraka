@@ -160,8 +160,8 @@ exports.rate_limit = function (connection, key, value, cb) {
 
         connection.logdebug(self, 'key=' + key + ' current value=' + (val || 'NEW' ));
 
-        var check_limits = function(err, result){
-            if (err) return cb(err);
+        var check_limits = function(err2, result){
+            if (err2) return cb(err2);
 
             if (parseInt(val) + 1 > parseInt(limit)) {
                 // Limit breached
@@ -260,9 +260,9 @@ exports.hook_connect = function (next, connection) {
             return next();
         }
         // Check rate limit
-        self.rate_limit(connection, 'rate_conn:' + key, value, function (err, over) {
-            if (err) {
-                connection.logerror(self, err);
+        self.rate_limit(connection, 'rate_conn:' + key, value, function (err2, over) {
+            if (err2) {
+                connection.logerror(self, err2);
                 return next();
             }
             if (over) {
@@ -275,13 +275,13 @@ exports.hook_connect = function (next, connection) {
             }
             // See if we need to tarpit rate_rcpt_host
             if (config.main.tarpit_delay) {
-                self.lookup_host_key('rate_rcpt_host', [connection.remote_ip, connection.remote_host], function (err, key, value) {
-                    if (!err && key && value) {
-                        var match = /^(\d+)/.exec(value);
+                self.lookup_host_key('rate_rcpt_host', [connection.remote_ip, connection.remote_host], function (err3, key2, value2) {
+                    if (!err3 && key2 && value2) {
+                        var match = /^(\d+)/.exec(value2);
                         var limit = match[0];
-                        client.get('rate_rcpt_host:' + key, function (err, result) {
-                            if (!err && result && limit) {
-                                connection.logdebug(self, 'rate_rcpt_host:' + key + ' value ' + result + ' exceeds limit ' + limit);
+                        client.get('rate_rcpt_host:' + key2, function (err4, result) {
+                            if (!err4 && result && limit) {
+                                connection.logdebug(self, 'rate_rcpt_host:' + key2 + ' value2 ' + result + ' exceeds limit ' + limit);
                                 if (result > limit) {
                                     connection.notes.tarpit = config.main.tarpit_delay;
                                 }
@@ -355,9 +355,9 @@ exports.hook_rcpt = function (next, connection, params) {
                 connection.logerror(self, err);
                 return chain_caller();
             }
-            self.rate_limit(connection, next_in_chain.name + ':' + key, value, function (err, over) {
-                if (err) {
-                    connection.logerror(self, err);
+            self.rate_limit(connection, next_in_chain.name + ':' + key, value, function (err2, over) {
+                if (err2) {
+                    connection.logerror(self, err2);
                     return chain_caller();
                 }
                 if (over) {

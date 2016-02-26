@@ -71,3 +71,13 @@ Whether Haraka should request a certificate from a connecting client.
 Reject connections from clients without a CA validated TLS certificate.
 
     `rejectUnauthorized=[true|false]`  (default: false)
+
+## Inbound Specific Configuration
+
+By default the above options are shared with outbound mail (either
+using `smtp_forward`, `smtp_proxy` or plain outbound mail heading to
+an external destination). To make these options specific to inbound
+mail, put them under an `[inbound]` parameter group. Outbound options
+can go under an `[outbound]` parameter group, and plugins that use
+SMTP tls for queueing such as `smtp_proxy` and `smtp_forward` can
+use that plugin name for plugin specific options.

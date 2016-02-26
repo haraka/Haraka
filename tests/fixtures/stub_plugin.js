@@ -4,12 +4,13 @@ var fs         = require('fs');
 var path       = require('path');
 var vm         = require('vm');
 
+var constants  = require('haraka-constants');
+
 var stub       = require('./stub');
 var vm_harness = require('./vm_harness');
-var constants  = require('../../constants');
 var logger     = require('../../logger');
 
-function Plugin(name) {
+function Plugin (name) {
     if (false === (this instanceof Plugin)) {
         return new Plugin(name);
     }
@@ -25,7 +26,7 @@ function Plugin(name) {
     return this.load_plugin(name);
 }
 
-Plugin.prototype.load_plugin = function(name) {
+Plugin.prototype.load_plugin = function (name) {
     var rf;
     var full_path = __dirname + "/../../plugins/" + name + ".js";
 

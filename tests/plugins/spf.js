@@ -4,7 +4,7 @@ var Connection   = require('../fixtures/stub_connection');
 var Plugin       = require('../fixtures/stub_plugin');
 var SPF          = require('../../spf').SPF;
 var config       = require('../../config');
-var Address      = require('../../address').Address;
+var Address      = require('address-rfc2821').Address;
 
 var spf = new SPF();
 

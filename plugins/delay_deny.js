@@ -14,7 +14,7 @@ exports.hook_deny = function (next, connection, params) {
 
     var pi_name     = params[2];
     var pi_function = params[3];
-    var pi_params   = params[4];
+    // var pi_params   = params[4];
     var pi_hook     = params[5];
 
     var plugin = this;

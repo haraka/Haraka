@@ -8,7 +8,6 @@ exports.register = function () {
 };
 
 exports.hook_capabilities = function (next, connection) {
-    var config = this.config.get('auth_proxy.ini');
     if (connection.using_tls) {
         var methods = [ 'PLAIN', 'LOGIN' ];
         connection.capabilities.push('AUTH ' + methods.join(' '));

@@ -1,7 +1,6 @@
 // log our denys
 /* jshint multistr: true */
 
-var http  = require('http');
 var urlp  = require('url');
 var utils = require('./utils');
 
@@ -78,9 +77,9 @@ exports.deny = function (next, connection, params) {
             plugin.logerror("Insert DENY failed: " + err);
             return next();
         }
-        insert.run(function (err, rows) {
-            if (err) {
-                plugin.logerror("Insert failed: " + err);
+        insert.run(function (err2, rows) {
+            if (err2) {
+                plugin.logerror("Insert failed: " + err2);
             }
             try { insert.reset(); }
             catch (e) {}
@@ -96,9 +95,9 @@ exports.queue_ok = function (next, connection, params) {
             plugin.logerror("Insert DENY failed: " + err);
             return next();
         }
-        insert.run(function (err, rows) {
-            if (err) {
-                plugin.logerror("Insert failed: " + err);
+        insert.run(function (err2, rows) {
+            if (err2) {
+                plugin.logerror("Insert failed: " + err2);
             }
             try { insert.reset(); }
             catch (ignore) {}

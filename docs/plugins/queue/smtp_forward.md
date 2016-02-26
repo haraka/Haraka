@@ -48,7 +48,8 @@ Configuration
 
   * enable\_tls=[true]
 
-    Enable TLS with the forward host (if supported)
+    Enable TLS with the forward host (if supported). TLS uses options
+    from the tls plugin.
 
   * auth\_type=[plain|login]
 

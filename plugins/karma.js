@@ -1,8 +1,6 @@
 'use strict';
 // karma - reward good and penalize bad mail senders
 
-var redis  = require('redis');
-
 var utils  = require('./utils');
 
 var phase_prefixes = utils.to_object(
@@ -490,8 +488,8 @@ exports.history_from_redis = function (next, connection) {
         plugin.db.multi()
             .hincrby(dbkey, 'connections', 1)  // increment total conn
             .expire(dbkey, expire)             // extend expiration
-            .exec(function (err, replies) {
-                if (err) connection.results.add(plugin, {err: err});
+            .exec(function (err2, replies) {
+                if (err2) connection.results.add(plugin, {err: err2});
             });
 
         // Careful: don't become self-fulfilling prophecy.
@@ -632,7 +630,6 @@ exports.get_award_loc_from_note = function (connection, award) {
 };
 
 exports.get_award_loc_from_results = function (connection, loc_bits) {
-    var plugin = this;
 
     var pi_name = loc_bits[1];
     var notekey = loc_bits[2];
@@ -669,7 +666,6 @@ exports.get_award_location = function (connection, award_key) {
         return connection[bits[0]];
     }
 
-    var obj;
     if (loc_bits[0] === 'notes') {        // ex: notes.spf_mail_helo
         return plugin.get_award_loc_from_note(connection, bits[0]);
     }
@@ -780,7 +776,7 @@ exports.check_awards = function (connection) {
                 }
                 break;
             case 'in':              // if in pass whitelisted
-                var list = bits[3];
+                // var list = bits[3];
                 if (bits[4]) { wants = bits[4]; }
                 if (!Array.isArray(note)) { continue; }
                 if (!wants) { continue; }

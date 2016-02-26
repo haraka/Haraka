@@ -77,7 +77,6 @@ exports.hook_lookup_rdns = function (next, connection) {
     var called_next  = 0;
     var timeout_id   = 0;
     var config       = this.config.get('lookup_rdns.strict.ini');
-    var rdns         = '';
     var fwd_nxdomain = config.forward && (config.forward.nxdomain    || '');
     var fwd_dnserror = config.forward && (config.forward.dnserror    || '');
     var rev_nxdomain = config.reverse && (config.reverse.nxdomain    || '');
@@ -134,30 +133,30 @@ exports.hook_lookup_rdns = function (next, connection) {
         // PTR record for a domain, however, DNS protocol does not
         // restrict one from having multiple PTR records for the same
         // address.  So here we are, dealing with that case.
-        domains.forEach(function (rdns) {
-            net_utils.get_ips_by_host(rdns, function (err, addresses) {
+        domains.forEach(function (rdns2) {
+            net_utils.get_ips_by_host(rdns2, function (err2, addresses) {
                 total_checks--;
 
-                if (err && err.length) {
+                if (err2 && err2.length) {
                     if (!called_next && !total_checks) {
                         connection.auth_results("iprev=fail");
-                        _dns_error(connection, call_next, err[0], rdns, plugin,
+                        _dns_error(connection, call_next, err2[0], rdns2, plugin,
                             fwd_nxdomain, fwd_dnserror);
                     }
                     return;
                 }
-                for (var i = 0; i < addresses.length ; i++) {
-                    if (addresses[i] === connection.remote_ip) {
+                for (var j = 0; j < addresses.length ; j++) {
+                    if (addresses[j] === connection.remote_ip) {
                         // We found a match, call next() and return
                         if (!called_next) {
                             connection.auth_results("iprev=pass");
-                            return call_next(OK, rdns);
+                            return call_next(OK, rdns2);
                         }
                     }
                 }
 
                 if (!called_next && !total_checks) {
-                    call_next(DENYDISCONNECT, rdns + ' [' +
+                    call_next(DENYDISCONNECT, rdns2 + ' [' +
                         connection.remote_ip + '] ' + nomatch);
                 }
             });
