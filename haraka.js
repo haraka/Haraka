@@ -54,11 +54,11 @@ process.on('SIGHUP', function () {
     server.flushQueue();
 });
 
-process.on('exit', function() {
+process.on('exit', function(code) {
     process.title = path.basename(process.argv[1], '.js');
     logger.lognotice('Shutting down');
     logger.dump_logs();
-    exit(0);
+    exit(code);
 });
 
 logger.log("NOTICE", "Starting up Haraka version " + exports.version);
