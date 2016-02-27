@@ -228,6 +228,15 @@ function insert_banner (ct, enc, buf, banners) {
     return new_buf;
 }
 
+Body.prototype._empty_filter = function (ct, enc) {
+    var new_buf = new Buffer('');
+    this.filters.forEach(function (filter) {
+        new_buf = filter(ct, enc, new_buf) || new_buf;
+    });
+
+    return new_buf.toString("binary");
+}
+
 Body.prototype.parse_end = function (line) {
     if (!line) {
         line = '';
@@ -243,11 +252,6 @@ Body.prototype.parse_end = function (line) {
         this.attachment_stream.emit_end();
     }
 
-    // ignore these lines - but we could store somewhere I guess.
-    if (!this.body_text_encoded.length) return line; // nothing to decode
-    if (this.bodytext.length !== 0) return line;     // already decoded?
-
-    var buf = this.decode_function(this.body_text_encoded);
     var ct  = this.header.get_decoded('content-type') || 'text/plain';
     var enc = 'UTF-8';
     var pre_enc = '';
@@ -259,6 +263,12 @@ Body.prototype.parse_end = function (line) {
         }
     }
     this.body_encoding = enc;
+
+    // ignore these lines - but we could store somewhere I guess.
+    if (!this.body_text_encoded.length) return this._empty_filter(ct, enc); // nothing to decode
+    if (this.bodytext.length !== 0) return line;     // already decoded?
+
+    var buf = this.decode_function(this.body_text_encoded);
 
     if (this.filters.length) {
         // up until this point we've returned '' for line, so now we run
