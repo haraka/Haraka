@@ -1,15 +1,14 @@
 'use strict';
 
-var Plugin           = require('../fixtures/stub_plugin');
-var Connection       = require('../fixtures/stub_connection');
-var Address          = require('address-rfc2821').Address;
-var ResultStore      = require('../../result_store');
-var config           = require('../../config');
+var Address      = require('address-rfc2821').Address;
+var fixtures     = require('haraka-test-fixtures');
+
+var Connection   = fixtures.connection;
+var ResultStore  = fixtures.result_store;
 
 var _set_up = function (done) {
 
-    this.plugin = new Plugin('rcpt_to.host_list_base');
-    this.plugin.config = config;
+    this.plugin = new fixtures.plugin('rcpt_to.host_list_base');
     this.plugin.cfg = {};
     this.plugin.host_list = {};
 

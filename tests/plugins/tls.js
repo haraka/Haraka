@@ -1,21 +1,15 @@
 'use strict';
 
 var fs           = require('fs');
-var Plugin       = require('../fixtures/stub_plugin');
-var Connection   = require('../fixtures/stub_connection');
-var config       = require('../../config');
-var ResultStore  = require('../../result_store');
+
+var fixtures     = require('haraka-test-fixtures');
+
+var Connection   = fixtures.connection;
+var Plugin       = fixtures.plugin;
 
 var _set_up = function (done) {
-
     this.plugin = new Plugin('tls');
-    this.plugin.config = config;
-
     this.connection = Connection.createConnection();
-    this.connection.transaction = {
-        results: new ResultStore(this.connection),
-    };
-
     done();
 };
 
@@ -42,7 +36,6 @@ exports.plugin = {
 exports.load_tls_ini = {
     setUp: function(done) {
         this.plugin = new Plugin('tls');
-        this.plugin.config = config;
         this.plugin.tls_opts = {};
         done();
     },
@@ -60,7 +53,6 @@ exports.load_tls_ini = {
 exports.register = {
     setUp : function(done) {
         this.plugin = new Plugin('tls');
-        this.plugin.config = config;
 
         // overload load_pem to get files from tests/config
         this.plugin.load_pem = function (file) {
@@ -82,7 +74,6 @@ exports.register = {
 exports.dont_register = {
     setUp : function(done) {
         this.plugin = new Plugin('tls');
-        this.plugin.config = config;
 
         // overload load_pem to get files from tests/config
         this.plugin.load_pem = function (file) {

@@ -1,18 +1,22 @@
 'use strict';
-// SMTP client object and class. This allows for every part of the client
+// SMTP client object and class. This allows every part of the client
 // protocol to be hooked for different levels of control, such as
 // smtp_forward and smtp_proxy queue plugins.
 
-var events = require('events');
-var util = require('util');
+// node.js builtins
+var events       = require('events');
+var util         = require('util');
+
+// npm deps
 var generic_pool = require('generic-pool');
+var ipaddr       = require('ipaddr.js');
+
+// haraka libs
 var line_socket = require('./line_socket');
-var logger = require('./logger');
-var uuid = require('./utils').uuid;
-var utils = require('./utils');
-var config = require('./config');
-var tls_socket = require('./tls_socket');
-var ipaddr      = require('ipaddr.js');
+var logger      = require('./logger');
+var utils       = require('./utils');
+var config      = require('./config');
+var tls_socket  = require('./tls_socket');
 
 var smtp_regexp = /^([0-9]{3})([ -])(.*)/;
 var STATE = {
@@ -22,9 +26,9 @@ var STATE = {
     DESTROYED: 4,
 };
 
-function SMTPClient(port, host, connect_timeout, idle_timeout) {
+function SMTPClient (port, host, connect_timeout, idle_timeout) {
     events.EventEmitter.call(this);
-    this.uuid = uuid();
+    this.uuid = utils.uuid();
     this.connect_timeout = parseInt(connect_timeout) || 30;
     this.socket = line_socket.connect(port, host);
     this.socket.setTimeout(this.connect_timeout * 1000);

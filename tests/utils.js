@@ -1,10 +1,5 @@
-var constants = require('haraka-constants');
 
-var stub      = require('./fixtures/stub');
-var Logger    = require('./fixtures/stub_logger');
-var utils     = require('./../utils');
-
-constants.import(global);
+var utils     = require('../utils');
 
 function _set_up(callback) {
     this.backup = {};

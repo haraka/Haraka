@@ -1,20 +1,17 @@
 'use strict';
 
-var Plugin       = require('../fixtures/stub_plugin');
-var Connection   = require('../fixtures/stub_connection');
-var config       = require('../../config');
+var fixtures     = require('haraka-test-fixtures');
 
-var _set_up = function (callback) {
+var _set_up = function (done) {
 
-    this.plugin = new Plugin('early_talker');
-    this.plugin.config = config;
+    this.plugin = new fixtures.plugin('early_talker');
     this.plugin.cfg = { main: { reject: true } };
 
-    this.connection = Connection.createConnection();
-    callback();
+    this.connection = fixtures.connection.createConnection();
+    done();
 };
 
-function _tear_down(callback) { callback(); }
+function _tear_down(done) { done(); }
 
 exports.early_talker = {
     setUp : _set_up,

@@ -1,14 +1,14 @@
 'use strict';
 
-var Plugin       = require('../../fixtures/stub_plugin');
-var Connection   = require('../../fixtures/stub_connection');
-var config       = require('../../../config');
+var fixtures     = require('haraka-test-fixtures');
+
+var Connection   = fixtures.connection;
+
 var utils        = require('../../../utils');
 
 var _set_up = function (done) {
 
-    this.plugin = new Plugin('auth/auth_base');
-    this.plugin.config = config;
+    this.plugin = new fixtures.plugin('auth/auth_base');
 
     this.plugin.get_plain_passwd = function (user, cb) {
         if (user === 'test') return cb('testpass');

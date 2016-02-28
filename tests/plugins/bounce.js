@@ -1,17 +1,16 @@
 'use strict';
 
 var Address      = require('address-rfc2821');
+var fixtures     = require('haraka-test-fixtures');
 
-var Plugin       = require('../fixtures/stub_plugin');
-var Connection   = require('../fixtures/stub_connection');
-var config       = require('../../config');
-var ResultStore  = require('../../result_store');
+var Connection   = fixtures.connection;
+var ResultStore  = fixtures.result_store;
+
 var Header       = require('../../mailheader').Header;
 
 var _set_up = function (done) {
 
-    this.plugin = new Plugin('bounce');
-    this.plugin.config = config;
+    this.plugin = new fixtures.plugin('bounce');
     this.plugin.cfg = {
         main: { },
         check: {

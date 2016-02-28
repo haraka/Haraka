@@ -1,26 +1,21 @@
 'use strict';
 
-var Plugin           = require('../fixtures/stub_plugin');
-var Connection       = require('../fixtures/stub_connection');
-var config           = require('../../config');
-var ResultStore      = require('../../result_store');
+var path         = require('path');
+
+var fixtures     = require('haraka-test-fixtures');
 
 var _set_up = function (done) {
 
     try {
-        this.plugin = new Plugin('log.elasticsearch');
+        this.plugin = new fixtures.plugin('log.elasticsearch');
     }
     catch (e) {
         console.error('unable to load log.elasticsearch plugin');
         return;
     }
 
-    this.connection = Connection.createConnection();
-    this.connection.results = new ResultStore(this.plugin);
-    this.connection.notes = {};
-
-    this.plugin.config = config;
-    // console.log(this.plugin);
+    this.connection = fixtures.connection.createConnection();
+    this.plugin.config.root_path = path.resolve(__dirname, '../../config');
 
     done();
 };

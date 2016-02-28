@@ -1,17 +1,16 @@
 'use strict';
 
-var stub         = require('../fixtures/stub');
-var Plugin       = require('../fixtures/stub_plugin');
-var Connection   = require('../fixtures/stub_connection');
-var config       = require('../../config');
+var path         = require('path');
+var fixtures     = require('haraka-test-fixtures');
+
+var stub         = fixtures.stub.stub;
 
 var _set_up = function (done) {
 
-    this.plugin = new Plugin('helo.checks');
-    this.plugin.config = config;
+    this.plugin = new fixtures.plugin('helo.checks');
+    this.plugin.config.root_path = path.resolve(__dirname, '../../config');
 
-    this.connection = Connection.createConnection();
-
+    this.connection = fixtures.connection.createConnection();
     this.connection.remote_ip='208.75.199.19';
 
     this.plugin.register();

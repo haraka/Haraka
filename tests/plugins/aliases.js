@@ -1,15 +1,15 @@
 'use strict';
 
-var Address          = require('address-rfc2821').Address;
+var Address      = require('address-rfc2821').Address;
+var fixtures     = require('haraka-test-fixtures');
 
-var stub             = require('../fixtures/stub');
-var Plugin           = require('../fixtures/stub_plugin');
-var Connection       = require('../fixtures/stub_connection');
+var stub         = fixtures.stub.stub;
+var Connection   = fixtures.connection;
 
 var _set_up = function (done) {
 
     // needed for tests
-    this.plugin = new Plugin('aliases');
+    this.plugin = new fixtures.plugin('aliases');
     this.recip  = new Address('<test1@example.com>');
     this.params = [this.recip];
 

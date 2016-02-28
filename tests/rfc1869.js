@@ -1,4 +1,4 @@
-var parse = require("../rfc1869").parse;
+var parse = require('../rfc1869').parse;
 
 function _check(test, line, expected) {
     test.expect(1 + expected.length);

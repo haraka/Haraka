@@ -1,14 +1,12 @@
 'use strict';
 
-var Plugin           = require('../fixtures/stub_plugin');
-var Connection       = require('../fixtures/stub_connection');
+var fixtures     = require('haraka-test-fixtures');
 
 var _set_up = function (done) {
 
-    this.plugin = new Plugin('connect.asn');
-
+    this.plugin = new fixtures.plugin('connect.asn');
     this.plugin.cfg = { main: {} };
-    this.connection = Connection.createConnection();
+    this.connection = fixtures.connection.createConnection();
 
     done();
 };

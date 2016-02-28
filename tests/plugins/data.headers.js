@@ -1,16 +1,16 @@
 'use strict';
 
-var Plugin       = require('../fixtures/stub_plugin');
-var Connection   = require('../fixtures/stub_connection');
 var Address      = require('address-rfc2821');
-var config       = require('../../config');
+var fixtures     = require('haraka-test-fixtures');
+
+var Connection   = fixtures.connection;
+var ResultStore  = fixtures.result_store;
+
 var Header       = require('../../mailheader').Header;
-var ResultStore  = require("../../result_store");
 
 var _set_up = function (done) {
 
-    this.plugin = new Plugin('data.headers');
-    this.plugin.config = config;
+    this.plugin = new fixtures.plugin('data.headers');
 
     this.plugin.register();
 
