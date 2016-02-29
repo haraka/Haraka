@@ -5,7 +5,6 @@ var Stream = require('stream').Stream;
 var indexOfLF = require('./utils').indexOfLF;
 var util = require('util');
 var dns = require('dns');
-var fs = require('fs');
 
 //////////////////////
 // Common functions //
