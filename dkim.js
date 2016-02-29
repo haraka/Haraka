@@ -5,6 +5,7 @@ var Stream = require('stream').Stream;
 var indexOfLF = require('./utils').indexOfLF;
 var util = require('util');
 var dns = require('dns');
+var fs = require('fs');
 
 //////////////////////
 // Common functions //
@@ -128,8 +129,7 @@ function DKIMObject (header, header_idx, cb, timeout) {
     if (this.fields.h) {
         var headers = this.fields.h.split(':');
         for (var h=0; h<headers.length; h++) {
-            var header2 = headers[h].trim().toLowerCase();
-            this.signed_headers.push(header2);
+            this.signed_headers.push(headers[h].trim().toLowerCase());
         }
         if (this.signed_headers.indexOf('from') === -1) {
             return this.result('from field not signed', 'invalid');
@@ -263,20 +263,22 @@ DKIMObject.prototype.end = function () {
         var header = this.signed_headers[h];
         this.debug(this.identity + ': canonicalize header: ' + header);
         if (this.header_idx[header]) {
-            for (var i=0; i<this.header_idx[header].length; i++) {
+            // RFC 6376 section 5.4.2, read headers from bottom to top
+            var this_header = this.header_idx[header].pop();
+            if (this_header) {
                 // Skip this signature if dkim-signature is specified
                 if (header === 'dkim-signature') {
-                    var h_md5 = md5(this.header_idx[header][i]);
+                    var h_md5 = md5(this_header);
                     if (h_md5 === this.sig_md5) {
                         this.debug(this.identity + ': skipped our own DKIM-Signature');
                         continue;
                     }
                 }
                 if (this.headercanon === 'simple') {
-                    this.verifier.update(this.header_idx[header][i]);
+                    this.verifier.update(this_header);
                 }
                 else if (this.headercanon === 'relaxed') {
-                    var hc = this.header_canon_relaxed(this.header_idx[header][i]);
+                    var hc = this.header_canon_relaxed(this_header);
                     this.verifier.update(hc);
                 }
             }
