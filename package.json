@@ -43,6 +43,7 @@
   },
   "devDependencies": {
     "nodeunit"              : "https://github.com/godsflaw/nodeunit/archive/master.tar.gz",
+    "haraka-test-fixtures"  : "*",
     "eslint"                : ">=2.0.0",
     "grunt"                 : "*",
     "grunt-contrib-clean"   : "*",

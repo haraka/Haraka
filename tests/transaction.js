@@ -1,13 +1,13 @@
-var configfile   = require('./../configfile'); // prevent compile errors in transaction.js.
+var logger       = require('../logger'); // prevent compile errors in transaction.js.
 var Transaction  = require('../transaction');
 
-function _set_up(callback) {
+function _set_up(done) {
     this.transaction = Transaction.createTransaction();
-    callback();
+    done();
 }
 
-function _tear_down(callback) {
-    callback();
+function _tear_down(done) {
+    done();
 }
 
 exports.transaction = {

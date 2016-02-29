@@ -1,6 +1,6 @@
 'use strict';
 
-var Plugin    = require('./fixtures/stub_plugin');
+var logger    = require('../logger');
 var config    = require('../config');
 var plugin    = require('../plugins');
 var path      = require('path');

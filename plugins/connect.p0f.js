@@ -1,7 +1,7 @@
 'use strict';
 // p0f v3 client - http://lcamtuf.coredump.cx/p0f3/
 
-var net = require('net');
+var net    = require('net');
 var ipaddr = require('ipaddr.js');
 
 function P0FClient(path) {

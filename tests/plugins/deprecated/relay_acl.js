@@ -1,14 +1,13 @@
 'use strict';
 
-var Connection   = require('../../fixtures/stub_connection');
-var Plugin       = require('../../fixtures/stub_plugin');
-var config       = require('../../../config');
-var ResultStore  = require("../../../result_store");
+var fixtures     = require('haraka-test-fixtures');
+
+var Connection   = fixtures.connection;
+var ResultStore  = fixtures.result_store;
 
 var _set_up = function (done) {
 
-    this.plugin = new Plugin('relay_acl');
-    this.plugin.config = config;
+    this.plugin = new fixtures.plugin('relay_acl');
     this.plugin.cfg = {};
 
     this.connection = Connection.createConnection();

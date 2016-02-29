@@ -1,18 +1,17 @@
 'use strict';
 
-var stub         = require('../fixtures/stub');
-var Plugin       = require('../fixtures/stub_plugin');
-var Connection   = require('../fixtures/stub_connection');
-var config       = require('../../config');
 var dns          = require('dns');
+
+var fixtures     = require('haraka-test-fixtures');
+
+var stub         = fixtures.stub.stub;
 
 var _set_up = function (done) {
 
-    this.plugin = new Plugin('connect.fcrdns');
-    this.plugin.config = config;
+    this.plugin = new fixtures.plugin('connect.fcrdns');
     this.plugin.register();
 
-    this.connection = Connection.createConnection();
+    this.connection = fixtures.connection.createConnection();
     this.connection.auth_results = stub();
 
     done();

@@ -1,9 +1,11 @@
 'use strict';
 
-var Plugin           = require('../fixtures/stub_plugin');
-var Connection       = require('../fixtures/stub_connection');
-var Address          = require('address-rfc2821').Address;
-var ResultStore      = require('../../result_store');
+var Address      = require('address-rfc2821').Address;
+var fixtures     = require('haraka-test-fixtures');
+
+var Connection   = fixtures.connection;
+var Plugin       = fixtures.plugin;
+var ResultStore  = fixtures.result_store;
 
 var _set_up = function (done) {
 
