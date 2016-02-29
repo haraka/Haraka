@@ -1,18 +1,24 @@
 'use strict';
 // load all defined plugins
 
-var logger      = require('./logger');
-var config      = require('./config');
-var constants   = require('haraka-constants');
+// node built-ins
+var fs          = require('fs');
 var path        = require('path');
 var vm          = require('vm');
-var fs          = require('fs');
+
+// npm modules
+var constants   = require('haraka-constants');
+
+// local modules
+var logger      = require('./logger');
+var config      = require('./config');
 var utils       = require('./utils');
 var states      = require('./connection').states;
 
 exports.registered_hooks = {};
 exports.registered_plugins = {};
 exports.plugin_list = [];
+
 var order = 0;
 
 function Plugin (name) {
@@ -75,25 +81,27 @@ Plugin.prototype._get_plugin_path = function () {
                 plugin.hasPackageJson = true;
             }
         }
-        catch (e) {
-            // ignore error
-        }
+        catch (ignore) {}
     });
 };
 
 Plugin.prototype._get_config = function () {
     if (this.hasPackageJson) {
-        // It's a package/folder plugin - look in plugin folder for defaults, haraka/config folder for overrides
-        return config.module_config(path.dirname(this.plugin_path), process.env.HARAKA || __dirname);
+        // It's a package/folder plugin - look in plugin folder for defaults,
+        // haraka/config folder for overrides
+        return config.module_config(
+            path.dirname(this.plugin_path),
+            process.env.HARAKA || __dirname
+        );
     }
-    else if (process.env.HARAKA) {
-        // Plain .js file, installed mode - look in core folder for defaults, install dir for overrides
+    if (process.env.HARAKA) {
+        // Plain .js file, installed mode - look in core folder for defaults,
+        // install dir for overrides
         return config.module_config(__dirname, process.env.HARAKA);
     }
-    else {
-        // Plain .js file, git mode - just look in this folder
-        return config.module_config(__dirname);
-    }
+
+    // Plain .js file, git mode - just look in this folder
+    return config.module_config(__dirname);
 };
 
 Plugin.prototype.register_hook = function (hook_name, method_name, priority) {
@@ -162,35 +170,35 @@ Plugin.prototype._make_custom_require = function () {
     };
 };
 
-
-
-Plugin.prototype._compile = function () {
+Plugin.prototype._get_code = function (pp) {
     var plugin = this;
-    var name = plugin.name;
-    var rf;
-    var last_err;
+    if (plugin.hasPackageJson) {
+        return 'exports = require("' + path.dirname(pp) + '");';
+    }
+
     try {
-        rf = fs.readFileSync(plugin.plugin_path);
+        return '"use strict";' + fs.readFileSync(pp);
     }
     catch (err) {
         if (config.get('smtp.ini').main.ignore_bad_plugins) {
-            logger.logcrit('Loading plugin ' + name + ' failed: ' + last_err);
+            logger.logcrit('Loading plugin ' + name + ' failed: ' + err);
             return;
         }
         throw 'Loading plugin ' + name + ' failed: ' + err;
     }
+}
 
-    var code;
-    if (plugin.hasPackageJson) {
-        code = 'exports = require("' + path.dirname(plugin.plugin_path) + '");';
-    }
-    else {
-        code = '"use strict";' + rf;
-    }
+Plugin.prototype._compile = function () {
+    var plugin = this;
+
+    var pp = plugin.plugin_path;
+    var code = plugin._get_code(pp);
+    if (!code) return;
+
     var sandbox = {
         require: plugin._make_custom_require(),
-        __filename: plugin.plugin_path,
-        __dirname:  path.dirname(plugin.plugin_path),
+        __filename: pp,
+        __dirname:  path.dirname(pp),
         exports: plugin,
         setTimeout: setTimeout,
         clearTimeout: clearTimeout,
@@ -206,13 +214,13 @@ Plugin.prototype._compile = function () {
     }
     constants.import(sandbox);
     try {
-        vm.runInNewContext(code, sandbox, plugin.plugin_path);
+        vm.runInNewContext(code, sandbox, pp);
     }
     catch (err) {
-        logger.logcrit('Compiling plugin: ' + name + ' failed');
+        logger.logcrit('Compiling plugin: ' + plugin.name + ' failed');
         if (config.get('smtp.ini').main.ignore_bad_plugins) {
-            logger.logcrit('Loading plugin ' + name + ' failed: ', err.message +
-                           ' - will skip this plugin and continue');
+            logger.logcrit('Loading plugin ' + plugin.name + ' failed: ',
+                err.message + ' - will skip this plugin and continue');
             return;
         }
         throw err; // default is to re-throw and stop Haraka
@@ -240,7 +248,6 @@ function get_timeout (name) {
 for (var key in logger) {
     if (!/^log\w/.test(key)) continue;
     // console.log('adding Plugin.' + key + ' method');
-    /* jshint loopfunc: true */
     Plugin.prototype[key] = (function (lev) {
         return function () {
             var args = [this];
