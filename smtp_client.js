@@ -128,7 +128,13 @@ function SMTPClient (port, host, connect_timeout, idle_timeout) {
     this.socket.on('connect', function () {
         // Remove connection timeout and set idle timeout
         client.socket.setTimeout(((idle_timeout) ? idle_timeout : 300) * 1000);
-        client.remote_ip = ipaddr.process(client.socket.remoteAddress).toString();
+        if (client.socket.remoteAddress) {
+            // "Value may be undefined if the socket is destroyed"
+            client.remote_ip = ipaddr.process(client.socket.remoteAddress).toString();
+        }
+        else {
+            logger.logerror('client.socket.remoteAddress undefined!');
+        }
     });
 
     var closed = function (msg) {
