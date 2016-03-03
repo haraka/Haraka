@@ -971,11 +971,11 @@ Connection.prototype.rcpt_incr = function(rcpt, action, msg, retval) {
     var addr = rcpt.format();
     var recipient = {
         address: addr.substr(1, addr.length -2),
+        action:  action
     };
     if (msg && action !== 'accept') {
         recipient.msg  = msg;
         recipient.code  = constants.translate(retval);
-        recipient.action = action;
     }
 
     this.transaction.results.push({name: 'rcpt_to'}, {
