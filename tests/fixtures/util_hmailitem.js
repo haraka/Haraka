@@ -1,7 +1,9 @@
 'use strict';
 
-var Address = require('address-rfc2821').Address;
-var stub_connection = require('./../fixtures/stub_connection');
+var Address         = require('address-rfc2821').Address;
+var fixtures        = require('haraka-test-fixtures');
+var stub_connection = fixtures.connection;
+// var transaction     = fixtures.transaction;  // not yet sufficient
 var transaction = require('../../transaction');
 
 

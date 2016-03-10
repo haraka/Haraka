@@ -1,15 +1,17 @@
 'use strict';
 
-var Plugin       = require('../fixtures/stub_plugin');
-var Connection   = require('../fixtures/stub_connection');
-var config       = require('../../config');
+var path = require('path');
+var fixtures     = require('haraka-test-fixtures');
 var ipaddr       = require('ipaddr.js');
-var ResultStore  = require('../../result_store');
+
+var Connection   = fixtures.connection;
+var ResultStore  = fixtures.result_store;
 
 var _set_up = function (done) {
 
-    this.plugin = new Plugin('greylist');
-    this.plugin.config = config;
+    this.plugin = new fixtures.plugin('greylist');
+    this.plugin.config.root_path = path.resolve(__dirname, '../../config');
+
     this.plugin.register();
     this.plugin.whitelist = {
         "mail":{"josef@example.com":true},
@@ -24,7 +26,6 @@ var _set_up = function (done) {
     this.plugin.list = {"dyndom":["sgvps.net"]};
 
     this.connection = Connection.createConnection();
-    this.connection.results = new ResultStore(this.connection);
     this.connection.transaction = {
         results: new ResultStore(this.connection),
     };

@@ -8,7 +8,7 @@ function _fill_body (body) {
 
     body.state = 'headers';
     body.parse_more("Content-Type: multipart/alternative; boundary=abcdef\n");
-    body.parse_more("From: =?US-ASCII*EN?Q?Keith_Moore?= <moore@cs.utk.edu>");
+    body.parse_more("From: =?US-ASCII*EN?Q?Keith_Moore?= <moore@cs.utk.edu>\n");
     body.parse_more("\n");
     body.parse_more("--abcdef\n");
     body.parse_more("Content-Type: text/plain; charset=UTF-8; format=flowed;\n");
@@ -27,6 +27,30 @@ function _fill_body (body) {
     body.parse_more("\n");
     body.parse_more("<p>This is some HTML, yo.<br>\n");
     body.parse_more("It's pretty rad.</p>\n");
+    body.parse_more("\n");
+    var html = body.parse_more("--abcdef--\n");
+    body.parse_end();
+
+    text = text.replace(/--abcdef\n$/, '').trim();
+    html = html.replace(/--abcdef--\n$/, '').trim();
+
+    return [text, html];
+}
+
+function _fill_empty_body (body) {
+    // Body.bodytext retains the original received text before filters are
+    // applied so the filtered text isn't tested against URIBLs, etc.  Since we
+    // want to test filter output, we use this hack to pull out the parsed body
+    // parts that will be passed onward to the transaction.
+
+    body.state = 'headers';
+    body.parse_more("Content-Type: multipart/alternative; boundary=abcdef\n");
+    body.parse_more("\n");
+    body.parse_more("--abcdef\n");
+    body.parse_more("Content-Type: text/plain; charset=UTF-8; format=flowed;\n");
+    body.parse_more("\n");
+    var text = body.parse_more("--abcdef\n");
+    body.parse_more("Content-Type: text/html; charset=UTF-8;\n");
     body.parse_more("\n");
     var html = body.parse_more("--abcdef--\n");
     body.parse_end();
@@ -122,6 +146,21 @@ exports.banners = {
         new_buf = insert_banners_fn (content_type, enc, empty_buf);
         test.equal(new_buf.toString(), "\ntextbanner\n",
                 "empty text part gets a banner");
+
+        test.done();
+    },
+
+    'insert_banner_empty_body': function (test) {
+        test.expect(2);
+
+        var body = new Body();
+        var banners = [ 'textbanner', 'htmlbanner' ];
+
+        body.set_banner(banners);
+        var results = _fill_empty_body(body);
+
+        test.equal(results[0], banners[0]);
+        test.equal(results[1], '<P>' + banners[1] + '</P>');
 
         test.done();
     },

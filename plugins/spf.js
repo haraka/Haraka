@@ -4,18 +4,17 @@ var SPF = require('./spf').SPF;
 var net_utils = require('./net_utils');
 
 // Override logging in SPF module
-var plugin_ignore = exports;
 SPF.prototype.log_debug = function (str) {
     return plugin.logdebug(str);
 };
 
 exports.register = function () {
     var plugin = this;
-
     plugin.load_config();
 };
 
 exports.load_config = function () {
+    var plugin = this;
     plugin.cfg = plugin.config.get('spf.ini', {
         booleans: [
             '-defer.helo_temperror',

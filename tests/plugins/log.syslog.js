@@ -1,13 +1,14 @@
 'use strict';
 
-var stub             = require('../fixtures/stub');
-var Plugin           = require('../fixtures/stub_plugin');
+var fixtures     = require('haraka-test-fixtures');
+
+var stub         = fixtures.stub.stub;
 
 var _set_up = function (done) {
     this.backup = { plugin: { Syslog: {} } };
 
     try {
-        this.plugin = new Plugin('log.syslog');
+        this.plugin = new fixtures.plugin('log.syslog');
     }
     catch (e) {
         console.log(e);

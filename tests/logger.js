@@ -1,6 +1,4 @@
-var Plugin       = require('./fixtures/stub_plugin');
-var Connection   = require('./fixtures/stub_connection');
-var config       = require('../config');
+
 var util         = require('util');
 
 function _set_up(callback) {

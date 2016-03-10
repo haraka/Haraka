@@ -1,9 +1,7 @@
 var constants    = require('haraka-constants');
 
-var stub         = require('./fixtures/stub');
-var configfile   = require('./../configfile');
-var config       = require('./../config');
-var connection   = require('./../connection');
+var logger       = require('../logger');
+var connection   = require('../connection');
 
 // huge hack here, but plugin tests need constants
 constants.import(global);

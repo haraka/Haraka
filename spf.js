@@ -5,7 +5,7 @@ var dns = require('dns');
 var ipaddr = require('ipaddr.js');
 
 // Constructor
-function SPF(count, been_there) {
+function SPF (count, been_there) {
     // For macro expansion
     // This should be set before check_host() is called
     this.helo = 'unknown';

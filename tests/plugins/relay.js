@@ -1,20 +1,16 @@
 'use strict';
 
-var Connection   = require('../fixtures/stub_connection');
-var Plugin       = require('../fixtures/stub_plugin');
-var config       = require('../../config');
-var ResultStore  = require('../../result_store');
+var fixtures     = require('haraka-test-fixtures');
+
+var Connection   = fixtures.connection;
+var Plugin       = fixtures.plugin;
+var ResultStore  = fixtures.result_store;
 
 var _set_up = function (done) {
 
     this.plugin = new Plugin('relay');
-    this.plugin.config = config;
     this.plugin.cfg = {};
-
     this.connection = Connection.createConnection();
-    this.connection.transaction = {
-        results: new ResultStore(this.connection),
-    };
 
     done();
 };
@@ -99,7 +95,6 @@ exports.is_acl_allowed = {
 exports.acl = {
     setUp : function (callback) {
         this.plugin = new Plugin('relay');
-        this.plugin.config = config;
         this.plugin.cfg = { relay: { dest_domains: true } };
         this.connection = Connection.createConnection();
         callback();
@@ -164,7 +159,6 @@ exports.acl = {
 exports.dest_domains = {
     setUp : function (callback) {
         this.plugin = new Plugin('relay');
-        this.plugin.config = config;
         this.plugin.cfg = { relay: { dest_domains: true } };
 
         this.connection = Connection.createConnection();
@@ -247,7 +241,6 @@ exports.dest_domains = {
 exports.force_routing = {
     setUp : function (callback) {
         this.plugin = new Plugin('relay');
-        this.plugin.config = config;
         this.plugin.cfg = { relay: { force_routing: true } };
         this.plugin.dest = {};
 

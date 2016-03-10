@@ -1,5 +1,7 @@
-var Connection   = require('./fixtures/stub_connection');
-var ResultStore  = require('../result_store');
+
+var fixtures     = require('haraka-test-fixtures');
+var Connection   = fixtures.connection;
+var ResultStore  = fixtures.result_store;
 
 function _set_up(callback) {
     this.connection = Connection.createConnection();
