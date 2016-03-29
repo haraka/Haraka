@@ -181,12 +181,25 @@ function createServer(cb) {
             // options.secureOptions = constants.SSL_OP_ALL;
 
             // Setting secureProtocol to 'SSLv23_method' and secureOptions to
-            // constants.SSL_OP_NO_SSLv3 are used to disable SSLv2 and SSLv3
-            // protcol support.
+            // constants.SSL_OP_NO_SSLv2/3 are used to disable SSLv2 and SSLv3
+            // protocol support, to prevent DROWN and POODLE attacks at least.
+            // Node's docs here are super unhelpful, e.g.
+            // <https://nodejs.org/api/tls.html#tls_tls_createserver_options_secureconnectionlistener>
+            // doesn't even mention secureOptions.  Some digging reveals the
+            // relevant openssl docs: secureProtocol is documented in
+            // <https://www.openssl.org/docs/manmaster/ssl/ssl.html#DEALING-WITH-PROTOCOL-METHODS>,
+            // (note: you'll want to select the correct openssl version that
+            // node was compiled against, instead of master), and secureOptions
+            // are documented in
+            // <https://www.openssl.org/docs/manmaster/ssl/SSL_CTX_set_options.html>
+            // (again, select the appropriate openssl version, not master).
+            // One caveat: it doesn't seem like all options are actually
+            // compiled into node.  To see which ones are, fire up node and
+            // examine the object returned by require('constants').
 
             options.secureProtocol = options.secureProtocol || 'SSLv23_method';
-            options.secureOptions  = options.secureOptions  ||
-                constants.SSL_OP_NO_SSLv3;
+            options.secureOptions = options.secureOptions |
+                    constants.SSL_OP_NO_SSLv2 | constants.SSL_OP_NO_SSLv3;
 
             var requestCert = true;
             var rejectUnauthorized = false;
@@ -283,8 +296,11 @@ function connect (port, host, cb) {
         // TODO: bug in Node means we can't do this until it's fixed
         // options.secureOptions = constants.SSL_OP_ALL;
 
+        // See comments around similar code in createServer above for what's
+        // going on here.
         options.secureProtocol = options.secureProtocol || 'SSLv23_method';
-        options.secureOptions  = options.secureOptions  || constants.SSL_OP_NO_SSLv3;
+        options.secureOptions = options.secureOptions |
+                    constants.SSL_OP_NO_SSLv2 | constants.SSL_OP_NO_SSLv3;
 
         var sslcontext = (tls.createSecureContext || crypto.createCredentials)(options);
 
