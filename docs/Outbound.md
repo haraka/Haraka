@@ -302,7 +302,7 @@ To do that, you can use the `outbound` module directly:
             case OK:    plugin.loginfo("mail sent");
                         next();
                         break;
-            default:    plugin.logerror("Unrecognised return code from sending email: " + msg);
+            default:    plugin.logerror("Unrecognized return code from sending email: " + msg);
                         next();
         }
     };

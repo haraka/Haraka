@@ -290,7 +290,7 @@ Connection.prototype.process_line = function (line) {
             }
         }
         else {
-            // unrecognised command
+            // unrecognized command
             matches.splice(0,1);
             matches.splice(1,1);
             plugins.run_hooks('unrecognized_command', this, matches);
@@ -1701,7 +1701,7 @@ Connection.prototype.queue_outbound_respond = function (retval, msg) {
                         });
                         break;
                     default:
-                        self.logerror("Unrecognised response from outbound layer: " + retval2 + " : " + msg2);
+                        self.logerror("Unrecognized response from outbound layer: " + retval2 + " : " + msg2);
                         self.respond(550, msg2 || "Internal Server Error", function() {
                             self.msg_count.reject++;
                             self.reset_transaction(function () {
