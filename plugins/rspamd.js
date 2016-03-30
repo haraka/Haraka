@@ -258,7 +258,7 @@ exports.add_headers = function (connection, data) {
             prettySymbols.join(' '));
     }
 
-    if (cfg.header.score) {
+    if (cfg.header && cfg.header.score) {
         connection.transaction.remove_header(cfg.header.score);
         connection.transaction.add_header(cfg.header.score, '' + data.score);
     }
