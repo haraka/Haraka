@@ -104,7 +104,7 @@ exports.hook_lookup_rdns = function (next, connection) {
 
                 if (err2) {
                     for (var e=0; e < err2.length; e++) {
-                        switch (err[e]) {
+                        switch (err2[e]) {
                             case 'queryAaaa ENODATA':
                             case 'queryAaaa ENOTFOUND':
                                 break;
