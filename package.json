@@ -12,7 +12,7 @@
   },
   "main": "haraka.js",
   "engines": {
-    "node": ">= v0.10.41"
+    "node": ">= v0.10.43"
   },
   "dependencies": {
     "address-rfc2821"       : "*",
@@ -28,8 +28,7 @@
     "semver"                : "~5.0.3",
     "sprintf-js"            : "~1.0.3",
     "haraka-tld"            : "*",
-    "haraka-constants"      : "*",
-    "exit"                  : "~0.1.2"
+    "haraka-constants"      : "*"
   },
   "optionalDependencies": {
     "elasticsearch"         : "*",

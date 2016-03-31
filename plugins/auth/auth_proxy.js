@@ -50,6 +50,7 @@ exports.try_auth_proxy = function (connection, hosts, user, passwd, cb) {
     var auth_success = false;
     var command = 'connect';
     var response = [];
+    var secure = false;
 
     var hostport = host.split(/:/);
     var socket = sock.connect(((hostport[1]) ? hostport[1] : 25), hostport[0]);
@@ -105,12 +106,13 @@ exports.try_auth_proxy = function (connection, hosts, user, passwd, cb) {
                     // Parse CAPABILITIES
                     var i;
                     for (i in response) {
-                        if (response[i].match(/^STARTTLS/)) {
+                        if (!secure && response[i].match(/^STARTTLS/)) {
                             var key = self.config.get('tls_key.pem', 'binary');
                             var cert = self.config.get('tls_cert.pem', 'binary');
                             // Use TLS opportunistically if we found the key and certificate
                             if (key && cert) {
                                 this.on('secure', function () {
+                                    secure = true;
                                     socket.send_command('EHLO', self.config.get('me'));
                                 });
                                 socket.send_command('STARTTLS');

@@ -286,10 +286,20 @@ function connect (port, host, cb) {
         options.secureProtocol = options.secureProtocol || 'SSLv23_method';
         options.secureOptions  = options.secureOptions  || constants.SSL_OP_NO_SSLv3;
 
+        var requestCert = true;
+        var rejectUnauthorized = false;
+        if (options) {
+            if (options.requestCert !== undefined) {
+                requestCert = options.requestCert;
+            }
+            if (options.rejectUnauthorized !== undefined) {
+                rejectUnauthorized = options.rejectUnauthorized;
+            }
+        }
         var sslcontext = (tls.createSecureContext || crypto.createCredentials)(options);
 
         // tls.createSecurePair([credentials], [isServer]);
-        var pair = tls.createSecurePair(sslcontext, false);
+        var pair = tls.createSecurePair(sslcontext, false, requestCert, rejectUnauthorized);
 
         socket.pair = pair;
 

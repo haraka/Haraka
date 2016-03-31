@@ -14,7 +14,9 @@ var _set_up = function (done) {
     this.connection = fixtures.connection.createConnection();
     this.connection.auth_results = stub();
 
-    done();
+    this.plugin.hook_connect_init(function () {
+        done();
+    }, this.connection);
 };
 
 exports.refresh_config = {
@@ -210,11 +212,6 @@ exports.check_fcrdns = {
             test.done();
         };
         this.connection.remote_ip = '10.1.1.1';
-        this.connection.results.add(this.plugin, {
-            fcrdns: [], invalid_tlds: [], other_ips: [], ptr_names: [],
-            ptr_multidomain: false, has_rdns: false, ptr_name_has_ips: false,
-            ptr_name_to_ip: {},
-        });
         this.plugin.check_fcrdns(this.connection, ['foo.example.com'], cb);
     },
     'null host': function (test) {
@@ -225,11 +222,25 @@ exports.check_fcrdns = {
             test.done();
         };
         this.connection.remote_ip = '10.1.1.1';
-        this.connection.results.add(this.plugin, {
-            fcrdns: [], invalid_tlds: [], other_ips: [], ptr_names: [],
-            ptr_multidomain: false, has_rdns: false, ptr_name_has_ips: false,
-            ptr_name_to_ip: {},
-        });
         this.plugin.check_fcrdns(this.connection, ['foo.example.com','', null], cb);
     },
 };
+
+exports.hook_lookup_rdns = {
+    setUp : _set_up,
+    'performs a rdns lookup': function (test) {
+        test.expect(3);
+
+        var conn = this.connection;
+        conn.remote_ip = '8.8.4.4';
+
+        var cb = function (rc, msg) {
+            test.ok( /google.com/.test(conn.results.get('connect.fcrdns').fcrdns[0]));
+            test.equal(rc, undefined);
+            test.equal(msg, undefined);
+            test.done();
+        };
+
+        this.plugin.hook_lookup_rdns(cb, conn);
+    },
+}

@@ -54,7 +54,7 @@ logger.colorize = function (color, str) {
            '\u001b[' + util.inspect.colors[color][1] + 'm';
 };
 
-logger.dump_logs = function () {
+logger.dump_logs = function (cb) {
     while (logger.deferred_logs.length > 0) {
         var log_item = logger.deferred_logs.shift();
         var color = logger.colors[log_item.level];
@@ -65,8 +65,16 @@ logger.dump_logs = function () {
             console.log(log_item.data);
         }
     }
+    // Run callback after flush
+    if (cb) process.stdout.write('', cb);
     return true;
 };
+
+logger.dump_and_exit = function (code) {
+    this.dump_logs(function () {
+        process.exit(code);
+    });
+}
 
 logger.log = function (level, data) {
     if (level === 'PROTOCOL') {
