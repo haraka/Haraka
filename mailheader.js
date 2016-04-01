@@ -231,11 +231,10 @@ Header.prototype._add_header_decode = function (key, value, method) {
 Header.prototype.add = function (key, value) {
     if (!key) key = 'X-Haraka-Blank';
     value = value.replace(/(\r?\n)*$/, '');
-    if (/[^\x00-\x7f]/.test(value) || (key.length + 2 + value.length) > 75) {
+    if (/[^\x00-\x7f]/.test(value)) {
         // Need to QP encode this header value and assume UTF-8
         value = '=?UTF-8?q?' + utils.encode_qp(value) + '?=';
-        value = value.replace(/(?!=([A-F0-9][A-F0-9]))=\n/g, '$1'); // turn wraps at non-QP code line ends into continuations
-        value = value.replace(/=([A-F0-9][A-F0-9])=\n/g, '=$1\n '); // turn wraps at QP code line ends into continuations
+        value = value.replace(/=\n/g, ''); // remove wraps - headers can only wrap at whitespace (with continuations)
     }
     this._add_header(key.toLowerCase(), value, "unshift");
     this._add_header_decode(key.toLowerCase(), value, "unshift");
@@ -245,10 +244,10 @@ Header.prototype.add = function (key, value) {
 Header.prototype.add_end = function (key, value) {
     if (!key) key = 'X-Haraka-Blank';
     value = value.replace(/(\r?\n)*$/, '');
-    if (/[^\x00-\x7f]/.test(value) || (key.length + 2 + value.length) > 75) {
+    if (/[^\x00-\x7f]/.test(value)) {
         // Need to QP encode this header value and assume UTF-8
         value = '=?UTF-8?q?' + utils.encode_qp(value) + '?=';
-        value = value.replace(/=\n/g, ' \n'); // turn wraps into continuations
+        value = value.replace(/=\n/g, ''); // remove wraps - headers can only wrap at whitespace (with continuations)
     }
     this._add_header(key.toLowerCase(), value, "push");
     this._add_header_decode(key.toLowerCase(), value, "push");
