@@ -133,7 +133,12 @@ exports.decode_qp = function (line) {
 };
 
 function _char_to_qp (ch) {
-    return "=" + _pad(ch.charCodeAt(0).toString(16).toUpperCase(), 2);
+    var b = new Buffer(ch);
+    var r = '';
+    for (var i=0; i<b.length; i++) {
+        r = r + '=' + _pad(b[i].toString(16).toUpperCase(), 2);
+    }
+    return r;
 }
 
 // Shameless attempt to copy from Perl's MIME::QuotedPrint::Perl code.
