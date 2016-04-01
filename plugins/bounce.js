@@ -100,6 +100,22 @@ exports.single_recipient = function(next, connection) {
         return next();
     }
 
+    // Skip this check for relays or private_ips
+    // This is because Microsoft Exchange will send mail
+    // to distribution groups using the null-sender if
+    // the option 'Do not send delivery reports' is
+    // checked (not sure if this is default or not)
+    if (connection.relaying) {
+        transaction.results.add(plugin,
+                {skip: 'single_recipient(relay)', emit: true });
+        return next();
+    }
+    if (net_utils.is_private_ip(connection.remote_ip)) {
+        transaction.results.add(plugin,
+                {skip: 'single_recipient(private_ip)', emit: true });
+        return next();
+    }
+
     connection.loginfo(plugin, "bounce with too many recipients to: " +
         connection.transaction.rcpt_to.join(','));
 

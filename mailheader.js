@@ -231,6 +231,11 @@ Header.prototype._add_header_decode = function (key, value, method) {
 Header.prototype.add = function (key, value) {
     if (!key) key = 'X-Haraka-Blank';
     value = value.replace(/(\r?\n)*$/, '');
+    if (/[^\x00-\x7f]/.test(value)) {
+        // Need to QP encode this header value and assume UTF-8
+        value = '=?UTF-8?q?' + utils.encode_qp(value) + '?=';
+        value = value.replace(/\n/g, '\n '); // turn wraps into continuations
+    }
     this._add_header(key.toLowerCase(), value, "unshift");
     this._add_header_decode(key.toLowerCase(), value, "unshift");
     this.header_list.unshift(key + ': ' + value + '\n');
@@ -239,6 +244,11 @@ Header.prototype.add = function (key, value) {
 Header.prototype.add_end = function (key, value) {
     if (!key) key = 'X-Haraka-Blank';
     value = value.replace(/(\r?\n)*$/, '');
+    if (/[^\x00-\x7f]/.test(value)) {
+        // Need to QP encode this header value and assume UTF-8
+        value = '=?UTF-8?q?' + utils.encode_qp(value) + '?=';
+        value = value.replace(/\n/g, ' \n'); // turn wraps into continuations
+    }
     this._add_header(key.toLowerCase(), value, "push");
     this._add_header_decode(key.toLowerCase(), value, "push");
     this.header_list.push(key + ': ' + value + '\n');
