@@ -42,14 +42,16 @@ exports.add_headers = {
         test.done();
     },
     add_utf8: function (test) {
-        test.expect(2);
+        test.expect(4);
         var h = new Header();
         h.parse(lines);
         h.add('Foo', 'bøø');
-        test.equal(h.lines()[0], 'Foo: =?UTF-8?q?b=F8=F8?=\n');
+        test.equal(h.lines()[0], 'Foo: =?UTF-8?q?b=C3=B8=C3=B8?=\n');
+        test.equal(h.get_decoded('Foo'), 'bøø');
         // test wrapping
         h.add('Bar', 'bøø 1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890');
-        test.equal(h.lines()[0], 'Bar: =?UTF-8?q?b=F8=F8 1234567890123456789012345678901234567890123456789012345678901234567=\n 890123456789012345678901234567890?=\n');
+        test.equal(h.lines()[0], 'Bar: =?UTF-8?q?b=C3=B8=C3=B8 1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890?=\n');
+        test.equal(h.get_decoded('Bar'), 'bøø 1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890');
         test.done();
     }
 }
