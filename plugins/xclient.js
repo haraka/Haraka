@@ -4,9 +4,35 @@
 var utils = require('./utils');
 var DSN = require('./dsn');
 var net = require('net');
+var allowed_hosts = {};
+
+exports.register = function () {
+    this.load_xclient_hosts();
+}
+
+exports.load_xclient_hosts = function () {
+    var self = this;
+    var cfg = this.config.get('xclient.hosts', 'list', function () {
+        self.load_xclient_hosts();
+    });
+    var ah = {};
+    for (var i in cfg) {
+        ah[cfg[i]] = true;
+    }
+    allowed_hosts = ah;
+}
+
+function xclient_allowed(ip) {
+    if (ip === '127.0.0.1' || ip === '::1' || allowed_hosts[ip]) {
+        return true;
+    }
+    return false;
+}
 
 exports.hook_capabilities = function (next, connection) {
-    connection.capabilities.push('XCLIENT NAME ADDR PROTO HELO LOGIN');
+    if (xclient_allowed(connection.remote_ip)) {
+        connection.capabilities.push('XCLIENT NAME ADDR PROTO HELO LOGIN');
+    }
     next();
 };
 
@@ -21,19 +47,7 @@ exports.hook_unrecognized_command = function (next, connection, params) {
             DSN.proto_unspecified('Mail transaction in progress', 503));
     }
 
-    // Check that the client is authorized
-    var config = this.config.get('xclient.hosts','list');
-    var found;
-    for (var i in config) {
-        connection.logdebug(this, 'Checking ' + connection.remote_ip +
-            ' == ' + config[i]);
-        // TODO: handle ip/mask here.
-        if (connection.remote_ip === config[i]) {
-            found = true;
-            break;
-        }
-    }
-    if (!found) {
+    if (!(xclient_allowed(connection.remote_ip))) {
         return next(DENY, DSN.proto_unspecified('Not authorized', 550));
     }
 
