@@ -2,14 +2,14 @@ var Header   = require('../mailheader').Header;
 
 var lines = [
     'Return-Path: <helpme@gmail.com>',
-    'Received: from [1.1.1.1] ([2.2.2.2])\
-            by smtp.gmail.com with ESMTPSA id abcdef.28.2016.03.31.12.51.37\
-            for <foo@bar.com>\
-            (version=TLSv1/SSLv3 cipher=OTHER);\
-            Thu, 31 Mar 2016 12:51:37 -0700 (PDT)',
+    'Received: from [1.1.1.1] ([2.2.2.2])',
+    '       by smtp.gmail.com with ESMTPSA id abcdef.28.2016.03.31.12.51.37',
+    '       for <foo@bar.com>',
+    '       (version=TLSv1/SSLv3 cipher=OTHER);',
+    '       Thu, 31 Mar 2016 12:51:37 -0700 (PDT)',
     'From: Matt Sergeant <helpme@gmail.com>',
-    'Content-Type: multipart/alternative;\
-        boundary=Apple-Mail-F2C5DAD3-7EB3-409D-9FE0-135C9FD43B69',
+    'Content-Type: multipart/alternative;',
+    '   boundary=Apple-Mail-F2C5DAD3-7EB3-409D-9FE0-135C9FD43B69',
     'Content-Transfer-Encoding: 7bit',
     'Mime-Version: 1.0 (1.0)',
     'Subject: Re: Haraka Rocks!',
@@ -18,6 +18,10 @@ var lines = [
     'To: The World <world@example.com>',
     'X-Mailer: iPhone Mail (13E233)',
 ];
+
+for (var i=0; i<lines.length; i++) {
+    lines[i] = lines[i] + '\n';
+}
 
 exports.basic = {
     parse_basic: function (test) {
@@ -50,6 +54,16 @@ exports.add_headers = {
         // test wrapping
         h.add('Bar', 'bøø 1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890');
         test.equal(h.lines()[0], 'Bar: =?UTF-8?q?b=F8=F8 1234567890123456789012345678901234567890123456789012345678901234567=\n 890123456789012345678901234567890?=\n');
+        test.done();
+    }
+}
+
+exports.continuations = {
+    continuations_decoded: function (test) {
+        test.expect(1);
+        var h = new Header();
+        h.parse(lines);
+        test.ok(!/\n/.test(h.get_decoded('content-type')));
         test.done();
     }
 }

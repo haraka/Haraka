@@ -23,7 +23,7 @@ Header.prototype.parse = function (lines) {
 
     for (var i=0,l=lines.length; i < l; i++) {
         var line = lines[i];
-        if (line.match(/^[ \t]/)) {
+        if (/^[ \t]/.test(line)) {
             // continuation
             this.header_list[this.header_list.length - 1] += line;
         }
@@ -101,7 +101,7 @@ function _decode_rfc2231 (params) {
     return function (matched, str) {
         var sub_matches = /^(([^=]*)\*)(\d*)=(\s*".*?[^\\]";?|\S*)\s*$/.exec(str);
         if (!sub_matches) {
-            return "\n " + str;
+            return " " + str;
         }
         var key = sub_matches[1];
         var key_actual = sub_matches[2];
