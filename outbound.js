@@ -133,7 +133,7 @@ exports.scan_queue_pids = function (cb) {
             // Format: $time_$attempts_$pid_$uniq.$host
             var match = /^\d+_\d+_(\d+)_\d+\./.exec(file);
             if (!match) {
-                self.logerror("Unrecognised file in queue directory: " + queue_dir + '/' + file);
+                self.logerror("Unrecognized file in queue directory: " + queue_dir + '/' + file);
                 return;
             }
 
@@ -280,7 +280,7 @@ exports.load_queue_files = function (pid, cb_name, files) {
 
             var matches = file.match(fn_re);
             if (!matches) {
-                self.logerror("Unrecognised file in queue folder: " + file);
+                self.logerror("Unrecognized file in queue folder: " + file);
                 return;
             }
 
@@ -1499,14 +1499,14 @@ HMailItem.prototype.try_deliver_host_on_socket = function (mx, host, port, socke
             }
         }
         else {
-            // Unrecognised response.
-            self.logerror("Unrecognised response from upstream server: " + line);
+            // Unrecognized response.
+            self.logerror("Unrecognized response from upstream server: " + line);
             processing_mail = false;
             socket.end();
             self.todo.rcpt_to.forEach(function (rcpt) {
-                self.extend_rcpt_with_dsn(rcpt, DSN.proto_invalid_command("Unrecognised response from upstream server: " + line));
+                self.extend_rcpt_with_dsn(rcpt, DSN.proto_invalid_command("Unrecognized response from upstream server: " + line));
             });
-            return self.bounce("Unrecognised response from upstream server: " + line, {mx: mx});
+            return self.bounce("Unrecognized response from upstream server: " + line, {mx: mx});
         }
     });
 };
