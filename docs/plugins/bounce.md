@@ -38,6 +38,11 @@ for mail servers at domains with frequent spoofing and few or no human users.
 Valid bounces have a single recipient. Assure that the message really is a
 bounce by enforcing bounces to be addressed to a single recipient.
 
+This check is skipped for relays or hosts with a private IP, this is because
+Microsoft Exchange distribution lists will send messages to list members with
+a null return-path when the 'Do not send delivery reports' option is enabled
+(yes, really...).
+
 ### empty\_return\_path
 
 Valid bounces should have an empty return path. Test for the presence of the
