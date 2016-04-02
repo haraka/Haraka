@@ -210,7 +210,7 @@ exports.get_public_ip = function (cb) {
         return cb(null, nu.public_ip);
     }
 
-    // Initialise cache value to null to prevent running 
+    // Initialise cache value to null to prevent running
     // should we hit a timeout or the module isn't installed.
     nu.public_ip = null;
 
