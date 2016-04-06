@@ -41,6 +41,7 @@ exports.hook_mail = function(next, connection, params) {
     }
 
     var domain = params[0].host.toLowerCase();
+
     var anti_spoof = plugin.config.get('host_list.anti_spoof') || false;
 
     if (plugin.in_host_list(domain) || plugin.in_host_regex(domain)) {
