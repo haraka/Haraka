@@ -320,7 +320,7 @@ Body.prototype.try_iconv = function(buf, enc) {
     catch (err) {
         logger.logwarn("initial iconv conversion from " + enc + " to UTF-8 failed: " + err.message);
         this.body_encoding = 'broken//' + enc;
-        // EINVAL is returned when the encoding type is not recognised/supported (e.g. ANSI_X3)
+        // EINVAL is returned when the encoding type is not recognized/supported (e.g. ANSI_X3)
         if (err.code !== 'EINVAL') {
             // Perform the conversion again, but ignore any errors
             try {

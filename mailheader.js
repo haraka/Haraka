@@ -23,7 +23,7 @@ Header.prototype.parse = function (lines) {
 
     for (var i=0,l=lines.length; i < l; i++) {
         var line = lines[i];
-        if (line.match(/^[ \t]/)) {
+        if (/^[ \t]/.test(line)) {
             // continuation
             this.header_list[this.header_list.length - 1] += line;
         }
@@ -101,7 +101,7 @@ function _decode_rfc2231 (params) {
     return function (matched, str) {
         var sub_matches = /^(([^=]*)\*)(\d*)=(\s*".*?[^\\]";?|\S*)\s*$/.exec(str);
         if (!sub_matches) {
-            return "\n " + str;
+            return " " + str;
         }
         var key = sub_matches[1];
         var key_actual = sub_matches[2];
@@ -181,7 +181,7 @@ Header.prototype.decode_header = function decode_header (val) {
         return val;
     }
 
-    val = val.replace(/=\?([\w_-]+)(\*[\w_-]+)?\?([bqBQ])\?(.*?)\?=/g, _decode_header);
+    val = val.replace(/=\?([\w_-]+)(\*[\w_-]+)?\?([bqBQ])\?([\s\S]*?)\?=/g, _decode_header);
 
     return val;
 }
@@ -234,7 +234,7 @@ Header.prototype.add = function (key, value) {
     if (/[^\x00-\x7f]/.test(value)) {
         // Need to QP encode this header value and assume UTF-8
         value = '=?UTF-8?q?' + utils.encode_qp(value) + '?=';
-        value = value.replace(/\n/g, '\n '); // turn wraps into continuations
+        value = value.replace(/=\n/g, ''); // remove wraps - headers can only wrap at whitespace (with continuations)
     }
     this._add_header(key.toLowerCase(), value, "unshift");
     this._add_header_decode(key.toLowerCase(), value, "unshift");
@@ -247,7 +247,7 @@ Header.prototype.add_end = function (key, value) {
     if (/[^\x00-\x7f]/.test(value)) {
         // Need to QP encode this header value and assume UTF-8
         value = '=?UTF-8?q?' + utils.encode_qp(value) + '?=';
-        value = value.replace(/\n/g, ' \n'); // turn wraps into continuations
+        value = value.replace(/=\n/g, ''); // remove wraps - headers can only wrap at whitespace (with continuations)
     }
     this._add_header(key.toLowerCase(), value, "push");
     this._add_header_decode(key.toLowerCase(), value, "push");

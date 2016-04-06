@@ -45,7 +45,7 @@ function SMTPClient (port, host, connect_timeout, idle_timeout) {
         client.emit('server_protocol', line);
         var matches = smtp_regexp.exec(line);
         if (!matches) {
-            client.emit('error', client.uuid + ': Unrecognised response from upstream server: ' + line);
+            client.emit('error', client.uuid + ': Unrecognized response from upstream server: ' + line);
             client.destroy();
             return;
         }

@@ -98,8 +98,8 @@ exports.try_auth_proxy = function (connection, hosts, user, passwd, cb) {
         response.push(rest);
 
         if (cont !== ' ') {
-            // Unrecognised response.
-            connection.logerror(self, "unrecognised response: " + line);
+            // Unrecognized response.
+            connection.logerror(self, "unrecognized response: " + line);
             socket.end();
             return;
         }
