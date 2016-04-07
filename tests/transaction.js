@@ -1,4 +1,3 @@
-var logger       = require('../logger'); // prevent compile errors in transaction.js.
 var Transaction  = require('../transaction');
 
 function _set_up(done) {
