@@ -387,6 +387,7 @@ else if (parsed.order) {
         require('module')._initPaths(); // Horrible hack
     }
     var sprintf = require('sprintf-js').sprintf;
+    require(path.join(base, 'configfile')).watch_files = false;
     var logger = require(path.join(base, "logger"));
     if (!parsed.verbose)
         logger.log = function () {} // disable logging for this

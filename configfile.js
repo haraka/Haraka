@@ -32,6 +32,19 @@ cfreader._enoent_files = {};
 cfreader._sedation_timers = {};
 cfreader._overrides = {};
 
+// Stubs that can be used before logger is loaded
+var logger = {
+    logdebug: function () {
+        console.log.apply(console, arguments);
+    },
+    loginfo: function () {
+        console.log.apply(console, arguments);
+    },
+    logerror: function () {
+        console.error.apply(console, arguments);
+    },
+}
+
 cfreader.on_watch_event = function (name, type, options, cb) {
     return function (fse, filename) {
         if (cfreader._sedation_timers[name]) {
@@ -548,4 +561,4 @@ cfreader.load_binary_config = function(name, type) {
 };
 var fs     = require('fs');
 var utils  = require('./utils');
-var logger = require('./logger');
+logger = require('./logger');
