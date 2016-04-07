@@ -1,6 +1,6 @@
 // Greylisting Haraka plugin
 
-var version = '0.1.3';
+// version 0.1.3
 
 var util = require('util');
 var redis = require('redis');
@@ -302,7 +302,6 @@ exports.process_tuple = function (connection, sender, rcpt, cb) {
 // Checks if host is _white_. Updates stats if so.
 exports.check_and_update_white = function (connection, cb) {
     var plugin = this;
-    var ctr = connection.transaction.results;
 
     var key = plugin.craft_white_key(connection);
 
