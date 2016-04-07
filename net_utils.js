@@ -199,7 +199,7 @@ exports.same_ipv4_network = function (ip, ipList) {
 
 exports.get_public_ip = function (cb) {
     var nu = this;
-    if (nu.public_ip) {
+    if (nu.public_ip !== undefined) {
         return cb(null, nu.public_ip);  // cache
     }
 
@@ -209,6 +209,10 @@ exports.get_public_ip = function (cb) {
         nu.public_ip = smtpIni.public_ip;
         return cb(null, nu.public_ip);
     }
+
+    // Initialise cache value to null to prevent running
+    // should we hit a timeout or the module isn't installed.
+    nu.public_ip = null;
 
     try {
         nu.stun = require('vs-stun');
@@ -238,6 +242,7 @@ exports.get_public_ip = function (cb) {
         if (!socket.stun.public) {
             return cb(new Error('invalid STUN result'));
         }
+        nu.public_ip = socket.stun.public.host;
         return cb(null, socket.stun.public.host);
     };
 
