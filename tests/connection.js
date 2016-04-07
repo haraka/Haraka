@@ -1,6 +1,5 @@
 var constants    = require('haraka-constants');
 
-var logger       = require('../logger');
 var connection   = require('../connection');
 
 // huge hack here, but plugin tests need constants

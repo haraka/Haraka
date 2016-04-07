@@ -7,7 +7,6 @@ var queueName;
 var connExchange_;
 var connQueue_;
 var routing_;
-var deliveryMode;
 exports.exchangeMapping = {}
 
 //This method registers the hook and try to initialize the connection to rabbitmq server for later use.
