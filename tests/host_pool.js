@@ -32,6 +32,19 @@ exports.HostPool = {
 
         test.done();
     },
+    "default port 25 ": function (test) {
+        test.expect(2);
+
+        var pool = new HostPool('1.1.1.1, 2.2.2.2');
+
+        var host1 = pool.get_host();
+        var host2 = pool.get_host();
+
+        test.equal(host1.port, 25, "is port 25: " + host1.port);
+        test.equal(host2.port, 25, "is port 25: " + host2.port);
+
+        test.done();
+    },
 
     "dead host": function(test){
         test.expect(3);

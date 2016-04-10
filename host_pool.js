@@ -5,7 +5,7 @@ var net = require('net');
 /* HostPool:
  *
  * Starts with a pool of backend hosts from a "forwarding_host_pool"
- * configuration that looks like this:
+ * configuration that looks like this (port defaults to 25 if not set):
  *
  *      1.1.1.1:11, 2.2.2.2:22, 3.3.3.3:33
  *
@@ -33,8 +33,11 @@ function HostPool(hostports_str, retry_secs){
             .split(/[\s,]+/)
             .map(function(hostport){
                 var splithost = hostport.split(/:/);
+                if (! splithost[1]){
+                    splithost[1] = 25;
+                }
                 return { host: splithost[0],
-                          port: splithost[1]
+                         port: splithost[1]
                         };
             });
     self.hostports_str = hostports_str;
