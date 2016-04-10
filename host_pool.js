@@ -23,7 +23,7 @@ var net = require('net');
 var logger = require('./logger');
 var utils  = require('./utils');
 
-// takes a comma/space-separated list if ip:ports
+// takes a comma/space-separated list of ip:ports
 //  1.1.1.1:22,  3.3.3.3:44
 function HostPool(hostports_str, retry_secs){
     var self = this;
