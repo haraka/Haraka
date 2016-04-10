@@ -496,9 +496,9 @@ exports.get_client_plugin = function (plugin, connection, c, callback) {
     });
 };
 
-function get_hostport (connection, server_notes, config) {
+function get_hostport (connection, server_notes, config_arg) {
 
-    var c = config;
+    var c = config_arg;
     if (c.forwarding_host_pool){
         if (! server_notes.host_pool){
             connection.logwarn("creating a new host_pool from " + c.forwarding_host_pool);
