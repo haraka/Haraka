@@ -5,6 +5,7 @@ var net_utils = require('./net_utils');
 
 // Override logging in SPF module
 SPF.prototype.log_debug = function (str) {
+    var plugin = this;
     return plugin.logdebug(str);
 };
 
