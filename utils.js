@@ -133,7 +133,7 @@ exports.decode_qp = function (line) {
 };
 
 function _char_to_qp (ch) {
-    var b = new Buffer(ch);
+    var b = new Buffer(ch, "binary");
     var r = '';
     for (var i=0; i<b.length; i++) {
         r = r + '=' + _pad(b[i].toString(16).toUpperCase(), 2);
