@@ -122,6 +122,7 @@ exports.get_dns_results = {
         };
         this.plugin.get_dns_results('asn.routeviews.org', '8.8.8.8', cb);
     },
+    /* - spameatingmonkey appears to be dead
     'origin.asn.spameatingmonkey.net': function (test) {
         var cb = function (err, zone, obj) {
             if (obj) {
@@ -142,4 +143,5 @@ exports.get_dns_results = {
                 cb
                 );
     },
+    */
 };
