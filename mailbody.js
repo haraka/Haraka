@@ -282,7 +282,7 @@ Body.prototype.parse_end = function (line) {
 
         // convert back to base_64 or QP if required:
         if (this.decode_function === this.decode_qp) {
-            line = utils.encode_qp(new_buf.toString("binary")) + "\n" + line;
+            line = utils.encode_qp(new_buf.toString("utf8")) + "\n" + line;
         }
         else if (this.decode_function === this.decode_base64) {
             line = new_buf.toString("base64").replace(/(.{1,76})/g, "$1\n") + line;
