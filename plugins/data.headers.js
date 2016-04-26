@@ -367,7 +367,9 @@ exports.mailing_list = function (next, connection) {
                     found_mlm++;
                     continue;
                 }
-                connection.logerror(plugin, "mlm start miss: " + name + ': ' + header);
+                // NOTE: Unlike the next "j.match" code block, this condition alone
+                //       (Sender header != "owner-...") should not log an error
+                connection.logdebug(plugin, "mlm start miss: " + name + ': ' + header);
             }
             if (j.match) {
                 if (header.match(new RegExp(j.match,'i'))) {
