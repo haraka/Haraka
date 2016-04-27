@@ -48,7 +48,7 @@ exports.early_talker = function(next, connection) {
     }
 
     // Don't delay whitelisted IPs
-    if (plugin.whitelist && plugin.ip_in_list(plugin.whitelist, connection.remote_ip)) { // check connecting IP
+    if (plugin.ip_in_list(connection.remote_ip)) { // check connecting IP
         connection.results.add(plugin, { skip: 'whitelist' });
         return next();
     }
@@ -79,21 +79,25 @@ exports.early_talker = function(next, connection) {
 
 
 /**
- * Check if the ip is whitelisted
+ * Check if an ip is whitelisted
  *
- * @param  {Array} whitelist A list of ipaddr objects
  * @param  {String} ip       The remote IP to verify
  * @return {Boolean}         True if is whitelisted
  */
-exports.ip_in_list = function (whitelist, ip) {
+exports.ip_in_list = function (ip) {
+    var plugin = this;
     var ipobj = ipaddr.parse(ip);
 
-    for (var i = 0; i < whitelist.length; i++) {
+    if (!plugin.whitelist) {
+        return false;
+    }
+
+    for (var i = 0; i < plugin.whitelist.length; i++) {
         try {
-            if (ipobj.match(whitelist[i])) {
+            if (ipobj.match(plugin.whitelist[i])) {
                 return true;
             }
-        } catch (e) {
+        } catch (ignore) {
         }
     }
     return false;
@@ -120,8 +124,8 @@ exports.load_ip_list = function(list) {
             }
 
             whitelist.push(addr);
-        } catch (e) {
+        } catch (ignore) {
         }
     }
     return whitelist;
-}
+};
