@@ -86,11 +86,12 @@ exports.early_talker = function(next, connection) {
  */
 exports.ip_in_list = function (ip) {
     var plugin = this;
-    var ipobj = ipaddr.parse(ip);
 
     if (!plugin.whitelist) {
         return false;
     }
+
+    var ipobj = ipaddr.parse(ip);
 
     for (var i = 0; i < plugin.whitelist.length; i++) {
         try {
