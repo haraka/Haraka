@@ -353,7 +353,7 @@ exports.get_client_plugin = function (plugin, connection, c, callback) {
         }
     }
 
-    var hostport = get_hostport(connection, connection.server.notes, config);
+    var hostport = get_hostport(connection, connection.server.notes, c);
 
     var pool = exports.get_pool(connection.server, hostport.port, hostport.host,
                                 c.connect_timeout, c.timeout, c.max_connections);
@@ -428,7 +428,7 @@ exports.get_client_plugin = function (plugin, connection, c, callback) {
         });
 
         smtp_client.on('helo', function () {
-            if (!config.auth || smtp_client.authenticated) {
+            if (!c.auth || smtp_client.authenticated) {
                 if (smtp_client.is_dead_sender(plugin, connection)) {
                     return;
                 }
@@ -436,19 +436,19 @@ exports.get_client_plugin = function (plugin, connection, c, callback) {
                 return;
             }
 
-            if (config.auth.type === null || typeof(config.auth.type) === 'undefined') { return; } // Ignore blank
-            var auth_type = config.auth.type.toLowerCase();
+            if (c.auth.type === null || typeof(c.auth.type) === 'undefined') { return; } // Ignore blank
+            var auth_type = c.auth.type.toLowerCase();
             if (smtp_client.auth_capabilities.indexOf(auth_type) === -1) {
                 throw new Error("Auth type \"" + auth_type + "\" not supported by server (supports: " + smtp_client.auth_capabilities.join(',') + ")");
             }
             switch (auth_type) {
                 case 'plain':
-                    if (!config.auth.user || !config.auth.pass) {
+                    if (!c.auth.user || !c.auth.pass) {
                         throw new Error("Must include auth.user and auth.pass for PLAIN auth.");
                     }
-                    logger.logdebug('[smtp_client_pool] uuid=' + smtp_client.uuid + ' authenticating as "' + config.auth.user + '"');
+                    logger.logdebug('[smtp_client_pool] uuid=' + smtp_client.uuid + ' authenticating as "' + c.auth.user + '"');
                     smtp_client.send_command('AUTH',
-                        'PLAIN ' + utils.base64(config.auth.user + "\0" + config.auth.user + "\0" + config.auth.pass) );
+                        'PLAIN ' + utils.base64(c.auth.user + "\0" + c.auth.user + "\0" + c.auth.pass) );
                     break;
                 case 'cram-md5':
                     throw new Error("Not implemented");
