@@ -12,16 +12,16 @@
   },
   "main": "haraka.js",
   "engines": {
-    "node": ">= v0.10.43"
+    "node": ">= v0.10.44"
   },
   "dependencies": {
     "address-rfc2821"       : "*",
     "address-rfc2822"       : "*",
     "async"                 : "~1.5.2",
     "daemon"                : "~1.1.0",
-    "generic-pool"          : "~2.3.1",
+    "generic-pool"          : "~2.4.1",
     "iconv"                 : "~2.2.0",
-    "ipaddr.js"             : "~1.0.3",
+    "ipaddr.js"             : "~1.1.0",
     "js-yaml"               : "~3.5.2",
     "nopt"                  : "~3.0.4",
     "npid"                  : "~0.4.0",
@@ -33,10 +33,10 @@
   "optionalDependencies": {
     "elasticsearch"         : "*",
     "haraka-nosql"          : "*",
-    "ldapjs"                : "~0.7.1",
+    "ldapjs"                : "~1.0.0",
     "maxmind"               : "*",
     "modern-syslog"         : "~1.1.1",
-    "redis"                 : "~2.4.2",
+    "redis"                 : "~2.5.3",
     "tmp"                   : "~0.0.28",
     "vs-stun"               : "~0.0.7"
   },
