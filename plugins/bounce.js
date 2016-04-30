@@ -251,7 +251,7 @@ exports.non_local_msgid = function (next, connection) {
 
     var domains=[];
     for (var i=0; i < matches.length; i++) {
-        var res = matches[i].match(/@(.*)>/i);
+        var res = matches[i].match(/@<?([^>]*)>?/i);
         if (!res) continue;
         domains.push(res[1]);
     }
