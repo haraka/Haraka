@@ -5,6 +5,7 @@ var config = require('./config');
 var Header = require('./mailheader').Header;
 var body   = require('./mailbody');
 var utils  = require('./utils');
+var util   = require('util');
 var MessageStream = require('./messagestream');
 
 var MAX_HEADER_LINES = config.get('max_header_lines') || 1000;
@@ -63,7 +64,7 @@ Transaction.prototype.ensure_body = function() {
     }
     this.body_filters.forEach(function(o) {
         self.body.add_filter(function(ct, enc, buf) {
-            if ((o.ct_match instanceof RegExp &&
+            if ((util.isRegExp(o.ct_match) &&
                  o.ct_match.test(ct.toLowerCase())) ||
                     ct.toLowerCase()
                       .indexOf(String(o.ct_match)
