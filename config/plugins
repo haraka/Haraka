@@ -16,18 +16,18 @@
 #relay
 # control which IPs, rDNS hostnames, HELO hostnames, MAIL FROM addresses, and
 # RCPT TO address you accept mail from. See 'haraka -h access'.
-access
+#access
 # connect.p0f
 # connect.geoip
 # connect.asn
 # connect.fcrdns
 # block mails from known bad hosts (see config/dnsbl.zones for the DNS zones queried)
-dnsbl
+#dnsbl
 
 # HELO
 #early_talker
 # see config/helo.checks.ini for configuration
-helo.checks
+#helo.checks
 # see 'haraka -h tls' for config instructions before enabling!
 # tls
 #
@@ -39,17 +39,18 @@ helo.checks
 
 # MAIL FROM
 # Only accept mail where the MAIL FROM domain is resolvable to an MX record
-mail_from.is_resolvable
+#mail_from.is_resolvable
 #spf
 
 # RCPT TO
 # At least one rcpt_to plugin is REQUIRED for inbound email. The simplest
 # plugin is in_host_list, see 'haraka -h rcpt_to.in_host_list' to configure.
-rcpt_to.in_host_list
+#rcpt_to.in_host_list
 #rcpt_to.qmail_deliverable
 #rcpt_to.ldap
 #rcpt_to.routes
 
+relay_localhost
 # DATA
 #bounce
 # Check mail headers are valid
