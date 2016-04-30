@@ -417,7 +417,7 @@ exports.send_email = function () {
     while (match = re.exec(contents)) {
         var line = match[1];
         line = line.replace(/\r?\n?$/, '\r\n'); // make sure it ends in \r\n
-        if (dot_stuffed === false && line.length > 3 && line.substr(0,1) === '.') {
+        if (dot_stuffed === false && line.length >= 3 && line.substr(0,1) === '.') {
             line = "." + line;
         }
         transaction.add_data(new Buffer(line));
