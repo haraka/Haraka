@@ -27,6 +27,7 @@ var _set_up = function (done) {
     };
 
     this.connection = Connection.createConnection();
+    this.connection.remote_ip = '8.8.8.8';
     this.connection.transaction = {
         header: new Header(),
         results: new ResultStore(this.plugin),
@@ -137,6 +138,7 @@ exports.single_recipient = {
             new Address.Address('test2@good.com')
         ];
         var cb = function () {
+            console.log(arguments[0]);
             test.equal(DENY, arguments[0]);
         };
         this.plugin.single_recipient(cb, this.connection);
