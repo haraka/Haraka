@@ -172,8 +172,8 @@ SPF.prototype.check_host = function (ip, domain, mail_from, cb) {
         if (err) {
             self.log_debug('error looking up TXT record: ' + err.message);
             switch (err.code) {
-                case 'ENOTFOUND':
-                case 'ENODATA':
+                case dns.NOTFOUND:
+                case dns.NODATA:
                 case dns.NXDOMAIN:  return cb(null, self.SPF_NONE);
                 default:            return cb(null, self.SPF_TEMPERROR);
             }
@@ -373,8 +373,8 @@ SPF.prototype.mech_exists = function (qualifier, args, cb) {
         if (err) {
             self.log_debug('mech_exists: ' + err);
             switch (err.code) {
-                case 'ENOTFOUND':
-                case 'ENODATA':
+                case dns.NOTFOUND:
+                case dns.NODATA:
                 case dns.NXDOMAIN:
                     return cb(null, self.SPF_NONE);
                 default:
@@ -418,8 +418,8 @@ SPF.prototype.mech_a = function (qualifier, args, cb) {
         if (err) {
             self.log_debug('mech_a: ' + err);
             switch (err.code) {
-                case 'ENOTFOUND':
-                case 'ENODATA':
+                case dns.NOTFOUND:
+                case dns.NODATA:
                 case dns.NXDOMAIN:  return cb(null, self.SPF_NONE);
                 default:            return cb(null, self.SPF_TEMPERROR);
             }
@@ -469,8 +469,8 @@ SPF.prototype.mech_mx = function (qualifier, args, cb) {
     dns.resolveMx(domain, function (err, mxes) {
         if (err) {
             switch (err.code) {
-                case 'ENOTFOUND':
-                case 'ENODATA':
+                case dns.NOTFOUND:
+                case dns.NODATA:
                 case dns.NXDOMAIN:  return cb(null, self.SPF_NONE);
                 default:            return cb(null, self.SPF_TEMPERROR);
             }
@@ -499,8 +499,8 @@ SPF.prototype.mech_mx = function (qualifier, args, cb) {
                 pending--;
                 if (err4) {
                     switch (err4.code) {
-                        case 'ENOTFOUND':
-                        case 'ENODATA':
+                        case dns.NOTFOUND:
+                        case dns.NODATA:
                         case dns.NXDOMAIN:  break;
                         default:            return cb(null, self.SPF_TEMPERROR);
                     }

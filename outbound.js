@@ -894,7 +894,7 @@ HMailItem.prototype.found_mx = function (err, mxs) {
     var hmail = this;
     if (err) {
         this.logerror("MX Lookup for " + this.todo.domain + " failed: " + err);
-        if (err.code === dns.NXDOMAIN || err.code === 'ENOTFOUND') {
+        if (err.code === dns.NXDOMAIN || err.code === dns.NOTFOUND) {
             this.todo.rcpt_to.forEach(function (rcpt) {
                 hmail.extend_rcpt_with_dsn(rcpt, DSN.addr_bad_dest_system("No Such Domain: " + hmail.todo.domain));
             });

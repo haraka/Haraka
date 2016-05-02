@@ -104,12 +104,12 @@ exports.hook_lookup_rdns = function (next, connection) {
 
                 if (err2) {
                     for (var e=0; e < err2.length; e++) {
-                        switch (err2[e]) {
-                            case 'queryAaaa ENODATA':
-                            case 'queryAaaa ENOTFOUND':
+                        switch (err2[e].code) {
+                            case dns.NODATA:
+                            case dns.NOTFOUND:
                                 break;
                             default:
-                                connection.results.add(plugin, {err: err2[e]});
+                                connection.results.add(plugin, {err: err2[e].message});
                         }
                     }
                 }
@@ -168,7 +168,6 @@ exports.handle_ptr_error = function (connection, err, do_next) {
     var rip = connection.remote_ip;
 
     switch (err.code) {
-        case 'ENOTFOUND':
         case dns.NOTFOUND:
         case dns.NXDOMAIN:
             connection.results.add(plugin, {fail: 'has_rdns', emit: true});

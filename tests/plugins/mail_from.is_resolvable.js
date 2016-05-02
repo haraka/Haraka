@@ -1,7 +1,7 @@
 'use strict';
 
 var fixtures     = require('haraka-test-fixtures');
-
+var dns          = require('dns');
 var Connection   = fixtures.connection;
 var ResultStore  = fixtures.result_store;
 
@@ -27,6 +27,7 @@ exports.mxErr = {
         var t = this;
         var txn = t.connection.transaction;
         var err = new Error('oops');
+        err.code = null;
         var called = false;
         var cb = function () { called = true; };
         var r  = t.plugin.mxErr(t.connection, 'any.com', 'MX', err, cb);
@@ -41,7 +42,7 @@ exports.mxErr = {
         var t = this;
         var txn = t.connection.transaction;
         var err = new Error('oops');
-        err.code='ENOTFOUND';
+        err.code=dns.NOTFOUND;
         var called = false;
         var cb = function () { called = true; };
         var r  = t.plugin.mxErr(t.connection, 'any.com', 'MX', err, cb);

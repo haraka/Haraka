@@ -47,7 +47,7 @@ exports.handle_ptr_error = {
         test.expect(1);
         this.plugin.refresh_config(this.connection);
         var err = new Error("test error");
-        err.code = 'ENOTFOUND';
+        err.code = dns.NOTFOUND;
         var cb = function () {
             test.equal(undefined, arguments[0]);
         };
@@ -58,7 +58,7 @@ exports.handle_ptr_error = {
         test.expect(1);
         this.plugin.refresh_config(this.connection);
         var err = new Error("test error");
-        err.code = 'ENOTFOUND';
+        err.code = dns.NOTFOUND;
         this.plugin.cfg.reject.no_rdns=1;
         var cb = function () {
             test.equal(DENY, arguments[0]);

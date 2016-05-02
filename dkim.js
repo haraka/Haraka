@@ -306,8 +306,8 @@ DKIMObject.prototype.end = function () {
         clearTimeout(timer);
         if (err) {
             switch (err.code) {
-                case 'ENOTFOUND':
-                case 'ENODATA':
+                case dns.NOTFOUND:
+                case dns.NODATA:
                 case dns.NXDOMAIN:
                     return self.result('no key for signature', 'invalid');
                 default:
