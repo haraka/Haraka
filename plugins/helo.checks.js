@@ -2,7 +2,7 @@
 // Check various bits of the HELO string
 
 var tlds      = require('haraka-tld');
-
+var dns       = require('dns');
 var net_utils = require('./net_utils');
 var utils     = require('./utils');
 
@@ -403,11 +403,11 @@ exports.forward_dns = function (next, connection, helo) {
 
     var cb = function (err, ips) {
         if (err) {
-            if (err.code === 'ENOTFOUND' || err.code === 'ENODATA') {
+            if (err.code === dns.NOTFOUND || err.code === dns.NODATA) {
                 connection.results.add(plugin, {fail: 'forward_dns('+err.code+')'});
                 return next();
             }
-            if (err.code === 'ETIMEOUT' && plugin.cfg.reject.forward_dns) {
+            if (err.code === dns.TIMEOUT && plugin.cfg.reject.forward_dns) {
                 connection.results.add(plugin, {fail: 'forward_dns('+err.code+')'});
                 return next(DENYSOFT, "DNS timeout resolving your HELO hostname");
             }
@@ -506,7 +506,7 @@ exports.get_a_records = function (host, cb) {
     if (!/\./.test(host)) {
         // a single label is not a host name
         var e = new Error("invalid hostname");
-        e.code = 'ENOTFOUND';
+        e.code = dns.NOTFOUND;
         return cb(e);
     }
 
@@ -515,7 +515,7 @@ exports.get_a_records = function (host, cb) {
     var timer = setTimeout(function () {
         timed_out = true;
         var err = new Error('timeout resolving: ' + host);
-        err.code = 'ETIMEOUT';
+        err.code = dns.TIMEOUT;
         plugin.logerror(err);
         return cb(err);
     }, (plugin.cfg.main.dns_timeout || 30) * 1000);
@@ -531,12 +531,12 @@ exports.get_a_records = function (host, cb) {
         if (errs) {
             var err = '';
             for (var f=0; f < errs.length; f++) {
-                switch (errs[f]) {
-                    case 'queryAaaa ENODATA':
-                    case 'queryAaaa ENOTFOUND':
+                switch (errs[f].code) {
+                    case dns.NODATA:
+                    case dns.NOTFOUND:
                         break;
                     default:
-                        err += errs[f];
+                        err += errs[f].message;
                 }
             }
         }

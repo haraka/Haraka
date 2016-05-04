@@ -97,10 +97,10 @@ exports.hook_mail = function(next, connection, params) {
                 pending_queries--;
                 if (!txn) return;
                 if (err2 && err2.length === 2) {
-                    results.add(plugin, {msg: err2[0]});
+                    results.add(plugin, {msg: err2[0].message});
                     connection.logdebug(plugin, domain + ': MX ' +
                             addr.priority + ' ' + addr.exchange +
-                            ' => ' + err2[0]);
+                            ' => ' + err2[0].message);
                     check_results();
                     return;
                 }
@@ -139,9 +139,9 @@ exports.mxErr = function (connection, domain, type, err, mxDone) {
     txn.results.add(plugin, {msg: domain + ':' + type + ':' + err.message});
     connection.logdebug(plugin, domain + ':' + type + ' => ' + err.message);
     switch (err.code) {
-        case 'NXDOMAIN':
-        case 'ENOTFOUND':
-        case 'ENODATA':
+        case dns.NXDOMAIN:
+        case dns.NOTFOUND:
+        case dns.NODATA:
             // Ignore
             break;
         default:

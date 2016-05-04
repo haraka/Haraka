@@ -286,7 +286,7 @@ exports.hook_lookup_rdns = function (next, connection) {
         if (err) {
             if (err.code) {
                 if (err.code === dns.NXDOMAIN) return next();
-                if (err.code === 'ENOTFOUND') return next();
+                if (err.code === dns.NOTFOUND) return next();
             }
             connection.results.add(plugin, {err: err });
             return next();

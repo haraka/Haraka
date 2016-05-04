@@ -20,6 +20,8 @@ var net_utils = require('./net_utils');
 function _dns_error(connection, next, err, host, plugin, nxdomain, dnserror) {
     switch (err.code) {
         case dns.NXDOMAIN:
+        case dns.NOTFOUND:
+        case dns.NOTDATA:
             connection.loginfo(plugin, 'could not find a address for ' + host +
                 '. Disconnecting.');
             next(DENYDISCONNECT, 'Sorry we could not find address for ' +

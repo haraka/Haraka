@@ -50,10 +50,10 @@ exports.lookup = function (lookup, zone, cb) {
         }
 
         if (err) {
-            if (err.code === 'ETIMEOUT') {         // list timed out
+            if (err.code === dns.TIMEOUT) {         // list timed out
                 self.disable_zone(zone, err.code); // disable it
             }
-            if (err.code === 'ENOTFOUND') {  // unlisted
+            if (err.code === dns.NOTFOUND) {  // unlisted
                 return cb(null, a);          // not an error for a DNSBL
             }
         }

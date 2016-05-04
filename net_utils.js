@@ -290,7 +290,7 @@ exports.get_ips_by_host = function (hostname, done) {
             function (iter_done) {
                 dns.resolve4(hostname, function resolve_cb (err, res) {
                     if (err) {
-                        errors.push(err.message);
+                        errors.push(err);
                         return iter_done();
                     }
                     for (var i=0; i<res.length; i++) {
@@ -302,7 +302,7 @@ exports.get_ips_by_host = function (hostname, done) {
             function (iter_done) {
                 dns.resolve6(hostname, function resolve_cb (err, res) {
                     if (err) {
-                        errors.push(err.message);
+                        errors.push(err);
                         return iter_done();
                     }
                     for (var j=0; j<res.length; j++) {
