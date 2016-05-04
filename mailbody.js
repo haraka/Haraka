@@ -265,7 +265,7 @@ Body.prototype.parse_end = function (line) {
     this.body_encoding = enc;
 
     // ignore these lines - but we could store somewhere I guess.
-    if (!this.body_text_encoded.length) return this._empty_filter(ct, enc); // nothing to decode
+    if (!this.body_text_encoded.length) return this._empty_filter(ct, enc) + line; // nothing to decode
     if (this.bodytext.length !== 0) return line;     // already decoded?
 
     var buf = this.decode_function(this.body_text_encoded);
