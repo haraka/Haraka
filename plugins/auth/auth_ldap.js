@@ -2,10 +2,11 @@
 
 var ldap  = require('ldapjs');
 var async = require('async');
+var net_utils = require('./net_utils');
 
 exports.hook_capabilities = function (next, connection) {
-    // Don't offer AUTH capabilities by default unless session is encrypted
-    if (connection.using_tls) {
+    // Don't offer AUTH capabilities by default unless private ip or session is encrypted
+    if (net_utils.is_private_ip(connection.remote_ip) || connection.using_tls) {
         var methods = [ 'LOGIN' ];
         connection.capabilities.push('AUTH ' + methods.join(' '));
         connection.notes.allowed_auth_methods = methods;
@@ -33,6 +34,11 @@ exports.check_plain_passwd = function (connection, user, passwd, cb) {
         tlsOptions: {
             rejectUnauthorized: rejectUnauthorized
         }
+    });
+
+    client.on('error', function (err) {
+        connection.loginfo('auth_ldap: client error ' + err.message);
+        cb(false);
     });
 
     config.dns = Object.keys(config.dns).map(function (v) {
