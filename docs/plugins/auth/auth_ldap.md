@@ -5,6 +5,11 @@ The `auth/auth_ldap` plugin uses an LDAP bind to authenticate a user. Currently
 only one server and multiple DNs can be configured. If any of the DN binds succeed, 
 the user is authenticated. 
 
+**IMPORANT NOTE** - this plugin requires that STARTTLS be used via the tls plugin
+before it will advertise AUTH capabilities by the EHLO command.  This is to
+improve security out-of-the-box.   Localhost and any IP in RFC1918 ranges
+are automatically exempt from this rule.
+
 Configuration
 -------------
 
