@@ -1,5 +1,55 @@
 
-2.N.N - Mar NN, 2016
+2.8.0 - May NN, 2016
+
+* Changes
+    * updated dependency versions (#1426, #1425)
+    * use utf8 encoding for body filters (#1429)
+    * remove spameatingmonkey from tests (#1421)
+    * replace ./constants.js with haraka-constants (#1353)
+    * Document HMail and TODO items (#1343)
+    * Copy only a minimal config/* by default (#1341).
+    * cfreader/* removed to haraka/haraka-config (#1350)
+    * outbound and smtp_client honor tls.ini settings (#1350)
+    * outbound TLS defaults to enabled
+    * lint: remove all unused variables (#1358)
+    * replace ./address.js with address-rfc2181 (#1359)
+
+* New Features
+    * smtp_forward: accepts a list of backend hosts, thanks @kgeoss (#1333)
+    * config: add array[] syntax to INI files (#1345)
+    * plugins.js: support require('./config') in plugins
+    * Load plugin config from own folder and merge (#1335)
+    * Allow original email's Subject to be included in bounce message (#1337)
+    * new queue/smtp_bridge plugin, thanks @jesucarr (#1351)
+
+* Improvements
+    * early_talker: supports IP whitelisting (#1423)
+    * loading plugins as packages (#1278)
+    * removed TLD stuff to haraka/haraka-tld (#1301)
+    * removed unused 'require('redis') in plugins/karma (#1348)
+    * improved MIME header support per rfc2231 (#1344)
+    * tls options can be defined for outbound and smtp_* (#1357) 
+    * explicitly disable SSLv2 (#1395)
+    * cache STUN results
+    * xclient plugin improvements (#1405)
+    * tls: Set verify=NO correctly when no certificate presented (#1400)
+    * improved message header decoding (#1403, #1406)
+    * bounce: skip single_recipient check for relays/private_ips (#1385)
+    * rspamd docs: Clarify usage of check.private_ip (#1383)
+    * if rcpt_to returns DSN in msg, log it properly (#1375)
+
+* Bug Fixes
+    * fix out-of-range errors from banner insertion (#1334)
+    * dkim_verify: Call next only after message_stream ended (#1330)
+    * outbound: remove type check from pid match (#1322)
+    * lint: enable no-shadown and remove all shadow variables (#1349)
+    * spf: fix log_debug syntax (#1416)
+    * auto_proxy: fix a starttls loop (#1392)
+    * fcrdns: corrected err variable name (#1391)
+    * rspamd: Fix undefined variable (#1396)
+    * dkim_verify: Fix header handling (#1371)
+    * smtp_client: fix remote_ip (#1362)
+
 
 2.7.3 - Feb 04, 2016
 
