@@ -35,6 +35,11 @@ exports.check_plain_passwd = function (connection, user, passwd, cb) {
         }
     });
 
+    client.on('error', function (err) {
+        connection.loginfo('auth_ldap: client error ' + err.message);
+        cb(false);
+    });
+
     config.dns = Object.keys(config.dns).map(function (v) {
         return config.dns[v];
     })
