@@ -10,7 +10,8 @@ var _set_up = function (done) {
 
     this.plugin = new fixtures.plugin('auth/auth_base');
 
-    this.plugin.get_plain_passwd = function (user, cb) {
+    this.plugin.get_plain_passwd = function (user, cb, connection) {
+        connection.notes.auth_custom_note = 'custom_note';
         if (user === 'test') return cb('testpass');
         return cb(null);
     };
@@ -56,14 +57,14 @@ exports.get_plain_passwd = {
             test.expect(1);
             test.equal(pass, null);
             test.done();
-        });
+        }, this.connection);
     },
     'get_plain_passwd, test user': function (test) {
         this.plugin.get_plain_passwd('test', function (pass) {
             test.expect(1);
             test.equal(pass, 'testpass');
             test.done();
-        });
+        }, this.connection);
     },
 };
 
@@ -161,9 +162,10 @@ exports.check_user = {
     setUp : _set_up,
     'bad auth': function (test) {
         var next = function (code) {
-            test.expect(2);
+            test.expect(3);
             test.equal(code, OK);
             test.equal(this.connection.relaying, false);
+            test.equal(this.connection.notes.auth_custom_note, 'custom_note');
             test.done();
         }.bind(this);
         var credentials = ['matt','ttam'];
@@ -171,9 +173,10 @@ exports.check_user = {
     },
     'good auth': function (test) {
         var next = function (code) {
-            test.expect(2);
+            test.expect(3);
             test.equal(code, OK);
             test.ok(this.connection.relaying);
+            test.equal(this.connection.notes.auth_custom_note, 'custom_note');
             test.done();
         }.bind(this);
         var credentials = ['test','testpass'];

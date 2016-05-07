@@ -106,7 +106,7 @@ exports.get_vpopmaild_socket = function (user) {
     return socket;
 };
 
-exports.get_plain_passwd = function (user, cb) {
+exports.get_plain_passwd = function (user, cb, connection) {
     var plugin = this;
 
     var socket = plugin.get_vpopmaild_socket(user);
