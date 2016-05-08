@@ -67,7 +67,7 @@ exports.tls_capabilities = function (next, connection) {
 
     var plugin = this;
 
-    if (plugin.cfg.no_tls_hosts[connection.remote_ip]) {
+    if (tls_socket.is_no_tls_host(plugin.cfg, connection.remote_ip)) {
         return next();
     }
 

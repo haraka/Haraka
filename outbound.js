@@ -1148,8 +1148,8 @@ HMailItem.prototype.try_deliver_host_on_socket = function (mx, host, port, socke
         }
 
         // TLS
-        if (!(self.todo.domain in tls_config.no_tls_hosts) &&
-            !(host in tls_config.no_tls_hosts) &&
+        if (!tls_socket.is_no_tls_host(tls_config, self.todo.domain) &&
+            !tls_socket.is_no_tls_host(tls_config, host) &&
             smtp_properties.tls && cfg.enable_tls && !secured)
         {
             socket.on('secure', function () {

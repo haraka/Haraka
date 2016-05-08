@@ -42,11 +42,12 @@ The following settings can be specified in config/tls.ini.
 
 ### `no_tls_hosts`
 
-If needed, add this section to the tls.ini file and list any IPs that have
+If needed, add this section to the tls.ini file and list any IP ranges that have
 broken TLS. Ex:
 
     [no_tls_hosts]
-    192.168.1.3=true
+    192.168.1.3
+    172.16.0.0/16
 
 
 The [Node.js TLS](http://nodejs.org/api/tls.html) page has additional information
