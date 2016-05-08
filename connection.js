@@ -1339,6 +1339,8 @@ Connection.prototype.received_line = function() {
     if (this.authheader) smtp = smtp + 'A';
     // sslheader only populated with node.js >= 0.8
     var sslheader;
+    var header_hide_version = config.get('header_hide_version') ? true : false;
+
     if (this.notes.tls && this.notes.tls.cipher) {
         sslheader = '(version=' + this.notes.tls.cipher.version +
             ' cipher=' + this.notes.tls.cipher.name +
@@ -1346,21 +1348,31 @@ Connection.prototype.received_line = function() {
             ((this.notes.tls.authorizationError &&
               this.notes.tls.authorizationError.code === 'UNABLE_TO_GET_ISSUER_CERT') ? 'NO' : 'FAIL')) + ')';
     }
-    return [
+    var received_header = [
         'from ',
         this.hello_host, ' (',
         // If no rDNS, don't display it
         ((!/^(?:DNSERROR|NXDOMAIN)/.test(this.remote_info)) ? this.remote_info + ' ' : ''),
         '[', this.remote_ip, '])',
         "\n\t",
-        'by ', config.get('me'), ' (Haraka/', version, ') with ', smtp,
+        'by ',
+        config.get('me')
+    ]
+
+    if (!header_hide_version) {
+        received_header.push(' (Haraka/', version, ')');
+    }
+
+    received_header.push(
+        ' with ', smtp,
         ' id ', this.transaction.uuid,
         "\n\t",
         'envelope-from ', this.transaction.mail_from.format(),
         ((this.authheader) ? ' ' + this.authheader.replace(/\r?\n\t?$/, '') : ''),
         ((sslheader) ? "\n\t" + sslheader.replace(/\r?\n\t?$/,'') : ''),
         ";\n\t", date_to_str(new Date())
-    ].join('');
+    )
+    return received_header.join('');
 };
 
 Connection.prototype.auth_results = function(message) {
