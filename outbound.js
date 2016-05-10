@@ -195,26 +195,24 @@ exports._load_cur_queue = function (pid, cb_name, cb) {
     self.loginfo("Loading outbound queue from ", queue_dir);
     fs.readdir(queue_dir, function (err, files) {
         if (err) {
-            return self.logerror("Failed to load queue directory (" +
+            return logger.logerror("Failed to load queue directory (" +
                 queue_dir + "): " + err);
         }
 
         self.cur_time = new Date(); // set once so we're not calling it a lot
 
-        self.load_queue_files(pid, cb_name, files);
-
-        if (cb) cb();
+        self.load_queue_files(pid, cb_name, files, cb);
     });
 };
 
-exports.load_queue_files = function (pid, cb_name, files) {
+exports.load_queue_files = function (pid, cb_name, files, cb) {
     var self = this;
     if (files.length === 0) return;
 
     if (cfg.disabled && cb_name === '_add_file') {
         // try again in 1 second if delivery is disabled
         setTimeout(function () {
-            self.load_queue_files(pid, cb_name, files);
+            exports.load_queue_files(pid, cb_name, files, cb);
         }, 1000);
         return;
     }
@@ -229,7 +227,7 @@ exports.load_queue_files = function (pid, cb_name, files) {
                 var new_filename = match[1] + match[2] + process.pid + match[4];
                 fs.rename(queue_dir + '/' + file, queue_dir + '/' + new_filename, function (err) {
                     if (err) {
-                        self.logerror("Unable to rename queue file: " + file +
+                        logger.logerror("Unable to rename queue file: " + file +
                             " to " + new_filename + " : " + err);
                         return cb();
                     }
@@ -246,10 +244,10 @@ exports.load_queue_files = function (pid, cb_name, files) {
             }
             else if (/^\./.test(file)) {
                 // dot-file...
-                self.logwarn("Removing left over dot-file: " + file);
+                logger.logwarn("Removing left over dot-file: " + file);
                 return fs.unlink(queue_dir + "/" + file, function (err) {
                     if (err) {
-                        self.logerror("Error removing dot-file: " + file + ": " + err);
+                        logger.logerror("Error removing dot-file: " + file + ": " + err);
                     }
                     cb();
                 });
@@ -261,27 +259,29 @@ exports.load_queue_files = function (pid, cb_name, files) {
         }, function (err) {
             if (err) {
                 // no error cases yet, but log anyway
-                self.logerror("Error fixing up queue files: " + err);
+                logger.logerror("Error fixing up queue files: " + err);
             }
-            self.loginfo("Done fixing up old PID queue files");
-            self.loginfo(delivery_queue.length() + " files in my delivery queue");
-            self.loginfo(load_queue.length() + " files in my load queue");
-            self.loginfo(temp_fail_queue.length() + " files in my temp fail queue");
+            logger.loginfo("Done fixing up old PID queue files");
+            logger.loginfo(delivery_queue.length() + " files in my delivery queue");
+            logger.loginfo(load_queue.length() + " files in my load queue");
+            logger.loginfo(temp_fail_queue.length() + " files in my temp fail queue");
+
+            if (cb) cb();
         });
     }
     else {
         self.loginfo("Loading the queue...");
-        files.forEach(function (file) {
+        async.eachSeries(files, function (file, cb) {
             if (/^\./.test(file)) {
                 // dot-file...
                 self.logwarn("Removing left over dot-file: " + file);
-                return fs.unlink(queue_dir + "/" + file, function () {});
+                return fs.unlink(queue_dir + "/" + file, cb);
             }
 
             var matches = file.match(fn_re);
             if (!matches) {
                 self.logerror("Unrecognized file in queue folder: " + file);
-                return;
+                return cb();
             }
 
             var next_process = matches[1];
@@ -293,10 +293,17 @@ exports.load_queue_files = function (pid, cb_name, files) {
                 else {
                     temp_fail_queue.add(next_process - self.cur_time, function () { load_queue.push(file);});
                 }
+                cb();
             }
             else {
-                self[cb_name](file);
+                self[cb_name](file, cb);
             }
+        }, function (err) {
+            if (err) {
+                logger.logerror(err);
+            }
+
+            if (cb) cb();
         });
     }
 };
@@ -312,13 +319,40 @@ exports._add_file = function (hmail) {
     }
 };
 
-exports._list_file = function (file) {
-    // TODO: output more data here?
-    console.log("Q: " + file);
+exports._list_file = function (file, cb) {
+    var tl_reader = fs.createReadStream(path.join(queue_dir, file), {start: 0, end: 3});
+    tl_reader.on('error', function (err) {
+        console.error("Error reading queue file: " + file + ":", err);
+    });
+    tl_reader.once('data', function (buf) {
+        // I'm making the assumption here we won't ever read less than 4 bytes
+        // as no filesystem on the planet should be that dumb...
+        tl_reader.destroy();
+        var todo_len = (buf[0] << 24) + (buf[1] << 16) + (buf[2] << 8) + buf[3];
+        var td_reader = fs.createReadStream(path.join(queue_dir, file), {encoding: 'utf8', start: 4, end: todo_len + 3});
+        var todo = '';
+        td_reader.on('data', function (str) {
+            todo += str;
+            if (Buffer.byteLength(todo) === todo_len) {
+                // we read everything
+                var todo_struct = JSON.parse(todo);
+                todo_struct.rcpt_to = todo_struct.rcpt_to.map(function (a) { return new Address (a); });
+                todo_struct.mail_from = new Address (todo_struct.mail_from);
+                console.log("Q: " + file + " " + todo_struct.rcpt_to.length + " recipients at domain " + todo_struct.domain);
+                cb();
+            }
+        });
+        td_reader.on('end', function () {
+            if (Buffer.byteLength(todo) !== todo_len) {
+                console.error("Didn't find right amount of data in todo for file:", file);
+            }
+        });
+    });
 };
 
-exports._stat_file = function () {
+exports._stat_file = function (file, cb) {
     queue_count++;
+    cb();
 };
 
 exports.stats = function () {
@@ -713,7 +747,7 @@ HMailItem.prototype.read_todo = function () {
         self.logerror("Error reading queue file: " + self.path + ": " + err);
         return self.temp_fail("Error reading queue file: " + err);
     });
-    tl_reader.on('data', function (buf) {
+    tl_reader.once('data', function (buf) {
         // I'm making the assumption here we won't ever read less than 4 bytes
         // as no filesystem on the planet should be that dumb...
         tl_reader.destroy();
