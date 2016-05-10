@@ -205,14 +205,14 @@ exports._load_cur_queue = function (pid, cb_name, cb) {
     });
 };
 
-exports.load_queue_files = function (pid, cb_name, files, cb) {
+exports.load_queue_files = function (pid, cb_name, files, callback) {
     var self = this;
     if (files.length === 0) return;
 
     if (cfg.disabled && cb_name === '_add_file') {
         // try again in 1 second if delivery is disabled
         setTimeout(function () {
-            exports.load_queue_files(pid, cb_name, files, cb);
+            exports.load_queue_files(pid, cb_name, files, callback);
         }, 1000);
         return;
     }
@@ -266,7 +266,7 @@ exports.load_queue_files = function (pid, cb_name, files, cb) {
             logger.loginfo(load_queue.length() + " files in my load queue");
             logger.loginfo(temp_fail_queue.length() + " files in my temp fail queue");
 
-            if (cb) cb();
+            if (callback) callback();
         });
     }
     else {
@@ -303,7 +303,7 @@ exports.load_queue_files = function (pid, cb_name, files, cb) {
                 logger.logerror(err);
             }
 
-            if (cb) cb();
+            if (callback) callback();
         });
     }
 };
