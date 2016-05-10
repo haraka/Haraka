@@ -31,7 +31,9 @@ var WRITE_EXCL  = core_consts.O_CREAT | core_consts.O_TRUNC | core_consts.O_WRON
 
 var MAX_UNIQ = 10000;
 var my_hostname = require('os').hostname().replace(/\\/, '\\057').replace(/:/, '\\072');
-var fn_re = /^(\d+)_(\d+)_/; // I like how this looks like a person
+
+// File Name Format: $time_$attempts_$pid_$uniq.$host
+var fn_re = /^(\d+)_(\d+)_(\d+)(_\d+\..*)$/
 
 // TODO: For testability, this should be accessible
 var queue_dir = path.resolve(config.get('queue_dir') || (process.env.HARAKA + '/queue'));
@@ -103,8 +105,9 @@ exports.list_queue = function (cb) {
 
 exports.stat_queue = function (cb) {
     var self = this;
-    this._load_cur_queue(null, "_stat_file", function () {
-        return cb(self.stats());
+    this._load_cur_queue(null, "_stat_file", function (err) {
+        if (err) return cb(err);
+        return cb(null, self.stats());
     });
 };
 
@@ -130,14 +133,13 @@ exports.scan_queue_pids = function (cb) {
                 return fs.unlink(file, function () {});
             }
 
-            // Format: $time_$attempts_$pid_$uniq.$host
-            var match = /^\d+_\d+_(\d+)_\d+\./.exec(file);
+            var match = fn_re.exec(file);
             if (!match) {
                 self.logerror("Unrecognized file in queue directory: " + queue_dir + '/' + file);
                 return;
             }
 
-            pids[match[1]] = true;
+            pids[match[3]] = true;
         });
 
         return cb(null, Object.keys(pids));
@@ -221,11 +223,11 @@ exports.load_queue_files = function (pid, cb_name, files, callback) {
         // Pre-scan to rename PID files to my PID:
         this.loginfo("Grabbing queue files for pid: " + pid);
         async.eachLimit(files, 200, function (file, cb) {
-            var match = /^(\d+)(_\d+_)(\d+)(_\d+\..*)$/.exec(file);
+            var match = fn_re.exec(file);
             if (match && match[3] == pid) {
                 var next_process = match[1];
-                var new_filename = match[1] + match[2] + process.pid + match[4];
-                fs.rename(queue_dir + '/' + file, queue_dir + '/' + new_filename, function (err) {
+                var new_filename = match[1] + "_" + match[2] + "_" + process.pid + match[4];
+                fs.rename(path.join(queue_dir, file), path.join(queue_dir, new_filename), function (err) {
                     if (err) {
                         logger.logerror("Unable to rename queue file: " + file +
                             " to " + new_filename + " : " + err);
@@ -245,7 +247,7 @@ exports.load_queue_files = function (pid, cb_name, files, callback) {
             else if (/^\./.test(file)) {
                 // dot-file...
                 logger.logwarn("Removing left over dot-file: " + file);
-                return fs.unlink(queue_dir + "/" + file, function (err) {
+                return fs.unlink(path.join(queue_dir, file), function (err) {
                     if (err) {
                         logger.logerror("Error removing dot-file: " + file + ": " + err);
                     }
@@ -270,23 +272,28 @@ exports.load_queue_files = function (pid, cb_name, files, callback) {
         });
     }
     else {
-        self.loginfo("Loading the queue...");
-        async.eachSeries(files, function (file, cb) {
+        logger.loginfo("Loading the queue...");
+        var good_file = function (file) {
             if (/^\./.test(file)) {
-                // dot-file...
-                self.logwarn("Removing left over dot-file: " + file);
-                return fs.unlink(queue_dir + "/" + file, cb);
+                logger.logwarn("Removing left over dot-file: " + file);
+                fs.unlink(path.join(queue_dir, file), function (err) {
+                    if (err) console.error(err);
+                });
+                return false;
             }
 
             var matches = file.match(fn_re);
             if (!matches) {
-                self.logerror("Unrecognized file in queue folder: " + file);
-                return cb();
+                logger.logerror("Unrecognized file in queue folder: " + file);
+                return false;
             }
-
-            var next_process = matches[1];
-
+            return true;
+        }
+        async.mapSeries(files.filter(good_file), function (file, cb) {
             if (cb_name === '_add_file') {
+                var matches = file.match(fn_re);
+                var next_process = matches[1];
+
                 if (next_process <= self.cur_time) {
                     load_queue.push(file);
                 }
@@ -298,13 +305,7 @@ exports.load_queue_files = function (pid, cb_name, files, callback) {
             else {
                 self[cb_name](file, cb);
             }
-        }, function (err) {
-            if (err) {
-                logger.logerror(err);
-            }
-
-            if (callback) callback();
-        });
+        }, callback);
     }
 };
 
@@ -338,8 +339,9 @@ exports._list_file = function (file, cb) {
                 var todo_struct = JSON.parse(todo);
                 todo_struct.rcpt_to = todo_struct.rcpt_to.map(function (a) { return new Address (a); });
                 todo_struct.mail_from = new Address (todo_struct.mail_from);
-                console.log("Q: " + file + " " + todo_struct.rcpt_to.length + " recipients at domain " + todo_struct.domain);
-                cb();
+                todo_struct.file = file;
+                todo_struct.full_path = path.join(queue_dir, file);
+                cb(null, todo_struct);
             }
         });
         td_reader.on('end', function () {
