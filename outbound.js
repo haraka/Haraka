@@ -347,6 +347,7 @@ exports._list_file = function (file, cb) {
         td_reader.on('end', function () {
             if (Buffer.byteLength(todo) !== todo_len) {
                 console.error("Didn't find right amount of data in todo for file:", file);
+                return cb();
             }
         });
     });
