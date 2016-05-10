@@ -86,7 +86,7 @@ exports.hook_data_post = function (next, connection) {
         }
     });
 
-    socket.once('end', function () {
+    socket.on('end', function () {
         // Abort if the transaction is gone
         if (!connection.transaction) return next();
 
