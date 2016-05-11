@@ -9,6 +9,7 @@ var fs   = require('fs'),
     path = require('path'),
     nopt = require("nopt"),
     os   = require('os'),
+    sprintf = require('sprintf-js').sprintf,
     base = path.join(__dirname, '..'),
     ver  = JSON.parse(fs.readFileSync(base+'/package.json', 'utf8'))['version'],
     knownOpts = {
@@ -81,14 +82,14 @@ var usage = [
 
 
 var listPlugins = function (b, dir) {
- 
+
     if (!dir) { dir = "plugins/"; }
-    
+
     var plist = dir + "\n",
         subdirs = [],
         gl = path.join((b ? b : base), dir),
         pd = fs.readdirSync(gl);
-    
+
     pd.forEach(function (p) {
         var stat = fs.statSync(gl + '/' + p);
         if (stat.isFile() && ~p.search('.js')) {
@@ -98,17 +99,17 @@ var listPlugins = function (b, dir) {
             subdirs.push(dir + p + "/");
         }
     });
-    
+
     subdirs.forEach(function (s) {
         plist += "\n" + listPlugins(b, s);
     });
-    
+
     return plist;
-    
+
 }
 
 
-// Show message when create 
+// Show message when create
 function create(path) {
 //  console.log('\x1b[32mcreate\x1b[0m: ' + path);
 }
@@ -145,19 +146,19 @@ function copyDir(srcPath, dstPath) {
 
     mkDir(dstPath);
     var files = fs.readdirSync(srcPath);
-    
+
     for(var i = 0; i < files.length; i++) {
-    
-        // Ignore ".*"  
+
+        // Ignore ".*"
         if (/^\./.test(files[i])) {
             continue;
         }
-    
+
         var srcFile = path.join(srcPath, files[i]);
         var dstFile = path.join(dstPath, files[i]);
 
         var srcStat = fs.statSync(srcFile);
-      
+
         // Recursive call If direcotory
         if (srcStat.isDirectory()) {
             copyDir(srcFile, dstFile);
@@ -315,7 +316,7 @@ else if (parsed.help) {
         var pager = 'less', spawn = require('child_process').spawn;
         if (process.env.PAGER) {
             var pager_split = process.env.PAGER.split(/ +/);
-            pager = pager_split.shift(); 
+            pager = pager_split.shift();
             md_path = pager_split.concat(md_path);
         };
 
@@ -329,11 +330,11 @@ else if (parsed.configs && parsed.plugin) {
     var js_path = path.join(parsed.configs, 'plugins', parsed.plugin + '.js');
     createFile(js_path,
                plugin_src, { plugin: parsed.plugin, config: parsed.configs });
-    
+
     var doc_path = path.join(parsed.configs, 'docs', 'plugins', parsed.plugin + '.md');
     createFile(doc_path,
                plugin_doc, { plugin: parsed.plugin, config: parsed.configs });
-    
+
     console.log("Plugin " + parsed.plugin + " created");
     console.log("Now edit javascript in:    " + js_path);
     console.log("Add the plugin to config:  " + path.join(parsed.configs, 'config', 'plugins'));
@@ -348,7 +349,10 @@ else if (parsed.qlist) {
     if (!parsed.verbose)
         logger.log = function () {} // disable logging for this
     var outbound = require(path.join(base, "outbound"));
-    outbound.list_queue(function () {
+    outbound.list_queue(function (err, qlist) {
+        qlist.forEach(function (todo) {
+            console.log(sprintf("Q: %s rcpt:%d from:%s domain:%s", todo.file, todo.rcpt_to.length, todo.mail_from.toString(), todo.domain));
+        });
         process.exit();
     });
 }
@@ -361,7 +365,7 @@ else if (parsed.qstat) {
     if (!parsed.verbose)
         logger.log = function () {} // disable logging for this
     var outbound = require(path.join(base, "outbound"));
-    outbound.stat_queue(function (stats) {
+    outbound.stat_queue(function (err, stats) {
         console.log(stats);
         process.exit();
     });
@@ -387,7 +391,6 @@ else if (parsed.order) {
                 (path.join(process.env.HARAKA, 'node_modules'));
         require('module')._initPaths(); // Horrible hack
     }
-    var sprintf = require('sprintf-js').sprintf;
     require(path.join(base, 'configfile')).watch_files = false;
     var logger = require(path.join(base, "logger"));
     if (!parsed.verbose)
@@ -467,14 +470,14 @@ else if (parsed.test) {
     }
     var connection = new Connection.createConnection(client, server);
     if (parsed['set-relay']) connection.relaying = true;
-   
+
     var run_next_hook = function () {
         var args = Array.prototype.slice.call(arguments);
         var code = args.shift();
         if (!parsed['skip-deny'] && code !== constants.ok && code !== constants.cont) {
              plugins.run_hooks('quit', connection);
         }
-        else { 
+        else {
              plugins.run_hooks.apply(this, args);
         }
     }
