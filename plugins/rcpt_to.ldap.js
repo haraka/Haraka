@@ -53,7 +53,7 @@ exports.ldap_rcpt = function(next, connection, params) {
 
     txn.results.add(plugin, { msg: 'connecting' });
 
-    var cfg = plugin.in_host_list(domain) ? plugin.cfg.main : plugin.cfg[domain];
+    var cfg = plugin.cfg[domain] || plugin.cfg.main;
     if (!cfg) {
         connection.logerror(plugin, 'no LDAP config for ' + domain);
         return next();
