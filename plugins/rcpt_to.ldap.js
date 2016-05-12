@@ -66,6 +66,11 @@ exports.ldap_rcpt = function(next, connection, params) {
         return next();
     }
 
+    client.on('error', function (err) {
+        connection.loginfo(plugin, 'client error ' + err.message);
+        next();
+    });
+
     client.bind(cfg.binddn, cfg.bindpw, function(err) {
         connection.logerror(plugin, 'error: ' + err);
     });
