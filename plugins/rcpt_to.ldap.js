@@ -68,7 +68,7 @@ exports.ldap_rcpt = function(next, connection, params) {
 
     client.on('error', function (err) {
         connection.loginfo(plugin, 'client error ' + err.message);
-        next();
+        next(DENYSOFT, 'Backend failure. Please, retry later');
     });
 
     client.bind(cfg.binddn, cfg.bindpw, function(err) {
@@ -81,6 +81,7 @@ exports.ldap_rcpt = function(next, connection, params) {
     var search_result = function(err, res) {
         if (err) {
             connection.logerror(plugin, 'LDAP search error: ' + err);
+            return next(DENYSOFT, 'Backend failure. Please, retry later');
         }
         var items = [];
         res.on('searchEntry', function(entry) {
@@ -88,8 +89,9 @@ exports.ldap_rcpt = function(next, connection, params) {
             items.push(entry.object);
         });
 
-        res.on('error', function(err2) {
+        res.on('error', function(err2) { // called for tcp (non-ldap) errors
             connection.logerror(plugin, 'LDAP search error: ' + err2);
+            next(DENYSOFT, 'Backend failure. Please, retry later');
         });
 
         res.on('end', function(result) {
