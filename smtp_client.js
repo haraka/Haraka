@@ -406,8 +406,8 @@ exports.get_client_plugin = function (plugin, connection, c, callback) {
                 }
 
                 if (smtp_client.response[line].match(/^STARTTLS/) && !secured) {
-                    if (!(c.host in smtp_client.tls_config.no_tls_hosts) &&
-                        !(smtp_client.remote_ip in smtp_client.tls_config.no_tls_hosts) &&
+                    if (!tls_socket.is_no_tls_host(smtp_client.tls_config, c.host) &&
+                        !tls_socket.is_no_tls_host(smtp_client.tls_config, smtp_client.remote_ip) &&
                         c.enable_tls)
                     {
                         smtp_client.socket.on('secure', on_secured);

@@ -11,6 +11,7 @@ var net       = require('net');
 var stream    = require('stream');
 var log       = require('./logger');
 var config    = require('./config');
+var ipaddr    = require('ipaddr.js');
 
 // provides a common socket for attaching
 // and detaching from either main socket, or crypto socket
@@ -377,6 +378,30 @@ exports.load_tls_ini = function (cb) {
     }
 
     return cfg;
+}
+
+exports.is_no_tls_host = function (cfg, ip) {
+    if (!net.isIP(ip)) return (ip in cfg.no_tls_hosts); // domain
+
+    for (var host in cfg.no_tls_hosts) {
+        if (host === ip) return true; // exact match
+
+        var cidr = host.split('/');
+
+        var c_net  = cidr[0];
+
+        if (!net.isIP(c_net)) continue;  // bad config entry
+        if (net.isIPv4(ip) && net.isIPv6(c_net)) continue;
+        if (net.isIPv6(ip) && net.isIPv4(c_net)) continue;
+
+        var c_mask = parseInt(cidr[1], 10) || (net.isIPv6(c_net) ? 128 : 32);
+
+        if (ipaddr.parse(ip).match(ipaddr.parse(c_net), c_mask)) {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 exports.connect = connect;
