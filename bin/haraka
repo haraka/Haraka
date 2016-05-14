@@ -633,6 +633,8 @@ else if (parsed.install) {
     mkDir(path.join(pa, 'config'));
     createFile(path.join(pa, 'README'), readme);
     createFile(path.join(pa, 'package.json'), packageJson);
+    var bytes = require('crypto').randomBytes(32);
+    createFile(path.join(pa, 'config', 'internalcmd_key'), bytes.toString('hex'));
     setupHostname(path.join(pa, 'config'));
     setupBaseConfig(path.join(pa, 'config'));
 }

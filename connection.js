@@ -1163,8 +1163,8 @@ Connection.prototype.cmd_internalcmd = function (line) {
     }
     var results = (String(line)).split(/ +/);
     if (/key:/.test(results[0])) {
-        var key = config.get('internalcmd_key');
-        if (results[0] != "key:" + key) {
+        var internal_key = config.get('internalcmd_key');
+        if (results[0] != "key:" + internal_key) {
             return this.respond(501, "Invalid internalcmd_key - check config");
         }
         results.shift();
