@@ -152,14 +152,26 @@ process.on('message', function (msg) {
         return;
     }
     if (msg.event && msg.event === 'outbound.flush_queue') {
-        exports.flush_queue();
+        exports.flush_queue(msg.domain);
         return;
     }
     // ignores the message
 });
 
-exports.flush_queue = function () {
-    temp_fail_queue.drain();
+exports.flush_queue = function (domain) {
+    if (domain) {
+        exports.list_queue(function (err, qlist) {
+            if (err) return logger.logerror("Failed to load queue: " + err);
+            qlist.forEach(function (todo) {
+                if (todo.domain.toLowerCase() != domain.toLowerCase()) return;
+                // console.log("requeue: ", todo);
+                delivery_queue.push(new HMailItem(todo.file, todo.full_path));
+            });
+        })
+    }
+    else {
+        temp_fail_queue.drain();
+    }
 };
 
 exports.load_pid_queue = function (pid) {

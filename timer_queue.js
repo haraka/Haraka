@@ -55,8 +55,6 @@ TimerQueue.prototype.length = function () {
 };
 
 TimerQueue.prototype.drain = function () {
-    if (this.queue.length === 0) return;
-
     while (this.queue.length) {
         var to_run = this.queue.shift();
         if (to_run.cb) to_run.cb();
