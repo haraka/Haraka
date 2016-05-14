@@ -87,14 +87,13 @@ Server.flushQueue = function (domain) {
 };
 
 Server.sendToMaster = function (command, params) {
+    // console.log("Send to master: ", command);
     if (Server.cluster) {
         if (Server.cluster.isMaster) {
             Server.receiveAsMaster(command, params);
         }
         else {
-            for (var id in cluster.workers) {
-                cluster.workers[id].send({cmd: command, params: params});
-            }
+            process.send({cmd: command, params: params});
         }
     }
     else {
@@ -109,11 +108,12 @@ Server.receiveAsMaster = function (command, params) {
     Server[command].apply(Server, params);
 }
 
-process.on('message', function (msg) {
+function messageHandler (worker, msg) {
+    // console.log("received cmd: ", msg);
     if (msg.cmd) {
         Server.receiveAsMaster(msg.cmd, msg.params);
     }
-});
+}
 
 Server.get_listen_addrs = function (cfg, port) {
     if (!port) port = 25;
@@ -168,6 +168,10 @@ Server.createServer = function (params) {
     if (!cluster.isMaster) {
         Server.setup_smtp_listeners(plugins, 'child', inactivity_timeout);
         return;
+    }
+    else {
+        // console.log("Setting up message handler");
+        cluster.on('message', messageHandler);
     }
 
     // Cluster Master

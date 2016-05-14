@@ -152,18 +152,19 @@ process.on('message', function (msg) {
         return;
     }
     if (msg.event && msg.event === 'outbound.flush_queue') {
-        exports.flush_queue(msg.domain);
+        exports.flush_queue(msg.domain, process.pid);
         return;
     }
     // ignores the message
 });
 
-exports.flush_queue = function (domain) {
+exports.flush_queue = function (domain, pid) {
     if (domain) {
         exports.list_queue(function (err, qlist) {
             if (err) return logger.logerror("Failed to load queue: " + err);
             qlist.forEach(function (todo) {
                 if (todo.domain.toLowerCase() != domain.toLowerCase()) return;
+                if (pid && todo.pid != pid) return;
                 // console.log("requeue: ", todo);
                 delivery_queue.push(new HMailItem(todo.file, todo.full_path));
             });
@@ -353,6 +354,8 @@ exports._list_file = function (file, cb) {
                 todo_struct.mail_from = new Address (todo_struct.mail_from);
                 todo_struct.file = file;
                 todo_struct.full_path = path.join(queue_dir, file);
+                var match = fn_re.exec(file);
+                todo_struct.pid = match[3];
                 cb(null, todo_struct);
             }
         });
@@ -699,6 +702,7 @@ function HMailItem (filename, filePath, notes) {
     this.filename     = filename;
     this.next_process = matches[1];
     this.num_failures = matches[2];
+    this.pid          = matches[3];
     this.notes        = notes || {};
     this.refcount     = 1;
     this.todo         = null;
