@@ -1156,6 +1156,30 @@ Connection.prototype.cmd_proxy = function (line) {
 /////////////////////////////////////////////////////////////////////////////
 // SMTP Commands
 
+Connection.prototype.cmd_internalcmd = function (line) {
+    var self = this;
+    if (self.remote_ip != '127.0.0.1' && self.remote_ip != '::1') {
+        return this.respond(501, "INTERNALCMD not allowed remotely");
+    }
+    var results = (String(line)).split(/ +/);
+    if (/key:/.test(results[0])) {
+        var internal_key = config.get('internalcmd_key');
+        if (results[0] != "key:" + internal_key) {
+            return this.respond(501, "Invalid internalcmd_key - check config");
+        }
+        results.shift();
+    }
+
+    // Now send the internal command to the master process
+    var command = results.shift();
+    if (!command) {
+        return this.respond(501, "No command given");
+    }
+
+    require('./server').sendToMaster(command, results);
+    return this.respond(250, "Command sent for execution. Check logs for results.");
+}
+
 Connection.prototype.cmd_helo = function(line) {
     var self = this;
     var results = (String(line)).split(/ +/);

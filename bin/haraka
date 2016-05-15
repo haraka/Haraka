@@ -10,6 +10,7 @@ var fs   = require('fs'),
     nopt = require("nopt"),
     os   = require('os'),
     sprintf = require('sprintf-js').sprintf,
+    path = require('path'),
     base = path.join(__dirname, '..'),
     ver  = JSON.parse(fs.readFileSync(base+'/package.json', 'utf8'))['version'],
     knownOpts = {
@@ -24,6 +25,7 @@ var fs   = require('fs'),
         "qlist":       Boolean,
         "qstat":       Boolean,
         "qempty":      Boolean,
+        "qunstick":    String,
         "order":       Boolean,
         "test":        [String, Array],
         "ip":          String,
@@ -65,6 +67,7 @@ var usage = [
     "\t-f, --force   \t\tForce overwriting of old files",
     "\t--qlist       \t\tList the outbound queue",
     "\t--qstat       \t\tGet statistics on the outbound queue",
+    "\t--qunstick    \t\tUnstick (force delivery) for a given domain",
     "\t-o, --order   \t\tShow all registered plugins and their run order",
     "\t-t PLUGIN     \t\tPlugin test mode",
     "\t--------------- PLUGIN TEST MODE OPTIONS (all optional) --------------",
@@ -370,6 +373,39 @@ else if (parsed.qstat) {
         process.exit();
     });
 }
+else if (parsed.qunstick) {
+    if (!parsed.configs) {
+        fail("qunstick option requires config path");
+    }
+    var domain = parsed.qunstick.toLowerCase();
+    process.env.HARAKA = parsed.configs;
+    var logger = require(path.join(base, "logger"));
+    if (!parsed.verbose)
+        logger.log = function () {} // disable logging for this
+    var config = require(path.join(base, "config"));
+    var key = config.get("internalcmd_key");
+    var smtp_ini = config.get("smtp.ini");
+    var listen_addrs = require(path.join(base, "server")).get_listen_addrs(smtp_ini.main);
+    var hp = /^\[?([^\]]+)\]?:(\d+)$/.exec(listen_addrs[0]);
+    if (!hp) throw "No listen address in smtp.ini";
+    console.log("Connecting to " + listen_addrs[0]);
+    var sock = require('net').connect(hp[2], hp[1], function () {
+        sock.once('data', function (data) {
+            // this is the greeting. Ignore it...
+            sock.write('INTERNALCMD ' + (key ? ('key:' + key + ' ') : '') + 'flushQueue ' + domain + '\r\n');
+            sock.once('data', function (data) {
+                console.log(data.toString());
+                sock.write('QUIT\r\n');
+                sock.once('data', function (data) {
+                    sock.end();
+                })
+            });
+        });
+    });
+    sock.on('end', function () {
+        process.exit();
+    })
+}
 else if (parsed.qempty) {
     if (!parsed.configs) {
         fail("qlist option requires config path");
@@ -597,6 +633,8 @@ else if (parsed.install) {
     mkDir(path.join(pa, 'config'));
     createFile(path.join(pa, 'README'), readme);
     createFile(path.join(pa, 'package.json'), packageJson);
+    var bytes = require('crypto').randomBytes(32);
+    createFile(path.join(pa, 'config', 'internalcmd_key'), bytes.toString('hex'));
     setupHostname(path.join(pa, 'config'));
     setupBaseConfig(path.join(pa, 'config'));
 }
