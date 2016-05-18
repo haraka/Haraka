@@ -1,5 +1,22 @@
+2.8.2 - May 17, 2016
 
-2.8.0 - May NN, 2016
+* Changes
+    * Added Node v6 to travis tests
+
+* New Features
+    * Added bin/haraka --qunstick <domain> to flush all mails
+      for that domain (#1460)
+
+* Improvements
+    * Make bin/haraka --qlist show much more information (#1452)
+    * Allow CIDR ranges in no_tls_hosts (#1450)
+
+* Bug Fixes
+    * 2.8.0 was shipped with a broken config/plugins. (#1453)
+    * Stop haraka dying when ldap connections fail (#1456)
+    * Pick up domain specific config correctly in ldap (#1456)
+
+2.8.0 - May 06, 2016
 
 * Changes
     * updated dependency versions (#1426, #1425)
