@@ -15,6 +15,9 @@ function Config (root_path) {
         }
         return cfg;
     };
+    if (process.env.HARAKA) {
+        this.overrides_path = path.join(__dirname, 'config');
+    }
 }
 
 Config.prototype.get = function(name, type, cb, options) {
