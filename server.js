@@ -167,6 +167,16 @@ Server._graceful = function (shutdown) {
     });
 }
 
+Server.drainPools = function () {
+    if (!Server.cluster) {
+        return out.drain_pools();
+    }
+
+    for (var id in cluster.workers) {
+        cluster.workers[id].send({event: 'outbound.drain_pools'});
+    }
+};
+
 Server.sendToMaster = function (command, params) {
     // console.log("Send to master: ", command);
     if (Server.cluster) {
