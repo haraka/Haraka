@@ -223,7 +223,7 @@ The Outbound hook ordering mirrors the Inbound hook order above until after `hoo
   - hook_deferred  (once per delivery domain where at least one recipient or connection was deferred)
   - hook_bounce  (once per delivery domain where the recipient(s) or message was rejected by the destination)
 
-# Plugin Run Order
+## Plugin Run Order
 
 Plugins are run on each hook in the order that they are specified in `config/plugins`. When a plugin returns anything other than `next()` on a hook, all subsequent plugins due to run on that hook are skipped (exceptions: connect_init, disconnect).
 
@@ -331,6 +331,25 @@ and provides a global `server` object. To access the `server` object, use
 
 Module plugins support default config in their local `config` directory. See the
 "Default Config and Overrides" section in [Config](Config.md).
+
+## Shutdown
+
+On shutdown and graceful reload, Haraka will call a plugin's `shutdown` method.
+
+This is so you can clear any timers or intervals, or shut down any connections
+to remote servers.
+
+e.g.
+
+    exports.shutdown = function () {
+        clearInterval(this._interval);
+    }
+
+If you don't implement this in your plugin and have a connection open or a
+timer running then Haraka will take 30 seconds to shut down and have to
+forcibly kill your process.
+
+Note: This only applies when running with a `nodes=...` value in smtp.ini.
 
 ## See also, [Results](Results.md)
 
