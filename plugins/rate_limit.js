@@ -28,6 +28,12 @@ exports.register = function () {
     this.register_hook('disconnect',   'decr_concurrency');
 };
 
+exports.shutdown = function () {
+    if (client) {
+        client.end();
+    }
+}
+
 exports.lookup_host_key = function (type, args, cb) {
     var remote_ip = args[0];
     var remote_host = args[1];

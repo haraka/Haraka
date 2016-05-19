@@ -85,8 +85,8 @@ exports.init_redis_plugin = function (next, server) {
 };
 
 exports.shutdown = function () {
-    if (plugin.db) {
-        plugin.db.end();
+    if (this.db) {
+        this.db.end();
     }
 }
 
