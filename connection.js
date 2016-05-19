@@ -1177,7 +1177,7 @@ Connection.prototype.cmd_internalcmd = function (line) {
     }
 
     require('./server').sendToMaster(command, results);
-    return this.respond(250, "Command sent for execution. Check logs for results.");
+    return this.respond(250, "Command sent for execution. Check Haraka logs for results.");
 }
 
 Connection.prototype.cmd_helo = function(line) {

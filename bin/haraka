@@ -9,6 +9,7 @@ var fs   = require('fs'),
     path = require('path'),
     nopt = require("nopt"),
     os   = require('os'),
+    async = require('async'),
     sprintf = require('sprintf-js').sprintf,
     path = require('path'),
     base = path.join(__dirname, '..'),
@@ -25,7 +26,8 @@ var fs   = require('fs'),
         "qlist":       Boolean,
         "qstat":       Boolean,
         "qempty":      Boolean,
-        "qunstick":    String,
+        "qunstick":    [String, null],
+        "graceful":    Boolean,
         "order":       Boolean,
         "test":        [String, Array],
         "ip":          String,
@@ -382,29 +384,36 @@ else if (parsed.qunstick) {
     var logger = require(path.join(base, "logger"));
     if (!parsed.verbose)
         logger.log = function () {} // disable logging for this
+    var cb = function () {
+        process.exit();
+    };
+    if (domain == 'true') {
+        send_internal_command('flushQueue', cb);
+    }
+    else {
+        send_internal_command('flushQueue ' + domain, cb);
+    }
+}
+else if (parsed.graceful) {
+    if (!parsed.configs) {
+        fail("graceful option requires config path");
+    }
+    process.env.HARAKA = parsed.configs;
+    var logger = require(path.join(base, "logger"));
+    if (!parsed.verbose)
+        logger.log = function () {} // disable logging for this
     var config = require(path.join(base, "config"));
     var key = config.get("internalcmd_key");
     var smtp_ini = config.get("smtp.ini");
-    var listen_addrs = require(path.join(base, "server")).get_listen_addrs(smtp_ini.main);
-    var hp = /^\[?([^\]]+)\]?:(\d+)$/.exec(listen_addrs[0]);
-    if (!hp) throw "No listen address in smtp.ini";
-    console.log("Connecting to " + listen_addrs[0]);
-    var sock = require('net').connect(hp[2], hp[1], function () {
-        sock.once('data', function (data) {
-            // this is the greeting. Ignore it...
-            sock.write('INTERNALCMD ' + (key ? ('key:' + key + ' ') : '') + 'flushQueue ' + domain + '\r\n');
-            sock.once('data', function (data) {
-                console.log(data.toString());
-                sock.write('QUIT\r\n');
-                sock.once('data', function (data) {
-                    sock.end();
-                })
-            });
-        });
-    });
-    sock.on('end', function () {
+    if (!smtp_ini.main.nodes) {
+        console.log("Graceful restart not possible without `nodes` value in smtp.ini");
         process.exit();
-    })
+    }
+    else {
+        send_internal_command('gracefulRestart', function () {
+            process.exit();
+        });
+    }
 }
 else if (parsed.qempty) {
     if (!parsed.configs) {
@@ -641,4 +650,28 @@ else if (parsed.install) {
 else {
     console.log("\033[31;40mError\033[0m: Undefined or erroneous arguments\n");
     console.log(usage);
+}
+
+function send_internal_command (cmd, cb) {
+    var config = require(path.join(base, "config"));
+    var key = config.get("internalcmd_key");
+    var smtp_ini = config.get("smtp.ini");
+    var listen_addrs = require(path.join(base, "server")).get_listen_addrs(smtp_ini.main);
+    var hp = /^\[?([^\]]+)\]?:(\d+)$/.exec(listen_addrs[0]);
+    if (!hp) throw "No listen address in smtp.ini";
+    // console.log("Connecting to " + listen_addrs[0]);
+    var sock = require('net').connect(hp[2], hp[1], function () {
+        sock.once('data', function (data) {
+            // this is the greeting. Ignore it...
+            sock.write('INTERNALCMD ' + (key ? ('key:' + key + ' ') : '') + cmd + '\r\n');
+            sock.once('data', function (data) {
+                console.log(data.toString().replace(/\r?\n$/, ''));
+                sock.write('QUIT\r\n');
+                sock.once('data', function (data) {
+                    sock.end();
+                })
+            });
+        });
+    });
+    sock.on('end', cb);
 }

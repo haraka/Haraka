@@ -223,6 +223,13 @@ cfreader.ensure_enoent_timer = function () {
     }, 60 * 1000);
 };
 
+process.on('message', function (msg) {
+    if (msg.event && msg.event == 'cfreader.shutdown') {
+        logger.loginfo("[cfreader] Shutting down enoent timer");
+        clearInterval(cfreader._enoent_timer);
+    }
+});
+
 cfreader.empty_config = function(type) {
     if (type === 'ini') {
         return { main: {} };

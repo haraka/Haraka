@@ -30,6 +30,21 @@ function Plugin (name) {
     this.hooks = {};
 }
 
+exports.shutdown_plugins = function () {
+    for (var i in exports.registered_plugins) {
+        if (exports.registered_plugins[i].shutdown) {
+            exports.registered_plugins[i].shutdown();
+        }
+    }
+}
+
+process.on('message', function (msg) {
+    if (msg.event && msg.event == 'plugins.shutdown') {
+        logger.loginfo("[plugins] Shutting down plugins");
+        exports.shutdown_plugins();
+    }
+});
+
 Plugin.prototype.core_require = function (name) {
     return require('./' + name);
 };
@@ -136,6 +151,11 @@ Plugin.prototype.inherits = function (parent_name) {
         if (!this[method]) {
             this[method] = parent_plugin[method];
         }
+        // else if (method == 'shutdown') { // Method is in this module, so it exists in the plugin
+        //     if (!this.hasOwnProperty('shutdown')) {
+        //         this[method] = parent_plugin[method];
+        //     }
+        // }
     }
     if (parent_plugin.register) {
         parent_plugin.register.call(this);

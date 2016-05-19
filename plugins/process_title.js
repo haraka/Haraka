@@ -85,8 +85,12 @@ exports.hook_init_child = function (next, server) {
     server.notes.pt_mps_max = 0;
     var title = 'Haraka (worker)';
     process.title = title;
-    setupInterval(title, server);
+    this._interval = setupInterval(title, server);
     return next();
+};
+
+exports.shutdown = function () {
+    clearInterval(this._interval);
 };
 
 exports.hook_connect_init = function (next, connection) {
@@ -137,7 +141,7 @@ exports.hook_data = function (next, connection) {
 
 var setupInterval = function (title, server) {
     // Set up a timer to update title
-    setInterval(function () {
+    return setInterval(function () {
         // Connections per second
         var av_cps = Math.round((server.notes.pt_connections/process.uptime()*100))/100;
         var cps = server.notes.pt_connections - server.notes.pt_cps_diff;

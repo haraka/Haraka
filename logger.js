@@ -72,6 +72,7 @@ logger.dump_logs = function (cb) {
 
 logger.dump_and_exit = function (code) {
     this.dump_logs(function () {
+        if (util.isFunction(code)) return code();
         process.exit(code);
     });
 }

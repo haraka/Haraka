@@ -62,6 +62,12 @@ function P0FClient(path) {
     connect();
 }
 
+P0FClient.prototype.shutdown = function () {
+    if (self.restart_interval) {
+        clearInterval(self.restart_interval);
+    }
+}
+
 P0FClient.prototype.decode_response = function (data) {
     var decode_string = function (data2, start, end) {
         var str = '';

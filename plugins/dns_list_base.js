@@ -191,6 +191,11 @@ exports.check_zones = function (interval) {
     }
 };
 
+exports.shutdown = function () {
+    this.logdebug("Shutting down re-test interval");
+    clearInterval(this._interval);
+};
+
 exports.disable_zone = function (zone, result) {
     if (!zone) return false;
     if (!this.zones) return false;
