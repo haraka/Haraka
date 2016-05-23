@@ -238,9 +238,11 @@ exports.plugin_config = {
 
         var p = new plugin.Plugin('tls');
 
-        test.expect(2);
+        test.expect(3);
         test.equal(p.config.root_path, path.resolve(__dirname, '..', 'config'));
         test.equal(p.config.overrides_path, path.resolve(__dirname, 'installation', 'config'));
+        var tls_ini = p.config.get('tls.ini');
+        test.equal(tls_ini.main.ciphers, 'test');
         test.done();
     },
 
