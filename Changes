@@ -1,3 +1,8 @@
+2.8.4 - May NN, 2016
+
+* Bug Fixes
+    * Fix plugin loading override when installed (#1471)
+
 2.8.3 - May 18, 2016
 
 * Bug Fixes
