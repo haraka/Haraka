@@ -97,7 +97,7 @@ Plugin.prototype._get_config = function () {
     if (process.env.HARAKA) {
         // Plain .js file, installed mode - look in core folder for defaults,
         // install dir for overrides
-        return config.module_config(process.env.HARAKA, __dirname);
+        return config.module_config(__dirname, process.env.HARAKA);
     }
 
     // Plain .js file, git mode - just look in this folder
