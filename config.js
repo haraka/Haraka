@@ -6,17 +6,18 @@ var cfreader     = require('./configfile');
 
 module.exports = new Config();
 
-function Config (root_path) {
+function Config (root_path, no_overrides) {
     this.root_path = root_path || cfreader.config_path;
     this.module_config = function (defaults_path, overrides_path) {
-        var cfg = new Config(path.join(defaults_path, 'config'));
+        var cfg = new Config(path.join(defaults_path, 'config'), true);
         if (overrides_path) {
             cfg.overrides_path = path.join(overrides_path, 'config');
         }
         return cfg;
     };
-    if (process.env.HARAKA) {
-        this.overrides_path = path.join(__dirname, 'config');
+    if (process.env.HARAKA && !no_overrides) {
+        this.overrides_path = root_path || cfreader.config_path;
+        this.root_path = path.join(process.env.HARAKA, 'config');
     }
 }
 
