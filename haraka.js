@@ -3,6 +3,10 @@
 'use strict';
 var path = require('path');
 
+if (!process.env.HARAKA) {
+    console.warn("WARNING: Not running installed Haraka - command line arguments ignored")
+}
+
 // this must be set before "server.js" is loaded
 process.env.HARAKA = process.env.HARAKA || path.resolve('.');
 try {
