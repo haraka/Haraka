@@ -1091,7 +1091,13 @@ HMailItem.prototype.try_deliver_host = function (mx) {
 
     var host = this.hostlist.shift();
     var port            = mx.port || 25;
-    var socket          = sock.connect({port: port, host: host, localAddress: mx.bind});
+    var socket;
+    if (mx.path) {
+        socket = sock.connect({path: mx.path});
+    }
+    else {
+        socket = sock.connect({port: port, host: host, localAddress: mx.bind});
+    }
 
     this.try_deliver_host_on_socket(mx, host, port, socket);
 }
