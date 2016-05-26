@@ -132,6 +132,7 @@ logger._init_loglevel = function () {
             logger.loglevel = loglevel_num;
         }
         if (!logger.loglevel) {
+            this.log('WARN', 'invalid loglevel: ' + _loglevel + ' defaulting to LOGWARN');
             logger.loglevel = logger.LOGWARN;
         }
     }
