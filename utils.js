@@ -140,7 +140,7 @@ function _char_to_qp (ch) {
 function _buf_to_qp (b) {
     var r = '';
     for (var i=0; i<b.length; i++) {
-        if ((b[i] >= 32 && b[i] <= 126) || b[i] == 9 || b[i] == 10 || b[i] == 13) {
+        if ((b[i] != 61) && ((b[i] > 32 && b[i] <= 126) || b[i] == 10 || b[i] == 13)) {
             // printable range
             r = r + String.fromCharCode(b[i]);
         }
