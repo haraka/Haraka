@@ -10,7 +10,22 @@ var _set_up = function (done) {
 
     this.plugin = new fixtures.plugin('auth/auth_base');
 
-    this.plugin.get_plain_passwd = function (user, cb, connection) {
+    this.plugin.get_plain_passwd = function (user, cb) {
+        if (user === 'test') return cb('testpass');
+        return cb(null);
+    };
+
+    this.connection = Connection.createConnection();
+    this.connection.capabilities=null;
+
+    done();
+};
+
+var _set_up_2 = function (done) {
+
+    this.plugin = new fixtures.plugin('auth/auth_base');
+
+    this.plugin.get_plain_passwd = function (user, connection, cb) {
         connection.notes.auth_custom_note = 'custom_note';
         if (user === 'test') return cb('testpass');
         return cb(null);
@@ -57,14 +72,14 @@ exports.get_plain_passwd = {
             test.expect(1);
             test.equal(pass, null);
             test.done();
-        }, this.connection);
+        });
     },
     'get_plain_passwd, test user': function (test) {
         this.plugin.get_plain_passwd('test', function (pass) {
             test.expect(1);
             test.equal(pass, 'testpass');
             test.done();
-        }, this.connection);
+        });
     },
 };
 
@@ -159,7 +174,7 @@ exports.auth_plain = {
 };
 
 exports.check_user = {
-    setUp : _set_up,
+    setUp : _set_up_2,
     'bad auth': function (test) {
         var next = function (code) {
             test.expect(3);
