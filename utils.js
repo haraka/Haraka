@@ -134,16 +134,27 @@ exports.decode_qp = function (line) {
 
 function _char_to_qp (ch) {
     var b = new Buffer(ch);
+    return _buf_to_qp(b);
+}
+
+function _buf_to_qp (b) {
     var r = '';
     for (var i=0; i<b.length; i++) {
-        r = r + '=' + _pad(b[i].toString(16).toUpperCase(), 2);
+        if ((b[i] != 61) && ((b[i] > 32 && b[i] <= 126) || b[i] == 10 || b[i] == 13)) {
+            // printable range
+            r = r + String.fromCharCode(b[i]);
+        }
+        else {
+            r = r + '=' + _pad(b[i].toString(16).toUpperCase(), 2);
+        }
     }
     return r;
 }
 
 // Shameless attempt to copy from Perl's MIME::QuotedPrint::Perl code.
 exports.encode_qp = function (str) {
-    str = str.replace(
+    str = Buffer.isBuffer(str) ? _buf_to_qp(str)
+        : str.replace(
         /([^\ \t\n!"#\$%&'()*+,\-.\/0-9:;<>?\@A-Z\[\\\]^_`a-z{|}~])/g,
         function (orig, p1) {
             return _char_to_qp(p1);
