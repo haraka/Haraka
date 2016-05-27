@@ -22,7 +22,7 @@ exports.hook_capabilities = function (next, connection) {
 };
 
 // Override this at a minimum. Run cb(passwd) to provide a password.
-exports.get_plain_passwd = function (user, cb) {
+exports.get_plain_passwd = function (user, cb, connection) {
     return cb();
 };
 
@@ -52,7 +52,7 @@ exports.check_plain_passwd = function (connection, user, passwd, cb) {
         if (plain_pw === null  ) { return cb(false); }
         if (plain_pw !== passwd) { return cb(false); }
         return cb(true);
-    });
+    }, connection);
 };
 
 exports.check_cram_md5_passwd = function (connection, user, passwd, cb) {
@@ -68,7 +68,7 @@ exports.check_cram_md5_passwd = function (connection, user, passwd, cb) {
             return cb(true);
         }
         return cb(false);
-    });
+    }, connection);
 };
 
 exports.check_user = function (next, connection, credentials, method) {
