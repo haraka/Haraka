@@ -34,7 +34,7 @@ exports.hook_capabilities = function (next, connection) {
     next();
 };
 
-exports.get_plain_passwd = function (user, cb) {
+exports.get_plain_passwd = function (user, cb, connection) {
     var plugin = this;
     if (plugin.cfg.users[user]) {
         return cb(plugin.cfg.users[user].toString());
