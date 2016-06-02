@@ -71,6 +71,20 @@ enables more flexibility in mail delivery and bounce handling.
 Default: "Haraka outbound". This text is attached as a `Received` header to
 all outbound mail just before it is queued.
 
+* `connect_timeout`
+
+Timeout for connecting to remote servers. Default: 30s
+
+* `pool_timeout`
+
+Outbound mail uses "pooled" connections. An unused pool connection will send
+a QUIT after this time. Default: 300s
+
+Pooled connections means that a mail to a particular IP address will hold that
+connection open and use it the next time it is requested. This helps with
+large scale outbound mail. If you don't send lots of mail it is advised to
+lower the `pool_timeout` value since it may upset receiving mail servers.
+
 ### outbound.bounce\_message
 
 See "Bounce Messages" below for details.

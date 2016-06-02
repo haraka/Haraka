@@ -57,7 +57,7 @@ async.series(
                     { 'from': 'haraka', 'test': 'MAIL FROM:<sender@domain>' },
                     { 'from': 'remote', 'line': '500 5.0.0 Absolutely not acceptable. Basic Test Only.' },
 
-                    { 'from': 'haraka', 'test': 'QUIT', end_test: true }, // this will trigger calling the callback
+                    { 'from': 'haraka', 'test': 'RSET', end_test: true }, // this will trigger calling the callback
                 ];
 
                 util_hmailitem.playTestSmtpConversation(mock_hmail, mock_socket, test, testPlaybook, function() {
@@ -90,7 +90,7 @@ async.series(
                     { 'from': 'haraka', 'test': 'MAIL FROM:<sender@domain>' },
                     { 'from': 'remote', 'line': '300 3.0.0 No time for you right now' },
 
-                    { 'from': 'haraka', 'test': 'QUIT', end_test: true }, // this will trigger calling the callback
+                    { 'from': 'haraka', 'test': 'RSET', end_test: true }, // this will trigger calling the callback
                 ];
 
                 util_hmailitem.playTestSmtpConversation(mock_hmail, mock_socket, test, testPlaybook, function() {
@@ -126,7 +126,7 @@ async.series(
                     { 'from': 'haraka', 'test': 'RCPT TO:<recipient@domain>' },
                     { 'from': 'remote', 'line': '400 4.0.0 Currently not available. Try again later.' },
 
-                    { 'from': 'haraka', 'test': 'QUIT', end_test: true }, // this will trigger calling the callback
+                    { 'from': 'haraka', 'test': 'RSET', end_test: true }, // this will trigger calling the callback
                 ];
 
                 util_hmailitem.playTestSmtpConversation(mock_hmail, mock_socket, test, testPlaybook, function() {
@@ -167,7 +167,7 @@ async.series(
                     // haraka will send us more lines
                     { 'from': 'remote', 'line': '450 4.6.0 Currently I do not like ascii art cats.' },
 
-                    { 'from': 'haraka', 'test': 'QUIT', end_test: true }, // this will trigger calling the callback
+                    { 'from': 'haraka', 'test': 'RSET', end_test: true }, // this will trigger calling the callback
                 ];
 
                 util_hmailitem.playTestSmtpConversation(mock_hmail, mock_socket, test, testPlaybook, function() {
@@ -206,7 +206,7 @@ async.series(
                     { 'from': 'haraka', 'test': 'RCPT TO:<recipient@domain>' },
                     { 'from': 'remote', 'line': '550 5.1.1 Not available and will not come back' },
 
-                    { 'from': 'haraka', 'test': 'QUIT', end_test: true }, // this will trigger calling the callback
+                    { 'from': 'haraka', 'test': 'RSET', end_test: true }, // this will trigger calling the callback
                 ];
 
                 util_hmailitem.playTestSmtpConversation(mock_hmail, mock_socket, test, testPlaybook, function() {
@@ -249,7 +249,7 @@ async.series(
                     // haraka will send us more lines
                     { 'from': 'remote', 'line': '550 5.6.0 I never did and will like ascii art cats.' },
 
-                    { 'from': 'haraka', 'test': 'QUIT', end_test: true }, // this will trigger calling the callback
+                    { 'from': 'haraka', 'test': 'RSET', end_test: true }, // this will trigger calling the callback
                 ];
 
                 util_hmailitem.playTestSmtpConversation(mock_hmail, mock_socket, test, testPlaybook, function() {
