@@ -1100,7 +1100,7 @@ var cram_md5_response = function (username, password, challenge) {
 }
 
 // Separate pools are kept for each set of server attributes.
-function get_pool (port, host, local_addr, connect_timeout, pool_timeout, max) {
+function get_pool (port, host, local_addr, is_unix_socket, connect_timeout, pool_timeout, max) {
     port = port || 25;
     host = host || 'localhost';
     connect_timeout = (connect_timeout === undefined) ? 30 : connect_timeout;
@@ -1113,7 +1113,8 @@ function get_pool (port, host, local_addr, connect_timeout, pool_timeout, max) {
         var pool = generic_pool.Pool({
             name: name,
             create: function (callback) {
-                var socket = sock.connect({port: port, host: host, localAddress: local_addr});
+                var socket = is_unix_socket ? sock.connect({path: host}) :
+                    sock.connect({port: port, host: host, localAddress: local_addr});
                 socket.setTimeout(connect_timeout * 1000);
                 logger.logdebug('[outbound] host=' +
                     host + ' port=' + port + ' pool_timeout=' + pool_timeout + ' created');
@@ -1158,8 +1159,8 @@ function get_pool (port, host, local_addr, connect_timeout, pool_timeout, max) {
 };
 
 // Get a socket for the given attributes.
-function get_client (port, host, local_addr, callback) {
-    var pool = get_pool(port, host, local_addr, cfg.connect_timeout, cfg.pool_timeout, cfg.concurrency_max);
+function get_client (port, host, local_addr, is_unix_socket, callback) {
+    var pool = get_pool(port, host, local_addr, is_unix_socket, cfg.connect_timeout, cfg.pool_timeout, cfg.concurrency_max);
     pool.acquire(callback);
 };
 
@@ -1218,20 +1219,14 @@ HMailItem.prototype.try_deliver_host = function (mx) {
     var port = mx.port || 25;
 
     if (mx.path) {
-        var socket = sock.connect({path: mx.path});
-
-        self.loginfo("Attempting to deliver to: " + mx.path +
-            (mx.using_lmtp ? " using LMTP" : "") + " (" + delivery_queue.length() +
-            ") (" + temp_fail_queue.length() + ")");
-
-        return self.try_deliver_host_on_socket(mx, mx.path, port, socket);
+        host = mx.path;
     }
 
     this.loginfo("Attempting to deliver to: " + host + ":" + port +
         (mx.using_lmtp ? " using LMTP" : "") + " (" + delivery_queue.length() +
         ") (" + temp_fail_queue.length() + ")");
 
-    get_client(port, host, mx.bind, function (err, socket) {
+    get_client(port, host, mx.bind, mx.path ? true : false, function (err, socket) {
         if (err) {
             logger.logerror('[outbound] Failed to get pool entry: ' + err);
             // try next host
