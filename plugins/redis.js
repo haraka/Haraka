@@ -84,6 +84,12 @@ exports.init_redis_plugin = function (next, server) {
     plugin.db = plugin.get_redis_client(plugin.cfg.redis, callNext);
 };
 
+exports.shutdown = function () {
+    if (this.db) {
+        this.db.end();
+    }
+}
+
 exports.redis_ping = function(done) {
     var plugin = this;
     var nope = function (err) {

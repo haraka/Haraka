@@ -137,6 +137,12 @@ exports.redis_onInit = function (next, server) {
     });
 };
 
+exports.shutdown = function () {
+    if (this.redis) {
+        this.redis.end();
+    }
+}
+
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 // We check for IP and envelope whitelist

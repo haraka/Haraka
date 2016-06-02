@@ -86,6 +86,87 @@ Server.flushQueue = function (domain) {
     }
 };
 
+var gracefull_in_progress = false;
+
+Server.gracefulRestart = function () {
+    Server._graceful();
+}
+
+Server.gracefulShutdown = function () {
+    Server._graceful(function () {
+        process.exit(0);
+    });
+}
+
+Server._graceful = function (shutdown) {
+    if (!Server.cluster) {
+        return;
+    }
+
+    if (gracefull_in_progress) {
+        logger.lognotice("Restart currently in progress - ignoring request");
+        return;
+    }
+
+    gracefull_in_progress = true;
+    // TODO: Make these configurable
+    var disconnect_timeout = 30;
+    var exit_timeout = 30;
+    cluster.removeAllListeners('exit');
+    // only reload one worker at a time
+    // otherwise, we'll have a time when no connection handlers are running
+    var worker_ids = Object.keys(cluster.workers);
+    async.eachSeries(worker_ids, function (id, cb) {
+        logger.lognotice("Killing node: " + id);
+        var worker = cluster.workers[id];
+        ['outbound', 'cfreader', 'plugins'].forEach(function (module) {
+            worker.send({event: module + '.shutdown'});
+        })
+        worker.disconnect();
+        var disconnect_received = false;
+        var disconnect_timer = setTimeout(function () {
+            if (!disconnect_received) {
+                logger.logcrit("Disconnect never received by worker. Killing.");
+                worker.kill();
+            }
+        }, disconnect_timeout * 1000);
+        worker.once("disconnect", function() {
+            clearTimeout(disconnect_timer);
+            disconnect_received = true;
+            logger.lognotice("Disconnect complete");
+            var dead = false;
+            var timer = setTimeout(function () {
+                if (!dead) {
+                    logger.logcrit("Worker " + id + " failed to shutdown. Killing.");
+                    worker.kill();
+                }
+            }, exit_timeout * 1000);
+            worker.once("exit", function () {
+                dead = true;
+                clearTimeout(timer);
+                if (shutdown) cb();
+            });
+        });
+        if (shutdown) return;
+        var newWorker = cluster.fork();
+        newWorker.once("listening", function() {
+            logger.lognotice("Replacement worker online.");
+            newWorker.on('exit', function (code, signal) {
+                cluster_exit_listener(newWorker, code, signal);
+            });
+            cb();
+        });
+    }, function (err) {
+        // err can basically never happen, but fuckit...
+        if (err) logger.logerror(err);
+        if (shutdown) {
+            return shutdown();
+        }
+        gracefull_in_progress = false;
+        logger.lognotice("Reload complete, workers: " + JSON.stringify(Object.keys(cluster.workers)));
+    });
+}
+
 Server.sendToMaster = function (command, params) {
     // console.log("Send to master: ", command);
     if (Server.cluster) {
@@ -364,27 +445,29 @@ Server.init_master_respond = function (retval, msg) {
             logger.lognotice('worker ' + worker.id + ' listening on ' +
                     address.address + ':' + address.port);
         });
-        cluster.on('exit', function (worker, code, signal) {
-            if (signal) {
-                logger.lognotice('worker ' + worker.id +
-                        ' killed by signal ' + signal);
-            }
-            else if (code !== 0) {
-                logger.lognotice('worker ' + worker.id +
-                        ' exited with error code: ' + code);
-            }
-            if (signal || code !== 0) {
-                // Restart worker
-                var new_worker = cluster.fork({
-                    CLUSTER_MASTER_PID: process.pid
-                });
-                new_worker.send({
-                    event: 'outbound.load_pid_queue', data: worker.process.pid,
-                });
-            }
-        });
+        cluster.on('exit', cluster_exit_listener);
     });
 };
+
+function cluster_exit_listener (worker, code, signal) {
+    if (signal) {
+        logger.lognotice('worker ' + worker.id +
+                ' killed by signal ' + signal);
+    }
+    else if (code !== 0) {
+        logger.lognotice('worker ' + worker.id +
+                ' exited with error code: ' + code);
+    }
+    if (signal || code !== 0) {
+        // Restart worker
+        var new_worker = cluster.fork({
+            CLUSTER_MASTER_PID: process.pid
+        });
+        new_worker.send({
+            event: 'outbound.load_pid_queue', data: worker.process.pid,
+        });
+    }
+}
 
 Server.init_child_respond = function (retval, msg) {
     switch (retval) {
