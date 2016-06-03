@@ -34,7 +34,7 @@
     "elasticsearch"         : "*",
     "haraka-nosql"          : "*",
     "ldapjs"                : "~1.0.0",
-    "maxmind"               : "*",
+    "maxmind"               : "0.6",
     "modern-syslog"         : "~1.1.1",
     "redis"                 : "~2.5.3",
     "tmp"                   : "~0.0.28",
