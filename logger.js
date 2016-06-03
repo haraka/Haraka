@@ -70,6 +70,13 @@ logger.dump_logs = function (cb) {
     return true;
 };
 
+if (!util.isFunction) {
+    util.isFunction = function (functionToCheck) {
+        var getType = {};
+        return functionToCheck && getType.toString.call(functionToCheck) === '[object Function]';
+    };
+}
+
 logger.dump_and_exit = function (code) {
     this.dump_logs(function () {
         if (util.isFunction(code)) return code();
