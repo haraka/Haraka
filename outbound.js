@@ -1134,10 +1134,11 @@ function get_pool (port, host, local_addr, is_unix_socket, connect_timeout, pool
             destroy: function(socket) {
                 logger.logdebug('[outbound] destroyed pool entry for ' + host + ':' + port);
                 socket.send_command('QUIT');
+                socket.end(); // half close
                 socket.once('line', function (line) {
                     // Just assume this is a valid response
                     logger.logprotocol("[outbound] S: " + line);
-                    socket.end();
+                    socket.destroy();
                 });
                 // Remove pool object from server notes once empty
                 var size = pool.getPoolSize();
@@ -1182,11 +1183,6 @@ function release_client (socket, port, host, local_addr) {
     socket.removeAllListeners('close');
     socket.removeAllListeners('timeout');
     socket.removeAllListeners('line');
-
-    socket.once('error', function (err) {
-        logger.logerror("[outbound] Pooled connection dropped from " + host + ":" + port + " : " + err);
-        delete server.notes.pool[name];
-    });
 
     socket.__fromPool = true;
 
