@@ -19,6 +19,7 @@
 * Bug Fixes
     * Bind maxmind version to ignore API change (#1492)
     * Fix encodings when banners are used (#1477)
+    * Various DKIM fixes (#1495)
 
 2.8.4 - May 24, 2016
 
