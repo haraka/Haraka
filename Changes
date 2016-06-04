@@ -1,7 +1,24 @@
 2.8.5 - May NN, 2016
 
-* Bug Fixes
+* Changes
+    * The connection object is now passed to `get_plain_passwd`. Older
+      modules should continue to work as-is.
+    * The reseed_rng plugin now just uses the Crypto module from core.
+      Though it seems this plugin should be irrelevant with newer versions
+      of node.js
 
+* New Features
+    * Outbound mail now uses pooled connections, only sending a `QUIT`
+      message if the connection has been idle for a while.
+
+* Improvements
+    * Shut down and reload (via `haraka -c <path> --graceful`) is now
+      graceful - allowing current connections to finish and plugins
+      to clean up before ending.
+
+* Bug Fixes
+    * Bind maxmind version to ignore API change (#1492)
+    * Fix encodings when banners are used (#1477)
 
 2.8.4 - May 24, 2016
 
