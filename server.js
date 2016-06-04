@@ -201,7 +201,7 @@ Server.receiveAsMaster = function (command, params) {
 
 function messageHandler (worker, msg) {
     // console.log("received cmd: ", msg);
-    if (msg.cmd) {
+    if (msg && msg.cmd) {
         Server.receiveAsMaster(msg.cmd, msg.params);
     }
 }
