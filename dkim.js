@@ -557,7 +557,7 @@ DKIMVerifyStream.prototype.write = function(buf) {
 
 DKIMVerifyStream.prototype.end = function(buf) {
     if (buf) this.handle_buf(buf);
-	else this.handle_buf(null);
+    else this.handle_buf(null);
     for (var d=0; d<this.dkim_objects.length; d++) {
         this.dkim_objects[d].end();
     }
