@@ -60,7 +60,6 @@ function DKIMObject (header, header_idx, cb, timeout) {
     this.signed_headers = [];
     this.identity = 'unknown';
     this.line_buffer = new Buf();
-    this.last2octets = new Buffer(2);
     this.dns_fields = {
         'v': 'DKIM1',
         'k': 'rsa',
@@ -68,7 +67,7 @@ function DKIMObject (header, header_idx, cb, timeout) {
     };
 
     var m = /^([^:]+):\s*((?:.|[\r\n])*)$/.exec(header);
-    var sig = m[2].trim().replace(/\s+/,'');
+    var sig = m[2].trim().replace(/\s+/g,'');
     var keys = sig.split(';');
     for (var k=0; k<keys.length; k++) {
         var key = keys[k].trim();
@@ -209,14 +208,10 @@ DKIMObject.prototype.add_body_line = function (line) {
         var l;
         if (this.bodycanon === 'simple') {
             l = this.line_buffer.pop(line);
-            if (l.length >= 2) {
-                this.last2octets[0] = l[l.length-2];
-                this.last2octets[1] = l[l.length-1];
-            }
             this.bh.update(l);
         }
         else if (this.bodycanon === 'relaxed') {
-            l = this.line_buffer.pop(line).toString('binary');
+            l = this.line_buffer.pop(line).toString('utf-8');
             l = l.replace(/[\t ]+(\r?\n)$/,"$1");
             l = l.replace(/[\t ]+/g,' ');
             l = this.line_buffer.pop(new Buffer(l));
@@ -240,14 +235,6 @@ DKIMObject.prototype.result = function (error, result) {
 
 DKIMObject.prototype.end = function () {
     if (this.run_cb) return;
-
-    if (this.bodycanon === 'simple') {
-        // Add CRLF if there was no body or no trailing CRLF
-        if (!(this.last2octets[0] === 0x0d && this.last2octets[1] === 0x0a)) {
-            this.debug(this.identity + ': adding CRLF for simple body canonicalization');
-            this.bh.update(new Buffer("\r\n"));
-        }
-    }
 
     var bh = this.bh.digest('base64');
     this.debug(this.identity + ':' +
@@ -454,8 +441,17 @@ DKIMVerifyStream.prototype.handle_buf = function (buf) {
     if (this._in_body && this._no_signatures_found) {
         return true;
     }
-
-    buf = this.buffer.pop(buf);
+	var once = false;
+	if (buf === null) {
+		once = true;
+		buf = this.buffer.pop();
+		if (!!buf && buf[buf.length - 2] === 0x0d && buf[buf.length - 1] === 0x0a) {
+			return true;
+		}
+		buf = Buffer.concat([buf, new Buffer('\r\n\r\n')]);
+	}else{
+		buf = this.buffer.pop(buf);
+	}
 
     var callback = function (err, result) {
         self.pending--;
@@ -535,10 +531,10 @@ DKIMVerifyStream.prototype.handle_buf = function (buf) {
             // Parse headers
             if (line[0] === 0x20 || line[0] === 0x09) {
                 // Header continuation
-                this.headers[this.headers.length-1] += line.toString('ascii');
+                this.headers[this.headers.length-1] += line.toString('utf-8');
             }
             else {
-                this.headers.push(line.toString('ascii'));
+                this.headers.push(line.toString('utf-8'));
             }
         }
         else {
@@ -546,6 +542,9 @@ DKIMVerifyStream.prototype.handle_buf = function (buf) {
                 this.dkim_objects[e].add_body_line(line);
             }
         }
+		if (once) {
+			break;
+		}
     }
 
     this.buffer.push(buf);
@@ -558,6 +557,7 @@ DKIMVerifyStream.prototype.write = function(buf) {
 
 DKIMVerifyStream.prototype.end = function(buf) {
     if (buf) this.handle_buf(buf);
+	else this.handle_buf(null);
     for (var d=0; d<this.dkim_objects.length; d++) {
         this.dkim_objects[d].end();
     }
