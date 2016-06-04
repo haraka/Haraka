@@ -1,4 +1,4 @@
-2.8.5 - May NN, 2016
+2.8.5 - Jun 04, 2016
 
 * Changes
     * The connection object is now passed to `get_plain_passwd`. Older
