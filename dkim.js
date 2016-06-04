@@ -441,17 +441,17 @@ DKIMVerifyStream.prototype.handle_buf = function (buf) {
     if (this._in_body && this._no_signatures_found) {
         return true;
     }
-	var once = false;
-	if (buf === null) {
-		once = true;
-		buf = this.buffer.pop();
-		if (!!buf && buf[buf.length - 2] === 0x0d && buf[buf.length - 1] === 0x0a) {
-			return true;
-		}
-		buf = Buffer.concat([buf, new Buffer('\r\n\r\n')]);
-	}else{
-		buf = this.buffer.pop(buf);
-	}
+    var once = false;
+    if (buf === null) {
+        once = true;
+        buf = this.buffer.pop();
+        if (!!buf && buf[buf.length - 2] === 0x0d && buf[buf.length - 1] === 0x0a) {
+            return true;
+        }
+        buf = Buffer.concat([buf, new Buffer('\r\n\r\n')]);
+    } else {
+        buf = this.buffer.pop(buf);
+    }
 
     var callback = function (err, result) {
         self.pending--;
@@ -542,9 +542,9 @@ DKIMVerifyStream.prototype.handle_buf = function (buf) {
                 this.dkim_objects[e].add_body_line(line);
             }
         }
-		if (once) {
-			break;
-		}
+        if (once) {
+            break;
+        }
     }
 
     this.buffer.push(buf);
