@@ -1,3 +1,8 @@
+2.8.6 - Jun NN, 2016
+
+* Bug Fixes
+    * Fix loading under Node v4 which sends a blank message
+
 2.8.5 - Jun 04, 2016
 
 * Changes
