@@ -100,7 +100,12 @@ Server.gracefulShutdown = function () {
 
 Server._graceful = function (shutdown) {
     if (!Server.cluster) {
-        return;
+        if (shutdown) {
+            ['outbound', 'cfreader', 'plugins'].forEach(function (module) {
+                process.emit('message', {event: module + '.shutdown'});
+            });
+            return setTimeout(shutdown, 5000);
+        }
     }
 
     if (gracefull_in_progress) {

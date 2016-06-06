@@ -52,6 +52,9 @@ var shutting_down = false;
             if (server.cluster && server.cluster.isMaster) {
                 server.gracefulShutdown();
             }
+            else if (!server.cluster) {
+                server.gracefulShutdown();
+            }
         });
     });
 });
