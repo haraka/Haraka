@@ -2,6 +2,7 @@
 
 * Bug Fixes
     * Fix loading under Node v4 which sends a blank message
+    * Fix quit (SIGINT) when running without nodes=
 
 2.8.5 - Jun 04, 2016
 
