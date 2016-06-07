@@ -30,7 +30,7 @@ exports.register = function () {
 
 exports.shutdown = function () {
     if (client) {
-        client.end();
+        client.quit();
     }
 }
 

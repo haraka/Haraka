@@ -194,7 +194,7 @@ exports.check_zones = function (interval) {
 exports.shutdown = function () {
     clearInterval(this._interval);
     if (redis_client) {
-        redis_client.end();
+        redis_client.quit();
     }
 };
 
