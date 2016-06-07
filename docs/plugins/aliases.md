@@ -38,6 +38,10 @@ Configuration
         or
         { "demo@example.com" : { "action" : "drop" } } 
 
+    Aliases may also be exploded to multiple recipients:
+
+        { "sales@example.com": { "action: "alias", "to": ["alice@example.com", "bob@example.com"] } }
+
     * wildcard '-' notation
 
         In an effort to match some of the functionality of other alias parsers
