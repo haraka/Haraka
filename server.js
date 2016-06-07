@@ -172,8 +172,8 @@ Server._graceful = function (shutdown) {
             ['outbound', 'cfreader', 'plugins'].forEach(function (module) {
                 process.emit('message', {event: module + '.shutdown'});
             })
-            var t = setTimeout(shutdown, Server.cfg.main.force_shutdown_timeout * 1000);
-            return t.unref();
+            var t2 = setTimeout(shutdown, Server.cfg.main.force_shutdown_timeout * 1000);
+            return t2.unref();
         }
         gracefull_in_progress = false;
         logger.lognotice("Reload complete, workers: " + JSON.stringify(Object.keys(cluster.workers)));
