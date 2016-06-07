@@ -87,12 +87,12 @@ function _alias(plugin, connection, key, config, host) {
     
     if (config.to) {
         if (Array.isArray(config.to)) {
-          connection.logdebug(plugin, "aliasing " + connection.transaction.rcpt_to + " to " + config.to);
-          connection.transaction.rcpt_to.pop();
-          for (var i = 0, len = config.to.length; i < len; i++) {
-              toAddress = new Address('<' + config.to[i] + '>');
-              connection.transaction.rcpt_to.push(toAddress);
-          }
+            connection.logdebug(plugin, "aliasing " + connection.transaction.rcpt_to + " to " + config.to);
+            connection.transaction.rcpt_to.pop();
+            for (var i = 0, len = config.to.length; i < len; i++) {
+                toAddress = new Address('<' + config.to[i] + '>');
+                connection.transaction.rcpt_to.push(toAddress);
+            }
         } else {
             if (config.to.search("@") !== -1) {
                 to = config.to;
