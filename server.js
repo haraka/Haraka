@@ -31,7 +31,8 @@ Server.load_smtp_ini = function () {
     var defaults = {
         inactivity_timeout: 600,
         daemon_log_file: '/var/log/haraka.log',
-        daemon_pid_file: '/var/run/haraka.pid'
+        daemon_pid_file: '/var/run/haraka.pid',
+        force_shutdown_timeout: 30,
     };
 
     for (var key in defaults) {
@@ -94,6 +95,7 @@ Server.gracefulRestart = function () {
 
 Server.gracefulShutdown = function () {
     Server._graceful(function () {
+        logger.loginfo("Failed to shutdown naturally. Exiting.");
         process.exit(0);
     });
 }
@@ -104,7 +106,8 @@ Server._graceful = function (shutdown) {
             ['outbound', 'cfreader', 'plugins'].forEach(function (module) {
                 process.emit('message', {event: module + '.shutdown'});
             });
-            return setTimeout(shutdown, 5000);
+            var t = setTimeout(shutdown, Server.cfg.main.force_shutdown_timeout * 1000);
+            return t.unref();
         }
     }
 
@@ -165,7 +168,12 @@ Server._graceful = function (shutdown) {
         // err can basically never happen, but fuckit...
         if (err) logger.logerror(err);
         if (shutdown) {
-            return shutdown();
+            logger.loginfo("Workers closed. Shutting down master process subsystems");
+            ['outbound', 'cfreader', 'plugins'].forEach(function (module) {
+                process.emit('message', {event: module + '.shutdown'});
+            })
+            var t2 = setTimeout(shutdown, Server.cfg.main.force_shutdown_timeout * 1000);
+            return t2.unref();
         }
         gracefull_in_progress = false;
         logger.lognotice("Reload complete, workers: " + JSON.stringify(Object.keys(cluster.workers)));
@@ -332,6 +340,8 @@ Server.setup_smtp_listeners = function (plugins2, type, inactivity_timeout) {
         var server = Server.get_smtp_server(host, port, inactivity_timeout);
         if (!server) return cb();
 
+        server.unref();
+
         server.notes = Server.notes;
         if (Server.cluster) server.cluster = Server.cluster;
 
@@ -389,6 +399,7 @@ Server.setup_http_listeners = function () {
         }
 
         Server.http.server = require('http').createServer(app);
+        Server.http.server.unref();
 
         Server.http.server.on('listening', function () {
             var addr = this.address();
@@ -540,6 +551,7 @@ Server.init_http_respond = function () {
     }
 
     Server.http.wss = new WebSocketServer({ server: Server.http.server });
+    Server.http.wss.unref();
     logger.loginfo('Server.http.wss loaded');
 
     plugins.run_hooks('init_wss', Server);
