@@ -89,7 +89,7 @@ exports.shutdown = function () {
         this.db.quit();
     }
     if (server.notes.redis) {
-        this server.notes.redis.quit();
+        server.notes.redis.quit();
     }
 }
 
