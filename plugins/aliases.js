@@ -97,7 +97,8 @@ function _alias(plugin, connection, key, config, host) {
         else {
             if (config.to.search("@") !== -1) {
                 to = config.to;
-            } else {
+            }
+            else {
                 to = config.to + '@' + host;
             }
 
