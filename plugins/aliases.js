@@ -84,7 +84,7 @@ function _drop(plugin, connection, rcpt) {
 function _alias(plugin, connection, key, config, host) {
     var to;
     var toAddress;
- 
+
     if (config.to) {
         if (Array.isArray(config.to)) {
             connection.logdebug(plugin, "aliasing " + connection.transaction.rcpt_to + " to " + config.to);
@@ -99,10 +99,10 @@ function _alias(plugin, connection, key, config, host) {
             } else {
                 to = config.to + '@' + host;
             }
- 
+
             connection.logdebug(plugin, "aliasing " +
                 connection.transaction.rcpt_to + " to " + to);
- 
+
             toAddress = new Address('<' + to + '>');
             connection.transaction.rcpt_to.pop();
             connection.transaction.rcpt_to.push(toAddress);
