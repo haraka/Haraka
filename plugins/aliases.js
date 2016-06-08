@@ -93,7 +93,8 @@ function _alias(plugin, connection, key, config, host) {
                 toAddress = new Address('<' + config.to[i] + '>');
                 connection.transaction.rcpt_to.push(toAddress);
             }
-        } else {
+        }
+        else {
             if (config.to.search("@") !== -1) {
                 to = config.to;
             } else {
@@ -107,7 +108,8 @@ function _alias(plugin, connection, key, config, host) {
             connection.transaction.rcpt_to.pop();
             connection.transaction.rcpt_to.push(toAddress);
         }
-    } else {
+    }
+    else {
         connection.loginfo(plugin, 'alias failed for ' + key +
             ', no "to" field in alias config');
     }
