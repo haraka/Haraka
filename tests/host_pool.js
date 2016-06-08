@@ -160,14 +160,21 @@ exports.HostPool = {
         test.ok(pool.dead_hosts["1.1.1.1:1111"], 'yes it was marked dead');
 
         // probe_dead_host() will hit two failures and one success (based on
-        // num_reqs above). So we wait 3xretry_secs and triple it for
-        // some headroom.
-        setTimeout(function(){
-            test.ok(! pool.dead_hosts["1.1.1.1:1111"],
-                    'timer un-deaded it'
-               );
+        // num_reqs above). So we wait at least 10s for that to happen:
+        var timer = setTimeout(function(){
+            clearInterval(interval);
+            test.ok(false, 'probe_dead_host failed');
             test.done();
-        }, retry_secs * 1000 * 3 * 3 );
+        }, 10 * 1000);
+
+        var interval = setInterval(function (){
+            if (!pool.dead_hosts["1.1.1.1:1111"]) {
+                clearTimeout(timer);
+                clearInterval(interval);
+                test.ok(true, 'timer un-deaded it');
+                test.done();
+            }
+        }, retry_secs * 1000 * 3 );
 
     }
 
