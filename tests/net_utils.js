@@ -197,10 +197,11 @@ exports.is_ip_literal = {
         test.done();
     },
     'ipv6 is_ip_literal': function (test) {
-        test.expect(6);
+        test.expect(7);
         test.equal(net_utils.is_ip_literal('[::5555:6666:7777:8888]'), true);
         test.equal(net_utils.is_ip_literal('[1111::4444:5555:6666:7777:8888]'), true);
         test.equal(net_utils.is_ip_literal('[2001:0:1234::C1C0:ABCD:876]'), true);
+        test.equal(net_utils.is_ip_literal('[IPv6:2607:fb90:4c28:f9e9:4ca2:2658:db85:f1a]'), true);
         test.equal(net_utils.is_ip_literal('::5555:6666:7777:8888'), false);
         test.equal(net_utils.is_ip_literal('1111::4444:5555:6666:7777:8888'), false);
         test.equal(net_utils.is_ip_literal('2001:0:1234::C1C0:ABCD:876'), false);
