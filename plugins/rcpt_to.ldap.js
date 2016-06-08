@@ -33,7 +33,7 @@ exports.ldap_rcpt = function(next, connection, params) {
     var txn = connection.transaction;
     if (!txn) return next();
 
-    var rcpt = params[0];
+    var rcpt = txn.rcpt_to[txn.rcpt_to.length - 1];
     if (!rcpt.host) {
         txn.results.add(plugin, {fail: '!domain'});
         return next();

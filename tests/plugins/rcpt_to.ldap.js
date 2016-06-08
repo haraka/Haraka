@@ -18,6 +18,7 @@ var _set_up = function (done) {
     this.connection.transaction = {
         results: new ResultStore(this.connection),
         notes: {},
+        rcpt_to: [new Address('test@test.com')]
     };
 
     done();
