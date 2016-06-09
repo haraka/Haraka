@@ -167,7 +167,7 @@ exports.is_private_ip = function (ip) {
 exports.is_rfc1918 = exports.is_private_ip;
 
 exports.is_ip_literal = function (host) {
-    return exports.get_ipany_re('^\\[','\\]$','').test(host) ? true : false;
+    return exports.get_ipany_re('^\\[(IPv6:)?','\\]$','').test(host) ? true : false;
 };
 
 exports.is_ipv4_literal = function (host) {
