@@ -35,7 +35,8 @@ var _set_up = function (done) {
         "@example.co" : { "action" : "drop" },
         "test11@example.org" : { "action" : "drop" },
         "@demo.com" : { "action" : "alias", "to" : "test12-works@success.com" },
-        "test13@example.net" : { "action" : "alias", "to" : "test13-works@success.com" }
+        "test13@example.net" : { "action" : "alias", "to" : "test13-works@success.com" },
+        "test14@example.net" : { "action" : "alias", "to" : ["alice@success.com", "bob@success.com"] }
     };
 
     this.plugin.config.get = function (file, type) {
@@ -244,6 +245,22 @@ exports.aliases = {
             test.isNotNull(this.connection.transaction.rcpt_to);
             test.isArray(this.connection.transaction.rcpt_to);
             test.deepEqual(this.connection.transaction.rcpt_to.pop(), result);
+            test.done();
+        }.bind(this);
+
+        this.plugin.aliases(next, this.connection, this.params);
+    },
+    'should explode test14@example.net to alice@success.com and bob@success.com' : function (test) {
+        // these will get reset in _set_up everytime
+        this.recip = new Address('<test14@example.net>');
+        this.params = [this.recip];
+        var result = [new Address('<alice@success.com>'), new Address('<bob@success.com>')];
+
+        var next = function (action) {
+            test.expect(3);
+            test.isNotNull(this.connection.transaction.rcpt_to);
+            test.isArray(this.connection.transaction.rcpt_to);
+            test.deepEqual(this.connection.transaction.rcpt_to, result);
             test.done();
         }.bind(this);
 
