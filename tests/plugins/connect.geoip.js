@@ -157,8 +157,8 @@ exports.lookup_geoip = {
             if (this.plugin.geoip) {
                 test.expect(3);
                 var r = this.connection.results.get('connect.geoip');
-                test.equal(38, r.ll[0]);
-                test.equal(-97, r.ll[1]);
+                test.equal(44.0387, r.ll[0]);
+                test.equal(-84.8414, r.ll[1]);
                 test.ok(r);
             }
             test.done();
