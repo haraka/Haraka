@@ -64,14 +64,16 @@ HostPool.prototype.failed = function (host, port) {
         logger.logwarn("host " + key + " is still dead, will retry in " +
                         self.retry_secs + " secs");
         self.dead_hosts[key] = true;
+        console.log(1);
         setTimeout(function() {
             self.probe_dead_host(host, port, cb_if_still_dead, cb_if_alive);
         }, retry_msecs);
     };
 
     var cb_if_alive = function (){
+        console.log(2);
         logger.loginfo("host " + key + " is back! adding back into pool");
-        self.dead_hosts[key] = false;
+        delete self.dead_hosts[key];
     };
 
     setTimeout(function() {
