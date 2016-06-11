@@ -12,6 +12,7 @@ Configuration
 
     Example:
 
+    ```
     ; defaults
     host=localhost
     port=24
@@ -24,3 +25,4 @@ Configuration
     [blah.com]
     ; Using unix domain sockets
     path = /tmp/blah_com_socket
+    ```
