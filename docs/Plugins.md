@@ -157,6 +157,7 @@ These are the hook and their parameters (next excluded):
 * bounce (hmail, err) - called when an outbound message bounces
 * delivered (hmail, [host, ip, response, delay, port, mode, ok_recips, secured, authenticated]) - called when outbound mail is delivered
 * send\_email (hmail) - called when outbound is about to be sent
+* pre\_send\_trans\_email (fake_connection) - called just before an email is queued to disk with a faked connection object
 
 ### rcpt
 
@@ -180,6 +181,11 @@ If http listeners are are enabled in http.ini and the express module loaded, the
 
 If express loaded, an attempt is made to load [ws](https://www.npmjs.com/package/ws), the websocket server. If it succeeds, the wss server will be located at Server.http.wss. Because of how websockets work, only one websocket plugin will work at a time. One plugin using wss is [watch](https://github.com/haraka/Haraka/tree/master/plugins/watch).
 
+### pre\_send\_trans\_email (next, fake_connection)
+
+The `fake` connection here is a holder for a new transaction object. It only has the log methods and a `transaction` property
+so don't expect it to behave like a a real connection object. This hook is designed so you can add headers and modify mails
+sent via `outbound.send_email()`, see the dkim_sign plugin for an example.
 
 ## Hook Order
 

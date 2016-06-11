@@ -162,9 +162,13 @@ exports.load_key = function (file) {
     return this.config.get(file, 'data').join('\n');
 };
 
-exports.hook_queue_outbound = function (next, connection) {
+exports.hook_queue_outbound = exports.hook_pre_send_trans_email = function (next, connection) {
     var plugin = this;
     if (plugin.cfg.main.disabled) { return next(); }
+    if (connection.transaction.notes.dkim_signed) {
+        connection.logdebug(plugin, 'email already signed');
+        return next();
+    }
 
     plugin.get_key_dir(connection, function(keydir) {
         var domain;
@@ -197,6 +201,7 @@ exports.hook_queue_outbound = function (next, connection) {
                 txn.results.add(plugin, {pass: dkim_header});
                 txn.add_header('DKIM-Signature', dkim_header);
             }
+            connection.transaction.notes.dkim_signed = true;
             return next();
         };
         txn.message_stream.pipe(new DKIMSignStream(
