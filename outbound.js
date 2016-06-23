@@ -527,56 +527,66 @@ exports.send_trans_email = function (transaction, next) {
 
     transaction.add_leading_header('Received', '('+cfg.received_header+'); ' + date_to_str(new Date()));
 
-    var deliveries = [];
-    var always_split = cfg.always_split;
-    if (always_split) {
-        this.logdebug("always split");
-        transaction.rcpt_to.forEach(function (rcpt) {
-            deliveries.push({domain: rcpt.host, rcpts: [ rcpt ]});
-        });
-    }
-    else {
-        // First get each domain
-        var recips = {};
-        transaction.rcpt_to.forEach(function (rcpt) {
-            var domain = rcpt.host;
-            if (!recips[domain]) { recips[domain] = []; }
-            recips[domain].push(rcpt);
-        });
-        Object.keys(recips).forEach(function (domain) {
-            deliveries.push({'domain': domain, 'rcpts': recips[domain]});
-        });
-    }
+    var connection = {
+        transaction: transaction,
+    };
 
-    var hmails = [];
-    var ok_paths = [];
+    logger.add_log_methods(connection);
 
-    var todo_index = 1;
+    connection.pre_send_trans_email_respond = function (retval) {
+        var deliveries = [];
+        var always_split = cfg.always_split;
+        if (always_split) {
+            this.logdebug("always split");
+            transaction.rcpt_to.forEach(function (rcpt) {
+                deliveries.push({domain: rcpt.host, rcpts: [ rcpt ]});
+            });
+        }
+        else {
+            // First get each domain
+            var recips = {};
+            transaction.rcpt_to.forEach(function (rcpt) {
+                var domain = rcpt.host;
+                if (!recips[domain]) { recips[domain] = []; }
+                recips[domain].push(rcpt);
+            });
+            Object.keys(recips).forEach(function (domain) {
+                deliveries.push({'domain': domain, 'rcpts': recips[domain]});
+            });
+        }
 
-    async.forEachSeries(deliveries, function (deliv, cb) {
-        var todo = new TODOItem(deliv.domain, deliv.rcpts, transaction);
-        todo.uuid = todo.uuid + '.' + todo_index;
-        todo_index++;
-        self.process_delivery(ok_paths, todo, hmails, cb);
-    },
-    function (err) {
-        if (err) {
-            for (var i=0,l=ok_paths.length; i<l; i++) {
-                fs.unlink(ok_paths[i], function () {});
+        var hmails = [];
+        var ok_paths = [];
+
+        var todo_index = 1;
+
+        async.forEachSeries(deliveries, function (deliv, cb) {
+            var todo = new TODOItem(deliv.domain, deliv.rcpts, transaction);
+            todo.uuid = todo.uuid + '.' + todo_index;
+            todo_index++;
+            self.process_delivery(ok_paths, todo, hmails, cb);
+        },
+        function (err) {
+            if (err) {
+                for (var i=0,l=ok_paths.length; i<l; i++) {
+                    fs.unlink(ok_paths[i], function () {});
+                }
+                if (next) next(constants.denysoft, err);
+                return;
             }
-            if (next) next(constants.denysoft, err);
-            return;
-        }
 
-        for (var j=0; j<hmails.length; j++) {
-            var hmail = hmails[j];
-            delivery_queue.push(hmail);
-        }
+            for (var j=0; j<hmails.length; j++) {
+                var hmail = hmails[j];
+                delivery_queue.push(hmail);
+            }
 
-        if (next) {
-            next(constants.ok, "Message Queued");
-        }
-    });
+            if (next) {
+                next(constants.ok, "Message Queued");
+            }
+        });
+    }
+
+    plugins.run_hooks('pre_send_trans_email', connection);
 };
 
 exports.process_delivery = function (ok_paths, todo, hmails, cb) {
