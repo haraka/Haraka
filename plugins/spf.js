@@ -123,13 +123,14 @@ exports.hook_mail = function (next, connection, params) {
     var mfrom = params[0].address();
     var host = params[0].host;
     var spf = new SPF();
+    var auth_result;
 
     if (connection.notes.spf_helo) {
         var h_result = connection.notes.spf_helo;
         var h_host = connection.hello_host;
         plugin.save_to_header(connection, spf, h_result, mfrom, h_host, 'helo');
         if (!host) {   // Use results from HELO if the return-path is null
-            var auth_result = spf.result(h_result).toLowerCase();
+            auth_result = spf.result(h_result).toLowerCase();
             connection.auth_results( "spf="+auth_result+" smtp.helo=" + h_host);
 
             var sender = '<> via ' + h_host;
@@ -149,15 +150,17 @@ exports.hook_mail = function (next, connection, params) {
 
     spf.helo = connection.hello_host;
 
-    var ch_cb = function (err, result) {
+    var ch_cb = function (err, result, ip) {
         if (timer) clearTimeout(timer);
         if (timeout) return;
         if (err) {
             connection.logerror(plugin, err);
             return next();
         }
-        plugin.log_result(connection, 'mfrom', host, mfrom, spf.result(result));
-        plugin.save_to_header(connection, spf, result, mfrom, host, 'mailfrom');
+        plugin.log_result(connection, 'mfrom', host, mfrom,
+                          spf.result(result), (ip ? ip : connection.remote_ip));
+        plugin.save_to_header(connection, spf, result, mfrom, host,
+                              'mailfrom', (ip ? ip : connection.remote_ip));
 
         auth_result = spf.result(result).toLowerCase();
         connection.auth_results( "spf="+auth_result+" smtp.mailfrom="+host);
@@ -186,20 +189,37 @@ exports.hook_mail = function (next, connection, params) {
 
     // outbound (relaying), context=myself
     net_utils.get_public_ip(function(e, my_public_ip) {
-        if (e) {
-            return ch_cb(e);
-        }
-        if (!my_public_ip) {
-            return ch_cb(new Error("failed to discover public IP"));
-        }
-        return spf.check_host(my_public_ip, host, mfrom, ch_cb);
+        // We always check the client IP first, because a relay
+        // could be sending inbound mail from a non-local domain
+        // which could case an incorrect SPF Fail result if we
+        // check the public IP first, so we only check the public
+        // IP if the client IP returns a result other than 'Pass'.
+        spf.check_host(connection.remote_ip, host, mfrom, function (err, result) {
+            var spf_result;
+            if (result) {
+                spf_result = spf.result(result).toLowerCase();
+            }
+            if (err || spf_result && spf_result !== 'pass') {
+                if (e) {
+                    // Error looking up public IP
+                    return ch_cb(e);
+                }
+                if (!my_public_ip) {
+                    return ch_cb(new Error("failed to discover public IP"));
+                }
+                return spf.check_host(my_public_ip, host, mfrom, function (er, r) {
+                    return ch_cb(er, r, my_public_ip);
+                });
+            }
+            ch_cb(err, result, connection.remote_ip);
+        });
     });
 };
 
-exports.log_result = function (connection, scope, host, mfrom, result) {
+exports.log_result = function (connection, scope, host, mfrom, result, ip) {
     connection.loginfo(this, [
         'identity=' + scope,
-        'ip=' + connection.remote_ip,
+        'ip=' + (ip ? ip : connection.remote_ip),
         'domain="' + host + '"',
         'mfrom=<' + mfrom + '>',
         'result=' + result
@@ -244,7 +264,7 @@ exports.return_results = function(next, connection, spf, scope, result, sender) 
     }
 };
 
-exports.save_to_header = function (connection, spf, result, mfrom, host, id) {
+exports.save_to_header = function (connection, spf, result, mfrom, host, id, ip) {
     var plugin = this;
     // Add a trace header
     if (!connection) return;
@@ -256,7 +276,7 @@ exports.save_to_header = function (connection, spf, result, mfrom, host, id) {
         connection.remote_ip + ' as permitted sender) ' + [
             'receiver=' + plugin.config.get('me'),
             'identity=' + id,
-            'client-ip=' + connection.remote_ip,
+            'client-ip=' + (ip ? ip : connection.remote_ip),
             'helo=' + connection.hello_host,
             'envelope-from=<' + mfrom + '>'
         ].join('; ')
