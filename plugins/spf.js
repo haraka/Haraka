@@ -123,13 +123,14 @@ exports.hook_mail = function (next, connection, params) {
     var mfrom = params[0].address();
     var host = params[0].host;
     var spf = new SPF();
+    var auth_result;
 
     if (connection.notes.spf_helo) {
         var h_result = connection.notes.spf_helo;
         var h_host = connection.hello_host;
         plugin.save_to_header(connection, spf, h_result, mfrom, h_host, 'helo');
         if (!host) {   // Use results from HELO if the return-path is null
-            var auth_result = spf.result(h_result).toLowerCase();
+            auth_result = spf.result(h_result).toLowerCase();
             connection.auth_results( "spf="+auth_result+" smtp.helo=" + h_host);
 
             var sender = '<> via ' + h_host;
@@ -161,7 +162,7 @@ exports.hook_mail = function (next, connection, params) {
         plugin.save_to_header(connection, spf, result, mfrom, host,
                               'mailfrom', (ip ? ip : connection.remote_ip));
 
-        var auth_result = spf.result(result).toLowerCase();
+        auth_result = spf.result(result).toLowerCase();
         connection.auth_results( "spf="+auth_result+" smtp.mailfrom="+host);
 
         txn.notes.spf_mail_result = spf.result(result);
@@ -206,8 +207,8 @@ exports.hook_mail = function (next, connection, params) {
                 if (!my_public_ip) {
                     return ch_cb(new Error("failed to discover public IP"));
                 }
-                return spf.check_host(my_public_ip, host, mfrom, function (e, r) {
-                    return ch_cb(e, r, my_public_ip);
+                return spf.check_host(my_public_ip, host, mfrom, function (er, r) {
+                    return ch_cb(er, r, my_public_ip);
                 });
             }
             ch_cb(err, result, connection.remote_ip);
