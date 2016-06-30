@@ -63,7 +63,7 @@ function _in_whitelist(connection, plugin, address) {
         connection.logdebug(plugin, 'checking ' + address + ' against ' +
             plugin.wl[i]);
 
-        if (plugin.wl[i] === address) {
+        if (plugin.wl[i].toLowerCase() === address.toLowerCase()) {
             return true;
         }
     }
