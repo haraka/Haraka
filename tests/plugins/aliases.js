@@ -266,6 +266,22 @@ exports.aliases = {
 
         this.plugin.aliases(next, this.connection, this.params);
     },
+    'should map test13+subaddress@example.net to test13-works@success.com' : function (test) {
+        // these will get reset in _set_up everytime
+        this.recip = new Address('<test13+subaddress@example.net>');
+        this.params = [this.recip];
+        var result = new Address('<test13-works@success.com>');
+
+        var next = function (action) {
+            test.expect(3);
+            test.isNotNull(this.connection.transaction.rcpt_to);
+            test.isArray(this.connection.transaction.rcpt_to);
+            test.deepEqual(this.connection.transaction.rcpt_to.pop(), result);
+            test.done();
+        }.bind(this);
+
+        this.plugin.aliases(next, this.connection, this.params);
+    },
     'should explode test14@example.net to alice@success.com and bob@success.com' : function (test) {
         // these will get reset in _set_up everytime
         this.recip = new Address('<test14@example.net>');
