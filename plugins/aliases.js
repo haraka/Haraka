@@ -14,7 +14,7 @@ exports.aliases = function (next, connection, params) {
     var rcpt   = params[0].address();
     var user   = params[0].user;
     var host   = params[0].host;
-    var match  = user.split("-", 1);
+    var match  = user.split(/[+-]/, 1);
     var action = "<missing>";
 
     if (config[rcpt]) {
