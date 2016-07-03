@@ -14,7 +14,7 @@ exports.aliases = function (next, connection, params) {
     var rcpt   = params[0].address();
     var user   = params[0].user;
     var host   = params[0].host;
-    var match  = user.split("-", 1);
+    var match  = user.split(/[+-]/, 1);
     var action = "<missing>";
 
     if (config[rcpt]) {
@@ -51,14 +51,18 @@ exports.aliases = function (next, connection, params) {
         }
     }
 
-    if (config[user] || config[match[0]]) {
+    if (config[user] || config[match[0]] || config[match[0] + '@' + host]) {
         if (config[user]) {
             action = config[user].action || action;
             match  = user;
         }
-        else {
+        else if (config[match[0]]) {
             action = config[match[0]].action || action;
             match  = match[0];
+        }
+        else {
+            action = config[match[0] + '@' + host].action || action;
+            match  = match[0] + '@' + host;
         }
 
         switch (action.toLowerCase()) {
