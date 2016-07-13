@@ -27,6 +27,7 @@ var existsSync  = utils.existsSync;
 var FsyncWriteStream = require('./fsync_writestream');
 var generic_pool = require('generic-pool');
 var server      = require('./server');
+var ResultStore = require('./result_store');
 
 var core_consts = require('constants');
 var WRITE_EXCL  = core_consts.O_CREAT | core_consts.O_TRUNC | core_consts.O_WRONLY | core_consts.O_EXCL;
@@ -532,6 +533,7 @@ exports.send_trans_email = function (transaction, next) {
     };
 
     logger.add_log_methods(connection);
+    transaction.results = new ResultStore(connection);
 
     connection.pre_send_trans_email_respond = function (retval) {
         var deliveries = [];
