@@ -1256,7 +1256,7 @@ HMailItem.prototype.try_deliver_host_on_socket = function (mx, host, port, socke
             processing_mail = false;
             release_client(socket, port, host, mx.bind);
             // try the next MX
-            self.try_deliver_host(mx);
+            return self.try_deliver_host(mx);
         }
     });
 
@@ -1297,6 +1297,7 @@ HMailItem.prototype.try_deliver_host_on_socket = function (mx, host, port, socke
             self.logerror("Socket writability went away");
             if (processing_mail) {
                 processing_mail = false;
+                release_client(socket, port, host, mx.bind);
                 return self.try_deliver_host(mx);
             }
             return;
