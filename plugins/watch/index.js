@@ -45,7 +45,10 @@ exports.hook_init_http = function (next, server) {
         res.end(JSON.stringify(client));
     });
 
-    var htdocs = plugin.cfg.wss.htdocs || __dirname + '/html';
+    var htdocs = __dirname + '/html';
+    if (plugin.cfg.wss && plugin.cfg.wss.htdocs) {
+        htdocs = plugin.cfg.wss.htdocs;
+    }
     server.http.app.use('/watch/', server.http.express.static(htdocs));
 
     plugin.loginfo('watch init_http done');

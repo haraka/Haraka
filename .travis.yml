@@ -2,9 +2,9 @@ language: node_js
 node_js:
 #   - "0.6"     # no longer supported by async
 #   - "0.8"     # no longer supported by iconv
-#   - "0.10"
+#   - "0.10"    # no longer supported by eslint
     - "4"
-    - "5"
+#   - "5"       # no longer maintained by node.js (see node 7)
     - "6"
 
 services:
