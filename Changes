@@ -1,3 +1,21 @@
+
+2.8.8 - Jul 20, 2016
+
+* Changes
+    * removed UPGRADE.doc to [wiki](https://github.com/haraka/Haraka/wiki/Upgrade-Haraka)
+
+* Improvements
+    * support + wildcard in aliases plugin #1531
+    * Support dkim_sign with outbound.send_email() #1512
+    * spf: always check remote IP, then public IP if != pass #1528
+    * spf: diplay IP used for SPF eval #1528
+
+* Bug Fixes
+    * handle missing wss section in http.ini #1542
+    * fix leak on socket write error #1541
+    * add results property to outbound transaction #1535 
+    * don't unref unref'd wss server #1521
+
 2.8.7 - Jun 18, 2016
 
 * Changes
