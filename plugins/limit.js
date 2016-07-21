@@ -159,7 +159,7 @@ exports.incr_concurrency = function (next, connection) {
 };
 
 exports.get_key = function (connection) {
-    return 'concurrency|' + connection.remote_ip;
+    return 'concurrency|' + connection.remote.ip;
 };
 
 exports.check_concurrency = function (next, connection) {

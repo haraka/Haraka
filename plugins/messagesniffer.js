@@ -18,10 +18,10 @@ exports.hook_connect = function (next, connection) {
     var cfg = this.config.get('messagesniffer.ini');
 
     // Skip any private IP ranges
-    if (net_utils.is_private_ip(connection.remote_ip)) return next();
+    if (net_utils.is_private_ip(connection.remote.ip)) return next();
 
     // Retrieve GBUdb information for the connecting IP
-    SNFClient("<snf><xci><gbudb><test ip='" + connection.remote_ip + "'/></gbudb></xci></snf>", function (err, result) {
+    SNFClient("<snf><xci><gbudb><test ip='" + connection.remote.ip + "'/></gbudb></xci></snf>", function (err, result) {
         if (err) {
             connection.logerror(self, err.message);
             return next();
@@ -66,9 +66,9 @@ exports.hook_connect = function (next, connection) {
                                 return next();
                             case 'retry':
                             case 'tempfail':
-                                return next(DENYSOFT, 'Poor GBUdb reputation for [' + connection.remote_ip + ']');
+                                return next(DENYSOFT, 'Poor GBUdb reputation for [' + connection.remote.ip + ']');
                             case 'reject':
-                                return next(DENY, 'Poor GBUdb reputation for [' + connection.remote_ip + ']');
+                                return next(DENY, 'Poor GBUdb reputation for [' + connection.remote.ip + ']');
                             case 'quarantine':
                                 connection.notes.gbudb.action = 'quarantine';
                                 connection.notes.quarantine = true;
@@ -84,7 +84,7 @@ exports.hook_connect = function (next, connection) {
                     }
                     else if (gbudb.range === 'truncate') {
                         // Default for truncate
-                        return next(DENY, 'Poor GBUdb reputation for [' + connection.remote_ip + ']');
+                        return next(DENY, 'Poor GBUdb reputation for [' + connection.remote.ip + ']');
                     }
                     return next();
                 default:
@@ -230,7 +230,7 @@ exports.hook_data_post = function (next, connection) {
                                 action = cfg.message.truncate;
                             }
                             else {
-                                return next(DENY, 'Poor GBUdb reputation for IP [' + connection.remote_ip + ']');
+                                return next(DENY, 'Poor GBUdb reputation for IP [' + connection.remote.ip + ']');
                             }
                         }
                         else if (code === 40 && cfg.message.caution) {
@@ -337,13 +337,13 @@ exports.hook_disconnect = function (next, connection) {
     if (cfg.main.gbudb_report_deny && !connection.notes.snf_run &&
         (connection.rcpt_count.reject > 0 || connection.msg_count.reject > 0))
     {
-        var snfreq = "<snf><xci><gbudb><bad ip='" + connection.remote_ip + "'/></gbudb></xci></snf>";
+        var snfreq = "<snf><xci><gbudb><bad ip='" + connection.remote.ip + "'/></gbudb></xci></snf>";
         SNFClient(snfreq, function (err, result) {
             if (err) {
                 connection.logerror(self, err.message);
             }
             else {
-                connection.logdebug(self, 'GBUdb bad encounter added for ' + connection.remote_ip);
+                connection.logdebug(self, 'GBUdb bad encounter added for ' + connection.remote.ip);
             }
             return next();
         });

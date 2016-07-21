@@ -433,7 +433,7 @@ function get_local_port (connection) {
     if (!connection) return {
         classy: 'bg_white', newval: '25', title: 'disconnected'
     };
-    var p = connection.local_port || '25';
+    var p = connection.local.port || '25';
     if (!p || isNaN(p)) return {
         classy: 'black', newval: '25', title: 'disconnected'
     };
@@ -443,8 +443,8 @@ function get_local_port (connection) {
 }
 
 function get_remote_host (connection) {
-    var host  = connection.remote_host || '';
-    var ip    = connection.remote_ip || '';
+    var host  = connection.remote.host || '';
+    var ip    = connection.remote.ip || '';
     var hostShort = host;
 
     if (host) {
@@ -466,14 +466,14 @@ function get_remote_host (connection) {
 }
 
 function get_helo(connection) {
-    var helo = connection.hello_host;
+    var helo = connection.hello.host;
     if (!helo) return {};
     var r = {
         newval: helo.length > 22 ? '...'+helo.substring(helo.length -22) : helo,
         title:  helo,
     };
-    if (connection.remote_host &&
-        connection.remote_host.toLowerCase() === helo.toLowerCase()) {
+    if (connection.remote.host &&
+        connection.remote.host.toLowerCase() === helo.toLowerCase()) {
         r.classy = 'green';  // matches rDNS
     }
     else {
@@ -528,7 +528,7 @@ function get_early (connection) {
 }
 
 function get_tls (connection) {
-    if (!connection.using_tls) return {};
+    if (!connection.tls.enabled) return {};
     var tls = connection.notes.tls;
     if (!tls) { return { classy: 'bg_lgreen' }; }
     return {

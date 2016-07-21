@@ -30,7 +30,7 @@ function xclient_allowed(ip) {
 }
 
 exports.hook_capabilities = function (next, connection) {
-    if (xclient_allowed(connection.remote_ip)) {
+    if (xclient_allowed(connection.remote.ip)) {
         connection.capabilities.push('XCLIENT NAME ADDR PROTO HELO LOGIN');
     }
     next();
@@ -47,7 +47,7 @@ exports.hook_unrecognized_command = function (next, connection, params) {
             DSN.proto_unspecified('Mail transaction in progress', 503));
     }
 
-    if (!(xclient_allowed(connection.remote_ip))) {
+    if (!(xclient_allowed(connection.remote.ip))) {
         return next(DENY, DSN.proto_unspecified('Not authorized', 550));
     }
 
@@ -111,12 +111,12 @@ exports.hook_unrecognized_command = function (next, connection, params) {
     connection.uuid = new_uuid;
     connection.reset_transaction();
     connection.relaying = false;
-    connection.remote_ip = xclient.addr;
-    connection.remote_host = (xclient.name) ? xclient.name : undefined;
-    connection.remote_login = (xclient.login) ? xclient.login : undefined;
-    connection.hello_host = (xclient.helo) ? xclient.helo : undefined;
+    connection.set('remote', 'ip', xclient.addr);
+    connection.set('remote', 'host', ((xclient.name) ? xclient.name : undefined));
+    connection.set('remote', 'login', ((xclient.login) ? xclient.login : undefined));
+    connection.set('hello', 'host', ((xclient.helo) ? xclient.helo : undefined));
     if (xclient.proto) {
-        connection.greeting = (xclient.proto === 'esmtp') ? 'EHLO' : 'HELO';
+        connection.set('hello', 'verb', ((xclient.proto === 'esmtp') ? 'EHLO' : 'HELO'));
     }
     connection.esmtp = (xclient.proto === 'esmtp') ? true : false;
     connection.xclient = true;

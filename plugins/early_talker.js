@@ -48,7 +48,7 @@ exports.early_talker = function(next, connection) {
     }
 
     // Don't delay whitelisted IPs
-    if (plugin.ip_in_list(connection.remote_ip)) { // check connecting IP
+    if (plugin.ip_in_list(connection.remote.ip)) { // check connecting IP
         connection.results.add(plugin, { skip: 'whitelist' });
         return next();
     }

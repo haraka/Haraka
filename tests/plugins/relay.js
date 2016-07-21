@@ -56,36 +56,36 @@ exports.is_acl_allowed = {
     'bare IP' : function (test) {
         test.expect(3);
         this.plugin.acl_allow=['127.0.0.6'];
-        this.connection.remote_ip='127.0.0.6';
+        this.connection.remote.ip='127.0.0.6';
         test.equal(true, this.plugin.is_acl_allowed(this.connection));
-        this.connection.remote_ip='127.0.0.5';
+        this.connection.remote.ip='127.0.0.5';
         test.equal(false, this.plugin.is_acl_allowed(this.connection));
-        this.connection.remote_ip='127.0.1.5';
+        this.connection.remote.ip='127.0.1.5';
         test.equal(false, this.plugin.is_acl_allowed(this.connection));
         test.done();
     },
     'netmask' : function (test) {
         test.expect(3);
         this.plugin.acl_allow=['127.0.0.6/24'];
-        this.connection.remote_ip='127.0.0.6';
+        this.connection.remote.ip='127.0.0.6';
         test.equal(true, this.plugin.is_acl_allowed(this.connection));
-        this.connection.remote_ip='127.0.0.5';
+        this.connection.remote.ip='127.0.0.5';
         test.equal(true, this.plugin.is_acl_allowed(this.connection));
-        this.connection.remote_ip='127.0.1.5';
+        this.connection.remote.ip='127.0.1.5';
         test.equal(false, this.plugin.is_acl_allowed(this.connection));
         test.done();
     },
     'mixed (ipv4 & ipv6 (Issue #428))' : function (test) {
         test.expect(3);
-        this.connection.remote_ip='2607:f060:b008:feed::2';
+        this.connection.remote.ip='2607:f060:b008:feed::2';
         test.equal(false, this.plugin.is_acl_allowed(this.connection));
 
         this.plugin.acl_allow=['2607:f060:b008:feed::2/64'];
-        this.connection.remote_ip='2607:f060:b008:feed::2';
+        this.connection.remote.ip='2607:f060:b008:feed::2';
         test.equal(true, this.plugin.is_acl_allowed(this.connection));
 
         this.plugin.acl_allow=['127.0.0.6/24'];
-        this.connection.remote_ip='2607:f060:b008:feed::2';
+        this.connection.remote.ip='2607:f060:b008:feed::2';
         test.equal(false, this.plugin.is_acl_allowed(this.connection));
 
         test.done();
@@ -126,7 +126,7 @@ exports.acl = {
             test.done();
         }.bind(this);
         this.plugin.cfg.relay.acl=true;
-        this.connection.remote_ip='1.1.1.1';
+        this.connection.remote.ip='1.1.1.1';
         this.plugin.acl_allow=['1.1.1.1/32'];
         this.plugin.acl(next, this.connection);
     },
@@ -138,7 +138,7 @@ exports.acl = {
             test.done();
         }.bind(this);
         this.plugin.cfg.relay.acl=true;
-        this.connection.remote_ip='1.1.1.1';
+        this.connection.remote.ip='1.1.1.1';
         this.plugin.acl_allow=['1.1.1.1'];
         this.plugin.acl(next, this.connection);
     },
@@ -150,7 +150,7 @@ exports.acl = {
             test.done();
         }.bind(this);
         this.plugin.cfg.relay.acl=true;
-        this.connection.remote_ip='1.1.1.1';
+        this.connection.remote.ip='1.1.1.1';
         this.plugin.acl_allow=['1.1.1.1/24'];
         this.plugin.acl(next, this.connection);
     },

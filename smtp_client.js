@@ -383,7 +383,7 @@ exports.get_client_plugin = function (plugin, connection, c, callback) {
 
         var helo = function (command) {
             if (smtp_client.xclient) {
-                smtp_client.send_command(command, connection.hello_host);
+                smtp_client.send_command(command, connection.hello.host);
             }
             else {
                 smtp_client.send_command(command, plugin.config.get('me'));
@@ -400,7 +400,7 @@ exports.get_client_plugin = function (plugin, connection, c, callback) {
             for (var line in smtp_client.response) {
                 if (smtp_client.response[line].match(/^XCLIENT/)) {
                     if (!smtp_client.xclient) {
-                        smtp_client.send_command('XCLIENT', 'ADDR=' + connection.remote_ip);
+                        smtp_client.send_command('XCLIENT', 'ADDR=' + connection.remote.ip);
                         return;
                     }
                 }
@@ -485,7 +485,7 @@ exports.get_client_plugin = function (plugin, connection, c, callback) {
 
         if (smtp_client.connected) {
             if (smtp_client.xclient) {
-                smtp_client.send_command('XCLIENT', 'ADDR=' + connection.remote_ip);
+                smtp_client.send_command('XCLIENT', 'ADDR=' + connection.remote.ip);
             }
             else {
                 smtp_client.emit('helo');

@@ -8,14 +8,14 @@ exports.hook_data_post = function (next, connection) {
 
     // Fix-up rDNS for DCC
     var host;
-    switch (connection.remote_host) {
+    switch (connection.remote.host) {
         case 'Unknown':
         case 'NXDOMAIN':
         case 'DNSERROR':
         case undefined:
             break;
         default:
-            host = connection.remote_host;
+            host = connection.remote.host;
             break;
     }
 
@@ -30,8 +30,8 @@ exports.hook_data_post = function (next, connection) {
         connection.logdebug(self, 'connected to dcc');
         var protocol_headers = [
             'header' + ((training) ? ' spam' : ''),
-            connection.remote_ip + ((host) ? '\r' + host : ''),
-            connection.hello_host,
+            connection.remote.ip + ((host) ? '\r' + host : ''),
+            connection.hello.host,
             txn.mail_from.address(),
             rcpts.join('\r'),
         ].join('\n');

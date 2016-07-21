@@ -73,7 +73,7 @@ exports.should_skip = function (connection) {
     var plugin = this;
 
     if (!connection) { return true; }
-    var rip = connection.remote_ip;
+    var rip = connection.remote.ip;
 
     if (net_utils.is_private_ip(rip)) {
         connection.logdebug(plugin, 'skipping private IP: ' + rip);
@@ -90,7 +90,7 @@ exports.should_skip = function (connection) {
 
 exports.connect_first = function(next, connection) {
     var plugin = this;
-    var remote_ip = connection.remote_ip;
+    var remote_ip = connection.remote.ip;
 
     if (plugin.should_skip(connection)) { return next(); }
 
@@ -115,7 +115,7 @@ exports.connect_first = function(next, connection) {
 
 exports.connect_multi = function(next, connection) {
     var plugin = this;
-    var remote_ip = connection.remote_ip;
+    var remote_ip = connection.remote.ip;
 
     if (plugin.should_skip(connection)) { return next(); }
 

@@ -110,7 +110,7 @@ exports.single_recipient = function(next, connection) {
                 {skip: 'single_recipient(relay)', emit: true });
         return next();
     }
-    if (net_utils.is_private_ip(connection.remote_ip)) {
+    if (net_utils.is_private_ip(connection.remote.ip)) {
         transaction.results.add(plugin,
                 {skip: 'single_recipient(private_ip)', emit: true });
         return next();

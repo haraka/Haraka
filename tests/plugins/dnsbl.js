@@ -66,13 +66,13 @@ exports.should_skip = {
     },
     'private remote_ip, no zones': function (test) {
         test.expect(1);
-        this.connection.remote_ip = '192.168.1.1';
+        this.connection.remote.ip = '192.168.1.1';
         test.equal(true, this.plugin.should_skip(this.connection));
         test.done();
     },
     'private remote_ip': function (test) {
         test.expect(1);
-        this.connection.remote_ip = '192.168.1.1';
+        this.connection.remote.ip = '192.168.1.1';
 
         this.plugin.load_config();
         this.plugin.cfg.main.zones = 'dnsbl.test, dnsbl2.test';
@@ -83,7 +83,7 @@ exports.should_skip = {
     },
     'public remote_ip': function (test) {
         test.expect(1);
-        this.connection.remote_ip = '208.1.1.1';
+        this.connection.remote.ip = '208.1.1.1';
 
         this.plugin.load_config();
         this.plugin.cfg.main.zones = 'dnsbl.test, dnsbl2.test';
@@ -94,7 +94,7 @@ exports.should_skip = {
     },
     'public remote_ip, no zones': function (test) {
         test.expect(1);
-        this.connection.remote_ip = '208.1.1.1';
+        this.connection.remote.ip = '208.1.1.1';
         test.equal(true, this.plugin.should_skip(this.connection));
         test.done();
     },

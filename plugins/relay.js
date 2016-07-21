@@ -80,7 +80,7 @@ exports.acl = function (next, connection) {
     var plugin = this;
     if (!plugin.cfg.relay.acl) { return next(); }
 
-    connection.logdebug(this, 'checking ' + connection.remote_ip + ' in relay_acl_allow');
+    connection.logdebug(this, 'checking ' + connection.remote.ip + ' in relay_acl_allow');
 
     if (!plugin.is_acl_allowed(connection)) {
         connection.results.add(plugin, {skip: 'acl(unlisted)'});
@@ -97,7 +97,7 @@ exports.is_acl_allowed = function (connection) {
     if (!plugin.acl_allow) { return false; }
     if (!plugin.acl_allow.length) { return false; }
 
-    var ip = connection.remote_ip;
+    var ip = connection.remote.ip;
 
     for (var i=0; i < plugin.acl_allow.length; i++) {
         var item = plugin.acl_allow[i];

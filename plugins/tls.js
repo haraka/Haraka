@@ -63,17 +63,17 @@ exports.load_tls_ini = function () {
 
 exports.tls_capabilities = function (next, connection) {
     /* Caution: do not advertise STARTTLS if already TLS upgraded */
-    if (connection.using_tls) { return next(); }
+    if (connection.tls.enabled) { return next(); }
 
     var plugin = this;
 
-    if (tls_socket.is_no_tls_host(plugin.cfg, connection.remote_ip)) {
+    if (tls_socket.is_no_tls_host(plugin.cfg, connection.remote.ip)) {
         return next();
     }
 
     var enable_tls = function () {
         connection.capabilities.push('STARTTLS');
-        connection.notes.tls_enabled = 1;
+        connection.tls.advertised = true;
         next();
     };
 
@@ -82,7 +82,7 @@ exports.tls_capabilities = function (next, connection) {
     }
 
     var redis = server.notes.redis;
-    var dbkey = 'no_tls|' + connection.remote_ip;
+    var dbkey = 'no_tls|' + connection.remote.ip;
 
     redis.get(dbkey, function (err, dbr) {
         if (err) {
@@ -114,7 +114,7 @@ exports.set_notls = function (ip) {
 
 exports.tls_unrecognized_command = function (next, connection, params) {
     /* Watch for STARTTLS directive from client. */
-    if (!connection.notes.tls_enabled) { return next(); }
+    if (!connection.tls.advertised) { return next(); }
     if (params[0].toUpperCase() !== 'STARTTLS') { return next(); }
 
     /* Respond to STARTTLS command. */
@@ -128,7 +128,7 @@ exports.tls_unrecognized_command = function (next, connection, params) {
     var timer = setTimeout(function () {
         timed_out = true;
         connection.logerror(plugin, 'timeout');
-        plugin.set_notls(connection.remote_ip);
+        plugin.set_notls(connection.remote.ip);
         return next(DENYSOFTDISCONNECT);
     }, timeout * 1000);
 
@@ -138,8 +138,9 @@ exports.tls_unrecognized_command = function (next, connection, params) {
         if (timed_out) { return; }
         clearTimeout(timer);
         connection.reset_transaction(function () {
-            connection.hello_host = undefined;
-            connection.using_tls = true;
+            connection.set('hello', 'host', undefined);
+            connection.set('tls', 'enabled', true);
+            connection.set('tls', 'cipher', cipher);
             connection.notes.tls = {
                 authorized: authorized,
                 authorizationError: verifyError,

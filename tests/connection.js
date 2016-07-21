@@ -22,6 +22,48 @@ function _tear_down (callback) {
 exports.connection = {
     setUp : _set_up,
     tearDown : _tear_down,
+    'has remote object': function (test) {
+        test.expect(5);
+        test.deepEqual(this.connection.remote, {
+            ip: null,
+            port: null,
+            host: null,
+            info: null,
+            closed: false,
+            is_private: false
+        });
+        // backwards compat, sunset v3.0.0
+        test.equal(this.connection.remote_ip, null);
+        test.equal(this.connection.remote_port, null);
+        test.equal(this.connection.remote_host, null);
+        test.equal(this.connection.remote_info, null);
+        test.done();
+    },
+    'has local object': function (test) {
+        test.expect(3);
+        test.deepEqual(this.connection.local, {
+            ip: null,
+            port: null,
+            proxy: null,
+            host: null,
+        });
+        // backwards compat, sunset v3.0.0
+        test.equal(this.connection.local_ip, null);
+        test.equal(this.connection.local_port, null);
+        test.done();
+    },
+    'has tls object': function (test) {
+        test.expect(2);
+        test.deepEqual(this.connection.tls, {
+            enabled: false,
+            verified: false,
+            cipher: {},
+            authorized: null,
+        });
+        // backwards compat, sunset v3.0.0
+        test.equal(this.connection.using_tls, false);
+        test.done();
+    },
     'get_capabilities' : function (test) {
         test.expect(1);
 // console.log(this);

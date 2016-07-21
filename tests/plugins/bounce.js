@@ -30,7 +30,7 @@ var _set_up = function (done) {
     };
 
     this.connection = Connection.createConnection();
-    this.connection.remote_ip = '8.8.8.8';
+    this.connection.remote.ip = '8.8.8.8';
     this.connection.transaction = {
         header: new Header(),
         results: new ResultStore(this.plugin),

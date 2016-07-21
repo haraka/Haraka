@@ -24,6 +24,7 @@ var outbound    = require('./outbound');
 var date_to_str = require('./utils').date_to_str;
 var indexOfLF   = require('./utils').indexOfLF;
 var ResultStore = require('./result_store');
+// var net_utils   = require('./net_utils');
 
 var hostname    = (os.hostname().split(/\./))[0];
 var version     = JSON.parse(

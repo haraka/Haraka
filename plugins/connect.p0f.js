@@ -196,7 +196,7 @@ exports.hook_lookup_rdns = function onLookup(next, connection) {
         return next();
     }
     var p0f_client = server.notes.p0f_client;
-    p0f_client.query(connection.remote_ip, function (err, result) {
+    p0f_client.query(connection.remote.ip, function (err, result) {
         if (err) {
             connection.results.add(plugin, {err: err.message});
             return next();

@@ -151,7 +151,7 @@ exports.hook_mail = function (next, connection, params) {
     var mail_from = params[0];
 
     // whitelist checks
-    if (plugin.ip_in_list(connection.remote_ip)) { // check connecting IP
+    if (plugin.ip_in_list(connection.remote.ip)) { // check connecting IP
 
         plugin.loginfo(connection, 'Connecting IP was whitelisted via config');
         connection.transaction.results.add(plugin, {
@@ -356,8 +356,8 @@ exports.should_skip_check = function (connection) {
         return true;
     }
 
-    if (net_utils.is_private_ip(connection.remote_ip)) {
-        connection.logdebug(plugin, 'skipping private IP: ' + connection.remote_ip);
+    if (net_utils.is_private_ip(connection.remote.ip)) {
+        connection.logdebug(plugin, 'skipping private IP: ' + connection.remote.ip);
         ctr.add(plugin, {
             skip : 'private-ip'
         });
@@ -429,8 +429,8 @@ exports.craft_hostid = function (connection) {
     if (trx.notes.greylist && trx.notes.greylist.hostid)
         return trx.notes.greylist.hostid; // "caching"
 
-    var ip = connection.remote_ip;
-    var rdns = connection.remote_host;
+    var ip = connection.remote.ip;
+    var rdns = connection.remote.host;
 
     var chsit = function (value, reason) { // cache the return value
         if (!value)

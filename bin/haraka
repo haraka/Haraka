@@ -537,7 +537,7 @@ else if (parsed.test) {
             helo = parsed.helo;
             mode = 'helo';
         }
-        connection.hello_host = helo;
+        connection.hello.host = helo;
         run_next_hook(arguments[0], mode, connection, helo);
     }
     connection.helo_respond = connection.ehlo_respond = function () {

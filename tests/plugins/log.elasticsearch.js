@@ -83,8 +83,8 @@ exports.populate_conn_properties = {
     setUp : _set_up,
     'adds conn.local' : function (test) {
         test.expect(1);
-        this.connection.local_ip= '127.0.0.3';
-        this.connection.local_port= '25';
+        this.connection.local.ip= '127.0.0.3';
+        this.connection.local.port= '25';
         var result = {};
         var expected = { ip: '127.0.0.3', port: '25' };
         this.plugin.load_es_ini();
@@ -95,8 +95,8 @@ exports.populate_conn_properties = {
     },
     'adds conn.remote' : function (test) {
         test.expect(1);
-        this.connection.remote_ip='127.0.0.4';
-        this.connection.remote_port='2525';
+        this.connection.remote.ip='127.0.0.4';
+        this.connection.remote.port='2525';
         var result = {};
         var expected = { ip: '127.0.0.4', port: '2525' };
         this.plugin.load_es_ini();
@@ -107,8 +107,8 @@ exports.populate_conn_properties = {
     },
     'adds conn.helo' : function (test) {
         test.expect(1);
-        this.connection.hello_host='testimerson';
-        this.connection.greeting='EHLO';
+        this.connection.hello.host='testimerson';
+        this.connection.hello.verb='EHLO';
         var result = {};
         var expected = { host: 'testimerson', verb: 'EHLO' };
         this.plugin.load_es_ini();

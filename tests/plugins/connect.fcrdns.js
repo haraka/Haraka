@@ -120,43 +120,43 @@ exports.is_generic_rdns = {
     setUp : _set_up,
     'mail.theartfarm.com': function (test) {
         test.expect(1);
-        this.connection.remote_ip='208.75.177.101';
+        this.connection.remote.ip='208.75.177.101';
         test.equal(false, this.plugin.is_generic_rdns(this.connection, 'mail.theartfarm.com'));
         test.done();
     },
     'dsl-188-34-255-136.asretelecom.net': function (test) {
         test.expect(1);
-        this.connection.remote_ip='188.34.255.136';
+        this.connection.remote.ip='188.34.255.136';
         test.ok(this.plugin.is_generic_rdns(this.connection, 'dsl-188-34-255-136.asretelecom.net'));
         test.done();
     },
     'c-76-121-96-159.hsd1.wa.comcast.net': function (test) {
         test.expect(1);
-        this.connection.remote_ip='76.121.96.159';
+        this.connection.remote.ip='76.121.96.159';
         test.ok(this.plugin.is_generic_rdns(this.connection, 'c-76-121-96-159.hsd1.wa.comcast.net'));
         test.done();
     },
     'c-76-121-96-159.business.wa.comcast.net': function (test) {
         test.expect(1);
-        this.connection.remote_ip='76.121.96.159';
+        this.connection.remote.ip='76.121.96.159';
         test.equal(false, this.plugin.is_generic_rdns(this.connection, 'c-76-121-96-159.business.wa.comcast.net'));
         test.done();
     },
     'null': function (test) {
         test.expect(1);
-        this.connection.remote_ip='192.168.1.1';
+        this.connection.remote.ip='192.168.1.1';
         test.equal(false, this.plugin.is_generic_rdns(this.connection, null));
         test.done();
     },
     'tld, com': function (test) {
         test.expect(1);
-        this.connection.remote_ip='192.168.1.1';
+        this.connection.remote.ip='192.168.1.1';
         test.equal(false, this.plugin.is_generic_rdns(this.connection, 'com'));
         test.done();
     },
     'empty string': function (test) {
         test.expect(1);
-        this.connection.remote_ip='192.168.1.1';
+        this.connection.remote.ip='192.168.1.1';
         test.equal(false, this.plugin.is_generic_rdns(this.connection, ''));
         test.done();
     },
@@ -182,21 +182,21 @@ exports.ptr_compare = {
     setUp : _set_up,
     'fail': function (test) {
         test.expect(1);
-        this.connection.remote_ip = '10.1.1.1';
+        this.connection.remote.ip = '10.1.1.1';
         var iplist = ['10.0.1.1'];
         test.equal(false, this.plugin.ptr_compare(iplist, this.connection, 'foo.example.com'));
         test.done();
     },
     'pass exact': function (test) {
         test.expect(1);
-        this.connection.remote_ip = '10.1.1.1';
+        this.connection.remote.ip = '10.1.1.1';
         var iplist = ['10.1.1.1'];
         test.equal(true, this.plugin.ptr_compare(iplist, this.connection, 'foo.example.com'));
         test.done();
     },
     'pass net': function (test) {
         test.expect(1);
-        this.connection.remote_ip = '10.1.1.1';
+        this.connection.remote.ip = '10.1.1.1';
         var iplist = ['10.1.1.2'];
         test.equal(true, this.plugin.ptr_compare(iplist, this.connection, 'foo.example.com'));
         test.done();
@@ -211,7 +211,7 @@ exports.check_fcrdns = {
             test.equal(rc, undefined);
             test.done();
         };
-        this.connection.remote_ip = '10.1.1.1';
+        this.connection.remote.ip = '10.1.1.1';
         this.plugin.check_fcrdns(this.connection, ['foo.example.com'], cb);
     },
     'null host': function (test) {
@@ -221,7 +221,7 @@ exports.check_fcrdns = {
             test.equal(rc, undefined);
             test.done();
         };
-        this.connection.remote_ip = '10.1.1.1';
+        this.connection.remote.ip = '10.1.1.1';
         this.plugin.check_fcrdns(this.connection, ['foo.example.com','', null], cb);
     },
 };
@@ -232,7 +232,7 @@ exports.hook_lookup_rdns = {
         test.expect(3);
 
         var conn = this.connection;
-        conn.remote_ip = '8.8.4.4';
+        conn.remote.ip = '8.8.4.4';
 
         var cb = function (rc, msg) {
             test.ok( /google.com/.test(conn.results.get('connect.fcrdns').fcrdns[0]));
