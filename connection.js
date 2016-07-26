@@ -460,17 +460,18 @@ Connection.prototype.respond = function(code, msg, func) {
         code = msg.code;
         msg = msg.reply;
     }
-    if (!(Array.isArray(msg))) {
-        // msg not an array, make it so:
-        messages = msg.toString().split(/\n/).filter(function (msg2) {
-            return /\S/.test(msg2);
-        });
+    if (!Array.isArray(msg)) {
+        messages = msg.toString().split(/\n/);
+    } else {
+        messages = msg.slice();
     }
-    else {
-        // copy
-        messages = msg.slice().filter(function (msg2) {
-            return /\S/.test(msg2);
-        });
+    messages = messages.filter(function (msg2) {
+        return /\S/.test(msg2);
+    });
+
+    // Multiline AUTH PLAIN as in RFC-4954 page 8.
+    if (code === 334 && !messages.length) {
+        messages = [' '];
     }
 
     if (code >= 400) {
