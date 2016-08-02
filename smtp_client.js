@@ -523,8 +523,8 @@ function get_hostport (connection, server_notes, config_arg) {
     }
     else {
         // current behavior in get_pool is to default to localhost:25
-        logger.logwarn("[smtp_client_pool] neither forwarding_host_pool nor host, port" +
-                       "found in config file, defaulting to localhost:25");
-        return { host: 'localhost', port: 25 };
+        logger.logwarn("[smtp_client_pool] forwarding_host_pool or host and port " +
+                       "where not found in config file");
+        throw new Error("You must specify either forwarding_host_pool or host and port");
     }
 }
