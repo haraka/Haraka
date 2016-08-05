@@ -52,6 +52,12 @@ rspamd.ini
     If false, messages from private IPs will not be scanned by Rspamd.
     If true, messages from private IPs will be scanned by Rspamd.
 
+- dkim.enabled
+
+    Default: true
+
+    If set to true, allow rspamd to add DKIM signatures to messages.
+
 - always\_add\_headers
 
     Default: false
@@ -77,6 +83,24 @@ rspamd.ini
     Default: undefined
 
     If set, add the numeric spam score in a header with this name.
+
+- headers.enabled
+
+    Default: true
+
+    If set to true, allow rspamd to add/remove headers from messages.
+
+- soft\_reject.enabled
+
+    Default: true
+
+    If set to true, allow rspamd to defer messages.
+
+- soft\_reject.message
+
+    Default: Deferred by policy
+
+    Message to send to remote server on rspamd soft rejection.
 
 - spambar.positive
 

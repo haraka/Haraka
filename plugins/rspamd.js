@@ -4,6 +4,7 @@
 var http = require('http');
 
 // haraka libs
+var DSN = require('./dsn');
 var net_utils = require('./net_utils');
 
 exports.register = function () {
@@ -17,9 +18,12 @@ exports.load_rspamd_ini = function () {
         booleans: [
             '-main.always_add_headers',
             '-check.authenticated',
+            '+dkim.enabled',
             '-check.private_ip',
+            '+headers.enabled',
             '+reject.spam',
             '-reject.authenticated',
+            '+soft_reject.enabled',
         ],
     }, function () {
         plugin.load_rspamd_ini();
@@ -27,6 +31,10 @@ exports.load_rspamd_ini = function () {
 
     if (!plugin.cfg.reject.message) {
         plugin.cfg.reject.message = 'Detected as spam';
+    }
+
+    if (!plugin.cfg.soft_reject.message) {
+        plugin.cfg.soft_reject.message = 'Deferred by policy';
     }
 
     if (!plugin.cfg.spambar) {
@@ -131,25 +139,44 @@ exports.hook_data_post = function (next, connection) {
         req = http.request(options, function (res) {
             res.on('data', function (chunk) { rawData += chunk; });
             res.on('end', function () {
-                var data = plugin.parse_response(rawData, connection);
-                if (!data) return callNext();
-                data.emit = true; // spit out a log entry
+                var r = plugin.parse_response(rawData, connection);
+                if (!r.data) return callNext();
+                r.data.emit = true; // spit out a log entry
 
                 if (!connection.transaction) return callNext();
-                connection.transaction.results.add(plugin, data);
+                connection.transaction.results.add(plugin, r.data);
                 connection.transaction.results.add(plugin, {
                     time: (Date.now() - start)/1000,
                 });
 
                 function no_reject () {
-                    if (data.action === 'add header' ||
+                    if (cfg.dkim.enabled && r.controlData['dkim-signature']) {
+                        connection.transaction.add_header('DKIM-Signature', r.controlData['dkim-signature']);
+                    }
+                    if (cfg.headers.enabled && r.controlData.rmilter) {
+                        if (r.controlData.rmilter.remove_headers) {
+                            for (var i = 0; i < r.controlData.rmilter.remove_headers.length; i++) {
+                                connection.transaction.remove_header(r.controlData.rmilter.remove_headers[i][0],
+                                    r.controlData.rmilter.remove_headers[i][1]);
+                            }
+                        }
+                        if (r.controlData.rmilter.add_headers) {
+                            for (var i = 0; i < r.controlData.rmilter.add_headers.length; i++) {
+                                connection.transaction.add_header(r.controlData.rmilter.add_headers[i][0],
+                                    r.controlData.rmilter.add_headers[i][1]);
+                            }
+                        }
+                    }
+                    if (r.data.action === 'add header' ||
                         cfg.main.always_add_headers) {
-                        plugin.add_headers(connection, data);
+                        plugin.add_headers(connection, r.data);
+                    } else if (cfg.soft_reject.enabled && r.data.action === 'soft reject') {
+                        return callNext(DENYSOFT, DSN.sec_unauthorized(cfg.soft_reject.message, 451));
                     }
                     return callNext();
                 }
 
-                if (data.action !== 'reject') return no_reject();
+                if (r.data.action !== 'reject') return no_reject();
 
                 if (!authed && !cfg.reject.spam) return no_reject();
                 if (authed && !cfg.reject.authenticated) return no_reject();
@@ -187,6 +214,7 @@ exports.parse_response = function (rawData, connection) {
 
     // copy those nested objects into a higher level object
     var dataClean = {};
+    var controlData = {};
     Object.keys(data.default).forEach(function (key) {
         var a = data.default[key];
         switch (typeof a) {
@@ -215,7 +243,14 @@ exports.parse_response = function (rawData, connection) {
         if (data[b] && data[b].length) dataClean[b] = data[b].join(',');
     });
 
-    return dataClean;
+    ['dkim-signature', 'rmilter'].forEach(function (x) {
+        if (data[x]) controlData[x] = data[x];
+    });
+
+    return {
+        'data' : dataClean,
+        'controlData' : controlData
+    };
 };
 
 exports.add_headers = function (connection, data) {
