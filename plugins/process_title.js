@@ -71,7 +71,7 @@ exports.hook_init_master = function (next, server) {
             server.notes.pt_child_exits++;
         });
     }
-    setupInterval(title, server);
+    this._interval = setupInterval(title, server);
     return next();
 };
 
@@ -90,6 +90,7 @@ exports.hook_init_child = function (next, server) {
 };
 
 exports.shutdown = function () {
+    this.logdebug("Shutting down interval: " + this._interval);
     clearInterval(this._interval);
 };
 
