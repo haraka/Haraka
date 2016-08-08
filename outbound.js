@@ -178,15 +178,16 @@ process.on('message', function (msg) {
 });
 
 exports.drain_pools = function () {
-    if (!server.notes.pool) {
-        return;
+    if (!server.notes.pool || Object.keys(server.notes.pool).length == 0) {
+        return logger.logdebug("[outbound] Drain pools: No pools available");
     }
     for (var p in server.notes.pool) {
-        logger.logdebug("Draining SMTP connection pool " + p);
+        logger.logdebug("[outbound] Drain pools: Draining SMTP connection pool " + p);
         server.notes.pool[p].drain(function() {
             server.notes.pool[p].destroyAllNow();
         });
     }
+    logger.logdebug("[outbound] Drain pools: Pools shut down");
 }
 
 exports.flush_queue = function (domain, pid) {
@@ -334,14 +335,17 @@ exports.load_queue_files = function (pid, cb_name, files, callback) {
             return true;
         }
         async.mapSeries(files.filter(good_file), function (file, cb) {
+            // logger.logdebug("Loading queue file: " + file);
             if (cb_name === '_add_file') {
                 var matches = file.match(fn_re);
                 var next_process = matches[1];
 
                 if (next_process <= self.cur_time) {
+                    // logger.logdebug("File needs processing now");
                     load_queue.push(file);
                 }
                 else {
+                    // logger.logdebug("File needs processing later: " + (next_process - self.cur_time) + "ms");
                     temp_fail_queue.add(next_process - self.cur_time, function () { load_queue.push(file);});
                 }
                 cb();
@@ -1136,6 +1140,9 @@ function get_pool (port, host, local_addr, is_unix_socket, connect_timeout, pool
                 });
                 socket.once('error', function (err) {
                     socket.end();
+                    if (server.notes.pool[name]) {
+                        delete server.notes.pool[name];
+                    }
                     callback("Outbound connection error: " + err, null);
                 });
                 socket.once('timeout', function () {
@@ -1178,6 +1185,7 @@ function get_client (port, host, local_addr, is_unix_socket, callback) {
 };
 
 function release_client (socket, port, host, local_addr) {
+    logger.logdebug("[outbound] release_client: " + host + ":" + port + " to " + local_addr);
     var pool_timeout = cfg.pool_timeout || 300;
     var name = 'outbound::' + port + ':' + host + ':' + local_addr + ':' + pool_timeout;
     if (!(server.notes && server.notes.pool)) {
@@ -1197,6 +1205,14 @@ function release_client (socket, port, host, local_addr) {
     socket.removeAllListeners('line');
 
     socket.__fromPool = true;
+
+    socket.once('error', function (err) {
+        logger.logwarn("[outbound] Socket in pool got an error: " + err);
+        socket.end();
+        if (server.notes.pool[name]) {
+            delete server.notes.pool[name];
+        }
+    })
 
     pool.release(socket);
 }
