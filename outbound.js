@@ -1152,6 +1152,7 @@ function get_pool (port, host, local_addr, is_unix_socket, connect_timeout, pool
             },
             destroy: function(socket) {
                 logger.logdebug('[outbound] destroyed pool entry for ' + host + ':' + port);
+                if (!socket.writable) return;
                 socket.send_command('QUIT');
                 socket.end(); // half close
                 socket.once('line', function (line) {
@@ -1200,7 +1201,7 @@ function release_client (socket, port, host, local_addr) {
 
     socket.removeAllListeners('close');
     socket.removeAllListeners('error');
-    socket.removeAllListeners('close');
+    socket.removeAllListeners('end');
     socket.removeAllListeners('timeout');
     socket.removeAllListeners('line');
 
@@ -1210,9 +1211,19 @@ function release_client (socket, port, host, local_addr) {
         logger.logwarn("[outbound] Socket in pool got an error: " + err);
         socket.end();
         if (server.notes.pool[name]) {
+            server.notes.pool[name].destroyAllNow();
             delete server.notes.pool[name];
         }
-    })
+    });
+
+    socket.once('end', function () {
+        logger.logwarn("[outbound] Socket in pool got FIN");
+        socket.end();
+        if (server.notes.pool[name]) {
+            server.notes.pool[name].destroyAllNow();
+            delete server.notes.pool[name];
+        }
+    });
 
     pool.release(socket);
 }
@@ -1265,6 +1276,8 @@ HMailItem.prototype.try_deliver_host_on_socket = function (mx, host, port, socke
     var processing_mail = true;
 
     socket.removeAllListeners('error');
+    socket.removeAllListeners('close');
+    socket.removeAllListeners('end');
 
     socket.once('error', function (err) {
         if (processing_mail) {
@@ -1684,6 +1697,7 @@ HMailItem.prototype.try_deliver_host_on_socket = function (mx, host, port, socke
                         data_stream.pipe(socket, {end: false});
                         break;
                     case 'dot':
+                        send_command('RSET');
                         finish_processing_mail(true);
                         break;
                     case 'dot_lmtp':
