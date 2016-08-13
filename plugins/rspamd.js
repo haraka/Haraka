@@ -16,13 +16,12 @@ exports.load_rspamd_ini = function () {
 
     plugin.cfg = plugin.config.get('rspamd.ini', {
         booleans: [
-            '-main.always_add_headers',
             '-check.authenticated',
             '+dkim.enabled',
             '-check.private_ip',
-            '+headers.enabled',
             '+reject.spam',
             '-reject.authenticated',
+            '+rmilter_headers.enabled',
             '+soft_reject.enabled',
         ],
     }, function () {
@@ -43,6 +42,14 @@ exports.load_rspamd_ini = function () {
 
     if (!plugin.cfg.main.port) plugin.cfg.main.port = 11333;
     if (!plugin.cfg.main.host) plugin.cfg.main.host = 'localhost';
+
+    if (!plugin.cfg.main.add_headers) {
+        if (plugin.cfg.main.always_add_headers === true) {
+            plugin.cfg.main.add_headers = 'always';
+        } else {
+            plugin.cfg.main.add_headers = 'sometimes';
+        }
+    }
 };
 
 exports.get_options = function (connection) {
@@ -153,25 +160,24 @@ exports.hook_data_post = function (next, connection) {
                     if (cfg.dkim.enabled && r.controlData['dkim-signature']) {
                         connection.transaction.add_header('DKIM-Signature', r.controlData['dkim-signature']);
                     }
-                    if (cfg.headers.enabled && r.controlData.rmilter) {
+                    if (cfg.rmilter_headers.enabled && r.controlData.rmilter) {
                         if (r.controlData.rmilter.remove_headers) {
-                            for (var i = 0; i < r.controlData.rmilter.remove_headers.length; i++) {
-                                connection.transaction.remove_header(r.controlData.rmilter.remove_headers[i][0],
-                                    r.controlData.rmilter.remove_headers[i][1]);
-                            }
+                            Object.keys(r.controlData.rmilter.remove_headers).forEach(function(key) {
+                                connection.transaction.remove_header(key);
+                            })
                         }
                         if (r.controlData.rmilter.add_headers) {
-                            for (var i = 0; i < r.controlData.rmilter.add_headers.length; i++) {
-                                connection.transaction.add_header(r.controlData.rmilter.add_headers[i][0],
-                                    r.controlData.rmilter.add_headers[i][1]);
-                            }
+                            Object.keys(r.controlData.rmilter.add_headers).forEach(function(key) {
+                                connection.transaction.add_header(key, r.controlData.rmilter.add_headers[key]);
+                            })
                         }
                     }
-                    if (r.data.action === 'add header' ||
-                        cfg.main.always_add_headers) {
-                        plugin.add_headers(connection, r.data);
-                    } else if (cfg.soft_reject.enabled && r.data.action === 'soft reject') {
+                    if (cfg.soft_reject.enabled && r.data.action === 'soft reject') {
                         return callNext(DENYSOFT, DSN.sec_unauthorized(cfg.soft_reject.message, 451));
+                    } else if (cfg.main.add_headers !== 'never' && (
+                               cfg.main.add_headers === 'always' ||
+                               (r.data.action === 'add header' && cfg.main.add_headers === 'sometimes'))) {
+                        plugin.add_headers(connection, r.data);
                     }
                     return callNext();
                 }
