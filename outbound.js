@@ -72,7 +72,7 @@ exports.load_config = function () {
     if (!cfg.connect_timeout) {
         cfg.connect_timeout = 30;
     }
-    if (!cfg.pool_timeout) {
+    if (cfg.pool_timeout === undefined) {
         cfg.pool_timeout = 300;
     }
     if (!cfg.ipv6_enabled && config.get('outbound.ipv6_enabled')) {
@@ -1120,7 +1120,6 @@ function get_pool (port, host, local_addr, is_unix_socket, connect_timeout, pool
     port = port || 25;
     host = host || 'localhost';
     connect_timeout = (connect_timeout === undefined) ? 30 : connect_timeout;
-    pool_timeout = (pool_timeout === undefined) ? 300 : pool_timeout;
     var name = 'outbound::' + port + ':' + host + ':' + local_addr + ':' + pool_timeout;
     if (!server.notes.pool) {
         server.notes.pool = {};
@@ -1187,7 +1186,7 @@ function get_client (port, host, local_addr, is_unix_socket, callback) {
 
 function release_client (socket, port, host, local_addr) {
     logger.logdebug("[outbound] release_client: " + host + ":" + port + " to " + local_addr);
-    var pool_timeout = cfg.pool_timeout || 300;
+    var pool_timeout = cfg.pool_timeout;
     var name = 'outbound::' + port + ':' + host + ':' + local_addr + ':' + pool_timeout;
     if (!(server.notes && server.notes.pool)) {
         logger.logcrit("[outbound] Releasing a pool (" + name + ") that doesn't exist!");
@@ -1197,6 +1196,11 @@ function release_client (socket, port, host, local_addr) {
     if (!pool) {
         logger.logcrit("[outbound] Releasing a pool (" + name + ") that doesn't exist!");
         return;
+    }
+
+    if (cfg.pool_timeout == 0) {
+        logger.loginfo("[outbound] Pool_timeout is zero - shutting it down");
+        return sockend();
     }
 
     socket.removeAllListeners('close');
@@ -1209,23 +1213,23 @@ function release_client (socket, port, host, local_addr) {
 
     socket.once('error', function (err) {
         logger.logwarn("[outbound] Socket in pool got an error: " + err);
-        socket.end();
-        if (server.notes.pool[name]) {
-            server.notes.pool[name].destroyAllNow();
-            delete server.notes.pool[name];
-        }
+        sockend();
     });
 
     socket.once('end', function () {
         logger.logwarn("[outbound] Socket in pool got FIN");
+        sockend();
+    });
+
+    pool.release(socket);
+
+    function sockend () {
         socket.end();
         if (server.notes.pool[name]) {
             server.notes.pool[name].destroyAllNow();
             delete server.notes.pool[name];
         }
-    });
-
-    pool.release(socket);
+    }
 }
 
 HMailItem.prototype.try_deliver_host = function (mx) {
