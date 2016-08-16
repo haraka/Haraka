@@ -72,7 +72,7 @@ exports.load_config = function () {
     if (!cfg.connect_timeout) {
         cfg.connect_timeout = 30;
     }
-    if (!cfg.pool_timeout) {
+    if (cfg.pool_timeout === undefined) {
         cfg.pool_timeout = 300;
     }
     if (!cfg.ipv6_enabled && config.get('outbound.ipv6_enabled')) {
@@ -178,15 +178,16 @@ process.on('message', function (msg) {
 });
 
 exports.drain_pools = function () {
-    if (!server.notes.pool) {
-        return;
+    if (!server.notes.pool || Object.keys(server.notes.pool).length == 0) {
+        return logger.logdebug("[outbound] Drain pools: No pools available");
     }
     for (var p in server.notes.pool) {
-        logger.logdebug("Draining SMTP connection pool " + p);
+        logger.logdebug("[outbound] Drain pools: Draining SMTP connection pool " + p);
         server.notes.pool[p].drain(function() {
             server.notes.pool[p].destroyAllNow();
         });
     }
+    logger.logdebug("[outbound] Drain pools: Pools shut down");
 }
 
 exports.flush_queue = function (domain, pid) {
@@ -334,14 +335,17 @@ exports.load_queue_files = function (pid, cb_name, files, callback) {
             return true;
         }
         async.mapSeries(files.filter(good_file), function (file, cb) {
+            // logger.logdebug("Loading queue file: " + file);
             if (cb_name === '_add_file') {
                 var matches = file.match(fn_re);
                 var next_process = matches[1];
 
                 if (next_process <= self.cur_time) {
+                    // logger.logdebug("File needs processing now");
                     load_queue.push(file);
                 }
                 else {
+                    // logger.logdebug("File needs processing later: " + (next_process - self.cur_time) + "ms");
                     temp_fail_queue.add(next_process - self.cur_time, function () { load_queue.push(file);});
                 }
                 cb();
@@ -1116,7 +1120,6 @@ function get_pool (port, host, local_addr, is_unix_socket, connect_timeout, pool
     port = port || 25;
     host = host || 'localhost';
     connect_timeout = (connect_timeout === undefined) ? 30 : connect_timeout;
-    pool_timeout = (pool_timeout === undefined) ? 300 : pool_timeout;
     var name = 'outbound::' + port + ':' + host + ':' + local_addr + ':' + pool_timeout;
     if (!server.notes.pool) {
         server.notes.pool = {};
@@ -1136,6 +1139,9 @@ function get_pool (port, host, local_addr, is_unix_socket, connect_timeout, pool
                 });
                 socket.once('error', function (err) {
                     socket.end();
+                    if (server.notes.pool[name]) {
+                        delete server.notes.pool[name];
+                    }
                     callback("Outbound connection error: " + err, null);
                 });
                 socket.once('timeout', function () {
@@ -1144,7 +1150,13 @@ function get_pool (port, host, local_addr, is_unix_socket, connect_timeout, pool
                 });
             },
             destroy: function(socket) {
-                logger.logdebug('[outbound] destroyed pool entry for ' + host + ':' + port);
+                logger.logdebug('[outbound] destroying pool entry for ' + host + ':' + port);
+                if (!socket.writable) return;
+                // Remove pool object from server notes once empty
+                var size = pool.getPoolSize();
+                if (size === 0) {
+                    delete server.notes.pool[name];
+                }
                 socket.send_command('QUIT');
                 socket.end(); // half close
                 socket.once('line', function (line) {
@@ -1152,11 +1164,6 @@ function get_pool (port, host, local_addr, is_unix_socket, connect_timeout, pool
                     logger.logprotocol("[outbound] S: " + line);
                     socket.destroy();
                 });
-                // Remove pool object from server notes once empty
-                var size = pool.getPoolSize();
-                if (size === 0) {
-                    delete server.notes.pool[name];
-                }
             },
             max: max || 1000,
             idleTimeoutMillis: pool_timeout * 1000,
@@ -1178,7 +1185,8 @@ function get_client (port, host, local_addr, is_unix_socket, callback) {
 };
 
 function release_client (socket, port, host, local_addr) {
-    var pool_timeout = cfg.pool_timeout || 300;
+    logger.logdebug("[outbound] release_client: " + host + ":" + port + " to " + local_addr);
+    var pool_timeout = cfg.pool_timeout;
     var name = 'outbound::' + port + ':' + host + ':' + local_addr + ':' + pool_timeout;
     if (!(server.notes && server.notes.pool)) {
         logger.logcrit("[outbound] Releasing a pool (" + name + ") that doesn't exist!");
@@ -1190,15 +1198,37 @@ function release_client (socket, port, host, local_addr) {
         return;
     }
 
+    if (cfg.pool_timeout == 0) {
+        logger.loginfo("[outbound] Pool_timeout is zero - shutting it down");
+        return sockend();
+    }
+
     socket.removeAllListeners('close');
     socket.removeAllListeners('error');
-    socket.removeAllListeners('close');
+    socket.removeAllListeners('end');
     socket.removeAllListeners('timeout');
     socket.removeAllListeners('line');
 
     socket.__fromPool = true;
 
+    socket.once('error', function (err) {
+        logger.logwarn("[outbound] Socket in pool got an error: " + err);
+        sockend();
+    });
+
+    socket.once('end', function () {
+        logger.logwarn("[outbound] Socket in pool got FIN");
+        sockend();
+    });
+
     pool.release(socket);
+
+    function sockend () {
+        socket.destroy();
+        if (server.notes.pool[name]) {
+            server.notes.pool[name].destroyAllNow();
+        }
+    }
 }
 
 HMailItem.prototype.try_deliver_host = function (mx) {
@@ -1249,6 +1279,8 @@ HMailItem.prototype.try_deliver_host_on_socket = function (mx, host, port, socke
     var processing_mail = true;
 
     socket.removeAllListeners('error');
+    socket.removeAllListeners('close');
+    socket.removeAllListeners('end');
 
     socket.once('error', function (err) {
         if (processing_mail) {
@@ -1668,6 +1700,7 @@ HMailItem.prototype.try_deliver_host_on_socket = function (mx, host, port, socke
                         data_stream.pipe(socket, {end: false});
                         break;
                     case 'dot':
+                        send_command('RSET');
                         finish_processing_mail(true);
                         break;
                     case 'dot_lmtp':
