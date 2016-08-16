@@ -251,7 +251,6 @@ exports.has_key_data = function (conn, domain, selector, private_key) {
         return false;
     }
 
-    conn.logprotocol(plugin, 'private_key: '+private_key);
     conn.logprotocol(plugin, 'selector: '+selector);
     return true;
 };
