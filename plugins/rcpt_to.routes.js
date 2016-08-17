@@ -3,6 +3,8 @@
 // validates incoming recipients against flat file & Redis
 // routes mail based on per-email or per-domain specified routes
 
+var urlparser = require('url-parse');
+
 exports.register = function() {
     var plugin = this;
     plugin.inherits('redis');
@@ -115,9 +117,24 @@ exports.get_mx = function(next, hmail, domain) {
     }
 
     var do_file_search = function () {
+        var mx = {};
         // check email adress for route
         if (plugin.route_list[address]) {
-            return next(OK, plugin.route_list[address]);
+            var uri = new urlparser(plugin.route_list[address]);
+            if ( uri.protocol == 'lmtp:' ) {
+                mx.exchange = uri.hostname;
+                mx.port = uri.port;
+                mx.using_lmtp = true;
+                return next(OK, mx);
+            }
+            else if ( uri.protocol == 'smtp:' ) {
+                mx.exchange = uri.hostname;
+                mx.port = uri.port;
+                return next(OK, mx);
+            }
+            else {
+                return next(OK, plugin.route_list[address]);
+            }
         }
 
         // check email domain for route
