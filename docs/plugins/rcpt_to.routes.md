@@ -1,4 +1,4 @@
-# `rcpt_to.routes`
+# rcpt_to.routes
 
 Recipient Routes does two things: recipient validation and MX routing.
 
