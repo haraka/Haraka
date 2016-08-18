@@ -171,6 +171,15 @@ exports.auth_plain = {
         var method = utils.base64('discard\0test\0testpass');
         this.plugin.auth_plain(next, this.connection, [method]);
     },
+    'params type=with two line login': function (test) {
+        var next = function () {
+            test.expect(2);
+            test.equal(this.connection.notes.auth_plain_asked_login, true);
+            test.equal(arguments[0], OK);
+            test.done();
+        }.bind(this);
+        this.plugin.auth_plain(next, this.connection, '');
+    },
 };
 
 exports.check_user = {
