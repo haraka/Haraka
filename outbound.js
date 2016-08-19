@@ -431,6 +431,7 @@ function _fname () {
     return time + '_0_' + process.pid + "_" + _next_uniq() + '.' + my_hostname;
 }
 
+var line_regexp = /^([^\n]*\n?)/;
 exports.send_email = function () {
 
     if (arguments.length === 2) {
@@ -497,25 +498,61 @@ exports.send_email = function () {
 
     transaction.rcpt_to = to;
 
-
     // Set data_lines to lines in contents
-    var match;
-    var re = /^([^\n]*\n?)/;
-    while (match = re.exec(contents)) {
-        var line = match[1];
-        line = line.replace(/\r?\n?$/, '\r\n'); // make sure it ends in \r\n
-        if (dot_stuffed === false && line.length >= 3 && line.substr(0,1) === '.') {
-            line = "." + line;
-        }
-        transaction.add_data(new Buffer(line));
-        contents = contents.substr(match[1].length);
-        if (contents.length === 0) {
-            break;
+    if (typeof contents == 'string') {
+        var match;
+        while (match = line_regexp.exec(contents)) {
+            var line = match[1];
+            line = line.replace(/\r?\n?$/, '\r\n'); // make sure it ends in \r\n
+            if (dot_stuffed === false && line.length >= 3 && line.substr(0,1) === '.') {
+                line = "." + line;
+            }
+            transaction.add_data(new Buffer(line));
+            contents = contents.substr(match[1].length);
+            if (contents.length === 0) {
+                break;
+            }
         }
     }
+    else {
+        // Assume a stream
+        return stream_line_reader(contents, transaction, function (err) {
+            if (err) {
+                return next(DENYSOFT, "Error from stream line reader: " + err);
+            }
+            this.send_trans_email(transaction, next);
+        });
+    }
+
     transaction.message_stream.add_line_end();
     this.send_trans_email(transaction, next);
 };
+
+function stream_line_reader (stream, transaction, cb) {
+    var current_data = '';
+    function process_data (data) {
+        current_data += data.toString();
+        var results;
+        while (results = line_regexp.exec(current_data)) {
+            var this_line = results[1];
+            current_data = current_data.slice(this_line.length);
+            transaction.add_data(new Buffer(this_line));
+        }
+    };
+
+    function process_end () {
+        if (current_data.length) {
+            transaction.add_data(new Buffer(current_data));
+        }
+        current_data = '';
+        transaction.message_stream.add_line_end();
+        cb();
+    };
+
+    stream.on('data', function (data) { process_data(data);});
+    stream.once('end',  function ()     { process_end();     });
+    stream.once('error', cb);
+}
 
 exports.send_trans_email = function (transaction, next) {
     var self = this;
