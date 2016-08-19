@@ -38,6 +38,9 @@ var my_hostname = require('os').hostname().replace(/\\/, '\\057').replace(/:/, '
 // File Name Format: $time_$attempts_$pid_$uniq.$host
 var fn_re = /^(\d+)_(\d+)_(\d+)(_\d+\..*)$/
 
+// Line regexp
+var line_regexp = utils.line_regexp;
+
 // TODO: For testability, this should be accessible
 var queue_dir = path.resolve(config.get('queue_dir') || (process.env.HARAKA + '/queue'));
 
@@ -431,7 +434,6 @@ function _fname () {
     return time + '_0_' + process.pid + "_" + _next_uniq() + '.' + my_hostname;
 }
 
-var line_regexp = /^([^\n]*\n?)/;
 exports.send_email = function () {
 
     if (arguments.length === 2) {
@@ -1795,7 +1797,6 @@ HMailItem.prototype.populate_bounce_message = function (from, to, reason, cb) {
     var original_header_lines = [];
     var headers_done = false;
     var header = new Header();
-    var line_regexp = /^([^\n]*\n)/;
 
     try {
         var data_stream = this.data_stream();
