@@ -310,4 +310,4 @@ exports.wildcard_to_regexp = function (str) {
         .replace('\\?', '.') + '$';
 };
 
-export.line_regexp = /^([^\n]*\n?)/;
+exports.line_regexp = /^([^\n]*\n?)/;
