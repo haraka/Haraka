@@ -1151,12 +1151,16 @@ function get_pool (port, host, local_addr, is_unix_socket, connect_timeout, pool
             },
             destroy: function(socket) {
                 logger.logdebug('[outbound] destroying pool entry for ' + host + ':' + port);
-                if (!socket.writable) return;
                 // Remove pool object from server notes once empty
                 var size = pool.getPoolSize();
                 if (size === 0) {
                     delete server.notes.pool[name];
                 }
+                socket.removeAllListeners();
+                socket.once('error', function (err) {
+                    logger.logwarn("[outbound] Socket got an error while shutting down: " + err);
+                });
+                if (!socket.writable) return;
                 socket.send_command('QUIT');
                 socket.end(); // half close
                 socket.once('line', function (line) {
@@ -1224,6 +1228,7 @@ function release_client (socket, port, host, local_addr) {
     pool.release(socket);
 
     function sockend () {
+        socket.removeAllListeners();
         socket.destroy();
         if (server.notes.pool[name]) {
             server.notes.pool[name].destroyAllNow();
