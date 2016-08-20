@@ -20,6 +20,18 @@ rspamd.ini
 
     Port Rspamd is listening on.
 
+- add\_headers
+
+    Default: sometimes
+
+    Possible values are:
+
+        "always" - always add headers
+        "never" - never add headers (unless provided by rspamd - see rmilter\_headers)
+        "sometimes" - add headers when rspamd recommends `add header` action
+
+    Format of these headers is governed by header.* settings
+
 - reject.message
 
     Default: Detected as spam
@@ -52,12 +64,11 @@ rspamd.ini
     If false, messages from private IPs will not be scanned by Rspamd.
     If true, messages from private IPs will be scanned by Rspamd.
 
-- always\_add\_headers
+- dkim.enabled
 
-    Default: false
+    Default: true
 
-    If true, always add headers (otherwise only do this when Rspamd recommends
-    *add header* action).
+    If set to true, allow rspamd to add DKIM signatures to messages.
 
 - header.bar
 
@@ -77,6 +88,24 @@ rspamd.ini
     Default: undefined
 
     If set, add the numeric spam score in a header with this name.
+
+- rmilter_headers.enabled
+
+    Default: true
+
+    If set to true, allow rspamd to add/remove headers to messages via [task:rmilter_set_reply()](https://rspamd.com/doc/lua/task.html#me7351).
+
+- soft\_reject.enabled
+
+    Default: true
+
+    If set to true, allow rspamd to defer messages.
+
+- soft\_reject.message
+
+    Default: Deferred by policy
+
+    Message to send to remote server on rspamd soft rejection.
 
 - spambar.positive
 

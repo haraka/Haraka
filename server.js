@@ -551,7 +551,6 @@ Server.init_http_respond = function () {
     }
 
     Server.http.wss = new WebSocketServer({ server: Server.http.server });
-    Server.http.wss.unref();
     logger.loginfo('Server.http.wss loaded');
 
     plugins.run_hooks('init_wss', Server);

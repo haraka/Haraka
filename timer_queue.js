@@ -1,5 +1,7 @@
 "use strict";
 
+var logger = require('./logger');
+
 function TQTimer (fire_time, cb) {
     this.fire_time = fire_time;
     this.cb = cb;
@@ -55,6 +57,7 @@ TimerQueue.prototype.length = function () {
 };
 
 TimerQueue.prototype.drain = function () {
+    logger.logdebug("Draining " + this.queue.length + " items from the queue");
     while (this.queue.length) {
         var to_run = this.queue.shift();
         if (to_run.cb) to_run.cb();

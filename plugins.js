@@ -192,8 +192,9 @@ Plugin.prototype._make_custom_require = function () {
 
 Plugin.prototype._get_code = function (pp) {
     var plugin = this;
+
     if (plugin.hasPackageJson) {
-        return 'exports = require("' + path.dirname(pp) + '");';
+        return 'var _p = require("' + path.dirname(pp) + '"); for (var k in _p) { exports[k] = _p[k] }';
     }
 
     try {

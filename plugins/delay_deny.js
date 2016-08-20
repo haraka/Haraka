@@ -26,12 +26,21 @@ exports.hook_deny = function (next, connection, params) {
     // Load config
     var cfg = this.config.get('delay_deny.ini');
     var skip;
-    if (cfg.main.excluded_plugins) {
+    var included;
+    if (cfg.main.included_plugins) {
+        included = cfg.main.included_plugins.split(/[;, ]+/);
+    } else if (cfg.main.excluded_plugins) {
         skip = cfg.main.excluded_plugins.split(/[;, ]+/);
     }
 
-    // See if we should skip this delay
-    if (skip && skip.length) {
+    // 'included' mode: only delay deny plugins in the included list
+    if (included && included.length) {
+        if (included.indexOf(pi_name) === -1 &&
+            included.indexOf(pi_name + ':' + pi_hook) === -1 &&
+            included.indexOf(pi_name + ':' + pi_hook + ':' + pi_function) === -1) {
+            return next();
+        }
+    } else if (skip && skip.length) { // 'excluded' mode: delay deny everything except in skip list
         // Skip by <plugin name>
         if (skip.indexOf(pi_name) !== -1) {
             connection.logdebug(plugin, 'not delaying excluded plugin: ' + pi_name);

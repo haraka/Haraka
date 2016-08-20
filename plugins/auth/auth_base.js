@@ -183,16 +183,26 @@ exports.select_auth_method = function(next, connection, method) {
 
 exports.auth_plain = function(next, connection, params) {
     var plugin = this;
-    if (!params || !params.length) {
-        connection.respond(334, ' ', function () {
-            return next(OK);
-        });
-        return;
+    // one parameter given on line, either:
+    //    AUTH PLAIN <param> or
+    //    AUTH PLAIN\n
+    //...
+    //    <param>
+    if (params[0]) {
+        var credentials = utils.unbase64(params[0]).split(/\0/);
+        credentials.shift();  // Discard authid
+        return plugin.check_user(next, connection, credentials, AUTH_METHOD_PLAIN);
+    } else {
+        if (connection.notes.auth_plain_asked_login) {
+            return next(DENYDISCONNECT, 'bad protocol');
+        } else {
+            connection.respond(334, ' ', function () {
+                connection.notes.auth_plain_asked_login = true;
+                return next(OK);
+            });
+            return;
+        }
     }
-
-    var credentials = utils.unbase64(params[0]).split(/\0/);
-    credentials.shift();  // Discard authid
-    return plugin.check_user(next, connection, credentials, AUTH_METHOD_PLAIN);
 };
 
 exports.auth_login = function(next, connection, params) {

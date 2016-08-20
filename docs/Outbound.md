@@ -85,6 +85,10 @@ connection open and use it the next time it is requested. This helps with
 large scale outbound mail. If you don't send lots of mail it is advised to
 lower the `pool_timeout` value since it may upset receiving mail servers.
 
+Setting this value to `0` will effectively disable the use of pools. You may
+wish to set this if you have a `get_mx` hook that picks outbound servers on
+a per-email basis (rather than per-domain).
+
 ### outbound.bounce\_message
 
 See "Bounce Messages" below for details.
