@@ -73,7 +73,7 @@ exports.load_config = function () {
         cfg.connect_timeout = 30;
     }
     if (cfg.pool_timeout === undefined) {
-        cfg.pool_timeout = 300;
+        cfg.pool_timeout = 50;
     }
     if (!cfg.ipv6_enabled && config.get('outbound.ipv6_enabled')) {
         cfg.ipv6_enabled = true;
@@ -1216,12 +1216,12 @@ function release_client (socket, port, host, local_addr) {
     socket.__fromPool = true;
 
     socket.once('error', function (err) {
-        logger.logwarn("[outbound] Socket in pool got an error: " + err);
+        logger.logwarn("[outbound] Socket [" + name + "] in pool got an error: " + err);
         sockend();
     });
 
     socket.once('end', function () {
-        logger.logwarn("[outbound] Socket in pool got FIN");
+        logger.logwarn("[outbound] Socket [" + name + "] in pool got FIN");
         sockend();
     });
 
