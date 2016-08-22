@@ -73,7 +73,7 @@ exports.load_config = function () {
         cfg.connect_timeout = 30;
     }
     if (cfg.pool_timeout === undefined) {
-        cfg.pool_timeout = 300;
+        cfg.pool_timeout = 50;
     }
     if (!cfg.ipv6_enabled && config.get('outbound.ipv6_enabled')) {
         cfg.ipv6_enabled = true;
@@ -1151,12 +1151,16 @@ function get_pool (port, host, local_addr, is_unix_socket, connect_timeout, pool
             },
             destroy: function(socket) {
                 logger.logdebug('[outbound] destroying pool entry for ' + host + ':' + port);
-                if (!socket.writable) return;
                 // Remove pool object from server notes once empty
                 var size = pool.getPoolSize();
                 if (size === 0) {
                     delete server.notes.pool[name];
                 }
+                socket.removeAllListeners();
+                socket.once('error', function (err) {
+                    logger.logwarn("[outbound] Socket got an error while shutting down: " + err);
+                });
+                if (!socket.writable) return;
                 socket.send_command('QUIT');
                 socket.end(); // half close
                 socket.once('line', function (line) {
@@ -1212,18 +1216,19 @@ function release_client (socket, port, host, local_addr) {
     socket.__fromPool = true;
 
     socket.once('error', function (err) {
-        logger.logwarn("[outbound] Socket in pool got an error: " + err);
+        logger.logwarn("[outbound] Socket [" + name + "] in pool got an error: " + err);
         sockend();
     });
 
     socket.once('end', function () {
-        logger.logwarn("[outbound] Socket in pool got FIN");
+        logger.logwarn("[outbound] Socket [" + name + "] in pool got FIN");
         sockend();
     });
 
     pool.release(socket);
 
     function sockend () {
+        socket.removeAllListeners();
         socket.destroy();
         if (server.notes.pool[name]) {
             server.notes.pool[name].destroyAllNow();

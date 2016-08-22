@@ -78,7 +78,7 @@ Timeout for connecting to remote servers. Default: 30s
 * `pool_timeout`
 
 Outbound mail uses "pooled" connections. An unused pool connection will send
-a QUIT after this time. Default: 300s
+a QUIT after this time. Default: 50s
 
 Pooled connections means that a mail to a particular IP address will hold that
 connection open and use it the next time it is requested. This helps with
