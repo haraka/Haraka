@@ -3,7 +3,7 @@
 // validates incoming recipients against flat file & Redis
 // routes mail based on per-email or per-domain specified routes
 
-var urlparser = require('url-parse');
+var urlparser = require('url');
 
 exports.register = function() {
     var plugin = this;
@@ -120,7 +120,7 @@ exports.get_mx = function(next, hmail, domain) {
         var mx = {};
         // check email adress for route
         if (plugin.route_list[address]) {
-            var uri = new urlparser(plugin.route_list[address]);
+            var uri = new urlparser.parse(plugin.route_list[address]);
             if ( uri.protocol == 'lmtp:' ) {
                 mx.exchange = uri.hostname;
                 mx.port = uri.port;
