@@ -3,6 +3,8 @@
 // validates incoming recipients against flat file & Redis
 // routes mail based on per-email or per-domain specified routes
 
+var urlparser = require('url');
+
 exports.register = function() {
     var plugin = this;
     plugin.inherits('redis');
@@ -106,18 +108,33 @@ exports.get_mx = function(next, hmail, domain) {
     var plugin = this;
 
     // get email address
-    var address = domain;
+    var address = domain.toLowerCase();
     if (hmail && hmail.todo && hmail.todo.rcpt_to && hmail.todo.rcpt_to[0]) {
-        address = hmail.todo.rcpt_to[0].address();
+        address = hmail.todo.rcpt_to[0].address().toLowerCase();
     }
     else {
         plugin.logerror('no rcpt from hmail, falling back to domain' );
     }
 
     var do_file_search = function () {
+        var mx = {};
         // check email adress for route
         if (plugin.route_list[address]) {
-            return next(OK, plugin.route_list[address]);
+            var uri = new urlparser.parse(plugin.route_list[address]);
+            if ( uri.protocol == 'lmtp:' ) {
+                mx.exchange = uri.hostname;
+                mx.port = uri.port;
+                mx.using_lmtp = true;
+                return next(OK, mx);
+            }
+            else if ( uri.protocol == 'smtp:' ) {
+                mx.exchange = uri.hostname;
+                mx.port = uri.port;
+                return next(OK, mx);
+            }
+            else {
+                return next(OK, plugin.route_list[address]);
+            }
         }
 
         // check email domain for route
