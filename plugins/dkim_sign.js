@@ -170,7 +170,11 @@ exports.hook_queue_outbound = exports.hook_pre_send_trans_email = function (next
         return next();
     }
 
-    plugin.get_key_dir(connection, function(keydir) {
+    plugin.get_key_dir(connection, function (err, keydir) {
+        if (err) {
+            connection.logerror(plugin, err);
+            return next(DENYSOFT, "Error getting key_dir in dkim_sign");
+        }
         var domain;
         var selector;
         var private_key;
@@ -192,9 +196,9 @@ exports.hook_queue_outbound = exports.hook_pre_send_trans_email = function (next
 
         var headers_to_sign = plugin.get_headers_to_sign();
         var txn = connection.transaction;
-        var dkimCallback = function (err, dkim_header) {
-            if (err) {
-                txn.results.add(plugin, {err: err.message});
+        var dkimCallback = function (err2, dkim_header) {
+            if (err2) {
+                txn.results.add(plugin, {err: err2.message});
             }
             else {
                 connection.loginfo(plugin, 'signed for ' + domain);
@@ -228,9 +232,16 @@ exports.get_key_dir = function (connection, cb) {
     }
     connection.logdebug(plugin, dom_hier);
 
-    async.filter(dom_hier, fs.exists, function(results) {
+    async.filter(dom_hier, function (file, cb2) {
+        try {
+            cb2(null, fs.exists(file));
+        }
+        catch (e) {
+            return cb2(e);
+        }
+    }, function (err, results) {
         connection.logdebug(plugin, results);
-        cb(results[0]);
+        cb(err, results ? results[0] : null);
     });
 };
 
