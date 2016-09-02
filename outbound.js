@@ -551,8 +551,8 @@ function stream_line_reader (stream, transaction, cb) {
         cb();
     };
 
-    stream.on('data', function (data) { process_data(data);});
-    stream.once('end',  function ()     { process_end();     });
+    stream.on('data', process_data);
+    stream.once('end', process_end);
     stream.once('error', cb);
 }
 
