@@ -258,7 +258,7 @@ Connection.prototype.set = function (obj, prop, val) {
         this.using_tls = val;
     }
     else {
-        this[obj + '_' + prop] = value;
+        this[obj + '_' + prop] = val;
     }
     // /sunset
 }
