@@ -4,7 +4,7 @@
 var net  = require('net');
 var tls  = require('./tls_socket');
 var util = require('util');
-var line_regexp = /^([^\n]*\n)/;
+var line_regexp = require('./utils').line_regexp;
 
 function Socket(options) {
     if (!(this instanceof Socket)) return new Socket(options);
