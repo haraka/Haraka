@@ -522,7 +522,7 @@ exports.send_email = function () {
             if (err) {
                 return next(DENYSOFT, "Error from stream line reader: " + err);
             }
-            this.send_trans_email(transaction, next);
+            exports.send_trans_email(transaction, next);
         });
     }
 
@@ -538,6 +538,9 @@ function stream_line_reader (stream, transaction, cb) {
         while (results = line_regexp.exec(current_data)) {
             var this_line = results[1];
             current_data = current_data.slice(this_line.length);
+            if (!(current_data.length || this_line.length)) {
+                return;
+            }
             transaction.add_data(new Buffer(this_line));
         }
     };
