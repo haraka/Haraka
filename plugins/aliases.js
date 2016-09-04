@@ -34,23 +34,6 @@ exports.aliases = function (next, connection, params) {
         }
     }
 
-    if (config['@'+host]) {
-
-        action = config['@'+host].action || action;
-        match  = '@'+host;
-
-        switch (action.toLowerCase()) {
-            case 'drop':
-                _drop(plugin, connection, '@'+host);
-                break;
-            case 'alias':
-                _alias(plugin, connection, match, config[match], host);
-                break;
-            default:
-                connection.loginfo(plugin, "unknown action: " + action);
-        }
-    }
-
     if (config[user] || config[match[0]]) {
         if (config[user]) {
             action = config[user].action || action;
@@ -64,6 +47,23 @@ exports.aliases = function (next, connection, params) {
         switch (action.toLowerCase()) {
             case 'drop':
                 _drop(plugin, connection, rcpt);
+                break;
+            case 'alias':
+                _alias(plugin, connection, match, config[match], host);
+                break;
+            default:
+                connection.loginfo(plugin, "unknown action: " + action);
+        }
+    }
+
+    if (config['@'+host]) {
+
+        action = config['@'+host].action || action;
+        match  = '@'+host;
+
+        switch (action.toLowerCase()) {
+            case 'drop':
+                _drop(plugin, connection, '@'+host);
                 break;
             case 'alias':
                 _alias(plugin, connection, match, config[match], host);
