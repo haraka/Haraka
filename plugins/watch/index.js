@@ -41,7 +41,9 @@ exports.hook_init_http = function (next, server) {
         // app.use args: request, response, app_next
         // pass config information to the WS client
         var client = { sampling: plugin.cfg.main.sampling };
-        if (plugin.cfg.wss.url) client.wss_url = plugin.cfg.wss.url;
+        if (plugin.cfg.wss && plugin.cfg.wss.url) {
+            client.wss_url = plugin.cfg.wss.url;
+        }
         res.end(JSON.stringify(client));
     });
 
