@@ -298,7 +298,14 @@ exports.get_sender_domain = function (txn) {
     if (!addrs || ! addrs.length) { return domain; }
 
     // If From has a single address, we're done
-    if (addrs.length === 1) { return addrs[0].host().toLowerCase(); }
+    if (addrs.length === 1) {
+        var fromHost = addrs[0].host();
+        if (fromHost) {
+            // don't attempt to lower a null or undefined value #1575
+            fromHost = fromHost.toLowerCase();
+        }
+        return fromHost;
+    }
 
     // If From has multiple-addresses, we must parse and
     // use the domain in the Sender header.
