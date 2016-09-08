@@ -555,7 +555,7 @@ function get_denyfn (object, hook, params, retval, msg, respond_method) {
             default:
                 object.saved_hooks_to_run = [];
                 object.hooks_to_run = [];
-                object[respond_method](retval, msg);
+                object[respond_method](retval, msg, params);
         }
     };
 }
