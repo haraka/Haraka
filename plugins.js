@@ -549,7 +549,7 @@ function get_denyfn (object, hook, params, retval, msg, respond_method) {
                     plugins.run_next_hook(hook, object, params);
                 }
                 else {
-                    object[respond_method](constants.cont, deny_msg);
+                    object[respond_method](constants.cont, deny_msg, params);
                 }
                 break;
             default:
