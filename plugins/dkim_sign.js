@@ -280,7 +280,7 @@ exports.get_sender_domain = function (txn) {
 
     // a fallback, when header parsing fails
     var domain;
-    try { domain = txn.mail_from.host.toLowerCase(); }
+    try { domain = txn.mail_from.host && txn.mail_from.host.toLowerCase(); }
     catch (e) {
         plugin.logerror(e);
     }
