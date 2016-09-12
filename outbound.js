@@ -70,13 +70,16 @@ exports.load_config = function () {
         cfg.maxTempFailures = config.get('outbound.maxTempFailures') || 13;
     }
     if (!cfg.concurrency_max) {
-        cfg.concurrency_max = config.get('outbound.concurrency_max') || 100;
+        cfg.concurrency_max = config.get('outbound.concurrency_max') || 10000;
     }
     if (!cfg.connect_timeout) {
         cfg.connect_timeout = 30;
     }
     if (cfg.pool_timeout === undefined) {
         cfg.pool_timeout = 50;
+    }
+    if (!cfg.pool_concurrency_max) {
+        cfg.pool_concurrency_max = 10;
     }
     if (!cfg.ipv6_enabled && config.get('outbound.ipv6_enabled')) {
         cfg.ipv6_enabled = true;
@@ -1191,6 +1194,9 @@ function get_pool (port, host, local_addr, is_unix_socket, connect_timeout, pool
                     callback("Outbound connection timed out to " + host + ":" + port, null);
                 });
             },
+            validate: function(socket) {
+                return socket.writable;
+            },
             destroy: function(socket) {
                 logger.logdebug('[outbound] destroying pool entry for ' + host + ':' + port);
                 // Remove pool object from server notes once empty
@@ -1203,7 +1209,8 @@ function get_pool (port, host, local_addr, is_unix_socket, connect_timeout, pool
                     logger.logwarn("[outbound] Socket got an error while shutting down: " + err);
                 });
                 if (!socket.writable) return;
-                socket.send_command('QUIT');
+                logger.logprotocol("C: QUIT");
+                socket.write("QUIT\r\n");
                 socket.end(); // half close
                 socket.once('line', function (line) {
                     // Just assume this is a valid response
@@ -1211,7 +1218,7 @@ function get_pool (port, host, local_addr, is_unix_socket, connect_timeout, pool
                     socket.destroy();
                 });
             },
-            max: max || 1000,
+            max: max || 10,
             idleTimeoutMillis: pool_timeout * 1000,
             log: function (str, level) {
                 if (/this._availableObjects.length=/.test(str)) return;
@@ -1226,7 +1233,10 @@ function get_pool (port, host, local_addr, is_unix_socket, connect_timeout, pool
 
 // Get a socket for the given attributes.
 function get_client (port, host, local_addr, is_unix_socket, callback) {
-    var pool = get_pool(port, host, local_addr, is_unix_socket, cfg.connect_timeout, cfg.pool_timeout, cfg.concurrency_max);
+    var pool = get_pool(port, host, local_addr, is_unix_socket, cfg.connect_timeout, cfg.pool_timeout, cfg.pool_concurrency_max);
+    if (pool.waitingClientsCount() >= cfg.pool_concurrency_max) {
+        return callback("Too many waiting clients for pool", null);
+    }
     pool.acquire(callback);
 };
 
