@@ -1351,6 +1351,7 @@ HMailItem.prototype.try_deliver_host_on_socket = function (mx, host, port, socke
 
     socket.once('close', function () {
         if (processing_mail) {
+            self.logerror("Remote end " + host + ":" + port + " closed connection while we were processing mail. Trying next MX.");
             processing_mail = false;
             release_client(socket, port, host, mx.bind);
             return self.try_deliver_host(mx);
