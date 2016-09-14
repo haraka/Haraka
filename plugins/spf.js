@@ -3,14 +3,14 @@
 var SPF = require('./spf').SPF;
 var net_utils = require('./net_utils');
 
-// Override logging in SPF module
-SPF.prototype.log_debug = function (str) {
-    var plugin = this;
-    return plugin.logdebug(str);
-};
-
 exports.register = function () {
     var plugin = this;
+
+    // Override logging in SPF module
+    SPF.prototype.log_debug = function (str) {
+        return plugin.logdebug(str);
+    };
+
     plugin.load_config();
 };
 
