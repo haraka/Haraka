@@ -4,6 +4,7 @@ var logger = require('./logger');
 var rabbitqueue;
 var exchangeName;
 var queueName;
+var deliveryMode;
 var connExchange_;
 var connQueue_;
 var routing_;
@@ -26,7 +27,7 @@ exports.hook_queue = function(next, connection) {
         if (connExchange_ && routing_) {
             //This is publish function of rabbitmq amqp library, currently direct queue is configured and routing is fixed.
             //Needs to be changed.
-            connExchange_.publish(routing_, buffere,{deliveryMode: 2}, function(error){
+            connExchange_.publish(routing_, buffere,{deliveryMode: deliveryMode}, function(error){
                 if (error) {
                     //There was some error while sending the email to queue.
                     logger.logdebug("queueFailure: #{JSON.stringify(error)}");
