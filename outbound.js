@@ -1237,11 +1237,22 @@ function get_client (port, host, local_addr, is_unix_socket, callback) {
     if (pool.waitingClientsCount() >= cfg.pool_concurrency_max) {
         return callback("Too many waiting clients for pool", null);
     }
-    pool.acquire(callback);
+    pool.acquire(function (err, socket) {
+        if (err) return callback(err);
+        socket.__acquired = true;
+        callback(null, socket);
+    });
 };
 
 function release_client (socket, port, host, local_addr) {
     logger.logdebug("[outbound] release_client: " + host + ":" + port + " to " + local_addr);
+
+    if (!socket.__acquired) {
+        logger.logerror("Release an un-acquired socket. Stack: " + (new Error()).stack);
+        return;
+    }
+    socket.__acquired = false;
+    
     var pool_timeout = cfg.pool_timeout;
     var name = 'outbound::' + port + ':' + host + ':' + local_addr + ':' + pool_timeout;
     if (!(server.notes && server.notes.pool)) {
