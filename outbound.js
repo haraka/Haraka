@@ -1514,7 +1514,12 @@ HMailItem.prototype.try_deliver_host_on_socket = function (mx, host, port, socke
         return send_command('MAIL', 'FROM:' + self.todo.mail_from);
     };
 
+    var fp_called = false;
     var finish_processing_mail = function (success) {
+        if (fp_called) {
+            return self.logerror("finish_processing_mail called multiple times! Stack: " + (new Error()).stack);
+        }
+        fp_called = true;
         if (fail_recips.length) {
             self.refcount++;
             exports.split_to_new_recipients(self, fail_recips, "Some recipients temporarily failed", function (hmail) {
