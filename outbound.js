@@ -1252,7 +1252,7 @@ function release_client (socket, port, host, local_addr) {
         return;
     }
     socket.__acquired = false;
-    
+
     var pool_timeout = cfg.pool_timeout;
     var name = 'outbound::' + port + ':' + host + ':' + local_addr + ':' + pool_timeout;
     if (!(server.notes && server.notes.pool)) {
