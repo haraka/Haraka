@@ -197,10 +197,14 @@ exports.unarchive_recursive = function(connection, f, archive_file_name, cb) {
                         // Extract this file from the archive
                         count++;
                         var cmd = spawn(bsdtar_path,
-                            [ '-Oxf', in_file, '--include=' + file ], {
-                            'cwd': '/tmp',
-                            'env': { 'LANG': 'C' },
-                        });
+                            [ '-Oxf', in_file, '--include=' + file ],
+                            {
+                                'cwd': '/tmp',
+                                'env': {
+                                    'LANG': 'C'
+                                },
+                            }
+                        );
                         // Start timer
                         var t2_timeout = false;
                         var t2_timer = setTimeout(function () {
@@ -354,7 +358,7 @@ exports.start_attachment = function (connection, ctype, filename, body, stream) 
                         txn.notes.attachment_result = [ DENY, 'Message contains nested archives exceeding the maximum depth' ];
                     }
                     else if (/Encrypted file is unsupported/i.test(error.message)) {
-                        if (!plugin.cfg.allow_encrypted_archives) {
+                        if (!plugin.cfg.main.allow_encrypted_archives) {
                             txn.notes.attachment_result = [ DENY, 'Message contains encrypted archive' ];
                         }
                     }
