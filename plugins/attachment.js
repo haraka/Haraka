@@ -1,3 +1,4 @@
+/*eslint no-shadow: ["error", { "allow": ["file", "depth", "code", "signal"] }]*/
 // attachment
 
 var fs = require('fs');
@@ -63,15 +64,15 @@ exports.find_bsdtar_path = function (cb) {
 
 exports.hook_init_master = exports.hook_init_child = function (next) {
     var plugin = this;
-    plugin.find_bsdtar_path(function (err, path) {
+    plugin.find_bsdtar_path(function (err, dir) {
         if (err) {
             archives_disabled = true;
             plugin.logwarn('This plugin requires the \'bsdtar\' binary ' +
                             'to extract filenames from archive files');
         }
         else {
-            plugin.logwarn('found bsdtar in ' + path);
-            bsdtar_path = path + '/bsdtar';
+            plugin.logwarn('found bsdtar in ' + dir);
+            bsdtar_path = dir + '/bsdtar';
         }
         return next();
     });
@@ -124,7 +125,7 @@ exports.unarchive_recursive = function(connection, f, archive_file_name, cb) {
                 });
             });
         });
-     }
+    }
 
     function listFiles(in_file, prefix, depth) {
         if (!depth) depth = 0;
@@ -168,9 +169,9 @@ exports.unarchive_recursive = function(connection, f, archive_file_name, cb) {
                 return do_cb(new Error('bsdtar terminated by signal: ' + signal));
             }
             // Process filenames
-            var f = lines.split(/\r?\n/);
-            for (var i=0; i<f.length; i++) {
-                var file = f[i];
+            var fl = lines.split(/\r?\n/);
+            for (var i=0; i<fl.length; i++) {
+                var file = fl[i];
                 // Skip any blank lines
                 if (!file) continue;
                 connection.logdebug(plugin, 'file: ' + file + ' depth=' + depth);
@@ -186,53 +187,53 @@ exports.unarchive_recursive = function(connection, f, archive_file_name, cb) {
                 count++;
                 depth++;
                 (function (file, depth) {
-                tmp.file(function (err, tmpfile, fd) {
-                    count--;
-                    if (err) return do_cb(err.message);
-                    connection.logdebug(plugin, 'created tmp file: ' + tmpfile +
-                                              '(fd=' + fd + ') for file ' +
-                                              (prefix ? prefix + '/' : '') + file);
-                    tmpfiles.push([fd, tmpfile]);
-                    // Extract this file from the archive
-                    count++;
-                    var cmd = spawn(bsdtar_path,
-                        [ '-Oxf', in_file, '--include=' + file ], {
-                        'cwd': '/tmp',
-                        'env': { 'LANG': 'C' },
-                    });
-                    // Start timer
-                    var t2_timeout = false;
-                    var t2_timer = setTimeout(function () {
-                        t2_timeout = true;
-                        return do_cb(new Error('bsdtar timed out extracting file '
-                                               + file));
-                    }, plugin.cfg.timeout);
-                    // Create WriteStream for this file
-                    var tws = fs.createWriteStream(tmpfile, { "fd": fd });
-                    var err = "";
-                    cmd.stderr.on('data', function(data) {
-                        err += data;
-                    });
-                    cmd.on('exit', function (code, signal) {
+                    tmp.file(function (err, tmpfile, fd) {
                         count--;
-                        if (t2_timeout) return;
-                        clearTimeout(t2_timer);
-                        if (code && code > 0) {
-                            // Error was returned
-                            return do_cb(new Error('bsdtar returned error code: '
-                                         + code + ' error=' + err.replace(/\r?\n/,' ')));
-                        }
-                        if (signal) {
-                            // Process terminated due to signal
-                            return do_cb(new Error('bsdtar terminated by signal: '
-                                                   + signal));
-                        }
-                        // Recurse
-                        return listFiles(tmpfile, (prefix ? prefix + '/' : '') +
-                                                  file, depth);
+                        if (err) return do_cb(err.message);
+                        connection.logdebug(plugin, 'created tmp file: ' + tmpfile +
+                                                  '(fd=' + fd + ') for file ' +
+                                                  (prefix ? prefix + '/' : '') + file);
+                        tmpfiles.push([fd, tmpfile]);
+                        // Extract this file from the archive
+                        count++;
+                        var cmd = spawn(bsdtar_path,
+                            [ '-Oxf', in_file, '--include=' + file ], {
+                            'cwd': '/tmp',
+                            'env': { 'LANG': 'C' },
+                        });
+                        // Start timer
+                        var t2_timeout = false;
+                        var t2_timer = setTimeout(function () {
+                            t2_timeout = true;
+                            return do_cb(new Error('bsdtar timed out extracting file '
+                                                   + file));
+                        }, plugin.cfg.timeout);
+                        // Create WriteStream for this file
+                        var tws = fs.createWriteStream(tmpfile, { "fd": fd });
+                        var err = "";
+                        cmd.stderr.on('data', function(data) {
+                            err += data;
+                        });
+                        cmd.on('exit', function (code, signal) {
+                            count--;
+                            if (t2_timeout) return;
+                            clearTimeout(t2_timer);
+                            if (code && code > 0) {
+                                // Error was returned
+                                return do_cb(new Error('bsdtar returned error code: '
+                                             + code + ' error=' + err.replace(/\r?\n/,' ')));
+                            }
+                            if (signal) {
+                                // Process terminated due to signal
+                                return do_cb(new Error('bsdtar terminated by signal: '
+                                                       + signal));
+                            }
+                            // Recurse
+                            return listFiles(tmpfile, (prefix ? prefix + '/' : '') +
+                                                      file, depth);
+                        });
+                        cmd.stdout.pipe(tws);
                     });
-                    cmd.stdout.pipe(tws);
-                });
                 })(file, depth);
             }
             connection.loginfo(plugin, 'finish: count=' + count +
@@ -344,20 +345,20 @@ exports.start_attachment = function (connection, ctype, filename, body, stream) 
         });
         ws.on('close', function() {
             connection.logdebug(plugin, 'end of stream reached');
-            plugin.unarchive_recursive(connection, fn, filename, function (err, files) {
+            plugin.unarchive_recursive(connection, fn, filename, function (error, files) {
                 txn.notes.attachment_count--;
                 cleanup();
                 if (err) {
-                    connection.logerror(plugin, err.message);
+                    connection.logerror(plugin, error.message);
                     if (err.message === 'maximum archive depth exceeded') {
                         txn.notes.attachment_result = [ DENY, 'Message contains nested archives exceeding the maximum depth' ];
                     }
-                    else if (/Encrypted file is unsupported/i.test(err.message)) {
+                    else if (/Encrypted file is unsupported/i.test(error.message)) {
                         if (!plugin.cfg.allow_encrypted_archives) {
                             txn.notes.attachment_result = [ DENY, 'Message contains encrypted archive' ];
                         }
                     }
-                    else if (/Mac metadata is too large/i.test(err.message)) {
+                    else if (/Mac metadata is too large/i.test(error.message)) {
                         // Skip this error
                     }
                     else {
