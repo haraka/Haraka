@@ -135,7 +135,12 @@ function _decode_rfc2231 (params) {
 
         params.cur_key = key_actual;
         params.keys[key_actual] = '';
-        value = decodeURIComponent(value);
+        try {
+            value = decodeURIComponent(value);
+        }
+        catch (e) {
+            logger.logerror("Decode header failed: " + key + ": " + value);
+        }
         params.kv[key_actual + '*' + key_id] = params.cur_enc ? try_convert(value, params.cur_enc) : value;
         return '';
     }
