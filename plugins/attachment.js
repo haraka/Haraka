@@ -1,12 +1,18 @@
+/*eslint no-shadow: ["error", { "allow": ["file", "depth", "code", "signal"] }]*/
 // attachment
 
-var fs     = require('fs');
-var exec   = require('child_process').exec;
-var path   = require('path');
+var fs = require('fs');
+var spawn = require('child_process').spawn;
+var path = require('path');
 var crypto = require('crypto');
+var utils = require('./utils');
 
 var tmp;
+var bsdtar_path;
 var archives_disabled = false;
+var default_archive_extns = [
+    '.zip', '.tar', '.tgz', '.taz', '.z', '.gz', '.rar', '.7z'
+];
 
 exports.register = function () {
     try {
@@ -15,31 +21,61 @@ exports.register = function () {
     }
     catch (e) {
         archives_disabled = true;
-        this.logwarn('This module requires the \'tmp\' module to extract ' +
-            'filenames from archive files');
-        return;
+        this.logwarn('This plugin requires the \'tmp\' module to extract ' +
+                     'filenames from archive files');
     }
-    this.load_archive_ini();
-
+    this.load_attachment_ini();
     this.register_hook('data_post', 'wait_for_attachment_hooks');
     this.register_hook('data_post', 'check_attachments');
 };
 
-exports.load_archive_ini = function () {
+exports.load_attachment_ini = function () {
     var plugin = this;
 
     plugin.cfg = plugin.config.get('attachment.ini', function () {
-        plugin.load_archive_ini();
+        plugin.load_attachment_ini();
     });
 
     plugin.cfg.timeout = (plugin.cfg.main.timeout || 30) * 1000;
-
     plugin.archive_max_depth = plugin.cfg.main.archive_max_depth || 5;
+    plugin.archive_exts = options_to_array(plugin.cfg.main.archive_extensions) ||
+                              default_archive_extns;
+};
 
-    plugin.archive_exts =
-        options_to_array(plugin.cfg.main.archive_extensions) ||
-        [ '.zip', '.tar', '.tgz', '.taz', '.z', '.gz', '.rar', '.7z' ];
+exports.find_bsdtar_path = function (cb) {
+    var found = false;
+    var i = 0;
+    ['/bin', '/usr/bin', '/usr/local/bin'].forEach(function (dir) {
+        if (found) return;
+        i++;
+        fs.stat(dir + '/bsdtar', function (err, stats) {
+            i--;
+            if (found) return;
+            if (err) {
+                if (i===0) cb(new Error('bsdtar not found'));
+                return;
+            }
+            found = true;
+            cb(null, dir);
+        });
+        if (i===0) cb(new Error('bsdtar not found'));
+    });
+};
 
+exports.hook_init_master = exports.hook_init_child = function (next) {
+    var plugin = this;
+    plugin.find_bsdtar_path(function (err, dir) {
+        if (err) {
+            archives_disabled = true;
+            plugin.logwarn('This plugin requires the \'bsdtar\' binary ' +
+                            'to extract filenames from archive files');
+        }
+        else {
+            plugin.logwarn('found bsdtar in ' + dir);
+            bsdtar_path = dir + '/bsdtar';
+        }
+        return next();
+    });
 };
 
 function options_to_array(options) {
@@ -59,14 +95,12 @@ function options_to_array(options) {
 }
 
 exports.unarchive_recursive = function(connection, f, archive_file_name, cb) {
-    var plugin = this;
-
     if (archives_disabled) {
         connection.logdebug(this, 'archive support disabled');
         return cb();
     }
 
-    var self = this;
+    var plugin = this;
     var files = [];
     var tmpfiles = [];
     var depth_exceeded = false;
@@ -85,9 +119,9 @@ exports.unarchive_recursive = function(connection, f, archive_file_name, cb) {
     function deleteTempFiles() {
         tmpfiles.forEach(function (t) {
             fs.close(t[0], function () {
-                connection.logdebug(self, 'closed fd: ' + t[0]);
+                connection.logdebug(plugin, 'closed fd: ' + t[0]);
                 fs.unlink(t[1], function() {
-                    connection.logdebug(self, 'deleted tempfile: ' + t[1]);
+                    connection.logdebug(plugin, 'deleted tempfile: ' + t[1]);
                 });
             });
         });
@@ -102,63 +136,112 @@ exports.unarchive_recursive = function(connection, f, archive_file_name, cb) {
             return;
         }
         count++;
-        var cmd = 'LANG=C bsdtar -tf ' + in_file;
-        exec(cmd, { timeout: plugin.cfg.timeout },  function (err, stdout, stderr) {
+        var bsdtar = spawn(bsdtar_path, [ '-tf', in_file ], {
+            'cwd': '/tmp',
+            'env': { 'LANG': 'C' },
+        });
+        // Start timer
+        var t1_timeout = false;
+        var t1_timer = setTimeout(function () {
+            t1_timeout = true;
+            bsdtar.kill();
+            return do_cb(new Error('bsdtar timed out'));
+        }, plugin.cfg.timeout);
+        var lines = "";
+        bsdtar.stdout.on('data', function(data) {
+            lines += data;
+        });
+        var stderr = "";
+        bsdtar.stderr.on('data', function(data) {
+            stderr += data;
+        });
+        bsdtar.on('exit', function (code, signal) {
             count--;
-            if (err) {
-                if (err.code === 127) {
-                    // file not found
-                    self.logwarn('bsdtar not found, disabling archive features');
-                    archives_disabled = true;
-                    return do_cb();
-                }
-                else if (err.code === null) {
-                    // likely a timeout
-                    return do_cb(new Error('timeout unpacking attachments'));
-                }
-                return do_cb(err);
+            if (t1_timeout) return;
+            clearTimeout(t1_timer);
+            if (code && code > 0) {
+                // Error was returned
+                return do_cb(new Error('bsdtar returned error code: ' + code +
+                             ' error=' + stderr.replace(/\r?\n/,' ')));
             }
-            var f2 = stdout.split(/\r?\n/);
-            for (var i=0; i<f2.length; i++) {
-                var file = f2[i];
+            if (signal) {
+                // Process terminated due to signal
+                return do_cb(new Error('bsdtar terminated by signal: ' + signal));
+            }
+            // Process filenames
+            var fl = lines.split(/\r?\n/);
+            for (var i=0; i<fl.length; i++) {
+                var file = fl[i];
                 // Skip any blank lines
                 if (!file) continue;
-                connection.logdebug(self, 'file: ' + file + ' depth=' + depth);
+                connection.logdebug(plugin, 'file: ' + file + ' depth=' + depth);
                 files.push((prefix ? prefix + '/' : '') + file);
                 var extn = path.extname(file.toLowerCase());
-                if (plugin.archive_exts.indexOf(extn) !== -1 ||
-                    plugin.archive_exts.indexOf(extn.substring(1)) !== -1)
+                if (plugin.archive_exts.indexOf(extn) === -1 &&
+                    plugin.archive_exts.indexOf(extn.substring(1)) === -1)
                 {
-                    connection.logdebug(self, 'need to extract file: ' + file);
-                    count++;
-                    depth++;
-                    (function (file2, depth2) {
-                        tmp.file(function (err2, tmpfile, fd) {
-                            count--;
-                            if (err2) return do_cb(err2.message);
-                            connection.logdebug(self, 'created tmp file: ' + tmpfile + '(fd=' + fd + ') for file ' + (prefix ? prefix + '/' : '') + file2);
-                            // Extract this file from the archive
-                            var cmd2 = 'LANG=C bsdtar -Oxf ' + in_file + ' --include="' + file2 + '" > ' + tmpfile;
-                            tmpfiles.push([fd, tmpfile]);
-                            connection.logdebug(self, 'running command: ' + cmd2);
-                            count++;
-                            exec(cmd2, { timeout: plugin.cfg.timeout }, function (error, stdout2, stderr2) {
-                                count--;
-                                if (error) {
-                                    connection.logdebug(self, 'error: return code ' + error.code + ': ' + stderr2.toString('utf-8'));
-                                    return do_cb(new Error(stderr2.toString('utf-8').replace(/\r?\n/g,' ')));
-                                }
-                                else {
-                                    // Recurse
-                                    return listFiles(tmpfile, (prefix ? prefix + '/' : '') + file2, depth2);
-                                }
-                            });
-                        });
-                    })(file, depth);
+                    // Not an archive file extension
+                    continue;
                 }
+                connection.logdebug(plugin, 'need to extract file: ' + file);
+                count++;
+                depth++;
+                (function (file, depth) {
+                    tmp.file(function (err, tmpfile, fd) {
+                        count--;
+                        if (err) return do_cb(err.message);
+                        connection.logdebug(plugin, 'created tmp file: ' + tmpfile +
+                                                  '(fd=' + fd + ') for file ' +
+                                                  (prefix ? prefix + '/' : '') + file);
+                        tmpfiles.push([fd, tmpfile]);
+                        // Extract this file from the archive
+                        count++;
+                        var cmd = spawn(bsdtar_path,
+                            [ '-Oxf', in_file, '--include=' + file ],
+                            {
+                                'cwd': '/tmp',
+                                'env': {
+                                    'LANG': 'C'
+                                },
+                            }
+                        );
+                        // Start timer
+                        var t2_timeout = false;
+                        var t2_timer = setTimeout(function () {
+                            t2_timeout = true;
+                            return do_cb(new Error('bsdtar timed out extracting file '
+                                                   + file));
+                        }, plugin.cfg.timeout);
+                        // Create WriteStream for this file
+                        var tws = fs.createWriteStream(tmpfile, { "fd": fd });
+                        var err = "";
+                        cmd.stderr.on('data', function(data) {
+                            err += data;
+                        });
+                        cmd.on('exit', function (code, signal) {
+                            count--;
+                            if (t2_timeout) return;
+                            clearTimeout(t2_timer);
+                            if (code && code > 0) {
+                                // Error was returned
+                                return do_cb(new Error('bsdtar returned error code: '
+                                             + code + ' error=' + err.replace(/\r?\n/,' ')));
+                            }
+                            if (signal) {
+                                // Process terminated due to signal
+                                return do_cb(new Error('bsdtar terminated by signal: '
+                                                       + signal));
+                            }
+                            // Recurse
+                            return listFiles(tmpfile, (prefix ? prefix + '/' : '') +
+                                                      file, depth);
+                        });
+                        cmd.stdout.pipe(tws);
+                    });
+                })(file, depth);
             }
-            if (depth > 0) depth--;
-            connection.logdebug(self, 'finish: count=' + count + ' depth=' + depth);
+            connection.loginfo(plugin, 'finish: count=' + count +
+                                       ' depth=' + depth);
             if (count === 0) {
                 return do_cb(null, files);
             }
@@ -176,11 +259,28 @@ exports.start_attachment = function (connection, ctype, filename, body, stream) 
     var plugin = this;
     var txn = connection.transaction;
 
-    function next () {
+    function next() {
         if (txn.notes.attachment_count === 0 && txn.notes.attachment_next) {
             return txn.notes.attachment_next();
         }
         return;
+    }
+
+    // Parse Content-Type
+    var ct;
+    if ((ct = ctype.match(/^([^\/]+\/[^;\r\n ]+)/)) && ct[1]) {
+        connection.logdebug(plugin, 'found content type: ' + ct[1]);
+        txn.notes.attachment_ctypes.push(ct[1]);
+    }
+
+    // Parse filename
+    if (filename) {
+        var ext;
+        var fileext = '.unknown';
+        if ((ext = filename.match(/(\.[^\. ]+)$/)) && ext[1]) {
+            fileext = ext[1].toLowerCase();
+        }
+        txn.notes.attachment_files.push(filename);
     }
 
     // Calculate and report the md5 of each attachment
@@ -188,106 +288,98 @@ exports.start_attachment = function (connection, ctype, filename, body, stream) 
     var digest;
     var bytes = 0;
     stream.on('data', function (data) {
-        bytes += data.length;
         md5.update(data);
+        bytes += data.length;
     });
     stream.once('end', function () {
         digest = md5.digest('hex');
-        var ca = ctype.match(/^(.*)?;\s+name="(.*)?"/);
-        txn.results.push(plugin, { attach: {
-            file: filename,
-            ctype: (ca && ca[2] === filename) ? ca[1] : ctype,
-            md5: digest,
-            bytes: bytes,
-        },
+        connection.loginfo(plugin, 'file="' + filename + '" ctype="' + ctype +
+                                   '" md5=' + digest + ' bytes=' + bytes);
+        txn.notes.attachments.push({
+            ctype: ((ct && ct[1]) ? ct[1].toLowerCase() : 'unknown/unknown'),
+            filename: (filename ? filename : ''),
+            extension: (ext && ext[1] ? ext[1].toLowerCase() : ''),
+            md5: ((digest) ? digest : ''),
         });
-        connection.loginfo(plugin, 'file="' + filename + '" ctype="' +
-                ctype + '" md5=' + digest);
     });
 
-    // Parse Content-Type
-    var ct = ctype.match(/^([^\/]+\/[^;\r\n ]+)/);
-    if (ct && ct[1]) {
-        connection.logdebug(plugin, 'found content type: ' + ct[1]);
-        txn.notes.attachment_ctypes.push(ct[1]);
+    if (!filename) return;
+    connection.logdebug(plugin, 'found attachment file: ' + filename);
+    // See if filename extension matches archive extension list
+    // We check with the dot prefixed and without
+    if (archives_disabled || (plugin.archive_exts.indexOf(fileext) === -1 &&
+        plugin.archive_exts.indexOf(fileext.substring(1)) === -1))
+    {
+        return;
     }
-    if (filename) {
-        connection.logdebug(plugin, 'found attachment file: ' + filename);
-        var ext = filename.match(/(\.[^\. ]+)$/);
-        var fileext = '.unknown';
-        if (ext && ext[1]) {
-            fileext = ext[1].toLowerCase();
-        }
-        txn.notes.attachment_files.push(filename);
-        // See if filename extension matches archive extension list
-        // We check with the dot prefixed and without
-        if (!archives_disabled && (plugin.archive_exts.indexOf(fileext) !== -1 ||
-            plugin.archive_exts.indexOf(fileext.substring(1)) !== -1))
-        {
-            connection.logdebug(plugin, 'found ' + fileext + ' on archive list');
-            txn.notes.attachment_count++;
-            stream.connection = connection;
-            stream.pause();
-            tmp.file(function (err, fn, fd) {
-                function cleanup() {
-                    fs.close(fd, function() {
-                        connection.logdebug(plugin, 'closed fd: ' + fd);
-                        fs.unlink(fn, function () {
-                            connection.logdebug(plugin, 'unlinked: ' + fn);
-                        });
-                    });
-                }
-                if (err) {
-                    txn.notes.attachment_result = [ DENYSOFT, err.message ];
-                    connection.logerror(plugin, 'Error writing tempfile: ' + err.message);
-                    txn.notes.attachment_count--;
-                    cleanup();
-                    stream.resume();
-                    return next();
-                }
-                connection.logdebug(plugin, 'Got tmpfile: attachment="' + filename + '" tmpfile="' + fn + '" fd=' + fd);
-                var ws = fs.createWriteStream(fn);
-                stream.pipe(ws);
-                stream.resume();
-                ws.on('error', function (error) {
-                    txn.notes.attachment_count--;
-                    txn.notes.attachment_result = [ DENYSOFT, error.message ];
-                    connection.logerror(plugin, 'stream error: ' + error.message);
-                    cleanup();
-                    return next();
-                });
-                ws.on('close', function() {
-                    connection.logdebug(plugin, 'end of stream reached');
-                    plugin.unarchive_recursive(connection, fn, filename, function (err2, files) {
-                        txn.notes.attachment_count--;
-                        cleanup();
-                        if (err2) {
-                            connection.logerror(plugin, err2.message);
-                            if (err2.message === 'maximum archive depth exceeded') {
-                                txn.notes.attachment_result = [ DENY, 'Message contains nested archives exceeding the maximum depth' ];
-                            }
-                            else if (/Encrypted file is unsupported/i.test(err2.message)) {
-                                txn.notes.attachment_result = [ DENY, 'Message contains encrypted archive' ];
-                            }
-                            else {
-                                txn.notes.attachment_result = [ DENYSOFT, 'Error unpacking archive' ];
-                            }
-                        }
-                        else {
-                            txn.notes.attachment_archive_files = txn.notes.attachment_archive_files.concat(files);
-                        }
-                        return next();
-                    });
+    connection.logdebug(plugin, 'found ' + fileext + ' on archive list');
+    txn.notes.attachment_count++;
+    stream.connection = connection;
+    stream.pause();
+    tmp.file(function (err, fn, fd) {
+        function cleanup() {
+            fs.close(fd, function() {
+                connection.logdebug(plugin, 'closed fd: ' + fd);
+                fs.unlink(fn, function () {
+                    connection.logdebug(plugin, 'unlinked: ' + fn);
                 });
             });
         }
-    }
-    txn.notes.attachments.push({
-        ctype: ((ct && ct[1]) ? ct[1].toLowerCase() : 'unknown/unknown'),
-        filename: (filename ? filename : ''),
-        extension: (ext && ext[1] ? ext[1].toLowerCase() : ''),
+        if (err) {
+            txn.notes.attachment_result = [ DENYSOFT, err.message ];
+            connection.logerror(plugin, 'Error writing tempfile: ' +
+                                        err.message);
+            txn.notes.attachment_count--;
+            cleanup();
+            stream.resume();
+            return next();
+        }
+        connection.logdebug(plugin, 'Got tmpfile: attachment="' +
+                                    filename + '" tmpfile="' + fn +
+                                    '" fd=' + fd);
+        var ws = fs.createWriteStream(fn);
+        stream.pipe(ws);
+        stream.resume();
+        ws.on('error', function (error) {
+            txn.notes.attachment_count--;
+            txn.notes.attachment_result = [ DENYSOFT, error.message ];
+            connection.logerror(plugin, 'stream error: ' + error.message);
+            cleanup();
+            return next();
+        });
+        ws.on('close', function() {
+            connection.logdebug(plugin, 'end of stream reached');
+            plugin.unarchive_recursive(connection, fn, filename, function (error, files) {
+                txn.notes.attachment_count--;
+                cleanup();
+                if (err) {
+                    connection.logerror(plugin, error.message);
+                    if (err.message === 'maximum archive depth exceeded') {
+                        txn.notes.attachment_result = [ DENY, 'Message contains nested archives exceeding the maximum depth' ];
+                    }
+                    else if (/Encrypted file is unsupported/i.test(error.message)) {
+                        if (!plugin.cfg.main.allow_encrypted_archives) {
+                            txn.notes.attachment_result = [ DENY, 'Message contains encrypted archive' ];
+                        }
+                    }
+                    else if (/Mac metadata is too large/i.test(error.message)) {
+                        // Skip this error
+                    }
+                    else {
+                        if (!connection.relaying) {
+                            txn.notes.attachment_result = [ DENYSOFT, 'Error unpacking archive' ];
+                        }
+                    }
+                }
+                else {
+                    txn.notes.attachment_archive_files = txn.notes.attachment_archive_files.concat(files);
+                }
+                return next();
+            });
+        });
     });
-};
+}
+
 
 exports.hook_data = function (next, connection) {
     var plugin = this;
@@ -309,6 +401,20 @@ exports.check_attachments = function (next, connection) {
     var ctype_config = this.config.get('attachment.ctype.regex','list');
     var file_config = this.config.get('attachment.filename.regex','list');
     var archive_config = this.config.get('attachment.archive.filename.regex','list');
+
+    // Add in any wildcard configuration
+    var ctype_wc = this.config.get('attachment.ctype.wc', 'list');
+    for (var i=0; i<ctype_wc.length; i++) {
+        ctype_config.push(utils.wildcard_to_regexp(ctype_wc[i]));
+    }
+    var file_wc = this.config.get('attachment.filename.wc', 'list');
+    for (var i=0; i<file_wc.length; i++) {
+        file_config.push(utils.wildcard_to_regexp(file_wc[i]));
+    }
+    var archive_wc = this.config.get('attachment.archive.filename.wc', 'list');
+    for (var i=0; i<archive_wc.length; i++) {
+        archive_config.push(utils.wildcard_to_regexp(archive_wc[i]));
+    }
 
     // Check for any stored errors from the attachment hooks
     if (txn.notes.attachment_result) {
@@ -393,3 +499,4 @@ exports.wait_for_attachment_hooks = function (next, connection) {
         next();
     }
 };
+
