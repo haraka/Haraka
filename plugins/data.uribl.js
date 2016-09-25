@@ -4,6 +4,8 @@
 var url       = require('url');
 var dns       = require('dns');
 var net       = require('net');
+var tlds      = require('haraka-tld');
+
 var net_utils = require('./net_utils');
 var utils     = require('./utils');
 
@@ -35,15 +37,15 @@ function check_excludes_list (host) {
 
 exports.register = function () {
     // Override regexps if top_level_tlds file is present
-    if (!net_utils.top_level_tlds) return;
-    if (!Object.keys(net_utils.top_level_tlds).length) return;
+    if (!tlds.top_level_tlds) return;
+    if (!Object.keys(tlds.top_level_tlds).length) return;
 
     this.logdebug('Building new regexps from TLD file');
     var re_schemeless = '(?:%(?:25)?(?:2F|3D|40))?((?:www\\.)?[a-zA-Z0-9][a-zA-Z0-9\\-.]{0,250}\\.(?:' +
-        Object.keys(net_utils.top_level_tlds).join('|') + '))(?!\\w)';
+        Object.keys(tlds.top_level_tlds).join('|') + '))(?!\\w)';
     schemeless = new RegExp(re_schemeless, 'gi');
     var re_schemed = '(\\w{3,16}:\\/+(?:\\S+@)?([a-zA-Z0-9][a-zA-Z0-9\\-.]+\\.(?:' +
-        Object.keys(net_utils.top_level_tlds).join('|') + ')))(?!\\w)';
+        Object.keys(tlds.top_level_tlds).join('|') + ')))(?!\\w)';
     schemed = new RegExp(re_schemed, 'gi');
 };
 
@@ -92,7 +94,7 @@ exports.do_lookups = function (connection, next, hosts, type) {
         var host = hosts[i].toLowerCase();
         connection.logdebug(plugin, '(' + type + ') checking: ' + host);
         // Make sure we have a valid TLD
-        if (!net.isIPv4(host) && !net.isIPv6(host) && !net_utils.top_level_tlds[(host.split('.').reverse())[0]]) {
+        if (!net.isIPv4(host) && !net.isIPv6(host) && !tlds.top_level_tlds[(host.split('.').reverse())[0]]) {
             continue;
         }
         // Check the exclusion list
@@ -151,7 +153,7 @@ exports.do_lookups = function (connection, next, hosts, type) {
             }
             // Handle zones that require host to be stripped to a domain boundary
             else if (/^(?:1|true|yes|enabled|on)$/i.test(lists[zone].strip_to_domain)) {
-                lookup = (net_utils.split_hostname(host, 3))[1];
+                lookup = (tlds.split_hostname(host, 3))[1];
             }
             // Anything else..
             else {
@@ -209,7 +211,7 @@ exports.do_lookups = function (connection, next, hosts, type) {
     }
 
     queries_to_run.forEach(function (query) {
-        var lookup = query.join('.');
+        lookup = query.join('.');
         // Add root dot if necessary
         if (lookup[lookup.length-1] !== '.') {
             lookup = lookup + '.';
@@ -284,7 +286,7 @@ exports.hook_lookup_rdns = function (next, connection) {
         if (err) {
             if (err.code) {
                 if (err.code === dns.NXDOMAIN) return next();
-                if (err.code === 'ENOTFOUND') return next();
+                if (err.code === dns.NOTFOUND) return next();
             }
             connection.results.add(plugin, {err: err });
             return next();

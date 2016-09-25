@@ -3,13 +3,15 @@
 /* Obtained and modified from http://js.5sh.net/starttls.js on 8/18/2011.                       */
 /*----------------------------------------------------------------------------------------------*/
 
-var tls = require('tls');
+var tls       = require('tls');
 var constants = require('constants');
-var crypto = require('crypto');
-var util = require('util');
-var net = require('net');
-var stream = require('stream');
-var log = require('./logger');
+var crypto    = require('crypto');
+var util      = require('util');
+var net       = require('net');
+var stream    = require('stream');
+var log       = require('./logger');
+var config    = require('./config');
+var ipaddr    = require('ipaddr.js');
 
 // provides a common socket for attaching
 // and detaching from either main socket, or crypto socket
@@ -167,7 +169,7 @@ function createServer(cb) {
 
         var socket = new pluggableStream(cryptoSocket);
 
-        socket.upgrade = function (options, cb) {
+        socket.upgrade = function (options, cb2) {
             log.logdebug('Upgrading to TLS');
 
             socket.clean();
@@ -180,12 +182,25 @@ function createServer(cb) {
             // options.secureOptions = constants.SSL_OP_ALL;
 
             // Setting secureProtocol to 'SSLv23_method' and secureOptions to
-            // constants.SSL_OP_NO_SSLv3 are used to disable SSLv2 and SSLv3
-            // protcol support.
+            // constants.SSL_OP_NO_SSLv2/3 are used to disable SSLv2 and SSLv3
+            // protocol support, to prevent DROWN and POODLE attacks at least.
+            // Node's docs here are super unhelpful, e.g.
+            // <https://nodejs.org/api/tls.html#tls_tls_createserver_options_secureconnectionlistener>
+            // doesn't even mention secureOptions.  Some digging reveals the
+            // relevant openssl docs: secureProtocol is documented in
+            // <https://www.openssl.org/docs/manmaster/ssl/ssl.html#DEALING-WITH-PROTOCOL-METHODS>,
+            // (note: you'll want to select the correct openssl version that
+            // node was compiled against, instead of master), and secureOptions
+            // are documented in
+            // <https://www.openssl.org/docs/manmaster/ssl/SSL_CTX_set_options.html>
+            // (again, select the appropriate openssl version, not master).
+            // One caveat: it doesn't seem like all options are actually
+            // compiled into node.  To see which ones are, fire up node and
+            // examine the object returned by require('constants').
 
             options.secureProtocol = options.secureProtocol || 'SSLv23_method';
-            options.secureOptions  = options.secureOptions  ||
-                constants.SSL_OP_NO_SSLv3;
+            options.secureOptions = options.secureOptions |
+                    constants.SSL_OP_NO_SSLv2 | constants.SSL_OP_NO_SSLv3;
 
             var requestCert = true;
             var rejectUnauthorized = false;
@@ -224,7 +239,7 @@ function createServer(cb) {
                     var cipher = pair.cleartext.getCipher();
                 }
                 socket.emit('secure');
-                if (cb) cb(cleartext.authorized, verifyError, cert, cipher);
+                if (cb2) cb2(cleartext.authorized, verifyError, cert, cipher);
             });
 
             cleartext._controlReleased = true;
@@ -257,22 +272,22 @@ else {
     };
 }
 
-function connect(port, host, cb) {
-    var options = {};
+function connect (port, host, cb) {
+    var conn_options = {};
     if (typeof port === 'object') {
-        options = port;
+        conn_options = port;
         cb = host;
     }
     else {
-        options.port = port;
-        options.host = host;
+        conn_options.port = port;
+        conn_options.host = host;
     }
 
-    var cryptoSocket = _net_connect(options);
+    var cryptoSocket = _net_connect(conn_options);
 
     var socket = new pluggableStream(cryptoSocket);
 
-    socket.upgrade = function (options, cb) {
+    socket.upgrade = function (options, cb2) {
         socket.clean();
         cryptoSocket.removeAllListeners('data');
 
@@ -282,13 +297,26 @@ function connect(port, host, cb) {
         // TODO: bug in Node means we can't do this until it's fixed
         // options.secureOptions = constants.SSL_OP_ALL;
 
+        // See comments around similar code in createServer above for what's
+        // going on here.
         options.secureProtocol = options.secureProtocol || 'SSLv23_method';
-        options.secureOptions  = options.secureOptions  || constants.SSL_OP_NO_SSLv3;
+        options.secureOptions = options.secureOptions |
+                    constants.SSL_OP_NO_SSLv2 | constants.SSL_OP_NO_SSLv3;
 
+        var requestCert = true;
+        var rejectUnauthorized = false;
+        if (options) {
+            if (options.requestCert !== undefined) {
+                requestCert = options.requestCert;
+            }
+            if (options.rejectUnauthorized !== undefined) {
+                rejectUnauthorized = options.rejectUnauthorized;
+            }
+        }
         var sslcontext = (tls.createSecureContext || crypto.createCredentials)(options);
 
         // tls.createSecurePair([credentials], [isServer]);
-        var pair = tls.createSecurePair(sslcontext, false);
+        var pair = tls.createSecurePair(sslcontext, false, requestCert, rejectUnauthorized);
 
         socket.pair = pair;
 
@@ -314,7 +342,7 @@ function connect(port, host, cb) {
                 var cipher = pair.cleartext.getCipher();
             }
 
-            if (cb) cb(cleartext.authorized, verifyError, cert, cipher);
+            if (cb2) cb2(cleartext.authorized, verifyError, cert, cipher);
 
             socket.emit('secure');
         });
@@ -334,6 +362,46 @@ function connect(port, host, cb) {
     };
 
     return (socket);
+}
+
+exports.load_tls_ini = function (cb) {
+    var cfg = config.get('tls.ini', {
+        booleans: [
+            '+main.requestCert',
+            '-main.rejectUnauthorized',
+            '-redis.disable_for_failed_hosts',
+        ]
+    }, cb);
+
+    if (!cfg.no_tls_hosts) {
+        cfg.no_tls_hosts = {};
+    }
+
+    return cfg;
+}
+
+exports.is_no_tls_host = function (cfg, ip) {
+    if (!net.isIP(ip)) return (ip in cfg.no_tls_hosts); // domain
+
+    for (var host in cfg.no_tls_hosts) {
+        if (host === ip) return true; // exact match
+
+        var cidr = host.split('/');
+
+        var c_net  = cidr[0];
+
+        if (!net.isIP(c_net)) continue;  // bad config entry
+        if (net.isIPv4(ip) && net.isIPv6(c_net)) continue;
+        if (net.isIPv6(ip) && net.isIPv4(c_net)) continue;
+
+        var c_mask = parseInt(cidr[1], 10) || (net.isIPv6(c_net) ? 128 : 32);
+
+        if (ipaddr.parse(ip).match(ipaddr.parse(c_net), c_mask)) {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 exports.connect = connect;

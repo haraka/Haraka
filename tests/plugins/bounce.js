@@ -1,16 +1,17 @@
 'use strict';
 
-var Plugin       = require('../fixtures/stub_plugin');
-var Connection   = require('../fixtures/stub_connection');
-var Address      = require('../../address');
-var config       = require('../../config');
-var ResultStore  = require('../../result_store');
+var Address      = require('address-rfc2821');
+var fixtures     = require('haraka-test-fixtures');
+
+var Connection   = fixtures.connection;
+var ResultStore  = fixtures.result_store;
+
+var Body         = require('../../mailbody').Body;
 var Header       = require('../../mailheader').Header;
 
 var _set_up = function (done) {
 
-    this.plugin = new Plugin('bounce');
-    this.plugin.config = config;
+    this.plugin = new fixtures.plugin('bounce');
     this.plugin.cfg = {
         main: { },
         check: {
@@ -18,15 +19,18 @@ var _set_up = function (done) {
             single_recipient: true,
             empty_return_path: true,
             bad_rcpt: true,
+            non_local_msgid: true,
         },
         reject: {
             single_recipient:true,
             empty_return_path:true,
+            non_local_msgid:true,
         },
         invalid_addrs: { 'test@bad1.com': true, 'test@bad2.com': true },
     };
 
     this.connection = Connection.createConnection();
+    this.connection.remote_ip = '8.8.8.8';
     this.connection.transaction = {
         header: new Header(),
         results: new ResultStore(this.plugin),
@@ -117,6 +121,62 @@ exports.empty_return_path = {
     },
 };
 
+exports.non_local_msgid = {
+    setUp: _set_up,
+    'no_msgid_in_headers': function (test) {
+        test.expect(1);
+        this.connection.transaction.mail_from= new Address.Address('<>');
+        this.connection.transaction.rcpt_to= [ new Address.Address('test@good.com') ];
+        this.connection.transaction.body = new Body();
+        this.connection.transaction.body.bodytext = '';
+        var cb = function () {
+            test.equal(DENY, arguments[0]);
+        }
+        this.plugin.non_local_msgid(cb, this.connection);
+        test.done();
+    },
+    'no_domains_in_msgid': function (test) {
+        test.expect(1);
+        this.connection.transaction.mail_from= new Address.Address('<>');
+        this.connection.transaction.rcpt_to= [ new Address.Address('test@good.com') ];
+        this.connection.transaction.body = new Body();
+        this.connection.transaction.body.bodytext = 'Message-ID:<blah>';
+        var cb = function () {
+            test.equal(DENY, arguments[0]);
+        }
+        this.plugin.non_local_msgid(cb, this.connection);
+        test.done();
+    },
+    'invalid_domain': function (test) {
+        test.expect(2);
+        this.connection.transaction.mail_from= new Address.Address('<>');
+        this.connection.transaction.rcpt_to= [ new Address.Address('test@good.com') ];
+        this.connection.transaction.body = new Body();
+        this.connection.transaction.body.bodytext = 'Message-ID: <blah@foo.cooooooom>';
+        var cb = function () {
+            test.equal(DENY, arguments[0]);
+            test.ok(/without valid domain/.test(arguments[1]));
+        }
+        this.plugin.non_local_msgid(cb, this.connection);
+        test.done();
+    },
+    /* - commented out because the code looks bogus to me - see comment in plugins/bounce.js - @baudehlo
+    'non-local': function (test) {
+        test.expect(2);
+        this.connection.transaction.mail_from= new Address.Address('<>');
+        this.connection.transaction.rcpt_to= [ new Address.Address('test@good.com') ];
+        this.connection.transaction.body = new Body();
+        this.connection.transaction.body.bodytext = 'Message-ID: <blah@foo.com>';
+        var cb = function () {
+            test.equal(DENY, arguments[0]);
+            test.ok(/non-local Message-ID/.test(arguments[1]));
+        }
+        this.plugin.non_local_msgid(cb, this.connection);
+        test.done();
+    },
+    */
+}
+
 exports.single_recipient = {
     setUp : _set_up,
     'valid': function (test) {
@@ -137,6 +197,7 @@ exports.single_recipient = {
             new Address.Address('test2@good.com')
         ];
         var cb = function () {
+            console.log(arguments[0]);
             test.equal(DENY, arguments[0]);
         };
         this.plugin.single_recipient(cb, this.connection);

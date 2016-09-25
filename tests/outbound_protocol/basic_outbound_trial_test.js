@@ -71,7 +71,7 @@ function _runBasicSmtpConversation(hmail) {
         { 'from': 'haraka', 'test': 'MAIL FROM:<sender@domain>' },
         { 'from': 'remote', 'line': '500 5.0.0 Absolutely not acceptable. Basic Test Only.' },
 
-        { 'from': 'haraka', 'test': 'QUIT', end_test: true }, // this will trigger calling the callback
+        { 'from': 'haraka', 'test': 'RSET', end_test: true }, // this will trigger calling the callback
     ];
 
     util_hmailitem.playTestSmtpConversation(hmail, mock_socket, test, testPlaybook, function() {

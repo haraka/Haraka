@@ -1,16 +1,16 @@
 'use strict';
 
-var Plugin       = require('../fixtures/stub_plugin');
-var Connection   = require('../fixtures/stub_connection');
-var config       = require('../../config');
-var Address      = require('../../address');
+var Address      = require('address-rfc2821');
+var fixtures     = require('haraka-test-fixtures');
+
+var Connection   = fixtures.connection;
+
 var Header       = require('../../mailheader').Header;
 var utils        = require('../../utils');
 
 var _set_up = function (done) {
 
-    this.plugin = new Plugin('dkim_sign');
-    this.plugin.config = config;
+    this.plugin = new fixtures.plugin('dkim_sign');
     this.plugin.cfg = { main: { } };
 
     this.connection = Connection.createConnection();

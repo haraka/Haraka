@@ -1,20 +1,17 @@
 'use strict';
 
-var Plugin       = require('../fixtures/stub_plugin');
-var Connection   = require('../fixtures/stub_connection');
-var config       = require('../../config');
+var fixtures     = require('haraka-test-fixtures');
 
-var _set_up = function (callback) {
+var _set_up = function (done) {
 
-    this.plugin = new Plugin('early_talker');
-    this.plugin.config = config;
+    this.plugin = new fixtures.plugin('early_talker');
     this.plugin.cfg = { main: { reject: true } };
 
-    this.connection = Connection.createConnection();
-    callback();
+    this.connection = fixtures.connection.createConnection();
+    done();
 };
 
-function _tear_down(callback) { callback(); }
+function _tear_down(done) { done(); }
 
 exports.early_talker = {
     setUp : _set_up,
@@ -66,5 +63,40 @@ exports.early_talker = {
         this.plugin.cfg.main.reject = false;
         this.connection.early_talker = true;
         this.plugin.early_talker(next, this.connection);
+    },
+    'relay whitelisted ip': function (test) {
+        test.expect(3);
+        var next = function (rc, msg) {
+            test.equal(undefined, rc);
+            test.equal(undefined, msg);
+            test.ok(this.connection.results.has('early_talker', 'skip', 'whitelist'));
+            test.done();
+        }.bind(this);
+        this.plugin.pause = 1000;
+        this.plugin.whitelist = this.plugin.load_ip_list(['127.0.0.1']);
+        this.connection.remote_ip = '127.0.0.1';
+        this.connection.early_talker = true;
+        this.plugin.early_talker(next, this.connection);
+    },
+    'relay whitelisted subnet': function (test) {
+        test.expect(3);
+        var next = function (rc, msg) {
+            test.equal(undefined, rc);
+            test.equal(undefined, msg);
+            test.ok(this.connection.results.has('early_talker', 'skip', 'whitelist'));
+            test.done();
+        }.bind(this);
+        this.plugin.pause = 1000;
+        this.plugin.whitelist = this.plugin.load_ip_list(['127.0.0.0/16']);
+        this.connection.remote_ip = '127.0.0.88';
+        this.connection.early_talker = true;
+        this.plugin.early_talker(next, this.connection);
+    },
+    'test loading ip list': function (test) {
+        var whitelist = this.plugin.load_ip_list(['123.123.123.123', '127.0.0.0/16']);
+        test.expect(2);
+        test.equal(whitelist[0][1], 32);
+        test.equal(whitelist[1][1], 16);
+        test.done();
     },
 };

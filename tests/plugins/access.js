@@ -1,20 +1,19 @@
 'use strict';
 
-var stub         = require('../fixtures/stub');
-var Plugin       = require('../fixtures/stub_plugin');
-var Connection   = require('../fixtures/stub_connection');
-var Address      = require('../../address').Address;
-var config       = require('../../config');
-var ResultStore  = require('../../result_store');
+var path         = require('path');
+
+var Address      = require('address-rfc2821').Address;
+var fixtures     = require('haraka-test-fixtures');
+
+var ResultStore  = fixtures.result_store;
 
 var _set_up = function (done) {
 
-    this.plugin = new Plugin('access');
-    this.plugin.config = config;
+    this.plugin = new fixtures.plugin('access');
+    this.plugin.config.root_path = path.resolve(__dirname, '../../config');
     this.plugin.register();
 
-    this.connection = Connection.createConnection();
-    this.connection.results = new ResultStore(this.connection);
+    this.connection = fixtures.connection.createConnection();
     this.connection.transaction = {
         results: new ResultStore(this.connection),
     };
@@ -22,7 +21,6 @@ var _set_up = function (done) {
     done();
 };
 
-/* jshint maxlen: 100 */
 exports.in_list = {
     setUp : _set_up,
     'white, mail': function (test) {
@@ -180,6 +178,7 @@ exports.in_re_file = {
     'in_re_file': function (test) {
         test.expect(2);
         var file = 'mail_from.access.whitelist_regex';
+        // console.log(this.plugin.cfg);
         test.equal(true,  this.plugin.in_re_file(file, 'list@harakamail.com'));
         test.equal(false, this.plugin.in_re_file(file, 'matt@harkatamale.com'));
         test.done();

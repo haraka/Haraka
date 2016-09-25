@@ -28,6 +28,7 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get -y -q install nodejs && \
 
 # Optional, useful for development
 # See https://github.com/phusion/baseimage-docker#login_ssh
+#RUN rm -f /etc/service/sshd/down
 #RUN /usr/sbin/enable_insecure_key
 
 # Install Haraka

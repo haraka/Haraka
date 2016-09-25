@@ -1,6 +1,5 @@
 // validate message headers and some fields
-
-var net_utils  = require('./net_utils');
+var tlds = require('haraka-tld');
 
 exports.register = function () {
     var plugin = this;
@@ -293,8 +292,8 @@ exports.from_match = function (next, connection) {
     }
 
     var extra = ['domain'];
-    var env_dom = net_utils.get_organizational_domain(env_addr.host);
-    var msg_dom = net_utils.get_organizational_domain(hdr_addr.host());
+    var env_dom = tlds.get_organizational_domain(env_addr.host);
+    var msg_dom = tlds.get_organizational_domain(hdr_addr.host());
     if (env_dom && msg_dom && env_dom.toLowerCase() === msg_dom.toLowerCase()) {
         var fcrdns  = connection.results.get('connect.fcrdns');
         if (fcrdns && fcrdns.fcrdns && new RegExp(msg_dom + '\\b', 'i').test(fcrdns.fcrdns)) {
@@ -368,7 +367,9 @@ exports.mailing_list = function (next, connection) {
                     found_mlm++;
                     continue;
                 }
-                connection.logerror(plugin, "mlm start miss: " + name + ': ' + header);
+                // NOTE: Unlike the next "j.match" code block, this condition alone
+                //       (Sender header != "owner-...") should not log an error
+                connection.logdebug(plugin, "mlm start miss: " + name + ': ' + header);
             }
             if (j.match) {
                 if (header.match(new RegExp(j.match,'i'))) {

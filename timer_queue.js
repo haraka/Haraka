@@ -1,5 +1,7 @@
 "use strict";
 
+var logger = require('./logger');
+
 function TQTimer (fire_time, cb) {
     this.fire_time = fire_time;
     this.cb = cb;
@@ -13,7 +15,7 @@ function TimerQueue (interval) {
     var self = this;
     interval = interval || 1000;
     this.queue = [];
-    setInterval(function () { self.fire(); }, interval);
+    this.interval_timer = setInterval(function () { self.fire(); }, interval);
 }
 
 module.exports = TimerQueue;
@@ -55,10 +57,13 @@ TimerQueue.prototype.length = function () {
 };
 
 TimerQueue.prototype.drain = function () {
-    if (this.queue.length === 0) return;
-
+    logger.logdebug("Draining " + this.queue.length + " items from the queue");
     while (this.queue.length) {
         var to_run = this.queue.shift();
         if (to_run.cb) to_run.cb();
     }
 };
+
+TimerQueue.prototype.shutdown = function () {
+    clearInterval(this.interval_timer);
+}

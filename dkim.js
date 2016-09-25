@@ -5,7 +5,6 @@ var Stream = require('stream').Stream;
 var indexOfLF = require('./utils').indexOfLF;
 var util = require('util');
 var dns = require('dns');
-var fs = require('fs');
 
 //////////////////////
 // Common functions //
@@ -42,7 +41,6 @@ function Buf() {
     };
 }
 
-
 ////////////////
 // DKIMObject //
 ////////////////
@@ -54,14 +52,13 @@ function DKIMObject (header, header_idx, cb, timeout) {
     this.sig = header;
     this.sig_md5 = md5(header);
     this.run_cb = false;
-    this.header_idx = header_idx;
+    this.header_idx = JSON.parse(JSON.stringify(header_idx));
     this.timeout = timeout;
     this.fields = {};
     this.headercanon = this.bodycanon = 'simple';
     this.signed_headers = [];
     this.identity = 'unknown';
     this.line_buffer = new Buf();
-    this.last2octets = new Buffer(2);
     this.dns_fields = {
         'v': 'DKIM1',
         'k': 'rsa',
@@ -69,7 +66,7 @@ function DKIMObject (header, header_idx, cb, timeout) {
     };
 
     var m = /^([^:]+):\s*((?:.|[\r\n])*)$/.exec(header);
-    var sig = m[2].trim().replace(/\s+/,'');
+    var sig = m[2].trim().replace(/\s+/g,'');
     var keys = sig.split(';');
     for (var k=0; k<keys.length; k++) {
         var key = keys[k].trim();
@@ -129,8 +126,7 @@ function DKIMObject (header, header_idx, cb, timeout) {
     if (this.fields.h) {
         var headers = this.fields.h.split(':');
         for (var h=0; h<headers.length; h++) {
-            var header2 = headers[h].trim().toLowerCase();
-            this.signed_headers.push(header2);
+            this.signed_headers.push(headers[h].trim().toLowerCase());
         }
         if (this.signed_headers.indexOf('from') === -1) {
             return this.result('from field not signed', 'invalid');
@@ -211,14 +207,10 @@ DKIMObject.prototype.add_body_line = function (line) {
         var l;
         if (this.bodycanon === 'simple') {
             l = this.line_buffer.pop(line);
-            if (l.length >= 2) {
-                this.last2octets[0] = l[l.length-2];
-                this.last2octets[1] = l[l.length-1];
-            }
             this.bh.update(l);
         }
         else if (this.bodycanon === 'relaxed') {
-            l = this.line_buffer.pop(line).toString('binary');
+            l = this.line_buffer.pop(line).toString('utf-8');
             l = l.replace(/[\t ]+(\r?\n)$/,"$1");
             l = l.replace(/[\t ]+/g,' ');
             l = this.line_buffer.pop(new Buffer(l));
@@ -243,14 +235,6 @@ DKIMObject.prototype.result = function (error, result) {
 DKIMObject.prototype.end = function () {
     if (this.run_cb) return;
 
-    if (this.bodycanon === 'simple') {
-        // Add CRLF if there was no body or no trailing CRLF
-        if (!(this.last2octets[0] === 0x0d && this.last2octets[1] === 0x0a)) {
-            this.debug(this.identity + ': adding CRLF for simple body canonicalization');
-            this.bh.update(new Buffer("\r\n"));
-        }
-    }
-
     var bh = this.bh.digest('base64');
     this.debug(this.identity + ':' +
                ' bodyhash=' + this.fields.bh +
@@ -264,20 +248,22 @@ DKIMObject.prototype.end = function () {
         var header = this.signed_headers[h];
         this.debug(this.identity + ': canonicalize header: ' + header);
         if (this.header_idx[header]) {
-            for (var i=0; i<this.header_idx[header].length; i++) {
+            // RFC 6376 section 5.4.2, read headers from bottom to top
+            var this_header = this.header_idx[header].pop();
+            if (this_header) {
                 // Skip this signature if dkim-signature is specified
                 if (header === 'dkim-signature') {
-                    var h_md5 = md5(this.header_idx[header][i]);
+                    var h_md5 = md5(this_header);
                     if (h_md5 === this.sig_md5) {
                         this.debug(this.identity + ': skipped our own DKIM-Signature');
                         continue;
                     }
                 }
                 if (this.headercanon === 'simple') {
-                    this.verifier.update(this.header_idx[header][i]);
+                    this.verifier.update(this_header);
                 }
                 else if (this.headercanon === 'relaxed') {
-                    var hc = this.header_canon_relaxed(this.header_idx[header][i]);
+                    var hc = this.header_canon_relaxed(this_header);
                     this.verifier.update(hc);
                 }
             }
@@ -306,8 +292,8 @@ DKIMObject.prototype.end = function () {
         clearTimeout(timer);
         if (err) {
             switch (err.code) {
-                case 'ENOTFOUND':
-                case 'ENODATA':
+                case dns.NOTFOUND:
+                case dns.NODATA:
                 case dns.NXDOMAIN:
                     return self.result('no key for signature', 'invalid');
                 default:
@@ -329,8 +315,8 @@ DKIMObject.prototype.end = function () {
             self.debug(self.identity + ': got DNS record: ' + record);
             var rec = record.replace(/\r?\n/g, '').replace(/\s+/g,'');
             var split = rec.split(';');
-            for (var i=0; i<split.length; i++) {
-                var split2 = split[i].split('=');
+            for (var j=0; j<split.length; j++) {
+                var split2 = split[j].split('=');
                 if (split2[0]) self.dns_fields[split2[0]] = split2[1];
             }
 
@@ -358,8 +344,8 @@ DKIMObject.prototype.end = function () {
             }
             if (self.dns_fields.h) {
                 var hashes = self.dns_fields.h.split(':');
-                for (var h=0; h<hashes.length; h++) {
-                    var hash = hashes[h].trim();
+                for (var k=0; k<hashes.length; k++) {
+                    var hash = hashes[k].trim();
                     if (self.fields.a.indexOf(hash) === -1) {
                         return self.result('inappropriate hash algorithm', 'invalid');
                     }
@@ -454,8 +440,17 @@ DKIMVerifyStream.prototype.handle_buf = function (buf) {
     if (this._in_body && this._no_signatures_found) {
         return true;
     }
-
-    buf = this.buffer.pop(buf);
+    var once = false;
+    if (buf === null) {
+        once = true;
+        buf = this.buffer.pop();
+        if (!!buf && buf[buf.length - 2] === 0x0d && buf[buf.length - 1] === 0x0a) {
+            return true;
+        }
+        buf = Buffer.concat([buf, new Buffer('\r\n\r\n')]);
+    } else {
+        buf = this.buffer.pop(buf);
+    }
 
     var callback = function (err, result) {
         self.pending--;
@@ -535,16 +530,19 @@ DKIMVerifyStream.prototype.handle_buf = function (buf) {
             // Parse headers
             if (line[0] === 0x20 || line[0] === 0x09) {
                 // Header continuation
-                this.headers[this.headers.length-1] += line.toString('ascii');
+                this.headers[this.headers.length-1] += line.toString('utf-8');
             }
             else {
-                this.headers.push(line.toString('ascii'));
+                this.headers.push(line.toString('utf-8'));
             }
         }
         else {
             for (var e=0; e<this.dkim_objects.length; e++) {
                 this.dkim_objects[e].add_body_line(line);
             }
+        }
+        if (once) {
+            break;
         }
     }
 
@@ -558,6 +556,7 @@ DKIMVerifyStream.prototype.write = function(buf) {
 
 DKIMVerifyStream.prototype.end = function(buf) {
     if (buf) this.handle_buf(buf);
+    else this.handle_buf(null);
     for (var d=0; d<this.dkim_objects.length; d++) {
         this.dkim_objects[d].end();
     }

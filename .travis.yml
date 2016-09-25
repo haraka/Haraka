@@ -2,14 +2,15 @@ language: node_js
 node_js:
 #   - "0.6"     # no longer supported by async
 #   - "0.8"     # no longer supported by iconv
-    - "0.10"
-    - "0.12"
-    - "4.2"
+#   - "0.10"    # no longer supported by eslint
+    - "4"
+#   - "5"       # no longer maintained by node.js (see node 7)
+    - "6"
 
 services:
     - redis-server
     
-# these are required for building on node.js 4.0 / io.js v3
+# these are required for building on node.js v4
 addons:
   apt:
     sources:
@@ -18,7 +19,7 @@ addons:
       - g++-4.8
 env:
   - "CXX=g++-4.8"
-# end: these are required for building on node.js 4.0 / io.js v3
+# end: these are required for building on node.js v4
 
 before_script:
     - npm install -g grunt-cli

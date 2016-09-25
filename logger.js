@@ -1,11 +1,12 @@
 'use strict';
 // Log class
 
+var constants = require('haraka-constants');
+
 var config    = require('./config');
 var plugins;
 var connection;
 var outbound;
-var constants = require('./constants');
 var util      = require('util');
 var tty       = require('tty');
 
@@ -24,8 +25,8 @@ logger.levels = {
     EMERG:    0,
 };
 
-for (var level in logger.levels) {
-    logger['LOG' + level] = logger.levels[level];
+for (var le in logger.levels) {
+    logger['LOG' + le] = logger.levels[le];
 }
 
 logger.loglevel     = logger.LOGWARN;
@@ -53,11 +54,7 @@ logger.colorize = function (color, str) {
            '\u001b[' + util.inspect.colors[color][1] + 'm';
 };
 
-var loglevel = logger.LOGWARN;
-
-var deferred_logs = [];
-
-logger.dump_logs = function (exit) {
+logger.dump_logs = function (cb) {
     while (logger.deferred_logs.length > 0) {
         var log_item = logger.deferred_logs.shift();
         var color = logger.colors[log_item.level];
@@ -68,11 +65,24 @@ logger.dump_logs = function (exit) {
             console.log(log_item.data);
         }
     }
-    if (exit) {
-        process.exit(1);
-    }
+    // Run callback after flush
+    if (cb) process.stdout.write('', cb);
     return true;
 };
+
+if (!util.isFunction) {
+    util.isFunction = function (functionToCheck) {
+        var getType = {};
+        return functionToCheck && getType.toString.call(functionToCheck) === '[object Function]';
+    };
+}
+
+logger.dump_and_exit = function (code) {
+    this.dump_logs(function () {
+        if (util.isFunction(code)) return code();
+        process.exit(code);
+    });
+}
 
 logger.log = function (level, data) {
     if (level === 'PROTOCOL') {
@@ -130,6 +140,7 @@ logger._init_loglevel = function () {
             logger.loglevel = loglevel_num;
         }
         if (!logger.loglevel) {
+            this.log('WARN', 'invalid loglevel: ' + _loglevel + ' defaulting to LOGWARN');
             logger.loglevel = logger.LOGWARN;
         }
     }
@@ -174,10 +185,11 @@ logger.log_if_level = function (level, key, plugin) {
         var pluginstr = '[' + (plugin || 'core') + ']';
         for (var i=0; i < arguments.length; i++) {
             var data = arguments[i];
-            if (typeof(data) !== 'object') {
+            if (typeof data !== 'object') {
                 str += data;
                 continue;
             }
+            if (!data) continue;
 
             // if the object is a connection, add the connection id
             if (data instanceof connection.Connection) {
@@ -190,7 +202,7 @@ logger.log_if_level = function (level, key, plugin) {
             else if (data instanceof plugins.Plugin) {
                 pluginstr = '[' + data.name + ']';
             }
-            else if (typeof data === 'object' && data.name) {
+            else if (data.name) {
                 pluginstr = '[' + data.name + ']';
             }
             else if (data instanceof outbound.HMailItem) {

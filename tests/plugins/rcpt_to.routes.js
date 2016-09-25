@@ -1,10 +1,11 @@
 'use strict';
 
-var Plugin        = require('../fixtures/stub_plugin');
-var Connection    = require('../fixtures/stub_connection');
-var Address       = require('../../address').Address;
-var config        = require('../../config');
-var ResultStore   = require('../../result_store');
+var Address      = require('address-rfc2821').Address;
+
+var fixtures     = require('haraka-test-fixtures');
+
+var Connection   = fixtures.connection;
+var ResultStore  = fixtures.result_store;
 
 var hmail = {
     todo: {
@@ -23,8 +24,9 @@ var hmail = {
 
 var _set_up_file = function (done) {
 
-    this.plugin = new Plugin('rcpt_to.routes');
-    this.plugin.config = config;
+    this.server = {};
+    this.plugin = new fixtures.plugin('rcpt_to.routes');
+
     this.plugin.register();
     this.connection = Connection.createConnection();
     this.connection.transaction = {
@@ -37,16 +39,36 @@ var _set_up_file = function (done) {
 
 var _set_up_redis = function (done) {
 
-    this.plugin = new Plugin('rcpt_to.routes');
-    this.plugin.config = config;
-    this.plugin.register();
+    this.server = {};
+    this.plugin = new fixtures.plugin('rcpt_to.routes');
+
     this.connection = Connection.createConnection();
     this.connection.transaction = {
         results: new ResultStore(this.connection),
         notes: {},
     };
 
-    this.plugin.redis_ping(done);
+    this.plugin.register();
+    this.plugin.server = { notes: { } };
+    this.plugin.redisCfg.opts.max_attempts = 1;
+    this.plugin.redisCfg.opts.connect_timeout = 1000;
+    var t = this;
+
+    this.plugin.init_redis_connection(function (err) {
+        if (err) {
+            console.error(err.message);
+            return done();
+        }
+
+        t.plugin.db = t.plugin.server.notes.redis;
+        t.plugin.redis_ping(function (err2, result) {
+            if (err2) {
+                console.error(err2);
+                return done(err2);
+            }
+            done(err2, result);
+        });
+    }, this.plugin.server);
 };
 
 var _tear_down_redis = function (done) {
@@ -94,6 +116,7 @@ exports.rcpt_redis = {
             this.plugin.rcpt(cb, this.connection, [addr]);
         }
         else {
+            console.error('ERROR: no redis available!');
             test.expect(0);
             test.done();
         }

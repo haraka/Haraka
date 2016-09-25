@@ -4,10 +4,31 @@ var childproc = require('child_process');
 var existsSync = require('./utils').existsSync;
 
 exports.register = function () {
-    this.queue_exec = this.config.get('qmail-queue.path') || '/var/qmail/bin/qmail-queue';
-    if (!existsSync(this.queue_exec)) {
-        throw new Error("Cannot find qmail-queue binary (" + this.queue_exec + ")");
+    var plugin = this;
+
+    plugin.queue_exec = plugin.config.get('qmail-queue.path') || '/var/qmail/bin/qmail-queue';
+    if (!existsSync(plugin.queue_exec)) {
+        throw new Error("Cannot find qmail-queue binary (" + plugin.queue_exec + ")");
     }
+
+    plugin.load_qmail_queue_ini();
+
+    if (plugin.cfg.main.enable_outbound) {
+        plugin.register_hook('queue_outbound', 'hook_queue');
+    }
+};
+
+exports.load_qmail_queue_ini = function () {
+    var plugin = this;
+
+    plugin.cfg = plugin.config.get('qmail-queue.ini', {
+        booleans: [
+            '+main.enable_outbound',
+        ],
+    },
+    function () {
+        plugin.load_qmail_queue_ini();
+    });
 };
 
 exports.hook_queue = function (next, connection) {
@@ -51,8 +72,8 @@ exports.hook_queue = function (next, connection) {
         connection.transaction.rcpt_to.forEach(function (rcpt) {
             buf[p++] = 84;
             var rcpt_to = rcpt.address();
-            for (var i = 0; i < rcpt_to.length; i++) {
-                buf[p++] = rcpt_to.charCodeAt(i);
+            for (var j = 0; j < rcpt_to.length; j++) {
+                buf[p++] = rcpt_to.charCodeAt(j);
             }
             buf[p++] = 0;
         });

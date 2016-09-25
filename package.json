@@ -3,8 +3,8 @@
   "name": "Haraka",
   "license": "MIT",
   "description": "An SMTP Server project.",
-  "keywords": ["haraka", "smtp", "server", "email"],
-  "version": "2.7.0",
+  "keywords": [ "haraka", "smtp", "server", "email" ],
+  "version": "2.8.8",
   "homepage": "http://haraka.github.io",
   "repository": {
     "type": "git",
@@ -12,34 +12,38 @@
   },
   "main": "haraka.js",
   "engines": {
-    "node": ">= v0.10.36"
+    "node": ">= v0.10.44"
   },
   "dependencies": {
-    "address-rfc2822"       : "~0.0.2",
-    "async"                 : "~1.4.2",
+    "address-rfc2821"       : "*",
+    "address-rfc2822"       : "*",
+    "async"                 : "~1.5.2",
     "daemon"                : "~1.1.0",
-    "generic-pool"          : "~2.2.0",
-    "iconv"                 : "~2.1.11",
-    "ipaddr.js"             : "~1.0.3",
-    "js-yaml"               : "~3.4.2",
+    "generic-pool"          : "~2.4.1",
+    "iconv"                 : "~2.2.0",
+    "ipaddr.js"             : "~1.2.0",
+    "js-yaml"               : "~3.6.1",
     "nopt"                  : "~3.0.4",
     "npid"                  : "~0.4.0",
     "semver"                : "~5.0.3",
-    "sprintf-js"            : "~1.0.3"
+    "sprintf-js"            : "~1.0.3",
+    "haraka-tld"            : "*",
+    "haraka-constants"      : "*"
   },
   "optionalDependencies": {
     "elasticsearch"         : "*",
     "haraka-nosql"          : "*",
-    "ldapjs"                : "~0.7.1",
-    "maxmind"               : "*",
+    "ldapjs"                : "~1.0.0",
+    "maxmind"               : "0.6",
     "modern-syslog"         : "~1.1.1",
-    "redis"                 : "~2.1.0",
+    "redis"                 : "~2.6.2",
     "tmp"                   : "~0.0.28",
     "vs-stun"               : "~0.0.7"
   },
   "devDependencies": {
     "nodeunit"              : "https://github.com/godsflaw/nodeunit/archive/master.tar.gz",
-    "eslint"                : "*",
+    "haraka-test-fixtures"  : "*",
+    "eslint"                : ">=2.0.0",
     "grunt"                 : "*",
     "grunt-contrib-clean"   : "*",
     "grunt-contrib-jshint"  : "*",

@@ -1,7 +1,7 @@
 'use strict';
 // p0f v3 client - http://lcamtuf.coredump.cx/p0f3/
 
-var net = require('net');
+var net    = require('net');
 var ipaddr = require('ipaddr.js');
 
 function P0FClient(path) {
@@ -62,11 +62,17 @@ function P0FClient(path) {
     connect();
 }
 
+P0FClient.prototype.shutdown = function () {
+    if (self.restart_interval) {
+        clearInterval(self.restart_interval);
+    }
+}
+
 P0FClient.prototype.decode_response = function (data) {
-    var decode_string = function (data, start, end) {
+    var decode_string = function (data2, start, end) {
         var str = '';
         for (var a=start; a<end; a++) {
-            var b = data.readUInt8(a);
+            var b = data2.readUInt8(a);
             if (b === 0x0) break;
             str = str + String.fromCharCode(b);
         }
@@ -207,14 +213,14 @@ exports.hook_lookup_rdns = function onLookup(next, connection) {
     });
 };
 
-function format_results(result) {
-    return [
-        'os="' + result.os_name + ' ' + result.os_flavor + '"',
-        'link_type="' + result.link_type + '"',
-        'distance=' + result.distance,
-        'total_conn=' + result.total_conn,
-        'shared_ip=' + ((result.last_nat === 0) ? 'N' : 'Y'),
-    ].join(' ');
+function format_results(r) {
+    var data = [];
+    if (r.os_name) data.push('os="' + r.os_name + ' ' + r.os_flavor + '"');
+    if (r.link_type) data.push('link_type="' + r.link_type + '"');
+    if (r.distance) data.push('distance=' + r.distance);
+    if (r.total_conn) data.push('total_conn=' + r.total_conn);
+    if (r.last_nat) data.push('shared_ip=' + ((r.last_nat === 0) ? 'N' : 'Y'));
+    return data.join(' ');
 }
 
 exports.hook_data_post = function (next, connection) {
@@ -227,7 +233,7 @@ exports.hook_data_post = function (next, connection) {
 
     connection.transaction.remove_header(header_name);
     var result = connection.results.get('connect.p0f');
-    if (!result) {
+    if (!result || !result.os) {
         connection.results.add(plugin, {err: 'no p0f note'});
         return next();
     }

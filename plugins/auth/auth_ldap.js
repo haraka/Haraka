@@ -1,7 +1,6 @@
 // auth/auth_ldap
 
-var ldap = require('ldapjs');
-var crypto = require('crypto');
+var ldap  = require('ldapjs');
 var async = require('async');
 
 exports.hook_capabilities = function (next, connection) {
@@ -34,6 +33,11 @@ exports.check_plain_passwd = function (connection, user, passwd, cb) {
         tlsOptions: {
             rejectUnauthorized: rejectUnauthorized
         }
+    });
+
+    client.on('error', function (err) {
+        connection.loginfo('auth_ldap: client error ' + err.message);
+        cb(false);
     });
 
     config.dns = Object.keys(config.dns).map(function (v) {

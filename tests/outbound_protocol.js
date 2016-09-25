@@ -1,12 +1,12 @@
 'use strict';
 
+var fs           = require('fs');
+var path         = require('path');
+// var fixtures     = require('haraka-test-fixtures');
+
 require('../configfile').watch_files = false;
+// var vm_harness   = fixtures.vm_harness;  // TODO
 var vm_harness     = require('./fixtures/vm_harness');
-var fs             = require('fs');
-var vm             = require('vm');
-var config         = require('../config');
-var path           = require('path');
-var util_hmailitem = require('./fixtures/util_hmailitem');
 
 var queue_dir = path.resolve(__dirname + '/test-queue/');
 

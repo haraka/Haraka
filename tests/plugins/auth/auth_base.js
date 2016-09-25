@@ -1,16 +1,32 @@
 'use strict';
 
-var Plugin       = require('../../fixtures/stub_plugin');
-var Connection   = require('../../fixtures/stub_connection');
-var config       = require('../../../config');
+var fixtures     = require('haraka-test-fixtures');
+
+var Connection   = fixtures.connection;
+
 var utils        = require('../../../utils');
 
 var _set_up = function (done) {
 
-    this.plugin = new Plugin('auth/auth_base');
-    this.plugin.config = config;
+    this.plugin = new fixtures.plugin('auth/auth_base');
 
     this.plugin.get_plain_passwd = function (user, cb) {
+        if (user === 'test') return cb('testpass');
+        return cb(null);
+    };
+
+    this.connection = Connection.createConnection();
+    this.connection.capabilities=null;
+
+    done();
+};
+
+var _set_up_2 = function (done) {
+
+    this.plugin = new fixtures.plugin('auth/auth_base');
+
+    this.plugin.get_plain_passwd = function (user, connection, cb) {
+        connection.notes.auth_custom_note = 'custom_note';
         if (user === 'test') return cb('testpass');
         return cb(null);
     };
@@ -155,15 +171,25 @@ exports.auth_plain = {
         var method = utils.base64('discard\0test\0testpass');
         this.plugin.auth_plain(next, this.connection, [method]);
     },
+    'params type=with two line login': function (test) {
+        var next = function () {
+            test.expect(2);
+            test.equal(this.connection.notes.auth_plain_asked_login, true);
+            test.equal(arguments[0], OK);
+            test.done();
+        }.bind(this);
+        this.plugin.auth_plain(next, this.connection, '');
+    },
 };
 
 exports.check_user = {
-    setUp : _set_up,
+    setUp : _set_up_2,
     'bad auth': function (test) {
         var next = function (code) {
-            test.expect(2);
+            test.expect(3);
             test.equal(code, OK);
             test.equal(this.connection.relaying, false);
+            test.equal(this.connection.notes.auth_custom_note, 'custom_note');
             test.done();
         }.bind(this);
         var credentials = ['matt','ttam'];
@@ -171,9 +197,10 @@ exports.check_user = {
     },
     'good auth': function (test) {
         var next = function (code) {
-            test.expect(2);
+            test.expect(3);
             test.equal(code, OK);
             test.ok(this.connection.relaying);
+            test.equal(this.connection.notes.auth_custom_note, 'custom_note');
             test.done();
         }.bind(this);
         var credentials = ['test','testpass'];

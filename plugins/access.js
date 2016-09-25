@@ -1,4 +1,6 @@
 // access plugin
+var tlds      = require('haraka-tld');
+
 var net_utils = require('./net_utils');
 var utils     = require('./utils');
 
@@ -172,7 +174,7 @@ exports.any = function (next, connection, params) {
         return next();
     }
 
-    var org_domain = net_utils.get_organizational_domain(domain);
+    var org_domain = tlds.get_organizational_domain(domain);
     if (!org_domain) {
         connection.logerror(plugin, "no org domain from " + domain);
         return next();
@@ -389,7 +391,7 @@ exports.data_any = function(next, connection) {
     }
 
     var hdr_addr = (require('address-rfc2822').parse(hdr_from))[0];
-    var hdr_dom = net_utils.get_organizational_domain(hdr_addr.host());
+    var hdr_dom = tlds.get_organizational_domain(hdr_addr.host());
 
     var file = plugin.cfg.domain.any;
     if (plugin.in_list('domain', 'any', '!'+hdr_dom)) {
@@ -533,7 +535,7 @@ exports.load_domain_file = function (type, phase) {
             continue;
         }
 
-        var d = net_utils.get_organizational_domain(list[i]);
+        var d = tlds.get_organizational_domain(list[i]);
         if (!d) { continue; }
         plugin.list[type][phase][d.toLowerCase()] = true;
     }

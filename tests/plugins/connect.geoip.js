@@ -1,24 +1,19 @@
 'use strict';
 
-var Connection       = require('../fixtures/stub_connection');
-var Plugin           = require('../fixtures/stub_plugin');
-var config           = require('../../config');
+var fixtures     = require('haraka-test-fixtures');
+
+var Connection   = fixtures.connection;
 
 var _set_up = function (done) {
-    this.plugin = new Plugin('connect.geoip');
-    this.plugin.config = config;
-
+    this.plugin = new fixtures.plugin('connect.geoip');
     this.plugin.load_geoip_ini();
-
     this.connection = Connection.createConnection();
-
     done();
 };
 
 exports.register = {
     setUp : function (done) {
-        this.plugin = new Plugin('connect.geoip');
-        this.plugin.config = config;
+        this.plugin = new fixtures.plugin('connect.geoip');
 
         try { this.plugin.mm_loads = require('maxmind'); }
         catch (ignore) {}
@@ -76,8 +71,7 @@ exports.load_geoip_lite = {
 
 exports.lookup_maxmind = {
     setUp : function (done) {
-        this.plugin = new Plugin('connect.geoip');
-        this.plugin.config = config;
+        this.plugin = new fixtures.plugin('connect.geoip');
         this.plugin.load_geoip_ini();
 
         this.connection = Connection.createConnection();
@@ -112,8 +106,7 @@ exports.lookup_maxmind = {
 
 exports.get_geoip = {
     setUp : function (done) {
-        this.plugin = new Plugin('connect.geoip');
-        this.plugin.config = config;
+        this.plugin = new fixtures.plugin('connect.geoip');
 
         try { this.plugin.mm_loads = require('maxmind'); }
         catch (ignore) {}
@@ -139,8 +132,7 @@ exports.get_geoip = {
 
 exports.lookup_geoip = {
     setUp : function (done) {
-        this.plugin = new Plugin('connect.geoip');
-        this.plugin.config = config;
+        this.plugin = new fixtures.plugin('connect.geoip');
         this.plugin.load_geoip_ini();
         this.connection = Connection.createConnection();
         this.plugin.load_geoip_lite();
@@ -165,8 +157,8 @@ exports.lookup_geoip = {
             if (this.plugin.geoip) {
                 test.expect(3);
                 var r = this.connection.results.get('connect.geoip');
-                test.equal(38, r.ll[0]);
-                test.equal(-97, r.ll[1]);
+                test.equal(44.0387, r.ll[0]);
+                test.equal(-84.8414, r.ll[1]);
                 test.ok(r);
             }
             test.done();
@@ -178,8 +170,7 @@ exports.lookup_geoip = {
 
 exports.get_geoip_maxmind = {
     setUp : function (done) {
-        this.plugin = new Plugin('connect.geoip');
-        this.plugin.config = config;
+        this.plugin = new fixtures.plugin('connect.geoip');
         this.plugin.load_geoip_ini();
         var p = this.plugin;
         this.plugin.load_maxmind();
@@ -211,8 +202,7 @@ exports.get_geoip_maxmind = {
 
 exports.get_geoip_lite = {
     setUp : function (done) {
-        this.plugin = new Plugin('connect.geoip');
-        this.plugin.config = config;
+        this.plugin = new fixtures.plugin('connect.geoip');
         this.plugin.load_geoip_ini();
         this.plugin.load_geoip_lite();
         done();

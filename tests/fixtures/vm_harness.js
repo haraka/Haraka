@@ -1,7 +1,7 @@
 var fs = require('fs');
 var vm = require('vm');
 
-function dot_files(element) {
+function dot_files (element) {
     return element.match(/^\./) == null;
 }
 
@@ -19,7 +19,7 @@ exports.sandbox_require = function (id) {
     return require(id);
 }
 
-function make_test(module_path, test_path, additional_sandbox) {
+function make_test (module_path, test_path, additional_sandbox) {
     return function (test) {
         var code = fs.readFileSync(module_path);
         code += fs.readFileSync(test_path);

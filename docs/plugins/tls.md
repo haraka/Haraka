@@ -42,11 +42,12 @@ The following settings can be specified in config/tls.ini.
 
 ### `no_tls_hosts`
 
-If needed, add this section to the tls.ini file and list any IPs that have
+If needed, add this section to the tls.ini file and list any IP ranges that have
 broken TLS. Ex:
 
     [no_tls_hosts]
-    192.168.1.3=true
+    192.168.1.3
+    172.16.0.0/16
 
 
 The [Node.js TLS](http://nodejs.org/api/tls.html) page has additional information
@@ -71,3 +72,13 @@ Whether Haraka should request a certificate from a connecting client.
 Reject connections from clients without a CA validated TLS certificate.
 
     `rejectUnauthorized=[true|false]`  (default: false)
+
+## Inbound Specific Configuration
+
+By default the above options are shared with outbound mail (either
+using `smtp_forward`, `smtp_proxy` or plain outbound mail heading to
+an external destination). To make these options specific to inbound
+mail, put them under an `[inbound]` parameter group. Outbound options
+can go under an `[outbound]` parameter group, and plugins that use
+SMTP tls for queueing such as `smtp_proxy` and `smtp_forward` can
+use that plugin name for plugin specific options.

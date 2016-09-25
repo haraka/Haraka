@@ -1,14 +1,13 @@
 var amqp = require('amqp');
-var fs   = require('fs');
 var logger = require('./logger');
 
 var rabbitqueue;
 var exchangeName;
 var queueName;
+var deliveryMode;
 var connExchange_;
 var connQueue_;
 var routing_;
-var deliveryMode;
 exports.exchangeMapping = {}
 
 //This method registers the hook and try to initialize the connection to rabbitmq server for later use.
@@ -22,13 +21,13 @@ exports.register = function () {
 //Actual magic of publishing message to rabbit when email comes happen here.
 exports.hook_queue = function(next, connection) {
     //Calling the get_data method and when it gets the data on callback, publish the message to queue with routing key.
-    var stream = connection.transaction.message_stream.get_data(function(buffere) {
+    connection.transaction.message_stream.get_data(function(buffere) {
         var exchangeData = exports.exchangeMapping[exchangeName + queueName]
         logger.logdebug("Sending the data: "+ queueName+" Routing : "+ exchangeData + " exchange :"+connExchange_);
         if (connExchange_ && routing_) {
             //This is publish function of rabbitmq amqp library, currently direct queue is configured and routing is fixed.
             //Needs to be changed.
-            connExchange_.publish(routing_, buffere,{deliveryMode: 2}, function(error){
+            connExchange_.publish(routing_, buffere,{deliveryMode: deliveryMode}, function(error){
                 if (error) {
                     //There was some error while sending the email to queue.
                     logger.logdebug("queueFailure: #{JSON.stringify(error)}");

@@ -18,5 +18,5 @@ Configuration
 
 * max\_unrecognized\_commands
 
-  Specifies the number of unrecognised commands to allow before disconnecting.
+  Specifies the number of unrecognized commands to allow before disconnecting.
   Default: 10.

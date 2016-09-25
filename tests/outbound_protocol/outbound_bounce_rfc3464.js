@@ -34,7 +34,7 @@ async.series(
                 exports.send_email = function (from, to, contents, cb, opts) {
                     test.ok(true, 'outbound.send_email called');
                     test.ok(contents.match(/^Content-type: message\/delivery-status/m), 'its a bounce report');
-                    test.ok(contents.match(/^Final recipient: rfc822;recipient@domain/m), 'bounce report contains final recipient');
+                    test.ok(contents.match(/^Final-Recipient: rfc822;recipient@domain/m), 'bounce report contains final recipient');
                     test.ok(contents.match(/^Action: failed/m), 'DATA-5XX: bounce report contains action field');
                     test.ok(contents.match(/^Status: 5\.0\.0/m), 'bounce report contains status field with our ext. smtp code');
                     test.ok(contents.match(/Absolutely not acceptable\. Basic Test Only\./), 'original upstream message available');
@@ -57,7 +57,7 @@ async.series(
                     { 'from': 'haraka', 'test': 'MAIL FROM:<sender@domain>' },
                     { 'from': 'remote', 'line': '500 5.0.0 Absolutely not acceptable. Basic Test Only.' },
 
-                    { 'from': 'haraka', 'test': 'QUIT', end_test: true }, // this will trigger calling the callback
+                    { 'from': 'haraka', 'test': 'RSET', end_test: true }, // this will trigger calling the callback
                 ];
 
                 util_hmailitem.playTestSmtpConversation(mock_hmail, mock_socket, test, testPlaybook, function() {
@@ -90,7 +90,7 @@ async.series(
                     { 'from': 'haraka', 'test': 'MAIL FROM:<sender@domain>' },
                     { 'from': 'remote', 'line': '300 3.0.0 No time for you right now' },
 
-                    { 'from': 'haraka', 'test': 'QUIT', end_test: true }, // this will trigger calling the callback
+                    { 'from': 'haraka', 'test': 'RSET', end_test: true }, // this will trigger calling the callback
                 ];
 
                 util_hmailitem.playTestSmtpConversation(mock_hmail, mock_socket, test, testPlaybook, function() {
@@ -126,7 +126,7 @@ async.series(
                     { 'from': 'haraka', 'test': 'RCPT TO:<recipient@domain>' },
                     { 'from': 'remote', 'line': '400 4.0.0 Currently not available. Try again later.' },
 
-                    { 'from': 'haraka', 'test': 'QUIT', end_test: true }, // this will trigger calling the callback
+                    { 'from': 'haraka', 'test': 'RSET', end_test: true }, // this will trigger calling the callback
                 ];
 
                 util_hmailitem.playTestSmtpConversation(mock_hmail, mock_socket, test, testPlaybook, function() {
@@ -167,7 +167,7 @@ async.series(
                     // haraka will send us more lines
                     { 'from': 'remote', 'line': '450 4.6.0 Currently I do not like ascii art cats.' },
 
-                    { 'from': 'haraka', 'test': 'QUIT', end_test: true }, // this will trigger calling the callback
+                    { 'from': 'haraka', 'test': 'RSET', end_test: true }, // this will trigger calling the callback
                 ];
 
                 util_hmailitem.playTestSmtpConversation(mock_hmail, mock_socket, test, testPlaybook, function() {
@@ -186,7 +186,7 @@ async.series(
                 exports.send_email = function (from, to, contents, cb, opts) {
                     test.ok(true, 'RCPT-TO-5XX: outbound.send_email called');
                     test.ok(contents.match(/^Content-type: message\/delivery-status/m), 'RCPT-TO-5XX: its a bounce report');
-                    test.ok(contents.match(/^Final recipient: rfc822;recipient@domain/m), 'RCPT-TO-5XX:  bounce report contains final recipient');
+                    test.ok(contents.match(/^Final-Recipient: rfc822;recipient@domain/m), 'RCPT-TO-5XX:  bounce report contains final recipient');
                     test.ok(contents.match(/^Action: failed/m), 'DATA-5XX: bounce report contains action field');
                     test.ok(contents.match(/^Status: 5\.1\.1/m), 'RCPT-TO-5XX: bounce report contains status field with our ext. smtp code');
                     test.ok(contents.match(/Not available and will not come back/), 'RCPT-TO-5XX: original upstream message available');
@@ -206,7 +206,7 @@ async.series(
                     { 'from': 'haraka', 'test': 'RCPT TO:<recipient@domain>' },
                     { 'from': 'remote', 'line': '550 5.1.1 Not available and will not come back' },
 
-                    { 'from': 'haraka', 'test': 'QUIT', end_test: true }, // this will trigger calling the callback
+                    { 'from': 'haraka', 'test': 'RSET', end_test: true }, // this will trigger calling the callback
                 ];
 
                 util_hmailitem.playTestSmtpConversation(mock_hmail, mock_socket, test, testPlaybook, function() {
@@ -225,7 +225,7 @@ async.series(
                 exports.send_email = function (from, to, contents, cb, opts) {
                     test.ok(true, 'DATA-5XX: outbound.send_email called');
                     test.ok(contents.match(/^Content-type: message\/delivery-status/m), 'DATA-5XX: its a bounce report');
-                    test.ok(contents.match(/^Final recipient: rfc822;recipient@domain/m), 'DATA-5XX:  bounce report contains final recipient');
+                    test.ok(contents.match(/^Final-Recipient: rfc822;recipient@domain/m), 'DATA-5XX:  bounce report contains final recipient');
                     test.ok(contents.match(/^Action: failed/m), 'DATA-5XX: bounce report contains action field');
                     test.ok(contents.match(/^Status: 5\.6\.0/m), 'DATA-5XX: bounce report contains status field with our ext. smtp code');
                     test.ok(contents.match(/I never did and will like ascii art cats/), 'DATA-5XX: original upstream message available');
@@ -249,7 +249,7 @@ async.series(
                     // haraka will send us more lines
                     { 'from': 'remote', 'line': '550 5.6.0 I never did and will like ascii art cats.' },
 
-                    { 'from': 'haraka', 'test': 'QUIT', end_test: true }, // this will trigger calling the callback
+                    { 'from': 'haraka', 'test': 'RSET', end_test: true }, // this will trigger calling the callback
                 ];
 
                 util_hmailitem.playTestSmtpConversation(mock_hmail, mock_socket, test, testPlaybook, function() {

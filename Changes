@@ -1,12 +1,211 @@
 
-N.N.N - Mon NN, 2015
+2.8.8 - Jul 20, 2016
+
+* Changes
+    * removed UPGRADE.doc to [wiki](https://github.com/haraka/Haraka/wiki/Upgrade-Haraka)
+
+* Improvements
+    * support + wildcard in aliases plugin #1531
+    * Support dkim_sign with outbound.send_email() #1512
+    * spf: always check remote IP, then public IP if != pass #1528
+    * spf: diplay IP used for SPF eval #1528
+
+* Bug Fixes
+    * handle missing wss section in http.ini #1542
+    * fix leak on socket write error #1541
+    * add results property to outbound transaction #1535 
+    * don't unref unref'd wss server #1521
+
+2.8.7 - Jun 18, 2016
+
+* Changes
+    * Fix geoip test
+
+* Improvements
+    * Allow alias plugin to explode to a list of aliases
+    * Support IPv6 literals in HELO tests (#1507 thanks @gramakri)
+    * Make ldap plugin use the modified address if a rcpt hook
+      changes it (#1501 thanks @darkpixel)
+
+* Bug Fixes
+    * Fix loading plugins as npm modules (#1513)
+    * More DKIM fixes (#1506 thanks @zllovesuki)
+    * Fix the long failing host-pool-timer test (#1508)
+    * Fix clean shutdown of redis with new shutdown code
+      (#1504 and #1502 thanks @darkpixel)
+    * More fixes to clean shutdown (#1503)
+
+2.8.6 - Jun 06, 2016
+
+* Bug Fixes
+    * Fix loading under Node v4 which sends a blank message
+    * Fix quit (SIGINT) when running without nodes=
+
+2.8.5 - Jun 04, 2016
+
+* Changes
+    * The connection object is now passed to `get_plain_passwd`. Older
+      modules should continue to work as-is.
+    * The reseed_rng plugin now just uses the Crypto module from core.
+      Though it seems this plugin should be irrelevant with newer versions
+      of node.js
 
 * New Features
+    * Outbound mail now uses pooled connections, only sending a `QUIT`
+      message if the connection has been idle for a while.
+
+* Improvements
+    * Shut down and reload (via `haraka -c <path> --graceful`) is now
+      graceful - allowing current connections to finish and plugins
+      to clean up before ending.
+
+* Bug Fixes
+    * Bind maxmind version to ignore API change (#1492)
+    * Fix encodings when banners are used (#1477)
+    * Various DKIM fixes (#1495)
+
+2.8.4 - May 24, 2016
+
+* Bug Fixes
+    * Fix plugin loading override when installed (#1471)
+
+2.8.3 - May 18, 2016
+
+* Bug Fixes
+    * Fix config overriding for core modules (#1468)
+
+2.8.2 - May 17, 2016
+
+* Changes
+    * Added Node v6 to travis tests
+
+* New Features
+    * Added bin/haraka --qunstick <domain> to flush all mails
+      for that domain (#1460)
+
+* Improvements
+    * Make bin/haraka --qlist show much more information (#1452)
+    * Allow CIDR ranges in no_tls_hosts (#1450)
+
+* Bug Fixes
+    * 2.8.0 was shipped with a broken config/plugins. (#1453)
+    * Stop haraka dying when ldap connections fail (#1456)
+    * Pick up domain specific config correctly in ldap (#1456)
+
+2.8.0 - May 06, 2016
+
+* Changes
+    * updated dependency versions (#1426, #1425)
+    * use utf8 encoding for body filters (#1429)
+    * remove spameatingmonkey from tests (#1421)
+    * replace ./constants.js with haraka-constants (#1353)
+    * Document HMail and TODO items (#1343)
+    * Copy only a minimal config/* by default (#1341).
+    * cfreader/* removed to haraka/haraka-config (#1350)
+    * outbound and smtp_client honor tls.ini settings (#1350)
+    * outbound TLS defaults to enabled
+    * lint: remove all unused variables (#1358)
+    * replace ./address.js with address-rfc2181 (#1359)
+
+* New Features
+    * smtp_forward: accepts a list of backend hosts, thanks @kgeoss (#1333)
+    * config: add array[] syntax to INI files (#1345)
+    * plugins.js: support require('./config') in plugins
+    * Load plugin config from own folder and merge (#1335)
+    * Allow original email's Subject to be included in bounce message (#1337)
+    * new queue/smtp_bridge plugin, thanks @jesucarr (#1351)
+
+* Improvements
+    * early_talker: supports IP whitelisting (#1423)
+    * loading plugins as packages (#1278)
+    * removed TLD stuff to haraka/haraka-tld (#1301)
+    * removed unused 'require('redis') in plugins/karma (#1348)
+    * improved MIME header support per rfc2231 (#1344)
+    * tls options can be defined for outbound and smtp_* (#1357) 
+    * explicitly disable SSLv2 (#1395)
+    * cache STUN results
+    * xclient plugin improvements (#1405)
+    * tls: Set verify=NO correctly when no certificate presented (#1400)
+    * improved message header decoding (#1403, #1406)
+    * bounce: skip single_recipient check for relays/private_ips (#1385)
+    * rspamd docs: Clarify usage of check.private_ip (#1383)
+    * if rcpt_to returns DSN in msg, log it properly (#1375)
+
+* Bug Fixes
+    * fix out-of-range errors from banner insertion (#1334)
+    * dkim_verify: Call next only after message_stream ended (#1330)
+    * outbound: remove type check from pid match (#1322)
+    * lint: enable no-shadown and remove all shadow variables (#1349)
+    * spf: fix log_debug syntax (#1416)
+    * auto_proxy: fix a starttls loop (#1392)
+    * fcrdns: corrected err variable name (#1391)
+    * rspamd: Fix undefined variable (#1396)
+    * dkim_verify: Fix header handling (#1371)
+    * smtp_client: fix remote_ip (#1362)
+
+
+2.7.3 - Feb 04, 2016
+
+* Changes
+    * smtp_proxy & qmail-queue: default to enabled for outbound deliveries
+      (previously used Outbound), to better matches user expectations.
+
+* New Features
+    * outbound: allow passing notes to send_email (#1295)
+
+* Improvements
+    * logging: emit log message queue before shutting down (#1296)
+    * result_store: permit redis pub/sub to work when host != localhost (#1277)
+    * tests: quiet the extremely verbose messages (#1282)
+    * rspamd: add timeout error handling (#1276)
+    * watch: fix display of early_talker results (#1281)
+    * spamassassin: publish results to result_store (#1280)
+    * karma: can now connect to redis on hosts other than localhost (#1275)
+    * geoip & p0f: don't log empty/null values from RFC 1918 connects (#1267)
+    * redis: make plugin params match docs (#1273)
+    * mailbody: small refactoring (#1315)
+    * smtp_proxy & qmail-queue: default to enabled for outbound (#1308)
+
+* Bug Fixes
+    * redis: use correct path for db.select (#1273)
+    * count errors correctly (#1274)
+    * logger: ignore null arguments (#1299)
+    * connection: pause for hook_reset_transaction (#1303)
+    * rcpt_to.routes: update redis usage for compat with redis plugin (#1302)
+    * smtp_forward: use correct config path to auth settings (#1327)
+    * messagestream: correctly pass options parameter to get_data (#1316) 
+    * spf: honour configuration for mfrom scope (#1322)
+    * outbound: Add missing dash to 'Final-Recipient' header name (#1320)
+
+
+2.7.2 - Dec 15, 2015
+
+* Bug Fixes
+    * Revert a change that broke plugin loading
+
+
+2.7.1 - Dec 14, 2015
+
+* New Features
+    * added debian init.d file (#1255) @slattery
 
 * Improvements
     * smtp_forward auth settings now work (#430)
+    * better handling of broken messages (#1234)
+    * Docker: use latest Phusion image && stdout (#1238, #1239)
+    * Clean up plugin loading a tiny bit (#1242)
+    * make dkim keydir case insensitive (1251)
+    * ignore DNS errors that aren't errors (#1247)
+    * outbound doc updates (#1258) @Currerius
+    * outbound: return DENYSOFT on queue error (#1264)
+    * smtp_client: if enable_tls is set and TLS files missing, warn (#1266)
 
 * Bug Fixes
+    * Don't sent empty headers to rspamd (#1230)
+    * Fix auth_base.js key need to be a string - number.toString() (#1228)
+    * fix bug with empty charset= on mime parts … (#1225)
+    * Fix "passwd" check crash with numeric password. (#1254)
+    * result_store: show arrays when not empty (#1261)
 
 
 2.7.0 - Oct 07, 2015
@@ -40,11 +239,11 @@ N.N.N - Mon NN, 2015
     * toobusy: only run checks if toobusy.js installed and loads
     * HAProxy: set local_ip, local_port and remote_port
     * save auth pass/fail/user to result_store
-    * ini files no longer require values (useful for storing lists) 
+    * ini files no longer require values (useful for storing lists)
     * connection: add MAIL and RCPT to results
     * results_store: enable 'emit' feature for .push()
     * add support for custom Outbound Received header value (@zombified)
-    * save smtp_forward result to result_store 
+    * save smtp_forward result to result_store
     * auth_base: permit a return message (@DarkSorrow)
     * add DSN.create() and RFC 4954 support
     * enhanced pipelining support
@@ -146,7 +345,7 @@ N.N.N - Mon NN, 2015
 * removed contrib/geolite-mirror-simple.pl (replaced by
   docs update pointing to maxmind-geolite-mirror)
 * rcpt.routes: new plugin by @msimerson
-* make haproxy IPv6 compatible 
+* make haproxy IPv6 compatible
 * record_envelope_addresses: new plugin by @deburau
 * prevent_credential_leaks: new plugin by @smfreegard
 * config:

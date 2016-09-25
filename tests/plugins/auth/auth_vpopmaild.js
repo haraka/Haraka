@@ -1,8 +1,11 @@
 'use strict';
 
-var Plugin       = require('../../fixtures/stub_plugin');
-var Connection   = require('../../fixtures/stub_connection');
-var config       = require('../../../config');
+var path         = require('path');
+
+var fixtures     = require('haraka-test-fixtures');
+
+var Connection   = fixtures.connection;
+var Plugin       = fixtures.plugin;
 
 var _set_up = function(done) {
     this.backup = {};
@@ -10,8 +13,9 @@ var _set_up = function(done) {
     // needed for tests
     this.plugin = new Plugin('auth/auth_vpopmaild');
     this.plugin.inherits('auth/auth_base');
-    this.plugin.config = config;
-    this.plugin.cfg = config.get('auth_vpopmaild.ini');
+    // reset the config/root_path
+    this.plugin.config.root_path = path.resolve(__dirname, '../../../config');
+    this.plugin.cfg = this.plugin.config.get('auth_vpopmaild.ini');
 
     this.connection = Connection.createConnection();
     this.connection.capabilities=null;
@@ -74,7 +78,7 @@ exports.get_vpopmaild_socket = {
 exports.get_plain_passwd = {
     setUp : _set_up,
     'matt@example.com': function (test) {
-        var cb = function(pass) {
+        var cb = function (pass) {
             test.expect(1);
             test.ok(pass);
             test.done();

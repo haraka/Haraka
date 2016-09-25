@@ -1,24 +1,13 @@
 'use strict';
 
-var stub         = require('../../fixtures/stub');
-var Connection   = require('../../fixtures/stub_connection');
-var Plugin       = require('../../fixtures/stub_plugin');
+var Address      = require('address-rfc2821').Address;
+var fixtures     = require('haraka-test-fixtures');
 
-var config       = require('../../../config');
-var Address      = require('../../../address').Address;
-
-var _set_up = function (done) {
-
-    this.plugin = new Plugin('queue/smtp_forward');
-    this.plugin.config = config;
-
-    done();
-};
+var Connection   = fixtures.connection;
 
 exports.register = {
     setUp : function (done) {
-        this.plugin = new Plugin('queue/smtp_forward');
-        this.plugin.config = config;
+        this.plugin = new fixtures.plugin('queue/smtp_forward');
         done();
     },
     'register': function (test) {
@@ -31,8 +20,7 @@ exports.register = {
 
 exports.get_config = {
     setUp : function (done) {
-        this.plugin = new Plugin('queue/smtp_forward');
-        this.plugin.config = config;
+        this.plugin = new fixtures.plugin('queue/smtp_forward');
         this.plugin.register();
 
         this.connection = Connection.createConnection();

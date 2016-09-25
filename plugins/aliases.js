@@ -1,6 +1,6 @@
 // This is the aliases plugin
 // One must not run this plugin with the queue/smtp_proxy plugin.
-var Address = require('./address').Address;
+var Address = require('address-rfc2821').Address;
 
 exports.register = function () {
     this.inherits('queue/discard');
@@ -14,7 +14,7 @@ exports.aliases = function (next, connection, params) {
     var rcpt   = params[0].address();
     var user   = params[0].user;
     var host   = params[0].host;
-    var match  = user.split("-", 1);
+    var match  = user.split(/[+-]/, 1);
     var action = "<missing>";
 
     if (config[rcpt]) {
@@ -51,14 +51,18 @@ exports.aliases = function (next, connection, params) {
         }
     }
 
-    if (config[user] || config[match[0]]) {
+    if (config[user] || config[match[0]] || config[match[0] + '@' + host]) {
         if (config[user]) {
             action = config[user].action || action;
             match  = user;
         }
-        else {
+        else if (config[match[0]]) {
             action = config[match[0]].action || action;
             match  = match[0];
+        }
+        else {
+            action = config[match[0] + '@' + host].action || action;
+            match  = match[0] + '@' + host;
         }
 
         switch (action.toLowerCase()) {
@@ -86,19 +90,29 @@ function _alias(plugin, connection, key, config, host) {
     var toAddress;
 
     if (config.to) {
-        if (config.to.search("@") !== -1) {
-            to = config.to;
+        if (Array.isArray(config.to)) {
+            connection.logdebug(plugin, "aliasing " + connection.transaction.rcpt_to + " to " + config.to);
+            connection.transaction.rcpt_to.pop();
+            for (var i = 0, len = config.to.length; i < len; i++) {
+                toAddress = new Address('<' + config.to[i] + '>');
+                connection.transaction.rcpt_to.push(toAddress);
+            }
         }
         else {
-            to = config.to + '@' + host;
+            if (config.to.search("@") !== -1) {
+                to = config.to;
+            }
+            else {
+                to = config.to + '@' + host;
+            }
+
+            connection.logdebug(plugin, "aliasing " +
+                connection.transaction.rcpt_to + " to " + to);
+
+            toAddress = new Address('<' + to + '>');
+            connection.transaction.rcpt_to.pop();
+            connection.transaction.rcpt_to.push(toAddress);
         }
-
-        connection.logdebug(plugin, "aliasing " +
-            connection.transaction.rcpt_to + " to " + to);
-
-        toAddress = new Address('<' + to + '>');
-        connection.transaction.rcpt_to.pop();
-        connection.transaction.rcpt_to.push(toAddress);
     }
     else {
         connection.loginfo(plugin, 'alias failed for ' + key +

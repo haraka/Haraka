@@ -1,9 +1,7 @@
 'use strict';
 
-var stub         = require('./fixtures/stub');
-var constants    = require('./../constants');
+var constants    = require('haraka-constants');
 
-// huge hack here, but plugin tests need constants
 constants.import(global);
 
 function _set_up(done) {

@@ -1,8 +1,8 @@
 'use strict';
 // Check various bits of the HELO string
 
+var tlds      = require('haraka-tld');
 var dns       = require('dns');
-var async     = require('async');
 var net_utils = require('./net_utils');
 var utils     = require('./utils');
 
@@ -175,7 +175,7 @@ exports.valid_hostname = function (next, connection, helo) {
     }
 
     // this will fail if TLD is invalid or hostname is a public suffix
-    if (!net_utils.get_organizational_domain(helo)) {
+    if (!tlds.get_organizational_domain(helo)) {
         // Check for any excluded TLDs
         var excludes = this.config.get('helo.checks.allow', 'list');
         var tld = (helo.split(/\./).reverse())[0].toLowerCase();
@@ -231,8 +231,8 @@ exports.rdns_match = function (next, connection, helo) {
         return next();
     }
 
-    if (net_utils.get_organizational_domain(r_host) ===
-        net_utils.get_organizational_domain(helo)) {
+    if (tlds.get_organizational_domain(r_host) ===
+        tlds.get_organizational_domain(helo)) {
         connection.results.add(plugin, {pass: 'rdns_match(org_dom)'});
         return next();
     }
@@ -403,11 +403,11 @@ exports.forward_dns = function (next, connection, helo) {
 
     var cb = function (err, ips) {
         if (err) {
-            if (err.code === 'ENOTFOUND' || err.code === 'ENODATA') {
+            if (err.code === dns.NOTFOUND || err.code === dns.NODATA) {
                 connection.results.add(plugin, {fail: 'forward_dns('+err.code+')'});
                 return next();
             }
-            if (err.code === 'ETIMEOUT' && plugin.cfg.reject.forward_dns) {
+            if (err.code === dns.TIMEOUT && plugin.cfg.reject.forward_dns) {
                 connection.results.add(plugin, {fail: 'forward_dns('+err.code+')'});
                 return next(DENYSOFT, "DNS timeout resolving your HELO hostname");
             }
@@ -431,8 +431,8 @@ exports.forward_dns = function (next, connection, helo) {
         // connecting. If their rDNS passed, and their HELO hostname is in
         // the same domain, consider it close enough.
         if (connection.results.has('helo.checks', 'pass', /^rdns_match/)) {
-            var helo_od = net_utils.get_organizational_domain(helo);
-            var rdns_od = net_utils.get_organizational_domain(connection.remote_host);
+            var helo_od = tlds.get_organizational_domain(helo);
+            var rdns_od = tlds.get_organizational_domain(connection.remote_host);
             if (helo_od && helo_od === rdns_od) {
                 connection.results.add(plugin, {pass: 'forward_dns(domain)'});
                 return next();
@@ -506,7 +506,7 @@ exports.get_a_records = function (host, cb) {
     if (!/\./.test(host)) {
         // a single label is not a host name
         var e = new Error("invalid hostname");
-        e.code = 'ENOTFOUND';
+        e.code = dns.NOTFOUND;
         return cb(e);
     }
 
@@ -515,7 +515,7 @@ exports.get_a_records = function (host, cb) {
     var timer = setTimeout(function () {
         timed_out = true;
         var err = new Error('timeout resolving: ' + host);
-        err.code = 'ETIMEOUT';
+        err.code = dns.TIMEOUT;
         plugin.logerror(err);
         return cb(err);
     }, (plugin.cfg.main.dns_timeout || 30) * 1000);
@@ -530,13 +530,13 @@ exports.get_a_records = function (host, cb) {
         if (timer) { clearTimeout(timer); }
         if (errs) {
             var err = '';
-            for (var e=0; e < errs.length; e++) {
-                switch (errs[e]) {
-                    case 'queryAaaa ENODATA':
-                    case 'queryAaaa ENOTFOUND':
+            for (var f=0; f < errs.length; f++) {
+                switch (errs[f].code) {
+                    case dns.NODATA:
+                    case dns.NOTFOUND:
                         break;
                     default:
-                        err += errs[e];
+                        err += errs[f].message;
                 }
             }
         }

@@ -5,7 +5,6 @@ exports.register = function() {
 };
 
 exports.hook_mail = function (next, connection, params) {
-    var txn = connection.transaction;
     var user = ((params[0] && params[0].user) ?
                params[0].user.toLowerCase() : null);
     if (!(!user || user === 'postmaster')) return next();

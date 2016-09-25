@@ -1,8 +1,8 @@
 var SPF = require('../spf').SPF;
+SPF.prototype.log_debug = function () {};  // noop, hush debug output
 
 function _set_up(done) {
     this.SPF = new SPF();
-    this.SPF.log_debug = function () {};  // noop, hush debug output
     done();
 }
 
@@ -36,24 +36,32 @@ exports.SPF = {
         this.SPF.mod_redirect('example.com', cb);
     },
     'mod_redirect, false': function (test) {
-        if (process.version !== 'v0.10.26') {
-            test.expect(2);
-            // var outer = this;
-            var cb = function (err, rc) {
-                test.equal(null, err);
-                test.equal(3, rc);
-                test.done();
-                // console.log(arguments);
-            };
-            this.SPF.count=0;
-            this.SPF.ip='212.70.129.94';
-            this.SPF.mail_from='fraud@aexp.com';
-            this.SPF.mod_redirect('aexp.com', cb);
-        }
-        else {
+        if (process.version === 'v0.10.26') {
             test.expect(0);
             test.done();
+            return;
         }
+
+        test.expect(2);
+        // var outer = this;
+        var cb = function (err, rc) {
+            test.equal(null, err);
+            if (rc === 7) {
+                // from time to time (this is the third time we've seen it,
+                // American Express publishes an invalid SPF record which results
+                // in a PERMERROR. Ignore it.
+                console.error("aexp SPF record is broken again");
+                test.equal(7, rc);
+            }
+            else {
+                test.equal(3, rc);
+            }
+            test.done();
+            // console.log(arguments);
+        };
+        this.SPF.count=0;
+        this.SPF.ip='212.70.129.94';
+        this.SPF.mail_from='fraud@aexp.com';
+        this.SPF.mod_redirect('aexp.com', cb);
     },
 };
-

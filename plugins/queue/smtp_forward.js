@@ -8,15 +8,26 @@ var smtp_client_mod = require('./smtp_client');
 
 exports.register = function () {
     var plugin = this;
-    var load_config = function () {
-        plugin.cfg = plugin.config.get('smtp_forward.ini', {
-            booleans: [
-                '-main.enable_tls',
-            ],
-        },
-        load_config);
-    };
-    load_config();
+
+    plugin.load_smtp_forward_ini();
+
+    if (plugin.cfg.main.enable_outbound) {
+        plugin.register_hook('queue_outbound', 'hook_queue');
+    }
+};
+
+exports.load_smtp_forward_ini = function () {
+    var plugin = this;
+
+    plugin.cfg = plugin.config.get('smtp_forward.ini', {
+        booleans: [
+            '-main.enable_tls',
+            '+main.enable_outbound',
+        ],
+    },
+    function () {
+        plugin.load_smtp_forward_ini();
+    });
 };
 
 exports.get_config = function (connection) {
@@ -46,14 +57,16 @@ exports.hook_queue = function (next, connection) {
     var cfg = plugin.get_config(connection);
     var txn = connection.transaction;
 
-    connection.loginfo(plugin, 'forwarding to ' + cfg.host + ':' + cfg.port);
+    connection.loginfo(plugin, 'forwarding to ' +
+            (cfg.forwarding_host_pool ? "configured forwarding_host_pool" : cfg.host + ':' + cfg.port)
+        );
 
     var smc_cb = function (err, smtp_client) {
         smtp_client.next = next;
 
         if (cfg.auth_user) {
-            connection.loginfo(plugin, 'Configuring authentication for SMTP server ' + cfg.main.host + ':' + cfg.main.port);
-            smtp_client.on('greeting', function() {
+            connection.loginfo(plugin, 'Configuring authentication for SMTP server ' + cfg.host + ':' + cfg.port);
+            smtp_client.on('capabilities', function() {
 
                 var base64 = function(str) {
                     var buffer = new Buffer(str, 'UTF-8');
@@ -143,4 +156,3 @@ exports.hook_queue = function (next, connection) {
     smtp_client_mod.get_client_plugin(plugin, connection, cfg, smc_cb);
 };
 
-exports.hook_queue_outbound = exports.hook_queue;

@@ -12,7 +12,7 @@ var total_cols;
 var cxn_cols;
 var txn_cols;
 
-var connect_plugins  = ['connect.geoip','connect.p0f','connect.asn','dnsbl', 'early', 'connect.fcrdns'];
+var connect_plugins  = ['connect.geoip','connect.p0f','connect.asn','dnsbl', 'early_talker', 'connect.fcrdns'];
 var helo_plugins     = ['helo.checks','tls','auth','relay','spf'];
 var mail_from_plugins= ['spf','mail_from.is_resolvable'];
 var rcpt_to_plugins  = ['access','rcpt_to.in_host_list']; // ,'rcpt_to.qmail_deliverable'];
@@ -158,14 +158,6 @@ function updateRow(row_data, selector) {
     $(selector + ' > td').tipsy();
 }
 
-function httpGet(theUrl) {
-    var xmlHttp = null;
-    xmlHttp = new XMLHttpRequest();
-    xmlHttp.open("GET", theUrl, false);
-    xmlHttp.send(null);
-    return xmlHttp.responseText;
-}
-
 function httpGetJSON(theUrl) {
     var xmlHttp = null;
     xmlHttp = new XMLHttpRequest();
@@ -255,10 +247,6 @@ function ws_connect() {
         prune_table();
         last_insert = now;
     };
-}
-
-function ws_disconnect() {
-    if (ws) ws.close();
 }
 
 function reconnect() {
@@ -366,6 +354,7 @@ function shorten_pi (name) {
 
     var trims = {
         spamassassin: 'spam',
+        early_talker: 'early',
         'rcpt_to.qmail_deliverable': 'qmd',
         'rcpt_to.in_host_list': 'host_list',
         'mail_from.is_resolvable': 'dns',

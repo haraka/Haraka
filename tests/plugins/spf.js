@@ -1,18 +1,19 @@
 'use strict';
 
-var Connection   = require('../fixtures/stub_connection');
-var Plugin       = require('../fixtures/stub_plugin');
-var SPF          = require('../../spf').SPF;
-var config       = require('../../config');
-var Address      = require('../../address').Address;
+var path         = require('path');
 
-var spf = new SPF();
+var Address      = require('address-rfc2821').Address;
+var fixtures     = require('haraka-test-fixtures');
+
+var Connection   = fixtures.connection;
+
+var SPF          = require('../../spf').SPF;
+var spf          = new SPF();
 
 var _set_up = function (done) {
 
-    // needed for tests
-    this.plugin = new Plugin('spf');
-    this.plugin.config = config;
+    this.plugin = new fixtures.plugin('spf');
+    this.plugin.config.root_path = path.resolve(__dirname, '../../config');
     this.plugin.cfg = { main: { }, defer: {}, deny: {} };
 
     this.connection = Connection.createConnection();

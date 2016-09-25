@@ -1,7 +1,6 @@
 // Auth against vpopmaild
 
 var net    = require('net');
-var crypto = require('crypto');
 
 exports.register = function () {
     var plugin = this;
@@ -107,7 +106,7 @@ exports.get_vpopmaild_socket = function (user) {
     return socket;
 };
 
-exports.get_plain_passwd = function (user, cb) {
+exports.get_plain_passwd = function (user, connection, cb) {
     var plugin = this;
 
     var socket = plugin.get_vpopmaild_socket(user);

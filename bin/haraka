@@ -9,6 +9,9 @@ var fs   = require('fs'),
     path = require('path'),
     nopt = require("nopt"),
     os   = require('os'),
+    async = require('async'),
+    sprintf = require('sprintf-js').sprintf,
+    path = require('path'),
     base = path.join(__dirname, '..'),
     ver  = JSON.parse(fs.readFileSync(base+'/package.json', 'utf8'))['version'],
     knownOpts = {
@@ -23,6 +26,8 @@ var fs   = require('fs'),
         "qlist":       Boolean,
         "qstat":       Boolean,
         "qempty":      Boolean,
+        "qunstick":    [String, null],
+        "graceful":    Boolean,
         "order":       Boolean,
         "test":        [String, Array],
         "ip":          String,
@@ -64,6 +69,7 @@ var usage = [
     "\t-f, --force   \t\tForce overwriting of old files",
     "\t--qlist       \t\tList the outbound queue",
     "\t--qstat       \t\tGet statistics on the outbound queue",
+    "\t--qunstick    \t\tUnstick (force delivery) for a given domain",
     "\t-o, --order   \t\tShow all registered plugins and their run order",
     "\t-t PLUGIN     \t\tPlugin test mode",
     "\t--------------- PLUGIN TEST MODE OPTIONS (all optional) --------------",
@@ -81,14 +87,14 @@ var usage = [
 
 
 var listPlugins = function (b, dir) {
- 
+
     if (!dir) { dir = "plugins/"; }
-    
+
     var plist = dir + "\n",
         subdirs = [],
         gl = path.join((b ? b : base), dir),
         pd = fs.readdirSync(gl);
-    
+
     pd.forEach(function (p) {
         var stat = fs.statSync(gl + '/' + p);
         if (stat.isFile() && ~p.search('.js')) {
@@ -98,17 +104,17 @@ var listPlugins = function (b, dir) {
             subdirs.push(dir + p + "/");
         }
     });
-    
+
     subdirs.forEach(function (s) {
         plist += "\n" + listPlugins(b, s);
     });
-    
+
     return plist;
-    
+
 }
 
 
-// Show message when create 
+// Show message when create
 function create(path) {
 //  console.log('\x1b[32mcreate\x1b[0m: ' + path);
 }
@@ -145,19 +151,19 @@ function copyDir(srcPath, dstPath) {
 
     mkDir(dstPath);
     var files = fs.readdirSync(srcPath);
-    
+
     for(var i = 0; i < files.length; i++) {
-    
-        // Ignore ".*"  
+
+        // Ignore ".*"
         if (/^\./.test(files[i])) {
             continue;
         }
-    
+
         var srcFile = path.join(srcPath, files[i]);
         var dstFile = path.join(dstPath, files[i]);
 
         var srcStat = fs.statSync(srcFile);
-      
+
         // Recursive call If direcotory
         if (srcStat.isDirectory()) {
             copyDir(srcFile, dstFile);
@@ -165,37 +171,32 @@ function copyDir(srcPath, dstPath) {
         // Copy to dstPath if file
         else if (srcStat.isFile()) {
             // NOT overwrite file
-            try {
-                var dstStat = fs.statSync(dstFile);
-                // File exists
-                warning("EEXIST, File exists '" + dstFile + "'");
-            }
-            catch (e) {
-                // File NOT exists
-                if (e.errno = 2) {
-                    var data = fs.readFileSync(srcFile);
-                    fs.writeFileSync(dstFile, data);
-                    create(dstFile)
-                }
-                else {
-                    throw e;
-                }
-            }
+            copyFile(srcFile, dstFile);
+        }
+    }
+}
+
+function copyFile (srcFile, dstFile) {
+    try {
+        var dstStat = fs.statSync(dstFile);
+        // File exists
+        warning("EEXIST, File exists '" + dstFile + "'");
+    }
+    catch (e) {
+        // File NOT exists
+        if (e.errno = 2) {
+            var data = fs.readFileSync(srcFile);
+            fs.writeFileSync(dstFile, data);
+            create(dstFile)
+        }
+        else {
+            throw e;
         }
     }
 }
 
 function setupHostname(confPath) {
     var hostname = os.hostname() + "\n";
-    
-    try {
-        var fd = fs.openSync(path.join(confPath, 'me'), 'w');
-        fs.writeSync(fd, hostname, null);
-    }
-    catch (e) {
-        warning("Unable to write config/me file: " + e);
-    }
-    
     try {
         var fd = fs.openSync(path.join(confPath, 'host_list'), 'w');
         fs.writeSync(fd, hostname, null);
@@ -203,6 +204,13 @@ function setupHostname(confPath) {
     catch (e) {
         warning("Unable to write config/host_list file: " + e);
     }
+}
+
+function setupBaseConfig(confPath) {
+    copyFile(path.join(base, 'config', 'smtp.ini'), path.join(confPath, 'smtp.ini'));
+    copyFile(path.join(base, 'config', 'loglevel'), path.join(confPath, 'loglevel'));
+    copyFile(path.join(base, 'config', 'plugins'),  path.join(confPath, 'plugins'));
+    copyDir(path.join(base, 'config', 'dkim'), path.join(confPath, 'dkim'));
 }
 
 var readme = [
@@ -313,7 +321,7 @@ else if (parsed.help) {
         var pager = 'less', spawn = require('child_process').spawn;
         if (process.env.PAGER) {
             var pager_split = process.env.PAGER.split(/ +/);
-            pager = pager_split.shift(); 
+            pager = pager_split.shift();
             md_path = pager_split.concat(md_path);
         };
 
@@ -327,11 +335,11 @@ else if (parsed.configs && parsed.plugin) {
     var js_path = path.join(parsed.configs, 'plugins', parsed.plugin + '.js');
     createFile(js_path,
                plugin_src, { plugin: parsed.plugin, config: parsed.configs });
-    
+
     var doc_path = path.join(parsed.configs, 'docs', 'plugins', parsed.plugin + '.md');
     createFile(doc_path,
                plugin_doc, { plugin: parsed.plugin, config: parsed.configs });
-    
+
     console.log("Plugin " + parsed.plugin + " created");
     console.log("Now edit javascript in:    " + js_path);
     console.log("Add the plugin to config:  " + path.join(parsed.configs, 'config', 'plugins'));
@@ -346,7 +354,10 @@ else if (parsed.qlist) {
     if (!parsed.verbose)
         logger.log = function () {} // disable logging for this
     var outbound = require(path.join(base, "outbound"));
-    outbound.list_queue(function () {
+    outbound.list_queue(function (err, qlist) {
+        qlist.forEach(function (todo) {
+            console.log(sprintf("Q: %s rcpt:%d from:%s domain:%s", todo.file, todo.rcpt_to.length, todo.mail_from.toString(), todo.domain));
+        });
         process.exit();
     });
 }
@@ -359,10 +370,50 @@ else if (parsed.qstat) {
     if (!parsed.verbose)
         logger.log = function () {} // disable logging for this
     var outbound = require(path.join(base, "outbound"));
-    outbound.stat_queue(function (stats) {
+    outbound.stat_queue(function (err, stats) {
         console.log(stats);
         process.exit();
     });
+}
+else if (parsed.qunstick) {
+    if (!parsed.configs) {
+        fail("qunstick option requires config path");
+    }
+    var domain = parsed.qunstick.toLowerCase();
+    process.env.HARAKA = parsed.configs;
+    var logger = require(path.join(base, "logger"));
+    if (!parsed.verbose)
+        logger.log = function () {} // disable logging for this
+    var cb = function () {
+        process.exit();
+    };
+    if (domain == 'true') {
+        send_internal_command('flushQueue', cb);
+    }
+    else {
+        send_internal_command('flushQueue ' + domain, cb);
+    }
+}
+else if (parsed.graceful) {
+    if (!parsed.configs) {
+        fail("graceful option requires config path");
+    }
+    process.env.HARAKA = parsed.configs;
+    var logger = require(path.join(base, "logger"));
+    if (!parsed.verbose)
+        logger.log = function () {} // disable logging for this
+    var config = require(path.join(base, "config"));
+    var key = config.get("internalcmd_key");
+    var smtp_ini = config.get("smtp.ini");
+    if (!smtp_ini.main.nodes) {
+        console.log("Graceful restart not possible without `nodes` value in smtp.ini");
+        process.exit();
+    }
+    else {
+        send_internal_command('gracefulRestart', function () {
+            process.exit();
+        });
+    }
 }
 else if (parsed.qempty) {
     if (!parsed.configs) {
@@ -385,7 +436,7 @@ else if (parsed.order) {
                 (path.join(process.env.HARAKA, 'node_modules'));
         require('module')._initPaths(); // Horrible hack
     }
-    var sprintf = require('sprintf-js').sprintf;
+    require(path.join(base, 'configfile')).watch_files = false;
     var logger = require(path.join(base, "logger"));
     if (!parsed.verbose)
         logger.log = function () {} // disable logging for this
@@ -443,8 +494,8 @@ else if (parsed.test) {
     plugins.load_plugins((parsed.test && parsed.test[0] !== 'all') ? parsed.test : null);
     var Connection = require(path.join(base, "connection"));
     var Transaction = require(path.join(base, "transaction"));
-    var Address = require(path.join(base, 'address')).Address;
-    var constants = require(path.join(base, 'constants'));
+    var Address = require('address-rfc2821').Address;
+    var constants = require('haraka-constants');
     var client = {
         remoteAddress: ((parsed.ip) ? parsed.ip : '1.2.3.4'),
         remotePort: 1234,
@@ -464,14 +515,14 @@ else if (parsed.test) {
     }
     var connection = new Connection.createConnection(client, server);
     if (parsed['set-relay']) connection.relaying = true;
-   
+
     var run_next_hook = function () {
         var args = Array.prototype.slice.call(arguments);
         var code = args.shift();
         if (!parsed['skip-deny'] && code !== constants.ok && code !== constants.cont) {
              plugins.run_hooks('quit', connection);
         }
-        else { 
+        else {
              plugins.run_hooks.apply(this, args);
         }
     }
@@ -588,12 +639,39 @@ else if (parsed.install) {
     mkDir(path.join(pa, 'docs'));
     mkDir(path.join(pa, 'docs/plugins'));
     mkDir(path.join(pa, 'docs/plugins/auth'));
-    copyDir(path.join(base, 'config'), path.join(pa, 'config'));
+    mkDir(path.join(pa, 'config'));
     createFile(path.join(pa, 'README'), readme);
     createFile(path.join(pa, 'package.json'), packageJson);
+    var bytes = require('crypto').randomBytes(32);
+    createFile(path.join(pa, 'config', 'internalcmd_key'), bytes.toString('hex'));
     setupHostname(path.join(pa, 'config'));
+    setupBaseConfig(path.join(pa, 'config'));
 }
 else {
     console.log("\033[31;40mError\033[0m: Undefined or erroneous arguments\n");
     console.log(usage);
+}
+
+function send_internal_command (cmd, cb) {
+    var config = require(path.join(base, "config"));
+    var key = config.get("internalcmd_key");
+    var smtp_ini = config.get("smtp.ini");
+    var listen_addrs = require(path.join(base, "server")).get_listen_addrs(smtp_ini.main);
+    var hp = /^\[?([^\]]+)\]?:(\d+)$/.exec(listen_addrs[0]);
+    if (!hp) throw "No listen address in smtp.ini";
+    // console.log("Connecting to " + listen_addrs[0]);
+    var sock = require('net').connect(hp[2], hp[1], function () {
+        sock.once('data', function (data) {
+            // this is the greeting. Ignore it...
+            sock.write('INTERNALCMD ' + (key ? ('key:' + key + ' ') : '') + cmd + '\r\n');
+            sock.once('data', function (data) {
+                console.log(data.toString().replace(/\r?\n$/, ''));
+                sock.write('QUIT\r\n');
+                sock.once('data', function (data) {
+                    sock.end();
+                })
+            });
+        });
+    });
+    sock.on('end', cb);
 }

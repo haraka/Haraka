@@ -1,10 +1,5 @@
-var stub      = require('./fixtures/stub');
-var constants = require('./../constants');
-var Logger    = require('./fixtures/stub_logger');
-var utils     = require('./../utils');
 
-// huge hack here, but plugin tests need constants
-constants.import(global);
+var utils     = require('../utils');
 
 function _set_up(callback) {
     this.backup = {};
@@ -29,7 +24,7 @@ exports.utils = {
             utils.encode_qp(
                 'v\xe5re kj\xe6re norske tegn b\xf8r \xe6res'
             ),
-            'v=E5re kj=E6re norske tegn b=F8r =E6res');
+            'v=C3=A5re kj=C3=A6re norske tegn b=C3=B8r =C3=A6res');
         test.done();
     },
     'trailing space should be encoded' : function (test) {
@@ -53,7 +48,7 @@ exports.utils = {
     '"=" is special and should be decoded' : function (test) {
         test.expect(2);
         test.equals(utils.encode_qp("=30\n"), "=3D30\n");
-        test.equals(utils.encode_qp("\0\xff0"), "=00=FF0");
+        test.equals(utils.encode_qp("\0\xff0"), "=00=C3=BF0");
         test.done();
     },
     'Very long lines should be broken' : function (test) {

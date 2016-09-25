@@ -1,4 +1,4 @@
-record_envelope_addresses
+record\_envelope\_addresses
 =========================
 
 This plugin adds two new header lines.

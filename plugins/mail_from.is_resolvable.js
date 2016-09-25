@@ -93,36 +93,36 @@ exports.hook_mail = function(next, connection, params) {
                 return;
             }
             pending_queries++;
-            net_utils.get_ips_by_host(addr.exchange, function(err, addresses) {
+            net_utils.get_ips_by_host(addr.exchange, function(err2, addresses2) {
                 pending_queries--;
                 if (!txn) return;
-                if (err && err.length === 2) {
-                    results.add(plugin, {msg: err[0]});
+                if (err2 && err2.length === 2) {
+                    results.add(plugin, {msg: err2[0].message});
                     connection.logdebug(plugin, domain + ': MX ' +
                             addr.priority + ' ' + addr.exchange +
-                            ' => ' + err[0]);
+                            ' => ' + err2[0].message);
                     check_results();
                     return;
                 }
                 connection.logdebug(plugin, domain + ': MX ' + addr.priority +
-                        ' ' + addr.exchange + ' => ' + addresses);
-                for (var i=0; i < addresses.length; i++) {
+                        ' ' + addr.exchange + ' => ' + addresses2);
+                for (var i=0; i < addresses2.length; i++) {
                     // Ignore anything obviously bogus
-                    if (net.isIPv4(addresses[i])){
-                        if (plugin.re_bogus_ip.test(addresses[i])) {
+                    if (net.isIPv4(addresses2[i])){
+                        if (plugin.re_bogus_ip.test(addresses2[i])) {
                             connection.logdebug(plugin, addr.exchange +
-                                    ': discarding ' + addresses[i]);
+                                    ': discarding ' + addresses2[i]);
                             continue;
                         }
                     }
-                    if (net.isIPv6(addresses[i])){
-                        if (net_utils.ipv6_bogus(addresses[i])) {
+                    if (net.isIPv6(addresses2[i])){
+                        if (net_utils.ipv6_bogus(addresses2[i])) {
                             connection.logdebug(plugin, addr.exchange +
-                                    ': discarding ' + addresses[i]);
+                                    ': discarding ' + addresses2[i]);
                             continue;
                         }
                     }
-                    records[addresses[i]] = 1;
+                    records[addresses2[i]] = 1;
                 }
                 check_results();
             });
@@ -139,9 +139,9 @@ exports.mxErr = function (connection, domain, type, err, mxDone) {
     txn.results.add(plugin, {msg: domain + ':' + type + ':' + err.message});
     connection.logdebug(plugin, domain + ':' + type + ' => ' + err.message);
     switch (err.code) {
-        case 'NXDOMAIN':
-        case 'ENOTFOUND':
-        case 'ENODATA':
+        case dns.NXDOMAIN:
+        case dns.NOTFOUND:
+        case dns.NODATA:
             // Ignore
             break;
         default:

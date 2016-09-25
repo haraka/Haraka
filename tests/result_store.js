@@ -1,8 +1,7 @@
-var stub         = require('./fixtures/stub');
-var Connection   = require('./fixtures/stub_connection');
-var configfile   = require('../configfile');
-var config       = require('../config');
-var ResultStore  = require('../result_store');
+
+var fixtures     = require('haraka-test-fixtures');
+var Connection   = fixtures.connection;
+var ResultStore  = fixtures.result_store;
 
 function _set_up(callback) {
     this.connection = Connection.createConnection();
@@ -134,6 +133,19 @@ exports.has = {
         test.ok(this.connection.results.has( 'test_plugin', 'random_key', /string/));
         test.ok(this.connection.results.has( 'test_plugin', 'random_key', /value/));
         test.equal(false, this.connection.results.has('test_plugin', 'random_key', /miss/));
+        test.done();
+    },
+};
+
+exports.private_collate = {
+    setUp : _set_up,
+    tearDown : _tear_down,
+    'collate, arrays are shown in output' : function (test) {
+        test.expect(2);
+        this.connection.results.push('test_plugin', { foo: 'bar' });
+        // console.log(this.connection.results);
+        test.equal(true, this.connection.results.has('test_plugin', 'foo', /bar/));
+        test.ok(/bar/.test(this.connection.results.get('test_plugin').human));
         test.done();
     },
 };

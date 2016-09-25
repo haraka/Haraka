@@ -1,21 +1,21 @@
 'use strict';
 
-var stub         = require('../fixtures/stub');
-var Plugin       = require('../fixtures/stub_plugin');
-var Connection   = require('../fixtures/stub_connection');
-var config       = require('../../config');
-var ResultStore  = require('../../result_store');
+var fixtures     = require('haraka-test-fixtures');
+var dns          = require('dns');
+var Connection   = fixtures.connection;
+var ResultStore  = fixtures.result_store;
 
 var _set_up = function (done) {
 
-    this.plugin = new Plugin('mail_from.is_resolvable');
-    this.plugin.config = config;
+    this.plugin = new fixtures.plugin('mail_from.is_resolvable');
     this.plugin.register();
 
     this.connection = Connection.createConnection();
 
-    this.connection.transaction = { notes: {} };
-    this.connection.transaction.results = new ResultStore(this.plugin);
+    this.connection.transaction = {
+        notes: {},
+        results: new ResultStore(this.plugin),
+    };
 
     done();
 };
@@ -27,6 +27,7 @@ exports.mxErr = {
         var t = this;
         var txn = t.connection.transaction;
         var err = new Error('oops');
+        err.code = null;
         var called = false;
         var cb = function () { called = true; };
         var r  = t.plugin.mxErr(t.connection, 'any.com', 'MX', err, cb);
@@ -41,7 +42,7 @@ exports.mxErr = {
         var t = this;
         var txn = t.connection.transaction;
         var err = new Error('oops');
-        err.code='ENOTFOUND';
+        err.code=dns.NOTFOUND;
         var called = false;
         var cb = function () { called = true; };
         var r  = t.plugin.mxErr(t.connection, 'any.com', 'MX', err, cb);

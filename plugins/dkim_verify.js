@@ -1,6 +1,5 @@
 var dkim = require('./dkim');
 var DKIMVerifyStream = dkim.DKIMVerifyStream;
-var util = require('util');
 
 var plugin = exports;
 
@@ -18,8 +17,12 @@ exports.hook_data_post = function(next, connection) {
     var verifier = new DKIMVerifyStream(function (err, result, results) {
         if (err) {
             connection.logerror(self, 'error=' + err);
+            return next();
         }
-        if (!results) return next();
+        if (!results) {
+            connection.logerror(self, 'No results from DKIMVerifyStream');
+            return next();
+        }
         results.forEach(function (res) {
             connection.auth_results(
               'dkim=' + res.result +
@@ -49,7 +52,7 @@ exports.hook_data_post = function(next, connection) {
         connection.logdebug(self, JSON.stringify(results));
         // Store results for other plugins
         txn.notes.dkim_results = results;
-        return next();
+        next();
     }, ((plugin.timeout) ? plugin.timeout - 1 : 0));
     txn.message_stream.pipe(verifier, { line_endings: '\r\n' });
 };

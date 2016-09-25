@@ -1,13 +1,7 @@
-var stub         = require('./fixtures/stub');
-var Plugin       = require('./fixtures/stub_plugin');
-var Connection   = require('./fixtures/stub_connection');
-var configfile   = require('../configfile');
-var config       = require('../config');
+
 var util         = require('util');
 
 function _set_up(callback) {
-    // this.connection = Connection.createConnection();
-    // this.connection.results = new ResultStore(this.connection);
     this.logger = require('../logger');
     callback();
 }
@@ -127,7 +121,7 @@ exports.log_if_level = {
     tearDown : _tear_down,
     'log_if_level is a function' : function (test) {
         test.expect(1);
-        test.ok('function' === typeof(this.logger.log_if_level));
+        test.ok('function' === typeof this.logger.log_if_level);
         test.done();
     },
     'log_if_level test log entry' : function (test) {
@@ -135,11 +129,35 @@ exports.log_if_level = {
         this.logger.loglevel = 9;
         var f = this.logger.log_if_level('INFO', 'LOGINFO');
         test.ok(f);
-        test.ok('function' === typeof(f));
-        test.ok(f("test info message"));
+        test.ok('function' === typeof f);
+        test.ok(f('test info message'));
         test.equal(1, this.logger.deferred_logs.length);
         // console.log(this.logger.deferred_logs[0]);
         test.equal('INFO', this.logger.deferred_logs[0].level);
+        test.done();
+    },
+    'log_if_level null case' : function (test) {
+        test.expect(2);
+        this.logger.loglevel = 9;
+        var f = this.logger.log_if_level('INFO', 'LOGINFO');
+        test.ok(f(null));
+        test.equal(2, this.logger.deferred_logs.length);
+        test.done();
+    },
+    'log_if_level false' : function (test) {
+        test.expect(2);
+        this.logger.loglevel = 9;
+        var f = this.logger.log_if_level('INFO', 'LOGINFO');
+        test.ok(f(false));
+        test.equal(3, this.logger.deferred_logs.length);
+        test.done();
+    },
+    'log_if_level 0' : function (test) {
+        test.expect(2);
+        this.logger.loglevel = 9;
+        var f = this.logger.log_if_level('INFO', 'LOGINFO');
+        test.ok(f(0));
+        test.equal(4, this.logger.deferred_logs.length);
         test.done();
     },
 };

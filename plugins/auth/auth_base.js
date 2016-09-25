@@ -22,7 +22,7 @@ exports.hook_capabilities = function (next, connection) {
 };
 
 // Override this at a minimum. Run cb(passwd) to provide a password.
-exports.get_plain_passwd = function (user, cb) {
+exports.get_plain_passwd = function (user, connection, cb) {
     return cb();
 };
 
@@ -48,15 +48,24 @@ exports.hook_unrecognized_command = function (next, connection, params) {
 };
 
 exports.check_plain_passwd = function (connection, user, passwd, cb) {
-    this.get_plain_passwd(user, function (plain_pw) {
+    var callback = function (plain_pw) {
         if (plain_pw === null  ) { return cb(false); }
         if (plain_pw !== passwd) { return cb(false); }
         return cb(true);
-    });
+    }
+    if (this.get_plain_passwd.length == 2) {
+        this.get_plain_passwd(user, callback);
+    }
+    else if (this.get_plain_passwd.length == 3) {
+        this.get_plain_passwd(user, connection, callback);
+    }
+    else {
+        throw "Invalid number of arguments for get_plain_passwd";
+    }
 };
 
 exports.check_cram_md5_passwd = function (connection, user, passwd, cb) {
-    this.get_plain_passwd(user, function (plain_pw) {
+    var callback = function (plain_pw) {
         if (plain_pw == null) {
             return cb(false);
         }
@@ -68,7 +77,16 @@ exports.check_cram_md5_passwd = function (connection, user, passwd, cb) {
             return cb(true);
         }
         return cb(false);
-    });
+    };
+    if (this.get_plain_passwd.length == 2) {
+        this.get_plain_passwd(user, callback);
+    }
+    else if (this.get_plain_passwd.length == 3) {
+        this.get_plain_passwd(user, connection, callback);
+    }
+    else {
+        throw "Invalid number of arguments for get_plain_passwd";
+    }
 };
 
 exports.check_user = function (next, connection, credentials, method) {
@@ -165,16 +183,26 @@ exports.select_auth_method = function(next, connection, method) {
 
 exports.auth_plain = function(next, connection, params) {
     var plugin = this;
-    if (!params || !params.length) {
-        connection.respond(334, ' ', function () {
-            return next(OK);
-        });
-        return;
+    // one parameter given on line, either:
+    //    AUTH PLAIN <param> or
+    //    AUTH PLAIN\n
+    //...
+    //    <param>
+    if (params[0]) {
+        var credentials = utils.unbase64(params[0]).split(/\0/);
+        credentials.shift();  // Discard authid
+        return plugin.check_user(next, connection, credentials, AUTH_METHOD_PLAIN);
+    } else {
+        if (connection.notes.auth_plain_asked_login) {
+            return next(DENYDISCONNECT, 'bad protocol');
+        } else {
+            connection.respond(334, ' ', function () {
+                connection.notes.auth_plain_asked_login = true;
+                return next(OK);
+            });
+            return;
+        }
     }
-
-    var credentials = utils.unbase64(params[0]).split(/\0/);
-    credentials.shift();  // Discard authid
-    return plugin.check_user(next, connection, credentials, AUTH_METHOD_PLAIN);
 };
 
 exports.auth_login = function(next, connection, params) {

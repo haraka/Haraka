@@ -162,9 +162,13 @@ exports.load_key = function (file) {
     return this.config.get(file, 'data').join('\n');
 };
 
-exports.hook_queue_outbound = function (next, connection) {
+exports.hook_queue_outbound = exports.hook_pre_send_trans_email = function (next, connection) {
     var plugin = this;
     if (plugin.cfg.main.disabled) { return next(); }
+    if (connection.transaction.notes.dkim_signed) {
+        connection.logdebug(plugin, 'email already signed');
+        return next();
+    }
 
     plugin.get_key_dir(connection, function(keydir) {
         var domain;
@@ -197,6 +201,7 @@ exports.hook_queue_outbound = function (next, connection) {
                 txn.results.add(plugin, {pass: dkim_header});
                 txn.add_header('DKIM-Signature', dkim_header);
             }
+            connection.transaction.notes.dkim_signed = true;
             return next();
         };
         txn.message_stream.pipe(new DKIMSignStream(
@@ -246,7 +251,6 @@ exports.has_key_data = function (conn, domain, selector, private_key) {
         return false;
     }
 
-    conn.logprotocol(plugin, 'private_key: '+private_key);
     conn.logprotocol(plugin, 'selector: '+selector);
     return true;
 };
@@ -276,7 +280,7 @@ exports.get_sender_domain = function (txn) {
 
     // a fallback, when header parsing fails
     var domain;
-    try { domain = txn.mail_from.host.toLowerCase(); }
+    try { domain = txn.mail_from.host && txn.mail_from.host.toLowerCase(); }
     catch (e) {
         plugin.logerror(e);
     }
@@ -294,7 +298,14 @@ exports.get_sender_domain = function (txn) {
     if (!addrs || ! addrs.length) { return domain; }
 
     // If From has a single address, we're done
-    if (addrs.length === 1) { return addrs[0].host().toLowerCase(); }
+    if (addrs.length === 1) {
+        var fromHost = addrs[0].host();
+        if (fromHost) {
+            // don't attempt to lower a null or undefined value #1575
+            fromHost = fromHost.toLowerCase();
+        }
+        return fromHost;
+    }
 
     // If From has multiple-addresses, we must parse and
     // use the domain in the Sender header.

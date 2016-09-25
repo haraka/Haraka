@@ -1,15 +1,12 @@
 'use strict';
 
-var stub             = require('../fixtures/stub');
-var Plugin           = require('../fixtures/stub_plugin');
-var Connection       = require('../fixtures/stub_connection');
+var fixtures     = require('haraka-test-fixtures');
 
 var _set_up = function (done) {
 
-    this.plugin = new Plugin('connect.asn');
-
+    this.plugin = new fixtures.plugin('connect.asn');
     this.plugin.cfg = { main: {} };
-    this.connection = Connection.createConnection();
+    this.connection = fixtures.connection.createConnection();
 
     done();
 };
@@ -125,6 +122,7 @@ exports.get_dns_results = {
         };
         this.plugin.get_dns_results('asn.routeviews.org', '8.8.8.8', cb);
     },
+    /* - spameatingmonkey appears to be dead
     'origin.asn.spameatingmonkey.net': function (test) {
         var cb = function (err, zone, obj) {
             if (obj) {
@@ -145,4 +143,5 @@ exports.get_dns_results = {
                 cb
                 );
     },
+    */
 };

@@ -1,14 +1,15 @@
 'use strict';
 
-var stub             = require('../fixtures/stub');
-var Plugin           = require('../fixtures/stub_plugin');
-var Connection       = require('../fixtures/stub_connection');
-var Address          = require('../../address').Address;
+var Address      = require('address-rfc2821').Address;
+var fixtures     = require('haraka-test-fixtures');
+
+var stub         = fixtures.stub.stub;
+var Connection   = fixtures.connection;
 
 var _set_up = function (done) {
 
     // needed for tests
-    this.plugin = new Plugin('aliases');
+    this.plugin = new fixtures.plugin('aliases');
     this.recip  = new Address('<test1@example.com>');
     this.params = [this.recip];
 
@@ -34,7 +35,8 @@ var _set_up = function (done) {
         "@example.co" : { "action" : "drop" },
         "test11@example.org" : { "action" : "drop" },
         "@demo.com" : { "action" : "alias", "to" : "test12-works@success.com" },
-        "test13@example.net" : { "action" : "alias", "to" : "test13-works@success.com" }
+        "test13@example.net" : { "action" : "alias", "to" : "test13-works@success.com" },
+        "test14@example.net" : { "action" : "alias", "to" : ["alice@success.com", "bob@success.com"] }
     };
 
     this.plugin.config.get = function (file, type) {
@@ -160,6 +162,22 @@ exports.aliases = {
 
         this.plugin.aliases(next, this.connection, this.params);
     },
+    'should map test4+testing@example.com to test4@example.com' : function (test) {
+        // these will get reset in _set_up everytime
+        this.recip = new Address('<test4+testing@example.com>');
+        this.params = [this.recip];
+        var result = new Address('<test4@example.com>');
+
+        var next = function (action) {
+            test.expect(3);
+            test.isNotNull(this.connection.transaction.rcpt_to);
+            test.isArray(this.connection.transaction.rcpt_to);
+            test.deepEqual(this.connection.transaction.rcpt_to.pop(), result);
+            test.done();
+        }.bind(this);
+
+        this.plugin.aliases(next, this.connection, this.params);
+    },
     'should map test5@example.com to test5-works@success.com' : function (test) {
         // these will get reset in _set_up everytime
         this.recip = new Address('<test5@example.com>');
@@ -243,6 +261,38 @@ exports.aliases = {
             test.isNotNull(this.connection.transaction.rcpt_to);
             test.isArray(this.connection.transaction.rcpt_to);
             test.deepEqual(this.connection.transaction.rcpt_to.pop(), result);
+            test.done();
+        }.bind(this);
+
+        this.plugin.aliases(next, this.connection, this.params);
+    },
+    'should map test13+subaddress@example.net to test13-works@success.com' : function (test) {
+        // these will get reset in _set_up everytime
+        this.recip = new Address('<test13+subaddress@example.net>');
+        this.params = [this.recip];
+        var result = new Address('<test13-works@success.com>');
+
+        var next = function (action) {
+            test.expect(3);
+            test.isNotNull(this.connection.transaction.rcpt_to);
+            test.isArray(this.connection.transaction.rcpt_to);
+            test.deepEqual(this.connection.transaction.rcpt_to.pop(), result);
+            test.done();
+        }.bind(this);
+
+        this.plugin.aliases(next, this.connection, this.params);
+    },
+    'should explode test14@example.net to alice@success.com and bob@success.com' : function (test) {
+        // these will get reset in _set_up everytime
+        this.recip = new Address('<test14@example.net>');
+        this.params = [this.recip];
+        var result = [new Address('<alice@success.com>'), new Address('<bob@success.com>')];
+
+        var next = function (action) {
+            test.expect(3);
+            test.isNotNull(this.connection.transaction.rcpt_to);
+            test.isArray(this.connection.transaction.rcpt_to);
+            test.deepEqual(this.connection.transaction.rcpt_to, result);
             test.done();
         }.bind(this);
 

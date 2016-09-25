@@ -40,9 +40,18 @@ Default: false. Switch to true to enable TLS for outbound mail when the
 remote end is capable.
 
 This uses the same `tls_key.pem` and `tls_cert.pem` files that the `tls`
-plugin uses. See the [tls plugin
+plugin uses, along with other values in `tls.ini`. See the [tls plugin
 docs](http://haraka.github.io/manual/plugins/tls.html) for information on generating those
 files.
+
+Within `tls.ini` you can specify global options for the values `ciphers`,
+`requestCert` and `rejectUnauthorized`, alternatively you can provide
+separate values by putting them under a key: `[outbound]`, such as:
+
+```
+[outbound]
+ciphers=!DES
+```
 
 * `ipv6_enabled`
 
@@ -62,9 +71,61 @@ enables more flexibility in mail delivery and bounce handling.
 Default: "Haraka outbound". This text is attached as a `Received` header to
 all outbound mail just before it is queued.
 
+* `connect_timeout`
+
+Timeout for connecting to remote servers. Default: 30s
+
+* `pool_timeout`
+
+Outbound mail uses "pooled" connections. An unused pool connection will send
+a QUIT after this time. Default: 50s
+
+Pooled connections means that a mail to a particular IP address will hold that
+connection open and use it the next time it is requested. This helps with
+large scale outbound mail. If you don't send lots of mail it is advised to
+lower the `pool_timeout` value since it may upset receiving mail servers.
+
+Setting this value to `0` will effectively disable the use of pools. You may
+wish to set this if you have a `get_mx` hook that picks outbound servers on
+a per-email basis (rather than per-domain).
+
 ### outbound.bounce\_message
 
 See "Bounce Messages" below for details.
+
+The HMail Object
+----------------
+
+Many hooks (see below) pass in a `hmail` object.
+
+You likely won't ever need to call methods on this object, so they are left
+undocumented here.
+
+The attributes of an `hmail` object that may be of use are:
+
+* path - the full path to the queue file
+* filename - the filename within the queue dir
+* num_failures - the number of times this mail has been temp failed
+* notes - notes you can store on a hmail object (similar to `transaction.notes`)
+  to allow you to pass information between outbound hooks
+* todo - see below
+
+The ToDo Object
+---------------
+
+The `todo` object contains information about how to deliver this mail. Keys
+you may be interested in are:
+
+* rcpt_to - an Array of Address objects - the rfc.2821 recipients of this mail
+* mail_from - an Address object - the rfc.2821 sender of this mail
+* domain - the domain this mail is going to (see `always_split` above)
+* notes - the original transaction.notes for this mail, also contains the
+  following useful keys:
+** outbound_ip - the IP address to bind to (note do not set this manually,
+  use the `get_mx` hook)
+** outbound_helo - the EHLO domain to use (again, do not set manually)
+* queue_time - the epoch milliseconds time when this mail was queued
+* uuid - the original transaction.uuid
 
 Outbound Mail Hooks
 -------------------
@@ -259,7 +320,7 @@ To do that, you can use the `outbound` module directly:
             case OK:    plugin.loginfo("mail sent");
                         next();
                         break;
-            default:    plugin.logerror("Unrecognised return code from sending email: " + msg);
+            default:    plugin.logerror("Unrecognized return code from sending email: " + msg);
                         next();
         }
     };
@@ -283,3 +344,9 @@ see https://tools.ietf.org/html/rfc2821#section-4.5.2), you should pass the
 ```dot_stuffed: true``` option, like so:
     
     outbound.send_email(from, to, contents, outnext, { dot_stuffed: true });
+
+
+In case you need notes in the new transaction that `send_email()` creates, you should pass the
+```notes``` option, like so:
+
+    outbound.send_email(from, to, contents, outnext, { notes: transaction.notes });

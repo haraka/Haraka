@@ -1,0 +1,11 @@
+{
+  "name": "folder_plugin",
+  "version": "1.0.0",
+  "description": "Plugin in a folder",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "MIT"
+}

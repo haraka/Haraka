@@ -1,20 +1,17 @@
 'use strict';
 
-var stub             = require('../fixtures/stub');
-var Connection       = require('../fixtures/stub_connection');
-var Plugin           = require('../fixtures/stub_plugin');
-var config           = require('../../config');
-var ResultStore      = require('../../result_store');
+var fixtures     = require('haraka-test-fixtures');
+
+var Connection   = fixtures.connection;
+var stub         = fixtures.stub.stub;
 
 var _set_up = function (done) {
 
-    this.plugin = new Plugin('limit');
+    this.plugin = new fixtures.plugin('limit');
 
-    this.plugin.config = config;
     this.plugin.cfg = { main: {} };
 
     this.connection = Connection.createConnection();
-    this.connection.results = new ResultStore(this.plugin);
     this.connection.transaction = stub;
 
     this.plugin.register();

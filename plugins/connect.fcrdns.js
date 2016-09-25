@@ -1,11 +1,9 @@
 'use strict';
 
 var dns       = require('dns');
-var net       = require('net');
 
-var async     = require('async');
+var tlds      = require('haraka-tld');
 
-var utils     = require('./utils');
 var net_utils = require('./net_utils');
 
 exports.register = function () {
@@ -90,7 +88,7 @@ exports.hook_lookup_rdns = function (next, connection) {
             results[ptr_domain] = [];
 
             // Make sure TLD is valid
-            if (!net_utils.get_organizational_domain(ptr_domain)) {
+            if (!tlds.get_organizational_domain(ptr_domain)) {
                 connection.results.add(plugin, {fail: 'valid_tld(' + ptr_domain +')'});
                 if (!plugin.cfg.reject.invalid_tld) continue;
                 if (net_utils.is_private_ip(rip)) continue;
@@ -101,17 +99,17 @@ exports.hook_lookup_rdns = function (next, connection) {
             queries_run = true;
             connection.logdebug(plugin, 'domain: ' + ptr_domain);
             pending_queries++;
-            net_utils.get_ips_by_host(ptr_domain, function (err, ips) {
+            net_utils.get_ips_by_host(ptr_domain, function (err2, ips) {
                 pending_queries--;
 
-                if (err) {
-                    for (var e=0; e < err.length; e++) {
-                        switch (err[e]) {
-                            case 'queryAaaa ENODATA':
-                            case 'queryAaaa ENOTFOUND':
+                if (err2) {
+                    for (var e=0; e < err2.length; e++) {
+                        switch (err2[e].code) {
+                            case dns.NODATA:
+                            case dns.NOTFOUND:
                                 break;
                             default:
-                                connection.results.add(plugin, {err: err[e]});
+                                connection.results.add(plugin, {err: err2[e].message});
                         }
                     }
                 }
@@ -170,7 +168,6 @@ exports.handle_ptr_error = function (connection, err, do_next) {
     var rip = connection.remote_ip;
 
     switch (err.code) {
-        case 'ENOTFOUND':
         case dns.NOTFOUND:
         case dns.NXDOMAIN:
             connection.results.add(plugin, {fail: 'has_rdns', emit: true});
@@ -192,7 +189,7 @@ exports.check_fcrdns = function (connection, results, do_next) {
 
     for (var fdom in results) {    // mail.example.com
         if (!fdom) continue;
-        var org_domain = net_utils.get_organizational_domain(fdom); // example.com
+        var org_domain = tlds.get_organizational_domain(fdom); // example.com
 
         // Multiple domains?
         if (last_domain && last_domain !== org_domain) {
@@ -276,7 +273,7 @@ exports.is_generic_rdns = function (connection, domain) {
 
     connection.results.add(plugin, {fail: 'is_generic_rdns'});
 
-    var orgDom = net_utils.get_organizational_domain(domain);
+    var orgDom = tlds.get_organizational_domain(domain);
     if (!orgDom) {
         connection.loginfo(this, 'no org domain for: ' + domain);
         return false;

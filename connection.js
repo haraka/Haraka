@@ -10,16 +10,16 @@ var path        = require('path');
 
 // npm libs
 var ipaddr      = require('ipaddr.js');
+var constants   = require('haraka-constants');
+var Address     = require('address-rfc2821').Address;
 
 // Haraka libs
 var config      = require('./config');
 var logger      = require('./logger');
 var trans       = require('./transaction');
 var plugins     = require('./plugins');
-var constants   = require('./constants');
 var rfc1869     = require('./rfc1869');
-var Address     = require('./address').Address;
-var uuid        = require('./utils').uuid;
+var utils       = require('./utils');
 var outbound    = require('./outbound');
 var date_to_str = require('./utils').date_to_str;
 var indexOfLF   = require('./utils').indexOfLF;
@@ -28,10 +28,6 @@ var ResultStore = require('./result_store');
 var hostname    = (os.hostname().split(/\./))[0];
 var version     = JSON.parse(
         fs.readFileSync(path.join(__dirname, 'package.json'))).version;
-
-var line_regexp = /^([^\n]*\n)/;
-
-var connection = exports;
 
 var states = exports.states = {
     STATE_CMD:             1,
@@ -49,14 +45,14 @@ var nextTick = setImmediate || process.nextTick;
 // copy logger methods into Connection:
 for (var key in logger) {
     if (!/^log\w/.test(key)) continue;
-    Connection.prototype[key] = (function (key) {
+    Connection.prototype[key] = (function (level) {
         return function () {
             // pass the connection instance to logger
             var args = [ this ];
             for (var i=0, l=arguments.length; i<l; i++) {
                 args.push(arguments[i]);
             }
-            logger[key].apply(logger, args);
+            logger[level].apply(logger, args);
         };
     })(key);
 }
@@ -175,7 +171,7 @@ function Connection(client, server) {
     this.prev_state = null;
     this.loop_code = null;
     this.loop_msg = null;
-    this.uuid = uuid();
+    this.uuid = utils.uuid();
     this.notes = {};
     this.transaction = null;
     this.tran_count = 0;
@@ -294,7 +290,7 @@ Connection.prototype.process_line = function (line) {
             }
         }
         else {
-            // unrecognised command
+            // unrecognized command
             matches.splice(0,1);
             matches.splice(1,1);
             plugins.run_hooks('unrecognized_command', this, matches);
@@ -464,15 +460,18 @@ Connection.prototype.respond = function(code, msg, func) {
         code = msg.code;
         msg = msg.reply;
     }
-    if (!(Array.isArray(msg))) {
-        // msg not an array, make it so:
-        messages = msg.toString().split(/\n/).filter(function (msg) {
-            return /\S/.test(msg);
-        });
+    if (!Array.isArray(msg)) {
+        messages = msg.toString().split(/\n/);
+    } else {
+        messages = msg.slice();
     }
-    else {
-        // copy
-        messages = msg.slice().filter(function (msg) { return /\S/.test(msg);});
+    messages = messages.filter(function (msg2) {
+        return /\S/.test(msg2);
+    });
+
+    // Multiline AUTH PLAIN as in RFC-4954 page 8.
+    if (code === 334 && !messages.length) {
+        messages = [' '];
     }
 
     if (code >= 400) {
@@ -572,6 +571,8 @@ Connection.prototype.tran_uuid = function () {
 
 Connection.prototype.reset_transaction = function(cb) {
     if (this.transaction && this.transaction.resetting === false) {
+        // Pause connection to allow the hook to complete
+        this.pause();
         this.transaction.resetting = true;
         plugins.run_hooks('reset_transaction', this, cb);
     }
@@ -587,6 +588,8 @@ Connection.prototype.reset_transaction_respond = function (retval, msg, cb) {
         this.transaction = null;
     }
     if (cb) cb();
+    // Allow the connection to continue
+    this.resume();
 };
 
 Connection.prototype.init_transaction = function(cb) {
@@ -969,11 +972,17 @@ Connection.prototype.rcpt_incr = function(rcpt, action, msg, retval) {
     var addr = rcpt.format();
     var recipient = {
         address: addr.substr(1, addr.length -2),
+        action:  action
     };
+
     if (msg && action !== 'accept') {
-        recipient.msg  = msg;
-        recipient.code  = constants.translate(retval);
-        recipient.action = action;
+        if (typeof msg === 'object' && msg.constructor.name === 'DSN') {
+            recipient.msg   = msg.reply;
+            recipient.code  = msg.code;
+        } else {
+            recipient.msg  = msg;
+            recipient.code  = constants.translate(retval);
+        }
     }
 
     this.transaction.results.push({name: 'rcpt_to'}, {
@@ -1147,6 +1156,30 @@ Connection.prototype.cmd_proxy = function (line) {
 
 /////////////////////////////////////////////////////////////////////////////
 // SMTP Commands
+
+Connection.prototype.cmd_internalcmd = function (line) {
+    var self = this;
+    if (self.remote_ip != '127.0.0.1' && self.remote_ip != '::1') {
+        return this.respond(501, "INTERNALCMD not allowed remotely");
+    }
+    var results = (String(line)).split(/ +/);
+    if (/key:/.test(results[0])) {
+        var internal_key = config.get('internalcmd_key');
+        if (results[0] != "key:" + internal_key) {
+            return this.respond(501, "Invalid internalcmd_key - check config");
+        }
+        results.shift();
+    }
+
+    // Now send the internal command to the master process
+    var command = results.shift();
+    if (!command) {
+        return this.respond(501, "No command given");
+    }
+
+    require('./server').sendToMaster(command, results);
+    return this.respond(250, "Command sent for execution. Check Haraka logs for results.");
+}
 
 Connection.prototype.cmd_helo = function(line) {
     var self = this;
@@ -1331,28 +1364,40 @@ Connection.prototype.received_line = function() {
     if (this.authheader) smtp = smtp + 'A';
     // sslheader only populated with node.js >= 0.8
     var sslheader;
+    var header_hide_version = config.get('header_hide_version') ? true : false;
+
     if (this.notes.tls && this.notes.tls.cipher) {
         sslheader = '(version=' + this.notes.tls.cipher.version +
             ' cipher=' + this.notes.tls.cipher.name +
             ' verify=' + ((this.notes.tls.authorized) ? 'OK' :
             ((this.notes.tls.authorizationError &&
-              this.notes.tls.authorizationError.message === 'UNABLE_TO_GET_ISSUER_CERT') ? 'NO' : 'FAIL')) + ')';
+              this.notes.tls.authorizationError.code === 'UNABLE_TO_GET_ISSUER_CERT') ? 'NO' : 'FAIL')) + ')';
     }
-    return [
+    var received_header = [
         'from ',
         this.hello_host, ' (',
         // If no rDNS, don't display it
         ((!/^(?:DNSERROR|NXDOMAIN)/.test(this.remote_info)) ? this.remote_info + ' ' : ''),
         '[', this.remote_ip, '])',
         "\n\t",
-        'by ', config.get('me'), ' (Haraka/', version, ') with ', smtp,
+        'by ',
+        config.get('me')
+    ]
+
+    if (!header_hide_version) {
+        received_header.push(' (Haraka/', version, ')');
+    }
+
+    received_header.push(
+        ' with ', smtp,
         ' id ', this.transaction.uuid,
         "\n\t",
         'envelope-from ', this.transaction.mail_from.format(),
         ((this.authheader) ? ' ' + this.authheader.replace(/\r?\n\t?$/, '') : ''),
         ((sslheader) ? "\n\t" + sslheader.replace(/\r?\n\t?$/,'') : ''),
         ";\n\t", date_to_str(new Date())
-    ].join('');
+    )
+    return received_header.join('');
 };
 
 Connection.prototype.auth_results = function(message) {
@@ -1414,10 +1459,10 @@ Connection.prototype.cmd_data = function(args) {
         return this.respond(503, "MAIL required first");
     }
     if (!this.transaction.rcpt_to.length) {
-        this.errors++;
         if (this.pipelining) {
             return this.respond(554, "No valid recipients");
         }
+        this.errors++;
         return this.respond(503, "RCPT required first");
     }
 
@@ -1639,7 +1684,7 @@ Connection.prototype.store_queue_result = function (retval, msg) {
     }
 };
 
-Connection.prototype.queue_outbound_respond = function(retval, msg) {
+Connection.prototype.queue_outbound_respond = function (retval, msg) {
     var self = this;
     if (!msg) msg = this.queue_msg(retval, msg);
     this.store_queue_result(retval, msg);
@@ -1676,16 +1721,16 @@ Connection.prototype.queue_outbound_respond = function(retval, msg) {
             });
             break;
         default:
-            outbound.send_email(this.transaction, function(retval, msg) {
-                if (!msg) msg = self.queue_msg(retval, msg);
-                switch (retval) {
+            outbound.send_email(this.transaction, function(retval2, msg2) {
+                if (!msg2) msg2 = self.queue_msg(retval2, msg2);
+                switch (retval2) {
                     case constants.ok:
-                        if (!msg) msg = self.queue_msg(retval, msg);
-                        plugins.run_hooks('queue_ok', self, msg);
+                        if (!msg2) msg2 = self.queue_msg(retval2, msg2);
+                        plugins.run_hooks('queue_ok', self, msg2);
                         break;
                     case constants.deny:
-                        if (!msg) msg = self.queue_msg(retval, msg);
-                        self.respond(550, msg, function() {
+                        if (!msg2) msg2 = self.queue_msg(retval2, msg2);
+                        self.respond(550, msg2, function() {
                             self.msg_count.reject++;
                             self.reset_transaction(function () {
                                 self.resume();
@@ -1693,8 +1738,8 @@ Connection.prototype.queue_outbound_respond = function(retval, msg) {
                         });
                         break;
                     default:
-                        self.logerror("Unrecognised response from outbound layer: " + retval + " : " + msg);
-                        self.respond(550, msg || "Internal Server Error", function() {
+                        self.logerror("Unrecognized response from outbound layer: " + retval2 + " : " + msg2);
+                        self.respond(550, msg2 || "Internal Server Error", function() {
                             self.msg_count.reject++;
                             self.reset_transaction(function () {
                                 self.resume();

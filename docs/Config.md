@@ -8,7 +8,7 @@ The API is fairly simple:
     // From within a plugin:
     var cfg = this.config.get(name, [type], [callback], [options]);
 
-`name` is not a filename, but a name in the config/ directory. For example:
+`name` is not a full path, but a filename in the config/ directory. For example:
 
     var cfg = this.config.get('rambling.paths', 'list');
 
@@ -25,13 +25,13 @@ This will load the file config/rambling.paths in the Haraka directory.
 * 'binary' - load a binary file into a Buffer
 
 If your ini and json files have `.ini`, `.json` or `.yaml` suffixes,
-the `type` parameter can be omitted.  
+the `type` parameter can be omitted.
 
 See the [File Formats](#file_formats) section below for a more detailed
 explaination of each of the formats.
 
 `callback` is an optional callback function that will be called when
-an update is detected on the file after the configuration cache has been 
+an update is detected on the file after the configuration cache has been
 updated by re-reading the file.  You can use this to refresh configuration
 variables within your plugin if you are not calling `config.get` within
 one of the hooks (e.g. if you use the `register()` function):
@@ -64,6 +64,60 @@ not recommended as config files are read syncronously, will block the event
 loop, and will slow down Haraka.
 * `booleans` (default: none) - for .ini files, this allows specifying
 boolean type keys. Default true or false can be specified.
+
+<a name="overrides">Default Config and Overrides</a>
+===========
+
+The config loader supports dual config files - a file containing default
+values, and overridden values installed by a user. This can be useful if
+publishing your plugin to npm (and is used by some core plugins).
+
+Overrides work in the following manner:
+
+* For `json`, `ini` and `yaml` config, values are overridden on a deep
+key by key basis.
+* For every other config format, an override file replaces the entire
+config.
+
+So for example, a plugin installed as a module (or a core Haraka plugin)
+that loads a `list` config from their own `config/plugin_name` file, can
+be completely overridden by a file called `config/plugin_name` in your
+local Haraka installation directory.
+
+Alternatively, a plugin using default config from `config/plugin_name.ini`
+can be overridden on a key-by-key basis, so for example a default
+`plugin_name.ini` might contain:
+
+```
+toplevel1=foo
+toplevel2=bar
+
+[subsection]
+sub1=something
+```
+
+And your local `plugin_name.ini` might contain:
+
+```
+toplevel2=blee
+
+[subsection]
+sub2=otherthing
+```
+
+This would be the equivalent of loading config containing:
+
+```
+toplevel1=foo
+toplevel2=blee
+
+[subsection]
+sub1=something
+sub2=otherthing
+```
+
+This allows plugins to provide default config, and allow users to override
+values on a key-by-key basis.
 
 <a name="file_formats">File Formats</a>
 ============
@@ -139,6 +193,16 @@ missing), prefix the key with +:
 For completeness the inverse is also allowed:
 
     { booleans: [ '-reject' ] }
+
+Lists are supported using this syntax:
+
+    hosts[] = first_host
+    hosts[] = second_host
+    hosts[] = third_host
+
+which produces this javascript array:
+
+    ['first_host', 'second_host', 'third_host']
 
 
 Flat Files
