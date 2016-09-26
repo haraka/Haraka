@@ -355,7 +355,7 @@ MessageStream.prototype.pipe = function (destination, options) {
     // Stream won't be readable until we've finished writing and add_line_end() has been called.
     // As we've registered for events above, the _write() function can now detect that we
     // are waiting for the data and will call _read() automatically when it is finished.
-    if (!this.write_complete) return;
+    if (!this.write_complete) return destination;
     // Create this.fd only if it doesn't already exist
     // This is so we can re-use the already open descriptor
     if (!this.fd && !(this._queue.length > 0)) {
