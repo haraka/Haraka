@@ -3,14 +3,19 @@ log.syslog
 
 This plugin adds syslog support to haraka.  Most log levels in haraka
 already map to valid levels in syslog.  Additional log levels in haraka
-fall under the DEBUG syslog level.  Note: this plugin requires node-syslog.
+fall under the DEBUG syslog level.  Note: this plugin requires modern-syslog and you need enable/add log.syslog inside config/plugins at the top of the file.
 
 Configuration log.syslog.ini
 ----------------------------
 
 This is the general configuration file for the log.syslog plugin.
 In it you can find ways to customize the syslog service name, set the
-logging facility, and set any syslog options you wish.  Sane defaults are
+logging facility, and set any syslog options you wish. For example:
+```
+[general]
+name=SomeOtherName
+```
+Sane defaults are
 chosen for you.
 
 * log.syslog.general.name (default: haraka)
