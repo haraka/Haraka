@@ -1295,11 +1295,11 @@ function release_client (socket, port, host, local_addr, error) {
     pool.release(socket);
 
     function sockend () {
+        if (server.notes.pool[name]) {
+            server.notes.pool[name].destroy(socket);
+        }
         socket.removeAllListeners();
         socket.destroy();
-        if (server.notes.pool[name]) {
-            server.notes.pool[name].destroyAllNow();
-        }
     }
 }
 
