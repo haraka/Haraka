@@ -220,7 +220,7 @@ exports.incr_concurrency = function (next, connection) {
                 connection.notes.tarpit = config.main.tarpit_delay;
             }
             else {
-                return next(DENYSOFT, 'connection concurrency limit exceeded');
+                return next(DENYSOFT, 'connection concurrency limit exceeded (' + count +')');
             }
         }
         return next();

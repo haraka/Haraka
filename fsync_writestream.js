@@ -13,10 +13,6 @@ function FsyncWriteStream (path, options) {
 
 util.inherits(FsyncWriteStream, fs.WriteStream);
 
-var versions   = process.version.split('.');
-var version    = Number(versions[0].substring(1));
-var subversion = Number(versions[1]);
-
 FsyncWriteStream.prototype.close = function(cb) {
     var self = this;
     if (cb)

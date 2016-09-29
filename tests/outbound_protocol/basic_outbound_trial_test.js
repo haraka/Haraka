@@ -1,4 +1,5 @@
 'use strict';
+/*eslint no-unused-vars: ["error", { "varsIgnorePattern": "queue_dir", "args": "none" }]*/
 
 // This test file is executed by tests/outbound_protocol.js (see there)
 //

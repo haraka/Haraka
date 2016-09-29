@@ -265,7 +265,6 @@ exports.add_headers = function (connection, data) {
 
     if (cfg.header && cfg.header.bar) {
         var spamBar = '';
-        var spamBarScore = data.score;
         if (data.score === 0) {
             spamBar = cfg.spambar.neutral || '/';
         }
@@ -275,7 +274,6 @@ exports.add_headers = function (connection, data) {
                 spamBarChar = cfg.spambar.positive || '+';
             }
             else {
-                spamBarScore = spamBarScore * -1;
                 spamBarChar = cfg.spambar.negative || '-';
             }
             for (var i = 0; i < data.score; i++) {
