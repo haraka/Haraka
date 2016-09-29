@@ -209,6 +209,7 @@ function Connection(client, server) {
     this.last_rcpt_msg = null;
     this.hook = null;
     this.haproxy_ip = null;
+    this.header_hide_version = config.get('header_hide_version') ? true : false;
     setupClient(this);
 }
 
@@ -748,7 +749,7 @@ Connection.prototype.connect_respond = function(retval, msg) {
                 }
             }
             else {
-                greeting = config.get('me') + " ESMTP Haraka " + version + " ready";
+                greeting = config.get('me') + " ESMTP Haraka" + (this.header_hide_version  ? '' : ' ' + version) + " ready";
                 if (this.banner_includes_uuid) {
                     greeting += ' (' + this.uuid + ')';
                 }
@@ -1364,7 +1365,6 @@ Connection.prototype.received_line = function() {
     if (this.authheader) smtp = smtp + 'A';
     // sslheader only populated with node.js >= 0.8
     var sslheader;
-    var header_hide_version = config.get('header_hide_version') ? true : false;
 
     if (this.notes.tls && this.notes.tls.cipher) {
         sslheader = '(version=' + this.notes.tls.cipher.version +
@@ -1384,7 +1384,7 @@ Connection.prototype.received_line = function() {
         config.get('me')
     ]
 
-    if (!header_hide_version) {
+    if (!this.header_hide_version) {
         received_header.push(' (Haraka/', version, ')');
     }
 
