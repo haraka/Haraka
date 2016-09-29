@@ -1,4 +1,5 @@
 'use strict';
+/*eslint no-unused-vars: ["error", { "varsIgnorePattern": "logger" }]*/
 
 var logger    = require('../logger');
 var config    = require('../config');

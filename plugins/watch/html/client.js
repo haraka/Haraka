@@ -201,7 +201,7 @@ function ws_connect() {
     };
 
     var last_insert = 0;
-    var sampled_out = 0;
+    // var sampled_out = 0;
 
     ws.onmessage = function(event, flags) {
         // flags.binary will be set if a binary data is received
@@ -236,7 +236,7 @@ function ws_connect() {
         if (config.sampling) {
             now = new Date().getTime();
             if ((now - last_insert) < 1000) {
-                sampled_out++;
+                // sampled_out++;
                 // $('#messages').append("so:" + sampled_out);
                 return;
             }
