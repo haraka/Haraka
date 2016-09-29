@@ -582,7 +582,7 @@ exports.send_trans_email = function (transaction, next) {
     };
 
     logger.add_log_methods(connection);
-    transaction.results = new ResultStore(connection);
+    transaction.results = transaction.results || new ResultStore(connection);
 
     connection.pre_send_trans_email_respond = function (retval) {
         var deliveries = [];
