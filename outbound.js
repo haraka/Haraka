@@ -1244,7 +1244,7 @@ function get_client (port, host, local_addr, is_unix_socket, callback) {
     });
 };
 
-function release_client (socket, port, host, local_addr) {
+function release_client (socket, port, host, local_addr, error) {
     logger.logdebug("[outbound] release_client: " + host + ":" + port + " to " + local_addr);
 
     if (!socket.__acquired) {
@@ -1263,6 +1263,10 @@ function release_client (socket, port, host, local_addr) {
     if (!pool) {
         logger.logcrit("[outbound] Releasing a pool (" + name + ") that doesn't exist!");
         return;
+    }
+
+    if (error) {
+        return sockend();
     }
 
     if (cfg.pool_timeout == 0) {
@@ -1291,11 +1295,11 @@ function release_client (socket, port, host, local_addr) {
     pool.release(socket);
 
     function sockend () {
+        if (server.notes.pool[name]) {
+            server.notes.pool[name].destroy(socket);
+        }
         socket.removeAllListeners();
         socket.destroy();
-        if (server.notes.pool[name]) {
-            server.notes.pool[name].destroyAllNow();
-        }
     }
 }
 
@@ -1354,7 +1358,7 @@ HMailItem.prototype.try_deliver_host_on_socket = function (mx, host, port, socke
         if (processing_mail) {
             self.logerror("Ongoing connection failed to " + host + ":" + port + " : " + err);
             processing_mail = false;
-            release_client(socket, port, host, mx.bind);
+            release_client(socket, port, host, mx.bind, true);
             // try the next MX
             return self.try_deliver_host(mx);
         }
@@ -1364,7 +1368,7 @@ HMailItem.prototype.try_deliver_host_on_socket = function (mx, host, port, socke
         if (processing_mail) {
             self.logerror("Remote end " + host + ":" + port + " closed connection while we were processing mail. Trying next MX.");
             processing_mail = false;
-            release_client(socket, port, host, mx.bind);
+            release_client(socket, port, host, mx.bind, true);
             return self.try_deliver_host(mx);
         }
     });
@@ -1398,7 +1402,7 @@ HMailItem.prototype.try_deliver_host_on_socket = function (mx, host, port, socke
             self.logerror("Socket writability went away");
             if (processing_mail) {
                 processing_mail = false;
-                release_client(socket, port, host, mx.bind);
+                release_client(socket, port, host, mx.bind, true);
                 return self.try_deliver_host(mx);
             }
             return;
