@@ -233,7 +233,7 @@ exports.hook_data_post = function (next, connection) {
 
     connection.transaction.remove_header(header_name);
     var result = connection.results.get('connect.p0f');
-    if (!result || !result.os) {
+    if (!result || !result.os_name) {
         connection.results.add(plugin, {err: 'no p0f note'});
         return next();
     }
