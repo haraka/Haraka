@@ -41,7 +41,7 @@ function newRowConnectRow1 (data, uuid, txnId) {
     return [
         '<tr class="spacer"><td colspan="'+total_cols+'"></td></tr>',
         '<tr class="'+uuid+'">',
-        '<td class="uuid uuid_tiny got" rowspan=2 title='+data.uuid+'>'+ data.uuid+'</td>',
+        '<td class="uuid uuid_tiny got" rowspan=2 title='+data.uuid+'><a href="/logs/'+data.uuid+'">'+ data.uuid+'</a></td>',
         '<td class="remote_host got" colspan=' + (connect_cols - 1) +' title="'+ host.title+'">'+host.newval+'</td>',
         '<td class="local_port bg_dgreen" title="connected">'+port+'</td>',
         '<td class="helo lgrey" colspan="' + helo_cols + '"></td>',
