@@ -454,6 +454,9 @@ exports.prune_noisy = function (res, pi) {
             var arr = plugin.objToArray(res.fcrdns.ptr_name_to_ip);
             res.fcrdns.ptr_name_to_ip = arr;
             break;
+        case 'geoip':
+            delete res.geoip.ll;
+            break;
         case 'max_unrecognized_commands':
             res.unrecognized_commands =
                 res.max_unrecognized_commands.count;

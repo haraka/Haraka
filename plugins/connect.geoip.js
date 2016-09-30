@@ -146,6 +146,12 @@ exports.lookup_maxmind = function (next, connection) {
     }
     if (loc.latitude) {
         connection.results.add(plugin, {ll: [loc.latitude, loc.longitude]});
+        connection.results.add(plugin, {
+            geo: {
+                lat: loc.latitude,
+                lon: loc.longitude
+            }
+        });
     }
 
     if (show.length === 0) return next();
