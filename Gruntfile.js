@@ -32,9 +32,11 @@ module.exports = function(grunt) {
             dist: [ 'node_modules' ]
         },
         versioncheck: {
-            options: {
-                skip : ['semver', 'npm'],
-                hideUpToDate : false
+            target: {
+                options: {
+                    skip : ['semver', 'npm'],
+                    hideUpToDate : false
+                }
             }
         },
     });
