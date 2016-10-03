@@ -1,3 +1,38 @@
+2.8.9 - Oct 02, 2016
+
+* Changes
+
+* New Features
+  * Support outbound.pool_timeout of 0 to effectively disable pooling. #1561
+  * Added never_add_headers option to rspamd plugin. #1562
+  * rcpt_to.routes URI format w/ LMTP support #1568
+
+* Improvements
+  * The delay_deny plugin now has a whitelist mode (vs blacklist). #1564
+  * Don't show the private key in logs for dkim_sign. #1565
+  * update geoip for compat with newer ES (#1622)
+  * drop node 0.10 testing / official support (#1621)
+  * watch plugin displays UUIDs as URL (#1624)
+  * Catch errors on header decode in rfc2231 #1599
+  * Attachment plugin updates (#1606)
+  * add outbound.ini pool_timeout example setting #1584
+
+* Bug Fixes
+  * Fixed some small documentation issues. #1573, #1616, #1612
+  * Fixed AUTH PLAIN when it spreads over two lines. #1550
+  * Fixed dkim_verify calling next() too soon. #1566
+  * Fixed bugs with outbound pools who shutdown before we QUIT. #1561, #1572
+  * outbound issues #1615, #1603
+  * Fixed adding/removing headers in rspamd plugin. #1562
+  * Fixed process_title not shutting down. #1560
+  * fix a spurious error emitted by p0f (#1623)
+  * fix header version hiding (#1617)
+  * messagestream returns destination (#1610)
+  * plugins.getdenyfn now passed 3rd params arg (#1591)
+  * Fix scope of spf logdebug (#1598)
+  * fix rabbitmq deliveryMode bug (#1594)
+  * fix dkim_sign TypeError with null mail_from.host (#1592)
+  * fix dkim_sign attempting to lower an undefined (#1587)
 
 2.8.8 - Jul 20, 2016
 
@@ -13,7 +48,7 @@
 * Bug Fixes
     * handle missing wss section in http.ini #1542
     * fix leak on socket write error #1541
-    * add results property to outbound transaction #1535 
+    * add results property to outbound transaction #1535
     * don't unref unref'd wss server #1521
 
 2.8.7 - Jun 18, 2016
