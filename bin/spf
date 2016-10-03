@@ -24,7 +24,7 @@ if (!parsed.debug) {
 }
 
 if (parsed.domain) {
-    var domain;       
+    var domain;
     if (domain = /\@(.+)$/.exec(parsed.domain)) {
         domain = domain[1];
     }

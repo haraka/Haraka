@@ -10,10 +10,10 @@ var DKIMVerifyStream = dkim.DKIMVerifyStream;
 
 var parsed = nopt({ 'debug': Boolean });
 
-function print_usage() {
-    console.log('Usage: dkimverify [--debug] < message');
-    process.exit(1);
-}
+// function print_usage() {
+//     console.log('Usage: dkimverify [--debug] < message');
+//     process.exit(1);
+// }
 
 if (!parsed.debug) {
     dkim.DKIMObject.prototype.debug = function (str) {}
@@ -27,7 +27,7 @@ var verifier = new DKIMVerifyStream(function (err, result, results) {
             console.log('identity="' + res.identity + '" ' +
                         'domain="' + res.domain + '" ' +
                         'result=' + res.result + ' ' +
-                        ((res.error) ? '(' + res.error + ')' : '')); 
+                        ((res.error) ? '(' + res.error + ')' : ''));
         });
     }
     else {

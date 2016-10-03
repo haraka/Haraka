@@ -11,8 +11,11 @@ module.exports = function(grunt) {
     grunt.initConfig({
         pkg: grunt.file.readJSON('package.json'),
         eslint: {
-            main: {
-                src: ['*.js', 'bin/**/*.js', 'plugins/**/*.js']
+            src: {
+                src: ['*.js', 'plugins/**/*.js' ]
+            },
+            bin: {
+                src: [ 'bin/haraka', 'bin/spf', 'bin/dkimverify' ]
             },
             test: {
                 src: ['tests/**/*.js'],

@@ -1,59 +1,57 @@
 #!/usr/bin/env node
+/*eslint no-shadow: ["error", { "allow": ["config", "smtp_ini"] }]*/
 
 // this script takes inspiration from:
 // https://github.com/visionmedia/express/blob/master/bin/express
 // https://github.com/tnantoka/LooseLeaf/blob/master/bin/looseleaf
 
-
-var fs   = require('fs'),
-    path = require('path'),
-    nopt = require("nopt"),
-    os   = require('os'),
-    async = require('async'),
-    sprintf = require('sprintf-js').sprintf,
-    path = require('path'),
-    base = path.join(__dirname, '..'),
-    ver  = JSON.parse(fs.readFileSync(base+'/package.json', 'utf8'))['version'],
-    knownOpts = {
-        "version":     Boolean,
-        "verbose":     Boolean,
-        "help":        [String, null],
-        "configs":     path,
-        "install":     path,
-        "list":        Boolean,
-        "plugin":      Array,
-        "force":       Boolean,
-        "qlist":       Boolean,
-        "qstat":       Boolean,
-        "qempty":      Boolean,
-        "qunstick":    [String, null],
-        "graceful":    Boolean,
-        "order":       Boolean,
-        "test":        [String, Array],
-        "ip":          String,
-        "helo":        String,
-        "ehlo":        String,
-        "envfrom":     String,
-        "envrcpt":     [String, Array],
-        "message":     path,
-        "dump-mime":   Boolean,
-        "dump-stream": Boolean,
-        "skip-deny":   Boolean,
-        "set-relay":   Boolean,
-    },
-    shortHands = {
-        "v": ["--version"],
-        "h": ["--help"],
-        "c": ["--configs"],
-        "i": ["--install"],
-        "l": ["--list"],
-        "p": ["--plugin"],
-        "f": ["--force"],
-        "o": ["--order"],
-        "t": ["--test"],
-    },
-    parsed = nopt(knownOpts, shortHands, process.argv, 2),
-    existsSync = require(base+'/utils').existsSync;
+var fs   = require('fs');
+var path = require('path');
+var nopt = require('nopt');
+var os   = require('os');
+var sprintf = require('sprintf-js').sprintf;
+var base = path.join(__dirname, '..');
+var ver  = JSON.parse(fs.readFileSync(base+'/package.json', 'utf8')).version;
+var knownOpts = {
+    "version":     Boolean,
+    "verbose":     Boolean,
+    "help":        [String, null],
+    "configs":     path,
+    "install":     path,
+    "list":        Boolean,
+    "plugin":      Array,
+    "force":       Boolean,
+    "qlist":       Boolean,
+    "qstat":       Boolean,
+    "qempty":      Boolean,
+    "qunstick":    [String, null],
+    "graceful":    Boolean,
+    "order":       Boolean,
+    "test":        [String, Array],
+    "ip":          String,
+    "helo":        String,
+    "ehlo":        String,
+    "envfrom":     String,
+    "envrcpt":     [String, Array],
+    "message":     path,
+    "dump-mime":   Boolean,
+    "dump-stream": Boolean,
+    "skip-deny":   Boolean,
+    "set-relay":   Boolean,
+};
+var shortHands = {
+    "v": ["--version"],
+    "h": ["--help"],
+    "c": ["--configs"],
+    "i": ["--install"],
+    "l": ["--list"],
+    "p": ["--plugin"],
+    "f": ["--force"],
+    "o": ["--order"],
+    "t": ["--test"],
+};
+var parsed = nopt(knownOpts, shortHands, process.argv, 2);
+var existsSync = require(base+'/utils').existsSync;
 
 var usage = [
     "\033[32;40mHaraka.js\033[0m — A Node.js Email Server project",
@@ -90,10 +88,10 @@ var listPlugins = function (b, dir) {
 
     if (!dir) { dir = "plugins/"; }
 
-    var plist = dir + "\n",
-        subdirs = [],
-        gl = path.join((b ? b : base), dir),
-        pd = fs.readdirSync(gl);
+    var plist = dir + "\n";
+    var subdirs = [];
+    var gl = path.join((b ? b : base), dir);
+    var pd = fs.readdirSync(gl);
 
     pd.forEach(function (p) {
         var stat = fs.statSync(gl + '/' + p);
@@ -110,13 +108,12 @@ var listPlugins = function (b, dir) {
     });
 
     return plist;
-
 }
 
 
 // Show message when create
-function create(path) {
-//  console.log('\x1b[32mcreate\x1b[0m: ' + path);
+function create (dirPath) {
+//  console.log('\x1b[32mcreate\x1b[0m: ' + dirPath);
 }
 
 // Warning messsage
@@ -152,7 +149,7 @@ function copyDir(srcPath, dstPath) {
     mkDir(dstPath);
     var files = fs.readdirSync(srcPath);
 
-    for(var i = 0; i < files.length; i++) {
+    for (var i = 0; i < files.length; i++) {
 
         // Ignore ".*"
         if (/^\./.test(files[i])) {
@@ -177,16 +174,15 @@ function copyDir(srcPath, dstPath) {
 }
 
 function copyFile (srcFile, dstFile) {
+
     try {
-        var dstStat = fs.statSync(dstFile);
-        // File exists
+        fs.statSync(dstFile);
         warning("EEXIST, File exists '" + dstFile + "'");
     }
     catch (e) {
         // File NOT exists
         if (e.errno = 2) {
-            var data = fs.readFileSync(srcFile);
-            fs.writeFileSync(dstFile, data);
+            fs.writeFileSync(dstFile, fs.readFileSync(srcFile));
             create(dstFile)
         }
         else {
@@ -214,59 +210,59 @@ function setupBaseConfig(confPath) {
 }
 
 var readme = [
-"Haraka",
-"",
-"Congratulations on creating a new installation of Haraka.",
-"",
-"This directory contains two key directories for how Haraka will function:",
-"",
-" - config",
-"           This directory contains configuration files for Haraka. The",
-"           directory contains the default configuration. You probably want",
-"           to modify some files in here, particularly `smtp.ini`.",
-" - plugins",
-"           This directory contains custom plugins which you write to run in",
-"           Haraka. The plugins which ship with Haraka are still available",
-"           to use.",
-" - docs/plugins",
-"           This directory contains documentation for your plugins.",
-"",
-"Documentation for Haraka is available via `haraka -h <name> where the name",
-"is either the name of a plugin (without the .js extension) or the name of",
-"a core Haraka module, such as `Connection` or `Transaction`.",
-"",
-"To get documentation on writing a plugin type `haraka -h Plugins`.",
-"",
+    "Haraka",
+    "",
+    "Congratulations on creating a new installation of Haraka.",
+    "",
+    "This directory contains two key directories for how Haraka will function:",
+    "",
+    " - config",
+    "           This directory contains configuration files for Haraka. The",
+    "           directory contains the default configuration. You probably want",
+    "           to modify some files in here, particularly `smtp.ini`.",
+    " - plugins",
+    "           This directory contains custom plugins which you write to run in",
+    "           Haraka. The plugins which ship with Haraka are still available",
+    "           to use.",
+    " - docs/plugins",
+    "           This directory contains documentation for your plugins.",
+    "",
+    "Documentation for Haraka is available via `haraka -h <name> where the name",
+    "is either the name of a plugin (without the .js extension) or the name of",
+    "a core Haraka module, such as `Connection` or `Transaction`.",
+    "",
+    "To get documentation on writing a plugin type `haraka -h Plugins`.",
+    "",
 ].join("\n");
 
 var packageJson = JSON.stringify({
-  "name": "haraka_local",
-  "description": "An SMTP Server",
-  "version": "0.0.1",
-  "dependencies": {}
+    "name": "haraka_local",
+    "description": "An SMTP Server",
+    "version": "0.0.1",
+    "dependencies": {}
 });
 
 var plugin_src = [
-"// %plugin%",
-"",
-"// documentation via: haraka -c %config% -h plugins/%plugin%",
-"",
-"// Put your plugin code here",
-"// type: `haraka -h Plugins` for documentation on how to create a plugin",
-"",
+    "// %plugin%",
+    "",
+    "// documentation via: haraka -c %config% -h plugins/%plugin%",
+    "",
+    "// Put your plugin code here",
+    "// type: `haraka -h Plugins` for documentation on how to create a plugin",
+    "",
 ].join("\n");
 
 var plugin_doc = [
-"%plugin%",
-"========",
-"",
-"Describe what your plugin does here.",
-"",
-"Configuration",
-"-------------",
-"",
-"* `config/some_file` - describe what effect this config file has",
-"",
+    "%plugin%",
+    "========",
+    "",
+    "Describe what your plugin does here.",
+    "",
+    "Configuration",
+    "-------------",
+    "",
+    "* `config/some_file` - describe what effect this config file has",
+    "",
 ].join("\n");
 
 function createFile(filePath, data, info) {
@@ -288,7 +284,7 @@ if (parsed.version) {
 }
 else if (parsed.list) {
     console.log("\033[32;40m*global\033[0m\n" + listPlugins());
-    if (parsed['configs']) {
+    if (parsed.configs) {
         console.log("\033[32;40m*local\033[0m\n" + listPlugins(parsed.configs));
     }
 }
@@ -297,19 +293,19 @@ else if (parsed.help) {
         console.log(usage);
     }
     else {
-        var md_path,
-            md_paths = [
-                path.join(base, 'docs', parsed.help + '.md'),
-                path.join(base, 'docs', 'plugins', parsed.help + '.md'),
-                path.join(base, 'docs', 'deprecated', parsed.help + '.md'),
-            ];
+        var md_path;
+        var md_paths = [
+            path.join(base, 'docs', parsed.help + '.md'),
+            path.join(base, 'docs', 'plugins', parsed.help + '.md'),
+            path.join(base, 'docs', 'deprecated', parsed.help + '.md'),
+        ];
         if (parsed.configs) {
             md_paths.unshift(path.join(parsed.configs, 'docs', 'plugins', parsed.help + '.md'));
             md_paths.unshift(path.join(parsed.configs, 'docs', parsed.help + '.md'));
         }
         for (var i=0, j=md_paths.length; i<j; i++) {
             var _md_path = md_paths[i];
-            if(existsSync(_md_path)) {
+            if (existsSync(_md_path)) {
                 md_path = [_md_path];
                 break;
             }
@@ -318,7 +314,8 @@ else if (parsed.help) {
             warning("No documentation found for: " + parsed.help);
             process.exit();
         }
-        var pager = 'less', spawn = require('child_process').spawn;
+        var pager = 'less';
+        var spawn = require('child_process').spawn;
         if (process.env.PAGER) {
             var pager_split = process.env.PAGER.split(/ +/);
             pager = pager_split.shift();
@@ -403,7 +400,6 @@ else if (parsed.graceful) {
     if (!parsed.verbose)
         logger.log = function () {} // disable logging for this
     var config = require(path.join(base, "config"));
-    var key = config.get("internalcmd_key");
     var smtp_ini = config.get("smtp.ini");
     if (!smtp_ini.main.nodes) {
         console.log("Graceful restart not possible without `nodes` value in smtp.ini");
@@ -429,7 +425,7 @@ else if (parsed.order) {
     try {
         require.paths.push(path.join(process.env.HARAKA, 'node_modules'));
     }
-    catch(e) {
+    catch (e) {
         process.env.NODE_PATH = process.env.NODE_PATH ?
                 (process.env.NODE_PATH + ':' + path.join(process.env.HARAKA, 'node_modules'))
                 :
@@ -465,17 +461,16 @@ else if (parsed.test) {
     try {
         require.paths.push(path.join(process.env.HARAKA, 'node_modules'));
     }
-    catch(e) {
+    catch (e) {
         process.env.NODE_PATH = process.env.NODE_PATH ?
                 (process.env.NODE_PATH + ':' + path.join(process.env.HARAKA, 'node_modules'))
                 :
                 (path.join(process.env.HARAKA, 'node_modules'));
         require('module')._initPaths(); // Horrible hack
     }
-    var cfreader = require(path.join(base, 'configfile')).watch_files = false;
+    require(path.join(base, 'configfile')).watch_files = false;
     var logger = require(path.join(base, "logger"));
     logger.loglevel = logger.levels.PROTOCOL;
-    var fs = require('fs');
 
     // Attempt to load message early
     var msg;
@@ -493,14 +488,14 @@ else if (parsed.test) {
     plugins.server = { notes: {} };
     plugins.load_plugins((parsed.test && parsed.test[0] !== 'all') ? parsed.test : null);
     var Connection = require(path.join(base, "connection"));
-    var Transaction = require(path.join(base, "transaction"));
+    // var Transaction = require(path.join(base, "transaction"));
     var Address = require('address-rfc2821').Address;
     var constants = require('haraka-constants');
     var client = {
         remoteAddress: ((parsed.ip) ? parsed.ip : '1.2.3.4'),
         remotePort: 1234,
         destroy: function () {},
-        on: function (event, cb) {},
+        on: function (event, done) {},
         end: function () {
             process.exit();
         },
@@ -520,10 +515,10 @@ else if (parsed.test) {
         var args = Array.prototype.slice.call(arguments);
         var code = args.shift();
         if (!parsed['skip-deny'] && code !== constants.ok && code !== constants.cont) {
-             plugins.run_hooks('quit', connection);
+            plugins.run_hooks('quit', connection);
         }
         else {
-             plugins.run_hooks.apply(this, args);
+            plugins.run_hooks.apply(this, args);
         }
     }
 
@@ -586,8 +581,8 @@ else if (parsed.test) {
         var dump_mime_structure = function (body) {
             console.log('Found MIME part ' + body.ct);
             console.log(body.bodytext);
-            for (var i=0,l=body.children.length; i < l; i++) {
-                dump_mime_structure(body.children[i]);
+            for (var m=0,l=body.children.length; m < l; m++) {
+                dump_mime_structure(body.children[m]);
             }
         }
         if (parsed['dump-mime']) {
@@ -652,7 +647,7 @@ else {
     console.log(usage);
 }
 
-function send_internal_command (cmd, cb) {
+function send_internal_command (cmd, done) {
     var config = require(path.join(base, "config"));
     var key = config.get("internalcmd_key");
     var smtp_ini = config.get("smtp.ini");
@@ -664,14 +659,14 @@ function send_internal_command (cmd, cb) {
         sock.once('data', function (data) {
             // this is the greeting. Ignore it...
             sock.write('INTERNALCMD ' + (key ? ('key:' + key + ' ') : '') + cmd + '\r\n');
-            sock.once('data', function (data) {
-                console.log(data.toString().replace(/\r?\n$/, ''));
+            sock.once('data', function (data2) {
+                console.log(data2.toString().replace(/\r?\n$/, ''));
                 sock.write('QUIT\r\n');
-                sock.once('data', function (data) {
+                sock.once('data', function (data3) {
                     sock.end();
                 })
             });
         });
     });
-    sock.on('end', cb);
+    sock.on('end', done);
 }
