@@ -1,8 +1,7 @@
 rate\_limit
 ==========
 
-This pluign enforces limits on connection concurrency, connection rate and 
-recipient rate.
+Enforce limits on connection concurrency, connection rate, and recipient rate.
 
 By default DENYSOFT will be returned when the limits are exceeded, but for 
 concurrency, connection rate and recipient rate by host you can optionally 
