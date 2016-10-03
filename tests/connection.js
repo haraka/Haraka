@@ -1,5 +1,6 @@
 var constants    = require('haraka-constants');
 
+/*eslint no-unused-vars: ["error", { "varsIgnorePattern": "config" }]*/
 var config      = require('./config');
 var connection   = require('../connection');
 
@@ -56,6 +57,7 @@ exports.connection = {
         test.expect(2);
         test.deepEqual(this.connection.tls, {
             enabled: false,
+            advertised: false,
             verified: false,
             cipher: {},
             authorized: null,
