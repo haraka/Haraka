@@ -81,7 +81,7 @@ function loadHAProxyHosts() {
 }
 loadHAProxyHosts();
 
-function setupClient(self) {
+function setupClient (self) {
     var ip = self.client.remoteAddress;
     if (!ip) {
         self.logdebug('setupClient got no IP address for this connection!');
@@ -91,27 +91,27 @@ function setupClient(self) {
 
     var local_addr = self.server.address();
     if (local_addr && local_addr.address) {
-        self.local_ip = ipaddr.process(local_addr.address).toString();
-        self.local_port = local_addr.port;
+        self.set('local', 'ip', ipaddr.process(local_addr.address).toString());
+        self.set('local', 'port', local_addr.port);
     }
-    self.remote_ip = ipaddr.process(ip).toString();
-    self.remote_port = self.client.remotePort;
-    self.lognotice('connect ip=' + self.remote_ip +
-            ' port=' + self.remote_port +
-            ' local_ip=' + self.local_ip + ' local_port=' + self.local_port);
+    self.set('remote', 'ip', ipaddr.process(ip).toString());
+    self.set('remote', 'port', self.client.remotePort);
+    self.lognotice('connect ip=' + self.remote.ip +
+            ' port=' + self.remote.port +
+            ' local_ip=' + self.local.ip + ' local_port=' + self.local.port);
 
-    var rhost = 'client ' + ((self.remote_host) ? self.remote_host + ' ' : '') +
-                '[' + self.remote_ip + ']';
+    var rhost = 'client ' + ((self.remote.host) ? self.remote.host + ' ' : '') +
+                '[' + self.remote.ip + ']';
     self.client.on('end', function() {
         if (self.state >= states.STATE_DISCONNECTING) return;
-        self.remote_close = true;
+        self.remote.closed = true;
         self.loginfo(rhost + ' half closed connection');
         self.fail();
     });
 
     self.client.on('close', function(has_error) {
         if (self.state >= states.STATE_DISCONNECTING) return;
-        self.remote_close = true;
+        self.remote.closed = true;
         self.loginfo(rhost + ' dropped connection');
         self.fail();
     });
@@ -133,12 +133,12 @@ function setupClient(self) {
         self.process_data(data);
     });
 
-    var ha_list = net.isIPv6(self.remote_ip) ?
+    var ha_list = net.isIPv6(self.remote.ip) ?
                   haproxy_hosts_ipv6
                 : haproxy_hosts_ipv4;
 
     if (ha_list.some(function (element, index, array) {
-        return ipaddr.parse(self.remote_ip).match(element[0], element[1]);
+        return ipaddr.parse(self.remote.ip).match(element[0], element[1]);
     })) {
         self.proxy = true;
         // Wait for PROXY command
@@ -153,20 +153,47 @@ function setupClient(self) {
     }
 }
 
-function Connection(client, server) {
+function Connection (client, server) {
     this.client = client;
     this.server = server;
-    this.local_ip = null;
-    this.local_port = null;
-    this.remote_ip = null;
-    this.remote_host = null;
-    this.remote_port = null;
-    this.remote_info = null;
+    this.local = {
+        ip: null,
+        proxy: null,
+        port: null,
+        host: null,
+    };
+    this.remote = {
+        ip:   null,
+        port: null,
+        host: null,
+        info: null,
+        closed: false,
+        is_private: false,
+    };
+    this.hello = {
+        host: null,
+        verb: null,
+    };
+    this.tls = {
+        verified: false,
+        cipher: {},
+        authorized: null,
+    };
+    this.set('tls', 'enabled', (server.has_tls ? true : false));
+
+    // sunset 3.0.0
+    // this.local_ip = null;
+    // this.local_port = null;
+    // this.remote_ip = null;
+    // this.remote_host = null;
+    // this.remote_port = null;
+    // this.remote_info = null;
+    // this.remote_closed = false;
+    // this.greeting = null;
+    // this.hello_host = null;
+
     this.current_data = null;
     this.current_line = null;
-    this.greeting = null;
-    this.hello_host = null;
-    this.using_tls = server.has_tls ? true : false;
     this.state = states.STATE_PAUSE;
     this.prev_state = null;
     this.loop_code = null;
@@ -184,7 +211,6 @@ function Connection(client, server) {
     this.relaying = false;
     this.esmtp = false;
     this.last_response = null;
-    this.remote_close = false;
     this.hooks_to_run = [];
     this.start_time = Date.now();
     this.last_reject = '';
@@ -220,6 +246,23 @@ exports.createConnection = function(client, server) {
     return s;
 };
 
+Connection.prototype.set = function (obj, prop, val) {
+    if (!this[obj]) this.obj = {};   // initialize
+    this[obj][prop] = val;
+
+    // sunset 3.0.0
+    if (obj === 'hello' && prop === 'verb') {
+        this.greeting = val;
+    }
+    else if (obj === 'tls' && prop === 'enabled') {
+        this.using_tls = val;
+    }
+    else {
+        this[obj + '_' + prop] = val;
+    }
+    // /sunset
+}
+
 Connection.prototype.process_line = function (line) {
     var self = this;
 
@@ -228,7 +271,7 @@ Connection.prototype.process_line = function (line) {
             this.logprotocol("C: (after-disconnect): " +
                     this.current_line + ' state=' + this.state);
         }
-        this.loginfo("data after disconnect from " + this.remote_ip);
+        this.loginfo("data after disconnect from " + this.remote.ip);
         return;
     }
 
@@ -313,7 +356,7 @@ Connection.prototype.process_line = function (line) {
 
 Connection.prototype.process_data = function (data) {
     if (this.state >= states.STATE_DISCONNECTING) {
-        this.logwarn("data after disconnect from " + this.remote_ip);
+        this.logwarn("data after disconnect from " + this.remote.ip);
         return;
     }
 
@@ -534,13 +577,13 @@ Connection.prototype.disconnect = function() {
 
 Connection.prototype.disconnect_respond = function () {
     var logdetail = [
-        'ip='    + this.remote_ip,
-        'rdns="' + ((this.remote_host) ? this.remote_host : '') + '"',
-        'helo="' + ((this.hello_host) ? this.hello_host : '') + '"',
+        'ip='    + this.remote.ip,
+        'rdns="' + ((this.remote.host) ? this.remote.host : '') + '"',
+        'helo="' + ((this.hello.host) ? this.hello.host : '') + '"',
         'relay=' + (this.relaying ? 'Y' : 'N'),
         'early=' + (this.early_talker ? 'Y' : 'N'),
         'esmtp=' + (this.esmtp ? 'Y' : 'N'),
-        'tls='   + (this.using_tls ? 'Y' : 'N'),
+        'tls='   + (this.tls.enabled ? 'Y' : 'N'),
         'pipe='  + (this.pipelining ? 'Y' : 'N'),
         'errors='+ this.errors,
         'txns='  + this.tran_count,
@@ -649,8 +692,8 @@ Connection.prototype.lookup_rdns_respond = function (retval, msg) {
     var self = this;
     switch (retval) {
         case constants.ok:
-            this.remote_host = msg || 'Unknown';
-            this.remote_info = this.remote_info || this.remote_host;
+            this.set('remote', 'host', (msg || 'Unknown'));
+            this.set('remote', 'info', (this.remote.info || this.remote.host));
             plugins.run_hooks('connect', this);
             break;
         case constants.deny:
@@ -671,7 +714,7 @@ Connection.prototype.lookup_rdns_respond = function (retval, msg) {
             });
             break;
         default:
-            dns.reverse(this.remote_ip, function(err, domains) {
+            dns.reverse(this.remote.ip, function(err, domains) {
                 self.rdns_response(err, domains);
             });
     }
@@ -680,14 +723,14 @@ Connection.prototype.lookup_rdns_respond = function (retval, msg) {
 Connection.prototype.rdns_response = function (err, domains) {
     if (err) {
         switch (err.code) {
-            case dns.NXDOMAIN: this.remote_host = 'NXDOMAIN'; break;
-            default:           this.remote_host = 'DNSERROR'; break;
+            case dns.NXDOMAIN: this.remote.host = 'NXDOMAIN'; break;
+            default:           this.remote.host = 'DNSERROR'; break;
         }
     }
     else {
-        this.remote_host = domains[0] || 'Unknown';
+        this.set('remote', 'host', (domains[0] || 'Unknown'));
     }
-    this.remote_info = this.remote_info || this.remote_host;
+    this.set('remote', 'info', this.remote.info || this.remote.host);
     plugins.run_hooks('connect', this);
 };
 
@@ -763,8 +806,8 @@ Connection.prototype.helo_respond = function(retval, msg) {
     switch (retval) {
         case constants.deny:
             this.respond(550, msg || "HELO denied", function() {
-                self.greeting = null;
-                self.hello_host = null;
+                self.set('hello', 'verb', null);
+                self.set('hello', 'host', null);
             });
             break;
         case constants.denydisconnect:
@@ -774,8 +817,8 @@ Connection.prototype.helo_respond = function(retval, msg) {
             break;
         case constants.denysoft:
             this.respond(450, msg || "HELO denied", function() {
-                self.greeting = null;
-                self.hello_host = null;
+                self.set('hello', 'verb', null);
+                self.set('hello', 'host', null);
             });
             break;
         case constants.denysoftdisconnect:
@@ -787,9 +830,9 @@ Connection.prototype.helo_respond = function(retval, msg) {
             // RFC5321 section 4.1.1.1
             // Hostname/domain should appear after 250
             this.respond(250, config.get('me') + " Hello " +
-                ((this.remote_host && this.remote_host !== 'DNSERROR' &&
-                this.remote_host !== 'NXDOMAIN') ? this.remote_host + ' ' : '') +
-                "[" + this.remote_ip + "]" +
+                ((this.remote.host && this.remote.host !== 'DNSERROR' &&
+                this.remote.host !== 'NXDOMAIN') ? this.remote.host + ' ' : '') +
+                "[" + this.remote.ip + "]" +
                 ", Haraka is at your service.");
     }
 };
@@ -799,8 +842,8 @@ Connection.prototype.ehlo_respond = function(retval, msg) {
     switch (retval) {
         case constants.deny:
             this.respond(550, msg || "EHLO denied", function() {
-                self.greeting = null;
-                self.hello_host = null;
+                self.set('hello', 'verb', null);
+                self.set('hello', 'host', null);
             });
             break;
         case constants.denydisconnect:
@@ -810,8 +853,8 @@ Connection.prototype.ehlo_respond = function(retval, msg) {
             break;
         case constants.denysoft:
             this.respond(450, msg || "EHLO denied", function() {
-                self.greeting = null;
-                self.hello_host = null;
+                self.set('hello', 'verb', null);
+                self.set('hello', 'host', null);
             });
             break;
         case constants.denysoftdisconnect:
@@ -823,9 +866,9 @@ Connection.prototype.ehlo_respond = function(retval, msg) {
             // RFC5321 section 4.1.1.1
             // Hostname/domain should appear after 250
             var response = [config.get('me') + " Hello " +
-                            ((this.remote_host && this.remote_host !== 'DNSERROR' &&
-                            this.remote_host !== 'NXDOMAIN') ? this.remote_host + ' ' : '') +
-                            "[" + this.remote_ip + "]" +
+                            ((this.remote.host && this.remote.host !== 'DNSERROR' &&
+                            this.remote.host !== 'NXDOMAIN') ? this.remote.host + ' ' : '') +
+                            "[" + this.remote.ip + "]" +
                             ", Haraka is at your service.",
                             "PIPELINING",
                             "8BITMIME",
@@ -1106,7 +1149,7 @@ Connection.prototype.cmd_proxy = function (line) {
     var self = this;
 
     if (!this.proxy) {
-        this.respond(421, 'PROXY not allowed from ' + this.remote_ip);
+        this.respond(421, 'PROXY not allowed from ' + this.remote.ip);
         return this.disconnect();
     }
 
@@ -1142,14 +1185,14 @@ Connection.prototype.cmd_proxy = function (line) {
         ' dst_ip=' + dst_ip + ':' + dst_port);
 
     this.reset_transaction(function () {
-        self.haproxy_ip = self.remote_ip;
+        self.haproxy_ip = self.remote.ip;
         self.relaying = false;
-        self.local_ip = dst_ip;
-        self.local_port = parseInt(dst_port, 10);
-        self.remote_ip = src_ip;
-        self.remote_port = parseInt(src_port, 10);
-        self.remote_host = undefined;
-        self.hello_host = undefined;
+        self.set('local', 'ip', dst_ip);
+        self.set('local', 'port', parseInt(dst_port, 10));
+        self.set('remote', 'ip', src_ip);
+        self.set('remote', 'port', parseInt(src_port, 10));
+        self.set('remote', 'host', null);
+        self.set('hello', 'host', null);
         plugins.run_hooks('connect_init', self);
     });
 };
@@ -1160,7 +1203,7 @@ Connection.prototype.cmd_proxy = function (line) {
 
 Connection.prototype.cmd_internalcmd = function (line) {
     var self = this;
-    if (self.remote_ip != '127.0.0.1' && self.remote_ip != '::1') {
+    if (self.remote.ip != '127.0.0.1' && self.remote.ip != '::1') {
         return this.respond(501, "INTERNALCMD not allowed remotely");
     }
     var results = (String(line)).split(/ +/);
@@ -1190,12 +1233,12 @@ Connection.prototype.cmd_helo = function(line) {
         return this.respond(501, "HELO requires domain/address - see RFC-2821 4.1.1.1");
     }
 
-    // We could check this.hello_host === host here
+    // We could check this.hello.host === host here
     // But this is probably best done in a plugin.
 
     this.reset_transaction(function () {
-        self.greeting = 'HELO';
-        self.hello_host = host;
+        self.set('hello', 'verb', 'HELO');
+        self.set('hello', 'host', host);
         plugins.run_hooks('helo', self, host);
     });
 };
@@ -1208,12 +1251,12 @@ Connection.prototype.cmd_ehlo = function(line) {
         return this.respond(501, "EHLO requires domain/address - see RFC-2821 4.1.1.1");
     }
 
-    // We could check this.hello_host === host here
+    // We could check this.hello.host === host here
     // But this is probably best done in a plugin.
 
     this.reset_transaction(function () {
-        self.greeting = 'EHLO';
-        self.hello_host = host;
+        self.set('hello', 'verb', 'EHLO');
+        self.set('hello', 'host', host);
         plugins.run_hooks('ehlo', self, host);
     });
 };
@@ -1237,7 +1280,7 @@ Connection.prototype.cmd_rset = function(args) {
 };
 
 Connection.prototype.cmd_vrfy = function(line) {
-    // I'm not really going to support this except via plugins
+    // only supported via plugins
     plugins.run_hooks('vrfy', this);
 };
 
@@ -1250,12 +1293,12 @@ Connection.prototype.cmd_help = function() {
 };
 
 Connection.prototype.cmd_mail = function(line) {
-    if (!this.hello_host) {
+    if (!this.hello.host) {
         this.errors++;
         return this.respond(503, 'Use EHLO/HELO before MAIL');
     }
     // Require authentication on connections to port 587 & 465
-    if (!this.relaying && [587,465].indexOf(this.local_port) !== -1) {
+    if (!this.relaying && [587,465].indexOf(this.local.port) !== -1) {
         this.errors++;
         return this.respond(550, 'Authentication required');
     }
@@ -1359,9 +1402,9 @@ Connection.prototype.cmd_rcpt = function(line) {
 };
 
 Connection.prototype.received_line = function() {
-    var smtp = this.greeting === 'EHLO' ? 'ESMTP' : 'SMTP';
+    var smtp = this.hello.verb === 'EHLO' ? 'ESMTP' : 'SMTP';
     // Implement RFC3848
-    if (this.using_tls)  smtp = smtp + 'S';
+    if (this.tls.enabled)  smtp = smtp + 'S';
     if (this.authheader) smtp = smtp + 'A';
     // sslheader only populated with node.js >= 0.8
     var sslheader;
@@ -1375,10 +1418,10 @@ Connection.prototype.received_line = function() {
     }
     var received_header = [
         'from ',
-        this.hello_host, ' (',
+        this.hello.host, ' (',
         // If no rDNS, don't display it
-        ((!/^(?:DNSERROR|NXDOMAIN)/.test(this.remote_info)) ? this.remote_info + ' ' : ''),
-        '[', this.remote_ip, '])',
+        ((!/^(?:DNSERROR|NXDOMAIN)/.test(this.remote.info)) ? this.remote.info + ' ' : ''),
+        '[', this.remote.ip, '])',
         "\n\t",
         'by ',
         config.get('me')
@@ -1475,7 +1518,7 @@ Connection.prototype.cmd_data = function(args) {
     plugins.run_hooks('data', this);
 };
 
-Connection.prototype.data_respond = function(retval, msg) {
+Connection.prototype.data_respond = function (retval, msg) {
     var self = this;
     var cont = 0;
     switch (retval) {
@@ -1515,7 +1558,7 @@ Connection.prototype.data_respond = function(retval, msg) {
     });
 };
 
-Connection.prototype.accumulate_data = function(line) {
+Connection.prototype.accumulate_data = function (line) {
     var self = this;
 
     this.transaction.data_bytes += line.length;
@@ -1585,7 +1628,7 @@ Connection.prototype.data_done = function() {
     });
 };
 
-Connection.prototype.data_post_respond = function(retval, msg) {
+Connection.prototype.data_post_respond = function (retval, msg) {
     if (!this.transaction) return;
     this.transaction.data_post_delay = (Date.now() - this.transaction.data_post_start)/1000;
     var mid = this.transaction.header.get('Message-ID') || '';

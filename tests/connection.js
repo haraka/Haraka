@@ -1,11 +1,12 @@
 var constants    = require('haraka-constants');
 
+var config      = require('./config');
 var connection   = require('../connection');
 
 // huge hack here, but plugin tests need constants
 constants.import(global);
 
-function _set_up(callback) {
+function _set_up (callback) {
     this.backup = {};
     var client = {
         destroy: function () { true; }
@@ -14,7 +15,7 @@ function _set_up(callback) {
     callback();
 }
 
-function _tear_down(callback) {
+function _tear_down (callback) {
     callback();
 }
 
@@ -62,6 +63,31 @@ exports.connection = {
     'queue_msg, default else' : function (test) {
         test.expect(1);
         test.equal('', this.connection.queue_msg('hello'));
+        test.done();
+    },
+    'has legacy connection properties' : function (test) {
+        test.expect(4);
+        this.connection.set('remote', 'ip', '172.16.15.1');
+        this.connection.set('hello', 'verb', 'EHLO');
+        this.connection.set('tls', 'enabled', true);
+
+        test.equal('172.16.15.1', this.connection.remote_ip);
+        test.equal(null, this.connection.remote_port);
+        test.equal('EHLO', this.connection.greeting);
+        test.equal(true, this.connection.using_tls);
+        test.done();
+    },
+    'has normalized connection properties' : function (test) {
+        test.expect(5);
+        this.connection.set('remote', 'ip', '172.16.15.1');
+        this.connection.set('hello', 'verb', 'EHLO');
+        this.connection.set('tls', 'enabled', true);
+
+        test.equal('172.16.15.1', this.connection.remote.ip);
+        test.equal(null, this.connection.remote.port);
+        test.equal('EHLO', this.connection.hello.verb);
+        test.equal(null, this.connection.hello.host);
+        test.equal(true, this.connection.tls.enabled);
         test.done();
     },
     /*
