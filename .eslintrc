@@ -7,8 +7,11 @@
     "indent": [2, 4, {"SwitchCase": 1}],
     "one-var": [2, "never"],
     "no-trailing-spaces": [2, { "skipBlankLines": false }],
-    "keyword-spacing": [2, {"overrides": {
-      }}],
+    "keyword-spacing": [2, {
+        "overrides": { },
+        "before": true,
+        "after": true
+        }],
     "no-delete-var": 2,
     "no-label-var": 2,
     "no-shadow": 2,
