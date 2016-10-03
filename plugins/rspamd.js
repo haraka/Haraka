@@ -122,7 +122,7 @@ exports.hook_data_post = function (next, connection) {
     }
 
     var timer;
-    var timeout = plugin.cfg.timeout || plugin.timeout - 1;
+    var timeout = plugin.cfg.main.timeout || plugin.timeout - 1;
 
     var calledNext=false;
     var callNext = function (code, msg) {
