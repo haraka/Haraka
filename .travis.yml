@@ -2,7 +2,7 @@ language: node_js
 node_js:
 #   - "0.6"     # no longer supported by async
 #   - "0.8"     # no longer supported by iconv
-#   - "0.10"    # no longer supported by eslint
+#   - "0.10"    # no longer maintained by node.js
     - "4"
 #   - "5"       # no longer maintained by node.js (see node 7)
     - "6"
@@ -29,8 +29,8 @@ script:
     - node run_tests
 
 after_success:
-    - npm install istanbul codecov.io
-    - ./node_modules/istanbul/lib/cli.js cov run_tests
-    - cat ./coverage/coverage.json | ./node_modules/codecov.io/bin/codecov.io.js
+    - npm install istanbul codecov
+    - NODE_ENV=cov ./node_modules/.bin/istanbul cov run_tests
+    - ./node_modules/.bin/codecov
 
 sudo: false
