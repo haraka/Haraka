@@ -122,7 +122,7 @@ exports.hook_data_post = function (next, connection) {
     }
 
     var timer;
-    var timeout = plugin.cfg.timeout || plugin.timeout - 1;
+    var timeout = plugin.cfg.main.timeout || plugin.timeout - 1;
 
     var calledNext=false;
     var callNext = function (code, msg) {
@@ -265,20 +265,18 @@ exports.add_headers = function (connection, data) {
 
     if (cfg.header && cfg.header.bar) {
         var spamBar = '';
-        if (data.score === 0) {
-            spamBar = cfg.spambar.neutral || '/';
+        var spamBarScore = 1;
+        var spamBarChar = cfg.spambar.neutral || '/';
+        if (data.score >= 1) {
+            spamBarScore = data.score;
+            spamBarChar = cfg.spambar.positive || '+';
         }
-        else {
-            var spamBarChar;
-            if (data.score > 0) {
-                spamBarChar = cfg.spambar.positive || '+';
-            }
-            else {
-                spamBarChar = cfg.spambar.negative || '-';
-            }
-            for (var i = 0; i < data.score; i++) {
-                spamBar += spamBarChar;
-            }
+        else if (data.score <= -1) {
+            spamBarScore = data.score * -1;
+            spamBarChar = cfg.spambar.negative || '-';
+        }
+        for (var i = 0; i < spamBarScore; i++) {
+            spamBar += spamBarChar;
         }
         connection.transaction.remove_header(cfg.header.bar);
         connection.transaction.add_header(cfg.header.bar, spamBar);
