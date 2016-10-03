@@ -129,6 +129,11 @@ function fail(msg) {
 // Make directory if NOT exist
 function mkDir(dstPath) {
     try {
+        if (fs.statSync(dstPath).isDirectory()) return;
+    }
+    catch (ignore) {};
+
+    try {
         fs.mkdirSync(dstPath, fs.statSync(__dirname).mode);
         create(dstPath)
     }
@@ -176,8 +181,13 @@ function copyDir(srcPath, dstPath) {
 function copyFile (srcFile, dstFile) {
 
     try {
-        fs.statSync(dstFile);
-        warning("EEXIST, File exists '" + dstFile + "'");
+        if (fs.statSync(dstFile).isFile()) {
+            // File exists
+            warning("EEXIST, File exists '" + dstFile + "'");
+            return;
+        };
+        // Something other than a file exists
+        throw "EEXIST but not a file: '" + dstFile + "'";
     }
     catch (e) {
         // File NOT exists
