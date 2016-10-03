@@ -87,9 +87,9 @@ exports.hook_lookup_rdns = function (next, connection) {
     var timeout      = config.general && (config.general.timeout     || 60);
     var timeout_msg  = config.general && (config.general.timeout_msg || '');
 
-    if (_in_whitelist(connection, plugin, connection.remote_ip)) {
+    if (_in_whitelist(connection, plugin, connection.remote.ip)) {
         called_next++;
-        return next(OK, connection.remote_ip);
+        return next(OK, connection.remote.ip);
     }
 
     var call_next = function (code, msg) {
@@ -101,16 +101,16 @@ exports.hook_lookup_rdns = function (next, connection) {
 
     timeout_id = setTimeout(function () {
         connection.loginfo(plugin, 'timed out when looking up ' +
-            connection.remote_ip + '. Disconnecting.');
+            connection.remote.ip + '. Disconnecting.');
         call_next(DENYDISCONNECT,
-            '[' + connection.remote_ip + '] ' + timeout_msg);
+            '[' + connection.remote.ip + '] ' + timeout_msg);
     }, timeout * 1000);
 
-    dns.reverse(connection.remote_ip, function (err, domains) {
+    dns.reverse(connection.remote.ip, function (err, domains) {
         if (err) {
             if (!called_next) {
                 connection.auth_results("iprev=permerror");
-                _dns_error(connection, call_next, err, connection.remote_ip,
+                _dns_error(connection, call_next, err, connection.remote.ip,
                     plugin, rev_nxdomain, rev_dnserror);
             }
             return;
@@ -148,7 +148,7 @@ exports.hook_lookup_rdns = function (next, connection) {
                     return;
                 }
                 for (var j = 0; j < addresses.length ; j++) {
-                    if (addresses[j] === connection.remote_ip) {
+                    if (addresses[j] === connection.remote.ip) {
                         // We found a match, call next() and return
                         if (!called_next) {
                             connection.auth_results("iprev=pass");
@@ -159,7 +159,7 @@ exports.hook_lookup_rdns = function (next, connection) {
 
                 if (!called_next && !total_checks) {
                     call_next(DENYDISCONNECT, rdns2 + ' [' +
-                        connection.remote_ip + '] ' + nomatch);
+                        connection.remote.ip + '] ' + nomatch);
                 }
             });
         });

@@ -30,54 +30,54 @@ exports.rdns_access = function(next, connection) {
     var plugin = this;
 
     // IP whitelist checks
-    if (connection.remote_ip) {
-        connection.logdebug(plugin, 'checking ' + connection.remote_ip +
+    if (connection.remote.ip) {
+        connection.logdebug(plugin, 'checking ' + connection.remote.ip +
             ' against connect.rdns_access.whitelist');
 
-        if (_in_whitelist(connection, plugin, connection.remote_ip)) {
-            connection.logdebug(plugin, "Allowing " + connection.remote_ip);
+        if (_in_whitelist(connection, plugin, connection.remote.ip)) {
+            connection.logdebug(plugin, "Allowing " + connection.remote.ip);
             connection.notes.rdns_access = 'white';
             return next();
         }
     }
 
     // hostname whitelist checks
-    if (connection.remote_host) {
-        connection.logdebug(plugin, 'checking ' + connection.remote_host +
+    if (connection.remote.host) {
+        connection.logdebug(plugin, 'checking ' + connection.remote.host +
             ' against connect.rdns_access.whitelist');
 
-        if (_in_whitelist(connection, plugin, connection.remote_host.toLowerCase())) {
-            connection.logdebug(plugin, "Allowing " + connection.remote_host);
+        if (_in_whitelist(connection, plugin, connection.remote.host.toLowerCase())) {
+            connection.logdebug(plugin, "Allowing " + connection.remote.host);
             connection.notes.rdns_access = 'white';
             return next();
         }
     }
 
     // IP blacklist checks
-    if (connection.remote_ip) {
-        connection.logdebug(plugin, 'checking ' + connection.remote_ip +
+    if (connection.remote.ip) {
+        connection.logdebug(plugin, 'checking ' + connection.remote.ip +
             ' against connect.rdns_access.blacklist');
 
-        if (_in_blacklist(connection, plugin, connection.remote_ip)) {
+        if (_in_blacklist(connection, plugin, connection.remote.ip)) {
             connection.logdebug(plugin, "Rejecting, matched: " +
-                connection.remote_ip);
+                connection.remote.ip);
             connection.notes.rdns_access = 'black';
-            return next(DENYDISCONNECT, connection.remote_host.toLowerCase() +
-                ' [' + connection.remote_ip + '] ' + plugin.deny_msg);
+            return next(DENYDISCONNECT, connection.remote.host.toLowerCase() +
+                ' [' + connection.remote.ip + '] ' + plugin.deny_msg);
         }
     }
 
     // hostname blacklist checks
-    if (connection.remote_host) {
-        connection.logdebug(plugin, 'checking ' + connection.remote_host +
+    if (connection.remote.host) {
+        connection.logdebug(plugin, 'checking ' + connection.remote.host +
             ' against connect.rdns_access.blacklist');
 
-        if (_in_blacklist(connection, plugin, connection.remote_host.toLowerCase())) {
+        if (_in_blacklist(connection, plugin, connection.remote.host.toLowerCase())) {
             connection.logdebug(plugin, "Rejecting, matched: " +
-               connection.remote_host);
+               connection.remote.host);
             connection.notes.rdns_access = 'black';
-            return next(DENYDISCONNECT, connection.remote_host.toLowerCase() +
-                ' [' + connection.remote_ip + '] ' + plugin.deny_msg);
+            return next(DENYDISCONNECT, connection.remote.host.toLowerCase() +
+                ' [' + connection.remote.ip + '] ' + plugin.deny_msg);
         }
     }
 

@@ -8,7 +8,7 @@ exports.register = function () {
 };
 
 exports.hook_capabilities = function (next, connection) {
-    if (connection.using_tls) {
+    if (connection.tls.enabled) {
         var methods = [ 'PLAIN', 'LOGIN' ];
         connection.capabilities.push('AUTH ' + methods.join(' '));
         connection.notes.allowed_auth_methods = methods;

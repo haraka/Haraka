@@ -156,41 +156,32 @@ function setupClient (self) {
 function Connection (client, server) {
     this.client = client;
     this.server = server;
-    this.local = {
-        ip: null,
+    this.local = {           // legacy property locations
+        ip: null,            // c.local_ip
         proxy: null,
-        port: null,
+        port: null,          // c.local_port
         host: null,
     };
     this.remote = {
-        ip:   null,
-        port: null,
-        host: null,
-        info: null,
-        closed: false,
+        ip:   null,          // c.remote_ip
+        port: null,          // c.remote_port
+        host: null,          // c.remote_host
+        info: null,          // c.remote_info
+        closed: false,       // c.remote_closed
         is_private: false,
     };
     this.hello = {
-        host: null,
-        verb: null,
+        host: null,          // c.hello_host
+        verb: null,          // c.greeting
     };
     this.tls = {
+        enabled: false,      // c.using_tls
+        advertised: false,   // c.notes.tls_enabled
         verified: false,
         cipher: {},
         authorized: null,
     };
     this.set('tls', 'enabled', (server.has_tls ? true : false));
-
-    // sunset 3.0.0
-    // this.local_ip = null;
-    // this.local_port = null;
-    // this.remote_ip = null;
-    // this.remote_host = null;
-    // this.remote_port = null;
-    // this.remote_info = null;
-    // this.remote_closed = false;
-    // this.greeting = null;
-    // this.hello_host = null;
 
     this.current_data = null;
     this.current_line = null;

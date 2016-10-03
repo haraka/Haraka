@@ -151,11 +151,11 @@ exports.hook_helo = {
             if (completed >= 3) test.done();
         };
         test.expect(3);
-        this.connection.remote_ip='192.168.1.1';
+        this.connection.remote.ip='192.168.1.1';
         this.plugin.hook_helo(next, this.connection);
-        this.connection.remote_ip='10.0.1.1';
+        this.connection.remote.ip='10.0.1.1';
         this.plugin.hook_helo(next, this.connection);
-        this.connection.remote_ip='127.0.0.1';
+        this.connection.remote.ip='127.0.0.1';
         this.plugin.hook_helo(next, this.connection, 'helo.sender.com');
     },
     'IPv4 literal': function (test) {
@@ -164,7 +164,7 @@ exports.hook_helo = {
             test.done();
         };
         test.expect(1);
-        this.connection.remote_ip='190.168.1.1';
+        this.connection.remote.ip='190.168.1.1';
         this.plugin.hook_helo(next, this.connection, '[190.168.1.1]' );
     },
 
@@ -178,7 +178,7 @@ exports.hook_mail = {
             test.done();
         };
         test.expect(1);
-        this.connection.remote_ip='192.168.1.1';
+        this.connection.remote.ip='192.168.1.1';
         this.plugin.hook_mail(next, this.connection);
     },
     'rfc1918 relaying': function (test) {
@@ -187,7 +187,7 @@ exports.hook_mail = {
             test.done();
         };
         test.expect(1);
-        this.connection.remote_ip='192.168.1.1';
+        this.connection.remote.ip='192.168.1.1';
         this.connection.relaying=true;
         this.plugin.hook_mail(next, this.connection);
     },
@@ -197,7 +197,7 @@ exports.hook_mail = {
             test.done();
         };
         test.expect(1);
-        this.connection.remote_ip='207.85.1.1';
+        this.connection.remote.ip='207.85.1.1';
         this.plugin.hook_mail(next, this.connection);
     },
     'txn, no helo': function (test) {
@@ -206,7 +206,7 @@ exports.hook_mail = {
             test.done();
         };
         test.expect(1);
-        this.connection.remote_ip='207.85.1.1';
+        this.connection.remote.ip='207.85.1.1';
         this.plugin.hook_mail(next, this.connection,
             [new Address('<test@example.com>')]);
     },
@@ -216,8 +216,8 @@ exports.hook_mail = {
             test.done();
         };
         test.expect(1);
-        this.connection.remote_ip='207.85.1.1';
-        this.connection.hello_host = 'mail.example.com';
+        this.connection.set('remote', 'ip', '207.85.1.1');
+        this.connection.set('hello', 'host', 'mail.example.com');
         this.plugin.hook_mail(next, this.connection,
             [new Address('<test@example.com>')]);
     },
@@ -227,9 +227,9 @@ exports.hook_mail = {
             test.done();
         };
         test.expect(1);
-        this.connection.remote_ip='207.85.1.1';
+        this.connection.set('remote', 'ip', '207.85.1.1');
         this.connection.relaying=true;
-        this.connection.hello_host = 'mail.example.com';
+        this.connection.set('hello', 'host', 'mail.example.com');
         this.plugin.hook_mail(next, this.connection,
             [new Address('<test@example.com>')]);
     },

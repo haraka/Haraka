@@ -282,7 +282,7 @@ exports.do_lookups = function (connection, next, hosts, type) {
 exports.hook_lookup_rdns = function (next, connection) {
     this.load_uri_config(next);
     var plugin = this;
-    dns.reverse(connection.remote_ip, function (err, rdns) {
+    dns.reverse(connection.remote.ip, function (err, rdns) {
         if (err) {
             if (err.code) {
                 if (err.code === dns.NXDOMAIN) return next();

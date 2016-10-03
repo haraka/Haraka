@@ -14,10 +14,10 @@ exports.hook_connect = function (next, connection) {
 
     for (var i=0,l=deny_list.length; i < l; i++) {
         var re = new RegExp(deny_list[i]);
-        if (re.test(connection.remote_host)) {
+        if (re.test(connection.remote.host)) {
             for (var i=0,l=allow_list.length; i < l; i++) {
                 var re = new RegExp(allow_list[i]);
-                if (re.test(connection.remote_host)) {
+                if (re.test(connection.remote.host)) {
                     connection.loginfo(this, "rdns matched: " + allow_list[i] +
                         ", allowing");
                     return next();

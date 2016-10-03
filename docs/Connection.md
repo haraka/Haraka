@@ -10,19 +10,19 @@ API
 
 A unique UUID for this connection.
 
-* connection.remote\_ip
+* connection.remote.ip
 
 The remote IP address
 
-* connection.remote\_host
+* connection.remote.host
 
 The rDNS of the remote IP
 
-* connection.local\_ip
+* connection.local.ip
 
 The bound IP address of the server as reported by the OS
 
-* connection.local\_port
+* connection.local.port
 
 The bound port number of the server which is handling the connection.
 If you have specified multiple listen= ports this variable is useful
@@ -34,11 +34,11 @@ port
 If the connection is being proxied by HAProxy, this variable will
 contain the remote IP address of the HAProxy host.
 
-* connection.greeting
+* connection.hello.verb
 
 Either 'EHLO' or 'HELO' whichever the remote end used
 
-* connection.hello\_host
+* connection.hello.host
 
 The hostname given to HELO or EHLO
 
@@ -67,7 +67,7 @@ verbatim as it was sent. Can be useful in certain botnet detection techniques.
 
 Contains the last SMTP response sent to the client.
 
-* connection.remote\_close
+* connection.remote\_closed
 
 For low level use.  This value is set when the remote host drops the connection.
 

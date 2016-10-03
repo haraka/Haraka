@@ -16,7 +16,7 @@ exports.load_vpop_ini = function () {
 };
 
 exports.hook_capabilities = function (next, connection) {
-    if (!connection.using_tls) { return next(); }
+    if (!connection.tls.enabled) { return next(); }
     var plugin = this;
 
     var methods = [ 'PLAIN', 'LOGIN' ];

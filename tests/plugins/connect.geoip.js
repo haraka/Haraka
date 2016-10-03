@@ -95,7 +95,7 @@ exports.lookup_maxmind = {
             test.done();
         }.bind(this);
 
-        this.connection.remote_ip='192.48.85.146';
+        this.connection.remote.ip='192.48.85.146';
         this.plugin.cfg.main.calc_distance=true;
         this.plugin.lookup_maxmind(cb, this.connection);
     },
@@ -149,7 +149,7 @@ exports.lookup_geoip = {
             }
             test.done();
         }.bind(this);
-        this.connection.remote_ip='192.48.85.146';
+        this.connection.remote.ip='192.48.85.146';
         this.plugin.lookup_geoip(cb, this.connection);
     },
     'michigan: lat + long': function (test) {
@@ -163,7 +163,7 @@ exports.lookup_geoip = {
             }
             test.done();
         }.bind(this);
-        this.connection.remote_ip='199.176.179.3';
+        this.connection.remote.ip='199.176.179.3';
         this.plugin.lookup_geoip(cb, this.connection);
     },
 };
@@ -244,8 +244,8 @@ exports.calculate_distance = {
             return test.done();
         }
         this.plugin.cfg.main.calc_distance=true;
-        this.plugin.local_ip='192.48.85.146';
-        this.connection.remote_ip='199.176.179.3';
+        this.plugin.local.ip='192.48.85.146';
+        this.connection.remote.ip='199.176.179.3';
         this.plugin.calculate_distance(
                 this.connection,
                 [38, -97],

@@ -300,7 +300,7 @@ exports.tarpit_delay = function (score, connection, hook, k) {
     var delay = score * -1;   // progressive tarpit
 
     // detect roaming users based on MSA ports that require auth
-    if (utils.in_array(connection.local_port, [587,465]) &&
+    if (utils.in_array(connection.local.port, [587,465]) &&
         utils.in_array(hook, ['ehlo','connect'])) {
         return plugin.tarpit_delay_msa(connection, delay, k);
     }
@@ -472,7 +472,7 @@ exports.history_from_redis = function (next, connection) {
     var plugin = this;
 
     var expire = (plugin.cfg.redis.expire_days || 60) * 86400; // to days
-    var dbkey  = 'karma|' + connection.remote_ip;
+    var dbkey  = 'karma|' + connection.remote.ip;
 
     plugin.db.hgetall(dbkey, function (err, dbr) {
         if (err) {
@@ -481,7 +481,7 @@ exports.history_from_redis = function (next, connection) {
         }
 
         if (dbr === null) {
-            plugin.init_ip(dbkey, connection.remote_ip, expire);
+            plugin.init_ip(dbkey, connection.remote.ip, expire);
             return next();
         }
 
@@ -579,7 +579,7 @@ exports.hook_data_post = function (next, connection) {
 exports.increment = function (connection, key, val) {
     var plugin = this;
 
-    plugin.db.hincrby('karma|' + connection.remote_ip, key, 1);
+    plugin.db.hincrby('karma|' + connection.remote.ip, key, 1);
 
     var asnkey = plugin.get_asn_key(connection);
     if (asnkey) plugin.db.hincrby(asnkey, key, 1);

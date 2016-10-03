@@ -59,7 +59,7 @@ exports.hook_capabilities = {
             // console.log(this.connection.capabilities);
             test.done();
         }.bind(this);
-        this.connection.using_tls=true;
+        this.connection.tls.enabled=true;
         this.connection.capabilities=[];
         this.plugin.hook_capabilities(cb, this.connection);
     },

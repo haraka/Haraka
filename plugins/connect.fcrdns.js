@@ -46,7 +46,7 @@ exports.hook_connect_init = function (next, connection) {
 exports.hook_lookup_rdns = function (next, connection) {
     var plugin = this;
 
-    var rip = connection.remote_ip;
+    var rip = connection.remote.ip;
     if (net_utils.is_private_ip(rip)) {
         connection.results.add(plugin, {skip: 'private_ip'});
         return next();
@@ -165,7 +165,7 @@ exports.hook_data_post = function (next, connection) {
 
 exports.handle_ptr_error = function (connection, err, do_next) {
     var plugin = this;
-    var rip = connection.remote_ip;
+    var rip = connection.remote.ip;
 
     switch (err.code) {
         case dns.NOTFOUND:
@@ -206,7 +206,7 @@ exports.check_fcrdns = function (connection, results, do_next) {
 
         if (plugin.is_generic_rdns(connection, fdom) &&
             plugin.cfg.reject.generic_rdns) {
-            return do_next(DENY, 'client ' + fdom + ' [' + connection.remote_ip +
+            return do_next(DENY, 'client ' + fdom + ' [' + connection.remote.ip +
                 '] rejected; generic rDNS, please use your ISPs SMTP relay');
         }
     }
@@ -226,12 +226,12 @@ exports.ptr_compare = function (ip_list, connection, domain) {
     if (!ip_list) return false;
     if (!ip_list.length) return false;
 
-    if (ip_list.indexOf(connection.remote_ip) !== -1) {
+    if (ip_list.indexOf(connection.remote.ip) !== -1) {
         connection.results.add(plugin, {pass: 'fcrdns' });
         connection.results.push(plugin, {fcrdns: domain});
         return true;
     }
-    if (net_utils.same_ipv4_network(connection.remote_ip, ip_list)) {
+    if (net_utils.same_ipv4_network(connection.remote.ip, ip_list)) {
         connection.results.add(plugin, {pass: 'fcrdns(net)' });
         connection.results.push(plugin, {fcrdns: domain});
         return true;
@@ -266,7 +266,7 @@ exports.is_generic_rdns = function (connection, domain) {
     // IP in rDNS? (Generic rDNS)
     if (!domain) return false;
 
-    if (!net_utils.is_ip_in_str(connection.remote_ip, domain)) {
+    if (!net_utils.is_ip_in_str(connection.remote.ip, domain)) {
         connection.results.add(plugin, {pass: 'is_generic_rdns'});
         return false;
     }
@@ -296,7 +296,7 @@ exports.log_summary = function (connection) {
     if (!note) return;
 
     connection.loginfo(this,
-        ['ip=' + connection.remote_ip,
+        ['ip=' + connection.remote.ip,
         'rdns="' + ((note.ptr_names.length > 2) ? note.ptr_names.slice(0,2).join(',') + '...' : note.ptr_names.join(',')) + '"',
         'rdns_len=' + note.ptr_names.length,
         'fcrdns="' + ((note.fcrdns.length > 2) ? note.fcrdns.slice(0,2).join(',') + '...' : note.fcrdns.join(',')) + '"',

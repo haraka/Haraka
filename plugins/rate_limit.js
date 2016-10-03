@@ -228,7 +228,7 @@ exports.incr_concurrency = function (next, connection) {
 
     // Concurrency
     this.lookup_host_key('concurrency',
-        [connection.remote_ip, connection.remote_host],
+        [connection.remote.ip, connection.remote.host],
         lookup_cb);
 };
 
@@ -237,7 +237,7 @@ exports.decr_concurrency = function (next, connection) {
     var snotes = connection.server.notes;
 
     // Concurrency
-    this.lookup_host_key('concurrency', [connection.remote_ip, connection.remote_host], function (err, key, value) {
+    this.lookup_host_key('concurrency', [connection.remote.ip, connection.remote.host], function (err, key, value) {
         if (err) {
             connection.logerror(self, err);
             return next();
@@ -260,7 +260,7 @@ exports.hook_connect = function (next, connection) {
     var self = this;
     var config = this.config.get('rate_limit.ini');
 
-    this.lookup_host_key('rate_conn', [connection.remote_ip, connection.remote_host], function (err, key, value) {
+    this.lookup_host_key('rate_conn', [connection.remote.ip, connection.remote.host], function (err, key, value) {
         if (err) {
             connection.logerror(self, err);
             return next();
@@ -281,7 +281,7 @@ exports.hook_connect = function (next, connection) {
             }
             // See if we need to tarpit rate_rcpt_host
             if (config.main.tarpit_delay) {
-                self.lookup_host_key('rate_rcpt_host', [connection.remote_ip, connection.remote_host], function (err3, key2, value2) {
+                self.lookup_host_key('rate_rcpt_host', [connection.remote.ip, connection.remote.host], function (err3, key2, value2) {
                     if (!err3 && key2 && value2) {
                         var match = /^(\d+)/.exec(value2);
                         var limit = match[0];
@@ -316,7 +316,7 @@ exports.hook_rcpt = function (next, connection, params) {
         {
             name:           'rate_rcpt_host',
             lookup_func:    'lookup_host_key',
-            lookup_args:    [connection.remote_ip, connection.remote_host],
+            lookup_args:    [connection.remote.ip, connection.remote.host],
         },
         {
             name:           'rate_rcpt_sender',

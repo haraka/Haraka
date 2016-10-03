@@ -68,19 +68,19 @@ exports.get_options = function (connection) {
         options.headers.User = connection.notes.auth_user;
     }
 
-    if (connection.remote_ip) options.headers.IP = connection.remote_ip;
+    if (connection.remote.ip) options.headers.IP = connection.remote.ip;
 
     var fcrdns = connection.results.get('connect.fcrdns');
     if (fcrdns && fcrdns.fcrdns && fcrdns.fcrdns[0]) {
         options.headers.Hostname = fcrdns.fcrdns[0];
     }
     else {
-        if (connection.remote_host) {
-            options.headers.Hostname = connection.remote_host;
+        if (connection.remote.host) {
+            options.headers.Hostname = connection.remote.host;
         }
     }
 
-    if (connection.hello_host) options.headers.Helo = connection.hello_host;
+    if (connection.hello.host) options.headers.Helo = connection.hello.host;
 
     if (connection.transaction.mail_from) {
         var mfaddr = connection.transaction.mail_from.address().toString();
@@ -117,7 +117,7 @@ exports.hook_data_post = function (next, connection) {
     var authed = connection.notes.auth_user;
     if (authed && !cfg.check.authenticated) return next();
     if (!cfg.check.private_ip &&
-        net_utils.is_private_ip(connection.remote_ip)) {
+        net_utils.is_private_ip(connection.remote.ip)) {
         return next();
     }
 

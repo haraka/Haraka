@@ -17,11 +17,11 @@ exports.hook_mail = function (next, connection, params) {
             return next();
         }
         if (!a) return next();
-        var msg = 'Host ' + connection.remote_host +
-                  ' [' + connection.remote_ip + ']' +
+        var msg = 'Host ' + connection.remote.host +
+                  ' [' + connection.remote.ip + ']' +
                   ' is blacklisted by ' + zone;
         return next(DENY, msg);
     }
 
-    this.first(connection.remote_ip, [ 'ips.backscatterer.org' ], resultCb);
+    this.first(connection.remote.ip, [ 'ips.backscatterer.org' ], resultCb);
 };

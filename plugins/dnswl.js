@@ -51,9 +51,9 @@ exports.hook_connect = function (next, connection) {
         connection.logerror(plugin, 'no zones');
         return next();
     }
-    plugin.first(connection.remote_ip, plugin.zones, function (err, zone, a) {
+    plugin.first(connection.remote.ip, plugin.zones, function (err, zone, a) {
         if (!a) return next();
-        connection.loginfo(plugin, connection.remote_ip +
+        connection.loginfo(plugin, connection.remote.ip +
             ' is whitelisted by ' + zone + ': ' + a);
         connection.notes.dnswl = true;
         return next(OK);

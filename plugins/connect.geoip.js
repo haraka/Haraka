@@ -97,7 +97,7 @@ exports.load_geoip_lite = function () {
 exports.get_maxmind_asn = function (connection) {
     var plugin = this;
 
-    var asn = plugin.maxmind.getAsn(connection.remote_ip);
+    var asn = plugin.maxmind.getAsn(connection.remote.ip);
     if (!asn) return;
 
     var match = asn.match(/^(?:AS)([0-9]+)\s+(.*)$/);
@@ -124,7 +124,7 @@ exports.lookup_maxmind = function (next, connection) {
 
     plugin.get_maxmind_asn(connection);
 
-    var loc = plugin.get_geoip_maxmind(connection.remote_ip);
+    var loc = plugin.get_geoip_maxmind(connection.remote.ip);
     if (!loc) return next();
 
     if (loc.continentCode && loc.continentCode !== '--') {
@@ -186,7 +186,7 @@ exports.lookup_geoip = function (next, connection) {
         return next();
     }
 
-    var r = plugin.get_geoip_lite(connection.remote_ip);
+    var r = plugin.get_geoip_lite(connection.remote.ip);
     if (!r) { return next(); }
 
     connection.results.add(plugin, r);

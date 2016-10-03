@@ -72,8 +72,7 @@ exports.load_es_ini = function () {
         ['From', 'To', 'Subject'];
 
     plugin.cfg.conn_props = plugin.cfg.connection_properties ||
-        {   using_tls:undefined,
-            relaying:undefined,
+        {   relaying:undefined,
             totalbytes:undefined,
             pipelining:undefined,
             early_talker:undefined,
@@ -212,18 +211,21 @@ exports.populate_conn_properties = function (conn, res) {
     }
 
     conn_res.local = {
-        ip:   conn.local_ip,
-        port: conn.local_port,
+        ip:   conn.local.ip,
+        port: conn.local.port,
         host: plugin.cfg.hostname || require('os').hostname(),
     };
     conn_res.remote = {
-        ip:   conn.remote_ip,
-        host: conn.remote_host,
-        port: conn.remote_port,
+        ip:   conn.remote.ip,
+        host: conn.remote.host,
+        port: conn.remote.port,
     };
     conn_res.hello = {
-        host: conn.hello_host,
-        verb: conn.greeting,
+        host: conn.hello.host,
+        verb: conn.hello.verb,
+    };
+    conn_res.tls = {
+        enabled: conn.tls.enabled,
     };
 
     if (!conn_res.auth) {

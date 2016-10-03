@@ -69,7 +69,7 @@ exports.hook_helo = exports.hook_ehlo = function (next, connection, helo) {
     var plugin = this;
 
     // Bypass private IPs
-    if (net_utils.is_private_ip(connection.remote_ip)) { return next(); }
+    if (net_utils.is_private_ip(connection.remote.ip)) { return next(); }
 
     // RFC 4408, 2.1: "SPF clients must be prepared for the "HELO"
     //           identity to be malformed or an IP address literal.
@@ -85,15 +85,15 @@ exports.hook_helo = exports.hook_ehlo = function (next, connection, helo) {
         connection.logerror(plugin, 'timeout');
         return next();
     }, (plugin.timeout-1) * 1000);
-    spf.hello_host = helo;
-    spf.check_host(connection.remote_ip, helo, null, function (err, result) {
+    spf.hello.host = helo;
+    spf.check_host(connection.remote.ip, helo, null, function (err, result) {
         if (timer) clearTimeout(timer);
         if (timeout) return;
         if (err) {
             connection.logerror(plugin, err);
             return next();
         }
-        var host = connection.hello_host;
+        var host = connection.hello.host;
         plugin.log_result(connection, 'helo', host, 'postmaster@' +
             host, spf.result(result));
 
@@ -113,7 +113,7 @@ exports.hook_mail = function (next, connection, params) {
 
     // For inbound message from a private IP, skip MAIL FROM check
     if (!connection.relaying &&
-         net_utils.is_private_ip(connection.remote_ip)) {
+         net_utils.is_private_ip(connection.remote.ip)) {
         return next();
     }
 
@@ -127,7 +127,7 @@ exports.hook_mail = function (next, connection, params) {
 
     if (connection.notes.spf_helo) {
         var h_result = connection.notes.spf_helo;
-        var h_host = connection.hello_host;
+        var h_host = connection.hello.host;
         plugin.save_to_header(connection, spf, h_result, mfrom, h_host, 'helo');
         if (!host) {   // Use results from HELO if the return-path is null
             auth_result = spf.result(h_result).toLowerCase();
@@ -148,7 +148,7 @@ exports.hook_mail = function (next, connection, params) {
         return next();
     }, (plugin.timeout-1) * 1000);
 
-    spf.helo = connection.hello_host;
+    spf.helo = connection.hello.host;
 
     var ch_cb = function (err, result, ip) {
         if (timer) clearTimeout(timer);
@@ -158,9 +158,9 @@ exports.hook_mail = function (next, connection, params) {
             return next();
         }
         plugin.log_result(connection, 'mfrom', host, mfrom,
-                          spf.result(result), (ip ? ip : connection.remote_ip));
+                          spf.result(result), (ip ? ip : connection.remote.ip));
         plugin.save_to_header(connection, spf, result, mfrom, host,
-                              'mailfrom', (ip ? ip : connection.remote_ip));
+                              'mailfrom', (ip ? ip : connection.remote.ip));
 
         auth_result = spf.result(result).toLowerCase();
         connection.auth_results( "spf="+auth_result+" smtp.mailfrom="+host);
@@ -179,12 +179,12 @@ exports.hook_mail = function (next, connection, params) {
 
     // typical inbound (!relay)
     if (!connection.relaying) {
-        return spf.check_host(connection.remote_ip, host, mfrom, ch_cb);
+        return spf.check_host(connection.remote.ip, host, mfrom, ch_cb);
     }
 
     // outbound (relaying), context=sender
     if (plugin.cfg.relay.context === 'sender') {
-        return spf.check_host(connection.remote_ip, host, mfrom, ch_cb);
+        return spf.check_host(connection.remote.ip, host, mfrom, ch_cb);
     }
 
     // outbound (relaying), context=myself
@@ -194,7 +194,7 @@ exports.hook_mail = function (next, connection, params) {
         // which could case an incorrect SPF Fail result if we
         // check the public IP first, so we only check the public
         // IP if the client IP returns a result other than 'Pass'.
-        spf.check_host(connection.remote_ip, host, mfrom, function (err, result) {
+        spf.check_host(connection.remote.ip, host, mfrom, function (err, result) {
             var spf_result;
             if (result) {
                 spf_result = spf.result(result).toLowerCase();
@@ -211,7 +211,7 @@ exports.hook_mail = function (next, connection, params) {
                     return ch_cb(er, r, my_public_ip);
                 });
             }
-            ch_cb(err, result, connection.remote_ip);
+            ch_cb(err, result, connection.remote.ip);
         });
     });
 };
@@ -219,7 +219,7 @@ exports.hook_mail = function (next, connection, params) {
 exports.log_result = function (connection, scope, host, mfrom, result, ip) {
     connection.loginfo(this, [
         'identity=' + scope,
-        'ip=' + (ip ? ip : connection.remote_ip),
+        'ip=' + (ip ? ip : connection.remote.ip),
         'domain="' + host + '"',
         'mfrom=<' + mfrom + '>',
         'result=' + result
@@ -273,11 +273,11 @@ exports.save_to_header = function (connection, spf, result, mfrom, host, id, ip)
         spf.result(result) +
         ' (' + plugin.config.get('me') + ': domain of ' + host +
         ((result === spf.SPF_PASS) ? ' designates ' : ' does not designate ') +
-        connection.remote_ip + ' as permitted sender) ' + [
+        connection.remote.ip + ' as permitted sender) ' + [
             'receiver=' + plugin.config.get('me'),
             'identity=' + id,
-            'client-ip=' + (ip ? ip : connection.remote_ip),
-            'helo=' + connection.hello_host,
+            'client-ip=' + (ip ? ip : connection.remote.ip),
+            'helo=' + connection.hello.host,
             'envelope-from=<' + mfrom + '>'
         ].join('; ')
     );

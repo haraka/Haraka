@@ -10,9 +10,9 @@ var config = require('./config');
 
 // npm modules
 var async    = require('async');
-var ipaddr    = require('ipaddr.js');
-var sprintf   = require('sprintf-js').sprintf;
-var tlds      = require('haraka-tld');
+var ipaddr   = require('ipaddr.js');
+var sprintf  = require('sprintf-js').sprintf;
+var tlds     = require('haraka-tld');
 
 exports.long_to_ip = function (n) {
     var d = n%256;
@@ -119,7 +119,7 @@ exports.is_local_ipv4 = function (ip) {
     // 127/8 (loopback)   # RFC 1122
     if (re_ipv4.loopback.test(ip)) return true;
 
-    // link local: 169.254/16) RFC 3927
+    // link local: 169.254/16 RFC 3927
     if (re_ipv4.link_local.test(ip)) return true;
 
     return false;

@@ -124,7 +124,7 @@ exports.should_skip = function (connection, test_name) {
         return true;
     }
 
-    if (plugin.cfg.skip.private_ip && net_utils.is_private_ip(connection.remote_ip)) {
+    if (plugin.cfg.skip.private_ip && net_utils.is_private_ip(connection.remote.ip)) {
         connection.results.add(plugin, {skip: test_name + '(private)'});
         return true;
     }
@@ -225,7 +225,7 @@ exports.rdns_match = function (next, connection, helo) {
         return next();
     }
 
-    var r_host = connection.remote_host;
+    var r_host = connection.remote.host;
     if (r_host && helo === r_host) {
         connection.results.add(plugin, {pass: 'rdns_match'});
         return next();
@@ -279,7 +279,7 @@ exports.dynamic = function (next, connection, helo) {
         return next();
     }
 
-    if (net_utils.is_ip_in_str(connection.remote_ip, helo)) {
+    if (net_utils.is_ip_in_str(connection.remote.ip, helo)) {
         connection.results.add(plugin, {fail: 'dynamic'});
         if (plugin.cfg.reject.dynamic) {
             return next(DENY, 'HELO is dynamic');
@@ -311,7 +311,7 @@ exports.big_company = function (next, connection, helo) {
         return next();
     }
 
-    var rdns = connection.remote_host;
+    var rdns = connection.remote.host;
     if (!rdns || rdns === 'Unknown' || rdns === 'DNSERROR') {
         connection.results.add(plugin, {fail: 'big_co(rDNS)'});
         if (plugin.cfg.reject.big_company) {
@@ -355,7 +355,7 @@ exports.literal_mismatch = function (next, connection, helo) {
     }
 
     if (lmm_mode > 1) {
-        if (net_utils.same_ipv4_network(connection.remote_ip, [helo_ip])) {
+        if (net_utils.same_ipv4_network(connection.remote.ip, [helo_ip])) {
             connection.results.add(plugin, {pass: 'literal_mismatch'});
             return next();
         }
@@ -367,7 +367,7 @@ exports.literal_mismatch = function (next, connection, helo) {
         return next();
     }
 
-    if (helo_ip === connection.remote_ip) {
+    if (helo_ip === connection.remote.ip) {
         connection.results.add(plugin, {pass: 'literal_mismatch'});
         return next();
     }
@@ -421,7 +421,7 @@ exports.forward_dns = function (next, connection, helo) {
         }
         connection.results.add(plugin, {ips: ips});
 
-        if (ips.indexOf(connection.remote_ip) !== -1) {
+        if (ips.indexOf(connection.remote.ip) !== -1) {
             connection.results.add(plugin, {pass: 'forward_dns'});
             return next();
         }
@@ -432,7 +432,7 @@ exports.forward_dns = function (next, connection, helo) {
         // the same domain, consider it close enough.
         if (connection.results.has('helo.checks', 'pass', /^rdns_match/)) {
             var helo_od = tlds.get_organizational_domain(helo);
-            var rdns_od = tlds.get_organizational_domain(connection.remote_host);
+            var rdns_od = tlds.get_organizational_domain(connection.remote.host);
             if (helo_od && helo_od === rdns_od) {
                 connection.results.add(plugin, {pass: 'forward_dns(domain)'});
                 return next();
