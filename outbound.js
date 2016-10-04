@@ -523,7 +523,7 @@ exports.send_email = function () {
         // Assume a stream
         return stream_line_reader(contents, transaction, function (err) {
             if (err) {
-                return next(DENYSOFT, "Error from stream line reader: " + err);
+                return next(constants.denysoft, "Error from stream line reader: " + err);
             }
             exports.send_trans_email(transaction, next);
         });
