@@ -508,7 +508,7 @@ DKIMVerifyStream.prototype.handle_buf = function (buf) {
                 }
                 if (!this.header_idx['dkim-signature']) {
                     this._no_signatures_found = true;
-                    return this.cb(null, this.result);
+                    return this.cb(null, this.result, this.results);
                 }
                 else {
                     // Create new DKIM objects for each header
@@ -555,12 +555,13 @@ DKIMVerifyStream.prototype.write = function(buf) {
 };
 
 DKIMVerifyStream.prototype.end = function(buf) {
-    if (buf) this.handle_buf(buf);
-    else this.handle_buf(null);
+    this.handle_buf(((buf) ? buf : null));
     for (var d=0; d<this.dkim_objects.length; d++) {
         this.dkim_objects[d].end();
     }
-    if (this.pending === 0 && this._no_signatures_found === false) this.cb(null, this.result);
+    if (this.pending === 0 && this._no_signatures_found === false) {
+        this.cb(null, this.result, this.results);
+    }
 };
 
 exports.DKIMVerifyStream = DKIMVerifyStream;
