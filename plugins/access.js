@@ -1,6 +1,6 @@
 // access plugin
 var tlds      = require('haraka-tld');
-
+var haddr     = require('address-rfc2822');
 var net_utils = require('./net_utils');
 var utils     = require('./utils');
 
@@ -390,7 +390,13 @@ exports.data_any = function(next, connection) {
         return next();
     }
 
-    var hdr_addr = (require('address-rfc2822').parse(hdr_from))[0];
+    var hdr_addr = haddr.parse(hdr_from)[0];
+    if (!hdr_addr) {
+        connection.transaction.results.add(plugin, {
+            fail: 'data(unparsable_from)'
+        });
+        return next();
+    }
     var hdr_dom = tlds.get_organizational_domain(hdr_addr.host());
 
     var file = plugin.cfg.domain.any;
