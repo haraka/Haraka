@@ -285,6 +285,10 @@ exports.from_match = function (next, connection) {
     }
 
     var hdr_addr = (plugin.addrparser.parse(hdr_from))[0];
+    if (!hdr_addr) {
+        connection.transaction.results.add(plugin, {fail: 'from_match(unparsable)'});
+        return next();
+    }
 
     if (env_addr.address().toLowerCase() === hdr_addr.address.toLowerCase()) {
         connection.transaction.results.add(plugin, {pass: 'from_match'});
