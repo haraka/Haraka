@@ -124,13 +124,15 @@ exports.tls_unrecognized_command = function (next, connection, params) {
     var timed_out = false;
     // adjust plugin.timeout like so: echo '45' > config/tls.timeout
     var timeout = plugin.timeout - 1;
-
-    var timer = setTimeout(function () {
-        timed_out = true;
-        connection.logerror(plugin, 'timeout');
-        plugin.set_notls(connection.remote.ip);
-        return next(DENYSOFTDISCONNECT);
-    }, timeout * 1000);
+    var timer;
+    if (timeout && timeout > 0) {
+        timer = setTimeout(function () {
+            timed_out = true;
+            connection.logerror(plugin, 'timeout');
+            plugin.set_notls(connection.remote.ip);
+            return next(DENYSOFTDISCONNECT);
+        }, timeout * 1000);
+    }
 
     connection.notes.tls_timer = timer;
 
