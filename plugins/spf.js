@@ -85,7 +85,7 @@ exports.hook_helo = exports.hook_ehlo = function (next, connection, helo) {
         connection.logerror(plugin, 'timeout');
         return next();
     }, (plugin.timeout-1) * 1000);
-    spf.hello.host = helo;
+
     spf.check_host(connection.remote.ip, helo, null, function (err, result) {
         if (timer) clearTimeout(timer);
         if (timeout) return;
