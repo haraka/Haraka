@@ -18,6 +18,7 @@ var path        = require('path');
 logger.add_log_methods(exports, 'server');
 
 var Server = exports;
+Server.listeners = [];
 
 Server.load_smtp_ini = function () {
     Server.cfg = config.get('smtp.ini', {
@@ -94,6 +95,10 @@ Server.gracefulRestart = function () {
 }
 
 Server.gracefulShutdown = function () {
+    logger.loginfo('Shutting down listeners');
+    Server.listeners.forEach(function (server) {
+        server.close();
+    });
     Server._graceful(function () {
         logger.loginfo("Failed to shutdown naturally. Exiting.");
         process.exit(0);
@@ -293,6 +298,7 @@ Server.get_smtp_server = function (host, port, inactivity_timeout) {
 
     if (port !== '465') {
         server = net.createServer(conn_cb);
+        Server.listeners.push(server);
         return server;
     }
 
@@ -312,6 +318,7 @@ Server.get_smtp_server = function (host, port, inactivity_timeout) {
     logger.logdebug("Creating TLS server on " + host + ':' + port);
     server = require('tls').createServer(options, conn_cb);
     server.has_tls=true;
+    Server.listeners.push(server);
     return server;
 };
 
@@ -340,8 +347,6 @@ Server.setup_smtp_listeners = function (plugins2, type, inactivity_timeout) {
         var server = Server.get_smtp_server(host, port, inactivity_timeout);
         if (!server) return cb();
 
-        server.unref();
-
         server.notes = Server.notes;
         if (Server.cluster) server.cluster = Server.cluster;
 
@@ -349,6 +354,10 @@ Server.setup_smtp_listeners = function (plugins2, type, inactivity_timeout) {
             var addr = this.address();
             logger.lognotice("Listening on " + addr.address + ':' + addr.port);
             cb();
+        });
+
+        server.on('close', function () {
+            logger.loginfo('Listener shutdown');
         });
 
         // Fallback from IPv6 to IPv4 if not supported
@@ -399,7 +408,7 @@ Server.setup_http_listeners = function () {
         }
 
         Server.http.server = require('http').createServer(app);
-        Server.http.server.unref();
+        Server.listeners.push(Server.http.server);
 
         Server.http.server.on('listening', function () {
             var addr = this.address();
