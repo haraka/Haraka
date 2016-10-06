@@ -148,41 +148,43 @@ exports.hook_data_post = function (next, connection) {
             res.on('end', function () {
                 var r = plugin.parse_response(rawData, connection);
                 if (!r.data) return callNext();
-                r.data.emit = true; // spit out a log entry
+                if (!r.data.default) return callNext();
+                if (!r.log) return callNext();
+                r.log.emit = true; // spit out a log entry
 
                 if (!connection.transaction) return callNext();
-                connection.transaction.results.add(plugin, r.data);
+                connection.transaction.results.add(plugin, r.log);
                 connection.transaction.results.add(plugin, {
                     time: (Date.now() - start)/1000,
                 });
 
                 function no_reject () {
-                    if (cfg.dkim.enabled && r.controlData['dkim-signature']) {
-                        connection.transaction.add_header('DKIM-Signature', r.controlData['dkim-signature']);
+                    if (cfg.dkim.enabled && r.data['dkim-signature']) {
+                        connection.transaction.add_header('DKIM-Signature', r.data['dkim-signature']);
                     }
-                    if (cfg.rmilter_headers.enabled && r.controlData.rmilter) {
-                        if (r.controlData.rmilter.remove_headers) {
-                            Object.keys(r.controlData.rmilter.remove_headers).forEach(function(key) {
+                    if (cfg.rmilter_headers.enabled && r.rmilter) {
+                        if (r.rmilter.remove_headers) {
+                            Object.keys(r.rmilter.remove_headers).forEach(function(key) {
                                 connection.transaction.remove_header(key);
                             })
                         }
-                        if (r.controlData.rmilter.add_headers) {
-                            Object.keys(r.controlData.rmilter.add_headers).forEach(function(key) {
-                                connection.transaction.add_header(key, r.controlData.rmilter.add_headers[key]);
+                        if (r.rmilter.add_headers) {
+                            Object.keys(r.rmilter.add_headers).forEach(function(key) {
+                                connection.transaction.add_header(key, r.rmilter.add_headers[key]);
                             })
                         }
                     }
-                    if (cfg.soft_reject.enabled && r.data.action === 'soft reject') {
+                    if (cfg.soft_reject.enabled && r.default.action === 'soft reject') {
                         return callNext(DENYSOFT, DSN.sec_unauthorized(cfg.soft_reject.message, 451));
                     } else if (cfg.main.add_headers !== 'never' && (
                                cfg.main.add_headers === 'always' ||
-                               (r.data.action === 'add header' && cfg.main.add_headers === 'sometimes'))) {
+                               (r.default.action === 'add header' && cfg.main.add_headers === 'sometimes'))) {
                         plugin.add_headers(connection, r.data);
                     }
                     return callNext();
                 }
 
-                if (r.data.action !== 'reject') return no_reject();
+                if (r.default.action !== 'reject') return no_reject();
 
                 if (!authed && !cfg.reject.spam) return no_reject();
                 if (authed && !cfg.reject.authenticated) return no_reject();
@@ -220,7 +222,6 @@ exports.parse_response = function (rawData, connection) {
 
     // copy those nested objects into a higher level object
     var dataClean = {};
-    var controlData = {};
     Object.keys(data.default).forEach(function (key) {
         var a = data.default[key];
         switch (typeof a) {
@@ -249,13 +250,9 @@ exports.parse_response = function (rawData, connection) {
         if (data[b] && data[b].length) dataClean[b] = data[b].join(',');
     });
 
-    ['dkim-signature', 'rmilter'].forEach(function (x) {
-        if (data[x]) controlData[x] = data[x];
-    });
-
     return {
-        'data' : dataClean,
-        'controlData' : controlData
+        'data' : data,
+        'log' : dataClean,
     };
 };
 
@@ -268,11 +265,11 @@ exports.add_headers = function (connection, data) {
         var spamBarScore = 1;
         var spamBarChar = cfg.spambar.neutral || '/';
         if (data.score >= 1) {
-            spamBarScore = data.score;
+            spamBarScore = Math.floor(data.score);
             spamBarChar = cfg.spambar.positive || '+';
         }
         else if (data.score <= -1) {
-            spamBarScore = data.score * -1;
+            spamBarScore = Math.floor(data.score * -1);
             spamBarChar = cfg.spambar.negative || '-';
         }
         for (var i = 0; i < spamBarScore; i++) {
@@ -284,10 +281,10 @@ exports.add_headers = function (connection, data) {
 
     if (cfg.header && cfg.header.report) {
         var prettySymbols = [];
-        for (var k in data) {
-            if (data[k].score) {
-                prettySymbols.push(data[k].name +
-                    '(' + data[k].score + ')');
+        for (var k in data.default) {
+            if (data.default[k].score) {
+                prettySymbols.push(data.default[k].name +
+                    '(' + data.default[k].score + ')');
             }
         }
         connection.transaction.remove_header(cfg.header.report);

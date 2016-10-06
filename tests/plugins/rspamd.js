@@ -52,13 +52,27 @@ exports.add_headers = {
         test.done();
     },
     'adds a header to a message with positive score': function (test) {
-        test.expect(2);
+        test.expect(3);
         var test_data = {
-            score: 1,
+            score: 1.1,
+            default: {
+                FOO: {
+                    name: 'FOO',
+                    score: 0.100000,
+                    description: 'foo',
+                    options: ['foo', 'bar'],
+                },
+                BAR: {
+                    name: 'BAR',
+                    score: 1.0,
+                    description: 'bar',
+                }
+            }
         };
         this.plugin.add_headers(this.connection, test_data);
-        test.equal(this.connection.transaction.header.headers['X-Rspamd-Score'], '1');
+        test.equal(this.connection.transaction.header.headers['X-Rspamd-Score'], '1.1');
         test.equal(this.connection.transaction.header.headers['X-Rspamd-Bar'], '+');
+        test.equal(this.connection.transaction.header.headers['X-Rspamd-Report'], 'FOO(0.1) BAR(1)');
         test.done();
     },
     'adds a header to a message with negative score': function (test) {
