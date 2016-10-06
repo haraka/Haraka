@@ -10,7 +10,7 @@ var isIPv6 = require('net').isIPv6;
 var ipaddr = require('ipaddr.js');
 
 var DSN = require('./dsn');
-var net_utils = require('./net_utils');
+var net_utils = require('haraka-net-utils');
 var Address = require('address-rfc2821').Address;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

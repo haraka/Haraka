@@ -1,5 +1,5 @@
 // dnsbl plugin
-var net_utils = require('./net_utils');
+var net_utils = require('haraka-net-utils');
 
 exports.register = function() {
     var plugin = this;

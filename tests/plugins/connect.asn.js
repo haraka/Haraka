@@ -1,6 +1,6 @@
 'use strict';
 
-var fixtures     = require('haraka-test-fixtures');
+var fixtures = require('haraka-test-fixtures');
 
 var _set_up = function (done) {
 

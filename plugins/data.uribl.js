@@ -6,7 +6,7 @@ var dns       = require('dns');
 var net       = require('net');
 var tlds      = require('haraka-tld');
 
-var net_utils = require('./net_utils');
+var net_utils = require('haraka-net-utils');
 var utils     = require('./utils');
 
 // Default regexps to extract the URIs from the message

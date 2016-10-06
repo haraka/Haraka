@@ -1,7 +1,7 @@
 // access plugin
 var tlds      = require('haraka-tld');
 var haddr     = require('address-rfc2822');
-var net_utils = require('./net_utils');
+var net_utils = require('haraka-net-utils');
 var utils     = require('./utils');
 
 exports.register = function() {

@@ -13,7 +13,7 @@
 
 var dns = require('dns');
 
-var net_utils = require('./net_utils');
+var net_utils = require('haraka-net-utils');
 
 // _dns_error handles err from node.dns callbacks.  It will always call next()
 // with a DENYDISCONNECT for this plugin.

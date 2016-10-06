@@ -3,7 +3,7 @@
 
 var tlds      = require('haraka-tld');
 var dns       = require('dns');
-var net_utils = require('./net_utils');
+var net_utils = require('haraka-net-utils');
 var utils     = require('./utils');
 
 var checks = [
