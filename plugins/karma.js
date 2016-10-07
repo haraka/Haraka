@@ -328,8 +328,8 @@ exports.tarpit_delay_msa = function (connection, delay, k) {
     }
 
     // Reduce delay for good ASN history
-    var asn = connection.results.get('connect.asn');
-    if (!asn) { asn = connection.results.get('connect.geoip'); }
+    var asn = connection.results.get('asn');
+    if (!asn) { asn = connection.results.get('geoip'); }
     if (asn && asn.asn && k.neighbors > 0) {
         connection.logdebug(plugin, trg + ' neighbors: ' + delay);
         delay = delay - 2;
@@ -922,9 +922,9 @@ exports.init_ip = function (dbkey, rip, expire) {
 exports.get_asn_key = function (connection) {
     var plugin = this;
     if (!plugin.cfg.asn.enable) { return; }
-    var asn = connection.results.get('connect.asn');
+    var asn = connection.results.get('asn');
     if (!asn || !asn.asn) {
-        asn = connection.results.get('connect.geoip');
+        asn = connection.results.get('geoip');
     }
     if (!asn || !asn.asn || isNaN(asn.asn)) { return; }
     return 'as' + asn.asn;
