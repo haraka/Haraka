@@ -14,6 +14,7 @@ exports.register = function () {
     plugin.tls_opts = {
         key: 'tls_key.pem',
         cert: 'tls_cert.pem',
+	dhparam: '',
     };
 
     plugin.load_tls_ini();
@@ -23,6 +24,8 @@ exports.register = function () {
     // transform key and cert filenames into key and cert in binary form
     plugin.tls_opts.key = plugin.load_pem(plugin.tls_opts.key);
     plugin.tls_opts.cert = plugin.load_pem(plugin.tls_opts.cert);
+
+    plugin.tls_opts.dhparam = plugin.load_pem(plugin.tls_opts.dhparam);
 
     if (!plugin.tls_opts.key) {
         plugin.logcrit("config/tls_key.pem not loaded. See 'haraka -h tls'");
@@ -49,7 +52,8 @@ exports.load_tls_ini = function () {
     });
 
     var config_options = ['ciphers','requestCert','rejectUnauthorized',
-        'key','cert'];
+        'key','cert','honorCipherOrder','ecdhCurve','dhparam',
+        'secureProtocol'];
 
     for (var i = 0; i < config_options.length; i++) {
         var opt = config_options[i];
