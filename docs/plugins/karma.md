@@ -187,7 +187,7 @@ Expect to use karma *with* content filters.
 
 
 [p0f-url]: /manual/plugins/connect.p0f.html
-[geoip-url]: /manual/plugins/connect.geoip.html
+[geoip-url]: https://github.com/haraka/haraka-plugin-geoip
 [dnsbl-url]: /manual/plugins/dnsbl.html
 [fcrdns-url]: http://haraka.github.io/manual/plugins/connect.fcrdns.html
 [uribl-url]: http://haraka.github.io/manual/plugins/data.uribl.html

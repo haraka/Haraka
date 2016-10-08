@@ -161,10 +161,10 @@ exports.get_award_location = {
         test.equal(2, r);
         test.done();
     },
-    'results.connect.geoip': function (test) {
+    'results.geoip': function (test) {
         test.expect(1);
-        this.connection.results.add('connect.geoip', { country: 'US' });
-        var r = this.plugin.get_award_location(this.connection, 'results.connect.geoip');
+        this.connection.results.add('geoip', { country: 'US' });
+        var r = this.plugin.get_award_location(this.connection, 'results.geoip');
         // console.log(r);
         test.equal('US', r.country);
         test.done();
@@ -245,16 +245,16 @@ exports.check_awards = {
 
         // populate the karma result with a todo item
         this.connection.results.add('karma', {
-            todo: { 'results.connect.geoip.distance@4000': '-1 if gt 4000' }
+            todo: { 'results.geoip.distance@4000': '-1 if gt 4000' }
         });
         // test a non-matching criteria
-        this.connection.results.add('connect.geoip', { distance: 4000 });
+        this.connection.results.add('geoip', { distance: 4000 });
         // check awards
         this.plugin.check_awards(this.connection);
         test.equal(undefined, this.connection.results.get('karma').fail[0]);
 
         // test a matching criteria
-        this.connection.results.add('connect.geoip', { distance: 4001 });
+        this.connection.results.add('geoip', { distance: 4001 });
         // check awards
         this.plugin.check_awards(this.connection);
         // test that the award was applied
@@ -545,12 +545,12 @@ exports.check_result = {
     'geoip country is scored': function (test) {
         test.expect(2);
         this.plugin.cfg.result_awards = {
-            1: 'connect.geoip | country | equals | CN | 2',
+            1: 'geoip | country | equals | CN | 2',
         };
         this.plugin.preparse_result_awards();
-        this.connection.results.add({name: 'connect.geoip'}, {country: 'CN'});
+        this.connection.results.add({name: 'geoip'}, {country: 'CN'});
         this.plugin.check_result(this.connection,
-                '{"plugin":"connect.geoip","result":{"country":"CN"}}');
+                '{"plugin":"geoip","result":{"country":"CN"}}');
         // console.log(this.connection.results.store);
         test.equals(this.connection.results.store.karma.score, 2);
         test.equals(this.connection.results.store.karma.awards[0], 1);

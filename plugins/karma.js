@@ -134,7 +134,7 @@ exports.check_result = function (connection, message) {
     var plugin = this;
     // connection.loginfo(plugin, message);
     // {"plugin":"karma","result":{"fail":"spamassassin.hits"}}
-    // {"plugin":"connect.geoip","result":{"country":"CN"}}
+    // {"plugin":"geoip","result":{"country":"CN"}}
 
     var m = JSON.parse(message);
     if (m && m.result && m.result.asn) {
@@ -670,7 +670,7 @@ exports.get_award_location = function (connection, award_key) {
         return plugin.get_award_loc_from_note(connection, bits[0]);
     }
 
-    if (loc_bits[0] === 'results') {   // ex: results.connect.geoip.distance
+    if (loc_bits[0] === 'results') {   // ex: results.geoip.distance
         return plugin.get_award_loc_from_results(connection, loc_bits);
     }
 
