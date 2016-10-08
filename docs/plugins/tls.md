@@ -6,6 +6,9 @@ For this plugin to work you must have SSL certificates installed correctly.
 
 ## Install Location
 
+Key and certificate chain default locations are as follows. The paths
+can be overridden in the config/tls.ini file.
+
     config/tls_key.pem
     config/tls_cert.pem
 
@@ -40,6 +43,14 @@ be the same as the contents of your `config/me` file.
 
 The following settings can be specified in config/tls.ini.
 
+### key
+
+Specifies an alternative location for the key file.
+
+### cert
+
+Specifies an alternative location for the certificate chain file.
+
 ### `no_tls_hosts`
 
 If needed, add this section to the tls.ini file and list any IP ranges that have
@@ -60,6 +71,23 @@ A list of allowable ciphers to use.
     `ciphers=...`
 
 See also: [Strong SSL Ciphers](http://cipherli.st) and the [SSLlabs Test Page](https://www.ssllabs.com/ssltest/index.html)
+
+### honorCipherOrder
+
+If specified, the list of configured ciphers is treated as the cipher priority from
+highest to lowest. The first matching cipher will be used, instead of letting the
+client choose the cipher.
+
+### ecdhCurve
+
+Specifies the elliptic curve used for ECDH or ECDHE ciphers.
+Only one curve can be specified. The default is prime256v1 (NIST P-256).
+
+### dhparam
+
+Specifies the file containing the diffie-hellman parameters to
+use for DH or DHE key exchange. Create such a file using `openssl dhparam`.
+No DH ciphers can be used without this parameter given.
 
 ### requestCert
 
