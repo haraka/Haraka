@@ -14,7 +14,6 @@ exports.register = function () {
     plugin.tls_opts = {
         key: 'tls_key.pem',
         cert: 'tls_cert.pem',
-	dhparam: '',
     };
 
     plugin.load_tls_ini();
@@ -25,14 +24,20 @@ exports.register = function () {
     plugin.tls_opts.key = plugin.load_pem(plugin.tls_opts.key);
     plugin.tls_opts.cert = plugin.load_pem(plugin.tls_opts.cert);
 
-    plugin.tls_opts.dhparam = plugin.load_pem(plugin.tls_opts.dhparam);
+    if (plugin.tls_opts.dhparam) {
+        plugin.tls_opts.dhparam = plugin.load_pem(plugin.tls_opts.dhparam);
+        if (!plugin.tls_opts.dhparam) {
+            plugin.logcrit("dhparam not loaded. See 'haraka -h tls'");
+            return;
+        }
+    }
 
     if (!plugin.tls_opts.key) {
-        plugin.logcrit("config/tls_key.pem not loaded. See 'haraka -h tls'");
+        plugin.logcrit("tls key not loaded. See 'haraka -h tls'");
         return;
     }
     if (!plugin.tls_opts.cert) {
-        plugin.logcrit("config/tls_cert.pem not loaded. See 'haraka -h tls'");
+        plugin.logcrit("tls certificate not loaded. See 'haraka -h tls'");
         return;
     }
 
