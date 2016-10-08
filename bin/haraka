@@ -202,14 +202,15 @@ function copyFile (srcFile, dstFile) {
 }
 
 function setupHostname(confPath) {
+    var hlPath = path.join(confPath, 'host_list');
     try {
-        if (fs.statSync(confPath).isFile()) return;
+        if (fs.statSync(hlPath).isFile()) return;
     }
     catch (ignore) {}
 
     var hostname = os.hostname() + "\n";
     try {
-        var fd = fs.openSync(path.join(confPath, 'host_list'), 'w');
+        var fd = fs.openSync(hlPath, 'w');
         fs.writeSync(fd, hostname, null);
     }
     catch (e) {

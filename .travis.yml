@@ -25,12 +25,12 @@ before_script:
     - npm install -g grunt-cli
 
 script:
-    - grunt lint
-    - node run_tests
+    - npm run lint
+    - npm test
 
 after_success:
     - npm install istanbul codecov
-    - NODE_ENV=cov ./node_modules/.bin/istanbul cov run_tests
+    - npm run coverage
     - ./node_modules/.bin/codecov
 
 sudo: false
