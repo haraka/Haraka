@@ -101,6 +101,13 @@ Reject connections from clients without a CA validated TLS certificate.
 
     `rejectUnauthorized=[true|false]`  (default: false)
 
+### secureProtocol
+
+Specifies the OpenSSL API function used for handling the TLS session. Choose
+one of the methods described at the
+[OpenSSL API page](https://www.openssl.org/docs/manmaster/ssl/ssl.html).
+The default is SSLv23_method.
+
 ## Inbound Specific Configuration
 
 By default the above options are shared with outbound mail (either
