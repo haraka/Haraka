@@ -16,7 +16,8 @@ var connect_plugins  = ['geoip','asn','connect.p0f','dnsbl', 'early_talker', 'co
 var helo_plugins     = ['helo.checks','tls','auth','relay','spf'];
 var mail_from_plugins= ['spf','mail_from.is_resolvable'];
 var rcpt_to_plugins  = ['access','rcpt_to.in_host_list','rcpt_to.qmail_deliverable'];
-var data_plugins     = ['bounce','data.headers','karma','spamassassin','clamd', 'data.uribl','dkim_sign','dkim_verify'];
+var data_plugins     = ['bounce','data.headers','karma','spamassassin','rspamd',
+                        'clamd','avg', 'data.uribl', 'limit', 'dkim_sign','dkim_verify'];
 // 'seen' plugins are ones we've seen data reported for. When data from a new
 // plugin arrives, it gets added to one of the sections above and the table is
 // redrawn.
