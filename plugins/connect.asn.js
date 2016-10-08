@@ -2,7 +2,7 @@
 
 var dns   = require('dns');
 var async = require('async');
-var net_utils = require('./net_utils');
+var net_utils = require('haraka-net-utils');
 
 var test_ip = '66.128.51.163';
 var providers = [];

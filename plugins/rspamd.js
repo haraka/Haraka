@@ -5,7 +5,7 @@ var http = require('http');
 
 // haraka libs
 var DSN = require('./dsn');
-var net_utils = require('./net_utils');
+var net_utils = require('haraka-net-utils');
 
 exports.register = function () {
     this.load_rspamd_ini();

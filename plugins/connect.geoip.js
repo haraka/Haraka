@@ -3,7 +3,7 @@
 var fs        = require('fs');
 var net       = require('net');
 
-var net_utils = require('./net_utils');
+var net_utils = require('haraka-net-utils');
 
 exports.register = function () {
     var plugin = this;

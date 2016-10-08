@@ -1,7 +1,7 @@
 // bounce tests
 var tlds = require('haraka-tld');
 
-var net_utils = require('./net_utils');
+var net_utils = require('haraka-net-utils');
 var SPF = require('./spf').SPF;
 
 // Override logging in SPF module

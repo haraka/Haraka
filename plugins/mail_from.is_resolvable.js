@@ -3,7 +3,7 @@
 var dns = require('dns');
 var net = require('net');
 
-var net_utils = require('./net_utils');
+var net_utils = require('haraka-net-utils');
 
 exports.register = function () {
     this.load_ini();
