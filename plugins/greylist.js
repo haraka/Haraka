@@ -356,7 +356,7 @@ exports.should_skip_check = function (connection) {
         return true;
     }
 
-    if (net_utils.is_private_ip(connection.remote.ip)) {
+    if (connection.remote.is_private) {
         connection.logdebug(plugin, 'skipping private IP: ' + connection.remote.ip);
         ctr.add(plugin, {
             skip : 'private-ip'

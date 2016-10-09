@@ -72,7 +72,7 @@ exports.should_skip = {
     },
     'private remote_ip': function (test) {
         test.expect(1);
-        this.connection.remote.ip = '192.168.1.1';
+        this.connection.remote.is_private = true;
 
         this.plugin.load_config();
         this.plugin.cfg.main.zones = 'dnsbl.test, dnsbl2.test';

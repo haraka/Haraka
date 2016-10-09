@@ -296,6 +296,7 @@ exports.big_company = {
             test.done();
         };
         this.connection.remote.host='anything-else.com';
+        this.connection.remote.is_private=false;
         this.plugin.init(stub, this.connection, test_helo);
         this.plugin.cfg.check.big_company=true;
         this.plugin.cfg.reject.big_company=false;
@@ -331,6 +332,7 @@ exports.literal_mismatch = {
             test.done();
         };
         this.connection.remote.ip='10.0.1.1';
+        this.connection.remote.is_private=true;
         this.plugin.init(stub, this.connection, test_helo);
         this.plugin.cfg.check.literal_mismatch=1;
         this.plugin.cfg.reject.literal_mismatch=true;
@@ -347,6 +349,7 @@ exports.literal_mismatch = {
             test.done();
         };
         this.connection.remote.ip='10.0.1.2';
+        this.connection.remote.is_private=true;
         this.plugin.init(stub, this.connection, test_helo);
         this.plugin.cfg.check.literal_mismatch=2;
         this.plugin.cfg.reject.literal_mismatch=true;
@@ -357,12 +360,12 @@ exports.literal_mismatch = {
         var outer = this;
         var test_helo = '[10.0.1.1]';
         var cb = function () {
-            // console.log(outer.connection.results.get('helo.checks'));
             test.equal(undefined, arguments[0]);
             test.ok(outer.connection.results.get('helo.checks').skip.length);
             test.done();
         };
         this.connection.remote.ip='10.0.1.2';
+        this.connection.remote.is_private=true;
         this.plugin.init(stub, this.connection, test_helo);
         this.plugin.cfg.check.literal_mismatch=0;
         this.plugin.cfg.reject.literal_mismatch=false;
@@ -373,12 +376,12 @@ exports.literal_mismatch = {
         var outer = this;
         var test_helo = '[10.0.1.1]';
         var cb = function () {
-            // console.log(outer.connection.results.get('helo.checks'));
             test.equal(undefined, arguments[0]);
             test.ok(outer.connection.results.get('helo.checks').skip.length);
             test.done();
         };
         this.connection.remote.ip='10.0.1.2';
+        this.connection.remote.is_private=true;
         this.plugin.init(stub, this.connection, test_helo);
         this.plugin.cfg.check.literal_mismatch=0;
         this.plugin.cfg.reject.literal_mismatch=true;
