@@ -146,9 +146,9 @@ function setupClient (self) {
     if (ha_list.some(function (element, index, array) {
         return ipaddr.parse(self.remote.ip).match(element[0], element[1]);
     })) {
-        self.proxy = true;
+        self.proxy.allowed = true;
         // Wait for PROXY command
-        self.proxy_timer = setTimeout(function () {
+        self.proxy.timer = setTimeout(function () {
             self.respond(421, 'PROXY timeout', function () {
                 self.disconnect();
             });
@@ -164,7 +164,6 @@ function Connection (client, server) {
     this.server = server;
     this.local = {           // legacy property locations
         ip: null,            // c.local_ip
-        proxy: null,
         port: null,          // c.local_port
         host: null,
     };
@@ -186,6 +185,12 @@ function Connection (client, server) {
         verified: false,
         cipher: {},
         authorized: null,
+    };
+    this.proxy = {
+        allowed: false,      // c.proxy
+        ip: null,            // c.haproxy_ip
+        type: null,
+        timer: null,         // c.proxy_timer
     };
     this.set('tls', 'enabled', (server.has_tls ? true : false));
 
@@ -223,15 +228,12 @@ function Connection (client, server) {
         tempfail: 0,
         reject:   0,
     };
-    this.proxy = false;
-    this.proxy_timer = false;
     this.max_line_length = config.get('max_line_length') || 512;
     this.max_data_line_length = config.get('max_data_line_length') || 992;
     this.results = new ResultStore(this);
     this.errors = 0;
     this.last_rcpt_msg = null;
     this.hook = null;
-    this.haproxy_ip = null;
     this.header_hide_version = config.get('header_hide_version') ? true : false;
     setupClient(this);
 }
@@ -245,7 +247,8 @@ exports.createConnection = function(client, server) {
 
 Connection.prototype.set = function (obj, prop, val) {
     if (!this[obj]) this.obj = {};   // initialize
-    this[obj][prop] = val;
+
+    this[obj][prop] = val;  // normalized propery location
 
     // sunset 3.0.0
     if (obj === 'hello' && prop === 'verb') {
@@ -253,6 +256,9 @@ Connection.prototype.set = function (obj, prop, val) {
     }
     else if (obj === 'tls' && prop === 'enabled') {
         this.using_tls = val;
+    }
+    else if (obj === 'proxy' && prop === 'ip') {
+        this.haproxy_ip = val;
     }
     else {
         this[obj + '_' + prop] = val;
@@ -395,8 +401,10 @@ Connection.prototype._process_data = function() {
         }
         var this_line = this.current_data.slice(0, offset+1);
         // Hack: bypass this code to allow HAProxy's PROXY extension
-        if (this.state === states.STATE_PAUSE && this.proxy && /^PROXY /.test(this_line)) {
-            if (this.proxy_timer) clearTimeout(this.proxy_timer);
+        if (this.state === states.STATE_PAUSE &&
+            this.proxy.allowed &&
+            /^PROXY /.test(this_line)) {
+            if (this.proxy.timer) clearTimeout(this.proxy.timer);
             this.state = states.STATE_CMD;
             this.current_data = this.current_data.slice(this_line.length);
             this.process_line(this_line);
@@ -404,7 +412,7 @@ Connection.prototype._process_data = function() {
         // Detect early_talker but allow PIPELINING extension (ESMTP)
         else if ((this.state === states.STATE_PAUSE || this.state === states.STATE_PAUSE_SMTP) && !this.esmtp) {
             // Allow EHLO/HELO to be pipelined with PROXY
-            if (this.proxy && /^(?:EH|HE)LO /i.test(this_line)) return;
+            if (this.proxy.allowed && /^(?:EH|HE)LO /i.test(this_line)) return;
             if (!this.early_talker) {
                 this_line = this_line.toString().replace(/\r?\n/,'');
                 this.logdebug('[early_talker] state=' + this.state + ' esmtp=' + this.esmtp + ' line="' + this_line + '"');
@@ -1145,13 +1153,13 @@ Connection.prototype.rcpt_respond = function(retval, msg) {
 Connection.prototype.cmd_proxy = function (line) {
     var self = this;
 
-    if (!this.proxy) {
+    if (!this.proxy.allowed) {
         this.respond(421, 'PROXY not allowed from ' + this.remote.ip);
         return this.disconnect();
     }
 
-    var match;
-    if (!(match = /(TCP4|TCP6|UNKNOWN) (\S+) (\S+) (\d+) (\d+)$/.exec(line))) {
+    var match = /(TCP4|TCP6|UNKNOWN) (\S+) (\S+) (\d+) (\d+)$/.exec(line);
+    if (!match) {
         this.respond(421, 'Invalid PROXY format');
         return this.disconnect();
     }
@@ -1160,6 +1168,7 @@ Connection.prototype.cmd_proxy = function (line) {
     var dst_ip = match[3];
     var src_port = match[4];
     var dst_port = match[5];
+
     // Validate source/destination IP
     switch (proto) {
         case 'TCP4':
@@ -1182,7 +1191,8 @@ Connection.prototype.cmd_proxy = function (line) {
         ' dst_ip=' + dst_ip + ':' + dst_port);
 
     this.reset_transaction(function () {
-        self.haproxy_ip = self.remote.ip;
+        self.set('proxy', 'ip', self.remote.ip);
+        self.set('proxy', 'type', 'haproxy');
         self.relaying = false;
         self.set('local', 'ip', dst_ip);
         self.set('local', 'port', parseInt(dst_port, 10));

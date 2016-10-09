@@ -53,7 +53,6 @@ exports.connectionRaw = {
         test.deepEqual(this.connection.local, {
             ip: null,
             port: null,
-            proxy: null,
             host: null,
         });
         // backwards compat, sunset v3.0.0
