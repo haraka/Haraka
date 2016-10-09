@@ -7,20 +7,28 @@ var connection   = require('../connection');
 // huge hack here, but plugin tests need constants
 constants.import(global);
 
-function _set_up (callback) {
+function _set_up (done) {
     this.backup = {};
     var client = {
-        destroy: function () { true; }
+        remotePort: null,
+        remoteAddress: null,
+        destroy: function () { true; },
     };
-    this.connection = connection.createConnection(client, {});  // this.server);
-    callback();
+    var server = {
+        ip_address: null,
+        address: function () {
+            return this.ip_address;
+        }
+    }
+    this.connection = connection.createConnection(client, server);
+    done();
 }
 
-function _tear_down (callback) {
-    callback();
+function _tear_down (done) {
+    done();
 }
 
-exports.connection = {
+exports.connectionRaw = {
     setUp : _set_up,
     tearDown : _tear_down,
     'has remote object': function (test) {
@@ -68,7 +76,6 @@ exports.connection = {
     },
     'get_capabilities' : function (test) {
         test.expect(1);
-// console.log(this);
         test.deepEqual([], this.connection.get_capabilities());
         test.done();
     },
@@ -134,6 +141,12 @@ exports.connection = {
         test.equal(true, this.connection.tls.enabled);
         test.done();
     },
+    'sets remote.is_private': function (test) {
+        test.expect(1);
+        test.equal(false, this.connection.remote.is_private);
+        test.done();
+    },
+
     /*
     'max_data_exceeded_respond' : function (test) {
         test.expect(1);
@@ -142,3 +155,29 @@ exports.connection = {
     }
     */
 };
+
+exports.connectionPrivate = {
+    setUp: function (done) {
+        this.backup = {};
+        var client = {
+            remotePort: 2525,
+            remoteAddress: '172.16.15.1',
+            destroy: function () { true; },
+        };
+        var server = {
+            ip_address: '172.16.15.254',
+            address: function () {
+                return this.ip_address;
+            }
+        }
+        this.connection = connection.createConnection(client, server);
+        done();
+    },
+    tearDown : _tear_down,
+    'sets remote.is_private': function (test) {
+        test.expect(2);
+        test.equal(true, this.connection.remote.is_private);
+        test.equal(2525, this.connection.remote.port);
+        test.done();
+    },
+}

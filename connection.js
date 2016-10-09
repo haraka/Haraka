@@ -11,6 +11,7 @@ var path        = require('path');
 // npm libs
 var ipaddr      = require('ipaddr.js');
 var constants   = require('haraka-constants');
+var net_utils   = require('haraka-net-utils');
 var Address     = require('address-rfc2821').Address;
 
 // Haraka libs
@@ -96,12 +97,17 @@ function setupClient (self) {
     }
     self.set('remote', 'ip', ipaddr.process(ip).toString());
     self.set('remote', 'port', self.client.remotePort);
+    self.set('remote', 'is_private', net_utils.is_private_ip(self.remote.ip));
     self.lognotice('connect ip=' + self.remote.ip +
             ' port=' + self.remote.port +
             ' local_ip=' + self.local.ip + ' local_port=' + self.local.port);
 
     var rhost = 'client ' + ((self.remote.host) ? self.remote.host + ' ' : '') +
                 '[' + self.remote.ip + ']';
+    if (!self.client.on) {
+        // end of tests
+        return;
+    }
     self.client.on('end', function() {
         if (self.state >= states.STATE_DISCONNECTING) return;
         self.remote.closed = true;
