@@ -2,7 +2,6 @@
 
 var fs = require('fs');
 var net = require('net');
-var net_utils = require('haraka-net-utils');
 var plugin = exports;
 
 // Defaults
@@ -18,7 +17,7 @@ exports.hook_connect = function (next, connection) {
     var cfg = this.config.get('messagesniffer.ini');
 
     // Skip any private IP ranges
-    if (net_utils.is_private_ip(connection.remote.ip)) return next();
+    if (connection.remote.is_private) return next();
 
     // Retrieve GBUdb information for the connecting IP
     SNFClient("<snf><xci><gbudb><test ip='" + connection.remote.ip + "'/></gbudb></xci></snf>", function (err, result) {
