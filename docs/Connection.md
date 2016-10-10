@@ -10,41 +10,30 @@ API
 
 A unique UUID for this connection.
 
-* connection.remote.ip
+* connection.remote - info about the host that is connecting to Haraka.
 
-The remote IP address
+    * ip   - remote IP address
+    * host - reverse DNS of the remote hosts IP
+    * is_private - true if the remote IP is from a private (loopback, RFC 1918, link local, etc.) IP address.
 
-* connection.remote.host
+* connection.local - info about the host that is running Haraka
 
-The rDNS of the remote IP
+    * ip - the IP of the Haraka server, as reported by the OS
+    * port - the port number handling the connection.
+    * host - the rDNS host name of the local IP
 
-* connection.local.ip
+* connection.proxy - proxy properties set when a proxy is used (like haproxy)
+    * allowed - if the remote IP has proxy permission
+    * ip - when proxied, the proxy servers IP address
+    * type - currently null or 'haproxy'
 
-The bound IP address of the server as reported by the OS
-
-* connection.local.port
-
-The bound port number of the server which is handling the connection.
-If you have specified multiple listen= ports this variable is useful
-if you only want a plugin to run when connections are made to a specific
-port
-
-* connection.haproxy\_ip
-
-If the connection is being proxied by HAProxy, this variable will
-contain the remote IP address of the HAProxy host.
-
-* connection.hello.verb
-
-Either 'EHLO' or 'HELO' whichever the remote end used
-
-* connection.hello.host
-
-The hostname given to HELO or EHLO
+* connection.hello
+    * verb - Either 'EHLO' or 'HELO' whichever the remote end used
+    * host - The hostname given with HELO or EHLO
 
 * connection.notes
 
-A safe object in which you can store connection-specific variables
+An object which persists during the lifetime of the connection. It is used to store connection-specific properties. See also, connection.results.
 
 * connection.transaction
 

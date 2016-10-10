@@ -53,7 +53,6 @@ exports.connectionRaw = {
         test.deepEqual(this.connection.local, {
             ip: null,
             port: null,
-            proxy: null,
             host: null,
         });
         // backwards compat, sunset v3.0.0
@@ -146,7 +145,33 @@ exports.connectionRaw = {
         test.equal(false, this.connection.remote.is_private);
         test.done();
     },
+    'has legacy proxy property set' : function (test) {
+        test.expect(1);
+        this.connection.set('proxy', 'ip', '172.16.15.1');
+        test.equal('172.16.15.1', this.connection.haproxy_ip);
+        test.done();
+    },
+    'has normalized proxy properties, default' : function (test) {
+        test.expect(4);
+        test.equal(false, this.connection.proxy.allowed);
+        test.equal(null, this.connection.proxy.ip);
+        test.equal(null, this.connection.proxy.type);
+        test.equal(null, this.connection.proxy.timer);
+        test.done();
+    },
+    'has normalized proxy properties, set' : function (test) {
+        test.expect(4);
+        this.connection.set('proxy', 'ip', '172.16.15.1');
+        this.connection.set('proxy', 'type', 'haproxy');
+        this.connection.set('proxy', 'timer', setTimeout(function() {}, 1000));
+        this.connection.set('proxy', 'allowed', true);
 
+        test.equal(true, this.connection.proxy.allowed);
+        test.equal('172.16.15.1', this.connection.proxy.ip);
+        test.ok(this.connection.proxy.timer);
+        test.equal(this.connection.proxy.type, 'haproxy');
+        test.done();
+    },
     /*
     'max_data_exceeded_respond' : function (test) {
         test.expect(1);
