@@ -5,7 +5,6 @@ var http = require('http');
 
 // haraka libs
 var DSN = require('./dsn');
-var net_utils = require('haraka-net-utils');
 
 exports.register = function () {
     this.load_rspamd_ini();
@@ -116,8 +115,7 @@ exports.hook_data_post = function (next, connection) {
 
     var authed = connection.notes.auth_user;
     if (authed && !cfg.check.authenticated) return next();
-    if (!cfg.check.private_ip &&
-        net_utils.is_private_ip(connection.remote.ip)) {
+    if (!cfg.check.private_ip && connection.remote.is_private) {
         return next();
     }
 

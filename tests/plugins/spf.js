@@ -148,14 +148,11 @@ exports.hook_helo = {
         var next = function (rc) {
             completed++;
             test.equal(undefined, rc);
-            if (completed >= 3) test.done();
+            if (completed >= 2) test.done();
         };
-        test.expect(3);
-        this.connection.remote.ip='192.168.1.1';
+        test.expect(2);
+        this.connection.remote.is_private=true;
         this.plugin.hook_helo(next, this.connection);
-        this.connection.remote.ip='10.0.1.1';
-        this.plugin.hook_helo(next, this.connection);
-        this.connection.remote.ip='127.0.0.1';
         this.plugin.hook_helo(next, this.connection, 'helo.sender.com');
     },
     'IPv4 literal': function (test) {

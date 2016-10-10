@@ -1,5 +1,4 @@
 // dnsbl plugin
-var net_utils = require('haraka-net-utils');
 
 exports.register = function() {
     var plugin = this;
@@ -73,10 +72,9 @@ exports.should_skip = function (connection) {
     var plugin = this;
 
     if (!connection) { return true; }
-    var rip = connection.remote.ip;
 
-    if (net_utils.is_private_ip(rip)) {
-        connection.logdebug(plugin, 'skipping private IP: ' + rip);
+    if (connection.remote.is_private) {
+        connection.logdebug(plugin, 'skip private: ' + connection.remote.ip);
         return true;
     }
 

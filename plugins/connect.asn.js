@@ -2,7 +2,6 @@
 
 var dns   = require('dns');
 var async = require('async');
-var net_utils = require('haraka-net-utils');
 
 var test_ip = '66.128.51.163';
 var providers = [];
@@ -115,14 +114,13 @@ exports.get_dns_results = function (zone, ip, done) {
 
 exports.lookup_asn = function (next, connection) {
     var plugin = this;
-    var ip = connection.remote.ip;
-    if (net_utils.is_private_ip(ip)) return next();
+    if (connection.remote.is_private) return next();
 
     function provIter (zone, done) {
 
         connection.logdebug(plugin, "zone: " + zone);
 
-        plugin.get_dns_results(zone, ip, function result_cb (err, zone2, r) {
+        plugin.get_dns_results(zone, connection.remote.ip, function result_cb (err, zone2, r) {
             if (err) {
                 connection.logerror(plugin, err.message);
                 return done();

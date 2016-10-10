@@ -46,13 +46,13 @@ exports.hook_connect_init = function (next, connection) {
 exports.hook_lookup_rdns = function (next, connection) {
     var plugin = this;
 
-    var rip = connection.remote.ip;
-    if (net_utils.is_private_ip(rip)) {
+    if (connection.remote.is_private) {
         connection.results.add(plugin, {skip: 'private_ip'});
         return next();
     }
 
     plugin.refresh_config(connection);
+    var rip = connection.remote.ip;
 
     var called_next = 0;
     var timer;

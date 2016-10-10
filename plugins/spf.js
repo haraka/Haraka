@@ -69,7 +69,7 @@ exports.hook_helo = exports.hook_ehlo = function (next, connection, helo) {
     var plugin = this;
 
     // Bypass private IPs
-    if (net_utils.is_private_ip(connection.remote.ip)) { return next(); }
+    if (connection.remote.is_private) { return next(); }
 
     // RFC 4408, 2.1: "SPF clients must be prepared for the "HELO"
     //           identity to be malformed or an IP address literal.
@@ -112,8 +112,7 @@ exports.hook_mail = function (next, connection, params) {
     var plugin = this;
 
     // For inbound message from a private IP, skip MAIL FROM check
-    if (!connection.relaying &&
-         net_utils.is_private_ip(connection.remote.ip)) {
+    if (!connection.relaying && connection.remote.is_private) {
         return next();
     }
 

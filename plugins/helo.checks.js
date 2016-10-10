@@ -124,7 +124,7 @@ exports.should_skip = function (connection, test_name) {
         return true;
     }
 
-    if (plugin.cfg.skip.private_ip && net_utils.is_private_ip(connection.remote.ip)) {
+    if (plugin.cfg.skip.private_ip && connection.remote.is_private) {
         connection.results.add(plugin, {skip: test_name + '(private)'});
         return true;
     }
