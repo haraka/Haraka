@@ -4,7 +4,7 @@
   "license": "MIT",
   "description": "An SMTP Server project.",
   "keywords": [ "haraka", "smtp", "server", "email" ],
-  "version": "2.8.9",
+  "version": "2.8.10",
   "homepage": "http://haraka.github.io",
   "repository": {
     "type": "git",
@@ -37,7 +37,6 @@
     "elasticsearch"         : "*",
     "haraka-nosql"          : "*",
     "ldapjs"                : "~1.0.0",
-    "maxmind"               : "0.6",
     "modern-syslog"         : "~1.1.1",
     "redis"                 : "~2.6.2",
     "tmp"                   : "~0.0.28",
