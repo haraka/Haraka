@@ -122,7 +122,7 @@ exports.check_redis_sub_msg = function (connection, message) {
     var plugin = this;
     // connection.loginfo(plugin, message);
     // {"plugin":"karma","result":{"fail":"spamassassin.hits"}}
-    // {"plugin":"connect.geoip","result":{"country":"CN"}}
+    // {"plugin":"geoip","result":{"country":"CN"}}
 
     var m = JSON.parse(message);
     connection.logprotocol(plugin, message);
@@ -314,7 +314,7 @@ exports.get_class = function (pi_name, r) {
             if (r.isa === 'no') return 'bg_lgreen';
             if (r.fail.length)  return 'bg_red';
             return 'bg_green';
-        case 'connect.geoip':
+        case 'geoip':
             return (!r.distance) ? 'got' : (r.too_far ? 'bg_red' : 'bg_green');
         case 'connect.p0f':
             if (r.os_name) {
@@ -389,11 +389,11 @@ exports.get_value = function (pi_name, r) {
 
     // replace the plugin name shown with...
     switch (pi_name) {
-        case 'connect.asn':
+        case 'asn':
             return r.asn;
         case 'connect.p0f':
             return r.os_name;
-        case 'connect.geoip':
+        case 'geoip':
             return r.country || 'geo';
         default:
             return;
@@ -412,7 +412,7 @@ exports.get_title = function (pi_name, r) {
         case 'bounce':
             if (r.isa === 'no') return 'not a bounce';
             return r.human;
-        case 'connect.geoip':
+        case 'geoip':
             return r.human;
         case 'data.dmarc':
             var comment = (r.reason && r.reason.length) ?

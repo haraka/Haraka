@@ -18,8 +18,8 @@
 # RCPT TO address you accept mail from. See 'haraka -h access'.
 access
 # connect.p0f
-# connect.geoip
-# connect.asn
+# geoip
+# asn
 # connect.fcrdns
 # block mails from known bad hosts (see config/dnsbl.zones for the DNS zones queried)
 dnsbl

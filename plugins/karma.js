@@ -134,7 +134,7 @@ exports.check_result = function (connection, message) {
     var plugin = this;
     // connection.loginfo(plugin, message);
     // {"plugin":"karma","result":{"fail":"spamassassin.hits"}}
-    // {"plugin":"connect.geoip","result":{"country":"CN"}}
+    // {"plugin":"geoip","result":{"country":"CN"}}
 
     var m = JSON.parse(message);
     if (m && m.result && m.result.asn) {
@@ -328,8 +328,8 @@ exports.tarpit_delay_msa = function (connection, delay, k) {
     }
 
     // Reduce delay for good ASN history
-    var asn = connection.results.get('connect.asn');
-    if (!asn) { asn = connection.results.get('connect.geoip'); }
+    var asn = connection.results.get('asn');
+    if (!asn) { asn = connection.results.get('geoip'); }
     if (asn && asn.asn && k.neighbors > 0) {
         connection.logdebug(plugin, trg + ' neighbors: ' + delay);
         delay = delay - 2;
@@ -670,7 +670,7 @@ exports.get_award_location = function (connection, award_key) {
         return plugin.get_award_loc_from_note(connection, bits[0]);
     }
 
-    if (loc_bits[0] === 'results') {   // ex: results.connect.geoip.distance
+    if (loc_bits[0] === 'results') {   // ex: results.geoip.distance
         return plugin.get_award_loc_from_results(connection, loc_bits);
     }
 
@@ -922,9 +922,9 @@ exports.init_ip = function (dbkey, rip, expire) {
 exports.get_asn_key = function (connection) {
     var plugin = this;
     if (!plugin.cfg.asn.enable) { return; }
-    var asn = connection.results.get('connect.asn');
+    var asn = connection.results.get('asn');
     if (!asn || !asn.asn) {
-        asn = connection.results.get('connect.geoip');
+        asn = connection.results.get('geoip');
     }
     if (!asn || !asn.asn || isNaN(asn.asn)) { return; }
     return 'as' + asn.asn;

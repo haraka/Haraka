@@ -29,7 +29,9 @@
     "sprintf-js"            : "~1.0.3",
     "haraka-tld"            : "*",
     "haraka-constants"      : "*",
-    "haraka-net-utils"      : "*"
+    "haraka-net-utils"      : "*",
+    "haraka-plugin-geoip"   : "*",
+    "haraka-plugin-asn"     : "*"
   },
   "optionalDependencies": {
     "elasticsearch"         : "*",

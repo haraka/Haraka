@@ -140,15 +140,15 @@ ASNs with less than 5 karma points in either direction are ignored.
 
 #### report\_as
 
-Store the ASN results as another plugin. Example: I set `report_as=connect.asn`, so that karma history for an ASN is reported with the ASN plugin data. A practical consequence of changing report_as is that the award location in karma.ini would need to change from:
+Store the ASN results as another plugin. Example: I set `report_as=asn`, so that karma history for an ASN is reported with the ASN plugin data. A practical consequence of changing report_as is that the award location in karma.ini would need to change from:
 
     NNN karma | pass | equals | asn_all_good |  2
     NNN karma | fail | equals | asn_all_bad  | -3
 
 to: 
 
-    NNN connect.asn | pass | equals | asn_all_good |  2
-    NNN connect.asn | fail | equals | asn_all_bad  | -3
+    NNN asn | pass | equals | asn_all_good |  2
+    NNN asn | fail | equals | asn_all_bad  | -3
 
 ### <a name="malformed_env"></a>Malformed Envelope Addresses
 
@@ -187,7 +187,7 @@ Expect to use karma *with* content filters.
 
 
 [p0f-url]: /manual/plugins/connect.p0f.html
-[geoip-url]: /manual/plugins/connect.geoip.html
+[geoip-url]: https://github.com/haraka/haraka-plugin-geoip
 [dnsbl-url]: /manual/plugins/dnsbl.html
 [fcrdns-url]: http://haraka.github.io/manual/plugins/connect.fcrdns.html
 [uribl-url]: http://haraka.github.io/manual/plugins/data.uribl.html
