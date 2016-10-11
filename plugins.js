@@ -52,9 +52,9 @@ Plugin.prototype.core_require = function (name) {
 function plugin_search_paths (prefix, name) {
     return [
         path.resolve(prefix, 'plugins', name + '.js'),
+        path.resolve(prefix, 'node_modules', 'haraka-plugin-' + name, 'package.json'),
         path.resolve(prefix, 'plugins', name, 'package.json'),
         path.resolve(prefix, 'node_modules', name, 'package.json'),
-        path.resolve(prefix, 'node_modules', 'haraka-plugin-' + name, 'package.json'),
     ];
 }
 

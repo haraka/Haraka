@@ -115,8 +115,9 @@ exports.plugin_paths = {
 
         var p = new plugin.Plugin('watch');
 
-        test.expect(3);
-        test.equal(p.plugin_path, path.resolve(__dirname, '..', 'plugins', 'watch', 'package.json'));
+        test.expect(2);
+        // invalid for watch, which is now npm packaged plugin
+        // test.equal(p.plugin_path, path.resolve(__dirname, '..', 'plugins', 'watch', 'package.json'));
         test.ok(p.hasPackageJson);
         try {
             p._compile();
@@ -248,8 +249,9 @@ exports.plugin_config = {
 
         var p = new plugin.Plugin('watch');
 
-        test.expect(2);
-        test.equal(p.config.root_path, path.resolve(__dirname, '..', 'plugins', 'watch', 'config'));
+        test.expect(1);
+        // invalid for watch, which is now npm packaged plugin
+        // test.equal(p.config.root_path, path.resolve(__dirname, '..', 'plugins', 'watch', 'config'));
         test.equal(p.config.overrides_path, path.resolve(__dirname, '..', 'config'));
         test.done();
     },
