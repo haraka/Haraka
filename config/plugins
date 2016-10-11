@@ -60,6 +60,7 @@ data.headers
 #spamassassin
 #dkim_sign
 #karma
+#limit
 
 # QUEUE
 # queues: discard  qmail-queue  quarantine  smtp_forward  smtp_proxy
@@ -68,3 +69,5 @@ queue/smtp_forward
 
 # Disconnect client if they spew bad SMTP commands at us
 max_unrecognized_commands
+
+#watch

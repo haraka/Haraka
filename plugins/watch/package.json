@@ -8,7 +8,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/haraka/Haraka.git"
+    "url": "git+https://github.com/haraka/haraka-plugin-watch.git"
   },
   "keywords": [
     "smtp",
@@ -17,9 +17,9 @@
     "email"
   ],
   "author": "Matt Simerson",
-  "license": "ISC",
+  "license": "MIT",
   "bugs": {
-    "url": "https://github.com/haraka/Haraka/issues"
+    "url": "https://github.com/haraka/haraka-plugin-watch/issues"
   },
-  "homepage": "https://github.com/haraka/Haraka#readme"
+  "homepage": "https://github.com/haraka/haraka-plugin-watch#readme"
 }

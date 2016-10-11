@@ -90,8 +90,6 @@ exports.get_timeout = {
 
 exports.plugin_paths = {
 
-    /* jshint maxlen: 90 */
-
     'CORE plugin: (tls)' : function (test) {
         delete process.env.HARAKA;
 
@@ -220,7 +218,6 @@ exports.plugin_paths = {
 };
 
 exports.plugin_config = {
-    /* jshint maxlen: 90 */
 
     'CORE plugin: (tls)' : function (test) {
         delete process.env.HARAKA;

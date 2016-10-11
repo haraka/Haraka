@@ -31,7 +31,8 @@
     "haraka-constants"      : "*",
     "haraka-net-utils"      : "*",
     "haraka-plugin-geoip"   : "*",
-    "haraka-plugin-asn"     : "*"
+    "haraka-plugin-asn"     : "*",
+    "haraka-plugin-watch"   : "*"
   },
   "optionalDependencies": {
     "elasticsearch"         : "*",

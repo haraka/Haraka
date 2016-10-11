@@ -49,6 +49,15 @@ Plugin.prototype.core_require = function (name) {
     return require('./' + name);
 };
 
+function plugin_search_paths (prefix, name) {
+    return [
+        path.resolve(prefix, 'plugins', name + '.js'),
+        path.resolve(prefix, 'plugins', name, 'package.json'),
+        path.resolve(prefix, 'node_modules', name, 'package.json'),
+        path.resolve(prefix, 'node_modules', 'haraka-plugin-' + name, 'package.json'),
+    ];
+}
+
 Plugin.prototype._get_plugin_path = function () {
     var plugin = this;
     /* From https://github.com/haraka/Haraka/pull/1278#issuecomment-168856528
@@ -74,20 +83,11 @@ Plugin.prototype._get_plugin_path = function () {
     var paths = [];
     if (process.env.HARAKA) {
         // Installed mode - started via bin/haraka
-        paths.push(
-            path.resolve(process.env.HARAKA, 'plugins', name + '.js'),
-            path.resolve(process.env.HARAKA, 'plugins', name, 'package.json'),
-            path.resolve(process.env.HARAKA, 'node_modules', name, 'package.json'),
-            path.resolve(process.env.HARAKA, 'node_modules', 'haraka-plugin-' + name, 'package.json')
-        );
+        paths = paths.concat(plugin_search_paths(process.env.HARAKA, name));
     }
 
-    paths.push(
-        path.resolve(__dirname, 'plugins', name + '.js'),
-        path.resolve(__dirname, 'plugins', name, 'package.json'),
-        path.resolve(__dirname, 'node_modules', name, 'package.json'),
-        path.resolve(__dirname, 'node_modules', 'haraka-plugin-' + name, 'package.json')
-    );
+    // development mode
+    paths = paths.concat(plugin_search_paths(__dirname, name));
 
     paths.forEach(function (pp) {
         if (plugin.plugin_path) return;
