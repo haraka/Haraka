@@ -148,11 +148,21 @@ exports.tls_unrecognized_command = function (next, connection, params) {
         }, timeout * 1000);
     }
 
+    function cleanUpDisconnect() {
+        if (!timed_out) {
+            clearTimeout(timer);
+            timed_out = true;
+            return next(DENYSOFTDISCONNECT);
+        }
+    }
+
     connection.notes.tls_timer = timer;
+    connection.notes.cleanUpDisconnect = cleanUpDisconnect;
 
     var upgrade_cb = function (authorized, verifyError, cert, cipher) {
         if (timed_out) { return; }
         clearTimeout(timer);
+        timed_out = true;
         connection.reset_transaction(function () {
             connection.set('hello', 'host', undefined);
             connection.set('tls', 'enabled', true);
@@ -181,8 +191,8 @@ exports.tls_unrecognized_command = function (next, connection, params) {
 };
 
 exports.hook_disconnect = function (next, connection) {
-    if (connection.notes.tls_timer) {
-        clearTimeout(connection.notes.tls_timer);
+    if (connection.notes.cleanUpDisconnect) {
+        connection.notes.cleanUpDisconnect();
     }
     return next();
 };
