@@ -49,11 +49,26 @@ Specifies an alternative location for the key file. If multiple keys are to be
 specified, use key[]= assignment for each of them. Non-absolute paths are relative
 to the config/ directory.
 
+For example, to configure single key and cert chain files, located in the `config/`
+directory, use the following in `tls.ini`:
+
+    key=example.com.key.pem
+    cert=example.com.crt-chain.pem
+
+If multiple pairs of key and cert chain files should be used, outside of the haraka
+`config/` directory, configure instead:
+
+    key[]=/etc/ssl/private/example.com.rsa.key.pem
+    cert[]=/etc/ssl/private/example.com.rsa.crt-chain.pem
+    key[]=/etc/ssl/private/example.com.ecdsa.key.pem
+    cert[]=/etc/ssl/private/example.com.ecdsa.crt-chain.pem
+
 ### cert
 
 Specifies an alternative location for the certificate chain file. If multiple
 certificate chains are to be used, use cert[]= assignmet for each of them.
-Non-absolute pahts are relative to the config/ directory.
+Non-absolute pahts are relative to the config/ directory. See the description of
+the `key` parameter for specific use.
 
 ### `no_tls_hosts`
 
