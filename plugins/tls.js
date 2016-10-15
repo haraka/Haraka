@@ -20,10 +20,6 @@ exports.register = function () {
 
     plugin.logdebug(plugin.tls_opts);
 
-    // transform key and cert filenames into key and cert in binary form
-    plugin.tls_opts.key = plugin.load_pem(plugin.tls_opts.key);
-    plugin.tls_opts.cert = plugin.load_pem(plugin.tls_opts.cert);
-
     if (plugin.tls_opts.dhparam) {
         plugin.tls_opts.dhparam = plugin.load_pem(plugin.tls_opts.dhparam);
         if (!plugin.tls_opts.dhparam) {
@@ -32,12 +28,40 @@ exports.register = function () {
         }
     }
 
-    if (!plugin.tls_opts.key) {
-        plugin.logcrit("tls key not loaded. See 'haraka -h tls'");
-        return;
+    // make non-array key/cert option into Arrays with one entry
+    if (!(Array.isArray(plugin.tls_opts.key))) {
+        plugin.tls_opts.key = [plugin.tls_opts.key];
     }
-    if (!plugin.tls_opts.cert) {
-        plugin.logcrit("tls certificate not loaded. See 'haraka -h tls'");
+    if (!(Array.isArray(plugin.tls_opts.cert))) {
+        plugin.tls_opts.cert = [plugin.tls_opts.cert];
+    }
+
+    if (plugin.tls_opts.key.length != plugin.tls_opts.cert.length) {
+        plugin.logcrit("number of keys (" +
+                       plugin.tls_opts.key.length + ") doesn't match number of certs (" +
+                       plugin.tls_opts.cert.length + "). See 'haraka -h tls'");
+        throw new Error('syntax error');
+    }
+
+    // turn key/cert file names into actual key/cert binary data
+    plugin.tls_opts.key = plugin.tls_opts.key.map(function(keyFileName) {
+        var key = plugin.load_pem(keyFileName);
+        if (!key) {
+            plugin.logcrit("tls key " + keyFileName + " could not be loaded. See 'haraka -h tls'");
+        }
+        return key;
+    });
+    plugin.tls_opts.cert = plugin.tls_opts.cert.map(function(certFileName) {
+        var cert = plugin.load_pem(certFileName);
+        if (!cert) {
+            plugin.logcrit("tls cert " + certFileName + " could not be loaded. See 'haraka -h tls'");
+        }
+        return cert;
+    });
+
+    // now do the error handling for unloadable key/cert files
+    if (plugin.tls_opts.key.some(function(key) { return !key;}) ||
+        plugin.tls_opts.cert.some(function(cert) { return !cert;})) {
         return;
     }
 
