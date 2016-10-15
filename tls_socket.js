@@ -369,6 +369,7 @@ exports.load_tls_ini = function (cb) {
         booleans: [
             '+main.requestCert',
             '-main.rejectUnauthorized',
+            '-main.honorCipherOrder',
             '-redis.disable_for_failed_hosts',
         ]
     }, cb);
