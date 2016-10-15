@@ -50,14 +50,14 @@ exports.register = function () {
             plugin.logcrit("tls key " + keyFileName + " could not be loaded. See 'haraka -h tls'");
         }
         return key;
-        });
+    });
     plugin.tls_opts.cert = plugin.tls_opts.cert.map(function(certFileName) {
         var cert = plugin.load_pem(certFileName);
         if (!cert) {
             plugin.logcrit("tls cert " + certFileName + " could not be loaded. See 'haraka -h tls'");
         }
         return cert;
-        });
+    });
 
     // now do the error handling for unloadable key/cert files
     if (plugin.tls_opts.key.some(function(key) { return !key;}) ||
