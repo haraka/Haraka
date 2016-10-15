@@ -66,8 +66,8 @@ If multiple pairs of key and cert chain files should be used, outside of the har
 ### cert
 
 Specifies an alternative location for the certificate chain file. If multiple
-certificate chains are to be used, use `cert[]=` assignmet for each of them.
-Non-absolute pahts are relative to the `config/` directory. See the description of
+certificate chains are to be used, use `cert[]=` assignment for each of them.
+Non-absolute paths are relative to the `config/` directory. See the description of
 the `key` parameter for specific use.
 
 ### no_tls_hosts
