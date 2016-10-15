@@ -7,10 +7,10 @@ For this plugin to work you must have SSL certificates installed correctly.
 ## Install Location
 
 Key and certificate chain default locations are as follows. The paths
-can be overridden in the config/tls.ini file.
+can be overridden in the config/tls.ini file using `key` and `cert` options.
 
-    config/tls_key.pem
-    config/tls_cert.pem
+    key=tls_key.pem
+    cert=tls_cert.pem
 
 ## Purchased Certificate
 
@@ -45,11 +45,15 @@ The following settings can be specified in config/tls.ini.
 
 ### key
 
-Specifies an alternative location for the key file.
+Specifies an alternative location for the key file. If multiple keys are to be
+specified, use key[]= assignment for each of them. Non-absolute paths are relative
+to the config/ directory.
 
 ### cert
 
-Specifies an alternative location for the certificate chain file.
+Specifies an alternative location for the certificate chain file. If multiple
+certificate chains are to be used, use cert[]= assignmet for each of them.
+Non-absolute pahts are relative to the config/ directory.
 
 ### `no_tls_hosts`
 
