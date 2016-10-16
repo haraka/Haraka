@@ -318,6 +318,11 @@ All of these notes are JS objects - use them as simple key/value store e.g.
 
 ## Plugins as Modules
 
+Plugins as NPM modules are named with the `haraka-plugin` prefix. Therefore, a
+plugin that frobnobricates might be called `haraka-plugin-frobnobricate` and
+published to NPM with that name. The prefix is not required in the
+`config/plugins` file.
+
 Plugins loaded as NPM modules behave slightly different than plugins loaded
 as plain JS files.
 

@@ -53,7 +53,6 @@ function plugin_search_paths (prefix, name) {
     return [
         path.resolve(prefix, 'plugins', name + '.js'),
         path.resolve(prefix, 'node_modules', 'haraka-plugin-' + name, 'package.json'),
-        path.resolve(prefix, 'node_modules', name, 'package.json'),
     ];
 }
 
@@ -88,8 +87,11 @@ Plugin.prototype._get_plugin_path = function () {
         // Installed mode - started via bin/haraka
         paths = paths.concat(plugin_search_paths(process.env.HARAKA, name));
 
-        // permit local "folder" plugins/$name/package.json (see #1649)
-        paths.push(path.resolve(process.env.HARAKA, 'plugins', name, 'package.json'));
+        // permit local "folder" plugins (/$name/package.json) (see #1649)
+        paths.push(
+            path.resolve(process.env.HARAKA, 'plugins', name, 'package.json'),
+            path.resolve(process.env.HARAKA, 'node_modules', name, 'package.json')
+        );
     }
 
     // development mode

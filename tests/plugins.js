@@ -129,11 +129,11 @@ exports.plugin_paths = {
         test.done();
     },
 
-    'CORE package plugin: (faked using address-rfc2822)': function (test) {
-        var p = new plugin.Plugin('address-rfc2822');
+    'CORE package plugin: asn': function (test) {
+        var p = new plugin.Plugin('haraka-plugin-asn');
 
         test.expect(2);
-        test.equal(p.plugin_path, path.resolve(__dirname, '..', 'node_modules', 'address-rfc2822', 'package.json'));
+        test.equal(p.plugin_path, path.resolve(__dirname, '..', 'node_modules', 'haraka-plugin-asn', 'package.json'));
         test.ok(p.hasPackageJson);
         test.done();
     },
