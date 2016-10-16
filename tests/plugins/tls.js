@@ -1,6 +1,7 @@
 'use strict';
 
 var fs           = require('fs');
+var path         = require('path');
 
 var fixtures     = require('haraka-test-fixtures');
 
@@ -10,6 +11,7 @@ var Plugin       = fixtures.plugin;
 var _set_up = function (done) {
     this.plugin = new Plugin('tls');
     this.connection = Connection.createConnection();
+    this.plugin.tls_opts = {};
     done();
 };
 
@@ -21,33 +23,98 @@ exports.plugin = {
         test.isFunction(this.plugin.register);
         test.done();
     },
-    'should have function tls_unrecognized_command' : function (test) {
+    'should have function load_tls_ini' : function (test) {
         test.expect(1);
-        test.isFunction(this.plugin.tls_unrecognized_command);
+        test.isFunction(this.plugin.load_tls_ini);
         test.done();
     },
-    'should have function tls_capabilities' : function (test) {
+    'should have function upgrade_connection' : function (test) {
         test.expect(1);
-        test.isFunction(this.plugin.tls_capabilities);
+        test.isFunction(this.plugin.upgrade_connection);
+        test.done();
+    },
+    'should have function advertise_starttls' : function (test) {
+        test.expect(1);
+        test.isFunction(this.plugin.advertise_starttls);
+        test.done();
+    },
+    'should have function emit_upgrade_msg' : function (test) {
+        test.expect(1);
+        test.isFunction(this.plugin.emit_upgrade_msg);
         test.done();
     },
 };
 
+function tls_ini_overload (plugin) {
+	plugin.config = plugin.config.module_config(path.resolve('tests'));
+	plugin.cfg = plugin.config.get('tls.ini', {
+		booleans: [
+			'-main.honorCipherOrder',
+			'-main.requestCert',
+			'-main.rejectUnauthorized',
+		]
+	});
+
+	var config_options = ['ciphers','requestCert','rejectUnauthorized',
+		'key','cert','honorCipherOrder','ecdhCurve','dhparam',
+		'secureProtocol'];
+
+	for (var i = 0; i < config_options.length; i++) {
+		var opt = config_options[i];
+		if (plugin.cfg.main[opt] === undefined) { continue; }
+		plugin.tls_opts[opt] = plugin.cfg.main[opt];
+	}
+}
+
 exports.load_tls_ini = {
-    setUp: function(done) {
-        this.plugin = new Plugin('tls');
-        this.plugin.tls_opts = {};
-        done();
-    },
-    'loads tls.ini' : function (test) {
-        test.expect(3);
-        this.plugin.load_tls_ini();
-        test.ok(this.plugin.cfg.main.requestCert);
+    setUp : _set_up,
+    'loads tls.ini (default)' : function (test) {
+		this.plugin.load_tls_ini();  // ALERT: runs tls_socket.load_tls_ini()
+
+        test.expect(4);
+        test.equal(true, this.plugin.cfg.main.requestCert);
         test.ok(this.plugin.cfg.main.ciphers);
         test.ok(this.plugin.cfg.no_tls_hosts);
-        // console.log(this.plugin.cfg);
+        test.equal(false, this.plugin.cfg.main.honorCipherOrder);
+        test.done();
+    },
+    'loads tls.ini (test)' : function (test) {
+		tls_ini_overload(this.plugin);
+
+        test.expect(4);
+        test.equal(true, this.plugin.cfg.main.requestCert);
+        test.ok(this.plugin.cfg.main.ciphers);
+        test.ok(this.plugin.cfg.no_tls_hosts);
+        test.equal(true, this.plugin.cfg.main.honorCipherOrder);
         test.done();
     }
+};
+
+exports.load_tls_opts = {
+    setUp : function (done) {
+        this.plugin = new Plugin('tls');
+        this.plugin.tls_opts = {};
+        tls_ini_overload(this.plugin);
+        done();
+    },
+    'TLS key loaded' : function (test) {
+        test.expect(1);
+        this.plugin.load_tls_opts();
+		test.ok(this.plugin.tls_opts.key.length);
+        test.done();
+    },
+    'TLS cert loaded' : function (test) {
+        test.expect(1);
+        this.plugin.load_tls_opts();
+		test.ok(this.plugin.tls_opts.cert.length);
+        test.done();
+    },
+    'TLS dhparams loaded' : function (test) {
+        test.expect(1);
+        this.plugin.load_tls_opts();
+        test.equal(this.plugin.tls_opts.dhparam.toString(), '-----BEGIN DH PARAMETERS-----\nMIGHAoGBAMylA+U3JgfrXqnNYJXQN70nRWjzA4sndjkjW+hLhHgQ/K8Ndwj7lfQz\ng95rLJOuvjEAkYqSANhaVNnKge6FqMM0FdW0/gFSfAh7PZJsOt9ypQRvyyX8/P3T\nzW4WTRaHNBOala5yT7pxXrzpIbkaUXAkrk2E9TjqD4pjgk9VYtFrAgEC\n-----END DH PARAMETERS-----\n');
+        test.done();
+    },
 };
 
 exports.register = {
@@ -93,3 +160,29 @@ exports.dont_register = {
         test.done();
     },
 };
+
+exports.emit_upgrade_msg = {
+    setUp : _set_up,
+    'should emit a log message': function (test) {
+        test.expect(1);
+        test.equal(this.plugin.emit_upgrade_msg(this.connection, true, '', {
+            subject: {
+                CN: 'TLS.subject',
+                O: 'TLS.org'
+            },
+        }),
+        'secured: verified=true cn="TLS.subject" organization="TLS.org"');
+        test.done();
+    },
+    'should emit a log message with error': function (test) {
+        test.expect(1);
+        test.equal(this.plugin.emit_upgrade_msg(this.connection, true, 'oops', {
+            subject: {
+                CN: 'TLS.subject',
+                O: 'TLS.org'
+            },
+        }),
+        'secured: verified=true error="oops" cn="TLS.subject" organization="TLS.org"');
+        test.done();
+    }
+}
