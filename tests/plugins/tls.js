@@ -46,30 +46,30 @@ exports.plugin = {
 };
 
 function tls_ini_overload (plugin) {
-	plugin.config = plugin.config.module_config(path.resolve('tests'));
-	plugin.cfg = plugin.config.get('tls.ini', {
-		booleans: [
-			'-main.honorCipherOrder',
-			'-main.requestCert',
-			'-main.rejectUnauthorized',
-		]
-	});
+    plugin.config = plugin.config.module_config(path.resolve('tests'));
+    plugin.cfg = plugin.config.get('tls.ini', {
+        booleans: [
+            '-main.honorCipherOrder',
+            '-main.requestCert',
+            '-main.rejectUnauthorized',
+        ]
+    });
 
-	var config_options = ['ciphers','requestCert','rejectUnauthorized',
-		'key','cert','honorCipherOrder','ecdhCurve','dhparam',
-		'secureProtocol'];
+    var config_options = ['ciphers','requestCert','rejectUnauthorized',
+       'key','cert','honorCipherOrder','ecdhCurve','dhparam',
+       'secureProtocol'];
 
-	for (var i = 0; i < config_options.length; i++) {
-		var opt = config_options[i];
-		if (plugin.cfg.main[opt] === undefined) { continue; }
-		plugin.tls_opts[opt] = plugin.cfg.main[opt];
-	}
+    for (var i = 0; i < config_options.length; i++) {
+        var opt = config_options[i];
+        if (plugin.cfg.main[opt] === undefined) { continue; }
+        plugin.tls_opts[opt] = plugin.cfg.main[opt];
+    }
 }
 
 exports.load_tls_ini = {
     setUp : _set_up,
     'loads tls.ini (default)' : function (test) {
-		this.plugin.load_tls_ini();  // ALERT: runs tls_socket.load_tls_ini()
+        this.plugin.load_tls_ini();  // ALERT: runs tls_socket.load_tls_ini()
 
         test.expect(4);
         test.equal(true, this.plugin.cfg.main.requestCert);
@@ -79,7 +79,7 @@ exports.load_tls_ini = {
         test.done();
     },
     'loads tls.ini (test)' : function (test) {
-		tls_ini_overload(this.plugin);
+        tls_ini_overload(this.plugin);
 
         test.expect(4);
         test.equal(true, this.plugin.cfg.main.requestCert);
@@ -100,13 +100,13 @@ exports.load_tls_opts = {
     'TLS key loaded' : function (test) {
         test.expect(1);
         this.plugin.load_tls_opts();
-		test.ok(this.plugin.tls_opts.key.length);
+        test.ok(this.plugin.tls_opts.key.length);
         test.done();
     },
     'TLS cert loaded' : function (test) {
         test.expect(1);
         this.plugin.load_tls_opts();
-		test.ok(this.plugin.tls_opts.cert.length);
+        test.ok(this.plugin.tls_opts.cert.length);
         test.done();
     },
     'TLS dhparams loaded' : function (test) {

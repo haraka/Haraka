@@ -3,10 +3,6 @@
 
 var tls_socket = require('./tls_socket');
 
-// To create a key:
-// openssl req -x509 -nodes -days 2190 -newkey rsa:2048 \
-//         -keyout config/tls_key.pem -out config/tls_cert.pem
-
 exports.register = function () {
     var plugin = this;
     plugin.load_errs = [];
@@ -183,7 +179,7 @@ exports.upgrade_connection = function (next, connection, params) {
         if (called_next) return;
         called_next = true;
         clearTimeout(connection.notes.tls_timer);
-        connection.logerror(plugin, 'timeout');
+        connection.logerror(plugin, 'timeout or disconnect');
         plugin.set_notls(connection.remote.ip);
         return next(DENYSOFTDISCONNECT);
     }

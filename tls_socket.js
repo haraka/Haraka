@@ -261,17 +261,6 @@ function createServer(cb) {
     return serv;
 }
 
-if (require('semver').gt(process.version, '0.7.0')) {
-    var _net_connect = function (options) {
-        return net.connect(options);
-    };
-}
-else {
-    var _net_connect = function (options) {
-        return net.connect(options.port, options.host);
-    };
-}
-
 function connect (port, host, cb) {
     var conn_options = {};
     if (typeof port === 'object') {
@@ -283,7 +272,7 @@ function connect (port, host, cb) {
         conn_options.host = host;
     }
 
-    var cryptoSocket = _net_connect(conn_options);
+    var cryptoSocket = net.connect(conn_options);
 
     var socket = new pluggableStream(cryptoSocket);
 
