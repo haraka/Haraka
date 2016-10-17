@@ -175,11 +175,11 @@ exports.upgrade_connection = function (next, connection, params) {
     // adjust plugin.timeout like so: echo '45' > config/tls.timeout
     var timeout = plugin.timeout - 1;
 
-    function nextOnce () {
+    function nextOnce (disconnected) {
         if (called_next) return;
         called_next = true;
         clearTimeout(connection.notes.tls_timer);
-        connection.logerror(plugin, 'timeout or disconnect');
+        if (!disconnected) connection.logerror(plugin, 'timeout');
         plugin.set_notls(connection.remote.ip);
         return next(DENYSOFTDISCONNECT);
     }
@@ -215,7 +215,7 @@ exports.upgrade_connection = function (next, connection, params) {
 
 exports.hook_disconnect = function (next, connection) {
     if (connection.notes.cleanUpDisconnect) {
-        connection.notes.cleanUpDisconnect();
+        connection.notes.cleanUpDisconnect(true);
     }
     return next();
 };
