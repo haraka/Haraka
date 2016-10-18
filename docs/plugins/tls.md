@@ -108,6 +108,9 @@ Specifies the file containing the diffie-hellman parameters to
 use for DH or DHE key exchange. Create such a file using `openssl dhparam`.
 No DH ciphers can be used without this parameter given.
 
+    openssl dhparam -out config/dhparams.pem 2048
+
+
 ### requestCert
 
 Whether Haraka should request a certificate from a connecting client.
