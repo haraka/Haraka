@@ -15,9 +15,9 @@ var sock        = require('./line_socket');
 var logger      = require('./logger');
 var config      = require('./config');
 var constants   = require('haraka-constants');
+var net_utils   = require('haraka-net-utils');
 var trans       = require('./transaction');
 var plugins     = require('./plugins');
-var tls_socket  = require('./tls_socket');
 var async       = require('async');
 var TimerQueue  = require('./timer_queue');
 var Header      = require('./mailheader').Header;
@@ -89,6 +89,8 @@ exports.load_config = function () {
     }
 };
 exports.load_config();
+exports.net_utils = net_utils;
+exports.config    = config;
 
 var load_queue = async.queue(function (file, cb) {
     var hmail = new HMailItem(file, path.join(queue_dir, file));
@@ -763,6 +765,51 @@ exports.split_to_new_recipients = function (hmail, recipients, response, cb) {
     self.build_todo(new_todo, ws, write_more);
 };
 
+exports.get_tls_options = function (mx) {
+
+    var tls_config = exports.net_utils.load_tls_ini();
+    var tls_options = { servername: mx.exchange };
+    var config_options = [
+        'key', 'cert', 'ciphers', 'dhparam',
+        'requestCert', 'honorCipherOrder', 'rejectUnauthorized'
+    ];
+
+
+    for (var i = 0; i < config_options.length; i++) {
+        var opt = config_options[i];
+        if (tls_config.main[opt] === undefined) { continue; }
+        tls_options[opt] = tls_config.main[opt];
+    }
+
+    if (tls_config.outbound) {
+        for (var i = 0; i < config_options.length; i++) {
+            var opt = config_options[i];
+            if (tls_config.outbound[opt] === undefined) { continue; }
+            tls_options[opt] = tls_config.outbound[opt];
+        }
+    }
+
+    if (tls_options.key) {
+        if (Array.isArray(tls_options.key)) {
+            tls_options.key = tls_options.key[0];
+        }
+        tls_options.key = exports.config.get(tls_options.key, 'binary');
+    }
+
+    if (tls_options.dhparam) {
+        tls_options.dhparam = exports.config.get(tls_options.dhparam, 'binary');
+    }
+
+    if (tls_options.cert) {
+        if (Array.isArray(tls_options.cert)) {
+            tls_options.cert = tls_options.cert[0];
+        }
+        tls_options.cert = exports.config.get(tls_options.cert, 'binary');
+    }
+
+    return tls_options;
+};
+
 // TODOItem - queue file header data
 function TODOItem (domain, recipients, transaction) {
     this.queue_time = Date.now();
@@ -1395,7 +1442,7 @@ HMailItem.prototype.try_deliver_host_on_socket = function (mx, host, port, socke
         "auth": [],
     };
 
-    var tls_config = tls_socket.load_tls_ini();
+    var tls_config = net_utils.load_tls_ini();
 
     var send_command = socket.send_command = function (cmd, data) {
         if (!socket.writable) {
@@ -1446,8 +1493,8 @@ HMailItem.prototype.try_deliver_host_on_socket = function (mx, host, port, socke
         }
 
         // TLS
-        if (!tls_socket.is_no_tls_host(tls_config, self.todo.domain) &&
-            !tls_socket.is_no_tls_host(tls_config, host) &&
+        if (!net_utils.ip_in_list(tls_config.no_tls_hosts, self.todo.domain) &&
+            !net_utils.ip_in_list(tls_config.no_tls_hosts, host) &&
             smtp_properties.tls && cfg.enable_tls && !secured)
         {
             socket.on('secure', function () {
@@ -1700,22 +1747,7 @@ HMailItem.prototype.try_deliver_host_on_socket = function (mx, host, port, socke
                         process_ehlo_data();
                         break;
                     case 'starttls':
-                        var tls_options = { servername: mx.exchange };
-                        var config_options = ['key','cert','ciphers','requestCert','rejectUnauthorized'];
-
-                        for (var i = 0; i < config_options.length; i++) {
-                            var opt = config_options[i];
-                            if (tls_config.main[opt] === undefined) { continue; }
-                            tls_options[opt] = tls_config.main[opt];
-                        }
-
-                        if (tls_config.outbound) {
-                            for (var i = 0; i < config_options.length; i++) {
-                                var opt = config_options[i];
-                                if (tls_config.outbound[opt] === undefined) { continue; }
-                                tls_options[opt] = tls_config.outbound[opt];
-                            }
-                        }
+                        var tls_options = exports.get_tls_options(mx);
 
                         if (Array.isArray(tls_options.key)) {
                             tls_options.key = tls_options.key[0];

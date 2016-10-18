@@ -20,8 +20,8 @@ var line_socket = require('./line_socket');
 var logger      = require('./logger');
 var utils       = require('./utils');
 var config      = require('./config');
-var tls_socket  = require('./tls_socket');
 var HostPool    = require('./host_pool');
+var net_utils   = require('haraka-net-utils');
 
 var smtp_regexp = /^([0-9]{3})([ -])(.*)/;
 var STATE = {
@@ -185,7 +185,7 @@ util.inherits(SMTPClient, events.EventEmitter);
 
 SMTPClient.prototype.load_tls_config = function (plugin) {
     var tls_options = {};
-    this.tls_config = tls_socket.load_tls_ini();
+    this.tls_config = net_utils.load_tls_ini();
     var config_options = ['key','cert','ciphers','requestCert','rejectUnauthorized'];
 
     for (var i = 0; i < config_options.length; i++) {
@@ -406,8 +406,8 @@ exports.get_client_plugin = function (plugin, connection, c, callback) {
                 }
 
                 if (smtp_client.response[line].match(/^STARTTLS/) && !secured) {
-                    if (!tls_socket.is_no_tls_host(smtp_client.tls_config, c.host) &&
-                        !tls_socket.is_no_tls_host(smtp_client.tls_config, smtp_client.remote_ip) &&
+                    if (!net_utils.ip_in_list(smtp_client.tls_config.no_tls_hosts, c.host) &&
+                        !net_utils.ip_in_list(smtp_client.tls_config.no_tls_hosts, smtp_client.remote_ip) &&
                         c.enable_tls)
                     {
                         smtp_client.socket.on('secure', on_secured);
