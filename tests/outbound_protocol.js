@@ -2,13 +2,11 @@
 
 var fs           = require('fs');
 var path         = require('path');
-// var fixtures     = require('haraka-test-fixtures');
 
 require('../configfile').watch_files = false;
-// var vm_harness   = fixtures.vm_harness;  // TODO
-var vm_harness     = require('./fixtures/vm_harness');
+var vm_harness   = require('./fixtures/vm_harness');
 
-var queue_dir = path.resolve(__dirname + '/test-queue/');
+var queue_dir = path.resolve(__dirname, 'test-queue');
 
 var ensureTestQueueDirExists = function(done) {
     fs.exists(queue_dir, function (exists) {
@@ -31,13 +29,13 @@ var removeTestQueueDir = function (done) {
         if (exists) {
             var files = fs.readdirSync(queue_dir);
             files.forEach(function(file,index){
-                var curPath = queue_dir + "/" + file;
+                var curPath = path.resolve(queue_dir, file);
                 if (fs.lstatSync(curPath).isDirectory()) { // recurse
                     return done(new Error('did not expect an sub folder here ("' + curPath + '")! cancel'));
                 }
             });
             files.forEach(function(file,index){
-                var curPath = queue_dir + "/" + file;
+                var curPath = path.resolve(queue_dir, file);
                 fs.unlinkSync(curPath);
             });
             done();
@@ -54,7 +52,7 @@ exports.outbound_protocol_tests = {
 };
 
 vm_harness.add_tests(
-    path.join(__dirname, '/../outbound.js'),
+    path.join(__dirname, '..', 'outbound.js'),
     path.join(__dirname, 'outbound_protocol/'),
     exports.outbound_protocol_tests,
     {
