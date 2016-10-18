@@ -163,6 +163,34 @@ function pipe(cleartext, socket) {
     socket.on('close', onclose);
 }
 
+function client_pipe(pair, socket) {
+    pair.encrypted.pipe(socket);
+    socket.pipe(pair.encrypted);
+
+    pair.fd = socket.fd;
+    var cleartext = pair.cleartext;
+    cleartext.socket = socket;
+    cleartext.encrypted = pair.encrypted;
+    cleartext.authorized = false;
+
+    function onerror(e) {
+        if (cleartext._controlReleased) {
+            cleartext.emit('error', e);
+        }
+    }
+
+    function onclose() {
+        socket.removeListener('error', onerror);
+        socket.removeListener('close', onclose);
+    }
+
+    socket.on('error', onerror);
+    socket.on('close', onclose);
+
+    return cleartext;
+}
+
+
 function createServer(cb) {
     var ocspCache = new ocsp.Cache();
 
@@ -339,7 +367,7 @@ function connect (port, host, cb) {
 
         socket.pair = pair;
 
-        var cleartext = pipe(pair, cryptoSocket);
+        var cleartext = client_pipe(pair, cryptoSocket);
 
         pair.on('error', function(exception) {
             socket.emit('error', exception);
