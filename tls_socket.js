@@ -12,8 +12,8 @@ var stream    = require('stream');
 var log       = require('./logger');
 var config    = require('./config');
 var ipaddr    = require('ipaddr.js');
-const EventEmitter = require('events');
-const ocsp    = require('ocsp');
+var EventEmitter = require('events');
+var ocsp      = require('ocsp');
 
 // provides a common socket for attaching
 // and detaching from either main socket, or crypto socket
@@ -162,7 +162,7 @@ class pseudoTLSServer extends EventEmitter {}
 function createServer(cb) {
     var ocspCache = new ocsp.Cache();
 
-    const pseudoServ = new pseudoTLSServer();
+    var pseudoServ = new pseudoTLSServer();
 
     pseudoServ.on('OCSPRequest', function(cert, issuer, cb) {
         ocsp.getOCSPURI(cert, function(err, uri) {
