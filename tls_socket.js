@@ -12,6 +12,8 @@ var stream    = require('stream');
 var log       = require('./logger');
 var config    = require('./config');
 var ipaddr    = require('ipaddr.js');
+const EventEmitter = require('events');
+const ocsp    = require('ocsp');
 
 // provides a common socket for attaching
 // and detaching from either main socket, or crypto socket
@@ -155,7 +157,39 @@ function pipe(cleartext, socket) {
     socket.on('close', onclose);
 }
 
+class pseudoTLSServer extends EventEmitter {}
+
 function createServer(cb) {
+    var ocspCache = new ocsp.Cache();
+
+    const pseudoServ = new pseudoTLSServer();
+
+    pseudoServ.on('OCSPRequest', function(cert, issuer, cb) {
+        ocsp.getOCSPURI(cert, function(err, uri) {
+            log.logdebug('OCSP Request, URI: ' + uri + ', err=' +err);
+            if (err) {
+                return cb(err);
+            }
+
+            var req = ocsp.request.generate(cert, issuer);
+            var options = {
+                url: uri,
+                ocsp: req.data
+            };
+
+            // look for a cached value first
+            ocspCache.probe(req.id, function(_x, result) {
+                log.logdebug('OCSP cache result: ' + util.inspect(result));
+                if (result) {
+                    cb(_x, result.response);
+                } else {
+                    log.logdebug('OCSP req:' + util.inspect(req));
+                    ocspCache.request(req.id, options, cb);
+                }
+            });
+        });
+    });
+
     var serv = net.createServer(function (cryptoSocket) {
 
         var socket = new pluggableStream(cryptoSocket);
@@ -203,6 +237,9 @@ function createServer(cb) {
             }
             options.secureContext = (tls.createSecureContext || crypto.createCredentials)(options);
             options.isServer = true;
+            options.server = pseudoServ;
+
+            pseudoServ._sharedCreds = options.secureContext;
 
             var cleartext = new tls.TLSSocket(cryptoSocket, options);
 
@@ -237,6 +274,14 @@ function createServer(cb) {
         };
 
         cb(socket);
+    });
+
+    serv.on('close', function() {
+        log.logdebug('Cleaning ocspCache. How many keys? ' + Object.keys(ocspCache.cache).length);
+        Object.keys(ocspCache.cache).forEach(function (key) {
+            var e = ocspCache.cache[key];
+            clearTimeout(e.timer);
+        });
     });
 
     return serv;
