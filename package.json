@@ -25,7 +25,6 @@
     "js-yaml"               : "~3.6.1",
     "nopt"                  : "~3.0.4",
     "npid"                  : "~0.4.0",
-    "ocsp"                  : "~1.1.0",
     "semver"                : "~5.0.3",
     "sprintf-js"            : "~1.0.3",
     "haraka-tld"            : "*",
@@ -41,6 +40,7 @@
     "ldapjs"                : "~1.0.0",
     "maxmind"               : "0.6",
     "modern-syslog"         : "~1.1.1",
+    "ocsp"                  : "~1.1.0",
     "redis"                 : "~2.6.2",
     "tmp"                   : "~0.0.28",
     "vs-stun"               : "~0.0.7"

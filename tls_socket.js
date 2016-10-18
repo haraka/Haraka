@@ -13,7 +13,13 @@ var log       = require('./logger');
 var config    = require('./config');
 var ipaddr    = require('ipaddr.js');
 var EventEmitter = require('events');
-var ocsp      = require('ocsp');
+
+var ocsp;
+try {
+    ocsp      = require('ocsp');
+} catch (er) {
+    ocsp = null;
+}
 
 // provides a common socket for attaching
 // and detaching from either main socket, or crypto socket
@@ -139,12 +145,6 @@ pluggableStream.prototype.setTimeout = function (timeout) {
     return this.targetsocket.setTimeout(timeout);
 };
 
-function pseudoTLSServer() {
-    EventEmitter.call(this);
-}
-
-util.inherits(pseudoTLSServer, EventEmitter);
-
 function pipe(cleartext, socket) {
     cleartext.socket = socket;
 
@@ -191,9 +191,13 @@ function client_pipe(pair, socket) {
 }
 
 
-function createServer(cb) {
-    var ocspCache = new ocsp.Cache();
+if (ocsp) {
+    function pseudoTLSServer() {
+        EventEmitter.call(this);
+    }
+    util.inherits(pseudoTLSServer, EventEmitter);
 
+    var ocspCache = new ocsp.Cache();
     var pseudoServ = new pseudoTLSServer();
 
     pseudoServ.on('OCSPRequest', function(cert, issuer, cb2) {
@@ -213,7 +217,7 @@ function createServer(cb) {
             ocspCache.probe(req.id, function(_x, result) {
                 log.logdebug('OCSP cache result: ' + util.inspect(result));
                 if (result) {
-                    cb(_x, result.response);
+                    cb2(_x, result.response);
                 } else {
                     log.logdebug('OCSP req:' + util.inspect(req));
                     ocspCache.request(req.id, options, cb2);
@@ -221,6 +225,19 @@ function createServer(cb) {
             });
         });
     });
+
+    exports.shutdown = function() {
+        log.logdebug('Cleaning ocspCache. How many keys? ' + Object.keys(ocspCache.cache).length);
+        Object.keys(ocspCache.cache).forEach(function (key) {
+            var e = ocspCache.cache[key];
+            clearTimeout(e.timer);
+        });
+    };
+}
+
+exports.ocsp = ocsp;
+
+function createServer(cb) {
 
     var serv = net.createServer(function (cryptoSocket) {
 
@@ -269,9 +286,10 @@ function createServer(cb) {
             }
             options.secureContext = (tls.createSecureContext || crypto.createCredentials)(options);
             options.isServer = true;
-            options.server = pseudoServ;
-
-            pseudoServ._sharedCreds = options.secureContext;
+            if (ocsp && options.enableOCSPStapling) {
+                options.server = pseudoServ;
+                pseudoServ._sharedCreds = options.secureContext;
+            }
 
             var cleartext = new tls.TLSSocket(cryptoSocket, options);
 
@@ -306,14 +324,6 @@ function createServer(cb) {
         };
 
         cb(socket);
-    });
-
-    serv.on('close', function() {
-        log.logdebug('Cleaning ocspCache. How many keys? ' + Object.keys(ocspCache.cache).length);
-        Object.keys(ocspCache.cache).forEach(function (key) {
-            var e = ocspCache.cache[key];
-            clearTimeout(e.timer);
-        });
     });
 
     return serv;
@@ -417,6 +427,7 @@ exports.load_tls_ini = function (cb) {
             '+main.requestCert',
             '-main.rejectUnauthorized',
             '-main.honorCipherOrder',
+            '-main.enableOCSPStapling',
             '-redis.disable_for_failed_hosts',
         ]
     }, cb);
