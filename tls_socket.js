@@ -168,7 +168,7 @@ function createServer(cb) {
 
     var pseudoServ = new pseudoTLSServer();
 
-    pseudoServ.on('OCSPRequest', function(cert, issuer, cb) {
+    pseudoServ.on('OCSPRequest', function(cert, issuer, cb2) {
         ocsp.getOCSPURI(cert, function(err, uri) {
             log.logdebug('OCSP Request, URI: ' + uri + ', err=' +err);
             if (err) {
@@ -188,7 +188,7 @@ function createServer(cb) {
                     cb(_x, result.response);
                 } else {
                     log.logdebug('OCSP req:' + util.inspect(req));
-                    ocspCache.request(req.id, options, cb);
+                    ocspCache.request(req.id, options, cb2);
                 }
             });
         });
