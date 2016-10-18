@@ -139,6 +139,12 @@ pluggableStream.prototype.setTimeout = function (timeout) {
     return this.targetsocket.setTimeout(timeout);
 };
 
+function pseudoTLSServer() {
+    EventEmitter.call(this);
+}
+
+util.inherits(pseudoTLSServer, EventEmitter);
+
 function pipe(cleartext, socket) {
     cleartext.socket = socket;
 
@@ -156,8 +162,6 @@ function pipe(cleartext, socket) {
     socket.on('error', onerror);
     socket.on('close', onclose);
 }
-
-class pseudoTLSServer extends EventEmitter {}
 
 function createServer(cb) {
     var ocspCache = new ocsp.Cache();
