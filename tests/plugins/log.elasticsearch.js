@@ -11,7 +11,7 @@ var _set_up = function (done) {
     }
     catch (e) {
         console.error('unable to load log.elasticsearch plugin');
-        return;
+        return done('failed to load log.elasticsearch');
     }
 
     this.connection = fixtures.connection.createConnection();
