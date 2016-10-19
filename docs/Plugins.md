@@ -21,10 +21,13 @@ Omit the `-c /path/to/config` to see only the plugins supplied with Haraka
 
 ## Anatomy of a Plugin
 
-Plugins in Haraka are Javascript files or modules in the plugins/ directory.
-Alternatively they can be npm-style node_modules in either the core node_modules
-folder, or the folder you gave to `haraka -i <folder>`. See "Plugins as Modules"
-below for more information on this.
+Plugins in Haraka are JS files in the `plugins` directory or npm
+modules in the node\_modules directory. See "Plugins as Modules" below for
+more information on this.
+
+Plugins can be installed in the Haraka global directory (default:
+/$os/$specific/lib/node\_modules/Haraka) or in the Haraka install directory
+(whatever you chose when you typed `haraka -i`. Example: `haraka -i /etc/haraka`
 
 To enable a plugin, add its name to `config/plugins`.
 
@@ -309,31 +312,35 @@ plugins.  This is done using `notes` - there are three types available:
   you store in the transaction notes is automatically available in the
   outbound functions here.
 
-All of these notes are Javascript objects - use them as simple key/value store e.g.
+All of these notes are JS objects - use them as simple key/value store e.g.
 
     connection.transaction.notes.test = 'testing';
 
 ## Plugins as Modules
 
-Plugins loaded as modules behave slightly differently to plugins loaded from
-`plugins/` as plain javascript files.
+Plugins as NPM modules are named with the `haraka-plugin` prefix. Therefore, a
+plugin that frobnobricates might be called `haraka-plugin-frobnobricate` and
+published to NPM with that name. The prefix is not required in the
+`config/plugins` file.
 
-Plain javascript plugins have a customized version of `require()` which allows
-you to load core Haraka modules via specifying `require('./name')` (note the
-`./` prefix). Although the core modules aren't in the same folder, we intercept
+Plugins loaded as NPM modules behave slightly different than plugins loaded
+as plain JS files.
+
+Plain JS plugins have a custom `require()` which allows loading core Haraka
+modules via specifying `require('./name')` (note the `./` prefix). Although
+the core modules aren't in the same folder, the custom `require` intercepts
 this and look for core modules. Note that if there is a module in your plugins
 folder of the same name that will not take preference, so avoid using names
 similar to core modules.
 
-Plugins loaded as modules do not have this special `require()`. In order to load
-a core Haraka module you will have to use `this.core_require('name')`. Note that
-this should be preferred anyway for plain javascript plugins anyway, as the
-`./` hack is likely to go away in the future.
+Plugins loaded as modules do not have the special `require()`. To load
+a core Haraka module you must use `this.core_require('name')`. 
+This should also be preferred for plain JS plugins, as the
+`./` hack is likely to be removed in the future.
 
-Plugins loaded as modules also are not compiled inside the Haraka plugin sandbox,
-which provides some security benefits, but also blocks access to certain globals,
-and provides a global `server` object. To access the `server` object, use
-`connection.server` instead.
+Plugins loaded as modules are not compiled in the Haraka plugin sandbox,
+which blocks access to certain globals and provides a global `server` object.
+To access the `server` object, use `connection.server` instead.
 
 Module plugins support default config in their local `config` directory. See the
 "Default Config and Overrides" section in [Config](Config.md).

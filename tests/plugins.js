@@ -110,26 +110,6 @@ exports.plugin_paths = {
         test.done();
     },
 
-    'CORE package plugin: (watch)': function (test) {
-        delete process.env.HARAKA;
-
-        var p = new plugin.Plugin('watch');
-
-        test.expect(2);
-        // invalid for watch, which is now npm packaged plugin
-        // test.equal(p.plugin_path, path.resolve(__dirname, '..', 'plugins', 'watch', 'package.json'));
-        test.ok(p.hasPackageJson);
-        try {
-            p._compile();
-            test.ok(true, "compiles OK");
-        }
-        catch (e) {
-            console.error(e.stack);
-            test.ok(false, "compiles OK");
-        }
-        test.done();
-    },
-
     'INSTALLED node_modules package plugin: (test-plugin)': function (test) {
         process.env.HARAKA = path.resolve(__dirname, '..', 'tests', 'installation');
 
@@ -149,11 +129,11 @@ exports.plugin_paths = {
         test.done();
     },
 
-    'CORE package plugin: (faked using address-rfc2822)': function (test) {
-        var p = new plugin.Plugin('address-rfc2822');
+    'CORE package plugin: asn': function (test) {
+        var p = new plugin.Plugin('haraka-plugin-asn');
 
         test.expect(2);
-        test.equal(p.plugin_path, path.resolve(__dirname, '..', 'node_modules', 'address-rfc2822', 'package.json'));
+        test.equal(p.plugin_path, path.resolve(__dirname, '..', 'node_modules', 'haraka-plugin-asn', 'package.json'));
         test.ok(p.hasPackageJson);
         test.done();
     },
@@ -241,18 +221,6 @@ exports.plugin_config = {
         test.equal(p.config.overrides_path, path.resolve(__dirname, 'installation', 'config'));
         var tls_ini = p.config.get('tls.ini');
         test.equal(tls_ini.main.ciphers, 'test');
-        test.done();
-    },
-
-    'CORE package plugin: (watch)': function (test) {
-        delete process.env.HARAKA;
-
-        var p = new plugin.Plugin('watch');
-
-        test.expect(1);
-        // invalid for watch, which is now npm packaged plugin
-        // test.equal(p.config.root_path, path.resolve(__dirname, '..', 'plugins', 'watch', 'config'));
-        test.equal(p.config.overrides_path, path.resolve(__dirname, '..', 'config'));
         test.done();
     },
 
