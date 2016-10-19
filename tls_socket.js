@@ -18,7 +18,7 @@ var ocsp;
 try {
     ocsp      = require('ocsp');
 } catch (er) {
-    log.loginfo("Can't load module ocsp. OCSP Stapling not available.");
+    log.lognotice("Can't load module ocsp. OCSP Stapling not available.");
     ocsp = null;
 }
 
