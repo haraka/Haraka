@@ -240,7 +240,7 @@ function createServer(cb) {
                 socket.emit('error', exception);
             });
 
-            cleartext.on('secureConnect', function() {
+            cleartext.on('secure', function() {
                 log.logdebug('TLS secured.');
                 var cert = cleartext.getPeerCertificate();
                 if (cleartext.getCipher) {
