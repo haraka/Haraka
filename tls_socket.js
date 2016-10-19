@@ -18,6 +18,7 @@ var ocsp;
 try {
     ocsp      = require('ocsp');
 } catch (er) {
+    log.loginfo("Can't load module ocsp. OCSP Stapling not available.");
     ocsp = null;
 }
 
@@ -272,23 +273,29 @@ function createServer(cb) {
             // compiled into node.  To see which ones are, fire up node and
             // examine the object returned by require('constants').
 
-            options.secureProtocol = options.secureProtocol || 'SSLv23_method';
-            options.secureOptions = options.secureOptions |
-                    constants.SSL_OP_NO_SSLv2 | constants.SSL_OP_NO_SSLv3;
+            // use cached secureContext as the relevant options are static
+            if (!options.secureContext) {
+                options.secureProtocol = options.secureProtocol || 'SSLv23_method';
+                options.secureOptions = options.secureOptions |
+                       constants.SSL_OP_NO_SSLv2 | constants.SSL_OP_NO_SSLv3;
 
-            if (options) {
                 if (options.requestCert === undefined) {
                     options.requestCert = true;
                 }
                 if (options.rejectUnauthorized === undefined) {
                     options.rejectUnauthorized = false;
                 }
-            }
-            options.secureContext = (tls.createSecureContext || crypto.createCredentials)(options);
-            options.isServer = true;
-            if (ocsp && options.enableOCSPStapling) {
-                options.server = pseudoServ;
-                pseudoServ._sharedCreds = options.secureContext;
+
+                options.secureContext = (tls.createSecureContext || crypto.createCredentials)(options);
+                options.isServer = true;
+                if (options.enableOCSPStapling) {
+                    if (ocsp) {
+                        options.server = pseudoServ;
+                        pseudoServ._sharedCreds = options.secureContext;
+                    } else {
+                        log.logerr("OCSP Stapling cannot be enabled because the ocsp module is not loaded");
+                    }
+                }
             }
 
             var cleartext = new tls.TLSSocket(cryptoSocket, options);
