@@ -191,7 +191,6 @@ function client_pipe(pair, socket) {
     return cleartext;
 }
 
-
 if (ocsp) {
     function pseudoTLSServer() {
         EventEmitter.call(this);
