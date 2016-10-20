@@ -293,7 +293,23 @@ Server.get_smtp_server = function (host, port, inactivity_timeout) {
     var server;
     var conn_cb = function (client) {
         client.setTimeout(inactivity_timeout);
-        conn.createConnection(client, server);
+        var connection = conn.createConnection(client, server);
+        if (server.has_tls) {
+            var cipher = client.getCipher();
+            var authorized = client.authorized;
+            var authorizationError = client.authorizationError;
+            var cert = client.getPeerCertificate();
+
+            connection.set('hello', 'host', undefined);
+            connection.set('tls', 'enabled', true);
+            connection.set('tls', 'cipher', cipher);
+            connection.notes.tls = {
+                authorized: authorized,
+                authorizationError: authorizationError,
+                peerCertificate: cert,
+                cipher: cipher
+            };
+        }
     };
 
     if (port !== '465') {
@@ -302,18 +318,19 @@ Server.get_smtp_server = function (host, port, inactivity_timeout) {
         return server;
     }
 
-    var options = {
-        key: config.get('tls_key.pem', 'binary'),
-        cert: config.get('tls_cert.pem', 'binary'),
-    };
-    if (!options.key) {
-        logger.logerror("Missing tls_key.pem for port 465");
+    if (!plugins.registered_plugins['tls']) {
+        logger.logerror("TLS plugin not activated. Cannot listen on port 465 (SMTPS) without config");
         return;
     }
-    if (!options.cert) {
-        logger.logerror("Missing tls_cert.pem for port 465");
+
+    var tls_plugin = plugins.registered_plugins['tls'];
+
+    if (!tls_plugin.tls_opts_valid) {
+        logger.logerror("No valid TLS setup in the tls config. Cannot listen on port 465.");
         return;
     }
+
+    var options = tls_plugin.tls_opts;
 
     logger.logdebug("Creating TLS server on " + host + ':' + port);
     server = require('tls').createServer(options, conn_cb);

@@ -27,6 +27,8 @@ exports.register = function () {
         return;
     }
 
+    plugin.tls_opts_valid = true;
+
     plugin.register_hook('capabilities', 'advertise_starttls');
     plugin.register_hook('unrecognized_command', 'upgrade_connection');
 };
