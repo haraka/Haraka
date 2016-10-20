@@ -21,7 +21,7 @@ exports.load_smtp_forward_ini = function () {
 
     plugin.cfg = plugin.config.get('smtp_forward.ini', {
         booleans: [
-            '-main.enable_tls',
+            '-*.enable_tls',
             '+main.enable_outbound',
         ],
     },
@@ -43,10 +43,12 @@ exports.get_config = function (connection) {
     var rcpt_count = connection.transaction.rcpt_to.length;
     if (rcpt_count === 1) { return plugin.cfg[dom]; }
 
-    var dst_host = plugin.cfg[dom].host;
     for (var i=1; i < rcpt_count; i++) {
-        if (connection.transaction.rcpt_to[i].host !== dst_host) {
-            return plugin.cfg.main;
+        var dom2 = connection.transaction.rcpt_to[i].host;
+        if (!dom2 || !plugin.cfg[dom2]) return plugin.cfg.main;
+        if (plugin.cfg[dom2].host !== plugin.cfg[dom].host) {
+            // differing destination hosts
+            return plugin.cfg.main; // return default config
         }
     }
     return plugin.cfg[dom];

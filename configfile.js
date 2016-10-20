@@ -457,16 +457,20 @@ cfreader.load_ini_config = function(name, options) {
             if (match) {
                 is_array_match = regex.is_array.exec(match[1]);
                 if (is_array_match){
-                    setter = function(key, value){
+                    setter = function (key, value) {
                         key = key.replace('[]', '');
                         if (! current_sect[key]) current_sect[key] = [];
                         current_sect[key].push(value) };
                 }
                 else {
-                    setter = function(key, value) { current_sect[key] = value };
+                    setter = function (key, value) { current_sect[key] = value };
                 }
                 if (options && Array.isArray(options.booleans) &&
-                    bool_matches.indexOf(current_sect_name + '.' + match[1]) !== -1)
+                    (
+                        bool_matches.indexOf(current_sect_name + '.' + match[1]) !== -1
+                        ||
+                        bool_matches.indexOf('*.' + match[1]) !== -1
+                    ))
                 {
                     setter(match[1], regex.is_truth.test(match[2]));
                     logger.logdebug('Returning boolean ' + current_sect[match[1]] +
