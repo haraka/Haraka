@@ -1,4 +1,4 @@
-2.8.10 - Oct 1?, 2016
+2.8.10 - Oct 20, 2016
 
 * Changes
     * use standard npm syntax for lint and tests #1646
@@ -6,10 +6,20 @@
     * remove incorrect and unused spf.hello_host #1635
     * remove rogue DENYSOFT copy-pasta error #1634
     * update async to v2 #1545
+    * remove plugin/dir support from base haraka #1668
+        * use node_modules_dir support instead
+    * use TLSSocket instead of createSecurePair #1672
+    * refactor plugins/tls #1670
+    * moved watch plugin to npm as haraka-plugin-watch #1657
+    * normalize proxy properties #1650
 
 * New Features
     * added connection.remote.is_private boolean #1648 
     * added additional TLS options (@typingArtist) #1651
+    * added wildcard boolean support to config loader #1680
+    * tls: allow multiple key and cert parameters for RSA+ECDSA #1663
+    * permit specifying haraka plugins w/o haraka-plugin- prefix #1645
+        * in config/plugins and resultstore
 
 * Improvements
     * connection.geoip replaced by haraka-plugin-geoip #1645
@@ -17,6 +27,8 @@
     * permit specifying npm packaged plugins w/o haraka-plugin prefix #1647
     * normalized connection properties #1547, #1577
     * Rspamd: fix spambar for negative scores #1630
+    * set connection.remote.is_private early
+        * replace calls to net_utils with remote.is_private test
 
 * Bug Fixes
     * Tidy-up graceful shutdown and fix for non-cluster mode #1639
@@ -25,6 +37,8 @@
     * Minor DKIM fix #1642
     * do not set TLS timer if timeout=0 #1632
     * do not overwrite config/host_list on install #1637
+    * correct smtp_forward cfg for multiple rcpts #1680
+    * fix TLS timeout errors #1665
 
 
 2.8.9 - Oct 02, 2016
