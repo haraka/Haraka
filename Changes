@@ -1,38 +1,81 @@
+2.8.10 - Oct 20, 2016
+
+* Changes
+    * use standard npm syntax for lint and tests #1646
+    * remove ./net_utils to haraka-net-utils #1644
+    * remove incorrect and unused spf.hello_host #1635
+    * remove rogue DENYSOFT copy-pasta error #1634
+    * update async to v2 #1545
+    * remove plugin/dir support from base haraka #1668
+        * use node_modules_dir support instead
+    * use TLSSocket instead of createSecurePair #1672
+    * refactor plugins/tls #1670
+    * moved watch plugin to npm as haraka-plugin-watch #1657
+    * normalize proxy properties #1650
+
+* New Features
+    * added connection.remote.is_private boolean #1648 
+    * added additional TLS options (@typingArtist) #1651
+    * added wildcard boolean support to config loader #1680
+    * tls: allow multiple key and cert parameters for RSA+ECDSA #1663
+    * permit specifying haraka plugins w/o haraka-plugin- prefix #1645
+        * in config/plugins and resultstore
+
+* Improvements
+    * connection.geoip replaced by haraka-plugin-geoip #1645
+    * connection.asn replaced by haraka-plugin-asn #1645
+    * permit specifying npm packaged plugins w/o haraka-plugin prefix #1647
+    * normalized connection properties #1547, #1577
+    * Rspamd: fix spambar for negative scores #1630
+    * set connection.remote.is_private early
+        * replace calls to net_utils with remote.is_private test
+
+* Bug Fixes
+    * Tidy-up graceful shutdown and fix for non-cluster mode #1639
+    * Fix data.headers plugin crash #1641
+    * Fix access plugin crash #1640
+    * Minor DKIM fix #1642
+    * do not set TLS timer if timeout=0 #1632
+    * do not overwrite config/host_list on install #1637
+    * correct smtp_forward cfg for multiple rcpts #1680
+    * fix TLS timeout errors #1665
+
+
 2.8.9 - Oct 02, 2016
 
 * Changes
 
 * New Features
-  * Support outbound.pool_timeout of 0 to effectively disable pooling. #1561
-  * Added never_add_headers option to rspamd plugin. #1562
-  * rcpt_to.routes URI format w/ LMTP support #1568
+    * Support outbound.pool_timeout of 0 to effectively disable pooling. #1561
+    * Added never_add_headers option to rspamd plugin. #1562
+    * rcpt_to.routes URI format w/ LMTP support #1568
 
 * Improvements
-  * The delay_deny plugin now has a whitelist mode (vs blacklist). #1564
-  * Don't show the private key in logs for dkim_sign. #1565
-  * update geoip for compat with newer ES (#1622)
-  * drop node 0.10 testing / official support (#1621)
-  * watch plugin displays UUIDs as URL (#1624)
-  * Catch errors on header decode in rfc2231 #1599
-  * Attachment plugin updates (#1606)
-  * add outbound.ini pool_timeout example setting #1584
-
+    * The delay_deny plugin now has a whitelist mode (vs blacklist). #1564
+    * Don't show the private key in logs for dkim_sign. #1565
+    * update geoip for compat with newer ES (#1622)
+    * drop node 0.10 testing / official support (#1621)
+    * watch plugin displays UUIDs as URL (#1624)
+    * Catch errors on header decode in rfc2231 #1599
+    * Attachment plugin updates (#1606)
+    * add outbound.ini pool_timeout example setting #1584
+  
 * Bug Fixes
-  * Fixed some small documentation issues. #1573, #1616, #1612
-  * Fixed AUTH PLAIN when it spreads over two lines. #1550
-  * Fixed dkim_verify calling next() too soon. #1566
-  * Fixed bugs with outbound pools who shutdown before we QUIT. #1561, #1572
-  * outbound issues #1615, #1603
-  * Fixed adding/removing headers in rspamd plugin. #1562
-  * Fixed process_title not shutting down. #1560
-  * fix a spurious error emitted by p0f (#1623)
-  * fix header version hiding (#1617)
-  * messagestream returns destination (#1610)
-  * plugins.getdenyfn now passed 3rd params arg (#1591)
-  * Fix scope of spf logdebug (#1598)
-  * fix rabbitmq deliveryMode bug (#1594)
-  * fix dkim_sign TypeError with null mail_from.host (#1592)
-  * fix dkim_sign attempting to lower an undefined (#1587)
+    * Fixed some small documentation issues. #1573, #1616, #1612
+    * Fixed AUTH PLAIN when it spreads over two lines. #1550
+    * Fixed dkim_verify calling next() too soon. #1566
+    * Fixed bugs with outbound pools who shutdown before we QUIT. #1561, #1572
+    * outbound issues #1615, #1603
+    * Fixed adding/removing headers in rspamd plugin. #1562
+    * Fixed process_title not shutting down. #1560
+    * fix a spurious error emitted by p0f (#1623)
+    * fix header version hiding (#1617)
+    * messagestream returns destination (#1610)
+    * plugins.getdenyfn now passed 3rd params arg (#1591)
+    * Fix scope of spf logdebug (#1598)
+    * fix rabbitmq deliveryMode bug (#1594)
+    * fix dkim_sign TypeError with null mail_from.host (#1592)
+    * fix dkim_sign attempting to lower an undefined (#1587)
 
 2.8.8 - Jul 20, 2016
 
