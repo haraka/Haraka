@@ -57,7 +57,30 @@ exports.get_config = {
             new Address('<matt@test.com>')
             );
         var cfg = this.plugin.get_config(this.connection);
-        test.ok(cfg.host === '1.2.3.4' );
+        test.equal(cfg.host, '1.2.3.4' );
+        test.done();
+    },
+    'valid 2 recipients with same route': function (test) {
+        test.expect(1);
+        this.plugin.cfg['test.com'] = { host: '1.2.3.4' };
+        this.connection.transaction.rcpt_to.push(
+            new Address('<matt@test.com>'),
+            new Address('<matt@test.com>')
+            );
+        var cfg = this.plugin.get_config(this.connection);
+        test.equal(cfg.host, '1.2.3.4' );
+        test.done();
+    },
+    'valid 2 recipients with different routes': function (test) {
+        test.expect(1);
+        this.plugin.cfg['test1.com'] = { host: '1.2.3.4' };
+        this.plugin.cfg['test2.com'] = { host: '2.3.4.5' };
+        this.connection.transaction.rcpt_to.push(
+            new Address('<matt@test1.com>'),
+            new Address('<matt@test2.com>')
+            );
+        var cfg = this.plugin.get_config(this.connection);
+        test.equal(cfg.host, 'localhost' );
         test.done();
     },
 };

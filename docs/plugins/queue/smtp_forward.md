@@ -8,8 +8,8 @@ other hosts, and inbound delivery to users.
 In comparison to `queue/smtp_proxy`, this plugin waits until queue time to
 attempt the ongoing connection. This can be a benefit in reducing connections
 to your inbound mail server when you have content filtering (such as
-spamassassin) enabled. However you miss out on the benefits of recipient
-filtering that the ongoing mail server may provide.
+spamassassin) enabled. A possible downside is that it also delays recipient
+validation that the ongoing mail server may provide until queue time.
 
 Configuration
 -------------
@@ -67,7 +67,7 @@ Configuration
 
 More specific forward routes for domains can be defined. More specific routes
 are only honored for SMTP connections with a single recipient or SMTP
-connections where every recipient is identical.
+connections where every recipient host is identical.
 
     # default SMTP host
     host=1.2.3.4
@@ -91,6 +91,8 @@ Messages with a single recipient to example[1-3].com will get delivered
 directly to the specified host. Messages with recipients only in the domains
 example1.com and example2.com will get delivered directly to 1.2.3.5.
 Everything else gets delivered to 1.2.3.4.
+
+## Per-Domain Limitations
 
 See [GitHub Issue #573](https://github.com/haraka/Haraka/issues/573) for
 background on the limitations of smtp-forward with recipients in different
