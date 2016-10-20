@@ -155,34 +155,6 @@ function pipe(cleartext, socket) {
     socket.on('close', onclose);
 }
 
-function client_pipe(pair, socket) {
-    pair.encrypted.pipe(socket);
-    socket.pipe(pair.encrypted);
-
-    pair.fd = socket.fd;
-    var cleartext = pair.cleartext;
-    cleartext.socket = socket;
-    cleartext.encrypted = pair.encrypted;
-    cleartext.authorized = false;
-
-    function onerror(e) {
-        if (cleartext._controlReleased) {
-            cleartext.emit('error', e);
-        }
-    }
-
-    function onclose() {
-        socket.removeListener('error', onerror);
-        socket.removeListener('close', onclose);
-    }
-
-    socket.on('error', onerror);
-    socket.on('close', onclose);
-
-    return cleartext;
-}
-
-
 function createServer(cb) {
     var serv = net.createServer(function (cryptoSocket) {
 
@@ -301,51 +273,31 @@ function connect (port, host, cb) {
         options.secureOptions = options.secureOptions |
                     constants.SSL_OP_NO_SSLv2 | constants.SSL_OP_NO_SSLv3;
 
-        var requestCert = true;
-        var rejectUnauthorized = false;
         if (options) {
-            if (options.requestCert !== undefined) {
-                requestCert = options.requestCert;
+            if (options.requestCert === undefined) {
+                options.requestCert = true;
             }
-            if (options.rejectUnauthorized !== undefined) {
-                rejectUnauthorized = options.rejectUnauthorized;
+            if (options.rejectUnauthorized === undefined) {
+                options.rejectUnauthorized = false;
             }
         }
-        var sslcontext = (tls.createSecureContext || crypto.createCredentials)(options);
+        options.sslcontext = (tls.createSecureContext || crypto.createCredentials)(options);
+        options.socket = cryptoSocket;
 
-        // tls.createSecurePair([credentials], [isServer]);
-        var pair = tls.createSecurePair(sslcontext, false, requestCert, rejectUnauthorized);
+        var cleartext = new tls.connect(options);
 
-        socket.pair = pair;
+        pipe(cleartext, cryptoSocket);
 
-        var cleartext = client_pipe(pair, cryptoSocket);
-
-        pair.on('error', function(exception) {
-            socket.emit('error', exception);
-        });
-
-        pair.on('secure', function() {
-            var verifyError = (pair.ssl || pair._ssl).verifyError();
-
+        cleartext.on('secureConnect', function() {
             log.logdebug('client TLS secured.');
-            if (verifyError) {
-                cleartext.authorized = false;
-                cleartext.authorizationError = verifyError;
+            var cert = cleartext.getPeerCertificate();
+            if (cleartext.getCipher) {
+                var cipher = cleartext.getCipher();
             }
-            else {
-                cleartext.authorized = true;
-            }
-            var cert = pair.cleartext.getPeerCertificate();
-            if (pair.cleartext.getCipher) {
-                var cipher = pair.cleartext.getCipher();
-            }
-
-            if (cb2) cb2(cleartext.authorized, verifyError, cert, cipher);
-
-            socket.emit('secure');
+            if (cb2) cb2(cleartext.authorized, cleartext.authorizationError, cert, cipher);
         });
 
-        cleartext._controlReleased = true;
+//        cleartext._controlReleased = true;
         socket.cleartext = cleartext;
 
         if (socket._timeout) {
