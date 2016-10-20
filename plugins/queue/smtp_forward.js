@@ -21,7 +21,7 @@ exports.load_smtp_forward_ini = function () {
 
     plugin.cfg = plugin.config.get('smtp_forward.ini', {
         booleans: [
-            '-main.enable_tls',
+            '-*.enable_tls',
             '+main.enable_outbound',
         ],
     },
