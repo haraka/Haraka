@@ -70,7 +70,7 @@ pluggableStream.prototype.attach = function (socket) {
     self.targetsocket.on('drain', function () {
         self.emit('drain');
     });
-    self.targetsocket.on('error', function (exception) {
+    self.targetsocket.once('error', function (exception) {
         self.writable = self.targetsocket.writable;
         self.emit('error', exception);
     });
@@ -287,6 +287,12 @@ function connect (port, host, cb) {
         var cleartext = new tls.connect(options);
 
         pipe(cleartext, cryptoSocket);
+
+        cleartext.on('error', function(err) {
+            if (err.reason) {
+                log.logerror("client TLS error: " + err);
+            }
+        });
 
         cleartext.on('secureConnect', function() {
             log.logdebug('client TLS secured.');
