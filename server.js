@@ -318,12 +318,12 @@ Server.get_smtp_server = function (host, port, inactivity_timeout) {
         return server;
     }
 
-    if (!plugins.registered_plugins['tls']) {
+    if (!plugins.registered_plugins.tls) {
         logger.logerror("TLS plugin not activated. Cannot listen on port 465 (SMTPS) without config");
         return;
     }
 
-    var tls_plugin = plugins.registered_plugins['tls'];
+    var tls_plugin = plugins.registered_plugins.tls;
 
     if (!tls_plugin.tls_opts_valid) {
         logger.logerror("No valid TLS setup in the tls config. Cannot listen on port 465.");
