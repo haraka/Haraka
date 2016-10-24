@@ -186,7 +186,6 @@ util.inherits(SMTPClient, events.EventEmitter);
 SMTPClient.prototype.load_tls_config = function (plugin) {
     var tls_options = {};
     this.tls_config = tls_socket.load_tls_ini();
-    logger.logcrit("loading tls opts for plugin " + plugin.name);
     var config_options = ['key','cert','ciphers','requestCert','rejectUnauthorized'];
 
     for (var i = 0; i < config_options.length; i++) {
@@ -202,6 +201,8 @@ SMTPClient.prototype.load_tls_config = function (plugin) {
             tls_options[opt] = this.tls_config[plugin.name][opt];
         }
     }
+
+    if (this.host) { tls_options.hostname = this.host };
 
     this.tls_options = tls_options;
 }
