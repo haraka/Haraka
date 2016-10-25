@@ -1700,10 +1700,8 @@ HMailItem.prototype.try_deliver_host_on_socket = function (mx, host, port, socke
                         process_ehlo_data();
                         break;
                     case 'starttls':
-                        var tkey = config.get('tls_key.pem', 'binary');
-                        var tcert = config.get('tls_cert.pem', 'binary');
-                        var tls_options = (tkey && tcert) ? { key: tkey, cert: tcert } : {};
-                        var config_options = ['ciphers','requestCert','rejectUnauthorized'];
+                        var tls_options = { servername: mx.exchange };
+                        var config_options = ['key','cert','ciphers','requestCert','rejectUnauthorized'];
 
                         for (var i = 0; i < config_options.length; i++) {
                             var opt = config_options[i];
@@ -1718,6 +1716,16 @@ HMailItem.prototype.try_deliver_host_on_socket = function (mx, host, port, socke
                                 tls_options[opt] = tls_config.outbound[opt];
                             }
                         }
+
+                        if (Array.isArray(tls_options.key)) {
+                            tls_options.key = tls_options.key[0];
+                        }
+                        tls_options.key = config.get(tls_options.key, 'binary');
+
+                        if (Array.isArray(tls_options.cert)) {
+                            tls_options.cert = tls_options.cert[0];
+                        }
+                        tls_options.cert = config.get(tls_options.cert, 'binary');
 
                         smtp_properties = {};
                         socket.upgrade(tls_options, function (authorized, verifyError, cert, cipher) {

@@ -184,11 +184,9 @@ function SMTPClient (port, host, connect_timeout, idle_timeout) {
 util.inherits(SMTPClient, events.EventEmitter);
 
 SMTPClient.prototype.load_tls_config = function (plugin) {
-    var key = config.get('tls_key.pem', 'binary');
-    var cert = config.get('tls_cert.pem', 'binary');
-    var tls_options = (key && cert) ? { key: key, cert: cert } : {};
+    var tls_options = {};
     this.tls_config = tls_socket.load_tls_ini();
-    var config_options = ['ciphers','requestCert','rejectUnauthorized'];
+    var config_options = ['key','cert','ciphers','requestCert','rejectUnauthorized'];
 
     for (var i = 0; i < config_options.length; i++) {
         var opt = config_options[i];
@@ -203,6 +201,8 @@ SMTPClient.prototype.load_tls_config = function (plugin) {
             tls_options[opt] = this.tls_config[plugin.name][opt];
         }
     }
+
+    if (this.host) { tls_options.hostname = this.host };
 
     this.tls_options = tls_options;
 }
