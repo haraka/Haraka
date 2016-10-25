@@ -68,17 +68,7 @@ function tls_ini_overload (plugin) {
 
 exports.load_tls_ini = {
     setUp : _set_up,
-    'loads tls.ini (default)' : function (test) {
-        this.plugin.load_tls_ini();  // ALERT: runs tls_socket.load_tls_ini()
-
-        test.expect(4);
-        test.equal(true, this.plugin.cfg.main.requestCert);
-        test.ok(this.plugin.cfg.main.ciphers);
-        test.ok(this.plugin.cfg.no_tls_hosts);
-        test.equal(false, this.plugin.cfg.main.honorCipherOrder);
-        test.done();
-    },
-    'loads tls.ini (test)' : function (test) {
+    'loads test/config/tls.ini' : function (test) {
         tls_ini_overload(this.plugin);
 
         test.expect(4);

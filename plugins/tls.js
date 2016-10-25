@@ -1,7 +1,7 @@
 // TLS is built into Haraka. Enabling this plugin advertises STARTTLS.
 // see 'haraka -h tls' for help
 
-var tls_socket = require('./tls_socket');
+var net_utils = require('haraka-net-utils');
 
 exports.register = function () {
     var plugin = this;
@@ -45,7 +45,8 @@ exports.load_pem = function (file) {
 
 exports.load_tls_ini = function () {
     var plugin = this;
-    plugin.cfg = tls_socket.load_tls_ini(function () {
+
+    plugin.cfg = net_utils.load_tls_ini(function () {
         plugin.load_tls_ini();
     });
 
@@ -119,7 +120,7 @@ exports.advertise_starttls = function (next, connection) {
 
     var plugin = this;
 
-    if (tls_socket.is_no_tls_host(plugin.cfg, connection.remote.ip)) {
+    if (net_utils.ip_in_list(plugin.cfg.no_tls_hosts, connection.remote.ip)) {
         return next();
     }
 
