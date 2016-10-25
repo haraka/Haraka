@@ -62,8 +62,7 @@ exports.get_config = {
         this.connection.transaction.rcpt_to.push(
             new Address('<matt@test.com>')
             );
-        var cfg = this.plugin.get_config(this.connection);
-        test.deepEqual(cfg, {
+        test.deepEqual(this.plugin.get_config(this.connection), {
             host: '1.2.3.4',
             enable_tls: true,
             auth_user: 'postmaster@test.com',
