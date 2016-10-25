@@ -23,7 +23,8 @@ exports.load_smtp_forward_ini = function () {
         booleans: [
             '-main.enable_tls',
             '+main.enable_outbound',
-            '-*.enable_tls',
+            'main.one_message_per_rcpt',
+            '*.enable_tls',
         ],
     },
     function () {

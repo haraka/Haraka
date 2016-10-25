@@ -19,7 +19,6 @@ var ipaddr       = require('ipaddr.js');
 var line_socket = require('./line_socket');
 var logger      = require('./logger');
 var utils       = require('./utils');
-var config      = require('./config');
 var HostPool    = require('./host_pool');
 var net_utils   = require('haraka-net-utils');
 
