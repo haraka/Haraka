@@ -1749,16 +1749,6 @@ HMailItem.prototype.try_deliver_host_on_socket = function (mx, host, port, socke
                     case 'starttls':
                         var tls_options = exports.get_tls_options(mx);
 
-                        if (Array.isArray(tls_options.key)) {
-                            tls_options.key = tls_options.key[0];
-                        }
-                        tls_options.key = config.get(tls_options.key, 'binary');
-
-                        if (Array.isArray(tls_options.cert)) {
-                            tls_options.cert = tls_options.cert[0];
-                        }
-                        tls_options.cert = config.get(tls_options.cert, 'binary');
-
                         smtp_properties = {};
                         socket.upgrade(tls_options, function (authorized, verifyError, cert, cipher) {
                             self.loginfo('secured:' +
