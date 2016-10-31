@@ -2,6 +2,10 @@
 
 Validates the rcpt_to addresses (recipient addresses) by connecting to a PostgreSQL database.
 
+To enable this plugin add the following line to the `config/plugins` file.
+
+`rcpt_to.validity`
+
 ## Config
 
 The `rcpt_to.validity.json` file has the following structure (defaults shown). Also note that this file will need
