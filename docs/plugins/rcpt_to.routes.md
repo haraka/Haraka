@@ -61,6 +61,7 @@ The [routes] section can include routes for domains and email addresses:
     spam@example.com=honeybucket.where.com:26
 
 You may also use URI format to specify SMTP vs LMTP:
+
     [routes]
     aaron@example.com=lmtp://mail.example.com:2525
     matt@example.com=smtp://127.0.0.1:4242
