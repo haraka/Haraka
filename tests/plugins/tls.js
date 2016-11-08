@@ -55,9 +55,11 @@ function tls_ini_overload (plugin) {
         ]
     });
 
-    var config_options = ['ciphers','requestCert','rejectUnauthorized',
-       'key','cert','honorCipherOrder','ecdhCurve','dhparam',
-       'secureProtocol'];
+    var config_options = [
+        'ciphers','requestCert','rejectUnauthorized',
+        'key','cert','honorCipherOrder','ecdhCurve','dhparam',
+        'secureProtocol'
+    ];
 
     for (var i = 0; i < config_options.length; i++) {
         var opt = config_options[i];

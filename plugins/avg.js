@@ -93,8 +93,7 @@ exports.hook_data_post = function (next, connection) {
             connection.logprotocol(plugin, '< ' + line);
             if (!matches) {
                 connection.results.add(plugin,
-                    { err: 'Unrecognized response: ' + line,
-                });
+                    { err: 'Unrecognized response: ' + line });
                 socket.end();
                 if (!plugin.cfg.defer.error) return do_next();
                 return do_next(DENYSOFT, 'Virus scanner error (AVG)');

@@ -66,6 +66,6 @@
   "scripts": {
     "test": "node run_tests",
     "lint": "grunt lint",
-    "coverage": "NODE_ENV=cov ./node_modules/.bin/istanbul cov run_tests"
+    "cover": "NODE_ENV=cov ./node_modules/.bin/istanbul cov run_tests"
   }
 }
