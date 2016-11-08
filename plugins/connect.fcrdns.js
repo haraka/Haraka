@@ -295,8 +295,8 @@ exports.log_summary = function (connection) {
     var note = connection.results.get('connect.fcrdns');
     if (!note) return;
 
-    connection.loginfo(this,
-        ['ip=' + connection.remote.ip,
+    connection.loginfo(this, [
+        'ip=' + connection.remote.ip,
         'rdns="' + ((note.ptr_names.length > 2) ? note.ptr_names.slice(0,2).join(',') + '...' : note.ptr_names.join(',')) + '"',
         'rdns_len=' + note.ptr_names.length,
         'fcrdns="' + ((note.fcrdns.length > 2) ? note.fcrdns.slice(0,2).join(',') + '...' : note.fcrdns.join(',')) + '"',
@@ -304,7 +304,7 @@ exports.log_summary = function (connection) {
         'other_ips_len=' + note.other_ips.length,
         'invalid_tlds=' + note.invalid_tlds.length,
         'generic_rdns=' + ((note.ptr_name_has_ips) ? 'true' : 'false'),
-        ].join(' '));
+    ].join(' '));
 };
 
 exports.refresh_config = function (connection) {

@@ -27,8 +27,10 @@ exports.load_spamassassin_ini = function () {
         plugin.cfg.main[key] = defaults[key];
     }
 
-    ['reject_threshold', 'relay_reject_threshold',
-    'munge_subject_threshold', 'max_size'].forEach(function (item) {
+    [
+        'reject_threshold', 'relay_reject_threshold',
+        'munge_subject_threshold', 'max_size'
+    ].forEach(function (item) {
         if (!plugin.cfg.main[item]) return;
         plugin.cfg.main[item] = Number(plugin.cfg.main[item]);
     });

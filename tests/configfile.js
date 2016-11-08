@@ -109,8 +109,10 @@ exports.load_ini_config = {
     'test.ini, sect1, opts, w/defaults' : function (test) {
         test.expect(6);
         var r = this.cfreader.load_ini_config('tests/config/test.ini', {
-            booleans: ['+sect1.bool_true','-sect1.bool_false',
-                       '+sect1.bool_true_default', 'sect1.-bool_false_default']
+            booleans: [
+                '+sect1.bool_true','-sect1.bool_false',
+                '+sect1.bool_true_default', 'sect1.-bool_false_default'
+            ]
         });
         test.strictEqual(r.sect1.bool_true, true);
         test.strictEqual(r.sect1.bool_false, false);

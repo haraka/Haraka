@@ -142,7 +142,7 @@ exports.get_plain_passwd = function (user, connection, cb) {
         }
         if (chunk_count > 2) {
             if (/^\-ERR/.test(chunk)) {
-                plugin.logerror("get_plain failed: " + chunk);
+                plugin.lognotice("get_plain failed: " + chunk);
                 socket.end();         // disconnect
                 return;
             }
@@ -155,6 +155,6 @@ exports.get_plain_passwd = function (user, connection, cb) {
         }
     });
     socket.on('end', function () {
-        cb(plain_pass.toString());
+        cb(plain_pass ? plain_pass.toString() : plain_pass);
     });
 };

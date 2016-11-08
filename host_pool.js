@@ -36,9 +36,10 @@ function HostPool(hostports_str, retry_secs){
                 if (! splithost[1]){
                     splithost[1] = 25;
                 }
-                return { host: splithost[0],
-                         port: splithost[1]
-                        };
+                return {
+                    host: splithost[0],
+                    port: splithost[1]
+                };
             });
     self.hostports_str = hostports_str;
     self.hosts = utils.shuffle(hosts);

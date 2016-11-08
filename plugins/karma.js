@@ -16,10 +16,10 @@ exports.register = function () {
             ['unrecognized_command','helo','data','data_post','queue']
         );
     plugin.deny_exclude_hooks = utils.to_object('rcpt_to, queue');
-    plugin.deny_exclude_plugins = utils.to_object(
-            ['access', 'helo.checks', 'data.headers', 'spamassassin',
-            'mail_from.is_resolvable', 'clamd', 'tls']
-    );
+    plugin.deny_exclude_plugins = utils.to_object([
+        'access', 'helo.checks', 'data.headers', 'spamassassin',
+        'mail_from.is_resolvable', 'clamd', 'tls'
+    ]);
 
     plugin.load_karma_ini();
     plugin.load_redis_ini();
@@ -119,14 +119,14 @@ exports.preparse_result_awards = function () {
         if (!plugin.result_awards[pi_name][property]) {
             plugin.result_awards[pi_name][property] = [];
         }
-        plugin.result_awards[pi_name][property].push(
-                {   id         : anum,
-                    operator   : parts[2],
-                    value      : parts[3],
-                    award      : parts[4],
-                    reason     : parts[5],
-                    resolution : parts[6],
-                });
+        plugin.result_awards[pi_name][property].push({
+            id         : anum,
+            operator   : parts[2],
+            value      : parts[3],
+            award      : parts[4],
+            reason     : parts[5],
+            resolution : parts[6],
+        });
     });
 };
 

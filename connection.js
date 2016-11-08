@@ -870,14 +870,15 @@ Connection.prototype.ehlo_respond = function(retval, msg) {
         default:
             // RFC5321 section 4.1.1.1
             // Hostname/domain should appear after 250
-            var response = [config.get('me') + " Hello " +
-                            ((this.remote.host && this.remote.host !== 'DNSERROR' &&
-                            this.remote.host !== 'NXDOMAIN') ? this.remote.host + ' ' : '') +
-                            "[" + this.remote.ip + "]" +
-                            ", Haraka is at your service.",
-                            "PIPELINING",
-                            "8BITMIME",
-                            ];
+            var response = [
+                config.get('me') + " Hello " +
+                ((this.remote.host && this.remote.host !== 'DNSERROR' &&
+                this.remote.host !== 'NXDOMAIN') ? this.remote.host + ' ' : '') +
+                "[" + this.remote.ip + "]" +
+                ", Haraka is at your service.",
+                "PIPELINING",
+                "8BITMIME",
+            ];
 
             var databytes = parseInt(config.get('databytes')) || 0;
             response.push("SIZE " + databytes);

@@ -78,11 +78,12 @@ exports.default_result = {
         this.connection.results.push('test_plugin', { other: 'test2' });
         delete this.connection.results.store.test_plugin.human;
         delete this.connection.results.store.test_plugin.human_html;
-        test.deepEqual(
-                { pass: [], other: ['test2'], fail: [], msg: [],
-                  err: [], skip: [] },
-                this.connection.results.get('test_plugin')
-                );
+        test.deepEqual({
+            pass: [], other: ['test2'], fail: [], msg: [],
+            err: [], skip: []
+        },
+        this.connection.results.get('test_plugin')
+        );
         test.done();
     },
 };

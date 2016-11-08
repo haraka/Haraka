@@ -1,8 +1,10 @@
 // Enforce RFC 5322 Section 3.6
 var required_headers = ['Date', 'From'];
-var singular_headers =  ['Date', 'From', 'Sender', 'Reply-To', 'To', 'Cc',
-                         'Bcc', 'Message-Id', 'In-Reply-To', 'References',
-                         'Subject'];
+var singular_headers =  [
+    'Date', 'From', 'Sender', 'Reply-To', 'To', 'Cc',
+    'Bcc', 'Message-Id', 'In-Reply-To', 'References',
+    'Subject'
+];
 
 exports.register = function () {
     this.logwarn("NOTICE: plugin deprecated, use 'data.headers' instead!");
