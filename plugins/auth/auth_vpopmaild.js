@@ -155,6 +155,6 @@ exports.get_plain_passwd = function (user, connection, cb) {
         }
     });
     socket.on('end', function () {
-        cb(plain_pass.toString());
+        cb(plain_pass ? plain_pass.toString() : plain_pass);
     });
 };
