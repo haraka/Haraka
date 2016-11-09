@@ -1,9 +1,15 @@
-var util = require('util'),
-    pg = require('pg');
+/**
+ * @author Thihara Neranjya
+ *
+ * Plugin to validate the email recipient via a posgresql database.
+ */
+
+var util = require('util');
+var pg = require('pg');
 
 exports.register = function () {
-    this.logdebug("Initializing rcpt_to validity plugin.");
-    var config = this.config.get('rcpt_to.validity.json');
+    this.logdebug("Initializing rcpt_to postgresql plugin.");
+    var config = this.config.get('rcpt_to.postgresql.json');
 
     var dbConfig = {
         user: config.user,
@@ -55,9 +61,9 @@ exports.shutdown = function () {
 exports.is_user_valid = function (userID, callback) {
     var plugin = this;
 
-    plugin.pool.connect(function (err, client, done) {
-        if (err) {
-            plugin.logerror('Error fetching client from pool. ' + err);
+    plugin.pool.connect(function (conErr, client, done) {
+        if (conErr) {
+            plugin.logerror('Error fetching client from pool. ' + conErr);
             return callback(false);
         }
 
