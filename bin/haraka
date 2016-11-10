@@ -314,6 +314,7 @@ else if (parsed.help) {
             path.join(base, 'docs', parsed.help + '.md'),
             path.join(base, 'docs', 'plugins', parsed.help + '.md'),
             path.join(base, 'docs', 'deprecated', parsed.help + '.md'),
+            path.join(base, 'node_modules', 'haraka-plugin-' + parsed.help, 'README.md'),
         ];
         if (parsed.configs) {
             md_paths.unshift(path.join(parsed.configs, 'docs', 'plugins', parsed.help + '.md'));
