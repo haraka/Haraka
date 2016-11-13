@@ -234,7 +234,7 @@ exports.get_key_dir = function (connection, cb) {
 
     async.filter(dom_hier, function (file, cb2) {
         try {
-            cb2(null, fs.exists(file));
+            cb2(null, fs.existsSync(file));
         }
         catch (e) {
             return cb2(e);
