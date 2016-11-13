@@ -5,6 +5,7 @@ var addrparser = require('address-rfc2822');
 var async      = require('async');
 var crypto     = require('crypto');
 var fs         = require('fs');
+var path       = require('path');
 var Stream     = require('stream').Stream;
 var util       = require('util');
 var utils      = require('./utils');
@@ -185,9 +186,9 @@ exports.hook_queue_outbound = exports.hook_pre_send_trans_email = function (next
         }
         else {
             domain = keydir.split('/').pop();
-            connection.logdebug(plugin, 'dkim_domain: '+domain);
-            private_key = plugin.load_key('dkim/'+domain+'/private');
-            selector    = plugin.load_key('dkim/'+domain+'/selector').trim();
+            connection.logdebug(plugin, 'dkim_domain: ' + domain);
+            private_key = plugin.load_key(path.join('dkim', domain, 'private'));
+            selector    = plugin.load_key(path.join('dkim', domain, 'selector')).trim();
         }
 
         if (!plugin.has_key_data(connection,domain,selector,private_key)) {
@@ -214,34 +215,33 @@ exports.hook_queue_outbound = exports.hook_pre_send_trans_email = function (next
     });
 };
 
-exports.get_key_dir = function (connection, cb) {
+exports.get_key_dir = function (connection, done) {
     var plugin = this;
-    var txn    = connection.transaction;
-    var domain = plugin.get_sender_domain(txn);
-    if (!domain) { return cb(); }
+    var domain = plugin.get_sender_domain(connection.transaction);
+    if (!domain) { return done(); }
 
     // split the domain name into labels
     var labels     = domain.split('.');
-    var haraka_dir = process.env.HARAKA;
+    var haraka_dir = process.env.HARAKA || '';
 
     // list possible matches (ex: mail.example.com, example.com, com)
     var dom_hier = [];
     for (var i=0; i<labels.length; i++) {
         var dom = labels.slice(i).join('.');
-        dom_hier[i] = haraka_dir + "/config/dkim/"+dom;
+        dom_hier[i] = path.resolve(haraka_dir, 'config', 'dkim', dom);
     }
-    connection.logdebug(plugin, dom_hier);
 
-    async.filter(dom_hier, function (file, cb2) {
-        try {
-            cb2(null, fs.exists(file));
-        }
-        catch (e) {
-            return cb2(e);
-        }
+    async.detectSeries(dom_hier, function (filePath, iterDone) {
+        fs.stat(filePath, function (err, stats) {
+            if (err) return iterDone(null, false);
+            iterDone(null, stats.isDirectory());
+        });
     }, function (err, results) {
+        if (err) {
+            connection.logerror(err);
+        }
         connection.logdebug(plugin, results);
-        cb(err, results ? results[0] : null);
+        done(err, results);
     });
 };
 
@@ -320,11 +320,14 @@ exports.get_sender_domain = function (txn) {
 
     // If From has multiple-addresses, we must parse and
     // use the domain in the Sender header.
-    try {
-        domain = (addrparser.parse(txn.header.get('Sender')))[0].host();
+    var sender = txn.header.get('Sender');
+    if (sender) {
+        try {
+            domain = (addrparser.parse(sender))[0].host().toLowerCase();
+        }
+        catch (e) {
+            plugin.logerror(e);
+        }
     }
-    catch (e) {
-        plugin.logerror(e);
-    }
-    return domain.toLowerCase();
+    return domain;
 };
