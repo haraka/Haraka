@@ -45,9 +45,11 @@ process.on('message', function (msg) {
     }
 });
 
-Plugin.prototype.core_require = function (name) {
+Plugin.prototype.haraka_require = function (name) {
     return require('./' + name);
 };
+
+Plugin.prototype.core_require = Plugin.prototype.haraka_require;
 
 function plugin_search_paths (prefix, name) {
     return [

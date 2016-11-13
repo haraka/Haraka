@@ -334,7 +334,7 @@ folder of the same name that will not take preference, so avoid using names
 similar to core modules.
 
 Plugins loaded as modules do not have the special `require()`. To load
-a core Haraka module you must use `this.core_require('name')`. 
+a core Haraka module you must use `this.haraka_require('name')`. 
 This should also be preferred for plain JS plugins, as the
 `./` hack is likely to be removed in the future.
 
