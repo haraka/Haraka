@@ -1,5 +1,6 @@
 'use strict';
 
+var Address      = require('address-rfc2821').Address;
 var fixtures     = require('haraka-test-fixtures');
 
 var Connection   = fixtures.connection;
@@ -571,3 +572,27 @@ exports.check_result = {
         test.done();
     },
 };
+
+exports.check_spammy_tld = {
+    setUp : _set_up,
+    'spammy TLD is scored: top': function (test) {
+        test.expect(2);
+        this.plugin.cfg.spammy_tlds = { top: -3 };
+        var mfrom = new Address('spamy@er7diogt.rrnsale.top');
+        this.plugin.check_spammy_tld(mfrom, this.connection);
+        // console.log(this.connection.results.store);
+        test.equals(this.connection.results.store.karma.score, -3);
+        test.equals(this.connection.results.store.karma.fail[0], 'spammy.TLD');
+        test.done();
+    },
+    'spammy TLD is scored: rocks': function (test) {
+        test.expect(2);
+        this.plugin.cfg.spammy_tlds = { rocks: '-2' };
+        var mfrom = new Address('spamy@foo.rocks');
+        this.plugin.check_spammy_tld(mfrom, this.connection);
+        // console.log(this.connection.results.store);
+        test.equals(this.connection.results.store.karma.score, -2);
+        test.equals(this.connection.results.store.karma.fail[0], 'spammy.TLD');
+        test.done();
+    },
+}
