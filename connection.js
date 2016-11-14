@@ -728,6 +728,7 @@ Connection.prototype.lookup_rdns_respond = function (retval, msg) {
 Connection.prototype.rdns_response = function (err, domains) {
     if (err) {
         switch (err.code) {
+            case dns.NXDOMAIN:
             case dns.NOTFOUND:
                 this.set('remote', 'host', 'NXDOMAIN');
                 break;
