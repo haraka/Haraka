@@ -728,8 +728,12 @@ Connection.prototype.lookup_rdns_respond = function (retval, msg) {
 Connection.prototype.rdns_response = function (err, domains) {
     if (err) {
         switch (err.code) {
-            case dns.NXDOMAIN: this.remote.host = 'NXDOMAIN'; break;
-            default:           this.remote.host = 'DNSERROR'; break;
+            case dns.NOTFOUND:
+                this.set('remote', 'host', 'NXDOMAIN');
+                break;
+            default:
+                this.set('remote', 'host', 'DNSERROR');
+                break;
         }
     }
     else {
