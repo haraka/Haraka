@@ -1523,11 +1523,6 @@ Connection.prototype.cmd_data = function(args) {
     }
 
     this.accumulate_data('Received: ' + this.received_line() + "\r\n");
-    this.auth_results_clean();   // rename old A-R headers
-    var ar_field = this.auth_results();  // assemble new one
-    if (ar_field) {
-        this.transaction.add_header('Authentication-Results', ar_field);
-    }
     plugins.run_hooks('data', this);
 };
 
@@ -1627,6 +1622,12 @@ Connection.prototype.data_done = function() {
             self.reset_transaction();
         });
         return;
+    }
+
+    this.auth_results_clean();   // rename old A-R headers
+    var ar_field = this.auth_results();  // assemble new one
+    if (ar_field) {
+        this.transaction.add_header('Authentication-Results', ar_field);
     }
 
     this.transaction.end_data(function () {
