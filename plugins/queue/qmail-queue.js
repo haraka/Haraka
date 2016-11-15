@@ -1,13 +1,13 @@
 // Queue to qmail-queue
 
 var childproc = require('child_process');
-var existsSync = require('./utils').existsSync;
+var fs        = require('fs');
 
 exports.register = function () {
     var plugin = this;
 
     plugin.queue_exec = plugin.config.get('qmail-queue.path') || '/var/qmail/bin/qmail-queue';
-    if (!existsSync(plugin.queue_exec)) {
+    if (!fs.existsSync(plugin.queue_exec)) {
         throw new Error("Cannot find qmail-queue binary (" + plugin.queue_exec + ")");
     }
 

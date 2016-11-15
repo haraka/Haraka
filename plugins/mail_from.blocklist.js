@@ -1,5 +1,5 @@
 // Block mail from matching anything in the list
-var utils = require('./utils');
+var utils = require('haraka-utils');
 
 exports.register = function () {
     this.logwarn("NOTICE: plugin deprecated, use 'mail_from.access' instead!");

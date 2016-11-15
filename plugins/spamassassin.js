@@ -2,7 +2,7 @@
 // Call spamassassin via spamd
 
 var sock  = require('./line_socket');
-var utils = require('./utils');
+var utils = require('haraka-utils');
 
 exports.register = function () {
     var plugin = this;

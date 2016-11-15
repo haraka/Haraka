@@ -1,11 +1,11 @@
 'use strict';
 // karma - reward good and penalize bad mail senders
 
-var utils  = require('./utils');
+var utils  = require('haraka-utils');
 
-var phase_prefixes = utils.to_object(
-        ['connect','helo','mail_from','rcpt_to','data']
-        );
+var phase_prefixes = utils.to_object([
+    'connect','helo','mail_from','rcpt_to','data'
+]);
 
 exports.register = function () {
     var plugin = this;

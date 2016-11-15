@@ -1,18 +1,16 @@
 // quarantine
 
+var fs   = require('fs');
 var path = require('path');
-var fs = require('fs');
-
-var existsSync = require('./utils').existsSync;
 
 exports.register = function () {
-    this.register_hook('queue','quarantine');
-    this.register_hook('queue_outbound','quarantine');
+    this.register_hook('queue',          'quarantine');
+    this.register_hook('queue_outbound', 'quarantine');
 };
 
 // http://unknownerror.net/2011-05/16260-nodejs-mkdirs-recursion-create-directory.html
 var mkdirs = exports.mkdirs = function(dirpath, mode, callback) {
-    if (existsSync(dirpath)) {
+    if (fs.existsSync(dirpath)) {
         return callback(dirpath);
     }
     mkdirs(path.dirname(dirpath), mode, function() {
@@ -37,7 +35,7 @@ exports.hook_init_master = function (next) {
                     config.main.quarantine_path  :
                     '/var/spool/haraka/quarantine';
     var tmp_dir = [ base_dir, 'tmp' ].join('/');
-    if (existsSync(tmp_dir)) {
+    if (fs.existsSync(tmp_dir)) {
         var dirent = fs.readdirSync(tmp_dir);
         this.loginfo('Removing temporary files from: ' + tmp_dir);
         for (var i=0; i<dirent.length; i++) {

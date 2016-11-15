@@ -4,7 +4,7 @@
 var config = require('./config');
 var Header = require('./mailheader').Header;
 var body   = require('./mailbody');
-var utils  = require('./utils');
+var utils  = require('haraka-utils');
 var util   = require('util');
 var MessageStream = require('./messagestream');
 

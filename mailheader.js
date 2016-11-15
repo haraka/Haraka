@@ -1,7 +1,8 @@
-"use strict";
+'use strict';
 // An RFC 2822 email header parser
+
 var logger = require('./logger');
-var utils  = require('./utils');
+var utils  = require('haraka-utils');
 var Iconv;
 try { Iconv = require('iconv').Iconv }
 catch (err) {

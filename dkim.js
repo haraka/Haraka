@@ -1,10 +1,10 @@
 'use strict';
 
 var crypto = require('crypto');
+var dns    = require('dns');
 var Stream = require('stream').Stream;
-var indexOfLF = require('./utils').indexOfLF;
-var util = require('util');
-var dns = require('dns');
+var utils  = require('haraka-utils');
+var util   = require('util');
 
 //////////////////////
 // Common functions //
@@ -481,7 +481,7 @@ DKIMVerifyStream.prototype.handle_buf = function (buf) {
 
     // Process input buffer into lines
     var offset = 0;
-    while ((offset = indexOfLF(buf)) !== -1) {
+    while ((offset = utils.indexOfLF(buf)) !== -1) {
         var line = buf.slice(0, offset+1);
         if (buf.length > offset) {
             buf = buf.slice(offset+1);

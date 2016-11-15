@@ -4,7 +4,7 @@
 // mail_from.blocklist plugin for this to work fully.
 
 var fs = require('fs');
-var utils = require('./utils');
+var utils = require('haraka-utils');
 
 exports.hook_data = function (next, connection) {
     // enable mail body parsing

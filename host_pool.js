@@ -21,7 +21,7 @@ var net = require('net');
  */
 
 var logger = require('./logger');
-var utils  = require('./utils');
+var utils  = require('haraka-utils');
 
 // takes a comma/space-separated list of ip:ports
 //  1.1.1.1:22,  3.3.3.3:44

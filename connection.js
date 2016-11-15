@@ -12,6 +12,7 @@ var path        = require('path');
 var ipaddr      = require('ipaddr.js');
 var constants   = require('haraka-constants');
 var net_utils   = require('haraka-net-utils');
+var utils       = require('haraka-utils');
 var Address     = require('address-rfc2821').Address;
 
 // Haraka libs
@@ -20,10 +21,7 @@ var logger      = require('./logger');
 var trans       = require('./transaction');
 var plugins     = require('./plugins');
 var rfc1869     = require('./rfc1869');
-var utils       = require('./utils');
 var outbound    = require('./outbound');
-var date_to_str = require('./utils').date_to_str;
-var indexOfLF   = require('./utils').indexOfLF;
 var ResultStore = require('./result_store');
 
 var hostname    = (os.hostname().split(/\./))[0];
@@ -395,7 +393,7 @@ Connection.prototype._process_data = function() {
     }
 
     var offset;
-    while (this.current_data && ((offset = indexOfLF(this.current_data, maxlength)) !== -1)) {
+    while (this.current_data && ((offset = utils.indexOfLF(this.current_data, maxlength)) !== -1)) {
         if (this.state === states.STATE_PAUSE_DATA) {
             return;
         }
@@ -470,7 +468,7 @@ Connection.prototype._process_data = function() {
     }
 
     if (this.current_data && (this.current_data.length > maxlength) &&
-            (indexOfLF(this.current_data, maxlength) === -1)) {
+            (utils.indexOfLF(this.current_data, maxlength) === -1)) {
         if (this.state !== states.STATE_DATA       &&
             this.state !== states.STATE_PAUSE_DATA)
         {
@@ -1446,7 +1444,7 @@ Connection.prototype.received_line = function() {
         'envelope-from ', this.transaction.mail_from.format(),
         ((this.authheader) ? ' ' + this.authheader.replace(/\r?\n\t?$/, '') : ''),
         ((sslheader) ? "\n\t" + sslheader.replace(/\r?\n\t?$/,'') : ''),
-        ";\n\t", date_to_str(new Date())
+        ";\n\t", utils.date_to_str(new Date())
     )
     return received_header.join('');
 };

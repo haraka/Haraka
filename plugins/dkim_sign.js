@@ -8,7 +8,8 @@ var fs         = require('fs');
 var path       = require('path');
 var Stream     = require('stream').Stream;
 var util       = require('util');
-var utils      = require('./utils');
+
+var utils      = require('haraka-utils');
 
 function DKIMSignStream(selector, domain, private_key, headers_to_sign, header, end_callback) {
     Stream.call(this);

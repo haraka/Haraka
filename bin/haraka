@@ -9,6 +9,8 @@ var fs   = require('fs');
 var path = require('path');
 var nopt = require('nopt');
 var os   = require('os');
+
+var utils   = require('haraka-utils');
 var sprintf = require('sprintf-js').sprintf;
 var base = path.join(__dirname, '..');
 var ver  = JSON.parse(fs.readFileSync(base+'/package.json', 'utf8')).version;
@@ -51,7 +53,6 @@ var shortHands = {
     "t": ["--test"],
 };
 var parsed = nopt(knownOpts, shortHands, process.argv, 2);
-var existsSync = require(base+'/utils').existsSync;
 
 var usage = [
     "\033[32;40mHaraka.js\033[0m — A Node.js Email Server project",
@@ -283,7 +284,7 @@ var plugin_doc = [
 
 function createFile(filePath, data, info) {
     try {
-        if (existsSync(filePath) && !parsed.force) {
+        if (fs.existsSync(filePath) && !parsed.force) {
             throw filePath + " already exists";
         }
         var fd = fs.openSync(filePath, 'w');
@@ -322,7 +323,7 @@ else if (parsed.help) {
         }
         for (var i=0, j=md_paths.length; i<j; i++) {
             var _md_path = md_paths[i];
-            if (existsSync(_md_path)) {
+            if (fs.existsSync(_md_path)) {
                 md_path = [_md_path];
                 break;
             }
@@ -574,8 +575,7 @@ else if (parsed.test) {
         // Add data to stream
         if (msg) {
             var buf = msg;
-            var indexOfLF   = require(path.join(base, 'utils')).indexOfLF;
-            while ((offset = indexOfLF(buf)) !== -1) {
+            while ((offset = utils.indexOfLF(buf)) !== -1) {
                 var line = buf.slice(0, offset+1);
                 if (buf.length > offset) {
                     buf = buf.slice(offset+1);

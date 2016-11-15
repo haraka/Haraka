@@ -2,7 +2,7 @@
 var tlds      = require('haraka-tld');
 var haddr     = require('address-rfc2822');
 var net_utils = require('haraka-net-utils');
-var utils     = require('./utils');
+var utils     = require('haraka-utils');
 
 exports.register = function() {
     var plugin = this;

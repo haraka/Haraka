@@ -1,10 +1,11 @@
 "use strict";
 // A subclass of Socket which reads data by line
 
-var net  = require('net');
+var net   = require('net');
+var util  = require('util');
+var utils = require('haraka-utils');
+
 var tls  = require('./tls_socket');
-var util = require('util');
-var line_regexp = require('./utils').line_regexp;
 
 function Socket(options) {
     if (!(this instanceof Socket)) return new Socket(options);
@@ -17,7 +18,7 @@ function setup_line_processor (socket) {
     socket.process_data = function (data) {
         current_data += data;
         var results;
-        while (results = line_regexp.exec(current_data)) {
+        while (results = utils.line_regexp.exec(current_data)) {
             var this_line = results[1];
             current_data = current_data.slice(this_line.length);
             socket.emit('line', this_line);

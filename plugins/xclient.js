@@ -1,7 +1,7 @@
 // Implementation of XCLIENT protocol
 // See http://www.postfix.org/XCLIENT_README.html
 
-var utils = require('./utils');
+var utils = require('haraka-utils');
 var DSN = require('./dsn');
 var net = require('net');
 var allowed_hosts = {};

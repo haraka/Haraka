@@ -1,29 +1,27 @@
 'use strict';
 
+var async       = require('async');
 var fs          = require('fs');
 var path        = require('path');
 var dns         = require('dns');
-var net         = require('net');
-var util        = require('util');
 var events      = require('events');
+var net         = require('net');
 var os          = require('os');
+var util        = require('util');
 
 var Address     = require('address-rfc2821').Address;
+var constants   = require('haraka-constants');
+var net_utils   = require('haraka-net-utils');
+var utils       = require('haraka-utils');
 
-var utils       = require('./utils');
 var sock        = require('./line_socket');
 var logger      = require('./logger');
 var config      = require('./config');
-var constants   = require('haraka-constants');
-var net_utils   = require('haraka-net-utils');
 var trans       = require('./transaction');
 var plugins     = require('./plugins');
-var async       = require('async');
 var TimerQueue  = require('./timer_queue');
 var Header      = require('./mailheader').Header;
 var DSN         = require('./dsn');
-var date_to_str = utils.date_to_str;
-var existsSync  = utils.existsSync;
 var FsyncWriteStream = require('./fsync_writestream');
 var generic_pool = require('generic-pool');
 var server      = require('./server');
@@ -37,9 +35,6 @@ var my_hostname = require('os').hostname().replace(/\\/, '\\057').replace(/:/, '
 
 // File Name Format: $time_$attempts_$pid_$uniq.$host
 var fn_re = /^(\d+)_(\d+)_(\d+)(_\d+\..*)$/
-
-// Line regexp
-var line_regexp = utils.line_regexp;
 
 // TODO: For testability, this should be accessible
 var queue_dir = path.resolve(config.get('queue_dir') || (process.env.HARAKA + '/queue'));
@@ -223,7 +218,7 @@ exports.load_pid_queue = function (pid) {
 exports.ensure_queue_dir = function () {
     // No reason not to do this stuff syncronously -
     // this code is only run at start-up.
-    if (!existsSync(queue_dir)) {
+    if (!fs.existsSync(queue_dir)) {
         this.logdebug("Creating queue directory " + queue_dir);
         try {
             fs.mkdirSync(queue_dir, 493); // 493 == 0755
@@ -508,7 +503,7 @@ exports.send_email = function () {
     // Set data_lines to lines in contents
     if (typeof contents == 'string') {
         var match;
-        while (match = line_regexp.exec(contents)) {
+        while (match = utils.line_regexp.exec(contents)) {
             var line = match[1];
             line = line.replace(/\r?\n?$/, '\r\n'); // make sure it ends in \r\n
             if (dot_stuffed === false && line.length >= 3 && line.substr(0,1) === '.') {
@@ -540,7 +535,7 @@ function stream_line_reader (stream, transaction, cb) {
     function process_data (data) {
         current_data += data.toString();
         var results;
-        while (results = line_regexp.exec(current_data)) {
+        while (results = utils.line_regexp.exec(current_data)) {
             var this_line = results[1];
             current_data = current_data.slice(this_line.length);
             if (!(current_data.length || this_line.length)) {
@@ -574,10 +569,10 @@ exports.send_trans_email = function (transaction, next) {
     }
     if (!transaction.header.get_all('Date').length) {
         this.loginfo("Adding missing Date header");
-        transaction.add_header('Date', date_to_str(new Date()));
+        transaction.add_header('Date', utils.date_to_str(new Date()));
     }
 
-    transaction.add_leading_header('Received', '('+cfg.received_header+'); ' + date_to_str(new Date()));
+    transaction.add_leading_header('Received', '('+cfg.received_header+'); ' + utils.date_to_str(new Date()));
 
     var connection = {
         transaction: transaction,
@@ -1873,7 +1868,7 @@ HMailItem.prototype.populate_bounce_message = function (from, to, reason, cb) {
             if (headers_done === false) {
                 buf += data;
                 var results;
-                while (results = line_regexp.exec(buf)) {
+                while (results = utils.line_regexp.exec(buf)) {
                     var this_line = results[1];
                     if (this_line === '\n' || this_line == '\r\n') {
                         headers_done = true;

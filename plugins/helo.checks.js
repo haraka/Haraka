@@ -4,7 +4,7 @@
 var tlds      = require('haraka-tld');
 var dns       = require('dns');
 var net_utils = require('haraka-net-utils');
-var utils     = require('./utils');
+var utils     = require('haraka-utils');
 
 var checks = [
     'match_re',           // List of regexps

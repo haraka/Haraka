@@ -2,7 +2,7 @@
 /* jshint multistr: true */
 
 var urlp  = require('url');
-var utils = require('./utils');
+var utils = require('haraka-utils');
 
 var db;
 var select = "SELECT COUNT(*) AS hits, plugin FROM graphdata WHERE timestamp >= ? AND timestamp < ? GROUP BY plugin";

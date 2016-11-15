@@ -3,7 +3,7 @@
 // See plugins/auth/flat_file.js for an example.
 
 var crypto = require('crypto');
-var utils = require('./utils');
+var utils = require('haraka-utils');
 var AUTH_COMMAND = 'AUTH';
 var AUTH_METHOD_CRAM_MD5 = 'CRAM-MD5';
 var AUTH_METHOD_PLAIN = 'PLAIN';
