@@ -108,7 +108,6 @@ exports.colors = {
         test.expect(4);
         test.ok(this.logger.colorize);
         test.equal('function', typeof this.logger.colorize);
-        // missing on Node < 0.10
         test.equal('error', this.logger.colorize('bad-color', 'error'));
         var expected = util.inspect.colors ? '\u001b[34mgood\u001b[39m' : 'good';
         test.equal(expected, this.logger.colorize('blue', 'good'));
