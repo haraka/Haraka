@@ -51,21 +51,6 @@ exports.sort_keys = function (obj) {
     return Object.keys(obj).sort();
 };
 
-exports.uniq = function (arr) {
-    var out = [];
-    var o = 0;
-    for (var i=0,l=arr.length; i < l; i++) {
-        if (out.length === 0) {
-            out.push(arr[i]);
-        }
-        else if (out[o] !== arr[i]) {
-            out.push(arr[i]);
-            o++;
-        }
-    }
-    return out;
-};
-
 exports.extend = function (target) {
     // http://stackoverflow.com/questions/14974864/
     var sources = [].slice.call(arguments, 1);
