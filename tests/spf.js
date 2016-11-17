@@ -36,12 +36,6 @@ exports.SPF = {
         this.SPF.mod_redirect('example.com', cb);
     },
     'mod_redirect, false': function (test) {
-        if (process.version === 'v0.10.26') {
-            test.expect(0);
-            test.done();
-            return;
-        }
-
         test.expect(2);
         // var outer = this;
         var cb = function (err, rc) {

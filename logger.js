@@ -59,7 +59,7 @@ logger.dump_logs = function (cb) {
         var log_item = logger.deferred_logs.shift();
         var color = logger.colors[log_item.level];
         if (color && stdout_is_tty) {
-            console.log(logger.colorize(color,log_item.data));
+            console.log(logger.colorize(color, log_item.data));
         }
         else {
             console.log(log_item.data);

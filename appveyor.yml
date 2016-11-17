@@ -14,7 +14,6 @@ test_script:
   # Output useful info for debugging.
   - node --version
   - npm --version
-  # run tests
   #- grunt lint  # no need to run lint tests here too
   - node run_tests
 
