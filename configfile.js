@@ -295,7 +295,7 @@ cfreader.load_json_config = function(name) {
     var result = cfreader.empty_config('json');
     var cache_key = cfreader.get_cache_key(name);
     try {
-        if (utils.existsSync(name)) {
+        if (fs.existsSync(name)) {
             result = JSON.parse(fs.readFileSync(name));
         }
         else {
@@ -303,7 +303,7 @@ cfreader.load_json_config = function(name) {
             // If filename ends in .json, try .yaml instead
             if (/\.json$/.test(name)) {
                 var yaml_name = name.replace(/\.json$/, '.yaml');
-                if (utils.existsSync(yaml_name)) {
+                if (fs.existsSync(yaml_name)) {
                     // We have to read_config() here, so the file is watched
                     result = cfreader.read_config(yaml_name, 'yaml');
                     // Replace original config cache with this result
@@ -366,7 +366,7 @@ cfreader.process_file_overrides = function (name, result) {
 cfreader.load_yaml_config = function(name) {
     var result = cfreader.empty_config('yaml');
     try {
-        if (utils.existsSync(name)) {
+        if (fs.existsSync(name)) {
             result = yaml.safeLoad(fs.readFileSync(name, 'utf8'));
         }
     }
@@ -423,7 +423,7 @@ cfreader.load_ini_config = function(name, options) {
     var current_sect_name = 'main';
     var bool_matches = cfreader.init_booleans(options, result);
 
-    if (!utils.existsSync(name)) { return result; }
+    if (!fs.existsSync(name)) { return result; }
 
     try {
         var data = fs.readFileSync(name, 'UTF-8');
@@ -508,7 +508,7 @@ cfreader.load_flat_config = function(name, type) {
     var result = cfreader.empty_config();
 
     try {
-        if (utils.existsSync(name)) {
+        if (fs.existsSync(name)) {
             var data   = fs.readFileSync(name, "UTF-8");
             if (type === 'data') {
                 while (data.length > 0) {
@@ -562,7 +562,7 @@ cfreader.load_flat_config = function(name, type) {
 
 cfreader.load_binary_config = function(name, type) {
     try {
-        if (utils.existsSync(name)) {
+        if (fs.existsSync(name)) {
             return fs.readFileSync(name);
         }
         return null;
@@ -578,6 +578,5 @@ cfreader.load_binary_config = function(name, type) {
         }
     }
 };
-var fs     = require('fs');
-var utils  = require('./utils');
+var fs = require('fs');
 logger = require('./logger');

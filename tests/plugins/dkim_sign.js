@@ -5,10 +5,9 @@ var path         = require('path');
 
 var Address      = require('address-rfc2821');
 var fixtures     = require('haraka-test-fixtures');
+var utils        = require('haraka-utils');
 
 var Connection   = fixtures.connection;
-
-var utils        = require('../../utils');
 
 var _set_up = function (done) {
 

@@ -7,7 +7,7 @@ var net       = require('net');
 var tlds      = require('haraka-tld');
 
 var net_utils = require('haraka-net-utils');
-var utils     = require('./utils');
+var utils     = require('haraka-utils');
 
 // Default regexps to extract the URIs from the message
 var numeric_ip = /\w{3,16}:\/+(\S+@)?(\d+|0[xX][0-9A-Fa-f]+)\.(\d+|0[xX][0-9A-Fa-f]+)\.(\d+|0[xX][0-9A-Fa-f]+)\.(\d+|0[xX][0-9A-Fa-f]+)/gi;

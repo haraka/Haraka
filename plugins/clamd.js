@@ -1,7 +1,7 @@
 // clamd
 
 var sock = require('./line_socket');
-var utils = require('./utils');
+var utils = require('haraka-utils');
 
 exports.load_excludes = function() {
     var plugin = this;

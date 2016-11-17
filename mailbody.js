@@ -3,7 +3,7 @@
 // Mail Body Parser
 var logger = require('./logger');
 var Header = require('./mailheader').Header;
-var utils  = require('./utils');
+var utils  = require('haraka-utils');
 var config = require('./config');
 var events = require('events');
 var util   = require('util');
@@ -407,7 +407,7 @@ Body.prototype.parse_attachment = function (line) {
 Body.prototype.decode_qp = utils.decode_qp;
 
 Body.prototype.decode_base64 = function (line) {
-    return new Buffer(line, "base64");
+    return new Buffer(line, 'base64');
 };
 
 Body.prototype.decode_8bit = function (line) {

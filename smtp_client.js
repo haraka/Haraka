@@ -18,7 +18,7 @@ var ipaddr       = require('ipaddr.js');
 // haraka libs
 var line_socket = require('./line_socket');
 var logger      = require('./logger');
-var utils       = require('./utils');
+var utils       = require('haraka-utils');
 var HostPool    = require('./host_pool');
 var net_utils   = require('haraka-net-utils');
 

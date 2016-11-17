@@ -5,7 +5,7 @@ var fs = require('fs');
 var spawn = require('child_process').spawn;
 var path = require('path');
 var crypto = require('crypto');
-var utils = require('./utils');
+var utils = require('haraka-utils');
 
 var tmp;
 var bsdtar_path;

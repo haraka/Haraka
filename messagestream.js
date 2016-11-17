@@ -3,8 +3,9 @@
 var fs = require('fs');
 var util = require('util');
 var Stream = require('stream').Stream;
+var utils = require('haraka-utils');
+
 var ChunkEmitter = require('./chunkemitter');
-var indexOfLF = require('./utils').indexOfLF;
 
 var STATE_HEADERS = 1;
 var STATE_BODY = 2;
@@ -263,7 +264,7 @@ MessageStream.prototype._read = function () {
 
 MessageStream.prototype.process_buf = function (buf) {
     var offset = 0;
-    while ((offset = indexOfLF(buf)) !== -1) {
+    while ((offset = utils.indexOfLF(buf)) !== -1) {
         var line = buf.slice(0, offset+1);
         buf = buf.slice(line.length);
         // Don't output headers if they where sent already

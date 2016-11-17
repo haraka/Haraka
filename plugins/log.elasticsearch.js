@@ -1,7 +1,7 @@
 'use strict';
 // log to Elasticsearch
 
-var utils = require('./utils');
+var utils = require('haraka-utils');
 
 exports.register = function() {
     var plugin = this;

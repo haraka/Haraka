@@ -1,6 +1,6 @@
 'use strict';
 // Block mail from matching anything in the list
-var utils = require('./utils');
+var utils = require('haraka-utils');
 
 exports.register = function () {
     this.logwarn("NOTICE: plugin deprecated, use 'rcpt_to.access' instead!");

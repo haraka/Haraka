@@ -12,7 +12,6 @@ var constants   = require('haraka-constants');
 // local modules
 var logger      = require('./logger');
 var config      = require('./config');
-var utils       = require('./utils');
 var states      = require('./connection').states;
 
 exports.registered_hooks = {};
@@ -193,12 +192,12 @@ Plugin.prototype._make_custom_require = function () {
             return require(module);
         }
 
-        if (utils.existsSync(__dirname + '/' + module + '.js') ||
-            utils.existsSync(__dirname + '/' + module)) {
+        if (fs.existsSync(path.join(__dirname, module + '.js')) ||
+            fs.existsSync(path.join(__dirname, module))) {
             return require(module);
         }
 
-        return require(path.dirname(plugin.plugin_path) + '/' + module);
+        return require(path.join(path.dirname(plugin.plugin_path), module));
     };
 };
 

@@ -1,6 +1,6 @@
 // Proxy AUTH requests selectively by domain
 var sock  = require('./line_socket');
-var utils = require('./utils');
+var utils = require('haraka-utils');
 var smtp_regexp = /^([0-9]{3})([ -])(.*)/;
 
 exports.register = function () {

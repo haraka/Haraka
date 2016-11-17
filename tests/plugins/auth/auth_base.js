@@ -1,10 +1,7 @@
 'use strict';
 
 var fixtures     = require('haraka-test-fixtures');
-
-var Connection   = fixtures.connection;
-
-var utils        = require('../../../utils');
+var utils        = require('haraka-utils');
 
 var _set_up = function (done) {
 
@@ -15,7 +12,7 @@ var _set_up = function (done) {
         return cb(null);
     };
 
-    this.connection = Connection.createConnection();
+    this.connection = fixtures.connection.createConnection();
     this.connection.capabilities=null;
 
     done();
@@ -31,7 +28,7 @@ var _set_up_2 = function (done) {
         return cb(null);
     };
 
-    this.connection = Connection.createConnection();
+    this.connection = fixtures.connection.createConnection();
     this.connection.capabilities=null;
 
     done();
