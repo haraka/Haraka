@@ -130,6 +130,20 @@ one of the methods described at the
 [OpenSSL API page](https://www.openssl.org/docs/manmaster/ssl/ssl.html).
 The default is `SSLv23_method`.
 
+### enableOCSPStapling
+
+Specifies that OCSP Stapling should be enabled, according to RFC 6066.
+Stapling of OCSP messages allows the client to receive these along the
+TLS session setup instead of delaying the session setup by requiring a
+separate http connection to the OCSP server.
+
+    enableOCSPStapling=[true|false]  (default: false)
+
+OCSP responses from the OCSP server are cached in memory for as long as
+they are valid, and get refreshed after that time. A server restart
+requires the OCSP responses to be fetched again upon the first client
+connection.
+
 ## Inbound Specific Configuration
 
 By default the above options are shared with outbound mail (either

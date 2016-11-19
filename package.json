@@ -40,6 +40,7 @@
     "haraka-nosql"          : "*",
     "ldapjs"                : "~1.0.0",
     "haraka-plugin-syslog"  : "*",
+    "ocsp"                  : "~1.1.0",
     "redis"                 : "~2.6.2",
     "tmp"                   : "~0.0.28",
     "vs-stun"               : "~0.0.7"
