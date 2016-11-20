@@ -23,13 +23,21 @@ exports.redis = {
         test.equal(this.plugin.redisCfg.server.port, 6379);
         test.done();
     },
-    'pings' : function (test) {
+    'connects' : function (test) {
         test.expect(1);
-        var server = { notes: { } };
-        this.plugin.init_redis_connection(function () {
-            test.ok(server.notes.redis);
+        var opts = {
+            host: this.plugin.redisCfg.server.host,
+            port: this.plugin.redisCfg.server.port,
+            retry_strategy: function (options) {
+                if (options.error) {
+                    console.error(options.error);
+                }
+                return undefined;
+            }
+        };
+        var redis = this.plugin.get_redis_client(opts, function () {
+            test.ok(redis.connected);
             test.done();
-        }, server);
+        });
     },
 };
-
