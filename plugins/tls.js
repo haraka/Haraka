@@ -2,6 +2,7 @@
 // see 'haraka -h tls' for help
 
 var net_utils = require('haraka-net-utils');
+var tls_socket = require('./tls_socket');
 
 exports.register = function () {
     var plugin = this;
@@ -33,6 +34,10 @@ exports.register = function () {
     plugin.register_hook('unrecognized_command', 'upgrade_connection');
 };
 
+exports.shutdown = function() {
+    if (tls_socket.shutdown) tls_socket.shutdown();
+};
+
 exports.load_err = function (errMsg) {
     this.logcrit(errMsg + " See 'haraka -h tls'");
     this.load_errs.push(errMsg);
@@ -52,7 +57,7 @@ exports.load_tls_ini = function () {
 
     var config_options = ['ciphers','requestCert','rejectUnauthorized',
         'key','cert','honorCipherOrder','ecdhCurve','dhparam',
-        'secureProtocol'];
+        'secureProtocol','enableOCSPStapling'];
 
     for (var i = 0; i < config_options.length; i++) {
         var opt = config_options[i];
