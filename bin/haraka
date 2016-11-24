@@ -256,7 +256,9 @@ var packageJson = JSON.stringify({
     "name": "haraka_local",
     "description": "An SMTP Server",
     "version": "0.0.1",
-    "dependencies": {}
+    "dependencies": {},
+    "repository": "",
+    "license": "MIT"
 });
 
 var plugin_src = [

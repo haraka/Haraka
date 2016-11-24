@@ -1,3 +1,34 @@
+2.8.11 - Nov 13, 2016
+
+* Changes
+    * rename core_require to haraka_require #1708
+    * move log.syslog to haraka-plugin-syslog #1698
+    * remove tls.ini loading and is_no_tls_host to net_utils #1690
+    * replace ./utils with npm packaged haraka-utils #1720
+    * require node 4
+    * karma: add .top TLD scoring #1714
+
+* New Features
+    * Implement OCSP Stapling #1724
+
+* Improvements
+    * show help for npm packaged plugins included in core #1698
+    * use tls.connect for client #1682
+    * bring port 465 SMTPS TLS config support on par with STARTTLS #1667
+    * use tls.connect instead of createSecurePair #1678
+    * redis: improve error handling in tests #
+    * replace / path seperators with path.* for cross platform compat #1713
+
+* Bug Fixes
+    * dkim_sign: per-domain key finding fixed #1707
+    * Rspamd: restore spam report header #1702
+    * auth/vpopmail: do not toString() when null #1695
+    * fix outbound to avoid recursive reading key/cert after refactoring #1692
+    * tls: fix option servername (not hostname) #1728
+    * correct Auth-Results cleaning #1726
+    * fix results for connection.remote_host and NXDOMAIN #1716
+
+
 2.8.10 - Oct 20, 2016
 
 * Changes
@@ -14,7 +45,7 @@
     * normalize proxy properties #1650
 
 * New Features
-    * added connection.remote.is_private boolean #1648 
+    * added connection.remote.is_private boolean #1648
     * added additional TLS options (@typingArtist) #1651
     * added wildcard boolean support to config loader #1680
     * tls: allow multiple key and cert parameters for RSA+ECDSA #1663
