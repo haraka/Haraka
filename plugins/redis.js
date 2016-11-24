@@ -37,24 +37,31 @@ exports.load_redis_ini = function () {
 exports.init_redis_connection = function (next, server) {
     var plugin = this;
 
-    // this is the server-wide redis, shared by plugins that don't
-    // set a specific db ID.
-    if (server.notes.redis && server.notes.redis.ping()) {
-        plugin.loginfo('already connected');
-        return next(); // connection is good
-    }
-
     var calledNext = false;
-    function callNext () {
+    function nextOnce () {
         if (calledNext) return;
         calledNext = true;
         next();
     }
 
-    var opts = plugin.redisCfg.opts;
-    opts.host = plugin.redisCfg.server.host;
-    opts.port = plugin.redisCfg.server.port;
-    server.notes.redis = plugin.get_redis_client(opts, callNext);
+    // this is the server-wide redis, shared by plugins that don't
+    // set a specific db ID.
+    if (server.notes.redis) {
+        server.notes.redis.ping(function (err, res) {
+            if (err) {
+                plugin.logerror(err);
+                return nextOnce(err);
+            }
+            plugin.loginfo('already connected');
+            nextOnce(); // connection is good
+        });
+    }
+    else {
+        var opts = plugin.redisCfg.opts;
+        opts.host = plugin.redisCfg.server.host;
+        opts.port = plugin.redisCfg.server.port;
+        server.notes.redis = plugin.get_redis_client(opts, nextOnce);
+    }
 };
 
 exports.init_redis_plugin = function (next, server) {
@@ -75,13 +82,13 @@ exports.init_redis_plugin = function (next, server) {
     }
 
     var calledNext=false;
-    function callNext () {
+    function nextOnce () {
         if (calledNext) return;
         calledNext = true;
         next();
     }
 
-    plugin.db = plugin.get_redis_client(plugin.cfg.redis, callNext);
+    plugin.db = plugin.get_redis_client(plugin.cfg.redis, nextOnce);
 };
 
 exports.shutdown = function () {
@@ -108,7 +115,7 @@ exports.redis_ping = function(done) {
         if (err           ) { return nope(err); }
         if (res !== 'PONG') { return nope(new Error('not PONG')); }
         plugin.redis_pings=true;
-        done(null, true);
+        done(err, true);
     });
 };
 
@@ -118,6 +125,25 @@ exports.get_redis_client = function (opts, next) {
     if (opts.db !== undefined) {
         db = opts.db;
         delete opts.db;
+    }
+
+    if (!opts.retry_strategy) {
+        opts.retry_strategy = function (options) {
+            if (options.error.code === 'ECONNREFUSED') {
+                // End reconnecting on a specific error and flush all commands with a individual error
+                return new Error('The server refused the connection');
+            }
+            if (options.total_retry_time > 1000 * 60 * 60) {
+                // End reconnecting after a specific timeout and flush all commands with a individual error
+                return new Error('Retry time exhausted');
+            }
+            if (options.times_connected > 10) {
+                // End reconnecting with built in error
+                return undefined;
+            }
+            // reconnect after
+            return Math.min(options.attempt * 100, 3000);
+        };
     }
 
     var client = redis.createClient(opts)
@@ -134,6 +160,11 @@ exports.get_redis_client = function (opts, next) {
                 msg += ' v' + client.server_info.redis_version;
             }
             plugin.loginfo(plugin, msg);
+            next();
+        })
+        .on('end', function () {
+            if (arguments.length) console.log(arguments);
+            // plugin.logerror('Redis error: ' + error.message);
             next();
         });
 
