@@ -187,6 +187,7 @@ exports.drain_pools = function () {
     for (var p in server.notes.pool) {
         logger.logdebug("[outbound] Drain pools: Draining SMTP connection pool " + p);
         server.notes.pool[p].drain(function() {
+            if (!server.notes.pool[p]) return;
             server.notes.pool[p].destroyAllNow();
         });
     }

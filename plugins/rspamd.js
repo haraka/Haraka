@@ -172,17 +172,17 @@ exports.hook_data_post = function (next, connection) {
                             })
                         }
                     }
-                    if (cfg.soft_reject.enabled && r.default.action === 'soft reject') {
+                    if (cfg.soft_reject.enabled && r.data.default.action === 'soft reject') {
                         return callNext(DENYSOFT, DSN.sec_unauthorized(cfg.soft_reject.message, 451));
                     } else if (cfg.main.add_headers !== 'never' && (
                                cfg.main.add_headers === 'always' ||
-                               (r.default.action === 'add header' && cfg.main.add_headers === 'sometimes'))) {
+                               (r.data.default.action === 'add header' && cfg.main.add_headers === 'sometimes'))) {
                         plugin.add_headers(connection, r.data);
                     }
                     return callNext();
                 }
 
-                if (r.default.action !== 'reject') return no_reject();
+                if (r.data.default.action !== 'reject') return no_reject();
 
                 if (!authed && !cfg.reject.spam) return no_reject();
                 if (authed && !cfg.reject.authenticated) return no_reject();
