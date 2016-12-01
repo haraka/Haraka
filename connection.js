@@ -39,7 +39,7 @@ var states = exports.states = {
     STATE_DISCONNECTED:    100,
 };
 
-var nextTick = setImmediate || process.nextTick;
+var nextTick = setImmediate || setImmediate;
 
 // copy logger methods into Connection:
 for (var key in logger) {
@@ -679,7 +679,7 @@ Connection.prototype.resume = function () {
         self.state = self.prev_state;
         self.prev_state = null;
     }
-    process.nextTick(function () { self._process_data();});
+    setImmediate(function () { self._process_data();});
 };
 
 /////////////////////////////////////////////////////////////////////////////

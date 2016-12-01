@@ -13,7 +13,7 @@ exports.lookup = function (lookup, zone, cb) {
     var self = this;
 
     if (!lookup || !zone) {
-        return process.nextTick(function () {
+        return setImmediate(function () {
             return cb(new Error('missing data'));
         });
     }

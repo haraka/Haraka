@@ -28,7 +28,7 @@ exports.newMockHMailItem = function (outbound_context, test, options, callback) 
             }
             if (!hmail.todo) {
                 hmail.once('ready', function () {
-                    process.nextTick(function(){callback(hmail);});
+                    setImmediate(function(){callback(hmail);});
                 });
             }
             else {

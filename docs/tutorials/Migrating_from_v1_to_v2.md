@@ -65,7 +65,7 @@ backpressure manually by checking the return of `write()` and adding
     };
     socket.on('drain', function () {
         if (end_pending && in_data) {
-            process.nextTick(function () { send_data() });
+            setImmediate(function () { send_data() });
         }
     });
 

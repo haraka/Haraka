@@ -22,7 +22,7 @@ FsyncWriteStream.prototype.close = function(cb) {
             this.once('open', close);
             return;
         }
-        return process.nextTick(this.emit.bind(this, 'close'));
+        return setImmediate(this.emit.bind(this, 'close'));
     }
     this.closed = true;
     close();
