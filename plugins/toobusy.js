@@ -17,7 +17,7 @@ exports.register = function () {
 
     plugin.loadConfig();
 
-    plugin.register_hook('lookup_rdns', 'check_busy');
+    plugin.register_hook('connect_pre', 'check_busy');
 };
 
 exports.loadConfig = function () {
@@ -39,15 +39,14 @@ exports.check_busy = function (next, connection) {
         return next();
     }
 
-    if (was_busy) {
+    if (!was_busy) {
         was_busy = true;
-        return next(DENYSOFTDISCONNECT, 'Too busy; try again later');
+        // Log a CRIT error at the first occurrence
+        var currentLag = toobusy.lag();
+        var maxLag = toobusy.maxLag();
+        this.logcrit(
+            'deferring connections: lag=' + currentLag + ' max=' + maxLag);
     }
 
-    // Log a CRIT error at the first occurrence
-    var currentLag = toobusy.lag();
-    var maxLag = toobusy.maxLag();
-    this.logcrit(
-        'deferring connections: lag=' + currentLag + ' max=' + maxLag);
-    return next();
+    return next(DENYSOFTDISCONNECT, 'Too busy; please try again later');
 };
