@@ -240,7 +240,7 @@ Plugin.prototype._compile = function () {
         Buffer: Buffer,
         Math: Math,
         server: plugins.server,
-        setImmediate,
+        setImmediate
     };
     if (plugin.hasPackageJson) {
         delete sandbox.__filename;
