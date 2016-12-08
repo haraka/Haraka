@@ -383,7 +383,7 @@ Server.setup_smtp_listeners = function (plugins2, type, inactivity_timeout) {
             if (e.code === 'EAFNOSUPPORT' &&
                     /^::0/.test(host) &&
                     Server.default_host) {
-                server.listen(port, '0.0.0.0');
+                server.listen(port, '0.0.0.0', 0);
             }
             else {
                 // Pass error to callback
@@ -391,7 +391,7 @@ Server.setup_smtp_listeners = function (plugins2, type, inactivity_timeout) {
             }
         });
 
-        server.listen(port, host);
+        server.listen(port, host, 0);
     };
 
     async.each(listeners, setupListener, runInitHooks);
@@ -438,7 +438,7 @@ Server.setup_http_listeners = function () {
             cb(e);
         });
 
-        Server.http.server.listen(hp[2], hp[1]);
+        Server.http.server.listen(hp[2], hp[1], 0);
     };
 
     var registerRoutes = function (err) {

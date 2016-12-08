@@ -169,7 +169,7 @@ cfreader.read_config = function(name, type, cb, options) {
     // Check cache first
     if (!process.env.WITHOUT_CONFIG_CACHE) {
         var cache_key = cfreader.get_cache_key(name, options);
-        if (cfreader._config_cache[cache_key]) {
+        if (cfreader._config_cache[cache_key] !== undefined) {
             //logger.logdebug('Returning cached file: ' + name);
             var cached = cfreader._config_cache[cache_key];
             // Make sure that any .ini file booleans are applied

@@ -39,8 +39,6 @@ var states = exports.states = {
     STATE_DISCONNECTED:    100,
 };
 
-var nextTick = setImmediate || process.nextTick;
-
 // copy logger methods into Connection:
 for (var key in logger) {
     if (!/^log\w/.test(key)) continue;
@@ -416,7 +414,7 @@ Connection.prototype._process_data = function() {
                 this.logdebug('[early_talker] state=' + this.state + ' esmtp=' + this.esmtp + ' line="' + this_line + '"');
             }
             this.early_talker = true;
-            nextTick(function () { self._process_data() });
+            setImmediate(function () { self._process_data() });
             break;
         }
         else if ((this.state === states.STATE_PAUSE || this.state === states.STATE_PAUSE_SMTP) && this.esmtp) {
@@ -457,7 +455,7 @@ Connection.prototype._process_data = function() {
                             ' esmtp=' + this.esmtp + ' line="' + this_line + '"');
                 }
                 this.early_talker = true;
-                nextTick(function () { self._process_data() });
+                setImmediate(function () { self._process_data() });
             }
             break;
         }
@@ -679,7 +677,7 @@ Connection.prototype.resume = function () {
         self.state = self.prev_state;
         self.prev_state = null;
     }
-    process.nextTick(function () { self._process_data();});
+    setImmediate(function () { self._process_data();});
 };
 
 /////////////////////////////////////////////////////////////////////////////

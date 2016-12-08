@@ -140,7 +140,7 @@ MessageStream.prototype._write = function (data) {
         // Do we have any waiting readers?
         if (this.listeners('data').length && !this.write_complete) {
             this.write_complete = true;
-            process.nextTick(function () {
+            setImmediate(function () {
                 if (self.readable && !self.paused)
                     self._read();
             });
@@ -167,7 +167,7 @@ MessageStream.prototype._write = function (data) {
         this.ws.on('open', function (fd) {
             self.fd = fd;
             self.open_pending = false;
-            process.nextTick(function () {
+            setImmediate(function () {
                 self._write();
             });
         });
@@ -184,7 +184,7 @@ MessageStream.prototype._write = function (data) {
         this.write_pending = true;
         this.ws.once('drain', function () {
             self.write_pending = false;
-            process.nextTick(function () {
+            setImmediate(function () {
                 self._write();
             });
         });
@@ -229,7 +229,7 @@ MessageStream.prototype._read = function () {
         // Add end of headers marker
         this.read_ce.fill(this.line_endings);
         // Loop
-        process.nextTick(function () {
+        setImmediate(function () {
             if (self.readable && !self.paused)
                 self._read();
         });

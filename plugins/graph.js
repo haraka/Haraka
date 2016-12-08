@@ -224,7 +224,7 @@ exports.get_data = function (res, earliest, today, group_by) {
             return res.end();
         }
         else {
-            return process.nextTick(function () {
+            return setImmediate(function () {
                 plugin.get_data(res, next_stop, today, group_by);
             });
         }
