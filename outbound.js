@@ -1804,8 +1804,8 @@ HMailItem.prototype.try_deliver_host_on_socket = function (mx, host, port, socke
                         data_stream.pipe(socket, {end: false});
                         break;
                     case 'dot':
-                        send_command('RSET');
                         finish_processing_mail(true);
+                        send_command('RSET');
                         break;
                     case 'dot_lmtp':
                         if (code.match(/^2/)) lmtp_rcpt_idx++;
