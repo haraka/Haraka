@@ -4,13 +4,13 @@
 /*----------------------------------------------------------------------------------------------*/
 
 var tls       = require('tls');
-var constants = require('constants');
-var crypto    = require('crypto');
 var util      = require('util');
 var net       = require('net');
 var stream    = require('stream');
 var log       = require('./logger');
 var EventEmitter = require('events');
+
+var secureContext;
 
 var ocsp;
 try {
@@ -208,6 +208,28 @@ if (ocsp) {
 
 exports.ocsp = ocsp;
 
+function _getSecureContext(options) {
+    if (secureContext) return secureContext;
+
+    if (options === undefined) options = {};
+
+    if (options.requestCert === undefined) {
+        options.requestCert = true;
+    }
+    if (options.rejectUnauthorized === undefined) {
+        options.rejectUnauthorized = false;
+    }
+    if (!options.sessionIdContext) {
+       	options.sessionIdContext = 'haraka';
+    };
+    if (!options.sessionTimeout) {
+       	// options.sessionTimeout = 1;
+    };
+
+    secureContext = tls.createSecureContext(options);
+    return secureContext;
+}
+
 function createServer(cb) {
     var serv = net.createServer(function (cryptoSocket) {
 
@@ -219,47 +241,16 @@ function createServer(cb) {
             socket.clean();
             cryptoSocket.removeAllListeners('data');
 
-            // Set SSL_OP_ALL for maximum compatibility with broken clients
-            // See http://www.openssl.org/docs/ssl/SSL_CTX_set_options.html
             if (!options) options = {};
-            // TODO: bug in Node means we can't do this until it's fixed
-            // options.secureOptions = constants.SSL_OP_ALL;
 
-            // Setting secureProtocol to 'SSLv23_method' and secureOptions to
-            // constants.SSL_OP_NO_SSLv2/3 are used to disable SSLv2 and SSLv3
-            // protocol support, to prevent DROWN and POODLE attacks at least.
-            // Node's docs here are super unhelpful, e.g.
-            // <https://nodejs.org/api/tls.html#tls_tls_createserver_options_secureconnectionlistener>
-            // doesn't even mention secureOptions.  Some digging reveals the
-            // relevant openssl docs: secureProtocol is documented in
-            // <https://www.openssl.org/docs/manmaster/ssl/ssl.html#DEALING-WITH-PROTOCOL-METHODS>,
-            // (note: you'll want to select the correct openssl version that
-            // node was compiled against, instead of master), and secureOptions
-            // are documented in
-            // <https://www.openssl.org/docs/manmaster/ssl/SSL_CTX_set_options.html>
-            // (again, select the appropriate openssl version, not master).
-            // One caveat: it doesn't seem like all options are actually
-            // compiled into node.  To see which ones are, fire up node and
-            // examine the object returned by require('constants').
-
-            // use cached secureContext as the relevant options are static
             if (!options.secureContext) {
-                options.secureProtocol = options.secureProtocol || 'SSLv23_method';
-                options.secureOptions = options.secureOptions |
-                       constants.SSL_OP_NO_SSLv2 | constants.SSL_OP_NO_SSLv3;
 
-                if (options.requestCert === undefined) {
-                    options.requestCert = true;
-                }
-                if (options.rejectUnauthorized === undefined) {
-                    options.rejectUnauthorized = false;
-                }
-                options.secureContext = (tls.createSecureContext || crypto.createCredentials)(options);
+                options.secureContext = _getSecureContext(options);
                 options.isServer = true;
                 if (options.enableOCSPStapling) {
                     if (ocsp) {
                         options.server = pseudoServ;
-                        pseudoServ._sharedCreds = options.secureContext;
+                        pseudoServ._sharedCreds = secureContext;
                     } else {
                         log.logerr("OCSP Stapling cannot be enabled because the ocsp module is not loaded");
                     }
@@ -323,27 +314,9 @@ function connect (port, host, cb) {
         socket.clean();
         cryptoSocket.removeAllListeners('data');
 
-        // Set SSL_OP_ALL for maximum compatibility with broken servers
-        // See http://www.openssl.org/docs/ssl/SSL_CTX_set_options.html
         if (!options) options = {};
-        // TODO: bug in Node means we can't do this until it's fixed
-        // options.secureOptions = constants.SSL_OP_ALL;
 
-        // See comments around similar code in createServer above for what's
-        // going on here.
-        options.secureProtocol = options.secureProtocol || 'SSLv23_method';
-        options.secureOptions = options.secureOptions |
-                    constants.SSL_OP_NO_SSLv2 | constants.SSL_OP_NO_SSLv3;
-
-        if (options) {
-            if (options.requestCert === undefined) {
-                options.requestCert = true;
-            }
-            if (options.rejectUnauthorized === undefined) {
-                options.rejectUnauthorized = false;
-            }
-        }
-        options.sslcontext = (tls.createSecureContext || crypto.createCredentials)(options);
+        options.secureContext = _getSecureContext(options);
         options.socket = cryptoSocket;
 
         var cleartext = new tls.connect(options);
@@ -365,7 +338,7 @@ function connect (port, host, cb) {
             if (cb2) cb2(cleartext.authorized, cleartext.authorizationError, cert, cipher);
         });
 
-//        cleartext._controlReleased = true;
+//      cleartext._controlReleased = true;
         socket.cleartext = cleartext;
 
         if (socket._timeout) {
