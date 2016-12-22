@@ -20,6 +20,7 @@ exports.load_spamassassin_ini = function () {
         max_size:     500000,
         old_headers_action: "rename",
         subject_prefix: "*** SPAM ***",
+        bypass_extra_headers: false,
     };
 
     for (var key in defaults) {
@@ -116,8 +117,10 @@ exports.hook_data_post = function (next, connection) {
             flag: spamd_response.flag,
         });
 
-        plugin.fixup_old_headers(connection.transaction);
-        plugin.do_header_updates(connection, spamd_response);
+        if ( !plugin.cfg.main.bypass_extra_headers ) {
+            plugin.fixup_old_headers(connection.transaction);
+            plugin.do_header_updates(connection, spamd_response);
+        }
         plugin.log_results(connection, spamd_response);
 
         var exceeds_err = plugin.score_too_high(connection, spamd_response);
