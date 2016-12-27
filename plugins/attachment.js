@@ -71,7 +71,7 @@ exports.hook_init_master = exports.hook_init_child = function (next) {
                             'to extract filenames from archive files');
         }
         else {
-            plugin.logwarn('found bsdtar in ' + dir);
+            plugin.logdebug('found bsdtar in ' + dir);
             bsdtar_path = dir + '/bsdtar';
         }
         return next();
