@@ -11,7 +11,11 @@ exports.register = function () {
 
 exports.load_spamassassin_ini = function () {
     var plugin = this;
-    plugin.cfg = plugin.config.get('spamassassin.ini', function () {
+    plugin.cfg = plugin.config.get('spamassassin.ini', {
+        booleans: [
+            '+add_headers',
+        ],
+    }, function () {
         plugin.load_spamassassin_ini();
     });
 
@@ -183,6 +187,8 @@ exports.do_header_updates = function (connection, spamd_response) {
     }
 
     var modern = plugin.cfg.main.modern_status_syntax;
+    if ( !plugin.cfg.main.add_headers ) return;
+
     for (var key in spamd_response.headers) {
         if (!key || key === '' || key === undefined) continue;
         var val = spamd_response.headers[key];
