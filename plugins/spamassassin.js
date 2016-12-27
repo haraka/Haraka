@@ -11,7 +11,11 @@ exports.register = function () {
 
 exports.load_spamassassin_ini = function () {
     var plugin = this;
-    plugin.cfg = plugin.config.get('spamassassin.ini', function () {
+    plugin.cfg = plugin.config.get('spamassassin.ini', {
+        booleans: [
+            '+add_headers',
+        ],
+    }, function () {
         plugin.load_spamassassin_ini();
     });
 
@@ -20,11 +24,11 @@ exports.load_spamassassin_ini = function () {
         max_size:     500000,
         old_headers_action: "rename",
         subject_prefix: "*** SPAM ***",
-        bypass_extra_headers: false,
+        add_headers: true,
     };
 
     for (var key in defaults) {
-        if (plugin.cfg.main[key]) continue;
+        if (plugin.cfg.main[key] !== undefined) continue;
         plugin.cfg.main[key] = defaults[key];
     }
 
@@ -117,10 +121,8 @@ exports.hook_data_post = function (next, connection) {
             flag: spamd_response.flag,
         });
 
-        if ( !plugin.cfg.main.bypass_extra_headers ) {
-            plugin.fixup_old_headers(connection.transaction);
-            plugin.do_header_updates(connection, spamd_response);
-        }
+        plugin.fixup_old_headers(connection.transaction);
+        plugin.do_header_updates(connection, spamd_response);
         plugin.log_results(connection, spamd_response);
 
         var exceeds_err = plugin.score_too_high(connection, spamd_response);
@@ -186,7 +188,10 @@ exports.do_header_updates = function (connection, spamd_response) {
     }
 
     var modern = plugin.cfg.main.modern_status_syntax;
+    var add_headers = plugin.cfg.main.add_headers;
+
     for (var key in spamd_response.headers) {
+        if ( !add_headers ) break;
         if (!key || key === '' || key === undefined) continue;
         var val = spamd_response.headers[key];
         if (val === undefined) { val = ''; }
