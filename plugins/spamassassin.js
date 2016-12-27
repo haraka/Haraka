@@ -24,11 +24,10 @@ exports.load_spamassassin_ini = function () {
         max_size:     500000,
         old_headers_action: "rename",
         subject_prefix: "*** SPAM ***",
-        add_headers: true,
     };
 
     for (var key in defaults) {
-        if (plugin.cfg.main[key] !== undefined) continue;
+        if (plugin.cfg.main[key]) continue;
         plugin.cfg.main[key] = defaults[key];
     }
 
@@ -188,10 +187,9 @@ exports.do_header_updates = function (connection, spamd_response) {
     }
 
     var modern = plugin.cfg.main.modern_status_syntax;
-    var add_headers = plugin.cfg.main.add_headers;
+    if ( !plugin.cfg.main.add_headers ) return;
 
     for (var key in spamd_response.headers) {
-        if ( !add_headers ) break;
         if (!key || key === '' || key === undefined) continue;
         var val = spamd_response.headers[key];
         if (val === undefined) { val = ''; }
