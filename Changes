@@ -1,3 +1,12 @@
+2.8.12 - Jan NN, 2017
+
+* Changes
+    * plugin/karma -> npm packaged haraka-plugin-karma
+* New Features
+* Improvements
+* Bug Fixes
+
+
 2.8.11 - Nov 24, 2016
 
 * Changes
