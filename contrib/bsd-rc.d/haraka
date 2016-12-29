@@ -3,7 +3,8 @@
 #        tested on FreeBSD. Should work on NetBSD and Dragonfly
 
 # PROVIDE: haraka
-# REQUIRE: networking syslog 
+# REQUIRE: NETWORKING ldconfig
+# KEYWORD: shutdown
 
 . /etc/rc.subr
 

@@ -1,9 +1,7 @@
 #!/bin/sh
 
 # PROVIDE: p0f
-# REQUIRE: ezjail
-# BEFORE:  DAEMON
-# KEYWORD: shutdown
+# REQUIRE: NETWORKING
 
 # Add the following lines to /etc/rc.conf to enable `p0f':
 #
