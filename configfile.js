@@ -22,7 +22,7 @@ var cfreader = exports;
 
 cfreader.config_path = process.env.HARAKA ?
                        path.join(process.env.HARAKA, 'config')
-                     : path.join(__dirname, './config');
+                     : path.join(__dirname, 'config');
 cfreader.watch_files = true;
 cfreader._config_cache = {};
 cfreader._read_args = {};

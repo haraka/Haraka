@@ -97,13 +97,12 @@ Plugin.prototype._get_plugin_path = function () {
 
     // development mode
     paths = paths.concat(plugin_search_paths(__dirname, name));
-
     paths.forEach(function (pp) {
         if (plugin.plugin_path) return;
         try {
             fs.statSync(pp);
             plugin.plugin_path = pp;
-            if (/\/package\.json$/.test(pp)) {
+            if (path.basename(pp) === 'package.json') {
                 plugin.hasPackageJson = true;
             }
         }

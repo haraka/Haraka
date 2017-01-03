@@ -238,15 +238,41 @@ exports.get = {
 };
 
 exports.plugin_get_merge = {
-    'INSTALLED node_modules package plugin: (test-plugin)': function (test) {
-        process.env.HARAKA = path.resolve(__dirname, '..', 'tests', 'installation');
-
+    tearDown: function (done) {
+        process.env.HARAKA = '';
+        done();
+    },
+    'INSTALLED node_modules package plugin: (test-plugin), flat': function (test) {
+        test.expect(2);
+        // process.env.HARAKA = path.resolve(__dirname, '..', 'tests', 'installation');
         var p = new plugin.Plugin('test-plugin');
 
-        test.expect(2);
-        var flat_config = p.config.get('test-plugin-flat');
-        test.equal(flat_config, 'flatisloaded');
-        var ini_config = p.config.get('test-plugin.ini', 'ini');
+        // HARAKA env not set, neither config file found
+        test.equal(p.config.get('test-plugin-flat'), null);
+
+        // calling module_config is the equivalant of setting process.env.HARAKA
+        // without side effects
+        var lc = p.config.module_config(
+            // module's "default" config file
+            path.resolve('tests', 'installation', 'node_modules','test-plugin'),
+            // installed path (overrides)
+            path.resolve('tests', 'installation')
+        );
+
+        test.equal(lc.get('test-plugin-flat'), 'flatisloaded');
+        test.done();
+    },
+    'INSTALLED node_modules package plugin: (test-plugin), ini': function (test) {
+        // setting process.env.HARAKA doesn't work here on Windows (see Appveyor tests)
+        // process.env.HARAKA = path.resolve(__dirname, '..', 'tests', 'installation');
+        var p = new plugin.Plugin('test-plugin');
+        var lc = p.config.module_config(
+            path.resolve('tests', 'installation', 'node_modules','test-plugin'),
+            path.resolve('tests', 'installation')
+        );
+
+        test.expect(1);
+        var ini_config = lc.get('test-plugin.ini', 'ini');
         test.deepEqual(ini_config, {
             main: { main1: 'foo', main2: 'blah' },
             sub1: { sub1: 'foo', sub2: 'blah' },
