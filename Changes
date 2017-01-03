@@ -2,6 +2,7 @@
 
 * Changes
     * plugin/karma -> npm packaged haraka-plugin-karma #1747
+    * update generic-pool 2.4.2 -> 2.5.0
 * New Features
     * Added option to bypass SpamAssassin headers' merge #1745
 * Improvements
