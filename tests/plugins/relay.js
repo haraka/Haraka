@@ -19,8 +19,8 @@ exports.plugin = {
     setUp : _set_up,
     'should have register function' : function (test) {
         test.expect(2);
-        test.isNotNull(this.plugin);
-        test.isFunction(this.plugin.register);
+        test.ok(this.plugin);
+        test.equal('function', typeof this.plugin.register);
         test.done();
     },
     'register function should call register_hook()' : function (test) {
@@ -295,8 +295,8 @@ exports.all = {
     setUp : _set_up,
     'register_hook() should register available function' : function (test) {
         test.expect(3);
-        test.isNotNull(this.plugin.all);
-        test.isFunction(this.plugin.all);
+        test.ok(this.plugin.all);
+        test.equal('function', typeof this.plugin.all);
         this.plugin.register();
         this.plugin.cfg.relay.all = true;
         this.plugin.register_hook('rcpt', 'all');  // register() doesn't b/c config is disabled
