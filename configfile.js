@@ -188,13 +188,15 @@ cfreader.read_config = function(name, type, cb, options) {
 
     // We can watch the directory on these platforms which
     // allows us to notice when files are newly created.
-    var os = process.platform;
-    if (os === 'linux' || os === 'win32') {
-        cfreader.watch_dir();
-    }
-    else {
-        // All other operating systems
-        cfreader.watch_file(name, type, cb, options);
+    switch (process.platform) {
+        case 'win32':
+        case 'win64':
+        case 'linux':
+            cfreader.watch_dir();
+            break;
+        default:
+            // All other operating systems
+            cfreader.watch_file(name, type, cb, options);
     }
 
     return result;
