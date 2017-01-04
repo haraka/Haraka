@@ -97,13 +97,12 @@ Plugin.prototype._get_plugin_path = function () {
 
     // development mode
     paths = paths.concat(plugin_search_paths(__dirname, name));
-
     paths.forEach(function (pp) {
         if (plugin.plugin_path) return;
         try {
             fs.statSync(pp);
             plugin.plugin_path = pp;
-            if (/\/package\.json$/.test(pp)) {
+            if (path.basename(pp) === 'package.json') {
                 plugin.hasPackageJson = true;
             }
         }
@@ -205,7 +204,12 @@ Plugin.prototype._get_code = function (pp) {
     var plugin = this;
 
     if (plugin.hasPackageJson) {
-        return 'var _p = require("' + path.dirname(pp) + '"); for (var k in _p) { exports[k] = _p[k] }';
+        var packageDir = path.dirname(pp);
+        if (/^win(32|64)/.test(process.platform)) {
+            // escape the c:\path\back\slashes else they disappear
+            packageDir = packageDir.replace(/\\/g, '\\\\');
+        }
+        return 'var _p = require("' + packageDir + '"); for (var k in _p) { exports[k] = _p[k] }';
     }
 
     try {

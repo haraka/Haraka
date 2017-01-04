@@ -3,20 +3,23 @@ environment:
 
 # Install scripts. (runs after repo cloning)
 install:
-  # Get the latest stable version of Node.js or io.js
-  - ps: Install-Product node $env:nodejs_version
-  # install modules
+  # Get the latest stable version of Node.js
+# - ps: Install-Product node $env:nodejs_version
   - npm install
-  - npm install -g grunt-cli
+  - choco install redis-64
+  - redis-server --service-install
+  - redis-server --service-start
 
-# Post-install test scripts.
-test_script:
-  # Output useful info for debugging.
+before_build:
+build: off
+after_build:
+
+before_test:
   - node --version
   - npm --version
-  #- grunt lint  # no need to run lint tests here too
+
+test_script:
   - node run_tests
 
-# Don't actually build.
-build: off
+after_test:
 

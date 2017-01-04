@@ -57,42 +57,43 @@ exports.get_timeout = {
     setUp : function (done) {
         process.env.WITHOUT_CONFIG_CACHE=true;
         this.to = getVal();
-        fs.writeFile(toPath, this.to, done);
+        var self = this;
+        fs.writeFile(toPath, this.to, function () {
+            self.plugin = new plugin.Plugin(piName);
+            done();
+        });
     },
     tearDown : function (done) {
         fs.unlink(toPath, done);
     },
     '0s' : function (test) {
-        var pi = new plugin.Plugin(piName);
         test.expect(1);
-        test.equal( pi.timeout, this.to );
+        test.equal( this.plugin.timeout, this.to );
         test.done();
     },
     '3s' : function (test) {
-        var pi = new plugin.Plugin(piName);
         test.expect(1);
-        test.equal( pi.timeout, this.to );
+        test.equal( this.plugin.timeout, this.to );
         test.done();
     },
     '60s' : function (test) {
-        var pi = new plugin.Plugin(piName);
         test.expect(1);
-        test.equal( pi.timeout, this.to );
+        test.equal( this.plugin.timeout, this.to );
         test.done();
     },
     '30s default (overrides NaN apple)' : function (test) {
-        var pi = new plugin.Plugin(piName);
         test.expect(1);
-        test.equal( pi.timeout, 30 );
+        test.equal( this.plugin.timeout, 30 );
         test.done();
     },
 };
 
 exports.plugin_paths = {
-
+    setUp : function (done) {
+        process.env.HARAKA = '';
+        done();
+    },
     'CORE plugin: (tls)' : function (test) {
-        delete process.env.HARAKA;
-
         var p = new plugin.Plugin('tls');
 
         test.expect(1);
@@ -199,9 +200,12 @@ exports.plugin_paths = {
 };
 
 exports.plugin_config = {
+    setUp : function (done) {
+        process.env.HARAKA = '';
+        done();
+    },
 
     'CORE plugin: (tls)' : function (test) {
-        delete process.env.HARAKA;
 
         var p = new plugin.Plugin('tls');
 
@@ -234,6 +238,5 @@ exports.plugin_config = {
         test.equal(p.config.overrides_path, path.resolve(__dirname, 'installation', 'config'));
         test.done();
     },
-
 }
 

@@ -10,7 +10,7 @@ var ResultStore  = fixtures.result_store;
 var _set_up = function (done) {
 
     this.plugin = new fixtures.plugin('access');
-    this.plugin.config.root_path = path.resolve(__dirname, '../../config');
+    this.plugin.config.module_config(path.resolve(__dirname, 'config'));
     this.plugin.register();
 
     this.connection = fixtures.connection.createConnection();
