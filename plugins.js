@@ -101,7 +101,7 @@ Plugin.prototype._get_plugin_path = function () {
         if (plugin.plugin_path) return;
         try {
             fs.statSync(pp);
-            plugin.plugin_path = pp;
+            plugin.plugin_path = pp.replace(/\\/, '\\\\');
             if (path.basename(pp) === 'package.json') {
                 plugin.hasPackageJson = true;
             }
