@@ -1,10 +1,17 @@
 2.8.12 - Jan NN, 2017
 
 * Changes
-    * plugin/karma -> npm packaged haraka-plugin-karma
+    * plugin/karma -> npm packaged haraka-plugin-karma #1747
+    * update generic-pool 2.4.2 -> 2.5.0
 * New Features
+    * Added option to bypass SpamAssassin headers' merge #1745
 * Improvements
+    * reduce severity of debug message #1744
+    * fix misleading entries in config/tls.ini #1734
+    * Misc. performance improvements #1738
+    * set tls.sessionIdContext property (for Thunderbird compat) #1740
 * Bug Fixes
+    * Swap lines to avoid clobbering response array #1743
 
 
 2.8.11 - Nov 24, 2016

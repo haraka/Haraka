@@ -23,7 +23,6 @@ env:
 # end: these are required for building on node.js v4
 
 before_script:
-    - npm install -g grunt-cli
 
 script:
     - npm run lint

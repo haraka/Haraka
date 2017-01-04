@@ -4,7 +4,7 @@
   "license": "MIT",
   "description": "An SMTP Server project.",
   "keywords": [ "haraka", "smtp", "server", "email" ],
-  "version": "2.8.11",
+  "version": "2.8.12",
   "homepage": "http://haraka.github.io",
   "repository": {
     "type": "git",
@@ -47,14 +47,9 @@
     "vs-stun"               : "~0.0.7"
   },
   "devDependencies": {
-    "nodeunit"              : "https://github.com/godsflaw/nodeunit/archive/master.tar.gz",
+    "nodeunit"              : "*",
     "haraka-test-fixtures"  : "*",
-    "eslint"                : ">=2.0.0",
-    "grunt"                 : "*",
-    "grunt-contrib-clean"   : "*",
-    "grunt-contrib-jshint"  : "*",
-    "grunt-version-check"   : "*",
-    "grunt-eslint"          : "*"
+    "eslint"                : ">=2"
   },
   "bugs": {
     "mail": "helpme@gmail.com",
@@ -68,7 +63,7 @@
   },
   "scripts": {
     "test": "node run_tests",
-    "lint": "grunt lint",
+    "lint": "./node_modules/.bin/eslint *.js plugins/**/*.js bin/haraka bin/spf bin/dkimverify tests/**/*.js",
     "cover": "NODE_ENV=cov ./node_modules/.bin/istanbul cov run_tests"
   }
 }

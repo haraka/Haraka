@@ -24,8 +24,8 @@ exports.register = {
     setUp : _set_up,
     'has a register function' : function (test) {
         test.expect(2);
-        test.isNotNull(this.plugin);
-        test.isFunction(this.plugin.register);
+        test.ok(this.plugin);
+        test.equal('function', typeof this.plugin.register);
         test.done();
     },
     /*

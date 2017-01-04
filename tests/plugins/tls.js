@@ -19,28 +19,28 @@ exports.plugin = {
     setUp : _set_up,
     'should have function register' : function (test) {
         test.expect(2);
-        test.isNotNull(this.plugin);
-        test.isFunction(this.plugin.register);
+        test.ok(this.plugin);
+        test.equal('function', typeof this.plugin.register);
         test.done();
     },
     'should have function load_tls_ini' : function (test) {
         test.expect(1);
-        test.isFunction(this.plugin.load_tls_ini);
+        test.equal('function', typeof this.plugin.load_tls_ini);
         test.done();
     },
     'should have function upgrade_connection' : function (test) {
         test.expect(1);
-        test.isFunction(this.plugin.upgrade_connection);
+        test.equal('function', typeof this.plugin.upgrade_connection);
         test.done();
     },
     'should have function advertise_starttls' : function (test) {
         test.expect(1);
-        test.isFunction(this.plugin.advertise_starttls);
+        test.equal('function', typeof this.plugin.advertise_starttls);
         test.done();
     },
     'should have function emit_upgrade_msg' : function (test) {
         test.expect(1);
-        test.isFunction(this.plugin.emit_upgrade_msg);
+        test.equal('function', typeof this.plugin.emit_upgrade_msg);
         test.done();
     },
 };
