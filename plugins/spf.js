@@ -17,6 +17,7 @@ exports.register = function () {
 exports.load_config = function () {
     var plugin = this;
     plugin.nu = net_utils;   // so tests can set public_ip
+    plugin.SPF = SPF;
 
     plugin.cfg = plugin.config.get('spf.ini', {
         booleans: [

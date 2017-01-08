@@ -12,6 +12,9 @@ var _set_up = function (done) {
     this.plugin.load_config();
     this.plugin.timeout = 8000;
 
+    // uncomment this line to see detailed SPF evaluation
+    this.plugin.SPF.prototype.log_debug = function () {};
+
     this.connection = fixtures.connection.createConnection();
     this.connection.transaction = fixtures.transaction.createTransaction();
     this.connection.transaction.results = new fixtures.result_store(this.connection);
@@ -233,7 +236,6 @@ exports.hook_mail = {
     },
     'txn, relaying, is_private': function (test) {
         var next = function (rc) {
-            console.log(arguments);
             test.equal(undefined, rc);
             test.done();
         };
