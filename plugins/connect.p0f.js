@@ -191,10 +191,13 @@ exports.hook_init_child = function (next, server) {
 
 exports.hook_lookup_rdns = function onLookup(next, connection) {
     var plugin = this;
+    if (connection.remote.is_private) return next();
+
     if (!server.notes.p0f_client) {
         connection.logerror(plugin, 'missing server');
         return next();
     }
+
     var p0f_client = server.notes.p0f_client;
     p0f_client.query(connection.remote.ip, function (err, result) {
         if (err) {
@@ -225,6 +228,8 @@ function format_results(r) {
 
 exports.hook_data_post = function (next, connection) {
     var plugin = this;
+    if (connection.remote.is_private) return next();
+
     var header_name = plugin.cfg.main.add_header;
     if (!header_name) {
         connection.logdebug(plugin, 'header disabled in ini' );
