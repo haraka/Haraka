@@ -16,6 +16,9 @@ exports.register = function () {
 
 exports.load_config = function () {
     var plugin = this;
+    plugin.nu = net_utils;   // so tests can set public_ip
+    plugin.SPF = SPF;
+
     plugin.cfg = plugin.config.get('spf.ini', {
         booleans: [
             '-defer.helo_temperror',
@@ -172,8 +175,7 @@ exports.hook_mail = function (next, connection, params) {
             domain: host,
             emit: true,
         });
-        return plugin.return_results(next, connection, spf, 'mfrom', result,
-            '<'+mfrom+'>');
+        plugin.return_results(next, connection, spf, 'mfrom', result, '<'+mfrom+'>');
     };
 
     // typical inbound (!relay)
@@ -198,7 +200,7 @@ exports.hook_mail = function (next, connection, params) {
             if (result) {
                 spf_result = spf.result(result).toLowerCase();
             }
-            if (err || spf_result && spf_result !== 'pass') {
+            if (err || (spf_result && spf_result !== 'pass')) {
                 if (e) {
                     // Error looking up public IP
                     return ch_cb(e);
@@ -206,9 +208,11 @@ exports.hook_mail = function (next, connection, params) {
                 if (!my_public_ip) {
                     return ch_cb(new Error("failed to discover public IP"));
                 }
-                return spf.check_host(my_public_ip, host, mfrom, function (er, r) {
-                    return ch_cb(er, r, my_public_ip);
+                spf = new SPF();
+                spf.check_host(my_public_ip, host, mfrom, function (er, r) {
+                    ch_cb(er, r, my_public_ip);
                 });
+                return;
             }
             ch_cb(err, result, connection.remote.ip);
         });
