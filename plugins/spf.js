@@ -114,9 +114,10 @@ exports.hook_helo = exports.hook_ehlo = function (next, connection, helo) {
 exports.hook_mail = function (next, connection, params) {
     var plugin = this;
 
-    // For inbound message from a private IP, skip MAIL FROM check
-    if (!connection.relaying && connection.remote.is_private) {
-        return next();
+    // For messages from private IP space...
+    if (connection.remote.is_private) {
+        if (!connection.relaying) return next();
+        if (connection.relaying && plugin.cfg.relay.context !== 'myself') return next();
     }
 
     var txn = connection.transaction;
