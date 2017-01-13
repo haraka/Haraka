@@ -36,6 +36,11 @@ AttachmentStream.prototype.emit_end = function () {
     }
     else {
         // console.log("YYY: end emit");
+        if (this.buffer.length > 0) {
+            while (this.buffer.length > 0) {
+                this.emit_data(this.buffer.shift());
+            }
+        }
         this.emit('end');
     }
 };
@@ -81,17 +86,7 @@ AttachmentStream.prototype.resume = function () {
         this.connection.resume();
     }
     this.paused = false;
-    if (this.buffer.length) {
-        while (this.paused === false && this.buffer.length > 0) {
-            this.emit_data(this.buffer.shift());
-        }
-        if (this.buffer.length === 0 && this.end_emitted) {
-            this.emit('end');
-        }
-    }
-    else if (this.end_emitted) {
-        this.emit('end');
-    }
+    this.emit_end();
 };
 
 AttachmentStream.prototype.destroy = function () {
