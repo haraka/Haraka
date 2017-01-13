@@ -29,8 +29,8 @@ AttachmentStream.prototype.emit_data = function (data) {
     }
 };
 
-AttachmentStream.prototype.emit_end = function () {
-    if (this.paused) {
+AttachmentStream.prototype.emit_end = function (force) {
+    if (this.paused && !force) {
         // console.log("YYY: end emit (cache)");
         this.end_emitted = true;
     }

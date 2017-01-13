@@ -145,6 +145,8 @@ Transaction.prototype.end_data = function (cb) {
             var line = new Buffer(data, 'binary');
 
             if (!this.discard_data) this.message_stream.add_line(line);
+
+            return this.body.force_end(cb);
         }
     }
 
