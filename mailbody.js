@@ -237,7 +237,7 @@ Body.prototype._empty_filter = function (ct, enc) {
     return new_buf.toString("binary");
 }
 
-Body.prototype.force_end = function (cb) {
+Body.prototype.force_end = function () {
     if (this.state === 'attachment') {
         if (this.buf_fill > 0) {
             // see below for why we create a new buffer here.
@@ -247,7 +247,6 @@ Body.prototype.force_end = function (cb) {
         }
         this.attachment_stream.emit_end(true);
     }
-    cb();
 }
 
 Body.prototype.parse_end = function (line) {

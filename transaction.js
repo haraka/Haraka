@@ -144,9 +144,9 @@ Transaction.prototype.end_data = function (cb) {
                        .replace(/\r?\n/gm, '\r\n');
             var line = new Buffer(data, 'binary');
 
-            if (!this.discard_data) this.message_stream.add_line(line);
+            this.body.force_end();
 
-            return this.body.force_end(cb);
+            if (!this.discard_data) this.message_stream.add_line(line);
         }
     }
 

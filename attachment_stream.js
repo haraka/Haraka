@@ -86,7 +86,17 @@ AttachmentStream.prototype.resume = function () {
         this.connection.resume();
     }
     this.paused = false;
-    this.emit_end();
+    if (this.buffer.length) {
+        while (this.paused === false && this.buffer.length > 0) {
+            this.emit_data(this.buffer.shift());
+        }
+        if (this.buffer.length === 0 && this.end_emitted) {
+            this.emit('end');
+        }
+    }
+    else if (this.end_emitted) {
+        this.emit('end');
+    }
 };
 
 AttachmentStream.prototype.destroy = function () {
