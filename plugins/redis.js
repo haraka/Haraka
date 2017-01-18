@@ -179,6 +179,27 @@ exports.get_redis_sub_channel = function (conn) {
     return 'result-' + conn.uuid + '*';
 };
 
+exports.redis_subscribe_pattern = function (pattern, next) {
+    var plugin = this;
+    if (plugin.redis) {
+	// already subscribed?
+	return next();
+    }
+
+    plugin.redis = require('redis').createClient({
+        host: plugin.redisCfg.pubsub.host,
+        port: plugin.redisCfg.pubsub.port,
+    })
+    .on('psubscribe', function (pattern, count) {
+        plugin.logdebug(plugin, 'psubscribed to ' + pattern);
+        next();
+    })
+    .on('punsubscribe', function (pattern, count) {
+        plugin.logdebug(plugin, 'unsubsubscribed from ' + pattern);
+    });
+    plugin.redis.psubscribe(pattern);
+};
+
 exports.redis_subscribe = function (connection, next) {
     var plugin = this;
 
