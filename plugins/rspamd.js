@@ -145,6 +145,7 @@ exports.hook_data_post = function (next, connection) {
             res.on('data', function (chunk) { rawData += chunk; });
             res.on('end', function () {
                 var r = plugin.parse_response(rawData, connection);
+                if (!r) return callNext();
                 if (!r.data) return callNext();
                 if (!r.data.default) return callNext();
                 if (!r.log) return callNext();
