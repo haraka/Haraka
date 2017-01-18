@@ -191,10 +191,10 @@ exports.getIndexName = function (section) {
         name = plugin.cfg.index[section];
     }
     var date = new Date();
-    var d = date.getDate();
-    var m = date.getMonth() + 1;
+    var d = date.getUTCDate();
+    var m = date.getUTCMonth() + 1;
     return name +
-           '-' + date.getFullYear() +
+           '-' + date.getUTCFullYear() +
            '-' + (m <= 9 ? '0' + m : m) +
            '-' + (d <= 9 ? '0' + d : d);
 };
