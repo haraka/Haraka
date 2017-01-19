@@ -29,16 +29,12 @@ var ResultStore = require('./result_store');
 var core_consts = require('constants');
 var WRITE_EXCL  = core_consts.O_CREAT | core_consts.O_TRUNC | core_consts.O_WRONLY | core_consts.O_EXCL;
 
-var MAX_UNIQ = 10000;
 var my_hostname = require('os').hostname().replace(/\\/, '\\057').replace(/:/, '\\072');
-
-// File Name Format: $time_$attempts_$pid_$uniq.$host
-var fn_re = /^(\d+)_(\d+)_(\d+)(_\d+\..*)$/
 
 // TODO: For testability, this should be accessible
 var queue_dir = path.resolve(config.get('queue_dir') || (process.env.HARAKA + '/queue'));
 
-var uniq = Math.round(Math.random() * MAX_UNIQ);
+
 var cfg;
 var platformDOT = ((['win32','win64'].indexOf( process.platform ) !== -1) ? '' : '__tmp__') + '.';
 exports.load_config = function () {
@@ -144,13 +140,13 @@ exports.scan_queue_pids = function (cb) {
                 return fs.unlink(file, function () {});
             }
 
-            var match = fn_re.exec(file);
-            if (!match) {
+            var parts = _qfile.parts(file);
+            if (!parts) {
                 self.logerror("Unrecognized file in queue directory: " + queue_dir + '/' + file);
                 return;
             }
 
-            pids[match[3]] = true;
+            pids[parts.pid] = true;
         });
 
         return cb(null, Object.keys(pids));
@@ -269,12 +265,19 @@ exports.load_queue_files = function (pid, cb_name, files, callback) {
 
     if (pid) {
         // Pre-scan to rename PID files to my PID:
-        this.loginfo("Grabbing queue files for pid: " + pid);
+        self.loginfo("Grabbing queue files for pid: " + pid);
         async.eachLimit(files, 200, function (file, cb) {
-            var match = fn_re.exec(file);
-            if (match && match[3] == pid) {
-                var next_process = match[1];
-                var new_filename = match[1] + "_" + match[2] + "_" + process.pid + match[4];
+
+            var parts = _qfile.parts(file);
+            if (parts && parts.pid === parseInt(pid)) {
+                var next_process = parts.next_attempt;
+                // maintain some original details for the rename
+                var new_filename = _qfile.name({
+                    arrival: parts.arrival,
+                    next_attempt: parts.next_attempt,
+                    attempts: parts.attempts
+                });
+                // self.loginfo("new_filename: ", new_filename);
                 fs.rename(path.join(queue_dir, file), path.join(queue_dir, new_filename), function (err) {
                     if (err) {
                         logger.logerror("Unable to rename queue file: " + file +
@@ -330,8 +333,7 @@ exports.load_queue_files = function (pid, cb_name, files, callback) {
                 return false;
             }
 
-            var matches = file.match(fn_re);
-            if (!matches) {
+            if (!_qfile.parts(file)) {
                 logger.logerror("Unrecognized file in queue folder: " + file);
                 return false;
             }
@@ -340,15 +342,15 @@ exports.load_queue_files = function (pid, cb_name, files, callback) {
         async.mapSeries(files.filter(good_file), function (file, cb) {
             // logger.logdebug("Loading queue file: " + file);
             if (cb_name === '_add_file') {
-                var matches = file.match(fn_re);
-                var next_process = matches[1];
+                var parts = _qfile.parts(file);
+                var next_process = parts.next_attempt;
 
                 if (next_process <= self.cur_time) {
-                    // logger.logdebug("File needs processing now");
+                    logger.logdebug("File needs processing now");
                     load_queue.push(file);
                 }
                 else {
-                    // logger.logdebug("File needs processing later: " + (next_process - self.cur_time) + "ms");
+                    logger.logdebug("File needs processing later: " + (next_process - self.cur_time) + "ms");
                     temp_fail_queue.add(next_process - self.cur_time, function () { load_queue.push(file);});
                 }
                 cb();
@@ -392,8 +394,8 @@ exports._list_file = function (file, cb) {
                 todo_struct.mail_from = new Address (todo_struct.mail_from);
                 todo_struct.file = file;
                 todo_struct.full_path = path.join(queue_dir, file);
-                var match = fn_re.exec(file);
-                todo_struct.pid = match[3];
+                var parts = _qfile.parts(file);
+                todo_struct.pid = (parts && parts.pid) || null;
                 cb(null, todo_struct);
             }
         });
@@ -421,18 +423,66 @@ exports.stats = function () {
     return results;
 };
 
-function _next_uniq () {
-    var result = uniq++;
-    if (uniq >= MAX_UNIQ) {
-        uniq = 1;
-    }
-    return result;
-}
 
-function _fname () {
-    var time = new Date().getTime();
-    return time + '_0_' + process.pid + "_" + _next_uniq() + '.' + my_hostname;
-}
+var MAX_UNIQ     = 10000;
+var _qfile = exports.qfile = {
+    // File Name Format: $arrival_$nextattempt_$attempts_$pid_$uniquenum_$host
+    name : function(overrides){
+        var o = overrides || {};
+        var time = new Date().getTime();
+        var a = o.attempts || 0;
+        return [
+            o.arrival || time,
+            o.next_attempt || time,
+            o.attempts || 0,
+            o.pid || process.pid,
+            o.uid || _qfile.next_unique(),
+            o.host || my_hostname
+        ].join('_');
+
+        return time + '_' + time + '_0_' + process.pid + "_" + _qfile.next_unique() + '_' + my_hostname;
+    },
+
+    rnd_unique : function(){
+        return Math.round(Math.random() * MAX_UNIQ);
+    },
+    next_unique : function(){
+        var next = unique_count+1;
+        unique_count = (next < MAX_UNIQ)?next:_qfile.rnd_unique();
+        return unique_count;
+    },
+    parts : function(filename){
+        if (!filename){
+           throw new Error("No filename provided");
+        }
+
+        // original RE structure
+        // $nextattempt_$attempts_$pid_$uniq.$host
+        // var fn_re = /^(\d+)_(\d+)_(\d+)(_\d+\..*)$/
+        // match[1] = $nextattempt
+        // match[2] = $attempts
+        // match[3] = $pid
+        // match[4] = $uniq.$host
+
+        var PARTS_EXPECTED = 6;
+        var p = filename.split('_');
+        if (p.length < PARTS_EXPECTED) {
+            return null;
+        }
+        var time = new Date().getTime();
+        return {
+            arrival      : parseInt(p[0]),
+            next_attempt : parseInt(p[1]),
+            attempts     : parseInt(p[2]),
+            pid          : parseInt(p[3]),
+            uid          : parseInt(p[4]),
+            host         : p[5],
+            age          : time - parseInt(p[0])
+        };
+    }
+};
+var unique_count = _qfile.rnd_unique();
+
 
 exports.send_email = function () {
 
@@ -640,7 +690,7 @@ exports.send_trans_email = function (transaction, next) {
 exports.process_delivery = function (ok_paths, todo, hmails, cb) {
     var self = this;
     this.loginfo("Processing domain: " + todo.domain);
-    var fname = _fname();
+    var fname = _qfile.name();
     var tmp_path = path.join(queue_dir, platformDOT + fname);
     var ws = new FsyncWriteStream(tmp_path, { flags: WRITE_EXCL });
     ws.on('close', function () {
@@ -696,6 +746,7 @@ exports.build_todo = function (todo, ws, write_more) {
     ws.once('drain', write_more);
 };
 
+
 exports.split_to_new_recipients = function (hmail, recipients, response, cb) {
     var self = this;
     if (recipients.length === hmail.todo.rcpt_to.length) {
@@ -703,7 +754,7 @@ exports.split_to_new_recipients = function (hmail, recipients, response, cb) {
         hmail.refcount++;
         return cb(hmail);
     }
-    var fname = _fname();
+    var fname = _qfile.name();
     var tmp_path = path.join(queue_dir, platformDOT + fname);
     var ws = new FsyncWriteStream(tmp_path, { flags: WRITE_EXCL });
     var err_handler = function (err, location) {
@@ -825,17 +876,18 @@ exports.TODOItem = TODOItem;
 
 var dummy_func = function () {};
 
+
 function HMailItem (filename, filePath, notes) {
     events.EventEmitter.call(this);
-    var matches = filename.match(fn_re);
-    if (!matches) {
+    var parts = _qfile.parts(filename);
+    if (!parts) {
         throw new Error("Bad filename: " + filename);
     }
     this.path         = filePath;
     this.filename     = filename;
-    this.next_process = matches[1];
-    this.num_failures = matches[2];
-    this.pid          = matches[3];
+    this.next_process = parts.next_attempt;
+    this.num_failures = parts.attempts;
+    this.pid          = parts.pid;
     this.notes        = notes || {};
     this.refcount     = 1;
     this.todo         = null;
