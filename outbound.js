@@ -430,7 +430,6 @@ var _qfile = exports.qfile = {
     name : function(overrides){
         var o = overrides || {};
         var time = new Date().getTime();
-        var a = o.attempts || 0;
         return [
             o.arrival || time,
             o.next_attempt || time,
@@ -454,7 +453,7 @@ var _qfile = exports.qfile = {
 
     parts : function(filename){
         if (!filename){
-           throw new Error("No filename provided");
+            throw new Error("No filename provided");
         }
 
         var PARTS_EXPECTED_OLD = 4;
