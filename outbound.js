@@ -273,9 +273,9 @@ exports.load_queue_files = function (pid, cb_name, files, callback) {
                 var next_process = parts.next_attempt;
                 // maintain some original details for the rename
                 var new_filename = _qfile.name({
-                    arrival: parts.arrival,
-                    next_attempt: parts.next_attempt,
-                    attempts: parts.attempts
+                    arrival:parts.arrival,
+                    next_attempt:parts.next_attempt,
+                    attempts:parts.attempts
                 });
                 // self.loginfo("new_filename: ", new_filename);
                 fs.rename(path.join(queue_dir, file), path.join(queue_dir, new_filename), function (err) {
@@ -451,25 +451,41 @@ var _qfile = exports.qfile = {
         unique_count = (next < MAX_UNIQ)?next:_qfile.rnd_unique();
         return unique_count;
     },
+
     parts : function(filename){
         if (!filename){
            throw new Error("No filename provided");
         }
 
-        // original RE structure
-        // $nextattempt_$attempts_$pid_$uniq.$host
-        // var fn_re = /^(\d+)_(\d+)_(\d+)(_\d+\..*)$/
-        // match[1] = $nextattempt
-        // match[2] = $attempts
-        // match[3] = $pid
-        // match[4] = $uniq.$host
-
-        var PARTS_EXPECTED = 6;
+        var PARTS_EXPECTED_OLD = 4;
+        var PARTS_EXPECTED_CURRENT = 6;
         var p = filename.split('_');
-        if (p.length < PARTS_EXPECTED) {
+
+        // bail on unknown split lengths
+        if (p.length !== PARTS_EXPECTED_OLD
+            && p.length !== PARTS_EXPECTED_CURRENT){
             return null;
         }
+
         var time = new Date().getTime();
+        if (p.length === PARTS_EXPECTED_OLD){
+            // parse the previous string structure
+            // $nextattempt_$attempts_$pid_$uniq.$host
+            // 1484878079415_0_12345_8888.mta-dev.mirus.io
+            // var fn_re = /^(\d+)_(\d+)_(\d+)(_\d+\..*)$/
+            // match[1] = $nextattempt
+            // match[2] = $attempts
+            // match[3] = $pid
+            // match[4] = $uniq.$my_hostname
+            var fn_re = /^(\d+)_(\d+)_(\d+)_(\d+)\.(.*)$/;
+            var match = filename.match(fn_re);
+            if (!match){
+                return null;
+            }
+            p = match.slice(1);
+            p.unshift(time);  // potentially inaccurate, non-critical if so
+        }
+
         return {
             arrival      : parseInt(p[0]),
             next_attempt : parseInt(p[1]),
