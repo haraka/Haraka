@@ -424,31 +424,29 @@ exports.stats = function () {
 };
 
 
-var MAX_UNIQ     = 10000;
 var _qfile = exports.qfile = {
     // File Name Format: $arrival_$nextattempt_$attempts_$pid_$uniquenum_$host
     name : function(overrides){
         var o = overrides || {};
         var time = new Date().getTime();
         return [
-            o.arrival || time,
-            o.next_attempt || time,
-            o.attempts || 0,
-            o.pid || process.pid,
-            o.uid || _qfile.next_unique(),
-            o.host || my_hostname
+            o.arrival       || time,
+            o.next_attempt  || time,
+            o.attempts      || 0,
+            o.pid           || process.pid,
+            o.uid           || _qfile.rnd_unique(),
+            o.host          || my_hostname
         ].join('_');
-
-        return time + '_' + time + '_0_' + process.pid + "_" + _qfile.next_unique() + '_' + my_hostname;
     },
 
-    rnd_unique : function(){
-        return Math.round(Math.random() * MAX_UNIQ);
-    },
-    next_unique : function(){
-        var next = unique_count+1;
-        unique_count = (next < MAX_UNIQ)?next:_qfile.rnd_unique();
-        return unique_count;
+    rnd_unique: function(len) {
+        len = len || 10; // default length
+        var chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+        var result = [];
+        for (var i = len; i > 0; --i){
+            result.push(chars[Math.floor(Math.random() * chars.length)]);
+        }
+        return result.join('');
     },
 
     parts : function(filename){
@@ -490,13 +488,12 @@ var _qfile = exports.qfile = {
             next_attempt : parseInt(p[1]),
             attempts     : parseInt(p[2]),
             pid          : parseInt(p[3]),
-            uid          : parseInt(p[4]),
+            uid          : p[4],
             host         : p[5],
             age          : time - parseInt(p[0])
         };
     }
 };
-var unique_count = _qfile.rnd_unique();
 
 
 exports.send_email = function () {
