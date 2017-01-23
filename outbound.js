@@ -2274,11 +2274,12 @@ HMailItem.prototype.deferred_respond = function (retval, msg, params) {
         delay = parseInt(msg, 10) * 1000;
     }
 
-    var until = Date.now() + delay;
-
     this.loginfo("Temp failing " + this.filename + " for " + (delay/1000) + " seconds: " + params.err);
-
-    var new_filename = this.filename.replace(/^(\d+)_(\d+)_/, until + '_' + this.num_failures + '_');
+    var parts = _.qfile.parts(this.filename);
+    parts.next_attempt = Date.now() + delay;
+    parts.attempts = this.num_failures;
+    var new_filename = _.qfile.name(parts);
+    // var new_filename = this`.filename.replace(/^(\d+)_(\d+)_/, until + '_' + this.num_failures + '_');
 
     var hmail = this;
     fs.rename(this.path, path.join(queue_dir, new_filename), function (err) {
