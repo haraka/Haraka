@@ -252,7 +252,7 @@ function createServer(cb) {
                         options.server = pseudoServ;
                         pseudoServ._sharedCreds = secureContext;
                     } else {
-                        log.logerr("OCSP Stapling cannot be enabled because the ocsp module is not loaded");
+                        log.logerror("OCSP Stapling cannot be enabled because the ocsp module is not loaded");
                     }
                 }
             }
