@@ -53,7 +53,7 @@ exports.load_uri_config = function (next) {
     lists = this.config.get('data.uribl.ini');
     zones = Object.keys(lists);
     if (!zones || zones.length <= 1) {
-        this.logerr('aborting: no zones configured');
+        this.logerror('aborting: no zones configured');
         return next();
     }
     // Load excludes
