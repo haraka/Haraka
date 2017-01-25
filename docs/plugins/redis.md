@@ -54,7 +54,7 @@ In your plugin:
 
 ## Custom Usage
 
-This variation lets your plugin establish it's own Redis connection,
+This variation lets your plugin establish its own Redis connection,
 optionally with a redis db ID.
 
     exports.register = function () {
