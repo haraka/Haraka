@@ -514,7 +514,6 @@ exports.put_map_template = function () {
         template_name = plugin.cfg.index.transaction;
     }
 
-    /* jshint maxlen: 100 */
     var body = {
         "dynamic_templates" : [
             // gone until docs for putTemplate are better

@@ -1,5 +1,4 @@
 // log our denys
-/* jshint multistr: true */
 
 var urlp  = require('url');
 var utils = require('haraka-utils');

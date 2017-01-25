@@ -62,7 +62,6 @@ exports.default_result = {
     },
     'init push array' : function (test) {
         test.expect(1);
-        /* jshint maxlen: 100 */
         this.connection.results.push('test_plugin', { pass: 'test1' });
         this.connection.results.push('test_plugin', { pass: ['test2'] });
         delete this.connection.results.store.test_plugin.human;
@@ -91,7 +90,6 @@ exports.default_result = {
 exports.has = {
     setUp : _set_up,
     tearDown : _tear_down,
-    /* jshint maxlen: 100 */
     'has, list, string' : function (test) {
         test.expect(2);
         this.connection.results.add('test_plugin', { pass: 'test pass' });

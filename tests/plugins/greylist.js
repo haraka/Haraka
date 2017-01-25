@@ -33,7 +33,6 @@ var _set_up = function (done) {
     done();
 };
 
-/* jshint maxlen: 100 */
 exports.in_list = {
     setUp : _set_up,
     'inlist: mail(1)': function (test) {

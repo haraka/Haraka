@@ -30,7 +30,6 @@ var _set_up = function (done) {
     done();
 };
 
-/* jshint maxlen: false */
 exports.invalid_date = {
     setUp : _set_up,
     'none': function (test) {
