@@ -1,44 +1,46 @@
 // rate_limit
 var ipaddr = require('ipaddr.js');
-var redis = require('redis');
-var client;
 
 exports.register = function () {
-    var config = this.config.get('rate_limit.ini');
-    if (config.main.redis_server) {
-        // No support for IPv6 in Redis yet...
-        // TODO: make this regex support IPv6 when it does.
-        var match = /^([^: ]+)(?::(\d+))?$/.exec(config.main.redis_server);
+    var plugin = this;
+    plugin.inherits('redis');
+
+    plugin.load_rate_limit_ini();
+
+    plugin.register_hook('init_master',  'init_redis_plugin');
+    plugin.register_hook('init_child',   'init_redis_plugin');
+
+    plugin.register_hook('connect_init', 'incr_concurrency');
+    plugin.register_hook('disconnect',   'decr_concurrency');
+};
+
+exports.load_rate_limit_ini = function () {
+    var plugin = this;
+
+    plugin.cfg = plugin.config.get('rate_limit.ini', function () {
+        plugin.load_rate_limit_ini();
+    });
+
+    // legacy setting
+    if (plugin.cfg.main.redis_server) {
+        var match = /^([^: ]+)(?::(\d+))?$/.exec(plugin.cfg.main.redis_server);
         if (match) {
-            var host = match[1];
-            var port = match[2] || '6379';
-            this.logdebug('using redis on ' + host + ':' + port);
-            client = redis.createClient(port, host);
-        }
-        else {
-            // Syntax error
-            throw new Error('syntax error');
+            plugin.cfg.redis.host = match[1];
+            plugin.cfg.redis.port = match[2] || '6379';
         }
     }
-    else {
-        // Client default is 127.0.0.1:6379
-        client = redis.createClient();
-    }
-    this.register_hook('connect_init', 'incr_concurrency');
-    this.register_hook('disconnect',   'decr_concurrency');
+
+    plugin.merge_redis_ini();
 };
 
 exports.shutdown = function () {
-    if (client) {
-        client.quit();
-    }
+    if (this.db) this.db.quit();
 }
 
 exports.lookup_host_key = function (type, args, cb) {
     var remote_ip = args[0];
     var remote_host = args[1];
-    var config = this.config.get('rate_limit.ini');
-    if (!config[type]) {
+    if (!plugin.cfg[type]) {
         return cb(new Error(type + ': not configured'));
     }
     var ip;
@@ -88,8 +90,7 @@ exports.lookup_host_key = function (type, args, cb) {
 
 exports.lookup_mail_key = function (type, args, cb) {
     var mail = args[0];
-    var config = this.config.get('rate_limit.ini');
-    if (!config[type] || !mail) {
+    if (!plugin.cfg[type] || !mail) {
         return cb();
     }
 
@@ -120,7 +121,7 @@ exports.lookup_mail_key = function (type, args, cb) {
 };
 
 exports.rate_limit = function (connection, key, value, cb) {
-    var self = this;
+    var plugin = this;
     var limit;
     var ttl;
     if (!key || !value) return cb();
@@ -159,19 +160,19 @@ exports.rate_limit = function (connection, key, value, cb) {
         return cb(new Error('syntax error: key=' + key + ' value=' + value));
     }
 
-    connection.logdebug(self, 'key=' + key + ' limit=' + limit + ' ttl=' + ttl);
+    connection.logdebug(plugin, 'key=' + key + ' limit=' + limit + ' ttl=' + ttl);
 
-    client.get(key, function(err, val) {
+    plugin.db.get(key, function(err, val) {
         if (err) return cb(err);
 
-        connection.logdebug(self, 'key=' + key + ' current value=' + (val || 'NEW' ));
+        connection.logdebug(plugin, 'key=' + key + ' current value=' + (val || 'NEW' ));
 
         var check_limits = function(err2, result){
             if (err2) return cb(err2);
 
             if (parseInt(val) + 1 > parseInt(limit)) {
                 // Limit breached
-                connection.lognotice(self, key + ' rate ' + val + ' exceeds ' + limit + '/' + ttl + 's');
+                connection.lognotice(plugin, key + ' rate ' + val + ' exceeds ' + limit + '/' + ttl + 's');
                 return cb(null, true);
             }
             else {
@@ -182,33 +183,33 @@ exports.rate_limit = function (connection, key, value, cb) {
         };
 
         if (val == null) { // new key
-            client.setex(key, ttl, 1, check_limits);
+            plugin.db.setex(key, ttl, 1, check_limits);
         }
         else { // old key
-            client.incr(key, check_limits);
+            plugin.db.incr(key, check_limits);
         }
     });
 };
 
 // TODO: support this in Redis somehow
 exports.incr_concurrency = function (next, connection) {
-    var self = this;
+    var plugin = this;
     var config = this.config.get('rate_limit.ini');
     var snotes = connection.server.notes;
 
     var lookup_cb = function (err, key, value) {
         if (err) {
-            connection.logerror(self, err);
+            connection.logerror(plugin, err);
             return next();
         }
         if (value === 0) {
-            connection.logdebug(self, 'concurrency limit disabled for ' + key);
+            connection.logdebug(plugin, 'concurrency limit disabled for ' + key);
             return next();
         }
         if (!snotes.concurrency) snotes.concurrency = {};
         if (!snotes.concurrency[key]) snotes.concurrency[key] = 0;
         snotes.concurrency[key]++;
-        connection.logdebug(self, '[concurrency] key=' + key + ' value=' +
+        connection.logdebug(plugin, '[concurrency] key=' + key + ' value=' +
                 snotes.concurrency[key] + ' limit=' + value);
         var count = 0;
         var keys = Object.keys(snotes.concurrency);
@@ -216,8 +217,8 @@ exports.incr_concurrency = function (next, connection) {
             count += snotes.concurrency[keys[i]];
         }
         if (snotes.concurrency[key] > value) {
-            if (config.main.tarpit_delay) {
-                connection.notes.tarpit = config.main.tarpit_delay;
+            if (plugin.cfg.main.tarpit_delay) {
+                connection.notes.tarpit = plugin.cfg.main.tarpit_delay;
             }
             else {
                 return next(DENYSOFT, 'connection concurrency limit exceeded (' + count +')');
@@ -233,13 +234,13 @@ exports.incr_concurrency = function (next, connection) {
 };
 
 exports.decr_concurrency = function (next, connection) {
-    var self = this;
+    var plugin = this;
     var snotes = connection.server.notes;
 
     // Concurrency
     this.lookup_host_key('concurrency', [connection.remote.ip, connection.remote.host], function (err, key, value) {
         if (err) {
-            connection.logerror(self, err);
+            connection.logerror(plugin, err);
             return next();
         }
         if (!snotes.concurrency) snotes.concurrency = {};
@@ -251,45 +252,44 @@ exports.decr_concurrency = function (next, connection) {
         for (var i=0; i<keys.length; i++) {
             count += snotes.concurrency[keys[i]];
         }
-        connection.loginfo(self, count + ' active connections to this child');
+        connection.loginfo(plugin, count + ' active connections to this child');
         return next();
     });
 };
 
 exports.hook_connect = function (next, connection) {
-    var self = this;
-    var config = this.config.get('rate_limit.ini');
+    var plugin = this;
 
     this.lookup_host_key('rate_conn', [connection.remote.ip, connection.remote.host], function (err, key, value) {
         if (err) {
-            connection.logerror(self, err);
+            connection.logerror(plugin, err);
             return next();
         }
         // Check rate limit
-        self.rate_limit(connection, 'rate_conn:' + key, value, function (err2, over) {
+        plugin.rate_limit(connection, 'rate_conn:' + key, value, function (err2, over) {
             if (err2) {
-                connection.logerror(self, err2);
+                connection.logerror(plugin, err2);
                 return next();
             }
             if (over) {
-                if (config.main.tarpit_delay) {
-                    connection.notes.tarpit = config.main.tarpit_delay;
+                if (plugin.cfg.main.tarpit_delay) {
+                    connection.notes.tarpit = plugin.cfg.main.tarpit_delay;
                 }
                 else {
                     return next(DENYSOFT, 'connection rate limit exceeded');
                 }
             }
             // See if we need to tarpit rate_rcpt_host
-            if (config.main.tarpit_delay) {
-                self.lookup_host_key('rate_rcpt_host', [connection.remote.ip, connection.remote.host], function (err3, key2, value2) {
+            if (plugin.cfg.main.tarpit_delay) {
+                plugin.lookup_host_key('rate_rcpt_host', [connection.remote.ip, connection.remote.host], function (err3, key2, value2) {
                     if (!err3 && key2 && value2) {
                         var match = /^(\d+)/.exec(value2);
                         var limit = match[0];
-                        client.get('rate_rcpt_host:' + key2, function (err4, result) {
+                        plugin.db.get('rate_rcpt_host:' + key2, function (err4, result) {
                             if (!err4 && result && limit) {
-                                connection.logdebug(self, 'rate_rcpt_host:' + key2 + ' value2 ' + result + ' exceeds limit ' + limit);
+                                connection.logdebug(plugin, 'rate_rcpt_host:' + key2 + ' value2 ' + result + ' exceeds limit ' + limit);
                                 if (result > limit) {
-                                    connection.notes.tarpit = config.main.tarpit_delay;
+                                    connection.notes.tarpit = plugin.cfg.main.tarpit_delay;
                                 }
                             }
                             return next();
@@ -308,8 +308,7 @@ exports.hook_connect = function (next, connection) {
 };
 
 exports.hook_rcpt = function (next, connection, params) {
-    var self = this;
-    var config = this.config.get('rate_limit.ini');
+    var plugin = this;
     var transaction = connection.transaction;
 
     var chain = [
@@ -356,27 +355,27 @@ exports.hook_rcpt = function (next, connection, params) {
                 return chain_caller();
             }
         }
-        self[next_in_chain.lookup_func](next_in_chain.name, next_in_chain.lookup_args, function (err, key, value) {
+        plugin[next_in_chain.lookup_func](next_in_chain.name, next_in_chain.lookup_args, function (err, key, value) {
             if (err) {
-                connection.logerror(self, err);
+                connection.logerror(plugin, err);
                 return chain_caller();
             }
-            self.rate_limit(connection, next_in_chain.name + ':' + key, value, function (err2, over) {
+            plugin.rate_limit(connection, next_in_chain.name + ':' + key, value, function (err2, over) {
                 if (err2) {
-                    connection.logerror(self, err2);
+                    connection.logerror(plugin, err2);
                     return chain_caller();
                 }
                 if (over) {
                     // Delay this response if we are not already tarpitting
-                    if (config.main.tarpit_delay &&
+                    if (plugin.cfg.main.tarpit_delay &&
                         !(connection.notes.tarpit || (transaction && transaction.notes.tarpit)))
                     {
-                        connection.loginfo(self, 'tarpitting response for ' + config.main.tarpit + 's');
+                        connection.loginfo(plugin, 'tarpitting response for ' + plugin.cfg.main.tarpit + 's');
                         setTimeout(function () {
                             if (connection) {
                                 return chain_caller(DENYSOFT, 'rate limit exceeded');
                             }
-                        }, config.main.tarpit_delay*1000);
+                        }, plugin.cfg.main.tarpit_delay*1000);
                     }
                     else {
                         return chain_caller(DENYSOFT, 'rate limit exceeded')
