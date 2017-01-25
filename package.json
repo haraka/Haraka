@@ -19,7 +19,7 @@
     "address-rfc2822"       : "*",
     "async"                 : "~2.1.2",
     "daemon"                : "~1.1.0",
-    "generic-pool"          : "~3.1.6",
+    "generic-pool"          : "~2.5.0",
     "iconv"                 : "~2.2.0",
     "ipaddr.js"             : "~1.2.0",
     "js-yaml"               : "~3.7.0",
@@ -54,6 +54,11 @@
   "bugs": {
     "mail": "helpme@gmail.com",
     "url": "https://github.com/haraka/Haraka/issues"
+  },
+  "greenkeeper": {
+    "ignore": [
+      "generic-pool"
+    ]
   },
   "bin": {
     "haraka": "./bin/haraka",
