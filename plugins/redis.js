@@ -45,6 +45,8 @@ exports.merge_redis_ini = function () {
         plugin.cfg.redis = {};
     }
 
+    if (!plugin.redisCfg) plugin.load_redis_ini();
+
     ['host', 'port', 'db'].forEach(function (k) {
         if (plugin.cfg.redis[k]) return;  // property already set
         plugin.cfg.redis[k] = plugin.redisCfg.server[k];
