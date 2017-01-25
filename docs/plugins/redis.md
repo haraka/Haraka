@@ -66,6 +66,7 @@ optionally with a redis db ID.
         // populate plugin.cfg.redis with defaults from redis.ini
         plugin.merge_redis_ini();
 
+        // cluster aware redis connection(s)
         plugin.register_hook('init_master', 'init_redis_plugin');
         plugin.register_hook('init_child',  'init_redis_plugin');
     }

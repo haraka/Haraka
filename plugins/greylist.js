@@ -469,7 +469,7 @@ exports.retrieve_grey = function (rcpt_key, sender_key, cb) {
     multi.hgetall(rcpt_key);
     multi.hgetall(sender_key);
 
-    return multi.exec(function (err, result) {
+    multi.exec(function (err, result) {
         if (err) {
             plugin.lognotice("DB error: " + util.inspect(err));
             err.what = 'db_error';
