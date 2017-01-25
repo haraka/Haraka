@@ -51,7 +51,7 @@ var _set_up_redis = function (done) {
     };
 
     var t = this;
-    this.plugin.init_redis_connection(function (err) {
+    this.plugin.init_redis_shared(function (err) {
         if (err) {
             console.error(err.message);
             return done();
