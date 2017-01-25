@@ -41,7 +41,9 @@ exports.load_redis_ini = function () {
 exports.merge_redis_ini = function () {
     var plugin = this;
 
-    if (!plugin.cfg.redis) {            // missing <plugin>.ini file
+    if (!plugin.cfg) plugin.cfg = {};   // no <plugin>.ini loaded?
+
+    if (!plugin.cfg.redis) {            // no [redis] in <plugin>.ini file
         plugin.cfg.redis = {};
     }
 
@@ -138,11 +140,6 @@ exports.redis_ping = function(done) {
 
 exports.get_redis_client = function (opts, next) {
     var plugin = this;
-    var db = 0;
-    if (opts.db !== undefined) {
-        db = opts.db;
-        delete opts.db;
-    }
 
     if (!opts.retry_strategy) {
         opts.retry_strategy = function (options) {
@@ -169,10 +166,8 @@ exports.get_redis_client = function (opts, next) {
             next();
         })
         .on('ready', function () {
-            if (db) client.select(db);
-
             var msg = 'connected to redis://' + opts.host + ':' + opts.port;
-            if (db) msg += '/' + db;
+            if (opts.db) msg += '/' + opts.db;
             if (client.server_info && client.server_info.redis_version) {
                 msg += ' v' + client.server_info.redis_version;
             }
@@ -199,20 +194,20 @@ exports.get_redis_sub_channel = function (conn) {
 exports.redis_subscribe_pattern = function (pattern, next) {
     var plugin = this;
     if (plugin.redis) {
-	// already subscribed?
-	return next();
+	   // already subscribed?
+	   return next();
     }
 
     plugin.redis = require('redis').createClient({
         host: plugin.redisCfg.pubsub.host,
         port: plugin.redisCfg.pubsub.port,
     })
-    .on('psubscribe', function (pattern, count) {
-        plugin.logdebug(plugin, 'psubscribed to ' + pattern);
+    .on('psubscribe', function (pattern2, count) {
+        plugin.logdebug(plugin, 'psubscribed to ' + pattern2);
         next();
     })
-    .on('punsubscribe', function (pattern, count) {
-        plugin.logdebug(plugin, 'unsubsubscribed from ' + pattern);
+    .on('punsubscribe', function (pattern3, count) {
+        plugin.logdebug(plugin, 'unsubsubscribed from ' + pattern3);
     });
     plugin.redis.psubscribe(pattern);
 };
