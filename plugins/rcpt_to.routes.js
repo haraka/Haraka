@@ -13,7 +13,7 @@ exports.register = function() {
     plugin.route_list={};
 
     plugin.load_rcpt_to_routes_ini();
-    plugin.load_redis_ini();
+    plugin.merge_redis_ini();
 
     plugin.register_hook('init_master',  'init_redis_plugin');
     plugin.register_hook('init_child',   'init_redis_plugin');

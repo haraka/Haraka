@@ -7,8 +7,12 @@ exports.register = function () {
 
     plugin.load_redis_ini();
 
-    plugin.register_hook('init_master',  'init_redis_connection');
-    plugin.register_hook('init_child',   'init_redis_connection');
+    // some other plugin doing: inherits('redis')
+    if (plugin.name !== 'redis') return;
+
+    // do register these when 'redis' is declared in config/plugins
+    plugin.register_hook('init_master',  'init_redis_shared');
+    plugin.register_hook('init_child',   'init_redis_shared');
 };
 
 exports.load_redis_ini = function () {
@@ -34,7 +38,24 @@ exports.load_redis_ini = function () {
     if (!plugin.redisCfg.opts) plugin.redisCfg.opts = {};
 };
 
-exports.init_redis_connection = function (next, server) {
+exports.merge_redis_ini = function () {
+    var plugin = this;
+
+    if (!plugin.cfg) plugin.cfg = {};   // no <plugin>.ini loaded?
+
+    if (!plugin.cfg.redis) {            // no [redis] in <plugin>.ini file
+        plugin.cfg.redis = {};
+    }
+
+    if (!plugin.redisCfg) plugin.load_redis_ini();
+
+    ['host', 'port', 'db'].forEach(function (k) {
+        if (plugin.cfg.redis[k]) return;  // property already set
+        plugin.cfg.redis[k] = plugin.redisCfg.server[k];
+    });
+}
+
+exports.init_redis_shared = function (next, server) {
     var plugin = this;
 
     var calledNext = false;
@@ -45,7 +66,7 @@ exports.init_redis_connection = function (next, server) {
     }
 
     // this is the server-wide redis, shared by plugins that don't
-    // set a specific db ID.
+    // specificy a db ID.
     if (server.notes.redis) {
         server.notes.redis.ping(function (err, res) {
             if (err) {
@@ -67,25 +88,23 @@ exports.init_redis_connection = function (next, server) {
 exports.init_redis_plugin = function (next, server) {
     var plugin = this;
 
-    // this function is called by plugins at init_*, and establishes their
+    // this function is called by plugins at init_*, to establish their
     // shared or unique redis db handle.
-
-    // use server-wide redis connection only when using default DB id
-    if (!plugin.cfg.redis.db) {
-        if (server.notes.redis) {
-            server.loginfo(plugin, 'using server.notes.redis');
-            plugin.db = server.notes.redis;
-        }
-        if (plugin.db && plugin.db.ping()) {  // connection is good
-            return next();
-        }
-    }
 
     var calledNext=false;
     function nextOnce () {
         if (calledNext) return;
         calledNext = true;
         next();
+    }
+
+    // use server-wide redis connection when using default DB id
+    if (!plugin.cfg.redis.db) {
+        if (server.notes.redis) {
+            server.loginfo(plugin, 'using server.notes.redis');
+            plugin.db = server.notes.redis;
+            return nextOnce();
+        }
     }
 
     plugin.db = plugin.get_redis_client(plugin.cfg.redis, nextOnce);
@@ -121,11 +140,6 @@ exports.redis_ping = function(done) {
 
 exports.get_redis_client = function (opts, next) {
     var plugin = this;
-    var db = 0;
-    if (opts.db !== undefined) {
-        db = opts.db;
-        delete opts.db;
-    }
 
     if (!opts.retry_strategy) {
         opts.retry_strategy = function (options) {
@@ -152,10 +166,8 @@ exports.get_redis_client = function (opts, next) {
             next();
         })
         .on('ready', function () {
-            if (db) client.select(db);
-
             var msg = 'connected to redis://' + opts.host + ':' + opts.port;
-            if (db) msg += '/' + db;
+            if (opts.db) msg += '/' + opts.db;
             if (client.server_info && client.server_info.redis_version) {
                 msg += ' v' + client.server_info.redis_version;
             }
@@ -182,20 +194,20 @@ exports.get_redis_sub_channel = function (conn) {
 exports.redis_subscribe_pattern = function (pattern, next) {
     var plugin = this;
     if (plugin.redis) {
-	// already subscribed?
-	return next();
+	   // already subscribed?
+	   return next();
     }
 
     plugin.redis = require('redis').createClient({
         host: plugin.redisCfg.pubsub.host,
         port: plugin.redisCfg.pubsub.port,
     })
-    .on('psubscribe', function (pattern, count) {
-        plugin.logdebug(plugin, 'psubscribed to ' + pattern);
+    .on('psubscribe', function (pattern2, count) {
+        plugin.logdebug(plugin, 'psubscribed to ' + pattern2);
         next();
     })
-    .on('punsubscribe', function (pattern, count) {
-        plugin.logdebug(plugin, 'unsubsubscribed from ' + pattern);
+    .on('punsubscribe', function (pattern3, count) {
+        plugin.logdebug(plugin, 'unsubsubscribed from ' + pattern3);
     });
     plugin.redis.psubscribe(pattern);
 };

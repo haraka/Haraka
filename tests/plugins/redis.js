@@ -10,6 +10,13 @@ var _set_up_redis = function (done) {
     done();
 };
 
+var retry = function (options) {
+    if (options.error) {
+        console.error(options.error);
+    }
+    return undefined;
+};
+
 exports.redis = {
     setUp : _set_up_redis,
     'loads' : function (test) {
@@ -25,19 +32,34 @@ exports.redis = {
     },
     'connects' : function (test) {
         test.expect(1);
-        var opts = {
+        var redis = this.plugin.get_redis_client({
             host: this.plugin.redisCfg.server.host,
             port: this.plugin.redisCfg.server.port,
-            retry_strategy: function (options) {
-                if (options.error) {
-                    console.error(options.error);
-                }
-                return undefined;
-            }
-        };
-        var redis = this.plugin.get_redis_client(opts, function () {
+            retry_strategy: retry,
+        },
+        function () {
             test.ok(redis.connected);
             test.done();
         });
     },
+    'populates plugin.cfg.redis when asked' : function (test) {
+        test.expect(2);
+        test.equal(this.plugin.cfg, undefined);
+        this.plugin.merge_redis_ini();
+        test.deepEqual(this.plugin.cfg.redis, { host: '127.0.0.1', port: '6379', db: undefined });
+        test.done();
+    },
+    'connects to a different redis db' : function (test) {
+        test.expect(2);
+        this.plugin.merge_redis_ini();
+        this.plugin.cfg.redis.db = 2;
+        this.plugin.cfg.redis.retry_strategy = retry;
+        var client = this.plugin.get_redis_client(this.plugin.cfg.redis, function () {
+            test.expect(2);
+            // console.log(client);
+            test.equal(client.connected, true);
+            test.equal(client.selected_db, 2);
+            test.done();
+        });
+    }
 };

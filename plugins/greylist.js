@@ -1,6 +1,6 @@
-// Greylisting Haraka plugin
+// Greylisting plugin for Haraka
 
-// version 0.1.3
+// version 0.1.4
 
 var util = require('util');
 var redis = require('redis');
@@ -16,12 +16,12 @@ var Address = require('address-rfc2821').Address;
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 exports.register = function (next) {
     var plugin = this;
+    plugin.inherits('redis');
 
     plugin.load_config();
-    plugin.load_config_lists();
 
-    this.register_hook('init_master', 'redis_onInit');
-    this.register_hook('init_child', 'redis_onInit');
+    this.register_hook('init_master', 'init_redis_plugin');
+    this.register_hook('init_child',  'init_redis_plugin');
 
     this.register_hook('rcpt_ok', 'hook_rcpt_ok');
 };
@@ -39,6 +39,7 @@ exports.load_config = function () {
         plugin.load_config();
     });
 
+    plugin.merge_redis_ini();
     plugin.load_config_lists();
 };
 
@@ -98,49 +99,8 @@ exports.load_config_lists = function () {
 };
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-exports.redis_onInit = function (next, server) {
-    var plugin = this;
-
-    if (plugin.redis)
-        return next();
-
-    /*
-    var r_opts = {
-        connect_timeout: 1000
-    };
-    */
-
-    var next_called;
-
-    plugin.redis = redis.createClient(plugin.cfg.redis.port, plugin.cfg.redis.host);
-
-    plugin.redis.on('error', function (err) {
-        plugin.logerror(err);
-        plugin.logerror("[gl] Redis error: " + err + '. Reconnecting...');
-    })
-    .on('ready', function () {
-        plugin.loginfo('[gl] Redis connected to ' + plugin.redis.host + ':' + (plugin.redis.port || 0) +
-            '/' + (plugin.cfg.redis.db || 0) + ' v' + plugin.redis.server_info.redis_version);
-
-        if (plugin.cfg.redis.db) {
-            plugin.redis.select(plugin.cfg.redis.db, function () {
-                if (!next_called) {
-                    next_called = true;
-                    return next();
-                }
-            });
-        }
-        else if (!next_called) {
-            next_called = true;
-            return next();
-        }
-    });
-};
-
 exports.shutdown = function () {
-    if (this.redis) {
-        this.redis.quit();
-    }
+    if (this.db) this.db.quit();
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -504,12 +464,12 @@ exports.craft_hostid = function (connection) {
 // not implemented
 exports.retrieve_grey = function (rcpt_key, sender_key, cb) {
     var plugin = this;
-    var multi = plugin.redis.multi();
+    var multi = plugin.db.multi();
 
     multi.hgetall(rcpt_key);
     multi.hgetall(sender_key);
 
-    return multi.exec(function (err, result) {
+    multi.exec(function (err, result) {
         if (err) {
             plugin.lognotice("DB error: " + util.inspect(err));
             err.what = 'db_error';
@@ -523,7 +483,7 @@ exports.retrieve_grey = function (rcpt_key, sender_key, cb) {
 exports.update_grey = function (key, create, cb) {
     // { created: TS, updated: TS, lifetime: TTL, tried: Integer }
     var plugin = this;
-    var multi = plugin.redis.multi();
+    var multi = plugin.db.multi();
 
     var ts_now = Math.round(Date.now() / 1000);
 
@@ -575,13 +535,13 @@ exports.promote_to_white = function (connection, grey_rec, cb) {
 
     var white_key = plugin.craft_white_key(connection);
 
-    return plugin.redis.hmset(white_key, white_rec, function (err, result) {
+    return plugin.db.hmset(white_key, white_rec, function (err, result) {
         if (err) {
             plugin.lognotice("DB error: " + util.inspect(err));
             err.what = 'db_error';
             throw err;
         }
-        plugin.redis.expire(white_key, white_ttl, function (err2, result2) {
+        plugin.db.expire(white_key, white_ttl, function (err2, result2) {
             plugin.lognotice("DB error: " + util.inspect(err2));
             return cb(err2, result2);
         });
@@ -592,7 +552,7 @@ exports.promote_to_white = function (connection, grey_rec, cb) {
 exports.update_white_record = function (key, record, cb) {
     var plugin = this;
 
-    var multi = plugin.redis.multi();
+    var multi = plugin.db.multi();
     var ts_now = Math.round(Date.now() / 1000);
 
     // { first_connect: TS, whitelisted: TS, updated: TS, lifetime: TTL, tried: Integer, tried_when_greylisted: Integer }
@@ -617,7 +577,7 @@ exports.update_white_record = function (key, record, cb) {
 exports.db_lookup = function (key, cb) {
     var plugin = this;
 
-    plugin.redis.hgetall(key, function (err, result) {
+    plugin.db.hgetall(key, function (err, result) {
         if (err) {
             plugin.lognotice("DB error: " + util.inspect(err), key);
         }
