@@ -186,7 +186,13 @@ exports.rate_limit = function (connection, key, value, cb) {
             plugin.db.setex(key, ttl, 1, check_limits);
         }
         else { // old key
-            plugin.db.incr(key, check_limits);
+            plugin.db.incr(key, function (err3, result) {
+                    if (result === 1) {
+                        plugin.db.expire(key, ttl);
+                    }
+                    check_limits(err3, result);
+                }
+            );
         }
     });
 };
