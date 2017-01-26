@@ -149,16 +149,15 @@ ResultStore.prototype.collate = function (plugin) {
     return this.private_collate(result, name).join(', ');
 };
 
-ResultStore.prototype.get = function (plugin_name) {
-    var result = this.store[plugin_name];
-    if (!result) return;
-    return result;
+ResultStore.prototype.get = function (plugin_or_name) {
+    var name = this.resolve_plugin_name(plugin_or_name);
+    return this.store[name];
 };
 
 ResultStore.prototype.resolve_plugin_name = function (thing) {
-    if (!thing) { return; }
-    if (typeof thing === 'string') { return thing; }
-    return thing.name;
+    if (typeof thing === 'string')               return thing;
+    if (typeof thing === 'object' && thing.name) return thing.name;
+    return;
 };
 
 ResultStore.prototype.get_all = function () {
