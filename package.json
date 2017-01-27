@@ -35,6 +35,7 @@
     "haraka-plugin-asn"     : "*",
     "haraka-plugin-geoip"   : "*",
     "haraka-plugin-karma"   : "*",
+    "haraka-plugin-limit"   : "*",
     "haraka-plugin-watch"   : "*"
   },
   "optionalDependencies": {
