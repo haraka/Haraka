@@ -10,7 +10,7 @@ var MessageStream = require('./messagestream');
 
 var MAX_HEADER_LINES = config.get('max_header_lines') || 1000;
 
-function Transaction() {
+function Transaction () {
     this.uuid = null;
     this.mail_from = null;
     this.rcpt_to = [];
@@ -40,7 +40,7 @@ function Transaction() {
 
 exports.Transaction = Transaction;
 
-exports.createTransaction = function(uuid) {
+exports.createTransaction = function (uuid) {
     var t = new Transaction();
     t.uuid = uuid || utils.uuid();
     // Initialize MessageStream here to pass in the UUID
@@ -49,7 +49,7 @@ exports.createTransaction = function(uuid) {
     return t;
 };
 
-Transaction.prototype.ensure_body = function() {
+Transaction.prototype.ensure_body = function () {
     var self = this;
     if (this.body) {
         return;
@@ -62,8 +62,8 @@ Transaction.prototype.ensure_body = function() {
     if (this.banner) {
         this.body.set_banner(this.banner);
     }
-    this.body_filters.forEach(function(o) {
-        self.body.add_filter(function(ct, enc, buf) {
+    this.body_filters.forEach(function (o) {
+        self.body.add_filter(function (ct, enc, buf) {
             if ((util.isRegExp(o.ct_match) &&
                  o.ct_match.test(ct.toLowerCase())) ||
                     ct.toLowerCase()
@@ -75,7 +75,7 @@ Transaction.prototype.ensure_body = function() {
     });
 };
 
-Transaction.prototype.add_data = function(line) {
+Transaction.prototype.add_data = function (line) {
     if (typeof line === 'string') { // This shouldn't ever really happen...
         line = new Buffer(line, 'binary');
     }
@@ -113,7 +113,7 @@ Transaction.prototype.add_data = function(line) {
     if (!this.discard_data) this.message_stream.add_line(line);
 };
 
-Transaction.prototype.end_data = function(cb) {
+Transaction.prototype.end_data = function (cb) {
     if (!this.found_hb_sep && this.header_lines.length) {
         // Headers not parsed yet - must be a busted email
         // Strategy: Find the first line that doesn't look like a header.
@@ -156,12 +156,12 @@ Transaction.prototype.end_data = function(cb) {
     }
 };
 
-Transaction.prototype.add_header = function(key, value) {
+Transaction.prototype.add_header = function (key, value) {
     this.header.add_end(key, value);
     if (this.header_pos > 0) this.reset_headers();
 };
 
-Transaction.prototype.add_leading_header = function(key, value) {
+Transaction.prototype.add_leading_header = function (key, value) {
     this.header.add(key, value);
     if (this.header_pos > 0) this.reset_headers();
 };

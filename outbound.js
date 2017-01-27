@@ -185,7 +185,7 @@ exports.drain_pools = function () {
     }
     for (var p in server.notes.pool) {
         logger.logdebug("[outbound] Drain pools: Draining SMTP connection pool " + p);
-        server.notes.pool[p].drain(function() {
+        server.notes.pool[p].drain(function () {
             if (!server.notes.pool[p]) return;
             server.notes.pool[p].destroyAllNow();
         });
@@ -671,7 +671,7 @@ exports.process_delivery = function (ok_paths, todo, hmails, cb) {
 
 exports.build_todo = function (todo, ws, write_more) {
     // Replacer function to exclude items from the queue file header
-    function exclude_from_json(key, value) {
+    function exclude_from_json (key, value) {
         switch (key) {
             case 'message_stream':
                 return undefined;
@@ -1056,7 +1056,7 @@ exports.lookup_mx = function lookup_mx (domain, cb) {
         return 1;
     };
 
-    dns.resolveMx(domain, function(err, addresses) {
+    dns.resolveMx(domain, function (err, addresses) {
         if (process_dns(err, addresses)) {
             return;
         }
@@ -1065,7 +1065,7 @@ exports.lookup_mx = function lookup_mx (domain, cb) {
         // wrap_mx() to return same thing as resolveMx() does.
         wrap_mx = function (a) { return {priority:0,exchange:a}; };
         // IS: IPv6 compatible
-        dns.resolve(domain, function(err2, addresses2) {
+        dns.resolve(domain, function (err2, addresses2) {
             if (process_dns(err2, addresses2)) {
                 return;
             }
@@ -1236,10 +1236,10 @@ function get_pool (port, host, local_addr, is_unix_socket, connect_timeout, pool
                     callback("Outbound connection timed out to " + host + ":" + port, null);
                 });
             },
-            validate: function(socket) {
+            validate: function (socket) {
                 return socket.writable;
             },
-            destroy: function(socket) {
+            destroy: function (socket) {
                 logger.logdebug('[outbound] destroying pool entry for ' + host + ':' + port);
                 // Remove pool object from server notes once empty
                 var size = pool.getPoolSize();
@@ -1842,7 +1842,7 @@ HMailItem.prototype.try_deliver_host_on_socket = function (mx, host, port, socke
     }
 };
 
-HMailItem.prototype.extend_rcpt_with_dsn = function(rcpt, dsn) {
+HMailItem.prototype.extend_rcpt_with_dsn = function (rcpt, dsn) {
     rcpt.dsn_code = dsn.code;
     rcpt.dsn_msg = dsn.msg;
     rcpt.dsn_status = "" + dsn.cls + "." + dsn.sub + "." + dsn.det;
@@ -1915,7 +1915,7 @@ HMailItem.prototype.populate_bounce_message = function (from, to, reason, cb) {
  * @param header
  * @param cb - a callback for fn(err, message_body_lines)
  */
-HMailItem.prototype.populate_bounce_message_with_headers = function(from, to, reason, header, cb) {
+HMailItem.prototype.populate_bounce_message_with_headers = function (from, to, reason, header, cb) {
     var self = this;
     var CRLF = '\r\n';
 

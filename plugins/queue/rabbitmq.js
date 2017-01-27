@@ -19,15 +19,15 @@ exports.register = function () {
 
 
 //Actual magic of publishing message to rabbit when email comes happen here.
-exports.hook_queue = function(next, connection) {
+exports.hook_queue = function (next, connection) {
     //Calling the get_data method and when it gets the data on callback, publish the message to queue with routing key.
-    connection.transaction.message_stream.get_data(function(buffere) {
+    connection.transaction.message_stream.get_data(function (buffere) {
         var exchangeData = exports.exchangeMapping[exchangeName + queueName]
         logger.logdebug("Sending the data: "+ queueName+" Routing : "+ exchangeData + " exchange :"+connExchange_);
         if (connExchange_ && routing_) {
             //This is publish function of rabbitmq amqp library, currently direct queue is configured and routing is fixed.
             //Needs to be changed.
-            connExchange_.publish(routing_, buffere,{deliveryMode: deliveryMode}, function(error){
+            connExchange_.publish(routing_, buffere,{deliveryMode: deliveryMode}, function (error){
                 if (error) {
                     //There was some error while sending the email to queue.
                     logger.logdebug("queueFailure: #{JSON.stringify(error)}");
@@ -50,7 +50,7 @@ exports.hook_queue = function(next, connection) {
 };
 
 //This initializes the connection to rabbitmq server, It reads values from rabbitmq.ini file in config directory.
-exports.init_rabbitmq_server = function() {
+exports.init_rabbitmq_server = function () {
     var plugin = this;
     // this is called during init of rabbitmq
 
@@ -92,12 +92,12 @@ exports.init_rabbitmq_server = function() {
 
 
     //Declaring listerner on error on connection.
-    rabbitqueue.on('error',function(error) {
+    rabbitqueue.on('error',function (error) {
         logger.logdebug("There was some error on the connection : "+error);
     });
 
     //Declaring listerner on close on connection.
-    rabbitqueue.on('close',function(close) {
+    rabbitqueue.on('close',function (close) {
         logger.logdebug(" Connection  is beingclosed : "+close);
     });
 
@@ -112,13 +112,13 @@ exports.init_rabbitmq_server = function() {
     rabbitqueue.on('ready', function () {
         logger.logdebug("Connection is ready, will try making exchange");
         // Now connection is ready will try to open exchange with config data.
-        rabbitqueue.exchange(exchangeName, {  type: exchangeType,  confirm: confirm,  durable: durable }, function(connExchange) {
+        rabbitqueue.exchange(exchangeName, {  type: exchangeType,  confirm: confirm,  durable: durable }, function (connExchange) {
 
 
             logger.logdebug("connExchange with server "+connExchange + " autoDelete : "+autoDelete);
 
             //Exchange is now open, will try to open queue.
-            return rabbitqueue.queue(queueName,{autoDelete: autoDelete,  durable:  durable  } , function(connQueue) {
+            return rabbitqueue.queue(queueName,{autoDelete: autoDelete,  durable:  durable  } , function (connQueue) {
                 logger.logdebug("connQueue with server "+connQueue);
 
                 //Creating the Routing key to bind the queue and exchange.

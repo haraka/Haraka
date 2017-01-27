@@ -1,7 +1,7 @@
 var util = require('util');
 var EventEmitter = require('events').EventEmitter;
 
-function ChunkEmitter(buffer_size) {
+function ChunkEmitter (buffer_size) {
     EventEmitter.call(this);
     this.buffer_size = parseInt(buffer_size) || (64 * 1024);
     this.buf = null;
@@ -14,7 +14,7 @@ util.inherits(ChunkEmitter, EventEmitter);
 
 if (!Buffer.concat) {
     var buf;
-    Buffer.concat = function(list, length) {
+    Buffer.concat = function (list, length) {
         if (!Array.isArray(list)) {
             throw new Error('Usage: Buffer.concat(list, [length])');
         }

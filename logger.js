@@ -160,7 +160,7 @@ logger._init_timestamps = function () {
     });
 
     if (_timestamps) {
-        console.log = function() {
+        console.log = function () {
             var new_arguments = [new Date().toISOString()];
             for (var key in arguments) {
                 new_arguments.push(arguments[key]);
@@ -177,7 +177,7 @@ logger._init_loglevel();
 logger._init_timestamps();
 
 logger.log_if_level = function (level, key, plugin) {
-    return function() {
+    return function () {
         if (logger.loglevel < logger[key]) { return; }
         var levelstr = '[' + level + ']';
         var str = '';

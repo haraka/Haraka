@@ -159,7 +159,7 @@ exports.check_user = function (next, connection, credentials, method) {
     }
 };
 
-exports.select_auth_method = function(next, connection, method) {
+exports.select_auth_method = function (next, connection, method) {
     var split = method.split(/\s+/);
     method = split.shift().toUpperCase();
     if (!connection.notes.allowed_auth_methods) return next();
@@ -181,7 +181,7 @@ exports.select_auth_method = function(next, connection, method) {
     }
 };
 
-exports.auth_plain = function(next, connection, params) {
+exports.auth_plain = function (next, connection, params) {
     var plugin = this;
     // one parameter given on line, either:
     //    AUTH PLAIN <param> or
@@ -205,7 +205,7 @@ exports.auth_plain = function(next, connection, params) {
     }
 };
 
-exports.auth_login = function(next, connection, params) {
+exports.auth_login = function (next, connection, params) {
     var plugin = this;
     if ((!connection.notes.auth_login_asked_login && params[0]) ||
         ( connection.notes.auth_login_asked_login &&
@@ -239,7 +239,7 @@ exports.auth_login = function(next, connection, params) {
     });
 };
 
-exports.auth_cram_md5 = function(next, connection, params) {
+exports.auth_cram_md5 = function (next, connection, params) {
     var plugin = this;
     if (params) {
         var credentials = utils.unbase64(params[0]).split(' ');

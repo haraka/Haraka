@@ -13,7 +13,7 @@ function FsyncWriteStream (path, options) {
 
 util.inherits(FsyncWriteStream, fs.WriteStream);
 
-FsyncWriteStream.prototype.close = function(cb) {
+FsyncWriteStream.prototype.close = function (cb) {
     var self = this;
     if (cb)
         this.once('close', cb);
@@ -27,13 +27,13 @@ FsyncWriteStream.prototype.close = function(cb) {
     this.closed = true;
     close();
 
-    function close(fd) {
-        fs.fsync(fd || self.fd, function(er) {
+    function close (fd) {
+        fs.fsync(fd || self.fd, function (er) {
             if (er) {
                 self.emit('error', er);
             }
             else {
-                fs.close(fd || self.fd, function(err) {
+                fs.close(fd || self.fd, function (err) {
                     if (err) {
                         self.emit('error', err);
                     }

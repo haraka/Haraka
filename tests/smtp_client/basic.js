@@ -10,7 +10,7 @@ test.equals(pool_name, Object.keys(server.notes.pool)[0]);
 test.equals(0, server.notes.pool[pool_name].getPoolSize());
 test.equals(0, server.notes.pool[pool_name].availableObjectsCount());
 
-exports.get_client(server, function(err, smtp_client) {
+exports.get_client(server, function (err, smtp_client) {
     test.equals(null, err);
     test.equals(1, server.notes.pool[pool_name].getPoolSize());
     test.equals(0, server.notes.pool[pool_name].availableObjectsCount());

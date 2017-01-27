@@ -1,0 +1,10 @@
+{
+  "plugins": [
+    "haraka"
+  ],
+  "extends": ["plugin:haraka/recommended"],
+  "rules": {
+    "no-console": 0,
+    "no-empty": ["error", { "allowEmptyCatch": true }]
+  }
+}

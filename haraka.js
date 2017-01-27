@@ -64,7 +64,7 @@ process.on('SIGHUP', function () {
     server.flushQueue();
 });
 
-process.on('exit', function(code) {
+process.on('exit', function (code) {
     if (shutting_down) return;
     process.title = path.basename(process.argv[1], '.js');
     logger.lognotice('Shutting down');

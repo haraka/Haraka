@@ -10,13 +10,13 @@ var util   = require('util');
 // Common functions //
 //////////////////////
 
-function md5(str) {
+function md5 (str) {
     if (!str) str = '';
     var h = crypto.createHash('md5');
     return h.update(str).digest('hex');
 }
 
-function Buf() {
+function Buf () {
     this.bar = [];
     this.blen = 0;
     this.pop = function (buf) {
@@ -403,7 +403,7 @@ exports.DKIMObject = DKIMObject;
 // DKIMVerifyStream //
 //////////////////////
 
-function DKIMVerifyStream(cb, timeout) {
+function DKIMVerifyStream (cb, timeout) {
     Stream.call(this);
     this.run_cb = false;
     var self = this;
@@ -550,11 +550,11 @@ DKIMVerifyStream.prototype.handle_buf = function (buf) {
     return true;
 };
 
-DKIMVerifyStream.prototype.write = function(buf) {
+DKIMVerifyStream.prototype.write = function (buf) {
     return this.handle_buf(buf);
 };
 
-DKIMVerifyStream.prototype.end = function(buf) {
+DKIMVerifyStream.prototype.end = function (buf) {
     this.handle_buf(((buf) ? buf : null));
     for (var d=0; d<this.dkim_objects.length; d++) {
         this.dkim_objects[d].end();

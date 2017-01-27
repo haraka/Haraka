@@ -54,7 +54,7 @@ Header.prototype.parse = function (lines) {
     })
 };
 
-function try_convert(data, encoding) {
+function try_convert (data, encoding) {
     try {
         var converter = new Iconv(encoding, "UTF-8");
         data = converter.convert(data);
