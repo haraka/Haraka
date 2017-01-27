@@ -50,6 +50,7 @@
   "devDependencies": {
     "nodeunit"              : "*",
     "haraka-test-fixtures"  : ">=1.0.17",
+    "eslint"                : ">=2",
     "eslint-plugin-haraka"  : "*"
   },
   "bugs": {
