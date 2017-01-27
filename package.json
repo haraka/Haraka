@@ -30,6 +30,7 @@
     "haraka-tld"            : "*",
     "haraka-constants"      : "*",
     "haraka-net-utils"      : ">=1.0.4",
+    "haraka-results"        : "^1.0.1",
     "haraka-utils"          : "*",
     "haraka-plugin-asn"     : "*",
     "haraka-plugin-geoip"   : "*",

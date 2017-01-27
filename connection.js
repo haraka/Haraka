@@ -22,7 +22,7 @@ var trans       = require('./transaction');
 var plugins     = require('./plugins');
 var rfc1869     = require('./rfc1869');
 var outbound    = require('./outbound');
-var ResultStore = require('./result_store');
+var ResultStore = require('haraka-results');
 
 var hostname    = (os.hostname().split(/\./))[0];
 var version     = JSON.parse(
