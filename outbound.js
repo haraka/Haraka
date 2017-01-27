@@ -273,9 +273,10 @@ exports.load_queue_files = function (pid, cb_name, files, callback) {
                 var next_process = parts.next_attempt;
                 // maintain some original details for the rename
                 var new_filename = _qfile.name({
-                    arrival:parts.arrival,
-                    next_attempt:parts.next_attempt,
-                    attempts:parts.attempts
+                    arrival      : parts.arrival,
+                    uid          : parts.uid,
+                    next_attempt : parts.next_attempt,
+                    attempts     : parts.attempts,
                 });
                 // self.loginfo("new_filename: ", new_filename);
                 fs.rename(path.join(queue_dir, file), path.join(queue_dir, new_filename), function (err) {
@@ -424,23 +425,34 @@ exports.stats = function () {
 };
 
 
+var QFILECOUNTER = 0;
 var _qfile = exports.qfile = {
-    // File Name Format: $arrival_$nextattempt_$attempts_$pid_$uniquenum_$host
-    name : function(overrides){
+    // File Name Format: $arrival_$nextattempt_$attempts_$pid_$uniquetag_$counter_$host
+    name : function (overrides) {
         var o = overrides || {};
-        var time = new Date().getTime();
+        var time = _qfile.time();
         return [
             o.arrival       || time,
             o.next_attempt  || time,
             o.attempts      || 0,
             o.pid           || process.pid,
             o.uid           || _qfile.rnd_unique(),
+            _qfile.next_counter(),
             o.host          || my_hostname
         ].join('_');
     },
 
-    rnd_unique: function(len) {
-        len = len || 10; // default length
+    time : function () {
+        return new Date().getTime();
+    },
+
+    next_counter: function () {
+        QFILECOUNTER = (QFILECOUNTER < 10000)?QFILECOUNTER+1:0;
+        return QFILECOUNTER;
+    },
+
+    rnd_unique: function (len) {
+        len = len || 6;
         var chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
         var result = [];
         for (var i = len; i > 0; --i){
@@ -449,13 +461,13 @@ var _qfile = exports.qfile = {
         return result.join('');
     },
 
-    parts : function(filename){
+    parts : function (filename) {
         if (!filename){
             throw new Error("No filename provided");
         }
 
         var PARTS_EXPECTED_OLD = 4;
-        var PARTS_EXPECTED_CURRENT = 6;
+        var PARTS_EXPECTED_CURRENT = 7;
         var p = filename.split('_');
 
         // bail on unknown split lengths
@@ -464,11 +476,11 @@ var _qfile = exports.qfile = {
             return null;
         }
 
-        var time = new Date().getTime();
+        var time = _qfile.time();
         if (p.length === PARTS_EXPECTED_OLD){
             // parse the previous string structure
             // $nextattempt_$attempts_$pid_$uniq.$host
-            // 1484878079415_0_12345_8888.mta-dev.mirus.io
+            // 1484878079415_0_12345_8888.mta1.example.com
             // var fn_re = /^(\d+)_(\d+)_(\d+)(_\d+\..*)$/
             // match[1] = $nextattempt
             // match[2] = $attempts
@@ -479,8 +491,9 @@ var _qfile = exports.qfile = {
             if (!match){
                 return null;
             }
-            p = match.slice(1);
-            p.unshift(time);  // potentially inaccurate, non-critical if so
+            p = match.slice(1); // grab the capture groups minus the pattern
+            p.splice(3,1,_qfile.rnd_unique(),_qfile.next_counter());  // add a fresh UID and counter
+            p.unshift(time);  // prepend current timestamp -- potentially inaccurate, but non-critical and shortlived
         }
 
         return {
@@ -489,7 +502,8 @@ var _qfile = exports.qfile = {
             attempts     : parseInt(p[2]),
             pid          : parseInt(p[3]),
             uid          : p[4],
-            host         : p[5],
+            counter      : parseInt(p[5]),
+            host         : p[6],
             age          : time - parseInt(p[0])
         };
     }

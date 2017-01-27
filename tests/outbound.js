@@ -52,7 +52,7 @@ exports.qfile = {
         test.expect(3);
         var name = this.qfile.name();
         var split = name.split('_');
-        test.equal(split.length, 6);
+        test.equal(split.length, 7);
         test.equal(split[2], 0);
         test.equal(split[3], process.pid);
         test.done();
@@ -69,13 +69,13 @@ exports.qfile = {
         };
         var name = this.qfile.name(overrides);
         var split = name.split('_');
-        test.equal(split.length, 6);
+        test.equal(split.length, 7);
         test.equal(split[0], overrides.arrival);
         test.equal(split[1], overrides.next_attempt);
         test.equal(split[2], overrides.attempts);
         test.equal(split[3], overrides.pid);
         test.equal(split[4], overrides.uid);
-        test.equal(split[5], overrides.host);
+        test.equal(split[6], overrides.host);
         test.done();
     },
     'rnd_unique() is unique-ish': function(test){
@@ -88,14 +88,13 @@ exports.qfile = {
         test.done();
     },
     'parts() updates previous queue filenames': function(test){
-        test.expect(5);
+        test.expect(4);
         // $nextattempt_$attempts_$pid_$uniq.$host
         var name = "1111_0_2222_3333.foo.example.com"
         var parts = this.qfile.parts(name);
         test.equal(parts.next_attempt, 1111);
         test.equal(parts.attempts, 0);
         test.equal(parts.pid, 2222);
-        test.equal(parts.uid, 3333);
         test.equal(parts.host, 'foo.example.com');
         test.done();
     },
