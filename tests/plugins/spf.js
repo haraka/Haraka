@@ -17,7 +17,7 @@ var _set_up = function (done) {
 
     this.connection = fixtures.connection.createConnection();
     this.connection.transaction = fixtures.transaction.createTransaction();
-    this.connection.transaction.results = new fixtures.result_store(this.connection);
+    this.connection.transaction.results = new fixtures.results(this.connection);
 
     done();
 };

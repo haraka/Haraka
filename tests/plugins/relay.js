@@ -2,15 +2,11 @@
 
 var fixtures     = require('haraka-test-fixtures');
 
-var Connection   = fixtures.connection;
-var Plugin       = fixtures.plugin;
-var ResultStore  = fixtures.result_store;
-
 var _set_up = function (done) {
 
-    this.plugin = new Plugin('relay');
+    this.plugin = new fixtures.plugin('relay');
     this.plugin.cfg = {};
-    this.connection = Connection.createConnection();
+    this.connection = fixtures.connection.createConnection();
 
     done();
 };
@@ -94,9 +90,9 @@ exports.is_acl_allowed = {
 
 exports.acl = {
     setUp : function (callback) {
-        this.plugin = new Plugin('relay');
+        this.plugin = new fixtures.plugin('relay');
         this.plugin.cfg = { relay: { dest_domains: true } };
-        this.connection = Connection.createConnection();
+        this.connection = fixtures.connection.createConnection();
         callback();
     },
     'relay.acl=false' : function (test) {
@@ -158,12 +154,12 @@ exports.acl = {
 
 exports.dest_domains = {
     setUp : function (callback) {
-        this.plugin = new Plugin('relay');
+        this.plugin = new fixtures.plugin('relay');
         this.plugin.cfg = { relay: { dest_domains: true } };
 
-        this.connection = Connection.createConnection();
+        this.connection = fixtures.connection.createConnection();
         this.connection.transaction = {
-            results: new ResultStore(this.connection),
+            results: new fixtures.results(this.connection),
         };
 
         callback();
@@ -240,13 +236,13 @@ exports.dest_domains = {
 
 exports.force_routing = {
     setUp : function (callback) {
-        this.plugin = new Plugin('relay');
+        this.plugin = new fixtures.plugin('relay');
         this.plugin.cfg = { relay: { force_routing: true } };
         this.plugin.dest = {};
 
-        this.connection = Connection.createConnection();
+        this.connection = fixtures.connection.createConnection();
         this.connection.transaction = {
-            results: new ResultStore(this.connection),
+            results: new fixtures.results(this.connection),
         };
 
         callback();

@@ -2,19 +2,17 @@
 
 var fixtures     = require('haraka-test-fixtures');
 var dns          = require('dns');
-var Connection   = fixtures.connection;
-var ResultStore  = fixtures.result_store;
 
 var _set_up = function (done) {
 
     this.plugin = new fixtures.plugin('mail_from.is_resolvable');
     this.plugin.register();
 
-    this.connection = Connection.createConnection();
+    this.connection = fixtures.connection.createConnection();
 
     this.connection.transaction = {
         notes: {},
-        results: new ResultStore(this.plugin),
+        results: new fixtures.results(this.plugin),
     };
 
     done();

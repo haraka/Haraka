@@ -3,9 +3,6 @@
 var Address      = require('address-rfc2821');
 var fixtures     = require('haraka-test-fixtures');
 
-var Connection   = fixtures.connection;
-var ResultStore  = fixtures.result_store;
-
 var Header       = require('../../mailheader').Header;
 
 var _set_up = function (done) {
@@ -19,11 +16,11 @@ var _set_up = function (done) {
     }
     catch (ignore) {}
 
-    this.connection = Connection.createConnection();
+    this.connection = fixtures.connection.createConnection();
 
     this.connection.transaction = {
         header: new Header(),
-        results: new ResultStore(this.plugin),
+        results: new fixtures.results(this.plugin),
         rcpt_to: [],
     };
 
