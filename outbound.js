@@ -24,7 +24,7 @@ var DSN         = require('./dsn');
 var FsyncWriteStream = require('./fsync_writestream');
 var generic_pool = require('generic-pool');
 var server      = require('./server');
-var ResultStore = require('./result_store');
+var ResultStore = require('haraka-results');
 
 var core_consts = require('constants');
 var WRITE_EXCL  = core_consts.O_CREAT | core_consts.O_TRUNC | core_consts.O_WRONLY | core_consts.O_EXCL;
