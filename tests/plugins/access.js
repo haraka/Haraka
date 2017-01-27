@@ -5,8 +5,6 @@ var path         = require('path');
 var Address      = require('address-rfc2821').Address;
 var fixtures     = require('haraka-test-fixtures');
 
-var ResultStore  = fixtures.result_store;
-
 var _set_up = function (done) {
 
     this.plugin = new fixtures.plugin('access');
@@ -15,7 +13,7 @@ var _set_up = function (done) {
 
     this.connection = fixtures.connection.createConnection();
     this.connection.transaction = {
-        results: new ResultStore(this.connection),
+        results: new fixtures.results(this.connection),
     };
 
     done();

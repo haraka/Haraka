@@ -3,12 +3,10 @@
 var Address      = require('address-rfc2821');
 var fixtures     = require('haraka-test-fixtures');
 
-var Connection   = fixtures.connection;
-
 var _set_up = function (done) {
 
     this.plugin = new fixtures.plugin('rcpt_to.qmail_deliverable');
-    this.connection = Connection.createConnection();
+    this.connection = fixtures.connection.createConnection();
 
     done();
 };

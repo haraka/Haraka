@@ -3,20 +3,16 @@
 var Address      = require('address-rfc2821').Address;
 var fixtures     = require('haraka-test-fixtures');
 
-var Connection   = fixtures.connection;
-var Plugin       = fixtures.plugin;
-var ResultStore  = fixtures.result_store;
-
 var _set_up = function (done) {
 
-    this.plugin = new Plugin('rcpt_to.ldap');
+    this.plugin = new fixtures.plugin('rcpt_to.ldap');
     this.plugin.inherits('rcpt_to.host_list_base');
 
     this.plugin.cfg = {};
     this.plugin.host_list = {};
-    this.connection = Connection.createConnection();
+    this.connection = fixtures.connection.createConnection();
     this.connection.transaction = {
-        results: new ResultStore(this.connection),
+        results: new fixtures.results(this.connection),
         notes: {},
         rcpt_to: [new Address('test@test.com')]
     };

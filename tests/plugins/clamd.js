@@ -3,7 +3,6 @@
 var fixtures     = require('haraka-test-fixtures');
 
 var Connection   = fixtures.connection;
-var ResultStore  = fixtures.result_store;
 
 var _set_up = function (done) {
 
@@ -14,7 +13,7 @@ var _set_up = function (done) {
 
     this.connection.transaction = {
         notes: {},
-        results: new ResultStore(this.plugin),
+        results: new fixtures.results(this.plugin),
     };
 
     done();

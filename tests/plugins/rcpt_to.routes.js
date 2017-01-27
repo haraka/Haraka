@@ -1,11 +1,7 @@
 'use strict';
 
 var Address      = require('address-rfc2821').Address;
-
 var fixtures     = require('haraka-test-fixtures');
-
-var Connection   = fixtures.connection;
-var ResultStore  = fixtures.result_store;
 
 var hmail = {
     todo: {
@@ -28,9 +24,9 @@ var _set_up_file = function (done) {
     this.plugin = new fixtures.plugin('rcpt_to.routes');
 
     this.plugin.register();
-    this.connection = Connection.createConnection();
+    this.connection = fixtures.connection.createConnection();
     this.connection.transaction = fixtures.transaction.createTransaction();
-    this.connection.transaction.results = new ResultStore(this.connection);
+    this.connection.transaction.results = new fixtures.results(this.connection);
 
     done();
 };
@@ -40,9 +36,9 @@ var _set_up_redis = function (done) {
     this.server = {};
     this.plugin = new fixtures.plugin('rcpt_to.routes');
 
-    this.connection = Connection.createConnection();
+    this.connection = fixtures.connection.createConnection();
     this.connection.transaction = fixtures.transaction.createTransaction();
-    this.connection.transaction.results = new ResultStore(this.connection);
+    this.connection.transaction.results = new fixtures.results(this.connection);
 
     this.plugin.register();
     this.plugin.server = { notes: { } };
