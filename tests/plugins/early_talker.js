@@ -11,7 +11,7 @@ var _set_up = function (done) {
     done();
 };
 
-function _tear_down(done) { done(); }
+function _tear_down (done) { done(); }
 
 exports.early_talker = {
     setUp : _set_up,

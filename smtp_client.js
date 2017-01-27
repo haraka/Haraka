@@ -299,7 +299,7 @@ exports.get_pool = function (server, port, host, connect_timeout, pool_timeout, 
                     host + ' port=' + port + ' pool_timeout=' + pool_timeout + ' created');
                 callback(null, smtp_client);
             },
-            destroy: function(smtp_client) {
+            destroy: function (smtp_client) {
                 logger.logdebug('[smtp_client_pool] ' + smtp_client.uuid + ' destroyed, state=' + smtp_client.state);
                 smtp_client.state = STATE.DESTROYED;
                 smtp_client.socket.destroy();

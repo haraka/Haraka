@@ -21,7 +21,7 @@ function Config (root_path, no_overrides) {
     }
 }
 
-Config.prototype.get = function(name, type, cb, options) {
+Config.prototype.get = function (name, type, cb, options) {
     var a = this.arrange_args([name, type, cb, options]);
     if (!a[1]) a[1] = 'value';
 

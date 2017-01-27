@@ -143,7 +143,7 @@ Server._graceful = function (shutdown) {
                 worker.kill();
             }
         }, disconnect_timeout * 1000);
-        worker.once("disconnect", function() {
+        worker.once("disconnect", function () {
             clearTimeout(disconnect_timer);
             disconnect_received = true;
             logger.lognotice("Disconnect complete");
@@ -162,7 +162,7 @@ Server._graceful = function (shutdown) {
         });
         if (shutdown) return;
         var newWorker = cluster.fork();
-        newWorker.once("listening", function() {
+        newWorker.once("listening", function () {
             logger.lognotice("Replacement worker online.");
             newWorker.on('exit', function (code, signal) {
                 cluster_exit_listener(newWorker, code, signal);
@@ -598,7 +598,7 @@ Server.get_http_docroot = function () {
     return Server.http.cfg.docroot;
 };
 
-Server.handle404 = function(req, res){
+Server.handle404 = function (req, res){
     // abandon all hope, serve up a 404
     var docroot = Server.get_http_docroot();
 

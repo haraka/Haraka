@@ -9,11 +9,11 @@ exports.register = function () {
 };
 
 // http://unknownerror.net/2011-05/16260-nodejs-mkdirs-recursion-create-directory.html
-var mkdirs = exports.mkdirs = function(dirpath, mode, callback) {
+var mkdirs = exports.mkdirs = function (dirpath, mode, callback) {
     if (fs.existsSync(dirpath)) {
         return callback(dirpath);
     }
-    mkdirs(path.dirname(dirpath), mode, function() {
+    mkdirs(path.dirname(dirpath), mode, function () {
         fs.mkdir(dirpath, mode, callback);
     });
 };

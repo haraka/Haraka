@@ -300,7 +300,7 @@ Body.prototype.parse_end = function (line) {
     return line;
 };
 
-Body.prototype.try_iconv = function(buf, enc) {
+Body.prototype.try_iconv = function (buf, enc) {
 
     if (!Iconv) {
         this.body_encoding = 'no_iconv';

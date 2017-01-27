@@ -50,7 +50,8 @@
   "devDependencies": {
     "nodeunit"              : "*",
     "haraka-test-fixtures"  : ">=1.0.17",
-    "eslint"                : ">=2"
+    "eslint"                : ">=2",
+    "eslint-plugin-haraka"  : "*"
   },
   "bugs": {
     "mail": "helpme@gmail.com",
@@ -70,6 +71,7 @@
   "scripts": {
     "test": "node run_tests",
     "lint": "./node_modules/.bin/eslint *.js plugins/**/*.js bin/haraka bin/spf bin/dkimverify tests/**/*.js",
+    "lintfix": "./node_modules/.bin/eslint --fix *.js plugins/**/*.js bin/haraka bin/spf bin/dkimverify tests/**/*.js",
     "cover": "NODE_ENV=cov ./node_modules/.bin/istanbul cov run_tests"
   }
 }

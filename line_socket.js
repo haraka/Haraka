@@ -7,7 +7,7 @@ var utils = require('haraka-utils');
 
 var tls  = require('./tls_socket');
 
-function Socket(options) {
+function Socket (options) {
     if (!(this instanceof Socket)) return new Socket(options);
     net.Socket.call(this, options);
     setup_line_processor(this);

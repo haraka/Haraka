@@ -70,9 +70,9 @@ exports.hook_queue = function (next, connection) {
 
         if (cfg.auth_user) {
             connection.loginfo(plugin, 'Configuring authentication for SMTP server ' + cfg.host + ':' + cfg.port);
-            smtp_client.on('capabilities', function() {
+            smtp_client.on('capabilities', function () {
 
-                var base64 = function(str) {
+                var base64 = function (str) {
                     var buffer = new Buffer(str, 'UTF-8');
                     return buffer.toString('base64');
                 };
@@ -83,13 +83,13 @@ exports.hook_queue = function (next, connection) {
                 }
                 else if (cfg.auth_type === 'login') {
                     smtp_client.send_command('AUTH', 'LOGIN');
-                    smtp_client.on('auth', function() {
+                    smtp_client.on('auth', function () {
                         connection.loginfo(plugin, 'Authenticating with AUTH LOGIN ' + cfg.auth_user);
                     });
-                    smtp_client.on('auth_username', function() {
+                    smtp_client.on('auth_username', function () {
                         smtp_client.send_command(base64(cfg.auth_user) + '\r\n');
                     });
-                    smtp_client.on('auth_password', function() {
+                    smtp_client.on('auth_password', function () {
                         smtp_client.send_command(base64(cfg.auth_pass) + '\r\n');
                     });
                 }

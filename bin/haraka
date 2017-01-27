@@ -118,17 +118,17 @@ function create (dirPath) {
 }
 
 // Warning messsage
-function warning(msg) {
+function warning (msg) {
     console.error('\x1b[31mwarning\x1b[0m: ' + msg);
 }
 
-function fail(msg) {
+function fail (msg) {
     console.error('\x1b[31merror\x1b[0m: ' + msg);
     process.exit(-1);
 }
 
 // Make directory if NOT exist
-function mkDir(dstPath) {
+function mkDir (dstPath) {
     try {
         if (fs.statSync(dstPath).isDirectory()) return;
     }
@@ -150,7 +150,7 @@ function mkDir(dstPath) {
 }
 
 // Copy directory
-function copyDir(srcPath, dstPath) {
+function copyDir (srcPath, dstPath) {
 
     mkDir(dstPath);
     var files = fs.readdirSync(srcPath);
@@ -202,7 +202,7 @@ function copyFile (srcFile, dstFile) {
     }
 }
 
-function setupHostname(confPath) {
+function setupHostname (confPath) {
     var hlPath = path.join(confPath, 'host_list');
     try {
         if (fs.statSync(hlPath).isFile()) return;
@@ -219,7 +219,7 @@ function setupHostname(confPath) {
     }
 }
 
-function setupBaseConfig(confPath) {
+function setupBaseConfig (confPath) {
     copyFile(path.join(base, 'config', 'smtp.ini'), path.join(confPath, 'smtp.ini'));
     copyFile(path.join(base, 'config', 'loglevel'), path.join(confPath, 'loglevel'));
     copyFile(path.join(base, 'config', 'plugins'),  path.join(confPath, 'plugins'));
@@ -284,7 +284,7 @@ var plugin_doc = [
     "",
 ].join("\n");
 
-function createFile(filePath, data, info) {
+function createFile (filePath, data, info) {
     try {
         if (fs.existsSync(filePath) && !parsed.force) {
             throw filePath + " already exists";
@@ -343,7 +343,7 @@ else if (parsed.help) {
         };
 
         var less  = spawn( pager, md_path, { stdio: 'inherit' } );
-        less.on('exit', function() {
+        less.on('exit', function () {
             process.exit(0);
         });
     }

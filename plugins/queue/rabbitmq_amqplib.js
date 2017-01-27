@@ -10,9 +10,9 @@ exports.register = function () {
     this.init_amqp_connection();
 }
 
-exports.rabbitmq_queue = function(next, connection) {
+exports.rabbitmq_queue = function (next, connection) {
     var plugin = this;
-    connection.transaction.message_stream.get_data(function(str) {
+    connection.transaction.message_stream.get_data(function (str) {
         if (channel && channel.sendToQueue(queue, new Buffer(str), {deliveryMode: deliveryMode})) {
             return next(OK);
         }
@@ -23,7 +23,7 @@ exports.rabbitmq_queue = function(next, connection) {
     });
 };
 
-exports.init_amqp_connection = function() {
+exports.init_amqp_connection = function () {
     var plugin = this;
     var cfg = this.config.get("rabbitmq.ini").rabbitmq;
 
@@ -39,7 +39,7 @@ exports.init_amqp_connection = function() {
     var autoDelete = cfg.autoDelete === "true" || false;
     deliveryMode = cfg.deliveryMode || 2;
 
-    amqp.connect("amqp://"+user+":"+password+"@"+host+":"+port, function(err, conn){
+    amqp.connect("amqp://"+user+":"+password+"@"+host+":"+port, function (err, conn){
         if (err) {
             plugin.logerror("Connection to rabbitmq failed: " + err);
             return;
@@ -50,7 +50,7 @@ exports.init_amqp_connection = function() {
                 plugin.logerror("Error creating rabbitmq channel: " + err2);
                 return conn.close();
             }
-            ch.assertExchange(exchangeName, exchangeType, {durable: durable}, function(err3, ok){
+            ch.assertExchange(exchangeName, exchangeType, {durable: durable}, function (err3, ok){
                 if (err3) {
                     plugin.logerror("Error asserting rabbitmq exchange: " + err3);
                     return conn.close();

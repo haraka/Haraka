@@ -97,7 +97,7 @@ exports.acl = {
     },
     'relay.acl=false' : function (test) {
         test.expect(1);
-        var next = function(rc) {
+        var next = function (rc) {
             test.equal(undefined, rc);
             test.done();
         };
@@ -106,7 +106,7 @@ exports.acl = {
     },
     'relay.acl=true, miss' : function (test) {
         test.expect(2);
-        var next = function(rc) {
+        var next = function (rc) {
             test.equal(undefined, rc);
             test.equal(false, this.connection.relaying);
             test.done();
@@ -116,7 +116,7 @@ exports.acl = {
     },
     'relay.acl=true, hit' : function (test) {
         test.expect(2);
-        var next = function(rc) {
+        var next = function (rc) {
             test.equal(OK, rc);
             test.equal(true, this.connection.relaying);
             test.done();
@@ -128,7 +128,7 @@ exports.acl = {
     },
     'relay.acl=true, hit, missing mask' : function (test) {
         test.expect(2);
-        var next = function(rc) {
+        var next = function (rc) {
             test.equal(OK, rc);
             test.equal(true, this.connection.relaying);
             test.done();
@@ -140,7 +140,7 @@ exports.acl = {
     },
     'relay.acl=true, hit, net': function (test) {
         test.expect(2);
-        var next = function(rc) {
+        var next = function (rc) {
             test.equal(OK, rc);
             test.equal(true, this.connection.relaying);
             test.done();
@@ -166,7 +166,7 @@ exports.dest_domains = {
     },
     'relay.dest_domains=false' : function (test) {
         test.expect(1);
-        var next = function(rc) {
+        var next = function (rc) {
             test.equal(undefined, rc);
             test.done();
         };
@@ -175,7 +175,7 @@ exports.dest_domains = {
     },
     'relaying' : function (test) {
         test.expect(2);
-        var next = function(rc) {
+        var next = function (rc) {
             test.equal(undefined, rc);
             test.equal(1, this.connection.transaction.results.get('relay').skip.length);
             test.done();
@@ -185,7 +185,7 @@ exports.dest_domains = {
     },
     'no config' : function (test) {
         test.expect(2);
-        var next = function(rc) {
+        var next = function (rc) {
             test.equal(undefined, rc);
             test.equal(1, this.connection.transaction.results.get('relay').err.length);
             test.done();
@@ -194,7 +194,7 @@ exports.dest_domains = {
     },
     'action=undef' : function (test) {
         test.expect(2);
-        var next = function(rc) {
+        var next = function (rc) {
             test.equal(DENY, rc);
             test.equal(1, this.connection.transaction.results.get('relay').fail.length);
             test.done();
@@ -204,32 +204,32 @@ exports.dest_domains = {
     },
     'action=deny' : function (test) {
         test.expect(2);
-        var next = function(rc) {
+        var next = function (rc) {
             test.equal(DENY, rc);
             test.equal(1, this.connection.transaction.results.get('relay').fail.length);
             test.done();
         }.bind(this);
-        this.plugin.dest = { domains: { foo: '{"action":"deny"}', } };
+        this.plugin.dest = { domains: { foo: '{"action":"deny"}' } };
         this.plugin.dest_domains(next, this.connection, [{host:'foo'}]);
     },
     'action=continue' : function (test) {
         test.expect(2);
-        var next = function(rc) {
+        var next = function (rc) {
             test.equal(CONT, rc);
             test.equal(1, this.connection.transaction.results.get('relay').pass.length);
             test.done();
         }.bind(this);
-        this.plugin.dest = { domains: { foo: '{"action":"continue"}', } };
+        this.plugin.dest = { domains: { foo: '{"action":"continue"}' } };
         this.plugin.dest_domains(next, this.connection, [{host:'foo'}]);
     },
     'action=accept' : function (test) {
         test.expect(2);
-        var next = function(rc) {
+        var next = function (rc) {
             test.equal(CONT, rc);
             test.equal(1, this.connection.transaction.results.get('relay').pass.length);
             test.done();
         }.bind(this);
-        this.plugin.dest = { domains: { foo: '{"action":"continue"}', } };
+        this.plugin.dest = { domains: { foo: '{"action":"continue"}' } };
         this.plugin.dest_domains(next, this.connection, [{host:'foo'}]);
     },
 };
@@ -249,7 +249,7 @@ exports.force_routing = {
     },
     'relay.force_routing=false' : function (test) {
         test.expect(1);
-        var next = function(rc) {
+        var next = function (rc) {
             test.equal(undefined, rc);
             test.done();
         };
@@ -258,7 +258,7 @@ exports.force_routing = {
     },
     'dest_domains empty' : function (test) {
         test.expect(1);
-        var next = function(rc) {
+        var next = function (rc) {
             test.equal(undefined, rc);
             test.done();
         };
@@ -266,7 +266,7 @@ exports.force_routing = {
     },
     'dest_domains, no route' : function (test) {
         test.expect(2);
-        var next = function(rc, nexthop) {
+        var next = function (rc, nexthop) {
             // console.log(arguments);
             test.equal(undefined, rc);
             test.equal(undefined, nexthop);
@@ -277,7 +277,7 @@ exports.force_routing = {
     },
     'dest_domains, route' : function (test) {
         test.expect(2);
-        var next = function(rc, nexthop) {
+        var next = function (rc, nexthop) {
             test.equal(OK, rc);
             test.equal('other-server', nexthop);
             test.done();

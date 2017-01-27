@@ -1,6 +1,7 @@
 'use strict';
 // Config file loader
 
+var fs   = require('fs');
 var path = require('path');
 var yaml = require('js-yaml');
 
@@ -20,9 +21,6 @@ var regex = exports.regex = {
 
 var cfreader = exports;
 
-cfreader.config_path = process.env.HARAKA ?
-                       path.join(process.env.HARAKA, 'config')
-                     : path.join(__dirname, 'config');
 cfreader.watch_files = true;
 cfreader._config_cache = {};
 cfreader._read_args = {};
@@ -31,6 +29,47 @@ cfreader._enoent_timer = false;
 cfreader._enoent_files = {};
 cfreader._sedation_timers = {};
 cfreader._overrides = {};
+
+var config_dir_candidates = [
+    path.join(__dirname, 'config'),    // Haraka ./config dir
+    __dirname,                         // npm packaged plugins
+];
+
+function get_path_to_config_dir () {
+    if (process.env.HARAKA) {
+        // console.log('process.env.HARAKA: ' + process.env.HARAKA);
+        cfreader.config_path = path.join(process.env.HARAKA, 'config');
+        return;
+    }
+
+    if (process.env.NODE_ENV === 'test') {
+        // loaded by haraka-config/test/*
+        cfreader.config_path = path.join(__dirname, 'test', 'config');
+        return;
+    }
+
+    if (/node_modules\/haraka-config$/.test(__dirname)) {
+        // loaded by a npm packaged module
+        cfreader.config_path = path.resolve(__dirname, '..', '..');
+        return;
+    }
+
+    for (let i=0; i < config_dir_candidates.length; i++) {
+        let candidate = config_dir_candidates[i];
+        try {
+            var stat = fs.statSync(candidate);
+            if (stat && stat.isDirectory()) {
+                cfreader.config_path = candidate;
+                return;
+            }
+        }
+        catch (ignore) {
+            console.error(ignore.message);
+        }
+    }
+}
+get_path_to_config_dir();
+// console.log('cfreader.config_path: ' + cfreader.config_path);
 
 // Stubs that can be used before logger is loaded
 var logger = {
@@ -155,7 +194,7 @@ cfreader.get_cache_key = function (name, options) {
     return result;
 };
 
-cfreader.read_config = function(name, type, cb, options) {
+cfreader.read_config = function (name, type, cb, options) {
     // Store arguments used so we can re-use them by filename later
     // and so we know which files we've attempted to read so that
     // we can ignore any other files written to the same directory.
@@ -240,7 +279,7 @@ process.on('message', function (msg) {
     }
 });
 
-cfreader.empty_config = function(type) {
+cfreader.empty_config = function (type) {
     if (type === 'ini') {
         return { main: {} };
     }
@@ -252,7 +291,7 @@ cfreader.empty_config = function(type) {
     }
 };
 
-cfreader.load_config = function(name, type, options) {
+cfreader.load_config = function (name, type, options) {
     var result;
 
     switch (type) {
@@ -293,7 +332,7 @@ cfreader.load_config = function(name, type, options) {
     return result;
 };
 
-cfreader.load_json_config = function(name) {
+cfreader.load_json_config = function (name) {
     var result = cfreader.empty_config('json');
     var cache_key = cfreader.get_cache_key(name);
     try {
@@ -365,7 +404,7 @@ cfreader.process_file_overrides = function (name, result) {
     }
 };
 
-cfreader.load_yaml_config = function(name) {
+cfreader.load_yaml_config = function (name) {
     var result = cfreader.empty_config('yaml');
     try {
         if (fs.existsSync(name)) {
@@ -419,7 +458,7 @@ cfreader.init_booleans = function (options, result) {
     return bool_matches;
 };
 
-cfreader.load_ini_config = function(name, options) {
+cfreader.load_ini_config = function (name, options) {
     var result       = cfreader.empty_config('ini');
     var current_sect = result.main;
     var current_sect_name = 'main';
@@ -435,7 +474,7 @@ cfreader.load_ini_config = function(name, options) {
         var setter;
         var pre = '';
 
-        lines.forEach(function(line) {
+        lines.forEach(function (line) {
             if (regex.comment.test(line)) {
                 return;
             }
@@ -506,7 +545,7 @@ cfreader.load_ini_config = function(name, options) {
     return result;
 };
 
-cfreader.load_flat_config = function(name, type) {
+cfreader.load_flat_config = function (name, type) {
     var result = cfreader.empty_config();
 
     try {
@@ -522,7 +561,7 @@ cfreader.load_flat_config = function(name, type) {
             }
             var lines  = data.split(/\r\n|\r|\n/);
 
-            lines.forEach( function(line) {
+            lines.forEach( function (line) {
                 var line_data;
                 if (regex.comment.test(line)) {
                     return;
@@ -562,7 +601,7 @@ cfreader.load_flat_config = function(name, type) {
     return result;
 };
 
-cfreader.load_binary_config = function(name, type) {
+cfreader.load_binary_config = function (name, type) {
     try {
         if (fs.existsSync(name)) {
             return fs.readFileSync(name);

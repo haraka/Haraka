@@ -110,7 +110,7 @@ exports.load_tls_opts = {
 };
 
 exports.register = {
-    setUp : function(done) {
+    setUp : function (done) {
         this.plugin = new Plugin('tls');
 
         // overload load_pem to get files from tests/config
@@ -131,7 +131,7 @@ exports.register = {
 };
 
 exports.dont_register = {
-    setUp : function(done) {
+    setUp : function (done) {
         this.plugin = new Plugin('tls');
 
         // overload load_pem to get files from tests/config

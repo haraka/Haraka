@@ -22,7 +22,7 @@ try {
 
 // provides a common socket for attaching
 // and detaching from either main socket, or crypto socket
-function pluggableStream(socket) {
+function pluggableStream (socket) {
     stream.Stream.call(this);
     this.readable = this.writable = true;
     this._timeout = 0;
@@ -144,16 +144,16 @@ pluggableStream.prototype.setTimeout = function (timeout) {
     return this.targetsocket.setTimeout(timeout);
 };
 
-function pipe(cleartext, socket) {
+function pipe (cleartext, socket) {
     cleartext.socket = socket;
 
-    function onerror(e) {
+    function onerror (e) {
         if (cleartext._controlReleased) {
             cleartext.emit('error', e);
         }
     }
 
-    function onclose() {
+    function onclose () {
         socket.removeListener('error', onerror);
         socket.removeListener('close', onclose);
     }
@@ -163,7 +163,7 @@ function pipe(cleartext, socket) {
 }
 
 if (ocsp) {
-    function pseudoTLSServer() {
+    function pseudoTLSServer () {
         EventEmitter.call(this);
     }
     util.inherits(pseudoTLSServer, EventEmitter);
@@ -171,8 +171,8 @@ if (ocsp) {
     var ocspCache = new ocsp.Cache();
     var pseudoServ = new pseudoTLSServer();
 
-    pseudoServ.on('OCSPRequest', function(cert, issuer, cb2) {
-        ocsp.getOCSPURI(cert, function(err, uri) {
+    pseudoServ.on('OCSPRequest', function (cert, issuer, cb2) {
+        ocsp.getOCSPURI(cert, function (err, uri) {
             log.logdebug('OCSP Request, URI: ' + uri + ', err=' +err);
             if (err) {
                 return cb(err);
@@ -185,7 +185,7 @@ if (ocsp) {
             };
 
             // look for a cached value first
-            ocspCache.probe(req.id, function(_x, result) {
+            ocspCache.probe(req.id, function (_x, result) {
                 log.logdebug('OCSP cache result: ' + util.inspect(result));
                 if (result) {
                     cb2(_x, result.response);
@@ -197,7 +197,7 @@ if (ocsp) {
         });
     });
 
-    exports.shutdown = function() {
+    exports.shutdown = function () {
         log.logdebug('Cleaning ocspCache. How many keys? ' + Object.keys(ocspCache.cache).length);
         Object.keys(ocspCache.cache).forEach(function (key) {
             var e = ocspCache.cache[key];
@@ -208,7 +208,7 @@ if (ocsp) {
 
 exports.ocsp = ocsp;
 
-function _getSecureContext(options) {
+function _getSecureContext (options) {
     if (secureContext) return secureContext;
 
     if (options === undefined) options = {};
@@ -230,7 +230,7 @@ function _getSecureContext(options) {
     return secureContext;
 }
 
-function createServer(cb) {
+function createServer (cb) {
     var serv = net.createServer(function (cryptoSocket) {
 
         var socket = new pluggableStream(cryptoSocket);
@@ -261,11 +261,11 @@ function createServer(cb) {
 
             pipe(cleartext, cryptoSocket);
 
-            cleartext.on('error', function(exception) {
+            cleartext.on('error', function (exception) {
                 socket.emit('error', exception);
             });
 
-            cleartext.on('secure', function() {
+            cleartext.on('secure', function () {
                 log.logdebug('TLS secured.');
                 var cert = cleartext.getPeerCertificate();
                 if (cleartext.getCipher) {
@@ -323,13 +323,13 @@ function connect (port, host, cb) {
 
         pipe(cleartext, cryptoSocket);
 
-        cleartext.on('error', function(err) {
+        cleartext.on('error', function (err) {
             if (err.reason) {
                 log.logerror("client TLS error: " + err);
             }
         });
 
-        cleartext.on('secureConnect', function() {
+        cleartext.on('secureConnect', function () {
             log.logdebug('client TLS secured.');
             var cert = cleartext.getPeerCertificate();
             if (cleartext.getCipher) {
