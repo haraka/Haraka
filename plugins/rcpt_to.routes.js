@@ -7,7 +7,7 @@ var urlparser = require('url');
 
 exports.register = function() {
     var plugin = this;
-    plugin.inherits('redis');
+    plugin.inherits('haraka-plugin-redis');
 
     plugin.cfg = {};
     plugin.route_list={};
