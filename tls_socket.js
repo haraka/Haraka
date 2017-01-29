@@ -222,8 +222,7 @@ function _getSecureContext (options) {
        	// options.sessionTimeout = 1;
     }
 
-    var secureContext = tls.createSecureContext(options);
-    return secureContext;
+    return tls.createSecureContext(options);
 }
 
 function createServer (cb) {
