@@ -16,14 +16,15 @@ var Address = require('address-rfc2821').Address;
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 exports.register = function (next) {
     var plugin = this;
-    plugin.inherits('redis');
+    plugin.inherits('haraka-plugin-redis');
 
     plugin.load_config();
 
     this.register_hook('init_master', 'init_redis_plugin');
     this.register_hook('init_child',  'init_redis_plugin');
 
-    this.register_hook('rcpt_ok', 'hook_rcpt_ok');
+    // redundant - using the special hook_ nomenclature
+    // this.register_hook('rcpt_ok', 'hook_rcpt_ok');
 };
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
