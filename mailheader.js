@@ -56,9 +56,8 @@ Header.prototype.parse = function (lines) {
 };
 
 function try_convert (data, encoding) {
-    var converter;
     try {
-        converter = new Iconv(encoding, "UTF-8");
+        let converter = new Iconv(encoding, "UTF-8");
         data = converter.convert(data);
     }
     catch (err) {
@@ -66,7 +65,7 @@ function try_convert (data, encoding) {
         logger.logwarn("initial iconv conversion from " + encoding + " to UTF-8 failed: " + err.message);
         if (err.code !== 'EINVAL') {
             try {
-                converter = new Iconv(encoding, "UTF-8//TRANSLIT//IGNORE");
+                let converter = new Iconv(encoding, "UTF-8//TRANSLIT//IGNORE");
                 data = converter.convert(data);
             }
             catch (e) {

@@ -229,7 +229,7 @@ exports.filters = {
 
         var dupe = false;
         var line;
-        while (line = lines.pop()) {
+        while ((line = lines.pop())) {
             lines.forEach(function (l) {
                 dupe = dupe || line === l;
             });
