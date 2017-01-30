@@ -315,7 +315,7 @@ DKIMObject.prototype.end = function () {
             self.debug(self.identity + ': got DNS record: ' + record);
             var rec = record.replace(/\r?\n/g, '').replace(/\s+/g,'');
             var split = rec.split(';');
-            for (var j=0; j<split.length; j++) {
+            for (let j=0; j<split.length; j++) {
                 var split2 = split[j].split('=');
                 if (split2[0]) self.dns_fields[split2[0]] = split2[1];
             }
@@ -366,7 +366,7 @@ DKIMObject.prototype.end = function () {
                     }
                     else if (flag === 's') {
                         // 'i' and 'd' domain much match exactly
-                        var j = self.fields.i;
+                        let j = self.fields.i;
                         j = j.substr(j.indexOf('@')+1, j.length);
                         if (j !== self.fields.d) {
                             return self.result('domain mismatch', 'invalid');

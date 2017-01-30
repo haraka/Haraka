@@ -503,7 +503,7 @@ exports.send_email = function () {
     // Set data_lines to lines in contents
     if (typeof contents == 'string') {
         var match;
-        while (match = utils.line_regexp.exec(contents)) {
+        while ((match = utils.line_regexp.exec(contents))) {
             var line = match[1];
             line = line.replace(/\r?\n?$/, '\r\n'); // make sure it ends in \r\n
             if (dot_stuffed === false && line.length >= 3 && line.substr(0,1) === '.') {
@@ -535,7 +535,7 @@ function stream_line_reader (stream, transaction, cb) {
     function process_data (data) {
         current_data += data.toString();
         var results;
-        while (results = utils.line_regexp.exec(current_data)) {
+        while ((results = utils.line_regexp.exec(current_data))) {
             var this_line = results[1];
             current_data = current_data.slice(this_line.length);
             if (!(current_data.length || this_line.length)) {
@@ -543,7 +543,7 @@ function stream_line_reader (stream, transaction, cb) {
             }
             transaction.add_data(new Buffer(this_line));
         }
-    };
+    }
 
     function process_end () {
         if (current_data.length) {
@@ -552,7 +552,7 @@ function stream_line_reader (stream, transaction, cb) {
         current_data = '';
         transaction.message_stream.add_line_end();
         cb();
-    };
+    }
 
     stream.on('data', process_data);
     stream.once('end', process_end);
@@ -769,16 +769,15 @@ exports.get_tls_options = function (mx) {
         'requestCert', 'honorCipherOrder', 'rejectUnauthorized'
     ];
 
-
-    for (var i = 0; i < config_options.length; i++) {
-        var opt = config_options[i];
+    for (let i = 0; i < config_options.length; i++) {
+        let opt = config_options[i];
         if (tls_config.main[opt] === undefined) { continue; }
         tls_options[opt] = tls_config.main[opt];
     }
 
     if (tls_config.outbound) {
-        for (var i = 0; i < config_options.length; i++) {
-            var opt = config_options[i];
+        for (let i = 0; i < config_options.length; i++) {
+            let opt = config_options[i];
             if (tls_config.outbound[opt] === undefined) { continue; }
             tls_options[opt] = tls_config.outbound[opt];
         }
@@ -1271,7 +1270,7 @@ function get_pool (port, host, local_addr, is_unix_socket, connect_timeout, pool
         server.notes.pool[name] = pool;
     }
     return server.notes.pool[name];
-};
+}
 
 // Get a socket for the given attributes.
 function get_client (port, host, local_addr, is_unix_socket, callback) {
@@ -1284,7 +1283,7 @@ function get_client (port, host, local_addr, is_unix_socket, callback) {
         socket.__acquired = true;
         callback(null, socket);
     });
-};
+}
 
 function release_client (socket, port, host, local_addr, error) {
     logger.logdebug("[outbound] release_client: " + host + ":" + port + " to " + local_addr);
@@ -1868,7 +1867,7 @@ HMailItem.prototype.populate_bounce_message = function (from, to, reason, cb) {
             if (headers_done === false) {
                 buf += data;
                 var results;
-                while (results = utils.line_regexp.exec(buf)) {
+                while ((results = utils.line_regexp.exec(buf))) {
                     var this_line = results[1];
                     if (this_line === '\n' || this_line == '\r\n') {
                         headers_done = true;

@@ -1,0 +1,10 @@
+{
+    "globals": {
+        "OK": true,
+        "CONT": true,
+        "DENY": true,
+        "DENYSOFT": true,
+        "DENYDISCONNECT": true,
+        "DENYSOFTDISCONNECT": true
+    }
+}

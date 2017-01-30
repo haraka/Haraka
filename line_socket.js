@@ -18,7 +18,7 @@ function setup_line_processor (socket) {
     socket.process_data = function (data) {
         current_data += data;
         var results;
-        while (results = utils.line_regexp.exec(current_data)) {
+        while ((results = utils.line_regexp.exec(current_data))) {
             var this_line = results[1];
             current_data = current_data.slice(this_line.length);
             socket.emit('line', this_line);

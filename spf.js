@@ -77,7 +77,7 @@ SPF.prototype.return_const = function (qualifier) {
 SPF.prototype.expand_macros = function (str) {
     var macro = /%{([slodipvh])((?:(?:\d+)?r?)?)?([-.+,/_=])?}/ig;
     var match;
-    while (match = macro.exec(str)) {
+    while ((match = macro.exec(str))) {
         // match[1] = macro-letter
         // match[2] = transformers
         // match[3] = delimiter
@@ -223,7 +223,7 @@ SPF.prototype.check_host = function (ip, domain, mail_from, cb) {
             // Skip blanks
             var obj;
             if (!split[i]) continue;
-            if (match = (mech_regexp1.exec(split[i]) || mech_regexp2.exec(split[i]))) {
+            if ((match = (mech_regexp1.exec(split[i]) || mech_regexp2.exec(split[i])))) {
                 // match[1] = qualifier
                 // match[2] = mechanism
                 // match[3] = optional args
@@ -254,7 +254,7 @@ SPF.prototype.check_host = function (ip, domain, mail_from, cb) {
                 obj[match[2]] = [ match[1], match[3] ];
                 mech_array.push(obj);
             }
-            else if (match = mod_regexp.exec(split[i])) {
+            else if ((match = mod_regexp.exec(split[i]))) {
                 self.log_debug('found modifier: ' + match);
                 // match[1] = modifier
                 // match[2] = name

@@ -19,6 +19,7 @@
 //   inner-esmtp-cmd  ::= ("MAIL FROM:" reverse-path)   /
 //                        ("RCPT TO:" forward-path)
 
+/* eslint no-control-regex: 0 */
 var chew_regexp = /\s+([A-Za-z0-9][A-Za-z0-9\-]*(?:=[^= \x00-\x1f]+)?)$/;
 
 exports.parse = function (type, line, strict) {

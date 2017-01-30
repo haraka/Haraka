@@ -375,7 +375,7 @@ cfreader.process_file_overrides = function (name, result) {
     var cache_key = cfreader.get_cache_key(name);
     if (cfreader._config_cache[cache_key]) {
         var ck_keys = Object.keys(cfreader._config_cache[cache_key]);
-        for (var i=0; i<ck_keys.length; i++) {
+        for (let i=0; i<ck_keys.length; i++) {
             if (ck_keys[i].substr(0,1) === '!') {
                 delete cfreader._config_cache[path.join(cfreader.config_path, ck_keys[i].substr(1))];
             }
@@ -386,7 +386,7 @@ cfreader.process_file_overrides = function (name, result) {
     // configuration file data using by prefixing the
     // outer variable name with ! e.g. !smtp.ini
     var keys = Object.keys(result);
-    for (var i=0; i<keys.length; i++) {
+    for (let i=0; i<keys.length; i++) {
         if (keys[i].substr(0,1) === '!') {
             var ofp = path.join(cfreader.config_path, keys[i].substr(1));
             cfreader._overrides[ofp] = true;
@@ -619,5 +619,4 @@ cfreader.load_binary_config = function (name, type) {
         }
     }
 };
-var fs = require('fs');
 logger = require('./logger');

@@ -84,7 +84,7 @@ function DSN (code, msg, def, subject, detail) {
     if (Array.isArray(this.msg)) {
         this.reply = [];
         var m;
-        while (m = this.msg.shift()) {
+        while ((m = this.msg.shift())) {
             this.reply.push([this.cls, this.sub, this.det].join('.') + ' ' + m);
         }
     }

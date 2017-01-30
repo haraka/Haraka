@@ -313,8 +313,9 @@ Body.prototype.try_iconv = function (buf, enc) {
         return;
     }
 
+    var converter;
     try {
-        var converter = new Iconv(enc, "UTF-8");
+        converter = new Iconv(enc, "UTF-8");
         this.bodytext = converter.convert(buf).toString();
     }
     catch (err) {
@@ -324,7 +325,7 @@ Body.prototype.try_iconv = function (buf, enc) {
         if (err.code !== 'EINVAL') {
             // Perform the conversion again, but ignore any errors
             try {
-                var converter = new Iconv(enc, 'UTF-8//TRANSLIT//IGNORE');
+                converter = new Iconv(enc, 'UTF-8//TRANSLIT//IGNORE');
                 this.bodytext = converter.convert(buf).toString();
             }
             catch (e) {

@@ -160,10 +160,11 @@ function pipe (cleartext, socket) {
     socket.on('close', onclose);
 }
 
+function pseudoTLSServer () {
+    EventEmitter.call(this);
+}
+
 if (ocsp) {
-    function pseudoTLSServer () {
-        EventEmitter.call(this);
-    }
     util.inherits(pseudoTLSServer, EventEmitter);
 
     var ocspCache = new ocsp.Cache();
@@ -173,7 +174,7 @@ if (ocsp) {
         ocsp.getOCSPURI(cert, function (err, uri) {
             log.logdebug('OCSP Request, URI: ' + uri + ', err=' +err);
             if (err) {
-                return cb(err);
+                return cb2(err);
             }
 
             var req = ocsp.request.generate(cert, issuer);
@@ -216,10 +217,10 @@ function _getSecureContext (options) {
         options.rejectUnauthorized = false;
     }
     if (!options.sessionIdContext) {
-       	options.sessionIdContext = 'haraka';
+        options.sessionIdContext = 'haraka';
     }
     if (!options.sessionTimeout) {
-       	// options.sessionTimeout = 1;
+        // options.sessionTimeout = 1;
     }
 
     return tls.createSecureContext(options);
@@ -271,7 +272,7 @@ function createServer (cb) {
                     cleartext.authorizationError, cert, cipher);
             });
 
-//            cleartext._controlReleased = true;
+            // cleartext._controlReleased = true;
 
             socket.cleartext = cleartext;
 
@@ -333,7 +334,7 @@ function connect (port, host, cb) {
             if (cb2) cb2(cleartext.authorized, cleartext.authorizationError, cert, cipher);
         });
 
-//      cleartext._controlReleased = true;
+        // cleartext._controlReleased = true;
         socket.cleartext = cleartext;
 
         if (socket._timeout) {

@@ -217,10 +217,10 @@ Plugin.prototype._get_code = function (pp) {
     }
     catch (err) {
         if (config.get('smtp.ini').main.ignore_bad_plugins) {
-            logger.logcrit('Loading plugin ' + name + ' failed: ' + err);
+            logger.logcrit('Loading plugin ' + plugin.name + ' failed: ' + err);
             return;
         }
-        throw 'Loading plugin ' + name + ' failed: ' + err;
+        throw 'Loading plugin ' + plugin.name + ' failed: ' + err;
     }
 }
 

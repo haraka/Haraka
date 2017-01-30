@@ -2,9 +2,11 @@
   "plugins": [
     "haraka"
   ],
-  "extends": ["plugin:haraka/recommended"],
+  "extends": ["eslint:recommended", "plugin:haraka/recommended"],
   "rules": {
     "no-console": 0,
-    "no-empty": ["error", { "allowEmptyCatch": true }]
+    "no-empty": ["error", { "allowEmptyCatch": true }],
+    "no-cond-assign": ["error", "except-parens"],
+    "no-constant-condition": ["error", { "checkLoops": false }]
   }
 }
