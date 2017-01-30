@@ -41,6 +41,7 @@ function SMTPClient (port, host, connect_timeout, idle_timeout) {
     this.command = 'greeting';
     this.response = [];
     this.connected = false;
+    this.authenticating=false;
     this.authenticated = false;
     this.auth_capabilities = [];
     this.host = host;
@@ -65,13 +66,21 @@ function SMTPClient (port, host, connect_timeout, idle_timeout) {
             return;
         }
 
-        if (client.command === 'auth') {
-            if (code.match(/^3/) && cont === 'VXNlcm5hbWU6') {
+        if (client.command === 'auth' || client.authenticating) {
+            logger.loginfo('SERVER RESPONCE, CLIENT ' + client.command + ", authenticating=" + client.authenticating + ",code="+code + ",cont="+cont+",msg=" +msg);
+            if (code.match(/^3/) && msg === 'VXNlcm5hbWU6') {
                 client.emit('auth_username');
                 return;
             }
-            else if (code.match(/^3/) && cont === 'UGFzc3dvcmQ6') {
+            else if (code.match(/^3/) && msg === 'UGFzc3dvcmQ6') {
                 client.emit('auth_password');
+                return;
+            } else if (code.match(/^2/) && client.authenticating) {
+                //TODO: logging
+                logger.loginfo('AUTHENTICATED');
+                client.authenticating = false;
+                client.authenticated = true;
+                client.emit('auth');
                 return;
             }
         }
@@ -186,7 +195,6 @@ SMTPClient.prototype.load_tls_config = function (plugin) {
     var tls_options = {};
     this.tls_config = net_utils.load_tls_ini();
     var config_options = ['key','cert','ciphers','requestCert','rejectUnauthorized'];
-
     for (var i = 0; i < config_options.length; i++) {
         var opt = config_options[i];
         if (this.tls_config.main[opt] === undefined) { continue; }
@@ -360,7 +368,7 @@ exports.get_client_plugin = function (plugin, connection, c, callback) {
     pool.acquire(function (err, smtp_client) {
         connection.logdebug(plugin, 'Got smtp_client: ' + smtp_client.uuid);
 
-        var secured = false;
+        var secured = false;        
 
         smtp_client.load_tls_config(plugin);
 
@@ -382,7 +390,7 @@ exports.get_client_plugin = function (plugin, connection, c, callback) {
 
         var helo = function (command) {
             if (smtp_client.xclient) {
-                smtp_client.send_command(command, connection.hello.host);
+                smtp_client.send_command(command, connection.hello_host);
             }
             else {
                 smtp_client.send_command(command, plugin.config.get('me'));
@@ -394,12 +402,13 @@ exports.get_client_plugin = function (plugin, connection, c, callback) {
         smtp_client.on('capabilities', function () {
             var on_secured = function () {
                 secured = true;
+                smtp_client.secured = true;
                 smtp_client.emit('greeting', 'EHLO');
             };
             for (var line in smtp_client.response) {
                 if (smtp_client.response[line].match(/^XCLIENT/)) {
                     if (!smtp_client.xclient) {
-                        smtp_client.send_command('XCLIENT', 'ADDR=' + connection.remote.ip);
+                        smtp_client.send_command('XCLIENT', 'ADDR=' + connection.remote_ip);
                         return;
                     }
                 }
@@ -410,6 +419,7 @@ exports.get_client_plugin = function (plugin, connection, c, callback) {
                         c.enable_tls)
                     {
                         smtp_client.socket.on('secure', on_secured);
+                        smtp_client.secured = false;  // have to wait in forward plugin before we can do auth, even if capabilities are there on first EHLO                         
                         smtp_client.send_command('STARTTLS');
                         return;
                     }
@@ -457,6 +467,10 @@ exports.get_client_plugin = function (plugin, connection, c, callback) {
         });
 
         smtp_client.on('auth', function () {
+            // if authentication has been handled by plugin(s)
+            if (smtp_client.authenticating) {
+                return;
+            }
             if (smtp_client.is_dead_sender(plugin, connection)) {
                 return;
             }
@@ -484,7 +498,7 @@ exports.get_client_plugin = function (plugin, connection, c, callback) {
 
         if (smtp_client.connected) {
             if (smtp_client.xclient) {
-                smtp_client.send_command('XCLIENT', 'ADDR=' + connection.remote.ip);
+                smtp_client.send_command('XCLIENT', 'ADDR=' + connection.remote_ip);
             }
             else {
                 smtp_client.emit('helo');
@@ -521,7 +535,6 @@ function get_hostport (connection, server_notes, config_arg) {
         return { host: c.host, port: c.port };
     }
     else {
-        // current behavior in get_pool is to default to localhost:25
         logger.logwarn("[smtp_client_pool] forwarding_host_pool or host and port " +
                 "were not found in config file");
         throw new Error("You must specify either forwarding_host_pool or host and port");
