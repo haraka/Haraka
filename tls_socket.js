@@ -10,8 +10,6 @@ var stream    = require('stream');
 var log       = require('./logger');
 var EventEmitter = require('events');
 
-var secureContext;
-
 var ocsp;
 try {
     ocsp      = require('ocsp');
@@ -209,8 +207,6 @@ if (ocsp) {
 exports.ocsp = ocsp;
 
 function _getSecureContext (options) {
-    if (secureContext) return secureContext;
-
     if (options === undefined) options = {};
 
     if (options.requestCert === undefined) {
@@ -221,13 +217,12 @@ function _getSecureContext (options) {
     }
     if (!options.sessionIdContext) {
        	options.sessionIdContext = 'haraka';
-    };
+    }
     if (!options.sessionTimeout) {
        	// options.sessionTimeout = 1;
-    };
+    }
 
-    secureContext = tls.createSecureContext(options);
-    return secureContext;
+    return tls.createSecureContext(options);
 }
 
 function createServer (cb) {
@@ -250,7 +245,7 @@ function createServer (cb) {
                 if (options.enableOCSPStapling) {
                     if (ocsp) {
                         options.server = pseudoServ;
-                        pseudoServ._sharedCreds = secureContext;
+                        pseudoServ._sharedCreds = options.secureContext;
                     } else {
                         log.logerror("OCSP Stapling cannot be enabled because the ocsp module is not loaded");
                     }
