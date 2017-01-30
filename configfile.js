@@ -5,6 +5,8 @@ var fs   = require('fs');
 var path = require('path');
 var yaml = require('js-yaml');
 
+var logger = getStubLogger();
+
 // for "ini" type files
 var regex = exports.regex = {
     section:        /^\s*\[\s*([^\]]*?)\s*\]\s*$/,
@@ -37,7 +39,7 @@ var config_dir_candidates = [
 
 function get_path_to_config_dir () {
     if (process.env.HARAKA) {
-        // console.log('process.env.HARAKA: ' + process.env.HARAKA);
+        // logger.logdebug('process.env.HARAKA: ' + process.env.HARAKA);
         cfreader.config_path = path.join(process.env.HARAKA, 'config');
         return;
     }
@@ -64,24 +66,26 @@ function get_path_to_config_dir () {
             }
         }
         catch (ignore) {
-            console.error(ignore.message);
+            logger.logerror(ignore.message);
         }
     }
 }
 get_path_to_config_dir();
-// console.log('cfreader.config_path: ' + cfreader.config_path);
+// logger.logdebug('cfreader.config_path: ' + cfreader.config_path);
 
-// Stubs that can be used before logger is loaded
-var logger = {
-    logdebug: function () {
-        console.log.apply(console, arguments);
-    },
-    loginfo: function () {
-        console.log.apply(console, arguments);
-    },
-    logerror: function () {
-        console.error.apply(console, arguments);
-    },
+function getStubLogger () {
+    // stubs used before logger is loaded
+    return {
+        logdebug: function () {
+            console.log.apply(console, arguments);
+        },
+        loginfo: function () {
+            console.log.apply(console, arguments);
+        },
+        logerror: function () {
+            console.error.apply(console, arguments);
+        },
+    }
 }
 
 cfreader.on_watch_event = function (name, type, options, cb) {
