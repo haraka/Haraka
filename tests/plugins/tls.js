@@ -17,28 +17,28 @@ var _set_up = function (done) {
 
 exports.plugin = {
     setUp : _set_up,
-    'should have function register' : function (test) {
+    'has function register' : function (test) {
         test.expect(2);
         test.ok(this.plugin);
         test.equal('function', typeof this.plugin.register);
         test.done();
     },
-    'should have function load_tls_ini' : function (test) {
+    'has function load_tls_ini' : function (test) {
         test.expect(1);
         test.equal('function', typeof this.plugin.load_tls_ini);
         test.done();
     },
-    'should have function upgrade_connection' : function (test) {
+    'has function upgrade_connection' : function (test) {
         test.expect(1);
         test.equal('function', typeof this.plugin.upgrade_connection);
         test.done();
     },
-    'should have function advertise_starttls' : function (test) {
+    'has function advertise_starttls' : function (test) {
         test.expect(1);
         test.equal('function', typeof this.plugin.advertise_starttls);
         test.done();
     },
-    'should have function emit_upgrade_msg' : function (test) {
+    'has function emit_upgrade_msg' : function (test) {
         test.expect(1);
         test.equal('function', typeof this.plugin.emit_upgrade_msg);
         test.done();
@@ -104,7 +104,7 @@ exports.load_tls_opts = {
     'TLS dhparams loaded' : function (test) {
         test.expect(1);
         this.plugin.load_tls_opts();
-        test.equal(this.plugin.tls_opts.dhparam.toString(), '-----BEGIN DH PARAMETERS-----\nMIGHAoGBAMylA+U3JgfrXqnNYJXQN70nRWjzA4sndjkjW+hLhHgQ/K8Ndwj7lfQz\ng95rLJOuvjEAkYqSANhaVNnKge6FqMM0FdW0/gFSfAh7PZJsOt9ypQRvyyX8/P3T\nzW4WTRaHNBOala5yT7pxXrzpIbkaUXAkrk2E9TjqD4pjgk9VYtFrAgEC\n-----END DH PARAMETERS-----\n');
+        test.equal(this.plugin.tls_opts.dhparam.toString(), '-----BEGIN DH PARAMETERS-----\nMIIBCAKCAQEA5u0Bg9gCrKvYbkCmUe7cZUjZYFbqvbo9UPaR27K5yPklpy2Fy7bT\n+Jbzb/C0zHRD3mx3hoapa/3jB1Zhw31cxNmmwGvblpWNjToBoSydVDAY2BphJxHn\nCMEz3VGqiA4FXKx0R+jLeq5p5rTEuMbXTyxnj/hJesquORc2sy8L410Kw+6UvbPE\ntw9WKwzrpdMxwVSme2voHlpLZuvGqE/paxxnp0kmFp/esda2Aj8xVMEtAMh8lw8v\nfPaeTO94I4/SKJtzLl8j9J6mrq+aTYjljMryt2GJwZNrH41CPuOZYb5MyGAGPCWW\nl/RlqtnAit2IQ4VA1MrITAzoepC144w5CwIBAg==\n-----END DH PARAMETERS-----\n');
         test.done();
     },
 };
