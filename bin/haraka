@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-/*eslint no-shadow: ["error", { "allow": ["config", "smtp_ini"] }]*/
 
 // this script takes inspiration from:
 // https://github.com/visionmedia/express/blob/master/bin/express
@@ -132,7 +131,7 @@ function mkDir (dstPath) {
     try {
         if (fs.statSync(dstPath).isDirectory()) return;
     }
-    catch (ignore) {};
+    catch (ignore) {}
 
     try {
         fs.mkdirSync(dstPath, fs.statSync(__dirname).mode);
@@ -140,7 +139,7 @@ function mkDir (dstPath) {
     }
     catch (e) {
         // File exists
-        if (e.errno = 17) {
+        if (e.errno == 17) {
             warning(e.message);
         }
         else {
@@ -186,13 +185,13 @@ function copyFile (srcFile, dstFile) {
             // File exists
             warning("EEXIST, File exists '" + dstFile + "'");
             return;
-        };
+        }
         // Something other than a file exists
         throw "EEXIST but not a file: '" + dstFile + "'";
     }
     catch (e) {
         // File NOT exists
-        if (e.errno = 2) {
+        if (e.errno == 2) {
             fs.writeFileSync(dstFile, fs.readFileSync(srcFile));
             create(dstFile)
         }
@@ -298,6 +297,10 @@ function createFile (filePath, data, info) {
     }
 }
 
+var config;
+var logger;
+var outbound;
+var plugins;
 if (parsed.version) {
     console.log("\033[32;40mHaraka.js\033[0m — Version: " + ver);
 }
@@ -340,7 +343,7 @@ else if (parsed.help) {
             var pager_split = process.env.PAGER.split(/ +/);
             pager = pager_split.shift();
             md_path = pager_split.concat(md_path);
-        };
+        }
 
         var less  = spawn( pager, md_path, { stdio: 'inherit' } );
         less.on('exit', function () {
@@ -367,10 +370,10 @@ else if (parsed.qlist) {
         fail("qlist option requires config path");
     }
     process.env.HARAKA = parsed.configs;
-    var logger = require(path.join(base, "logger"));
+    logger = require(path.join(base, "logger"));
     if (!parsed.verbose)
         logger.log = function () {} // disable logging for this
-    var outbound = require(path.join(base, "outbound"));
+    outbound = require(path.join(base, "outbound"));
     outbound.list_queue(function (err, qlist) {
         qlist.forEach(function (todo) {
             console.log(sprintf("Q: %s rcpt:%d from:%s domain:%s", todo.file, todo.rcpt_to.length, todo.mail_from.toString(), todo.domain));
@@ -383,10 +386,10 @@ else if (parsed.qstat) {
         fail("qlist option requires config path");
     }
     process.env.HARAKA = parsed.configs;
-    var logger = require(path.join(base, "logger"));
+    logger = require(path.join(base, "logger"));
     if (!parsed.verbose)
         logger.log = function () {} // disable logging for this
-    var outbound = require(path.join(base, "outbound"));
+    outbound = require(path.join(base, "outbound"));
     outbound.stat_queue(function (err, stats) {
         console.log(stats);
         process.exit();
@@ -398,7 +401,7 @@ else if (parsed.qunstick) {
     }
     var domain = parsed.qunstick.toLowerCase();
     process.env.HARAKA = parsed.configs;
-    var logger = require(path.join(base, "logger"));
+    logger = require(path.join(base, "logger"));
     if (!parsed.verbose)
         logger.log = function () {} // disable logging for this
     var cb = function () {
@@ -416,12 +419,11 @@ else if (parsed.graceful) {
         fail("graceful option requires config path");
     }
     process.env.HARAKA = parsed.configs;
-    var logger = require(path.join(base, "logger"));
+    logger = require(path.join(base, "logger"));
     if (!parsed.verbose)
         logger.log = function () {} // disable logging for this
-    var config = require(path.join(base, "config"));
-    var smtp_ini = config.get("smtp.ini");
-    if (!smtp_ini.main.nodes) {
+    config = require(path.join(base, "config"));
+    if (!config.get("smtp.ini").main.nodes) {
         console.log("Graceful restart not possible without `nodes` value in smtp.ini");
         process.exit();
     }
@@ -453,10 +455,10 @@ else if (parsed.order) {
         require('module')._initPaths(); // Horrible hack
     }
     require(path.join(base, 'configfile')).watch_files = false;
-    var logger = require(path.join(base, "logger"));
+    logger = require(path.join(base, "logger"));
     if (!parsed.verbose)
         logger.log = function () {} // disable logging for this
-    var plugins = require(path.join(base, "plugins"));
+    plugins = require(path.join(base, "plugins"));
     plugins.load_plugins();
     console.log('');
     var hooks = Object.keys(plugins.registered_hooks);
@@ -489,7 +491,7 @@ else if (parsed.test) {
         require('module')._initPaths(); // Horrible hack
     }
     require(path.join(base, 'configfile')).watch_files = false;
-    var logger = require(path.join(base, "logger"));
+    logger = require(path.join(base, "logger"));
     logger.loglevel = logger.levels.PROTOCOL;
 
     // Attempt to load message early
@@ -504,7 +506,7 @@ else if (parsed.test) {
         }
     }
 
-    var plugins = require(path.join(base, "plugins"));
+    plugins = require(path.join(base, "plugins"));
     plugins.server = { notes: {} };
     plugins.load_plugins((parsed.test && parsed.test[0] !== 'all') ? parsed.test : null);
     var Connection = require(path.join(base, "connection"));
@@ -577,6 +579,7 @@ else if (parsed.test) {
         // Add data to stream
         if (msg) {
             var buf = msg;
+            var offset;
             while ((offset = utils.indexOfLF(buf)) !== -1) {
                 var line = buf.slice(0, offset+1);
                 if (buf.length > offset) {
@@ -634,11 +637,11 @@ else if (parsed.configs) {
         fail( "No such directory: " + base_dir + "\n" + err_msg );
     }
 
-    var smtp_ini = path.join(base_dir,'config','smtp.ini');
+    var smtp_ini_path = path.join(base_dir,'config','smtp.ini');
     var smtp_json = path.join(base_dir,'config','smtp.json');
     var smtp_yaml = path.join(base_dir,'config','smtp.yaml');
-    if (!fs.existsSync(smtp_ini) && !fs.existsSync(smtp_json) && !fs.existsSync(smtp_yaml)) {
-        fail( "No smtp.ini at: " + smtp_ini + "\n" + err_msg );
+    if (!fs.existsSync(smtp_ini_path) && !fs.existsSync(smtp_json) && !fs.existsSync(smtp_yaml)) {
+        fail( "No smtp.ini at: " + smtp_ini_path + "\n" + err_msg );
     }
 
     process.argv[1] = haraka_path;
@@ -667,7 +670,7 @@ else {
 }
 
 function send_internal_command (cmd, done) {
-    var config = require(path.join(base, "config"));
+    config = require(path.join(base, "config"));
     var key = config.get("internalcmd_key");
     var smtp_ini = config.get("smtp.ini");
     var listen_addrs = require(path.join(base, "server")).get_listen_addrs(smtp_ini.main);

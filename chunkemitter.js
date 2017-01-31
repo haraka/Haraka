@@ -1,3 +1,5 @@
+'use strict';
+
 var util = require('util');
 var EventEmitter = require('events').EventEmitter;
 
@@ -28,7 +30,7 @@ if (!Buffer.concat) {
 
         if (typeof length !== 'number') {
             length = 0;
-            for (var i = 0; i < list.length; i++) {
+            for (let i = 0; i < list.length; i++) {
                 buf = list[i];
                 length += buf.length;
             }
@@ -37,7 +39,7 @@ if (!Buffer.concat) {
         var buffer = new Buffer(length);
         var pos = 0;
 
-        for (var i = 0; i < list.length; i++) {
+        for (let i = 0; i < list.length; i++) {
             buf = list[i];
             buf.copy(buffer, pos);
             pos += buf.length;

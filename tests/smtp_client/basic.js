@@ -93,15 +93,15 @@ exports.get_client(server, function (err, smtp_client) {
         if (reading_body && line == '.\r\n') {
             reading_body = false;
         }
-        if (!reading_body) {
-            if (line == 'DATA\r\n') {
-                reading_body = true;
-            }
-            while (true) {
-                var line = data.shift();
-                this.emit('line', line + '\r\n');
-                if (line[3] == ' ') break;
-            }
+        if (reading_body) return true;
+
+        if (line == 'DATA\r\n') {
+            reading_body = true;
+        }
+        while (true) {
+            var line2 = data.shift();
+            this.emit('line', line2 + '\r\n');
+            if (line2[3] == ' ') break;
         }
 
         return true;

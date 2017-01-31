@@ -16,6 +16,7 @@ var queue_dir = test_queue_dir;
 var util_hmailitem = require('./../fixtures/util_hmailitem');
 var async          = require('async');
 var dns            = require('dns');
+var constants      = require('haraka-constants');
 
 
 var outbound_context = {
