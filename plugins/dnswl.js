@@ -1,10 +1,10 @@
 'use strict';
 // dnswl plugin
 
-exports.register = function() {
+exports.register = function () {
     var plugin = this;
-    plugin.load_dnswl_ini();
     plugin.inherits('dns_list_base');
+    plugin.load_dnswl_ini();
 
     // IMPORTANT: don't run this on hook_rcpt otherwise we're an open relay...
     ['ehlo','helo','mail'].forEach(function (hook) {
