@@ -24,21 +24,17 @@ var DSN         = require('./dsn');
 var FsyncWriteStream = require('./fsync_writestream');
 var generic_pool = require('generic-pool');
 var server      = require('./server');
-var ResultStore = require('haraka-results');
+var ResultStore = require('./result_store');
 
 var core_consts = require('constants');
 var WRITE_EXCL  = core_consts.O_CREAT | core_consts.O_TRUNC | core_consts.O_WRONLY | core_consts.O_EXCL;
 
-var MAX_UNIQ = 10000;
 var my_hostname = require('os').hostname().replace(/\\/, '\\057').replace(/:/, '\\072');
-
-// File Name Format: $time_$attempts_$pid_$uniq.$host
-var fn_re = /^(\d+)_(\d+)_(\d+)(_\d+\..*)$/
 
 // TODO: For testability, this should be accessible
 var queue_dir = path.resolve(config.get('queue_dir') || (process.env.HARAKA + '/queue'));
 
-var uniq = Math.round(Math.random() * MAX_UNIQ);
+
 var cfg;
 var platformDOT = ((['win32','win64'].indexOf( process.platform ) !== -1) ? '' : '__tmp__') + '.';
 exports.load_config = function () {
@@ -144,13 +140,13 @@ exports.scan_queue_pids = function (cb) {
                 return fs.unlink(file, function () {});
             }
 
-            var match = fn_re.exec(file);
-            if (!match) {
+            var parts = _qfile.parts(file);
+            if (!parts) {
                 self.logerror("Unrecognized file in queue directory: " + queue_dir + '/' + file);
                 return;
             }
 
-            pids[match[3]] = true;
+            pids[parts.pid] = true;
         });
 
         return cb(null, Object.keys(pids));
@@ -185,7 +181,7 @@ exports.drain_pools = function () {
     }
     for (var p in server.notes.pool) {
         logger.logdebug("[outbound] Drain pools: Draining SMTP connection pool " + p);
-        server.notes.pool[p].drain(function () {
+        server.notes.pool[p].drain(function() {
             if (!server.notes.pool[p]) return;
             server.notes.pool[p].destroyAllNow();
         });
@@ -269,12 +265,20 @@ exports.load_queue_files = function (pid, cb_name, files, callback) {
 
     if (pid) {
         // Pre-scan to rename PID files to my PID:
-        this.loginfo("Grabbing queue files for pid: " + pid);
+        self.loginfo("Grabbing queue files for pid: " + pid);
         async.eachLimit(files, 200, function (file, cb) {
-            var match = fn_re.exec(file);
-            if (match && match[3] == pid) {
-                var next_process = match[1];
-                var new_filename = match[1] + "_" + match[2] + "_" + process.pid + match[4];
+
+            var parts = _qfile.parts(file);
+            if (parts && parts.pid === parseInt(pid)) {
+                var next_process = parts.next_attempt;
+                // maintain some original details for the rename
+                var new_filename = _qfile.name({
+                    arrival      : parts.arrival,
+                    uid          : parts.uid,
+                    next_attempt : parts.next_attempt,
+                    attempts     : parts.attempts,
+                });
+                // self.loginfo("new_filename: ", new_filename);
                 fs.rename(path.join(queue_dir, file), path.join(queue_dir, new_filename), function (err) {
                     if (err) {
                         logger.logerror("Unable to rename queue file: " + file +
@@ -330,8 +334,7 @@ exports.load_queue_files = function (pid, cb_name, files, callback) {
                 return false;
             }
 
-            var matches = file.match(fn_re);
-            if (!matches) {
+            if (!_qfile.parts(file)) {
                 logger.logerror("Unrecognized file in queue folder: " + file);
                 return false;
             }
@@ -340,15 +343,15 @@ exports.load_queue_files = function (pid, cb_name, files, callback) {
         async.mapSeries(files.filter(good_file), function (file, cb) {
             // logger.logdebug("Loading queue file: " + file);
             if (cb_name === '_add_file') {
-                var matches = file.match(fn_re);
-                var next_process = matches[1];
+                var parts = _qfile.parts(file);
+                var next_process = parts.next_attempt;
 
                 if (next_process <= self.cur_time) {
-                    // logger.logdebug("File needs processing now");
+                    logger.logdebug("File needs processing now");
                     load_queue.push(file);
                 }
                 else {
-                    // logger.logdebug("File needs processing later: " + (next_process - self.cur_time) + "ms");
+                    logger.logdebug("File needs processing later: " + (next_process - self.cur_time) + "ms");
                     temp_fail_queue.add(next_process - self.cur_time, function () { load_queue.push(file);});
                 }
                 cb();
@@ -392,8 +395,8 @@ exports._list_file = function (file, cb) {
                 todo_struct.mail_from = new Address (todo_struct.mail_from);
                 todo_struct.file = file;
                 todo_struct.full_path = path.join(queue_dir, file);
-                var match = fn_re.exec(file);
-                todo_struct.pid = match[3];
+                var parts = _qfile.parts(file);
+                todo_struct.pid = (parts && parts.pid) || null;
                 cb(null, todo_struct);
             }
         });
@@ -421,18 +424,91 @@ exports.stats = function () {
     return results;
 };
 
-function _next_uniq () {
-    var result = uniq++;
-    if (uniq >= MAX_UNIQ) {
-        uniq = 1;
-    }
-    return result;
-}
 
-function _fname () {
-    var time = new Date().getTime();
-    return time + '_0_' + process.pid + "_" + _next_uniq() + '.' + my_hostname;
-}
+var QFILECOUNTER = 0;
+var _qfile = exports.qfile = {
+    // File Name Format: $arrival_$nextattempt_$attempts_$pid_$uniquetag_$counter_$host
+    name : function (overrides) {
+        var o = overrides || {};
+        var time = _qfile.time();
+        return [
+            o.arrival       || time,
+            o.next_attempt  || time,
+            o.attempts      || 0,
+            o.pid           || process.pid,
+            o.uid           || _qfile.rnd_unique(),
+            _qfile.next_counter(),
+            o.host          || my_hostname
+        ].join('_');
+    },
+
+    time : function () {
+        return new Date().getTime();
+    },
+
+    next_counter: function () {
+        QFILECOUNTER = (QFILECOUNTER < 10000)?QFILECOUNTER+1:0;
+        return QFILECOUNTER;
+    },
+
+    rnd_unique: function (len) {
+        len = len || 6;
+        var chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+        var result = [];
+        for (var i = len; i > 0; --i){
+            result.push(chars[Math.floor(Math.random() * chars.length)]);
+        }
+        return result.join('');
+    },
+
+    parts : function (filename) {
+        if (!filename){
+            throw new Error("No filename provided");
+        }
+
+        var PARTS_EXPECTED_OLD = 4;
+        var PARTS_EXPECTED_CURRENT = 7;
+        var p = filename.split('_');
+
+        // bail on unknown split lengths
+        if (p.length !== PARTS_EXPECTED_OLD
+            && p.length !== PARTS_EXPECTED_CURRENT){
+            return null;
+        }
+
+        var time = _qfile.time();
+        if (p.length === PARTS_EXPECTED_OLD){
+            // parse the previous string structure
+            // $nextattempt_$attempts_$pid_$uniq.$host
+            // 1484878079415_0_12345_8888.mta1.example.com
+            // var fn_re = /^(\d+)_(\d+)_(\d+)(_\d+\..*)$/
+            // match[1] = $nextattempt
+            // match[2] = $attempts
+            // match[3] = $pid
+            // match[4] = $uniq.$my_hostname
+            var fn_re = /^(\d+)_(\d+)_(\d+)_(\d+)\.(.*)$/;
+            var match = filename.match(fn_re);
+            if (!match){
+                return null;
+            }
+            p = match.slice(1); // grab the capture groups minus the pattern
+            p.splice(3,1,_qfile.rnd_unique(),_qfile.next_counter());  // add a fresh UID and counter
+            p.unshift(time);  // prepend current timestamp -- potentially inaccurate, but non-critical and shortlived
+        }
+
+        return {
+            arrival      : parseInt(p[0]),
+            next_attempt : parseInt(p[1]),
+            attempts     : parseInt(p[2]),
+            pid          : parseInt(p[3]),
+            uid          : p[4],
+            counter      : parseInt(p[5]),
+            host         : p[6],
+            age          : time - parseInt(p[0])
+        };
+    }
+};
+
 
 exports.send_email = function () {
 
@@ -503,7 +579,7 @@ exports.send_email = function () {
     // Set data_lines to lines in contents
     if (typeof contents == 'string') {
         var match;
-        while ((match = utils.line_regexp.exec(contents))) {
+        while (match = utils.line_regexp.exec(contents)) {
             var line = match[1];
             line = line.replace(/\r?\n?$/, '\r\n'); // make sure it ends in \r\n
             if (dot_stuffed === false && line.length >= 3 && line.substr(0,1) === '.') {
@@ -535,7 +611,7 @@ function stream_line_reader (stream, transaction, cb) {
     function process_data (data) {
         current_data += data.toString();
         var results;
-        while ((results = utils.line_regexp.exec(current_data))) {
+        while (results = utils.line_regexp.exec(current_data)) {
             var this_line = results[1];
             current_data = current_data.slice(this_line.length);
             if (!(current_data.length || this_line.length)) {
@@ -543,7 +619,7 @@ function stream_line_reader (stream, transaction, cb) {
             }
             transaction.add_data(new Buffer(this_line));
         }
-    }
+    };
 
     function process_end () {
         if (current_data.length) {
@@ -552,7 +628,7 @@ function stream_line_reader (stream, transaction, cb) {
         current_data = '';
         transaction.message_stream.add_line_end();
         cb();
-    }
+    };
 
     stream.on('data', process_data);
     stream.once('end', process_end);
@@ -640,7 +716,7 @@ exports.send_trans_email = function (transaction, next) {
 exports.process_delivery = function (ok_paths, todo, hmails, cb) {
     var self = this;
     this.loginfo("Processing domain: " + todo.domain);
-    var fname = _fname();
+    var fname = _qfile.name();
     var tmp_path = path.join(queue_dir, platformDOT + fname);
     var ws = new FsyncWriteStream(tmp_path, { flags: WRITE_EXCL });
     ws.on('close', function () {
@@ -671,7 +747,7 @@ exports.process_delivery = function (ok_paths, todo, hmails, cb) {
 
 exports.build_todo = function (todo, ws, write_more) {
     // Replacer function to exclude items from the queue file header
-    function exclude_from_json (key, value) {
+    function exclude_from_json(key, value) {
         switch (key) {
             case 'message_stream':
                 return undefined;
@@ -696,6 +772,7 @@ exports.build_todo = function (todo, ws, write_more) {
     ws.once('drain', write_more);
 };
 
+
 exports.split_to_new_recipients = function (hmail, recipients, response, cb) {
     var self = this;
     if (recipients.length === hmail.todo.rcpt_to.length) {
@@ -703,7 +780,7 @@ exports.split_to_new_recipients = function (hmail, recipients, response, cb) {
         hmail.refcount++;
         return cb(hmail);
     }
-    var fname = _fname();
+    var fname = _qfile.name();
     var tmp_path = path.join(queue_dir, platformDOT + fname);
     var ws = new FsyncWriteStream(tmp_path, { flags: WRITE_EXCL });
     var err_handler = function (err, location) {
@@ -769,15 +846,16 @@ exports.get_tls_options = function (mx) {
         'requestCert', 'honorCipherOrder', 'rejectUnauthorized'
     ];
 
-    for (let i = 0; i < config_options.length; i++) {
-        let opt = config_options[i];
+
+    for (var i = 0; i < config_options.length; i++) {
+        var opt = config_options[i];
         if (tls_config.main[opt] === undefined) { continue; }
         tls_options[opt] = tls_config.main[opt];
     }
 
     if (tls_config.outbound) {
-        for (let i = 0; i < config_options.length; i++) {
-            let opt = config_options[i];
+        for (var i = 0; i < config_options.length; i++) {
+            var opt = config_options[i];
             if (tls_config.outbound[opt] === undefined) { continue; }
             tls_options[opt] = tls_config.outbound[opt];
         }
@@ -824,17 +902,18 @@ exports.TODOItem = TODOItem;
 
 var dummy_func = function () {};
 
+
 function HMailItem (filename, filePath, notes) {
     events.EventEmitter.call(this);
-    var matches = filename.match(fn_re);
-    if (!matches) {
+    var parts = _qfile.parts(filename);
+    if (!parts) {
         throw new Error("Bad filename: " + filename);
     }
     this.path         = filePath;
     this.filename     = filename;
-    this.next_process = matches[1];
-    this.num_failures = matches[2];
-    this.pid          = matches[3];
+    this.next_process = parts.next_attempt;
+    this.num_failures = parts.attempts;
+    this.pid          = parts.pid;
     this.notes        = notes || {};
     this.refcount     = 1;
     this.todo         = null;
@@ -1055,7 +1134,7 @@ exports.lookup_mx = function lookup_mx (domain, cb) {
         return 1;
     };
 
-    dns.resolveMx(domain, function (err, addresses) {
+    dns.resolveMx(domain, function(err, addresses) {
         if (process_dns(err, addresses)) {
             return;
         }
@@ -1064,7 +1143,7 @@ exports.lookup_mx = function lookup_mx (domain, cb) {
         // wrap_mx() to return same thing as resolveMx() does.
         wrap_mx = function (a) { return {priority:0,exchange:a}; };
         // IS: IPv6 compatible
-        dns.resolve(domain, function (err2, addresses2) {
+        dns.resolve(domain, function(err2, addresses2) {
             if (process_dns(err2, addresses2)) {
                 return;
             }
@@ -1235,10 +1314,10 @@ function get_pool (port, host, local_addr, is_unix_socket, connect_timeout, pool
                     callback("Outbound connection timed out to " + host + ":" + port, null);
                 });
             },
-            validate: function (socket) {
+            validate: function(socket) {
                 return socket.writable;
             },
-            destroy: function (socket) {
+            destroy: function(socket) {
                 logger.logdebug('[outbound] destroying pool entry for ' + host + ':' + port);
                 // Remove pool object from server notes once empty
                 var size = pool.getPoolSize();
@@ -1270,7 +1349,7 @@ function get_pool (port, host, local_addr, is_unix_socket, connect_timeout, pool
         server.notes.pool[name] = pool;
     }
     return server.notes.pool[name];
-}
+};
 
 // Get a socket for the given attributes.
 function get_client (port, host, local_addr, is_unix_socket, callback) {
@@ -1283,7 +1362,7 @@ function get_client (port, host, local_addr, is_unix_socket, callback) {
         socket.__acquired = true;
         callback(null, socket);
     });
-}
+};
 
 function release_client (socket, port, host, local_addr, error) {
     logger.logdebug("[outbound] release_client: " + host + ":" + port + " to " + local_addr);
@@ -1841,7 +1920,7 @@ HMailItem.prototype.try_deliver_host_on_socket = function (mx, host, port, socke
     }
 };
 
-HMailItem.prototype.extend_rcpt_with_dsn = function (rcpt, dsn) {
+HMailItem.prototype.extend_rcpt_with_dsn = function(rcpt, dsn) {
     rcpt.dsn_code = dsn.code;
     rcpt.dsn_msg = dsn.msg;
     rcpt.dsn_status = "" + dsn.cls + "." + dsn.sub + "." + dsn.det;
@@ -1867,7 +1946,7 @@ HMailItem.prototype.populate_bounce_message = function (from, to, reason, cb) {
             if (headers_done === false) {
                 buf += data;
                 var results;
-                while ((results = utils.line_regexp.exec(buf))) {
+                while (results = utils.line_regexp.exec(buf)) {
                     var this_line = results[1];
                     if (this_line === '\n' || this_line == '\r\n') {
                         headers_done = true;
@@ -1914,7 +1993,7 @@ HMailItem.prototype.populate_bounce_message = function (from, to, reason, cb) {
  * @param header
  * @param cb - a callback for fn(err, message_body_lines)
  */
-HMailItem.prototype.populate_bounce_message_with_headers = function (from, to, reason, header, cb) {
+HMailItem.prototype.populate_bounce_message_with_headers = function(from, to, reason, header, cb) {
     var self = this;
     var CRLF = '\r\n';
 
@@ -2209,11 +2288,12 @@ HMailItem.prototype.deferred_respond = function (retval, msg, params) {
         delay = parseInt(msg, 10) * 1000;
     }
 
-    var until = Date.now() + delay;
-
     this.loginfo("Temp failing " + this.filename + " for " + (delay/1000) + " seconds: " + params.err);
-
-    var new_filename = this.filename.replace(/^(\d+)_(\d+)_/, until + '_' + this.num_failures + '_');
+    var parts = _.qfile.parts(this.filename);
+    parts.next_attempt = Date.now() + delay;
+    parts.attempts = this.num_failures;
+    var new_filename = _.qfile.name(parts);
+    // var new_filename = this`.filename.replace(/^(\d+)_(\d+)_/, until + '_' + this.num_failures + '_');
 
     var hmail = this;
     fs.rename(this.path, path.join(queue_dir, new_filename), function (err) {
