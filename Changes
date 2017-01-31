@@ -1,4 +1,15 @@
-2.8.12 - Jan NN, 2017
+
+2.8.13 - Jan   , 2017
+
+* Changes
+    * plugin/limit -> npm packaged haraka-plugin-limit
+    * plugin/rate_limit: folded into haraka-plugin-limit
+* New Features
+* Improvements
+* Bug Fixes
+
+
+2.8.12 - Jan 03, 2017
 
 * Changes
     * plugin/karma -> npm packaged haraka-plugin-karma #1747

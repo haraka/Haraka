@@ -15,6 +15,10 @@ function Config (root_path, no_overrides) {
         }
         return cfg;
     };
+    if (process.env.HARAKA_TEST_DIR) {
+        this.root_path = path.join(process.env.HARAKA_TEST_DIR, 'config');
+        return;
+    }
     if (process.env.HARAKA && !no_overrides) {
         this.overrides_path = root_path || cfreader.config_path;
         this.root_path = path.join(process.env.HARAKA, 'config');

@@ -14,8 +14,6 @@ var lines = [
 ];
 
 exports.outbound = {
-    // setUp : _set_up,
-    // tearDown : _tear_down,
     'converts \\n and \\r\\n line endings to \\r\\n' : function (test) {
         test.expect(2);
 
@@ -123,7 +121,12 @@ exports.qfile = {
 
 exports.get_tls_options = {
     setUp : function (done) {
+        process.env.HARAKA_TEST_DIR=path.resolve('tests');
         this.outbound = require('../outbound');
+        done();
+    },
+    tearDown: function (done) {
+        process.env.HARAKA_TEST_DIR='';
         done();
     },
     'gets TLS properties from tls.ini.main': function (test) {

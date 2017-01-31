@@ -48,7 +48,6 @@ logger.colors = {
 var stdout_is_tty = tty.isatty(process.stdout.fd);
 
 logger.colorize = function (color, str) {
-    if (!util.inspect.colors) { return str; }  // node util before Nov 2013
     if (!util.inspect.colors[color]) { return str; }  // unknown color
     return '\u001b[' + util.inspect.colors[color][0] + 'm' + str +
            '\u001b[' + util.inspect.colors[color][1] + 'm';
