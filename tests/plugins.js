@@ -93,6 +93,10 @@ exports.plugin_paths = {
         process.env.HARAKA = '';
         done();
     },
+    tearDown : function (done) {
+        process.env.HARAKA = '';
+        done();
+    },
     'CORE plugin: (tls)' : function (test) {
         var p = new plugin.Plugin('tls');
 
@@ -204,7 +208,10 @@ exports.plugin_config = {
         process.env.HARAKA = '';
         done();
     },
-
+    tearDown : function (done) {
+        process.env.HARAKA = '';
+        done();
+    },
     'CORE plugin: (tls)' : function (test) {
 
         var p = new plugin.Plugin('tls');
