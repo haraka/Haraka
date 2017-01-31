@@ -35,8 +35,17 @@ var my_hostname = require('os').hostname().replace(/\\/, '\\057').replace(/:/, '
 // File Name Format: $time_$attempts_$pid_$uniq.$host
 var fn_re = /^(\d+)_(\d+)_(\d+)(_\d+\..*)$/
 
-// TODO: For testability, this should be accessible
-var queue_dir = path.resolve(config.get('queue_dir') || (process.env.HARAKA + '/queue'));
+var queue_dir;
+if (config.get('queue_dir')) {
+    queue_dir = path.resolve(config.get('queue_dir'));
+}
+else if (process.env.HARAKA) {
+    queue_dir = path.resolve(process.env.HARAKA, 'queue');
+}
+else {
+    queue_dir = path.resolve('tests', 'test-queue');
+}
+
 
 var uniq = Math.round(Math.random() * MAX_UNIQ);
 var cfg;
@@ -218,16 +227,16 @@ exports.load_pid_queue = function (pid) {
 exports.ensure_queue_dir = function () {
     // No reason not to do this stuff syncronously -
     // this code is only run at start-up.
-    if (!fs.existsSync(queue_dir)) {
-        this.logdebug("Creating queue directory " + queue_dir);
-        try {
-            fs.mkdirSync(queue_dir, 493); // 493 == 0755
-        }
-        catch (err) {
-            if (err.code !== 'EEXIST') {
-                logger.logerror("Error creating queue directory: " + err);
-                throw err;
-            }
+    if (fs.existsSync(queue_dir)) return;
+
+    this.logdebug("Creating queue directory " + queue_dir);
+    try {
+        fs.mkdirSync(queue_dir, 493); // 493 == 0755
+    }
+    catch (err) {
+        if (err.code !== 'EEXIST') {
+            logger.logerror("Error creating queue directory: " + err);
+            throw err;
         }
     }
 };
