@@ -4,6 +4,7 @@
 exports.register = function () {
     var plugin = this;
     plugin.inherits('dns_list_base');
+
     plugin.load_dnswl_ini();
 
     // IMPORTANT: don't run this on hook_rcpt otherwise we're an open relay...
@@ -14,7 +15,9 @@ exports.register = function () {
 
 exports.load_dnswl_ini = function () {
     var plugin = this;
-    plugin.cfg = plugin.config.get('dnswl.ini', exports.load_dnswl_ini);
+    plugin.cfg = plugin.config.get('dnswl.ini', function () {
+        plugin.load_dnswl_ini();
+    });
 
     if (plugin.cfg.main.enable_stats) {
         plugin.logdebug('stats reporting enabled');
