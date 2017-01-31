@@ -181,7 +181,7 @@ exports.drain_pools = function () {
     }
     for (var p in server.notes.pool) {
         logger.logdebug("[outbound] Drain pools: Draining SMTP connection pool " + p);
-        server.notes.pool[p].drain(function() {
+        server.notes.pool[p].drain(function () {
             if (!server.notes.pool[p]) return;
             server.notes.pool[p].destroyAllNow();
         });
@@ -579,7 +579,7 @@ exports.send_email = function () {
     // Set data_lines to lines in contents
     if (typeof contents == 'string') {
         var match;
-        while (match = utils.line_regexp.exec(contents)) {
+        while ((match = utils.line_regexp.exec(contents))) {
             var line = match[1];
             line = line.replace(/\r?\n?$/, '\r\n'); // make sure it ends in \r\n
             if (dot_stuffed === false && line.length >= 3 && line.substr(0,1) === '.') {
@@ -611,7 +611,7 @@ function stream_line_reader (stream, transaction, cb) {
     function process_data (data) {
         current_data += data.toString();
         var results;
-        while (results = utils.line_regexp.exec(current_data)) {
+        while ((results = utils.line_regexp.exec(current_data))) {
             var this_line = results[1];
             current_data = current_data.slice(this_line.length);
             if (!(current_data.length || this_line.length)) {
@@ -619,7 +619,7 @@ function stream_line_reader (stream, transaction, cb) {
             }
             transaction.add_data(new Buffer(this_line));
         }
-    };
+    }
 
     function process_end () {
         if (current_data.length) {
@@ -628,7 +628,7 @@ function stream_line_reader (stream, transaction, cb) {
         current_data = '';
         transaction.message_stream.add_line_end();
         cb();
-    };
+    }
 
     stream.on('data', process_data);
     stream.once('end', process_end);
@@ -747,7 +747,7 @@ exports.process_delivery = function (ok_paths, todo, hmails, cb) {
 
 exports.build_todo = function (todo, ws, write_more) {
     // Replacer function to exclude items from the queue file header
-    function exclude_from_json(key, value) {
+    function exclude_from_json (key, value) {
         switch (key) {
             case 'message_stream':
                 return undefined;
@@ -854,10 +854,10 @@ exports.get_tls_options = function (mx) {
     }
 
     if (tls_config.outbound) {
-        for (var i = 0; i < config_options.length; i++) {
-            var opt = config_options[i];
-            if (tls_config.outbound[opt] === undefined) { continue; }
-            tls_options[opt] = tls_config.outbound[opt];
+        for (var j = 0; j < config_options.length; j++) {
+            var opt2 = config_options[j];
+            if (tls_config.outbound[opt2] === undefined) { continue; }
+            tls_options[opt2] = tls_config.outbound[opt2];
         }
     }
 
@@ -1134,7 +1134,7 @@ exports.lookup_mx = function lookup_mx (domain, cb) {
         return 1;
     };
 
-    dns.resolveMx(domain, function(err, addresses) {
+    dns.resolveMx(domain, function (err, addresses) {
         if (process_dns(err, addresses)) {
             return;
         }
@@ -1143,7 +1143,7 @@ exports.lookup_mx = function lookup_mx (domain, cb) {
         // wrap_mx() to return same thing as resolveMx() does.
         wrap_mx = function (a) { return {priority:0,exchange:a}; };
         // IS: IPv6 compatible
-        dns.resolve(domain, function(err2, addresses2) {
+        dns.resolve(domain, function (err2, addresses2) {
             if (process_dns(err2, addresses2)) {
                 return;
             }
@@ -1314,10 +1314,10 @@ function get_pool (port, host, local_addr, is_unix_socket, connect_timeout, pool
                     callback("Outbound connection timed out to " + host + ":" + port, null);
                 });
             },
-            validate: function(socket) {
+            validate: function (socket) {
                 return socket.writable;
             },
-            destroy: function(socket) {
+            destroy: function (socket) {
                 logger.logdebug('[outbound] destroying pool entry for ' + host + ':' + port);
                 // Remove pool object from server notes once empty
                 var size = pool.getPoolSize();
@@ -1349,7 +1349,7 @@ function get_pool (port, host, local_addr, is_unix_socket, connect_timeout, pool
         server.notes.pool[name] = pool;
     }
     return server.notes.pool[name];
-};
+}
 
 // Get a socket for the given attributes.
 function get_client (port, host, local_addr, is_unix_socket, callback) {
@@ -1362,7 +1362,7 @@ function get_client (port, host, local_addr, is_unix_socket, callback) {
         socket.__acquired = true;
         callback(null, socket);
     });
-};
+}
 
 function release_client (socket, port, host, local_addr, error) {
     logger.logdebug("[outbound] release_client: " + host + ":" + port + " to " + local_addr);
@@ -1920,7 +1920,7 @@ HMailItem.prototype.try_deliver_host_on_socket = function (mx, host, port, socke
     }
 };
 
-HMailItem.prototype.extend_rcpt_with_dsn = function(rcpt, dsn) {
+HMailItem.prototype.extend_rcpt_with_dsn = function (rcpt, dsn) {
     rcpt.dsn_code = dsn.code;
     rcpt.dsn_msg = dsn.msg;
     rcpt.dsn_status = "" + dsn.cls + "." + dsn.sub + "." + dsn.det;
@@ -1946,7 +1946,7 @@ HMailItem.prototype.populate_bounce_message = function (from, to, reason, cb) {
             if (headers_done === false) {
                 buf += data;
                 var results;
-                while (results = utils.line_regexp.exec(buf)) {
+                while ((results = utils.line_regexp.exec(buf))) {
                     var this_line = results[1];
                     if (this_line === '\n' || this_line == '\r\n') {
                         headers_done = true;
@@ -1993,7 +1993,7 @@ HMailItem.prototype.populate_bounce_message = function (from, to, reason, cb) {
  * @param header
  * @param cb - a callback for fn(err, message_body_lines)
  */
-HMailItem.prototype.populate_bounce_message_with_headers = function(from, to, reason, header, cb) {
+HMailItem.prototype.populate_bounce_message_with_headers = function (from, to, reason, header, cb) {
     var self = this;
     var CRLF = '\r\n';
 
@@ -2289,10 +2289,10 @@ HMailItem.prototype.deferred_respond = function (retval, msg, params) {
     }
 
     this.loginfo("Temp failing " + this.filename + " for " + (delay/1000) + " seconds: " + params.err);
-    var parts = _.qfile.parts(this.filename);
+    var parts = _qfile.parts(this.filename);
     parts.next_attempt = Date.now() + delay;
     parts.attempts = this.num_failures;
-    var new_filename = _.qfile.name(parts);
+    var new_filename = _qfile.name(parts);
     // var new_filename = this`.filename.replace(/^(\d+)_(\d+)_/, until + '_' + this.num_failures + '_');
 
     var hmail = this;
