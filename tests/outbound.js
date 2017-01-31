@@ -42,12 +42,12 @@ exports.outbound = {
 
 exports.get_tls_options = {
     setUp : function (done) {
-        process.env.HARAKA_TEST_CONFIG=path.resolve('tests');
+        process.env.HARAKA_TEST_DIR=path.resolve('tests');
         this.outbound = require('../outbound');
         done();
     },
     tearDown: function (done) {
-        process.env.HARAKA_TEST_CONFIG='';
+        process.env.HARAKA_TEST_DIR='';
         done();
     },
     'gets TLS properties from tls.ini.main': function (test) {

@@ -125,7 +125,7 @@ Plugin.prototype._get_config = function () {
         return exports.config.module_config(__dirname, process.env.HARAKA);
     }
     if (process.env.HARAKA_TEST_DIR) {
-        return exports.config.module_config(path.resolve(process.env.HARAKA_TEST_DIR));
+        return exports.config.module_config(process.env.HARAKA_TEST_DIR);
     }
 
     // Plain .js file, git mode - just look in this folder
