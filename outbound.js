@@ -31,9 +31,6 @@ var WRITE_EXCL  = core_consts.O_CREAT | core_consts.O_TRUNC | core_consts.O_WRON
 
 var my_hostname = require('os').hostname().replace(/\\/, '\\057').replace(/:/, '\\072');
 
-// File Name Format: $time_$attempts_$pid_$uniq.$host
-var fn_re = /^(\d+)_(\d+)_(\d+)(_\d+\..*)$/
-
 var queue_dir;
 if (config.get('queue_dir')) {
     queue_dir = path.resolve(config.get('queue_dir'));
