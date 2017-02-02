@@ -1,12 +1,36 @@
 
-2.8.13 - Jan   , 2017
+2.8.13 - Feb 03, 2017
 
 * Changes
-    * plugin/limit -> npm packaged haraka-plugin-limit
-    * plugin/rate_limit: folded into haraka-plugin-limit
+    * new [haraka-plugin-limit](https://github.com/haraka/haraka-plugin-limit) #1785
+        * replaces plugin/limit, plugin/rate_limit, and haraka-plugin-outbound-rate-limit
+    * p0f: skip on private IPs (normally empty) #1758
+    * spf: skip for outbound when context != myself #1763
+    * redis: plugins using redis can inherit redis config #1777
+    * redis: replace plugins/redis with haraka-plugin-redis #1786
+    * lint: require space before function declaration #1784
+    * lint: added eslint:recommended #1790
+    * logger: remove logger.colorize code for legacy node versions
 * New Features
+    * redis: add `redis_subscribe_pattern()` #1766
+    * queue/discard: add ENV that permits discarding #1791
 * Improvements
+    * rspamd: improve response parsing #1770
+    * restore Windows testing to working state #1755
+    * elasticsearch: use UTC dates for index creation #1771
+    * tls: fix dhparam usage example syntax #1774
+    * typo: logerr -> logerror #1776
+    * when generating long DKIM keys, include a BIND compatible folded key #1775
+    * in haraka-test-fixtures, access results via fixtures.results #1783
+    * integration test: end to end server testing #1791
 * Bug Fixes
+    * spf: restore functionality for relay context=myself #1759
+    * rate_limit:if incr creates a new record, assure it has a TTL #1781
+    * tls: do not create a top level secureContext #1787
+    * dnswl: swap lines to fix missing inherited methods #1793
+    * dnswl: fix config loader callback syntax #1794
+    * tests/plugins: unset process.env.HARAKA to avoid side effects that interfere with other tests
+    * remove auth_flat_file sample auth user #1796
 
 
 2.8.12 - Jan 03, 2017
@@ -117,7 +141,7 @@
     * Catch errors on header decode in rfc2231 #1599
     * Attachment plugin updates (#1606)
     * add outbound.ini pool_timeout example setting #1584
-  
+
 * Bug Fixes
     * Fixed some small documentation issues. #1573, #1616, #1612
     * Fixed AUTH PLAIN when it spreads over two lines. #1550
