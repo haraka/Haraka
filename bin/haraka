@@ -139,6 +139,7 @@ function mkDir (dstPath) {
     }
     catch (e) {
         // File exists
+        console.error(e);
         if (e.errno == 17) {
             warning(e.message);
         }
@@ -191,11 +192,12 @@ function copyFile (srcFile, dstFile) {
     }
     catch (e) {
         // File NOT exists
-        if (e.errno == 2) {
+        if (e.errno == -2) {
             fs.writeFileSync(dstFile, fs.readFileSync(srcFile));
             create(dstFile)
         }
         else {
+            console.log('copy ' + srcFile + ' to ' + dstFile);
             throw e;
         }
     }

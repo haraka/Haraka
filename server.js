@@ -476,8 +476,6 @@ Server.init_master_respond = function (retval, msg) {
         return;
     }
 
-    if (!c.outbound) return;
-
     // Running under cluster, fork children here, so that
     // cluster events can be registered in init_master hooks.
     outbound.scan_queue_pids(function (err, pids) {
