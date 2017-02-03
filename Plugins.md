@@ -1,5 +1,14 @@
-## Haraka Plugins
+# Haraka Plugins
 
+To create your own plugin, see:
+- the [plugin template](https://github.com/haraka/haraka-plugin-template) that includes all the boilerplate
+- the [Write a Plugin](https://github.com/haraka/Haraka/wiki/Write-a-Plugin) tutorial
+- the [Plugins](http://haraka.github.io/manual/Plugins.html) section of [the manual](https://haraka.github.io)
+
+## Plugin Registry
+
+A mostly comprehensive list of plugins known to be working and maintained.
+Create a PR adding yours to this list.
 
 - [access](https://github.com/haraka/Haraka/blob/master/docs/plugins/access.md)
 - [aliases](https://github.com/haraka/Haraka/blob/master/docs/plugins/aliases.md)
@@ -63,3 +72,5 @@
 - [tls](https://github.com/haraka/Haraka/blob/master/docs/plugins/tls.md)
 - [toobusy](https://github.com/haraka/Haraka/blob/master/docs/plugins/toobusy.md)
 - [xclient](https://github.com/haraka/Haraka/blob/master/docs/plugins/xclient.md)
+
+
