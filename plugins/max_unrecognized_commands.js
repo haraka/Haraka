@@ -1,7 +1,7 @@
 // Don't let the remote end spew us with unrecognized commands
 // Defaults to 10 max unrecognized commands
 
-exports.hook_connect = function(next, connection) {
+exports.hook_connect = function (next, connection) {
     var plugin = this;
     connection.results.add(plugin, {
         max: plugin.config.get('max_unrecognized_commands') || 10,
@@ -10,7 +10,7 @@ exports.hook_connect = function(next, connection) {
     return next();
 };
 
-exports.hook_unrecognized_command = function(next, connection, cmd) {
+exports.hook_unrecognized_command = function (next, connection, cmd) {
     var plugin = this;
 
     connection.results.add(plugin, {fail: "Unrecognized command: " + cmd, emit: true});

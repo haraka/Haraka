@@ -146,7 +146,7 @@ exports.load_ini_config = {
         test.deepEqual({ first: undefined, second: undefined}, r.empty_values);
         test.done();
     },
-    'test.ini, array' : function(test){
+    'test.ini, array' : function (test){
         test.expect(2);
         var r = this.cfreader.load_ini_config('tests/config/test.ini');
         test.deepEqual(['first_host', 'second_host', 'third_host'], r.array_test.hostlist);
@@ -159,7 +159,7 @@ exports.load_ini_config = {
 exports.non_existing = {
     setUp: _set_up,
 
-    'empty object for JSON files': function(test) {
+    'empty object for JSON files': function (test) {
         test.expect(1);
         var result = this.cfreader.load_config(
                 'tests/config/non-existent.json',
@@ -168,7 +168,7 @@ exports.non_existing = {
         test.deepEqual(result, {});
         test.done();
     },
-    'empty object for YAML files': function(test) {
+    'empty object for YAML files': function (test) {
         test.expect(1);
         var result = this.cfreader.load_config(
                 'tests/config/non-existent.yaml',
@@ -177,7 +177,7 @@ exports.non_existing = {
         test.deepEqual(result, {});
         test.done();
     },
-    'null for binary file': function(test) {
+    'null for binary file': function (test) {
         test.expect(1);
         var result = this.cfreader.load_config(
                 'tests/config/non-existent.bin',
@@ -186,7 +186,7 @@ exports.non_existing = {
         test.equal(result, null);
         test.done();
     },
-    'null for flat file': function(test) {
+    'null for flat file': function (test) {
         test.expect(1);
         var result = this.cfreader.load_config(
                 'tests/config/non-existent.flat',
@@ -195,7 +195,7 @@ exports.non_existing = {
         test.deepEqual(result, null);
         test.done();
     },
-    'null for value file': function(test) {
+    'null for value file': function (test) {
         test.expect(1);
         var result = this.cfreader.load_config(
                 'tests/config/non-existent.value',
@@ -204,7 +204,7 @@ exports.non_existing = {
         test.deepEqual(result, null);
         test.done();
     },
-    'empty array for list file': function(test) {
+    'empty array for list file': function (test) {
         test.expect(1);
         var result = this.cfreader.load_config(
             'tests/config/non-existent.list',
@@ -213,7 +213,7 @@ exports.non_existing = {
         test.deepEqual(result, []);
         test.done();
     },
-    'template ini for INI file': function(test) {
+    'template ini for INI file': function (test) {
         test.expect(1);
         var result = this.cfreader.load_config(
                 'tests/config/non-existent.ini',

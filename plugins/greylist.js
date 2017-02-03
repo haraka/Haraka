@@ -51,7 +51,7 @@ exports.load_config_lists = function () {
     plugin.whitelist = {};
     plugin.list = {};
 
-    function load_list(type, file_name) {
+    function load_list (type, file_name) {
         plugin.whitelist[type] = {};
 
         var list = Object.keys(plugin.cfg[file_name]);
@@ -64,7 +64,7 @@ exports.load_config_lists = function () {
         plugin.logdebug('whitelist {' + type + '} loaded from ' + file_name + ' with ' + list.length + ' entries');
     }
 
-    function load_ip_list(type, file_name) {
+    function load_ip_list (type, file_name) {
         plugin.whitelist[type] = [];
 
         var list = Object.keys(plugin.cfg[file_name]);
@@ -86,7 +86,7 @@ exports.load_config_lists = function () {
         plugin.logdebug('whitelist {' + type + '} loaded from ' + file_name + ' with ' + plugin.whitelist[type].length + ' entries');
     }
 
-    function load_config_list(type, file_name) {
+    function load_config_list (type, file_name) {
         plugin.list[type] = Object.keys(plugin.cfg[file_name]);
 
         plugin.logdebug('list {' + type + '} loaded from ' + file_name + ' with ' + plugin.list[type].length + ' entries');

@@ -11,7 +11,7 @@ DKIMVerifyStream.prototype.debug = function (str) {
     plugin.logdebug(str);
 };
 
-exports.hook_data_post = function(next, connection) {
+exports.hook_data_post = function (next, connection) {
     var self = this;
     var txn = connection.transaction;
     var verifier = new DKIMVerifyStream(function (err, result, results) {

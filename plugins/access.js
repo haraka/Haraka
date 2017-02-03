@@ -4,7 +4,7 @@ var haddr     = require('address-rfc2822');
 var net_utils = require('haraka-net-utils');
 var utils     = require('haraka-utils');
 
-exports.register = function() {
+exports.register = function () {
     var plugin = this;
 
     plugin.init_config();      // init plugin.cfg
@@ -40,7 +40,7 @@ exports.register = function() {
     }
 };
 
-exports.init_config = function() {
+exports.init_config = function () {
     var plugin = this;
 
     plugin.cfg = {
@@ -213,7 +213,7 @@ exports.any = function (next, connection, params) {
     return next();
 };
 
-exports.rdns_access = function(next, connection) {
+exports.rdns_access = function (next, connection) {
     var plugin = this;
     if (!plugin.cfg.check.conn) { return next(); }
 
@@ -276,7 +276,7 @@ exports.rdns_access = function(next, connection) {
     return next();
 };
 
-exports.helo_access = function(next, connection, helo) {
+exports.helo_access = function (next, connection, helo) {
     var plugin = this;
     if (!plugin.cfg.check.helo) { return next(); }
 
@@ -290,7 +290,7 @@ exports.helo_access = function(next, connection, helo) {
     return next();
 };
 
-exports.mail_from_access = function(next, connection, params) {
+exports.mail_from_access = function (next, connection, params) {
     var plugin = this;
     if (!plugin.cfg.check.mail) { return next(); }
 
@@ -334,7 +334,7 @@ exports.mail_from_access = function(next, connection, params) {
     return next();
 };
 
-exports.rcpt_to_access = function(next, connection, params) {
+exports.rcpt_to_access = function (next, connection, params) {
     var plugin = this;
     if (!plugin.cfg.check.rcpt) { return next(); }
 
@@ -376,7 +376,7 @@ exports.rcpt_to_access = function(next, connection, params) {
     return next();
 };
 
-exports.data_any = function(next, connection) {
+exports.data_any = function (next, connection) {
     var plugin = this;
     if (!plugin.cfg.check.data && !plugin.cfg.check.any) {
         connection.transaction.results.add(plugin, {skip: 'data(disabled)'});

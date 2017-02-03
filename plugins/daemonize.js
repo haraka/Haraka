@@ -9,7 +9,7 @@ throw new Error('The daemonize plugin should not be used.' +
 // npm install daemon
 var daemon;
 try { daemon = require('daemon'); }
-catch (err) {};
+catch (err) {}
 
 var cfg;
 exports.register = function () {

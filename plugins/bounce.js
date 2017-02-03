@@ -86,7 +86,7 @@ exports.reject_all = function (next, connection, params) {
     return next(DENY, "No bounces accepted here");
 };
 
-exports.single_recipient = function(next, connection) {
+exports.single_recipient = function (next, connection) {
     var plugin = this;
     if (!plugin.cfg.check.single_recipient) return next();
     if (!plugin.has_null_sender(connection)) return next();
@@ -126,7 +126,7 @@ exports.single_recipient = function(next, connection) {
     return next(DENY, "this bounce message does not have 1 recipient");
 };
 
-exports.empty_return_path = function(next, connection) {
+exports.empty_return_path = function (next, connection) {
     var plugin = this;
     if (!plugin.cfg.check.empty_return_path) return next();
     if (!plugin.has_null_sender(connection)) return next();
