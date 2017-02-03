@@ -321,7 +321,6 @@ else if (parsed.help) {
         var md_paths = [
             path.join(base, 'docs', parsed.help + '.md'),
             path.join(base, 'docs', 'plugins', parsed.help + '.md'),
-            path.join(base, 'docs', 'deprecated', parsed.help + '.md'),
             path.join(base, 'node_modules', 'haraka-plugin-' + parsed.help, 'README.md'),
         ];
         if (parsed.configs) {
