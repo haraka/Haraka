@@ -18,12 +18,13 @@ exports.hook_data_post = function (next, connection) {
         return next();
     });
 
+    var start_time;
+
     var wsOnClose = function (error, stdout, stderr) {
         // Remove the temporary file
         fs.unlink(tmpfile, function (){});
 
         // Timing
-        var start_time;
         var end_time = Date.now();
         var elapsed = end_time - start_time;
 

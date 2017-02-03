@@ -155,7 +155,7 @@ exports.get_mx = function (next, hmail, domain) {
         .get(domain)
         .exec(function (err, replies) {
             if (err) {
-                connection.results.add(plugin, {err: err});
+                plugin.logerror(err);
                 return next();
             }
 

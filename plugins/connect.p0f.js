@@ -63,8 +63,8 @@ function P0FClient (path) {
 }
 
 P0FClient.prototype.shutdown = function () {
-    if (self.restart_interval) {
-        clearInterval(self.restart_interval);
+    if (this.restart_interval) {
+        clearInterval(this.restart_interval);
     }
 }
 

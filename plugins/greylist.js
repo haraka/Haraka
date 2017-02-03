@@ -3,7 +3,6 @@
 // version 0.1.4
 
 var util = require('util');
-var redis = require('redis');
 var tlds  = require('haraka-tld');
 var isIPv6 = require('net').isIPv6;
 
@@ -258,10 +257,10 @@ exports.process_tuple = function (connection, sender, rcpt, cb) {
         }
 
         return plugin.update_grey(key, !record, function (err2, created_record) {
-            var err2 = new Error('in black zone');
-            err2.record = created_record || record;
-            err2.notanerror = true;
-            return cb(err2, null);
+            var err3 = new Error('in black zone');
+            err3.record = created_record || record;
+            err3.notanerror = true;
+            return cb(err3, null);
         });
     });
 };

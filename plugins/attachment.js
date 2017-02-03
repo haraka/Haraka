@@ -1,3 +1,4 @@
+'use strict';
 /*eslint no-shadow: ["error", { "allow": ["file", "depth", "code", "signal"] }]*/
 // attachment
 
@@ -214,7 +215,7 @@ exports.unarchive_recursive = function (connection, f, archive_file_name, cb) {
                         }, plugin.cfg.timeout);
                         // Create WriteStream for this file
                         var tws = fs.createWriteStream(tmpfile, { "fd": fd });
-                        var err = "";
+                        err = "";
                         cmd.stderr.on('data', function (data) {
                             err += data;
                         });
@@ -404,15 +405,15 @@ exports.check_attachments = function (next, connection) {
 
     // Add in any wildcard configuration
     var ctype_wc = this.config.get('attachment.ctype.wc', 'list');
-    for (var i=0; i<ctype_wc.length; i++) {
+    for (let i=0; i<ctype_wc.length; i++) {
         ctype_config.push(utils.wildcard_to_regexp(ctype_wc[i]));
     }
     var file_wc = this.config.get('attachment.filename.wc', 'list');
-    for (var i=0; i<file_wc.length; i++) {
+    for (let i=0; i<file_wc.length; i++) {
         file_config.push(utils.wildcard_to_regexp(file_wc[i]));
     }
     var archive_wc = this.config.get('attachment.archive.filename.wc', 'list');
-    for (var i=0; i<archive_wc.length; i++) {
+    for (let i=0; i<archive_wc.length; i++) {
         archive_config.push(utils.wildcard_to_regexp(archive_wc[i]));
     }
 

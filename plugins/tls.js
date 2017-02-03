@@ -1,4 +1,5 @@
-// TLS is built into Haraka. Enabling this plugin advertises STARTTLS.
+'use strict';
+// TLS is built into Haraka. This plugin conditionally advertises STARTTLS.
 // see 'haraka -h tls' for help
 
 var net_utils = require('haraka-net-utils');
@@ -59,15 +60,15 @@ exports.load_tls_ini = function () {
         'key','cert','honorCipherOrder','ecdhCurve','dhparam',
         'secureProtocol','enableOCSPStapling'];
 
-    for (var i = 0; i < config_options.length; i++) {
-        var opt = config_options[i];
+    for (let i = 0; i < config_options.length; i++) {
+        let opt = config_options[i];
         if (plugin.cfg.main[opt] === undefined) { continue; }
         plugin.tls_opts[opt] = plugin.cfg.main[opt];
     }
 
     if (plugin.cfg.inbound) {
-        for (var i = 0; i < config_options.length; i++) {
-            var opt = config_options[i];
+        for (let i = 0; i < config_options.length; i++) {
+            let opt = config_options[i];
             if (plugin.cfg.inbound[opt] === undefined) { continue; }
             plugin.tls_opts[opt] = plugin.cfg.inbound[opt];
         }

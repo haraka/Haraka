@@ -48,6 +48,7 @@ exports.hook_connect = function (next, connection) {
                     if (!cfg.gbudb || (cfg.gbudb && !cfg.gbudb[gbudb.range])) {
                         return next(OK);
                     }
+                    // fall through
                 case 'caution':
                 case 'black':
                 case 'truncate':
@@ -71,7 +72,7 @@ exports.hook_connect = function (next, connection) {
                             case 'quarantine':
                                 connection.notes.gbudb.action = 'quarantine';
                                 connection.notes.quarantine = true;
-                                connection.notes.quarantine_action = [ OK, 'Message quarantined (' + txn.uuid + ')' ];
+                                connection.notes.quarantine_action = [ OK, 'Message quarantined (' + connection.transaction.uuid + ')' ];
                                 break;
                             case 'tag':
                                 connection.notes.gbudb.action = 'tag';
@@ -172,7 +173,7 @@ exports.hook_data_post = function (next, connection) {
                         }
                         else {
                             // Must be a header
-                            var match = /^([^: ]+):(?:\s*(.+))?$/.exec(line);
+                            match = /^([^: ]+):(?:\s*(.+))?$/.exec(line);
                             if (match) {
                                 headers.push({ header: match[1], value: (match[2] ? match[2] + '\r\n' : '\r\n') });
                             }
@@ -285,6 +286,7 @@ exports.hook_data_post = function (next, connection) {
                             break;
                         case 'tag':
                             tag_subject();
+                            // fall through
                         default:
                             return next();
                     }
