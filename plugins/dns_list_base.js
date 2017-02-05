@@ -79,16 +79,17 @@ exports.stats_incr_zone = function (err, zone, start) {
 };
 
 exports.init_redis = function () {
+    var plugin = this;
     if (redis_client) { return; }
 
     var redis = require('redis');
-    var host_port = this.redis_host.split(':');
+    var host_port = plugin.redis_host.split(':');
     var host = host_port[0] || '127.0.0.1';
     var port = parseInt(host_port[1], 10) || 6379;
 
     redis_client = redis.createClient(port, host);
     redis_client.on('error', function (err) {
-        self.logerror('Redis error: ' + err);
+        plugin.logerror('Redis error: ' + err);
         redis_client.quit();
         redis_client = null; // should force a reconnect
         // not sure if that's the right thing but better than nothing...

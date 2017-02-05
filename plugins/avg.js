@@ -41,7 +41,7 @@ exports.hook_data_post = function (next, connection) {
     var tmpfile = plugin.get_tmp_file(connection.transaction);
     var ws      = fs.createWriteStream(tmpfile);
 
-    ws.once('error', function(err) {
+    ws.once('error', function (err) {
         connection.results.add(plugin, {
             err: 'Error writing temporary file: ' + err.message
         });
@@ -49,7 +49,7 @@ exports.hook_data_post = function (next, connection) {
         return next(DENYSOFT, 'Virus scanner error (AVG)');
     });
 
-    ws.once('close', function() {
+    ws.once('close', function () {
         var start_time = Date.now();
         var socket = new sock.Socket();
         socket.setTimeout((plugin.cfg.main.connect_timeout || 10) * 1000);
@@ -58,7 +58,7 @@ exports.hook_data_post = function (next, connection) {
         var response = [];
 
         var do_next = function (code, msg) {
-            fs.unlink(tmpfile, function(){});
+            fs.unlink(tmpfile, function (){});
             return next(code, msg);
         };
 

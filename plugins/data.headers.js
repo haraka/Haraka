@@ -50,7 +50,7 @@ exports.load_headers_ini = function () {
     });
 };
 
-exports.duplicate_singular = function(next, connection) {
+exports.duplicate_singular = function (next, connection) {
     var plugin = this;
     if (!plugin.cfg.check.duplicate_singular) { return next(); }
 
@@ -86,7 +86,7 @@ exports.duplicate_singular = function(next, connection) {
     return next();
 };
 
-exports.missing_required = function(next, connection) {
+exports.missing_required = function (next, connection) {
     var plugin = this;
     if (!plugin.cfg.check.missing_required) { return next(); }
 
@@ -115,7 +115,7 @@ exports.missing_required = function(next, connection) {
     return next();
 };
 
-exports.invalid_return_path = function(next, connection) {
+exports.invalid_return_path = function (next, connection) {
     var plugin = this;
     if (!plugin.cfg.check.invalid_return_path) { return next(); }
 
@@ -354,8 +354,8 @@ exports.mailing_list = function (next, connection) {
         'Sender'             : [
             { mlm: 'majordomo',   start: 'owner-' },
         ],
-        'X-Mailman-Version'  : [ { mlm: 'mailman'   }, ],
-        'X-Majordomo-Version': [ { mlm: 'majordomo' }, ],
+        'X-Mailman-Version'  : [ { mlm: 'mailman'   } ],
+        'X-Majordomo-Version': [ { mlm: 'majordomo' } ],
         'X-Google-Loop'      : [ { mlm: 'googlegroups' } ],
     };
 

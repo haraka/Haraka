@@ -1,6 +1,6 @@
 // dnsbl plugin
 
-exports.register = function() {
+exports.register = function () {
     var plugin = this;
     plugin.inherits('dns_list_base');
 
@@ -86,7 +86,7 @@ exports.should_skip = function (connection) {
     return false;
 };
 
-exports.connect_first = function(next, connection) {
+exports.connect_first = function (next, connection) {
     var plugin = this;
     var remote_ip = connection.remote.ip;
 
@@ -111,7 +111,7 @@ exports.connect_first = function(next, connection) {
     });
 };
 
-exports.connect_multi = function(next, connection) {
+exports.connect_multi = function (next, connection) {
     var plugin = this;
     var remote_ip = connection.remote.ip;
 

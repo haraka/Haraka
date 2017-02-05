@@ -8,7 +8,7 @@ var vm_harness   = require('./fixtures/vm_harness');
 
 var queue_dir = path.resolve(__dirname, 'test-queue');
 
-var ensureTestQueueDirExists = function(done) {
+var ensureTestQueueDirExists = function (done) {
     fs.exists(queue_dir, function (exists) {
         if (exists) {
             done();
@@ -28,13 +28,13 @@ var removeTestQueueDir = function (done) {
     fs.exists(queue_dir, function (exists) {
         if (exists) {
             var files = fs.readdirSync(queue_dir);
-            files.forEach(function(file,index){
+            files.forEach(function (file,index){
                 var curPath = path.resolve(queue_dir, file);
                 if (fs.lstatSync(curPath).isDirectory()) { // recurse
                     return done(new Error('did not expect an sub folder here ("' + curPath + '")! cancel'));
                 }
             });
-            files.forEach(function(file,index){
+            files.forEach(function (file,index){
                 var curPath = path.resolve(queue_dir, file);
                 fs.unlinkSync(curPath);
             });

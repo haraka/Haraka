@@ -3,7 +3,7 @@
 var ipaddr = require('ipaddr.js');
 var isIPv6 = require('net').isIPv6;
 
-exports.register = function() {
+exports.register = function () {
     var plugin = this;
     plugin.load_config();
     plugin.register_hook('connect_init', 'early_talker');
@@ -36,7 +36,7 @@ exports.load_config = function () {
     });
 };
 
-exports.early_talker = function(next, connection) {
+exports.early_talker = function (next, connection) {
     var plugin = this;
     if (!plugin.pause) return next();
 
@@ -111,7 +111,7 @@ exports.ip_in_list = function (ip) {
  * @param  {Array} list A list of IP addresses / subnets
  * @return {Array}      The converted array
  */
-exports.load_ip_list = function(list) {
+exports.load_ip_list = function (list) {
     var whitelist = [];
 
     for (var i = 0; i < list.length; i++) {
