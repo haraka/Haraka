@@ -857,6 +857,8 @@ function HMailItem (filename, filePath, notes) {
 util.inherits(HMailItem, events.EventEmitter);
 exports.HMailItem = HMailItem;
 
+logger.add_log_methods(HMailItem.prototype, "outbound");
+
 // populate log functions - so we can use hooks
 for (var key in logger) {
     if (key.match(/^log\w/)) {
@@ -1222,6 +1224,7 @@ function _create_socket (port, host, local_addr, is_unix_socket, connect_timeout
     });
     socket.once('error', function (err) {
         socket.end();
+        var name = 'outbound::' + port + ':' + host + ':' + local_addr + ':' + pool_timeout;
         if (server.notes.pool[name]) {
             delete server.notes.pool[name];
         }
