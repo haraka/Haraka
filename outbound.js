@@ -857,6 +857,8 @@ function HMailItem (filename, filePath, notes) {
 util.inherits(HMailItem, events.EventEmitter);
 exports.HMailItem = HMailItem;
 
+logger.add_log_methods(HMailItem.prototype, "outbound");
+
 // populate log functions - so we can use hooks
 for (var key in logger) {
     if (key.match(/^log\w/)) {
@@ -1210,6 +1212,30 @@ var cram_md5_response = function (username, password, challenge) {
     return utils.base64(username + ' ' + digest);
 }
 
+function _create_socket (port, host, local_addr, is_unix_socket, connect_timeout, pool_timeout, callback) {
+    var socket = is_unix_socket ? sock.connect({path: host}) :
+        sock.connect({port: port, host: host, localAddress: local_addr});
+    socket.setTimeout(connect_timeout * 1000);
+    logger.logdebug('[outbound] host=' +
+        host + ' port=' + port + ' pool_timeout=' + pool_timeout + ' created');
+    socket.once('connect', function () {
+        socket.removeAllListeners('error'); // these get added after callback
+        callback(null, socket);
+    });
+    socket.once('error', function (err) {
+        socket.end();
+        var name = 'outbound::' + port + ':' + host + ':' + local_addr + ':' + pool_timeout;
+        if (server.notes.pool[name]) {
+            delete server.notes.pool[name];
+        }
+        callback("Outbound connection error: " + err, null);
+    });
+    socket.once('timeout', function () {
+        socket.end();
+        callback("Outbound connection timed out to " + host + ":" + port, null);
+    });
+}
+
 // Separate pools are kept for each set of server attributes.
 function get_pool (port, host, local_addr, is_unix_socket, connect_timeout, pool_timeout, max) {
     port = port || 25;
@@ -1222,28 +1248,7 @@ function get_pool (port, host, local_addr, is_unix_socket, connect_timeout, pool
     if (!server.notes.pool[name]) {
         var pool = generic_pool.Pool({
             name: name,
-            create: function (callback) {
-                var socket = is_unix_socket ? sock.connect({path: host}) :
-                    sock.connect({port: port, host: host, localAddress: local_addr});
-                socket.setTimeout(connect_timeout * 1000);
-                logger.logdebug('[outbound] host=' +
-                    host + ' port=' + port + ' pool_timeout=' + pool_timeout + ' created');
-                socket.once('connect', function () {
-                    socket.removeAllListeners('error'); // these get added after callback
-                    callback(null, socket);
-                });
-                socket.once('error', function (err) {
-                    socket.end();
-                    if (server.notes.pool[name]) {
-                        delete server.notes.pool[name];
-                    }
-                    callback("Outbound connection error: " + err, null);
-                });
-                socket.once('timeout', function () {
-                    socket.end();
-                    callback("Outbound connection timed out to " + host + ":" + port, null);
-                });
-            },
+            create: _create_socket,
             validate: function (socket) {
                 return socket.writable;
             },
@@ -1283,6 +1288,10 @@ function get_pool (port, host, local_addr, is_unix_socket, connect_timeout, pool
 
 // Get a socket for the given attributes.
 function get_client (port, host, local_addr, is_unix_socket, callback) {
+    if (cfg.pool_concurrency_max == 0) {
+        return _create_socket(port, host, local_addr, is_unix_socket, cfg.connect_timeout, cfg.pool_timeout, callback);
+    }
+
     var pool = get_pool(port, host, local_addr, is_unix_socket, cfg.connect_timeout, cfg.pool_timeout, cfg.pool_concurrency_max);
     if (pool.waitingClientsCount() >= cfg.pool_concurrency_max) {
         return callback("Too many waiting clients for pool", null);
@@ -1421,6 +1430,11 @@ HMailItem.prototype.try_deliver_host_on_socket = function (mx, host, port, socke
             release_client(socket, port, host, mx.bind, true);
             return self.try_deliver_host(mx);
         }
+    });
+
+    var fin_sent = false;
+    socket.once('end', function () {
+        fin_sent = true;
     });
 
     var command = mx.using_lmtp ? 'connect_lmtp' : 'connect';
@@ -1597,7 +1611,7 @@ HMailItem.prototype.try_deliver_host_on_socket = function (mx, host, port, socke
         else {
             self.discard();
         }
-        release_client(socket, port, host, mx.bind);
+        release_client(socket, port, host, mx.bind, fin_sent);
     };
 
     socket.on('line', function (line) {
@@ -1787,8 +1801,8 @@ HMailItem.prototype.try_deliver_host_on_socket = function (mx, host, port, socke
                                 send_command('DATA');
                             }
                             else {
-                                send_command('RSET');
                                 finish_processing_mail(false);
+                                send_command('RSET');
                             }
                         }
                         else {
