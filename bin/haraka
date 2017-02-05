@@ -20,7 +20,6 @@ var knownOpts = {
     "configs":     path,
     "install":     path,
     "list":        Boolean,
-    "plugin":      Array,
     "force":       Boolean,
     "qlist":       Boolean,
     "qstat":       Boolean,
@@ -46,7 +45,6 @@ var shortHands = {
     "c": ["--configs"],
     "i": ["--install"],
     "l": ["--list"],
-    "p": ["--plugin"],
     "f": ["--force"],
     "o": ["--order"],
     "t": ["--test"],
@@ -63,7 +61,6 @@ var usage = [
     "\t-c, --configs \t\tPath to your config directory",
     "\t-i, --install \t\tCopies the default configs to a specified dir",
     "\t-l, --list    \t\tList the plugins bundled with Haraka",
-    "\t-p, --plugin  \t\tGenerate a new plugin with the given name",
     "\t-f, --force   \t\tForce overwriting of old files",
     "\t--qlist       \t\tList the outbound queue",
     "\t--qstat       \t\tGet statistics on the outbound queue",
@@ -261,29 +258,6 @@ var packageJson = JSON.stringify({
     "repository": "",
     "license": "MIT"
 });
-
-var plugin_src = [
-    "// %plugin%",
-    "",
-    "// documentation via: haraka -c %config% -h plugins/%plugin%",
-    "",
-    "// Put your plugin code here",
-    "// type: `haraka -h Plugins` for documentation on how to create a plugin",
-    "",
-].join("\n");
-
-var plugin_doc = [
-    "%plugin%",
-    "========",
-    "",
-    "Describe what your plugin does here.",
-    "",
-    "Configuration",
-    "-------------",
-    "",
-    "* `config/some_file` - describe what effect this config file has",
-    "",
-].join("\n");
 
 function createFile (filePath, data, info) {
     try {
