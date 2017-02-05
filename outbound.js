@@ -1246,7 +1246,7 @@ function get_pool (port, host, local_addr, is_unix_socket, connect_timeout, pool
         var pool = generic_pool.Pool({
             name: name,
             create: _create_socket,
-            validate: function(socket) {
+            validate: function (socket) {
                 return socket.writable;
             },
             destroy: function (socket) {
@@ -1288,7 +1288,7 @@ function get_client (port, host, local_addr, is_unix_socket, callback) {
     if (cfg.pool_concurrency_max == 0) {
         return _create_socket(port, host, local_addr, is_unix_socket, cfg.connect_timeout, cfg.pool_timeout, callback);
     }
-    
+
     var pool = get_pool(port, host, local_addr, is_unix_socket, cfg.connect_timeout, cfg.pool_timeout, cfg.pool_concurrency_max);
     if (pool.waitingClientsCount() >= cfg.pool_concurrency_max) {
         return callback("Too many waiting clients for pool", null);
@@ -1428,7 +1428,7 @@ HMailItem.prototype.try_deliver_host_on_socket = function (mx, host, port, socke
             return self.try_deliver_host(mx);
         }
     });
-    
+
     var fin_sent = false;
     socket.once('end', function () {
         fin_sent = true;
