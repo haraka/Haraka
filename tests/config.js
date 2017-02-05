@@ -146,7 +146,7 @@ var yamlRes = {
     }
 };
 
-function _test_get(test, name, type, callback, options, expected) {
+function _test_get (test, name, type, callback, options, expected) {
     test.expect(1);
     test.deepEqual(config.get(name,type,callback,options), expected);
     test.done();

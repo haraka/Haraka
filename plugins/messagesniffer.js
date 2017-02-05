@@ -48,6 +48,7 @@ exports.hook_connect = function (next, connection) {
                     if (!cfg.gbudb || (cfg.gbudb && !cfg.gbudb[gbudb.range])) {
                         return next(OK);
                     }
+                    // fall through
                 case 'caution':
                 case 'black':
                 case 'truncate':
@@ -71,7 +72,7 @@ exports.hook_connect = function (next, connection) {
                             case 'quarantine':
                                 connection.notes.gbudb.action = 'quarantine';
                                 connection.notes.quarantine = true;
-                                connection.notes.quarantine_action = [ OK, 'Message quarantined (' + txn.uuid + ')' ];
+                                connection.notes.quarantine_action = [ OK, 'Message quarantined (' + connection.transaction.uuid + ')' ];
                                 break;
                             case 'tag':
                                 connection.notes.gbudb.action = 'tag';
@@ -135,18 +136,18 @@ exports.hook_data_post = function (next, connection) {
     var tmpfile = tmpdir + '/' + txn.uuid + '.tmp';
     var ws = fs.createWriteStream(tmpfile);
 
-    ws.once('error', function(err) {
+    ws.once('error', function (err) {
         connection.logerror(self, 'Error writing temporary file: ' + err.message);
         return next();
     });
 
-    ws.once('close', function() {
+    ws.once('close', function () {
         var start_time = Date.now();
         SNFClient("<snf><xci><scanner><scan file='" + tmpfile + "' xhdr='yes'/></scanner></xci></snf>", function (err, result) {
             var end_time = Date.now();
             var elapsed = end_time - start_time;
             // Delete the tempfile
-            fs.unlink(tmpfile, function(){});
+            fs.unlink(tmpfile, function (){});
             var match;
             // Make sure we actually got a result
             if ((match = /<result code='(\d+)'/.exec(result))) {
@@ -172,7 +173,7 @@ exports.hook_data_post = function (next, connection) {
                         }
                         else {
                             // Must be a header
-                            var match = /^([^: ]+):(?:\s*(.+))?$/.exec(line);
+                            match = /^([^: ]+):(?:\s*(.+))?$/.exec(line);
                             if (match) {
                                 headers.push({ header: match[1], value: (match[2] ? match[2] + '\r\n' : '\r\n') });
                             }
@@ -285,6 +286,7 @@ exports.hook_data_post = function (next, connection) {
                             break;
                         case 'tag':
                             tag_subject();
+                            // fall through
                         default:
                             return next();
                     }
@@ -356,24 +358,24 @@ function SNFClient (req, cb) {
     var result;
     var sock = new net.Socket();
     sock.setTimeout(30 * 1000); // Connection timeout
-    sock.once('timeout', function() {
+    sock.once('timeout', function () {
         this.destroy();
         return cb(new Error('connection timed out'));
     });
-    sock.once('error', function(err) {
+    sock.once('error', function (err) {
         return cb(err);
     });
-    sock.once('connect', function() {
+    sock.once('connect', function () {
         // Connected, send request
         plugin.logprotocol('> ' + req);
         this.write(req + "\n");
     });
-    sock.on('data', function(data) {
+    sock.on('data', function (data) {
         plugin.logprotocol('< ' + data);
         // Buffer all the received lines
         (result ? result += data : result = data);
     });
-    sock.once('end', function() {
+    sock.once('end', function () {
         // Check for result
         var match;
         if (/<result /.exec(result)) {

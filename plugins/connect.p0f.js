@@ -4,7 +4,7 @@
 var net    = require('net');
 var ipaddr = require('ipaddr.js');
 
-function P0FClient(path) {
+function P0FClient (path) {
     var self = this;
 
     this.sock = null;
@@ -63,8 +63,8 @@ function P0FClient(path) {
 }
 
 P0FClient.prototype.shutdown = function () {
-    if (self.restart_interval) {
-        clearInterval(self.restart_interval);
+    if (this.restart_interval) {
+        clearInterval(this.restart_interval);
     }
 }
 
@@ -189,7 +189,7 @@ exports.hook_init_child = function (next, server) {
     return next();
 };
 
-exports.hook_lookup_rdns = function onLookup(next, connection) {
+exports.hook_lookup_rdns = function onLookup (next, connection) {
     var plugin = this;
     if (connection.remote.is_private) return next();
 
@@ -216,7 +216,7 @@ exports.hook_lookup_rdns = function onLookup(next, connection) {
     });
 };
 
-function format_results(r) {
+function format_results (r) {
     var data = [];
     if (r.os_name) data.push('os="' + r.os_name + ' ' + r.os_flavor + '"');
     if (r.link_type) data.push('link_type="' + r.link_type + '"');

@@ -2,7 +2,7 @@
 
 var util = require('util');
 
-exports.register = function() {
+exports.register = function () {
     var plugin = this;
     plugin.inherits('rcpt_to.host_list_base');
 
@@ -21,14 +21,14 @@ exports.register = function() {
     plugin.register_hook('rcpt', 'ldap_rcpt');
 };
 
-exports.load_ldap_ini = function() {
+exports.load_ldap_ini = function () {
     var plugin = this;
     plugin.cfg = plugin.config.get('rcpt_to.ldap.ini', 'ini', function () {
         plugin.load_ldap_ini();
     });
 };
 
-exports.ldap_rcpt = function(next, connection, params) {
+exports.ldap_rcpt = function (next, connection, params) {
     var plugin = this;
     var txn = connection.transaction;
     if (!txn) return next();
@@ -71,30 +71,30 @@ exports.ldap_rcpt = function(next, connection, params) {
         next(DENYSOFT, 'Backend failure. Please, retry later');
     });
 
-    client.bind(cfg.binddn, cfg.bindpw, function(err) {
+    client.bind(cfg.binddn, cfg.bindpw, function (err) {
         connection.logerror(plugin, 'error: ' + err);
     });
 
     var opts = plugin.get_search_opts(cfg, rcpt);
     connection.logdebug(plugin, "Search filter is: " + util.inspect(opts));
 
-    var search_result = function(err, res) {
+    var search_result = function (err, res) {
         if (err) {
             connection.logerror(plugin, 'LDAP search error: ' + err);
             return next(DENYSOFT, 'Backend failure. Please, retry later');
         }
         var items = [];
-        res.on('searchEntry', function(entry) {
+        res.on('searchEntry', function (entry) {
             connection.logdebug(plugin, 'entry: ' + JSON.stringify(entry.object));
             items.push(entry.object);
         });
 
-        res.on('error', function(err2) { // called for tcp (non-ldap) errors
+        res.on('error', function (err2) { // called for tcp (non-ldap) errors
             connection.logerror(plugin, 'LDAP search error: ' + err2);
             next(DENYSOFT, 'Backend failure. Please, retry later');
         });
 
-        res.on('end', function(result) {
+        res.on('end', function (result) {
             connection.logdebug(plugin, 'LDAP search results: ' + items.length + ' -- ' + util.inspect(items));
 
             if (items.length) return next();

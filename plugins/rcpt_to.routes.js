@@ -5,7 +5,7 @@
 
 var urlparser = require('url');
 
-exports.register = function() {
+exports.register = function () {
     var plugin = this;
     plugin.inherits('haraka-plugin-redis');
 
@@ -46,7 +46,7 @@ exports.load_rcpt_to_routes_ini = function () {
     }
 };
 
-exports.rcpt = function(next, connection, params) {
+exports.rcpt = function (next, connection, params) {
     var plugin = this;
     var txn = connection.transaction;
     if (!txn) { return next(); }
@@ -104,7 +104,7 @@ exports.rcpt = function(next, connection, params) {
         });
 };
 
-exports.get_mx = function(next, hmail, domain) {
+exports.get_mx = function (next, hmail, domain) {
     var plugin = this;
 
     // get email address
@@ -155,7 +155,7 @@ exports.get_mx = function(next, hmail, domain) {
         .get(domain)
         .exec(function (err, replies) {
             if (err) {
-                connection.results.add(plugin, {err: err});
+                plugin.logerror(err);
                 return next();
             }
 

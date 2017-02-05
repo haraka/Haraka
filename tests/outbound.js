@@ -23,7 +23,7 @@ exports.outbound = {
             // Set data_lines to lines in contents
             var match;
             var re = /^([^\n]*\n?)/;
-            while (match = re.exec(contents)) {
+            while ((match = re.exec(contents))) {
                 var line = match[1];
                 line = line.replace(/\r?\n?$/, '\r\n'); // assure \r\n ending
                 // transaction.add_data(new Buffer(line));

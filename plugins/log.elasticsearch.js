@@ -3,7 +3,7 @@
 
 var utils = require('haraka-utils');
 
-exports.register = function() {
+exports.register = function () {
     var plugin = this;
 
     try {
@@ -94,7 +94,7 @@ exports.get_es_hosts = function () {
         }
 
         var opts = { host: host };
-        plugin.cfg.hosts[host].trim().split(',').forEach(function(opt){
+        plugin.cfg.hosts[host].trim().split(',').forEach(function (opt){
             var o=opt.trim().split(':');
             opts[o[0]] = o[1];
         });

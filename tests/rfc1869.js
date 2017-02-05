@@ -1,6 +1,6 @@
 var parse = require('../rfc1869').parse;
 
-function _check(test, line, expected) {
+function _check (test, line, expected) {
     test.expect(1 + expected.length);
     var match = /^(MAIL|RCPT)\s+(.*)$/.exec(line);
     var parsed = parse(match[1].toLowerCase(), match[2]);
