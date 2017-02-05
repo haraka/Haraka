@@ -1264,7 +1264,7 @@ function get_pool (port, host, local_addr, is_unix_socket, connect_timeout, pool
                     logger.logwarn("[outbound] Socket got an error while shutting down: " + err);
                 });
                 if (!socket.writable) return;
-                logger.logprotocol("C: QUIT");
+                logger.logprotocol("[outbound] C: QUIT");
                 socket.write("QUIT\r\n");
                 socket.end(); // half close
                 socket.once('line', function (line) {
