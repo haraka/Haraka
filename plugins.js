@@ -11,8 +11,8 @@ var constants   = require('haraka-constants');
 
 // local modules
 var logger      = require('./logger');
-var config      = require('./config');
 var states      = require('./connection').states;
+exports.config  = require('./config');
 
 exports.registered_hooks = {};
 exports.registered_plugins = {};
@@ -115,7 +115,7 @@ Plugin.prototype._get_config = function () {
     if (this.hasPackageJson) {
         // It's a package/folder plugin - look in plugin folder for defaults,
         // haraka/config folder for overrides
-        return config.module_config(
+        return exports.config.module_config(
             path.dirname(this.plugin_path),
             process.env.HARAKA || __dirname
         );
@@ -123,11 +123,14 @@ Plugin.prototype._get_config = function () {
     if (process.env.HARAKA) {
         // Plain .js file, installed mode - look in core folder for defaults,
         // install dir for overrides
-        return config.module_config(__dirname, process.env.HARAKA);
+        return exports.config.module_config(__dirname, process.env.HARAKA);
+    }
+    if (process.env.HARAKA_TEST_DIR) {
+        return exports.config.module_config(process.env.HARAKA_TEST_DIR);
     }
 
     // Plain .js file, git mode - just look in this folder
-    return config.module_config(__dirname);
+    return exports.config.module_config(__dirname);
 };
 
 Plugin.prototype.register_hook = function (hook_name, method_name, priority) {
@@ -217,7 +220,7 @@ Plugin.prototype._get_code = function (pp) {
         return '"use strict";' + fs.readFileSync(pp);
     }
     catch (err) {
-        if (config.get('smtp.ini').main.ignore_bad_plugins) {
+        if (exports.config.get('smtp.ini').main.ignore_bad_plugins) {
             logger.logcrit('Loading plugin ' + plugin.name + ' failed: ' + err);
             return;
         }
@@ -256,7 +259,7 @@ Plugin.prototype._compile = function () {
     }
     catch (err) {
         logger.logcrit('Compiling plugin: ' + plugin.name + ' failed');
-        if (config.get('smtp.ini').main.ignore_bad_plugins) {
+        if (exports.config.get('smtp.ini').main.ignore_bad_plugins) {
             logger.logcrit('Loading plugin ' + plugin.name + ' failed: ',
                 err.message + ' - will skip this plugin and continue');
             return;
@@ -268,10 +271,10 @@ Plugin.prototype._compile = function () {
 };
 
 function get_timeout (name) {
-    var timeout = parseFloat((config.get(name + '.timeout')));
+    var timeout = parseFloat((exports.config.get(name + '.timeout')));
     if (isNaN(timeout)) {
         logger.logdebug('no timeout in ' + name + '.timeout');
-        timeout = parseFloat(config.get('plugin_timeout'));
+        timeout = parseFloat(exports.config.get('plugin_timeout'));
     }
     if (isNaN(timeout)) {
         logger.logdebug('no timeout in plugin_timeout');
@@ -309,7 +312,7 @@ plugins.load_plugins = function (override) {
         plugin_list = override;
     }
     else {
-        plugin_list = config.get('plugins', 'list');
+        plugin_list = exports.config.get('plugins', 'list');
     }
 
     plugin_list.forEach(function (plugin) {
@@ -357,7 +360,7 @@ plugins._load_and_compile_plugin = function (name) {
     if (!plugin.plugin_path) {
         var err = 'Loading plugin ' + plugin.name +
             ' failed: No plugin with this name found';
-        if (config.get('smtp.ini').main.ignore_bad_plugins) {
+        if (exports.config.get('smtp.ini').main.ignore_bad_plugins) {
             logger.logcrit(err);
             return;
         }

@@ -13,17 +13,18 @@ exports.hook_data_post = function (next, connection) {
     var tmpfile = tmpdir + '/' + txn.uuid + '.esets';
     var ws = fs.createWriteStream(tmpfile);
 
-    ws.once('error', function(err) {
+    ws.once('error', function (err) {
         connection.logerror(plugin, 'Error writing temporary file: ' + err.message);
         return next();
     });
 
+    var start_time;
+
     var wsOnClose = function (error, stdout, stderr) {
         // Remove the temporary file
-        fs.unlink(tmpfile, function(){});
+        fs.unlink(tmpfile, function (){});
 
         // Timing
-        var start_time;
         var end_time = Date.now();
         var elapsed = end_time - start_time;
 
@@ -63,7 +64,7 @@ exports.hook_data_post = function (next, connection) {
         return next();
     };
 
-    ws.once('close', function() {
+    ws.once('close', function () {
         start_time = Date.now();
         child_process.exec('LANG=C /opt/eset/esets/bin/esets_cli ' + tmpfile,
                            { encoding: 'utf8', timeout: 30 * 1000 },

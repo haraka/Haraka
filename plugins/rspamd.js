@@ -163,12 +163,12 @@ exports.hook_data_post = function (next, connection) {
                     }
                     if (cfg.rmilter_headers.enabled && r.rmilter) {
                         if (r.rmilter.remove_headers) {
-                            Object.keys(r.rmilter.remove_headers).forEach(function(key) {
+                            Object.keys(r.rmilter.remove_headers).forEach(function (key) {
                                 connection.transaction.remove_header(key);
                             })
                         }
                         if (r.rmilter.add_headers) {
-                            Object.keys(r.rmilter.add_headers).forEach(function(key) {
+                            Object.keys(r.rmilter.add_headers).forEach(function (key) {
                                 connection.transaction.add_header(key, r.rmilter.add_headers[key]);
                             })
                         }

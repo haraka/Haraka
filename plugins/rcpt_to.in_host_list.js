@@ -9,7 +9,7 @@
 // connection.transaction.notes.local_sender=true. During RCPT TO, if relaying
 // is enabled and the sending domain is local, the receipt is OK.
 
-exports.register = function() {
+exports.register = function () {
     var plugin = this;
     plugin.inherits('rcpt_to.host_list_base');
 
@@ -17,7 +17,7 @@ exports.register = function() {
     plugin.load_host_list_regex();
 };
 
-exports.hook_rcpt = function(next, connection, params) {
+exports.hook_rcpt = function (next, connection, params) {
     var plugin = this;
     var txn = connection.transaction;
     if (!txn) { return; }

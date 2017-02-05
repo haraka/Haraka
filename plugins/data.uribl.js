@@ -328,8 +328,8 @@ exports.hook_data_post = function (next, connection) {
     // From header
     var do_from_header = function (cb) {
         var from = trans.header.get('from');
-        var fmatch;
-        if (fmatch = email_re.exec(from)) {
+        var fmatch = email_re.exec(from);
+        if (fmatch) {
             return plugin.do_lookups(connection, cb, fmatch[1], 'from');
         }
         cb();
@@ -383,7 +383,7 @@ function extract_urls (urls, body, connection, self) {
 
     var uri;
     // extract numeric URIs
-    while (match = numeric_ip.exec(body.bodytext)) {
+    while ((match = numeric_ip.exec(body.bodytext))) {
         try {
             uri = url.parse(match[0]);
             // Don't reverse the IPs here; we do it in the lookup
@@ -396,7 +396,7 @@ function extract_urls (urls, body, connection, self) {
     }
 
     // match plain hostname.tld
-    while (match = schemeless.exec(body.bodytext)) {
+    while ((match = schemeless.exec(body.bodytext))) {
         try {
             uri = url.parse('http://' + match[1]);
             urls[uri.hostname] = uri;
@@ -408,7 +408,7 @@ function extract_urls (urls, body, connection, self) {
     }
 
     // match scheme:// URI
-    while (match = schemed.exec(body.bodytext)) {
+    while ((match = schemed.exec(body.bodytext))) {
         try {
             uri = url.parse(match[1]);
             urls[uri.hostname] = uri;

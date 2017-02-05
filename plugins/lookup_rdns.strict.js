@@ -17,7 +17,7 @@ var net_utils = require('haraka-net-utils');
 
 // _dns_error handles err from node.dns callbacks.  It will always call next()
 // with a DENYDISCONNECT for this plugin.
-function _dns_error(connection, next, err, host, plugin, nxdomain, dnserror) {
+function _dns_error (connection, next, err, host, plugin, nxdomain, dnserror) {
     switch (err.code) {
         case dns.NXDOMAIN:
         case dns.NOTFOUND:
@@ -37,7 +37,7 @@ function _dns_error(connection, next, err, host, plugin, nxdomain, dnserror) {
     }
 }
 
-function _in_whitelist(connection, plugin, address) {
+function _in_whitelist (connection, plugin, address) {
     var domain          = address.toLowerCase();
     var host_list       =
         plugin.config.get('lookup_rdns.strict.whitelist', 'list');

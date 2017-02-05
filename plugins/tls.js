@@ -1,4 +1,5 @@
-// TLS is built into Haraka. Enabling this plugin advertises STARTTLS.
+'use strict';
+// TLS is built into Haraka. This plugin conditionally advertises STARTTLS.
 // see 'haraka -h tls' for help
 
 var net_utils = require('haraka-net-utils');
@@ -34,7 +35,7 @@ exports.register = function () {
     plugin.register_hook('unrecognized_command', 'upgrade_connection');
 };
 
-exports.shutdown = function() {
+exports.shutdown = function () {
     if (tls_socket.shutdown) tls_socket.shutdown();
 };
 
@@ -59,15 +60,15 @@ exports.load_tls_ini = function () {
         'key','cert','honorCipherOrder','ecdhCurve','dhparam',
         'secureProtocol','enableOCSPStapling'];
 
-    for (var i = 0; i < config_options.length; i++) {
-        var opt = config_options[i];
+    for (let i = 0; i < config_options.length; i++) {
+        let opt = config_options[i];
         if (plugin.cfg.main[opt] === undefined) { continue; }
         plugin.tls_opts[opt] = plugin.cfg.main[opt];
     }
 
     if (plugin.cfg.inbound) {
-        for (var i = 0; i < config_options.length; i++) {
-            var opt = config_options[i];
+        for (let i = 0; i < config_options.length; i++) {
+            let opt = config_options[i];
             if (plugin.cfg.inbound[opt] === undefined) { continue; }
             plugin.tls_opts[opt] = plugin.cfg.inbound[opt];
         }
@@ -101,14 +102,14 @@ exports.load_tls_opts = function () {
     }
 
     // turn key/cert file names into actual key/cert binary data
-    plugin.tls_opts.key = plugin.tls_opts.key.map(function(keyFileName) {
+    plugin.tls_opts.key = plugin.tls_opts.key.map(function (keyFileName) {
         var key = plugin.load_pem(keyFileName);
         if (!key) {
             plugin.load_err("tls key " + keyFileName + " could not be loaded.");
         }
         return key;
     });
-    plugin.tls_opts.cert = plugin.tls_opts.cert.map(function(certFileName) {
+    plugin.tls_opts.cert = plugin.tls_opts.cert.map(function (certFileName) {
         var cert = plugin.load_pem(certFileName);
         if (!cert) {
             plugin.load_err("tls cert " + certFileName + " could not be loaded.");

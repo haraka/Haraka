@@ -1,3 +1,4 @@
+'use strict';
 // Simple string signatures
 
 exports.hook_data = function (next, connection) {
@@ -16,13 +17,13 @@ exports.hook_data_post = function (next, connection) {
 }
 
 function check_sigs (sigs, body) {
-    for (var i=0,l=sigs.length; i < l; i++) {
+    for (let i=0,l=sigs.length; i < l; i++) {
         if (body.bodytext.indexOf(sigs[i]) != -1) {
             return 1;
         }
     }
 
-    for (var i=0,l=body.children.length; i < l; i++) {
+    for (let i=0,l=body.children.length; i < l; i++) {
         if (check_sigs(sigs, body.children[i])) {
             return 1;
         }

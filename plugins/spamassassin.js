@@ -221,7 +221,7 @@ exports.score_too_high = function (connection, spamd_response) {
     return false;
 };
 
-exports.get_spamd_username = function(connection) {
+exports.get_spamd_username = function (connection) {
     var plugin = this;
 
     var user = connection.transaction.notes.spamd_user;  // 1st priority
@@ -244,7 +244,7 @@ exports.get_spamd_username = function(connection) {
     return user;
 };
 
-exports.get_spamd_headers = function(connection, username) {
+exports.get_spamd_headers = function (connection, username) {
     // http://svn.apache.org/repos/asf/spamassassin/trunk/spamd/PROTOCOL
     var headers = [
         'HEADERS SPAMC/1.3',
@@ -259,7 +259,7 @@ exports.get_spamd_headers = function(connection, username) {
     return headers;
 };
 
-exports.get_spamd_socket = function(next, connection, headers) {
+exports.get_spamd_socket = function (next, connection, headers) {
     var plugin = this;
     // TODO: support multiple spamd backends
 
@@ -311,7 +311,7 @@ exports.get_spamd_socket = function(next, connection, headers) {
     return socket;
 };
 
-exports.msg_too_big = function(connection) {
+exports.msg_too_big = function (connection) {
     var plugin = this;
     if (!plugin.cfg.main.max_size) return false;
 
@@ -324,7 +324,7 @@ exports.msg_too_big = function(connection) {
     return true;
 };
 
-exports.log_results = function(connection, spamd_response) {
+exports.log_results = function (connection, spamd_response) {
     var plugin = this;
     var cfg = plugin.cfg.main;
     connection.loginfo(plugin, "status=" + spamd_response.flag +
