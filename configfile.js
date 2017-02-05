@@ -5,6 +5,8 @@ var fs   = require('fs');
 var path = require('path');
 var yaml = require('js-yaml');
 
+var logger = getStubLogger();
+
 // for "ini" type files
 var regex = exports.regex = {
     section:        /^\s*\[\s*([^\]]*?)\s*\]\s*$/,
@@ -37,7 +39,7 @@ var config_dir_candidates = [
 
 function get_path_to_config_dir () {
     if (process.env.HARAKA) {
-        // console.log('process.env.HARAKA: ' + process.env.HARAKA);
+        // logger.logdebug('process.env.HARAKA: ' + process.env.HARAKA);
         cfreader.config_path = path.join(process.env.HARAKA, 'config');
         return;
     }
@@ -64,24 +66,26 @@ function get_path_to_config_dir () {
             }
         }
         catch (ignore) {
-            console.error(ignore.message);
+            logger.logerror(ignore.message);
         }
     }
 }
 get_path_to_config_dir();
-// console.log('cfreader.config_path: ' + cfreader.config_path);
+// logger.logdebug('cfreader.config_path: ' + cfreader.config_path);
 
-// Stubs that can be used before logger is loaded
-var logger = {
-    logdebug: function () {
-        console.log.apply(console, arguments);
-    },
-    loginfo: function () {
-        console.log.apply(console, arguments);
-    },
-    logerror: function () {
-        console.error.apply(console, arguments);
-    },
+function getStubLogger () {
+    // stubs used before logger is loaded
+    return {
+        logdebug: function () {
+            console.log.apply(console, arguments);
+        },
+        loginfo: function () {
+            console.log.apply(console, arguments);
+        },
+        logerror: function () {
+            console.error.apply(console, arguments);
+        },
+    }
 }
 
 cfreader.on_watch_event = function (name, type, options, cb) {
@@ -375,7 +379,7 @@ cfreader.process_file_overrides = function (name, result) {
     var cache_key = cfreader.get_cache_key(name);
     if (cfreader._config_cache[cache_key]) {
         var ck_keys = Object.keys(cfreader._config_cache[cache_key]);
-        for (var i=0; i<ck_keys.length; i++) {
+        for (let i=0; i<ck_keys.length; i++) {
             if (ck_keys[i].substr(0,1) === '!') {
                 delete cfreader._config_cache[path.join(cfreader.config_path, ck_keys[i].substr(1))];
             }
@@ -386,7 +390,7 @@ cfreader.process_file_overrides = function (name, result) {
     // configuration file data using by prefixing the
     // outer variable name with ! e.g. !smtp.ini
     var keys = Object.keys(result);
-    for (var i=0; i<keys.length; i++) {
+    for (let i=0; i<keys.length; i++) {
         if (keys[i].substr(0,1) === '!') {
             var ofp = path.join(cfreader.config_path, keys[i].substr(1));
             cfreader._overrides[ofp] = true;
@@ -619,5 +623,4 @@ cfreader.load_binary_config = function (name, type) {
         }
     }
 };
-var fs = require('fs');
 logger = require('./logger');

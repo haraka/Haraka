@@ -2,11 +2,8 @@
 // smtp network server
 
 var net         = require('./tls_socket');
-var logger      = require('./logger');
-var config      = require('./config');
 var conn        = require('./connection');
-var out         = require('./outbound');
-var plugins     = require('./plugins');
+var outbound    = require('./outbound');
 var constants   = require('haraka-constants');
 var os          = require('os');
 var cluster     = require('cluster');
@@ -14,14 +11,20 @@ var async       = require('async');
 var daemon      = require('daemon');
 var path        = require('path');
 
-// Need these here so we can run hooks
-logger.add_log_methods(exports, 'server');
+var Server      = exports;
+Server.logger   = require('./logger');
+Server.config   = require('./config');
+Server.plugins  = require('./plugins');
 
-var Server = exports;
+var logger      = Server.logger;
+
+// Need these here so we can run hooks
+logger.add_log_methods(Server, 'server');
+
 Server.listeners = [];
 
 Server.load_smtp_ini = function () {
-    Server.cfg = config.get('smtp.ini', {
+    Server.cfg = Server.config.get('smtp.ini', {
         booleans: [
             '-main.daemonize',
         ],
@@ -44,7 +47,7 @@ Server.load_smtp_ini = function () {
 
 Server.load_http_ini = function () {
     Server.http = {};
-    Server.http.cfg = config.get('http.ini', function () {
+    Server.http.cfg = Server.config.get('http.ini', function () {
         Server.load_http_ini();
     }).main;
 };
@@ -79,7 +82,7 @@ Server.daemonize = function () {
 
 Server.flushQueue = function (domain) {
     if (!Server.cluster) {
-        out.flush_queue(domain);
+        outbound.flush_queue(domain);
         return;
     }
 
@@ -187,7 +190,7 @@ Server._graceful = function (shutdown) {
 
 Server.drainPools = function () {
     if (!Server.cluster) {
-        return out.drain_pools();
+        return outbound.drain_pools();
     }
 
     for (var id in cluster.workers) {
@@ -259,14 +262,14 @@ Server.createServer = function (params) {
     }
 
     Server.notes = {};
-    plugins.server = Server;
-    plugins.load_plugins();
+    Server.plugins.server = Server;
+    Server.plugins.load_plugins();
 
     var inactivity_timeout = (c.inactivity_timeout || 300) * 1000;
 
     if (!cluster || !c.nodes) {
         Server.daemonize(c);
-        Server.setup_smtp_listeners(plugins, 'master', inactivity_timeout);
+        Server.setup_smtp_listeners(Server.plugins, 'master', inactivity_timeout);
         return;
     }
 
@@ -275,7 +278,7 @@ Server.createServer = function (params) {
 
     // Cluster Workers
     if (!cluster.isMaster) {
-        Server.setup_smtp_listeners(plugins, 'child', inactivity_timeout);
+        Server.setup_smtp_listeners(Server.plugins, 'child', inactivity_timeout);
         return;
     }
     else {
@@ -286,7 +289,7 @@ Server.createServer = function (params) {
     // Cluster Master
     // We fork workers in init_master_respond so that plugins
     // can put handlers on cluster events before they are emitted.
-    plugins.run_hooks('init_master', Server);
+    Server.plugins.run_hooks('init_master', Server);
 };
 
 Server.get_smtp_server = function (host, port, inactivity_timeout) {
@@ -318,12 +321,12 @@ Server.get_smtp_server = function (host, port, inactivity_timeout) {
         return server;
     }
 
-    if (!plugins.registered_plugins.tls) {
+    if (!Server.plugins.registered_plugins.tls) {
         logger.logerror("TLS plugin not activated. Cannot listen on port 465 (SMTPS) without config");
         return;
     }
 
-    var tls_plugin = plugins.registered_plugins.tls;
+    var tls_plugin = Server.plugins.registered_plugins.tls;
 
     if (!tls_plugin.tls_opts_valid) {
         logger.logerror("No valid TLS setup in the tls config. Cannot listen on port 465.");
@@ -446,7 +449,7 @@ Server.setup_http_listeners = function () {
             logger.logerror('Failed to setup http routes: ' + err.message);
         }
 
-        plugins.run_hooks('init_http', Server);
+        Server.plugins.run_hooks('init_http', Server);
         app.use(Server.http.express.static(Server.get_http_docroot()));
         app.use(Server.handle404);
     };
@@ -466,14 +469,16 @@ Server.init_master_respond = function (retval, msg) {
 
     // Load the queue if we're just one process
     if (!(cluster && c.nodes)) {
-        out.load_queue();
+        if (c.outbound) {
+            outbound.load_queue();
+        }
         Server.setup_http_listeners();
         return;
     }
 
     // Running under cluster, fork children here, so that
     // cluster events can be registered in init_master hooks.
-    out.scan_queue_pids(function (err, pids) {
+    outbound.scan_queue_pids(function (err, pids) {
         if (err) {
             Server.logcrit("Scanning queue failed. Shutting down.");
             return logger.dump_and_exit(1);
@@ -579,7 +584,7 @@ Server.init_http_respond = function () {
     Server.http.wss = new WebSocketServer({ server: Server.http.server });
     logger.loginfo('Server.http.wss loaded');
 
-    plugins.run_hooks('init_wss', Server);
+    Server.plugins.run_hooks('init_wss', Server);
 };
 
 Server.init_wss_respond = function () {

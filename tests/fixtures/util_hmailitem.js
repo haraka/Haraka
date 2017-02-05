@@ -69,7 +69,7 @@ exports.createHMailItem = function (outbound_context, options, callback) {
         ""].join("\n");
     var match;
     var re = /^([^\n]*\n?)/;
-    while (match = re.exec(contents)) {
+    while ((match = re.exec(contents))) {
         var line = match[1];
         line = line.replace(/\r?\n?$/, '\r\n'); // make sure it ends in \r\n
         conn.transaction.add_data(new Buffer(line));

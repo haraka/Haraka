@@ -102,9 +102,9 @@ exports.get_client(server, function (err, smtp_client) {
                 reading_body = true;
             }
             while (true) {
-                var line = data.shift();
-                this.emit('line', line + '\r\n');
-                if (line[3] == ' ') break;
+                var line2 = data.shift();
+                this.emit('line', line2 + '\r\n');
+                if (line2[3] == ' ') break;
             }
         }
 

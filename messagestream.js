@@ -1,3 +1,5 @@
+'use strict';
+
 // MessageStream class
 
 var fs = require('fs');
@@ -223,7 +225,7 @@ MessageStream.prototype._read = function () {
     // loop around again (and check for pause).
     if (this.headers.length && !this.headers_done) {
         this.headers_done = true;
-        for (var i=0; i<this.headers.length; i++) {
+        for (let i=0; i<this.headers.length; i++) {
             this.read_ce.fill(this.headers[i].replace(/\r?\n/g,this.line_endings));
         }
         // Add end of headers marker
@@ -240,7 +242,7 @@ MessageStream.prototype._read = function () {
         // create a queue file, so we read from memory.
         if (this._queue.length > 0) {
             // TODO: implement start/end offsets
-            for (var i=0; i<this._queue.length; i++) {
+            for (let i=0; i<this._queue.length; i++) {
                 this.process_buf(this._queue[i].slice(0));
             }
             this._read_finish();

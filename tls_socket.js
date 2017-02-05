@@ -10,8 +10,6 @@ var stream    = require('stream');
 var log       = require('./logger');
 var EventEmitter = require('events');
 
-var secureContext;
-
 var ocsp;
 try {
     ocsp      = require('ocsp');
@@ -162,10 +160,11 @@ function pipe (cleartext, socket) {
     socket.on('close', onclose);
 }
 
+function pseudoTLSServer () {
+    EventEmitter.call(this);
+}
+
 if (ocsp) {
-    function pseudoTLSServer () {
-        EventEmitter.call(this);
-    }
     util.inherits(pseudoTLSServer, EventEmitter);
 
     var ocspCache = new ocsp.Cache();
@@ -175,7 +174,7 @@ if (ocsp) {
         ocsp.getOCSPURI(cert, function (err, uri) {
             log.logdebug('OCSP Request, URI: ' + uri + ', err=' +err);
             if (err) {
-                return cb(err);
+                return cb2(err);
             }
 
             var req = ocsp.request.generate(cert, issuer);
@@ -209,8 +208,6 @@ if (ocsp) {
 exports.ocsp = ocsp;
 
 function _getSecureContext (options) {
-    if (secureContext) return secureContext;
-
     if (options === undefined) options = {};
 
     if (options.requestCert === undefined) {
@@ -220,14 +217,13 @@ function _getSecureContext (options) {
         options.rejectUnauthorized = false;
     }
     if (!options.sessionIdContext) {
-       	options.sessionIdContext = 'haraka';
-    };
+        options.sessionIdContext = 'haraka';
+    }
     if (!options.sessionTimeout) {
-       	// options.sessionTimeout = 1;
-    };
+        // options.sessionTimeout = 1;
+    }
 
-    secureContext = tls.createSecureContext(options);
-    return secureContext;
+    return tls.createSecureContext(options);
 }
 
 function createServer (cb) {
@@ -250,7 +246,7 @@ function createServer (cb) {
                 if (options.enableOCSPStapling) {
                     if (ocsp) {
                         options.server = pseudoServ;
-                        pseudoServ._sharedCreds = secureContext;
+                        pseudoServ._sharedCreds = options.secureContext;
                     } else {
                         log.logerror("OCSP Stapling cannot be enabled because the ocsp module is not loaded");
                     }
@@ -276,7 +272,7 @@ function createServer (cb) {
                     cleartext.authorizationError, cert, cipher);
             });
 
-//            cleartext._controlReleased = true;
+            // cleartext._controlReleased = true;
 
             socket.cleartext = cleartext;
 
@@ -338,7 +334,7 @@ function connect (port, host, cb) {
             if (cb2) cb2(cleartext.authorized, cleartext.authorizationError, cert, cipher);
         });
 
-//      cleartext._controlReleased = true;
+        // cleartext._controlReleased = true;
         socket.cleartext = cleartext;
 
         if (socket._timeout) {

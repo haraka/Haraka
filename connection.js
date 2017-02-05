@@ -288,6 +288,7 @@ Connection.prototype.process_line = function (line) {
     }
 
     // Check for non-ASCII characters
+    /* eslint no-control-regex: 0 */
     if (/[^\x00-\x7F]/.test(this.current_line)) {
         // See if this is a TLS handshake
         var buf = new Buffer(this.current_line.substr(0,3), 'binary');
@@ -532,7 +533,7 @@ Connection.prototype.respond = function (code, msg, func) {
     var mess;
     var buf = '';
 
-    while (mess = messages.shift()) {
+    while ((mess = messages.shift())) {
         var line = code + (messages.length ? "-" : " ") +
             (uuid ? '[' + uuid + '@' + hostname + '] ' : '' ) + mess;
         this.logprotocol("S: " + line);
@@ -1172,6 +1173,7 @@ Connection.prototype.cmd_proxy = function (line) {
     var dst_port = match[5];
 
     // Validate source/destination IP
+    /*eslint no-fallthrough: 0 */
     switch (proto) {
         case 'TCP4':
             if (ipaddr.IPv4.isValid(src_ip) && ipaddr.IPv4.isValid(dst_ip)) {
