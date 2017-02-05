@@ -54,6 +54,7 @@ function plugin_search_paths (prefix, name) {
     return [
         path.resolve(prefix, 'plugins', name + '.js'),
         path.resolve(prefix, 'node_modules', 'haraka-plugin-' + name, 'package.json'),
+        path.resolve(prefix, '..', 'haraka-plugin-' + name, 'package.json')
     ];
 }
 
