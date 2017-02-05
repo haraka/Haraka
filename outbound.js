@@ -859,30 +859,6 @@ exports.HMailItem = HMailItem;
 
 logger.add_log_methods(HMailItem.prototype, "outbound");
 
-// populate log functions - so we can use hooks
-for (var key in logger) {
-    if (key.match(/^log\w/)) {
-        exports[key] = (function (key2) {
-            return function () {
-                var args = ["[outbound] "];
-                for (var i=0, l=arguments.length; i<l; i++) {
-                    args.push(arguments[i]);
-                }
-                logger[key2].apply(logger, args);
-            };
-        })(key);
-        HMailItem.prototype[key] = (function (key2) {
-            return function () {
-                var args = [ this ];
-                for (var i=0, l=arguments.length; i<l; i++) {
-                    args.push(arguments[i]);
-                }
-                logger[key2].apply(logger, args);
-            };
-        })(key);
-    }
-}
-
 HMailItem.prototype.data_stream = function () {
     return fs.createReadStream(this.path, {start: this.data_start, end: this.file_size});
 };
