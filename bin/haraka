@@ -352,20 +352,6 @@ else if (parsed.help) {
         });
     }
 }
-else if (parsed.configs && parsed.plugin) {
-    var js_path = path.join(parsed.configs, 'plugins', parsed.plugin + '.js');
-    createFile(js_path,
-               plugin_src, { plugin: parsed.plugin, config: parsed.configs });
-
-    var doc_path = path.join(parsed.configs, 'docs', 'plugins', parsed.plugin + '.md');
-    createFile(doc_path,
-               plugin_doc, { plugin: parsed.plugin, config: parsed.configs });
-
-    console.log("Plugin " + parsed.plugin + " created");
-    console.log("Now edit javascript in:    " + js_path);
-    console.log("Add the plugin to config:  " + path.join(parsed.configs, 'config', 'plugins'));
-    console.log("And edit documentation in: " + doc_path);
-}
 else if (parsed.qlist) {
     if (!parsed.configs) {
         fail("qlist option requires config path");

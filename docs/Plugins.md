@@ -6,30 +6,44 @@ enabled.
 
 Recipient (*rcpt*) plugins determine if a particular recipient is allowed to be relayed or received for. A *queue* plugin queues the message somewhere - normally to disk or to an another SMTP server.
 
-Get a list of built-in plugins by running:
-
-`haraka -l -c /path/to/config`
+See the [list of plugins][1]
 
 Display the help text for a plugin by running:
 
 `haraka -h <name> -c /path/to/config`
 
-Omit the `-c /path/to/config` to see only the plugins supplied with Haraka
-(not your local plugins in your `config` directory).
 
 # Writing Haraka Plugins
 
+We have a [plugin template](https://github.com/haraka/haraka-plugin-template) that includes all the boilerplate (Changed.md, README.md, test configs, tests) needed to create and publish a Haraka plugin on NPM. There's also a detailed example of how to [Write a Plugin](https://github.com/haraka/Haraka/wiki/Write-a-Plugin).
+
 ## Anatomy of a Plugin
 
-Plugins in Haraka are JS files in the `plugins` directory or npm
-modules in the node\_modules directory. See "Plugins as Modules" below for
-more information on this.
+Haraka legacy plugins are JS files in the `plugins` directory and markdown
+documents in docs/plugins. Newer plugins are published as modules. See
+"Plugins as Modules" below.
 
 Plugins can be installed in the Haraka global directory (default:
 /$os/$specific/lib/node\_modules/Haraka) or in the Haraka install directory
 (whatever you chose when you typed `haraka -i`. Example: `haraka -i /etc/haraka`
 
 To enable a plugin, add its name to `config/plugins`.
+
+## Plugins as Modules
+
+Plugins as NPM modules are named with the `haraka-plugin-` prefix. Therefore, a
+plugin that frobnobricates might be called `haraka-plugin-frobnobricate` and
+published to NPM with that name. The `haraka-plugin-` prefix is not required in
+the `config/plugins` file.
+
+To load a core Haraka module you must use `this.haraka_require('name')`.
+
+Plugins loaded as modules are not compiled in the Haraka plugin sandbox,
+which blocks access to certain globals and provides a global `server` object.
+To access the `server` object, use `connection.server` instead.
+
+Module plugins support default config in their local `config` directory. See the
+"Default Config and Overrides" section in [Config](Config.md).
 
 ## Register a Hook
 
@@ -73,7 +87,7 @@ When a single function runs on multiple hooks, the function can check the
         this.register_hook('rcpt',    'my_rcpt');
         this.register_hook('rcpt_ok', 'my_rcpt');
     };
-     
+
     exports.my_rcpt = function (next, connection, params) {
         var hook_name = connection.hook; // rcpt or rcpt_ok
         // email address is in params[0]
@@ -316,35 +330,6 @@ All of these notes are JS objects - use them as simple key/value store e.g.
 
     connection.transaction.notes.test = 'testing';
 
-## Plugins as Modules
-
-Plugins as NPM modules are named with the `haraka-plugin` prefix. Therefore, a
-plugin that frobnobricates might be called `haraka-plugin-frobnobricate` and
-published to NPM with that name. The prefix is not required in the
-`config/plugins` file.
-
-Plugins loaded as NPM modules behave slightly different than plugins loaded
-as plain JS files.
-
-Plain JS plugins have a custom `require()` which allows loading core Haraka
-modules via specifying `require('./name')` (note the `./` prefix). Although
-the core modules aren't in the same folder, the custom `require` intercepts
-this and look for core modules. Note that if there is a module in your plugins
-folder of the same name that will not take preference, so avoid using names
-similar to core modules.
-
-Plugins loaded as modules do not have the special `require()`. To load
-a core Haraka module you must use `this.haraka_require('name')`. 
-This should also be preferred for plain JS plugins, as the
-`./` hack is likely to be removed in the future.
-
-Plugins loaded as modules are not compiled in the Haraka plugin sandbox,
-which blocks access to certain globals and provides a global `server` object.
-To access the `server` object, use `connection.server` instead.
-
-Module plugins support default config in their local `config` directory. See the
-"Default Config and Overrides" section in [Config](Config.md).
-
 ## Shutdown
 
 On shutdown and graceful reload, Haraka will call a plugin's `shutdown` method.
@@ -373,3 +358,7 @@ Further Reading
 Read about the [Connection](Connection.md) object.
 
 Outbound hooks are [also documented](Outbound.md).
+
+
+
+[1]: https://github.com/haraka/Haraka/blob/v3/Plugins.md

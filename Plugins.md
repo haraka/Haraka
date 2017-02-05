@@ -46,9 +46,8 @@ Create a PR adding yours to this list.
 - [messagesniffer](https://github.com/haraka/Haraka/blob/master/docs/plugins/messagesniffer.md)
 - [prevent_credential_leaks](https://github.com/haraka/Haraka/blob/master/docs/plugins/prevent_credential_leaks.md)
 - [process_title](https://github.com/haraka/Haraka/blob/master/docs/plugins/process_title.md)
-- [profile](https://github.com/haraka/Haraka/blob/master/docs/plugins/profile.md)
+- profile
 - queue
-    - [deliver](https://github.com/haraka/Haraka/blob/master/docs/plugins/queue/deliver.md)
     - [discard](https://github.com/haraka/Haraka/blob/master/docs/plugins/queue/discard.md)
     - [lmtp](https://github.com/haraka/Haraka/blob/master/docs/plugins/queue/lmtp.md)
     - [qmail-queue](https://github.com/haraka/Haraka/blob/master/docs/plugins/queue/qmail-queue.md)

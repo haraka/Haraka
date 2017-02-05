@@ -5,7 +5,7 @@ Haraka - a Node.js Mail Server
 [![Build Status][ci-img]][ci-url]
 [![Coverage Status][cov-img]][cov-url]
 [![Windows Status][ci-win-img]][ci-win-url]
-[![Greenkeeper badge](https://badges.greenkeeper.io/haraka/Haraka.svg)](https://greenkeeper.io/)
+[![Greenkeeper badge][gk-img](https://greenkeeper.io/)
 
 
 Haraka is a highly scalable [node.js][1] email server with a modular
@@ -39,8 +39,8 @@ queued for outbound delivery.
 ### Why Use Haraka?
 
 Haraka's plugin architecure provides an easily extensible MTA that
-complements traditional MTAs that excel at managing mail stores but do
-not have sufficient filtering.
+complements traditional MTAs that excel at managing mail stores but lack
+sufficient filtering.
 
 The plugin system makes it easy to code new features. A typical example
 is providing qmail-like extended addresses to an Exchange system,
@@ -48,8 +48,7 @@ whereby you could receive mail as `user-anyword@domain.com`, and yet
 still have it correctly routed to `user@domain.com`. This is a few lines of
 code in Haraka.
 
-Plugins are provided for running mail through [SpamAssassin][9], validating
-[HELO][10] names, checking [DNS Blocklists][11], and [many others][12].
+See the [Plugin list][4] for an extensive list of plugins.
 
 
 ### Installing Haraka
@@ -136,15 +135,11 @@ SpamAssassin and a hacker on [Qpsmtpd][13].
 [1]: http://nodejs.org/
 [2]: http://youtu.be/6twKXMAsPsw
 [3]: http://en.wikipedia.org/wiki/Message_transfer_agent
-[4]: https://haraka.github.io/manual.html
+[4]: https://github.com/haraka/Haraka/blob/v3/Plugins.md
 [5]: http://en.wikipedia.org/wiki/Mail_submission_agent
 [6]: https://github.com/haraka/Haraka/blob/master/docs/plugins/dkim_sign.md
 [7]: https://en.wikipedia.org/wiki/Mail_delivery_agent
 [8]: mailto:haraka-sub@harakamail.com
-[9]: https://haraka.github.io/manual/plugins/spamassassin.html
-[10]: https://haraka.github.io/manual/plugins/helo.checks.html
-[11]: https://haraka.github.io/manual/plugins/dnsbl.html
-[12]: https://github.com/haraka/Haraka/tree/master/plugins
 [13]: https://github.com/smtpd/qpsmtpd/
 [14]: https://freenode.net/irc_servers.shtml
 
@@ -154,3 +149,4 @@ SpamAssassin and a hacker on [Qpsmtpd][13].
 [cov-url]: https://codecov.io/github/haraka/Haraka?branch=master
 [ci-win-img]: https://ci.appveyor.com/api/projects/status/g29l24w7qwoam47f?svg=true
 [ci-win-url]: https://ci.appveyor.com/project/msimerson/haraka-pa8a5
+[gk-url]: https://badges.greenkeeper.io/haraka/Haraka.svg
