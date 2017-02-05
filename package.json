@@ -61,7 +61,8 @@
   },
   "greenkeeper": {
     "ignore": [
-      "generic-pool"
+      "generic-pool",
+      "nodemailer"
     ]
   },
   "bin": {
