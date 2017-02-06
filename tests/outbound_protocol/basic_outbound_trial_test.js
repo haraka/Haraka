@@ -56,6 +56,7 @@ function runBasicSmtpConversation (hmail) {
 function _runBasicSmtpConversation (hmail) {
     var mock_socket = mock_sock.connect('testhost', 'testport');
     mock_socket.writable = true;
+    mock_socket.__acquired = true;
 
     // The playbook
     // from remote: This line is to be sent (from an mocked remote SMTP) to haraka outbound. This is done in this test.
