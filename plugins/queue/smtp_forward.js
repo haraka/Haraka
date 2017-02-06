@@ -71,6 +71,14 @@ exports.hook_queue = function (next, connection) {
         if (cfg.auth_user) {
             connection.loginfo(plugin, 'Configuring authentication for SMTP server ' + cfg.host + ':' + cfg.port);
             smtp_client.on('capabilities', function () {
+                connection.loginfo(plugin, 'capabilities received');
+                if ('secured' in smtp_client) {
+                    connection.loginfo(plugin, 'secured is pending');
+                    if (smtp_client.secured === false) {
+                        connection.loginfo(plugin,"Waiting for STARTTLS to complete. AUTH postponed");
+                        return;
+                    }
+                }
 
                 var base64 = function (str) {
                     var buffer = new Buffer(str, 'UTF-8');
@@ -82,15 +90,19 @@ exports.hook_queue = function (next, connection) {
                     smtp_client.send_command('AUTH', 'PLAIN ' + base64('\0' + cfg.auth_user + '\0' + cfg.auth_pass));
                 }
                 else if (cfg.auth_type === 'login') {
+                    smtp_client.authenticating = true;
+                    smtp_client.authenticated=false;
+
+                    connection.loginfo(plugin, 'Authenticating with AUTH LOGIN ' + cfg.auth_user);
                     smtp_client.send_command('AUTH', 'LOGIN');
                     smtp_client.on('auth', function () {
-                        connection.loginfo(plugin, 'Authenticating with AUTH LOGIN ' + cfg.auth_user);
+                        //TODO: nothing?
                     });
                     smtp_client.on('auth_username', function () {
-                        smtp_client.send_command(base64(cfg.auth_user) + '\r\n');
+                        smtp_client.send_command(base64(cfg.auth_user));
                     });
                     smtp_client.on('auth_password', function () {
-                        smtp_client.send_command(base64(cfg.auth_pass) + '\r\n');
+                        smtp_client.send_command(base64(cfg.auth_pass));
                     });
                 }
             });
