@@ -29,11 +29,7 @@ var ResultStore = require('haraka-results');
 var core_consts = require('constants');
 var WRITE_EXCL  = core_consts.O_CREAT | core_consts.O_TRUNC | core_consts.O_WRONLY | core_consts.O_EXCL;
 
-var MAX_UNIQ = 10000;
 var my_hostname = require('os').hostname().replace(/\\/, '\\057').replace(/:/, '\\072');
-
-// File Name Format: $time_$attempts_$pid_$uniq.$host
-var fn_re = /^(\d+)_(\d+)_(\d+)(_\d+\..*)$/
 
 var queue_dir;
 if (config.get('queue_dir')) {
@@ -46,8 +42,6 @@ else {
     queue_dir = path.resolve('tests', 'test-queue');
 }
 
-
-var uniq = Math.round(Math.random() * MAX_UNIQ);
 var cfg;
 var platformDOT = ((['win32','win64'].indexOf( process.platform ) !== -1) ? '' : '__tmp__') + '.';
 exports.load_config = function () {
@@ -153,13 +147,13 @@ exports.scan_queue_pids = function (cb) {
                 return fs.unlink(file, function () {});
             }
 
-            var match = fn_re.exec(file);
-            if (!match) {
+            var parts = _qfile.parts(file);
+            if (!parts) {
                 self.logerror("Unrecognized file in queue directory: " + queue_dir + '/' + file);
                 return;
             }
 
-            pids[match[3]] = true;
+            pids[parts.pid] = true;
         });
 
         return cb(null, Object.keys(pids));
@@ -278,12 +272,20 @@ exports.load_queue_files = function (pid, cb_name, files, callback) {
 
     if (pid) {
         // Pre-scan to rename PID files to my PID:
-        this.loginfo("Grabbing queue files for pid: " + pid);
+        self.loginfo("Grabbing queue files for pid: " + pid);
         async.eachLimit(files, 200, function (file, cb) {
-            var match = fn_re.exec(file);
-            if (match && match[3] == pid) {
-                var next_process = match[1];
-                var new_filename = match[1] + "_" + match[2] + "_" + process.pid + match[4];
+
+            var parts = _qfile.parts(file);
+            if (parts && parts.pid === parseInt(pid)) {
+                var next_process = parts.next_attempt;
+                // maintain some original details for the rename
+                var new_filename = _qfile.name({
+                    arrival      : parts.arrival,
+                    uid          : parts.uid,
+                    next_attempt : parts.next_attempt,
+                    attempts     : parts.attempts,
+                });
+                // self.loginfo("new_filename: ", new_filename);
                 fs.rename(path.join(queue_dir, file), path.join(queue_dir, new_filename), function (err) {
                     if (err) {
                         logger.logerror("Unable to rename queue file: " + file +
@@ -339,8 +341,7 @@ exports.load_queue_files = function (pid, cb_name, files, callback) {
                 return false;
             }
 
-            var matches = file.match(fn_re);
-            if (!matches) {
+            if (!_qfile.parts(file)) {
                 logger.logerror("Unrecognized file in queue folder: " + file);
                 return false;
             }
@@ -349,15 +350,15 @@ exports.load_queue_files = function (pid, cb_name, files, callback) {
         async.mapSeries(files.filter(good_file), function (file, cb) {
             // logger.logdebug("Loading queue file: " + file);
             if (cb_name === '_add_file') {
-                var matches = file.match(fn_re);
-                var next_process = matches[1];
+                var parts = _qfile.parts(file);
+                var next_process = parts.next_attempt;
 
                 if (next_process <= self.cur_time) {
-                    // logger.logdebug("File needs processing now");
+                    logger.logdebug("File needs processing now");
                     load_queue.push(file);
                 }
                 else {
-                    // logger.logdebug("File needs processing later: " + (next_process - self.cur_time) + "ms");
+                    logger.logdebug("File needs processing later: " + (next_process - self.cur_time) + "ms");
                     temp_fail_queue.add(next_process - self.cur_time, function () { load_queue.push(file);});
                 }
                 cb();
@@ -401,8 +402,8 @@ exports._list_file = function (file, cb) {
                 todo_struct.mail_from = new Address (todo_struct.mail_from);
                 todo_struct.file = file;
                 todo_struct.full_path = path.join(queue_dir, file);
-                var match = fn_re.exec(file);
-                todo_struct.pid = match[3];
+                var parts = _qfile.parts(file);
+                todo_struct.pid = (parts && parts.pid) || null;
                 cb(null, todo_struct);
             }
         });
@@ -430,18 +431,91 @@ exports.stats = function () {
     return results;
 };
 
-function _next_uniq () {
-    var result = uniq++;
-    if (uniq >= MAX_UNIQ) {
-        uniq = 1;
-    }
-    return result;
-}
 
-function _fname () {
-    var time = new Date().getTime();
-    return time + '_0_' + process.pid + "_" + _next_uniq() + '.' + my_hostname;
-}
+var QFILECOUNTER = 0;
+var _qfile = exports.qfile = {
+    // File Name Format: $arrival_$nextattempt_$attempts_$pid_$uniquetag_$counter_$host
+    name : function (overrides) {
+        var o = overrides || {};
+        var time = _qfile.time();
+        return [
+            o.arrival       || time,
+            o.next_attempt  || time,
+            o.attempts      || 0,
+            o.pid           || process.pid,
+            o.uid           || _qfile.rnd_unique(),
+            _qfile.next_counter(),
+            o.host          || my_hostname
+        ].join('_');
+    },
+
+    time : function () {
+        return new Date().getTime();
+    },
+
+    next_counter: function () {
+        QFILECOUNTER = (QFILECOUNTER < 10000)?QFILECOUNTER+1:0;
+        return QFILECOUNTER;
+    },
+
+    rnd_unique: function (len) {
+        len = len || 6;
+        var chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+        var result = [];
+        for (var i = len; i > 0; --i){
+            result.push(chars[Math.floor(Math.random() * chars.length)]);
+        }
+        return result.join('');
+    },
+
+    parts : function (filename) {
+        if (!filename){
+            throw new Error("No filename provided");
+        }
+
+        var PARTS_EXPECTED_OLD = 4;
+        var PARTS_EXPECTED_CURRENT = 7;
+        var p = filename.split('_');
+
+        // bail on unknown split lengths
+        if (p.length !== PARTS_EXPECTED_OLD
+            && p.length !== PARTS_EXPECTED_CURRENT){
+            return null;
+        }
+
+        var time = _qfile.time();
+        if (p.length === PARTS_EXPECTED_OLD){
+            // parse the previous string structure
+            // $nextattempt_$attempts_$pid_$uniq.$host
+            // 1484878079415_0_12345_8888.mta1.example.com
+            // var fn_re = /^(\d+)_(\d+)_(\d+)(_\d+\..*)$/
+            // match[1] = $nextattempt
+            // match[2] = $attempts
+            // match[3] = $pid
+            // match[4] = $uniq.$my_hostname
+            var fn_re = /^(\d+)_(\d+)_(\d+)_(\d+)\.(.*)$/;
+            var match = filename.match(fn_re);
+            if (!match){
+                return null;
+            }
+            p = match.slice(1); // grab the capture groups minus the pattern
+            p.splice(3,1,_qfile.rnd_unique(),_qfile.next_counter());  // add a fresh UID and counter
+            p.unshift(time);  // prepend current timestamp -- potentially inaccurate, but non-critical and shortlived
+        }
+
+        return {
+            arrival      : parseInt(p[0]),
+            next_attempt : parseInt(p[1]),
+            attempts     : parseInt(p[2]),
+            pid          : parseInt(p[3]),
+            uid          : p[4],
+            counter      : parseInt(p[5]),
+            host         : p[6],
+            age          : time - parseInt(p[0])
+        };
+    }
+};
+
 
 exports.send_email = function () {
 
@@ -648,15 +722,15 @@ exports.send_trans_email = function (transaction, next) {
 
 exports.process_delivery = function (ok_paths, todo, hmails, cb) {
     var self = this;
-    this.loginfo("Processing domain: " + todo.domain);
-    var fname = _fname();
+    logger.loginfo("[outbound] Processing domain: " + todo.domain);
+    var fname = _qfile.name();
     var tmp_path = path.join(queue_dir, platformDOT + fname);
     var ws = new FsyncWriteStream(tmp_path, { flags: WRITE_EXCL });
     ws.on('close', function () {
         var dest_path = path.join(queue_dir, fname);
         fs.rename(tmp_path, dest_path, function (err) {
             if (err) {
-                self.logerror("Unable to rename tmp file!: " + err);
+                logger.logerror("[outbound] Unable to rename tmp file!: " + err);
                 fs.unlink(tmp_path, function () {});
                 cb("Queue error");
             }
@@ -668,7 +742,7 @@ exports.process_delivery = function (ok_paths, todo, hmails, cb) {
         });
     });
     ws.on('error', function (err) {
-        self.logerror("Unable to write queue file (" + fname + "): " + err);
+        logger.logerror("[outbound] Unable to write queue file (" + fname + "): " + err);
         ws.destroy();
         fs.unlink(tmp_path, function () {});
         cb("Queueing failed");
@@ -705,6 +779,7 @@ exports.build_todo = function (todo, ws, write_more) {
     ws.once('drain', write_more);
 };
 
+
 exports.split_to_new_recipients = function (hmail, recipients, response, cb) {
     var self = this;
     if (recipients.length === hmail.todo.rcpt_to.length) {
@@ -712,11 +787,11 @@ exports.split_to_new_recipients = function (hmail, recipients, response, cb) {
         hmail.refcount++;
         return cb(hmail);
     }
-    var fname = _fname();
+    var fname = _qfile.name();
     var tmp_path = path.join(queue_dir, platformDOT + fname);
     var ws = new FsyncWriteStream(tmp_path, { flags: WRITE_EXCL });
     var err_handler = function (err, location) {
-        self.logerror("Error while splitting to new recipients (" + location + "): " + err);
+        logger.logerror("[outbound] Error while splitting to new recipients (" + location + "): " + err);
         hmail.todo.rcpt_to.forEach(function (rcpt) {
             hmail.extend_rcpt_with_dsn(rcpt, DSN.sys_unspecified("Error splitting to new recipients: " + err));
         });
@@ -756,7 +831,7 @@ exports.split_to_new_recipients = function (hmail, recipients, response, cb) {
     };
 
     ws.on('error', function (err) {
-        self.logerror("Unable to write queue file (" + fname + "): " + err);
+        logger.logerror("[outbound] Unable to write queue file (" + fname + "): " + err);
         ws.destroy();
         hmail.todo.rcpt_to.forEach(function (rcpt) {
             hmail.extend_rcpt_with_dsn(rcpt, DSN.sys_unspecified("Error re-queueing some recipients: " + err));
@@ -778,17 +853,18 @@ exports.get_tls_options = function (mx) {
         'requestCert', 'honorCipherOrder', 'rejectUnauthorized'
     ];
 
-    for (let i = 0; i < config_options.length; i++) {
-        let opt = config_options[i];
+
+    for (var i = 0; i < config_options.length; i++) {
+        var opt = config_options[i];
         if (tls_config.main[opt] === undefined) { continue; }
         tls_options[opt] = tls_config.main[opt];
     }
 
     if (tls_config.outbound) {
-        for (let i = 0; i < config_options.length; i++) {
-            let opt = config_options[i];
-            if (tls_config.outbound[opt] === undefined) { continue; }
-            tls_options[opt] = tls_config.outbound[opt];
+        for (var j = 0; j < config_options.length; j++) {
+            var opt2 = config_options[j];
+            if (tls_config.outbound[opt2] === undefined) { continue; }
+            tls_options[opt2] = tls_config.outbound[opt2];
         }
     }
 
@@ -833,17 +909,18 @@ exports.TODOItem = TODOItem;
 
 var dummy_func = function () {};
 
+
 function HMailItem (filename, filePath, notes) {
     events.EventEmitter.call(this);
-    var matches = filename.match(fn_re);
-    if (!matches) {
+    var parts = _qfile.parts(filename);
+    if (!parts) {
         throw new Error("Bad filename: " + filename);
     }
     this.path         = filePath;
     this.filename     = filename;
-    this.next_process = matches[1];
-    this.num_failures = matches[2];
-    this.pid          = matches[3];
+    this.next_process = parts.next_attempt;
+    this.num_failures = parts.attempts;
+    this.pid          = parts.pid;
     this.notes        = notes || {};
     this.refcount     = 1;
     this.todo         = null;
@@ -857,29 +934,7 @@ function HMailItem (filename, filePath, notes) {
 util.inherits(HMailItem, events.EventEmitter);
 exports.HMailItem = HMailItem;
 
-// populate log functions - so we can use hooks
-for (var key in logger) {
-    if (key.match(/^log\w/)) {
-        exports[key] = (function (key2) {
-            return function () {
-                var args = ["[outbound] "];
-                for (var i=0, l=arguments.length; i<l; i++) {
-                    args.push(arguments[i]);
-                }
-                logger[key2].apply(logger, args);
-            };
-        })(key);
-        HMailItem.prototype[key] = (function (key2) {
-            return function () {
-                var args = [ this ];
-                for (var i=0, l=arguments.length; i<l; i++) {
-                    args.push(arguments[i]);
-                }
-                logger[key2].apply(logger, args);
-            };
-        })(key);
-    }
-}
+logger.add_log_methods(HMailItem.prototype, "outbound");
 
 HMailItem.prototype.data_stream = function () {
     return fs.createReadStream(this.path, {start: this.data_start, end: this.file_size});
@@ -1210,6 +1265,30 @@ var cram_md5_response = function (username, password, challenge) {
     return utils.base64(username + ' ' + digest);
 }
 
+function _create_socket (port, host, local_addr, is_unix_socket, connect_timeout, pool_timeout, callback) {
+    var socket = is_unix_socket ? sock.connect({path: host}) :
+        sock.connect({port: port, host: host, localAddress: local_addr});
+    socket.setTimeout(connect_timeout * 1000);
+    logger.logdebug('[outbound] host=' +
+        host + ' port=' + port + ' pool_timeout=' + pool_timeout + ' created');
+    socket.once('connect', function () {
+        socket.removeAllListeners('error'); // these get added after callback
+        callback(null, socket);
+    });
+    socket.once('error', function (err) {
+        socket.end();
+        var name = 'outbound::' + port + ':' + host + ':' + local_addr + ':' + pool_timeout;
+        if (server.notes.pool[name]) {
+            delete server.notes.pool[name];
+        }
+        callback("Outbound connection error: " + err, null);
+    });
+    socket.once('timeout', function () {
+        socket.end();
+        callback("Outbound connection timed out to " + host + ":" + port, null);
+    });
+}
+
 // Separate pools are kept for each set of server attributes.
 function get_pool (port, host, local_addr, is_unix_socket, connect_timeout, pool_timeout, max) {
     port = port || 25;
@@ -1222,28 +1301,7 @@ function get_pool (port, host, local_addr, is_unix_socket, connect_timeout, pool
     if (!server.notes.pool[name]) {
         var pool = generic_pool.Pool({
             name: name,
-            create: function (callback) {
-                var socket = is_unix_socket ? sock.connect({path: host}) :
-                    sock.connect({port: port, host: host, localAddress: local_addr});
-                socket.setTimeout(connect_timeout * 1000);
-                logger.logdebug('[outbound] host=' +
-                    host + ' port=' + port + ' pool_timeout=' + pool_timeout + ' created');
-                socket.once('connect', function () {
-                    socket.removeAllListeners('error'); // these get added after callback
-                    callback(null, socket);
-                });
-                socket.once('error', function (err) {
-                    socket.end();
-                    if (server.notes.pool[name]) {
-                        delete server.notes.pool[name];
-                    }
-                    callback("Outbound connection error: " + err, null);
-                });
-                socket.once('timeout', function () {
-                    socket.end();
-                    callback("Outbound connection timed out to " + host + ":" + port, null);
-                });
-            },
+            create: _create_socket,
             validate: function (socket) {
                 return socket.writable;
             },
@@ -1259,7 +1317,7 @@ function get_pool (port, host, local_addr, is_unix_socket, connect_timeout, pool
                     logger.logwarn("[outbound] Socket got an error while shutting down: " + err);
                 });
                 if (!socket.writable) return;
-                logger.logprotocol("C: QUIT");
+                logger.logprotocol("[outbound] C: QUIT");
                 socket.write("QUIT\r\n");
                 socket.end(); // half close
                 socket.once('line', function (line) {
@@ -1283,6 +1341,10 @@ function get_pool (port, host, local_addr, is_unix_socket, connect_timeout, pool
 
 // Get a socket for the given attributes.
 function get_client (port, host, local_addr, is_unix_socket, callback) {
+    if (cfg.pool_concurrency_max == 0) {
+        return _create_socket(port, host, local_addr, is_unix_socket, cfg.connect_timeout, cfg.pool_timeout, callback);
+    }
+
     var pool = get_pool(port, host, local_addr, is_unix_socket, cfg.connect_timeout, cfg.pool_timeout, cfg.pool_concurrency_max);
     if (pool.waitingClientsCount() >= cfg.pool_concurrency_max) {
         return callback("Too many waiting clients for pool", null);
@@ -1296,6 +1358,10 @@ function get_client (port, host, local_addr, is_unix_socket, callback) {
 
 function release_client (socket, port, host, local_addr, error) {
     logger.logdebug("[outbound] release_client: " + host + ":" + port + " to " + local_addr);
+
+    if (cfg.pool_concurrency_max == 0) {
+        return sockend();
+    }
 
     if (!socket.__acquired) {
         logger.logerror("Release an un-acquired socket. Stack: " + (new Error()).stack);
@@ -1421,6 +1487,11 @@ HMailItem.prototype.try_deliver_host_on_socket = function (mx, host, port, socke
             release_client(socket, port, host, mx.bind, true);
             return self.try_deliver_host(mx);
         }
+    });
+
+    var fin_sent = false;
+    socket.once('end', function () {
+        fin_sent = true;
     });
 
     var command = mx.using_lmtp ? 'connect_lmtp' : 'connect';
@@ -1597,7 +1668,7 @@ HMailItem.prototype.try_deliver_host_on_socket = function (mx, host, port, socke
         else {
             self.discard();
         }
-        release_client(socket, port, host, mx.bind);
+        release_client(socket, port, host, mx.bind, fin_sent);
     };
 
     socket.on('line', function (line) {
@@ -1787,8 +1858,8 @@ HMailItem.prototype.try_deliver_host_on_socket = function (mx, host, port, socke
                                 send_command('DATA');
                             }
                             else {
-                                send_command('RSET');
                                 finish_processing_mail(false);
+                                send_command('RSET');
                             }
                         }
                         else {
@@ -2218,11 +2289,12 @@ HMailItem.prototype.deferred_respond = function (retval, msg, params) {
         delay = parseInt(msg, 10) * 1000;
     }
 
-    var until = Date.now() + delay;
-
     this.loginfo("Temp failing " + this.filename + " for " + (delay/1000) + " seconds: " + params.err);
-
-    var new_filename = this.filename.replace(/^(\d+)_(\d+)_/, until + '_' + this.num_failures + '_');
+    var parts = _qfile.parts(this.filename);
+    parts.next_attempt = Date.now() + delay;
+    parts.attempts = this.num_failures;
+    var new_filename = _qfile.name(parts);
+    // var new_filename = this`.filename.replace(/^(\d+)_(\d+)_/, until + '_' + this.num_failures + '_');
 
     var hmail = this;
     fs.rename(this.path, path.join(queue_dir, new_filename), function (err) {

@@ -34,6 +34,7 @@
     "haraka-utils"          : "*",
     "haraka-plugin-asn"     : "*",
     "haraka-plugin-geoip"   : "*",
+    "haraka-plugin-fcrdns"  : "*",
     "haraka-plugin-karma"   : "*",
     "haraka-plugin-limit"   : "*",
     "haraka-plugin-watch"   : "*"
@@ -51,7 +52,7 @@
   "devDependencies": {
     "nodeunit"              : "*",
     "haraka-test-fixtures"  : ">=1.0.17",
-    "eslint"                : ">=2",
+    "eslint"                : ">=3",
     "eslint-plugin-haraka"  : "*",
     "nodemailer"            : "^2.7.2"
   },
