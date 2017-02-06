@@ -1282,6 +1282,10 @@ function get_client (port, host, local_addr, is_unix_socket, callback) {
 function release_client (socket, port, host, local_addr, error) {
     logger.logdebug("[outbound] release_client: " + host + ":" + port + " to " + local_addr);
 
+    if (cfg.pool_concurrency_max == 0) {
+        return sockend();
+    }
+
     if (!socket.__acquired) {
         logger.logerror("Release an un-acquired socket. Stack: " + (new Error()).stack);
         return;
