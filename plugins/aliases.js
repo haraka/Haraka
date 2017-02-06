@@ -80,12 +80,12 @@ exports.aliases = function (next, connection, params) {
     next();
 };
 
-function _drop(plugin, connection, rcpt) {
+function _drop (plugin, connection, rcpt) {
     connection.logdebug(plugin, "marking " + rcpt + " for drop");
     connection.transaction.notes.discard = true;
 }
 
-function _alias(plugin, connection, key, config, host) {
+function _alias (plugin, connection, key, config, host) {
     var to;
     var toAddress;
 

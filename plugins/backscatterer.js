@@ -1,6 +1,6 @@
 // backscatterer plugin
 
-exports.register = function() {
+exports.register = function () {
     this.inherits('dns_list_base');
 };
 

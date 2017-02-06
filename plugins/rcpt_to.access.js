@@ -1,7 +1,7 @@
 'use strict';
 // rcpt_to.access plugin
 
-exports.register = function() {
+exports.register = function () {
     var config = this.config.get('rcpt_to.access.ini');
     this.wl = this.config.get('rcpt_to.access.whitelist', 'list');
     this.bl = this.config.get('rcpt_to.access.blacklist', 'list');
@@ -24,7 +24,7 @@ exports.register = function() {
     this.register_hook('rcpt', 'rcpt_to_access');
 };
 
-exports.rcpt_to_access = function(next, connection, params) {
+exports.rcpt_to_access = function (next, connection, params) {
     var plugin = this;
     var rcpt_to = params[0].address();
 
@@ -57,7 +57,7 @@ exports.rcpt_to_access = function(next, connection, params) {
     return next();
 };
 
-function _in_whitelist(connection, plugin, address) {
+function _in_whitelist (connection, plugin, address) {
     var i;
     for (i in plugin.wl) {
         connection.logdebug(plugin, 'checking ' + address + ' against ' +
@@ -80,7 +80,7 @@ function _in_whitelist(connection, plugin, address) {
     return false;
 }
 
-function _in_blacklist(connection, plugin, address) {
+function _in_blacklist (connection, plugin, address) {
     var i;
     for (i in plugin.bl) {
         connection.logdebug(plugin, 'checking ' + address + ' against ' +

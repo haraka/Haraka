@@ -22,7 +22,7 @@ exports.register = function () {
 
 exports.loadConfig = function () {
     var plugin = this;
-    var maxLag = plugin.config.get('toobusy.maxlag','value', function() {
+    var maxLag = plugin.config.get('toobusy.maxlag','value', function () {
         plugin.loadConfig();
     });
 

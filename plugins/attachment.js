@@ -1,3 +1,4 @@
+'use strict';
 /*eslint no-shadow: ["error", { "allow": ["file", "depth", "code", "signal"] }]*/
 // attachment
 
@@ -78,7 +79,7 @@ exports.hook_init_master = exports.hook_init_child = function (next) {
     });
 };
 
-function options_to_array(options) {
+function options_to_array (options) {
     if (!options) return false;
     var arr = options.toLowerCase().replace(/\s+/,' ').split(/[;, ]/);
     var len = arr.length;
@@ -94,7 +95,7 @@ function options_to_array(options) {
     return (arr.length ? arr : false);
 }
 
-exports.unarchive_recursive = function(connection, f, archive_file_name, cb) {
+exports.unarchive_recursive = function (connection, f, archive_file_name, cb) {
     if (archives_disabled) {
         connection.logdebug(this, 'archive support disabled');
         return cb();
@@ -108,7 +109,7 @@ exports.unarchive_recursive = function(connection, f, archive_file_name, cb) {
     var done_cb = false;
     var timer;
 
-    function do_cb(err, files2) {
+    function do_cb (err, files2) {
         if (timer) clearTimeout(timer);
         if (done_cb) return;
         done_cb = true;
@@ -116,18 +117,18 @@ exports.unarchive_recursive = function(connection, f, archive_file_name, cb) {
         return cb(err, files2);
     }
 
-    function deleteTempFiles() {
+    function deleteTempFiles () {
         tmpfiles.forEach(function (t) {
             fs.close(t[0], function () {
                 connection.logdebug(plugin, 'closed fd: ' + t[0]);
-                fs.unlink(t[1], function() {
+                fs.unlink(t[1], function () {
                     connection.logdebug(plugin, 'deleted tempfile: ' + t[1]);
                 });
             });
         });
     }
 
-    function listFiles(in_file, prefix, depth) {
+    function listFiles (in_file, prefix, depth) {
         if (!depth) depth = 0;
         if (depth >= plugin.archive_max_depth || depth_exceeded) {
             if (count === 0) {
@@ -148,11 +149,11 @@ exports.unarchive_recursive = function(connection, f, archive_file_name, cb) {
             return do_cb(new Error('bsdtar timed out'));
         }, plugin.cfg.timeout);
         var lines = "";
-        bsdtar.stdout.on('data', function(data) {
+        bsdtar.stdout.on('data', function (data) {
             lines += data;
         });
         var stderr = "";
-        bsdtar.stderr.on('data', function(data) {
+        bsdtar.stderr.on('data', function (data) {
             stderr += data;
         });
         bsdtar.on('exit', function (code, signal) {
@@ -214,8 +215,8 @@ exports.unarchive_recursive = function(connection, f, archive_file_name, cb) {
                         }, plugin.cfg.timeout);
                         // Create WriteStream for this file
                         var tws = fs.createWriteStream(tmpfile, { "fd": fd });
-                        var err = "";
-                        cmd.stderr.on('data', function(data) {
+                        err = "";
+                        cmd.stderr.on('data', function (data) {
                             err += data;
                         });
                         cmd.on('exit', function (code, signal) {
@@ -259,7 +260,7 @@ exports.start_attachment = function (connection, ctype, filename, body, stream) 
     var plugin = this;
     var txn = connection.transaction;
 
-    function next() {
+    function next () {
         if (txn.notes.attachment_count === 0 && txn.notes.attachment_next) {
             return txn.notes.attachment_next();
         }
@@ -317,8 +318,8 @@ exports.start_attachment = function (connection, ctype, filename, body, stream) 
     stream.connection = connection;
     stream.pause();
     tmp.file(function (err, fn, fd) {
-        function cleanup() {
-            fs.close(fd, function() {
+        function cleanup () {
+            fs.close(fd, function () {
                 connection.logdebug(plugin, 'closed fd: ' + fd);
                 fs.unlink(fn, function () {
                     connection.logdebug(plugin, 'unlinked: ' + fn);
@@ -347,7 +348,7 @@ exports.start_attachment = function (connection, ctype, filename, body, stream) 
             cleanup();
             return next();
         });
-        ws.on('close', function() {
+        ws.on('close', function () {
             connection.logdebug(plugin, 'end of stream reached');
             plugin.unarchive_recursive(connection, fn, filename, function (error, files) {
                 txn.notes.attachment_count--;
@@ -404,15 +405,15 @@ exports.check_attachments = function (next, connection) {
 
     // Add in any wildcard configuration
     var ctype_wc = this.config.get('attachment.ctype.wc', 'list');
-    for (var i=0; i<ctype_wc.length; i++) {
+    for (let i=0; i<ctype_wc.length; i++) {
         ctype_config.push(utils.wildcard_to_regexp(ctype_wc[i]));
     }
     var file_wc = this.config.get('attachment.filename.wc', 'list');
-    for (var i=0; i<file_wc.length; i++) {
+    for (let i=0; i<file_wc.length; i++) {
         file_config.push(utils.wildcard_to_regexp(file_wc[i]));
     }
     var archive_wc = this.config.get('attachment.archive.filename.wc', 'list');
-    for (var i=0; i<archive_wc.length; i++) {
+    for (let i=0; i<archive_wc.length; i++) {
         archive_config.push(utils.wildcard_to_regexp(archive_wc[i]));
     }
 

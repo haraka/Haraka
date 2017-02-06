@@ -19,11 +19,12 @@ exports.hook_init_master = function (next, server) {
         server.notes.pt_new_out_stats = [0,0,0,0];
         var cluster = server.cluster;
         var recvMsg = function (msg) {
+            var count;
             switch (msg.event) {
                 case 'process_title.connect':
                     server.notes.pt_connections++;
                     server.notes.pt_concurrent_cluster[msg.wid]++;
-                    var count = 0;
+                    count = 0;
                     Object.keys(server.notes.pt_concurrent_cluster).forEach(function (id) {
                         count += server.notes.pt_concurrent_cluster[id];
                     });
@@ -31,7 +32,7 @@ exports.hook_init_master = function (next, server) {
                     break;
                 case 'process_title.disconnect':
                     server.notes.pt_concurrent_cluster[msg.wid]--;
-                    var count = 0;
+                    count = 0;
                     Object.keys(server.notes.pt_concurrent_cluster).forEach(function (id) {
                         count += server.notes.pt_concurrent_cluster[id];
                     });
@@ -51,6 +52,7 @@ exports.hook_init_master = function (next, server) {
                         server.notes.pt_out_stats = server.notes.pt_new_out_stats.slice(0,3).join('/');
                         server.notes.pt_new_out_stats = [0,0,0,0];
                     }
+                    // fall through
                 default:
                     // Unknown message
             }

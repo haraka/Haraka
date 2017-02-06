@@ -23,7 +23,7 @@ exports.load_qmd_ini = function () {
                 );
 };
 
-exports.hook_mail = function(next, connection, params) {
+exports.hook_mail = function (next, connection, params) {
     var plugin = this;
 
     if (!plugin.cfg.main.check_outbound) { return next(); }
@@ -64,7 +64,7 @@ exports.hook_mail = function(next, connection, params) {
     plugin.get_qmd_response(connection, domain, email, cb);
 };
 
-exports.hook_rcpt = function(next, connection, params) {
+exports.hook_rcpt = function (next, connection, params) {
     var plugin = this;
     var txn = connection.transaction;
 
@@ -124,7 +124,7 @@ exports.get_qmd_response = function (connection, domain, email, cb) {
     connection.logdebug(plugin, "checking " + email);
     options.path = '/qd1/deliverable?' + querystring.escape(email);
     // connection.logdebug(plugin, 'PATH: ' + options.path);
-    http.get(options, function(res) {
+    http.get(options, function (res) {
         connection.logprotocol(plugin, 'STATUS: ' + res.statusCode);
         connection.logprotocol(plugin, 'HEADERS: ' + JSON.stringify(res.headers));
         res.setEncoding('utf8');
@@ -136,7 +136,7 @@ exports.get_qmd_response = function (connection, domain, email, cb) {
             cb(undefined, arr);
 
         });
-    }).on('error', function(e) {
+    }).on('error', function (e) {
         return cb(e);
     });
 };

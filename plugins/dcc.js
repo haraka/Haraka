@@ -61,13 +61,13 @@ exports.hook_data_post = function (next, connection) {
         var result = rl.shift();
         switch (result) {
             case 'A':
-                // Accept
+                // Accept, fall through
             case 'G':
-                // Greylist
+                // Greylist, fall through
             case 'R':
-                // Reject
+                // Reject, fall through
             case 'S':
-                // Accept for some recipients
+                // Accept for some recipients, fall through
             case 'T':
                 // Temporary failure
                 break;

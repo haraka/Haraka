@@ -2,7 +2,7 @@
 
 // documentation via: haraka -h plugins/relay_force_routing
 
-exports.register = function() {
+exports.register = function () {
     this.logerror(this, "deprecated. see 'haraka -h relay'");
 };
 

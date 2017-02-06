@@ -22,7 +22,7 @@ exports.load_xclient_hosts = function () {
     allowed_hosts = ah;
 }
 
-function xclient_allowed(ip) {
+function xclient_allowed (ip) {
     if (ip === '127.0.0.1' || ip === '::1' || allowed_hosts[ip]) {
         return true;
     }

@@ -4,7 +4,7 @@ var os = require('os');
 
 var tempDir = os.tmpdir();
 
-exports.hook_queue = function(next, connection) {
+exports.hook_queue = function (next, connection) {
     var ws = fs.createWriteStream(tempDir + '/mail.eml');
     connection.logdebug(this, "Saving to " + tempDir + "/mail.eml");
     ws.once('close', function () {

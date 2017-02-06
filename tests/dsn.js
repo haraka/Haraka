@@ -4,13 +4,13 @@ var constants    = require('haraka-constants');
 
 constants.import(global);
 
-function _set_up(done) {
+function _set_up (done) {
     this.DSN = require('../dsn');
 
     done();
 }
 
-function _tear_down(done) {
+function _tear_down (done) {
     done();
 }
 

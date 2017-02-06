@@ -46,7 +46,7 @@ exports.HostPool = {
         test.done();
     },
 
-    "dead host": function(test){
+    "dead host": function (test){
         test.expect(3);
 
         var pool = new HostPool('1.1.1.1:1111, 2.2.2.2:2222');
@@ -68,7 +68,7 @@ exports.HostPool = {
     // if they're *all* dead, we return a host to try anyway, to keep from
     // accidentally DOS'ing ourselves if there's a transient but widespread
     // network outage
-    "they're all dead": function(test){
+    "they're all dead": function (test){
         test.expect(6);
 
         var host1;
@@ -104,27 +104,27 @@ exports.HostPool = {
         test.expect(2);
 
         var num_reqs = 0;
-        var MockSocket = function MockSocket(pool) {
+        var MockSocket = function MockSocket (pool) {
             var self = this;
 
             // these are the methods called from probe_dead_host
 
             // setTimeout on the socket
-            self.pretendTimeout = function(){};
-            self.setTimeout = function(ms, cb){
+            self.pretendTimeout = function (){};
+            self.setTimeout = function (ms, cb){
                 self.pretendTimeout = cb;
             };
             // handle socket.on('error', ....
             self.listeners = {};
-            self.on = function(eventname, cb){
+            self.on = function (eventname, cb){
                 self.listeners[eventname] = cb;
             };
-            self.emit = function(eventname){
+            self.emit = function (eventname){
                 self.listeners[eventname]();
             };
             // handle socket.connect(...
-            self.connected = function() {};
-            self.connect = function(port, host, cb){
+            self.connected = function () {};
+            self.connect = function (port, host, cb){
                 switch (++num_reqs){
                     case 1:
                         // the first time through we pretend it timed out
@@ -144,7 +144,7 @@ exports.HostPool = {
                         process.exit(1);
                 }
             };
-            self.destroy = function(){};
+            self.destroy = function (){};
 
         };
 
@@ -152,7 +152,7 @@ exports.HostPool = {
         var pool = new HostPool('1.1.1.1:1111, 2.2.2.2:2222', retry_secs);
 
         // override the pool's get_socket method to return our mock
-        pool.get_socket = function(){ return new MockSocket(pool); };
+        pool.get_socket = function (){ return new MockSocket(pool); };
 
         // mark the host as failed and start up the retry timers
         pool.failed('1.1.1.1', '1111');
@@ -161,7 +161,7 @@ exports.HostPool = {
 
         // probe_dead_host() will hit two failures and one success (based on
         // num_reqs above). So we wait at least 10s for that to happen:
-        var timer = setTimeout(function(){
+        var timer = setTimeout(function (){
             clearInterval(interval);
             test.ok(false, 'probe_dead_host failed');
             test.done();

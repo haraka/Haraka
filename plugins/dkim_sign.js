@@ -11,7 +11,7 @@ var util       = require('util');
 
 var utils      = require('haraka-utils');
 
-function DKIMSignStream(selector, domain, private_key, headers_to_sign, header, end_callback) {
+function DKIMSignStream (selector, domain, private_key, headers_to_sign, header, end_callback) {
     Stream.call(this);
     this.selector = selector;
     this.domain = domain;

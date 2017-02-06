@@ -1,10 +1,11 @@
-module.exports = function(grunt) {
+module.exports = function (grunt) {
 
     grunt.loadNpmTasks('grunt-contrib-clean');
     grunt.loadNpmTasks('grunt-bower-install-simple');
     grunt.loadNpmTasks('grunt-bower');
 
-    var bpSrc = [], bpDest = [];
+    var bpSrc = [];
+    var bpDest = [];
     [
         "404.html",
         "apple-touch-icon.png",

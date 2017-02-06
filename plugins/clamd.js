@@ -3,7 +3,7 @@
 var sock = require('./line_socket');
 var utils = require('haraka-utils');
 
-exports.load_excludes = function() {
+exports.load_excludes = function () {
     var plugin = this;
 
     plugin.loginfo('Loading excludes file');
@@ -67,7 +67,7 @@ exports.load_excludes = function() {
     plugin.skip_list = new_skip_list;
 };
 
-exports.load_clamd_ini = function() {
+exports.load_clamd_ini = function () {
     var plugin = this;
 
     plugin.cfg = plugin.config.get('clamd.ini', {
@@ -181,7 +181,7 @@ exports.hook_data_post = function (next, connection) {
     var hosts = cfg.main.clamd_socket.split(/[,; ]+/);
 
     if (cfg.main.randomize_host_order) {
-        hosts.sort(function() {return 0.5 - Math.random();});
+        hosts.sort(function () {return 0.5 - Math.random();});
     }
 
     var try_next_host = function () {

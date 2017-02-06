@@ -2,7 +2,7 @@
 //
 // NOTICE: this plugin is deprecated. See 'haraka -h access' to upgrade
 
-exports.register = function() {
+exports.register = function () {
     var config = this.config.get('connect.rdns_access.ini');
     this.wl = this.config.get('connect.rdns_access.whitelist', 'list');
     this.bl = this.config.get('connect.rdns_access.blacklist', 'list');
@@ -26,7 +26,7 @@ exports.register = function() {
     this.register_hook('connect', 'rdns_access');
 };
 
-exports.rdns_access = function(next, connection) {
+exports.rdns_access = function (next, connection) {
     var plugin = this;
 
     // IP whitelist checks
@@ -84,7 +84,7 @@ exports.rdns_access = function(next, connection) {
     return next();
 }
 
-function _in_whitelist(connection, plugin, host) {
+function _in_whitelist (connection, plugin, host) {
     var i;
     for (i in plugin.wl) {
         connection.logdebug(plugin, 'checking ' + host + ' against ' +
@@ -107,7 +107,7 @@ function _in_whitelist(connection, plugin, host) {
     return 0;
 }
 
-function _in_blacklist(connection, plugin, host) {
+function _in_blacklist (connection, plugin, host) {
     var i;
     for (i in plugin.bl) {
         connection.logdebug(plugin, 'checking ' + host + ' against ' +

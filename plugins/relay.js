@@ -5,7 +5,7 @@
 var ipaddr = require('ipaddr.js');
 var net    = require('net');
 
-exports.register = function() {
+exports.register = function () {
     var plugin = this;
 
     plugin.load_relay_ini();             // plugin.cfg = { }
@@ -51,7 +51,7 @@ exports.load_dest_domains = function () {
     plugin.dest = plugin.config.get(
         'relay_dest_domains.ini',
         'ini',
-        function() { plugin.load_dest_domains(); }
+        function () { plugin.load_dest_domains(); }
     );
 };
 
@@ -195,7 +195,7 @@ exports.force_routing = function (next, hmail, domain) {
     return next(OK, nexthop);
 };
 
-exports.all = function(next, connection, params) {
+exports.all = function (next, connection, params) {
 // relay everything - could be useful for a spamtrap
     var plugin = this;
     if (!plugin.cfg.relay.all) { return next(); }

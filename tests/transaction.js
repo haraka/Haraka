@@ -1,11 +1,11 @@
 var Transaction  = require('../transaction');
 
-function _set_up(done) {
+function _set_up (done) {
     this.transaction = Transaction.createTransaction();
     done();
 }
 
-function _tear_down(done) {
+function _tear_down (done) {
     done();
 }
 

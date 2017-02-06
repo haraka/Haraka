@@ -163,7 +163,7 @@ exports.connectionRaw = {
         test.expect(4);
         this.connection.set('proxy', 'ip', '172.16.15.1');
         this.connection.set('proxy', 'type', 'haproxy');
-        this.connection.set('proxy', 'timer', setTimeout(function() {}, 1000));
+        this.connection.set('proxy', 'timer', setTimeout(function () {}, 1000));
         this.connection.set('proxy', 'allowed', true);
 
         test.equal(true, this.connection.proxy.allowed);

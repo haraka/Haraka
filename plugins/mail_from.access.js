@@ -1,6 +1,6 @@
 // mail_from.access plugin
 
-exports.register = function() {
+exports.register = function () {
     var config = this.config.get('mail_from.access.ini');
     this.wl = this.config.get('mail_from.access.whitelist', 'list');
     this.bl = this.config.get('mail_from.access.blacklist', 'list');
@@ -23,7 +23,7 @@ exports.register = function() {
     this.register_hook('mail', 'mail_from_access');
 }
 
-exports.mail_from_access = function(next, connection, params) {
+exports.mail_from_access = function (next, connection, params) {
     var plugin = this;
     var mail_from = params[0].address();
 
@@ -56,7 +56,7 @@ exports.mail_from_access = function(next, connection, params) {
     return next();
 }
 
-function _in_whitelist(connection, plugin, address) {
+function _in_whitelist (connection, plugin, address) {
     var i;
     for (i in plugin.wl) {
         connection.logdebug(plugin, 'checking ' + address + ' against ' +
@@ -79,7 +79,7 @@ function _in_whitelist(connection, plugin, address) {
     return false;
 }
 
-function _in_blacklist(connection, plugin, address) {
+function _in_blacklist (connection, plugin, address) {
     var i;
     for (i in plugin.bl) {
         connection.logdebug(plugin, 'checking ' + address + ' against ' +

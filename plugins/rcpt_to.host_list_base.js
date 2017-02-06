@@ -29,7 +29,7 @@ exports.load_host_list_regex = function () {
                 plugin.host_list_regex.join('|') + ')$', 'i');
 };
 
-exports.hook_mail = function(next, connection, params) {
+exports.hook_mail = function (next, connection, params) {
     var plugin = this;
     var txn = connection.transaction;
     if (!txn) { return; }
