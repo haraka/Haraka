@@ -369,7 +369,7 @@ exports.get_client_plugin = function (plugin, connection, c, callback) {
     pool.acquire(function (err, smtp_client) {
         connection.logdebug(plugin, 'Got smtp_client: ' + smtp_client.uuid);
 
-        var secured = false;       
+        var secured = false;
 
         smtp_client.load_tls_config(plugin);
 
@@ -420,7 +420,7 @@ exports.get_client_plugin = function (plugin, connection, c, callback) {
                         c.enable_tls)
                     {
                         smtp_client.socket.on('secure', on_secured);
-                        smtp_client.secured = false;  // have to wait in forward plugin before we can do auth, even if capabilities are there on first EHLO                         
+                        smtp_client.secured = false;  // have to wait in forward plugin before we can do auth, even if capabilities are there on first EHLO
                         smtp_client.send_command('STARTTLS');
                         return;
                     }
