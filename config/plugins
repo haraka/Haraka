@@ -20,7 +20,7 @@ access
 # connect.p0f
 # geoip
 # asn
-# connect.fcrdns
+# fcrdns
 # block mails from known bad hosts (see config/dnsbl.zones for the DNS zones queried)
 dnsbl
 
