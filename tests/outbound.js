@@ -57,7 +57,7 @@ exports.qfile = {
         this.qfile = require('../outbound').qfile;
         done();
     },
-    'name() basic functions': function(test){
+    'name() basic functions': function (test){
         test.expect(3);
         var name = this.qfile.name();
         var split = name.split('_');
@@ -66,7 +66,7 @@ exports.qfile = {
         test.equal(split[3], process.pid);
         test.done();
     },
-    'name() with overrides': function(test){
+    'name() with overrides': function (test){
         test.expect(7);
         var overrides = {
             arrival : 12345,
@@ -87,7 +87,7 @@ exports.qfile = {
         test.equal(split[6], overrides.host);
         test.done();
     },
-    'rnd_unique() is unique-ish': function(test){
+    'rnd_unique() is unique-ish': function (test){
         var repeats = 1000;
         test.expect(repeats);
         var u = this.qfile.rnd_unique();
@@ -96,7 +96,7 @@ exports.qfile = {
         }
         test.done();
     },
-    'parts() updates previous queue filenames': function(test){
+    'parts() updates previous queue filenames': function (test){
         test.expect(4);
         // $nextattempt_$attempts_$pid_$uniq.$host
         var name = "1111_0_2222_3333.foo.example.com"
@@ -107,7 +107,7 @@ exports.qfile = {
         test.equal(parts.host, 'foo.example.com');
         test.done();
     },
-    'parts() handles standard queue filenames': function(test){
+    'parts() handles standard queue filenames': function (test){
         test.expect(6);
         var overrides = {
             arrival : 12345,
