@@ -70,12 +70,12 @@ exports.hook_queue = function (next, connection) {
 
         if (cfg.auth_user) {
             connection.loginfo(plugin, 'Configuring authentication for SMTP server ' + cfg.host + ':' + cfg.port);
-            smtp_client.on('capabilities', function() {
+            smtp_client.on('capabilities', function () {
                 connection.loginfo(plugin, 'capabilities received');
                 if ('secured' in smtp_client) {
                     connection.loginfo(plugin, 'secured is pending');
                     if (smtp_client.secured === false) {
-                        connection.loginfo(plugin,"Waiting for STARTTLS to complete. AUTH posponed");
+                        connection.loginfo(plugin,"Waiting for STARTTLS to complete. AUTH postponed");
                         return;
                     }
                 }

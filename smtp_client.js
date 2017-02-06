@@ -67,7 +67,7 @@ function SMTPClient (port, host, connect_timeout, idle_timeout) {
         }
 
         if (client.command === 'auth' || client.authenticating) {
-            logger.loginfo('SERVER RESPONCE, CLIENT ' + client.command + ", authenticating=" + client.authenticating + ",code="+code + ",cont="+cont+",msg=" +msg);
+            logger.loginfo('SERVER RESPONSE, CLIENT ' + client.command + ", authenticating=" + client.authenticating + ",code="+code + ",cont="+cont+",msg=" +msg);
             if (code.match(/^3/) && msg === 'VXNlcm5hbWU6') {
                 client.emit('auth_username');
                 return;
@@ -369,7 +369,7 @@ exports.get_client_plugin = function (plugin, connection, c, callback) {
     pool.acquire(function (err, smtp_client) {
         connection.logdebug(plugin, 'Got smtp_client: ' + smtp_client.uuid);
 
-        var secured = false;        
+        var secured = false;       
 
         smtp_client.load_tls_config(plugin);
 
@@ -391,7 +391,7 @@ exports.get_client_plugin = function (plugin, connection, c, callback) {
 
         var helo = function (command) {
             if (smtp_client.xclient) {
-                smtp_client.send_command(command, connection.hello_host);
+                smtp_client.send_command(command, connection.hello.host);
             }
             else {
                 smtp_client.send_command(command, plugin.config.get('me'));
@@ -409,7 +409,7 @@ exports.get_client_plugin = function (plugin, connection, c, callback) {
             for (var line in smtp_client.response) {
                 if (smtp_client.response[line].match(/^XCLIENT/)) {
                     if (!smtp_client.xclient) {
-                        smtp_client.send_command('XCLIENT', 'ADDR=' + connection.remote_ip);
+                        smtp_client.send_command('XCLIENT', 'ADDR=' + connection.remote.ip);
                         return;
                     }
                 }
@@ -499,7 +499,7 @@ exports.get_client_plugin = function (plugin, connection, c, callback) {
 
         if (smtp_client.connected) {
             if (smtp_client.xclient) {
-                smtp_client.send_command('XCLIENT', 'ADDR=' + connection.remote_ip);
+                smtp_client.send_command('XCLIENT', 'ADDR=' + connection.remote.ip);
             }
             else {
                 smtp_client.emit('helo');
