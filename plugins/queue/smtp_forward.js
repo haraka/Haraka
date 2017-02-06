@@ -95,13 +95,13 @@ exports.hook_queue = function (next, connection) {
 
                     connection.loginfo(plugin, 'Authenticating with AUTH LOGIN ' + cfg.auth_user);
                     smtp_client.send_command('AUTH', 'LOGIN');
-                    smtp_client.on('auth', function() {
+                    smtp_client.on('auth', function () {
                         //TODO: nothing?
                     });
-                    smtp_client.on('auth_username', function() {
+                    smtp_client.on('auth_username', function () {
                         smtp_client.send_command(base64(cfg.auth_user));
                     });
-                    smtp_client.on('auth_password', function() {
+                    smtp_client.on('auth_password', function () {
                         smtp_client.send_command(base64(cfg.auth_pass));
                     });
                 }
