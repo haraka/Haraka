@@ -399,8 +399,8 @@ Connection.prototype._process_data = function () {
         var this_line = this.current_data.slice(0, offset+1);
         // Hack: bypass this code to allow HAProxy's PROXY extension
         if (this.state === states.STATE_PAUSE &&
-            this.proxy.allowed &&
-            /^PROXY /.test(this_line)) {
+            this.proxy.allowed && /^PROXY /.test(this_line))
+        {
             if (this.proxy.timer) clearTimeout(this.proxy.timer);
             this.state = states.STATE_CMD;
             this.current_data = this.current_data.slice(this_line.length);
@@ -1203,6 +1203,7 @@ Connection.prototype.cmd_proxy = function (line) {
         self.set('remote', 'ip', src_ip);
         self.set('remote', 'port', parseInt(src_port, 10));
         self.set('remote', 'host', null);
+        self.set('remote', 'is_private', net_utils.is_private_ip(src_ip));
         self.set('hello', 'host', null);
         plugins.run_hooks('connect_init', self);
     });
