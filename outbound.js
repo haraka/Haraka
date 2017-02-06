@@ -648,7 +648,7 @@ exports.send_trans_email = function (transaction, next) {
 
 exports.process_delivery = function (ok_paths, todo, hmails, cb) {
     var self = this;
-    this.loginfo("Processing domain: " + todo.domain);
+    logger.loginfo("[outbound] Processing domain: " + todo.domain);
     var fname = _fname();
     var tmp_path = path.join(queue_dir, platformDOT + fname);
     var ws = new FsyncWriteStream(tmp_path, { flags: WRITE_EXCL });
@@ -656,7 +656,7 @@ exports.process_delivery = function (ok_paths, todo, hmails, cb) {
         var dest_path = path.join(queue_dir, fname);
         fs.rename(tmp_path, dest_path, function (err) {
             if (err) {
-                self.logerror("Unable to rename tmp file!: " + err);
+                logger.logerror("[outbound] Unable to rename tmp file!: " + err);
                 fs.unlink(tmp_path, function () {});
                 cb("Queue error");
             }
@@ -668,7 +668,7 @@ exports.process_delivery = function (ok_paths, todo, hmails, cb) {
         });
     });
     ws.on('error', function (err) {
-        self.logerror("Unable to write queue file (" + fname + "): " + err);
+        logger.logerror("[outbound] Unable to write queue file (" + fname + "): " + err);
         ws.destroy();
         fs.unlink(tmp_path, function () {});
         cb("Queueing failed");
@@ -716,7 +716,7 @@ exports.split_to_new_recipients = function (hmail, recipients, response, cb) {
     var tmp_path = path.join(queue_dir, platformDOT + fname);
     var ws = new FsyncWriteStream(tmp_path, { flags: WRITE_EXCL });
     var err_handler = function (err, location) {
-        self.logerror("Error while splitting to new recipients (" + location + "): " + err);
+        logger.logerror("[outbound] Error while splitting to new recipients (" + location + "): " + err);
         hmail.todo.rcpt_to.forEach(function (rcpt) {
             hmail.extend_rcpt_with_dsn(rcpt, DSN.sys_unspecified("Error splitting to new recipients: " + err));
         });
@@ -756,7 +756,7 @@ exports.split_to_new_recipients = function (hmail, recipients, response, cb) {
     };
 
     ws.on('error', function (err) {
-        self.logerror("Unable to write queue file (" + fname + "): " + err);
+        logger.logerror("[outbound] Unable to write queue file (" + fname + "): " + err);
         ws.destroy();
         hmail.todo.rcpt_to.forEach(function (rcpt) {
             hmail.extend_rcpt_with_dsn(rcpt, DSN.sys_unspecified("Error re-queueing some recipients: " + err));
