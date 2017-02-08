@@ -10,70 +10,71 @@ To create your own plugin, see:
 A mostly comprehensive list of plugins known to be working and maintained.
 Create a PR adding yours to this list.
 
-| Plugin                  | Description |
-| ----------------------  | ------------- |
-| [access][url-access]    | ACLs based on IPs, domains, email addrs, etc. |
-| [aliases][url-aliases]  |   |
-| [attachment][url-attach] |  |
+| Plugin                     | Description |
+| -------------------------  | ------------- |
+| [access][url-access]       | ACLs based on IPs, domains, email addrs, etc. |
+| [aliases][url-aliases]     |   |
+| [attachment][url-attach]   |   |
 | auth/[flat_file][url-authflat] | |
 | auth/[auth_bridge][url-authbridge] |  |
 | auth/[auth_ldap][url-authldap] |  |
 | auth/[auth_proxy][url-authproxy] |  |
 | auth/[auth_vpopmaild][url-authvpop] |  |
-| [avg](https://github.com/haraka/Haraka/blob/master/docs/plugins/avg.md)
-| [backscatterer](https://github.com/haraka/Haraka/blob/master/docs/plugins/backscatterer.md)
-| [block_me](https://github.com/haraka/Haraka/blob/master/docs/plugins/block_me.md)
-| [bounce](https://github.com/haraka/Haraka/blob/master/docs/plugins/bounce.md)
-| [clamd](https://github.com/haraka/Haraka/blob/master/docs/plugins/clamd.md)
-| [connect.fcrdns](https://github.com/haraka/Haraka/blob/master/docs/plugins/connect.fcrdns.md)
-| [connect.p0f](https://github.com/haraka/Haraka/blob/master/docs/plugins/connect.p0f.md)
-| [data.headers](https://github.com/haraka/Haraka/blob/master/docs/plugins/data.headers.md)
-| [data.signatures](https://github.com/haraka/Haraka/blob/master/docs/plugins/data.signatures.md)
-| [data.uribl](https://github.com/haraka/Haraka/blob/master/docs/plugins/data.uribl.md)
-| [dcc](https://github.com/haraka/Haraka/blob/master/docs/plugins/dcc.md)
-| [delay_deny](https://github.com/haraka/Haraka/blob/master/docs/plugins/delay_deny.md)
-| [dkim_sign](https://github.com/haraka/Haraka/blob/master/docs/plugins/dkim_sign.md)
-| [dkim_verify](https://github.com/haraka/Haraka/blob/master/docs/plugins/dkim_verify.md)
-| [dnsbl](https://github.com/haraka/Haraka/blob/master/docs/plugins/dnsbl.md)
-| [dnswl](https://github.com/haraka/Haraka/blob/master/docs/plugins/dnswl.md)
-| [early_talker](https://github.com/haraka/Haraka/blob/master/docs/plugins/early_talker.md)
-| [esets](https://github.com/haraka/Haraka/blob/master/docs/plugins/esets.md)
-| [graph](https://github.com/haraka/Haraka/blob/master/docs/plugins/graph.md)
-| [greylist](https://github.com/haraka/Haraka/blob/master/docs/plugins/greylist.md)
-| [helo.checks](https://github.com/haraka/Haraka/blob/master/docs/plugins/helo.checks.md)
-| [log.elasticsearch](https://github.com/haraka/Haraka/blob/master/docs/plugins/log.elasticsearch.md)
-| [syslog](https://github.com/haraka/haraka-plugin-syslog)
-| [mail_from.is_resolvable](https://github.com/haraka/Haraka/blob/master/docs/plugins/mail_from.is_resolvable.md)
-| [messagesniffer](https://github.com/haraka/Haraka/blob/master/docs/plugins/messagesniffer.md)
-| [prevent_credential_leaks](https://github.com/haraka/Haraka/blob/master/docs/plugins/prevent_credential_leaks.md)
-| [process_title](https://github.com/haraka/Haraka/blob/master/docs/plugins/process_title.md)
+| [avg][url-avg]             |   |
+| [backscatterer][url-scatter] |  |
+| [block_me][url-blockme]    |   |
+| [bounce][url-bounce]       |   |
+| [clamd][url-clamd]         |   |
+| [fcrdns][url-fcrdns]       |   |
+| [connect.p0f][url-p0f]        |   |
+| [data.headers][url-headers]  |  |
+| [data.signatures][url-sigs]  |  |
+| [data.uribl][url-uribl]  |  |
+| [dcc][url-dcc]  |  |
+| [delay_deny][url-delay]  |  |
+| [dkim_sign][url-sign]  |  |
+| [dkim_verify][url-dkimv]  |  |
+| [dnsbl][url-dnsbl]  |  |
+| [dnswl][url-dnswl]  |  |
+| [early_talker][url-early]  |  |
+| [esets][url-esets]  |  |
+| [graph][url-graph]  |  |
+| [greylist][url-greylist]  |  |
+| [helo.checks][url-helo]  |  |
+| [log.elasticsearch][url-elastic] |  |
+| [syslog][url-syslog]
+| [mail_from.is_resolvable][url-mfres]
+| [messagesniffer][url-msgsniff]
+| [prevent_credential_leaks][url-creds]
+| [process_title][url-proctitle]
 | profile
-| queue
-    - [discard](https://github.com/haraka/Haraka/blob/master/docs/plugins/queue/discard.md)
-    - [lmtp](https://github.com/haraka/Haraka/blob/master/docs/plugins/queue/lmtp.md)
-    - [qmail-queue](https://github.com/haraka/Haraka/blob/master/docs/plugins/queue/qmail-queue.md)
-    - [quarantine](https://github.com/haraka/Haraka/blob/master/docs/plugins/queue/quarantine.md)
-    - [rabbitmq](https://github.com/haraka/Haraka/blob/master/docs/plugins/queue/rabbitmq.md)
-    - [rabbitmq_amqplib](https://github.com/haraka/Haraka/blob/master/docs/plugins/queue/rabbitmq_amqplib.md)
-    - [smtp_bridge](https://github.com/haraka/Haraka/blob/master/docs/plugins/queue/smtp_bridge.md)
-    - [smtp_forward](https://github.com/haraka/Haraka/blob/master/docs/plugins/queue/smtp_forward.md)
-    - [smtp_proxy](https://github.com/haraka/Haraka/blob/master/docs/plugins/queue/smtp_proxy.md)
-| [rcpt_to.in_host_list](https://github.com/haraka/Haraka/blob/master/docs/plugins/rcpt_to.in_host_list.md)
-| [rcpt_to.ldap](https://github.com/haraka/Haraka/blob/master/docs/plugins/rcpt_to.ldap.md)
-| [rcpt_to.qmail_deliverable](https://github.com/haraka/Haraka/blob/master/docs/plugins/rcpt_to.qmail_deliverable.md)
-| [rcpt_to.routes](https://github.com/haraka/Haraka/blob/master/docs/plugins/rcpt_to.routes.md)
-| [record_envelope_addresses](https://github.com/haraka/Haraka/blob/master/docs/plugins/record_envelope_addresses.md)
-| [relay](https://github.com/haraka/Haraka/blob/master/docs/plugins/relay.md)
-| [reseed_rng](https://github.com/haraka/Haraka/blob/master/docs/plugins/reseed_rng.md)
-| [rspamd](https://github.com/haraka/Haraka/blob/master/docs/plugins/rspamd.md)
-| [spamassassin](https://github.com/haraka/Haraka/blob/master/docs/plugins/spamassassin.md)
-| [spf](https://github.com/haraka/Haraka/blob/master/docs/plugins/spf.md)
-| [tarpit](https://github.com/haraka/Haraka/blob/master/docs/plugins/tarpit.md)
-| [tls](https://github.com/haraka/Haraka/blob/master/docs/plugins/tls.md)
-| [toobusy](https://github.com/haraka/Haraka/blob/master/docs/plugins/toobusy.md)
-| [xclient](https://github.com/haraka/Haraka/blob/master/docs/plugins/xclient.md)
+| queue/[discard][url-qdisc]  |   |
+| queue/[lmtp][url-qlmtp]  |   |
+| queue/[qmail-queue][url-qmail]  |   |
+| queue/[quarantine][url-qquart]  |   |
+| queue/[rabbitmq][url-qrabbit]  |   |
+| queue/[rabbitmq_amqplib][url-qrabbita]  |   |
+| queue/[smtp_bridge][url-qbridge]  |   |
+| queue/[smtp_forward][url-qforward]  |   |
+| queue/[smtp_proxy][url-qproxy]  |   |
+| [rcpt_to.in_host_list][url-rhost]  |   |
+| [rcpt_to.ldap][url-ldap]  |   |
+| [rcpt_to.qmail_deliverable][url-rqmd]  |   |
+| [rcpt_to.routes][url-rroutes]  |   |
+| [record_envelope_addresses][url-recordenv]  |   |
+| [relay][url-relay]  |   |
+| [reseed_rng][url-rng]  |   |
+| [rspamd][url-rspamd]  |   |
+| [spamassassin][url-spamass]  |   |
+| [spf][url-spf]  |   |
+| [tarpit][url-tarpit]  |   |
+| [tls][url-tls]  |   |
+| [toobusy][url-toobusy]  |   |
+| [xclient][url-xclient]  |   |
 
 
+
+<!-- URLs tucked safely out of the way -->
 
 [template]: https://github.com/haraka/haraka-plugin-template
 [write-plugin]: https://github.com/haraka/Haraka/wiki/Write-a-Plugin
@@ -82,7 +83,57 @@ Create a PR adding yours to this list.
 [url-aliases]: https://github.com/haraka/Haraka/blob/master/docs/plugins/aliases.md
 [url-attach]: https://github.com/haraka/Haraka/blob/master/docs/plugins/attachment.md
 [url-authflat]: https://github.com/haraka/Haraka/blob/master/docs/plugins/auth/flat_file.md
-[url-authbridge]: https://github.com/haraka/Haraka/blob/master/docs/plugins/auth/auth_bridge.md)
-[url-authldap]: https://github.com/haraka/Haraka/blob/master/docs/plugins/auth/auth_ldap.md)
-[url-authproxy]: https://github.com/haraka/Haraka/blob/master/docs/plugins/auth/auth_proxy.md)
-[url-authvpop]: https://github.com/haraka/Haraka/blob/master/docs/plugins/auth/auth_vpopmaild.md)
+[url-authbridge]: https://github.com/haraka/Haraka/blob/master/docs/plugins/auth/auth_bridge.md
+[url-authldap]: https://github.com/haraka/Haraka/blob/master/docs/plugins/auth/auth_ldap.md
+[url-authproxy]: https://github.com/haraka/Haraka/blob/master/docs/plugins/auth/auth_proxy.md
+[url-authvpop]: https://github.com/haraka/Haraka/blob/master/docs/plugins/auth/auth_vpopmaild.md
+[url-avg]: https://github.com/haraka/Haraka/blob/master/docs/plugins/avg.md
+[url-scatter]: https://github.com/haraka/Haraka/blob/master/docs/plugins/backscatterer.md
+[url-blockme]: https://github.com/haraka/Haraka/blob/master/docs/plugins/block_me.md
+[url-bounce]: https://github.com/haraka/Haraka/blob/master/docs/plugins/bounce.md
+[url-clamd]: https://github.com/haraka/Haraka/blob/master/docs/plugins/clamd.md
+[url-fcrdns]: https://github.com/haraka/haraka-plugin-fcrdns
+[url-p0f]: https://github.com/haraka/Haraka/blob/master/docs/plugins/connect.p0f.md
+[url-headers]: https://github.com/haraka/Haraka/blob/master/docs/plugins/data.headers.md
+[url-sigs]: https://github.com/haraka/Haraka/blob/master/docs/plugins/data.signatures.md
+[url-uribl]: https://github.com/haraka/Haraka/blob/master/docs/plugins/data.uribl.md
+[url-dcc]: https://github.com/haraka/Haraka/blob/master/docs/plugins/dcc.md
+[url-delay]: https://github.com/haraka/Haraka/blob/master/docs/plugins/delay_deny.md
+[url-sign]: https://github.com/haraka/Haraka/blob/master/docs/plugins/dkim_sign.md
+[url-dkimv]: https://github.com/haraka/Haraka/blob/master/docs/pluginsdkim_verify.md)
+[url-dnsbl]: https://github.com/haraka/Haraka/blob/master/docs/plugins/dnsbl.md
+[url-dnswl]: https://github.com/haraka/Haraka/blob/master/docs/plugins/dnswl.md
+[url-early]: https://github.com/haraka/Haraka/blob/master/docs/plugins/early_talker.md
+[url-esets]: https://github.com/haraka/Haraka/blob/master/docs/plugins/esets.md
+[url-graph]: https://github.com/haraka/haraka-plugin-graph
+[url-greylist]: https://github.com/haraka/Haraka/blob/master/docs/plugins/greylist.md
+[url-helo]: https://github.com/haraka/Haraka/blob/master/docs/plugins/helo.checks.md
+[url-elastic]: https://github.com/haraka/Haraka/blob/master/docs/plugins/log.elasticsearch.md
+[url-syslog]: https://github.com/haraka/haraka-plugin-syslog)
+[url-mfres]: https://github.com/haraka/Haraka/blob/master/docs/plugins/mail_from.is_resolvable.md)
+[url-msgsniff]: https://github.com/haraka/Haraka/blob/master/docs/plugins/messagesniffer.md)
+[url-creds]: https://github.com/haraka/Haraka/blob/master/docs/plugins/prevent_credential_leaks.md)
+[url-proctitle]: https://github.com/haraka/Haraka/blob/master/docs/plugins/process_title.md)
+[url-qdisc]: https://github.com/haraka/Haraka/blob/master/docs/plugins/queue/discard.md
+[url-qlmtp]: https://github.com/haraka/Haraka/blob/master/docs/plugins/queue/lmtp.md
+[url-qmail]: https://github.com/haraka/Haraka/blob/master/docs/plugins/queue/qmail-queue.md
+[url-qquart]: https://github.com/haraka/Haraka/blob/master/docs/plugins/queue/quarantine.md
+[url-qrabbit]: https://github.com/haraka/Haraka/blob/master/docs/plugins/queue/rabbitmq.md
+[url-qrabbita]: https://github.com/haraka/Haraka/blob/master/docs/plugins/queue/rabbitmq_amqplib.md
+[url-qbridge]: https://github.com/haraka/Haraka/blob/master/docs/plugins/queue/smtp_bridge.md
+[url-qforward]: https://github.com/haraka/Haraka/blob/master/docs/plugins/queue/smtp_forward.md
+[url-qproxy]: https://github.com/haraka/Haraka/blob/master/docs/plugins/queue/smtp_proxy.md
+[url-rhost]: https://github.com/haraka/Haraka/blob/master/docs/plugins/rcpt_to.in_host_list.md
+[url-ldap]: https://github.com/haraka/Haraka/blob/master/docs/plugins/rcpt_to.ldap.md
+[url-rqmd]: https://github.com/haraka/Haraka/blob/master/docs/plugins/rcpt_to.qmail_deliverable.md
+[url-rroutes]: https://github.com/haraka/Haraka/blob/master/docs/plugins/rcpt_to.routes.md
+[url-recordenv]: https://github.com/haraka/Haraka/blob/master/docs/plugins/record_envelope_addresses.md
+[url-relay]: https://github.com/haraka/Haraka/blob/master/docs/plugins/relay.md
+[url-rng]: https://github.com/haraka/Haraka/blob/master/docs/plugins/reseed_rng.md
+[url-rspamd]: https://github.com/haraka/Haraka/blob/master/docs/plugins/rspamd.md
+[url-spamass]: https://github.com/haraka/Haraka/blob/master/docs/plugins/spamassassin.md
+[url-spf]: https://github.com/haraka/Haraka/blob/master/docs/plugins/spf.md
+[url-tarpit]: https://github.com/haraka/Haraka/blob/master/docs/plugins/tarpit.md
+[url-tls]: https://github.com/haraka/Haraka/blob/master/docs/plugins/tls.md
+[url-toobusy]: https://github.com/haraka/Haraka/blob/master/docs/plugins/toobusy.md
+[url-xclient]: https://github.com/haraka/Haraka/blob/master/docs/plugins/xclient.md
