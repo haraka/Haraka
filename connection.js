@@ -622,6 +622,9 @@ Connection.prototype.tran_uuid = function () {
 };
 
 Connection.prototype.reset_transaction = function (cb) {
+    this.results.add({name: 'reset'}, {
+        duration: (Date.now() - this.start_time)/1000,
+    });
     if (this.transaction && this.transaction.resetting === false) {
         // Pause connection to allow the hook to complete
         this.pause();
