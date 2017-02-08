@@ -13,64 +13,62 @@ Create a PR adding yours to this list.
 | Plugin                     | Description |
 | -------------------------  | ------------- |
 | [access][url-access]       | ACLs based on IPs, domains, email addrs, etc. |
-| [aliases][url-aliases]     |   |
-| [attachment][url-attach]   |   |
-| auth/[flat_file][url-authflat] | |
-| auth/[auth_bridge][url-authbridge] |  |
-| auth/[auth_ldap][url-authldap] |  |
-| auth/[auth_proxy][url-authproxy] |  |
-| auth/[auth_vpopmaild][url-authvpop] |  |
-| [avg][url-avg]             |   |
-| [backscatterer][url-scatter] |  |
-| [block_me][url-blockme]    |   |
-| [bounce][url-bounce]       |   |
-| [clamd][url-clamd]         |   |
-| [fcrdns][url-fcrdns]       |   |
-| [connect.p0f][url-p0f]        |   |
-| [data.headers][url-headers]  |  |
-| [data.signatures][url-sigs]  |  |
-| [data.uribl][url-uribl]  |  |
-| [dcc][url-dcc]  |  |
-| [delay_deny][url-delay]  |  |
-| [dkim_sign][url-sign]  |  |
-| [dkim_verify][url-dkimv]  |  |
-| [dnsbl][url-dnsbl]  |  |
-| [dnswl][url-dnswl]  |  |
-| [early_talker][url-early]  |  |
-| [esets][url-esets]  |  |
-| [graph][url-graph]  |  |
-| [greylist][url-greylist]  |  |
-| [helo.checks][url-helo]  |  |
-| [log.elasticsearch][url-elastic] |  |
-| [syslog][url-syslog]
-| [mail_from.is_resolvable][url-mfres]
-| [messagesniffer][url-msgsniff]
-| [prevent_credential_leaks][url-creds]
-| [process_title][url-proctitle]
-| profile
-| queue/[discard][url-qdisc]  |   |
-| queue/[lmtp][url-qlmtp]  |   |
-| queue/[qmail-queue][url-qmail]  |   |
-| queue/[quarantine][url-qquart]  |   |
-| queue/[rabbitmq][url-qrabbit]  |   |
-| queue/[rabbitmq_amqplib][url-qrabbita]  |   |
-| queue/[smtp_bridge][url-qbridge]  |   |
-| queue/[smtp_forward][url-qforward]  |   |
-| queue/[smtp_proxy][url-qproxy]  |   |
-| [rcpt_to.in_host_list][url-rhost]  |   |
-| [rcpt_to.ldap][url-ldap]  |   |
-| [rcpt_to.qmail_deliverable][url-rqmd]  |   |
-| [rcpt_to.routes][url-rroutes]  |   |
-| [record_envelope_addresses][url-recordenv]  |   |
-| [relay][url-relay]  |   |
-| [reseed_rng][url-rng]  |   |
-| [rspamd][url-rspamd]  |   |
-| [spamassassin][url-spamass]  |   |
-| [spf][url-spf]  |   |
-| [tarpit][url-tarpit]  |   |
-| [tls][url-tls]  |   |
-| [toobusy][url-toobusy]  |   |
-| [xclient][url-xclient]  |   |
+| [aliases][url-aliases]     | Email aliases |
+| [attachment][url-attach]   | Restrict attachment types |
+| auth/[flat_file][url-authflat] | Auth against user/pass in a file |
+| auth/[auth_bridge][url-authbridge] | Auth against remote MTA |
+| auth/[auth_ldap][url-authldap] | Auth against LDAP |
+| auth/[auth_proxy][url-authproxy] | Auth against remote MTA |
+| auth/[auth_vpopmaild][url-authvpop] | Auth against vpopmaild |
+| [avg][url-avg]              | AVG antivirus scanner |
+| [backscatterer][url-scatter] | Check remote IP against ips.backscatterer.org |
+| [block_me][url-blockme]     | Populate block list via forwarded emails |
+| [bounce][url-bounce]        | Many options for bounce processing |
+| [clamd][url-clamd]          | Anti-Virus scanning with ClamAV |
+| [fcrdns][url-fcrdns]        | Forward Confirmed reverse DNS |
+| [connect.p0f][url-p0f]      | TCP Fingerprinting |
+| [data.headers][url-headers] | Inspect and verify various email headers |
+| [data.signatures][url-sigs] | Block emails whose bodies match signatures |
+| [data.uribl][url-uribl]     | Block based on URI blacklists |
+| [dcc][url-dcc]              | Distributed Checksum Clearinghouse |
+| [delay_deny][url-delay]     | Delays all pre-DATA 'deny' results |
+| [dkim_sign][url-sign]       | DKIM sign outbound messages |
+| [dkim_verify][url-dkimv]    | Verify DKIM signatures on incoming messages |
+| [dnsbl][url-dnsbl]          | Check remote MTAs against DNS blacklists |
+| [dnswl][url-dnswl]          | Check remote MTAs against DNS whitelists |
+| [early_talker][url-early]   | Reject remotes that talk early |
+| [esets][url-esets]          | Virus scanning with ESET Mail Security |
+| [greylist][url-greylist]    | Greylisting |
+| [helo.checks][url-helo]     | Validaty checks of the HELO string |
+| [log.elasticsearch][url-elastic]  | Store message metadata in Elasticsearch |
+| [syslog][url-syslog]              | Log to syslog |
+| [mail_from.is_resolvable][url-mfres]  | Verifies the MAIL FROM domain resolves to a MX |
+| [messagesniffer][url-msgsniff]    | Anti-spam via [MessageSniffer][url-ms] |
+| [prevent_credential_leaks][url-creds]  | Prevent users from emailing their credentials |
+| [process_title][url-proctitle]    | Populate `ps` output with activity counters |
+| queue/[discard][url-qdisc]        | queues messages to /dev/null |
+| queue/[lmtp][url-qlmtp]           | deliver queued messages via LMTP |
+| queue/[qmail-queue][url-qmail]    | queue to qmail |
+| queue/[quarantine][url-qquart]    | queue to a quarantine directory |
+| queue/[rabbitmq][url-qrabbit]     | queue to RabbitMQ |
+| queue/[rabbitmq_amqplib][url-qrabbita]  | queue to RabbitMQ using amqplib |
+| queue/[smtp_bridge][url-qbridge]   | Bridge SMTP sessions to another MTA |
+| queue/[smtp_forward][url-qforward] | Forward emails to another MTA |
+| queue/[smtp_proxy][url-qproxy]     | Proxy SMTP connections to another MTA |
+| [rcpt_to.in_host_list][url-rhost]  | Define local email domains in a file |
+| [rcpt_to.ldap][url-ldap]           | Validate recipients against LDAP |
+| [rcpt_to.qmail_deliverable][url-rqmd]  | Validate recipients against Qmail-Deliverable |
+| [rcpt_to.routes][url-rroutes]      | Route emails based on their recipient(s) |
+| [record_envelope_addresses][url-recordenv]  | Adds message headers with ENV recips |
+| [relay][url-relay]                 | Manage relay permissions |
+| [reseed_rng][url-rng]              | Reseed the RNG |
+| [rspamd][url-rspamd]               | Scan emails with rspamd |
+| [spamassassin][url-spamass]        | Scan emails with SpamAssassin |
+| [spf][url-spf]                     | Perform SPF checks |
+| [tarpit][url-tarpit]               | Slow down connections |
+| [tls][url-tls]                     | Implements TLS |
+| [toobusy][url-toobusy]             | Defers connections when too busy |
+| [xclient][url-xclient]             | Implements XCLIENT |
 
 
 
@@ -112,6 +110,7 @@ Create a PR adding yours to this list.
 [url-syslog]: https://github.com/haraka/haraka-plugin-syslog)
 [url-mfres]: https://github.com/haraka/Haraka/blob/master/docs/plugins/mail_from.is_resolvable.md)
 [url-msgsniff]: https://github.com/haraka/Haraka/blob/master/docs/plugins/messagesniffer.md)
+[url-ms]: http://armresearch.com/products/sniffer.jsp
 [url-creds]: https://github.com/haraka/Haraka/blob/master/docs/plugins/prevent_credential_leaks.md)
 [url-proctitle]: https://github.com/haraka/Haraka/blob/master/docs/plugins/process_title.md)
 [url-qdisc]: https://github.com/haraka/Haraka/blob/master/docs/plugins/queue/discard.md
