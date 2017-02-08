@@ -98,7 +98,7 @@ Create a PR adding yours to this list.
 [url-dcc]: https://github.com/haraka/Haraka/blob/master/docs/plugins/dcc.md
 [url-delay]: https://github.com/haraka/Haraka/blob/master/docs/plugins/delay_deny.md
 [url-sign]: https://github.com/haraka/Haraka/blob/master/docs/plugins/dkim_sign.md
-[url-dkimv]: https://github.com/haraka/Haraka/blob/master/docs/pluginsdkim_verify.md)
+[url-dkimv]: https://github.com/haraka/Haraka/blob/master/docs/pluginsdkim_verify.md
 [url-dnsbl]: https://github.com/haraka/Haraka/blob/master/docs/plugins/dnsbl.md
 [url-dnswl]: https://github.com/haraka/Haraka/blob/master/docs/plugins/dnswl.md
 [url-early]: https://github.com/haraka/Haraka/blob/master/docs/plugins/early_talker.md
@@ -107,12 +107,12 @@ Create a PR adding yours to this list.
 [url-greylist]: https://github.com/haraka/Haraka/blob/master/docs/plugins/greylist.md
 [url-helo]: https://github.com/haraka/Haraka/blob/master/docs/plugins/helo.checks.md
 [url-elastic]: https://github.com/haraka/Haraka/blob/master/docs/plugins/log.elasticsearch.md
-[url-syslog]: https://github.com/haraka/haraka-plugin-syslog)
-[url-mfres]: https://github.com/haraka/Haraka/blob/master/docs/plugins/mail_from.is_resolvable.md)
-[url-msgsniff]: https://github.com/haraka/Haraka/blob/master/docs/plugins/messagesniffer.md)
+[url-syslog]: https://github.com/haraka/haraka-plugin-syslog
+[url-mfres]: https://github.com/haraka/Haraka/blob/master/docs/plugins/mail_from.is_resolvable.md
+[url-msgsniff]: https://github.com/haraka/Haraka/blob/master/docs/plugins/messagesniffer.md
 [url-ms]: http://armresearch.com/products/sniffer.jsp
-[url-creds]: https://github.com/haraka/Haraka/blob/master/docs/plugins/prevent_credential_leaks.md)
-[url-proctitle]: https://github.com/haraka/Haraka/blob/master/docs/plugins/process_title.md)
+[url-creds]: https://github.com/haraka/Haraka/blob/master/docs/plugins/prevent_credential_leaks.md
+[url-proctitle]: https://github.com/haraka/Haraka/blob/master/docs/plugins/process_title.md
 [url-qdisc]: https://github.com/haraka/Haraka/blob/master/docs/plugins/queue/discard.md
 [url-qlmtp]: https://github.com/haraka/Haraka/blob/master/docs/plugins/queue/lmtp.md
 [url-qmail]: https://github.com/haraka/Haraka/blob/master/docs/plugins/queue/qmail-queue.md
