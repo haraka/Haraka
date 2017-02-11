@@ -98,7 +98,7 @@ Create a PR adding yours to this list.
 [url-dcc]: https://github.com/haraka/Haraka/blob/master/docs/plugins/dcc.md
 [url-delay]: https://github.com/haraka/Haraka/blob/master/docs/plugins/delay_deny.md
 [url-sign]: https://github.com/haraka/Haraka/blob/master/docs/plugins/dkim_sign.md
-[url-dkimv]: https://github.com/haraka/Haraka/blob/master/docs/pluginsdkim_verify.md
+[url-dkimv]: https://github.com/haraka/Haraka/blob/master/docs/plugins/dkim_verify.md
 [url-dnsbl]: https://github.com/haraka/Haraka/blob/master/docs/plugins/dnsbl.md
 [url-dnswl]: https://github.com/haraka/Haraka/blob/master/docs/plugins/dnswl.md
 [url-early]: https://github.com/haraka/Haraka/blob/master/docs/plugins/early_talker.md
@@ -136,3 +136,4 @@ Create a PR adding yours to this list.
 [url-tls]: https://github.com/haraka/Haraka/blob/master/docs/plugins/tls.md
 [url-toobusy]: https://github.com/haraka/Haraka/blob/master/docs/plugins/toobusy.md
 [url-xclient]: https://github.com/haraka/Haraka/blob/master/docs/plugins/xclient.md
+
