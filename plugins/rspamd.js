@@ -149,13 +149,12 @@ exports.hook_data_post = function (next, connection) {
                 if (!r.data) return callNext();
                 if (!r.data.default) return callNext();
                 if (!r.log) return callNext();
+
                 r.log.emit = true; // spit out a log entry
+                r.log.time = (Date.now() - start)/1000;
 
                 if (!connection.transaction) return callNext();
                 connection.transaction.results.add(plugin, r.log);
-                connection.transaction.results.add(plugin, {
-                    time: (Date.now() - start)/1000,
-                });
 
                 function no_reject () {
                     if (cfg.dkim.enabled && r.data['dkim-signature']) {
@@ -194,7 +193,7 @@ exports.hook_data_post = function (next, connection) {
 
     req.on('error', function (err) {
         if (!connection || !connection.transaction) return;
-        connection.transaction.results.add(plugin, err.message);
+        connection.transaction.results.add(plugin, { err: err.message});
         return callNext();
     });
 };
