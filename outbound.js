@@ -89,6 +89,8 @@ exports.load_config();
 exports.net_utils = net_utils;
 exports.config    = config;
 
+logger.add_log_methods(exports, "outbound");
+
 var load_queue = async.queue(function (file, cb) {
     var hmail = new HMailItem(file, path.join(queue_dir, file));
     exports._add_file(hmail);
@@ -184,33 +186,34 @@ process.on('message', function (msg) {
 
 exports.drain_pools = function () {
     if (!server.notes.pool || Object.keys(server.notes.pool).length == 0) {
-        return logger.logdebug("[outbound] Drain pools: No pools available");
+        return this.logdebug("Drain pools: No pools available");
     }
     for (var p in server.notes.pool) {
-        logger.logdebug("[outbound] Drain pools: Draining SMTP connection pool " + p);
+        this.logdebug("Drain pools: Draining SMTP connection pool " + p);
         server.notes.pool[p].drain(function () {
             if (!server.notes.pool[p]) return;
             server.notes.pool[p].destroyAllNow();
         });
     }
-    logger.logdebug("[outbound] Drain pools: Pools shut down");
+    this.logdebug("Drain pools: Pools shut down");
 }
 
 exports.flush_queue = function (domain, pid) {
-    if (domain) {
-        exports.list_queue(function (err, qlist) {
-            if (err) return logger.logerror("Failed to load queue: " + err);
-            qlist.forEach(function (todo) {
-                if (todo.domain.toLowerCase() != domain.toLowerCase()) return;
-                if (pid && todo.pid != pid) return;
-                // console.log("requeue: ", todo);
-                delivery_queue.push(new HMailItem(todo.file, todo.full_path));
-            });
-        })
-    }
-    else {
+    if (!domain) {
         temp_fail_queue.drain();
+        return;
     }
+
+    var self = this;
+    exports.list_queue(function (err, qlist) {
+        if (err) return self.logerror("Failed to load queue: " + err);
+        qlist.forEach(function (todo) {
+            if (todo.domain.toLowerCase() != domain.toLowerCase()) return;
+            if (pid && todo.pid != pid) return;
+            // console.log("requeue: ", todo);
+            delivery_queue.push(new HMailItem(todo.file, todo.full_path));
+        });
+    })
 };
 
 exports.load_pid_queue = function (pid) {
@@ -219,8 +222,7 @@ exports.load_pid_queue = function (pid) {
 };
 
 exports.ensure_queue_dir = function () {
-    // No reason not to do this stuff syncronously -
-    // this code is only run at start-up.
+    // No reason not to do this syncronously - only run at start-up.
     if (fs.existsSync(queue_dir)) return;
 
     this.logdebug("Creating queue directory " + queue_dir);
@@ -229,7 +231,7 @@ exports.ensure_queue_dir = function () {
     }
     catch (err) {
         if (err.code !== 'EEXIST') {
-            logger.logerror("Error creating queue directory: " + err);
+            this.logerror("Error creating queue directory: " + err);
             throw err;
         }
     }
@@ -248,8 +250,9 @@ exports._load_cur_queue = function (pid, cb_name, cb) {
     self.loginfo("Loading outbound queue from ", queue_dir);
     fs.readdir(queue_dir, function (err, files) {
         if (err) {
-            return logger.logerror("Failed to load queue directory (" +
+            self.logerror("Failed to load queue directory (" +
                 queue_dir + "): " + err);
+            return;
         }
 
         self.cur_time = new Date(); // set once so we're not calling it a lot
@@ -288,7 +291,7 @@ exports.load_queue_files = function (pid, cb_name, files, callback) {
                 // self.loginfo("new_filename: ", new_filename);
                 fs.rename(path.join(queue_dir, file), path.join(queue_dir, new_filename), function (err) {
                     if (err) {
-                        logger.logerror("Unable to rename queue file: " + file +
+                        self.logerror("Unable to rename queue file: " + file +
                             " to " + new_filename + " : " + err);
                         return cb();
                     }
@@ -305,10 +308,10 @@ exports.load_queue_files = function (pid, cb_name, files, callback) {
             }
             else if (/^\./.test(file)) {
                 // dot-file...
-                logger.logwarn("Removing left over dot-file: " + file);
+                self.logwarn("Removing left over dot-file: " + file);
                 return fs.unlink(path.join(queue_dir, file), function (err) {
                     if (err) {
-                        logger.logerror("Error removing dot-file: " + file + ": " + err);
+                        self.logerror("Error removing dot-file: " + file + ": " + err);
                     }
                     cb();
                 });
@@ -320,21 +323,21 @@ exports.load_queue_files = function (pid, cb_name, files, callback) {
         }, function (err) {
             if (err) {
                 // no error cases yet, but log anyway
-                logger.logerror("Error fixing up queue files: " + err);
+                self.logerror("Error fixing up queue files: " + err);
             }
-            logger.loginfo("Done fixing up old PID queue files");
-            logger.loginfo(delivery_queue.length() + " files in my delivery queue");
-            logger.loginfo(load_queue.length() + " files in my load queue");
-            logger.loginfo(temp_fail_queue.length() + " files in my temp fail queue");
+            self.loginfo("Done fixing up old PID queue files");
+            self.loginfo(delivery_queue.length() + " files in my delivery queue");
+            self.loginfo(load_queue.length() + " files in my load queue");
+            self.loginfo(temp_fail_queue.length() + " files in my temp fail queue");
 
             if (callback) callback();
         });
     }
     else {
-        logger.loginfo("Loading the queue...");
+        self.loginfo("Loading the queue...");
         var good_file = function (file) {
             if (/^\./.test(file)) {
-                logger.logwarn("Removing left over dot-file: " + file);
+                self.logwarn("Removing left over dot-file: " + file);
                 fs.unlink(path.join(queue_dir, file), function (err) {
                     if (err) console.error(err);
                 });
@@ -342,23 +345,23 @@ exports.load_queue_files = function (pid, cb_name, files, callback) {
             }
 
             if (!_qfile.parts(file)) {
-                logger.logerror("Unrecognized file in queue folder: " + file);
+                self.logerror("Unrecognized file in queue folder: " + file);
                 return false;
             }
             return true;
         }
         async.mapSeries(files.filter(good_file), function (file, cb) {
-            // logger.logdebug("Loading queue file: " + file);
+            // self.logdebug("Loading queue file: " + file);
             if (cb_name === '_add_file') {
                 var parts = _qfile.parts(file);
                 var next_process = parts.next_attempt;
 
                 if (next_process <= self.cur_time) {
-                    logger.logdebug("File needs processing now");
+                    self.logdebug("File needs processing now");
                     load_queue.push(file);
                 }
                 else {
-                    logger.logdebug("File needs processing later: " + (next_process - self.cur_time) + "ms");
+                    self.logdebug("File needs processing later: " + (next_process - self.cur_time) + "ms");
                     temp_fail_queue.add(next_process - self.cur_time, function () { load_queue.push(file);});
                 }
                 cb();
@@ -647,11 +650,11 @@ exports.send_trans_email = function (transaction, next) {
 
     // add in potentially missing headers
     if (!transaction.header.get_all('Message-Id').length) {
-        this.loginfo("Adding missing Message-Id header");
+        self.loginfo("Adding missing Message-Id header");
         transaction.add_header('Message-Id', '<' + transaction.uuid + '@' + config.get('me') + '>');
     }
     if (!transaction.header.get_all('Date').length) {
-        this.loginfo("Adding missing Date header");
+        self.loginfo("Adding missing Date header");
         transaction.add_header('Date', utils.date_to_str(new Date()));
     }
 
@@ -722,7 +725,7 @@ exports.send_trans_email = function (transaction, next) {
 
 exports.process_delivery = function (ok_paths, todo, hmails, cb) {
     var self = this;
-    logger.loginfo("[outbound] Processing domain: " + todo.domain);
+    self.loginfo("[outbound] Processing domain: " + todo.domain);
     var fname = _qfile.name();
     var tmp_path = path.join(queue_dir, platformDOT + fname);
     var ws = new FsyncWriteStream(tmp_path, { flags: WRITE_EXCL });
@@ -730,7 +733,7 @@ exports.process_delivery = function (ok_paths, todo, hmails, cb) {
         var dest_path = path.join(queue_dir, fname);
         fs.rename(tmp_path, dest_path, function (err) {
             if (err) {
-                logger.logerror("[outbound] Unable to rename tmp file!: " + err);
+                self.logerror("Unable to rename tmp file!: " + err);
                 fs.unlink(tmp_path, function () {});
                 cb("Queue error");
             }
@@ -742,7 +745,7 @@ exports.process_delivery = function (ok_paths, todo, hmails, cb) {
         });
     });
     ws.on('error', function (err) {
-        logger.logerror("[outbound] Unable to write queue file (" + fname + "): " + err);
+        self.logerror("Unable to write queue file (" + fname + "): " + err);
         ws.destroy();
         fs.unlink(tmp_path, function () {});
         cb("Queueing failed");
@@ -791,7 +794,7 @@ exports.split_to_new_recipients = function (hmail, recipients, response, cb) {
     var tmp_path = path.join(queue_dir, platformDOT + fname);
     var ws = new FsyncWriteStream(tmp_path, { flags: WRITE_EXCL });
     var err_handler = function (err, location) {
-        logger.logerror("[outbound] Error while splitting to new recipients (" + location + "): " + err);
+        self.logerror("Error while splitting to new recipients (" + location + "): " + err);
         hmail.todo.rcpt_to.forEach(function (rcpt) {
             hmail.extend_rcpt_with_dsn(rcpt, DSN.sys_unspecified("Error splitting to new recipients: " + err));
         });
@@ -831,7 +834,7 @@ exports.split_to_new_recipients = function (hmail, recipients, response, cb) {
     };
 
     ws.on('error', function (err) {
-        logger.logerror("[outbound] Unable to write queue file (" + fname + "): " + err);
+        self.logerror("Unable to write queue file (" + fname + "): " + err);
         ws.destroy();
         hmail.todo.rcpt_to.forEach(function (rcpt) {
             hmail.extend_rcpt_with_dsn(rcpt, DSN.sys_unspecified("Error re-queueing some recipients: " + err));
@@ -1454,7 +1457,7 @@ HMailItem.prototype.try_deliver_host = function (mx) {
 
     get_client(port, host, mx.bind, mx.path ? true : false, function (err, socket) {
         if (err) {
-            logger.logerror('[outbound] Failed to get pool entry: ' + err);
+            self.logerror('Failed to get pool entry: ' + err);
             // try next host
             return self.try_deliver_host(mx);
         }
@@ -1916,7 +1919,7 @@ HMailItem.prototype.try_deliver_host_on_socket = function (mx, host, port, socke
     });
 
     if (socket.__fromPool) {
-        logger.logdebug('[outbound] got pooled socket, trying to deliver');
+        self.logdebug('got pooled socket, trying to deliver');
         send_command('MAIL', 'FROM:' + self.todo.mail_from);
     }
 };
@@ -2256,7 +2259,7 @@ HMailItem.prototype.convert_temp_failed_to_bounce = function (err, extra) {
 }
 
 HMailItem.prototype.temp_fail = function (err, extra) {
-    logger.logdebug("Temp fail for: " + err);
+    this.logdebug("Temp fail for: " + err);
     this.num_failures++;
 
     // Test for max failures which is configurable.

@@ -39,7 +39,18 @@ exports.outbound = {
         });
         test.done();
     },
-    'log_methods added': function (test) {
+    'log_methods added to outbound': function (test) {
+        var logger = require('../logger');
+        test.expect(Object.keys(logger.levels).length);
+
+        var outbound = require('../outbound');
+
+        Object.keys(logger.levels).forEach(function (level) {
+            test.ok(outbound['log' + level.toLowerCase()], "Log method for level: " + level);
+        });
+        test.done();
+    },
+    'log_methods added to HMailItem': function (test) {
         var logger = require('../logger');
         test.expect(Object.keys(logger.levels).length);
 
