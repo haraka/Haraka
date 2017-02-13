@@ -1302,8 +1302,8 @@ function get_pool (port, host, local_addr, is_unix_socket, connect_timeout, pool
         var pool = generic_pool.Pool({
             name: name,
             create: function (done) {
-		_create_socket(port, host, local_addr, is_unix_socket, connect_timeout, pool_timeout, done);
-	    },
+                _create_socket(port, host, local_addr, is_unix_socket, connect_timeout, pool_timeout, done);
+            },
             validate: function (socket) {
                 return socket.writable;
             },
