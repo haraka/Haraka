@@ -214,7 +214,7 @@ exports.flush_queue = function (domain, pid) {
 };
 
 exports.load_pid_queue = function (pid) {
-    this.loginfo("Loading queue for pid: " + pid);
+    logger.loginfo("[outbound] Loading queue for pid: " + pid);
     this.load_queue(pid);
 };
 
@@ -245,7 +245,7 @@ exports.load_queue = function (pid) {
 
 exports._load_cur_queue = function (pid, cb_name, cb) {
     var self = this;
-    self.loginfo("Loading outbound queue from ", queue_dir);
+    logger.loginfo("[outbound] Loading outbound queue from ", queue_dir);
     fs.readdir(queue_dir, function (err, files) {
         if (err) {
             return logger.logerror("Failed to load queue directory (" +
@@ -272,7 +272,7 @@ exports.load_queue_files = function (pid, cb_name, files, callback) {
 
     if (pid) {
         // Pre-scan to rename PID files to my PID:
-        self.loginfo("Grabbing queue files for pid: " + pid);
+        logger.loginfo("[outbound] Grabbing queue files for pid: " + pid);
         async.eachLimit(files, 200, function (file, cb) {
 
             var parts = _qfile.parts(file);
