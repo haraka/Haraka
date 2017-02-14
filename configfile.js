@@ -423,7 +423,7 @@ cfreader.load_yaml_config = function (name) {
             }
         }
         else {
-            throw err;
+            logger.logerror('EXCEPTION processing ' + name + ': ' + err);
         }
     }
     cfreader.process_file_overrides(name, result);
