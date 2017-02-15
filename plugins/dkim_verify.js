@@ -35,7 +35,7 @@ exports.hook_data_post = function (next, connection) {
                                      'result=' + res.result + res_err);
 
             // save to ResultStore
-            var rs_obj = JSON.parse(JSON.stringify(results));
+            var rs_obj = JSON.parse(JSON.stringify(res));
             if      (res.result === 'pass') { rs_obj.pass = res.domain; }
             else if (res.result === 'fail') { rs_obj.fail = res.domain + res_err; }
             else                            { rs_obj.err  = res.domain + res_err; }
