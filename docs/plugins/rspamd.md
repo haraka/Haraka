@@ -55,7 +55,7 @@ rspamd.ini
 
     Default: false
 
-    If true, messages from authenticated users will not be scanned by Rspamd.
+    If true, messages from authenticated users will be scanned by Rspamd.
 
 - check.private\_ip
 
