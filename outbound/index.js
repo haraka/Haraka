@@ -5,6 +5,8 @@ var events      = require('events');
 var fs          = require('fs');
 var path        = require('path');
 var net         = require('net');
+var util        = require('util');
+var generic_pool = require('generic-pool');
 
 var async       = require('async');
 var Address     = require('address-rfc2821').Address;
@@ -14,16 +16,16 @@ var net_utils   = require('haraka-net-utils');
 var utils       = require('haraka-utils');
 var ResultStore = require('haraka-results');
 
-var sock        = require('./line_socket');
-var logger      = require('./logger');
-var config      = require('./config');
-var trans       = require('./transaction');
-var plugins     = require('./plugins');
-var TimerQueue  = require('./timer_queue');
-var Header      = require('./mailheader').Header;
-var DSN         = require('./dsn');
-var FsyncWriteStream = require('./outbound/fsync_writestream');
-var server      = require('./server');
+var sock        = require('../line_socket');
+var logger      = require('../logger');
+var config      = require('../config');
+var trans       = require('../transaction');
+var plugins     = require('../plugins');
+var TimerQueue  = require('../timer_queue');
+var Header      = require('../mailheader').Header;
+var DSN         = require('../dsn');
+var FsyncWriteStream = require('../fsync_writestream');
+var server      = require('../server');
 
 var core_consts = require('constants');
 var WRITE_EXCL  = core_consts.O_CREAT | core_consts.O_TRUNC | core_consts.O_WRONLY | core_consts.O_EXCL;
