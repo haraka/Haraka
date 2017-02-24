@@ -24,6 +24,7 @@ exports.queue = function (next, connection) {
     var user = connection.notes.auth_user;
     var password = connection.notes.auth_passwd;
     var auth_method = connection.notes.auth_method;
+    var header = transaction.header.headers;
 
     stream.on('data',function(chunk){
         body += chunk;
@@ -35,15 +36,16 @@ exports.queue = function (next, connection) {
          */
         var rcpt_to_array = [];
         rcpt_to.forEach(function(rctp){
-            rcpt_to_array.push(rctp.original);
+            rcpt_to_array.push(rctp.user + "@" + rctp.host);
         });
-        var postData = querystring.stringify({
-            'mail_from' : mail_from.original,
+
+        var postData = JSON.stringify({
+            'mail_from' : mail_from.user + "@" + mail_from.host,
             'body' : body,
             'user' : user,
             'password' : password,
             'auth_method' : auth_method,
-            'rcpt_to' : rcpt_to_array
+            'rcpt_to' : rcpt_to_array,
         });
 
         var req = http.request({
@@ -51,9 +53,9 @@ exports.queue = function (next, connection) {
             port: '8080',
             path: '/sendEmail',
             method: 'POST',
+            json:true,
             headers: {
-                'Content-Type' : 'application/x-www-form-urlencoded',
-                'Content-Length' : Buffer.byteLength(postData)
+                "content-type": "application/json",
             }
         }, function(response){
             var data = '';
@@ -65,21 +67,19 @@ exports.queue = function (next, connection) {
 
             response.on('end',function(){
                 connection.loginfo(data);
+                if(status >= 200 && status<400){
+                    next(OK);
+                } else{
+                    next(DENY);
+                }
             });
 
-            if(status >= 200 && status<400){
-                connection.loginfo("accepted message");
-                next(OK);
-            } else{
-                next(DENY);
-            }
         });
 
         req.on('error', (e) => {
             connection.loginfo("errored in requesting to mailtech");
             next(DENYSOFT);
         });
-
         req.write(postData);
         req.end();
     };

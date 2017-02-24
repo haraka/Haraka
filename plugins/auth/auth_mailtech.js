@@ -17,7 +17,7 @@ exports.hook_capabilities = function (next, connection) {
         return next();
     }
 
-    var methods = ['PLAIN','LOGIN','CRAM-MD5']
+    var methods = ['PLAIN','LOGIN'];
     if (methods && methods.length > 0) {
         connection.capabilities.push('AUTH ' + methods.join(' '));
         connection.notes.allowed_auth_methods = methods;
