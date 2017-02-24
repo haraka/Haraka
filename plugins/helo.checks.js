@@ -16,7 +16,6 @@ var checks = [
     'rdns_match',         // HELO hostname matches rDNS
     'forward_dns',        // HELO hostname resolves to the connecting IP
     'host_mismatch',      // hostname differs between invocations
-    'emit_log',           // emit a loginfo summary
 ];
 
 exports.register = function () {
@@ -40,6 +39,10 @@ exports.register = function () {
         plugin.register_hook('ehlo', hook);
     }
 
+    // Always emit a log entry
+    plugin.register_hook('helo', 'emit_log');
+    plugin.register_hook('ehlo', 'emit_log');
+
     if (plugin.cfg.check.match_re) {
         var load_re_file = function () {
             var regex_list = utils.valid_regexes(plugin.config.get('helo.checks.regexps', 'list', load_re_file));
@@ -53,34 +56,22 @@ exports.register = function () {
 exports.load_helo_checks_ini = function () {
     var plugin = this;
 
-    plugin.cfg = plugin.config.get('helo.checks.ini', {
-        booleans: [
-            '+check.match_re',
-            '+check.bare_ip',
-            '+check.dynamic',
-            '+check.big_company',
-            '+check.valid_hostname',
-            '+check.forward_dns',
-            '+check.rdns_match',
-            '+check.mismatch',
-            '+check.proto_mismatch',
+    var booleans = [
+        '+skip.private_ip',
+        '+skip.whitelist',
+        '+skip.relaying',
 
-            '+reject.valid_hostname',
-            '+reject.match_re',
-            '+reject.bare_ip',
-            '+reject.dynamic',
-            '+reject.big_company',
-            '-reject.forward_dns',
-            '-reject.literal_mismatch',
-            '-reject.rdns_match',
-            '-reject.mismatch',
-            '-reject.proto_mismatch',
+        '+check.proto_mismatch',
+        '-reject.proto_mismatch',
+    ];
 
-            '+skip.private_ip',
-            '+skip.whitelist',
-            '+skip.relaying',
-        ],
-    }, function () {
+    checks.forEach(function (c) {
+        booleans.push('+check.' + c);
+        booleans.push('-reject.' + c);
+    });
+
+    plugin.cfg = plugin.config.get('helo.checks.ini', { booleans: booleans },
+    function () {
         plugin.load_helo_checks_ini();
     });
 
@@ -93,6 +84,16 @@ exports.load_helo_checks_ini = function () {
     }
     if (plugin.cfg.check_raw_ip !== undefined) {
         plugin.cfg.check.bare_ip = plugin.cfg.check_raw_ip ? true : false;
+    }
+
+    // non-default setting, so apply their localized setting
+    if (plugin.cfg.check.mismatch !== undefined && !plugin.cfg.check.mismatch) {
+        plugin.logerror('deprecated setting mismatch renamed to host_mismatch');
+        plugin.cfg.check.host_mismatch = plugin.cfg.check.mismatch;
+    }
+    if (plugin.cfg.reject.mismatch !== undefined && plugin.cfg.reject.mismatch) {
+        plugin.logerror('deprecated setting mismatch renamed to host_mismatch');
+        plugin.cfg.reject.host_mismatch = plugin.cfg.reject.mismatch;
     }
 };
 
@@ -151,9 +152,9 @@ exports.host_mismatch = function (next, connection, helo) {
 
     var msg = 'host_mismatch(' + prev_helo + ' / ' + helo + ')';
     connection.results.add(plugin, {fail: msg});
-    if (plugin.cfg.reject.mismatch) { return next(DENY, 'HELO host ' + msg); }
+    if (!plugin.cfg.reject.host_mismatch) return next();
 
-    return next();
+    return next(DENY, 'HELO host ' + msg);
 };
 
 exports.valid_hostname = function (next, connection, helo) {
