@@ -6,7 +6,7 @@ var path = require('path');
 var yaml = require('js-yaml');
 var logger = require('./logger')
 
-logger.logdebug = function() {
+logger.logdebug = function () {
     if (!logger.log) {
         console.log.apply(console, arguments);
     }
@@ -15,8 +15,8 @@ logger.logdebug = function() {
     }
 }
 
-logger.loginfo = function() {
-    if(!logger.log) {
+logger.loginfo = function () {
+    if (!logger.log) {
         console.log.apply(console, arguments);
     }
     else {
@@ -24,8 +24,8 @@ logger.loginfo = function() {
     }
 }
 
-logger.logerror = function() {
-    if(!logger.log) {
+logger.logerror = function () {
+    if (!logger.log) {
         console.error.apply(console, arguments);
     }
     else {
