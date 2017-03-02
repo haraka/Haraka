@@ -87,3 +87,38 @@ exports.add_headers = {
         test.done();
     }
 };
+
+exports.wants_headers_added = {
+    setUp : _set_up,
+    'wants no headers when add_headers=never': function (test) {
+        test.expect(1);
+        this.plugin.cfg.main.add_headers='never';
+        test.equal(
+            this.plugin.wants_headers_added({ default: { action: 'add header' }}),
+            false
+            );
+        test.done();
+    },
+    'always wants no headers when add_headers=always': function (test) {
+        test.expect(1);
+        this.plugin.cfg.main.add_headers='always';
+        test.equal(
+            this.plugin.wants_headers_added({ default: { action: 'beat it' }}),
+            true
+            );
+        test.done();
+    },
+    'wants headers when rspamd response indicates, add_headers=sometimes': function (test) {
+        test.expect(2);
+        this.plugin.cfg.main.add_headers='sometimes';
+        test.equal(
+            this.plugin.wants_headers_added({ default: { action: 'add header' }}),
+            true
+            );
+        test.equal(
+            this.plugin.wants_headers_added({ default: { action: 'brownlist' }}),
+            false
+            );
+        test.done();
+    }
+}
