@@ -5,6 +5,17 @@ To create your own plugin, see:
 - the [Write a Plugin][write-plugin] tutorial
 - the [Plugins](plugins-doc) section of [the manual](https://haraka.github.io)
 
+## Installing NPM packaged plugins
+
+NPM packaged plugins can be installed in the `npm` directory where Haraka was installed (where depends on your OS platform and whether you specified `-g`) or the Haraka install directory (haraka -i this_path). This example installs _my-great-plugin_ in the Haraka install directory:
+
+````
+cd /etc/haraka
+npm install haraka-plugin-my-great-plugin
+````
+
+NPM then installs the plugin and its dependencies in a `node_modules` directory within the Haraka install directory.
+
 ## Plugin Registry
 
 A mostly comprehensive list of plugins known to be working and maintained.
@@ -44,6 +55,7 @@ Create a PR adding yours to this list.
 | [syslog][url-syslog]              | Log to syslog |
 | [mail_from.is_resolvable][url-mfres]  | Verifies the MAIL FROM domain resolves to a MX |
 | [messagesniffer][url-msgsniff]    | Anti-spam via [MessageSniffer][url-ms] |
+| [mongodb][mongo-url]              | Queue emails to MongoDB |
 | [prevent_credential_leaks][url-creds]  | Prevent users from emailing their credentials |
 | [process_title][url-proctitle]    | Populate `ps` output with activity counters |
 | queue/[discard][url-qdisc]        | queues messages to /dev/null |
@@ -136,4 +148,5 @@ Create a PR adding yours to this list.
 [url-tls]: https://github.com/haraka/Haraka/blob/master/docs/plugins/tls.md
 [url-toobusy]: https://github.com/haraka/Haraka/blob/master/docs/plugins/toobusy.md
 [url-xclient]: https://github.com/haraka/Haraka/blob/master/docs/plugins/xclient.md
+[mongo-url]: https://github.com/Helpmonks/haraka-plugin-mongodb
 
