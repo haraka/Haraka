@@ -2,7 +2,7 @@
 // SMTP client object and class. This allows every part of the client
 // protocol to be hooked for different levels of control, such as
 // smtp_forward and smtp_proxy queue plugins.
-// This newer version can use HostPool to get a connection to a pool of
+// It can use HostPool to get a connection to a pool of
 // possible hosts in the configuration value "forwarding_host_pool", rather
 // than a bunch of connections to a single host from the configuration values
 // in "host" and "port" (see host_pool.js).
@@ -319,7 +319,7 @@ exports.get_pool = function (server, port, host, connect_timeout, pool_timeout, 
                 }
             },
             max: max || 1000,
-            idleTimeoutMillis: pool_timeout * 1000,
+            idleTimeoutMillis: (pool_timeout -1) * 1000,
             log: function (str, level) {
                 level = (level === 'verbose') ? 'debug' : level;
                 logger['log' + level]('[smtp_client_pool] [' + name + '] ' + str);
@@ -518,7 +518,7 @@ function get_hostport (connection, server_notes, config_arg) {
             connection.logwarn("creating a new host_pool from " + c.forwarding_host_pool);
             server_notes.host_pool =
                 new HostPool(
-                    c.forwarding_host_pool, // "1.2.3.4:420,  5.6.7.8:420
+                    c.forwarding_host_pool, // 1.2.3.4:420, 5.6.7.8:420
                     c.dead_forwarding_host_retry_secs
                 );
         }
