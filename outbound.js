@@ -134,7 +134,7 @@ exports.scan_queue_pids = function (cb) {
 
     fs.readdir(queue_dir, function (err, files) {
         if (err) {
-            self.logerror("Failed to load queue directory (" + queue_dir + "): " + err);
+            logger.logerror("[outbound] Failed to load queue directory (" + queue_dir + "): " + err);
             return cb(err);
         }
 
@@ -143,13 +143,13 @@ exports.scan_queue_pids = function (cb) {
         files.forEach(function (file) {
             if (/^\./.test(file)) {
                 // dot-file...
-                self.logwarn("Removing left over dot-file: " + file);
+                logger.logwarn("[outbound] Removing left over dot-file: " + file);
                 return fs.unlink(file, function () {});
             }
 
             var parts = _qfile.parts(file);
             if (!parts) {
-                self.logerror("Unrecognized file in queue directory: " + queue_dir + '/' + file);
+                logger.logerror("[outbound] Unrecognized file in queue directory: " + queue_dir + '/' + file);
                 return;
             }
 
@@ -214,7 +214,7 @@ exports.flush_queue = function (domain, pid) {
 };
 
 exports.load_pid_queue = function (pid) {
-    this.loginfo("Loading queue for pid: " + pid);
+    logger.loginfo("[outbound] Loading queue for pid: " + pid);
     this.load_queue(pid);
 };
 
@@ -223,7 +223,7 @@ exports.ensure_queue_dir = function () {
     // this code is only run at start-up.
     if (fs.existsSync(queue_dir)) return;
 
-    this.logdebug("Creating queue directory " + queue_dir);
+    logger.logdebug("[outbound] Creating queue directory " + queue_dir);
     try {
         fs.mkdirSync(queue_dir, 493); // 493 == 0755
     }
@@ -245,7 +245,7 @@ exports.load_queue = function (pid) {
 
 exports._load_cur_queue = function (pid, cb_name, cb) {
     var self = this;
-    self.loginfo("Loading outbound queue from ", queue_dir);
+    logger.loginfo("[outbound] Loading outbound queue from ", queue_dir);
     fs.readdir(queue_dir, function (err, files) {
         if (err) {
             return logger.logerror("Failed to load queue directory (" +
@@ -272,7 +272,7 @@ exports.load_queue_files = function (pid, cb_name, files, callback) {
 
     if (pid) {
         // Pre-scan to rename PID files to my PID:
-        self.loginfo("Grabbing queue files for pid: " + pid);
+        logger.loginfo("[outbound] Grabbing queue files for pid: " + pid);
         async.eachLimit(files, 200, function (file, cb) {
 
             var parts = _qfile.parts(file);
@@ -285,7 +285,7 @@ exports.load_queue_files = function (pid, cb_name, files, callback) {
                     next_attempt : parts.next_attempt,
                     attempts     : parts.attempts,
                 });
-                // self.loginfo("new_filename: ", new_filename);
+                // logger.loginfo("new_filename: ", new_filename);
                 fs.rename(path.join(queue_dir, file), path.join(queue_dir, new_filename), function (err) {
                     if (err) {
                         logger.logerror("Unable to rename queue file: " + file +
@@ -520,7 +520,7 @@ var _qfile = exports.qfile = {
 exports.send_email = function () {
 
     if (arguments.length === 2) {
-        this.loginfo("Sending email as a transaction");
+        logger.loginfo("[outbound] Sending email as a transaction");
         return this.send_trans_email(arguments[0], arguments[1]);
     }
 
@@ -533,11 +533,11 @@ exports.send_email = function () {
     var dot_stuffed = ((options && options.dot_stuffed) ? options.dot_stuffed : false);
     var notes = ((options && options.notes) ? options.notes : null);
 
-    this.loginfo("Sending email via params");
+    logger.loginfo("[outbound] Sending email via params");
 
     var transaction = trans.createTransaction();
 
-    this.loginfo("Created transaction: " + transaction.uuid);
+    logger.loginfo("[outbound] Created transaction: " + transaction.uuid);
 
     //Adding notes passed as parameter
     if (notes) {
@@ -647,11 +647,11 @@ exports.send_trans_email = function (transaction, next) {
 
     // add in potentially missing headers
     if (!transaction.header.get_all('Message-Id').length) {
-        this.loginfo("Adding missing Message-Id header");
+        logger.loginfo("[outbound] Adding missing Message-Id header");
         transaction.add_header('Message-Id', '<' + transaction.uuid + '@' + config.get('me') + '>');
     }
     if (!transaction.header.get_all('Date').length) {
-        this.loginfo("Adding missing Date header");
+        logger.loginfo("[outbound] Adding missing Date header");
         transaction.add_header('Date', utils.date_to_str(new Date()));
     }
 
@@ -668,7 +668,7 @@ exports.send_trans_email = function (transaction, next) {
         var deliveries = [];
         var always_split = cfg.always_split;
         if (always_split) {
-            this.logdebug("always split");
+            this.logdebug({name: "outbound"}, "always split");
             transaction.rcpt_to.forEach(function (rcpt) {
                 deliveries.push({domain: rcpt.host, rcpts: [ rcpt ]});
             });
@@ -1301,7 +1301,9 @@ function get_pool (port, host, local_addr, is_unix_socket, connect_timeout, pool
     if (!server.notes.pool[name]) {
         var pool = generic_pool.Pool({
             name: name,
-            create: _create_socket,
+            create: function (done) {
+                _create_socket(port, host, local_addr, is_unix_socket, connect_timeout, pool_timeout, done);
+            },
             validate: function (socket) {
                 return socket.writable;
             },

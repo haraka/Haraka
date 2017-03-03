@@ -29,3 +29,8 @@ after_success:
     - ./node_modules/.bin/codecov
 
 sudo: false
+
+cache:
+    directories:
+        - node_modules
+

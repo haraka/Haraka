@@ -2,7 +2,7 @@
 // SMTP client object and class. This allows every part of the client
 // protocol to be hooked for different levels of control, such as
 // smtp_forward and smtp_proxy queue plugins.
-// This newer version can use HostPool to get a connection to a pool of
+// It can use HostPool to get a connection to a pool of
 // possible hosts in the configuration value "forwarding_host_pool", rather
 // than a bunch of connections to a single host from the configuration values
 // in "host" and "port" (see host_pool.js).
@@ -48,7 +48,7 @@ function SMTPClient (port, host, connect_timeout, idle_timeout) {
     this.port = port;
     var client = this;
 
-    this.socket.on('line', function (line) {
+    client.socket.on('line', function (line) {
         client.emit('server_protocol', line);
         var matches = smtp_regexp.exec(line);
         if (!matches) {
@@ -113,7 +113,7 @@ function SMTPClient (port, host, connect_timeout, idle_timeout) {
                 client.emit('xclient', 'EHLO');
                 break;
             case 'starttls':
-                this.upgrade(this.tls_options);
+                client.upgrade(client.tls_options);
                 break;
             case 'greeting':
                 client.connected = true;
@@ -140,7 +140,7 @@ function SMTPClient (port, host, connect_timeout, idle_timeout) {
         }
     });
 
-    this.socket.on('connect', function () {
+    client.socket.on('connect', function () {
         // Remove connection timeout and set idle timeout
         client.socket.setTimeout(((idle_timeout) ? idle_timeout : 300) * 1000);
         if (client.socket.remoteAddress) {
@@ -183,10 +183,10 @@ function SMTPClient (port, host, connect_timeout, idle_timeout) {
         };
     };
 
-    this.socket.on('error',   closed('errored'));
-    this.socket.on('timeout', closed('timed out'));
-    this.socket.on('close',   closed('closed'));
-    this.socket.on('end',     closed('ended'));
+    client.socket.on('error',   closed('errored'));
+    client.socket.on('timeout', closed('timed out'));
+    client.socket.on('close',   closed('closed'));
+    client.socket.on('end',     closed('ended'));
 }
 
 util.inherits(SMTPClient, events.EventEmitter);
@@ -293,51 +293,53 @@ SMTPClient.prototype.is_dead_sender = function (plugin, connection) {
 exports.get_pool = function (server, port, host, connect_timeout, pool_timeout, max) {
     port = port || 25;
     host = host || 'localhost';
-    connect_timeout = (connect_timeout === undefined) ? 30 : connect_timeout;
-    pool_timeout = (pool_timeout === undefined) ? 300 : pool_timeout;
+    if (connect_timeout === undefined) connect_timeout = 30;
+    if (pool_timeout === undefined) pool_timeout = 300;
     var name = port + ':' + host + ':' + pool_timeout;
     if (!server.notes.pool) {
         server.notes.pool = {};
     }
-    if (!server.notes.pool[name]) {
-        var pool = generic_pool.Pool({
-            name: name,
-            create: function (callback) {
-                var smtp_client = new SMTPClient(port, host, connect_timeout);
-                logger.logdebug('[smtp_client_pool] uuid=' + smtp_client.uuid + ' host=' +
-                    host + ' port=' + port + ' pool_timeout=' + pool_timeout + ' created');
-                callback(null, smtp_client);
-            },
-            destroy: function (smtp_client) {
-                logger.logdebug('[smtp_client_pool] ' + smtp_client.uuid + ' destroyed, state=' + smtp_client.state);
-                smtp_client.state = STATE.DESTROYED;
-                smtp_client.socket.destroy();
-                // Remove pool object from server notes once empty
-                var size = pool.getPoolSize();
-                if (size === 0) {
-                    delete server.notes.pool[name];
-                }
-            },
-            max: max || 1000,
-            idleTimeoutMillis: pool_timeout * 1000,
-            log: function (str, level) {
-                level = (level === 'verbose') ? 'debug' : level;
-                logger['log' + level]('[smtp_client_pool] [' + name + '] ' + str);
-            }
-        });
-
-        var acquire = pool.acquire;
-        pool.acquire = function (callback, priority) {
-            var callback_wrapper = function (err, smtp_client) {
-                smtp_client.pool = pool;
-                smtp_client.state = STATE.ACTIVE;
-                callback(err, smtp_client);
-            };
-            acquire.call(pool, callback_wrapper, priority);
-        };
-        server.notes.pool[name] = pool;
+    if (server.notes.pool[name]) {
+        return server.notes.pool[name];
     }
-    return server.notes.pool[name];
+
+    var pool = generic_pool.Pool({
+        name: name,
+        create: function (callback) {
+            var smtp_client = new SMTPClient(port, host, connect_timeout);
+            logger.logdebug('[smtp_client_pool] uuid=' + smtp_client.uuid + ' host=' +
+                host + ' port=' + port + ' pool_timeout=' + pool_timeout + ' created');
+            callback(null, smtp_client);
+        },
+        destroy: function (smtp_client) {
+            logger.logdebug('[smtp_client_pool] ' + smtp_client.uuid + ' destroyed, state=' + smtp_client.state);
+            smtp_client.state = STATE.DESTROYED;
+            smtp_client.socket.destroy();
+            // Remove pool object from server notes once empty
+            var size = pool.getPoolSize();
+            if (size === 0) {
+                delete server.notes.pool[name];
+            }
+        },
+        max: max || 1000,
+        idleTimeoutMillis: (pool_timeout -1) * 1000,
+        log: function (str, level) {
+            level = (level === 'verbose') ? 'debug' : level;
+            logger['log' + level]('[smtp_client_pool] [' + name + '] ' + str);
+        }
+    });
+
+    var acquire = pool.acquire;
+    pool.acquire = function (callback, priority) {
+        var callback_wrapper = function (err, smtp_client) {
+            smtp_client.pool = pool;
+            smtp_client.state = STATE.ACTIVE;
+            callback(err, smtp_client);
+        };
+        acquire.call(pool, callback_wrapper, priority);
+    };
+    server.notes.pool[name] = pool;
+    return pool;
 };
 
 // Get a smtp_client for the given attributes.
@@ -518,7 +520,7 @@ function get_hostport (connection, server_notes, config_arg) {
             connection.logwarn("creating a new host_pool from " + c.forwarding_host_pool);
             server_notes.host_pool =
                 new HostPool(
-                    c.forwarding_host_pool, // "1.2.3.4:420,  5.6.7.8:420
+                    c.forwarding_host_pool, // 1.2.3.4:420, 5.6.7.8:420
                     c.dead_forwarding_host_retry_secs
                 );
         }

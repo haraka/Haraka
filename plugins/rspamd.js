@@ -149,13 +149,12 @@ exports.hook_data_post = function (next, connection) {
                 if (!r.data) return callNext();
                 if (!r.data.default) return callNext();
                 if (!r.log) return callNext();
+
                 r.log.emit = true; // spit out a log entry
+                r.log.time = (Date.now() - start)/1000;
 
                 if (!connection.transaction) return callNext();
                 connection.transaction.results.add(plugin, r.log);
-                connection.transaction.results.add(plugin, {
-                    time: (Date.now() - start)/1000,
-                });
 
                 function no_reject () {
                     if (cfg.dkim.enabled && r.data['dkim-signature']) {
@@ -175,9 +174,8 @@ exports.hook_data_post = function (next, connection) {
                     }
                     if (cfg.soft_reject.enabled && r.data.default.action === 'soft reject') {
                         return callNext(DENYSOFT, DSN.sec_unauthorized(cfg.soft_reject.message, 451));
-                    } else if (cfg.main.add_headers !== 'never' && (
-                               cfg.main.add_headers === 'always' ||
-                               (r.data.default.action === 'add header' && cfg.main.add_headers === 'sometimes'))) {
+                    }
+                    if (plugin.wants_headers_added(r.data)) {
                         plugin.add_headers(connection, r.data);
                     }
                     return callNext();
@@ -194,9 +192,20 @@ exports.hook_data_post = function (next, connection) {
 
     req.on('error', function (err) {
         if (!connection || !connection.transaction) return;
-        connection.transaction.results.add(plugin, err.message);
+        connection.transaction.results.add(plugin, { err: err.message});
         return callNext();
     });
+};
+
+exports.wants_headers_added = function (rspamd_data) {
+    var plugin = this;
+
+    if (plugin.cfg.main.add_headers === 'never') return false;
+    if (plugin.cfg.main.add_headers === 'always') return true;
+
+    // implicit add_headers=sometimes, based on rspamd response
+    if (rspamd_data.default.action === 'add header') return true;
+    return false;
 };
 
 exports.parse_response = function (rawData, connection) {

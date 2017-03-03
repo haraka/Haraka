@@ -213,6 +213,7 @@ exports.upgrade_connection = function (next, connection, params) {
                 peerCertificate: cert,
                 cipher: cipher
             };
+            connection.results.add(plugin, connection.tls);
             plugin.emit_upgrade_msg(connection, authorized, verifyErr, cert, cipher);
             return next(OK);  // Return OK as we responded to the client
         });

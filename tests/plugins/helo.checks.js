@@ -37,12 +37,11 @@ exports.host_mismatch = {
         var outer = this;
         var cb = function () {
             test.equal(undefined, arguments[0]);
-            // console.log(outer.connection.results.get('helo.checks'));
             test.ok(outer.connection.results.get('helo.checks').fail.length);
         };
         this.plugin.init(stub, this.connection, 'helo.example.com');
-        this.plugin.cfg.check.mismatch=true;
-        this.plugin.cfg.reject.mismatch=false;
+        this.plugin.cfg.check.host_mismatch=true;
+        this.plugin.cfg.reject.host_mismatch=false;
         this.plugin.host_mismatch(cb, this.connection, 'anything');
         test.done();
     },
@@ -55,8 +54,8 @@ exports.host_mismatch = {
             test.ok(outer.connection.results.get('helo.checks').fail.length);
         };
         this.plugin.init(stub, this.connection, 'helo.example.com');
-        this.plugin.cfg.check.mismatch=true;
-        this.plugin.cfg.reject.mismatch=true;
+        this.plugin.cfg.check.host_mismatch=true;
+        this.plugin.cfg.reject.host_mismatch=true;
         this.plugin.host_mismatch(cb, this.connection, 'anything');
         test.done();
     },

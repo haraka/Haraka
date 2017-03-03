@@ -83,7 +83,7 @@ helo.checks results can be accessed by subsequent plugins:
       Sees if the HELO hostname (or at least the domain) match the rDNS
       hostname(s).
 
-    * mismatch=true
+    * host\_mismatch=true
 
       If HELO is called multiple times, checks if the hostname differs between
       EHLO invocations.
@@ -100,12 +100,12 @@ helo.checks results can be accessed by subsequent plugins:
     Defaults shown:
 
     [reject]
-    mismatch=false
+    host_mismatch=false
+    literal_mismatch=false
     proto_mismatch=false
     rdns_match=false
     dynamic=false
     bare_ip=false
-    literal_mismatch=false
     valid_hostname=false
     forward_dns=false
     big_company=false
