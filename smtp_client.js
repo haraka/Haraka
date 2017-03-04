@@ -348,7 +348,7 @@ exports.get_client_plugin = function (plugin, connection, c, callback) {
         }
     }
 
-    var hostport = get_hostport(connection, connection.server.notes, c);
+    var hostport = get_hostport(connection, connection.server, c);
 
     var pool = exports.get_pool(connection.server, hostport.port, hostport.host, c);
 
@@ -496,34 +496,31 @@ exports.get_client_plugin = function (plugin, connection, c, callback) {
     });
 };
 
-function get_hostport (connection, server_notes, config_arg) {
+function get_hostport (connection, server, cfg) {
 
-    var c = config_arg;
-    if (c.forwarding_host_pool){
-        if (! server_notes.host_pool){
-            connection.logwarn("creating a new host_pool from " + c.forwarding_host_pool);
-            server_notes.host_pool =
+    if (cfg.forwarding_host_pool) {
+        if (! server.notes.host_pool) {
+            connection.logwarn("creating host_pool from " + cfg.forwarding_host_pool);
+            server.notes.host_pool =
                 new HostPool(
-                    c.forwarding_host_pool, // 1.2.3.4:420, 5.6.7.8:420
-                    c.dead_forwarding_host_retry_secs
+                    cfg.forwarding_host_pool, // 1.2.3.4:420, 5.6.7.8:420
+                    cfg.dead_forwarding_host_retry_secs
                 );
         }
-        var host_pool = server_notes.host_pool;
 
-        var host = host_pool.get_host();
-        if (! host){
-            logger.logerror('[smtp_client_pool] no backend hosts in pool!');
-            throw new Error("no backend hosts found in pool!");
+        var host = server.notes.host_pool.get_host();
+        if (host) {
+            return host; // { host: 1.2.3.4, port: 567 }
         }
+        logger.logerror('[smtp_client_pool] no backend hosts in pool!');
+        throw new Error("no backend hosts found in pool!");
+    }
 
-        return host; // { host: 1.2.3.4, port: 567 }
+    if (cfg.host && cfg.port) {
+        return { host: cfg.host, port: cfg.port };
     }
-    else if (c.host && c.port){
-        return { host: c.host, port: c.port };
-    }
-    else {
-        logger.logwarn("[smtp_client_pool] forwarding_host_pool or host and port " +
-                "were not found in config file");
-        throw new Error("You must specify either forwarding_host_pool or host and port");
-    }
+
+    logger.logwarn("[smtp_client_pool] forwarding_host_pool or host and port " +
+            "were not found in config file");
+    throw new Error("You must specify either forwarding_host_pool or host and port");
 }
