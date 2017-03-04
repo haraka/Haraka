@@ -63,9 +63,7 @@ class SMTPClient extends events.EventEmitter {
             var msg = matches[3];
 
             client.response.push(msg);
-            if (cont !== ' ') {
-                return;
-            }
+            if (cont !== ' ') return;
 
             if (client.command === 'auth' || client.authenticating) {
                 logger.loginfo('SERVER RESPONSE, CLIENT ' + client.command + ", authenticating=" + client.authenticating + ",code="+code + ",cont="+cont+",msg=" +msg);
