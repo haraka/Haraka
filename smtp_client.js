@@ -72,11 +72,11 @@ function SMTPClient (port, host, connect_timeout, idle_timeout) {
                 client.emit('auth_username');
                 return;
             }
-            else if (code.match(/^3/) && msg === 'UGFzc3dvcmQ6') {
+            if (code.match(/^3/) && msg === 'UGFzc3dvcmQ6') {
                 client.emit('auth_password');
                 return;
-            } else if (code.match(/^2/) && client.authenticating) {
-                //TODO: logging
+            }
+            if (code.match(/^2/) && client.authenticating) {
                 logger.loginfo('AUTHENTICATED');
                 client.authenticating = false;
                 client.authenticated = true;
@@ -143,13 +143,12 @@ function SMTPClient (port, host, connect_timeout, idle_timeout) {
     client.socket.on('connect', function () {
         // Remove connection timeout and set idle timeout
         client.socket.setTimeout(((idle_timeout) ? idle_timeout : 300) * 1000);
-        if (client.socket.remoteAddress) {
+        if (!client.socket.remoteAddress) {
             // "Value may be undefined if the socket is destroyed"
-            client.remote_ip = ipaddr.process(client.socket.remoteAddress).toString();
+            logger.logdebug('socket.remoteAddress undefined');
+            return;
         }
-        else {
-            logger.logerror('client.socket.remoteAddress undefined!');
-        }
+        client.remote_ip = ipaddr.process(client.socket.remoteAddress).toString();
     });
 
     var closed = function (msg) {
