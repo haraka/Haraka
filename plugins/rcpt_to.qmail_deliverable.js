@@ -66,7 +66,8 @@ exports.set_queue = function (connection, queue_wanted, domain) {
     if (!queue_wanted) return true;
 
     if (queue_wanted === 'smtp_forward') {
-        queue_wanted += ':' + (dom_cfg.host || plugin.cfg.main.host || '');
+        var dst_host = dom_cfg.host || plugin.cfg.main.host;
+        if (dst_host) queue_wanted += ':' + dst_host;
     }
 
     if (!connection.transaction.notes.queue) {

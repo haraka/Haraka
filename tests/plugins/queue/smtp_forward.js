@@ -109,7 +109,11 @@ exports.get_mx = {
         test.expect(2);
         var cb = function (code, mx) {
             test.equal(code, OK);
-            test.deepEqual(mx, { priority: 0, exchange: '1.2.3.4', port: 2555 });
+            test.deepEqual(mx, {
+                priority: 0, exchange: '1.2.3.4', port: 2555,
+                auth_user: 'postmaster@test.com',
+                auth_pass: 'superDuperSecret'
+            });
             test.done();
         };
         this.plugin.get_mx(cb, {}, 'test.com');

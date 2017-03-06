@@ -92,7 +92,8 @@ exports.set_queue = function (connection, queue_wanted, domain) {
     if (!queue_wanted) queue_wanted = dom_cfg.queue || plugin.cfg.main.queue;
     if (!queue_wanted) return true;
 
-    queue_wanted += ':' + (dom_cfg.host || plugin.cfg.main.host || '');
+    var dst_host = dom_cfg.host || plugin.cfg.main.host;
+    if (dst_host) queue_wanted += ':' + dst_host;
 
     if (!connection.transaction.notes.queue) {
         connection.transaction.notes.queue = queue_wanted;
@@ -275,9 +276,22 @@ exports.get_mx = function (next, hmail, domain) {
         return next();
     }
 
-    return next(OK, {
+    var mx_opts = [
+        'auth_type', 'auth_user', 'auth_pass', 'bind', 'bind_helo',
+        'using_lmtp'
+    ]
+
+    var mx = {
         priority: 0,
         exchange: plugin.cfg[domain].host || plugin.cfg.main.host,
         port: plugin.cfg[domain].port || plugin.cfg.main.port || 25,
-    });
+    }
+
+    // apply auth/mx options
+    mx_opts.forEach(function (o) {
+        if (plugin.cfg[domain][o] === undefined) return;
+        mx[o] = plugin.cfg[domain][o];
+    })
+
+    return next(OK, mx);
 };
