@@ -54,17 +54,6 @@ exports.get_config = function (connection) {
     if (!dom)             return plugin.cfg.main;
     if (!plugin.cfg[dom]) return plugin.cfg.main;  // no specific route
 
-    var rcpt_count = connection.transaction.rcpt_to.length;
-    if (rcpt_count === 1) { return plugin.cfg[dom]; }
-
-    for (let i=1; i < rcpt_count; i++) {
-        let dom2 = connection.transaction.rcpt_to[i].host;
-        if (!dom2 || !plugin.cfg[dom2]) return plugin.cfg.main;
-        if (plugin.cfg[dom2].host !== plugin.cfg[dom].host) {
-            // differing destination hosts
-            return plugin.cfg.main; // return default config
-        }
-    }
     return plugin.cfg[dom];
 };
 
@@ -273,5 +262,22 @@ exports.queue_forward = function (next, connection) {
                                 msg);
             smtp_client.release();
         });
+    });
+};
+
+exports.get_mx = function (next, hmail, domain) {
+    var plugin = this;
+
+    if (domain !== domain.toLowerCase()) domain = domain.toLowerCase();
+
+    if (plugin.cfg[domain] === undefined) {
+        plugin.logdebug('using DNS MX for: ' + domain);
+        return next();
+    }
+
+    return next(OK, {
+        priority: 0,
+        exchange: plugin.cfg[domain].host || plugin.cfg.main.host,
+        port: plugin.cfg[domain].port || plugin.cfg.main.port || 25,
     });
 };

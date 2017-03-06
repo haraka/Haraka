@@ -87,13 +87,6 @@ connections where every recipient host is identical.
     [example3.com]
     host=1.2.3.6
 
-Messages with a single recipient to example[1-3].com will get delivered
-directly to the specified host. Messages with recipients only in the domains
-example1.com and example2.com will get delivered directly to 1.2.3.5.
-Everything else gets delivered to 1.2.3.4.
+## split-host forward routing
 
-## Per-Domain Limitations
-
-See [GitHub Issue #573](https://github.com/haraka/Haraka/issues/573) for
-background on the limitations of smtp-forward with recipients in different
-domains.
+When an incoming email transaction has multiple recipients with differing forward routes,  recipients to subsequent forward routes are deferred. Example: an incoming email transaction has recipients user@example1.com, user@example2.com, and user@example3.com. The first two messages will be accepted (they share the same forward destination) and the latter one will be deferred. It will arrive in a future delivery attempt by the remote.
