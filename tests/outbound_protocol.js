@@ -52,7 +52,7 @@ exports.outbound_protocol_tests = {
 };
 
 vm_harness.add_tests(
-    path.join(__dirname, '..', 'outbound.js'),
+    path.join(__dirname, '..', 'outbound', 'index.js'),
     path.join(__dirname, 'outbound_protocol/'),
     exports.outbound_protocol_tests,
     {
