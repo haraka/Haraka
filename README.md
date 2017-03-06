@@ -136,7 +136,7 @@ SpamAssassin and a hacker on [Qpsmtpd][13].
 [1]: http://nodejs.org/
 [2]: http://youtu.be/6twKXMAsPsw
 [3]: http://en.wikipedia.org/wiki/Message_transfer_agent
-[4]: https://haraka.github.io/manual.html
+[4]: https://github.com/haraka/Haraka/blob/v3/Plugins.md
 [5]: http://en.wikipedia.org/wiki/Mail_submission_agent
 [6]: https://github.com/haraka/Haraka/blob/master/docs/plugins/dkim_sign.md
 [7]: https://en.wikipedia.org/wiki/Mail_delivery_agent
