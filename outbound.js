@@ -1,17 +1,19 @@
 'use strict';
 
-var async       = require('async');
-var fs          = require('fs');
-var path        = require('path');
 var dns         = require('dns');
 var events      = require('events');
+var fs          = require('fs');
+var path        = require('path');
 var net         = require('net');
 var util        = require('util');
 
+var async       = require('async');
 var Address     = require('address-rfc2821').Address;
 var constants   = require('haraka-constants');
+var generic_pool = require('generic-pool');
 var net_utils   = require('haraka-net-utils');
 var utils       = require('haraka-utils');
+var ResultStore = require('haraka-results');
 
 var sock        = require('./line_socket');
 var logger      = require('./logger');
@@ -22,9 +24,7 @@ var TimerQueue  = require('./timer_queue');
 var Header      = require('./mailheader').Header;
 var DSN         = require('./dsn');
 var FsyncWriteStream = require('./fsync_writestream');
-var generic_pool = require('generic-pool');
 var server      = require('./server');
-var ResultStore = require('haraka-results');
 
 var core_consts = require('constants');
 var WRITE_EXCL  = core_consts.O_CREAT | core_consts.O_TRUNC | core_consts.O_WRONLY | core_consts.O_EXCL;
@@ -845,27 +845,8 @@ exports.split_to_new_recipients = function (hmail, recipients, response, cb) {
 
 exports.get_tls_options = function (mx) {
 
-    var tls_config = exports.net_utils.load_tls_ini();
-
-    var tls_options = { servername: mx.exchange };
-    var config_options = [
-        'key', 'cert', 'ciphers', 'dhparam',
-        'requestCert', 'honorCipherOrder', 'rejectUnauthorized'
-    ];
-
-    for (var i = 0; i < config_options.length; i++) {
-        var opt = config_options[i];
-        if (tls_config.main[opt] === undefined) continue;
-        tls_options[opt] = tls_config.main[opt];
-    }
-
-    if (tls_config.outbound) {
-        for (var j = 0; j < config_options.length; j++) {
-            var opt2 = config_options[j];
-            if (tls_config.outbound[opt2] === undefined) continue;
-            tls_options[opt2] = tls_config.outbound[opt2];
-        }
-    }
+    var tls_options = exports.net_utils.tls_ini_section_with_defaults('outbound');
+    tls_options.servername = mx.exchange;
 
     if (tls_options.key) {
         if (Array.isArray(tls_options.key)) {
@@ -1517,7 +1498,7 @@ HMailItem.prototype.try_deliver_host_on_socket = function (mx, host, port, socke
         "auth": [],
     };
 
-    var tls_config = net_utils.load_tls_ini();
+    var tls_cfg = net_utils.load_tls_ini();
 
     var send_command = socket.send_command = function (cmd, data) {
         if (!socket.writable) {
@@ -1568,8 +1549,8 @@ HMailItem.prototype.try_deliver_host_on_socket = function (mx, host, port, socke
         }
 
         // TLS
-        if (!net_utils.ip_in_list(tls_config.no_tls_hosts, self.todo.domain) &&
-            !net_utils.ip_in_list(tls_config.no_tls_hosts, host) &&
+        if (!net_utils.ip_in_list(tls_cfg.no_tls_hosts, self.todo.domain) &&
+            !net_utils.ip_in_list(tls_cfg.no_tls_hosts, host) &&
             smtp_properties.tls && cfg.enable_tls && !secured)
         {
             socket.on('secure', function () {

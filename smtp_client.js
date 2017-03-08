@@ -14,13 +14,13 @@ var util         = require('util');
 // npm deps
 var generic_pool = require('generic-pool');
 var ipaddr       = require('ipaddr.js');
+var net_utils    = require('haraka-net-utils');
+var utils        = require('haraka-utils');
 
 // haraka libs
 var line_socket = require('./line_socket');
 var logger      = require('./logger');
-var utils       = require('haraka-utils');
 var HostPool    = require('./host_pool');
-var net_utils   = require('haraka-net-utils');
 
 var smtp_regexp = /^([0-9]{3})([ -])(.*)/;
 var STATE = {
@@ -192,22 +192,7 @@ util.inherits(SMTPClient, events.EventEmitter);
 
 SMTPClient.prototype.load_tls_config = function (plugin) {
     var tls_options = {};
-    this.tls_config = net_utils.load_tls_ini();
-    var config_options = ['key','cert','ciphers','requestCert','rejectUnauthorized'];
-
-    for (let i = 0; i < config_options.length; i++) {
-        let opt = config_options[i];
-        if (this.tls_config.main[opt] === undefined) { continue; }
-        tls_options[opt] = this.tls_config.main[opt];
-    }
-
-    if (this.tls_config[plugin.name]) {
-        for (let i = 0; i < config_options.length; i++) {
-            let opt = config_options[i];
-            if (this.tls_config[plugin.name][opt] === undefined) { continue; }
-            tls_options[opt] = this.tls_config[plugin.name][opt];
-        }
-    }
+    this.tls_config = net_utils.tls_ini_section_with_defaults(plugin.name);
 
     if (this.host) { tls_options.servername = this.host }
 
