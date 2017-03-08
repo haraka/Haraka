@@ -141,7 +141,7 @@ exports.get_mx_file = {
             test.equal(rc, OK);
             test.equal(mx, '192.168.1.1');
             test.done();
-        }.bind(this);
+        };
 
         this.plugin.route_list = {'matt@example.com': '192.168.1.1'};
         var addr = new Address('<matt@example.com>');
@@ -153,7 +153,7 @@ exports.get_mx_file = {
             test.equal(rc, OK);
             test.equal(mx, '192.168.1.2');
             test.done();
-        }.bind(this);
+        };
 
         this.plugin.route_list = {'example.com': '192.168.1.2'};
         var addr = new Address('<matt@example.com>');
@@ -165,7 +165,7 @@ exports.get_mx_file = {
             test.equal(rc, OK);
             test.equal(mx, '192.168.1.1');
             test.done();
-        }.bind(this);
+        };
 
         this.plugin.route_list = {
             'matt@example.com': '192.168.1.1',

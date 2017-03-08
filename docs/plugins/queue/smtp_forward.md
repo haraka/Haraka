@@ -63,6 +63,23 @@ Configuration
 
     SMTP AUTH password to use.
 
+  * queue
+
+    Which queue plugin to use. Default: undefined. The default bahavior is to
+    use smtp_forward for inbound connections and outbound for relaying
+    connections. This option is used for complex mail routes.
+
+  * check_sender=false
+
+    Requires that sender domains defined in smtp_forward.ini (see Per-Domain below) have relaying privileges. This is a form of spoof prevention and assumes that any mail clients have relaying or AUTH privileges. This is usually the case.
+
+  * check_recipient=false
+
+    By default, Haraka accepts no emails until a recipient plugin has been configured to accept mails for a domain. The simplest common case is the in_host_list plugin with a list of domains in config/host_host. An alternative is to set `check_recipient=true` and list each domain in a definition block in smtp_forward.ini (see Per-Domain Configuration). An example for two domains:
+
+    [example.com]
+    [example.net]
+
 # Per-Domain Configuration
 
 More specific forward routes for domains can be defined. More specific routes
@@ -87,6 +104,7 @@ connections where every recipient host is identical.
     [example3.com]
     host=1.2.3.6
 
-## split-host forward routing
 
-When an incoming email transaction has multiple recipients with differing forward routes,  recipients to subsequent forward routes are deferred. Example: an incoming email transaction has recipients user@example1.com, user@example2.com, and user@example3.com. The first two messages will be accepted (they share the same forward destination) and the latter one will be deferred. It will arrive in a future delivery attempt by the remote.
+# Split host forward routing
+
+When an incoming email transaction has multiple recipients with different forward routes,  recipients to subsequent forward routes are deferred. Example: an incoming email transaction has recipients user@example1.com, user@example2.com, and user@example3.com. The first two messages will be accepted (they share the same forward destination) and the latter one will be deferred. It will arrive in a future delivery attempt by the remote.

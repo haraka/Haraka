@@ -127,7 +127,7 @@ exports.check_recipient = function (next, connection, params) {
             return next(OK);
         }
         txn.results.add(plugin, {pass: 'rcpt_to.split'});
-        return next(DENYSOFT, "Queue error, try again soon");
+        return next(DENYSOFT, "Split transaction, retry soon");
     }
 
     if (connection.relaying && txn.notes.local_sender) {

@@ -104,7 +104,7 @@ exports.hook_rcpt = function (next, connection, params) {
             if (plugin.set_queue(connection, null, domain)) {
                 return next(OK);
             }
-            return next(DENYSOFT, "Queue error, try again soon");
+            return next(DENYSOFT, "Split transaction, retry soon");
         }
 
         // a client with relaying privileges is sending from a local domain.
