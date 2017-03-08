@@ -126,7 +126,6 @@ exports.stat_queue = function (cb) {
 };
 
 exports.scan_queue_pids = function (cb) {
-    var self = this;
 
     // Under cluster, this is called first by the master so
     // we create the queue directory if it doesn't exist.
