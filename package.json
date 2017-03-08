@@ -12,7 +12,7 @@
   },
   "main": "haraka.js",
   "engines": {
-    "node": ">= v4.6.2"
+    "node": ">= v4.7.3"
   },
   "dependencies": {
     "address-rfc2821"       : "*",
@@ -29,7 +29,7 @@
     "sprintf-js"            : "~1.0.3",
     "haraka-tld"            : "*",
     "haraka-constants"      : "*",
-    "haraka-net-utils"      : ">=1.0.4",
+    "haraka-net-utils"      : ">=1.0.6",
     "haraka-results"        : "^1.0.1",
     "haraka-utils"          : "*",
     "haraka-plugin-asn"     : "*",
