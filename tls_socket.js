@@ -224,7 +224,7 @@ function _getSecureContext (options) {
 }
 
 function createServer (cb) {
-    var serv = net.createServer(function (cryptoSocket) {
+    return net.createServer(function (cryptoSocket) {
 
         var socket = new pluggableStream(cryptoSocket);
 
@@ -250,6 +250,8 @@ function createServer (cb) {
                 else {
                     log.logerror("OCSP Stapling cannot be enabled because the ocsp module is not loaded");
                 }
+
+                done(null, options.secureContext);
             }
 
             var cleartext = new tls.TLSSocket(cryptoSocket, options);
@@ -286,8 +288,6 @@ function createServer (cb) {
 
         cb(socket);
     });
-
-    return serv;
 }
 
 function connect (port, host, cb) {

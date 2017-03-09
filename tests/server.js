@@ -188,6 +188,8 @@ exports.createServer = {
         function (error, info){
             if (error){
                 console.log(error);
+                test.done();
+                return;
             }
             test.deepEqual(info.accepted, [ 'discard@haraka.local' ]);
             console.log('Message sent: ' + info.response);

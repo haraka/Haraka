@@ -2,7 +2,7 @@
 // TLS is built into Haraka. This plugin conditionally advertises STARTTLS.
 // see 'haraka -h tls' for help
 
-var net_utils = require('haraka-net-utils');
+exports.net_utils = require('haraka-net-utils');
 var tls_socket = require('./tls_socket');
 
 exports.register = function () {
@@ -52,24 +52,26 @@ exports.load_pem = function (file) {
 exports.load_tls_ini = function () {
     var plugin = this;
 
-    plugin.cfg = net_utils.load_tls_ini(function () {
+    plugin.cfg = plugin.net_utils.load_tls_ini(function () {
         plugin.load_tls_ini();
     });
 
-    var config_options = ['ciphers','requestCert','rejectUnauthorized',
-        'key','cert','honorCipherOrder','ecdhCurve','dhparam',
-        'secureProtocol','enableOCSPStapling'];
+    var config_options = [
+        'ciphers', 'requestCert', 'rejectUnauthorized',
+        'key', 'cert', 'honorCipherOrder', 'ecdhCurve', 'dhparam',
+        'secureProtocol', 'enableOCSPStapling'
+    ];
 
     for (let i = 0; i < config_options.length; i++) {
         let opt = config_options[i];
-        if (plugin.cfg.main[opt] === undefined) { continue; }
+        if (plugin.cfg.main[opt] === undefined) continue;
         plugin.tls_opts[opt] = plugin.cfg.main[opt];
     }
 
     if (plugin.cfg.inbound) {
         for (let i = 0; i < config_options.length; i++) {
             let opt = config_options[i];
-            if (plugin.cfg.inbound[opt] === undefined) { continue; }
+            if (plugin.cfg.inbound[opt] === undefined) continue;
             plugin.tls_opts[opt] = plugin.cfg.inbound[opt];
         }
     }
@@ -101,32 +103,71 @@ exports.load_tls_opts = function () {
                        plugin.tls_opts.cert.length + ").");
     }
 
+    plugin.loadPemFiles();
+
+    plugin.loadPemDir((err, certs) => {
+        if (certs && certs.length) {
+            plugin.loginfo(certs.length + ' TLS certificates loaded');
+        }
+    });
+
+    plugin.logdebug(plugin.tls_opts);
+};
+
+exports.loadPemDir = function (done) {
+    var plugin = this;
+
+    plugin.net_utils.load_tls_dir('tls', (err, certs) => {
+        if (err) plugin.logerror(err);
+
+        if (!certs || !certs.length) {
+            plugin.loginfo('0 TLS certs in config/tls');
+            return done(null, certs);
+        }
+
+        let certsByHost = {};
+
+        certs.forEach(cert => {
+            // plugin.loginfo(thisCert);
+            cert.names.forEach(name => {
+                certsByHost[name] = cert;
+            })
+        })
+
+        // plugin.loginfo(certsByHost);
+        plugin.tls_opts.certsByHost = certsByHost;
+        done(null, certs);
+    })
+}
+
+exports.loadPemFiles = function () {
+    var plugin = this;
+
     // turn key/cert file names into actual key/cert binary data
-    plugin.tls_opts.key = plugin.tls_opts.key.map(function (keyFileName) {
+    plugin.tls_opts.key = plugin.tls_opts.key.map(keyFileName => {
         var key = plugin.load_pem(keyFileName);
         if (!key) {
             plugin.load_err("tls key " + keyFileName + " could not be loaded.");
         }
         return key;
     });
-    plugin.tls_opts.cert = plugin.tls_opts.cert.map(function (certFileName) {
+
+    plugin.tls_opts.cert = plugin.tls_opts.cert.map(certFileName => {
         var cert = plugin.load_pem(certFileName);
         if (!cert) {
             plugin.load_err("tls cert " + certFileName + " could not be loaded.");
         }
         return cert;
     });
-
-    plugin.logdebug(plugin.tls_opts);
-};
+}
 
 exports.advertise_starttls = function (next, connection) {
     /* Caution: do not advertise STARTTLS if already TLS upgraded */
-    if (connection.tls.enabled) { return next(); }
+    if (connection.tls.enabled) return next();
 
     var plugin = this;
 
-    if (net_utils.ip_in_list(plugin.cfg.no_tls_hosts, connection.remote.ip)) {
+    if (plugin.net_utils.ip_in_list(plugin.cfg.no_tls_hosts, connection.remote.ip)) {
         return next();
     }
 
@@ -143,7 +184,7 @@ exports.advertise_starttls = function (next, connection) {
     var redis = server.notes.redis;
     var dbkey = 'no_tls|' + connection.remote.ip;
 
-    redis.get(dbkey, function (err, dbr) {
+    redis.get(dbkey, (err, dbr) => {
         if (err) {
             connection.results.add(plugin, {err: err});
             return enable_tls();
@@ -201,11 +242,11 @@ exports.upgrade_connection = function (next, connection, params) {
     connection.notes.cleanUpDisconnect = nextOnce;
 
     /* Upgrade the connection to TLS. */
-    connection.client.upgrade(plugin.tls_opts, function (authorized, verifyErr, cert, cipher) {
-        if (called_next) { return; }
+    connection.client.upgrade(plugin.tls_opts, (authorized, verifyErr, cert, cipher) => {
+        if (called_next) return;
         clearTimeout(connection.notes.tls_timer);
         called_next = true;
-        connection.reset_transaction(function () {
+        connection.reset_transaction(() => {
             connection.set('hello', 'host', undefined);
             connection.set('tls', 'enabled', true);
             connection.set('tls', 'cipher', cipher);
@@ -233,18 +274,17 @@ exports.emit_upgrade_msg = function (c, authorized, verifyErr, cert, cipher) {
     var plugin = this;
     var msg = 'secured:';
     if (cipher) {
-        msg += ' cipher='  + cipher.name + ' version=' + cipher.version;
+        msg += ` cipher=${cipher.name} version=${cipher.version}`;
     }
-    msg += ' verified=' + authorized;
-    if (verifyErr) msg += ' error="' + verifyErr + '"';
+    msg += ` verified=${authorized}`;
+    if (verifyErr) msg += ` error="${verifyErr}"`;
     if (cert) {
         if (cert.subject) {
-            msg += ' cn="' + cert.subject.CN + '"' +
-                   ' organization="' + cert.subject.O + '"';
+            msg += ` cn="${cert.subject.CN}" organization="${cert.subject.O}"`;
         }
-        if (cert.issuer)      msg += ' issuer="'     + cert.issuer.O + '"';
-        if (cert.valid_to)    msg += ' expires="'    + cert.valid_to + '"';
-        if (cert.fingerprint) msg += ' fingerprint=' + cert.fingerprint;
+        if (cert.issuer)      msg += ` issuer="${cert.issuer.O}"`;
+        if (cert.valid_to)    msg += ` expires="${cert.valid_to}"`;
+        if (cert.fingerprint) msg += ` fingerprint=${cert.fingerprint}`;
     }
 
     c.loginfo(plugin,  msg);

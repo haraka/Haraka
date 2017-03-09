@@ -29,7 +29,7 @@
     "sprintf-js"            : "~1.0.3",
     "haraka-tld"            : "*",
     "haraka-constants"      : "*",
-    "haraka-net-utils"      : ">=1.0.6",
+    "haraka-net-utils"      : ">=1.0.8",
     "haraka-results"        : "^1.0.1",
     "haraka-utils"          : "*",
     "haraka-plugin-asn"     : "*",
