@@ -131,6 +131,8 @@ exports.hook_data_post = function (next, connection) {
     }
 
     timer = setTimeout(function () {
+        if (!connection) return;
+        if (!connection.transaction) return;
         connection.transaction.results.add(plugin, {err: 'timeout'});
         callNext();
     }, timeout * 1000);
@@ -174,9 +176,8 @@ exports.hook_data_post = function (next, connection) {
                     }
                     if (cfg.soft_reject.enabled && r.data.default.action === 'soft reject') {
                         return callNext(DENYSOFT, DSN.sec_unauthorized(cfg.soft_reject.message, 451));
-                    } else if (cfg.main.add_headers !== 'never' && (
-                               cfg.main.add_headers === 'always' ||
-                               (r.data.default.action === 'add header' && cfg.main.add_headers === 'sometimes'))) {
+                    }
+                    if (plugin.wants_headers_added(r.data)) {
                         plugin.add_headers(connection, r.data);
                     }
                     return callNext();
@@ -196,6 +197,17 @@ exports.hook_data_post = function (next, connection) {
         connection.transaction.results.add(plugin, { err: err.message});
         return callNext();
     });
+};
+
+exports.wants_headers_added = function (rspamd_data) {
+    var plugin = this;
+
+    if (plugin.cfg.main.add_headers === 'never') return false;
+    if (plugin.cfg.main.add_headers === 'always') return true;
+
+    // implicit add_headers=sometimes, based on rspamd response
+    if (rspamd_data.default.action === 'add header') return true;
+    return false;
 };
 
 exports.parse_response = function (rawData, connection) {

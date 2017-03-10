@@ -20,11 +20,6 @@ var Header      = require('../mailheader').Header;
 var DSN         = require('../dsn');
 var server      = require('../server');
 
-var mx = require('./mx_lookup');
-var _qfile = require('./qfile');
-var cfg = require('./config');
-
-
 /////////////////////////////////////////////////////////////////////////////
 // HMailItem - encapsulates an individual outbound mail item
 
@@ -580,7 +575,7 @@ HMailItem.prototype.try_deliver_host_on_socket = function (mx, host, port, socke
         "auth": [],
     };
 
-    var tls_config = net_utils.load_tls_ini();
+    var tls_cfg = net_utils.load_tls_ini();
 
     var send_command = socket.send_command = function (cmd, data) {
         if (!socket.writable) {
@@ -631,8 +626,8 @@ HMailItem.prototype.try_deliver_host_on_socket = function (mx, host, port, socke
         }
 
         // TLS
-        if (!net_utils.ip_in_list(tls_config.no_tls_hosts, self.todo.domain) &&
-            !net_utils.ip_in_list(tls_config.no_tls_hosts, host) &&
+        if (!net_utils.ip_in_list(tls_cfg.no_tls_hosts, self.todo.domain) &&
+            !net_utils.ip_in_list(tls_cfg.no_tls_hosts, host) &&
             smtp_properties.tls && cfg.enable_tls && !secured)
         {
             socket.on('secure', function () {

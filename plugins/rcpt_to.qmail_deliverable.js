@@ -4,12 +4,6 @@
 var http = require('http');
 var querystring = require('querystring');
 
-var options = {
-    method: 'get',
-    host: '127.0.0.1',
-    port: 8998,
-};
-
 exports.register = function () {
     var plugin = this;
     plugin.load_qmd_ini();
@@ -17,10 +11,10 @@ exports.register = function () {
 
 exports.load_qmd_ini = function () {
     var plugin = this;
-    plugin.cfg = plugin.config.get(
-                'rcpt_to.qmail_deliverable.ini',
-                function () { plugin.load_qmd_ini(); }
-                );
+    var cfgName = 'rcpt_to.qmail_deliverable.ini';
+    plugin.cfg = plugin.config.get(cfgName, function () {
+        plugin.load_qmd_ini();
+    });
 };
 
 exports.hook_mail = function (next, connection, params) {
@@ -39,7 +33,7 @@ exports.hook_mail = function (next, connection, params) {
 
     var domain = params[0].host.toLowerCase();
 
-    var cb = function (err, qmd_r) {
+    plugin.get_qmd_response(connection, domain, email, function (err, qmd_r) {
         if (err) {
             txn.results.add(plugin, {err: err});
             return next(DENYSOFT, err);
@@ -59,10 +53,36 @@ exports.hook_mail = function (next, connection, params) {
 
         txn.results.add(plugin, {msg: "mail_from." + qmd_r[1]});
         return next(CONT, "mail_from." + qmd_r[1]);
-    };
-
-    plugin.get_qmd_response(connection, domain, email, cb);
+    });
 };
+
+exports.set_queue = function (connection, queue_wanted, domain) {
+    var plugin = this;
+
+    var dom_cfg = plugin.cfg[domain];
+    if (dom_cfg === undefined) dom_cfg = {};
+
+    if (!queue_wanted) queue_wanted = dom_cfg.queue || plugin.cfg.main.queue;
+    if (!queue_wanted) return true;
+
+    if (queue_wanted === 'smtp_forward') {
+        var dst_host = dom_cfg.host || plugin.cfg.main.host;
+        if (dst_host) queue_wanted += ':' + dst_host;
+    }
+
+    if (!connection.transaction.notes.queue) {
+        connection.transaction.notes.queue = queue_wanted;
+        return true;
+    }
+
+    // multiple recipients with same destination
+    if (connection.transaction.notes.queue === queue_wanted) {
+        return true;
+    }
+
+    // multiple recipients with different forward host, soft deny
+    return false;
+}
 
 exports.hook_rcpt = function (next, connection, params) {
     var plugin = this;
@@ -71,11 +91,9 @@ exports.hook_rcpt = function (next, connection, params) {
     var rcpt = params[0];
     var domain = rcpt.host.toLowerCase();
 
-    txn.results.add(plugin, {
-        msg: "sock: " + options.host + ':' + options.port
-    });
-
-    var cb = function (err, qmd_r) {
+    // Qmail::Deliverable::Client does a rfc2822 "atext" test
+    // but Haraka has already validated for us by this point
+    plugin.get_qmd_response(connection, domain, rcpt.address(), function (err, qmd_r) {
         if (err) {
             txn.results.add(plugin, {err: err});
             return next(DENYSOFT, "error validating email address");
@@ -83,13 +101,17 @@ exports.hook_rcpt = function (next, connection, params) {
 
         if (qmd_r[0] === OK) {
             txn.results.add(plugin, {pass: "rcpt." + qmd_r[1]});
-            return next(OK);
+            if (plugin.set_queue(connection, null, domain)) {
+                return next(OK);
+            }
+            return next(DENYSOFT, "Split transaction, retry soon");
         }
 
         // a client with relaying privileges is sending from a local domain.
         // Any RCPT is acceptable.
         if (connection.relaying && txn.notes.local_sender) {
             txn.results.add(plugin, {pass: "relaying local_sender"});
+            plugin.set_queue(connection, 'outbound');
             return next(OK);
         }
 
@@ -102,15 +124,17 @@ exports.hook_rcpt = function (next, connection, params) {
         // returns OK, then the address is not accepted.
         txn.results.add(plugin, {msg: "rcpt." + qmd_r[1]});
         return next(CONT, qmd_r[1]);
-    };
-
-    // Qmail::Deliverable::Client does a rfc2822 "atext" test
-    // but Haraka has already validated for us by this point
-    plugin.get_qmd_response(connection, domain, rcpt.address(), cb);
+    });
 };
 
 exports.get_qmd_response = function (connection, domain, email, cb) {
     var plugin = this;
+
+    var options = {
+        method: 'get',
+        host: '127.0.0.1',
+        port: 8998,
+    };
 
     if (plugin.cfg[domain]) {
         if (plugin.cfg[domain].host) options.host = plugin.cfg[domain].host;
@@ -120,6 +144,10 @@ exports.get_qmd_response = function (connection, domain, email, cb) {
         if (plugin.cfg.main.host) options.host = plugin.cfg.main.host;
         if (plugin.cfg.main.port) options.port = plugin.cfg.main.port;
     }
+
+    connection.transaction.results.add(plugin, {
+        msg: "sock: " + options.host + ':' + options.port
+    });
 
     connection.logdebug(plugin, "checking " + email);
     options.path = '/qd1/deliverable?' + querystring.escape(email);

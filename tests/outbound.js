@@ -129,7 +129,6 @@ exports.qfile = {
     }
 };
 
-
 exports.get_tls_options = {
     setUp : function (done) {
         process.env.HARAKA_TEST_DIR=path.resolve('tests');
@@ -140,25 +139,13 @@ exports.get_tls_options = {
         process.env.HARAKA_TEST_DIR='';
         done();
     },
-    'gets TLS properties from tls.ini.main': function (test) {
-        test.expect(1);
-        var tls_config = this.outbound.get_tls_options(
-            { exchange: 'mail.example.com'}
-        );
-        test.deepEqual(tls_config, {
-            servername: 'mail.example.com',
-            requestCert: true,
-            honorCipherOrder: false,
-            rejectUnauthorized: false
-        });
-        test.done();
-    },
     'gets TLS properties from tls.ini.outbound': function (test) {
         test.expect(1);
 
         // reset config to load from tests directory
-        this.outbound.net_utils.config = this.outbound.net_utils.config.module_config(path.resolve('tests'));
-        this.outbound.config = this.outbound.config.module_config(path.resolve('tests'));
+        var testDir = path.resolve('tests');
+        this.outbound.net_utils.config = this.outbound.net_utils.config.module_config(testDir);
+        this.outbound.config = this.outbound.config.module_config(testDir);
 
         var tls_config = this.outbound.get_tls_options(
             { exchange: 'mail.example.com'}

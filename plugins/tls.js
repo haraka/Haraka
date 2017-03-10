@@ -172,9 +172,10 @@ exports.set_notls = function (ip) {
 };
 
 exports.upgrade_connection = function (next, connection, params) {
-    if (!connection.tls.advertised) { return next(); }
+    if (!connection.tls.advertised) return next();
+
     /* Watch for STARTTLS directive from client. */
-    if (params[0].toUpperCase() !== 'STARTTLS') { return next(); }
+    if (params[0].toUpperCase() !== 'STARTTLS') return next();
 
     /* Respond to STARTTLS command. */
     connection.respond(220, "Go ahead.");
@@ -199,7 +200,8 @@ exports.upgrade_connection = function (next, connection, params) {
 
     connection.notes.cleanUpDisconnect = nextOnce;
 
-    var upgrade_cb = function (authorized, verifyErr, cert, cipher) {
+    /* Upgrade the connection to TLS. */
+    connection.client.upgrade(plugin.tls_opts, function (authorized, verifyErr, cert, cipher) {
         if (called_next) { return; }
         clearTimeout(connection.notes.tls_timer);
         called_next = true;
@@ -217,10 +219,7 @@ exports.upgrade_connection = function (next, connection, params) {
             plugin.emit_upgrade_msg(connection, authorized, verifyErr, cert, cipher);
             return next(OK);  // Return OK as we responded to the client
         });
-    };
-
-    /* Upgrade the connection to TLS. */
-    connection.client.upgrade(plugin.tls_opts, upgrade_cb);
+    });
 };
 
 exports.hook_disconnect = function (next, connection) {
