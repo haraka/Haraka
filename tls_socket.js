@@ -284,7 +284,7 @@ function createServer (cb) {
             cleartext.setKeepAlive(socket._keepalive);
 
             socket.attach(socket.cleartext);
-        };
+        }
 
         cb(socket);
     });
@@ -348,7 +348,7 @@ function connect (port, host, cb) {
         log.logdebug('client TLS upgrade in progress, awaiting secured.');
     };
 
-    return (socket);
+    return socket;
 }
 
 exports.connect = connect;
