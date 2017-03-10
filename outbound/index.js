@@ -5,7 +5,6 @@ var fs          = require('fs');
 var path        = require('path');
 var net         = require('net');
 var util        = require('util');
-var generic_pool = require('generic-pool');
 
 var async       = require('async');
 var Address     = require('address-rfc2821').Address;
