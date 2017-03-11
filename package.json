@@ -45,7 +45,7 @@
     "haraka-plugin-redis"   : "*",
     "haraka-plugin-syslog"  : "*",
     "ocsp"                  : "~1.1.0",
-    "redis"                 : "~2.6.2",
+    "redis"                 : "~2.7.0",
     "tmp"                   : "~0.0.28",
     "vs-stun"               : "~0.0.7"
   },
