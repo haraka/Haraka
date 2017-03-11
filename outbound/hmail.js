@@ -5,6 +5,7 @@ var events       = require('events');
 var fs           = require('fs');
 var dns          = require('dns');
 var path         = require('path');
+var net          = require('net');
 
 var Address     = require('address-rfc2821').Address;
 
@@ -21,6 +22,11 @@ var DSN         = require('../dsn');
 var client_pool = require('./client_pool');
 var cfg         = require('./config');
 var _qfile      = require('./qfile');
+var queuelib    = require('./queue');
+
+var queue_dir = queuelib.queue_dir;
+var temp_fail_queue = queuelib.temp_fail_queue;
+var delivery_queue = queuelib.delivery_queue;
 
 /////////////////////////////////////////////////////////////////////////////
 // HMailItem - encapsulates an individual outbound mail item

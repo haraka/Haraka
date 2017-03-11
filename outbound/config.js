@@ -44,6 +44,6 @@ function load_config () {
     if (!cfg.received_header) {
         cfg.received_header = config.get('outbound.received_header') || 'Haraka outbound';
     }
-};
+}
 
 load_config();
