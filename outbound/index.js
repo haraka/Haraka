@@ -3,8 +3,6 @@
 var async       = require('async');
 var fs          = require('fs');
 var path        = require('path');
-var net         = require('net');
-var util        = require('util');
 
 var async       = require('async');
 var Address     = require('address-rfc2821').Address;
@@ -18,7 +16,6 @@ var logger      = require('../logger');
 var config      = require('../config');
 var trans       = require('../transaction');
 var plugins     = require('../plugins');
-var TimerQueue  = require('../timer_queue');
 var DSN         = require('../dsn');
 var FsyncWriteStream = require('../fsync_writestream');
 var server      = require('../server');
@@ -26,96 +23,33 @@ var server      = require('../server');
 var HMailItem   = require('./hmail');
 var TODOItem    = require('./todo');
 var cfg = require('./config');
+var queuelib    = require('./queue');
 
+var queue_dir = queuelib.queue_dir;
+var temp_fail_queue = queuelib.temp_fail_queue;
+var delivery_queue = queuelib.delivery_queue;
 
 var core_consts = require('constants');
 var WRITE_EXCL  = core_consts.O_CREAT | core_consts.O_TRUNC | core_consts.O_WRONLY | core_consts.O_EXCL;
-
-var queue_dir;
-if (config.get('queue_dir')) {
-    queue_dir = path.resolve(config.get('queue_dir'));
-}
-else if (process.env.HARAKA) {
-    queue_dir = path.resolve(process.env.HARAKA, 'queue');
-}
-else {
-    queue_dir = path.resolve('tests', 'test-queue');
-}
 
 var platformDOT = ((['win32','win64'].indexOf( process.platform ) !== -1) ? '' : '__tmp__') + '.';
 
 exports.net_utils = net_utils;
 exports.config    = config;
 
-var load_queue = async.queue(function (file, cb) {
-    var hmail = new HMailItem(file, path.join(queue_dir, file));
-    exports._add_file(hmail);
-    hmail.once('ready', cb);
-}, cfg.concurrency_max);
+exports.get_stats = queuelib.get_stats;
+exports.list_queue = queuelib.list_queue;
+exports.stat_queue = queuelib.stat_queue;
+exports.scan_queue_pids = queuelib.scan_queue_pids;
+exports.flush_queue = queuelib.flush_queue;
+exports.load_pid_queue = queuelib.load_pid_queue;
+exports.ensure_queue_dir = queuelib.ensure_queue_dir;
+exports.load_queue = queuelib.load_queue;
+exports._add_file = queuelib._add_file;
+exports.stats = queuelib.stats;
 
-var in_progress = 0;
-var delivery_queue = async.queue(function (hmail, cb) {
-    in_progress++;
-    hmail.next_cb = function () {
-        in_progress--;
-        cb();
-    };
-    hmail.send();
-}, cfg.concurrency_max);
+var _qfile = exports.qfile = require('./qfile');
 
-var temp_fail_queue = new TimerQueue();
-
-var queue_count = 0;
-
-exports.get_stats = function () {
-    return in_progress + '/' + delivery_queue.length() + '/' + temp_fail_queue.length();
-};
-
-exports.list_queue = function (cb) {
-    this._load_cur_queue(null, "_list_file", cb);
-};
-
-exports.stat_queue = function (cb) {
-    var self = this;
-    this._load_cur_queue(null, "_stat_file", function (err) {
-        if (err) return cb(err);
-        return cb(null, self.stats());
-    });
-};
-
-exports.scan_queue_pids = function (cb) {
-
-    // Under cluster, this is called first by the master so
-    // we create the queue directory if it doesn't exist.
-    this.ensure_queue_dir();
-
-    fs.readdir(queue_dir, function (err, files) {
-        if (err) {
-            logger.logerror("[outbound] Failed to load queue directory (" + queue_dir + "): " + err);
-            return cb(err);
-        }
-
-        var pids = {};
-
-        files.forEach(function (file) {
-            if (/^\./.test(file)) {
-                // dot-file...
-                logger.logwarn("[outbound] Removing left over dot-file: " + file);
-                return fs.unlink(file, function () {});
-            }
-
-            var parts = _qfile.parts(file);
-            if (!parts) {
-                logger.logerror("[outbound] Unrecognized file in queue directory: " + queue_dir + '/' + file);
-                return;
-            }
-
-            pids[parts.pid] = true;
-        });
-
-        return cb(null, Object.keys(pids));
-    });
-};
 
 process.on('message', function (msg) {
     if (msg.event && msg.event === 'outbound.load_pid_queue') {
@@ -152,244 +86,6 @@ exports.drain_pools = function () {
     }
     logger.logdebug("[outbound] Drain pools: Pools shut down");
 }
-
-exports.flush_queue = function (domain, pid) {
-    if (domain) {
-        exports.list_queue(function (err, qlist) {
-            if (err) return logger.logerror("Failed to load queue: " + err);
-            qlist.forEach(function (todo) {
-                if (todo.domain.toLowerCase() != domain.toLowerCase()) return;
-                if (pid && todo.pid != pid) return;
-                // console.log("requeue: ", todo);
-                delivery_queue.push(new HMailItem(todo.file, todo.full_path));
-            });
-        })
-    }
-    else {
-        temp_fail_queue.drain();
-    }
-};
-
-exports.load_pid_queue = function (pid) {
-    logger.loginfo("[outbound] Loading queue for pid: " + pid);
-    this.load_queue(pid);
-};
-
-exports.ensure_queue_dir = function () {
-    // No reason not to do this stuff syncronously -
-    // this code is only run at start-up.
-    if (fs.existsSync(queue_dir)) return;
-
-    logger.logdebug("[outbound] Creating queue directory " + queue_dir);
-    try {
-        fs.mkdirSync(queue_dir, 493); // 493 == 0755
-    }
-    catch (err) {
-        if (err.code !== 'EEXIST') {
-            logger.logerror("Error creating queue directory: " + err);
-            throw err;
-        }
-    }
-};
-
-exports.load_queue = function (pid) {
-    // Initialise and load queue
-    // This function is called first when not running under cluster,
-    // so we create the queue directory if it doesn't already exist.
-    this.ensure_queue_dir();
-    this._load_cur_queue(pid, "_add_file");
-};
-
-exports._load_cur_queue = function (pid, cb_name, cb) {
-    var self = this;
-    logger.loginfo("[outbound] Loading outbound queue from ", queue_dir);
-    fs.readdir(queue_dir, function (err, files) {
-        if (err) {
-            return logger.logerror("Failed to load queue directory (" +
-                queue_dir + "): " + err);
-        }
-
-        self.cur_time = new Date(); // set once so we're not calling it a lot
-
-        self.load_queue_files(pid, cb_name, files, cb);
-    });
-};
-
-exports.load_queue_files = function (pid, cb_name, files, callback) {
-    var self = this;
-    if (files.length === 0) return;
-
-    if (cfg.disabled && cb_name === '_add_file') {
-        // try again in 1 second if delivery is disabled
-        setTimeout(function () {
-            exports.load_queue_files(pid, cb_name, files, callback);
-        }, 1000);
-        return;
-    }
-
-    if (pid) {
-        // Pre-scan to rename PID files to my PID:
-        logger.loginfo("[outbound] Grabbing queue files for pid: " + pid);
-        async.eachLimit(files, 200, function (file, cb) {
-
-            var parts = _qfile.parts(file);
-            if (parts && parts.pid === parseInt(pid)) {
-                var next_process = parts.next_attempt;
-                // maintain some original details for the rename
-                var new_filename = _qfile.name({
-                    arrival      : parts.arrival,
-                    uid          : parts.uid,
-                    next_attempt : parts.next_attempt,
-                    attempts     : parts.attempts,
-                });
-                // logger.loginfo("new_filename: ", new_filename);
-                fs.rename(path.join(queue_dir, file), path.join(queue_dir, new_filename), function (err) {
-                    if (err) {
-                        logger.logerror("Unable to rename queue file: " + file +
-                            " to " + new_filename + " : " + err);
-                        return cb();
-                    }
-                    if (next_process <= self.cur_time) {
-                        load_queue.push(new_filename);
-                    }
-                    else {
-                        temp_fail_queue.add(next_process - self.cur_time, function () {
-                            load_queue.push(new_filename);
-                        });
-                    }
-                    cb();
-                });
-            }
-            else if (/^\./.test(file)) {
-                // dot-file...
-                logger.logwarn("Removing left over dot-file: " + file);
-                return fs.unlink(path.join(queue_dir, file), function (err) {
-                    if (err) {
-                        logger.logerror("Error removing dot-file: " + file + ": " + err);
-                    }
-                    cb();
-                });
-            }
-            else {
-                // Do this because otherwise we blow the stack
-                async.setImmediate(cb);
-            }
-        }, function (err) {
-            if (err) {
-                // no error cases yet, but log anyway
-                logger.logerror("Error fixing up queue files: " + err);
-            }
-            logger.loginfo("Done fixing up old PID queue files");
-            logger.loginfo(delivery_queue.length() + " files in my delivery queue");
-            logger.loginfo(load_queue.length() + " files in my load queue");
-            logger.loginfo(temp_fail_queue.length() + " files in my temp fail queue");
-
-            if (callback) callback();
-        });
-    }
-    else {
-        logger.loginfo("Loading the queue...");
-        var good_file = function (file) {
-            if (/^\./.test(file)) {
-                logger.logwarn("Removing left over dot-file: " + file);
-                fs.unlink(path.join(queue_dir, file), function (err) {
-                    if (err) console.error(err);
-                });
-                return false;
-            }
-
-            if (!_qfile.parts(file)) {
-                logger.logerror("Unrecognized file in queue folder: " + file);
-                return false;
-            }
-            return true;
-        }
-        async.mapSeries(files.filter(good_file), function (file, cb) {
-            // logger.logdebug("Loading queue file: " + file);
-            if (cb_name === '_add_file') {
-                var parts = _qfile.parts(file);
-                var next_process = parts.next_attempt;
-
-                if (next_process <= self.cur_time) {
-                    logger.logdebug("File needs processing now");
-                    load_queue.push(file);
-                }
-                else {
-                    logger.logdebug("File needs processing later: " + (next_process - self.cur_time) + "ms");
-                    temp_fail_queue.add(next_process - self.cur_time, function () { load_queue.push(file);});
-                }
-                cb();
-            }
-            else {
-                self[cb_name](file, cb);
-            }
-        }, callback);
-    }
-};
-
-exports._add_file = function (hmail) {
-    if (hmail.next_process < this.cur_time) {
-        delivery_queue.push(hmail);
-    }
-    else {
-        temp_fail_queue.add(hmail.next_process - this.cur_time, function () {
-            delivery_queue.push(hmail);
-        });
-    }
-};
-
-exports._list_file = function (file, cb) {
-    var tl_reader = fs.createReadStream(path.join(queue_dir, file), {start: 0, end: 3});
-    tl_reader.on('error', function (err) {
-        console.error("Error reading queue file: " + file + ":", err);
-    });
-    tl_reader.once('data', function (buf) {
-        // I'm making the assumption here we won't ever read less than 4 bytes
-        // as no filesystem on the planet should be that dumb...
-        tl_reader.destroy();
-        var todo_len = (buf[0] << 24) + (buf[1] << 16) + (buf[2] << 8) + buf[3];
-        var td_reader = fs.createReadStream(path.join(queue_dir, file), {encoding: 'utf8', start: 4, end: todo_len + 3});
-        var todo = '';
-        td_reader.on('data', function (str) {
-            todo += str;
-            if (Buffer.byteLength(todo) === todo_len) {
-                // we read everything
-                var todo_struct = JSON.parse(todo);
-                todo_struct.rcpt_to = todo_struct.rcpt_to.map(function (a) { return new Address (a); });
-                todo_struct.mail_from = new Address (todo_struct.mail_from);
-                todo_struct.file = file;
-                todo_struct.full_path = path.join(queue_dir, file);
-                var parts = _qfile.parts(file);
-                todo_struct.pid = (parts && parts.pid) || null;
-                cb(null, todo_struct);
-            }
-        });
-        td_reader.on('end', function () {
-            if (Buffer.byteLength(todo) !== todo_len) {
-                console.error("Didn't find right amount of data in todo for file:", file);
-                return cb();
-            }
-        });
-    });
-};
-
-exports._stat_file = function (file, cb) {
-    queue_count++;
-    cb();
-};
-
-exports.stats = function () {
-    // TODO: output more data here
-    var results = {
-        queue_dir:   queue_dir,
-        queue_count: queue_count,
-    };
-
-    return results;
-};
-
-
-var _qfile = exports.qfile = require('./qfile');
 
 exports.send_email = function () {
 
