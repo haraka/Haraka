@@ -2,8 +2,6 @@
 // TLS is built into Haraka. This plugin conditionally advertises STARTTLS.
 // see 'haraka -h tls' for help
 
-var tls = require('tls');
-
 var tls_socket = require('./tls_socket');
 
 // exported so tests can override config dir
@@ -109,39 +107,7 @@ exports.load_tls_opts = function () {
 
     plugin.loadPemFiles();
 
-    plugin.loadPemDir((err, certs) => {
-        if (certs && certs.length) {
-            plugin.loginfo(certs.length + ' TLS certificates loaded');
-        }
-    });
-
     plugin.logdebug(plugin.tls_opts);
-}
-
-exports.loadPemDir = function (done) {
-    var plugin = this;
-
-    plugin.net_utils.load_tls_dir('tls', (err, certs) => {
-        if (err) plugin.logerror(err);
-
-        if (!certs || !certs.length) {
-            plugin.loginfo('0 TLS certs in config/tls');
-            return done(null, certs);
-        }
-
-        let certsByHost = {};
-
-        certs.forEach(cert => {
-            // plugin.loginfo(thisCert);
-            cert.names.forEach(name => {
-                certsByHost[name] = cert;
-            })
-        })
-
-        // plugin.loginfo(certsByHost);
-        plugin.tls_opts.certsByHost = certsByHost;
-        done(null, certs);
-    })
 }
 
 exports.loadPemFiles = function () {
@@ -245,60 +211,8 @@ exports.upgrade_connection = function (next, connection, params) {
 
     connection.notes.cleanUpDisconnect = nextOnce;
 
-    let options = JSON.parse(JSON.stringify(plugin.tls_opts));
-    delete options.certsByHost;
-
-    function _getSecureContext (opts) {
-        if (opts === undefined) opts = {};
-
-        if (opts.requestCert === undefined) opts.requestCert = true;
-
-        if (opts.rejectUnauthorized === undefined)
-            opts.rejectUnauthorized = false;
-
-        if (!opts.sessionIdContext) opts.sessionIdContext = 'haraka';
-
-        // if (!opts.sessionTimeout) opts.sessionTimeout = 1;
-
-        return tls.createSecureContext(opts);
-    }
-
-    // function setCert (obj) {
-    //     if (obj) {
-    //         options.cert = obj.cert;
-    //         options.key  = obj.key;
-    //     }
-    //     // refresh context after SNI changes TLS key/cert
-    //     options.secureContext = _getSecureContext(options);
-    // }
-
-    options.secureContext = _getSecureContext(options);
-
-    // options.SNICallback = function (servername, done) {
-    //     plugin.loginfo('SNICallback servername: ' + servername);
-
-    //     // // no TLS certs in dir
-    //     // if (plugin.tls_opts.certsByHost === undefined)
-    //     //     return done(null, _getSecureContext(options));
-
-    //     // if (plugin.tls_opts.certsByHost[servername]) {
-    //     //     setCert(plugin.tls_opts.certsByHost[servername]);
-    //     //     return done(null, _getSecureContext(options));
-    //     // }
-
-    //     // if (servername.split('.').length > 1) {
-    //     //     let wildHost = '*.' + servername.split('.').slice(1).join('.');
-    //     //     if (plugin.tls_opts.certsByHost[wildHost]) {
-    //     //         setCert(plugin.tls_opts.certsByHost[wildHost]);
-    //     //         return done(null, _getSecureContext(options));
-    //     //     }
-    //     // }
-
-    //     done(null, _getSecureContext(options));
-    // }
-
     /* Upgrade the connection to TLS. */
-    connection.client.upgrade(options, (authorized, verifyErr, cert, cipher) => {
+    connection.client.upgrade(plugin.tls_opts, (authorized, verifyErr, cert, cipher) => {
         if (called_next) return;
         clearTimeout(connection.notes.tls_timer);
         called_next = true;

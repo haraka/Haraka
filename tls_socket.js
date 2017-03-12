@@ -12,7 +12,7 @@ var EventEmitter = require('events');
 
 var ocsp;
 try {
-    ocsp      = require('ocsp');
+    ocsp = require('ocsp');
 }
 catch (er) {
     log.lognotice("Can't load module ocsp. OCSP Stapling not available.");
@@ -224,7 +224,7 @@ function _getSecureContext (options) {
 }
 
 function createServer (cb) {
-    return net.createServer(function (cryptoSocket) {
+    var serv = net.createServer(function (cryptoSocket) {
 
         var socket = new pluggableStream(cryptoSocket);
 
@@ -250,8 +250,6 @@ function createServer (cb) {
                 else {
                     log.logerror("OCSP Stapling cannot be enabled because the ocsp module is not loaded");
                 }
-
-                done(null, options.secureContext);
             }
 
             var cleartext = new tls.TLSSocket(cryptoSocket, options);
@@ -288,6 +286,8 @@ function createServer (cb) {
 
         cb(socket);
     });
+
+    return serv;
 }
 
 function connect (port, host, cb) {

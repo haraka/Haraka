@@ -114,23 +114,6 @@ exports.load_tls_opts = {
     },
 };
 
-exports.loadPemDir = {
-    setUp: _set_up,
-    'loads TLS certs from config/tls': function (test) {
-        this.plugin.load_tls_ini(); // sets up plugin.cfg
-
-        var plugin = this.plugin;
-        test.expect(4);
-        this.plugin.loadPemDir(function (err, res) {
-            test.equal(err, null);
-            test.ok(Array.isArray(res));
-            test.ok(res.length);
-            test.equal(plugin.tls_opts.certsByHost['haraka.local'].file, 'haraka.local.pem');
-            test.done();
-        })
-    }
-}
-
 exports.register = {
     setUp : function (done) {
         this.plugin = new Plugin('tls');
