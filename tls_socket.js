@@ -12,7 +12,7 @@ var EventEmitter = require('events');
 
 var ocsp;
 try {
-    ocsp = require('ocsp');
+    ocsp      = require('ocsp');
 }
 catch (er) {
     log.lognotice("Can't load module ocsp. OCSP Stapling not available.");
@@ -284,7 +284,7 @@ function createServer (cb) {
             cleartext.setKeepAlive(socket._keepalive);
 
             socket.attach(socket.cleartext);
-        }
+        };
 
         cb(socket);
     });
@@ -322,7 +322,7 @@ function connect (port, host, cb) {
             if (err.reason) {
                 log.logerror("client TLS error: " + err);
             }
-        });
+        })
 
         cleartext.on('secureConnect', function () {
             log.logdebug('client TLS secured.');
@@ -346,7 +346,7 @@ function connect (port, host, cb) {
         socket.attach(socket.cleartext);
 
         log.logdebug('client TLS upgrade in progress, awaiting secured.');
-    };
+    }
 
     return socket;
 }
