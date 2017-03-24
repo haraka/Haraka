@@ -232,7 +232,7 @@ exports.hook_data_post = function (next, connection) {
 
         var result = '';
         socket.on('line', function (line) {
-            connection.logprotocol(plugin, 'C:' + line);
+            connection.logprotocol(plugin, 'C:' + line.replace(/\x00/,''));
             result = line.replace(/\r?\n/, '');
         });
 
