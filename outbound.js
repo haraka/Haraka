@@ -5,7 +5,6 @@ var events      = require('events');
 var fs          = require('fs');
 var path        = require('path');
 var net         = require('net');
-var util        = require('util');
 
 var async       = require('async');
 var Address     = require('address-rfc2821').Address;
@@ -23,7 +22,7 @@ var plugins     = require('./plugins');
 var TimerQueue  = require('./timer_queue');
 var Header      = require('./mailheader').Header;
 var DSN         = require('./dsn');
-var FsyncWriteStream = require('./fsync_writestream');
+var FsyncWriteStream = require('./outbound/fsync_writestream');
 var server      = require('./server');
 
 var core_consts = require('constants');
@@ -889,29 +888,29 @@ exports.TODOItem = TODOItem;
 
 var dummy_func = function () {};
 
-
-function HMailItem (filename, filePath, notes) {
-    events.EventEmitter.call(this);
-    var parts = _qfile.parts(filename);
-    if (!parts) {
-        throw new Error("Bad filename: " + filename);
+class HMailItem extends events.EventEmitter {
+    constructor (filename, filePath, notes) {
+        super();
+        var parts = _qfile.parts(filename);
+        if (!parts) {
+            throw new Error("Bad filename: " + filename);
+        }
+        this.path         = filePath;
+        this.filename     = filename;
+        this.next_process = parts.next_attempt;
+        this.num_failures = parts.attempts;
+        this.pid          = parts.pid;
+        this.notes        = notes || {};
+        this.refcount     = 1;
+        this.todo         = null;
+        this.file_size    = 0;
+        this.next_cb      = dummy_func;
+        this.bounce_error = null;
+        this.hook         = null;
+        this.size_file();
     }
-    this.path         = filePath;
-    this.filename     = filename;
-    this.next_process = parts.next_attempt;
-    this.num_failures = parts.attempts;
-    this.pid          = parts.pid;
-    this.notes        = notes || {};
-    this.refcount     = 1;
-    this.todo         = null;
-    this.file_size    = 0;
-    this.next_cb      = dummy_func;
-    this.bounce_error = null;
-    this.hook         = null;
-    this.size_file();
 }
 
-util.inherits(HMailItem, events.EventEmitter);
 exports.HMailItem = HMailItem;
 
 logger.add_log_methods(HMailItem.prototype, "outbound");

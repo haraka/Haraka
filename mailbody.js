@@ -1,36 +1,38 @@
 'use strict';
 
+var events = require('events');
+var utils  = require('haraka-utils');
+
 // Mail Body Parser
 var logger = require('./logger');
 var Header = require('./mailheader').Header;
-var utils  = require('haraka-utils');
 var config = require('./config');
-var events = require('events');
-var util   = require('util');
 var Iconv  = require('./mailheader').Iconv;
 var attstr = require('./attachment_stream');
 
 var buf_siz = config.get('mailparser.bufsize') || 65536;
 
-function Body (header, options) {
-    this.header = header || new Header();
-    this.header_lines = [];
-    this.is_html = false;
-    this.options = options || {};
-    this.filters = [];
-    this.bodytext = '';
-    this.body_text_encoded = '';
-    this.body_encoding = null;
-    this.boundary = null;
-    this.ct = null;
-    this.decode_function = null;
-    this.children = []; // if multipart
-    this.state = 'start';
-    this.buf = new Buffer(buf_siz);
-    this.buf_fill = 0;
+class Body extends events.EventEmitter {
+    constructor (header, options) {
+        super();
+        this.header = header || new Header();
+        this.header_lines = [];
+        this.is_html = false;
+        this.options = options || {};
+        this.filters = [];
+        this.bodytext = '';
+        this.body_text_encoded = '';
+        this.body_encoding = null;
+        this.boundary = null;
+        this.ct = null;
+        this.decode_function = null;
+        this.children = []; // if multipart
+        this.state = 'start';
+        this.buf = new Buffer(buf_siz);
+        this.buf_fill = 0;
+    }
 }
 
-util.inherits(Body, events.EventEmitter);
 exports.Body = Body;
 
 Body.prototype.add_filter = function (filter) {
