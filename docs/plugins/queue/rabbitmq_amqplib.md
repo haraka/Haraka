@@ -10,7 +10,7 @@ Dependency
 Configuration
 -------------
 
-* `config/rabbitmq_amqplib.ini` - Connection, exchange and queue settings
+* `config/rabbitmq.ini` - Connection, exchange and queue settings
     
     Example:
 
