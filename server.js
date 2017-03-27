@@ -297,22 +297,18 @@ Server.get_smtp_server = function (host, port, inactivity_timeout) {
     var conn_cb = function (client) {
         client.setTimeout(inactivity_timeout);
         var connection = conn.createConnection(client, server);
-        if (server.has_tls) {
-            var cipher = client.getCipher();
-            var authorized = client.authorized;
-            var authorizationError = client.authorizationError;
-            var cert = client.getPeerCertificate();
 
-            connection.set('hello', 'host', undefined);
-            connection.set('tls', 'enabled', true);
-            connection.set('tls', 'cipher', cipher);
-            connection.notes.tls = {
-                authorized: authorized,
-                authorizationError: authorizationError,
-                peerCertificate: cert,
-                cipher: cipher
-            };
-        }
+        if (!server.has_tls) return;
+
+        connection.set('hello', 'host', undefined);
+        connection.set('tls', 'enabled', true);
+        connection.set('tls', 'cipher', client.getCipher());
+        connection.notes.tls = {
+            authorized: client.authorized,
+            authorizationError: client.authorizationError,
+            peerCertificate: client.getPeerCertificate(),
+            cipher: client.getCipher(),
+        };
     };
 
     if (port !== '465') {

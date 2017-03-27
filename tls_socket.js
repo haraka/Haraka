@@ -235,21 +235,15 @@ function createServer (cb) {
             cryptoSocket.removeAllListeners('data');
 
             if (!options) options = {};
-
             options.isServer = true;
 
             if (!options.secureContext) {
                 options.secureContext = _getSecureContext(options);
             }
 
-            if (options.enableOCSPStapling) {
-                if (ocsp) {
-                    options.server = pseudoServ;
-                    pseudoServ._sharedCreds = options.secureContext;
-                }
-                else {
-                    log.logerror("OCSP Stapling cannot be enabled because the ocsp module is not loaded");
-                }
+            if (options.enableOCSPStapling && ocsp) {
+                options.server = pseudoServ;
+                pseudoServ._sharedCreds = options.secureContext;
             }
 
             var cleartext = new tls.TLSSocket(cryptoSocket, options);
