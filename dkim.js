@@ -403,35 +403,34 @@ exports.DKIMObject = DKIMObject;
 // DKIMVerifyStream //
 //////////////////////
 
-function DKIMVerifyStream (cb, timeout) {
-    Stream.call(this);
-    this.run_cb = false;
-    var self = this;
-    this.cb = function (err, result, results) {
-        if (!self.run_cb) {
-            self.run_cb = true;
-            return cb(err, result, results);
-        }
-    };
-    this._in_body = false;
-    this._no_signatures_found = false;
-    this.buffer = new Buf();
-    this.headers = [];
-    this.header_idx = {};
-    this.dkim_objects = [];
-    this.results = [];
-    this.result = 'none';
-    this.pending = 0;
-    this.writable = true;
-    this.timeout = timeout || 30;
+class DKIMVerifyStream extends Stream {
+    constructor (cb, timeout) {
+        super();
+        this.run_cb = false;
+        this.cb = (err, result, results) => {
+            if (!this.run_cb) {
+                this.run_cb = true;
+                return cb(err, result, results);
+            }
+        };
+        this._in_body = false;
+        this._no_signatures_found = false;
+        this.buffer = new Buf();
+        this.headers = [];
+        this.header_idx = {};
+        this.dkim_objects = [];
+        this.results = [];
+        this.result = 'none';
+        this.pending = 0;
+        this.writable = true;
+        this.timeout = timeout || 30;
+    }
 }
 
-util.inherits(DKIMVerifyStream, Stream);
 
 DKIMVerifyStream.prototype.debug = function (str) {
     util.debug(str);
 };
-
 
 DKIMVerifyStream.prototype.handle_buf = function (buf) {
     var self = this;
