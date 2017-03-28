@@ -29,6 +29,7 @@ exports.init_amqp_connection = function () {
 
     var host = cfg.host || "127.0.0.1";
     var port = cfg.port || "5672";
+    var vhost = cfg.vhost || "";
     var user = cfg.user || "guest";
     var password = cfg.password || "guest";
     var exchangeName = cfg.exchangeName || "emailMessages";
@@ -39,7 +40,7 @@ exports.init_amqp_connection = function () {
     var autoDelete = cfg.autoDelete === "true" || false;
     deliveryMode = cfg.deliveryMode || 2;
 
-    amqp.connect("amqp://"+user+":"+password+"@"+host+":"+port, function (err, conn){
+    amqp.connect("amqp://"+user+":"+password+"@"+host+":"+port+vhost, function (err, conn){
         if (err) {
             plugin.logerror("Connection to rabbitmq failed: " + err);
             return;
