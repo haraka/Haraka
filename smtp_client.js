@@ -9,7 +9,6 @@
 
 // node.js builtins
 var events       = require('events');
-var util         = require('util');
 
 // npm deps
 var generic_pool = require('generic-pool');
@@ -30,165 +29,166 @@ var STATE = {
     DESTROYED: 4,
 };
 
-function SMTPClient (port, host, connect_timeout, idle_timeout) {
-    events.EventEmitter.call(this);
-    this.uuid = utils.uuid();
-    this.connect_timeout = parseInt(connect_timeout) || 30;
-    this.socket = line_socket.connect(port, host);
-    this.socket.setTimeout(this.connect_timeout * 1000);
-    this.socket.setKeepAlive(true);
-    this.state = STATE.IDLE;
-    this.command = 'greeting';
-    this.response = [];
-    this.connected = false;
-    this.authenticating=false;
-    this.authenticated = false;
-    this.auth_capabilities = [];
-    this.host = host;
-    this.port = port;
-    var client = this;
+class SMTPClient extends events.EventEmitter {
+    constructor (port, host, connect_timeout, idle_timeout) {
+        super();
+        this.uuid = utils.uuid();
+        this.connect_timeout = parseInt(connect_timeout) || 30;
+        this.socket = line_socket.connect(port, host);
+        this.socket.setTimeout(this.connect_timeout * 1000);
+        this.socket.setKeepAlive(true);
+        this.state = STATE.IDLE;
+        this.command = 'greeting';
+        this.response = [];
+        this.connected = false;
+        this.authenticating=false;
+        this.authenticated = false;
+        this.auth_capabilities = [];
+        this.host = host;
+        this.port = port;
 
-    client.socket.on('line', function (line) {
-        client.emit('server_protocol', line);
-        var matches = smtp_regexp.exec(line);
-        if (!matches) {
-            client.emit('error', client.uuid + ': Unrecognized response from upstream server: ' + line);
-            client.destroy();
-            return;
-        }
+        var client = this;
 
-        var code = matches[1];
-        var cont = matches[2];
-        var msg = matches[3];
-
-        client.response.push(msg);
-        if (cont !== ' ') {
-            return;
-        }
-
-        if (client.command === 'auth' || client.authenticating) {
-            logger.loginfo('SERVER RESPONSE, CLIENT ' + client.command + ", authenticating=" + client.authenticating + ",code="+code + ",cont="+cont+",msg=" +msg);
-            if (code.match(/^3/) && msg === 'VXNlcm5hbWU6') {
-                client.emit('auth_username');
-                return;
-            }
-            if (code.match(/^3/) && msg === 'UGFzc3dvcmQ6') {
-                client.emit('auth_password');
-                return;
-            }
-            if (code.match(/^2/) && client.authenticating) {
-                logger.loginfo('AUTHENTICATED');
-                client.authenticating = false;
-                client.authenticated = true;
-                client.emit('auth');
-                return;
-            }
-        }
-
-        if (client.command === 'ehlo') {
-            if (code.match(/^5/)) {
-                // Handle fallback to HELO if EHLO is rejected
-                client.emit('greeting', 'HELO');
-                return;
-            }
-            client.emit('capabilities');
-            if (client.command !== 'ehlo') {
-                return;
-            }
-        }
-        if (client.command === 'xclient' && code.match(/^5/)) {
-            // XCLIENT command was rejected (no permission?)
-            // Carry on without XCLIENT
-            client.command = 'helo';
-        }
-        else if (code.match(/^[45]/)) {
-            client.emit('bad_code', code, client.response.join(' '));
-            if (client.state !== STATE.ACTIVE) {
-                return;
-            }
-        }
-        switch (client.command) {
-            case 'xclient':
-                client.xclient = true;
-                client.emit('xclient', 'EHLO');
-                break;
-            case 'starttls':
-                client.upgrade(client.tls_options);
-                break;
-            case 'greeting':
-                client.connected = true;
-                client.emit('greeting', 'EHLO');
-                break;
-            case 'ehlo':
-                client.emit('helo');
-                break;
-            case 'helo':
-            case 'mail':
-            case 'rcpt':
-            case 'data':
-            case 'dot':
-            case 'rset':
-            case 'auth':
-                client.emit(client.command);
-                break;
-            case 'quit':
-                client.emit('quit');
+        client.socket.on('line', function (line) {
+            client.emit('server_protocol', line);
+            var matches = smtp_regexp.exec(line);
+            if (!matches) {
+                client.emit('error', client.uuid + ': Unrecognized response from upstream server: ' + line);
                 client.destroy();
-                break;
-            default:
-                throw new Error("Unknown command: " + client.command);
-        }
-    });
-
-    client.socket.on('connect', function () {
-        // Remove connection timeout and set idle timeout
-        client.socket.setTimeout(((idle_timeout) ? idle_timeout : 300) * 1000);
-        if (!client.socket.remoteAddress) {
-            // "Value may be undefined if the socket is destroyed"
-            logger.logdebug('socket.remoteAddress undefined');
-            return;
-        }
-        client.remote_ip = ipaddr.process(client.socket.remoteAddress).toString();
-    });
-
-    var closed = function (msg) {
-        return function (error) {
-            if (!error) {
-                error = '';
+                return;
             }
-            // msg is e.g. "errored" or "timed out"
-            // error is e.g. "Error: connect ECONNREFUSE"
-            var errMsg = client.uuid +
-                ': [' + client.host + ':' + client.port + '] ' +
-                'SMTP connection ' + msg + ' ' + error;
-            switch (client.state) {
-                case STATE.ACTIVE:
-                case STATE.IDLE:
-                case STATE.RELEASED:
+
+            var code = matches[1];
+            var cont = matches[2];
+            var msg = matches[3];
+
+            client.response.push(msg);
+            if (cont !== ' ') {
+                return;
+            }
+
+            if (client.command === 'auth' || client.authenticating) {
+                logger.loginfo('SERVER RESPONSE, CLIENT ' + client.command + ", authenticating=" + client.authenticating + ",code="+code + ",cont="+cont+",msg=" +msg);
+                if (code.match(/^3/) && msg === 'VXNlcm5hbWU6') {
+                    client.emit('auth_username');
+                    return;
+                }
+                if (code.match(/^3/) && msg === 'UGFzc3dvcmQ6') {
+                    client.emit('auth_password');
+                    return;
+                }
+                if (code.match(/^2/) && client.authenticating) {
+                    logger.loginfo('AUTHENTICATED');
+                    client.authenticating = false;
+                    client.authenticated = true;
+                    client.emit('auth');
+                    return;
+                }
+            }
+
+            if (client.command === 'ehlo') {
+                if (code.match(/^5/)) {
+                    // Handle fallback to HELO if EHLO is rejected
+                    client.emit('greeting', 'HELO');
+                    return;
+                }
+                client.emit('capabilities');
+                if (client.command !== 'ehlo') {
+                    return;
+                }
+            }
+            if (client.command === 'xclient' && code.match(/^5/)) {
+                // XCLIENT command was rejected (no permission?)
+                // Carry on without XCLIENT
+                client.command = 'helo';
+            }
+            else if (code.match(/^[45]/)) {
+                client.emit('bad_code', code, client.response.join(' '));
+                if (client.state !== STATE.ACTIVE) {
+                    return;
+                }
+            }
+            switch (client.command) {
+                case 'xclient':
+                    client.xclient = true;
+                    client.emit('xclient', 'EHLO');
+                    break;
+                case 'starttls':
+                    client.upgrade(client.tls_options);
+                    break;
+                case 'greeting':
+                    client.connected = true;
+                    client.emit('greeting', 'EHLO');
+                    break;
+                case 'ehlo':
+                    client.emit('helo');
+                    break;
+                case 'helo':
+                case 'mail':
+                case 'rcpt':
+                case 'data':
+                case 'dot':
+                case 'rset':
+                case 'auth':
+                    client.emit(client.command);
+                    break;
+                case 'quit':
+                    client.emit('quit');
                     client.destroy();
                     break;
                 default:
+                    throw new Error("Unknown command: " + client.command);
             }
-            if (client.state === STATE.ACTIVE) {
-                client.emit('error', errMsg);
+        });
+
+        client.socket.on('connect', function () {
+            // Remove connection timeout and set idle timeout
+            client.socket.setTimeout(((idle_timeout) ? idle_timeout : 300) * 1000);
+            if (!client.socket.remoteAddress) {
+                // "Value may be undefined if the socket is destroyed"
+                logger.logdebug('socket.remoteAddress undefined');
                 return;
             }
-            if ((msg === 'errored' || msg === 'timed out')
-                  && client.state === STATE.DESTROYED){
-                client.emit('connection-error', errMsg);
-            } // don't return, continue (original behavior)
+            client.remote_ip = ipaddr.process(client.socket.remoteAddress).toString();
+        });
 
-            logger.logdebug('[smtp_client_pool] ' + errMsg + ' (state=' + client.state + ')');
+        var closed = function (msg) {
+            return function (error) {
+                if (!error) {
+                    error = '';
+                }
+                // msg is e.g. "errored" or "timed out"
+                // error is e.g. "Error: connect ECONNREFUSE"
+                var errMsg = client.uuid +
+                    ': [' + client.host + ':' + client.port + '] ' +
+                    'SMTP connection ' + msg + ' ' + error;
+                switch (client.state) {
+                    case STATE.ACTIVE:
+                    case STATE.IDLE:
+                    case STATE.RELEASED:
+                        client.destroy();
+                        break;
+                    default:
+                }
+                if (client.state === STATE.ACTIVE) {
+                    client.emit('error', errMsg);
+                    return;
+                }
+                if ((msg === 'errored' || msg === 'timed out')
+                      && client.state === STATE.DESTROYED){
+                    client.emit('connection-error', errMsg);
+                } // don't return, continue (original behavior)
+
+                logger.logdebug('[smtp_client_pool] ' + errMsg + ' (state=' + client.state + ')');
+            };
         };
-    };
 
-    client.socket.on('error',   closed('errored'));
-    client.socket.on('timeout', closed('timed out'));
-    client.socket.on('close',   closed('closed'));
-    client.socket.on('end',     closed('ended'));
+        client.socket.on('error',   closed('errored'));
+        client.socket.on('timeout', closed('timed out'));
+        client.socket.on('close',   closed('closed'));
+        client.socket.on('end',     closed('ended'));
+    }
 }
-
-util.inherits(SMTPClient, events.EventEmitter);
 
 SMTPClient.prototype.load_tls_config = function (plugin) {
     var tls_options = {};

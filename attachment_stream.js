@@ -1,19 +1,18 @@
-"use strict";
+'use strict';
 
 var Stream = require('stream');
-var util   = require('util');
 
-function AttachmentStream (header) {
-    Stream.call(this);
-    this.header = header;
-    this.encoding = null;
-    this.paused = false;
-    this.end_emitted = false;
-    this.connection = null;
-    this.buffer = [];
+class AttachmentStream extends Stream {
+    constructor (header) {
+        super();
+        this.header = header;
+        this.encoding = null;
+        this.paused = false;
+        this.end_emitted = false;
+        this.connection = null;
+        this.buffer = [];
+    }
 }
-
-util.inherits(AttachmentStream, Stream);
 
 AttachmentStream.prototype.emit_data = function (data) {
     // console.log("YYY: DATA emit");

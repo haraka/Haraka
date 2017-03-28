@@ -7,27 +7,26 @@ var crypto     = require('crypto');
 var fs         = require('fs');
 var path       = require('path');
 var Stream     = require('stream').Stream;
-var util       = require('util');
 
 var utils      = require('haraka-utils');
 
-function DKIMSignStream (selector, domain, private_key, headers_to_sign, header, end_callback) {
-    Stream.call(this);
-    this.selector = selector;
-    this.domain = domain;
-    this.private_key = private_key;
-    this.headers_to_sign = headers_to_sign;
-    this.header = header;
-    this.end_callback = end_callback;
-    this.writable = true;
-    this.found_eoh = false;
-    this.buffer = { ar: [], len: 0 };
-    this.hash = crypto.createHash('SHA256');
-    this.line_buffer = { ar: [], len: 0 };
-    this.signer = crypto.createSign('RSA-SHA256');
+class DKIMSignStream extends Stream {
+    constructor (selector, domain, private_key, headers_to_sign, header, end_callback) {
+        super();
+        this.selector = selector;
+        this.domain = domain;
+        this.private_key = private_key;
+        this.headers_to_sign = headers_to_sign;
+        this.header = header;
+        this.end_callback = end_callback;
+        this.writable = true;
+        this.found_eoh = false;
+        this.buffer = { ar: [], len: 0 };
+        this.hash = crypto.createHash('SHA256');
+        this.line_buffer = { ar: [], len: 0 };
+        this.signer = crypto.createSign('RSA-SHA256');
+    }
 }
-
-util.inherits(DKIMSignStream, Stream);
 
 DKIMSignStream.prototype.write = function (buf) {
     /*

@@ -1,57 +1,54 @@
 'use strict';
 
-// MessageStream class
-
-var fs = require('fs');
-var util = require('util');
+var fs     = require('fs');
 var Stream = require('stream').Stream;
-var utils = require('haraka-utils');
+var utils  = require('haraka-utils');
 
 var ChunkEmitter = require('./chunkemitter');
 
 var STATE_HEADERS = 1;
 var STATE_BODY = 2;
 
-function MessageStream (config, id, headers) {
-    if (!id) throw new Error('id required');
-    Stream.call(this);
-    this.uuid = id;
-    this.write_ce = null;
-    this.read_ce = null;
-    this.bytes_read = 0;
-    this.state = STATE_HEADERS;
-    this.idx = {};
-    this.end_called = false;
-    this.end_callback = null;
-    this.buffered = 0;
-    this._queue = [];
-    this.max_data_inflight = 0;
-    this.buffer_max = (!isNaN(config.main.spool_after) ?
-                       Number(config.main.spool_after) : -1);
-    this.spooling = false;
-    this.fd = null;
-    this.open_pending = false;
-    this.spool_dir = config.main.spool_dir || '/tmp';
-    this.filename = this.spool_dir + '/' + id + '.eml';
-    this.write_pending = false;
+class MessageStream extends Stream {
+    constructor (config, id, headers) {
+        super();
+        if (!id) throw new Error('id required');
+        this.uuid = id;
+        this.write_ce = null;
+        this.read_ce = null;
+        this.bytes_read = 0;
+        this.state = STATE_HEADERS;
+        this.idx = {};
+        this.end_called = false;
+        this.end_callback = null;
+        this.buffered = 0;
+        this._queue = [];
+        this.max_data_inflight = 0;
+        this.buffer_max = (!isNaN(config.main.spool_after) ?
+                        Number(config.main.spool_after) : -1);
+        this.spooling = false;
+        this.fd = null;
+        this.open_pending = false;
+        this.spool_dir = config.main.spool_dir || '/tmp';
+        this.filename = this.spool_dir + '/' + id + '.eml';
+        this.write_pending = false;
 
-    this.readable = true;
-    this.paused = false;
-    this.headers = headers || [];
-    this.headers_done = false;
-    this.headers_found_eoh = false;
-    this.line_endings = "\r\n";
-    this.dot_stuffing = false;
-    this.ending_dot = false;
-    this.buffer_size = (1024 * 64);
-    this.start = 0;
-    this.write_complete = false;
-    this.ws = null;
-    this.rs = null;
-    this.in_pipe = false;
+        this.readable = true;
+        this.paused = false;
+        this.headers = headers || [];
+        this.headers_done = false;
+        this.headers_found_eoh = false;
+        this.line_endings = "\r\n";
+        this.dot_stuffing = false;
+        this.ending_dot = false;
+        this.buffer_size = (1024 * 64);
+        this.start = 0;
+        this.write_complete = false;
+        this.ws = null;
+        this.rs = null;
+        this.in_pipe = false;
+    }
 }
-
-util.inherits(MessageStream, Stream);
 
 MessageStream.prototype.add_line = function (line) {
     var self = this;
@@ -417,14 +414,14 @@ MessageStream.prototype.get_data = function (options, cb) { // Or: (cb)
 
 module.exports = MessageStream;
 
-
-function GetDataStream (cb) {
-    this.cb = cb;
-    this.buf = '';
-    this.writable = true;
+class GetDataStream extends Stream {
+    constructor (cb) {
+        super();
+        this.cb = cb;
+        this.buf = '';
+        this.writable = true;
+    }
 }
-
-util.inherits(GetDataStream, Stream);
 
 GetDataStream.prototype.write = function (obj, enc) {
     this.buf += obj;

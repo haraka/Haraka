@@ -1,51 +1,16 @@
 'use strict';
 
-var util = require('util');
 var EventEmitter = require('events').EventEmitter;
 
-function ChunkEmitter (buffer_size) {
-    EventEmitter.call(this);
-    this.buffer_size = parseInt(buffer_size) || (64 * 1024);
-    this.buf = null;
-    this.pos = 0;
-    this.bufs = [];
-    this.bufs_size = 0;
-}
-
-util.inherits(ChunkEmitter, EventEmitter);
-
-if (!Buffer.concat) {
-    var buf;
-    Buffer.concat = function (list, length) {
-        if (!Array.isArray(list)) {
-            throw new Error('Usage: Buffer.concat(list, [length])');
-        }
-
-        if (list.length === 0) {
-            return new Buffer(0);
-        }
-        else if (list.length === 1) {
-            return list[0];
-        }
-
-        if (typeof length !== 'number') {
-            length = 0;
-            for (let i = 0; i < list.length; i++) {
-                buf = list[i];
-                length += buf.length;
-            }
-        }
-
-        var buffer = new Buffer(length);
-        var pos = 0;
-
-        for (let i = 0; i < list.length; i++) {
-            buf = list[i];
-            buf.copy(buffer, pos);
-            pos += buf.length;
-        }
-        return buffer;
-    };
+class ChunkEmitter extends EventEmitter {
+    constructor (buffer_size) {
+        super();
+        this.buffer_size = parseInt(buffer_size) || (64 * 1024);
+        this.buf = null;
+        this.pos = 0;
+        this.bufs = [];
+        this.bufs_size = 0;
+    }
 }
 
 ChunkEmitter.prototype.fill = function (input) {

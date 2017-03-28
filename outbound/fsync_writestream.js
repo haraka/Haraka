@@ -1,17 +1,13 @@
-"use strict";
+'use strict';
 
 var fs      = require('fs');
 var util    = require('util');
 
-module.exports = FsyncWriteStream;
-
-function FsyncWriteStream (path, options) {
-    if (!(this instanceof FsyncWriteStream)) return new FsyncWriteStream(path, options);
-
-    fs.WriteStream.call(this, path, options);
+class FsyncWriteStream extends fs.WriteStream {
+    constructor(path, options) {
+        super(path, options);
+    }
 }
-
-util.inherits(FsyncWriteStream, fs.WriteStream);
 
 FsyncWriteStream.prototype.close = function (cb) {
     var self = this;
@@ -46,3 +42,6 @@ FsyncWriteStream.prototype.close = function (cb) {
         });
     }
 };
+
+module.exports = FsyncWriteStream;
+
