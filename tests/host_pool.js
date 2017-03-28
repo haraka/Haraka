@@ -32,7 +32,7 @@ exports.HostPool = {
 
         test.done();
     },
-    "default port 25 ": function (test) {
+    "default port 25": function (test) {
         test.expect(2);
 
         var pool = new HostPool('1.1.1.1, 2.2.2.2');
@@ -100,7 +100,7 @@ exports.HostPool = {
     // after .01 secs the timer to retry the dead host will fire, and then
     // we connect using this mock socket, whose "connect" always succeeds
     // so the code brings the dead host back to life
-    "host dead checking timer": function (test){
+    "host dead checking timer": function (test) {
         test.expect(2);
 
         var num_reqs = 0;
@@ -110,21 +110,21 @@ exports.HostPool = {
             // these are the methods called from probe_dead_host
 
             // setTimeout on the socket
-            self.pretendTimeout = function (){};
+            self.pretendTimeout = function () {};
             self.setTimeout = function (ms, cb){
                 self.pretendTimeout = cb;
             };
             // handle socket.on('error', ....
             self.listeners = {};
-            self.on = function (eventname, cb){
+            self.on = function (eventname, cb) {
                 self.listeners[eventname] = cb;
             };
-            self.emit = function (eventname){
+            self.emit = function (eventname) {
                 self.listeners[eventname]();
             };
             // handle socket.connect(...
             self.connected = function () {};
-            self.connect = function (port, host, cb){
+            self.connect = function (port, host, cb) {
                 switch (++num_reqs){
                     case 1:
                         // the first time through we pretend it timed out
