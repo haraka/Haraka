@@ -146,9 +146,6 @@ function pipe (cleartext, socket) {
     cleartext.socket = socket;
 
     function onerror (e) {
-        if (cleartext._controlReleased) {
-            cleartext.emit('error', e);
-        }
     }
 
     function onclose () {
@@ -256,16 +253,13 @@ function createServer (cb) {
 
             cleartext.on('secure', function () {
                 log.logdebug('TLS secured.');
-                var cert = cleartext.getPeerCertificate();
-                if (cleartext.getCipher) {
-                    var cipher = cleartext.getCipher();
-                }
                 socket.emit('secure');
                 if (cb2) cb2(cleartext.authorized,
-                    cleartext.authorizationError, cert, cipher);
+                    cleartext.authorizationError,
+                    cleartext.getPeerCertificate(),
+                    cleartext.getCipher()
+                    );
             });
-
-            // cleartext._controlReleased = true;
 
             socket.cleartext = cleartext;
 
@@ -328,7 +322,6 @@ function connect (port, host, cb) {
             );
         });
 
-        // cleartext._controlReleased = true;
         socket.cleartext = cleartext;
 
         if (socket._timeout) {
