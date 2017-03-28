@@ -1,6 +1,7 @@
-"use strict";
+'use strict';
 
-var net = require('net');
+var net    = require('net');
+var utils  = require('haraka-utils');
 
 /* HostPool:
  *
@@ -15,17 +16,16 @@ var net = require('net');
  * If failed() is called with one of the hosts, we mark it down for retry_secs
  * and don't give it out again until that period has passed.
  *
- * If *all* the hosts have been marked down, we ignore the marks and just give
- * out the next host. That's too keep some random short-lived but widespread
+ * If *all* the hosts have been marked down, ignore the marks and give
+ * out the next host. That's to keep a random short-lived but widespread
  * network failure from taking the whole system down.
  */
 
 var logger = require('./logger');
-var utils  = require('haraka-utils');
 
 // takes a comma/space-separated list of ip:ports
 //  1.1.1.1:22,  3.3.3.3:44
-function HostPool (hostports_str, retry_secs){
+function HostPool (hostports_str, retry_secs) {
     var self = this;
 
     var hosts = (hostports_str || '')
@@ -65,14 +65,14 @@ HostPool.prototype.failed = function (host, port) {
         logger.logwarn("host " + key + " is still dead, will retry in " +
                         self.retry_secs + " secs");
         self.dead_hosts[key] = true;
-        console.log(1);
+        // console.log(1);
         setTimeout(function () {
             self.probe_dead_host(host, port, cb_if_still_dead, cb_if_alive);
         }, retry_msecs);
     };
 
     var cb_if_alive = function (){
-        console.log(2);
+        // console.log(2);
         logger.loginfo("host " + key + " is back! adding back into pool");
         delete self.dead_hosts[key];
     };
@@ -115,7 +115,8 @@ HostPool.prototype.probe_dead_host = function (
             cb_if_alive();
             s.destroy(); // will this conflict with setTimeout's s.destroy?
         });
-    } catch (e){
+    }
+    catch (e) {
         // only way to catch run-time javascript errors in here;
         console.log("ERROR in probe_dead_host, got error " + e);
         throw e;
@@ -140,7 +141,7 @@ HostPool.prototype.get_socket = function () {
  * anyway. That should make it more forgiving about transient but widespread
  * network problems that make all the hosts look dead.
  */
-HostPool.prototype.get_host = function (){
+HostPool.prototype.get_host = function () {
     var host;
     var found;
 
@@ -151,19 +152,19 @@ HostPool.prototype.get_host = function (){
 
     for (var i = 0; i < this.hosts.length; ++i){
         var j = i + first_i;
-        if (j >= this.hosts.length){
+        if (j >= this.hosts.length) {
             j = j - this.hosts.length;
         }
         host = this.hosts[j];
         var key = host.host + ':' + host.port;
-        if (this.dead_hosts[key]){
+        if (this.dead_hosts[key]) {
             continue;
         }
         this.last_i = j;
         found = true;
         break;
     }
-    if (found){
+    if (found) {
         return host;
     }
     else {

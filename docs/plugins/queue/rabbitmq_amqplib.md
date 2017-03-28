@@ -10,7 +10,7 @@ Dependency
 Configuration
 -------------
 
-* `config/rabbitmq_amqplib.ini` - Connection, exchange and queue settings
+* `config/rabbitmq.ini` - Connection, exchange and queue settings
     
     Example:
 
@@ -19,6 +19,9 @@ Configuration
         ; Connection
 		host = localhost
 		port = 5672
+		;Virtual Host. Start with "/". Leave blank or not use if you don't want to use virtual hosts.
+		vhost = /haraka
+		;Credentials
 		user = guest
 		password = guest
 		; Exchange

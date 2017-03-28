@@ -1,17 +1,18 @@
 'use strict';
 
-var async       = require('async');
-var fs          = require('fs');
-var path        = require('path');
 var dns         = require('dns');
 var events      = require('events');
+var fs          = require('fs');
+var path        = require('path');
 var net         = require('net');
-var util        = require('util');
 
+var async       = require('async');
 var Address     = require('address-rfc2821').Address;
 var constants   = require('haraka-constants');
+var generic_pool = require('generic-pool');
 var net_utils   = require('haraka-net-utils');
 var utils       = require('haraka-utils');
+var ResultStore = require('haraka-results');
 
 var sock        = require('./line_socket');
 var logger      = require('./logger');
@@ -21,10 +22,8 @@ var plugins     = require('./plugins');
 var TimerQueue  = require('./timer_queue');
 var Header      = require('./mailheader').Header;
 var DSN         = require('./dsn');
-var FsyncWriteStream = require('./fsync_writestream');
-var generic_pool = require('generic-pool');
+var FsyncWriteStream = require('./outbound/fsync_writestream');
 var server      = require('./server');
-var ResultStore = require('haraka-results');
 
 var core_consts = require('constants');
 var WRITE_EXCL  = core_consts.O_CREAT | core_consts.O_TRUNC | core_consts.O_WRONLY | core_consts.O_EXCL;
@@ -126,7 +125,6 @@ exports.stat_queue = function (cb) {
 };
 
 exports.scan_queue_pids = function (cb) {
-    var self = this;
 
     // Under cluster, this is called first by the master so
     // we create the queue directory if it doesn't exist.
@@ -846,27 +844,8 @@ exports.split_to_new_recipients = function (hmail, recipients, response, cb) {
 
 exports.get_tls_options = function (mx) {
 
-    var tls_config = exports.net_utils.load_tls_ini();
-    var tls_options = { servername: mx.exchange };
-    var config_options = [
-        'key', 'cert', 'ciphers', 'dhparam',
-        'requestCert', 'honorCipherOrder', 'rejectUnauthorized'
-    ];
-
-
-    for (var i = 0; i < config_options.length; i++) {
-        var opt = config_options[i];
-        if (tls_config.main[opt] === undefined) { continue; }
-        tls_options[opt] = tls_config.main[opt];
-    }
-
-    if (tls_config.outbound) {
-        for (var j = 0; j < config_options.length; j++) {
-            var opt2 = config_options[j];
-            if (tls_config.outbound[opt2] === undefined) { continue; }
-            tls_options[opt2] = tls_config.outbound[opt2];
-        }
-    }
+    var tls_options = exports.net_utils.tls_ini_section_with_defaults('outbound');
+    tls_options.servername = mx.exchange;
 
     if (tls_options.key) {
         if (Array.isArray(tls_options.key)) {
@@ -909,29 +888,29 @@ exports.TODOItem = TODOItem;
 
 var dummy_func = function () {};
 
-
-function HMailItem (filename, filePath, notes) {
-    events.EventEmitter.call(this);
-    var parts = _qfile.parts(filename);
-    if (!parts) {
-        throw new Error("Bad filename: " + filename);
+class HMailItem extends events.EventEmitter {
+    constructor (filename, filePath, notes) {
+        super();
+        var parts = _qfile.parts(filename);
+        if (!parts) {
+            throw new Error("Bad filename: " + filename);
+        }
+        this.path         = filePath;
+        this.filename     = filename;
+        this.next_process = parts.next_attempt;
+        this.num_failures = parts.attempts;
+        this.pid          = parts.pid;
+        this.notes        = notes || {};
+        this.refcount     = 1;
+        this.todo         = null;
+        this.file_size    = 0;
+        this.next_cb      = dummy_func;
+        this.bounce_error = null;
+        this.hook         = null;
+        this.size_file();
     }
-    this.path         = filePath;
-    this.filename     = filename;
-    this.next_process = parts.next_attempt;
-    this.num_failures = parts.attempts;
-    this.pid          = parts.pid;
-    this.notes        = notes || {};
-    this.refcount     = 1;
-    this.todo         = null;
-    this.file_size    = 0;
-    this.next_cb      = dummy_func;
-    this.bounce_error = null;
-    this.hook         = null;
-    this.size_file();
 }
 
-util.inherits(HMailItem, events.EventEmitter);
 exports.HMailItem = HMailItem;
 
 logger.add_log_methods(HMailItem.prototype, "outbound");
@@ -1265,19 +1244,19 @@ var cram_md5_response = function (username, password, challenge) {
     return utils.base64(username + ' ' + digest);
 }
 
-function _create_socket (port, host, local_addr, is_unix_socket, connect_timeout, pool_timeout, callback) {
+function _create_socket (port, host, local_addr, is_unix_socket, callback) {
     var socket = is_unix_socket ? sock.connect({path: host}) :
         sock.connect({port: port, host: host, localAddress: local_addr});
-    socket.setTimeout(connect_timeout * 1000);
+    socket.setTimeout(cfg.connect_timeout * 1000);
     logger.logdebug('[outbound] host=' +
-        host + ' port=' + port + ' pool_timeout=' + pool_timeout + ' created');
+        host + ' port=' + port + ' pool_timeout=' + cfg.pool_timeout + ' created');
     socket.once('connect', function () {
         socket.removeAllListeners('error'); // these get added after callback
         callback(null, socket);
     });
     socket.once('error', function (err) {
         socket.end();
-        var name = 'outbound::' + port + ':' + host + ':' + local_addr + ':' + pool_timeout;
+        var name = 'outbound::' + port + ':' + host + ':' + local_addr + ':' + cfg.pool_timeout;
         if (server.notes.pool[name]) {
             delete server.notes.pool[name];
         }
@@ -1290,64 +1269,66 @@ function _create_socket (port, host, local_addr, is_unix_socket, connect_timeout
 }
 
 // Separate pools are kept for each set of server attributes.
-function get_pool (port, host, local_addr, is_unix_socket, connect_timeout, pool_timeout, max) {
+function get_pool (port, host, local_addr, is_unix_socket) {
     port = port || 25;
     host = host || 'localhost';
-    connect_timeout = (connect_timeout === undefined) ? 30 : connect_timeout;
+    var pool_timeout = cfg.pool_timeout || 300;
     var name = 'outbound::' + port + ':' + host + ':' + local_addr + ':' + pool_timeout;
     if (!server.notes.pool) {
         server.notes.pool = {};
     }
-    if (!server.notes.pool[name]) {
-        var pool = generic_pool.Pool({
-            name: name,
-            create: function (done) {
-                _create_socket(port, host, local_addr, is_unix_socket, connect_timeout, pool_timeout, done);
-            },
-            validate: function (socket) {
-                return socket.writable;
-            },
-            destroy: function (socket) {
-                logger.logdebug('[outbound] destroying pool entry for ' + host + ':' + port);
-                // Remove pool object from server notes once empty
-                var size = pool.getPoolSize();
-                if (size === 0) {
-                    delete server.notes.pool[name];
-                }
-                socket.removeAllListeners();
-                socket.once('error', function (err) {
-                    logger.logwarn("[outbound] Socket got an error while shutting down: " + err);
-                });
-                if (!socket.writable) return;
-                logger.logprotocol("[outbound] C: QUIT");
-                socket.write("QUIT\r\n");
-                socket.end(); // half close
-                socket.once('line', function (line) {
-                    // Just assume this is a valid response
-                    logger.logprotocol("[outbound] S: " + line);
-                    socket.destroy();
-                });
-            },
-            max: max || 10,
-            idleTimeoutMillis: pool_timeout * 1000,
-            log: function (str, level) {
-                if (/this._availableObjects.length=/.test(str)) return;
-                level = (level === 'verbose') ? 'debug' : level;
-                logger['log' + level]('[outbound] [' + name + '] ' + str);
-            }
-        });
-        server.notes.pool[name] = pool;
+    if (server.notes.pool[name]) {
+        return server.notes.pool[name];
     }
-    return server.notes.pool[name];
+
+    var pool = generic_pool.Pool({
+        name: name,
+        create: function (done) {
+            _create_socket(port, host, local_addr, is_unix_socket, done);
+        },
+        validate: function (socket) {
+            return socket.writable;
+        },
+        destroy: function (socket) {
+            logger.logdebug('[outbound] destroying pool entry for ' + host + ':' + port);
+            // Remove pool object from server notes once empty
+            var size = pool.getPoolSize();
+            if (size === 0) {
+                delete server.notes.pool[name];
+            }
+            socket.removeAllListeners();
+            socket.once('error', function (err) {
+                logger.logwarn("[outbound] Socket got an error while shutting down: " + err);
+            });
+            if (!socket.writable) return;
+            logger.logprotocol("[outbound] C: QUIT");
+            socket.write("QUIT\r\n");
+            socket.end(); // half close
+            socket.once('line', function (line) {
+                // Just assume this is a valid response
+                logger.logprotocol("[outbound] S: " + line);
+                socket.destroy();
+            });
+        },
+        max: cfg.pool_concurrency_max || 10,
+        idleTimeoutMillis: pool_timeout * 1000,
+        log: function (str, level) {
+            if (/this._availableObjects.length=/.test(str)) return;
+            level = (level === 'verbose') ? 'debug' : level;
+            logger['log' + level]('[outbound] [' + name + '] ' + str);
+        }
+    });
+    server.notes.pool[name] = pool;
+    return pool;
 }
 
 // Get a socket for the given attributes.
 function get_client (port, host, local_addr, is_unix_socket, callback) {
     if (cfg.pool_concurrency_max == 0) {
-        return _create_socket(port, host, local_addr, is_unix_socket, cfg.connect_timeout, cfg.pool_timeout, callback);
+        return _create_socket(port, host, local_addr, is_unix_socket, callback);
     }
 
-    var pool = get_pool(port, host, local_addr, is_unix_socket, cfg.connect_timeout, cfg.pool_timeout, cfg.pool_concurrency_max);
+    var pool = get_pool(port, host, local_addr, is_unix_socket);
     if (pool.waitingClientsCount() >= cfg.pool_concurrency_max) {
         return callback("Too many waiting clients for pool", null);
     }
@@ -1518,7 +1499,7 @@ HMailItem.prototype.try_deliver_host_on_socket = function (mx, host, port, socke
         "auth": [],
     };
 
-    var tls_config = net_utils.load_tls_ini();
+    var tls_cfg = net_utils.load_tls_ini();
 
     var send_command = socket.send_command = function (cmd, data) {
         if (!socket.writable) {
@@ -1569,8 +1550,8 @@ HMailItem.prototype.try_deliver_host_on_socket = function (mx, host, port, socke
         }
 
         // TLS
-        if (!net_utils.ip_in_list(tls_config.no_tls_hosts, self.todo.domain) &&
-            !net_utils.ip_in_list(tls_config.no_tls_hosts, host) &&
+        if (!net_utils.ip_in_list(tls_cfg.no_tls_hosts, self.todo.domain) &&
+            !net_utils.ip_in_list(tls_cfg.no_tls_hosts, host) &&
             smtp_properties.tls && cfg.enable_tls && !secured)
         {
             socket.on('secure', function () {

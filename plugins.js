@@ -165,7 +165,8 @@ Plugin.prototype.inherits = function (parent_name) {
         if (!this[method]) {
             this[method] = parent_plugin[method];
         }
-        // else if (method == 'shutdown') { // Method is in this module, so it exists in the plugin
+        // else if (method == 'shutdown') {
+        //     Method is in this module, so it exists in the plugin
         //     if (!this.hasOwnProperty('shutdown')) {
         //         this[method] = parent_plugin[method];
         //     }

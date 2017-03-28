@@ -2,8 +2,10 @@
 // TLS is built into Haraka. This plugin conditionally advertises STARTTLS.
 // see 'haraka -h tls' for help
 
-var net_utils = require('haraka-net-utils');
 var tls_socket = require('./tls_socket');
+
+// exported so tests can override config dir
+exports.net_utils = require('haraka-net-utils');
 
 exports.register = function () {
     var plugin = this;
@@ -33,47 +35,49 @@ exports.register = function () {
 
     plugin.register_hook('capabilities', 'advertise_starttls');
     plugin.register_hook('unrecognized_command', 'upgrade_connection');
-};
+}
 
 exports.shutdown = function () {
     if (tls_socket.shutdown) tls_socket.shutdown();
-};
+}
 
 exports.load_err = function (errMsg) {
     this.logcrit(errMsg + " See 'haraka -h tls'");
     this.load_errs.push(errMsg);
-};
+}
 
 exports.load_pem = function (file) {
     var plugin = this;
     return plugin.config.get(file, 'binary');
-};
+}
 
 exports.load_tls_ini = function () {
     var plugin = this;
 
-    plugin.cfg = net_utils.load_tls_ini(function () {
+    plugin.cfg = plugin.net_utils.load_tls_ini(function () {
         plugin.load_tls_ini();
     });
 
-    var config_options = ['ciphers','requestCert','rejectUnauthorized',
-        'key','cert','honorCipherOrder','ecdhCurve','dhparam',
-        'secureProtocol','enableOCSPStapling'];
+    var config_options = [
+        'ciphers', 'requestCert', 'rejectUnauthorized',
+        'key', 'cert', 'honorCipherOrder', 'ecdhCurve', 'dhparam',
+        'secureProtocol', 'enableOCSPStapling'
+    ];
 
     for (let i = 0; i < config_options.length; i++) {
         let opt = config_options[i];
-        if (plugin.cfg.main[opt] === undefined) { continue; }
+        if (plugin.cfg.main[opt] === undefined) continue;
         plugin.tls_opts[opt] = plugin.cfg.main[opt];
     }
 
     if (plugin.cfg.inbound) {
         for (let i = 0; i < config_options.length; i++) {
             let opt = config_options[i];
-            if (plugin.cfg.inbound[opt] === undefined) { continue; }
+            if (plugin.cfg.inbound[opt] === undefined) continue;
             plugin.tls_opts[opt] = plugin.cfg.inbound[opt];
         }
     }
-};
+}
 
 exports.load_tls_opts = function () {
     var plugin = this;
@@ -101,32 +105,39 @@ exports.load_tls_opts = function () {
                        plugin.tls_opts.cert.length + ").");
     }
 
+    plugin.loadPemFiles();
+
+    plugin.logdebug(plugin.tls_opts);
+}
+
+exports.loadPemFiles = function () {
+    var plugin = this;
+
     // turn key/cert file names into actual key/cert binary data
-    plugin.tls_opts.key = plugin.tls_opts.key.map(function (keyFileName) {
+    plugin.tls_opts.key = plugin.tls_opts.key.map(keyFileName => {
         var key = plugin.load_pem(keyFileName);
         if (!key) {
             plugin.load_err("tls key " + keyFileName + " could not be loaded.");
         }
         return key;
     });
-    plugin.tls_opts.cert = plugin.tls_opts.cert.map(function (certFileName) {
+
+    plugin.tls_opts.cert = plugin.tls_opts.cert.map(certFileName => {
         var cert = plugin.load_pem(certFileName);
         if (!cert) {
             plugin.load_err("tls cert " + certFileName + " could not be loaded.");
         }
         return cert;
     });
-
-    plugin.logdebug(plugin.tls_opts);
-};
+}
 
 exports.advertise_starttls = function (next, connection) {
     /* Caution: do not advertise STARTTLS if already TLS upgraded */
-    if (connection.tls.enabled) { return next(); }
+    if (connection.tls.enabled) return next();
 
     var plugin = this;
 
-    if (net_utils.ip_in_list(plugin.cfg.no_tls_hosts, connection.remote.ip)) {
+    if (plugin.net_utils.ip_in_list(plugin.cfg.no_tls_hosts, connection.remote.ip)) {
         return next();
     }
 
@@ -143,7 +154,7 @@ exports.advertise_starttls = function (next, connection) {
     var redis = server.notes.redis;
     var dbkey = 'no_tls|' + connection.remote.ip;
 
-    redis.get(dbkey, function (err, dbr) {
+    redis.get(dbkey, (err, dbr) => {
         if (err) {
             connection.results.add(plugin, {err: err});
             return enable_tls();
@@ -160,7 +171,7 @@ exports.advertise_starttls = function (next, connection) {
         connection.results.add(plugin, { msg: 'tls disabled'});
         return next();
     });
-};
+}
 
 exports.set_notls = function (ip) {
     var plugin = this;
@@ -169,12 +180,13 @@ exports.set_notls = function (ip) {
     if (!server.notes.redis) return;
 
     server.notes.redis.set('no_tls|' + ip, true);
-};
+}
 
 exports.upgrade_connection = function (next, connection, params) {
-    if (!connection.tls.advertised) { return next(); }
+    if (!connection.tls.advertised) return next();
+
     /* Watch for STARTTLS directive from client. */
-    if (params[0].toUpperCase() !== 'STARTTLS') { return next(); }
+    if (params[0].toUpperCase() !== 'STARTTLS') return next();
 
     /* Respond to STARTTLS command. */
     connection.respond(220, "Go ahead.");
@@ -199,11 +211,12 @@ exports.upgrade_connection = function (next, connection, params) {
 
     connection.notes.cleanUpDisconnect = nextOnce;
 
-    var upgrade_cb = function (authorized, verifyErr, cert, cipher) {
-        if (called_next) { return; }
+    /* Upgrade the connection to TLS. */
+    connection.client.upgrade(plugin.tls_opts, (authorized, verifyErr, cert, cipher) => {
+        if (called_next) return;
         clearTimeout(connection.notes.tls_timer);
         called_next = true;
-        connection.reset_transaction(function () {
+        connection.reset_transaction(() => {
             connection.set('hello', 'host', undefined);
             connection.set('tls', 'enabled', true);
             connection.set('tls', 'cipher', cipher);
@@ -216,36 +229,32 @@ exports.upgrade_connection = function (next, connection, params) {
             connection.results.add(plugin, connection.tls);
             plugin.emit_upgrade_msg(connection, authorized, verifyErr, cert, cipher);
             return next(OK);  // Return OK as we responded to the client
-        });
-    };
-
-    /* Upgrade the connection to TLS. */
-    connection.client.upgrade(plugin.tls_opts, upgrade_cb);
-};
+        })
+    })
+}
 
 exports.hook_disconnect = function (next, connection) {
     if (connection.notes.cleanUpDisconnect) {
         connection.notes.cleanUpDisconnect(true);
     }
     return next();
-};
+}
 
 exports.emit_upgrade_msg = function (c, authorized, verifyErr, cert, cipher) {
     var plugin = this;
     var msg = 'secured:';
     if (cipher) {
-        msg += ' cipher='  + cipher.name + ' version=' + cipher.version;
+        msg += ` cipher=${cipher.name} version=${cipher.version}`;
     }
-    msg += ' verified=' + authorized;
-    if (verifyErr) msg += ' error="' + verifyErr + '"';
+    msg += ` verified=${authorized}`;
+    if (verifyErr) msg += ` error="${verifyErr}"`;
     if (cert) {
         if (cert.subject) {
-            msg += ' cn="' + cert.subject.CN + '"' +
-                   ' organization="' + cert.subject.O + '"';
+            msg += ` cn="${cert.subject.CN}" organization="${cert.subject.O}"`;
         }
-        if (cert.issuer)      msg += ' issuer="'     + cert.issuer.O + '"';
-        if (cert.valid_to)    msg += ' expires="'    + cert.valid_to + '"';
-        if (cert.fingerprint) msg += ' fingerprint=' + cert.fingerprint;
+        if (cert.issuer)      msg += ` issuer="${cert.issuer.O}"`;
+        if (cert.valid_to)    msg += ` expires="${cert.valid_to}"`;
+        if (cert.fingerprint) msg += ` fingerprint=${cert.fingerprint}`;
     }
 
     c.loginfo(plugin,  msg);

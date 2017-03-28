@@ -1,5 +1,7 @@
 var path = require('path');
 
+var MessageStream = require('../messagestream');
+
 function _set_up (done) {
 
     this.server = require('../server');
@@ -153,9 +155,10 @@ exports.createServer = {
     tearDown: function (done) {
         process.env.YES_REALLY_DO_DISCARD='';
         process.env.HARAKA_TEST_DIR='';
+        this.server.gracefulShutdown();
         done();
     },
-    'accepts SMTP message on port 2500': function (test) {
+    'accepts SMTP message from nodemailer': function (test) {
 
         this.server.load_smtp_ini();
 
@@ -185,10 +188,69 @@ exports.createServer = {
         function (error, info){
             if (error){
                 console.log(error);
+                test.done();
+                return;
             }
             test.deepEqual(info.accepted, [ 'discard@haraka.local' ]);
             console.log('Message sent: ' + info.response);
             test.done();
         });
+    },
+    'accepts SMTP message from smtp_client': function (test) {
+
+        this.server.load_smtp_ini();
+
+        this.server.createServer({});
+
+        test.expect(1);
+        var server = { notes: { } };
+        var cfg = {
+            connect_timeout: 2,
+            pool_timeout: 5,
+            max_connections: 3,
+        };
+        var smtp_client = require('../smtp_client');
+
+        smtp_client.get_client(server, function (err, client) {
+
+            client
+            .on('greeting', function (command) {
+                client.send_command('HELO', 'haraka.local');
+            })
+            .on('helo', function () {
+                client.send_command('MAIL', 'FROM:<test@haraka.local>');
+            })
+            .on('mail', function () {
+                client.send_command('RCPT', 'TO:<nobody-will-see-this@haraka.local>');
+            })
+            .on('rcpt', function () {
+                client.send_command('DATA');
+            })
+            .on('data', function () {
+                var message_stream = new MessageStream(
+                  { main : { spool_after : 1024 } }, "theMessageId"
+                );
+
+                message_stream.on('end', function () {
+                    client.socket.write('.\r\n');
+                })
+                message_stream.add_line('Header: test\r\n');
+                message_stream.add_line('\r\n');
+                message_stream.add_line('I am body text\r\n');
+                message_stream.add_line_end();
+
+                client.start_data(message_stream);
+            })
+            .on('dot', function () {
+                test.ok(1);
+                client.release();
+                test.done();
+            })
+            .on('bad_code', function (code, msg) {
+                client.release();
+                test.done();
+            });
+
+        }, 2500, 'localhost', cfg);
     },
 };

@@ -5,7 +5,7 @@ var path         = require('path');
 var Address      = require('address-rfc2821').Address;
 var fixtures     = require('haraka-test-fixtures');
 
-var Connection   = fixtures.connection;
+const OK = 906;
 
 function _setup (done) {
     this.plugin = new fixtures.plugin('queue/smtp_forward');
@@ -14,8 +14,8 @@ function _setup (done) {
     this.plugin.config = this.plugin.config.module_config(path.resolve('tests'));
     this.plugin.register();
 
-    this.connection = Connection.createConnection();
-    this.connection.transaction = fixtures.transaction.createTransaction();
+    this.connection = new fixtures.connection.createConnection();
+    this.connection.transaction = new fixtures.transaction.createTransaction();
 
     done();
 }
@@ -92,14 +92,30 @@ exports.get_config = {
         test.deepEqual(cfg.host, '1.2.3.4' );
         test.done();
     },
-    'valid 2 recipients with different routes': function (test) {
-        test.expect(1);
-        this.connection.transaction.rcpt_to.push(
-            new Address('<matt@test1.com>'),
-            new Address('<matt@test2.com>')
-            );
-        var cfg = this.plugin.get_config(this.connection);
-        test.equal(cfg.host, 'localhost' );
-        test.done();
-    },
 };
+
+exports.get_mx = {
+    setUp : _setup,
+    'returns no outbound route for undefined domains' : function (test) {
+        test.expect(2);
+        var cb = function (code, mx) {
+            test.equal(code, undefined);
+            test.deepEqual(mx, undefined);
+            test.done();
+        };
+        this.plugin.get_mx(cb, {}, 'undefined.com');
+    },
+    'returns an outbound route for defined domains' : function (test) {
+        test.expect(2);
+        var cb = function (code, mx) {
+            test.equal(code, OK);
+            test.deepEqual(mx, {
+                priority: 0, exchange: '1.2.3.4', port: 2555,
+                auth_user: 'postmaster@test.com',
+                auth_pass: 'superDuperSecret'
+            });
+            test.done();
+        };
+        this.plugin.get_mx(cb, {}, 'test.com');
+    },
+}
