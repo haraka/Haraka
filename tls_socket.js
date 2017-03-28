@@ -322,7 +322,7 @@ function connect (port, host, cb) {
             if (err.reason) {
                 log.logerror("client TLS error: " + err);
             }
-        });
+        })
 
         cleartext.on('secureConnect', function () {
             log.logdebug('client TLS secured.');
@@ -346,9 +346,9 @@ function connect (port, host, cb) {
         socket.attach(socket.cleartext);
 
         log.logdebug('client TLS upgrade in progress, awaiting secured.');
-    };
+    }
 
-    return (socket);
+    return socket;
 }
 
 exports.connect = connect;

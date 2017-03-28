@@ -4,10 +4,9 @@ This plugin enables the use of TLS (via `STARTTLS`) in Haraka.
 
 For this plugin to work you must have SSL certificates installed correctly.
 
-## Install Location
+## Certificate Files
 
-Key and certificate chain default locations are as follows. The paths
-can be overridden in the `config/tls.ini` file using `key` and `cert` options.
+Defaults are shown and can be overridden in `config/tls.ini`.
 
     key=tls_key.pem
     cert=tls_cert.pem
@@ -45,17 +44,15 @@ The following settings can be specified in `config/tls.ini`.
 
 ### key
 
-Specifies an alternative location for the key file. If multiple keys are to be
-specified, use `key[]=` assignment for each of them. Non-absolute paths are relative
-to the `config/` directory.
+Specifies an alternative location for the key file. For multiple keys, use `key[]=` assignment for each. Non-absolute paths are relative to the `config/` directory.
 
-For example, to configure single key and cert chain files, located in the `config/`
+To configure a single key and a cert chain, located in the `config/`
 directory, use the following in `tls.ini`:
 
     key=example.com.key.pem
     cert=example.com.crt-chain.pem
 
-If multiple pairs of key and cert chain files should be used, outside of the haraka
+For multiple pairs of key and cert chain files should be used, outside of the haraka
 `config/` directory, configure instead:
 
     key[]=/etc/ssl/private/example.com.rsa.key.pem
@@ -65,10 +62,7 @@ If multiple pairs of key and cert chain files should be used, outside of the har
 
 ### cert
 
-Specifies an alternative location for the certificate chain file. If multiple
-certificate chains are to be used, use `cert[]=` assignment for each of them.
-Non-absolute paths are relative to the `config/` directory. See the description of
-the `key` parameter for specific use.
+Specifies the location(s) for the certificate chain file. For multiple certificate chains, use `cert[]=` assignment for each. Non-absolute paths are relative to the `config/` directory. See the description of the `key` parameter for specific use.
 
 ### no_tls_hosts
 
@@ -106,7 +100,7 @@ Only one curve can be specified. The default is `prime256v1` (NIST P-256).
 
 Specifies the file containing the diffie-hellman parameters to
 use for DH or DHE key exchange. Create such a file using `openssl dhparam`.
-No DH ciphers can be used without this parameter given.
+No DH ciphers can be used without this parameter.
 
     openssl dhparam -out config/dhparams.pem 2048
 
@@ -117,11 +111,13 @@ Whether Haraka should request a certificate from a connecting client.
 
     requestCert=[true|false]  (default: true)
 
+
 ### rejectUnauthorized
 
 Reject connections from clients without a CA validated TLS certificate.
 
     rejectUnauthorized=[true|false]  (default: false)
+
 
 ### secureProtocol
 
@@ -129,6 +125,7 @@ Specifies the OpenSSL API function used for handling the TLS session. Choose
 one of the methods described at the
 [OpenSSL API page](https://www.openssl.org/docs/manmaster/ssl/ssl.html).
 The default is `SSLv23_method`.
+
 
 ### enableOCSPStapling
 
@@ -143,6 +140,7 @@ OCSP responses from the OCSP server are cached in memory for as long as
 they are valid, and get refreshed after that time. A server restart
 requires the OCSP responses to be fetched again upon the first client
 connection.
+
 
 ## Inbound Specific Configuration
 
