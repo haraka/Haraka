@@ -192,7 +192,7 @@ SMTPClient.prototype.load_tls_config = function (plugin) {
     var tls_options = {};
     this.tls_config = net_utils.tls_ini_section_with_defaults(plugin.name);
 
-    if (this.host) { tls_options.servername = this.host }
+    if (this.host) tls_options.servername = this.host;
 
     this.tls_options = tls_options;
 }
