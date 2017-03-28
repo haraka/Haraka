@@ -202,6 +202,11 @@ exports.createServer = {
 
         test.expect(1);
         var server = { notes: { } };
+        var cfg = {
+            connect_timeout: 2,
+            pool_timeout: 5,
+            max_connections: 3,
+        };
         var smtp_client = require('../smtp_client');
 
         smtp_client.get_client(server, function (err, client) {
@@ -244,6 +249,6 @@ exports.createServer = {
                 test.done();
             });
 
-        }, 2500, 'localhost', {});
+        }, 2500, 'localhost', cfg);
     },
 };
