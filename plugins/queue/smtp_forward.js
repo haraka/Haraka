@@ -120,6 +120,12 @@ exports.check_recipient = function (next, connection, params) {
         return next();
     }
 
+    if (connection.relaying && txn.notes.local_sender) {
+        plugin.set_queue(connection, 'outbound');
+        txn.results.add(plugin, {pass: 'relaying local_sender'});
+        return next(OK);
+    }
+
     var domain = rcpt.host.toLowerCase();
     if (plugin.cfg[domain] !== undefined) {
         if (plugin.set_queue(connection, 'smtp_forward', domain)) {
@@ -128,12 +134,6 @@ exports.check_recipient = function (next, connection, params) {
         }
         txn.results.add(plugin, {pass: 'rcpt_to.split'});
         return next(DENYSOFT, "Split transaction, retry soon");
-    }
-
-    if (connection.relaying && txn.notes.local_sender) {
-        plugin.set_queue(connection, 'outbound');
-        txn.results.add(plugin, {pass: 'relaying local_sender'});
-        return next(OK);
     }
 
     // the MAIL FROM domain is not local and neither is the RCPT TO

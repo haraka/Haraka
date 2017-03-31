@@ -1,4 +1,37 @@
 
+2.8.14 - Mmm NN, 2017
+
+* Changes
+    * tls consistency cleanups #1851
+    * Get pool config handling simplifcation #1868
+        * add integration test: send message w/smtp_client
+    * replace some legacy code with es6 #1862
+    * update async to version 2.2.0 #1863
+    * update ipaddr.js to version 1.3.0 #1857
+    * update redis to version 2.7.0 #1854
+    * assure conn/tran still exists before storing results #1849
+    * moved tls.ini parsing to net_utils #1848
+    * smtp forward dest split routing #1847
+    * rspamd: refactor complex condition into function #1840
+    * block js attachments #1837
+    * helo.checks: bring plugin into alignment with docs #1833
+    * when proxy enabled, update remote.is_private too #1811
+    * create an outbound queue filename handler #1792
+    * replace connect.fcrdns with npm package #1810
+    * add an additional node_modules plugin search path #1805
+* New Features
+    * Added RabbitMQ vhost support #1866
+* Fixes
+    * spf: improve modifier regexp #1859
+    * rabbitmq doc typo in config file name #1865
+    * URL to manual was 404, point to Plugins.md #1844
+    * smtp_client: set idleTimeout to 1s < pool_timeout #1842
+    * fix broken continuations #1843
+    * doc error for the 'check.authenticated' setting in rspamd plugin #1834
+    * emit _the_ result, not all of them #1829
+    * fix outbound logger #1827
+    * fix forwarding with client auth over TLS (forward to gmail) #1803
+
 2.8.13 - Feb 03, 2017
 
 * Changes
