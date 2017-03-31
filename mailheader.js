@@ -48,8 +48,8 @@ Header.prototype.parse = function (lines) {
     }
 
     // Now add decoded versions
-    Object.keys(this.headers).forEach(function (key2) {
-        self.headers[key2].forEach(function (val2) {
+    Object.keys(this.headers).forEach((key2) => {
+        self.headers[key2].forEach((val2) => {
             self._add_header_decode(key2, val2, 'push');
         })
     })
@@ -157,6 +157,7 @@ Header.prototype.decode_header = function decode_header (val) {
         cur_enc: '',
         cur_lang: '', // Secondary languages are ignored for our purposes
     };
+
     val = val.replace(/\n[ \t]+([^\n]*)/g, _decode_rfc2231(rfc2231_params));
     for (var key in rfc2231_params.keys) {
         val = val + ' ' + key + '="';
@@ -172,7 +173,9 @@ Header.prototype.decode_header = function decode_header (val) {
 
     // remove end carriage return
     val = val.replace(/\r?\n$/, '');
-    val = val.replace(/\([^\)]*\)/, ''); // strip 822 comments in the most basic way - does not support nested comments
+
+    // strip 822 comments in the most basic way - does not support nested comments
+    // val = val.replace(/\([^\)]*\)/, '');
 
     if (Iconv && !/^[\x00-\x7f]*$/.test(val)) {
         // 8 bit values in the header
