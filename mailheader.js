@@ -172,7 +172,9 @@ Header.prototype.decode_header = function decode_header (val) {
 
     // remove end carriage return
     val = val.replace(/\r?\n$/, '');
-    val = val.replace(/\([^\)]*\)/, ''); // strip 822 comments in the most basic way - does not support nested comments
+
+    // strip 822 comments in the most basic way - does not support nested comments
+    // val = val.replace(/\([^\)]*\)/, '');
 
     if (Iconv && !/^[\x00-\x7f]*$/.test(val)) {
         // 8 bit values in the header
