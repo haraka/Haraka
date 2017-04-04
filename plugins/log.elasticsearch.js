@@ -336,8 +336,8 @@ exports.populate_message = function (pir, connection) {
     }
 
     if (pir.rcpt_to && pir.rcpt_to.recipient) {
-	for (var key in pir.rcpt_to.recipient) {
-                pir.rcpt_to.recipient[key].address=pir.rcpt_to.recipient[key].address.toLowerCase();
+        for (var key in pir.rcpt_to.recipient) {
+            pir.rcpt_to.recipient[key].address=pir.rcpt_to.recipient[key].address.toLowerCase();
         }
         pir.message.envelope.recipient = pir.rcpt_to.recipient;
         delete pir.rcpt_to;
