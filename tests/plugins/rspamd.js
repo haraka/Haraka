@@ -54,8 +54,8 @@ exports.add_headers = {
     'adds a header to a message with positive score': function (test) {
         test.expect(3);
         var test_data = {
-            score: 1.1,
             default: {
+		score: 1.1,
                 FOO: {
                     name: 'FOO',
                     score: 0.100000,
@@ -78,7 +78,9 @@ exports.add_headers = {
     'adds a header to a message with negative score': function (test) {
         test.expect(2);
         var test_data = {
-            score: -1,
+		default: {
+            		score: -1,
+		}
         };
         this.plugin.add_headers(this.connection, test_data);
         // console.log(this.connection.transaction.header);
