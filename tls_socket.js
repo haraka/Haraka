@@ -174,6 +174,9 @@ if (ocsp) {
             if (err) {
                 return cb2(err);
             }
+            if (uri === null) {   // not working OCSP server
+                return cb2();
+            }
 
             var req = ocsp.request.generate(cert, issuer);
             var options = {
