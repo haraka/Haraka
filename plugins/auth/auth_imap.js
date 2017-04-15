@@ -1,6 +1,5 @@
 // Auth against imap
 
-var logger = require('./logger');
 var imap;
 try {
     imap = require('imap');
@@ -9,7 +8,7 @@ catch (e) {
     throw new Error('imap library not found, try \'npm -g install imap\' or \'npm install imap\' in your configuration directory to install it');
 }
 
-exports.register = function() {
+exports.register = function () {
     var plugin = this;
 
     if (!imap) {
@@ -21,14 +20,14 @@ exports.register = function() {
     plugin.load_imap_ini();
 };
 
-exports.load_imap_ini = function() {
+exports.load_imap_ini = function () {
     var plugin = this;
-    plugin.cfg = plugin.config.get('auth_imap.ini', function() {
+    plugin.cfg = plugin.config.get('auth_imap.ini', function () {
         plugin.load_imap_ini();
     });
 };
 
-exports.hook_capabilities = function(next, connection) {
+exports.hook_capabilities = function (next, connection) {
     // Don't offer AUTH capabilities by default unless session is encrypted
     if (connection.tls.enabled) {
         var methods = ['PLAIN', 'LOGIN'];
@@ -38,7 +37,7 @@ exports.hook_capabilities = function(next, connection) {
     next();
 };
 
-exports.check_plain_passwd = function(connection, user, passwd, cb) {
+exports.check_plain_passwd = function (connection, user, passwd, cb) {
     var plugin = this;
     var trace_imap = false;
     var config = {
@@ -59,7 +58,7 @@ exports.check_plain_passwd = function(connection, user, passwd, cb) {
 
     if (sect.trace_imap == 'true') {
         trace_imap = true;
-        config.debug = function(info) {
+        config.debug = function (info) {
             connection.logdebug(plugin, info);
         }
     }
@@ -109,7 +108,7 @@ exports.check_plain_passwd = function(connection, user, passwd, cb) {
     }
     connection.logdebug(plugin, message);
 
-    client.once('ready', function() {
+    client.once('ready', function () {
 
         connection.loginfo(plugin, 'AUTH user="' + user +
             '" success=true');
@@ -120,7 +119,7 @@ exports.check_plain_passwd = function(connection, user, passwd, cb) {
         return cb(true);
     });
 
-    client.once('error', function(err) {
+    client.once('error', function (err) {
         connection.loginfo(plugin, 'AUTH user="' + user +
             '" success=false error="' + err.message + '"');
         if (trace_imap) {
