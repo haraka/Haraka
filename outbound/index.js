@@ -47,9 +47,9 @@ exports.ensure_queue_dir = queuelib.ensure_queue_dir;
 exports.load_queue = queuelib.load_queue;
 exports._add_file = queuelib._add_file;
 exports.stats = queuelib.stats;
+exports.drain_pools = queuelib.drain_pools;
 
 var _qfile = exports.qfile = require('./qfile');
-
 
 process.on('message', function (msg) {
     if (msg.event && msg.event === 'outbound.load_pid_queue') {
@@ -72,20 +72,6 @@ process.on('message', function (msg) {
     }
     // ignores the message
 });
-
-exports.drain_pools = function () {
-    if (!server.notes.pool || Object.keys(server.notes.pool).length == 0) {
-        return logger.logdebug("[outbound] Drain pools: No pools available");
-    }
-    for (var p in server.notes.pool) {
-        logger.logdebug("[outbound] Drain pools: Draining SMTP connection pool " + p);
-        server.notes.pool[p].drain(function () {
-            if (!server.notes.pool[p]) return;
-            server.notes.pool[p].destroyAllNow();
-        });
-    }
-    logger.logdebug("[outbound] Drain pools: Pools shut down");
-}
 
 exports.send_email = function () {
 
@@ -347,97 +333,6 @@ exports.build_todo = function (todo, ws, write_more) {
     var continue_writing = ws.write(buf);
     if (continue_writing) return write_more();
     ws.once('drain', write_more);
-};
-
-
-exports.split_to_new_recipients = function (hmail, recipients, response, cb) {
-    var self = this;
-    if (recipients.length === hmail.todo.rcpt_to.length) {
-        // Split to new for no reason - increase refcount and return self
-        hmail.refcount++;
-        return cb(hmail);
-    }
-    var fname = _qfile.name();
-    var tmp_path = path.join(queue_dir, platformDOT + fname);
-    var ws = new FsyncWriteStream(tmp_path, { flags: WRITE_EXCL });
-    var err_handler = function (err, location) {
-        logger.logerror("[outbound] Error while splitting to new recipients (" + location + "): " + err);
-        hmail.todo.rcpt_to.forEach(function (rcpt) {
-            hmail.extend_rcpt_with_dsn(rcpt, DSN.sys_unspecified("Error splitting to new recipients: " + err));
-        });
-        hmail.bounce("Error splitting to new recipients: " + err);
-    };
-
-    ws.on('error', function (err) { err_handler(err, "tmp file writer");});
-
-    var writing = false;
-
-    var write_more = function () {
-        if (writing) return;
-        writing = true;
-        var rs = hmail.data_stream();
-        rs.pipe(ws, {end: false});
-        rs.on('error', function (err) {
-            err_handler(err, "hmail.data_stream reader");
-        });
-        rs.on('end', function () {
-            ws.on('close', function () {
-                var dest_path = path.join(queue_dir, fname);
-                fs.rename(tmp_path, dest_path, function (err) {
-                    if (err) {
-                        err_handler(err, "tmp file rename");
-                    }
-                    else {
-                        var split_mail = new HMailItem (fname, dest_path);
-                        split_mail.once('ready', function () {
-                            cb(split_mail);
-                        });
-                    }
-                });
-            });
-            ws.destroySoon();
-            return;
-        });
-    };
-
-    ws.on('error', function (err) {
-        logger.logerror("[outbound] Unable to write queue file (" + fname + "): " + err);
-        ws.destroy();
-        hmail.todo.rcpt_to.forEach(function (rcpt) {
-            hmail.extend_rcpt_with_dsn(rcpt, DSN.sys_unspecified("Error re-queueing some recipients: " + err));
-        });
-        hmail.bounce("Error re-queueing some recipients: " + err);
-    });
-
-    var new_todo = JSON.parse(JSON.stringify(hmail.todo));
-    new_todo.rcpt_to = recipients;
-    self.build_todo(new_todo, ws, write_more);
-};
-
-exports.get_tls_options = function (mx) {
-
-    var tls_options = exports.net_utils.tls_ini_section_with_defaults('outbound');
-    tls_options.servername = mx.exchange;
-
-    if (tls_options.key) {
-        if (Array.isArray(tls_options.key)) {
-            tls_options.key = tls_options.key[0];
-        }
-        tls_options.key = exports.config.get(tls_options.key, 'binary');
-    }
-
-    if (tls_options.dhparam) {
-        tls_options.dhparam = exports.config.get(tls_options.dhparam, 'binary');
-    }
-
-    if (tls_options.cert) {
-        if (Array.isArray(tls_options.cert)) {
-            tls_options.cert = tls_options.cert[0];
-        }
-        tls_options.cert = exports.config.get(tls_options.cert, 'binary');
-    }
-
-    return tls_options;
 };
 
 // exported for testability
