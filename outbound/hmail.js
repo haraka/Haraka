@@ -23,6 +23,10 @@ var client_pool = require('./client_pool');
 var cfg         = require('./config');
 var _qfile      = require('./qfile');
 var queuelib    = require('./queue');
+var mx_lookup   = require('./mx_lookup');
+var outbound    = require('./index');
+
+var get_tls_options = require('./_get_tls_options');
 
 var queue_dir = queuelib.queue_dir;
 var temp_fail_queue = queuelib.temp_fail_queue;
@@ -198,7 +202,7 @@ HMailItem.prototype.get_mx_respond = function (retval, mx) {
     }
 
     // if none of the above return codes, drop through to this...
-    mx.lookup_mx(this.todo.domain, function (err, mxs) {
+    mx_lookup.lookup_mx(this.todo.domain, function (err, mxs) {
         hmail.found_mx(err, mxs);
     });
 };
@@ -558,14 +562,14 @@ HMailItem.prototype.try_deliver_host_on_socket = function (mx, host, port, socke
         fp_called = true;
         if (fail_recips.length) {
             self.refcount++;
-            exports.split_to_new_recipients(self, fail_recips, "Some recipients temporarily failed", function (hmail) {
+            split_to_new_recipients(self, fail_recips, "Some recipients temporarily failed", function (hmail) {
                 self.discard();
                 hmail.temp_fail("Some recipients temp failed: " + fail_recips.join(', '), { rcpt: fail_recips, mx: mx });
             });
         }
         if (bounce_recips.length) {
             self.refcount++;
-            exports.split_to_new_recipients(self, bounce_recips, "Some recipients rejected", function (hmail) {
+            split_to_new_recipients(self, bounce_recips, "Some recipients rejected", function (hmail) {
                 self.discard();
                 hmail.bounce("Some recipients failed: " + bounce_recips.join(', '), { rcpt: bounce_recips, mx: mx });
             });
@@ -732,7 +736,7 @@ HMailItem.prototype.try_deliver_host_on_socket = function (mx, host, port, socke
                         process_ehlo_data();
                         break;
                     case 'starttls':
-                        var tls_options = exports.get_tls_options(mx);
+                        var tls_options = get_tls_options(mx);
 
                         smtp_properties = {};
                         socket.upgrade(tls_options, function (authorized, verifyError, cert, cipher) {
@@ -1111,7 +1115,7 @@ HMailItem.prototype.bounce_respond = function (retval, msg) {
             return self.double_bounce("Error populating bounce message: " + err2);
         }
 
-        exports.send_email(from, recip, data_lines.join(''), function (code, msg2) {
+        outbound.send_email(from, recip, data_lines.join(''), function (code, msg2) {
             if (code === constants.deny) {
                 // failed to even queue the mail
                 return self.double_bounce("Unable to queue the bounce message. Not sending bounce!");
@@ -1229,3 +1233,68 @@ HMailItem.prototype.delivered_respond = function (retval, msg) {
     }
     this.discard();
 };
+
+function split_to_new_recipients (hmail, recipients, response, cb) {
+    var self = this;
+    if (recipients.length === hmail.todo.rcpt_to.length) {
+        // Split to new for no reason - increase refcount and return self
+        hmail.refcount++;
+        return cb(hmail);
+    }
+    var fname = _qfile.name();
+    var tmp_path = path.join(queue_dir, platformDOT + fname);
+    var ws = new FsyncWriteStream(tmp_path, { flags: WRITE_EXCL });
+    var err_handler = function (err, location) {
+        logger.logerror("[outbound] Error while splitting to new recipients (" + location + "): " + err);
+        hmail.todo.rcpt_to.forEach(function (rcpt) {
+            hmail.extend_rcpt_with_dsn(rcpt, DSN.sys_unspecified("Error splitting to new recipients: " + err));
+        });
+        hmail.bounce("Error splitting to new recipients: " + err);
+    };
+
+    ws.on('error', function (err) { err_handler(err, "tmp file writer");});
+
+    var writing = false;
+
+    var write_more = function () {
+        if (writing) return;
+        writing = true;
+        var rs = hmail.data_stream();
+        rs.pipe(ws, {end: false});
+        rs.on('error', function (err) {
+            err_handler(err, "hmail.data_stream reader");
+        });
+        rs.on('end', function () {
+            ws.on('close', function () {
+                var dest_path = path.join(queue_dir, fname);
+                fs.rename(tmp_path, dest_path, function (err) {
+                    if (err) {
+                        err_handler(err, "tmp file rename");
+                    }
+                    else {
+                        var split_mail = new HMailItem (fname, dest_path);
+                        split_mail.once('ready', function () {
+                            cb(split_mail);
+                        });
+                    }
+                });
+            });
+            ws.destroySoon();
+            return;
+        });
+    };
+
+    ws.on('error', function (err) {
+        logger.logerror("[outbound] Unable to write queue file (" + fname + "): " + err);
+        ws.destroy();
+        hmail.todo.rcpt_to.forEach(function (rcpt) {
+            hmail.extend_rcpt_with_dsn(rcpt, DSN.sys_unspecified("Error re-queueing some recipients: " + err));
+        });
+        hmail.bounce("Error re-queueing some recipients: " + err);
+    });
+
+    var new_todo = JSON.parse(JSON.stringify(hmail.todo));
+    new_todo.rcpt_to = recipients;
+    self.build_todo(new_todo, ws, write_more);
+};
+
