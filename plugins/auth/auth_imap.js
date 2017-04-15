@@ -1,10 +1,22 @@
 // Auth against imap
 
 var logger = require('./logger');
-var imap = require('imap');
+var imap;
+try {
+    imap = require('imap');
+}
+catch (e) {
+    throw new Error('imap library not found, try \'npm -g install imap\' or \'npm install imap\' in your configuration directory to install it');
+}
 
 exports.register = function() {
     var plugin = this;
+
+    if (!imap) {
+        plugin.logerror('imap library not found, try \'npm -g install imap\' or \'npm install imap\' in your configuration directory to install it');
+        return;
+    }
+
     plugin.inherits('auth/auth_base');
     plugin.load_imap_ini();
 };
