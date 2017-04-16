@@ -47,6 +47,8 @@ exports.load_smtp_forward_ini = function () {
 exports.get_config = function (connection) {
     var plugin = this;
 
+    plugin.cfg.main.auth = plugin.cfg.auth;
+
     if (!connection.transaction) return plugin.cfg.main;
     if (!connection.transaction.rcpt_to[0]) return plugin.cfg.main;
     var dom = connection.transaction.rcpt_to[0].host;
