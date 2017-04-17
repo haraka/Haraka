@@ -496,10 +496,9 @@ exports.check_items_against_regexps = function (items, regexps) {
 };
 
 exports.wait_for_attachment_hooks = function (next, connection) {
-    this.loginfo("Checking if attachment hooks are running");
     var txn = connection.transaction;
     if (txn.notes.attachment_count > 0) {
-        this.loginfo("We still have attachment hooks running");
+        // this.loginfo("We still have attachment hooks running");
         txn.notes.attachment_next = next;
     }
     else {
