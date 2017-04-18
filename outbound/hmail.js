@@ -25,8 +25,7 @@ var _qfile      = require('./qfile');
 var queuelib    = require('./queue');
 var mx_lookup   = require('./mx_lookup');
 var outbound    = require('./index');
-
-var get_tls_options = require('./_get_tls_options');
+var obtls       = require('./tls');
 
 var queue_dir = queuelib.queue_dir;
 var temp_fail_queue = queuelib.temp_fail_queue;
@@ -741,7 +740,7 @@ HMailItem.prototype.try_deliver_host_on_socket = function (mx, host, port, socke
                         process_ehlo_data();
                         break;
                     case 'starttls':
-                        var tls_options = get_tls_options(mx);
+                        var tls_options = obtls.get_tls_options(mx);
 
                         smtp_properties = {};
                         socket.upgrade(tls_options, function (authorized, verifyError, cert, cipher) {
