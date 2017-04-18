@@ -306,4 +306,5 @@ exports.add_headers = function (connection, data) {
         connection.transaction.remove_header(cfg.header.score);
         connection.transaction.add_header(cfg.header.score, '' + data.default.score);
     }
+    connection.results.add(plugin, {score: data.score});
 };
