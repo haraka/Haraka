@@ -293,6 +293,8 @@ exports.start_attachment = function (connection, ctype, filename, body, stream) 
         bytes += data.length;
     });
     stream.once('end', function () {
+        stream.pause();
+
         digest = md5.digest('hex');
         connection.loginfo(plugin, 'file="' + filename + '" ctype="' + ctype +
                                    '" md5=' + digest + ' bytes=' + bytes);
@@ -325,6 +327,7 @@ exports.start_attachment = function (connection, ctype, filename, body, stream) 
                     connection.logdebug(plugin, 'unlinked: ' + fn);
                 });
             });
+            stream.resume();
         }
         if (err) {
             txn.notes.attachment_result = [ DENYSOFT, err.message ];
@@ -350,6 +353,7 @@ exports.start_attachment = function (connection, ctype, filename, body, stream) 
         });
         ws.on('close', function () {
             connection.logdebug(plugin, 'end of stream reached');
+            connection.pause();
             plugin.unarchive_recursive(connection, fn, filename, function (error, files) {
                 txn.notes.attachment_count--;
                 cleanup();
@@ -375,6 +379,7 @@ exports.start_attachment = function (connection, ctype, filename, body, stream) 
                 else {
                     txn.notes.attachment_archive_files = txn.notes.attachment_archive_files.concat(files);
                 }
+                connection.resume();
                 return next();
             });
         });
@@ -493,7 +498,7 @@ exports.check_items_against_regexps = function (items, regexps) {
 exports.wait_for_attachment_hooks = function (next, connection) {
     var txn = connection.transaction;
     if (txn.notes.attachment_count > 0) {
-        // We still have attachment hooks running
+        // this.loginfo("We still have attachment hooks running");
         txn.notes.attachment_next = next;
     }
     else {

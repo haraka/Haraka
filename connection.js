@@ -1605,9 +1605,7 @@ Connection.prototype.accumulate_data = function (line) {
 
 Connection.prototype.data_done = function () {
     var self = this;
-    this.state = states.STATE_CMD;
     this.pause();
-    // this.state = states.STATE_PAUSE;
     this.totalbytes += this.transaction.data_bytes;
 
     // Check message size limit
