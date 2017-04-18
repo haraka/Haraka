@@ -14,11 +14,11 @@ exports.sandbox_require = function (id) {
         }
         catch (e) {
             try {
-                var override = __dirname + '/../../outbound/' + id.replace(/^[./]*/, '') + '.js';
+                override = __dirname + '/../../outbound/' + id.replace(/^[./]*/, '') + '.js';
                 fs.statSync(override);
                 id = override;
             }
-            catch (e) {
+            catch (err) {
                 id = '../../' + id.replace(/^[./]*/, '');
             }
         }
