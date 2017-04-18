@@ -2,9 +2,9 @@
 
 var net_utils   = require('haraka-net-utils');
 
-var config      = require('../config');
+exports.config = require('../config');
 
-module.exports = function (mx) {
+exports.get_tls_options = function (mx) {
 
     var tls_config = net_utils.load_tls_ini();
     var tls_options = { servername: mx.exchange };
@@ -31,18 +31,18 @@ module.exports = function (mx) {
         if (Array.isArray(tls_options.key)) {
             tls_options.key = tls_options.key[0];
         }
-        tls_options.key = config.get(tls_options.key, 'binary');
+        tls_options.key = exports.config.get(tls_options.key, 'binary');
     }
 
     if (tls_options.dhparam) {
-        tls_options.dhparam = config.get(tls_options.dhparam, 'binary');
+        tls_options.dhparam = exports.config.get(tls_options.dhparam, 'binary');
     }
 
     if (tls_options.cert) {
         if (Array.isArray(tls_options.cert)) {
             tls_options.cert = tls_options.cert[0];
         }
-        tls_options.cert = config.get(tls_options.cert, 'binary');
+        tls_options.cert = exports.config.get(tls_options.cert, 'binary');
     }
 
     return tls_options;
