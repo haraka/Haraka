@@ -57,18 +57,7 @@ exports.hook_queue_outbound = function (next, connection) {
     plugin.loginfo("Outbound IP : "+connection.transaction.notes.outbound_ip);
     plugin.loginfo("Outbound HOST : "+connection.transaction.notes.outbound_helo);
 
-    outbound.send_email(connection.transaction, function (retval, msg) {
-        switch (retval) {
-            case constants.ok:
-                return next(OK, msg);
-                break;
-            case constants.deny:
-                return next(DENY, msg);
-                break;
-            default:
-                return next(DENYSOFT, msg);
-        }
-    });
+    outbound.send_email(connection.transaction, next);
 
     plugin.loginfo("----------- virtual_mta plugin LOG END -----------");
     plugin.loginfo("");
