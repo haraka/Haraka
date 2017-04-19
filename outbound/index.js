@@ -4,10 +4,8 @@ var async       = require('async');
 var fs          = require('fs');
 var path        = require('path');
 
-var async       = require('async');
 var Address     = require('address-rfc2821').Address;
 var constants   = require('haraka-constants');
-var generic_pool = require('generic-pool');
 var net_utils   = require('haraka-net-utils');
 var utils       = require('haraka-utils');
 var ResultStore = require('haraka-results');
@@ -17,12 +15,12 @@ var config      = require('../config');
 var trans       = require('../transaction');
 var plugins     = require('../plugins');
 var DSN         = require('../dsn');
-var FsyncWriteStream = require('../fsync_writestream');
+var FsyncWriteStream = require('./fsync_writestream');
 var server      = require('../server');
 
 var HMailItem   = require('./hmail');
 var TODOItem    = require('./todo');
-var cfg = require('./config');
+var cfg         = require('./config');
 var queuelib    = require('./queue');
 
 var queue_dir = queuelib.queue_dir;
@@ -337,7 +335,6 @@ exports.build_todo = function (todo, ws, write_more) {
 
 // exported for testability
 exports.TODOItem = TODOItem;
-
 
 exports.HMailItem = HMailItem;
 
