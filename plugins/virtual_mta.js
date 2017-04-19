@@ -29,13 +29,13 @@ exports.hook_queue_outbound = function (next, connection) {
     plugin.loginfo("");
     plugin.loginfo("----------- virtual_mta plugin LOG START -----------");
 
-    if( transaction.header.headers.hasOwnProperty("x-vmta") )
+    if ( transaction.header.headers.hasOwnProperty("x-vmta") )
     {
         //Get 'x-vmta' from the header
         vmta = transaction.header.headers["x-vmta"][0].replace("\n", "");
 
         //Check if The specified VMTA is defined in the config file
-        if( cfg.hasOwnProperty(vmta) ){
+        if ( cfg.hasOwnProperty(vmta) ){
             //Get 'vmta' parameter from the config file
             connection.transaction.notes.outbound_ip   = cfg[vmta].ip;
             connection.transaction.notes.outbound_helo = cfg[vmta].host;
@@ -44,11 +44,11 @@ exports.hook_queue_outbound = function (next, connection) {
             transaction.remove_header("x-vmta");
 
             plugin.loginfo("'x-vmta' Found '"+vmta+"'");
-        }else{
+        } else {
             plugin.logerror("The specified Virtual VMTA '"+vmta+"' does not exist.");
             return next(DENY, "The specified Virtual VMTA '"+vmta+"' does not exist.");
         }
-    }else{
+    } else {
         connection.transaction.notes.outbound_ip   = ip;
         connection.transaction.notes.outbound_helo = host;
 
@@ -58,8 +58,8 @@ exports.hook_queue_outbound = function (next, connection) {
     plugin.loginfo("Outbound IP : "+connection.transaction.notes.outbound_ip);
     plugin.loginfo("Outbound HOST : "+connection.transaction.notes.outbound_helo);
 
-    outbound.send_email(connection.transaction, function(retval, msg) {
-        switch(retval) {
+    outbound.send_email(connection.transaction, function (retval, msg) {
+        switch (retval) {
             case constants.ok:
                 return next(OK, msg);
                 break;
