@@ -9,6 +9,7 @@ var util   = require('util');
 var MessageStream = require('./messagestream');
 
 var MAX_HEADER_LINES = config.get('max_header_lines') || 1000;
+var REMOVE_CARRIAGE_RETURN = config.get('remove_carriage_return') || 'true';
 
 function Transaction () {
     this.uuid = null;
@@ -93,14 +94,29 @@ Transaction.prototype.add_data = function (line) {
         // Build up headers
         if (this.header_lines.length < MAX_HEADER_LINES) {
             if (line[0] === 0x2E) line = line.slice(1); // Strip leading "."
-            this.header_lines.push(
-                    line.toString('binary').replace(/\r\n$/, '\n'));
+            if (REMOVE_CARRIAGE_RETURN === 'true') {
+                this.header_lines.push(
+                        line.toString('binary').replace(/\r\n$/, '\n'));
+            }
+            else {
+                this.header_lines.push(
+                        line.toString('binary'));
+            }
+
         }
     }
     else if (this.header_pos && this.parse_body) {
         if (line[0] === 0x2E) line = line.slice(1); // Strip leading "."
-        var new_line = this.body.parse_more(
+        var new_line;
+        if (REMOVE_CARRIAGE_RETURN === 'true') {
+            new_line = this.body.parse_more(
                 line.toString('binary').replace(/\r\n$/, '\n'));
+        }
+        else {
+            new_line = this.body.parse_more(
+                line.toString('binary'));
+        }
+
 
         if (!new_line.length) {
             return; // buffering for banners
