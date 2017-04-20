@@ -622,13 +622,13 @@ function stream_line_reader (stream, transaction, cb) {
             if (!(current_data.length || this_line.length)) {
                 return;
             }
-            transaction.add_data(new Buffer(this_line));
+            transaction.add_data(new Buffer(this_line.replace(/\r?\n$/, "\r\n")));
         }
     }
 
     function process_end () {
         if (current_data.length) {
-            transaction.add_data(new Buffer(current_data));
+            transaction.add_data(new Buffer(current_data.replace(/\r?\n$/, "\r\n")));
         }
         current_data = '';
         transaction.message_stream.add_line_end();
