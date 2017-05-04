@@ -262,6 +262,23 @@ SMTPClient.prototype.destroy = function () {
     }
 };
 
+SMTPClient.prototype.upgrade = function (tls_options) {
+    var this_logger = logger;
+
+    this.socket.upgrade(tls_options, function (authorized, verifyError, cert, cipher) {
+        this_logger.loginfo('secured:' +
+            ((cipher) ? ' cipher=' + cipher.name + ' version=' + cipher.version : '') +
+            ' verified=' + authorized +
+            ((verifyError) ? ' error="' + verifyError + '"' : '' ) +
+            ((cert && cert.subject) ? ' cn="' + cert.subject.CN + '"' +
+            ' organization="' + cert.subject.O + '"' : '') +
+            ((cert && cert.issuer) ? ' issuer="' + cert.issuer.O + '"' : '') +
+            ((cert && cert.valid_to) ? ' expires="' + cert.valid_to + '"' : '') +
+            ((cert && cert.fingerprint) ? ' fingerprint=' + cert.fingerprint : ''));
+    });
+};
+
+
 SMTPClient.prototype.is_dead_sender = function (plugin, connection) {
     if (connection.transaction) { return false; }
 
