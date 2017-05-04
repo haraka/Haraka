@@ -232,7 +232,9 @@ exports.hook_data_post = function (next, connection) {
 
         var result = '';
         socket.on('line', function (line) {
-            connection.logprotocol(plugin, 'C:' + line.split('').filter(function(x) { var n = x.charCodeAt(0); return 31 < n && 127 > n  }).join('') );
+            connection.logprotocol(plugin, 'C:' + line.split('').filter((x) => {
+                return 31 < x.charCodeAt(0) && 127 > x.charCodeAt(0)
+            }).join('') );
             result = line.replace(/\r?\n/, '');
         });
 
