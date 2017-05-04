@@ -133,6 +133,7 @@ exports.get_tls_options = {
     setUp : function (done) {
         process.env.HARAKA_TEST_DIR=path.resolve('tests');
         this.outbound = require('../outbound');
+        this.obtls = require('../outbound/tls');
         done();
     },
     tearDown: function (done) {
@@ -146,8 +147,9 @@ exports.get_tls_options = {
         var testDir = path.resolve('tests');
         this.outbound.net_utils.config = this.outbound.net_utils.config.module_config(testDir);
         this.outbound.config = this.outbound.config.module_config(testDir);
+        this.obtls.config = this.outbound.config;
 
-        var tls_config = this.outbound.get_tls_options(
+        var tls_config = this.obtls.get_tls_options(
             { exchange: 'mail.example.com'}
         );
 
