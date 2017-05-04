@@ -192,7 +192,7 @@ function copyFile (srcFile, dstFile) {
     }
     catch (e) {
         // File NOT exists
-        if (e.errno == -2) {
+        if (e.code == 'ENOENT') {
             fs.writeFileSync(dstFile, fs.readFileSync(srcFile));
             create(dstFile)
         }
