@@ -200,7 +200,7 @@ exports.match_re = function (next, connection, helo) {
 
     if (plugin.should_skip(connection, 'match_re')) { return next(); }
 
-    if (plugin.cfg.list_re.test(helo)) {
+    if (plugin.cfg.list_re && plugin.cfg.list_re.test(helo)) {
         connection.results.add(plugin, {fail: 'match_re'});
         if (plugin.cfg.reject.match_re) {
             return next(DENY, "That HELO not allowed here");
