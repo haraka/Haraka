@@ -12,6 +12,10 @@ function _setup (done) {
 
     // switch config directory to 'tests/config'
     this.plugin.config = this.plugin.config.module_config(path.resolve('tests'));
+
+    this.plugin.net_utils.config =
+        this.plugin.net_utils.config.module_config(path.resolve('tests'));
+
     this.plugin.register();
 
     this.connection = new fixtures.connection.createConnection();
@@ -19,6 +23,58 @@ function _setup (done) {
 
     done();
 }
+
+exports.loadingTLSConfig = {
+    'TLS enabled but no outbound config in tls.ini': function(test) {
+        var plugin = new fixtures.plugin('queue/smtp_forward');
+        test.expect(2);
+
+        plugin.config = { get: function () {  return { main: { enable_tls: true }}; }};
+        plugin.get_net_utils = function () { return { 'load_tls_ini': function() { return { } } } };
+        plugin.register();
+
+        test.equal(plugin.tls_options, undefined);
+        test.equal(plugin.register_hook.called, true);
+
+        test.done();
+    },
+    'TLS enabled but no outbound config points to certs that do not exist': function(test) {
+        var plugin = new fixtures.plugin('queue/smtp_forward');
+        test.expect(1);
+        plugin.config = { get: function (file, opts) {
+            if (opts === 'binary') {
+                return null;
+            }
+            return { main: { enable_tls: true }};
+        }};
+
+        plugin.get_net_utils = function () {
+            return { 'load_tls_ini': function() {
+                return { outbound: { key: "DoesNotExist", cert: "DoesNotExist" }}}}};
+
+        plugin.register();
+
+        test.equal(plugin.register_hook.called, false);
+
+        test.done();
+    },
+    'TLS enabled and certs are loaded': function(test) {
+        test.expect(2);
+        var plugin = new fixtures.plugin('queue/smtp_forward');
+        // switch config directory to 'tests/config'
+        plugin.config = plugin.config.module_config(path.resolve('tests'));
+
+        plugin.get_net_utils().config =
+            plugin.get_net_utils().config.module_config(path.resolve('tests'));
+
+        plugin.register();
+
+        test.equal(plugin.tls_options.key, 'OutboundTlsKeyLoaded');
+        test.equal(plugin.tls_options.cert, 'OutboundTlsCertLoaded');
+
+        test.done();
+    }
+};
 
 exports.register = {
     setUp : _setup,
@@ -33,27 +89,33 @@ exports.register = {
 exports.get_config = {
     setUp : _setup,
     'no recipient': function (test) {
-        test.expect(2);
+        test.expect(4);
         var cfg = this.plugin.get_config(this.connection);
         test.equal(cfg.host, 'localhost');
         test.equal(cfg.enable_tls, true);
+        test.equal(cfg.enable_client_cert, true);
+        test.equal(cfg.one_message_per_rcpt, true);
         test.done();
     },
     'null recipient': function (test) {
-        test.expect(2);
+        test.expect(4);
         this.connection.transaction.rcpt_to.push(new Address('<>'));
         var cfg = this.plugin.get_config(this.connection);
         test.equal(cfg.host, 'localhost');
         test.equal(cfg.enable_tls, true);
+        test.equal(cfg.enable_client_cert, true);
+        test.equal(cfg.one_message_per_rcpt, true);
         test.done();
     },
     'valid recipient': function (test) {
-        test.expect(2);
+        test.expect(4);
         this.connection.transaction.rcpt_to.push(
             new Address('<matt@example.com>')
             );
         var cfg = this.plugin.get_config(this.connection);
         test.equal(cfg.enable_tls, true);
+        test.equal(cfg.enable_client_cert, true);
+        test.equal(cfg.one_message_per_rcpt, true);
         test.equal(cfg.host, 'localhost');
         test.done();
     },
@@ -78,7 +140,7 @@ exports.get_config = {
         var cfg = this.plugin.get_config(this.connection);
         test.deepEqual(cfg, {
             host: '1.2.3.4',
-            enable_tls: false,
+            enable_tls: false
         });
         test.done();
     },
