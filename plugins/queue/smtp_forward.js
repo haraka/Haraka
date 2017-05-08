@@ -7,9 +7,11 @@
 var smtp_client_mod = require('./smtp_client');
 
 // exported so tests can override config dir
-exports.get_net_utils = function () {
-    return require('haraka-net-utils');
-}
+// exports.get_net_utils = function () {
+//     return require('haraka-net-utils');
+// }
+
+exports.net_utils = require('haraka-net-utils');
 
 exports.register = function () {
     var plugin = this;
@@ -41,7 +43,7 @@ exports.make_tls_opts = function () {
 
     if (plugin.cfg.main.enable_tls === true) {
 
-        var tls = plugin.get_net_utils().load_tls_ini();
+        var tls = plugin.net_utils.load_tls_ini();
         if (!tls.outbound) { return; }
 
         var tlsCfg = tls.outbound;

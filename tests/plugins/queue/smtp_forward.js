@@ -13,8 +13,8 @@ function _setup (done) {
     // switch config directory to 'tests/config'
     this.plugin.config = this.plugin.config.module_config(path.resolve('tests'));
 
-    this.plugin.get_net_utils().config =
-        this.plugin.get_net_utils().config.module_config(path.resolve('tests'));
+    this.plugin.net_utils.config =
+        this.plugin.net_utils.config.module_config(path.resolve('tests'));
         
     this.plugin.register();
 
@@ -30,7 +30,7 @@ exports.loadingTLSConfig = {
         test.expect(2);
 
         plugin.config = { get: function () {  return { main: { enable_tls: true }}; }};
-        plugin.get_net_utils = function () { return { 'load_tls_ini': function() { return { } } } };
+        plugin.net_utils = { 'load_tls_ini': function() { return { } } };
         plugin.register();
 
         test.equal(plugin.tls_options, undefined);
@@ -48,9 +48,8 @@ exports.loadingTLSConfig = {
             return { main: { enable_tls: true }};
         }};
 
-        plugin.get_net_utils = function () {
-            return { 'load_tls_ini': function() {
-                return { outbound: { key: "DoesNotExist", cert: "DoesNotExist" }}}}};
+        plugin.net_utils = { 'load_tls_ini': function() {
+                return { outbound: { key: "DoesNotExist", cert: "DoesNotExist" }}}};
 
         plugin.register();
 
@@ -64,8 +63,8 @@ exports.loadingTLSConfig = {
         // switch config directory to 'tests/config'
         plugin.config = plugin.config.module_config(path.resolve('tests'));
 
-        plugin.get_net_utils().config =
-            plugin.get_net_utils().config.module_config(path.resolve('tests'));
+        plugin.net_utils.config =
+            plugin.net_utils.config.module_config(path.resolve('tests'));
 
         plugin.register();
 

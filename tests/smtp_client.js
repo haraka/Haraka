@@ -17,8 +17,8 @@ exports.testUpgradeIsCalledOnSTARTTLS = function (test) {
     // switch config directory to 'tests/config'
     plugin.config = plugin.config.module_config(path.resolve('tests'));
 
-    plugin.get_net_utils().config =
-        plugin.get_net_utils().config.module_config(path.resolve('tests'));
+    plugin.net_utils.config =
+        plugin.net_utils.config.module_config(path.resolve('tests'));
 
     plugin.register();
 
