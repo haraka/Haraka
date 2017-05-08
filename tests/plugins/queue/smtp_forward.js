@@ -13,9 +13,9 @@ function _setup (done) {
     // switch config directory to 'tests/config'
     this.plugin.config = this.plugin.config.module_config(path.resolve('tests'));
 
-    this.plugin.net_utils.config =
-        this.plugin.net_utils.config.module_config(path.resolve('tests'));
-
+    this.plugin.get_net_utils().config =
+        this.plugin.get_net_utils().config.module_config(path.resolve('tests'));
+        
     this.plugin.register();
 
     this.connection = new fixtures.connection.createConnection();
