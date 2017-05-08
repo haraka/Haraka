@@ -89,32 +89,29 @@ exports.register = {
 exports.get_config = {
     setUp : _setup,
     'no recipient': function (test) {
-        test.expect(4);
+        test.expect(3);
         var cfg = this.plugin.get_config(this.connection);
         test.equal(cfg.host, 'localhost');
         test.equal(cfg.enable_tls, true);
-        test.equal(cfg.enable_client_cert, true);
         test.equal(cfg.one_message_per_rcpt, true);
         test.done();
     },
     'null recipient': function (test) {
-        test.expect(4);
+        test.expect(3);
         this.connection.transaction.rcpt_to.push(new Address('<>'));
         var cfg = this.plugin.get_config(this.connection);
         test.equal(cfg.host, 'localhost');
         test.equal(cfg.enable_tls, true);
-        test.equal(cfg.enable_client_cert, true);
         test.equal(cfg.one_message_per_rcpt, true);
         test.done();
     },
     'valid recipient': function (test) {
-        test.expect(4);
+        test.expect(3);
         this.connection.transaction.rcpt_to.push(
             new Address('<matt@example.com>')
             );
         var cfg = this.plugin.get_config(this.connection);
         test.equal(cfg.enable_tls, true);
-        test.equal(cfg.enable_client_cert, true);
         test.equal(cfg.one_message_per_rcpt, true);
         test.equal(cfg.host, 'localhost');
         test.done();

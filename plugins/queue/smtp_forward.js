@@ -7,7 +7,7 @@
 var smtp_client_mod = require('./smtp_client');
 
 // exported so tests can override config dir
-exports.get_net_utils = function() {
+exports.get_net_utils = function () {
     return require('haraka-net-utils');
 }
 
@@ -45,7 +45,7 @@ exports.make_tls_opts = function () {
         if (!tls.outbound) { return; }
 
         var tlsCfg = tls.outbound;
-        
+
         var config_options = [
             'ciphers', 'requestCert', 'rejectUnauthorized',
             'key', 'cert', 'honorCipherOrder', 'ecdhCurve', 'dhparam',
@@ -81,12 +81,10 @@ exports.load_smtp_forward_ini = function () {
     plugin.cfg = plugin.config.get('smtp_forward.ini', {
         booleans: [
             '-main.enable_tls',
-            '-main.enable_client_cert',
             '+main.enable_outbound',
             'main.one_message_per_rcpt',
             '-main.check_sender',
             '-main.check_recipient',
-            '*.enable_client_cert',
             '*.enable_tls',
         ],
     },

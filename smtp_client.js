@@ -190,9 +190,8 @@ class SMTPClient extends events.EventEmitter {
 
 SMTPClient.prototype.load_tls_config = function (opts) {
     var tls_options = {};
-    
     if (opts) {
-        for(var k in opts) tls_options[k]=opts[k];
+        for (var k in opts) tls_options[k]=opts[k];
     }
 
     if (this.host) tls_options.servername = this.host;
@@ -419,7 +418,7 @@ exports.get_client_plugin = function (plugin, connection, c, callback) {
         connection.logdebug(plugin, 'Got smtp_client: ' + smtp_client.uuid);
 
         var secured = false;
-        
+
         smtp_client.load_tls_config(plugin.tls_options);
 
         smtp_client.call_next = function (retval, msg) {
@@ -455,7 +454,7 @@ exports.get_client_plugin = function (plugin, connection, c, callback) {
             smtp_client.emit('greeting', 'EHLO');
         };
 
-        smtp_client.on('capabilities', function() {
+        smtp_client.on('capabilities', function () {
             exports.onCapabilitiesOutbound(smtp_client, secured, connection, c, on_secured);
         });
 

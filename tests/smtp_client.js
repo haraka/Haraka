@@ -31,16 +31,16 @@ exports.testUpgradeIsCalledOnSTARTTLS = function (test) {
         on: function (eventName, callback) {
             cmds[eventName] = callback;
         },
-        upgrade: function(arg) {
+        upgrade: function (arg) {
             upgradeArgs = arg;
         }
     };
-    
+
     var client = new smtp_client.smtp_client(25, 'localhost', 30, 30, socket);
     client.load_tls_config(plugin.tls_options);
 
     client.command = 'starttls';
-    cmds['line']('250 Hello client.example.com\r\n');
+    cmds.line('250 Hello client.example.com\r\n');
 
     var StringDecoder = require('string_decoder').StringDecoder;
     var decoder = new StringDecoder('utf8');
@@ -60,13 +60,13 @@ exports.startTLS = function (test) {
         setTimeout: function (arg) {  },
         setKeepAlive: function (arg) {  },
         on: function (eventName, callback) {  },
-        upgrade: function(arg) {  },
-        write: function(arg) { cmd = arg; }
+        upgrade: function (arg) {  },
+        write: function (arg) { cmd = arg; }
     };
 
     var client = new smtp_client.smtp_client(25, 'localhost', 30, 30, socket);
     client.tls_options = {};
-    
+
     client.secured = false;
     client.response = [ 'STARTTLS' ]
 
