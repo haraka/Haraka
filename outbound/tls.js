@@ -6,7 +6,7 @@ exports.config = require('../config');
 
 exports.get_tls_options = function (mx) {
     
-    var tls_options = exports.net_utils.tls_ini_section_with_defaults('outbound');
+    var tls_options = net_utils.tls_ini_section_with_defaults('outbound');
     tls_options.servername = mx.exchange;
     
     if (tls_options.key) {
