@@ -49,7 +49,8 @@ Configuration
   * enable\_tls=[true]
 
     Enable TLS with the forward host (if supported). TLS uses options
-    from the tls plugin.
+    from the tls plugin. If key and cert are provided in the the outbound section of the tls plugin,
+    that certificate will be used as a TLS Client Certificate.
 
   * auth\_type=[plain|login]
 
