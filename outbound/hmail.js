@@ -411,6 +411,7 @@ HMailItem.prototype.try_deliver_host_on_socket = function (mx, host, port, socke
     var fin_sent = false;
     socket.once('end', function () {
         fin_sent = true;
+        socket.writable = false;
     });
 
     var command = mx.using_lmtp ? 'connect_lmtp' : 'connect';
