@@ -454,7 +454,15 @@ HMailItem.prototype.try_deliver_host_on_socket = function (mx, host, port, socke
         }
         if (authenticating) cmd = 'auth';
         self.logprotocol("C: " + line);
-        socket.write(line + "\r\n");
+        socket.write(line + "\r\n", "utf8", function (err) {
+            if (err) {
+                self.logcrit("Socket write failed unexpectedly: " + err);
+                // We may want to release client here - but I want to get this
+                // line of code in before we do that so we might see some logging
+                // in case of errors.
+                // client_pool.release_client(socket, port, host, mx.bind, fin_sent);
+            }
+        });
         command = cmd.toLowerCase();
         response = [];
     };
