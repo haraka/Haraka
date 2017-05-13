@@ -6,19 +6,19 @@ var server       = require('../server');
 var logger       = require('../logger');
 var cfg          = require('./config');
 
-function _create_socket (port, host, local_addr, is_unix_socket, connect_timeout, pool_timeout, callback) {
+function _create_socket (port, host, local_addr, is_unix_socket, callback) {
     var socket = is_unix_socket ? sock.connect({path: host}) :
         sock.connect({port: port, host: host, localAddress: local_addr});
-    socket.setTimeout(connect_timeout * 1000);
+    socket.setTimeout(cfg.connect_timeout * 1000);
     logger.logdebug('[outbound] host=' +
-        host + ' port=' + port + ' pool_timeout=' + pool_timeout + ' created');
+        host + ' port=' + port + ' pool_timeout=' + cfg.pool_timeout + ' created');
     socket.once('connect', function () {
         socket.removeAllListeners('error'); // these get added after callback
         callback(null, socket);
     });
     socket.once('error', function (err) {
         socket.end();
-        var name = 'outbound::' + port + ':' + host + ':' + local_addr + ':' + pool_timeout;
+        var name = 'outbound::' + port + ':' + host + ':' + local_addr + ':' + cfg.pool_timeout;
         if (server.notes.pool[name]) {
             delete server.notes.pool[name];
         }
@@ -31,11 +31,10 @@ function _create_socket (port, host, local_addr, is_unix_socket, connect_timeout
 }
 
 // Separate pools are kept for each set of server attributes.
-function get_pool (port, host, local_addr, is_unix_socket, connect_timeout, pool_timeout, max) {
+function get_pool (port, host, local_addr, is_unix_socket, max) {
     port = port || 25;
     host = host || 'localhost';
-    connect_timeout = (connect_timeout === undefined) ? 30 : connect_timeout;
-    var name = 'outbound::' + port + ':' + host + ':' + local_addr + ':' + pool_timeout;
+    var name = 'outbound::' + port + ':' + host + ':' + local_addr + ':' + cfg.pool_timeout;
     if (!server.notes.pool) {
         server.notes.pool = {};
     }
@@ -43,7 +42,7 @@ function get_pool (port, host, local_addr, is_unix_socket, connect_timeout, pool
         var pool = generic_pool.Pool({
             name: name,
             create: function (done) {
-                _create_socket(port, host, local_addr, is_unix_socket, connect_timeout, pool_timeout, done);
+                _create_socket(port, host, local_addr, is_unix_socket, done);
             },
             validate: function (socket) {
                 return socket.writable;
@@ -70,7 +69,7 @@ function get_pool (port, host, local_addr, is_unix_socket, connect_timeout, pool
                 });
             },
             max: max || 10,
-            idleTimeoutMillis: pool_timeout * 1000,
+            idleTimeoutMillis: cfg.pool_timeout * 1000,
             log: function (str, level) {
                 if (/this._availableObjects.length=/.test(str)) return;
                 level = (level === 'verbose') ? 'debug' : level;
@@ -85,10 +84,10 @@ function get_pool (port, host, local_addr, is_unix_socket, connect_timeout, pool
 // Get a socket for the given attributes.
 exports.get_client = function (port, host, local_addr, is_unix_socket, callback) {
     if (cfg.pool_concurrency_max == 0) {
-        return _create_socket(port, host, local_addr, is_unix_socket, cfg.connect_timeout, cfg.pool_timeout, callback);
+        return _create_socket(port, host, local_addr, is_unix_socket, callback);
     }
 
-    var pool = get_pool(port, host, local_addr, is_unix_socket, cfg.connect_timeout, cfg.pool_timeout, cfg.pool_concurrency_max);
+    var pool = get_pool(port, host, local_addr, is_unix_socket, cfg.pool_concurrency_max);
     if (pool.waitingClientsCount() >= cfg.pool_concurrency_max) {
         return callback("Too many waiting clients for pool", null);
     }
@@ -112,8 +111,7 @@ exports.release_client = function (socket, port, host, local_addr, error) {
     }
     socket.__acquired = false;
 
-    var pool_timeout = cfg.pool_timeout;
-    var name = 'outbound::' + port + ':' + host + ':' + local_addr + ':' + pool_timeout;
+    var name = 'outbound::' + port + ':' + host + ':' + local_addr + ':' + cfg.pool_timeout;
     if (!(server.notes && server.notes.pool)) {
         logger.logcrit("[outbound] Releasing a pool (" + name + ") that doesn't exist!");
         return;

@@ -81,7 +81,7 @@ exports._load_cur_queue = function (pid, cb_name, cb) {
     logger.loginfo("[outbound] Loading outbound queue from ", queue_dir);
     fs.readdir(queue_dir, function (err, files) {
         if (err) {
-            return logger.logerror("Failed to load queue directory (" +
+            return logger.logerror("[outbound] Failed to load queue directory (" +
                 queue_dir + "): " + err);
         }
 
@@ -121,7 +121,7 @@ exports.load_queue_files = function (pid, cb_name, files, callback) {
                 // logger.loginfo("new_filename: ", new_filename);
                 fs.rename(path.join(queue_dir, file), path.join(queue_dir, new_filename), function (err) {
                     if (err) {
-                        logger.logerror("Unable to rename queue file: " + file +
+                        logger.logerror("[outbound] Unable to rename queue file: " + file +
                             " to " + new_filename + " : " + err);
                         return cb();
                     }
@@ -138,10 +138,10 @@ exports.load_queue_files = function (pid, cb_name, files, callback) {
             }
             else if (/^\./.test(file)) {
                 // dot-file...
-                logger.logwarn("Removing left over dot-file: " + file);
+                logger.logwarn("[outbound] Removing left over dot-file: " + file);
                 return fs.unlink(path.join(queue_dir, file), function (err) {
                     if (err) {
-                        logger.logerror("Error removing dot-file: " + file + ": " + err);
+                        logger.logerror("[outbound] Error removing dot-file: " + file + ": " + err);
                     }
                     cb();
                 });
@@ -153,21 +153,21 @@ exports.load_queue_files = function (pid, cb_name, files, callback) {
         }, function (err) {
             if (err) {
                 // no error cases yet, but log anyway
-                logger.logerror("Error fixing up queue files: " + err);
+                logger.logerror("[outbound] Error fixing up queue files: " + err);
             }
-            logger.loginfo("Done fixing up old PID queue files");
-            logger.loginfo(delivery_queue.length() + " files in my delivery queue");
-            logger.loginfo(load_queue.length() + " files in my load queue");
-            logger.loginfo(temp_fail_queue.length() + " files in my temp fail queue");
+            logger.loginfo("[outbound] Done fixing up old PID queue files");
+            logger.loginfo("[outbound] " + delivery_queue.length() + " files in my delivery queue");
+            logger.loginfo("[outbound] " + load_queue.length() + " files in my load queue");
+            logger.loginfo("[outbound] " + temp_fail_queue.length() + " files in my temp fail queue");
 
             if (callback) callback();
         });
     }
     else {
-        logger.loginfo("Loading the queue...");
+        logger.loginfo("[outbound] Loading the queue...");
         var good_file = function (file) {
             if (/^\./.test(file)) {
-                logger.logwarn("Removing left over dot-file: " + file);
+                logger.logwarn("[outbound] Removing left over dot-file: " + file);
                 fs.unlink(path.join(queue_dir, file), function (err) {
                     if (err) console.error(err);
                 });
@@ -175,7 +175,7 @@ exports.load_queue_files = function (pid, cb_name, files, callback) {
             }
 
             if (!_qfile.parts(file)) {
-                logger.logerror("Unrecognized file in queue folder: " + file);
+                logger.logerror("[outbound] Unrecognized file in queue folder: " + file);
                 return false;
             }
             return true;
@@ -187,11 +187,11 @@ exports.load_queue_files = function (pid, cb_name, files, callback) {
                 var next_process = parts.next_attempt;
 
                 if (next_process <= self.cur_time) {
-                    logger.logdebug("File needs processing now");
+                    logger.logdebug("[outbound] File needs processing now");
                     load_queue.push(file);
                 }
                 else {
-                    logger.logdebug("File needs processing later: " + (next_process - self.cur_time) + "ms");
+                    logger.logdebug("[outbound] File needs processing later: " + (next_process - self.cur_time) + "ms");
                     temp_fail_queue.add(next_process - self.cur_time, function () { load_queue.push(file);});
                 }
                 cb();
@@ -251,7 +251,7 @@ exports._list_file = function (file, cb) {
 exports.flush_queue = function (domain, pid) {
     if (domain) {
         exports.list_queue(function (err, qlist) {
-            if (err) return logger.logerror("Failed to load queue: " + err);
+            if (err) return logger.logerror("[outbound] Failed to load queue: " + err);
             qlist.forEach(function (todo) {
                 if (todo.domain.toLowerCase() != domain.toLowerCase()) return;
                 if (pid && todo.pid != pid) return;
@@ -281,7 +281,7 @@ exports.ensure_queue_dir = function () {
     }
     catch (err) {
         if (err.code !== 'EEXIST') {
-            logger.logerror("Error creating queue directory: " + err);
+            logger.logerror("[outbound] Error creating queue directory: " + err);
             throw err;
         }
     }
