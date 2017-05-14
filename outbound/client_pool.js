@@ -102,6 +102,9 @@ exports.get_client = function (port, host, local_addr, is_unix_socket, callback)
 exports.release_client = function (socket, port, host, local_addr, error) {
     logger.logdebug("[outbound] release_client: " + host + ":" + port + " to " + local_addr);
 
+    var pool_timeout = cfg.pool_timeout;
+    var name = 'outbound::' + port + ':' + host + ':' + local_addr + ':' + pool_timeout;
+
     if (cfg.pool_concurrency_max == 0) {
         return sockend();
     }
@@ -112,8 +115,6 @@ exports.release_client = function (socket, port, host, local_addr, error) {
     }
     socket.__acquired = false;
 
-    var pool_timeout = cfg.pool_timeout;
-    var name = 'outbound::' + port + ':' + host + ':' + local_addr + ':' + pool_timeout;
     if (!(server.notes && server.notes.pool)) {
         logger.logcrit("[outbound] Releasing a pool (" + name + ") that doesn't exist!");
         return;
@@ -154,7 +155,7 @@ exports.release_client = function (socket, port, host, local_addr, error) {
     pool.release(socket);
 
     function sockend () {
-        if (server.notes.pool[name]) {
+        if (server.notes.pool && server.notes.pool[name]) {
             server.notes.pool[name].destroy(socket);
         }
         socket.removeAllListeners();

@@ -408,6 +408,9 @@ HMailItem.prototype.try_deliver_host_on_socket = function (mx, host, port, socke
     var fin_sent = false;
     socket.once('end', function () {
         fin_sent = true;
+        if (!processing_mail) {
+            client_pool.release_client(socket, port, host, mx.bind, true);
+        }
     });
 
     var command = mx.using_lmtp ? 'connect_lmtp' : 'connect';
@@ -804,7 +807,7 @@ HMailItem.prototype.try_deliver_host_on_socket = function (mx, host, port, socke
                         break;
                     case 'dot':
                         finish_processing_mail(true);
-                        send_command('RSET');
+                        if (cfg.pool_concurrency_max) send_command('RSET');
                         break;
                     case 'dot_lmtp':
                         if (code.match(/^2/)) lmtp_rcpt_idx++;
