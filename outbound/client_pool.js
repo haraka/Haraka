@@ -59,6 +59,10 @@ function get_pool (port, host, local_addr, is_unix_socket, connect_timeout, pool
                 socket.once('error', function (err) {
                     logger.logwarn("[outbound] Socket got an error while shutting down: " + err);
                 });
+                socket.once('end', function () {
+                    logger.loginfo("[outbound] Remote end half closed juring destroy()");
+                    socket.destroy();
+                })
                 if (!socket.writable) return;
                 logger.logprotocol("[outbound] C: QUIT");
                 socket.write("QUIT\r\n");
@@ -161,4 +165,19 @@ exports.release_client = function (socket, port, host, local_addr, error) {
         socket.removeAllListeners();
         socket.destroy();
     }
+}
+
+exports.drain_pools = function () {
+    if (!server.notes.pool || Object.keys(server.notes.pool).length == 0) {
+        return logger.logdebug("[outbound] Drain pools: No pools available");
+    }
+    Object.keys(server.notes.pool).forEach(function (p) {
+        logger.logdebug("[outbound] Drain pools: Draining SMTP connection pool " + p);
+        server.notes.pool[p].drain(function () {
+            if (!server.notes.pool[p]) return;
+            server.notes.pool[p].destroyAllNow();
+            delete server.notes.pool[p];
+        });
+    });
+    logger.logdebug("[outbound] Drain pools: Pools shut down");
 }

@@ -330,17 +330,3 @@ exports.scan_queue_pids = function (cb) {
         return cb(null, Object.keys(pids));
     });
 };
-
-exports.drain_pools = function () {
-    if (!server.notes.pool || Object.keys(server.notes.pool).length == 0) {
-        return logger.logdebug("[outbound] Drain pools: No pools available");
-    }
-    for (var p in server.notes.pool) {
-        logger.logdebug("[outbound] Drain pools: Draining SMTP connection pool " + p);
-        server.notes.pool[p].drain(function () {
-            if (!server.notes.pool[p]) return;
-            server.notes.pool[p].destroyAllNow();
-        });
-    }
-    logger.logdebug("[outbound] Drain pools: Pools shut down");
-}

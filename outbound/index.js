@@ -22,6 +22,7 @@ var HMailItem   = require('./hmail');
 var TODOItem    = require('./todo');
 var cfg         = require('./config');
 var queuelib    = require('./queue');
+var pools       = require('./client_pool');
 
 var queue_dir = queuelib.queue_dir;
 var temp_fail_queue = queuelib.temp_fail_queue;
@@ -45,7 +46,7 @@ exports.ensure_queue_dir = queuelib.ensure_queue_dir;
 exports.load_queue = queuelib.load_queue;
 exports._add_file = queuelib._add_file;
 exports.stats = queuelib.stats;
-exports.drain_pools = queuelib.drain_pools;
+exports.drain_pools = pools.drain_pools;
 
 var _qfile = exports.qfile = require('./qfile');
 
