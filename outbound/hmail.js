@@ -1,5 +1,4 @@
 "use strict";
-
 var util         = require('util');
 var events       = require('events');
 var fs           = require('fs');
@@ -20,7 +19,6 @@ var Header      = require('../mailheader').Header;
 var DSN         = require('../dsn');
 
 var client_pool = require('./client_pool');
-var cfg         = require('./config');
 var _qfile      = require('./qfile');
 var queuelib    = require('./queue');
 var mx_lookup   = require('./mx_lookup');
@@ -34,7 +32,6 @@ var delivery_queue = queuelib.delivery_queue;
 var mx = require('./mx_lookup');
 var _qfile = require('./qfile');
 var cfg = require('./config');
-
 
 /////////////////////////////////////////////////////////////////////////////
 // HMailItem - encapsulates an individual outbound mail item
@@ -587,7 +584,12 @@ HMailItem.prototype.try_deliver_host_on_socket = function (mx, host, port, socke
         else {
             self.discard();
         }
-        client_pool.release_client(socket, port, host, mx.bind, fin_sent);
+        if (cfg.pool_concurrency_max) {
+            client_pool.release_client(socket, port, host, mx.bind, fin_sent);
+        }
+        else {
+            send_command('QUIT');
+        }
     };
 
     socket.on('line', function (line) {
@@ -641,7 +643,7 @@ HMailItem.prototype.try_deliver_host_on_socket = function (mx, host, port, socke
                         rcpt.dsn_smtp_response = response.join(' ');
                         rcpt.dsn_remote_mta = mx.exchange;
                     });
-                    send_command('RSET');
+                    send_command(cfg.pool_concurrency_max ? 'RSET' : 'QUIT');
                     processing_mail = false;
                     client_pool.release_client(socket, port, host, mx.bind);
                     return self.temp_fail("Upstream error: " + code + " " + ((extc) ? extc + ' ' : '') + reason);
@@ -680,7 +682,7 @@ HMailItem.prototype.try_deliver_host_on_socket = function (mx, host, port, socke
                             rcpt.dsn_smtp_response = response.join(' ');
                             rcpt.dsn_remote_mta = mx.exchange;
                         });
-                        send_command('RSET');
+                        send_command(cfg.pool_concurrency_max ? 'RSET' : 'QUIT');
                         processing_mail = false;
                         client_pool.release_client(socket, port, host, mx.bind);
                         return self.temp_fail("Upstream error: " + code + " " + ((extc) ? extc + ' ' : '') + reason);
@@ -722,7 +724,7 @@ HMailItem.prototype.try_deliver_host_on_socket = function (mx, host, port, socke
                             rcpt.dsn_smtp_response = response.join(' ');
                             rcpt.dsn_remote_mta = mx.exchange;
                         });
-                        send_command('RSET');
+                        send_command(cfg.pool_concurrency_max ? 'RSET' : 'QUIT');
                         processing_mail = false;
                         client_pool.release_client(socket, port, host, mx.bind);
                         return self.bounce(reason, { mx: mx });
@@ -778,7 +780,7 @@ HMailItem.prototype.try_deliver_host_on_socket = function (mx, host, port, socke
                             }
                             else {
                                 finish_processing_mail(false);
-                                send_command('RSET');
+                                if (cfg.pool_concurrency_max) send_command('RSET');
                             }
                         }
                         else {
@@ -811,7 +813,12 @@ HMailItem.prototype.try_deliver_host_on_socket = function (mx, host, port, socke
                         }
                         break;
                     case 'quit':
-                        self.logerror("We should NOT have sent QUIT from here...");
+                        if (cfg.pool_concurrency_max) {
+                            self.logerror("We should NOT have sent QUIT from here...");
+                        }
+                        else {
+                            client_pool.release_client(socket, port, host, mx.bind, fin_sent);
+                        }
                         break;
                     case 'rset':
                         break;
