@@ -1,0 +1,13 @@
+{
+	"host":"localhost",
+	"port":5672,
+	"user":"smtpserver",
+	"password":"smtpserver",
+	"exchangeName":"email_messages",
+	"exchangeType":"direct",
+	"queueRCPTReplace":[["<.*@(.*).local>","$1"]],
+	"deliveryMode":"2",
+	"confirm":true,
+	"durable":true,
+	"autoDelete":false
+}
