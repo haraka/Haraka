@@ -77,12 +77,13 @@ exports.load_tls_ini = {
     setUp : _set_up,
     'loads test/config/tls.ini' : function (test) {
         tls_ini_overload(this.plugin);
-
-        test.expect(4);
+        test.expect(6);
         test.equal(true, this.plugin.cfg.main.requestCert);
         test.ok(this.plugin.cfg.main.ciphers);
         test.ok(this.plugin.cfg.no_tls_hosts);
         test.equal(true, this.plugin.cfg.main.honorCipherOrder);
+        test.equal('outbound_tls_key.pem', this.plugin.cfg.outbound.key);
+        test.equal('outbound_tls_cert.pem', this.plugin.cfg.outbound.cert);
         test.done();
     }
 };

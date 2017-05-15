@@ -155,8 +155,8 @@ exports.get_tls_options = {
 
         test.deepEqual(tls_config, {
             servername: 'mail.example.com',
-            key: fs.readFileSync(path.resolve('tests','config','tls_key.pem')),
-            cert: fs.readFileSync(path.resolve('tests','config','tls_cert.pem')),
+            key: fs.readFileSync(path.resolve('tests','config','outbound_tls_key.pem')),
+            cert: fs.readFileSync(path.resolve('tests','config','outbound_tls_cert.pem')),
             dhparam: fs.readFileSync(path.resolve('tests','config','dhparams.pem')),
             ciphers: 'ECDHE-RSA-AES256-GCM-SHA384',
             rejectUnauthorized: false,

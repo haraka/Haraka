@@ -30,11 +30,11 @@ var STATE = {
 };
 
 class SMTPClient extends events.EventEmitter {
-    constructor (port, host, connect_timeout, idle_timeout) {
+    constructor (port, host, connect_timeout, idle_timeout, socket) {
         super();
         this.uuid = utils.uuid();
         this.connect_timeout = parseInt(connect_timeout) || 30;
-        this.socket = line_socket.connect(port, host);
+        this.socket =  socket || line_socket.connect(port, host);
         this.socket.setTimeout(this.connect_timeout * 1000);
         this.socket.setKeepAlive(true);
         this.state = STATE.IDLE;
@@ -188,9 +188,11 @@ class SMTPClient extends events.EventEmitter {
     }
 }
 
-SMTPClient.prototype.load_tls_config = function (plugin) {
+SMTPClient.prototype.load_tls_config = function (opts) {
     var tls_options = {};
-    this.tls_config = net_utils.tls_ini_section_with_defaults(plugin.name);
+    if (opts) {
+        for (var k in opts) tls_options[k]=opts[k];
+    }
 
     if (this.host) tls_options.servername = this.host;
 
@@ -288,6 +290,8 @@ SMTPClient.prototype.is_dead_sender = function (plugin, connection) {
     return true;
 };
 
+exports.smtp_client = SMTPClient;
+
 // Separate pools are kept for each set of server attributes.
 exports.get_pool = function (server, port, host, cfg) {
     port = port || 25;
@@ -348,6 +352,49 @@ exports.get_client = function (server, callback, port, host, cfg) {
     pool.acquire(callback);
 };
 
+
+exports.onCapabilitiesOutbound = function (smtp_client, secured, connection, config, on_secured) {
+    for (var line in smtp_client.response) {
+        if (smtp_client.response[line].match(/^XCLIENT/)) {
+            if (!smtp_client.xclient) {
+                smtp_client.send_command('XCLIENT', 'ADDR=' + connection.remote.ip);
+                return;
+            }
+        }
+
+        if (smtp_client.response[line].match(/^STARTTLS/) && !secured) {
+
+            var hostBanned = false
+            var serverBanned = false
+
+            // Check if there are any banned TLS hosts
+            if (smtp_client.tls_options.no_tls_hosts) {
+                // If there are check if these hosts are in the blacklist
+                hostBanned = net_utils.ip_in_list(smtp_client.tls_config.no_tls_hosts, config.host);
+                serverBanned = net_utils.ip_in_list(smtp_client.tls_config.no_tls_hosts, smtp_client.remote_ip);
+            }
+
+            if (!hostBanned && !serverBanned && config.enable_tls)
+            {
+                console.log("true");
+                smtp_client.socket.on('secure', on_secured);
+                smtp_client.secured = false;  // have to wait in forward plugin before we can do auth, even if capabilities are there on first EHLO
+                smtp_client.send_command('STARTTLS');
+                return;
+            } else { console.log("false"); }
+        }
+
+        var auth_matches = smtp_client.response[line].match(/^AUTH (.*)$/);
+        if (auth_matches) {
+            smtp_client.auth_capabilities = [];
+            auth_matches = auth_matches[1].split(' ');
+            for (var i = 0; i < auth_matches.length; i++) {
+                smtp_client.auth_capabilities.push(auth_matches[i].toLowerCase());
+            }
+        }
+    }
+}
+
 // Get a smtp_client for the given attributes and set up the common
 // config and listeners for plugins. This is what smtp_proxy and
 // smtp_forward have in common.
@@ -372,7 +419,7 @@ exports.get_client_plugin = function (plugin, connection, c, callback) {
 
         var secured = false;
 
-        smtp_client.load_tls_config(plugin);
+        smtp_client.load_tls_config(plugin.tls_options);
 
         smtp_client.call_next = function (retval, msg) {
             if (this.next) {
@@ -401,41 +448,14 @@ exports.get_client_plugin = function (plugin, connection, c, callback) {
         smtp_client.on('greeting', helo);
         smtp_client.on('xclient', helo);
 
+        var on_secured = function () {
+            secured = true;
+            smtp_client.secured = true;
+            smtp_client.emit('greeting', 'EHLO');
+        };
+
         smtp_client.on('capabilities', function () {
-            var on_secured = function () {
-                secured = true;
-                smtp_client.secured = true;
-                smtp_client.emit('greeting', 'EHLO');
-            };
-            for (var line in smtp_client.response) {
-                if (smtp_client.response[line].match(/^XCLIENT/)) {
-                    if (!smtp_client.xclient) {
-                        smtp_client.send_command('XCLIENT', 'ADDR=' + connection.remote.ip);
-                        return;
-                    }
-                }
-
-                if (smtp_client.response[line].match(/^STARTTLS/) && !secured) {
-                    if (!net_utils.ip_in_list(smtp_client.tls_config.no_tls_hosts, c.host) &&
-                        !net_utils.ip_in_list(smtp_client.tls_config.no_tls_hosts, smtp_client.remote_ip) &&
-                        c.enable_tls)
-                    {
-                        smtp_client.socket.on('secure', on_secured);
-                        smtp_client.secured = false;  // have to wait in forward plugin before we can do auth, even if capabilities are there on first EHLO
-                        smtp_client.send_command('STARTTLS');
-                        return;
-                    }
-                }
-
-                var auth_matches = smtp_client.response[line].match(/^AUTH (.*)$/);
-                if (auth_matches) {
-                    smtp_client.auth_capabilities = [];
-                    auth_matches = auth_matches[1].split(' ');
-                    for (var i = 0; i < auth_matches.length; i++) {
-                        smtp_client.auth_capabilities.push(auth_matches[i].toLowerCase());
-                    }
-                }
-            }
+            exports.onCapabilitiesOutbound(smtp_client, secured, connection, c, on_secured);
         });
 
         smtp_client.on('helo', function () {
