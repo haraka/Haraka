@@ -185,7 +185,7 @@ exports.hook_queue_outbound = exports.hook_pre_send_trans_email = function (next
             selector = plugin.cfg.main.selector;
         }
         else {
-            domain = keydir.split('/').pop();
+            domain = path.basename(keydir);
             connection.logdebug(plugin, 'dkim_domain: ' + domain);
             private_key = plugin.load_key(path.join('dkim', domain, 'private'));
             selector    = plugin.load_key(path.join('dkim', domain, 'selector')).trim();
