@@ -152,6 +152,7 @@ exports.release_client = function (socket, port, host, local_addr, error) {
 
     socket.once('end', function () {
         logger.logwarn("[outbound] Socket [" + name + "] in pool got FIN");
+        socket.writable = false;
         sockend();
     });
 
