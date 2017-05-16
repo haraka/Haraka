@@ -89,6 +89,13 @@ Setting this value to `0` will effectively disable the use of pools. You may
 wish to set this if you have a `get_mx` hook that picks outbound servers on
 a per-email basis (rather than per-domain).
 
+* `pool_concurrency_max`
+
+Set this to `0` to completely disable the pooling code.
+
+This value determines how many concurrent connections can be made to a single
+IP address (destination) in the pool. Default: 10 connections.
+
 ### outbound.bounce\_message
 
 See "Bounce Messages" below for details.

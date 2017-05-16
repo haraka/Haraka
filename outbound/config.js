@@ -15,6 +15,8 @@ function load_config () {
     }, function () {
         load_config();
     }).main;
+    
+    console.log(config.get('outbound.ini'));
 
     // legacy config file support. Remove in Haraka 4.0
     if (!cfg.disabled && config.get('outbound.disabled')) {
@@ -35,7 +37,7 @@ function load_config () {
     if (cfg.pool_timeout === undefined) {
         cfg.pool_timeout = 50;
     }
-    if (!cfg.pool_concurrency_max) {
+    if (cfg.pool_concurrency_max === undefined) {
         cfg.pool_concurrency_max = 10;
     }
     if (!cfg.ipv6_enabled && config.get('outbound.ipv6_enabled')) {
@@ -44,6 +46,8 @@ function load_config () {
     if (!cfg.received_header) {
         cfg.received_header = config.get('outbound.received_header') || 'Haraka outbound';
     }
+
+    module.exports = cfg;
 }
 
 load_config();

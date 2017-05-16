@@ -58,6 +58,10 @@ function get_pool (port, host, local_addr, is_unix_socket, max) {
                 socket.once('error', function (err) {
                     logger.logwarn("[outbound] Socket got an error while shutting down: " + err);
                 });
+                socket.once('end', function () {
+                    logger.loginfo("[outbound] Remote end half closed juring destroy()");
+                    socket.destroy();
+                })
                 if (!socket.writable) return;
                 logger.logprotocol("[outbound] C: QUIT");
                 socket.write("QUIT\r\n");
@@ -101,6 +105,9 @@ exports.get_client = function (port, host, local_addr, is_unix_socket, callback)
 exports.release_client = function (socket, port, host, local_addr, error) {
     logger.logdebug("[outbound] release_client: " + host + ":" + port + " to " + local_addr);
 
+    var pool_timeout = cfg.pool_timeout;
+    var name = 'outbound::' + port + ':' + host + ':' + local_addr + ':' + pool_timeout;
+
     if (cfg.pool_concurrency_max == 0) {
         return sockend();
     }
@@ -111,7 +118,6 @@ exports.release_client = function (socket, port, host, local_addr, error) {
     }
     socket.__acquired = false;
 
-    var name = 'outbound::' + port + ':' + host + ':' + local_addr + ':' + cfg.pool_timeout;
     if (!(server.notes && server.notes.pool)) {
         logger.logcrit("[outbound] Releasing a pool (" + name + ") that doesn't exist!");
         return;
@@ -153,10 +159,25 @@ exports.release_client = function (socket, port, host, local_addr, error) {
     pool.release(socket);
 
     function sockend () {
-        if (server.notes.pool[name]) {
+        if (server.notes.pool && server.notes.pool[name]) {
             server.notes.pool[name].destroy(socket);
         }
         socket.removeAllListeners();
         socket.destroy();
     }
+}
+
+exports.drain_pools = function () {
+    if (!server.notes.pool || Object.keys(server.notes.pool).length == 0) {
+        return logger.logdebug("[outbound] Drain pools: No pools available");
+    }
+    Object.keys(server.notes.pool).forEach(function (p) {
+        logger.logdebug("[outbound] Drain pools: Draining SMTP connection pool " + p);
+        server.notes.pool[p].drain(function () {
+            if (!server.notes.pool[p]) return;
+            server.notes.pool[p].destroyAllNow();
+            delete server.notes.pool[p];
+        });
+    });
+    logger.logdebug("[outbound] Drain pools: Pools shut down");
 }
