@@ -97,7 +97,10 @@ exports.ldap_rcpt = function (next, connection, params) {
         res.on('end', function (result) {
             connection.logdebug(plugin, 'LDAP search results: ' + items.length + ' -- ' + util.inspect(items));
 
-            if (items.length) return next();
+            if (items.length) {
+              txn.results.add(plugin, {pass: 'rcpt_to'});
+              return next(OK);
+            }
 
             next(DENY, "Sorry - no mailbox here by that name.");
         });
