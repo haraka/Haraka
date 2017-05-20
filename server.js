@@ -1,6 +1,7 @@
 'use strict';
 // smtp network server
 
+// var log = require('why-is-node-running');
 var net         = require('./tls_socket');
 var conn        = require('./connection');
 var outbound    = require('./outbound');
@@ -27,6 +28,7 @@ Server.load_smtp_ini = function () {
     Server.cfg = Server.config.get('smtp.ini', {
         booleans: [
             '-main.daemonize',
+            '-main.graceful_shutdown',
         ],
     }, function () {
         Server.load_smtp_ini();
@@ -98,25 +100,28 @@ Server.gracefulRestart = function () {
 }
 
 Server.gracefulShutdown = function () {
+    if (!Server.cfg.main.graceful_shutdown) {
+        logger.loginfo("Shutting down.");
+        process.exit(0);
+    }
     logger.loginfo('Shutting down listeners');
     Server.listeners.forEach(function (server) {
         server.close();
     });
     Server._graceful(function () {
+        // log();
         logger.loginfo("Failed to shutdown naturally. Exiting.");
         process.exit(0);
     });
 }
 
 Server._graceful = function (shutdown) {
-    if (!Server.cluster) {
-        if (shutdown) {
-            ['outbound', 'cfreader', 'plugins'].forEach(function (module) {
-                process.emit('message', {event: module + '.shutdown'});
-            });
-            var t = setTimeout(shutdown, Server.cfg.main.force_shutdown_timeout * 1000);
-            return t.unref();
-        }
+    if (!Server.cluster && shutdown) {
+        ['outbound', 'cfreader', 'plugins'].forEach(function (module) {
+            process.emit('message', {event: module + '.shutdown'});
+        });
+        var t = setTimeout(shutdown, Server.cfg.main.force_shutdown_timeout * 1000);
+        return t.unref();
     }
 
     if (gracefull_in_progress) {
@@ -132,7 +137,9 @@ Server._graceful = function (shutdown) {
     // only reload one worker at a time
     // otherwise, we'll have a time when no connection handlers are running
     var worker_ids = Object.keys(cluster.workers);
-    async.eachSeries(worker_ids, function (id, cb) {
+    var limit = worker_ids.length - 1;
+    if (limit < 2) limit = 1;
+    async.eachLimit(worker_ids, limit, function (id, cb) {
         logger.lognotice("Killing node: " + id);
         var worker = cluster.workers[id];
         ['outbound', 'cfreader', 'plugins'].forEach(function (module) {

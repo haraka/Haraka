@@ -137,6 +137,10 @@ pluggableStream.prototype.setKeepAlive = function (bool) {
 pluggableStream.prototype.setNoDelay = function (/* true||false */) {
 };
 
+pluggableStream.prototype.unref = function () {
+    return this.targetsocket.unref();
+};
+
 pluggableStream.prototype.setTimeout = function (timeout) {
     this._timeout = timeout;
     return this.targetsocket.setTimeout(timeout);
