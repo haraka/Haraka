@@ -138,8 +138,9 @@ Server._graceful = function (shutdown) {
     var disconnect_timeout = 30;
     var exit_timeout = 30;
     cluster.removeAllListeners('exit');
-    // only reload one worker at a time
-    // otherwise, we'll have a time when no connection handlers are running
+    // we reload using eachLimit where limit = num_workers - 1
+    // this kills all-but-one workers in parallel, leaving one running
+    // for new connections, and then restarts that one last worker.
     var worker_ids = Object.keys(cluster.workers);
     var limit = worker_ids.length - 1;
     if (limit < 2) limit = 1;
