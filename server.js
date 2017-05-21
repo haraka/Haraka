@@ -99,11 +99,15 @@ Server.gracefulRestart = function () {
     Server._graceful();
 }
 
-Server.gracefulShutdown = function () {
-    if (!Server.cfg.main.graceful_shutdown) {
-        logger.loginfo("Shutting down.");
-        process.exit(0);
+Server.performShutdown = function () {
+    if (Server.cfg.main.graceful_shutdown) {
+        return Server.gracefulShutdown();
     }
+    logger.loginfo("Shutting down.");
+    process.exit(0);
+}
+
+Server.gracefulShutdown = function () {
     logger.loginfo('Shutting down listeners');
     Server.listeners.forEach(function (server) {
         server.close();
