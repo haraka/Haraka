@@ -57,7 +57,7 @@ exports.list_queue = function (cb) {
 
 exports._stat_file = function (file, cb) {
     queue_count++;
-    cb();
+    setImmediate(cb);
 };
 
 exports.stat_queue = function (cb) {
