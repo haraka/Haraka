@@ -266,6 +266,7 @@ cfreader.ensure_enoent_timer = function () {
             })(files[i]); // END BLOCK SCOPE
         }
     }, 60 * 1000);
+    cfreader._enoent_timer.unref();
 };
 
 process.on('message', function (msg) {

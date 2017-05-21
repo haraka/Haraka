@@ -50,10 +50,10 @@ var shutting_down = false;
         logger.lognotice(sig + ' received');
         logger.dump_and_exit(function () {
             if (server.cluster && server.cluster.isMaster) {
-                server.gracefulShutdown();
+                server.performShutdown();
             }
             else if (!server.cluster) {
-                server.gracefulShutdown();
+                server.performShutdown();
             }
         });
     });
