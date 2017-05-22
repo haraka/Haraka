@@ -1,5 +1,5 @@
 
-2.8.14 - Mmm NN, 2017
+2.8.14 - May 27, 2017
 
 * Changes
     * tls consistency cleanups #1851
@@ -19,8 +19,18 @@
     * create an outbound queue filename handler #1792
     * replace connect.fcrdns with npm package #1810
     * add an additional node_modules plugin search path #1805
+    * Set graceful shutdown off by default #1927
+    * Allow outbound pools to be disabled #1917
+    * Outbound split and move into folder #1850
+    * don't emit binary characters into the logs #1902
+    * Add .editorconfig #1884
+    * tls: remove interim variables #1871
 * New Features
     * Added RabbitMQ vhost support #1866
+    * clamav: allow "Unknown Result" and Socket Error to try next host #1931
+    * outbound client certificates #1908
+    * Implement the missing upgrade method on SMTPClient #1901
+    * Remove typo from relay.md #1886
 * Fixes
     * spf: improve modifier regexp #1859
     * rabbitmq doc typo in config file name #1865
@@ -31,6 +41,13 @@
     * emit _the_ result, not all of them #1829
     * fix outbound logger #1827
     * fix forwarding with client auth over TLS (forward to gmail) #1803
+    * Don't blow the stack on qstat #1930
+    * run dumped logs through log plugins, not console #1929
+    * Fix path parsing bug on Windows platform #1919
+    * helo: make sure list_re is defined before access #1903
+    * TLS: handle case where OCSP server is unavailable #1880
+    * rspamd: add missing 'default' keyword #1856
+    * disable naïve comment stripping #1876
 
 2.8.13 - Feb 03, 2017
 
