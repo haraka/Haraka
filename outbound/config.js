@@ -15,8 +15,6 @@ function load_config () {
     }, function () {
         load_config();
     }).main;
-    
-    console.log(config.get('outbound.ini'));
 
     // legacy config file support. Remove in Haraka 4.0
     if (!cfg.disabled && config.get('outbound.disabled')) {
