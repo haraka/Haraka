@@ -1,21 +1,14 @@
 - Milter support
-- Ability to modify the body of email (e.g add a banner)
-- Create a config file for each of the core shipping configs, so people have something as a baseline
-- IMAP server (long shot for now)
+- Ability to modify the body of email
+    - Done for banners. Modifying the rest, not so much.
 - Plugins to copy from Qpsmtpd:
   - dspam
-  - greylisting
-  - virus/*
 
 Outbound improvements
- - Rate Limiting (there's a branch for this but it's incomplete)
  - Provide better command line tools for manipulating/inspecting the queue
  - Add the ability to force a run on a specific queue file or destination domain
  - Make retry times configurable (handle RFC requirements for 5 days and DSN queued warnings)
- - Limit concurrency by domain
  - Disable deliveries for a domain
- - Pool connections by domain/MX
- - Enable TLS by default
 
 Plugin behavior changes
  - in SpamAssassin plugin, change default behavior of 'legacy' status header.
@@ -40,13 +33,6 @@ Remove the following deprecated plugins
  - relay_acl            (replaced by relay.js)
  - relay_all                      ""
  - relay_force_routing            ""
-
-Rename the following plugins
- - toobusy      -> connect.toobusy
- - attachment   -> data.attachment
- - avg          -> data.avg
- - clamd        -> data.clamd
- - spamassassin -> data.spamassassin
 
 Move the following plugins:
  - test_queue   -> queue/test_queue
