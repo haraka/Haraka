@@ -213,8 +213,14 @@ exports.hook_data_post = function (next, connection) {
                        'Connection to ' + host + ' failed: ' + err.message);
                 return try_next_host();
             }
-
-            if (txn) txn.results.add(plugin, {err: err });
+            
+            // If an error occurred after connection and there are other hosts left to try,
+            // then try those before returning DENYSOFT.
+            if (hosts.length) {
+                connection.logwarn(plugin, 'error on host ' + host + ': ' + err.message);
+                return try_next_host();
+            }
+            if (txn) txn.results.add(plugin, {err: 'error on host ' + host + ': ' + err.message });
             if (!plugin.cfg.reject.error) return next();
             return next(DENYSOFT, 'Virus scanner error');
         });
@@ -289,8 +295,15 @@ exports.hook_data_post = function (next, connection) {
                 // Continue as StreamMaxLength default is 25Mb
                 return next();
             }
-
-            txn.results.add(plugin, { err: 'unknown result: ' + result });
+            
+            // The current host returned an unknown result.  If other hosts are available, 
+            // then try those before returning a DENYSOFT.
+            if (hosts.length) {
+                connection.logwarn(plugin, 'unknown result: "' + result + '" from host ' + host);
+                socket.destroy();
+                return try_next_host();
+            }          
+            txn.results.add(plugin, { err: 'unknown result: "' + result + '" from host ' + host });
             if (!plugin.cfg.reject.error) return next();
             return next(DENYSOFT, 'Error running virus scanner');
         });
