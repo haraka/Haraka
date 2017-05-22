@@ -57,7 +57,7 @@ exports.list_queue = function (cb) {
 
 exports._stat_file = function (file, cb) {
     queue_count++;
-    cb();
+    setImmediate(cb);
 };
 
 exports.stat_queue = function (cb) {
@@ -194,7 +194,7 @@ exports.load_queue_files = function (pid, cb_name, files, callback) {
                     logger.logdebug("[outbound] File needs processing later: " + (next_process - self.cur_time) + "ms");
                     temp_fail_queue.add(next_process - self.cur_time, function () { load_queue.push(file);});
                 }
-                cb();
+                async.setImmediate(cb);
             }
             else {
                 self[cb_name](file, cb);
