@@ -3,13 +3,11 @@
     - Done for banners. Modifying the rest, not so much.
 - Plugins to copy from Qpsmtpd:
   - dspam
-  - virus/*
 
 Outbound improvements
  - Provide better command line tools for manipulating/inspecting the queue
  - Add the ability to force a run on a specific queue file or destination domain
  - Make retry times configurable (handle RFC requirements for 5 days and DSN queued warnings)
- - Limit concurrency by domain
  - Disable deliveries for a domain
 
 Plugin behavior changes
@@ -35,13 +33,6 @@ Remove the following deprecated plugins
  - relay_acl            (replaced by relay.js)
  - relay_all                      ""
  - relay_force_routing            ""
-
-Rename the following plugins
- - toobusy      -> connect.toobusy
- - attachment   -> data.attachment
- - avg          -> data.avg
- - clamd        -> data.clamd
- - spamassassin -> data.spamassassin
 
 Move the following plugins:
  - test_queue   -> queue/test_queue
