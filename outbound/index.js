@@ -18,10 +18,10 @@ var DSN         = require('../dsn');
 var FsyncWriteStream = require('./fsync_writestream');
 var server      = require('../server');
 
-var HMailItem   = require('./hmail');
-var TODOItem    = require('./todo');
 var cfg         = require('./config');
 var queuelib    = require('./queue');
+var HMailItem   = require('./hmail');
+var TODOItem    = require('./todo');
 var pools       = require('./client_pool');
 
 var queue_dir = queuelib.queue_dir;

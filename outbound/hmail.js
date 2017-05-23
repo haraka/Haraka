@@ -20,14 +20,19 @@ var DSN         = require('../dsn');
 
 var client_pool = require('./client_pool');
 var _qfile      = require('./qfile');
-var queuelib    = require('./queue');
 var mx_lookup   = require('./mx_lookup');
 var outbound    = require('./index');
 var obtls       = require('./tls');
 
-var queue_dir = queuelib.queue_dir;
-var temp_fail_queue = queuelib.temp_fail_queue;
-var delivery_queue = queuelib.delivery_queue;
+var queue_dir;
+var temp_fail_queue;
+var delivery_queue;
+setImmediate(function () {
+    var queuelib    = require('./queue');
+    queue_dir = queuelib.queue_dir;
+    temp_fail_queue = queuelib.temp_fail_queue;
+    delivery_queue = queuelib.delivery_queue;
+});
 
 var mx = require('./mx_lookup');
 var _qfile = require('./qfile');
@@ -63,7 +68,6 @@ class HMailItem extends events.EventEmitter {
 }
 
 module.exports = HMailItem;
-
 
 logger.add_log_methods(HMailItem.prototype, "outbound");
 

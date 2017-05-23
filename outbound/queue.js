@@ -52,7 +52,7 @@ exports.get_stats = function () {
 };
 
 exports.list_queue = function (cb) {
-    this._load_cur_queue(null, "_list_file", cb);
+    exports._load_cur_queue(null, "_list_file", cb);
 };
 
 exports._stat_file = function (file, cb) {
@@ -61,8 +61,8 @@ exports._stat_file = function (file, cb) {
 };
 
 exports.stat_queue = function (cb) {
-    var self = this;
-    this._load_cur_queue(null, "_stat_file", function (err) {
+    var self = exports;
+    exports._load_cur_queue(null, "_stat_file", function (err) {
         if (err) return cb(err);
         return cb(null, self.stats());
     });
@@ -72,12 +72,12 @@ exports.load_queue = function (pid) {
     // Initialise and load queue
     // This function is called first when not running under cluster,
     // so we create the queue directory if it doesn't already exist.
-    this.ensure_queue_dir();
-    this._load_cur_queue(pid, "_add_file");
+    exports.ensure_queue_dir();
+    exports._load_cur_queue(pid, "_add_file");
 };
 
 exports._load_cur_queue = function (pid, cb_name, cb) {
-    var self = this;
+    var self = exports;
     logger.loginfo("[outbound] Loading outbound queue from ", queue_dir);
     fs.readdir(queue_dir, function (err, files) {
         if (err) {
@@ -92,7 +92,7 @@ exports._load_cur_queue = function (pid, cb_name, cb) {
 };
 
 exports.load_queue_files = function (pid, cb_name, files, callback) {
-    var self = this;
+    var self = exports;
     if (files.length === 0) return;
 
     if (cfg.disabled && cb_name === '_add_file') {
@@ -267,7 +267,7 @@ exports.flush_queue = function (domain, pid) {
 
 exports.load_pid_queue = function (pid) {
     logger.loginfo("[outbound] Loading queue for pid: " + pid);
-    this.load_queue(pid);
+    exports.load_queue(pid);
 };
 
 exports.ensure_queue_dir = function () {
@@ -288,11 +288,11 @@ exports.ensure_queue_dir = function () {
 };
 
 exports._add_file = function (hmail) {
-    if (hmail.next_process < this.cur_time) {
+    if (hmail.next_process < exports.cur_time) {
         delivery_queue.push(hmail);
     }
     else {
-        temp_fail_queue.add(hmail.next_process - this.cur_time, function () {
+        temp_fail_queue.add(hmail.next_process - exports.cur_time, function () {
             delivery_queue.push(hmail);
         });
     }
@@ -301,7 +301,7 @@ exports._add_file = function (hmail) {
 exports.scan_queue_pids = function (cb) {
     // Under cluster, this is called first by the master so
     // we create the queue directory if it doesn't exist.
-    this.ensure_queue_dir();
+    exports.ensure_queue_dir();
 
     fs.readdir(queue_dir, function (err, files) {
         if (err) {
