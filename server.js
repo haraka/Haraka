@@ -232,7 +232,12 @@ Server.receiveAsMaster = function (command, params) {
     Server[command].apply(Server, params);
 }
 
-function messageHandler (worker, msg) {
+function messageHandler (worker, msg, handle) {
+    if (arguments.length === 2) { // Node < v6
+        handle = msg;
+        msg = worker;
+        worker = undefined;
+    }
     // console.log("received cmd: ", msg);
     if (msg && msg.cmd) {
         Server.receiveAsMaster(msg.cmd, msg.params);
