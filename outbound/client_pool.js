@@ -19,7 +19,7 @@ function _create_socket (port, host, local_addr, is_unix_socket, callback) {
     socket.once('error', function (err) {
         socket.end();
         var name = 'outbound::' + port + ':' + host + ':' + local_addr + ':' + cfg.pool_timeout;
-        if (server.notes.pool[name]) {
+        if (server.notes.pool && server.notes.pool[name]) {
             delete server.notes.pool[name];
         }
         callback("Outbound connection error: " + err, null);
