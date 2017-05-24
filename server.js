@@ -482,7 +482,7 @@ Server.init_master_respond = function (retval, msg) {
 
     // Load the queue if we're just one process
     if (!(cluster && c.nodes)) {
-        if (c.outbound) {
+        if (outbound) {
             outbound.load_queue();
         }
         Server.setup_http_listeners();
