@@ -483,6 +483,9 @@ HMailItem.prototype.try_deliver_host_on_socket = function (mx, host, port, socke
             else if (r.toUpperCase() === 'ENHANCEDSTATUSCODES') {
                 smtp_properties.enh_status_codes = true;
             }
+            else if (r.toUpperCase() === 'SMTPUTF8') {
+                smtp_properties.smtp_utf8 = true;
+            }
             else {
                 var matches;
                 // Check for SIZE parameter and limit
@@ -784,7 +787,7 @@ HMailItem.prototype.try_deliver_host_on_socket = function (mx, host, port, socke
                     case 'mail':
                         last_recip = recipients[recip_index];
                         recip_index++;
-                        send_command('RCPT', 'TO:' + last_recip.format());
+                        send_command('RCPT', 'TO:' + last_recip.format(!smtp_properties.smtp_utf8));
                         break;
                     case 'rcpt':
                         if (last_recip && code.match(/^250/)) {
@@ -802,7 +805,7 @@ HMailItem.prototype.try_deliver_host_on_socket = function (mx, host, port, socke
                         else {
                             last_recip = recipients[recip_index];
                             recip_index++;
-                            send_command('RCPT', 'TO:' + last_recip.format());
+                            send_command('RCPT', 'TO:' + last_recip.format(!smtp_properties.smtp_utf8));
                         }
                         break;
                     case 'data':
