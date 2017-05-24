@@ -23,6 +23,7 @@ var queuelib    = require('./queue');
 var HMailItem   = require('./hmail');
 var TODOItem    = require('./todo');
 var pools       = require('./client_pool');
+var _qfile      = require('./qfile');
 
 var queue_dir = queuelib.queue_dir;
 var temp_fail_queue = queuelib.temp_fail_queue;
@@ -30,8 +31,6 @@ var delivery_queue = queuelib.delivery_queue;
 
 var core_consts = require('constants');
 var WRITE_EXCL  = core_consts.O_CREAT | core_consts.O_TRUNC | core_consts.O_WRONLY | core_consts.O_EXCL;
-
-var platformDOT = ((['win32','win64'].indexOf( process.platform ) !== -1) ? '' : '__tmp__') + '.';
 
 exports.net_utils = net_utils;
 exports.config    = config;
@@ -279,7 +278,7 @@ exports.process_delivery = function (ok_paths, todo, hmails, cb) {
     var self = this;
     logger.loginfo("[outbound] Processing domain: " + todo.domain);
     var fname = _qfile.name();
-    var tmp_path = path.join(queue_dir, platformDOT + fname);
+    var tmp_path = path.join(queue_dir, _qfile.platformDOT + fname);
     var ws = new FsyncWriteStream(tmp_path, { flags: WRITE_EXCL });
     ws.on('close', function () {
         var dest_path = path.join(queue_dir, fname);
