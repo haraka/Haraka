@@ -1,6 +1,7 @@
 "use strict";
 
 var my_hostname = require('os').hostname().replace(/\\/, '\\057').replace(/:/, '\\072');
+var platform_dot = ((['win32','win64'].indexOf( process.platform ) !== -1) ? '' : '__tmp__') + '.';
 
 var QFILECOUNTER = 0;
 
@@ -84,5 +85,7 @@ var _qfile = module.exports = {
             host         : p[6],
             age          : time - parseInt(p[0])
         };
-    }
+    },
+
+    platformDOT : platform_dot
 };
