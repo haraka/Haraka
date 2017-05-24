@@ -779,10 +779,10 @@ HMailItem.prototype.try_deliver_host_on_socket = function (mx, host, port, socke
                     case 'auth':
                         authenticating = false;
                         authenticated = true;
-                        send_command('MAIL', 'FROM:' + self.todo.mail_from);
+                        send_command('MAIL', 'FROM:' + self.todo.mail_from.format(!smtp_properties.smtp_utf8));
                         break;
                     case 'helo':
-                        send_command('MAIL', 'FROM:' + self.todo.mail_from);
+                        send_command('MAIL', 'FROM:' + self.todo.mail_from.format(!smtp_properties.smtp_utf8));
                         break;
                     case 'mail':
                         last_recip = recipients[recip_index];
