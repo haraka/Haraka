@@ -6,6 +6,9 @@ var path = require('path');
 var yaml = require('js-yaml');
 
 var logger = getStubLogger();
+setImmediate(function () {
+    logger = require('./logger');
+});
 
 // for "ini" type files
 var regex = exports.regex = {
@@ -624,4 +627,3 @@ cfreader.load_binary_config = function (name, type) {
         }
     }
 };
-logger = require('./logger');
