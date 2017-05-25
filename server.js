@@ -233,7 +233,8 @@ Server.receiveAsMaster = function (command, params) {
 }
 
 function messageHandler (worker, msg, handle) {
-    if (arguments.length === 2) { // Node < v6
+    // sunset Haraka v3 (Node < 6)
+    if (arguments.length === 2) {
         handle = msg;
         msg = worker;
         worker = undefined;
