@@ -79,7 +79,7 @@ logger.dump_and_exit = function (code) {
 
 logger.log = function (level, data) {
     if (level === 'PROTOCOL') {
-        data = data.replace(/\n/g, '\\n\n');
+        data = data.replace(/\n/g, '\\n');
     }
     data = data.replace(/\r/g, '\\r')
                .replace(/\n$/, '');
