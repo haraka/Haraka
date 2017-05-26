@@ -4,8 +4,34 @@
 var fs   = require('fs');
 var path = require('path');
 var yaml = require('js-yaml');
+var logger = require('./logger')
 
-var logger = getStubLogger();
+logger.logdebug = function () {
+    if (!logger.log) {
+        console.log.apply(console, arguments);
+    }
+    else {
+        logger.log.apply(logger, [logger.levels.DEBUG, arguments[0].toString()]);
+    }
+}
+
+logger.loginfo = function () {
+    if (!logger.log) {
+        console.log.apply(console, arguments);
+    }
+    else {
+        logger.log.apply(logger, [logger.levels.INFO, arguments[0].toString()]);
+    }
+}
+
+logger.logerror = function () {
+    if (!logger.log) {
+        console.error.apply(console, arguments);
+    }
+    else {
+        logger.log.apply(logger, [logger.levels.ERROR, arguments[0].toString()]);
+    }
+}
 
 // for "ini" type files
 var regex = exports.regex = {
@@ -72,21 +98,6 @@ function get_path_to_config_dir () {
 }
 get_path_to_config_dir();
 // logger.logdebug('cfreader.config_path: ' + cfreader.config_path);
-
-function getStubLogger () {
-    // stubs used before logger is loaded
-    return {
-        logdebug: function () {
-            console.log.apply(console, arguments);
-        },
-        loginfo: function () {
-            console.log.apply(console, arguments);
-        },
-        logerror: function () {
-            console.error.apply(console, arguments);
-        },
-    }
-}
 
 cfreader.on_watch_event = function (name, type, options, cb) {
     return function (fse, filename) {
@@ -624,4 +635,4 @@ cfreader.load_binary_config = function (name, type) {
         }
     }
 };
-logger = require('./logger');
+//logger = require('./logger');
