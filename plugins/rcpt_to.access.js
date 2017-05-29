@@ -40,7 +40,7 @@ exports.rcpt_to_access = function (next, connection, params) {
     if (_in_whitelist(connection, plugin, rcpt_to)) {
         connection.logdebug(plugin, "Allowing " + rcpt_to);
         connection.transaction.results.add(plugin, {pass: 'whitelisted', emit: true});
-        return next();
+        return next(OK);
     }
 
     // address blacklist checks
@@ -63,7 +63,7 @@ function _in_whitelist (connection, plugin, address) {
         connection.logdebug(plugin, 'checking ' + address + ' against ' +
             plugin.wl[i]);
 
-        if (plugin.wl[i] === address) {
+        if (plugin.wl[i].toLowerCase() === address.toLowerCase()) {
             return true;
         }
     }
