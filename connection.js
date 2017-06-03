@@ -890,6 +890,7 @@ Connection.prototype.ehlo_respond = function (retval, msg) {
                 ", Haraka is at your service.",
                 "PIPELINING",
                 "8BITMIME",
+                "SMTPUTF8",
             ];
 
             var databytes = parseInt(config.get('databytes')) || 0;
@@ -1253,6 +1254,7 @@ Connection.prototype.cmd_helo = function (line) {
     }
 
     this.reset_transaction(function () {
+        self.transaction.encoding = 'binary';
         self.set('hello', 'verb', 'HELO');
         self.set('hello', 'host', host);
         self.results.add({ name: 'helo' }, self.hello);
