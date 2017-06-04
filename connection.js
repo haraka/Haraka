@@ -1254,7 +1254,6 @@ Connection.prototype.cmd_helo = function (line) {
     }
 
     this.reset_transaction(function () {
-        self.transaction.encoding = 'binary';
         self.set('hello', 'verb', 'HELO');
         self.set('hello', 'host', host);
         self.results.add({ name: 'helo' }, self.hello);
@@ -1367,6 +1366,9 @@ Connection.prototype.cmd_mail = function (line) {
     var self = this;
     this.init_transaction(function () {
         self.transaction.mail_from = from;
+        if (self.hello.verb == 'HELO') {
+            self.transaction.encoding = 'binary';
+        }
         plugins.run_hooks('mail', self, [from, params]);
     });
 };
