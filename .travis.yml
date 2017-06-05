@@ -8,6 +8,7 @@ node_js:
 #   - "5"       # no longer maintained by node.js (see node 7)
     - "6"       # LTS until 2018-04
     - "7"
+    - "8"
 
 services:
     - redis-server
