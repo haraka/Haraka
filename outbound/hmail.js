@@ -17,13 +17,14 @@ var config      = require('../config');
 var plugins     = require('../plugins');
 var Header      = require('../mailheader').Header;
 var DSN         = require('../dsn');
-var FsyncWriteStream = require('./fsync_writestream');
 
 var client_pool = require('./client_pool');
 var _qfile      = require('./qfile');
 var mx_lookup   = require('./mx_lookup');
 var outbound    = require('./index');
 var obtls       = require('./tls');
+
+var FsyncWriteStream = require('./fsync_writestream');
 
 var queue_dir;
 var temp_fail_queue;
