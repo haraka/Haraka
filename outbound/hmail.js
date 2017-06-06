@@ -17,6 +17,7 @@ var config      = require('../config');
 var plugins     = require('../plugins');
 var Header      = require('../mailheader').Header;
 var DSN         = require('../dsn');
+var FsyncWriteStream = require('./fsync_writestream');
 
 var client_pool = require('./client_pool');
 var _qfile      = require('./qfile');
