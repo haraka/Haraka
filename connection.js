@@ -196,6 +196,7 @@ function Connection (client, server) {
     this.current_data = null;
     this.current_line = null;
     this.state = states.STATE_PAUSE;
+    this.encoding = 'utf8';
     this.prev_state = null;
     this.loop_code = null;
     this.loop_msg = null;
@@ -285,7 +286,7 @@ Connection.prototype.process_line = function (line) {
         return;
     }
 
-    this.current_line = line.toString('binary').replace(/\r?\n/, '');
+    this.current_line = line.toString(this.encoding).replace(/\r?\n/, '');
     if (logger.would_log(logger.LOGPROTOCOL)) {
         this.logprotocol("C: " + this.current_line + ' state=' + this.state);
     }
@@ -304,7 +305,7 @@ Connection.prototype.process_line = function (line) {
             this.disconnect();
             return;
         }
-        else {
+        else if (this.hello.verb == 'HELO') {
             return this.respond(501, 'Syntax error (8-bit characters not allowed)');
         }
     }
@@ -1368,6 +1369,7 @@ Connection.prototype.cmd_mail = function (line) {
         self.transaction.mail_from = from;
         if (self.hello.verb == 'HELO') {
             self.transaction.encoding = 'binary';
+            self.encoding = 'binary';
         }
         plugins.run_hooks('mail', self, [from, params]);
     });
