@@ -24,6 +24,8 @@ var mx_lookup   = require('./mx_lookup');
 var outbound    = require('./index');
 var obtls       = require('./tls');
 
+var FsyncWriteStream = require('./fsync_writestream');
+
 var queue_dir;
 var temp_fail_queue;
 var delivery_queue;
