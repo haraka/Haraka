@@ -1,13 +1,15 @@
 var Body   = require('../mailbody').Body;
 
-function _fill_body (body) {
+function _fill_body (body, quote) {
     // Body.bodytext retains the original received text before filters are
     // applied so the filtered text isn't tested against URIBLs, etc.  Since we
     // want to test filter output, we use this hack to pull out the parsed body
     // parts that will be passed onward to the transaction.
 
+    quote = quote || "";
+
     body.state = 'headers';
-    body.parse_more("Content-Type: multipart/alternative; boundary=abcdef\n");
+    body.parse_more("Content-Type: multipart/alternative; boundary=" + quote + "abcdef" + quote + "\n");
     body.parse_more("From: =?US-ASCII*EN?Q?Keith_Moore?= <moore@cs.utk.edu>\n");
     body.parse_more("\n");
     body.parse_more("--abcdef\n");
@@ -271,3 +273,35 @@ exports.rfc2231 = {
         test.done();
     }
 };
+
+exports.boundaries = {
+    'with-quotes': function (test) {
+        test.expect(1);
+
+        var body = new Body();
+        _fill_body(body, '"');
+
+        test.equal(body.children.length, 2);
+        test.done();
+    },
+
+    'without-quotes': function (test) {
+        test.expect(1);
+
+        var body = new Body();
+        _fill_body(body, "");
+
+        test.equal(body.children.length, 2);
+        test.done();
+    },
+
+    'with-bad-quotes': function (test) {
+        test.expect(1);
+
+        var body = new Body();
+        _fill_body(body, "'");
+
+        test.equal(body.children.length, 0);
+        test.done();
+    }
+}
