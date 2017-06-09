@@ -115,14 +115,14 @@ Body.prototype.parse_start = function (line) {
         this.state = 'body';
     }
     else if (/^multipart\//i.test(ct)) {
-        match = ct.match(/boundary\s*=\s*["']?([^"';]+)["']?/i);
+        match = ct.match(/boundary\s*=\s*"?([^";]+)"?/i);
         this.boundary = match ? match[1] : '';
         this.state = 'multipart_preamble';
     }
     else {
-        match = cd.match(/name\s*=\s*["']?([^'";]+)["']?/i);
+        match = cd.match(/name\s*=\s*"?([^";]+)"?/i);
         if (!match) {
-            match = ct.match(/name\s*=\s*["']?([^'";]+)["']?/i);
+            match = ct.match(/name\s*=\s*"?([^";]+)"?/i);
         }
         var filename = match ? match[1] : '';
         this.attachment_stream = attstr.createStream(this.header);
