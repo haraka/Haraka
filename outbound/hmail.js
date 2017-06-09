@@ -523,7 +523,7 @@ HMailItem.prototype.try_deliver_host_on_socket = function (mx, host, port, socke
                 self.logwarn('AUTH configured for domain ' + self.todo.domain +
                              ' but host ' + host + ' did not advertise AUTH capability');
                 // Try and send the message without authentication
-                return send_command('MAIL', 'FROM:' + self.todo.mail_from);
+                return send_command('MAIL', 'FROM:' + self.todo.mail_from.format(!smtp_properties.smtp_utf8));
             }
 
             if (!mx.auth_type) {
@@ -550,7 +550,7 @@ HMailItem.prototype.try_deliver_host_on_socket = function (mx, host, port, socke
                              ((mx.auth_type) ? ' (requested: ' + mx.auth_type + ')' : '') +
                              ' (offered: ' + smtp_properties.auth.join(',') + ')');
                 // Proceed without authentication
-                return send_command('MAIL', 'FROM:' + self.todo.mail_from);
+                return send_command('MAIL', 'FROM:' + self.todo.mail_from.format(!smtp_properties.smtp_utf8));
             }
 
             switch (mx.auth_type.toUpperCase()) {
@@ -567,11 +567,11 @@ HMailItem.prototype.try_deliver_host_on_socket = function (mx, host, port, socke
                     // Unsupported AUTH type
                     self.logwarn('Unsupported authentication type ' + mx.auth_type.toUpperCase() +
                                  ' requested for domain ' + self.todo.domain);
-                    return send_command('MAIL', 'FROM:' + self.todo.mail_from);
+                    return send_command('MAIL', 'FROM:' + self.todo.mail_from.format(!smtp_properties.smtp_utf8));
             }
         }
 
-        return send_command('MAIL', 'FROM:' + self.todo.mail_from);
+        return send_command('MAIL', 'FROM:' + self.todo.mail_from.format(!smtp_properties.smtp_utf8));
     };
 
     var fp_called = false;
@@ -862,7 +862,7 @@ HMailItem.prototype.try_deliver_host_on_socket = function (mx, host, port, socke
 
     if (socket.__fromPool) {
         logger.logdebug('[outbound] got pooled socket, trying to deliver');
-        send_command('MAIL', 'FROM:' + self.todo.mail_from);
+        send_command('MAIL', 'FROM:' + self.todo.mail_from.format(!smtp_properties.smtp_utf8));
     }
 };
 
