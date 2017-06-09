@@ -3,8 +3,7 @@ environment:
 
 # Install scripts. (runs after repo cloning)
 install:
-  # Get the latest stable version of Node.js
-# - ps: Install-Product node $env:nodejs_version
+  - ps: Install-Product node $env:nodejs_version
   - npm install
   - choco install redis-64
   - redis-server --service-install
