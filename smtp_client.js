@@ -362,7 +362,7 @@ exports.onCapabilitiesOutbound = function (smtp_client, secured, connection, con
                 return;
             }
         }
-        
+
         if (smtp_client.response[line].match(/^SMTPUTF8/)) {
             smtp_client.smtputf8 = true;
         }
