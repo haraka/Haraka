@@ -79,7 +79,7 @@ exports.hook_rcpt_ok = function (next, connection, recipient) {
     var smtp_client = connection.notes.smtp_client;
     if (!smtp_client) return next();
     smtp_client.next = next;
-    smtp_client.send_command('RCPT', 'TO:' + recipient);
+    smtp_client.send_command('RCPT', 'TO:' + recipient.format(!smtp_client.smtp_utf8));
 };
 
 exports.hook_data = function (next, connection) {

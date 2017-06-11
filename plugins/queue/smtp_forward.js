@@ -273,7 +273,7 @@ exports.queue_forward = function (next, connection) {
                 smtp_client.send_command('DATA');
                 return;
             }
-            smtp_client.send_command('RCPT', 'TO:' + txn.rcpt_to[rcpt]);
+            smtp_client.send_command('RCPT', 'TO:' + txn.rcpt_to[rcpt].format(!smtp_client.smtp_utf8));
             rcpt++;
         };
 

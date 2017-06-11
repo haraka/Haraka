@@ -46,6 +46,7 @@ class SMTPClient extends events.EventEmitter {
         this.auth_capabilities = [];
         this.host = host;
         this.port = port;
+        this.smtputf8 = false;
 
         var client = this;
 
@@ -362,6 +363,10 @@ exports.onCapabilitiesOutbound = function (smtp_client, secured, connection, con
             }
         }
 
+        if (smtp_client.response[line].match(/^SMTPUTF8/)) {
+            smtp_client.smtputf8 = true;
+        }
+
         if (smtp_client.response[line].match(/^STARTTLS/) && !secured) {
 
             var hostBanned = false
@@ -463,7 +468,7 @@ exports.get_client_plugin = function (plugin, connection, c, callback) {
                 if (smtp_client.is_dead_sender(plugin, connection)) {
                     return;
                 }
-                smtp_client.send_command('MAIL', 'FROM:' + connection.transaction.mail_from);
+                smtp_client.send_command('MAIL', 'FROM:' + connection.transaction.mail_from.format(!smtp_client.smtp_utf8));
                 return;
             }
 
@@ -497,7 +502,7 @@ exports.get_client_plugin = function (plugin, connection, c, callback) {
                 return;
             }
             smtp_client.authenticated = true;
-            smtp_client.send_command('MAIL', 'FROM:' + connection.transaction.mail_from);
+            smtp_client.send_command('MAIL', 'FROM:' + connection.transaction.mail_from.format(!smtp_client.smtp_utf8));
         });
 
         // these errors only get thrown when the connection is still active

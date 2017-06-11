@@ -15,7 +15,7 @@
     "node": ">= v4.7.3"
   },
   "dependencies": {
-    "address-rfc2821"       : "*",
+    "address-rfc2821"       : "^1.1.0",
     "address-rfc2822"       : "*",
     "async"                 : "~2.4.0",
     "daemon"                : "~1.1.0",
