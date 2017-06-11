@@ -190,20 +190,20 @@ HMailItem.prototype.get_mx_respond = function (retval, mx) {
                 }
                 mx_list = [{priority: 0, exchange: matches[1], port: matches[3]}];
             }
-            this.logdebug("Got an MX from Plugin: " + this.todo.domain + " => 0 " + mx);
-            return this.found_mx(null, mx_list);
+            hmail.logdebug("Got an MX from Plugin: " + hmail.todo.domain + " => 0 " + mx);
+            return hmail.found_mx(null, mx_list);
         case constants.deny:
-            this.logwarn("get_mx plugin returned DENY: " + mx);
-            this.todo.rcpt_to.forEach(function (rcpt) {
-                hmail.extend_rcpt_with_dsn(rcpt, DSN.addr_bad_dest_system("No MX for " + hmail.domain));
+            hmail.logwarn("get_mx plugin returned DENY: " + mx);
+            hmail.todo.rcpt_to.forEach(function (rcpt) {
+                hmail.extend_rcpt_with_dsn(rcpt, DSN.addr_bad_dest_system("No MX for " + hmail.todo.domain));
             });
-            return this.bounce("No MX for " + this.domain);
+            return hmail.bounce("No MX for " + hmail.todo.domain);
         case constants.denysoft:
-            this.logwarn("get_mx plugin returned DENYSOFT: " + mx);
-            this.todo.rcpt_to.forEach(function (rcpt) {
-                hmail.extend_rcpt_with_dsn(rcpt, DSN.addr_bad_dest_system("Temporary MX lookup error for " + hmail.domain, 450));
+            hmail.logwarn("get_mx plugin returned DENYSOFT: " + mx);
+            hmail.todo.rcpt_to.forEach(function (rcpt) {
+                hmail.extend_rcpt_with_dsn(rcpt, DSN.addr_bad_dest_system("Temporary MX lookup error for " + hmail.todo.domain, 450));
             });
-            return this.temp_fail("Temporary MX lookup error for " + this.domain);
+            return hmail.temp_fail("Temporary MX lookup error for " + hmail.todo.domain);
     }
 
     // if none of the above return codes, drop through to this...
