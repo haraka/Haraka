@@ -228,7 +228,7 @@ The Outbound hook ordering mirrors the Inbound hook order above until after `hoo
 - hook_send_email
 - hook_get_mx
 - at least one of:
-  - hook_delivered  (once per delivery domain with at least one successfull recipient)
+  - hook_delivered  (once per delivery domain with at least one successful recipient)
   - hook_deferred  (once per delivery domain where at least one recipient or connection was deferred)
   - hook_bounce  (once per delivery domain where the recipient(s) or message was rejected by the destination)
 
