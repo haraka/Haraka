@@ -309,7 +309,7 @@ exports.get_sender_domain = function (txn) {
     if (!addrs || ! addrs.length) { return domain; }
 
     // If From has a single address, we're done
-    if (addrs.length === 1) {
+    if (addrs.length === 1 && addrs[0].host) {
         var fromHost = addrs[0].host();
         if (fromHost) {
             // don't attempt to lower a null or undefined value #1575
