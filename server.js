@@ -16,6 +16,7 @@ var Server      = exports;
 Server.logger   = require('./logger');
 Server.config   = require('./config');
 Server.plugins  = require('./plugins');
+Server.notes    = {};
 
 var logger      = Server.logger;
 

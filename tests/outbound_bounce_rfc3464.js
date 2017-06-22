@@ -17,8 +17,11 @@ var path        = require('path');
 var util_hmailitem = require('./fixtures/util_hmailitem');
 var TODOItem    = require('../outbound/todo');
 var HMailItem    = require('../outbound/hmail');
+var ob_cfg      = require('../outbound/config');
 var outbound    = require('../outbound');
 var mock_sock   = require('./fixtures/line_socket');
+
+ob_cfg.pool_concurrency_max = 0;
 
 var outbound_context = {
     TODOItem: TODOItem,
@@ -99,7 +102,7 @@ exports.bounce_3464 = {
                 { 'from': 'haraka', 'test': 'MAIL FROM:<sender@domain>' },
                 { 'from': 'remote', 'line': '500 5.0.0 Absolutely not acceptable. Basic Test Only.' },
 
-                { 'from': 'haraka', 'test': 'RSET', end_test: true }, // this will trigger calling the callback
+                { 'from': 'haraka', 'test': 'QUIT', end_test: true }, // this will trigger calling the callback
             ];
 
             util_hmailitem.playTestSmtpConversation(mock_hmail, mock_socket, test, testPlaybook, function () {
@@ -133,7 +136,7 @@ exports.bounce_3464 = {
                 { 'from': 'haraka', 'test': 'MAIL FROM:<sender@domain>' },
                 { 'from': 'remote', 'line': '300 3.0.0 No time for you right now' },
 
-                { 'from': 'haraka', 'test': 'RSET', end_test: true }, // this will trigger calling the callback
+                { 'from': 'haraka', 'test': 'QUIT', end_test: true }, // this will trigger calling the callback
             ];
 
             util_hmailitem.playTestSmtpConversation(mock_hmail, mock_socket, test, testPlaybook, function () {
@@ -170,7 +173,7 @@ exports.bounce_3464 = {
                 { 'from': 'haraka', 'test': 'RCPT TO:<recipient@domain>' },
                 { 'from': 'remote', 'line': '400 4.0.0 Currently not available. Try again later.' },
 
-                { 'from': 'haraka', 'test': 'RSET', end_test: true }, // this will trigger calling the callback
+                { 'from': 'haraka', 'test': 'QUIT', end_test: true }, // this will trigger calling the callback
             ];
 
             util_hmailitem.playTestSmtpConversation(mock_hmail, mock_socket, test, testPlaybook, function () {
@@ -211,7 +214,7 @@ exports.bounce_3464 = {
                 // haraka will send us more lines
                 { 'from': 'remote', 'line': '450 4.6.0 Currently I do not like ascii art cats.' },
 
-                { 'from': 'haraka', 'test': 'RSET', end_test: true }, // this will trigger calling the callback
+                { 'from': 'haraka', 'test': 'QUIT', end_test: true }, // this will trigger calling the callback
             ];
 
             util_hmailitem.playTestSmtpConversation(mock_hmail, mock_socket, test, testPlaybook, function () {
@@ -250,7 +253,7 @@ exports.bounce_3464 = {
                 { 'from': 'haraka', 'test': 'RCPT TO:<recipient@domain>' },
                 { 'from': 'remote', 'line': '550 5.1.1 Not available and will not come back' },
 
-                { 'from': 'haraka', 'test': 'RSET', end_test: true }, // this will trigger calling the callback
+                { 'from': 'haraka', 'test': 'QUIT', end_test: true }, // this will trigger calling the callback
             ];
 
             util_hmailitem.playTestSmtpConversation(mock_hmail, mock_socket, test, testPlaybook, function () {
@@ -293,7 +296,7 @@ exports.bounce_3464 = {
                 // haraka will send us more lines
                 { 'from': 'remote', 'line': '550 5.6.0 I never did and will like ascii art cats.' },
 
-                { 'from': 'haraka', 'test': 'RSET', end_test: true }, // this will trigger calling the callback
+                { 'from': 'haraka', 'test': 'QUIT', end_test: true }, // this will trigger calling the callback
             ];
 
             util_hmailitem.playTestSmtpConversation(mock_hmail, mock_socket, test, testPlaybook, function () {
