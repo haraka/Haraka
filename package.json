@@ -21,7 +21,7 @@
     "daemon"                : "~1.1.0",
     "generic-pool"          : "~2.5.0",
     "iconv"                 : "~2.2.0",
-    "ipaddr.js"             : "~1.3.0",
+    "ipaddr.js"             : "~1.4.0",
     "js-yaml"               : "~3.8.0",
     "nopt"                  : "~4.0.1",
     "npid"                  : "~0.4.0",
