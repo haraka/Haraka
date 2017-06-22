@@ -85,7 +85,7 @@ exports.get_sender_domain = {
     },
     'from header, RFC 5322 odd': function (test) {
         test.expect(1);
-        this.connection.transaction.header.add('From', 'Pete(A nice \) chap) <pete(his account)@silly.test(his host)>');
+        this.connection.transaction.header.add('From', 'Pete(A nice \\) chap) <pete(his account)@silly.test(his host)>');
         var r = this.plugin.get_sender_domain(this.connection.transaction);
         test.equal('silly.test', r);
         test.done();
