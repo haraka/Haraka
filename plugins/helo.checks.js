@@ -71,9 +71,9 @@ exports.load_helo_checks_ini = function () {
     });
 
     plugin.cfg = plugin.config.get('helo.checks.ini', { booleans: booleans },
-    function () {
-        plugin.load_helo_checks_ini();
-    });
+        function () {
+            plugin.load_helo_checks_ini();
+        });
 
     // backwards compatible with old config file
     if (plugin.cfg.check_no_dot !== undefined) {

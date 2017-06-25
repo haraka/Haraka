@@ -18,7 +18,7 @@ exports.hook_capabilities = function (next, connection) {
     // don't allow AUTH unless private IP or encrypted
     if (!connection.remote.is_private && !connection.tls.enabled) {
         connection.logdebug(plugin,
-                "Auth disabled for insecure public connection");
+            "Auth disabled for insecure public connection");
         return next();
     }
 

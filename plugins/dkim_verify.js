@@ -26,7 +26,7 @@ exports.hook_data_post = function (next, connection) {
         results.forEach(function (res) {
             var res_err = ' (' + res.error + ')' ? res.error : '';
             connection.auth_results(
-              'dkim=' + res.result + res_err +
+                'dkim=' + res.result + res_err +
               ' header.i=' + res.identity
             );
             connection.loginfo(self, 'identity="' + res.identity + '" ' +

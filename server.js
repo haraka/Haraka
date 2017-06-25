@@ -374,7 +374,7 @@ Server.setup_smtp_listeners = function (plugins2, type, inactivity_timeout) {
         var hp = /^\[?([^\]]+)\]?:(\d+)$/.exec(host_port);
         if (!hp) {
             return cb(new Error(
-                        'Invalid format for listen parameter in smtp.ini'));
+                'Invalid format for listen parameter in smtp.ini'));
         }
         var host = hp[1];
         var port = hp[2];

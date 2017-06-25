@@ -54,9 +54,9 @@ exports.objToArray = {
     'converts an object to an array of key vals' : function (test) {
         test.expect(2);
         test.deepEqual([{k: 'foo', v: 'bar'}],
-                this.plugin.objToArray({ foo: 'bar' }));
+            this.plugin.objToArray({ foo: 'bar' }));
         test.deepEqual([{k: 'foo', v: 'bar'}, {k: 'baz', v: 'wuz'}],
-                this.plugin.objToArray({ foo: 'bar', baz: 'wuz' }));
+            this.plugin.objToArray({ foo: 'bar', baz: 'wuz' }));
         test.done();
     },
 };
@@ -67,9 +67,9 @@ exports.getIndexName = {
         test.expect(4);
         this.plugin.cfg = { index: {} };
         test.ok( /smtp\-connection\-/
-                .test(this.plugin.getIndexName('connection')));
+            .test(this.plugin.getIndexName('connection')));
         test.ok( /smtp\-transaction\-/
-                .test(this.plugin.getIndexName('transaction')));
+            .test(this.plugin.getIndexName('transaction')));
 
         this.plugin.cfg.index.connection = 'cxn';
         this.plugin.cfg.index.transaction = 'txn';
@@ -163,9 +163,9 @@ exports.trimPluginName = {
         test.equal('asn', this.plugin.trimPluginName('connect.asn'));
         test.equal('helo', this.plugin.trimPluginName('helo.checks'));
         test.equal('qmail_deliverable',
-                this.plugin.trimPluginName('rcpt_to.qmail_deliverable'));
+            this.plugin.trimPluginName('rcpt_to.qmail_deliverable'));
         test.equal('is_resolvable',
-                this.plugin.trimPluginName('mail_from.is_resolvable'));
+            this.plugin.trimPluginName('mail_from.is_resolvable'));
         test.done();
     },
 };

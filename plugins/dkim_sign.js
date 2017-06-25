@@ -274,9 +274,9 @@ exports.get_headers_to_sign = function () {
     }
 
     headers = plugin.cfg.main.headers_to_sign
-                    .toLowerCase()
-                    .replace(/\s+/g,'')
-                    .split(/[,;:]/);
+        .toLowerCase()
+        .replace(/\s+/g,'')
+        .split(/[,;:]/);
 
     // From MUST be present
     if (headers.indexOf('from') === -1) {

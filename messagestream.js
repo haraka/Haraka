@@ -25,7 +25,7 @@ class MessageStream extends Stream {
         this._queue = [];
         this.max_data_inflight = 0;
         this.buffer_max = (!isNaN(config.main.spool_after) ?
-                        Number(config.main.spool_after) : -1);
+            Number(config.main.spool_after) : -1);
         this.spooling = false;
         this.fd = null;
         this.open_pending = false;

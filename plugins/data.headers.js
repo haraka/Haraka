@@ -56,12 +56,11 @@ exports.duplicate_singular = function (next, connection) {
 
     // RFC 5322 Section 3.6, Headers that MUST be unique if present
     var singular = plugin.cfg.main.singular !== undefined ?
-                   plugin.cfg.main.singular.split(',') :
-    [
-        'Date', 'From', 'Sender', 'Reply-To', 'To', 'Cc',
-        'Bcc', 'Message-Id', 'In-Reply-To', 'References',
-        'Subject'
-    ];
+        plugin.cfg.main.singular.split(',') : [
+            'Date', 'From', 'Sender', 'Reply-To', 'To', 'Cc',
+            'Bcc', 'Message-Id', 'In-Reply-To', 'References',
+            'Subject'
+        ];
 
     var failures = [];
     for (var i=0; i < singular.length; i++ ) {
@@ -92,8 +91,8 @@ exports.missing_required = function (next, connection) {
 
     // Enforce RFC 5322 Section 3.6, Headers that MUST be present
     var required = plugin.cfg.main.required !== undefined ?
-                   plugin.cfg.main.required.split(',') :
-                   ['Date', 'From'];
+        plugin.cfg.main.required.split(',') :
+        ['Date', 'From'];
 
     var failures = [];
     for (var i=0; i < required.length; i++) {
@@ -161,8 +160,8 @@ exports.invalid_date = function (next, connection) {
     msg_date = Date.parse(msg_date);
 
     var date_future_days = plugin.cfg.main.date_future_days !== undefined ?
-                           plugin.cfg.main.date_future_days :
-                           2;
+        plugin.cfg.main.date_future_days :
+        2;
 
     if (date_future_days > 0) {
         var too_future = new Date();
@@ -178,8 +177,8 @@ exports.invalid_date = function (next, connection) {
     }
 
     var date_past_days = plugin.cfg.main.date_past_days !== undefined ?
-                         plugin.cfg.main.date_past_days :
-                         15;
+        plugin.cfg.main.date_past_days :
+        15;
 
     if (date_past_days > 0) {
         var too_old = new Date();

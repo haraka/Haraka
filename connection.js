@@ -26,7 +26,7 @@ var ResultStore = require('haraka-results');
 
 var hostname    = (os.hostname().split(/\./))[0];
 var version     = JSON.parse(
-        fs.readFileSync(path.join(__dirname, 'package.json'))).version;
+    fs.readFileSync(path.join(__dirname, 'package.json'))).version;
 
 var states = exports.states = {
     STATE_CMD:             1,
@@ -139,8 +139,8 @@ function setupClient (self) {
     });
 
     var ha_list = net.isIPv6(self.remote.ip) ?
-                  haproxy_hosts_ipv6
-                : haproxy_hosts_ipv4;
+        haproxy_hosts_ipv6
+        : haproxy_hosts_ipv4;
 
     if (ha_list.some(function (element, index, array) {
         return ipaddr.parse(self.remote.ip).match(element[0], element[1]);
@@ -315,7 +315,7 @@ Connection.prototype.process_line = function (line) {
         var matches = /^([^ ]*)( +(.*))?$/.exec(this.current_line);
         if (!matches) {
             return plugins.run_hooks('unrecognized_command',
-                    this, this.current_line);
+                this, this.current_line);
         }
         var method = "cmd_" + matches[1].toLowerCase();
         var remaining = matches[3] || '';
@@ -1434,7 +1434,7 @@ Connection.prototype.received_line = function () {
         sslheader = '(version=' + this.notes.tls.cipher.version +
             ' cipher=' + this.notes.tls.cipher.name +
             ' verify=' + ((this.notes.tls.authorized) ? 'OK' :
-            ((this.notes.tls.authorizationError &&
+                ((this.notes.tls.authorizationError &&
               this.notes.tls.authorizationError.code === 'UNABLE_TO_GET_ISSUER_CERT') ? 'NO' : 'FAIL')) + ')';
     }
     var received_header = [

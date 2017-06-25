@@ -107,14 +107,14 @@ exports.banners = {
         buf = new Buffer("winter </html>");
         new_buf = insert_banners_fn (content_type, enc, buf);
         test.equal(new_buf.toString(), "winter <P>htmlbanner</P></html>",
-                "html banner looks ok");
+            "html banner looks ok");
 
 
         content_type = 'text/plain';
         buf = new Buffer("winter");
         new_buf = insert_banners_fn (content_type, enc, buf);
         test.equal(new_buf.toString(), "winter\ntextbanner\n",
-                "text banner looks ok");
+            "text banner looks ok");
 
         test.done();
     },
@@ -142,12 +142,12 @@ exports.banners = {
         empty_buf = new Buffer("");
         new_buf = insert_banners_fn (content_type, enc, empty_buf);
         test.equal(new_buf.toString(), "<P>htmlbanner</P>",
-                "empty html part gets a banner" );
+            "empty html part gets a banner" );
 
         content_type = 'text/plain';
         new_buf = insert_banners_fn (content_type, enc, empty_buf);
         test.equal(new_buf.toString(), "\ntextbanner\n",
-                "empty text part gets a banner");
+            "empty text part gets a banner");
 
         test.done();
     },

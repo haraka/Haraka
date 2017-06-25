@@ -214,42 +214,42 @@ exports.createServer = {
         smtp_client.get_client(server, function (err, client) {
 
             client
-            .on('greeting', function (command) {
-                client.send_command('HELO', 'haraka.local');
-            })
-            .on('helo', function () {
-                client.send_command('MAIL', 'FROM:<test@haraka.local>');
-            })
-            .on('mail', function () {
-                client.send_command('RCPT', 'TO:<nobody-will-see-this@haraka.local>');
-            })
-            .on('rcpt', function () {
-                client.send_command('DATA');
-            })
-            .on('data', function () {
-                var message_stream = new MessageStream(
-                  { main : { spool_after : 1024 } }, "theMessageId"
-                );
-
-                message_stream.on('end', function () {
-                    client.socket.write('.\r\n');
+                .on('greeting', function (command) {
+                    client.send_command('HELO', 'haraka.local');
                 })
-                message_stream.add_line('Header: test\r\n');
-                message_stream.add_line('\r\n');
-                message_stream.add_line('I am body text\r\n');
-                message_stream.add_line_end();
+                .on('helo', function () {
+                    client.send_command('MAIL', 'FROM:<test@haraka.local>');
+                })
+                .on('mail', function () {
+                    client.send_command('RCPT', 'TO:<nobody-will-see-this@haraka.local>');
+                })
+                .on('rcpt', function () {
+                    client.send_command('DATA');
+                })
+                .on('data', function () {
+                    var message_stream = new MessageStream(
+                        { main : { spool_after : 1024 } }, "theMessageId"
+                    );
 
-                client.start_data(message_stream);
-            })
-            .on('dot', function () {
-                test.ok(1);
-                client.release();
-                test.done();
-            })
-            .on('bad_code', function (code, msg) {
-                client.release();
-                test.done();
-            });
+                    message_stream.on('end', function () {
+                        client.socket.write('.\r\n');
+                    })
+                    message_stream.add_line('Header: test\r\n');
+                    message_stream.add_line('\r\n');
+                    message_stream.add_line('I am body text\r\n');
+                    message_stream.add_line_end();
+
+                    client.start_data(message_stream);
+                })
+                .on('dot', function () {
+                    test.ok(1);
+                    client.release();
+                    test.done();
+                })
+                .on('bad_code', function (code, msg) {
+                    client.release();
+                    test.done();
+                });
 
         }, 2500, 'localhost', cfg);
     },

@@ -78,7 +78,7 @@ exports.hook_mail = function (next, connection, params) {
             }
             results.add(plugin, {fail: 'has_fwd_dns'});
             return mxDone(((c.reject_no_mx) ? DENY : DENYSOFT),
-                    'MX without A/AAAA records');
+                'MX without A/AAAA records');
         }
 
         addresses.forEach(function (addr) {
@@ -161,7 +161,7 @@ exports.implicit_mx = function (connection, domain, mxDone) {
         if (!addresses || !addresses.length) {
             txn.results.add(plugin, {fail: 'has_fwd_dns'});
             return mxDone(((plugin.cfg.main.reject_no_mx) ? DENY : DENYSOFT),
-                    'No MX for your FROM address');
+                'No MX for your FROM address');
         }
 
         connection.logdebug(plugin, domain + ': A/AAAA => ' + addresses);

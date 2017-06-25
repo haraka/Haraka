@@ -260,7 +260,7 @@ exports.rdns_access = function (next, connection) {
         if (plugin.in_list('black', 'conn', addr)) {
             connection.results.add(plugin, {fail: file, emit: true});
             return next(DENYDISCONNECT,
-                    host + ' [' + r_ip + '] ' + plugin.cfg.deny_msg.conn);
+                host + ' [' + r_ip + '] ' + plugin.cfg.deny_msg.conn);
         }
 
         file = plugin.cfg.re.black.conn;
@@ -268,7 +268,7 @@ exports.rdns_access = function (next, connection) {
         if (plugin.in_re_list('black', 'conn', addr)) {
             connection.results.add(plugin, {fail: file, emit: true});
             return next(DENYDISCONNECT,
-                    host + ' [' + r_ip + '] ' + plugin.cfg.deny_msg.conn);
+                host + ' [' + r_ip + '] ' + plugin.cfg.deny_msg.conn);
         }
     }
 
@@ -446,7 +446,7 @@ exports.in_file = function (file_name, address, connection) {
     connection.logdebug(plugin, 'checking ' + address +
             ' against ' + file_name);
     return (plugin.config.get(file_name, 'list')
-            .indexOf(address) === -1) ? false : true;
+        .indexOf(address) === -1) ? false : true;
 };
 
 exports.in_re_file = function (file_name, address) {
@@ -455,7 +455,7 @@ exports.in_re_file = function (file_name, address) {
     // in_re_list.
     this.logdebug(this, 'checking ' + address + ' against ' + file_name);
     var re_list = utils.valid_regexes(
-            this.config.get(file_name, 'list'), file_name);
+        this.config.get(file_name, 'list'), file_name);
     for (var i=0; i < re_list.length; i++) {
         if (new RegExp('^' + re_list[i] + '$', 'i').test(address)) return true;
     }
@@ -496,13 +496,13 @@ exports.load_re_file = function (type, phase) {
     }
 
     var regex_list = utils.valid_regexes(
-            plugin.config.get(
-                plugin.cfg.re[type][phase],
-                'list',
-                function () {
-                    plugin.load_re_file(type, phase);
-                })
-            );
+        plugin.config.get(
+            plugin.cfg.re[type][phase],
+            'list',
+            function () {
+                plugin.load_re_file(type, phase);
+            })
+    );
 
     // initialize the list store
     if (!plugin.list_re)       plugin.list_re = { type: {} };
