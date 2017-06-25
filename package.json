@@ -20,7 +20,7 @@
     "async"                 : "~2.4.0",
     "daemon"                : "~1.1.0",
     "generic-pool"          : "~2.5.0",
-    "iconv"                 : "~2.2.0",
+    "iconv"                 : "~2.3.0",
     "ipaddr.js"             : "~1.4.0",
     "js-yaml"               : "~3.8.0",
     "nopt"                  : "~4.0.1",
