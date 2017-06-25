@@ -448,8 +448,8 @@ cfreader.init_booleans = function (options, result) {
             var key     = m[2];
 
             var bool_default = section[0] === '+' ? true
-                             :     key[0] === '+' ? true
-                             :     false;
+                :     key[0] === '+' ? true
+                    :     false;
 
             if (section.match(/^(\-|\+)/)) section = section.substr(1);
             if (    key.match(/^(\-|\+)/)) key     =     key.substr(1);

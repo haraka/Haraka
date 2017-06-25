@@ -106,8 +106,8 @@ exports.hook_data_post = function (next, connection) {
                 // be added before autolearn= when the header line has been folded.
                 // So we modify the regexp here not to match autolearn onwards.
                 var tests = /tests=((?:(?!autolearn)[^ ])+)/.exec(
-                        spamd_response.headers.Status.replace(/\r?\n\t/g,'')
-                    );
+                    spamd_response.headers.Status.replace(/\r?\n\t/g,'')
+                );
                 if (tests) { spamd_response.tests = tests[1]; }
             }
         }
@@ -331,6 +331,6 @@ exports.log_results = function (connection, spamd_response) {
           ', score=' + spamd_response.score +
           ', required=' + spamd_response.reqd +
           ', reject=' + ((connection.relaying) ?
-             (cfg.relay_reject_threshold || cfg.reject_threshold) : cfg.reject_threshold) +
+            (cfg.relay_reject_threshold || cfg.reject_threshold) : cfg.reject_threshold) +
           ', tests="' + spamd_response.tests + '"');
 };

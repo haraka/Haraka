@@ -285,7 +285,7 @@ exports.get_plugin_results = function (connection) {
 
     try {
         var txr = JSON.parse(JSON.stringify(
-                    connection.transaction.results.get_all()));
+            connection.transaction.results.get_all()));
     }
     catch (e) {
         connection.transaction.results.add(plugin, {err: e.message });

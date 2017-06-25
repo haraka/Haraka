@@ -538,7 +538,7 @@ function log_run_item (item, hook, retval, object, params, msg) {
             'plugin='   + item[0].name,
             'function=' + item[1],
             'params="'  + ((params) ? ((typeof params === 'string') ?
-                            params : params[0]) : '') + '"',
+                params : params[0]) : '') + '"',
             'retval='   + constants.translate(retval),
             'msg="'     + ((msg) ? msg : '') + '"',
         ].join(' '));

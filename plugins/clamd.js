@@ -32,7 +32,7 @@ exports.load_excludes = function () {
                     // Wildcard exclude
                     try {
                         re = new RegExp(
-                                utils.wildcard_to_regexp(list[i].substr(1)),'i');
+                            utils.wildcard_to_regexp(list[i].substr(1)),'i');
                         new_skip_list_exclude.push(re);
                     }
                     catch (e) {
@@ -153,7 +153,7 @@ exports.hook_data = function (next, connection) {
     txn.parse_body = true;
     txn.attachment_hooks(function (ctype, filename, body) {
         connection.logdebug(plugin,
-                'found ctype=' + ctype + ', filename=' + filename);
+            'found ctype=' + ctype + ', filename=' + filename);
         txn.notes.clamd_found_attachment = true;
     });
 
@@ -210,7 +210,7 @@ exports.hook_data_post = function (next, connection) {
             socket.destroy();
             if (!connected) {
                 connection.logerror(plugin,
-                       'Connection to ' + host + ' failed: ' + err.message);
+                    'Connection to ' + host + ' failed: ' + err.message);
                 return try_next_host();
             }
 
@@ -273,7 +273,7 @@ exports.hook_data_post = function (next, connection) {
                 for (var i=0; i < plugin.skip_list_exclude.length; i++) {
                     if (!plugin.skip_list_exclude[i].test(virus)) continue;
                     return next(DENY,
-                            'Message is infected with ' + (virus || 'UNKNOWN'));
+                        'Message is infected with ' + (virus || 'UNKNOWN'));
                 }
 
                 // Check skip list

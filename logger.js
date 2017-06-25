@@ -82,7 +82,7 @@ logger.log = function (level, data) {
         data = data.replace(/\n/g, '\\n');
     }
     data = data.replace(/\r/g, '\\r')
-               .replace(/\n$/, '');
+        .replace(/\n$/, '');
 
     var item = { 'level' : level, 'data'  : data };
 

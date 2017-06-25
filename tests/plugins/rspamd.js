@@ -98,7 +98,7 @@ exports.wants_headers_added = {
         test.equal(
             this.plugin.wants_headers_added({ default: { action: 'add header' }}),
             false
-            );
+        );
         test.done();
     },
     'always wants no headers when add_headers=always': function (test) {
@@ -107,7 +107,7 @@ exports.wants_headers_added = {
         test.equal(
             this.plugin.wants_headers_added({ default: { action: 'beat it' }}),
             true
-            );
+        );
         test.done();
     },
     'wants headers when rspamd response indicates, add_headers=sometimes': function (test) {
@@ -116,11 +116,11 @@ exports.wants_headers_added = {
         test.equal(
             this.plugin.wants_headers_added({ default: { action: 'add header' }}),
             true
-            );
+        );
         test.equal(
             this.plugin.wants_headers_added({ default: { action: 'brownlist' }}),
             false
-            );
+        );
         test.done();
     }
 }

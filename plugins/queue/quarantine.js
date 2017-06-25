@@ -32,8 +32,8 @@ exports.hook_init_master = function (next) {
     //       is completed prior to any messages being received.
     var config = this.config.get('quarantine.ini');
     var base_dir = (config.main.quarantine_path) ?
-                    config.main.quarantine_path  :
-                    '/var/spool/haraka/quarantine';
+        config.main.quarantine_path  :
+        '/var/spool/haraka/quarantine';
     var tmp_dir = [ base_dir, 'tmp' ].join('/');
     if (fs.existsSync(tmp_dir)) {
         var dirent = fs.readdirSync(tmp_dir);
@@ -54,8 +54,8 @@ exports.quarantine = function (next, connection) {
             + this.zeroPad(d.getDate(), 2);
         var config = this.config.get('quarantine.ini');
         var base_dir = (config.main.quarantine_path) ?
-                        config.main.quarantine_path  :
-                        '/var/spool/haraka/quarantine';
+            config.main.quarantine_path  :
+            '/var/spool/haraka/quarantine';
         var dir;
         // Allow either boolean or a sub-directory to be specified
         if (connection.notes.quarantine) {
@@ -93,32 +93,32 @@ exports.quarantine = function (next, connection) {
                 });
                 ws.on('close', function () {
                     fs.link([ base_dir, 'tmp', transaction.uuid ].join('/'),
-                            [ base_dir, dir, transaction.uuid ].join('/'),
-                            function (err) {
-                                if (err) {
-                                    connection.logerror(plugin, 'Error writing quarantine file: ' + err);
-                                }
-                                else {
-                                    // Add a note to where we stored the message
-                                    transaction.notes.quarantined = [ base_dir, dir, transaction.uuid ].join('/');
-                                    connection.loginfo(plugin, 'Stored copy of message in quarantine: ' +
-                                                   [ base_dir, dir, transaction.uuid ].join('/'));
-                                    // Now delete the temporary file
-                                    fs.unlink([ base_dir, 'tmp', transaction.uuid ].join('/'), function () {});
-                                }
-                                // Using notes.quarantine_action to decide what to do after the message is quarantined.
-                                // Format can be either action = [ code, msg ] or action = code
-                                var action = (connection.notes.quarantine_action || transaction.notes.quarantine_action);
-                                if (Array.isArray(action)) {
-                                    return next(action[0], action[1]);
-                                }
-                                else if (action) {
-                                    return next(action);
-                                }
-                                else {
-                                    return next();
-                                }
+                        [ base_dir, dir, transaction.uuid ].join('/'),
+                        function (err) {
+                            if (err) {
+                                connection.logerror(plugin, 'Error writing quarantine file: ' + err);
                             }
+                            else {
+                                // Add a note to where we stored the message
+                                transaction.notes.quarantined = [ base_dir, dir, transaction.uuid ].join('/');
+                                connection.loginfo(plugin, 'Stored copy of message in quarantine: ' +
+                                                   [ base_dir, dir, transaction.uuid ].join('/'));
+                                // Now delete the temporary file
+                                fs.unlink([ base_dir, 'tmp', transaction.uuid ].join('/'), function () {});
+                            }
+                            // Using notes.quarantine_action to decide what to do after the message is quarantined.
+                            // Format can be either action = [ code, msg ] or action = code
+                            var action = (connection.notes.quarantine_action || transaction.notes.quarantine_action);
+                            if (Array.isArray(action)) {
+                                return next(action[0], action[1]);
+                            }
+                            else if (action) {
+                                return next(action);
+                            }
+                            else {
+                                return next();
+                            }
+                        }
                     );
                 });
                 transaction.message_stream.pipe(ws, { line_endings: '\n' });

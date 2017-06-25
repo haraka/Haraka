@@ -356,11 +356,11 @@ else if (parsed.help) {
 else if (parsed.configs && parsed.plugin) {
     var js_path = path.join(parsed.configs, 'plugins', parsed.plugin + '.js');
     createFile(js_path,
-               plugin_src, { plugin: parsed.plugin, config: parsed.configs });
+        plugin_src, { plugin: parsed.plugin, config: parsed.configs });
 
     var doc_path = path.join(parsed.configs, 'docs', 'plugins', parsed.plugin + '.md');
     createFile(doc_path,
-               plugin_doc, { plugin: parsed.plugin, config: parsed.configs });
+        plugin_doc, { plugin: parsed.plugin, config: parsed.configs });
 
     console.log("Plugin " + parsed.plugin + " created");
     console.log("Now edit javascript in:    " + js_path);
@@ -451,9 +451,9 @@ else if (parsed.order) {
     }
     catch (e) {
         process.env.NODE_PATH = process.env.NODE_PATH ?
-                (process.env.NODE_PATH + ':' + path.join(process.env.HARAKA, 'node_modules'))
-                :
-                (path.join(process.env.HARAKA, 'node_modules'));
+            (process.env.NODE_PATH + ':' + path.join(process.env.HARAKA, 'node_modules'))
+            :
+            (path.join(process.env.HARAKA, 'node_modules'));
         require('module')._initPaths(); // Horrible hack
     }
     require(path.join(base, 'configfile')).watch_files = false;
@@ -487,9 +487,9 @@ else if (parsed.test) {
     }
     catch (e) {
         process.env.NODE_PATH = process.env.NODE_PATH ?
-                (process.env.NODE_PATH + ':' + path.join(process.env.HARAKA, 'node_modules'))
-                :
-                (path.join(process.env.HARAKA, 'node_modules'));
+            (process.env.NODE_PATH + ':' + path.join(process.env.HARAKA, 'node_modules'))
+            :
+            (path.join(process.env.HARAKA, 'node_modules'));
         require('module')._initPaths(); // Horrible hack
     }
     require(path.join(base, 'configfile')).watch_files = false;

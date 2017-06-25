@@ -265,7 +265,7 @@ function createServer (cb) {
                     cleartext.authorizationError,
                     cleartext.getPeerCertificate(),
                     cleartext.getCipher()
-                    );
+                );
             });
 
             socket.cleartext = cleartext;

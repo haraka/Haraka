@@ -73,7 +73,7 @@ exports.stats_incr_zone = function (err, zone, start) {
     redis_client.hget(rkey, 'AVG_RT', function (err2, rt) {
         if (err2) return;
         var avg = parseInt(rt) ? (parseInt(elapsed) + parseInt(rt))/2
-                               : parseInt(elapsed);
+            : parseInt(elapsed);
         redis_client.hset(rkey, 'AVG_RT', avg);
     });
 };

@@ -161,9 +161,9 @@ exports.hook_mail = function (next, connection, params) {
             return next();
         }
         plugin.log_result(connection, 'mfrom', host, mfrom,
-                          spf.result(result), (ip ? ip : connection.remote.ip));
+            spf.result(result), (ip ? ip : connection.remote.ip));
         plugin.save_to_header(connection, spf, result, mfrom, host,
-                              'mailfrom', (ip ? ip : connection.remote.ip));
+            'mailfrom', (ip ? ip : connection.remote.ip));
 
         auth_result = spf.result(result).toLowerCase();
         connection.auth_results( "spf="+auth_result+" smtp.mailfrom="+host);

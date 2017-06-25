@@ -259,8 +259,8 @@ exports.queue_forward = function (next, connection) {
         var dead_sender = function () {
             if (smtp_client.is_dead_sender(plugin, connection)) {
                 var rs = connection.transaction ?
-                         connection.transaction.results :
-                         connection.results;
+                    connection.transaction.results :
+                    connection.results;
                 rs.add(plugin, { err: 'dead sender' });
                 return true;
             }
@@ -311,7 +311,7 @@ exports.queue_forward = function (next, connection) {
         smtp_client.on('bad_code', function (code, msg) {
             if (dead_sender()) return;
             smtp_client.call_next(((code && code[0] === '5') ? DENY : DENYSOFT),
-                                msg);
+                msg);
             smtp_client.release();
         });
     });
