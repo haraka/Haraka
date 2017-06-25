@@ -56,8 +56,7 @@ exports.duplicate_singular = function (next, connection) {
 
     // RFC 5322 Section 3.6, Headers that MUST be unique if present
     var singular = plugin.cfg.main.singular !== undefined ?
-        plugin.cfg.main.singular.split(',') :
-        [
+        plugin.cfg.main.singular.split(',') : [
             'Date', 'From', 'Sender', 'Reply-To', 'To', 'Cc',
             'Bcc', 'Message-Id', 'In-Reply-To', 'References',
             'Subject'
