@@ -5,7 +5,7 @@ Haraka - a Node.js Mail Server
 [![Build Status][ci-img]][ci-url]
 [![Coverage Status][cov-img]][cov-url]
 [![Windows Status][ci-win-img]][ci-win-url]
-[![Greenkeeper badge][gk-img](https://greenkeeper.io/)
+[![Greenkeeper badge][gk-img]][gk-url]
 
 
 Haraka is a highly scalable [node.js][1] email server with a modular
@@ -149,4 +149,5 @@ SpamAssassin and a hacker on [Qpsmtpd][13].
 [cov-url]: https://codecov.io/github/haraka/Haraka?branch=master
 [ci-win-img]: https://ci.appveyor.com/api/projects/status/g29l24w7qwoam47f?svg=true
 [ci-win-url]: https://ci.appveyor.com/project/msimerson/haraka-pa8a5
-[gk-url]: https://badges.greenkeeper.io/haraka/Haraka.svg
+[gk-img]: https://badges.greenkeeper.io/haraka/Haraka.svg
+[gk-url]: https://badges.greenkeeper.io
