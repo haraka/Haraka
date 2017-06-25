@@ -24,6 +24,7 @@ Create a PR adding yours to this list.
 | Plugin                     | Description |
 | -------------------------  | ------------- |
 | [access][url-access]       | ACLs based on IPs, domains, email addrs, etc. |
+| [accounting_files][url-acc-files] | Retrieve, Store and Archive custom information of outbound traffic |
 | [aliases][url-aliases]     | Email aliases |
 | [attachment][url-attach]   | Restrict attachment types |
 | auth/[flat_file][url-authflat] | Auth against user/pass in a file |
@@ -90,6 +91,7 @@ Create a PR adding yours to this list.
 [write-plugin]: https://github.com/haraka/Haraka/wiki/Write-a-Plugin
 [plugins-doc]: http://haraka.github.io/manual/Plugins.html
 [url-access]: https://github.com/haraka/Haraka/blob/master/docs/plugins/access.md
+[url-acc-files]: https://github.com/acharkizakaria/haraka-plugin-accounting-files/blob/master/README.md
 [url-aliases]: https://github.com/haraka/Haraka/blob/master/docs/plugins/aliases.md
 [url-attach]: https://github.com/haraka/Haraka/blob/master/docs/plugins/attachment.md
 [url-authflat]: https://github.com/haraka/Haraka/blob/master/docs/plugins/auth/flat_file.md
