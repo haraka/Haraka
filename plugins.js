@@ -80,7 +80,6 @@ Plugin.prototype._get_plugin_path = function () {
     plugin.hasPackageJson = false;
     var name = plugin.name;
     if (/^haraka\-plugin\-/.test(name)) {
-        logger.lognotice("the haraka-plugin- prefix is not required in config/plugins");
         name = name.replace(/^haraka\-plugin\-/, '');
     }
 
