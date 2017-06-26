@@ -1,7 +1,17 @@
 
-2.8.14 - May 27, 2017
+2.8.14 - Jun 26, 2017
 
 * Changes
+    * update async to 2.5.0 #1982
+    * update iconv to 2.3.0 #1981
+    * require node.js v6+ #1958
+    * update ipaddr.js to 1.4.0 #1972
+    * support newer address-rfc2822 #1970
+    * update node-address-rfc2821 version to 1.1.1 #1968
+    * outbound: be consistent with todo.domain #1960
+    * bump haraka-results required version #1949
+    * logger: load in a setImmediate call #1948
+    * logger: strip intermediate \n chars #1947
     * tls consistency cleanups #1851
     * Get pool config handling simplifcation #1868
         * add integration test: send message w/smtp_client
@@ -26,12 +36,22 @@
     * Add .editorconfig #1884
     * tls: remove interim variables #1871
 * New Features
+    * Use punycode domain (support SMTPUTF8) #1944
     * Added RabbitMQ vhost support #1866
     * clamav: allow "Unknown Result" and Socket Error to try next host #1931
     * outbound client certificates #1908
     * Implement the missing upgrade method on SMTPClient #1901
     * Remove typo from relay.md #1886
 * Fixes
+    * outbound: fix queue not loaded for single process #1941
+    * outbound: Fix undefined variable platformDOT in hmail.js #1943
+    * outbound: fix undefined FsyncWriteStream var #1953
+    * Fix cluster messaging for node v6+ #1938
+    * outbound: fix loading under cluster. #1934
+    * Check pool exists before delete #1937
+    * be more strict in attachment filename matching #1957
+    * doc typo fix #1963
+    * RabbitMQ: fix encoding of user and password string #1964
     * spf: improve modifier regexp #1859
     * rabbitmq doc typo in config file name #1865
     * URL to manual was 404, point to Plugins.md #1844
