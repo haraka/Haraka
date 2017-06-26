@@ -1,13 +1,19 @@
 language: node_js
 node_js:
-#   - "0.6"     # no longer supported by async
-#   - "0.8"     # no longer supported by iconv
-#   - "0.10"    # no longer maintained by node.js (2016-10-31)
-#   - "0.12"    # no longer maintained by node.js (2016-12-31)
-#   - "4"       # LTS ended 2017-04-01 (crit maint only)
-#   - "5"       # no longer maintained by node.js (see node 7)
+#   - 0.6       # no longer supported by async
+#   - 0.8       # no longer supported by iconv
+#   - 0.10      # no longer maintained by node.js (2016-10-31)
+#   - 0.12      # no longer maintained by node.js (2016-12-31)
+#   - 4         # LTS ended 2017-04-01 (crit only)
+#   - 5         # no longer maintained by node.js (see node 7)
     - "6"       # LTS until 2018-04
-    - "7"
+    - "7"       # current until 2017-04
+    - "8"       # current as of 2017-04, LTS on 2017-10
+
+matrix:
+  fast_finish: true
+  allow_failures:
+    - node_js: "8"
 
 services:
     - redis-server
