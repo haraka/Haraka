@@ -150,7 +150,7 @@
     * fix results for connection.remote_host and NXDOMAIN #1716
 
 
-2.8.10 - Oct 20, 2016
+## 2.8.10 - Oct 20, 2016
 
 * Changes
     * use standard npm syntax for lint and tests #1646
@@ -294,17 +294,17 @@
     * Fix encodings when banners are used (#1477)
     * Various DKIM fixes (#1495)
 
-2.8.4 - May 24, 2016
+## 2.8.4 - May 24, 2016
 
 * Bug Fixes
     * Fix plugin loading override when installed (#1471)
 
-2.8.3 - May 18, 2016
+## 2.8.3 - May 18, 2016
 
 * Bug Fixes
     * Fix config overriding for core modules (#1468)
 
-2.8.2 - May 17, 2016
+## 2.8.2 - May 17, 2016
 
 * Changes
     * Added Node v6 to travis tests
@@ -322,7 +322,7 @@
     * Stop haraka dying when ldap connections fail (#1456)
     * Pick up domain specific config correctly in ldap (#1456)
 
-2.8.0 - May 06, 2016
+## 2.8.0 - May 06, 2016
 
 * Changes
     * updated dependency versions (#1426, #1425)
@@ -374,7 +374,7 @@
     * smtp_client: fix remote_ip (#1362)
 
 
-2.7.3 - Feb 04, 2016
+## 2.7.3 - Feb 04, 2016
 
 * Changes
     * smtp_proxy & qmail-queue: default to enabled for outbound deliveries
@@ -408,13 +408,13 @@
     * outbound: Add missing dash to 'Final-Recipient' header name (#1320)
 
 
-2.7.2 - Dec 15, 2015
+## 2.7.2 - Dec 15, 2015
 
 * Bug Fixes
     * Revert a change that broke plugin loading
 
 
-2.7.1 - Dec 14, 2015
+## 2.7.1 - Dec 14, 2015
 
 * New Features
     * added debian init.d file (#1255) @slattery
@@ -438,7 +438,7 @@
     * result_store: show arrays when not empty (#1261)
 
 
-2.7.0 - Oct 07, 2015
+## 2.7.0 - Oct 07, 2015
 
 * New Features
     * SPF bounce check
@@ -540,7 +540,7 @@
     * Fix connect.geoip bug #1144 (@smfreegard)
     * Fix tiny bug in messagesniffer #1198 (@smfreegard)
 
-2.6.1 - Mar 27, 2015
+## 2.6.1 - Mar 27, 2015
 
 * added sedation timers for config file re-reading
 * Add AUTH support to outbound
@@ -558,7 +558,7 @@
 * pre-populated config/plugins
 * added utils.extend, copies props onto objects
 
-2.6.0 - Feb 21, 2015
+## 2.6.0 - Feb 21, 2015
 
 * other bug fixes
 * updated a few tests so test suite passes on Windows
@@ -626,7 +626,7 @@
     * load lists into objects (vs arrays), for much faster runtime access
 * host_list: huge performance increase, esp for many hosts
 
-2.5.0 - May 24, 2014
+## 2.5.0 - May 24, 2014
 
 * added automated build testing via Travis-CI.org
 * fixed dkim_sign crash issue #560
@@ -676,7 +676,7 @@
 * return after next() in the whitelist checks
 * Add new -o option to bin/haraka
 
-2.4.0 - Feb 12, 2014
+## 2.4.0 - Feb 12, 2014
 
 * Trim whitespace when reading "list" type config files (such as config/plugins)
 * Added LMTP via queue/lmtp plugin
@@ -686,7 +686,7 @@
 * Store the RCPT TO rejection reason on the address object
 
 
-2.3.0 - Feb 07, 2014
+## 2.3.0 - Feb 07, 2014
 
 * Fix memory leak when watching config files for changes
 * Support for badly formatted MAIL FROM/RCPT TO lines
@@ -723,7 +723,7 @@
 * Allow setting of spamd_user for spamassassin plugin
 
 
-2.0.0 - Nov 28, 2012
+## 2.0.0 - Nov 28, 2012
 
 * Various fixes to SMTP AUTH code, including providing SMTP AUTH to inbound
   mail forwarders.
@@ -740,4 +740,4 @@
 * Throw exception with set_banner as it is now non-functional. Will be returned in a future version.
 * Small fixes to data.uribl
 
-1.4.0 -
+## 1.4.0 -
