@@ -1,5 +1,5 @@
 
-2.8.14 - Jun 26, 2017
+## 2.8.14 - Jun 26, 2017
 
 * Changes
     * update async to 2.5.0 #1982
@@ -69,7 +69,7 @@
     * rspamd: add missing 'default' keyword #1856
     * disable naïve comment stripping #1876
 
-2.8.13 - Feb 03, 2017
+## 2.8.13 - Feb 03, 2017
 
 * Changes
     * new [haraka-plugin-limit](https://github.com/haraka/haraka-plugin-limit) #1785
@@ -103,7 +103,7 @@
     * remove auth_flat_file sample auth user #1796
 
 
-2.8.12 - Jan 03, 2017
+## 2.8.12 - Jan 03, 2017
 
 * Changes
     * plugin/karma -> npm packaged haraka-plugin-karma #1747
@@ -119,7 +119,7 @@
     * Swap lines to avoid clobbering response array #1743
 
 
-2.8.11 - Nov 24, 2016
+## 2.8.11 - Nov 24, 2016
 
 * Changes
     * rename core_require to haraka_require #1708
@@ -138,7 +138,7 @@
     * bring port 465 SMTPS TLS config support on par with STARTTLS #1667
     * use tls.connect instead of createSecurePair #1678
     * redis: improve error handling in tests #
-    * replace / path seperators with path.* for cross platform compat #1713
+    * replace / path seperators with path.\* for cross platform compat #1713
 
 * Bug Fixes
     * dkim_sign: per-domain key finding fixed #1707
@@ -193,7 +193,7 @@
     * fix TLS timeout errors #1665
 
 
-2.8.9 - Oct 02, 2016
+## 2.8.9 - Oct 02, 2016
 
 * Changes
 
@@ -229,7 +229,7 @@
     * fix dkim_sign TypeError with null mail_from.host (#1592)
     * fix dkim_sign attempting to lower an undefined (#1587)
 
-2.8.8 - Jul 20, 2016
+## 2.8.8 - Jul 20, 2016
 
 * Changes
     * removed UPGRADE.doc to [wiki](https://github.com/haraka/Haraka/wiki/Upgrade-Haraka)
@@ -246,7 +246,7 @@
     * add results property to outbound transaction #1535
     * don't unref unref'd wss server #1521
 
-2.8.7 - Jun 18, 2016
+## 2.8.7 - Jun 18, 2016
 
 * Changes
     * Fix geoip test
@@ -265,13 +265,13 @@
       (#1504 and #1502 thanks @darkpixel)
     * More fixes to clean shutdown (#1503)
 
-2.8.6 - Jun 06, 2016
+## 2.8.6 - Jun 06, 2016
 
 * Bug Fixes
     * Fix loading under Node v4 which sends a blank message
     * Fix quit (SIGINT) when running without nodes=
 
-2.8.5 - Jun 04, 2016
+## 2.8.5 - Jun 04, 2016
 
 * Changes
     * The connection object is now passed to `get_plain_passwd`. Older
@@ -330,8 +330,8 @@
     * remove spameatingmonkey from tests (#1421)
     * replace ./constants.js with haraka-constants (#1353)
     * Document HMail and TODO items (#1343)
-    * Copy only a minimal config/* by default (#1341).
-    * cfreader/* removed to haraka/haraka-config (#1350)
+    * Copy only a minimal config/\* by default (#1341).
+    * cfreader/\* removed to haraka/haraka-config (#1350)
     * outbound and smtp_client honor tls.ini settings (#1350)
     * outbound TLS defaults to enabled
     * lint: remove all unused variables (#1358)
@@ -351,7 +351,7 @@
     * removed TLD stuff to haraka/haraka-tld (#1301)
     * removed unused 'require('redis') in plugins/karma (#1348)
     * improved MIME header support per rfc2231 (#1344)
-    * tls options can be defined for outbound and smtp_* (#1357) 
+    * tls options can be defined for outbound and smtp\_\* (#1357) 
     * explicitly disable SSLv2 (#1395)
     * cache STUN results
     * xclient plugin improvements (#1405)
@@ -529,9 +529,9 @@
     * fcrdns: always init results
     * TLS timer on error
     * dkim_verify: fixed timeout issue
-    * smtp_[proxy|forward]: correct authentication example
+    * smtp\_[proxy|forward]: correct authentication example
     * Fork child workers after init_master hook
-    * connection: return 450/550 for plugin DENY* (was 452/552)
+    * connection: return 450/550 for plugin DENY\* (was 452/552)
     * spamassassin: don't call next() when transaction gone
     * outbound: fix crash when sending bounce mail
     * auth_base: fix bad protocol in auth_base.js #1121 (@Dexus)
@@ -548,7 +548,7 @@
 * allow domains with underscore
 * correct name of domains config file in access
 * Fix SMTP AUTH in smtp_forward/proxy and add docs
-* Fix opts not being passed to HMailItem _bounce function
+* Fix opts not being passed to HMailItem \_bounce function
 * log.syslog will try strong-fork-syslog (for node 0.12 compat)
 * improvements to Plugin docs
 * rename net_utils.is_rfc1918 -> is_private_ip
@@ -664,13 +664,13 @@
 * karma: added whitelist award, pass through temp (DENYSOFT) errors, made
   tarpit variable, configurable reject hooks, doc rewrite, ASN awards, fix penalty days calculation, new DSL for karma awards,
 * bannering fixes
-* added log* stubs to test/fixtures/[plugin|connection]
+* added log\* stubs to test/fixtures/[plugin|connection]
 * tests/fixtures/stub_plugin: set name property
 * config: corrected handling of config.arg gets, fix caching bug, fix boolean
   handling, added missing 'type' handling.
 * Adding the option of using CIDR ranges in the haproxy_hosts file
 * tarpit: added config option hooks_to_delay, added docs
-* contrib/haraka.bsd.rc: startup file for *BSD
+* contrib/haraka.bsd.rc: startup file for \*BSD
 * Store attachment headers on stream
 * Record accepted domains at hook_rcpt and improve queue/lmtp
 * return after next() in the whitelist checks
