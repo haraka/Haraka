@@ -81,6 +81,7 @@ Create a PR adding yours to this list.
 | [tarpit][url-tarpit]               | Slow down connections |
 | [tls][url-tls]                     | Implements TLS |
 | [toobusy][url-toobusy]             | Defers connections when too busy |
+| [vmta][url-vmta]                   | Virtual MTA management |
 | [xclient][url-xclient]             | Implements XCLIENT |
 
 
@@ -150,5 +151,6 @@ Create a PR adding yours to this list.
 [url-tls]: https://github.com/haraka/Haraka/blob/master/docs/plugins/tls.md
 [url-toobusy]: https://github.com/haraka/Haraka/blob/master/docs/plugins/toobusy.md
 [url-xclient]: https://github.com/haraka/Haraka/blob/master/docs/plugins/xclient.md
+[url-vmta]: https://github.com/haraka/haraka-plugin-vmta/blob/master/README.md
 [mongo-url]: https://github.com/Helpmonks/haraka-plugin-mongodb
 
