@@ -1,7 +1,0 @@
-# For more information: 'haraka -h access'
-#
-# Each line is a regex.
-# Each line is anchored, meaning '^' + regex + '$' is added
-# To bypass anchoring, use a '.*' at the start or the end of your regex.
-# Automatic anchoring should help prevent accidentally permissive rules.
-.*@harakamail.com
