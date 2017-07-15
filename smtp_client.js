@@ -381,12 +381,11 @@ exports.onCapabilitiesOutbound = function (smtp_client, secured, connection, con
 
             if (!hostBanned && !serverBanned && config.enable_tls)
             {
-                console.log("true");
                 smtp_client.socket.on('secure', on_secured);
                 smtp_client.secured = false;  // have to wait in forward plugin before we can do auth, even if capabilities are there on first EHLO
                 smtp_client.send_command('STARTTLS');
                 return;
-            } else { console.log("false"); }
+            }
         }
 
         var auth_matches = smtp_client.response[line].match(/^AUTH (.*)$/);
