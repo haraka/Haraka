@@ -463,16 +463,16 @@ exports.in_re_file = function (file_name, address) {
 };
 
 exports.load_file = function (type, phase) {
-    var plugin = this;
+    let plugin = this;
     if (!plugin.cfg.check[phase]) {
         plugin.loginfo(plugin, "skipping " + plugin.cfg[type][phase]);
         return;
     }
 
-    var file_name = plugin.cfg[type][phase];
+    let file_name = plugin.cfg[type][phase];
 
     // load config with a self-referential callback
-    var list = plugin.config.get(file_name, 'list', function () {
+    let list = plugin.config.get(file_name, 'list', () => {
         plugin.load_file(type, phase);
     });
 
@@ -482,10 +482,11 @@ exports.load_file = function (type, phase) {
 
     // toLower when loading spends a fraction of a second at load time
     // to save millions of seconds during run time.
-    var i;
-    for (i=0; i<list.length; i++) {
-        plugin.list[type][phase][list[i].toLowerCase()] = true;
+    let listAsHash = {};  // store as hash for speedy lookups
+    for (let i=0; i<list.length; i++) {
+        listAsHash[list[i].toLowerCase()] = true;
     }
+    plugin.list[type][phase] = listAsHash;
 };
 
 exports.load_re_file = function (type, phase) {
