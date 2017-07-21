@@ -12,7 +12,7 @@
   },
   "main": "haraka.js",
   "engines": {
-    "node": ">= v6.10.0"
+    "node": ">= v6.11.1"
   },
   "dependencies": {
     "address-rfc2821"       : "^1.1.1",
@@ -40,7 +40,7 @@
     "haraka-plugin-watch"   : "*"
   },
   "optionalDependencies": {
-    "elasticsearch"         : "*",
+    "haraka-plugin-elasticsearch" : "*",
     "ldapjs"                : "~1.0.0",
     "haraka-plugin-redis"   : "*",
     "haraka-plugin-syslog"  : "*",
