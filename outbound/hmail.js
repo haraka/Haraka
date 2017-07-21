@@ -26,6 +26,9 @@ var obtls       = require('./tls');
 
 var FsyncWriteStream = require('./fsync_writestream');
 
+var core_consts = require('constants');
+var WRITE_EXCL  = core_consts.O_CREAT | core_consts.O_TRUNC | core_consts.O_WRONLY | core_consts.O_EXCL;
+
 var queue_dir;
 var temp_fail_queue;
 var delivery_queue;
