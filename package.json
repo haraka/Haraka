@@ -32,6 +32,7 @@
     "haraka-net-utils"      : ">=1.0.8",
     "haraka-results"        : "^2.0.0",
     "haraka-utils"          : "*",
+    "haraka-plugin-access"  : "*",
     "haraka-plugin-asn"     : "*",
     "haraka-plugin-geoip"   : "*",
     "haraka-plugin-fcrdns"  : "*",
