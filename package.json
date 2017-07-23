@@ -28,7 +28,7 @@
     "semver"                : "~5.3.0",
     "sprintf-js"            : "~1.1.0",
     "haraka-tld"            : "*",
-    "haraka-constants"      : "*",
+    "haraka-constants"      : ">=1.0.4",
     "haraka-net-utils"      : ">=1.0.8",
     "haraka-results"        : "^2.0.0",
     "haraka-utils"          : "*",
