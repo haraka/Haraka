@@ -1275,7 +1275,7 @@ function split_to_new_recipients (hmail, recipients, response, cb) {
     }
     var fname = _qfile.name();
     var tmp_path = path.join(queue_dir, _qfile.platformDOT + fname);
-    var ws = new FsyncWriteStream(tmp_path, { flags: WRITE_EXCL });
+    var ws = new FsyncWriteStream(tmp_path, { flags: constants.WRITE_EXCL });
     var err_handler = function (err, location) {
         logger.logerror("[outbound] Error while splitting to new recipients (" + location + "): " + err);
         hmail.todo.rcpt_to.forEach(function (rcpt) {
