@@ -70,7 +70,7 @@ another mail server. If your organization has an Exchange server, using Haraka
 to filter inbound messages is a great choice. You might also want to relay
 outbound messages via Haraka as well, so they can be DKIM signed on their way
 to the internet. For such a use case, you would set 'acl=true' (the default)
-in the [relay] section of `access.ini` and then add the external IP address
+in the [relay] section of `relay.ini` and then add the external IP address
 of the corporate firewall to `config/relay_acl_allow`:
 
     echo 'N.N.N.N/32' >> /path/to/haraka/config/relay_acl_allow
