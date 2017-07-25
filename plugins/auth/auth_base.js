@@ -167,6 +167,8 @@ exports.select_auth_method = function (next, connection, method) {
         return next();
     }
 
+    if (connection.notes.authenticating) return next(DENYDISCONNECT, 'bad protocol');
+
     connection.notes.authenticating = true;
     connection.notes.auth_method = method;
 
