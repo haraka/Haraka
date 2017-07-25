@@ -1267,7 +1267,6 @@ HMailItem.prototype.delivered_respond = function (retval, msg) {
 };
 
 function split_to_new_recipients (hmail, recipients, response, cb) {
-    var self = this;
     if (recipients.length === hmail.todo.rcpt_to.length) {
         // Split to new for no reason - increase refcount and return self
         hmail.refcount++;
@@ -1327,6 +1326,5 @@ function split_to_new_recipients (hmail, recipients, response, cb) {
 
     var new_todo = JSON.parse(JSON.stringify(hmail.todo));
     new_todo.rcpt_to = recipients;
-    self.build_todo(new_todo, ws, write_more);
-};
-
+    outbound.build_todo(new_todo, ws, write_more);
+}
