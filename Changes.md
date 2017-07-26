@@ -1,7 +1,21 @@
 
-## 2.8.14 - Jun 26, 2017
+## 2.8.14 - Jul 26, 2017
 
 * Changes
+    * Fix auth plugin failure when re-selecting auth method #2000
+    * don't crash Haraka when invalid YAML config encountered #2013
+    * update semver to version 5.4.0 #2015
+    * relay docs: correct the config file name #2012
+    * rename config/xclient.hosts to match plugin & docs #2014
+    * build_todo() is part of the outbound/index.js api #2016
+    * update js-yaml to version 3.9.0 #2002
+    * outbound/hmail: use WRITE_EXCL from haraka-constants #2011
+    * replace plugins/log.elasticsearch with npm packaged #2004
+    * Remove two spurious log statements #1989
+    * access: rebuild blacklist upon change (vs supplement) #1990
+    * deliver to qmail-queue with LF line endings (not CRLF) #1997
+    * doc: add note that smtp_forward only supports STARTTLS #1988
+    * import Plugins.md from v3 #1991
     * update async to 2.5.0 #1982
     * update iconv to 2.3.0 #1981
     * require node.js v6+ #1958
