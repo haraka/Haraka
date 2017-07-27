@@ -71,7 +71,20 @@ class HMailItem extends events.EventEmitter {
 
 module.exports = HMailItem;
 
-logger.add_log_methods(HMailItem.prototype, "outbound");
+// copy logger methods into HMailItem:
+for (var key in logger) {
+    if (!/^log\w/.test(key)) continue;
+    HMailItem.prototype[key] = (function (level) {
+        return function () {
+            // pass the HMailItem instance to logger
+            var args = [ this ];
+            for (var i=0, l=arguments.length; i<l; i++) {
+                args.push(arguments[i]);
+            }
+            logger[level].apply(logger, args);
+        };
+    })(key);
+}
 
 HMailItem.prototype.data_stream = function () {
     return fs.createReadStream(this.path, {start: this.data_start, end: this.file_size});
