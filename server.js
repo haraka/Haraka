@@ -92,6 +92,12 @@ Server.flushQueue = function (domain) {
     }
 };
 
+Server.stopListeners = function () {
+    Server.listeners.forEach(function (server) {
+        server.close();
+    });
+}
+
 Server.performShutdown = function () {
     logger.loginfo("Shutting down.");
     process.exit(0);

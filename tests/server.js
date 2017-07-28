@@ -155,7 +155,7 @@ exports.createServer = {
     tearDown: function (done) {
         process.env.YES_REALLY_DO_DISCARD='';
         process.env.HARAKA_TEST_DIR='';
-        this.server.gracefulShutdown();
+        this.server.stopListeners();
         done();
     },
     'accepts SMTP message from nodemailer': function (test) {
