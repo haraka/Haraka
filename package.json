@@ -42,6 +42,7 @@
   },
   "optionalDependencies": {
     "haraka-plugin-elasticsearch" : "*",
+    "haraka-plugin-recipient-routes": "*",
     "haraka-plugin-redis"   : "*",
     "haraka-plugin-syslog"  : "*",
     "ldapjs"                : "~1.0.0",
