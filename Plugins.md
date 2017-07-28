@@ -26,9 +26,11 @@ Create a PR adding yours to this list.
 | [access][url-access]       | ACLs based on IPs, domains, email addrs, etc. |
 | [accounting_files][url-acc-files] | Retrieve, Store and Archive custom information of outbound traffic |
 | [aliases][url-aliases]     | Email aliases |
+| [ASN][url-asn]             | Get ASN info for remote senders |
 | [attachment][url-attach]   | Restrict attachment types |
 | auth/[flat_file][url-authflat] | Auth against user/pass in a file |
 | auth/[auth_bridge][url-authbridge] | Auth against remote MTA |
+| [auth-imap][url-auth-imap] | Auth against IMAP server |
 | auth/[auth_ldap][url-authldap] | Auth against LDAP |
 | auth/[auth_proxy][url-authproxy] | Auth against remote MTA |
 | auth/[auth_vpopmaild][url-authvpop] | Auth against vpopmaild |
@@ -37,7 +39,6 @@ Create a PR adding yours to this list.
 | [block_me][url-blockme]     | Populate block list via forwarded emails |
 | [bounce][url-bounce]        | Many options for bounce processing |
 | [clamd][url-clamd]          | Anti-Virus scanning with ClamAV |
-| [fcrdns][url-fcrdns]        | Forward Confirmed reverse DNS |
 | [connect.p0f][url-p0f]      | TCP Fingerprinting |
 | [data.headers][url-headers] | Inspect and verify various email headers |
 | [data.signatures][url-sigs] | Block emails whose bodies match signatures |
@@ -46,16 +47,26 @@ Create a PR adding yours to this list.
 | [delay_deny][url-delay]     | Delays all pre-DATA 'deny' results |
 | [dkim_sign][url-sign]       | DKIM sign outbound messages |
 | [dkim_verify][url-dkimv]    | Verify DKIM signatures on incoming messages |
+| [opendkim][url-opendkim]    | DKIM sign and verify email messages |
 | [dnsbl][url-dnsbl]          | Check remote MTAs against DNS blacklists |
 | [dnswl][url-dnswl]          | Check remote MTAs against DNS whitelists |
+| [dovecot][url-dovecot]      | Recipient validation & SMTP AUTH against dovecot |
 | [early_talker][url-early]   | Reject remotes that talk early |
 | [esets][url-esets]          | Virus scanning with ESET Mail Security |
+| [fcrdns][url-fcrdns]        | Forward Confirmed reverse DNS |
+| [geoip][url-geoip]          | get geographic information about mail senders |
 | [greylist][url-greylist]    | Greylisting |
 | [helo.checks][url-helo]     | Validaty checks of the HELO string |
+| [karma][url-karma]          | Dynamic scoring of incoming connections |
+| [known-senders][url-known-senders] | Reward emails from those you send mail to |
+| [LDAP][url-ldap]            | Aliases, Auth, and Recipient validation from LDAP |
+| [Limit][url-limit]          | Apply many types of limits to SMTP connections |
 | [log.elasticsearch][url-elastic]  | Store message metadata in Elasticsearch |
+| [log reader][url-logreader]       | extract log entries from the haraka log file |
 | [syslog][url-syslog]              | Log to syslog |
 | [mail_from.is_resolvable][url-mfres]  | Verifies the MAIL FROM domain resolves to a MX |
 | [messagesniffer][url-msgsniff]    | Anti-spam via [MessageSniffer][url-ms] |
+| [milter][url-milter]              | milter support |
 | [mongodb][mongo-url]              | Queue emails to MongoDB |
 | [prevent_credential_leaks][url-creds]  | Prevent users from emailing their credentials |
 | [process_title][url-proctitle]    | Populate `ps` output with activity counters |
@@ -68,10 +79,12 @@ Create a PR adding yours to this list.
 | queue/[smtp_bridge][url-qbridge]   | Bridge SMTP sessions to another MTA |
 | queue/[smtp_forward][url-qforward] | Forward emails to another MTA |
 | queue/[smtp_proxy][url-qproxy]     | Proxy SMTP connections to another MTA |
+| [recipient-routes][url-rroutes]    | Route emails based on their recipient(s) |
+| [redis][url-redis]                 | multi-purpose Redis db connection(s) |
 | [rcpt_to.in_host_list][url-rhost]  | Define local email domains in a file |
-| [rcpt_to.ldap][url-ldap]           | Validate recipients against LDAP |
+| [rcpt_to.ldap][url-rcpt-ldap]      | Validate recipients against LDAP |
+| [rcpt-postgresql][url-postgres]    | validate recipients against PostgreSQL
 | [rcpt_to.qmail_deliverable][url-rqmd]  | Validate recipients against Qmail-Deliverable |
-| [rcpt_to.routes][url-rroutes]      | Route emails based on their recipient(s) |
 | [record_envelope_addresses][url-recordenv]  | Adds message headers with ENV recips |
 | [relay][url-relay]                 | Manage relay permissions |
 | [reseed_rng][url-rng]              | Reseed the RNG |
@@ -82,6 +95,7 @@ Create a PR adding yours to this list.
 | [tls][url-tls]                     | Implements TLS |
 | [toobusy][url-toobusy]             | Defers connections when too busy |
 | [vmta][url-vmta]                   | Virtual MTA management |
+| [watch][url-watch]                 | Watch live SMTP traffic in a web interface |
 | [xclient][url-xclient]             | Implements XCLIENT |
 
 
@@ -91,12 +105,14 @@ Create a PR adding yours to this list.
 [template]: https://github.com/haraka/haraka-plugin-template
 [write-plugin]: https://github.com/haraka/Haraka/wiki/Write-a-Plugin
 [plugins-doc]: http://haraka.github.io/manual/Plugins.html
-[url-access]: https://github.com/haraka/Haraka/blob/master/docs/plugins/access.md
+[url-access]: https://github.com/haraka/haraka-plugin-access
 [url-acc-files]: https://github.com/acharkizakaria/haraka-plugin-accounting-files/blob/master/README.md
 [url-aliases]: https://github.com/haraka/Haraka/blob/master/docs/plugins/aliases.md
+[url-asn]: https://github.com/haraka/haraka-plugin-asn
 [url-attach]: https://github.com/haraka/Haraka/blob/master/docs/plugins/attachment.md
 [url-authflat]: https://github.com/haraka/Haraka/blob/master/docs/plugins/auth/flat_file.md
 [url-authbridge]: https://github.com/haraka/Haraka/blob/master/docs/plugins/auth/auth_bridge.md
+[url-authimap]: https://github.com/haraka/haraka-plugin-auth-imap
 [url-authldap]: https://github.com/haraka/Haraka/blob/master/docs/plugins/auth/auth_ldap.md
 [url-authproxy]: https://github.com/haraka/Haraka/blob/master/docs/plugins/auth/auth_proxy.md
 [url-authvpop]: https://github.com/haraka/Haraka/blob/master/docs/plugins/auth/auth_vpopmaild.md
@@ -105,6 +121,7 @@ Create a PR adding yours to this list.
 [url-blockme]: https://github.com/haraka/Haraka/blob/master/docs/plugins/block_me.md
 [url-bounce]: https://github.com/haraka/Haraka/blob/master/docs/plugins/bounce.md
 [url-clamd]: https://github.com/haraka/Haraka/blob/master/docs/plugins/clamd.md
+[url-dovecot]: https://github.com/haraka/haraka-plugin-dovecot
 [url-fcrdns]: https://github.com/haraka/haraka-plugin-fcrdns
 [url-p0f]: https://github.com/haraka/Haraka/blob/master/docs/plugins/connect.p0f.md
 [url-headers]: https://github.com/haraka/Haraka/blob/master/docs/plugins/data.headers.md
@@ -114,19 +131,27 @@ Create a PR adding yours to this list.
 [url-delay]: https://github.com/haraka/Haraka/blob/master/docs/plugins/delay_deny.md
 [url-sign]: https://github.com/haraka/Haraka/blob/master/docs/plugins/dkim_sign.md
 [url-dkimv]: https://github.com/haraka/Haraka/blob/master/docs/plugins/dkim_verify.md
+[url-opendkim]: https://www.npmjs.com/package/haraka-plugin-opendkim
 [url-dnsbl]: https://github.com/haraka/Haraka/blob/master/docs/plugins/dnsbl.md
 [url-dnswl]: https://github.com/haraka/Haraka/blob/master/docs/plugins/dnswl.md
 [url-early]: https://github.com/haraka/Haraka/blob/master/docs/plugins/early_talker.md
 [url-esets]: https://github.com/haraka/Haraka/blob/master/docs/plugins/esets.md
+[url-geoip]: https://github.com/haraka/haraka-plugin-geoip
 [url-graph]: https://github.com/haraka/haraka-plugin-graph
 [url-greylist]: https://github.com/haraka/Haraka/blob/master/docs/plugins/greylist.md
 [url-helo]: https://github.com/haraka/Haraka/blob/master/docs/plugins/helo.checks.md
-[url-elastic]: https://github.com/haraka/Haraka/blob/master/docs/plugins/log.elasticsearch.md
+[url-karma]: https://github.com/haraka/haraka-plugin-karma
+[url-elastic]: https://github.com/haraka/haraka-plugin-elasticsearch/
 [url-syslog]: https://github.com/haraka/haraka-plugin-syslog
+[url-ldap]: https://github.com/haraka/haraka-plugin-ldap
+[url-limit]: https://github.com/haraka/haraka-plugin-limit
+[url-logreader]: https://github.com/haraka/haraka-plugin-log-reader
+[url-milter]: https://github.com/haraka/haraka-plugin-milter
 [url-mfres]: https://github.com/haraka/Haraka/blob/master/docs/plugins/mail_from.is_resolvable.md
 [url-msgsniff]: https://github.com/haraka/Haraka/blob/master/docs/plugins/messagesniffer.md
-[url-ms]: http://armresearch.com/products/sniffer.jsp
+[url-ms]: http://www.armresearch.com/Products/
 [url-creds]: https://github.com/haraka/Haraka/blob/master/docs/plugins/prevent_credential_leaks.md
+[url-postgres]: https://github.com/haraka/haraka-plugin-rcpt-postgresql
 [url-proctitle]: https://github.com/haraka/Haraka/blob/master/docs/plugins/process_title.md
 [url-qdisc]: https://github.com/haraka/Haraka/blob/master/docs/plugins/queue/discard.md
 [url-qlmtp]: https://github.com/haraka/Haraka/blob/master/docs/plugins/queue/lmtp.md
@@ -137,10 +162,11 @@ Create a PR adding yours to this list.
 [url-qbridge]: https://github.com/haraka/Haraka/blob/master/docs/plugins/queue/smtp_bridge.md
 [url-qforward]: https://github.com/haraka/Haraka/blob/master/docs/plugins/queue/smtp_forward.md
 [url-qproxy]: https://github.com/haraka/Haraka/blob/master/docs/plugins/queue/smtp_proxy.md
+[url-redis]: https://github.com/haraka/haraka-plugin-redis
 [url-rhost]: https://github.com/haraka/Haraka/blob/master/docs/plugins/rcpt_to.in_host_list.md
-[url-ldap]: https://github.com/haraka/Haraka/blob/master/docs/plugins/rcpt_to.ldap.md
+[url-rcpt-ldap]: https://github.com/haraka/Haraka/blob/master/docs/plugins/rcpt_to.ldap.md
 [url-rqmd]: https://github.com/haraka/Haraka/blob/master/docs/plugins/rcpt_to.qmail_deliverable.md
-[url-rroutes]: https://github.com/haraka/Haraka/blob/master/docs/plugins/rcpt_to.routes.md
+[url-rroutes]: https://github.com/haraka/haraka-plugin-recipient-routes
 [url-recordenv]: https://github.com/haraka/Haraka/blob/master/docs/plugins/record_envelope_addresses.md
 [url-relay]: https://github.com/haraka/Haraka/blob/master/docs/plugins/relay.md
 [url-rng]: https://github.com/haraka/Haraka/blob/master/docs/plugins/reseed_rng.md
@@ -150,7 +176,8 @@ Create a PR adding yours to this list.
 [url-tarpit]: https://github.com/haraka/Haraka/blob/master/docs/plugins/tarpit.md
 [url-tls]: https://github.com/haraka/Haraka/blob/master/docs/plugins/tls.md
 [url-toobusy]: https://github.com/haraka/Haraka/blob/master/docs/plugins/toobusy.md
-[url-xclient]: https://github.com/haraka/Haraka/blob/master/docs/plugins/xclient.md
 [url-vmta]: https://github.com/haraka/haraka-plugin-vmta/blob/master/README.md
+[url-watch]: https://github.com/haraka/haraka-plugin-watch
+[url-xclient]: https://github.com/haraka/Haraka/blob/master/docs/plugins/xclient.md
 [mongo-url]: https://github.com/Helpmonks/haraka-plugin-mongodb
 
