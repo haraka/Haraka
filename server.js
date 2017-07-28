@@ -116,7 +116,7 @@ Server.gracefulShutdown = function () {
     Server._graceful(function () {
         // log();
         logger.loginfo("Failed to shutdown naturally. Exiting.");
-        process.exit(0);
+        // process.exit(0);
     });
 }
 
