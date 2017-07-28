@@ -43,6 +43,7 @@
   "optionalDependencies": {
     "haraka-plugin-elasticsearch" : "*",
     "ldapjs"                : "~1.0.0",
+    "haraka-plugin-recipient-routes": "*",
     "haraka-plugin-redis"   : "*",
     "haraka-plugin-syslog"  : "*",
     "ocsp"                  : "~1.2.0",
