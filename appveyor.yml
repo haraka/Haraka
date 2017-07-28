@@ -18,7 +18,7 @@ before_test:
   - npm --version
 
 test_script:
-  - node run_tests
+  - npm run test
 
 after_test:
 
