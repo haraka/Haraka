@@ -100,6 +100,12 @@ Server.gracefulRestart = function () {
     Server._graceful();
 }
 
+Server.stopListeners = function () {
+    Server.listeners.forEach(function (server) {
+        server.close();
+    });
+}
+
 Server.performShutdown = function () {
     if (Server.cfg.main.graceful_shutdown) {
         return Server.gracefulShutdown();
