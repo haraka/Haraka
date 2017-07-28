@@ -334,7 +334,7 @@ folder of the same name that will not take preference, so avoid using names
 similar to core modules.
 
 Plugins loaded as modules do not have the special `require()`. To load
-a core Haraka module you must use `this.haraka_require('name')`. 
+a core Haraka module you must use `this.haraka_require('name')`.
 This should also be preferred for plain JS plugins, as the
 `./` hack is likely to be removed in the future.
 
@@ -344,25 +344,6 @@ To access the `server` object, use `connection.server` instead.
 
 Module plugins support default config in their local `config` directory. See the
 "Default Config and Overrides" section in [Config](Config.md).
-
-## Shutdown
-
-On shutdown and graceful reload, Haraka will call a plugin's `shutdown` method.
-
-This is so you can clear any timers or intervals, or shut down any connections
-to remote servers.
-
-e.g.
-
-    exports.shutdown = function () {
-        clearInterval(this._interval);
-    }
-
-If you don't implement this in your plugin and have a connection open or a
-timer running then Haraka will take 30 seconds to shut down and have to
-forcibly kill your process.
-
-Note: This only applies when running with a `nodes=...` value in smtp.ini.
 
 ## See also, [Results](Results.md)
 

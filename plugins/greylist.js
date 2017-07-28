@@ -98,13 +98,6 @@ exports.load_config_lists = function () {
     load_config_list('dyndom', 'special_dynamic_domains');
 };
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-exports.shutdown = function () {
-    if (this.db) this.db.quit();
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
 // We check for IP and envelope whitelist
 exports.hook_mail = function (next, connection, params) {
     var plugin = this;

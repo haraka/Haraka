@@ -41,20 +41,12 @@ process.on('uncaughtException', function (err) {
     logger.dump_and_exit(1);
 });
 
-var shutting_down = false;
 ['SIGTERM', 'SIGINT'].forEach(function (sig) {
     process.on(sig, function () {
-        if (shutting_down) return process.exit(1);
-        shutting_down = true;
         process.title = path.basename(process.argv[1], '.js');
         logger.lognotice(sig + ' received');
         logger.dump_and_exit(function () {
-            if (server.cluster && server.cluster.isMaster) {
-                server.performShutdown();
-            }
-            else if (!server.cluster) {
-                server.performShutdown();
-            }
+            server.performShutdown();
         });
     });
 });
@@ -65,7 +57,6 @@ process.on('SIGHUP', function () {
 });
 
 process.on('exit', function (code) {
-    if (shutting_down) return;
     process.title = path.basename(process.argv[1], '.js');
     logger.lognotice('Shutting down');
     logger.dump_logs();
