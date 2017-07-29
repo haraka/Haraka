@@ -101,9 +101,11 @@ Server.gracefulRestart = function () {
 }
 
 Server.stopListeners = function () {
+    logger.loginfo('Shutting down listeners');
     Server.listeners.forEach(function (server) {
         server.close();
     });
+    Server.listeners = [];
 }
 
 Server.performShutdown = function () {
@@ -115,10 +117,7 @@ Server.performShutdown = function () {
 }
 
 Server.gracefulShutdown = function () {
-    logger.loginfo('Shutting down listeners');
-    Server.listeners.forEach(function (server) {
-        server.close();
-    });
+    Server.stopListeners();
     Server._graceful(function () {
         // log();
         logger.loginfo("Failed to shutdown naturally. Exiting.");
