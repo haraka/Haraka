@@ -42,7 +42,7 @@ process.on('uncaughtException', function (err) {
 });
 
 var shutting_down = false;
-['SIGTERM', 'SIGINT'].forEach(function (sig) {
+['SIGINT'].forEach(function (sig) {
     process.on(sig, function () {
         if (shutting_down) return process.exit(1);
         shutting_down = true;
