@@ -107,6 +107,12 @@ exports.load_tls_opts = function () {
 
     plugin.loadPemFiles();
 
+    plugin.loadPemDir((err, certs) => {
+        if (certs && certs.length) {
+            plugin.loginfo(certs.length + ' TLS certificates loaded');
+        }
+    });
+
     plugin.logdebug(plugin.tls_opts);
 }
 
@@ -129,6 +135,32 @@ exports.loadPemFiles = function () {
         }
         return cert;
     });
+}
+
+exports.loadPemDir = function (done) {
+    var plugin = this;
+
+    plugin.net_utils.load_tls_dir('tls', (err, certs) => {
+        if (err) plugin.logerror(err);
+
+        if (!certs || !certs.length) {
+            plugin.loginfo('0 TLS certs in config/tls');
+            return done(null, certs);
+        }
+
+        let certsByHost = {};
+
+        certs.forEach(cert => {
+            // plugin.loginfo(cert);
+            cert.names.forEach(name => {
+                certsByHost[name] = cert;
+            })
+        })
+
+        // plugin.loginfo(certsByHost);
+        plugin.tls_opts.certsByHost = certsByHost;
+        done(null, certs);
+    })
 }
 
 exports.advertise_starttls = function (next, connection) {

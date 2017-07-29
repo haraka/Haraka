@@ -1,24 +1,23 @@
 'use strict';
 
-var fs           = require('fs');
-var path         = require('path');
+const fs           = require('fs');
+const path         = require('path');
 
-var fixtures     = require('haraka-test-fixtures');
-var Plugin       = fixtures.plugin;
+const fixtures     = require('haraka-test-fixtures');
+const Plugin       = fixtures.plugin;
 
-var _set_up = function (done) {
-    this.plugin = new Plugin('tls');
+function _set_up (done) {
+    let plugin = new Plugin('tls');
+    this.plugin = plugin;
     this.connection = new fixtures.connection.createConnection();
 
     // use tests/config instead of ./config
-    this.plugin.config =
-        this.plugin.config.module_config(path.resolve('tests'));
-    this.plugin.net_utils.config =
-        this.plugin.net_utils.config.module_config(path.resolve('tests'));
+    plugin.config = plugin.config.module_config(path.resolve('tests'));
+    plugin.net_utils.config = plugin.net_utils.config.module_config(path.resolve('tests'));
 
-    this.plugin.tls_opts = {};
+    plugin.tls_opts = {};
     done();
-};
+}
 
 exports.plugin = {
     setUp : _set_up,
@@ -48,7 +47,7 @@ exports.plugin = {
         test.equal('function', typeof this.plugin.emit_upgrade_msg);
         test.done();
     },
-};
+}
 
 function tls_ini_overload (plugin) {
     plugin.config = plugin.config.module_config(path.resolve('tests'));
@@ -86,7 +85,27 @@ exports.load_tls_ini = {
         test.equal('outbound_tls_cert.pem', this.plugin.cfg.outbound.cert);
         test.done();
     }
-};
+}
+
+exports.loadPemDir = {
+    setUp: _set_up,
+    'loads TLS certs from config/tls': function (test) {
+        let plugin = this.plugin;
+        plugin.load_tls_ini(); // sets up plugin.cfg
+
+        test.expect(5);
+        plugin.loadPemDir(function (err, res) {
+            // console.log(arguments);
+            test.equal(err, null);
+            test.ok(Array.isArray(res));
+            test.ok(res.length);
+            test.equal(plugin.tls_opts.certsByHost['haraka.local'].file, 'haraka.local.pem');
+            // console.log(plugin.tls_opts.certsByHost['haraka.local']);
+            test.equal(plugin.tls_opts.certsByHost['haraka.local'].names[0], 'haraka.local');
+            test.done();
+        })
+    }
+}
 
 exports.load_tls_opts = {
     setUp : function (done) {
@@ -113,7 +132,7 @@ exports.load_tls_opts = {
         test.equal(this.plugin.tls_opts.dhparam.toString(), '-----BEGIN DH PARAMETERS-----\nMIIBCAKCAQEA5u0Bg9gCrKvYbkCmUe7cZUjZYFbqvbo9UPaR27K5yPklpy2Fy7bT\n+Jbzb/C0zHRD3mx3hoapa/3jB1Zhw31cxNmmwGvblpWNjToBoSydVDAY2BphJxHn\nCMEz3VGqiA4FXKx0R+jLeq5p5rTEuMbXTyxnj/hJesquORc2sy8L410Kw+6UvbPE\ntw9WKwzrpdMxwVSme2voHlpLZuvGqE/paxxnp0kmFp/esda2Aj8xVMEtAMh8lw8v\nfPaeTO94I4/SKJtzLl8j9J6mrq+aTYjljMryt2GJwZNrH41CPuOZYb5MyGAGPCWW\nl/RlqtnAit2IQ4VA1MrITAzoepC144w5CwIBAg==\n-----END DH PARAMETERS-----\n');
         test.done();
     },
-};
+}
 
 exports.register = {
     setUp : function (done) {
@@ -134,7 +153,7 @@ exports.register = {
         // console.log(this.plugin);
         test.done();
     },
-};
+}
 
 exports.dont_register = {
     setUp : function (done) {
@@ -157,7 +176,7 @@ exports.dont_register = {
         // console.log(this.plugin);
         test.done();
     },
-};
+}
 
 exports.emit_upgrade_msg = {
     setUp : _set_up,

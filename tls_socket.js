@@ -228,7 +228,7 @@ function _getSecureContext (options) {
 }
 
 function createServer (cb) {
-    var serv = net.createServer(function (cryptoSocket) {
+    return net.createServer(function (cryptoSocket) {
 
         var socket = new pluggableStream(cryptoSocket);
 
@@ -281,8 +281,6 @@ function createServer (cb) {
 
         cb(socket);
     });
-
-    return serv;
 }
 
 function connect (port, host, cb) {
