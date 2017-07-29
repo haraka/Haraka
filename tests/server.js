@@ -368,7 +368,7 @@ exports.nodemailer = {
             }
         },
         function (error, info){
-            console.log(info);
+            // console.log(info);
             if (error){
                 console.log(error);
                 test.done();
