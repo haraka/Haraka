@@ -240,7 +240,86 @@ exports.hook_unrecognized_command = {
         this.connection.notes.authenticating=true;
         this.connection.notes.auth_method='PLAIN';
         this.plugin.hook_unrecognized_command(next, this.connection, [utils.base64('discard\0test\0testpass')]);
+    }
+};
+
+exports.auth_login = {
+    setUp : _set_up,
+    'AUTH LOGIN': function (test) {
+        test.expect(8);
+
+        var next3 = function (code) {
+            test.equal(code, OK);
+            test.equal(this.connection.relaying, true);
+            test.done();
+        }.bind(this);
+
+        var next2 = function (code) {
+            test.equal(code, OK);
+            test.equal(this.connection.notes.auth_login_userlogin, 'test');
+            test.equal(this.connection.relaying, false);
+            this.plugin.hook_unrecognized_command(next3, this.connection, [utils.base64('testpass')]);
+        }.bind(this);
+
+        var next = function (code) {
+            test.equal(code, OK);
+            test.equal(this.connection.relaying, false);
+            test.equal(this.connection.notes.auth_login_asked_login , true);
+
+            this.plugin.hook_unrecognized_command(next2, this.connection, [utils.base64('test')]);
+        }.bind(this);
+
+        var params = ['AUTH','LOGIN'];
+        this.connection.notes.allowed_auth_methods = ['PLAIN','LOGIN'];
+        this.plugin.hook_unrecognized_command(next, this.connection, params);
     },
+
+    'AUTH LOGIN <username>': function (test) {
+        test.expect(6);
+
+        var next2 = function (code) {
+            test.equal(code, OK);
+            test.equal(this.connection.relaying, true);
+            test.done();
+        }.bind(this);
+
+        var next = function (code) {
+            test.equal(code, OK);
+            test.equal(this.connection.relaying, false);
+            test.equal(this.connection.notes.auth_login_userlogin, 'test');
+            test.equal(this.connection.notes.auth_login_asked_login , true);
+
+            this.plugin.hook_unrecognized_command(next2, this.connection, [utils.base64('testpass')]);
+        }.bind(this);
+
+        var params = ['AUTH','LOGIN', utils.base64('test')];
+        this.connection.notes.allowed_auth_methods = ['PLAIN','LOGIN'];
+        this.plugin.hook_unrecognized_command(next, this.connection, params);
+    },
+
+    'AUTH LOGIN <username>, bad protocol': function (test) {
+        test.expect(7);
+
+        var next2 = function (code, msg) {
+            test.equal(code, DENYDISCONNECT);
+            test.equal(msg, 'bad protocol');
+            test.equal(this.connection.relaying, false);
+            test.done();
+        }.bind(this);
+
+        var next = function (code) {
+            test.equal(code, OK);
+            test.equal(this.connection.relaying, false);
+            test.equal(this.connection.notes.auth_login_userlogin, 'test');
+            test.equal(this.connection.notes.auth_login_asked_login , true);
+
+            this.plugin.hook_unrecognized_command(next2, this.connection, ['AUTH', 'LOGIN']);
+        }.bind(this);
+
+        var params = ['AUTH','LOGIN', utils.base64('test')];
+        this.connection.notes.allowed_auth_methods = ['PLAIN','LOGIN'];
+        this.plugin.hook_unrecognized_command(next, this.connection, params);
+    }
 };
 
 exports.hexi = {
@@ -252,3 +331,4 @@ exports.hexi = {
         test.done();
     },
 };
+

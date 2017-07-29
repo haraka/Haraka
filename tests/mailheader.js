@@ -10,6 +10,7 @@ var lines = [
     'From: Matt Sergeant <helpme@gmail.com>',
     'Content-Type: multipart/alternative;',
     '   boundary=Apple-Mail-F2C5DAD3-7EB3-409D-9FE0-135C9FD43B69',
+    'Content-Type2: multipart/mixed; boundary="nqp=nb64=()I9WT8XjoN"',
     'Content-Transfer-Encoding: 7bit',
     'Mime-Version: 1.0 (1.0)',
     'Subject: Re: Haraka Rocks!',
@@ -28,8 +29,20 @@ exports.basic = {
         test.expect(2);
         var h = new Header();
         h.parse(lines);
-        test.equal(h.lines().length, 11);
-        test.ok(/multipart\/alternative;\s+boundary=Apple-Mail-F2C5DAD3-7EB3-409D-9FE0-135C9FD43B69/.test(h.get_decoded('content-type')));
+        test.equal(h.lines().length, 12);
+        test.equal(
+            h.get_decoded('content-type'),
+            'multipart/alternative; boundary=Apple-Mail-F2C5DAD3-7EB3-409D-9FE0-135C9FD43B69'
+        );
+        test.done();
+    },
+    'content type w/parens': function (test) {
+        test.expect(2);
+        var h = new Header();
+        h.parse(lines);
+        test.equal(h.lines().length, 12);
+        var ct = h.get_decoded('content-type2');
+        test.equal(ct, 'multipart/mixed; boundary="nqp=nb64=()I9WT8XjoN"');
         test.done();
     }
 }
@@ -42,7 +55,7 @@ exports.add_headers = {
         h.add('Foo', 'bar');
         test.equal(h.lines()[0], 'Foo: bar\n');
         h.add_end('Fizz', 'buzz');
-        test.equal(h.lines()[12], 'Fizz: buzz\n');
+        test.equal(h.lines()[13], 'Fizz: buzz\n');
         test.done();
     },
     add_utf8: function (test) {

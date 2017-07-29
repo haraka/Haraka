@@ -26,7 +26,7 @@ var ResultStore = require('haraka-results');
 
 var hostname    = (os.hostname().split(/\./))[0];
 var version     = JSON.parse(
-        fs.readFileSync(path.join(__dirname, 'package.json'))).version;
+    fs.readFileSync(path.join(__dirname, 'package.json'))).version;
 
 var states = exports.states = {
     STATE_CMD:             1,
@@ -139,8 +139,8 @@ function setupClient (self) {
     });
 
     var ha_list = net.isIPv6(self.remote.ip) ?
-                  haproxy_hosts_ipv6
-                : haproxy_hosts_ipv4;
+        haproxy_hosts_ipv6
+        : haproxy_hosts_ipv4;
 
     if (ha_list.some(function (element, index, array) {
         return ipaddr.parse(self.remote.ip).match(element[0], element[1]);
@@ -196,6 +196,7 @@ function Connection (client, server) {
     this.current_data = null;
     this.current_line = null;
     this.state = states.STATE_PAUSE;
+    this.encoding = 'utf8';
     this.prev_state = null;
     this.loop_code = null;
     this.loop_msg = null;
@@ -285,7 +286,7 @@ Connection.prototype.process_line = function (line) {
         return;
     }
 
-    this.current_line = line.toString('binary').replace(/\r?\n/, '');
+    this.current_line = line.toString(this.encoding).replace(/\r?\n/, '');
     if (logger.would_log(logger.LOGPROTOCOL)) {
         this.logprotocol("C: " + this.current_line + ' state=' + this.state);
     }
@@ -304,7 +305,7 @@ Connection.prototype.process_line = function (line) {
             this.disconnect();
             return;
         }
-        else {
+        else if (this.hello.verb == 'HELO') {
             return this.respond(501, 'Syntax error (8-bit characters not allowed)');
         }
     }
@@ -314,7 +315,7 @@ Connection.prototype.process_line = function (line) {
         var matches = /^([^ ]*)( +(.*))?$/.exec(this.current_line);
         if (!matches) {
             return plugins.run_hooks('unrecognized_command',
-                    this, this.current_line);
+                this, this.current_line);
         }
         var method = "cmd_" + matches[1].toLowerCase();
         var remaining = matches[3] || '';
@@ -890,6 +891,7 @@ Connection.prototype.ehlo_respond = function (retval, msg) {
                 ", Haraka is at your service.",
                 "PIPELINING",
                 "8BITMIME",
+                "SMTPUTF8",
             ];
 
             var databytes = parseInt(config.get('databytes')) || 0;
@@ -1365,6 +1367,10 @@ Connection.prototype.cmd_mail = function (line) {
     var self = this;
     this.init_transaction(function () {
         self.transaction.mail_from = from;
+        if (self.hello.verb == 'HELO') {
+            self.transaction.encoding = 'binary';
+            self.encoding = 'binary';
+        }
         plugins.run_hooks('mail', self, [from, params]);
     });
 };
@@ -1428,7 +1434,7 @@ Connection.prototype.received_line = function () {
         sslheader = '(version=' + this.notes.tls.cipher.version +
             ' cipher=' + this.notes.tls.cipher.name +
             ' verify=' + ((this.notes.tls.authorized) ? 'OK' :
-            ((this.notes.tls.authorizationError &&
+                ((this.notes.tls.authorizationError &&
               this.notes.tls.authorizationError.code === 'UNABLE_TO_GET_ISSUER_CERT') ? 'NO' : 'FAIL')) + ')';
     }
     var received_header = [
@@ -1605,9 +1611,7 @@ Connection.prototype.accumulate_data = function (line) {
 
 Connection.prototype.data_done = function () {
     var self = this;
-    this.state = states.STATE_CMD;
     this.pause();
-    // this.state = states.STATE_PAUSE;
     this.totalbytes += this.transaction.data_bytes;
 
     // Check message size limit

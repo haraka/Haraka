@@ -99,20 +99,20 @@ exports.hook_rcpt = function (next, connection, params) {
             return next(DENYSOFT, "error validating email address");
         }
 
-        if (qmd_r[0] === OK) {
-            txn.results.add(plugin, {pass: "rcpt." + qmd_r[1]});
-            if (plugin.set_queue(connection, null, domain)) {
-                return next(OK);
-            }
-            return next(DENYSOFT, "Split transaction, retry soon");
-        }
-
         // a client with relaying privileges is sending from a local domain.
         // Any RCPT is acceptable.
         if (connection.relaying && txn.notes.local_sender) {
             txn.results.add(plugin, {pass: "relaying local_sender"});
             plugin.set_queue(connection, 'outbound');
             return next(OK);
+        }
+
+        if (qmd_r[0] === OK) {
+            txn.results.add(plugin, {pass: "rcpt." + qmd_r[1]});
+            if (plugin.set_queue(connection, null, domain)) {
+                return next(OK);
+            }
+            return next(DENYSOFT, "Split transaction, retry soon");
         }
 
         if (qmd_r[0] === undefined) {

@@ -51,7 +51,7 @@ exports.hook_queue = function (next, connection) {
 
     qmail_queue.on('exit', finished);
 
-    connection.transaction.message_stream.pipe(qmail_queue.stdin);
+    connection.transaction.message_stream.pipe(qmail_queue.stdin, { line_endings: '\n' });
 
     qmail_queue.stdin.on('close', function () {
         if (!connection.transaction) {

@@ -21,7 +21,7 @@ exports.hook_data_post = function (next, connection) {
 
     var rcpts = txn.rcpt_to.map(function (rcpt) { return rcpt.address(); });
     var training = (txn.notes.training_mode && txn.notes.training_mode === 'spam')
-                   ? true : false;
+        ? true : false;
     var response = '';
     var client = net.createConnection({
         path: '/var/dcc/dccifd'

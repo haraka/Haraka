@@ -6,10 +6,31 @@
 
 var smtp_client_mod = require('./smtp_client');
 
+// exported so tests can override config dir
+// exports.get_net_utils = function () {
+//     return require('haraka-net-utils');
+// }
+
+exports.net_utils = require('haraka-net-utils');
+
 exports.register = function () {
     var plugin = this;
+    plugin.load_errs = [];
 
     plugin.load_smtp_forward_ini();
+    plugin.make_tls_opts();
+
+    if (plugin.load_errs.length > 0) return;
+
+    if (plugin.cfg.main.check_sender) {
+        plugin.register_hook('mail', 'check_sender');
+    }
+
+    if (plugin.cfg.main.check_recipient) {
+        plugin.register_hook('rcpt', 'check_recipient');
+    }
+
+    plugin.register_hook('queue', 'queue_forward');
 
     if (plugin.cfg.main.check_sender) {
         plugin.register_hook('mail', 'check_sender');
@@ -25,6 +46,46 @@ exports.register = function () {
         plugin.register_hook('queue_outbound', 'queue_forward');
     }
 };
+
+exports.make_tls_opts = function () {
+    var plugin = this;
+    var tls_options = {};
+
+    if (plugin.cfg.main.enable_tls === true) {
+
+        var tls = plugin.net_utils.load_tls_ini();
+        if (!tls.outbound) { return; }
+
+        var tlsCfg = tls.outbound;
+
+        var config_options = [
+            'ciphers', 'requestCert', 'rejectUnauthorized',
+            'key', 'cert', 'honorCipherOrder', 'ecdhCurve', 'dhparam',
+            'secureProtocol', 'enableOCSPStapling'
+        ];
+
+        for (let i = 0; i < config_options.length; i++) {
+            let opt = config_options[i];
+            if (tlsCfg[opt] === undefined) continue;
+
+            if (opt === 'key' || opt === 'cert') {
+                var pem = plugin.config.get(tlsCfg[opt], 'binary');
+                if (!pem) {
+                    var msg = "tls " + opt + " " + tlsCfg[opt] + " could not be loaded.";
+                    this.load_errs.push(msg);
+                    this.logcrit(msg + " See 'haraka -h queue/smtp_forward'");
+                }
+
+                tls_options[opt] = pem;
+            }
+            else {
+                tls_options[opt] = tlsCfg[opt];
+            }
+        }
+    }
+
+    this.tls_options = tls_options;
+}
 
 exports.load_smtp_forward_ini = function () {
     var plugin = this;
@@ -120,6 +181,12 @@ exports.check_recipient = function (next, connection, params) {
         return next();
     }
 
+    if (connection.relaying && txn.notes.local_sender) {
+        plugin.set_queue(connection, 'outbound');
+        txn.results.add(plugin, {pass: 'relaying local_sender'});
+        return next(OK);
+    }
+
     var domain = rcpt.host.toLowerCase();
     if (plugin.cfg[domain] !== undefined) {
         if (plugin.set_queue(connection, 'smtp_forward', domain)) {
@@ -128,12 +195,6 @@ exports.check_recipient = function (next, connection, params) {
         }
         txn.results.add(plugin, {pass: 'rcpt_to.split'});
         return next(DENYSOFT, "Split transaction, retry soon");
-    }
-
-    if (connection.relaying && txn.notes.local_sender) {
-        plugin.set_queue(connection, 'outbound');
-        txn.results.add(plugin, {pass: 'relaying local_sender'});
-        return next(OK);
     }
 
     // the MAIL FROM domain is not local and neither is the RCPT TO
@@ -208,8 +269,8 @@ exports.queue_forward = function (next, connection) {
         var dead_sender = function () {
             if (smtp_client.is_dead_sender(plugin, connection)) {
                 var rs = connection.transaction ?
-                         connection.transaction.results :
-                         connection.results;
+                    connection.transaction.results :
+                    connection.results;
                 rs.add(plugin, { err: 'dead sender' });
                 return true;
             }
@@ -222,7 +283,7 @@ exports.queue_forward = function (next, connection) {
                 smtp_client.send_command('DATA');
                 return;
             }
-            smtp_client.send_command('RCPT', 'TO:' + txn.rcpt_to[rcpt]);
+            smtp_client.send_command('RCPT', 'TO:' + txn.rcpt_to[rcpt].format(!smtp_client.smtp_utf8));
             rcpt++;
         };
 
@@ -260,7 +321,7 @@ exports.queue_forward = function (next, connection) {
         smtp_client.on('bad_code', function (code, msg) {
             if (dead_sender()) return;
             smtp_client.call_next(((code && code[0] === '5') ? DENY : DENYSOFT),
-                                msg);
+                msg);
             smtp_client.release();
         });
     });

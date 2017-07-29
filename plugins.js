@@ -80,7 +80,6 @@ Plugin.prototype._get_plugin_path = function () {
     plugin.hasPackageJson = false;
     var name = plugin.name;
     if (/^haraka\-plugin\-/.test(name)) {
-        logger.lognotice("the haraka-plugin- prefix is not required in config/plugins");
         name = name.replace(/^haraka\-plugin\-/, '');
     }
 
@@ -538,7 +537,7 @@ function log_run_item (item, hook, retval, object, params, msg) {
             'plugin='   + item[0].name,
             'function=' + item[1],
             'params="'  + ((params) ? ((typeof params === 'string') ?
-                            params : params[0]) : '') + '"',
+                params : params[0]) : '') + '"',
             'retval='   + constants.translate(retval),
             'msg="'     + ((msg) ? msg : '') + '"',
         ].join(' '));

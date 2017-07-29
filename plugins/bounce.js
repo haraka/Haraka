@@ -82,7 +82,7 @@ exports.reject_all = function (next, connection, params) {
     }
 
     connection.transaction.results.add(plugin,
-            {fail: 'bounces_accepted', emit: true });
+        {fail: 'bounces_accepted', emit: true });
     return next(DENY, "No bounces accepted here");
 };
 
@@ -96,7 +96,7 @@ exports.single_recipient = function (next, connection) {
     // Valid bounces have a single recipient
     if (connection.transaction.rcpt_to.length === 1) {
         transaction.results.add(plugin,
-                {pass: 'single_recipient', emit: true });
+            {pass: 'single_recipient', emit: true });
         return next();
     }
 
@@ -107,12 +107,12 @@ exports.single_recipient = function (next, connection) {
     // checked (not sure if this is default or not)
     if (connection.relaying) {
         transaction.results.add(plugin,
-                {skip: 'single_recipient(relay)', emit: true });
+            {skip: 'single_recipient(relay)', emit: true });
         return next();
     }
     if (connection.remote.is_private) {
         transaction.results.add(plugin,
-                {skip: 'single_recipient(private_ip)', emit: true });
+            {skip: 'single_recipient(private_ip)', emit: true });
         return next();
     }
 
@@ -258,7 +258,7 @@ exports.non_local_msgid = function (next, connection) {
 
     if (domains.length === 0) {
         connection.loginfo(plugin,
-                'no domain(s) parsed from Message-ID headers');
+            'no domain(s) parsed from Message-ID headers');
         transaction.results.add(plugin, { fail: 'Message-ID parseable' });
         if (!plugin.cfg.reject.non_local_msgid) return next();
         return next(DENY, "bounce with invalid Message-ID, I didn't send it.");

@@ -16,7 +16,7 @@ exports.get_client(server, function (err, smtp_client) {
     test.equals(0, server.notes.pool[pool_name].availableObjectsCount());
 
     var message_stream = new MessageStream(
-      { main : { spool_after : 1024 } }, "123456789"
+        { main : { spool_after : 1024 } }, "123456789"
     );
 
     var data = [];

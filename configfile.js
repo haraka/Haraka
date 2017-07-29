@@ -6,6 +6,9 @@ var path = require('path');
 var yaml = require('js-yaml');
 
 var logger = getStubLogger();
+setImmediate(function () {
+    logger = require('./logger');
+});
 
 // for "ini" type files
 var regex = exports.regex = {
@@ -266,6 +269,7 @@ cfreader.ensure_enoent_timer = function () {
             })(files[i]); // END BLOCK SCOPE
         }
     }, 60 * 1000);
+    cfreader._enoent_timer.unref();
 };
 
 process.on('message', function (msg) {
@@ -423,7 +427,7 @@ cfreader.load_yaml_config = function (name) {
             }
         }
         else {
-            throw err;
+            logger.logerror('EXCEPTION processing ' + name + ': ' + err);
         }
     }
     cfreader.process_file_overrides(name, result);
@@ -444,8 +448,8 @@ cfreader.init_booleans = function (options, result) {
             var key     = m[2];
 
             var bool_default = section[0] === '+' ? true
-                             :     key[0] === '+' ? true
-                             :     false;
+                :     key[0] === '+' ? true
+                    :     false;
 
             if (section.match(/^(\-|\+)/)) section = section.substr(1);
             if (    key.match(/^(\-|\+)/)) key     =     key.substr(1);
@@ -623,4 +627,3 @@ cfreader.load_binary_config = function (name, type) {
         }
     }
 };
-logger = require('./logger');

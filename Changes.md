@@ -1,5 +1,89 @@
 
-2.8.13 - Feb 03, 2017
+## 2.8.14 - Jul 26, 2017
+
+* Changes
+    * Fix auth plugin failure when re-selecting auth method #2000
+    * don't crash Haraka when invalid YAML config encountered #2013
+    * update semver to version 5.4.0 #2015
+    * relay docs: correct the config file name #2012
+    * rename config/xclient.hosts to match plugin & docs #2014
+    * build_todo() is part of the outbound/index.js api #2016
+    * update js-yaml to version 3.9.0 #2002
+    * outbound/hmail: use WRITE_EXCL from haraka-constants #2011
+    * replace plugins/log.elasticsearch with npm packaged #2004
+    * Remove two spurious log statements #1989
+    * access: rebuild blacklist upon change (vs supplement) #1990
+    * deliver to qmail-queue with LF line endings (not CRLF) #1997
+    * doc: add note that smtp_forward only supports STARTTLS #1988
+    * import Plugins.md from v3 #1991
+    * update async to 2.5.0 #1982
+    * update iconv to 2.3.0 #1981
+    * require node.js v6+ #1958
+    * update ipaddr.js to 1.4.0 #1972
+    * support newer address-rfc2822 #1970
+    * update node-address-rfc2821 version to 1.1.1 #1968
+    * outbound: be consistent with todo.domain #1960
+    * bump haraka-results required version #1949
+    * logger: load in a setImmediate call #1948
+    * logger: strip intermediate \n chars #1947
+    * tls consistency cleanups #1851
+    * Get pool config handling simplifcation #1868
+        * add integration test: send message w/smtp_client
+    * replace some legacy code with es6 #1862
+    * update async to version 2.2.0 #1863
+    * update ipaddr.js to version 1.3.0 #1857
+    * update redis to version 2.7.0 #1854
+    * assure conn/tran still exists before storing results #1849
+    * moved tls.ini parsing to net_utils #1848
+    * smtp forward dest split routing #1847
+    * rspamd: refactor complex condition into function #1840
+    * block js attachments #1837
+    * helo.checks: bring plugin into alignment with docs #1833
+    * when proxy enabled, update remote.is_private too #1811
+    * create an outbound queue filename handler #1792
+    * replace connect.fcrdns with npm package #1810
+    * add an additional node_modules plugin search path #1805
+    * Set graceful shutdown off by default #1927
+    * Allow outbound pools to be disabled #1917
+    * Outbound split and move into folder #1850
+    * don't emit binary characters into the logs #1902
+    * Add .editorconfig #1884
+    * tls: remove interim variables #1871
+* New Features
+    * Use punycode domain (support SMTPUTF8) #1944
+    * Added RabbitMQ vhost support #1866
+    * clamav: allow "Unknown Result" and Socket Error to try next host #1931
+    * outbound client certificates #1908
+    * Implement the missing upgrade method on SMTPClient #1901
+    * Remove typo from relay.md #1886
+* Fixes
+    * outbound: fix queue not loaded for single process #1941
+    * outbound: Fix undefined variable platformDOT in hmail.js #1943
+    * outbound: fix undefined FsyncWriteStream var #1953
+    * Fix cluster messaging for node v6+ #1938
+    * outbound: fix loading under cluster. #1934
+    * Check pool exists before delete #1937
+    * be more strict in attachment filename matching #1957
+    * doc typo fix #1963
+    * RabbitMQ: fix encoding of user and password string #1964
+    * spf: improve modifier regexp #1859
+    * rabbitmq doc typo in config file name #1865
+    * URL to manual was 404, point to Plugins.md #1844
+    * smtp_client: set idleTimeout to 1s < pool_timeout #1842
+    * fix broken continuations #1843
+    * doc error for the 'check.authenticated' setting in rspamd plugin #1834
+    * emit _the_ result, not all of them #1829
+    * fix outbound logger #1827
+    * fix forwarding with client auth over TLS (forward to gmail) #1803
+    * Don't blow the stack on qstat #1930
+    * run dumped logs through log plugins, not console #1929
+    * Fix path parsing bug on Windows platform #1919
+    * helo: make sure list_re is defined before access #1903
+    * TLS: handle case where OCSP server is unavailable #1880
+    * rspamd: add missing 'default' keyword #1856
+    * disable naïve comment stripping #1876
+
+## 2.8.13 - Feb 03, 2017
 
 * Changes
     * new [haraka-plugin-limit](https://github.com/haraka/haraka-plugin-limit) #1785
@@ -33,7 +117,7 @@
     * remove auth_flat_file sample auth user #1796
 
 
-2.8.12 - Jan 03, 2017
+## 2.8.12 - Jan 03, 2017
 
 * Changes
     * plugin/karma -> npm packaged haraka-plugin-karma #1747
@@ -49,7 +133,7 @@
     * Swap lines to avoid clobbering response array #1743
 
 
-2.8.11 - Nov 24, 2016
+## 2.8.11 - Nov 24, 2016
 
 * Changes
     * rename core_require to haraka_require #1708
@@ -68,7 +152,7 @@
     * bring port 465 SMTPS TLS config support on par with STARTTLS #1667
     * use tls.connect instead of createSecurePair #1678
     * redis: improve error handling in tests #
-    * replace / path seperators with path.* for cross platform compat #1713
+    * replace / path seperators with path.\* for cross platform compat #1713
 
 * Bug Fixes
     * dkim_sign: per-domain key finding fixed #1707
@@ -80,7 +164,7 @@
     * fix results for connection.remote_host and NXDOMAIN #1716
 
 
-2.8.10 - Oct 20, 2016
+## 2.8.10 - Oct 20, 2016
 
 * Changes
     * use standard npm syntax for lint and tests #1646
@@ -123,7 +207,7 @@
     * fix TLS timeout errors #1665
 
 
-2.8.9 - Oct 02, 2016
+## 2.8.9 - Oct 02, 2016
 
 * Changes
 
@@ -159,7 +243,7 @@
     * fix dkim_sign TypeError with null mail_from.host (#1592)
     * fix dkim_sign attempting to lower an undefined (#1587)
 
-2.8.8 - Jul 20, 2016
+## 2.8.8 - Jul 20, 2016
 
 * Changes
     * removed UPGRADE.doc to [wiki](https://github.com/haraka/Haraka/wiki/Upgrade-Haraka)
@@ -176,7 +260,7 @@
     * add results property to outbound transaction #1535
     * don't unref unref'd wss server #1521
 
-2.8.7 - Jun 18, 2016
+## 2.8.7 - Jun 18, 2016
 
 * Changes
     * Fix geoip test
@@ -195,13 +279,13 @@
       (#1504 and #1502 thanks @darkpixel)
     * More fixes to clean shutdown (#1503)
 
-2.8.6 - Jun 06, 2016
+## 2.8.6 - Jun 06, 2016
 
 * Bug Fixes
     * Fix loading under Node v4 which sends a blank message
     * Fix quit (SIGINT) when running without nodes=
 
-2.8.5 - Jun 04, 2016
+## 2.8.5 - Jun 04, 2016
 
 * Changes
     * The connection object is now passed to `get_plain_passwd`. Older
@@ -224,17 +308,17 @@
     * Fix encodings when banners are used (#1477)
     * Various DKIM fixes (#1495)
 
-2.8.4 - May 24, 2016
+## 2.8.4 - May 24, 2016
 
 * Bug Fixes
     * Fix plugin loading override when installed (#1471)
 
-2.8.3 - May 18, 2016
+## 2.8.3 - May 18, 2016
 
 * Bug Fixes
     * Fix config overriding for core modules (#1468)
 
-2.8.2 - May 17, 2016
+## 2.8.2 - May 17, 2016
 
 * Changes
     * Added Node v6 to travis tests
@@ -252,7 +336,7 @@
     * Stop haraka dying when ldap connections fail (#1456)
     * Pick up domain specific config correctly in ldap (#1456)
 
-2.8.0 - May 06, 2016
+## 2.8.0 - May 06, 2016
 
 * Changes
     * updated dependency versions (#1426, #1425)
@@ -260,8 +344,8 @@
     * remove spameatingmonkey from tests (#1421)
     * replace ./constants.js with haraka-constants (#1353)
     * Document HMail and TODO items (#1343)
-    * Copy only a minimal config/* by default (#1341).
-    * cfreader/* removed to haraka/haraka-config (#1350)
+    * Copy only a minimal config/\* by default (#1341).
+    * cfreader/\* removed to haraka/haraka-config (#1350)
     * outbound and smtp_client honor tls.ini settings (#1350)
     * outbound TLS defaults to enabled
     * lint: remove all unused variables (#1358)
@@ -281,7 +365,7 @@
     * removed TLD stuff to haraka/haraka-tld (#1301)
     * removed unused 'require('redis') in plugins/karma (#1348)
     * improved MIME header support per rfc2231 (#1344)
-    * tls options can be defined for outbound and smtp_* (#1357) 
+    * tls options can be defined for outbound and smtp\_\* (#1357) 
     * explicitly disable SSLv2 (#1395)
     * cache STUN results
     * xclient plugin improvements (#1405)
@@ -304,7 +388,7 @@
     * smtp_client: fix remote_ip (#1362)
 
 
-2.7.3 - Feb 04, 2016
+## 2.7.3 - Feb 04, 2016
 
 * Changes
     * smtp_proxy & qmail-queue: default to enabled for outbound deliveries
@@ -338,13 +422,13 @@
     * outbound: Add missing dash to 'Final-Recipient' header name (#1320)
 
 
-2.7.2 - Dec 15, 2015
+## 2.7.2 - Dec 15, 2015
 
 * Bug Fixes
     * Revert a change that broke plugin loading
 
 
-2.7.1 - Dec 14, 2015
+## 2.7.1 - Dec 14, 2015
 
 * New Features
     * added debian init.d file (#1255) @slattery
@@ -368,7 +452,7 @@
     * result_store: show arrays when not empty (#1261)
 
 
-2.7.0 - Oct 07, 2015
+## 2.7.0 - Oct 07, 2015
 
 * New Features
     * SPF bounce check
@@ -459,9 +543,9 @@
     * fcrdns: always init results
     * TLS timer on error
     * dkim_verify: fixed timeout issue
-    * smtp_[proxy|forward]: correct authentication example
+    * smtp\_[proxy|forward]: correct authentication example
     * Fork child workers after init_master hook
-    * connection: return 450/550 for plugin DENY* (was 452/552)
+    * connection: return 450/550 for plugin DENY\* (was 452/552)
     * spamassassin: don't call next() when transaction gone
     * outbound: fix crash when sending bounce mail
     * auth_base: fix bad protocol in auth_base.js #1121 (@Dexus)
@@ -470,7 +554,7 @@
     * Fix connect.geoip bug #1144 (@smfreegard)
     * Fix tiny bug in messagesniffer #1198 (@smfreegard)
 
-2.6.1 - Mar 27, 2015
+## 2.6.1 - Mar 27, 2015
 
 * added sedation timers for config file re-reading
 * Add AUTH support to outbound
@@ -478,7 +562,7 @@
 * allow domains with underscore
 * correct name of domains config file in access
 * Fix SMTP AUTH in smtp_forward/proxy and add docs
-* Fix opts not being passed to HMailItem _bounce function
+* Fix opts not being passed to HMailItem \_bounce function
 * log.syslog will try strong-fork-syslog (for node 0.12 compat)
 * improvements to Plugin docs
 * rename net_utils.is_rfc1918 -> is_private_ip
@@ -488,7 +572,7 @@
 * pre-populated config/plugins
 * added utils.extend, copies props onto objects
 
-2.6.0 - Feb 21, 2015
+## 2.6.0 - Feb 21, 2015
 
 * other bug fixes
 * updated a few tests so test suite passes on Windows
@@ -556,7 +640,7 @@
     * load lists into objects (vs arrays), for much faster runtime access
 * host_list: huge performance increase, esp for many hosts
 
-2.5.0 - May 24, 2014
+## 2.5.0 - May 24, 2014
 
 * added automated build testing via Travis-CI.org
 * fixed dkim_sign crash issue #560
@@ -594,19 +678,19 @@
 * karma: added whitelist award, pass through temp (DENYSOFT) errors, made
   tarpit variable, configurable reject hooks, doc rewrite, ASN awards, fix penalty days calculation, new DSL for karma awards,
 * bannering fixes
-* added log* stubs to test/fixtures/[plugin|connection]
+* added log\* stubs to test/fixtures/[plugin|connection]
 * tests/fixtures/stub_plugin: set name property
 * config: corrected handling of config.arg gets, fix caching bug, fix boolean
   handling, added missing 'type' handling.
 * Adding the option of using CIDR ranges in the haproxy_hosts file
 * tarpit: added config option hooks_to_delay, added docs
-* contrib/haraka.bsd.rc: startup file for *BSD
+* contrib/haraka.bsd.rc: startup file for \*BSD
 * Store attachment headers on stream
 * Record accepted domains at hook_rcpt and improve queue/lmtp
 * return after next() in the whitelist checks
 * Add new -o option to bin/haraka
 
-2.4.0 - Feb 12, 2014
+## 2.4.0 - Feb 12, 2014
 
 * Trim whitespace when reading "list" type config files (such as config/plugins)
 * Added LMTP via queue/lmtp plugin
@@ -616,7 +700,7 @@
 * Store the RCPT TO rejection reason on the address object
 
 
-2.3.0 - Feb 07, 2014
+## 2.3.0 - Feb 07, 2014
 
 * Fix memory leak when watching config files for changes
 * Support for badly formatted MAIL FROM/RCPT TO lines
@@ -653,7 +737,7 @@
 * Allow setting of spamd_user for spamassassin plugin
 
 
-2.0.0 - Nov 28, 2012
+## 2.0.0 - Nov 28, 2012
 
 * Various fixes to SMTP AUTH code, including providing SMTP AUTH to inbound
   mail forwarders.
@@ -670,4 +754,4 @@
 * Throw exception with set_banner as it is now non-functional. Will be returned in a future version.
 * Small fixes to data.uribl
 
-1.4.0 -
+## 1.4.0 -

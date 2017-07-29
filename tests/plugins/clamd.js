@@ -42,21 +42,21 @@ exports.load_clamd_ini = {
         test.equal(true, this.plugin.rejectRE.test('Encrypted.'));
         test.equal(true, this.plugin.rejectRE.test('Heuristics.Structured.'));
         test.equal(true, this.plugin.rejectRE.test(
-                    'Heuristics.Structured.CreditCardNumber'));
+            'Heuristics.Structured.CreditCardNumber'));
         test.equal(true, this.plugin.rejectRE.test('Broken.Executable.'));
         test.equal(true, this.plugin.rejectRE.test('PUA.'));
         test.equal(true, this.plugin.rejectRE.test(
-                    'Heuristics.OLE2.ContainsMacros'));
+            'Heuristics.OLE2.ContainsMacros'));
         test.equal(true, this.plugin.rejectRE.test('Heuristics.Safebrowsing.'));
         test.equal(true, this.plugin.rejectRE.test(
-        'Heuristics.Safebrowsing.Suspected-phishing_safebrowsing.clamav.net'));
+            'Heuristics.Safebrowsing.Suspected-phishing_safebrowsing.clamav.net'));
         test.equal(true, this.plugin.rejectRE.test(
-                    'Sanesecurity.Junk.50402.UNOFFICIAL'));
+            'Sanesecurity.Junk.50402.UNOFFICIAL'));
         test.equal(false, this.plugin.rejectRE.test(
-                    'Sanesecurity.UNOFFICIAL.oops'));
+            'Sanesecurity.UNOFFICIAL.oops'));
         test.equal(false, this.plugin.rejectRE.test('Phishing'));
         test.equal(false, this.plugin.rejectRE.test(
-                    'Heuristics.Phishing.Email.SpoofedDomain'));
+            'Heuristics.Phishing.Email.SpoofedDomain'));
         test.equal(false, this.plugin.rejectRE.test('Suspect.Executable'));
         test.equal(false, this.plugin.rejectRE.test('MattWuzHere'));
         test.done();

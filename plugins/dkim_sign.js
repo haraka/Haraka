@@ -185,7 +185,7 @@ exports.hook_queue_outbound = exports.hook_pre_send_trans_email = function (next
             selector = plugin.cfg.main.selector;
         }
         else {
-            domain = keydir.split('/').pop();
+            domain = path.basename(keydir);
             connection.logdebug(plugin, 'dkim_domain: ' + domain);
             private_key = plugin.load_key(path.join('dkim', domain, 'private'));
             selector    = plugin.load_key(path.join('dkim', domain, 'selector')).trim();
@@ -274,9 +274,9 @@ exports.get_headers_to_sign = function () {
     }
 
     headers = plugin.cfg.main.headers_to_sign
-                    .toLowerCase()
-                    .replace(/\s+/g,'')
-                    .split(/[,;:]/);
+        .toLowerCase()
+        .replace(/\s+/g,'')
+        .split(/[,;:]/);
 
     // From MUST be present
     if (headers.indexOf('from') === -1) {
@@ -309,7 +309,7 @@ exports.get_sender_domain = function (txn) {
     if (!addrs || ! addrs.length) { return domain; }
 
     // If From has a single address, we're done
-    if (addrs.length === 1) {
+    if (addrs.length === 1 && addrs[0].host) {
         var fromHost = addrs[0].host();
         if (fromHost) {
             // don't attempt to lower a null or undefined value #1575

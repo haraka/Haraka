@@ -274,12 +274,12 @@ exports.add_headers = function (connection, data) {
         var spamBar = '';
         var spamBarScore = 1;
         var spamBarChar = cfg.spambar.neutral || '/';
-        if (data.score >= 1) {
-            spamBarScore = Math.floor(data.score);
+        if (data.default.score >= 1) {
+            spamBarScore = Math.floor(data.default.score);
             spamBarChar = cfg.spambar.positive || '+';
         }
-        else if (data.score <= -1) {
-            spamBarScore = Math.floor(data.score * -1);
+        else if (data.default.score <= -1) {
+            spamBarScore = Math.floor(data.default.score * -1);
             spamBarChar = cfg.spambar.negative || '-';
         }
         for (var i = 0; i < spamBarScore; i++) {
@@ -304,6 +304,6 @@ exports.add_headers = function (connection, data) {
 
     if (cfg.header && cfg.header.score) {
         connection.transaction.remove_header(cfg.header.score);
-        connection.transaction.add_header(cfg.header.score, '' + data.score);
+        connection.transaction.add_header(cfg.header.score, '' + data.default.score);
     }
 };

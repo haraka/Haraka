@@ -49,9 +49,13 @@ Configuration
   * enable\_tls=[true]
 
     Enable TLS with the forward host (if supported). TLS uses options
-    from the tls plugin.
+    from the tls plugin. If key and cert are provided in the the outbound section of the tls plugin,
+    that certificate will be used as a TLS Client Certificate.
 
-  * auth\_type=[plain|login]
+    This option controls the use of TLS via `STARTTLS`. This plugin does not work with
+    SMTP over TLS.
+
+  * auth\_type=[plain\|login]
 
     Enable PLAIN or LOGIN SMTP AUTH.  This is required to enable AUTH.
 

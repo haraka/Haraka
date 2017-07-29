@@ -56,13 +56,7 @@ logger.colorize = function (color, str) {
 logger.dump_logs = function (cb) {
     while (logger.deferred_logs.length > 0) {
         var log_item = logger.deferred_logs.shift();
-        var color = logger.colors[log_item.level];
-        if (color && stdout_is_tty) {
-            console.log(logger.colorize(color, log_item.data));
-        }
-        else {
-            console.log(log_item.data);
-        }
+        plugins.run_hooks('log', logger, log_item);
     }
     // Run callback after flush
     if (cb) process.stdout.write('', cb);
@@ -85,10 +79,10 @@ logger.dump_and_exit = function (code) {
 
 logger.log = function (level, data) {
     if (level === 'PROTOCOL') {
-        data = data.replace(/\n/g, '\\n\n');
+        data = data.replace(/\n/g, '\\n');
     }
     data = data.replace(/\r/g, '\\r')
-               .replace(/\n$/, '');
+        .replace(/\n$/, '');
 
     var item = { 'level' : level, 'data'  : data };
 
