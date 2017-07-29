@@ -1,7 +1,5 @@
 var path = require('path');
 
-var MessageStream = require('../messagestream');
-
 function _set_up (done) {
 
     this.server = require('../server');
@@ -156,6 +154,7 @@ exports.createServer = {
         process.env.YES_REALLY_DO_DISCARD='';
         process.env.HARAKA_TEST_DIR='';
         this.server.stopListeners();
+        this.server = null;
         done();
     },
     'accepts SMTP message from nodemailer': function (test) {
@@ -196,6 +195,133 @@ exports.createServer = {
             test.done();
         });
     },
+    'accepts authenticated SMTP from nodemailer': function (test) {
+
+        this.server.load_smtp_ini();
+
+        this.server.createServer({});
+
+        test.expect(1);
+        var nodemailer = require('nodemailer');
+        var transporter = nodemailer.createTransport({
+            host: 'localhost',
+            port: 2500,
+            auth: {
+                user: 'matt',
+                pass: 'goodPass'
+            },
+            tls: {
+                // do not fail on invalid certs
+                rejectUnauthorized: false
+            }
+        });
+        transporter.sendMail({
+            from: '"Testalicious Matt" <harakamail@gmail.com>',
+            to:   'nobody-will-see-this@haraka.local',
+            envelope: {
+                from: 'Haraka Test <test@haraka.local>',
+                to:   'Discard Queue <discard@haraka.local>',
+            },
+            subject: 'Hello ✔',
+            text: 'Hello world ?',
+            html: '<b>Hello world ?</b>',
+        },
+        function (error, info){
+            if (error){
+                console.log(error);
+                test.done();
+                return;
+            }
+            test.deepEqual(info.accepted, [ 'discard@haraka.local' ]);
+            console.log('Message sent: ' + info.response);
+            test.done();
+        });
+    },
+    'rejects invalid auth from nodemailer': function (test) {
+
+        this.server.load_smtp_ini();
+
+        this.server.createServer({});
+
+        test.expect(1);
+        var nodemailer = require('nodemailer');
+        var transporter = nodemailer.createTransport({
+            host: 'localhost',
+            port: 2500,
+            auth: {
+                user: 'matt',
+                pass: 'badPass'
+            },
+            tls: {
+                // do not fail on invalid certs
+                rejectUnauthorized: false
+            }
+        });
+        transporter.sendMail({
+            from: '"Testalicious Matt" <harakamail@gmail.com>',
+            to:   'nobody-will-see-this@haraka.local',
+            envelope: {
+                from: 'Haraka Test <test@haraka.local>',
+                to:   'Discard Queue <discard@haraka.local>',
+            },
+            subject: 'Hello ✔',
+            text: 'Hello world ?',
+            html: '<b>Hello world ?</b>',
+        },
+        function (error, info){
+            if (error){
+                test.equals(error.code, 'EAUTH');
+                // console.log(error);
+                test.done();
+                return;
+            }
+            console.log(info.response);
+            test.done();
+        });
+    },
+    'DKIM validates signed nodemailer message': function (test) {
+
+        this.server.load_smtp_ini();
+
+        this.server.createServer({});
+
+        test.expect(1);
+        var nodemailer = require('nodemailer');
+        var transporter = nodemailer.createTransport({
+            host: 'localhost',
+            port: 2500,
+            tls: {
+                // do not fail on invalid certs
+                rejectUnauthorized: false
+            }
+        });
+        transporter.sendMail({
+            from: '"Testalicious Matt" <harakamail@gmail.com>',
+            to:   'nobody-will-see-this@haraka.local',
+            envelope: {
+                from: 'Haraka Test <test@haraka.local>',
+                to:   'Discard Queue <discard@haraka.local>',
+            },
+            subject: 'Hello ✔',
+            text: 'Hello world ?',
+            html: '<b>Hello world ?</b>',
+            dkim: {
+                domainName: "test.simerson.com",
+                keySelector: "harakatest2017",
+                privateKey: '-----BEGIN RSA PRIVATE KEY-----\nMIIEpAIBAAKCAQEAxqoUAnQ9GB3iNnkS7coj0Iggd0nyryW062tpK95NC5UXmmAwIpUMfkYdiHY2o2duWYGF0Bp237M/QXKhJYTXfsgkwP/bq9OGWtRZxHPHhbhdjbiI\nqObi6zvYcxrI77gpWDDvruhMeS9Hwa1R99pLUWd4PsuYTzbV/jwu2pz+XZXXXNEU\nVxzDAAj0yF7mwxHMLzQfR+hdhWcrgN0stUP0o7hm7hoOP8IWgcSW3JiQYavIKoI4\nm4+I9I1LzDJN2rHVnQvmjUrqqpG7X6SyFVFtuTWGaMqf1Cj/t8eSvU9VdgLFllS8\ntThqUZHq5S5hm8M8VzLuQLG9U0dtFolcFmJkbQIDAQABAoIBAB4fUbNhjpXmihM6\nXm1htfZ7fXi45Kw76me7vJGjPklgTNjidsn3kZJf7UBwtC4ok6nMos6ABMA8fH3e\n9KIst0QI8tG0ucke5INHKWlJKNqUrtK7RTVe9M84HsStLgRzBwnRObZqkJXbXmT2\nc7RCDCOGrcvPsQNpzB6lX3FUVpk3x24RXpQV1qSgH8yuHSPc1C6rssXwPAgnESfS\nK3MHRx2CLZvTTkq/YCsT+wS/O9RWPCVOYuWaa5DDDAIp3Yw1wYq9Upoh0BdIFC3U\nWm+5Cr3o9wxcvS6+W2RA6I51eymzvCU5ZakWt/bnUDb6/ByxsWOn5rL4WfPpCwE4\nnuC72v0CgYEA9imEq6a0GoaEsMoR7cxT7uXKimQH+Jaq3CGkuh0iN32F4FXhuUKz\nLYKSLCZzpb1MiDJv6BBchV6uSQ6ATo1cZ8WzYQISikk175bf0SPom591OZElvKA2\nSOrTrXtbl33YbWZEgyEcpTgelVi5ys9rj4eKkMvM0lwRmW6gctEFXRcCgYEAzpqc\nR/wqPjgPhpF1CZtdEwOZg4kkOig8CBcuQ7o/hDG7N69A9ZbeJO8eD+gKDrHRfkYr\nTH/UdkZGjilBk/lxnpIZpyBLxQ6UdhNPuwtxXKAvuSN+aQ0pdJn8tg03OSj2OzTK\nJ4hMsO/wt1xM8EDRobLZEosMadaYZUHzx8VU5RsCgYEAvFZbuXEcT0cocpLIUOaK\nOTf7VRLfvmSYaUAcZoEv0sDpExDiWPodWO6To8/vn5lL2tCsKiOKhkhAlIjRxkgF\nsSfj7I7HXKJS7/LBX6RXrem8qMTS2JTDs9pnBk5hb3DLjDg4pxNIdWiQjbeKvw8f\nvnr3m30yQqhKlte7Tt15exUCgYBzq7RbyR6Nfy2SFdYE7usJPjawohOaS/RwQyov\n2RK+nGlJH+GqnjD5VLbsCOm4mG3F2NtdFSSKo4XVCdwhUMMAGKQsIbTKOwN7qAw3\nmIx7Y2PUr76SakAPfDc0ZenJItnZBBE6WOE3Ht8Siaa5zFCRy2QlMZxdlTv1VRt7\neUuyiQKBgQDdXJO5+3h1HPxbYZcmNm/2CJUNw2ehU8vCiBXCcWPn7JukayHx+TXy\nyj0j/b1SvmKgjB+4JWluiqIU+QBjRjvb397QY1YoCEaGZd0zdFjTZwQksQ5AFst9\nCiD9OFXe/kkmIUQQra6aw1CoppyAfvAblp8uevLWb57xU3VUB3xeGg==\n-----END RSA PRIVATE KEY-----\n',
+            }
+        },
+        function (error, info){
+            if (error){
+                console.log(error);
+                test.done();
+                return;
+            }
+            test.deepEqual(info.accepted, [ 'discard@haraka.local' ]);
+            console.log('Message sent: ' + info.response);
+            test.done();
+        });
+    },
     'accepts SMTP message from smtp_client': function (test) {
 
         this.server.load_smtp_ini();
@@ -203,13 +329,15 @@ exports.createServer = {
         this.server.createServer({});
 
         test.expect(1);
-        var server = { notes: { } };
-        var cfg = {
+        let server = { notes: { } };
+        let cfg = {
             connect_timeout: 2,
             pool_timeout: 5,
             max_connections: 3,
         };
-        var smtp_client = require('../smtp_client');
+
+        const smtp_client   = require('../smtp_client');
+        const MessageStream = require('../messagestream');
 
         smtp_client.get_client(server, function (err, client) {
 

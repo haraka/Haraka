@@ -1,10 +1,10 @@
 'use strict';
 
-var fs     = require('fs');
-var Stream = require('stream').Stream;
-var utils  = require('haraka-utils');
+const fs     = require('fs');
+const Stream = require('stream').Stream;
+const utils  = require('haraka-utils');
 
-var ChunkEmitter = require('./chunkemitter');
+const ChunkEmitter = require('./chunkemitter');
 
 var STATE_HEADERS = 1;
 var STATE_BODY = 2;
@@ -429,8 +429,7 @@ GetDataStream.prototype.write = function (obj, enc) {
 };
 
 GetDataStream.prototype.end = function (obj, enc) {
-    if (obj)
-        this.buf += obj;
+    if (obj) this.buf += obj;
     this.cb(this.buf);
 };
 

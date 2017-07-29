@@ -55,7 +55,7 @@
     "haraka-test-fixtures"  : ">=1.0.17",
     "eslint"                : ">=3",
     "eslint-plugin-haraka"  : "*",
-    "nodemailer"            : "^2.7.2"
+    "nodemailer"            : "*"
   },
   "bugs": {
     "mail": "helpme@gmail.com",
