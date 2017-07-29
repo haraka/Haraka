@@ -29,33 +29,33 @@
     "sprintf-js"            : "~1.1.0",
     "haraka-tld"            : "*",
     "haraka-constants"      : ">=1.0.4",
-    "haraka-net-utils"      : ">=1.0.8",
+    "haraka-net-utils"      : ">=1.0.10",
     "haraka-results"        : "^2.0.0",
     "haraka-utils"          : "*",
     "haraka-plugin-access"  : "*",
-    "haraka-plugin-asn"     : "*",
-    "haraka-plugin-geoip"   : "*",
-    "haraka-plugin-fcrdns"  : "*",
-    "haraka-plugin-karma"   : "*",
-    "haraka-plugin-limit"   : "*",
-    "haraka-plugin-watch"   : "*"
+    "haraka-plugin-limit"   : "*"
   },
   "optionalDependencies": {
+    "haraka-plugin-asn"     : "*",
     "haraka-plugin-elasticsearch" : "*",
-    "ldapjs"                : "~1.0.0",
+    "haraka-plugin-fcrdns"  : "*",
+    "haraka-plugin-geoip"   : "*",
+    "haraka-plugin-karma"   : "*",
+    "haraka-plugin-recipient-routes" : "*",
     "haraka-plugin-redis"   : "*",
     "haraka-plugin-syslog"  : "*",
+    "haraka-plugin-watch"   : "*",
+    "ldapjs"                : "~1.0.0",
     "ocsp"                  : "~1.2.0",
     "redis"                 : "~2.7.0",
-    "tmp"                   : "~0.0.28",
-    "vs-stun"               : "~0.0.7"
+    "tmp"                   : "~0.0.28"
   },
   "devDependencies": {
     "nodeunit"              : "*",
     "haraka-test-fixtures"  : ">=1.0.17",
     "eslint"                : ">=3",
     "eslint-plugin-haraka"  : "*",
-    "nodemailer"            : "^2.7.2"
+    "nodemailer"            : "*"
   },
   "bugs": {
     "mail": "helpme@gmail.com",
@@ -75,8 +75,8 @@
   },
   "scripts": {
     "test": "node run_tests",
-    "lint": "./node_modules/.bin/eslint *.js plugins/*.js plugins/*/*.js tests/*.js tests/*/*.js bin/haraka bin/spf bin/dkimverify",
-    "lintfix": "./node_modules/.bin/eslint --fix *.js plugins/*.js plugins/*/*.js tests/*.js tests/*/*.js bin/haraka bin/spf bin/dkimverify",
-    "cover": "NODE_ENV=cov ./node_modules/.bin/istanbul cov run_tests"
+    "lint": "node node_modules/.bin/eslint *.js plugins/*.js plugins/*/*.js tests/*.js tests/*/*.js bin/haraka bin/spf bin/dkimverify",
+    "lintfix": "node node_modules/.bin/eslint --fix *.js plugins/*.js plugins/*/*.js tests/*.js tests/*/*.js bin/haraka bin/spf bin/dkimverify",
+    "cover": "NODE_ENV=cov node node_modules/.bin/istanbul cov run_tests"
   }
 }

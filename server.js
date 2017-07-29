@@ -98,6 +98,36 @@ Server.stopListeners = function () {
     });
 }
 
+var gracefull_in_progress = false;
+Server.gracefulRestart = function () {
+    Server._graceful();
+}
+
+Server.stopListeners = function () {
+    logger.loginfo('Shutting down listeners');
+    Server.listeners.forEach(function (server) {
+        server.close();
+    });
+    Server.listeners = [];
+}
+
+Server.performShutdown = function () {
+    if (Server.cfg.main.graceful_shutdown) {
+        return Server.gracefulShutdown();
+    }
+    logger.loginfo("Shutting down.");
+    process.exit(0);
+}
+
+Server.gracefulShutdown = function () {
+    Server.stopListeners();
+    Server._graceful(function () {
+        // log();
+        logger.loginfo("Failed to shutdown naturally. Exiting.");
+        process.exit(0);
+    });
+}
+
 Server.performShutdown = function () {
     logger.loginfo("Shutting down.");
     process.exit(0);

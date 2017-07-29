@@ -1,4 +1,6 @@
-var dkim = require('./dkim');
+
+const dkim = require('./dkim');
+
 var DKIMVerifyStream = dkim.DKIMVerifyStream;
 
 var plugin = exports;
@@ -24,10 +26,10 @@ exports.hook_data_post = function (next, connection) {
             return next();
         }
         results.forEach(function (res) {
-            var res_err = ' (' + res.error + ')' ? res.error : '';
+            var res_err = '';
+            if (res.error) res_err += ' (' + res.error + ')';
             connection.auth_results(
-                'dkim=' + res.result + res_err +
-              ' header.i=' + res.identity
+                `dkim=' + ${res.result}${res_err} header.i=${res.identity}`
             );
             connection.loginfo(self, 'identity="' + res.identity + '" ' +
                                      'domain="' + res.domain + '" ' +
@@ -47,5 +49,6 @@ exports.hook_data_post = function (next, connection) {
         txn.notes.dkim_results = results;
         next();
     }, ((plugin.timeout) ? plugin.timeout - 1 : 0));
+
     txn.message_stream.pipe(verifier, { line_endings: '\r\n' });
 };
