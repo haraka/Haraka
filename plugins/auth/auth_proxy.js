@@ -74,7 +74,8 @@ exports.try_auth_proxy = function (connection, hosts, user, passwd, cb) {
     });
     socket.on('error', function (err) {
         connection.logerror(self, "connection failed to host " + host + ": " + err);
-        return self.try_auth_proxy(connection, hosts, user, passwd, cb);
+        socket.end();
+        return;
     });
     socket.send_command = function (cmd, data) {
         var line = cmd + (data ? (' ' + data) : '');

@@ -11,70 +11,70 @@ exports.load_ini_config = {
     'non-exist.ini empty' : function (test) {
         test.expect(1);
         test.deepEqual(
-                this.cfreader.load_ini_config('non-exist.ini'),
-                { main: { } }
-                );
+            this.cfreader.load_ini_config('non-exist.ini'),
+            { main: { } }
+        );
         test.done();
     },
     'non-exist.ini boolean' : function (test) {
         test.expect(1);
         test.deepEqual(
-                this.cfreader.load_ini_config('non-exist.ini',
-                    { booleans: ['reject']}),
-                { main: { reject: false } }
-                );
+            this.cfreader.load_ini_config('non-exist.ini',
+                { booleans: ['reject']}),
+            { main: { reject: false } }
+        );
         test.done();
     },
     'non-exist.ini boolean true default' : function (test) {
         test.expect(3);
         test.deepEqual(
-                this.cfreader.load_ini_config('non-exist.ini',
-                    { booleans: ['+reject']}),
-                { main: { reject: true } }
-                );
+            this.cfreader.load_ini_config('non-exist.ini',
+                { booleans: ['+reject']}),
+            { main: { reject: true } }
+        );
         test.deepEqual(
-                this.cfreader.load_ini_config('non-exist.ini',
-                    { booleans: ['+main.reject']}),
-                { main: { reject: true } }
-                );
+            this.cfreader.load_ini_config('non-exist.ini',
+                { booleans: ['+main.reject']}),
+            { main: { reject: true } }
+        );
         test.deepEqual(
-                this.cfreader.load_ini_config('non-exist.ini',
-                    { booleans: ['main.+reject']}),
-                { main: { reject: true } }
-                );
+            this.cfreader.load_ini_config('non-exist.ini',
+                { booleans: ['main.+reject']}),
+            { main: { reject: true } }
+        );
         test.done();
     },
     'non-exist.ini boolean false default' : function (test) {
         test.expect(3);
         test.deepEqual(
-                this.cfreader.load_ini_config('non-exist.ini',
-                    { booleans: ['-reject']}),
-                { main: { reject: false } }
-                );
+            this.cfreader.load_ini_config('non-exist.ini',
+                { booleans: ['-reject']}),
+            { main: { reject: false } }
+        );
         test.deepEqual(
-                this.cfreader.load_ini_config('non-exist.ini',
-                    { booleans: ['-main.reject']}),
-                { main: { reject: false } }
-                );
+            this.cfreader.load_ini_config('non-exist.ini',
+                { booleans: ['-main.reject']}),
+            { main: { reject: false } }
+        );
         test.deepEqual(
-                this.cfreader.load_ini_config('non-exist.ini',
-                    { booleans: ['main.-reject']}),
-                { main: { reject: false } }
-                );
+            this.cfreader.load_ini_config('non-exist.ini',
+                { booleans: ['main.-reject']}),
+            { main: { reject: false } }
+        );
         test.done();
     },
     'non-exist.ini boolean false default, section' : function (test) {
         test.expect(2);
         test.deepEqual(
-                this.cfreader.load_ini_config('non-exist.ini',
-                    { booleans: ['-reject.boolf']}),
-                { main: { }, reject: {boolf: false} }
-                );
+            this.cfreader.load_ini_config('non-exist.ini',
+                { booleans: ['-reject.boolf']}),
+            { main: { }, reject: {boolf: false} }
+        );
         test.deepEqual(
-                this.cfreader.load_ini_config('non-exist.ini',
-                    { booleans: ['+reject.boolt']}),
-                { main: { }, reject: {boolt: true} }
-                );
+            this.cfreader.load_ini_config('non-exist.ini',
+                { booleans: ['+reject.boolt']}),
+            { main: { }, reject: {boolt: true} }
+        );
         test.done();
     },
     'test.ini, no opts' : function (test) {
@@ -162,45 +162,45 @@ exports.non_existing = {
     'empty object for JSON files': function (test) {
         test.expect(1);
         var result = this.cfreader.load_config(
-                'tests/config/non-existent.json',
-                'json'
-                );
+            'tests/config/non-existent.json',
+            'json'
+        );
         test.deepEqual(result, {});
         test.done();
     },
     'empty object for YAML files': function (test) {
         test.expect(1);
         var result = this.cfreader.load_config(
-                'tests/config/non-existent.yaml',
-                'yaml'
-                );
+            'tests/config/non-existent.yaml',
+            'yaml'
+        );
         test.deepEqual(result, {});
         test.done();
     },
     'null for binary file': function (test) {
         test.expect(1);
         var result = this.cfreader.load_config(
-                'tests/config/non-existent.bin',
-                'binary'
-                );
+            'tests/config/non-existent.bin',
+            'binary'
+        );
         test.equal(result, null);
         test.done();
     },
     'null for flat file': function (test) {
         test.expect(1);
         var result = this.cfreader.load_config(
-                'tests/config/non-existent.flat',
-                'flat'
-                );
+            'tests/config/non-existent.flat',
+            'flat'
+        );
         test.deepEqual(result, null);
         test.done();
     },
     'null for value file': function (test) {
         test.expect(1);
         var result = this.cfreader.load_config(
-                'tests/config/non-existent.value',
-                'value'
-                );
+            'tests/config/non-existent.value',
+            'value'
+        );
         test.deepEqual(result, null);
         test.done();
     },
@@ -209,16 +209,16 @@ exports.non_existing = {
         var result = this.cfreader.load_config(
             'tests/config/non-existent.list',
             'list'
-            );
+        );
         test.deepEqual(result, []);
         test.done();
     },
     'template ini for INI file': function (test) {
         test.expect(1);
         var result = this.cfreader.load_config(
-                'tests/config/non-existent.ini',
-                'ini'
-                );
+            'tests/config/non-existent.ini',
+            'ini'
+        );
         test.deepEqual(result, { main: {} });
         test.done();
     },

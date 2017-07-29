@@ -20,10 +20,10 @@ exports.load_host_list_regex = function () {
     var plugin = this;
 
     plugin.host_list_regex = plugin.config.get(
-            'host_list_regex',
-            'list',
-            function () { plugin.load_host_list_regex(); }
-            );
+        'host_list_regex',
+        'list',
+        function () { plugin.load_host_list_regex(); }
+    );
 
     plugin.hl_re = new RegExp ('^(?:' +
                 plugin.host_list_regex.join('|') + ')$', 'i');

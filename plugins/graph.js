@@ -13,7 +13,7 @@ var width = 800;
 
 function createTable () {
     db.exec( "CREATE TABLE IF NOT EXISTS graphdata (timestamp INTEGER NOT NULL, plugin TEXT NOT NULL)")
-      .exec( "CREATE INDEX IF NOT EXISTS graphdata_idx ON graphdata (timestamp)");
+        .exec( "CREATE INDEX IF NOT EXISTS graphdata_idx ON graphdata (timestamp)");
 }
 
 exports.register = function () {

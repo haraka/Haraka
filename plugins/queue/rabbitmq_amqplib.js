@@ -40,7 +40,7 @@ exports.init_amqp_connection = function () {
     var autoDelete = cfg.autoDelete === "true" || false;
     deliveryMode = cfg.deliveryMode || 2;
 
-    amqp.connect("amqp://"+user+":"+password+"@"+host+":"+port+vhost, function (err, conn){
+    amqp.connect("amqp://"+encodeURIComponent(user)+":"+encodeURIComponent(password)+"@"+host+":"+port+vhost, function (err, conn){
         if (err) {
             plugin.logerror("Connection to rabbitmq failed: " + err);
             return;

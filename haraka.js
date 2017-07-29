@@ -14,10 +14,10 @@ try {
 }
 catch (e) {
     process.env.NODE_PATH = process.env.NODE_PATH ?
-            (process.env.NODE_PATH + ':' +
+        (process.env.NODE_PATH + ':' +
              path.join(process.env.HARAKA, 'node_modules'))
-            :
-            (path.join(process.env.HARAKA, 'node_modules'));
+        :
+        (path.join(process.env.HARAKA, 'node_modules'));
     require('module')._initPaths(); // Horrible hack
 }
 
@@ -26,8 +26,8 @@ var logger = require('./logger');
 var server = require('./server');
 
 exports.version = JSON.parse(
-        fs.readFileSync(path.join(__dirname, './package.json'), 'utf8')
-    ).version;
+    fs.readFileSync(path.join(__dirname, './package.json'), 'utf8')
+).version;
 
 process.on('uncaughtException', function (err) {
     if (err.stack) {
@@ -50,10 +50,10 @@ var shutting_down = false;
         logger.lognotice(sig + ' received');
         logger.dump_and_exit(function () {
             if (server.cluster && server.cluster.isMaster) {
-                server.gracefulShutdown();
+                server.performShutdown();
             }
             else if (!server.cluster) {
-                server.gracefulShutdown();
+                server.performShutdown();
             }
         });
     });

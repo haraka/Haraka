@@ -49,8 +49,8 @@ exports.hook_data_post = function (next, connection) {
         connection.loginfo(plugin, 'elapsed=' + elapsed + 'ms' +
                                    ' code=' + exit_code +
                                    (exit_code === 0 || (exit_code > 1 && exit_code < 4)
-                                    ? ' virus="' + virus + '"'
-                                    : ' error="' + (stdout || stderr || 'UNKNOWN').replace('\n',' ').trim() + '"'));
+                                       ? ' virus="' + virus + '"'
+                                       : ' error="' + (stdout || stderr || 'UNKNOWN').replace('\n',' ').trim() + '"'));
 
         // esets_cli returns non-zero exit on virus/error
         if (exit_code) {
@@ -67,8 +67,8 @@ exports.hook_data_post = function (next, connection) {
     ws.once('close', function () {
         start_time = Date.now();
         child_process.exec('LANG=C /opt/eset/esets/bin/esets_cli ' + tmpfile,
-                           { encoding: 'utf8', timeout: 30 * 1000 },
-                           wsOnClose);
+            { encoding: 'utf8', timeout: 30 * 1000 },
+            wsOnClose);
     });
 
     txn.message_stream.pipe(ws, { line_endings: '\r\n' });

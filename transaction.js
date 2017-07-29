@@ -36,6 +36,7 @@ function Transaction () {
     };
     this.data_post_start = null;
     this.data_post_delay = 0;
+    this.encoding = 'utf8';
 }
 
 exports.Transaction = Transaction;
@@ -45,7 +46,7 @@ exports.createTransaction = function (uuid) {
     t.uuid = uuid || utils.uuid();
     // Initialize MessageStream here to pass in the UUID
     t.message_stream = new MessageStream(
-            config.get('smtp.ini'), t.uuid, t.header.header_list);
+        config.get('smtp.ini'), t.uuid, t.header.header_list);
     return t;
 };
 
@@ -67,8 +68,8 @@ Transaction.prototype.ensure_body = function () {
             if ((util.isRegExp(o.ct_match) &&
                  o.ct_match.test(ct.toLowerCase())) ||
                     ct.toLowerCase()
-                      .indexOf(String(o.ct_match)
-                      .toLowerCase()) === 0) {
+                        .indexOf(String(o.ct_match)
+                            .toLowerCase()) === 0) {
                 return o.filter(ct, enc, buf);
             }
         });
@@ -77,7 +78,7 @@ Transaction.prototype.ensure_body = function () {
 
 Transaction.prototype.add_data = function (line) {
     if (typeof line === 'string') { // This shouldn't ever really happen...
-        line = new Buffer(line, 'binary');
+        line = new Buffer(line, this.encoding);
     }
     // check if this is the end of headers line
     if (this.header_pos === 0 &&
@@ -94,20 +95,20 @@ Transaction.prototype.add_data = function (line) {
         if (this.header_lines.length < MAX_HEADER_LINES) {
             if (line[0] === 0x2E) line = line.slice(1); // Strip leading "."
             this.header_lines.push(
-                    line.toString('binary').replace(/\r\n$/, '\n'));
+                line.toString(this.encoding).replace(/\r\n$/, '\n'));
         }
     }
     else if (this.header_pos && this.parse_body) {
         if (line[0] === 0x2E) line = line.slice(1); // Strip leading "."
         var new_line = this.body.parse_more(
-                line.toString('binary').replace(/\r\n$/, '\n'));
+            line.toString(this.encoding).replace(/\r\n$/, '\n'));
 
         if (!new_line.length) {
             return; // buffering for banners
         }
 
         new_line = new_line.replace(/^\./gm, '..').replace(/\r?\n/gm, '\r\n');
-        line = new Buffer(new_line,'binary');
+        line = new Buffer(new_line, this.encoding);
     }
 
     if (!this.discard_data) this.message_stream.add_line(line);
@@ -139,10 +140,10 @@ Transaction.prototype.end_data = function (cb) {
     if (this.header_pos && this.parse_body) {
         var data = this.body.parse_end();
         if (data.length) {
-            data = data.toString('binary')
-                       .replace(/^\./gm, '..')
-                       .replace(/\r?\n/gm, '\r\n');
-            var line = new Buffer(data, 'binary');
+            data = data.toString(this.encoding)
+                .replace(/^\./gm, '..')
+                .replace(/\r?\n/gm, '\r\n');
+            var line = new Buffer(data, this.encoding);
 
             this.body.force_end();
 

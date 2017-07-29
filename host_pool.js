@@ -29,18 +29,18 @@ function HostPool (hostports_str, retry_secs) {
     var self = this;
 
     var hosts = (hostports_str || '')
-            .trim()
-            .split(/[\s,]+/)
-            .map(function (hostport){
-                var splithost = hostport.split(/:/);
-                if (! splithost[1]){
-                    splithost[1] = 25;
-                }
-                return {
-                    host: splithost[0],
-                    port: splithost[1]
-                };
-            });
+        .trim()
+        .split(/[\s,]+/)
+        .map(function (hostport){
+            var splithost = hostport.split(/:/);
+            if (! splithost[1]){
+                splithost[1] = 25;
+            }
+            return {
+                host: splithost[0],
+                port: splithost[1]
+            };
+        });
     self.hostports_str = hostports_str;
     self.hosts = utils.shuffle(hosts);
     self.dead_hosts = {};  // hostport => true/false
@@ -90,8 +90,8 @@ HostPool.prototype.failed = function (host, port) {
  * mix.
  */
 HostPool.prototype.probe_dead_host = function (
-            host, port, cb_if_still_dead, cb_if_alive
-        ){
+    host, port, cb_if_still_dead, cb_if_alive
+){
 
     var self = this;
     logger.loginfo("probing dead host " + host + ":" + port);
@@ -169,10 +169,10 @@ HostPool.prototype.get_host = function () {
     }
     else {
         logger.logwarn(
-                "no working hosts found, retrying a dead one, config " +
+            "no working hosts found, retrying a dead one, config " +
                 "(probably from smtp_forward.forwarding_host_pool) is " +
                 "'" + this.hostports_str + "'"
-            );
+        );
         this.last_i = first_i;
         return this.hosts[ first_i ];
     }

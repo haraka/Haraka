@@ -133,6 +133,7 @@ exports.get_tls_options = {
     setUp : function (done) {
         process.env.HARAKA_TEST_DIR=path.resolve('tests');
         this.outbound = require('../outbound');
+        this.obtls = require('../outbound/tls');
         done();
     },
     tearDown: function (done) {
@@ -146,15 +147,16 @@ exports.get_tls_options = {
         var testDir = path.resolve('tests');
         this.outbound.net_utils.config = this.outbound.net_utils.config.module_config(testDir);
         this.outbound.config = this.outbound.config.module_config(testDir);
+        this.obtls.config = this.outbound.config;
 
-        var tls_config = this.outbound.get_tls_options(
+        var tls_config = this.obtls.get_tls_options(
             { exchange: 'mail.example.com'}
         );
 
         test.deepEqual(tls_config, {
             servername: 'mail.example.com',
-            key: fs.readFileSync(path.resolve('tests','config','tls_key.pem')),
-            cert: fs.readFileSync(path.resolve('tests','config','tls_cert.pem')),
+            key: fs.readFileSync(path.resolve('tests','config','outbound_tls_key.pem')),
+            cert: fs.readFileSync(path.resolve('tests','config','outbound_tls_cert.pem')),
             dhparam: fs.readFileSync(path.resolve('tests','config','dhparams.pem')),
             ciphers: 'ECDHE-RSA-AES256-GCM-SHA384',
             rejectUnauthorized: false,

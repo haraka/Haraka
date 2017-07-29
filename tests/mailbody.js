@@ -1,13 +1,15 @@
 var Body   = require('../mailbody').Body;
 
-function _fill_body (body) {
+function _fill_body (body, quote) {
     // Body.bodytext retains the original received text before filters are
     // applied so the filtered text isn't tested against URIBLs, etc.  Since we
     // want to test filter output, we use this hack to pull out the parsed body
     // parts that will be passed onward to the transaction.
 
+    quote = quote || "";
+
     body.state = 'headers';
-    body.parse_more("Content-Type: multipart/alternative; boundary=abcdef\n");
+    body.parse_more("Content-Type: multipart/alternative; boundary=" + quote + "abcdef" + quote + "\n");
     body.parse_more("From: =?US-ASCII*EN?Q?Keith_Moore?= <moore@cs.utk.edu>\n");
     body.parse_more("\n");
     body.parse_more("--abcdef\n");
@@ -105,14 +107,14 @@ exports.banners = {
         buf = new Buffer("winter </html>");
         new_buf = insert_banners_fn (content_type, enc, buf);
         test.equal(new_buf.toString(), "winter <P>htmlbanner</P></html>",
-                "html banner looks ok");
+            "html banner looks ok");
 
 
         content_type = 'text/plain';
         buf = new Buffer("winter");
         new_buf = insert_banners_fn (content_type, enc, buf);
         test.equal(new_buf.toString(), "winter\ntextbanner\n",
-                "text banner looks ok");
+            "text banner looks ok");
 
         test.done();
     },
@@ -140,12 +142,12 @@ exports.banners = {
         empty_buf = new Buffer("");
         new_buf = insert_banners_fn (content_type, enc, empty_buf);
         test.equal(new_buf.toString(), "<P>htmlbanner</P>",
-                "empty html part gets a banner" );
+            "empty html part gets a banner" );
 
         content_type = 'text/plain';
         new_buf = insert_banners_fn (content_type, enc, empty_buf);
         test.equal(new_buf.toString(), "\ntextbanner\n",
-                "empty text part gets a banner");
+            "empty text part gets a banner");
 
         test.done();
     },
@@ -271,3 +273,35 @@ exports.rfc2231 = {
         test.done();
     }
 };
+
+exports.boundaries = {
+    'with-quotes': function (test) {
+        test.expect(1);
+
+        var body = new Body();
+        _fill_body(body, '"');
+
+        test.equal(body.children.length, 2);
+        test.done();
+    },
+
+    'without-quotes': function (test) {
+        test.expect(1);
+
+        var body = new Body();
+        _fill_body(body, "");
+
+        test.equal(body.children.length, 2);
+        test.done();
+    },
+
+    'with-bad-quotes': function (test) {
+        test.expect(1);
+
+        var body = new Body();
+        _fill_body(body, "'");
+
+        test.equal(body.children.length, 0);
+        test.done();
+    }
+}

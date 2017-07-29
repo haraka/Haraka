@@ -6,15 +6,25 @@ function dot_files (element) {
 }
 
 exports.sandbox_require = function (id) {
-    if (id[0] == '.') {
+    if (id[0] == '.' && id[1] != '.') {
         try {
             var override = __dirname + '/' + id + '.js';
             fs.statSync(override);
             id = override;
         }
         catch (e) {
-            id = '../../' + id;
+            try {
+                override = __dirname + '/../../outbound/' + id.replace(/^[./]*/, '') + '.js';
+                fs.statSync(override);
+                id = override;
+            }
+            catch (err) {
+                id = '../../' + id.replace(/^[./]*/, '');
+            }
         }
+    }
+    else if (id[0] == '.' && id[1] == '.') {
+        id = '../../' + id.replace(/^[./]*/, '');
     }
     return require(id);
 }

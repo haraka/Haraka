@@ -70,7 +70,7 @@ another mail server. If your organization has an Exchange server, using Haraka
 to filter inbound messages is a great choice. You might also want to relay
 outbound messages via Haraka as well, so they can be DKIM signed on their way
 to the internet. For such a use case, you would set 'acl=true' (the default)
-in the [relay] section of `access.ini` and then add the external IP address
+in the [relay] section of `relay.ini` and then add the external IP address
 of the corporate firewall to `config/relay_acl_allow`:
 
     echo 'N.N.N.N/32' >> /path/to/haraka/config/relay_acl_allow
@@ -118,7 +118,7 @@ Example:
     [domains]
     test.com = { "action": "accept" }
 
-I think of *accept* as the equivalent of qmail's *rcpthosts*, or a misplaced Haraka `rcpt_to.*` plugin. The *accept* mechanism is another way to tell Haraka that a particular domain is one we accept mail for. The difference between this and and the [rcpt_to.in_host_list](http://haraka.github.io/manual/plugins/rcpt_to.in_host_list.html) plugin is that this one also enables relaying.
+I think of *accept* as the equivalent of qmail's *rcpthosts*, or a misplaced Haraka `rcpt_to.*` plugin. The *accept* mechanism is another way to tell Haraka that a particular domain is one we accept mail for. The difference between this and the [rcpt_to.in_host_list](http://haraka.github.io/manual/plugins/rcpt_to.in_host_list.html) plugin is that this one also enables relaying.
 
     * continue (mails are subject to further checks)
 

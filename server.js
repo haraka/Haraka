@@ -1,6 +1,7 @@
 'use strict';
 // smtp network server
 
+// var log = require('why-is-node-running');
 var net         = require('./tls_socket');
 var conn        = require('./connection');
 var outbound    = require('./outbound');
@@ -15,6 +16,7 @@ var Server      = exports;
 Server.logger   = require('./logger');
 Server.config   = require('./config');
 Server.plugins  = require('./plugins');
+Server.notes    = {};
 
 var logger      = Server.logger;
 
@@ -27,6 +29,7 @@ Server.load_smtp_ini = function () {
     Server.cfg = Server.config.get('smtp.ini', {
         booleans: [
             '-main.daemonize',
+            '-main.graceful_shutdown',
         ],
     }, function () {
         Server.load_smtp_ini();
@@ -97,26 +100,33 @@ Server.gracefulRestart = function () {
     Server._graceful();
 }
 
+Server.performShutdown = function () {
+    if (Server.cfg.main.graceful_shutdown) {
+        return Server.gracefulShutdown();
+    }
+    logger.loginfo("Shutting down.");
+    process.exit(0);
+}
+
 Server.gracefulShutdown = function () {
     logger.loginfo('Shutting down listeners');
     Server.listeners.forEach(function (server) {
         server.close();
     });
     Server._graceful(function () {
+        // log();
         logger.loginfo("Failed to shutdown naturally. Exiting.");
         process.exit(0);
     });
 }
 
 Server._graceful = function (shutdown) {
-    if (!Server.cluster) {
-        if (shutdown) {
-            ['outbound', 'cfreader', 'plugins'].forEach(function (module) {
-                process.emit('message', {event: module + '.shutdown'});
-            });
-            var t = setTimeout(shutdown, Server.cfg.main.force_shutdown_timeout * 1000);
-            return t.unref();
-        }
+    if (!Server.cluster && shutdown) {
+        ['outbound', 'cfreader', 'plugins'].forEach(function (module) {
+            process.emit('message', {event: module + '.shutdown'});
+        });
+        var t = setTimeout(shutdown, Server.cfg.main.force_shutdown_timeout * 1000);
+        return t.unref();
     }
 
     if (gracefull_in_progress) {
@@ -129,10 +139,13 @@ Server._graceful = function (shutdown) {
     var disconnect_timeout = 30;
     var exit_timeout = 30;
     cluster.removeAllListeners('exit');
-    // only reload one worker at a time
-    // otherwise, we'll have a time when no connection handlers are running
+    // we reload using eachLimit where limit = num_workers - 1
+    // this kills all-but-one workers in parallel, leaving one running
+    // for new connections, and then restarts that one last worker.
     var worker_ids = Object.keys(cluster.workers);
-    async.eachSeries(worker_ids, function (id, cb) {
+    var limit = worker_ids.length - 1;
+    if (limit < 2) limit = 1;
+    async.eachLimit(worker_ids, limit, function (id, cb) {
         logger.lognotice("Killing node: " + id);
         var worker = cluster.workers[id];
         ['outbound', 'cfreader', 'plugins'].forEach(function (module) {
@@ -220,7 +233,13 @@ Server.receiveAsMaster = function (command, params) {
     Server[command].apply(Server, params);
 }
 
-function messageHandler (worker, msg) {
+function messageHandler (worker, msg, handle) {
+    // sunset Haraka v3 (Node < 6)
+    if (arguments.length === 2) {
+        handle = msg;
+        msg = worker;
+        worker = undefined;
+    }
     // console.log("received cmd: ", msg);
     if (msg && msg.cmd) {
         Server.receiveAsMaster(msg.cmd, msg.params);
@@ -297,22 +316,18 @@ Server.get_smtp_server = function (host, port, inactivity_timeout) {
     var conn_cb = function (client) {
         client.setTimeout(inactivity_timeout);
         var connection = conn.createConnection(client, server);
-        if (server.has_tls) {
-            var cipher = client.getCipher();
-            var authorized = client.authorized;
-            var authorizationError = client.authorizationError;
-            var cert = client.getPeerCertificate();
 
-            connection.set('hello', 'host', undefined);
-            connection.set('tls', 'enabled', true);
-            connection.set('tls', 'cipher', cipher);
-            connection.notes.tls = {
-                authorized: authorized,
-                authorizationError: authorizationError,
-                peerCertificate: cert,
-                cipher: cipher
-            };
-        }
+        if (!server.has_tls) return;
+
+        connection.set('hello', 'host', undefined);
+        connection.set('tls', 'enabled', true);
+        connection.set('tls', 'cipher', client.getCipher());
+        connection.notes.tls = {
+            authorized: client.authorized,
+            authorizationError: client.authorizationError,
+            peerCertificate: client.getPeerCertificate(),
+            cipher: client.getCipher(),
+        };
     };
 
     if (port !== '465') {
@@ -359,7 +374,7 @@ Server.setup_smtp_listeners = function (plugins2, type, inactivity_timeout) {
         var hp = /^\[?([^\]]+)\]?:(\d+)$/.exec(host_port);
         if (!hp) {
             return cb(new Error(
-                        'Invalid format for listen parameter in smtp.ini'));
+                'Invalid format for listen parameter in smtp.ini'));
         }
         var host = hp[1];
         var port = hp[2];
@@ -469,9 +484,7 @@ Server.init_master_respond = function (retval, msg) {
 
     // Load the queue if we're just one process
     if (!(cluster && c.nodes)) {
-        if (c.outbound) {
-            outbound.load_queue();
-        }
+        outbound.load_queue();
         Server.setup_http_listeners();
         return;
     }
