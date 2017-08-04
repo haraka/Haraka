@@ -14,6 +14,7 @@ var constants   = require('haraka-constants');
 var net_utils   = require('haraka-net-utils');
 var utils       = require('haraka-utils');
 var Address     = require('address-rfc2821').Address;
+var ResultStore = require('haraka-results');
 
 // Haraka libs
 var config      = require('./config');
@@ -22,7 +23,6 @@ var trans       = require('./transaction');
 var plugins     = require('./plugins');
 var rfc1869     = require('./rfc1869');
 var outbound    = require('./outbound');
-var ResultStore = require('haraka-results');
 
 var hostname    = (os.hostname().split(/\./))[0];
 var version     = JSON.parse(
@@ -183,7 +183,6 @@ function Connection (client, server) {
         advertised: false,   // c.notes.tls_enabled
         verified: false,
         cipher: {},
-        authorized: null,
     };
     this.proxy = {
         allowed: false,      // c.proxy
@@ -241,9 +240,30 @@ function Connection (client, server) {
 exports.Connection = Connection;
 
 exports.createConnection = function (client, server) {
-    var s = new Connection(client, server);
-    return s;
+    return new Connection(client, server);
 };
+
+Connection.prototype.setTLS = function (obj) {
+
+    this.set('hello', 'host', undefined);
+    this.set('tls',   'enabled', true);
+
+    ['cipher','verified','verifyError','peerCertificate'].forEach(t => {
+        if (obj[t] === undefined) return;
+        this.set('tls', t, obj[t]);
+    })
+
+    // prior to 2017-07, authorized and verified were both used. Verified
+    // seems to be the more common and has the property updated in the
+    // tls object. However, authorized has been up-to-date in the notes. Store
+    // in both, for backwards compatibility.
+    this.notes.tls = {
+        authorized: obj.verified,   // legacy name
+        authorizationError: obj.verifyError,
+        cipher: obj.cipher,
+        peerCertificate: obj.peerCertificate,
+    }
+}
 
 Connection.prototype.set = function (obj, prop, val) {
     if (!this[obj]) this.obj = {};   // initialize
@@ -1425,18 +1445,26 @@ Connection.prototype.cmd_rcpt = function (line) {
 Connection.prototype.received_line = function () {
     var smtp = this.hello.verb === 'EHLO' ? 'ESMTP' : 'SMTP';
     // Implement RFC3848
-    if (this.tls.enabled)  smtp = smtp + 'S';
+    if (this.tls.enabled) smtp = smtp + 'S';
     if (this.authheader) smtp = smtp + 'A';
-    // sslheader only populated with node.js >= 0.8
+
     var sslheader;
 
-    if (this.notes.tls && this.notes.tls.cipher) {
-        sslheader = '(version=' + this.notes.tls.cipher.version +
-            ' cipher=' + this.notes.tls.cipher.name +
-            ' verify=' + ((this.notes.tls.authorized) ? 'OK' :
-                ((this.notes.tls.authorizationError &&
-              this.notes.tls.authorizationError.code === 'UNABLE_TO_GET_ISSUER_CERT') ? 'NO' : 'FAIL')) + ')';
+    if (this.tls && this.tls.cipher) {
+        sslheader = `(version=${this.tls.cipher.version} cipher=${this.tls.cipher.name} verify=`;
+        if (this.tls.verified) {
+            sslheader += 'OK)';
+        }
+        else {
+            if (this.tls.verifyError && this.tls.verifyError.code === 'UNABLE_TO_GET_ISSUER_CERT') {
+                sslheader += 'NO)';
+            }
+            else {
+                sslheader += 'FAIL)';
+            }
+        }
     }
+
     var received_header = [
         'from ',
         this.hello.host, ' (',
