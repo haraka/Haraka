@@ -14,11 +14,9 @@ exports.testUpgradeIsCalledOnSTARTTLS = function (test) {
     test.expect(1);
 
     var plugin = new fixtures.plugin('queue/smtp_forward');
+
     // switch config directory to 'tests/config'
     plugin.config = plugin.config.module_config(path.resolve('tests'));
-
-    plugin.net_utils.config =
-        plugin.net_utils.config.module_config(path.resolve('tests'));
 
     plugin.register();
 
@@ -37,7 +35,7 @@ exports.testUpgradeIsCalledOnSTARTTLS = function (test) {
     };
 
     var client = new smtp_client.smtp_client(25, 'localhost', 30, 30, socket);
-    client.load_tls_config(plugin.tls_options);
+    client.load_tls_config({ key: Buffer.from('OutboundTlsKeyLoaded')});
 
     client.command = 'starttls';
     cmds.line('250 Hello client.example.com\r\n');

@@ -152,12 +152,13 @@ exports.load_tls_ini = {
             redis: { disable_for_failed_hosts: false },
             no_tls_hosts: {},
             outbound: {
+                key: 'outbound_tls_key.pem',
+                cert: 'outbound_tls_cert.pem',
                 ciphers: 'ECDHE-RSA-AES256-GCM-SHA384',
                 dhparam: 'dhparams.pem',
                 rejectUnauthorized: false,
                 requestCert: false,
                 honorCipherOrder: false,
-                requestOCSP: false,
             }
         });
         test.done();
@@ -175,8 +176,8 @@ exports.parse_x509 = {
         var res = this.socket.parse_x509('-BEGIN PRIVATE KEY-\nhello\n--END PRIVATE KEY--\n-its me-\n');
         res.key.toString();
         test.deepEqual(
-          res.key.toString(),
-          '-BEGIN PRIVATE KEY-\nhello\n--END PRIVATE KEY--\n'
+            res.key.toString(),
+            '-BEGIN PRIVATE KEY-\nhello\n--END PRIVATE KEY--\n'
         );
         // everything after the private key is cert(s)
         test.deepEqual(res.cert.toString(), '-its me-\n');
@@ -186,8 +187,8 @@ exports.parse_x509 = {
         var res = this.socket.parse_x509('-BEGIN RSA PRIVATE KEY-\nhello\n--END RSA PRIVATE KEY--\n-its me-\n');
         res.key.toString();
         test.deepEqual(
-          res.key.toString(),
-          '-BEGIN RSA PRIVATE KEY-\nhello\n--END RSA PRIVATE KEY--\n'
+            res.key.toString(),
+            '-BEGIN RSA PRIVATE KEY-\nhello\n--END RSA PRIVATE KEY--\n'
         );
         // everything after the private key is cert(s)
         test.deepEqual(res.cert.toString(), '-its me-\n');

@@ -10,6 +10,7 @@ Defaults are shown and can be overridden in `config/tls.ini`.
 
     key=tls_key.pem
     cert=tls_cert.pem
+    dhparam=dhparams.pem
 
 ## Purchased Certificate
 
@@ -19,10 +20,6 @@ files to the certificate in this order:
 1. The CA signed SSL cert
 2. Any intermediate certificates
 3. The CA root certificate
-
-Example:
-
-    cat mail.example.com.crt intermediary_cert.crt ca-cert.crt > config/tls_cert.pem
 
 See also [Setting Up TLS](https://github.com/haraka/Haraka/wiki/Setting-up-TLS-with-CA-certificates)
 
@@ -52,7 +49,7 @@ directory, use the following in `tls.ini`:
     key=example.com.key.pem
     cert=example.com.crt-chain.pem
 
-For multiple pairs of key and cert chain files should be used, outside of the haraka
+To use multiple pairs of key and cert chain files outside of the haraka
 `config/` directory, configure instead:
 
     key[]=/etc/ssl/private/example.com.rsa.key.pem
@@ -66,16 +63,14 @@ Specifies the location(s) for the certificate chain file. For multiple certifica
 
 ### no_tls_hosts
 
-If needed, add this section to the `config/tls.ini` file and list any IP ranges that have
-broken TLS. Ex:
+If needed, add this section to the `config/tls.ini` file and list any IP ranges that have broken TLS hosts. Ex:
 
     [no_tls_hosts]
     192.168.1.3
     172.16.0.0/16
 
 
-The [Node.js TLS](http://nodejs.org/api/tls.html) page has additional information
-about the following options.
+The [Node.js TLS](http://nodejs.org/api/tls.html) page has additional information about the following options.
 
 ### ciphers
 
@@ -87,9 +82,7 @@ See also: [Strong SSL Ciphers](http://cipherli.st) and the [SSLlabs Test Page](h
 
 ### honorCipherOrder
 
-If specified, the list of configured ciphers is treated as the cipher priority from
-highest to lowest. The first matching cipher will be used, instead of letting the
-client choose the cipher. The default is `false`.
+If specified, the list of configured ciphers is treated as the cipher priority from highest to lowest. The first matching cipher will be used, instead of letting the client choose. The default is `false`.
 
 ### ecdhCurve
 
@@ -99,11 +92,7 @@ Only one curve can be specified. The default is `prime256v1` (NIST P-256).
 ### dhparam
 
 Specifies the file containing the diffie-hellman parameters to
-use for DH or DHE key exchange. Create such a file using `openssl dhparam`.
-No DH ciphers can be used without this parameter.
-
-    openssl dhparam -out config/dhparams.pem 2048
-
+use for DH or DHE key exchange. If this param or file is missing, it will be generated automatically. Default: `dhparams.pem`.
 
 ### requestCert
 
@@ -127,14 +116,14 @@ one of the methods described at the
 The default is `SSLv23_method`.
 
 
-### enableOCSPStapling
+### requestOCSP
 
 Specifies that OCSP Stapling should be enabled, according to RFC 6066.
 Stapling of OCSP messages allows the client to receive these along the
 TLS session setup instead of delaying the session setup by requiring a
 separate http connection to the OCSP server.
 
-    enableOCSPStapling=[true|false]  (default: false)
+    requestOCSP=[true|false]  (default: false)
 
 OCSP responses from the OCSP server are cached in memory for as long as
 they are valid, and get refreshed after that time. A server restart

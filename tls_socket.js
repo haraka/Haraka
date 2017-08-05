@@ -589,19 +589,20 @@ function createServer (cb) {
 
             pipe(cleartext, cryptoSocket);
 
-            cleartext.on('error', (exception) => {
-                socket.emit('error', exception);
-            })
-            .on('secure', function () {
-                log.logdebug('TLS secured.');
-                socket.emit('secure');
-                if (cb2) cb2(
-                    cleartext.authorized,
-                    cleartext.authorizationError,
-                    cleartext.getPeerCertificate(),
-                    cleartext.getCipher()
-                );
-            })
+            cleartext
+                .on('error', (exception) => {
+                    socket.emit('error', exception);
+                })
+                .on('secure', function () {
+                    log.logdebug('TLS secured.');
+                    socket.emit('secure');
+                    if (cb2) cb2(
+                        cleartext.authorized,
+                        cleartext.authorizationError,
+                        cleartext.getPeerCertificate(),
+                        cleartext.getCipher()
+                    );
+                })
 
             socket.cleartext = cleartext;
 

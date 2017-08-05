@@ -377,26 +377,26 @@ Server.setup_smtp_listeners = function (plugins2, type, inactivity_timeout) {
                 if (Server.cluster) server.cluster = Server.cluster;
 
                 server
-                .on('listening', function () {
-                    var addr = this.address();
-                    logger.lognotice("Listening on " + addr.address + ':' + addr.port);
-                    listenerDone();
-                })
-                .on('close', function () {
-                    logger.loginfo(`Listener ${host}:${port} stopped`);
-                })
-                .on('error', function (e) {
-                    if (e.code !== 'EAFNOSUPPORT') return listenerDone(e);
-                    // Fallback from IPv6 to IPv4 if not supported
-                    // But only if we supplied the default of [::0]:25
-                    if (/^::0/.test(host) && Server.default_host) {
-                        server.listen(port, '0.0.0.0', 0);
-                        return;
-                    }
-                    // Pass error to callback
-                    listenerDone(e);
-                })
-                .listen(port, host, 0);
+                    .on('listening', function () {
+                        var addr = this.address();
+                        logger.lognotice("Listening on " + addr.address + ':' + addr.port);
+                        listenerDone();
+                    })
+                    .on('close', function () {
+                        logger.loginfo(`Listener ${host}:${port} stopped`);
+                    })
+                    .on('error', function (e) {
+                        if (e.code !== 'EAFNOSUPPORT') return listenerDone(e);
+                        // Fallback from IPv6 to IPv4 if not supported
+                        // But only if we supplied the default of [::0]:25
+                        if (/^::0/.test(host) && Server.default_host) {
+                            server.listen(port, '0.0.0.0', 0);
+                            return;
+                        }
+                        // Pass error to callback
+                        listenerDone(e);
+                    })
+                    .listen(port, host, 0);
             });
         },
         function runInitHooks (err) {
