@@ -339,6 +339,7 @@ Server.get_smtp_server = function (host, port, inactivity_timeout, done) {
         tls_socket.getSocketOpts('*', opts => {
             logger.loginfo("Creating TLS server on " + host + ':465');
             server = tls.createServer(opts, onConnect);
+            tls_socket.addOCSP(server);
             server.has_tls=true;
             server.on('resumeSession', (id, rsDone) => {
                 logger.loginfo("client requested TLS resumeSession");
@@ -436,7 +437,17 @@ Server.setup_http_listeners = function () {
             return cb(new Error('Invalid format for listen in http.ini'));
         }
 
-        Server.http.server = require('http').createServer(app);
+        if (443 == hp[2]) {
+            // clone the default TLS opts
+            let tlsOpts = Object.assign({}, tls_socket.certsByHost['*']);
+            tlsOpts.requestCert = false; // not appropriate for HTTPS
+            // console.log(tlsOpts);
+            Server.http.server = require('https').createServer(tlsOpts, app);
+        }
+        else {
+            Server.http.server = require('http').createServer(app);
+        }
+
         Server.listeners.push(Server.http.server);
 
         Server.http.server.on('listening', function () {
