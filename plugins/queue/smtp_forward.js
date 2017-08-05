@@ -6,19 +6,11 @@
 
 var smtp_client_mod = require('./smtp_client');
 
-// exported so tests can override config dir
-// exports.get_net_utils = function () {
-//     return require('haraka-net-utils');
-// }
-
-exports.net_utils = require('haraka-net-utils');
-
 exports.register = function () {
     var plugin = this;
     plugin.load_errs = [];
 
     plugin.load_smtp_forward_ini();
-    plugin.make_tls_opts();
 
     if (plugin.load_errs.length > 0) return;
 
@@ -36,46 +28,6 @@ exports.register = function () {
         plugin.register_hook('queue_outbound', 'queue_forward');
     }
 };
-
-exports.make_tls_opts = function () {
-    var plugin = this;
-    var tls_options = {};
-
-    if (plugin.cfg.main.enable_tls === true) {
-
-        var tls = plugin.net_utils.load_tls_ini();
-        if (!tls.outbound) { return; }
-
-        var tlsCfg = tls.outbound;
-
-        var config_options = [
-            'ciphers', 'requestCert', 'rejectUnauthorized',
-            'key', 'cert', 'honorCipherOrder', 'ecdhCurve', 'dhparam',
-            'secureProtocol', 'enableOCSPStapling'
-        ];
-
-        for (let i = 0; i < config_options.length; i++) {
-            let opt = config_options[i];
-            if (tlsCfg[opt] === undefined) continue;
-
-            if (opt === 'key' || opt === 'cert') {
-                var pem = plugin.config.get(tlsCfg[opt], 'binary');
-                if (!pem) {
-                    var msg = "tls " + opt + " " + tlsCfg[opt] + " could not be loaded.";
-                    this.load_errs.push(msg);
-                    this.logcrit(msg + " See 'haraka -h queue/smtp_forward'");
-                }
-
-                tls_options[opt] = pem;
-            }
-            else {
-                tls_options[opt] = tlsCfg[opt];
-            }
-        }
-    }
-
-    this.tls_options = tls_options;
-}
 
 exports.load_smtp_forward_ini = function () {
     var plugin = this;
