@@ -190,12 +190,11 @@ class SMTPClient extends events.EventEmitter {
 }
 
 SMTPClient.prototype.load_tls_config = function (opts) {
-    var tls_options = {};
-    if (opts) {
-        for (var k in opts) tls_options[k]=opts[k];
-    }
 
-    if (this.host) tls_options.servername = this.host;
+    let tls_options = { servername: this.host };
+    if (opts) {
+        Object.assign(tls_options, opts);
+    }
 
     this.tls_options = tls_options;
 }
@@ -268,10 +267,10 @@ SMTPClient.prototype.destroy = function () {
 SMTPClient.prototype.upgrade = function (tls_options) {
     var this_logger = logger;
 
-    this.socket.upgrade(tls_options, function (authorized, verifyError, cert, cipher) {
+    this.socket.upgrade(tls_options, function (verified, verifyError, cert, cipher) {
         this_logger.loginfo('secured:' +
             ((cipher) ? ' cipher=' + cipher.name + ' version=' + cipher.version : '') +
-            ' verified=' + authorized +
+            ' verified=' + verified +
             ((verifyError) ? ' error="' + verifyError + '"' : '' ) +
             ((cert && cert.subject) ? ' cn="' + cert.subject.CN + '"' +
             ' organization="' + cert.subject.O + '"' : '') +
