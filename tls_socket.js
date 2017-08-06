@@ -255,6 +255,7 @@ exports.load_tls_ini = function () {
 
     tlss.cfg = cfg;
 
+    tlss.applySocketOpts('*');
     tlss.load_default_opts();
 
     return cfg;
@@ -287,7 +288,9 @@ exports.applySocketOpts = function (name) {
 
     allOpts.forEach(opt => {
         // console.log(tlss.cfg);
+        // if the setting exists in tls.ini
         if (tlss.cfg.main[opt] !== undefined) {
+            // then save it to the certsByHost options
             tlss.saveOpt(name, opt, tlss.cfg.main[opt]);
         }
 
@@ -318,8 +321,6 @@ exports.applySocketOpts = function (name) {
 
 exports.load_default_opts = function () {
     let tlss = this;
-
-    tlss.applySocketOpts('*');
 
     let cfg = certsByHost['*'];
 
@@ -379,8 +380,6 @@ function SNICallback (servername, sniDone) {
 exports.get_certs_dir = function (tlsDir, done) {
     var tlss = this;
 
-    tlss.load_tls_ini();
-
     tlss.config.getDir(tlsDir, {}, (iterErr, files) => {
         if (iterErr) return done(iterErr);
 
@@ -420,7 +419,6 @@ exports.get_certs_dir = function (tlsDir, done) {
 
             if (!certs || !certs.length) {
                 log.loginfo('0 TLS certs in config/tls');
-                certsByHost = {};
                 return done(null, certs);
             }
 
@@ -432,6 +430,7 @@ exports.get_certs_dir = function (tlsDir, done) {
                     tlss.saveOpt(name, 'cert', cert.cert);
                     tlss.saveOpt(name, 'key', cert.key);
                     if (certsByHost['*'] !== undefined && certsByHost['*'].dhparam) {
+                        // copy in dhparam from default '*' TLS config
                         tlss.saveOpt(name, 'dhparam', certsByHost['*'].dhparam);
                     }
 
@@ -460,6 +459,7 @@ exports.getSocketOpts = function (name, done) {
 
     // startup time, load the config/tls dir
     if (!certsByHost['*']) {
+        tlss.load_tls_ini();
         tlss.get_certs_dir('tls', getTlsOpts);
         return;
     }

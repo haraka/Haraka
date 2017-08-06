@@ -8,29 +8,14 @@ const tls_socket = require('./tls_socket');
 exports.net_utils = require('haraka-net-utils');
 
 exports.register = function () {
-    var plugin = this;
+    let plugin = this;
 
     plugin.load_tls_ini();
 
-    // delay checking for tls_valid until init_* hooks (after TLS config loaded)
-    plugin.register_hook('init_master', 'init');
-    plugin.register_hook('init_child',  'init');
-}
-
-exports.init = function (next) {
-    let plugin = this;
-
-    // if no valid TLS setup, skip registering hooks
-    if (!tls_socket.tls_valid) {
-        plugin.logerror('no valid TLS config');
-        return next();
-    }
-
     plugin.register_hook('capabilities',         'advertise_starttls');
     plugin.register_hook('unrecognized_command', 'upgrade_connection');
-
-    next();
 }
+
 
 exports.shutdown = function () {
     if (tls_socket.shutdown) tls_socket.shutdown();
@@ -45,10 +30,16 @@ exports.load_tls_ini = function () {
 }
 
 exports.advertise_starttls = function (next, connection) {
+    let plugin = this;
+
+    // if no TLS setup incomplete/invalid, don't advertise
+    if (!tls_socket.tls_valid) {
+        plugin.logerror('no valid TLS config');
+        return next();
+    }
+
     /* Caution: do not advertise STARTTLS if already TLS upgraded */
     if (connection.tls.enabled) return next();
-
-    var plugin = this;
 
     if (plugin.net_utils.ip_in_list(plugin.cfg.no_tls_hosts, connection.remote.ip)) {
         return next();
@@ -87,7 +78,8 @@ exports.advertise_starttls = function (next, connection) {
 }
 
 exports.set_notls = function (ip) {
-    var plugin = this;
+    let plugin = this;
+
     if (!plugin.cfg.redis) return;
     if (!plugin.cfg.redis.disable_for_failed_hosts) return;
     if (!server.notes.redis) return;
@@ -104,10 +96,10 @@ exports.upgrade_connection = function (next, connection, params) {
     /* Respond to STARTTLS command. */
     connection.respond(220, "Go ahead.");
 
-    var plugin = this;
-    var called_next = false;
+    let plugin = this;
+    let called_next = false;
     // adjust plugin.timeout like so: echo '45' > config/tls.timeout
-    var timeout = plugin.timeout - 1;
+    let timeout = plugin.timeout - 1;
 
     function nextOnce (disconnected) {
         if (called_next) return;
@@ -152,9 +144,9 @@ exports.hook_disconnect = function (next, connection) {
     return next();
 }
 
-exports.emit_upgrade_msg = function (c, verified, verifyErr, cert, cipher) {
-    var plugin = this;
-    var msg = 'secured:';
+exports.emit_upgrade_msg = function (conn, verified, verifyErr, cert, cipher) {
+    let plugin = this;
+    let msg = 'secured:';
     if (cipher) {
         msg += ` cipher=${cipher.name} version=${cipher.version}`;
     }
@@ -169,6 +161,6 @@ exports.emit_upgrade_msg = function (c, verified, verifyErr, cert, cipher) {
         if (cert.fingerprint) msg += ` fingerprint=${cert.fingerprint}`;
     }
 
-    c.loginfo(plugin,  msg);
+    conn.loginfo(plugin,  msg);
     return msg;
 }
