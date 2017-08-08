@@ -47,7 +47,7 @@
     "haraka-plugin-watch"   : "*",
     "ldapjs"                : "~1.0.0",
     "ocsp"                  : "~1.2.0",
-    "redis"                 : "~2.7.0",
+    "redis"                 : "~2.8.0",
     "tmp"                   : "~0.0.28"
   },
   "devDependencies": {
