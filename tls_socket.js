@@ -11,7 +11,6 @@ const openssl   = require('openssl-wrapper').exec;
 const path      = require('path');
 const spawn     = require('child_process').spawn;
 const stream    = require('stream');
-const EventEmitter = require('events');
 
 exports.config  = require('haraka-config');  // exported for tests
 
@@ -324,7 +323,7 @@ exports.load_default_opts = function () {
 
     let cfg = certsByHost['*'];
 
-    if (cfg.dhparam) {
+    if (cfg.dhparam && typeof cfg.dhparam === 'string') {
         tlss.saveOpt('*', 'dhparam', tlss.config.get(cfg.dhparam, 'binary'));
     }
 
@@ -337,26 +336,32 @@ exports.load_default_opts = function () {
             ") not equal to certs (" + cfg.cert.length + ").");
     }
 
-    // turn key/cert file names into actual key/cert binary data
-    let asArray = cfg.key.map(keyFileName => {
-        if (!keyFileName) return;
-        let key = tlss.config.get(keyFileName, 'binary');
-        if (!key) {
-            log.logerror("tls key " + keyFileName + " could not be loaded.");
-        }
-        return key;
-    })
-    tlss.saveOpt('*', 'key', asArray);
+    // if key file has already been loaded, it'll be a Buffer.
+    if (typeof cfg.key[0] === 'string') {
+        // turn key/cert file names into actual key/cert binary data
+        let asArray = cfg.key.map(keyFileName => {
+            if (!keyFileName) return;
+            let key = tlss.config.get(keyFileName, 'binary');
+            if (!key) {
+                log.logerror("tls key " + keyFileName + " could not be loaded.");
+                log.logerror(tlss.config);
+            }
+            return key;
+        })
+        tlss.saveOpt('*', 'key', asArray);
+    }
 
-    asArray = cfg.cert.map(certFileName => {
-        if (!certFileName) return;
-        var cert = tlss.config.get(certFileName, 'binary');
-        if (!cert) {
-            log.logerror("tls cert " + certFileName + " could not be loaded.");
-        }
-        return cert;
-    })
-    tlss.saveOpt('*', 'cert', asArray);
+    if (typeof cfg.cert[0] === 'string') {
+        let asArray = cfg.cert.map(certFileName => {
+            if (!certFileName) return;
+            var cert = tlss.config.get(certFileName, 'binary');
+            if (!cert) {
+                log.logerror("tls cert " + certFileName + " could not be loaded.");
+            }
+            return cert;
+        })
+        tlss.saveOpt('*', 'cert', asArray);
+    }
 
     if (cfg.cert[0] && cfg.key[0]) {
         tlss.tls_valid = true;

@@ -317,6 +317,16 @@ Server.createServer = function (params) {
     Server.plugins.run_hooks('init_master', Server);
 };
 
+Server.load_default_tls_config = function (done) {
+    if (Server.config.root_path != tls_socket.config.root_path) {
+        logger.loginfo('resetting tls_config.config path');
+        tls_socket.config = tls_socket.config.module_config(path.dirname(Server.config.root_path));
+    }
+    tls_socket.getSocketOpts('*', (opts) => {
+        done(opts);
+    });
+}
+
 Server.get_smtp_server = function (host, port, inactivity_timeout, done) {
     var server;
 
@@ -336,7 +346,7 @@ Server.get_smtp_server = function (host, port, inactivity_timeout, done) {
 
     if (port === '465') {
         logger.loginfo("getting SocketOpts for SMTPS server");
-        tls_socket.getSocketOpts('*', opts => {
+        Server.load_default_tls_options(opts=> {
             logger.loginfo("Creating TLS server on " + host + ':465');
             server = tls.createServer(opts, onConnect);
             tls_socket.addOCSP(server);

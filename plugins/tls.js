@@ -16,7 +16,6 @@ exports.register = function () {
     plugin.register_hook('unrecognized_command', 'upgrade_connection');
 }
 
-
 exports.shutdown = function () {
     if (tls_socket.shutdown) tls_socket.shutdown();
 }
