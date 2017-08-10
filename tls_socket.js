@@ -211,7 +211,6 @@ exports.load_tls_ini = function () {
     let tlss = this;
 
     log.loginfo('loading tls.ini');
-    // console.log('loading tls.ini');
 
     let cfg = exports.config.get('tls.ini', {
         booleans: [
@@ -286,7 +285,6 @@ exports.applySocketOpts = function (name) {
     let allOpts = TLSSocketOptions.concat(createSecureContextOptions);
 
     allOpts.forEach(opt => {
-        // console.log(tlss.cfg);
         // if the setting exists in tls.ini
         if (tlss.cfg.main[opt] !== undefined) {
             // then save it to the certsByHost options
@@ -368,7 +366,6 @@ exports.load_default_opts = function () {
 
         // now that all opts are applied, generate TLS context
         tlss.ensureDhparams(() => {
-            // console.log(cfg);
             ctxByHost['*'] = tls.createSecureContext(cfg);
         })
     }
@@ -432,7 +429,11 @@ exports.get_certs_dir = function (tlsDir, done) {
             }
 
             certs.forEach(cert => {
-                // log.loginfo(cert);
+                if (cert.err) {
+                    log.logerror(`${cert.file} had error: ${cert.err.message}`);
+                }
+
+                log.logdebug(cert);
                 cert.names.forEach(name => {
                     tlss.applySocketOpts(name);
 
@@ -505,7 +506,6 @@ exports.ensureDhparams = function (done) {
     let o = spawn('openssl', ['dhparam', '-out', `${filePath}`, '2048']);
     o.stdout.on('data', data => {
         // normally empty output
-        console.log(data);
         log.logdebug(data);
     })
 
@@ -514,16 +514,12 @@ exports.ensureDhparams = function (done) {
     })
 
     o.on('close', code => {
-        // console.log(code);
         if (code !== 0) {
-            console.log(code);
             return done('Error code: ' + code);
         }
 
         log.loginfo(`Saved to ${filePath}`);
-        // console.log(`dhparam: ${tlss.cfg.main.dhparam}`);
         let content = tlss.config.get(tlss.cfg.main.dhparam, 'binary');
-        // console.log(Buffer.isBuffer(content));
 
         tlss.saveOpt('*', 'dhparam', content);
         done(null, certsByHost['*'].dhparam);
