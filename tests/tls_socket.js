@@ -79,7 +79,7 @@ exports.get_certs_dir = {
         test.expect(2);
         this.socket.get_certs_dir('tls', function (err, certs) {
             test.ifError(err);
-            // console.error(certs);
+            console.error(certs);
             test.ok(certs);
             test.done();
         })

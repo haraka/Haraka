@@ -402,14 +402,18 @@ exports.get_certs_dir = function (tlsDir, done) {
             let x509args = { noout: true, text: true };
 
             openssl('x509', parsed.cert, x509args, function (e, as_str) {
-                if (e) log.logerror(e);
+                if (e) {
+                    log.logerror(`BAD TLS in ${file.path}`);
+                    log.logerror(e);
+                }
 
                 let expire = tlss.parse_x509_expire(file, as_str);
                 if (expire && expire < new Date()) {
                     log.logerror(file.path + ' expired on ' + expire);
                 }
 
-                iter_done(e, {
+                iter_done(null, {
+                    err: e,
                     file: path.basename(file.path),
                     key: parsed.key,
                     cert: parsed.cert,
