@@ -63,7 +63,7 @@ Now in another window you can run swaks to test this - be sure to substitute
 an email address you can monitor in place of test@example.com, and the
 username and password you added for the -au and -ap params:
 
-    swaks -f youremail@yourdomain.com -t test@example.com -s localhost \
+    swaks -t youremail@yourdomain.com -f test@example.com -s localhost \
       -p 587 -au testuser -ap testpassword
 
 Watch the output of swaks and ensure no errors have occurred. Then watch
