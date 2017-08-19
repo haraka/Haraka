@@ -18,7 +18,7 @@
     "address-rfc2821"       : "^1.1.1",
     "address-rfc2822"       : "^2.0.0",
     "async"                 : "~2.5.0",
-    "daemon"                : "https://github.com/zipang/daemon.node/tarball/48d0977c26fb3a6a44ae99aae3471b9d5a761085",
+    "daemon"                : "~1.1.0",
     "generic-pool"          : "~2.5.0",
     "iconv"                 : "~2.3.0",
     "ipaddr.js"             : "~1.4.0",
