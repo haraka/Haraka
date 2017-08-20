@@ -346,7 +346,7 @@ Server.get_smtp_server = function (host, port, inactivity_timeout, done) {
 
     if (port === '465') {
         logger.loginfo("getting SocketOpts for SMTPS server");
-        Server.load_default_tls_options(opts=> {
+        tls_socket.getSocketOpts('*', opts => {
             logger.loginfo("Creating TLS server on " + host + ':465');
             server = tls.createServer(opts, onConnect);
             tls_socket.addOCSP(server);

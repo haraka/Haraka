@@ -267,6 +267,8 @@ exports.saveOpt = function (name, opt, val) {
 exports.applySocketOpts = function (name) {
     let tlss = this;
 
+    if (!certsByHost[name]) certsByHost[name] = {};
+
     // https://nodejs.org/api/tls.html#tls_new_tls_tlssocket_socket_options
     let TLSSocketOptions = [
         // 'server'        // manually added
@@ -285,14 +287,18 @@ exports.applySocketOpts = function (name) {
     let allOpts = TLSSocketOptions.concat(createSecureContextOptions);
 
     allOpts.forEach(opt => {
-        // if the setting exists in tls.ini
-        if (tlss.cfg.main[opt] !== undefined) {
+
+        if (tlss.cfg[name] && tlss.cfg[name][opt] !== undefined) {
+            // if the setting exists in tls.ini [name]
+            tlss.saveOpt(name, opt, tlss.cfg[name][opt]);
+        }
+        else if (tlss.cfg.main[opt] !== undefined) {
+            // if the setting exists in tls.ini [main]
             // then save it to the certsByHost options
             tlss.saveOpt(name, opt, tlss.cfg.main[opt]);
         }
 
-        if (!certsByHost[name]) certsByHost[name] = {};
-
+        // defaults
         switch (opt) {
             case 'sessionIdContext':
                 tlss.saveOpt(name, opt, 'haraka');
@@ -301,16 +307,16 @@ exports.applySocketOpts = function (name) {
                 tlss.saveOpt(name, opt, true);
                 break;
             case 'key':
-                if (!certsByHost[name][opt]) tlss.saveOpt(name, opt, 'tls_key.pem');
+                tlss.saveOpt(name, opt, 'tls_key.pem');
                 break;
             case 'cert':
-                if (!certsByHost[name][opt]) tlss.saveOpt(name, opt, 'tls_cert.pem');
+                tlss.saveOpt(name, opt, 'tls_cert.pem');
                 break;
             case 'dhparam':
-                if (!certsByHost[name][opt]) tlss.saveOpt(name, opt, 'dhparams.pem');
+                tlss.saveOpt(name, opt, 'dhparams.pem');
                 break;
             case 'SNICallback':
-                if (!certsByHost[name][opt]) tlss.saveOpt(name, opt, SNICallback);
+                tlss.saveOpt(name, opt, SNICallback);
                 break;
         }
     })
@@ -532,29 +538,37 @@ exports.addOCSP = function (server) {
         return;
     }
 
+    if (server.listenerCount('OCSPRequest') > 0) {
+        log.logdebug('OCSPRequest already listening');
+        return;
+    }
+
     log.logdebug('adding OCSPRequest listener');
-    server.on('OCSPRequest', function (cert, issuer, cb2) {
+    server.on('OCSPRequest', function (cert, issuer, ocr_cb) {
         log.logdebug('OCSPRequest: ' + cert);
         ocsp.getOCSPURI(cert, function (err, uri) {
             log.logdebug('OCSP Request, URI: ' + uri + ', err=' +err);
-            if (err) return cb2(err);
-            if (uri === null) return cb2();  // not working OCSP server
+            if (err) return ocr_cb(err);
+            if (uri === null) return ocr_cb();  // not working OCSP server
 
             let req = ocsp.request.generate(cert, issuer);
-            let options = {
-                url: uri,
-                ocsp: req.data
-            };
 
             // look for a cached value first
-            ocspCache.probe(req.id, function (_x, result) {
-                log.logdebug('OCSP cache result: ' + util.inspect(result));
-                if (result) {
-                    cb2(_x, result.response);
-                } else {
-                    log.logdebug('OCSP req:' + util.inspect(req));
-                    ocspCache.request(req.id, options, cb2);
+            ocspCache.probe(req.id, function (err2, cached) {
+                if (err2) return ocr_cb(err2);
+
+                if (cached) {
+                    log.logdebug('OCSP cache: ' + util.inspect(cached));
+                    return ocr_cb(err2, cached.response);
                 }
+
+                let options = {
+                    url: uri,
+                    ocsp: req.data
+                };
+
+                log.logdebug('OCSP req:' + util.inspect(req));
+                ocspCache.request(req.id, options, ocr_cb);
             })
         })
     })
@@ -585,6 +599,7 @@ function createServer (cb) {
             log.logdebug('Upgrading to TLS');
 
             socket.clean();
+
             cryptoSocket.removeAllListeners('data');
 
             let options = Object.assign({}, certsByHost['*']);
