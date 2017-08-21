@@ -148,7 +148,6 @@ function _setupServer (done) {
     // this.server.outbound.config = this.config.module_config(test_cfg_path);
 
     this.server.load_smtp_ini();
-
     // console.log(require('util').inspect(this.server, {depth: null}));
 
     this.server.createServer({});

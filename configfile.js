@@ -269,23 +269,8 @@ cfreader.ensure_enoent_timer = function () {
             })(files[i]); // END BLOCK SCOPE
         }
     }, 60 * 1000);
-    cfreader._enoent_timer.unref();
+    cfreader._enoent_timer.unref(); // remove?
 };
-
-process.on('message', function (msg) {
-    if (msg.event && msg.event == 'cfreader.shutdown') {
-        logger.loginfo("[cfreader] Shutting down enoent timer");
-        clearInterval(cfreader._enoent_timer);
-        logger.loginfo("[cfreader] Clearing any sedation timers");
-        for (var k in cfreader._sedation_timers) {
-            clearTimeout(cfreader._sedation_timers[k]);
-        }
-        logger.loginfo("[cfreader] Removing watchers");
-        for (var k2 in cfreader._watchers) {
-            cfreader._watchers[k2].close();
-        }
-    }
-});
 
 cfreader.empty_config = function (type) {
     if (type === 'ini') {

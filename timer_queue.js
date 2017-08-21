@@ -62,8 +62,4 @@ TimerQueue.prototype.drain = function () {
         var to_run = this.queue.shift();
         if (to_run.cb) to_run.cb();
     }
-};
-
-TimerQueue.prototype.shutdown = function () {
-    clearInterval(this.interval_timer);
 }

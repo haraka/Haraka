@@ -192,13 +192,6 @@ exports.check_zones = function (interval) {
     }
 };
 
-exports.shutdown = function () {
-    clearInterval(this._interval);
-    if (redis_client) {
-        redis_client.quit();
-    }
-};
-
 exports.disable_zone = function (zone, result) {
     if (!zone) return false;
     if (!this.zones) return false;

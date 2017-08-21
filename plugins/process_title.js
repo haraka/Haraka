@@ -91,11 +91,6 @@ exports.hook_init_child = function (next, server) {
     return next();
 };
 
-exports.shutdown = function () {
-    this.logdebug("Shutting down interval: " + this._interval);
-    clearInterval(this._interval);
-};
-
 exports.hook_connect_init = function (next, connection) {
     var server = connection.server;
     connection.notes.pt_connect_run = true;

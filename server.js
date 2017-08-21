@@ -29,7 +29,6 @@ Server.load_smtp_ini = function () {
     Server.cfg = Server.config.get('smtp.ini', {
         booleans: [
             '-main.daemonize',
-            '-main.graceful_shutdown',
         ],
     }, function () {
         Server.load_smtp_ini();
@@ -38,8 +37,7 @@ Server.load_smtp_ini = function () {
     var defaults = {
         inactivity_timeout: 600,
         daemon_log_file: '/var/log/haraka.log',
-        daemon_pid_file: '/var/run/haraka.pid',
-        force_shutdown_timeout: 30,
+        daemon_pid_file: '/var/run/haraka.pid'
     };
 
     for (var key in defaults) {
@@ -94,8 +92,13 @@ Server.flushQueue = function (domain) {
     }
 };
 
-var gracefull_in_progress = false;
+Server.stopListeners = function () {
+    Server.listeners.forEach(function (server) {
+        server.close();
+    });
+}
 
+var gracefull_in_progress = false;
 Server.gracefulRestart = function () {
     Server._graceful();
 }
@@ -125,85 +128,9 @@ Server.gracefulShutdown = function () {
     });
 }
 
-Server._graceful = function (shutdown) {
-    if (!Server.cluster && shutdown) {
-        ['outbound', 'cfreader', 'plugins'].forEach(function (module) {
-            process.emit('message', {event: module + '.shutdown'});
-        });
-        var t = setTimeout(shutdown, Server.cfg.main.force_shutdown_timeout * 1000);
-        return t.unref();
-    }
-
-    if (gracefull_in_progress) {
-        logger.lognotice("Restart currently in progress - ignoring request");
-        return;
-    }
-
-    gracefull_in_progress = true;
-    // TODO: Make these configurable
-    var disconnect_timeout = 30;
-    var exit_timeout = 30;
-    cluster.removeAllListeners('exit');
-    // we reload using eachLimit where limit = num_workers - 1
-    // this kills all-but-one workers in parallel, leaving one running
-    // for new connections, and then restarts that one last worker.
-    var worker_ids = Object.keys(cluster.workers);
-    var limit = worker_ids.length - 1;
-    if (limit < 2) limit = 1;
-    async.eachLimit(worker_ids, limit, function (id, cb) {
-        logger.lognotice("Killing node: " + id);
-        var worker = cluster.workers[id];
-        ['outbound', 'cfreader', 'plugins'].forEach(function (module) {
-            worker.send({event: module + '.shutdown'});
-        })
-        worker.disconnect();
-        var disconnect_received = false;
-        var disconnect_timer = setTimeout(function () {
-            if (!disconnect_received) {
-                logger.logcrit("Disconnect never received by worker. Killing.");
-                worker.kill();
-            }
-        }, disconnect_timeout * 1000);
-        worker.once("disconnect", function () {
-            clearTimeout(disconnect_timer);
-            disconnect_received = true;
-            logger.lognotice("Disconnect complete");
-            var dead = false;
-            var timer = setTimeout(function () {
-                if (!dead) {
-                    logger.logcrit("Worker " + id + " failed to shutdown. Killing.");
-                    worker.kill();
-                }
-            }, exit_timeout * 1000);
-            worker.once("exit", function () {
-                dead = true;
-                clearTimeout(timer);
-                if (shutdown) cb();
-            });
-        });
-        if (shutdown) return;
-        var newWorker = cluster.fork();
-        newWorker.once("listening", function () {
-            logger.lognotice("Replacement worker online.");
-            newWorker.on('exit', function (code, signal) {
-                cluster_exit_listener(newWorker, code, signal);
-            });
-            cb();
-        });
-    }, function (err) {
-        // err can basically never happen, but fuckit...
-        if (err) logger.logerror(err);
-        if (shutdown) {
-            logger.loginfo("Workers closed. Shutting down master process subsystems");
-            ['outbound', 'cfreader', 'plugins'].forEach(function (module) {
-                process.emit('message', {event: module + '.shutdown'});
-            })
-            var t2 = setTimeout(shutdown, Server.cfg.main.force_shutdown_timeout * 1000);
-            return t2.unref();
-        }
-        gracefull_in_progress = false;
-        logger.lognotice("Reload complete, workers: " + JSON.stringify(Object.keys(cluster.workers)));
-    });
+Server.performShutdown = function () {
+    logger.loginfo("Shutting down.");
+    process.exit(0);
 }
 
 Server.drainPools = function () {

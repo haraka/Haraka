@@ -26,7 +26,6 @@ var knownOpts = {
     "qstat":       Boolean,
     "qempty":      Boolean,
     "qunstick":    [String, null],
-    "graceful":    Boolean,
     "order":       Boolean,
     "test":        [String, Array],
     "ip":          String,
@@ -414,25 +413,6 @@ else if (parsed.qunstick) {
     }
     else {
         send_internal_command('flushQueue ' + domain, cb);
-    }
-}
-else if (parsed.graceful) {
-    if (!parsed.configs) {
-        fail("graceful option requires config path");
-    }
-    process.env.HARAKA = parsed.configs;
-    logger = require(path.join(base, "logger"));
-    if (!parsed.verbose)
-        logger.log = function () {} // disable logging for this
-    config = require(path.join(base, "config"));
-    if (!config.get("smtp.ini").main.nodes) {
-        console.log("Graceful restart not possible without `nodes` value in smtp.ini");
-        process.exit();
-    }
-    else {
-        send_internal_command('gracefulRestart', function () {
-            process.exit();
-        });
     }
 }
 else if (parsed.qempty) {

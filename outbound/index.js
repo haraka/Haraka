@@ -55,12 +55,6 @@ process.on('message', function (msg) {
         exports.flush_queue(msg.domain, process.pid);
         return;
     }
-    if (msg.event && msg.event == 'outbound.shutdown') {
-        logger.loginfo("[outbound] Shutting down temp fail queue");
-        exports.drain_pools();
-        temp_fail_queue.shutdown();
-        return;
-    }
     if (msg.event && msg.event === 'outbound.drain_pools') {
         exports.drain_pools();
         return;
