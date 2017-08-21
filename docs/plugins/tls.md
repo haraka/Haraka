@@ -12,6 +12,17 @@ Defaults are shown and can be overridden in `config/tls.ini`.
     cert=tls_cert.pem
     dhparam=dhparams.pem
 
+
+## Certificate Directory
+
+If the directory `config/tls` exists, each file within the directory is expected to be a PEM encoded TLS bundle. Generate the PEM bundles in The Usual Way[TM] by concatenating the key, certificate, and CA/chain certs in that order. Example:
+
+    cat example.com.key example.com.crt ca.crt > config/tls/example.com.pem
+
+Here is [an example [acme.sh](https://acme.sh) deployment script](https://github.com/msimerson/Mail-Toaster-6/blob/master/provision-letsencrypt.sh) that installs [Let's Encrypt](https://letsencrypt.org) certificates to the Haraka `config/tls`directory.
+
+Haraka has (SNI](https://en.wikipedia.org/wiki/Server_Name_Indication) support. When the remote MUA/MTA presents a servername during the TLS handshake and a TLS certificate with that Common Name matches, that certificate will be presented. If no match is found, the default certificate (see Certificate Files above) is presented.
+
 ## Purchased Certificate
 
 If you have a purchased certificate, append any intermediate/chained/ca-cert
