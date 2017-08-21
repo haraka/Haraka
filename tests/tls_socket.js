@@ -125,7 +125,7 @@ exports.load_tls_ini = {
                 main: {
                     requestCert: true,
                     rejectUnauthorized: false,
-                    honorCipherOrder: false,
+                    honorCipherOrder: true,
                     requestOCSP: false,
                     // enableOCSPStapling: false,
                 },

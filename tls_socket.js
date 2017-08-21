@@ -226,7 +226,7 @@ exports.load_tls_ini = function () {
             // explicitely declared booleans are initialized
             '+main.requestCert',
             '-main.rejectUnauthorized',
-            '-main.honorCipherOrder',
+            '+main.honorCipherOrder',
             '-main.requestOCSP',
         ]
     }, function () {

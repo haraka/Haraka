@@ -93,7 +93,7 @@ See also: [Strong SSL Ciphers](http://cipherli.st) and the [SSLlabs Test Page](h
 
 ### honorCipherOrder
 
-If specified, the list of configured ciphers is treated as the cipher priority from highest to lowest. The first matching cipher will be used, instead of letting the client choose. The default is `false`.
+If specified, the list of configured ciphers is treated as the cipher priority from highest to lowest. The first matching cipher will be used, instead of letting the client choose. The default is `true`.
 
 ### ecdhCurve
 
@@ -102,8 +102,7 @@ Only one curve can be specified. The default is `prime256v1` (NIST P-256).
 
 ### dhparam
 
-Specifies the file containing the diffie-hellman parameters to
-use for DH or DHE key exchange. If this param or file is missing, it will be generated automatically. Default: `dhparams.pem`.
+Specifies the file containing the diffie-hellman parameters to use for DH or DHE key exchange. If this param or file is missing, it will be generated automatically. Default: `dhparams.pem`.
 
 ### requestCert
 
