@@ -67,7 +67,6 @@ exports.connectionRaw = {
             advertised: false,
             verified: false,
             cipher: {},
-            authorized: null,
         });
         // backwards compat, sunset v3.0.0
         test.equal(this.connection.using_tls, false);

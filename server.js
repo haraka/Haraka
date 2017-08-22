@@ -1,24 +1,25 @@
 'use strict';
 // smtp network server
 
-// var log = require('why-is-node-running');
-var net         = require('./tls_socket');
-var conn        = require('./connection');
-var outbound    = require('./outbound');
-var constants   = require('haraka-constants');
-var os          = require('os');
-var cluster     = require('cluster');
-var async       = require('async');
-var daemon      = require('daemon');
-var path        = require('path');
+// let log = require('why-is-node-running');
+const tls_socket  = require('./tls_socket');
+const conn        = require('./connection');
+const outbound    = require('./outbound');
+const async       = require('async');
+const cluster     = require('cluster');
+const constants   = require('haraka-constants');
+const daemon      = require('daemon');
+const os          = require('os');
+const path        = require('path');
+const tls         = require('tls');
 
-var Server      = exports;
-Server.logger   = require('./logger');
-Server.config   = require('./config');
-Server.plugins  = require('./plugins');
-Server.notes    = {};
+let Server        = exports;
+Server.logger     = require('./logger');
+Server.config     = require('./config');
+Server.plugins    = require('./plugins');
+Server.notes      = {};
 
-var logger      = Server.logger;
+let logger        = Server.logger;
 
 // Need these here so we can run hooks
 logger.add_log_methods(Server, 'server');
@@ -35,14 +36,14 @@ Server.load_smtp_ini = function () {
         Server.load_smtp_ini();
     });
 
-    var defaults = {
+    let defaults = {
         inactivity_timeout: 600,
         daemon_log_file: '/var/log/haraka.log',
         daemon_pid_file: '/var/run/haraka.pid',
         force_shutdown_timeout: 30,
     };
 
-    for (var key in defaults) {
+    for (let key in defaults) {
         if (Server.cfg.main[key] !== undefined) continue;
         Server.cfg.main[key] = defaults[key];
     }
@@ -59,7 +60,7 @@ Server.load_smtp_ini();
 Server.load_http_ini();
 
 Server.daemonize = function () {
-    var c = this.cfg.main;
+    let c = this.cfg.main;
     if (!c.daemonize) return;
 
     if (!process.env.__daemon) {
@@ -316,109 +317,108 @@ Server.createServer = function (params) {
     Server.plugins.run_hooks('init_master', Server);
 };
 
-Server.get_smtp_server = function (host, port, inactivity_timeout) {
+Server.load_default_tls_config = function (done) {
+    if (Server.config.root_path != tls_socket.config.root_path) {
+        logger.loginfo('resetting tls_config.config path');
+        tls_socket.config = tls_socket.config.module_config(path.dirname(Server.config.root_path));
+    }
+    tls_socket.getSocketOpts('*', (opts) => {
+        done(opts);
+    });
+}
+
+Server.get_smtp_server = function (host, port, inactivity_timeout, done) {
     var server;
-    var conn_cb = function (client) {
+
+    function onConnect (client) {
         client.setTimeout(inactivity_timeout);
-        var connection = conn.createConnection(client, server);
+        let connection = conn.createConnection(client, server);
 
         if (!server.has_tls) return;
 
-        connection.set('hello', 'host', undefined);
-        connection.set('tls', 'enabled', true);
-        connection.set('tls', 'cipher', client.getCipher());
-        connection.notes.tls = {
-            authorized: client.authorized,
-            authorizationError: client.authorizationError,
-            peerCertificate: client.getPeerCertificate(),
+        connection.setTLS({
             cipher: client.getCipher(),
-        };
-    };
+            verified: client.authorized,
+            verifyError: client.authorizationError,
+            peerCertificate: client.getPeerCertificate(),
+        });
+    }
 
-    if (port !== '465') {
-        server = net.createServer(conn_cb);
+    if (port === '465') {
+        logger.loginfo("getting SocketOpts for SMTPS server");
+        tls_socket.getSocketOpts('*', opts => {
+            logger.loginfo("Creating TLS server on " + host + ':465');
+            server = tls.createServer(opts, onConnect);
+            tls_socket.addOCSP(server);
+            server.has_tls=true;
+            server.on('resumeSession', (id, rsDone) => {
+                logger.loginfo("client requested TLS resumeSession");
+                rsDone(null, null);
+            })
+            Server.listeners.push(server);
+            done(server);
+        })
+    }
+    else {
+        server = tls_socket.createServer(onConnect);
         Server.listeners.push(server);
-        return server;
+        done(server);
     }
-
-    if (!Server.plugins.registered_plugins.tls) {
-        logger.logerror("TLS plugin not activated. Cannot listen on port 465 (SMTPS) without config");
-        return;
-    }
-
-    var tls_plugin = Server.plugins.registered_plugins.tls;
-
-    if (!tls_plugin.tls_opts_valid) {
-        logger.logerror("No valid TLS setup in the tls config. Cannot listen on port 465.");
-        return;
-    }
-
-    var options = tls_plugin.tls_opts;
-
-    logger.logdebug("Creating TLS server on " + host + ':' + port);
-    server = require('tls').createServer(options, conn_cb);
-    server.has_tls=true;
-    Server.listeners.push(server);
-    return server;
 };
 
 Server.setup_smtp_listeners = function (plugins2, type, inactivity_timeout) {
-    var listeners = Server.get_listen_addrs(Server.cfg.main);
 
-    var runInitHooks = function (err) {
-        if (err) {
-            logger.logerror("Failed to setup listeners: " + err.message);
-            return logger.dump_and_exit(-1);
-        }
-        Server.listening();
-        plugins2.run_hooks('init_' + type, Server);
-    };
+    async.each(
+        Server.get_listen_addrs(Server.cfg.main),  // array of listeners
 
-    var setupListener = function (host_port, cb) {
+        function setupListener (host_port, listenerDone) {
 
-        var hp = /^\[?([^\]]+)\]?:(\d+)$/.exec(host_port);
-        if (!hp) {
-            return cb(new Error(
-                'Invalid format for listen parameter in smtp.ini'));
-        }
-        var host = hp[1];
-        var port = hp[2];
+            var hp = /^\[?([^\]]+)\]?:(\d+)$/.exec(host_port);
+            if (!hp) return listenerDone(
+                new Error('Invalid "listen" format in smtp.ini'));
 
-        var server = Server.get_smtp_server(host, port, inactivity_timeout);
-        if (!server) return cb();
+            let host = hp[1];
+            let port = hp[2];
 
-        server.notes = Server.notes;
-        if (Server.cluster) server.cluster = Server.cluster;
+            Server.get_smtp_server(host, port, inactivity_timeout, (server) => {
+                if (!server) return listenerDone();
 
-        server.on('listening', function () {
-            var addr = this.address();
-            logger.lognotice("Listening on " + addr.address + ':' + addr.port);
-            cb();
-        });
+                server.notes = Server.notes;
+                if (Server.cluster) server.cluster = Server.cluster;
 
-        server.on('close', function () {
-            logger.loginfo('Listener shutdown');
-        });
-
-        // Fallback from IPv6 to IPv4 if not supported
-        // But only if we supplied the default of [::0]:25
-        server.on('error', function (e) {
-            if (e.code === 'EAFNOSUPPORT' &&
-                    /^::0/.test(host) &&
-                    Server.default_host) {
-                server.listen(port, '0.0.0.0', 0);
+                server
+                    .on('listening', function () {
+                        var addr = this.address();
+                        logger.lognotice("Listening on " + addr.address + ':' + addr.port);
+                        listenerDone();
+                    })
+                    .on('close', function () {
+                        logger.loginfo(`Listener ${host}:${port} stopped`);
+                    })
+                    .on('error', function (e) {
+                        if (e.code !== 'EAFNOSUPPORT') return listenerDone(e);
+                        // Fallback from IPv6 to IPv4 if not supported
+                        // But only if we supplied the default of [::0]:25
+                        if (/^::0/.test(host) && Server.default_host) {
+                            server.listen(port, '0.0.0.0', 0);
+                            return;
+                        }
+                        // Pass error to callback
+                        listenerDone(e);
+                    })
+                    .listen(port, host, 0);
+            });
+        },
+        function runInitHooks (err) {
+            if (err) {
+                logger.logerror("Failed to setup listeners: " + err.message);
+                return logger.dump_and_exit(-1);
             }
-            else {
-                // Pass error to callback
-                cb(e);
-            }
-        });
-
-        server.listen(port, host, 0);
-    };
-
-    async.each(listeners, setupListener, runInitHooks);
-};
+            Server.listening();
+            plugins2.run_hooks('init_' + type, Server);
+        }
+    );
+}
 
 Server.setup_http_listeners = function () {
     if (!Server.http.cfg) return;
@@ -447,7 +447,17 @@ Server.setup_http_listeners = function () {
             return cb(new Error('Invalid format for listen in http.ini'));
         }
 
-        Server.http.server = require('http').createServer(app);
+        if (443 == hp[2]) {
+            // clone the default TLS opts
+            let tlsOpts = Object.assign({}, tls_socket.certsByHost['*']);
+            tlsOpts.requestCert = false; // not appropriate for HTTPS
+            // console.log(tlsOpts);
+            Server.http.server = require('https').createServer(tlsOpts, app);
+        }
+        else {
+            Server.http.server = require('http').createServer(app);
+        }
+
         Server.listeners.push(Server.http.server);
 
         Server.http.server.on('listening', function () {

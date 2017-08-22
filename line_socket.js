@@ -4,7 +4,7 @@
 var net   = require('net');
 var utils = require('haraka-utils');
 
-var tls  = require('./tls_socket');
+var tls_socket = require('./tls_socket');
 
 class Socket extends net.Socket {
     constructor (options) {
@@ -49,7 +49,7 @@ exports.connect = function (port, host, cb) {
         options.port = port;
         options.host = host;
     }
-    var sock = tls.connect(options, cb);
+    var sock = tls_socket.connect(options, cb);
     setup_line_processor(sock);
     return sock;
 };
