@@ -129,9 +129,6 @@ exports.check_user = function (next, connection, credentials, method) {
             fail: plugin.name + '/' + method,
         });
 
-        connection.notes.auth_login_userlogin = null;
-        connection.notes.auth_login_asked_login = false;
-
         var delay = Math.pow(2, connection.notes.auth_fails - 1);
         if (plugin.timeout && delay >= plugin.timeout) {
             delay = plugin.timeout - 1;
@@ -231,6 +228,10 @@ exports.auth_login = function (next, connection, params) {
             connection.notes.auth_login_userlogin,
             utils.unbase64(params[0])
         ];
+
+        connection.notes.auth_login_userlogin = null;
+        connection.notes.auth_login_asked_login = false;
+
         return plugin.check_user(next, connection, credentials,
             AUTH_METHOD_LOGIN);
     }
