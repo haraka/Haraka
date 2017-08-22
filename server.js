@@ -9,7 +9,7 @@ var constants   = require('haraka-constants');
 var os          = require('os');
 var cluster     = require('cluster');
 var async       = require('async');
-var daemon      = require('daemon')({ cwd: process.cwd() });
+var daemon      = require('daemon');
 var path        = require('path');
 
 var Server      = exports;
