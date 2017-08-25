@@ -205,7 +205,7 @@ logger.log_if_level = function (level, key, plugin) {
         var logobj = {
             level,
             connection_uuid: '-',
-            source: (plugin || 'core'),
+            origin: (plugin || 'core'),
             message: ''
         };
         for (var i=0; i < arguments.length; i++) {
@@ -224,13 +224,13 @@ logger.log_if_level = function (level, key, plugin) {
                 }
             }
             else if (data instanceof plugins.Plugin) {
-                logobj.source = data.name;
+                logobj.origin = data.name;
             }
             else if (data.name) {
-                logobj.source = data.name;
+                logobj.origin = data.name;
             }
             else if (data instanceof outbound.HMailItem) {
-                logobj.source = 'outbound';
+                logobj.origin = 'outbound';
                 if (data.todo && data.todo.uuid) {
                     logobj.connection_uuid = data.todo.uuid;
                 }
@@ -265,7 +265,7 @@ logger.log_if_level = function (level, key, plugin) {
                     [
                         '[' + logobj.level + ']',
                         '[' + logobj.connection_uuid + ']',
-                        '[' + logobj.source + ']',
+                        '[' + logobj.origin + ']',
                         logobj.message
                     ].join(' ')
                 );
