@@ -14,6 +14,7 @@ var constants   = require('haraka-constants');
 var net_utils   = require('haraka-net-utils');
 var utils       = require('haraka-utils');
 var Address     = require('address-rfc2821').Address;
+var ResultStore = require('haraka-results');
 
 // Haraka libs
 var config      = require('./config');
@@ -22,7 +23,6 @@ var trans       = require('./transaction');
 var plugins     = require('./plugins');
 var rfc1869     = require('./rfc1869');
 var outbound    = require('./outbound');
-var ResultStore = require('haraka-results');
 
 var hostname    = (os.hostname().split(/\./))[0];
 var version     = JSON.parse(
