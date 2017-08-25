@@ -35,12 +35,8 @@ logger.formats = {
     LOGFMT: "LOGFMT",
 };
 
-for (var lf in logger.formats) {
-    logger['LOGFMT' + lf] = logger.formats[lf];
-}
-
 logger.loglevel     = logger.LOGWARN;
-logger.logformat    = logger.LOGFMTDEFAULT;
+logger.logformat    = logger.formats.DEFAULT;
 logger.deferred_logs = [];
 
 logger.colors = {
@@ -156,7 +152,7 @@ logger._init_logformat = function () {
         self._init_logformat();
     });
     if (_logformat) {
-        logger.logformat = logger[_logformat.toUpperCase()];
+        logger.logformat = logger.formats[_logformat.toUpperCase()];
         this.log('INFO', 'logformat: ' + _logformat.toUpperCase());
     }
     else {
@@ -164,7 +160,7 @@ logger._init_logformat = function () {
     }
     if (!logger.logformat) {
         this.log('WARN', 'invalid logformat: ' + _logformat + ' defaulting to LOGFMTDEFAULT');
-        logger.logformat = logger.LOGFMTDEFAULT;
+        logger.logformat = logger.formats.DEFAULT;
     }
 };
 
@@ -236,7 +232,7 @@ logger.log_if_level = function (level, key, plugin) {
                 }
             }
             else if (
-                logger.logformat === logger.LOGFMTLOGFMT &&
+                logger.logformat === logger.formats.LOGFMT &&
                 data.constructor === Object
             ) {
                 logobj = Object.assign(logobj, data);
@@ -252,13 +248,13 @@ logger.log_if_level = function (level, key, plugin) {
             }
         }
         switch (logger.logformat) {
-            case logger.LOGFMTLOGFMT:
+            case logger.formats.LOGFMT:
                 logger.log(
                     level,
                     logfmt.stringify(logobj)
                 );
                 return true;
-            case logger.LOGFMTDEFAULT:
+            case logger.formats.DEFAULT:
             default:
                 logger.log(
                     level,
