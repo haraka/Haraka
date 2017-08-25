@@ -523,8 +523,10 @@ Server.init_master_respond = function (retval, msg) {
                 .send({event: 'outbound.load_pid_queue', data: pids[j]});
         }
         cluster.on('online', function (worker) {
-            logger.lognotice('worker ' + worker.id + ' started pid=' +
-                    worker.process.pid);
+            logger.lognotice(
+                'worker started',
+                { worker: worker.id, pid: worker.process.pid }
+            );
         });
         cluster.on('listening', function (worker, address) {
             logger.lognotice('worker ' + worker.id + ' listening on ' +
