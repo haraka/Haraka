@@ -10,8 +10,14 @@ function _create_socket (port, host, local_addr, is_unix_socket, callback) {
     var socket = is_unix_socket ? sock.connect({path: host}) :
         sock.connect({port: port, host: host, localAddress: local_addr});
     socket.setTimeout(cfg.connect_timeout * 1000);
-    logger.logdebug('[outbound] host=' +
-        host + ' port=' + port + ' pool_timeout=' + cfg.pool_timeout + ' created');
+    logger.logdebug(
+        '[outbound] created',
+        {
+            host: host,
+            port: port,
+            pool_timeout: cfg.pool_timeout
+        }
+    );
     socket.once('connect', function () {
         socket.removeAllListeners('error'); // these get added after callback
         callback(null, socket);
