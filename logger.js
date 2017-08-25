@@ -74,7 +74,7 @@ logger.load_log_ini = function () {
 
     this.set_loglevel(this.cfg.main.level);
     this.set_timestamps(this.cfg.main.timestamps);
-    this._init_format(this.cfg.main.format);
+    this.set_format(this.cfg.main.format);
 }
 
 logger.colorize = function (color, str) {
@@ -167,6 +167,20 @@ logger.set_loglevel = function (level) {
     }
 }
 
+logger.set_format = function (format) {
+    if (format) {
+        logger.format = logger.formats[format.toUpperCase()];
+        this.log('INFO', 'log format: ' + format.toUpperCase());
+    }
+    else {
+        logger.format = null;
+    }
+    if (!logger.format) {
+        this.log('WARN', 'invalid log format: ' + format + ' defaulting to DEFAULT');
+        logger.format = logger.formats.DEFAULT;
+    }
+};
+
 logger._init_loglevel = function () {
     let self = this;
 
@@ -176,21 +190,6 @@ logger._init_loglevel = function () {
 
     self.set_loglevel(_loglevel);
 }
-
-logger._init_format = function (_format) {
-
-    if (_format) {
-        logger.format = logger.formats[_format.toUpperCase()];
-        this.log('INFO', 'log format: ' + _format.toUpperCase());
-    }
-    else {
-        logger.format = null;
-    }
-    if (!logger.format) {
-        this.log('WARN', 'invalid log format: ' + _format + ' defaulting to DEFAULT');
-        logger.format = logger.formats.DEFAULT;
-    }
-};
 
 logger.would_log = function (level) {
     if (logger.loglevel < level) { return false; }
