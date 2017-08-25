@@ -259,9 +259,9 @@ Connection.prototype.setTLS = function (obj) {
         this.set('tls', t, obj[t]);
     })
 
-    // prior to 07, authorized and verified were both used. Verified
+    // prior to 2017-07, authorized and verified were both used. Verified
     // seems to be the more common and has the property updated in the
-    // tls object. However, authorized has been todate in the notes. Store
+    // tls object. However, authorized has been up-to-date in the notes. Store
     // in both, for backwards compatibility.
     this.notes.tls = {
         authorized: obj.verified,   // legacy name
