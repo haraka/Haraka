@@ -2,6 +2,7 @@
 // Log class
 
 var constants = require('haraka-constants');
+var logfmt = require('logfmt');
 
 var config    = require('./config');
 var plugins;
@@ -29,7 +30,17 @@ for (var le in logger.levels) {
     logger['LOG' + le] = logger.levels[le];
 }
 
+logger.formats = {
+    DEFAULT: "DEFAULT",
+    LOGFMT: "LOGFMT",
+};
+
+for (var lf in logger.formats) {
+    logger['LOGFMT' + lf] = logger.formats[lf];
+}
+
 logger.loglevel     = logger.LOGWARN;
+logger.logformat    = logger.LOGFMTDEFAULT;
 logger.deferred_logs = [];
 
 logger.colors = {
@@ -139,6 +150,24 @@ logger._init_loglevel = function () {
     }
 };
 
+logger._init_logformat = function () {
+    var self = this;
+    var _logformat = config.get('logformat', 'value', function () {
+        self._init_logformat();
+    });
+    if (_logformat) {
+        logger.logformat = logger[_logformat.toUpperCase()];
+        this.log('INFO', 'logformat: ' + _logformat.toUpperCase());
+    }
+    else {
+        logger.logformat = null;
+    }
+    if (!logger.logformat) {
+        this.log('WARN', 'invalid logformat: ' + _logformat + ' defaulting to LOGFMTDEFAULT');
+        logger.logformat = logger.LOGFMTDEFAULT;
+    }
+};
+
 logger.would_log = function (level) {
     if (logger.loglevel < level) { return false; }
     return true;
@@ -167,49 +196,81 @@ logger._init_timestamps = function () {
 };
 
 logger._init_loglevel();
+logger._init_logformat();
 logger._init_timestamps();
 
 logger.log_if_level = function (level, key, plugin) {
     return function () {
         if (logger.loglevel < logger[key]) { return; }
-        var levelstr = '[' + level + ']';
-        var str = '';
-        var uuidstr = '[-]';
-        var pluginstr = '[' + (plugin || 'core') + ']';
+        var logobj = {
+            level,
+            'connection-uuid': '-',
+            source: (plugin || 'core'),
+            message: ''
+        };
         for (var i=0; i < arguments.length; i++) {
             var data = arguments[i];
             if (typeof data !== 'object') {
-                str += data;
+                logobj.message += (data);
                 continue;
             }
             if (!data) continue;
 
             // if the object is a connection, add the connection id
             if (data instanceof connection.Connection) {
-                uuidstr = '[' + data.uuid;
+                logobj['connection-uuid'] = data.uuid;
                 if (data.tran_count > 0) {
-                    uuidstr += "." + data.tran_count;
+                    logobj['connection-uuid'] += "." + data.tran_count;
                 }
-                uuidstr += ']';
             }
             else if (data instanceof plugins.Plugin) {
-                pluginstr = '[' + data.name + ']';
+                logobj.source = data.name;
             }
             else if (data.name) {
-                pluginstr = '[' + data.name + ']';
+                logobj.source = data.name;
             }
             else if (data instanceof outbound.HMailItem) {
-                pluginstr = '[outbound]';
+                logobj.source = 'outbound';
                 if (data.todo && data.todo.uuid) {
-                    uuidstr = '[' + data.todo.uuid + ']';
+                    logobj['connection-uuid'] = data.todo.uuid;
                 }
             }
+            else if (
+                logger.logformat === logger.LOGFMTLOGFMT &&
+                data.constructor === Object
+            ) {
+                logobj = Object.assign(logobj, data);
+            }
+            else if (data.constructor === Object) {
+                if (!logobj.message.endsWith(' ')) {
+                    logobj.message += ' ';
+                }
+                logobj.message += (logfmt.stringify(data));
+            }
             else {
-                str += util.inspect(data);
+                logobj.message += (util.inspect(data));
             }
         }
-        logger.log(level, [levelstr, uuidstr, pluginstr, str].join(' '));
-        return true;
+        switch (logger.logformat) {
+            case logger.LOGFMTLOGFMT:
+                logger.log(
+                    level,
+                    logfmt.stringify(logobj)
+                );
+                break;
+            case logger.LOGFMTDEFAULT:
+            default:
+                logger.log(
+                    level,
+                    [
+                        '[' + logobj.level + ']',
+                        '[' + logobj['connection-uuid'] + ']',
+                        '[' + logobj.source + ']',
+                        logobj.message
+                    ].join(' ')
+                );
+                return true;
+        }
     };
 };
 
