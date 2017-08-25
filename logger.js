@@ -35,8 +35,8 @@ logger.formats = {
     LOGFMT: "LOGFMT",
 };
 
-logger.loglevel     = logger.LOGWARN;
-logger.logformat    = logger.formats.DEFAULT;
+logger.loglevel = logger.LOGWARN;
+logger.format = logger.formats.DEFAULT;
 logger.deferred_logs = [];
 
 logger.colors = {
@@ -146,21 +146,21 @@ logger._init_loglevel = function () {
     }
 };
 
-logger._init_logformat = function () {
+logger._init_format = function () {
     var self = this;
-    var _logformat = config.get('logformat', 'value', function () {
-        self._init_logformat();
+    var _format = config.get('logformat', 'value', function () {
+        self._init_format();
     });
-    if (_logformat) {
-        logger.logformat = logger.formats[_logformat.toUpperCase()];
-        this.log('INFO', 'logformat: ' + _logformat.toUpperCase());
+    if (_format) {
+        logger.format = logger.formats[_format.toUpperCase()];
+        this.log('INFO', 'log format: ' + _format.toUpperCase());
     }
     else {
-        logger.logformat = null;
+        logger.format = null;
     }
-    if (!logger.logformat) {
-        this.log('WARN', 'invalid logformat: ' + _logformat + ' defaulting to LOGFMTDEFAULT');
-        logger.logformat = logger.formats.DEFAULT;
+    if (!logger.format) {
+        this.log('WARN', 'invalid log format: ' + _format + ' defaulting to DEFAULT');
+        logger.format = logger.formats.DEFAULT;
     }
 };
 
@@ -192,7 +192,7 @@ logger._init_timestamps = function () {
 };
 
 logger._init_loglevel();
-logger._init_logformat();
+logger._init_format();
 logger._init_timestamps();
 
 logger.log_if_level = function (level, key, plugin) {
@@ -232,7 +232,7 @@ logger.log_if_level = function (level, key, plugin) {
                 }
             }
             else if (
-                logger.logformat === logger.formats.LOGFMT &&
+                logger.format === logger.formats.LOGFMT &&
                 data.constructor === Object
             ) {
                 logobj = Object.assign(logobj, data);
@@ -247,7 +247,7 @@ logger.log_if_level = function (level, key, plugin) {
                 logobj.message += (util.inspect(data));
             }
         }
-        switch (logger.logformat) {
+        switch (logger.format) {
             case logger.formats.LOGFMT:
                 logger.log(
                     level,

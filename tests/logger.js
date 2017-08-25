@@ -40,7 +40,7 @@ exports.log = {
     'log in logfmt' : function (test) {
         this.logger.deferred_logs = [];
         test.expect(3);
-        this.logger.logformat = this.logger.formats.LOGFMT;
+        this.logger.format = this.logger.formats.LOGFMT;
         test.equal(0, this.logger.deferred_logs.length);
         test.ok(this.logger.log('WARN','test warning'));
         test.equal(1, this.logger.deferred_logs.length);
