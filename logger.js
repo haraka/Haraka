@@ -257,7 +257,7 @@ logger.log_if_level = function (level, key, plugin) {
                     level,
                     logfmt.stringify(logobj)
                 );
-                break;
+                return true;
             case logger.LOGFMTDEFAULT:
             default:
                 logger.log(
