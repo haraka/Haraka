@@ -204,7 +204,7 @@ logger.log_if_level = function (level, key, plugin) {
         if (logger.loglevel < logger[key]) { return; }
         var logobj = {
             level,
-            'connection-uuid': '-',
+            connection_uuid: '-',
             source: (plugin || 'core'),
             message: ''
         };
@@ -218,9 +218,9 @@ logger.log_if_level = function (level, key, plugin) {
 
             // if the object is a connection, add the connection id
             if (data instanceof connection.Connection) {
-                logobj['connection-uuid'] = data.uuid;
+                logobj.connection_uuid = data.uuid;
                 if (data.tran_count > 0) {
-                    logobj['connection-uuid'] += "." + data.tran_count;
+                    logobj.connection_uuid += "." + data.tran_count;
                 }
             }
             else if (data instanceof plugins.Plugin) {
@@ -232,7 +232,7 @@ logger.log_if_level = function (level, key, plugin) {
             else if (data instanceof outbound.HMailItem) {
                 logobj.source = 'outbound';
                 if (data.todo && data.todo.uuid) {
-                    logobj['connection-uuid'] = data.todo.uuid;
+                    logobj.connection_uuid = data.todo.uuid;
                 }
             }
             else if (
@@ -264,7 +264,7 @@ logger.log_if_level = function (level, key, plugin) {
                     level,
                     [
                         '[' + logobj.level + ']',
-                        '[' + logobj['connection-uuid'] + ']',
+                        '[' + logobj.connection_uuid + ']',
                         '[' + logobj.source + ']',
                         logobj.message
                     ].join(' ')
