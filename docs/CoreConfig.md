@@ -7,6 +7,11 @@ The Haraka core reads some configuration files to determine a few actions:
 
 Contains settings for log level, timestamps, and format. See the example log.ini file for examples.
 
+* logformat
+
+  Can contain either be LOGFMTDEFAULT for the default log format or
+LOGFMTLOGFMT for the logfmt format.
+
 * smtp.yaml or smtp.json
 
 If either of these files exist then they are loaded first after loglevel.
@@ -77,7 +82,8 @@ The list of plugins to load
   default: 30
 
   Note also that each plugin can have a `config/<plugin_name>.timeout`
-  file specifying a per-plugin timeout.  In this file you can set a timeout of 0 to mean that this plugin's hooks never time out.  Use this with care.
+  file specifying a per-plugin timeout.  In this file you can set a timeout of 0
+  to mean that this plugin's hooks never time out.  Use this with care.
 
   If the plugin is in a sub-directory of plugins, then you must create this file
   in the equivalent path e.g. the queue/smtp_forward would need a timeout file in `config/queue/smtp_forward.timeout`

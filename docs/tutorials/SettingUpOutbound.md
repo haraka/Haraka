@@ -60,11 +60,11 @@ Now you can start Haraka. That's all the configuration you need.
     haraka -c .
 
 Now in another window you can run swaks to test this - be sure to substitute
-an email address you can monitor in place of test@example.com, and the
-username and password you added for the -au and -ap params:
+an email address you can monitor in place of youremail@yourdomain.com, and the
+username and password you added for the --auth-user and --auth-password params:
 
-    swaks -f youremail@yourdomain.com -t test@example.com -s localhost \
-      -p 587 -au testuser -ap testpassword
+    swaks --to youremail@yourdomain.com --from test@example.com --server localhost \
+      --port 587 --auth-user testuser --auth-password testpassword
 
 Watch the output of swaks and ensure no errors have occurred. Then watch
 the recipient email address (easiest to make this your webmail account) and

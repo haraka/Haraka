@@ -8,25 +8,25 @@ See also
 ------------------
 [https://github.com/haraka/Haraka/pull/119](https://github.com/haraka/Haraka/pull/119)
 
-logline will always always be in the form:
+The logline by default will be in the form of:
 
     [level] [connection uuid] [origin] message
 
-where origin is "haraka\_core" or the name of the plugin which
+Where origin is "core" or the name of the plugin which
 triggered the message, and "connection uuid" is the ID of the
 connection associated with the message.
 
-when calling a log method on logger, you should provide the
+When calling a log method on logger, you should provide the
 plugin object and the connection object anywhere in the arguments
 to the log method.
 
     logger.logdebug("i like turtles", plugin, connection);
 
-will yield, for example,
+Will yield, for example,
 
     [DEBUG] [7F1C820F-DC79-4192-9AA6-5307354B20A6] [dnsbl] i like turtles
 
-if you call the log method on the connection object, you can
+If you call the log method on the connection object, you can
 forego the connection as argument:
 
     connection.logdebug("turtles all the way down", plugin);
@@ -36,11 +36,21 @@ and similarly for the log methods on the plugin object:
     plugin.logdebug("he just really likes turtles", connection);
 
 failing to provide a connection and/or plugin object will leave
-the default values in the log (currently "core" and
-"no\_connection").
+the default values in the log (currently "core").
 
-this is implemented by testing for argument type in
+This is implemented by testing for argument type in
 the logger.js log\* method. objects-as-arguments are then sniffed
 to try to determine if they're a connection or plugin instance.
 
+The logfmt format is also supported and can be enabled by changing
+`LOGFMTDEFAULT` to `LOGFMTLOGFMT` in the `config/logformat` file which will
+start logging in the following format below.
 
+    level=PROTOCOL connection_uuid=9FF7F70E-5D57-435A-AAD9-EA069B6159D9.1 source=core message="S: 354 go ahead, make my day"
+
+Any objects you pass through will also be appeneded to the log line as
+key=value and will look like this:
+
+    level=NOTICE connection_uuid=9FF7F70E-5D57-435A-AAD9-EA069B6159D9.1 source=core message=disconnect ip=127.0.0.1 rdns=Unknown helo=3h2dnz8a0if relay=N early=N esmtp=N tls=N pipe=N errors=0 txns=1 rcpts=1/0/0 msgs=1/0/0 bytes=222 lr="" time=0.052
+
+You can find out more about logfmt here: [https://brandur.org/logfmt](https://brandur.org/logfmt)

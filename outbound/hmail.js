@@ -780,15 +780,33 @@ HMailItem.prototype.try_deliver_host_on_socket = function (mx, host, port, socke
 
                         smtp_properties = {};
                         socket.upgrade(tls_options, function (authorized, verifyError, cert, cipher) {
-                            self.loginfo('secured:' +
-                                ((cipher) ? ' cipher=' + cipher.name + ' version=' + cipher.version : '') +
-                                ' verified=' + authorized +
-                              ((verifyError) ? ' error="' + verifyError + '"' : '' ) +
-                              ((cert && cert.subject) ? ' cn="' + cert.subject.CN + '"' +
-                              ' organization="' + cert.subject.O + '"' : '') +
-                              ((cert && cert.issuer) ? ' issuer="' + cert.issuer.O + '"' : '') +
-                              ((cert && cert.valid_to) ? ' expires="' + cert.valid_to + '"' : '') +
-                              ((cert && cert.fingerprint) ? ' fingerprint=' + cert.fingerprint : ''));
+                            var loginfo = {
+                                verified: authorized
+                            };
+                            if (cipher) {
+                                loginfo.cipher = cipher.name;
+                                loginfo.version = cipher.version;
+                            }
+                            if (verifyError) {
+                                loginfo.error = verifyError;
+                            }
+                            if (cert && cert.subject) {
+                                loginfo.cn = cert.subject.CN;
+                                loginfo.organization = cert.subject.O;
+                            }
+                            if (cert && cert.issuer) {
+                                loginfo.issuer = cert.issuer.O;
+                            }
+                            if (cert && cert.valid_to) {
+                                loginfo.expires = cert.valid_to;
+                            }
+                            if (cert && cert.fingerprint) {
+                                loginfo.fingerprint = cert.fingerprint;
+                            }
+                            self.loginfo(
+                                'secured',
+                                loginfo
+                            );
                         });
                         break;
                     case 'auth':
@@ -1181,18 +1199,20 @@ HMailItem.prototype.double_bounce = function (err) {
 
 HMailItem.prototype.delivered = function (ip, port, mode, host, response, ok_recips, fail_recips, bounce_recips, secured, authenticated) {
     var delay = (Date.now() - this.todo.queue_time)/1000;
-    this.lognotice("delivered file=" + this.filename +
-                   ' domain="' + this.todo.domain + '"' +
-                   ' host="' + host + '"' +
-                   ' ip=' + ip +
-                   ' port=' + port +
-                   ' mode=' + mode +
-                   ' tls=' + ((secured) ? 'Y' : 'N') +
-                   ' auth=' + ((authenticated) ? 'Y' : 'N') +
-                   ' response="' + response + '"' +
-                   ' delay=' + delay +
-                   ' fails=' + this.num_failures +
-                   ' rcpts=' + ok_recips.length + '/' + fail_recips.length + '/' + bounce_recips.length);
+    this.lognotice({
+        'delivered file': this.filename,
+        'domain': this.todo.domain,
+        'host': host,
+        'ip': ip,
+        'port': port,
+        'mode': mode,
+        'tls': ((secured) ? 'Y' : 'N'),
+        'auth': ((authenticated) ? 'Y' : 'N'),
+        'response': response,
+        'delay': delay,
+        'fails': this.num_failures,
+        'rcpts': ok_recips.length + '/' + fail_recips.length + '/' + bounce_recips.length
+    });
     plugins.run_hooks("delivered", this, [host, ip, response, delay, port, mode, ok_recips, secured, authenticated]);
 };
 
@@ -1274,7 +1294,10 @@ HMailItem.prototype.deferred_respond = function (retval, msg, params) {
 // The following handler has an impact on outgoing mail. It does remove the queue file.
 HMailItem.prototype.delivered_respond = function (retval, msg) {
     if (retval !== constants.cont && retval !== constants.ok) {
-        this.logwarn("delivered plugin responded with: " + retval + " msg=" + msg + ".");
+        this.logwarn(
+            "delivered plugin responded",
+            { retval, msg }
+        );
     }
     this.discard();
 };

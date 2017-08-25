@@ -319,6 +319,39 @@ exports.auth_login = {
         var params = ['AUTH','LOGIN', utils.base64('test')];
         this.connection.notes.allowed_auth_methods = ['PLAIN','LOGIN'];
         this.plugin.hook_unrecognized_command(next, this.connection, params);
+    },
+
+
+    'AUTH LOGIN, reauthentication': function (test) {
+        test.expect(9);
+
+        var next3 = function (code) {
+            test.equal(code, OK);
+
+            test.done();
+        };
+
+        var next2 = function (code) {
+            test.equal(code, OK);
+            test.equal(this.connection.relaying, true);
+            test.equal(this.connection.notes.auth_login_userlogin, null);
+            test.equal(this.connection.notes.auth_login_asked_login , false);
+
+            this.plugin.hook_unrecognized_command(next3, this.connection, ['AUTH','LOGIN']);
+        }.bind(this);
+
+        var next = function (code) {
+            test.equal(code, OK);
+            test.equal(this.connection.relaying, false);
+            test.equal(this.connection.notes.auth_login_userlogin, 'test');
+            test.equal(this.connection.notes.auth_login_asked_login , true);
+
+            this.plugin.hook_unrecognized_command(next2, this.connection, [utils.base64('testpass')]);
+        }.bind(this);
+
+        var params = ['AUTH','LOGIN', utils.base64('test')];
+        this.connection.notes.allowed_auth_methods = ['PLAIN','LOGIN'];
+        this.plugin.hook_unrecognized_command(next, this.connection, params);
     }
 };
 
