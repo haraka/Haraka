@@ -42,8 +42,8 @@ This is implemented by testing for argument type in
 the logger.js log\* method. objects-as-arguments are then sniffed
 to try to determine if they're a connection or plugin instance.
 
-The logfmt format is also supported and can be enabled by changing
-`LOGFMTDEFAULT` to `LOGFMTLOGFMT` in the `config/logformat` file which will
+The logfmt format is also supported and can be enabled by changing the format
+from `default` to `logfmt` in the `config/log.ini` file which will
 start logging in the following format below.
 
     level=PROTOCOL connection_uuid=9FF7F70E-5D57-435A-AAD9-EA069B6159D9.1 source=core message="S: 354 go ahead, make my day"
