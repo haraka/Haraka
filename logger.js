@@ -204,7 +204,7 @@ logger.log_if_level = function (level, key, plugin) {
         if (logger.loglevel < logger[key]) { return; }
         var logobj = {
             level,
-            connection_uuid: '-',
+            uuid: '-',
             origin: (plugin || 'core'),
             message: ''
         };
