@@ -5,7 +5,7 @@ var util      = require('util');
 var tty       = require('tty');
 
 var constants = require('haraka-constants');
-var logfmt = require('logfmt');
+var logfmt    = require('logfmt');
 
 var config    = require('./config');
 var plugins;
@@ -59,7 +59,6 @@ logger._init = function () {
     this.load_log_ini();
     this._init_loglevel();
     this._init_timestamps();
-    this._init_format();
 }
 
 logger.load_log_ini = function () {
@@ -75,6 +74,7 @@ logger.load_log_ini = function () {
 
     this.set_loglevel(this.cfg.main.level);
     this.set_timestamps(this.cfg.main.timestamps);
+    this._init_format(this.cfg.main.format);
 }
 
 logger.colorize = function (color, str) {
@@ -177,11 +177,8 @@ logger._init_loglevel = function () {
     self.set_loglevel(_loglevel);
 }
 
-logger._init_format = function () {
-    var self = this;
-    var _format = config.get('logformat', 'value', function () {
-        self._init_format();
-    });
+logger._init_format = function (_format) {
+
     if (_format) {
         logger.format = logger.formats[_format.toUpperCase()];
         this.log('INFO', 'log format: ' + _format.toUpperCase());
