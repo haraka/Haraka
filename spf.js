@@ -603,7 +603,13 @@ SPF.prototype.mech_ptr = function (qualifier, args, cb) {
                             re = new RegExp(domain.replace('\.','\\.') + '$', 'i');
                         }
                         catch (e) {
-                            self.log_debug('mech_ptr: domain="' + self.domain + '" err="' + e.message + '"');
+                            self.log_debug(
+                                'mech_ptr',
+                                {
+                                    domain: self.domain,
+                                    err: e.message
+                                }
+                            );
                             return cb(null, self.SPF_PERMERROR);
                         }
                         for (var t=0; t<names.length; t++) {
