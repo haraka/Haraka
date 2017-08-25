@@ -3,10 +3,9 @@ Core Configuration Files
 
 The Haraka core reads some configuration files to determine a few actions:
 
-* loglevel
+* log.ini
 
-  Can contain either a number or a string. See the top of logger.js for the
-different levels available.
+Contains settings for log level, timestamps, and format. See the example log.ini file for examples.
 
 * logformat
 
@@ -19,20 +18,13 @@ If either of these files exist then they are loaded first after loglevel.
 This file is designed to use the JSON/YAML file overrides documented in
 Config.md to optionally provide the entire configuration in a single file.
 
-* log_timestamps
-
-  If this contains a 1 (or other truthy value), will prepend a timestamp
-to log lines. Note this only affects log lines sent via console.log, not
-the actual content sent to log hooks, so logging via syslog for example
-will not include a timestamp.
-
 * databytes
 
-  Contains the maximum SIZE of an email that Haraka will receive.
+Contains the maximum SIZE of an email that Haraka will receive.
 
 * plugins
 
-  The list of plugins to load
+The list of plugins to load
 
 * smtp.ini
 
@@ -94,8 +86,7 @@ will not include a timestamp.
   to mean that this plugin's hooks never time out.  Use this with care.
 
   If the plugin is in a sub-directory of plugins, then you must create this file
-  in the equivalent path e.g. the queue/smtp_forward would need a timeout file in
-  `config/queue/smtp_forward.timeout`
+  in the equivalent path e.g. the queue/smtp_forward would need a timeout file in `config/queue/smtp_forward.timeout`
 
 * smtpgreeting
 
