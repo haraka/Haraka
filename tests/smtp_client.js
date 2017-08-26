@@ -1,14 +1,16 @@
 
 require('../configfile').watch_files = false;
-var vm_harness = require('./fixtures/vm_harness');
+const path        = require('path');
+const vm_harness  = require('./fixtures/vm_harness');
 
-vm_harness.add_tests(path.join(__dirname, '..', 'smtp_client.js'),
-    path.join(__dirname, 'smtp_client', exports));
+vm_harness.add_tests(
+    path.join(__dirname, '..', 'smtp_client.js'),
+    path.join(__dirname, 'smtp_client') + path.sep,
+    exports
+);
 
-
-var smtp_client = require('../smtp_client');
-var path         = require('path');
-var fixtures     = require('haraka-test-fixtures');
+const smtp_client = require('../smtp_client');
+const fixtures    = require('haraka-test-fixtures');
 
 exports.testUpgradeIsCalledOnSTARTTLS = function (test) {
     test.expect(1);
