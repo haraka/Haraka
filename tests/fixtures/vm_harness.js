@@ -1,5 +1,7 @@
-var fs = require('fs');
-var vm = require('vm');
+
+const fs   = require('fs');
+const path = require('path');
+const vm   = require('vm');
 
 function dot_files (element) {
     return element.match(/^\./) == null;
@@ -8,13 +10,13 @@ function dot_files (element) {
 exports.sandbox_require = function (id) {
     if (id[0] == '.' && id[1] != '.') {
         try {
-            var override = __dirname + '/' + id + '.js';
+            var override = path.join(__dirname, id, '.js');
             fs.statSync(override);
             id = override;
         }
         catch (e) {
             try {
-                override = __dirname + '/../../outbound/' + id.replace(/^[./]*/, '') + '.js';
+                override = path.join(__dirname, '..', '..', 'outbound', id.replace(/^[./]*/, ''), '.js');
                 fs.statSync(override);
                 id = override;
             }
