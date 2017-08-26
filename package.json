@@ -41,6 +41,7 @@
     "haraka-plugin-fcrdns"  : "*",
     "haraka-plugin-geoip"   : "*",
     "haraka-plugin-karma"   : "*",
+    "haraka-plugin-qmail-deliverable" : "*",
     "haraka-plugin-recipient-routes" : "*",
     "haraka-plugin-redis"   : "*",
     "haraka-plugin-syslog"  : "*",
