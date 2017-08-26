@@ -165,7 +165,7 @@ Create a PR adding yours to this list.
 [url-redis]: https://github.com/haraka/haraka-plugin-redis
 [url-rhost]: https://github.com/haraka/Haraka/blob/master/docs/plugins/rcpt_to.in_host_list.md
 [url-rcpt-ldap]: https://github.com/haraka/Haraka/blob/master/docs/plugins/rcpt_to.ldap.md
-[url-rqmd]: https://github.com/haraka/Haraka/blob/master/docs/plugins/rcpt_to.qmail_deliverable.md
+[url-rqmd]: https://github.com/haraka/haraka-plugin-qmail-deliverable
 [url-rroutes]: https://github.com/haraka/haraka-plugin-recipient-routes
 [url-recordenv]: https://github.com/haraka/Haraka/blob/master/docs/plugins/record_envelope_addresses.md
 [url-relay]: https://github.com/haraka/Haraka/blob/master/docs/plugins/relay.md
