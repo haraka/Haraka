@@ -21,7 +21,7 @@ If the directory `config/tls` exists, each file within the directory is expected
 
 An example [acme.sh](https://acme.sh) deployment [script](https://github.com/msimerson/Mail-Toaster-6/blob/master/provision-letsencrypt.sh) demonstrates how to install [Let's Encrypt](https://letsencrypt.org) certificates to the Haraka `config/tls`directory.
 
-Haraka has (SNI](https://en.wikipedia.org/wiki/Server_Name_Indication) support. When the remote MUA/MTA presents a servername during the TLS handshake and a TLS certificate with that Common Name matches, that certificate will be presented. If no match is found, the default certificate (see Certificate Files above) is presented.
+Haraka has [SNI](https://en.wikipedia.org/wiki/Server_Name_Indication) support. When the remote MUA/MTA presents a servername during the TLS handshake and a TLS certificate with that Common Name matches, that certificate will be presented. If no match is found, the default certificate (see Certificate Files above) is presented.
 
 ## Purchased Certificate
 
