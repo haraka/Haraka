@@ -8,6 +8,7 @@
     "no-empty": ["error", { "allowEmptyCatch": true }],
     "no-cond-assign": ["error", "except-parens"],
     "no-constant-condition": ["error", { "checkLoops": false }],
-    "no-useless-escape": "warn"
+    "no-useless-escape": "warn",
+    "no-path-concat": "error"
   }
 }
