@@ -1,11 +1,9 @@
 Core Configuration Files
 ========================
 
+See [Logging](Logging).
+
 The Haraka core reads some configuration files to determine a few actions:
-
-* log.ini
-
-Contains settings for log level, timestamps, and format. See the example log.ini file for examples.
 
 * smtp.yaml or smtp.json
 
