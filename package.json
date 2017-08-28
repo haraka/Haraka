@@ -45,6 +45,7 @@
     "haraka-plugin-redis"   : "*",
     "haraka-plugin-syslog"  : "*",
     "haraka-plugin-watch"   : "*",
+    "haraka-plugin-dcc"     : "*",
     "ldapjs"                : "~1.0.0",
     "ocsp"                  : "~1.2.0",
     "redis"                 : "~2.7.0",
