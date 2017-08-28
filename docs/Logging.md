@@ -1,6 +1,6 @@
 # Haraka Logging
 
-Haraka has built-in logging (see #API docs below) and support for log plugins. These docs pertain to the built in logging. For logging plugins like ([haraka-plugin-syslog](https://github.com/haraka/haraka-plugin-syslog)), refer to the plugin docs.
+Haraka has built-in logging (see API docs below) and support for log plugins. This page pertains to the built in logging. For log plugins like ([haraka-plugin-syslog](https://github.com/haraka/haraka-plugin-syslog)), refer to the plugin's docs.
 
 * log.ini
 
