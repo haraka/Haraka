@@ -1,38 +1,28 @@
 Core Configuration Files
 ========================
 
+See [Logging](Logging).
+
 The Haraka core reads some configuration files to determine a few actions:
-
-* loglevel
-
-  Can contain either a number or a string. See the top of logger.js for the
-different levels available.
 
 * smtp.yaml or smtp.json
 
-If either of these files exist then they are loaded first after loglevel.
+If either of these files exist then they are loaded first after log.ini.
 This file is designed to use the JSON/YAML file overrides documented in
 Config.md to optionally provide the entire configuration in a single file.
 
-* log_timestamps
-
-  If this contains a 1 (or other truthy value), will prepend a timestamp
-to log lines. Note this only affects log lines sent via console.log, not
-the actual content sent to log hooks, so logging via syslog for example
-will not include a timestamp.
-
 * databytes
 
-  Contains the maximum SIZE of an email that Haraka will receive.
+Contains the maximum SIZE of an email that Haraka will receive.
 
 * plugins
 
-  The list of plugins to load
+The list of plugins to load
 
 * smtp.ini
 
   Keys:
-  
+
   * port - the port to use (default: 25)
   * listen\_address - default: 0.0.0.0 (i.e. all addresses)
   * inactivity\_time - how long to let clients idle in seconds (default: 300)
@@ -85,13 +75,11 @@ will not include a timestamp.
   default: 30
 
   Note also that each plugin can have a `config/<plugin_name>.timeout`
-  file specifying a per-plugin timeout.  In this file you can set a timeout of 0 
-  to mean that this plugin's hooks never time out.  Use this with care.
-  
+  file specifying a per-plugin timeout.  In this file you can set a timeout of 0 to mean that this plugin's hooks never time out.  Use this with care.
+
   If the plugin is in a sub-directory of plugins, then you must create this file
-  in the equivalent path e.g. the queue/smtp_forward would need a timeout file in
-  `config/queue/smtp_forward.timeout`
-  
+  in the equivalent path e.g. the queue/smtp_forward would need a timeout file in `config/queue/smtp_forward.timeout`
+
 * smtpgreeting
 
   The greeting line used when a client connects. This can be multiple lines

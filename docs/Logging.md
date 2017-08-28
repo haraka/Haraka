@@ -1,8 +1,21 @@
+# Haraka Logging
 
-Logging API
-==================
+Haraka has built-in logging (see API docs below) and support for log plugins.
+
+* log.ini
+
+Contains settings for log level, timestamps, and format. See the example log.ini file for examples.
+
+* loglevel
+
+The loglevel file provides a finger-friendly way to change the loglevel on the CLI. Use it like so: `echo DEBUG > config/loglevel`. When the level in log.ini is set and the loglevel file is present, the loglevel file wins. During runtime, whichever was edited most recently wins.
+
+
+## Logging API
 
 Logging conventions within Haraka
+
+This section pertains to the built in logging. For log plugins like ([haraka-plugin-syslog](https://github.com/haraka/haraka-plugin-syslog)), refer to the plugin's docs.
 
 See also
 ------------------
@@ -42,5 +55,3 @@ the default values in the log (currently "core" and
 this is implemented by testing for argument type in
 the logger.js log\* method. objects-as-arguments are then sniffed
 to try to determine if they're a connection or plugin instance.
-
-
