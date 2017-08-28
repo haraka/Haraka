@@ -110,7 +110,7 @@ All we are doing here is logging the fact that we got the recipient.
 
 Check this works. You'll need two terminal windows. In window 1:
 
-    $ echo LOGDEBUG > config/loglevel
+    $ sed -i '' -e '/^level/ s/=.*/=debug/' log.ini
     $ echo myserver.com >> config/host_list
     $ sudo haraka -c /path/to/new_project
 

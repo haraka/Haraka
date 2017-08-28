@@ -9,7 +9,7 @@ Contains settings for log level, timestamps, and format. See the example log.ini
 
 * smtp.yaml or smtp.json
 
-If either of these files exist then they are loaded first after loglevel.
+If either of these files exist then they are loaded first after log.ini.
 This file is designed to use the JSON/YAML file overrides documented in
 Config.md to optionally provide the entire configuration in a single file.
 
