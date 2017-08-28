@@ -127,7 +127,7 @@ Create a PR adding yours to this list.
 [url-headers]: https://github.com/haraka/Haraka/blob/master/docs/plugins/data.headers.md
 [url-sigs]: https://github.com/haraka/Haraka/blob/master/docs/plugins/data.signatures.md
 [url-uribl]: https://github.com/haraka/Haraka/blob/master/docs/plugins/data.uribl.md
-[url-dcc]: https://github.com/haraka/Haraka/blob/master/docs/plugins/dcc.md
+[url-dcc]: https://github.com/haraka/haraka-plugin-dcc
 [url-delay]: https://github.com/haraka/Haraka/blob/master/docs/plugins/delay_deny.md
 [url-sign]: https://github.com/haraka/Haraka/blob/master/docs/plugins/dkim_sign.md
 [url-dkimv]: https://github.com/haraka/Haraka/blob/master/docs/plugins/dkim_verify.md
