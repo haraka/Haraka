@@ -8,7 +8,7 @@ Contains settings for log level, timestamps, and format. See the example log.ini
 
 * loglevel
 
-The loglevel file provides a finger-friendly way to change the loglevel on the CLI. Use it like so: `echo DEBUG > config/loglevel`.
+The loglevel file provides a finger-friendly way to change the loglevel on the CLI. Use it like so: `echo DEBUG > config/loglevel`. When the level in log.ini is set and the loglevel file is present, the loglevel file wins. During runtime, whichever was edited most recently wins.
 
 ## Logging API
 
