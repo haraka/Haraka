@@ -40,7 +40,7 @@ exports.log = {
     'log in logfmt' : function (test) {
         this.logger.deferred_logs = [];
         test.expect(3);
-        this.logger.logformat = this.logger.formats.LOGFMT;
+        this.logger.format = this.logger.formats.LOGFMT;
         test.equal(0, this.logger.deferred_logs.length);
         test.ok(this.logger.log('WARN','test warning'));
         test.equal(1, this.logger.deferred_logs.length);
@@ -48,7 +48,6 @@ exports.log = {
     },
     'log in logfmt w/deffered' : function (test) {
         test.expect(1);
-        this.logger.logformat = this.logger.LOGFMTLOGFMT;
         this.logger.plugins = { plugin_list: true };
         this.logger.deferred_logs.push( { level: 'INFO', data: 'log test info'} );
         test.ok(this.logger.log('INFO', 'another test info'));

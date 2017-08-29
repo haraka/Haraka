@@ -1,15 +1,16 @@
 'use strict';
 // Log class
 
+var util      = require('util');
+var tty       = require('tty');
+
 var constants = require('haraka-constants');
-var logfmt = require('logfmt');
+var logfmt    = require('logfmt');
 
 var config    = require('./config');
 var plugins;
 var connection;
 var outbound;
-var util      = require('util');
-var tty       = require('tty');
 
 var logger = exports;
 
@@ -35,8 +36,8 @@ logger.formats = {
     LOGFMT: "LOGFMT",
 };
 
-logger.loglevel     = logger.LOGWARN;
-logger.logformat    = logger.formats.DEFAULT;
+logger.loglevel = logger.LOGWARN;
+logger.format = logger.formats.DEFAULT;
 logger.deferred_logs = [];
 
 logger.colors = {
@@ -53,6 +54,28 @@ logger.colors = {
 };
 
 var stdout_is_tty = tty.isatty(process.stdout.fd);
+
+logger._init = function () {
+    this.load_log_ini();
+    this._init_loglevel();
+    this._init_timestamps();
+}
+
+logger.load_log_ini = function () {
+    let self = this;
+    self.cfg = config.get('log.ini', {
+        booleans: [
+            '+main.timestamps',
+        ]
+    },
+    function () {
+        self.load_log_ini();
+    });
+
+    this.set_loglevel(this.cfg.main.level);
+    this.set_timestamps(this.cfg.main.timestamps);
+    this.set_format(this.cfg.main.format);
+}
 
 logger.colorize = function (color, str) {
     if (!util.inspect.colors[color]) { return str; }  // unknown color
@@ -125,44 +148,48 @@ logger.log_respond = function (retval, msg, data) {
     return true;
 };
 
-logger._init_loglevel = function () {
-    var self = this;
-    var _loglevel = config.get('loglevel', 'value', function () {
-        self._init_loglevel();
-    });
-    if (_loglevel) {
-        var loglevel_num = parseInt(_loglevel);
-        if (!loglevel_num || isNaN(loglevel_num)) {
-            this.log('INFO', 'loglevel: ' + _loglevel.toUpperCase());
-            logger.loglevel = logger[_loglevel.toUpperCase()];
-        }
-        else {
-            logger.loglevel = loglevel_num;
-        }
-        if (!logger.loglevel) {
-            this.log('WARN', 'invalid loglevel: ' + _loglevel + ' defaulting to LOGWARN');
-            logger.loglevel = logger.LOGWARN;
-        }
+logger.set_loglevel = function (level) {
+
+    if (!level) return;
+
+    let loglevel_num = parseInt(level);
+    if (!loglevel_num || isNaN(loglevel_num)) {
+        this.log('INFO', 'loglevel: ' + level.toUpperCase());
+        logger.loglevel = logger[level.toUpperCase()];
+    }
+    else {
+        logger.loglevel = loglevel_num;
+    }
+
+    if (!logger.loglevel) {
+        this.log('WARN', 'invalid loglevel: ' + level + ' defaulting to LOGWARN');
+        logger.loglevel = logger.LOGWARN;
+    }
+}
+
+logger.set_format = function (format) {
+    if (format) {
+        logger.format = logger.formats[format.toUpperCase()];
+        this.log('INFO', 'log format: ' + format.toUpperCase());
+    }
+    else {
+        logger.format = null;
+    }
+    if (!logger.format) {
+        this.log('WARN', 'invalid log format: ' + format + ' defaulting to DEFAULT');
+        logger.format = logger.formats.DEFAULT;
     }
 };
 
-logger._init_logformat = function () {
-    var self = this;
-    var _logformat = config.get('logformat', 'value', function () {
-        self._init_logformat();
+logger._init_loglevel = function () {
+    let self = this;
+
+    let _loglevel = config.get('loglevel', 'value', function () {
+        self._init_loglevel();
     });
-    if (_logformat) {
-        logger.logformat = logger.formats[_logformat.toUpperCase()];
-        this.log('INFO', 'logformat: ' + _logformat.toUpperCase());
-    }
-    else {
-        logger.logformat = null;
-    }
-    if (!logger.logformat) {
-        this.log('WARN', 'invalid logformat: ' + _logformat + ' defaulting to LOGFMTDEFAULT');
-        logger.logformat = logger.formats.DEFAULT;
-    }
-};
+
+    self.set_loglevel(_loglevel);
+}
 
 logger.would_log = function (level) {
     if (logger.loglevel < level) { return false; }
@@ -171,29 +198,33 @@ logger.would_log = function (level) {
 
 var original_console_log = console.log;
 
+logger.set_timestamps = function (value) {
+
+    if (!value) {
+        console.log = original_console_log;
+        return;
+    }
+
+    console.log = function () {
+        let new_arguments = [new Date().toISOString()];
+        for (let key in arguments) {
+            new_arguments.push(arguments[key]);
+        }
+        original_console_log.apply(console, new_arguments);
+    };
+}
+
 logger._init_timestamps = function () {
-    var self = this;
-    var _timestamps = config.get('log_timestamps', 'value', function () {
+    let self = this;
+
+    let _timestamps = config.get('log_timestamps', 'value', function () {
         self._init_timestamps();
     });
 
-    if (_timestamps) {
-        console.log = function () {
-            var new_arguments = [new Date().toISOString()];
-            for (var key in arguments) {
-                new_arguments.push(arguments[key]);
-            }
-            original_console_log.apply(console, new_arguments);
-        };
-    }
-    else {
-        console.log = original_console_log;
-    }
+    this.set_timestamps(_timestamps);
 };
 
-logger._init_loglevel();
-logger._init_logformat();
-logger._init_timestamps();
+logger._init();
 
 logger.log_if_level = function (level, key, plugin) {
     return function () {
@@ -232,7 +263,7 @@ logger.log_if_level = function (level, key, plugin) {
                 }
             }
             else if (
-                logger.logformat === logger.formats.LOGFMT &&
+                logger.format === logger.formats.LOGFMT &&
                 data.constructor === Object
             ) {
                 logobj = Object.assign(logobj, data);
@@ -247,7 +278,7 @@ logger.log_if_level = function (level, key, plugin) {
                 logobj.message += (util.inspect(data));
             }
         }
-        switch (logger.logformat) {
+        switch (logger.format) {
             case logger.formats.LOGFMT:
                 logger.log(
                     level,
