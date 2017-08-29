@@ -41,16 +41,18 @@ exports.log = {
 
 exports.level = {
     setUp : _set_up,
+    tearDown : _tear_down,
     'both INFO and LOGINFO are log levels' : function (test) {
         test.expect(2);
         test.equal(this.logger.levels.INFO, 6);
         test.equal(this.logger.levels.LOGINFO, 6);
         test.done();
-    }
+    },
 }
 
 exports.set_loglevel = {
     setUp : _set_up,
+    tearDown : _tear_down,
     'set loglevel to LOGINFO' : function (test) {
         test.expect(1);
         this.logger.set_loglevel('LOGINFO');
@@ -74,7 +76,7 @@ exports.set_loglevel = {
         this.logger.set_loglevel('invalid');
         test.equal(this.logger.loglevel, this.logger.levels.WARN);
         test.done();
-    }
+    },
 };
 
 exports.would_log = {
