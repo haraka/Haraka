@@ -148,7 +148,7 @@ logger.set_loglevel = function (level) {
     let loglevel_num = parseInt(level);
     if (!loglevel_num || isNaN(loglevel_num)) {
         this.log('INFO', 'loglevel: ' + level.toUpperCase());
-        logger.loglevel = logger[level.toUpperCase()];
+        logger.loglevel = logger.levels[level.toUpperCase()];
     }
     else {
         logger.loglevel = loglevel_num;
