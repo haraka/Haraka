@@ -39,6 +39,16 @@ exports.log = {
     },
 };
 
+exports.level = {
+    setUp : _set_up,
+    'both INFO and LOGINFO are log levels' : function (test) {
+        test.expect(2);
+        test.equal(this.logger.levels.INFO, 6);
+        test.equal(this.logger.levels.LOGINFO, 6);
+        test.done();
+    }
+}
+
 exports.would_log = {
     setUp : _set_up,
     tearDown : _tear_down,
