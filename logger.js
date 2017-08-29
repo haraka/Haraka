@@ -5,12 +5,34 @@ var util      = require('util');
 var tty       = require('tty');
 
 var constants = require('haraka-constants');
-var logfmt    = require('logfmt');
 
 var config    = require('./config');
 var plugins;
 var connection;
 var outbound;
+
+const regex = /(^$|[ ="\\])/;
+const escape_replace_regex = /["\\]/g;
+
+function stringify (obj) {
+    var str = '';
+    var key;
+    for (key in obj) {
+        let v = obj[key];
+        if (v == null) {
+            str += `${key}="" `;
+            continue;
+        }
+        v = v.toString();
+        if (regex.test(v)) {
+            str += `${key}="${v.replace(escape_replace_regex, '\\$&')}" `;
+        }
+        else {
+            str += `${key}=${v} `;
+        }
+    }
+    return str.trim();
+}
 
 var logger = exports;
 
@@ -272,7 +294,7 @@ logger.log_if_level = function (level, key, plugin) {
                 if (!logobj.message.endsWith(' ')) {
                     logobj.message += ' ';
                 }
-                logobj.message += (logfmt.stringify(data));
+                logobj.message += (stringify(data));
             }
             else {
                 logobj.message += (util.inspect(data));
@@ -282,7 +304,7 @@ logger.log_if_level = function (level, key, plugin) {
             case logger.formats.LOGFMT:
                 logger.log(
                     level,
-                    logfmt.stringify(logobj)
+                    stringify(logobj)
                 );
                 return true;
             case logger.formats.DEFAULT:
