@@ -55,6 +55,7 @@ exports.get_options = function (connection) {
     var plugin = this;
 
     // https://rspamd.com/doc/architecture/protocol.html
+    // https://github.com/vstakhov/rspamd/blob/master/rules/http_headers.lua
     var options = {
         headers: {},
         port: plugin.cfg.main.port,
@@ -80,6 +81,17 @@ exports.get_options = function (connection) {
     }
 
     if (connection.hello.host) options.headers.Helo = connection.hello.host;
+
+    let spf = connection.transaction.results.get('spf');
+    if (spf && spf.result) {
+        options.headers.SPF = { result: spf.result.toLowerCase() };
+    }
+    else {
+        spf = connection.results.get('spf');
+        if (spf && spf.result) {
+            options.headers.SPF = { result: spf.result.toLowerCase() };
+        }
+    }
 
     if (connection.transaction.mail_from) {
         var mfaddr = connection.transaction.mail_from.address().toString();

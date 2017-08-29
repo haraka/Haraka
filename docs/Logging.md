@@ -1,8 +1,21 @@
+# Haraka Logging
 
-Logging API
-==================
+Haraka has built-in logging (see API docs below) and support for log plugins.
+
+* log.ini
+
+Contains settings for log level, timestamps, and format. See the example log.ini file for examples.
+
+* loglevel
+
+The loglevel file provides a finger-friendly way to change the loglevel on the CLI. Use it like so: `echo DEBUG > config/loglevel`. When the level in log.ini is set and the loglevel file is present, the loglevel file wins. During runtime, whichever was edited most recently wins.
+
+
+## Logging API
 
 Logging conventions within Haraka
+
+This section pertains to the built in logging. For log plugins like ([haraka-plugin-syslog](https://github.com/haraka/haraka-plugin-syslog)), refer to the plugin's docs.
 
 See also
 ------------------
@@ -41,6 +54,7 @@ the default values in the log (currently "core").
 This is implemented by testing for argument type in
 the logger.js log\* method. objects-as-arguments are then sniffed
 to try to determine if they're a connection or plugin instance.
+<<<<<<< HEAD:docs/Logging_API.md
 
 The logfmt format is also supported and can be enabled by changing the format
 from `default` to `logfmt` in the `config/log.ini` file which will
@@ -54,3 +68,5 @@ key=value and will look like this:
     level=NOTICE connection_uuid=9FF7F70E-5D57-435A-AAD9-EA069B6159D9.1 source=core message=disconnect ip=127.0.0.1 rdns=Unknown helo=3h2dnz8a0if relay=N early=N esmtp=N tls=N pipe=N errors=0 txns=1 rcpts=1/0/0 msgs=1/0/0 bytes=222 lr="" time=0.052
 
 You can find out more about logfmt here: [https://brandur.org/logfmt](https://brandur.org/logfmt)
+=======
+>>>>>>> upstream/master:docs/Logging.md
