@@ -11,6 +11,29 @@ var plugins;
 var connection;
 var outbound;
 
+const regex = /(^$|[ ="\\])/;
+const escape_replace_regex = /["\\]/g;
+
+function stringify (obj) {
+    var str = '';
+    var key;
+    for (key in obj) {
+        let v = obj[key];
+        if (v == null) {
+            str += `${key}="" `;
+            continue;
+        }
+        v = v.toString();
+        if (regex.test(v)) {
+            str += `${key}="${v.replace(escape_replace_regex, '\\$&')}" `;
+        }
+        else {
+            str += `${key}=${v} `;
+        }
+    }
+    return str.trim();
+}
+
 var logger = exports;
 
 logger.levels = {
@@ -31,7 +54,13 @@ for (var le in logger.levels) {
     logger['LOG' + le] = logger.levels[le];
 }
 
-logger.loglevel     = logger.levels.WARN;
+logger.formats = {
+    DEFAULT: "DEFAULT",
+    LOGFMT: "LOGFMT",
+};
+
+logger.loglevel      = logger.levels.WARN;
+logger.format        = logger.formats.DEFAULT;
 logger.deferred_logs = [];
 
 logger.colors = {
@@ -68,6 +97,7 @@ logger.load_log_ini = function () {
 
     this.set_loglevel(this.cfg.main.level);
     this.set_timestamps(this.cfg.main.timestamps);
+    this.set_format(this.cfg.main.format);
 }
 
 logger.colorize = function (color, str) {
@@ -160,6 +190,20 @@ logger.set_loglevel = function (level) {
     }
 }
 
+logger.set_format = function (format) {
+    if (format) {
+        logger.format = logger.formats[format.toUpperCase()];
+        this.log('INFO', 'log format: ' + format.toUpperCase());
+    }
+    else {
+        logger.format = null;
+    }
+    if (!logger.format) {
+        this.log('WARN', 'invalid log format: ' + format + ' defaulting to DEFAULT');
+        logger.format = logger.formats.DEFAULT;
+    }
+};
+
 logger._init_loglevel = function () {
     let self = this;
 
@@ -208,44 +252,75 @@ logger._init();
 logger.log_if_level = function (level, key, plugin) {
     return function () {
         if (logger.loglevel < logger[key]) { return; }
-        var levelstr = '[' + level + ']';
-        var str = '';
-        var uuidstr = '[-]';
-        var pluginstr = '[' + (plugin || 'core') + ']';
+        var logobj = {
+            level,
+            uuid: '-',
+            origin: (plugin || 'core'),
+            message: ''
+        };
         for (var i=0; i < arguments.length; i++) {
             var data = arguments[i];
             if (typeof data !== 'object') {
-                str += data;
+                logobj.message += (data);
                 continue;
             }
             if (!data) continue;
 
             // if the object is a connection, add the connection id
             if (data instanceof connection.Connection) {
-                uuidstr = '[' + data.uuid;
+                logobj.uuid = data.uuid;
                 if (data.tran_count > 0) {
-                    uuidstr += "." + data.tran_count;
+                    logobj.uuid += "." + data.tran_count;
                 }
-                uuidstr += ']';
             }
             else if (data instanceof plugins.Plugin) {
-                pluginstr = '[' + data.name + ']';
+                logobj.origin = data.name;
             }
             else if (data.name) {
-                pluginstr = '[' + data.name + ']';
+                logobj.origin = data.name;
             }
             else if (data instanceof outbound.HMailItem) {
-                pluginstr = '[outbound]';
+                logobj.origin = 'outbound';
                 if (data.todo && data.todo.uuid) {
-                    uuidstr = '[' + data.todo.uuid + ']';
+                    logobj.uuid = data.todo.uuid;
                 }
             }
+            else if (
+                logger.format === logger.formats.LOGFMT &&
+                data.constructor === Object
+            ) {
+                logobj = Object.assign(logobj, data);
+            }
+            else if (data.constructor === Object) {
+                if (!logobj.message.endsWith(' ')) {
+                    logobj.message += ' ';
+                }
+                logobj.message += (stringify(data));
+            }
             else {
-                str += util.inspect(data);
+                logobj.message += (util.inspect(data));
             }
         }
-        logger.log(level, [levelstr, uuidstr, pluginstr, str].join(' '));
-        return true;
+        switch (logger.format) {
+            case logger.formats.LOGFMT:
+                logger.log(
+                    level,
+                    stringify(logobj)
+                );
+                return true;
+            case logger.formats.DEFAULT:
+            default:
+                logger.log(
+                    level,
+                    [
+                        '[' + logobj.level + ']',
+                        '[' + logobj.uuid + ']',
+                        '[' + logobj.origin + ']',
+                        logobj.message
+                    ].join(' ')
+                );
+                return true;
+        }
     };
 };
 
