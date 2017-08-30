@@ -54,19 +54,16 @@ the default values in the log (currently "core").
 This is implemented by testing for argument type in
 the logger.js log\* method. objects-as-arguments are then sniffed
 to try to determine if they're a connection or plugin instance.
-<<<<<<< HEAD:docs/Logging_API.md
 
 The logfmt format is also supported and can be enabled by changing the format
 from `default` to `logfmt` in the `config/log.ini` file which will
 start logging in the following format below.
 
-    level=PROTOCOL connection_uuid=9FF7F70E-5D57-435A-AAD9-EA069B6159D9.1 source=core message="S: 354 go ahead, make my day"
+    level=PROTOCOL uuid=9FF7F70E-5D57-435A-AAD9-EA069B6159D9.1 source=core message="S: 354 go ahead, make my day"
 
 Any objects you pass through will also be appeneded to the log line as
 key=value and will look like this:
 
-    level=NOTICE connection_uuid=9FF7F70E-5D57-435A-AAD9-EA069B6159D9.1 source=core message=disconnect ip=127.0.0.1 rdns=Unknown helo=3h2dnz8a0if relay=N early=N esmtp=N tls=N pipe=N errors=0 txns=1 rcpts=1/0/0 msgs=1/0/0 bytes=222 lr="" time=0.052
+    level=NOTICE uuid=9FF7F70E-5D57-435A-AAD9-EA069B6159D9.1 source=core message=disconnect ip=127.0.0.1 rdns=Unknown helo=3h2dnz8a0if relay=N early=N esmtp=N tls=N pipe=N errors=0 txns=1 rcpts=1/0/0 msgs=1/0/0 bytes=222 lr="" time=0.052
 
 You can find out more about logfmt here: [https://brandur.org/logfmt](https://brandur.org/logfmt)
-=======
->>>>>>> upstream/master:docs/Logging.md

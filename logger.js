@@ -59,8 +59,8 @@ logger.formats = {
     LOGFMT: "LOGFMT",
 };
 
-logger.loglevel = logger.LOGWARN;
-logger.format = logger.formats.DEFAULT;
+logger.loglevel      = logger.levels.WARN;
+logger.format        = logger.formats.DEFAULT;
 logger.deferred_logs = [];
 
 logger.colors = {
@@ -178,7 +178,7 @@ logger.set_loglevel = function (level) {
     let loglevel_num = parseInt(level);
     if (!loglevel_num || isNaN(loglevel_num)) {
         this.log('INFO', 'loglevel: ' + level.toUpperCase());
-        logger.loglevel = logger[level.toUpperCase()];
+        logger.loglevel = logger.levels[level.toUpperCase()];
     }
     else {
         logger.loglevel = loglevel_num;
@@ -186,7 +186,7 @@ logger.set_loglevel = function (level) {
 
     if (!logger.loglevel) {
         this.log('WARN', 'invalid loglevel: ' + level + ' defaulting to LOGWARN');
-        logger.loglevel = logger.LOGWARN;
+        logger.loglevel = logger.levels.WARN;
     }
 }
 
@@ -254,7 +254,7 @@ logger.log_if_level = function (level, key, plugin) {
         if (logger.loglevel < logger[key]) { return; }
         var logobj = {
             level,
-            connection_uuid: '-',
+            uuid: '-',
             origin: (plugin || 'core'),
             message: ''
         };
@@ -268,9 +268,9 @@ logger.log_if_level = function (level, key, plugin) {
 
             // if the object is a connection, add the connection id
             if (data instanceof connection.Connection) {
-                logobj.connection_uuid = data.uuid;
+                logobj.uuid = data.uuid;
                 if (data.tran_count > 0) {
-                    logobj.connection_uuid += "." + data.tran_count;
+                    logobj.uuid += "." + data.tran_count;
                 }
             }
             else if (data instanceof plugins.Plugin) {
@@ -282,7 +282,7 @@ logger.log_if_level = function (level, key, plugin) {
             else if (data instanceof outbound.HMailItem) {
                 logobj.origin = 'outbound';
                 if (data.todo && data.todo.uuid) {
-                    logobj.connection_uuid = data.todo.uuid;
+                    logobj.uuid = data.todo.uuid;
                 }
             }
             else if (
@@ -314,7 +314,7 @@ logger.log_if_level = function (level, key, plugin) {
                     level,
                     [
                         '[' + logobj.level + ']',
-                        '[' + logobj.connection_uuid + ']',
+                        '[' + logobj.uuid + ']',
                         '[' + logobj.origin + ']',
                         logobj.message
                     ].join(' ')
