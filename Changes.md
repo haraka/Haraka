@@ -1,3 +1,7 @@
+## 2.8.15 - Mmm DD, YYYY
+
+* Changes
+    * Permit log settings to be set w/o LOG prefix #2057
 
 ## 2.8.14 - Jul 26, 2017
 

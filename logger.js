@@ -31,7 +31,7 @@ for (var le in logger.levels) {
     logger['LOG' + le] = logger.levels[le];
 }
 
-logger.loglevel     = logger.LOGWARN;
+logger.loglevel     = logger.levels.WARN;
 logger.deferred_logs = [];
 
 logger.colors = {
@@ -148,7 +148,7 @@ logger.set_loglevel = function (level) {
     let loglevel_num = parseInt(level);
     if (!loglevel_num || isNaN(loglevel_num)) {
         this.log('INFO', 'loglevel: ' + level.toUpperCase());
-        logger.loglevel = logger[level.toUpperCase()];
+        logger.loglevel = logger.levels[level.toUpperCase()];
     }
     else {
         logger.loglevel = loglevel_num;
@@ -156,7 +156,7 @@ logger.set_loglevel = function (level) {
 
     if (!logger.loglevel) {
         this.log('WARN', 'invalid loglevel: ' + level + ' defaulting to LOGWARN');
-        logger.loglevel = logger.LOGWARN;
+        logger.loglevel = logger.levels.WARN;
     }
 }
 
