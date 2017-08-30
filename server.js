@@ -318,6 +318,7 @@ Server.createServer = function (params) {
 };
 
 Server.load_default_tls_config = function (done) {
+    // this fn exists solely for testing
     if (Server.config.root_path != tls_socket.config.root_path) {
         logger.loginfo('resetting tls_config.config path');
         tls_socket.config = tls_socket.config.module_config(path.dirname(Server.config.root_path));
