@@ -506,8 +506,9 @@ exports.ensureDhparams = function (done) {
         return done(null, certsByHost['*'].dhparam);
     }
 
-    let filePath = path.resolve(exports.config.root_path, 'dhparams.pem');
-    log.loginfo(`Generating a 2048 bit dhparams file`);
+    let filePath = tlss.cfg.main.dhparam;
+    if (!filePath) filePath = path.resolve(exports.config.root_path, 'dhparams.pem');
+    log.loginfo(`Generating a 2048 bit dhparams file at ${filePath}`);
 
     let o = spawn('openssl', ['dhparam', '-out', `${filePath}`, '2048']);
     o.stdout.on('data', data => {
@@ -516,7 +517,7 @@ exports.ensureDhparams = function (done) {
     })
 
     o.stderr.on('data', data => {
-        // this is the status crap that `openssl dhparam` spews as it works
+        // this is the status gibberish `openssl dhparam` spews as it works
     })
 
     o.on('close', code => {
@@ -525,7 +526,7 @@ exports.ensureDhparams = function (done) {
         }
 
         log.loginfo(`Saved to ${filePath}`);
-        let content = tlss.config.get(tlss.cfg.main.dhparam, 'binary');
+        let content = tlss.config.get(filePath, 'binary');
 
         tlss.saveOpt('*', 'dhparam', content);
         done(null, certsByHost['*'].dhparam);
