@@ -65,6 +65,39 @@ exports.level = {
     }
 }
 
+exports.set_format = {
+    setUp : _set_up,
+    tearDown : _tear_down,
+    'set format to DEFAULT' : function (test) {
+        test.expect(1);
+        this.logger.format = '';
+        this.logger.set_format('DEFAULT');
+        test.equal(this.logger.format, this.logger.formats.DEFAULT);
+        test.done();
+    },
+    'set format to LOGFMT' : function (test) {
+        test.expect(1);
+        this.logger.format = '';
+        this.logger.set_format('LOGFMT');
+        test.equal(this.logger.format, this.logger.formats.LOGFMT);
+        test.done();
+    },
+    'set format to WARN if empty' : function (test) {
+        test.expect(1);
+        this.logger.format = '';
+        this.logger.set_format('');
+        test.equal(this.logger.format, this.logger.formats.DEFAULT);
+        test.done();
+    },
+    'set format to WARN if invalid' : function (test) {
+        test.expect(1);
+        this.logger.format = '';
+        this.logger.set_format('invalid');
+        test.equal(this.logger.format, this.logger.formats.DEFAULT);
+        test.done();
+    },
+}
+
 exports.would_log = {
     setUp : _set_up,
     tearDown : _tear_down,
