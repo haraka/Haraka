@@ -50,6 +50,7 @@ logger.levels = {
 };
 
 for (var le in logger.levels) {
+    logger.levels[`LOG${le}`] = logger.levels[le];
     logger['LOG' + le] = logger.levels[le];
 }
 
