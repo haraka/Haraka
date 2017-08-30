@@ -23,10 +23,10 @@ See also
 
 The logline by default will be in the form of:
 
-    [level] [connection uuid] [origin] message
+    [level] [uuid] [origin] message
 
 Where origin is "core" or the name of the plugin which
-triggered the message, and "connection uuid" is the ID of the
+triggered the message, and "uuid" is the ID of the
 connection associated with the message.
 
 When calling a log method on logger, you should provide the
