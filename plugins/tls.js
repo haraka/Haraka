@@ -23,7 +23,7 @@ exports.shutdown = function () {
 exports.load_tls_ini = function () {
     let plugin = this;
 
-    plugin.cfg = plugin.net_utils.load_tls_ini(function () {
+    plugin.cfg = tls_socket.load_tls_ini(function () {
         plugin.load_tls_ini();
     });
 }
