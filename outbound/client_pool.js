@@ -1,12 +1,12 @@
 "use strict";
 
-const generic_pool = require('generic-pool');
+var generic_pool = require('generic-pool');
 
-const sock         = require('../line_socket');
-const server       = require('../server');
-const logger       = require('../logger');
+var sock         = require('../line_socket');
+var server       = require('../server');
+var logger       = require('../logger');
 
-const cfg          = require('./config');
+var cfg          = require('./config');
 
 function _create_socket (port, host, local_addr, is_unix_socket, callback) {
     var socket = is_unix_socket ? sock.connect({path: host}) :
@@ -26,7 +26,7 @@ function _create_socket (port, host, local_addr, is_unix_socket, callback) {
     });
     socket.once('error', function (err) {
         socket.end();
-        var name = 'outbound::' + port + ':' + host + ':' + local_addr + ':' + cfg.pool_timeout;
+        var name = `outbound::${port}:${host}:${local_addr}:${cfg.pool_timeout}`;
         if (server.notes.pool && server.notes.pool[name]) {
             delete server.notes.pool[name];
         }
@@ -42,7 +42,7 @@ function _create_socket (port, host, local_addr, is_unix_socket, callback) {
 function get_pool (port, host, local_addr, is_unix_socket, max) {
     port = port || 25;
     host = host || 'localhost';
-    var name = 'outbound::' + port + ':' + host + ':' + local_addr + ':' + cfg.pool_timeout;
+    var name = `outbound::${port}:${host}:${local_addr}:${cfg.pool_timeout}`;
     if (!server.notes.pool) {
         server.notes.pool = {};
     }
@@ -67,7 +67,7 @@ function get_pool (port, host, local_addr, is_unix_socket, max) {
                     logger.logwarn("[outbound] Socket got an error while shutting down: " + err);
                 });
                 socket.once('end', function () {
-                    logger.loginfo("[outbound] Remote end half closed juring destroy()");
+                    logger.loginfo("[outbound] Remote end half closed during destroy()");
                     socket.destroy();
                 })
                 if (!socket.writable) return;
@@ -114,7 +114,7 @@ exports.release_client = function (socket, port, host, local_addr, error) {
     logger.logdebug("[outbound] release_client: " + host + ":" + port + " to " + local_addr);
 
     var pool_timeout = cfg.pool_timeout;
-    var name = 'outbound::' + port + ':' + host + ':' + local_addr + ':' + pool_timeout;
+    var name = `outbound:: ${port}:${host}:${local_addr}:${pool_timeout}`;
 
     if (cfg.pool_concurrency_max == 0) {
         return sockend();

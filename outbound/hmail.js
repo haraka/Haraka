@@ -40,8 +40,7 @@ var cfg = require('./config');
 /////////////////////////////////////////////////////////////////////////////
 // HMailItem - encapsulates an individual outbound mail item
 
-var dummy_func = function () {};
-
+function dummy_func () {}
 
 class HMailItem extends events.EventEmitter {
     constructor (filename, filePath, notes) {
@@ -116,7 +115,7 @@ HMailItem.prototype.read_todo = function () {
         var todo_len = (buf[0] << 24) + (buf[1] << 16) + (buf[2] << 8) + buf[3];
         var td_reader = fs.createReadStream(self.path, {encoding: 'utf8', start: 4, end: todo_len + 3});
         self.data_start = todo_len + 4;
-        var todo = '';
+        let todo = '';
         td_reader.on('data', function (str) {
             todo += str;
             if (Buffer.byteLength(todo) === todo_len) {
