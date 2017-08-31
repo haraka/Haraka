@@ -1,10 +1,12 @@
 "use strict";
 
-var generic_pool = require('generic-pool');
-var sock         = require('../line_socket');
-var server       = require('../server');
-var logger       = require('../logger');
-var cfg          = require('./config');
+const generic_pool = require('generic-pool');
+
+const sock         = require('../line_socket');
+const server       = require('../server');
+const logger       = require('../logger');
+
+const cfg          = require('./config');
 
 function _create_socket (port, host, local_addr, is_unix_socket, callback) {
     var socket = is_unix_socket ? sock.connect({path: host}) :

@@ -15,7 +15,7 @@ matrix:
 
 services:
     - redis-server
-    
+
 # these are required for building on node.js v4+
 addons:
   apt:

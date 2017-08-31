@@ -1,6 +1,6 @@
-"use strict";
+'use strict';
 
-var logger = require('./logger');
+var logger = require('../logger');
 
 function TQTimer (fire_time, cb) {
     this.fire_time = fire_time;

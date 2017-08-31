@@ -1,5 +1,5 @@
 "use strict";
-var util         = require('util');
+
 var events       = require('events');
 var fs           = require('fs');
 var dns          = require('dns');
@@ -7,7 +7,6 @@ var path         = require('path');
 var net          = require('net');
 
 var Address     = require('address-rfc2821').Address;
-
 var constants   = require('haraka-constants');
 var net_utils   = require('haraka-net-utils');
 var utils       = require('haraka-utils');
@@ -36,8 +35,6 @@ setImmediate(function () {
     delivery_queue = queuelib.delivery_queue;
 });
 
-var mx = require('./mx_lookup');
-var _qfile = require('./qfile');
 var cfg = require('./config');
 
 /////////////////////////////////////////////////////////////////////////////
@@ -613,7 +610,7 @@ HMailItem.prototype.try_deliver_host_on_socket = function (mx, host, port, socke
         if (success) {
             var reason = response.join(' ');
             self.delivered(host, port, (mx.using_lmtp ? 'LMTP' : 'SMTP'), mx.exchange,
-                           reason, ok_recips, fail_recips, bounce_recips, secured, authenticated);
+                reason, ok_recips, fail_recips, bounce_recips, secured, authenticated);
         }
         else {
             self.discard();
