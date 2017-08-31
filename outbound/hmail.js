@@ -116,7 +116,7 @@ HMailItem.prototype.read_todo = function () {
         // I'm making the assumption here we won't ever read less than 4 bytes
         // as no filesystem on the planet should be that dumb...
         tl_reader.destroy();
-        var todo_len = (buf[0] << 24) + (buf[1] << 16) + (buf[2] << 8) + buf[3];
+        var todo_len = buf.readUInt32BE(0);
         var td_reader = fs.createReadStream(self.path, {encoding: 'utf8', start: 4, end: todo_len + 3});
         self.data_start = todo_len + 4;
         var todo = '';
