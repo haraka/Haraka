@@ -4,6 +4,8 @@
 // and passes back any errors seen on the ongoing server to the
 // originating server.
 
+const url = require('url');
+
 var smtp_client_mod = require('./smtp_client');
 
 exports.register = function () {
@@ -192,8 +194,10 @@ exports.queue_forward = function (next, connection) {
     var plugin = this;
     var txn = connection.transaction;
 
-    if (txn.notes.queue && !/^smtp_forward/.test(txn.notes.queue))
+    if (txn.notes.queue && txn.notes.queue !== 'smtp_forward') {
+        connection.logdebug(plugin, 'skipping, unwanted');
         return next();
+    }
 
     var cfg = plugin.get_config(connection);
 
@@ -208,16 +212,18 @@ exports.queue_forward = function (next, connection) {
             (cfg.forwarding_host_pool ? "host_pool" : cfg.host + ':' + cfg.port)
         );
 
+        function get_rs () {
+            if (connection.transaction) return connection.transaction.results;
+            return connection.results;
+        }
+
         var dead_sender = function () {
             if (smtp_client.is_dead_sender(plugin, connection)) {
-                var rs = connection.transaction ?
-                    connection.transaction.results :
-                    connection.results;
-                rs.add(plugin, { err: 'dead sender' });
+                get_rs().add(plugin, { err: 'dead sender' });
                 return true;
             }
             return false;
-        };
+        }
 
         var send_rcpt = function () {
             if (dead_sender()) return;
@@ -227,7 +233,7 @@ exports.queue_forward = function (next, connection) {
             }
             smtp_client.send_command('RCPT', 'TO:' + txn.rcpt_to[rcpt].format(!smtp_client.smtp_utf8));
             rcpt++;
-        };
+        }
 
         smtp_client.on('mail', send_rcpt);
 
@@ -247,6 +253,7 @@ exports.queue_forward = function (next, connection) {
 
         smtp_client.on('dot', function () {
             if (dead_sender()) return;
+            get_rs().add(plugin, { pass: smtp_client.response });
             if (rcpt < txn.rcpt_to.length) {
                 smtp_client.send_command('RSET');
                 return;
@@ -269,8 +276,28 @@ exports.queue_forward = function (next, connection) {
     });
 };
 
+exports.get_mx_next_hop = function (next_hop) {
+    const dest = url.parse(next_hop);
+    const mx = {
+        priority: 0,
+        port: dest.port || 25,
+        exchange: dest.hostname,
+    }
+    if (dest.auth) {
+        mx.auth_type = 'plain';
+        mx.auth_user = dest.auth.split(':')[0];
+        mx.auth_pass = dest.auth.split(':')[1];
+    }
+    return mx;
+}
+
 exports.get_mx = function (next, hmail, domain) {
     var plugin = this;
+
+    // hmail.todo not defined in tests.
+    if (hmail.todo.notes.next_hop) {
+        return next(OK, plugin.get_mx_next_hop(hmail.todo.notes.next_hop));
+    }
 
     if (domain !== domain.toLowerCase()) domain = domain.toLowerCase();
 

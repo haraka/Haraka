@@ -2,8 +2,10 @@
 
 * Changes
     * Permit log settings to be set w/o LOG prefix #2057
+    * additional results storing in smtp_forward and quarantine #2067
 * New Features
-    * TLS certificate directory (config/tls). #2032
+    * TLS certificate directory (config/tls) #2032
+    * plugins can specify a queue plugin & next_hop route #2067
 
 ## 2.8.14 - Jul 26, 2017
 

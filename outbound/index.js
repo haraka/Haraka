@@ -241,7 +241,7 @@ exports.send_trans_email = function (transaction, next) {
 
         async.forEachSeries(deliveries, function (deliv, cb) {
             var todo = new TODOItem(deliv.domain, deliv.rcpts, transaction);
-            todo.uuid = todo.uuid + '.' + todo_index;
+            todo.uuid = `${todo.uuid}.${todo_index}`;
             todo_index++;
             self.process_delivery(ok_paths, todo, hmails, cb);
         },
