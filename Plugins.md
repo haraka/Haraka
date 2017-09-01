@@ -112,7 +112,7 @@ Create a PR adding yours to this list.
 [url-attach]: https://github.com/haraka/Haraka/blob/master/docs/plugins/attachment.md
 [url-authflat]: https://github.com/haraka/Haraka/blob/master/docs/plugins/auth/flat_file.md
 [url-authbridge]: https://github.com/haraka/Haraka/blob/master/docs/plugins/auth/auth_bridge.md
-[url-authimap]: https://github.com/haraka/haraka-plugin-auth-imap
+[url-auth-imap]: https://github.com/haraka/haraka-plugin-auth-imap
 [url-authldap]: https://github.com/haraka/Haraka/blob/master/docs/plugins/auth/auth_ldap.md
 [url-authproxy]: https://github.com/haraka/Haraka/blob/master/docs/plugins/auth/auth_proxy.md
 [url-authvpop]: https://github.com/haraka/Haraka/blob/master/docs/plugins/auth/auth_vpopmaild.md
@@ -141,6 +141,7 @@ Create a PR adding yours to this list.
 [url-greylist]: https://github.com/haraka/Haraka/blob/master/docs/plugins/greylist.md
 [url-helo]: https://github.com/haraka/Haraka/blob/master/docs/plugins/helo.checks.md
 [url-karma]: https://github.com/haraka/haraka-plugin-karma
+[url-known-senders]: https://github.com/haraka/haraka-plugin-known-senders
 [url-elastic]: https://github.com/haraka/haraka-plugin-elasticsearch/
 [url-syslog]: https://github.com/haraka/haraka-plugin-syslog
 [url-ldap]: https://github.com/haraka/haraka-plugin-ldap
