@@ -619,7 +619,7 @@ HMailItem.prototype.try_deliver_host_on_socket = function (mx, host, port, socke
             self.discard();
         }
         if (cfg.pool_concurrency_max) {
-            client_pool.release_client(socket, port, host, mx.bind, fin_sent);
+            send_command('RSET');
         }
         else {
             send_command('QUIT');
@@ -627,7 +627,7 @@ HMailItem.prototype.try_deliver_host_on_socket = function (mx, host, port, socke
     };
 
     socket.on('line', function (line) {
-        if (!processing_mail) {
+        if (!processing_mail && command !== 'rset') {
             if (command !== 'quit') {
                 self.logprotocol("Received data after stopping processing: " + line);
             }
@@ -679,7 +679,6 @@ HMailItem.prototype.try_deliver_host_on_socket = function (mx, host, port, socke
                     });
                     send_command(cfg.pool_concurrency_max ? 'RSET' : 'QUIT');
                     processing_mail = false;
-                    client_pool.release_client(socket, port, host, mx.bind);
                     return self.temp_fail("Upstream error: " + code + " " + ((extc) ? extc + ' ' : '') + reason);
                 }
                 else if (code.match(/^4/)) {
@@ -718,7 +717,6 @@ HMailItem.prototype.try_deliver_host_on_socket = function (mx, host, port, socke
                         });
                         send_command(cfg.pool_concurrency_max ? 'RSET' : 'QUIT');
                         processing_mail = false;
-                        client_pool.release_client(socket, port, host, mx.bind);
                         return self.temp_fail("Upstream error: " + code + " " + ((extc) ? extc + ' ' : '') + reason);
                     }
                 }
@@ -760,7 +758,6 @@ HMailItem.prototype.try_deliver_host_on_socket = function (mx, host, port, socke
                         });
                         send_command(cfg.pool_concurrency_max ? 'RSET' : 'QUIT');
                         processing_mail = false;
-                        client_pool.release_client(socket, port, host, mx.bind);
                         return self.bounce(reason, { mx: mx });
                     }
                 }
@@ -832,7 +829,6 @@ HMailItem.prototype.try_deliver_host_on_socket = function (mx, host, port, socke
                             }
                             else {
                                 finish_processing_mail(false);
-                                if (cfg.pool_concurrency_max) send_command('RSET');
                             }
                         }
                         else {
@@ -856,7 +852,6 @@ HMailItem.prototype.try_deliver_host_on_socket = function (mx, host, port, socke
                         break;
                     case 'dot':
                         finish_processing_mail(true);
-                        if (cfg.pool_concurrency_max) send_command('RSET');
                         break;
                     case 'dot_lmtp':
                         if (code.match(/^2/)) lmtp_rcpt_idx++;
@@ -873,6 +868,7 @@ HMailItem.prototype.try_deliver_host_on_socket = function (mx, host, port, socke
                         }
                         break;
                     case 'rset':
+                        client_pool.release_client(socket, port, host, mx.bind, fin_sent);
                         break;
                     default:
                         // should never get here - means we did something
@@ -885,7 +881,8 @@ HMailItem.prototype.try_deliver_host_on_socket = function (mx, host, port, socke
             // Unrecognized response.
             self.logerror("Unrecognized response from upstream server: " + line);
             processing_mail = false;
-            client_pool.release_client(socket, port, host, mx.bind);
+            // Release back to the pool and instruct it to terminate this connection
+            client_pool.release_client(socket, port, host, mx.bind, true);
             self.todo.rcpt_to.forEach(function (rcpt) {
                 self.extend_rcpt_with_dsn(rcpt, DSN.proto_invalid_command("Unrecognized response from upstream server: " + line));
             });
