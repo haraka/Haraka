@@ -96,6 +96,7 @@ Create a PR adding yours to this list.
 | [toobusy][url-toobusy]             | Defers connections when too busy |
 | [vmta][url-vmta]                   | Virtual MTA management |
 | [watch][url-watch]                 | Watch live SMTP traffic in a web interface |
+| [wildduck][url-wildduck]           | provides recipient checks against Wild Duck |
 | [xclient][url-xclient]             | Implements XCLIENT |
 
 
@@ -178,6 +179,7 @@ Create a PR adding yours to this list.
 [url-toobusy]: https://github.com/haraka/Haraka/blob/master/docs/plugins/toobusy.md
 [url-vmta]: https://github.com/haraka/haraka-plugin-vmta/blob/master/README.md
 [url-watch]: https://github.com/haraka/haraka-plugin-watch
+[url-wildduck]: https://github.com/nodemailer/haraka-plugin-wildduck
 [url-xclient]: https://github.com/haraka/Haraka/blob/master/docs/plugins/xclient.md
 [mongo-url]: https://github.com/Helpmonks/haraka-plugin-mongodb
 
