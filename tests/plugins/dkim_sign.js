@@ -1,15 +1,15 @@
 'use strict';
 
-var fs           = require('fs');
-var path         = require('path');
+const fs           = require('fs');
+const path         = require('path');
 
-var Address      = require('address-rfc2821');
-var fixtures     = require('haraka-test-fixtures');
-var utils        = require('haraka-utils');
+const Address      = require('address-rfc2821');
+const fixtures     = require('haraka-test-fixtures');
+const utils        = require('haraka-utils');
 
-var Connection   = fixtures.connection;
+const Connection   = fixtures.connection;
 
-var _set_up = function (done) {
+const _set_up = function (done) {
 
     this.plugin = new fixtures.plugin('dkim_sign');
     this.plugin.cfg = { main: { } };
@@ -51,42 +51,42 @@ exports.get_sender_domain = {
     'no from header, env MAIL FROM': function (test) {
         test.expect(1);
         this.connection.transaction.mail_from = new Address.Address('<test@example.com>');
-        var r = this.plugin.get_sender_domain(this.connection.transaction);
+        const r = this.plugin.get_sender_domain(this.connection.transaction);
         test.equal('example.com', r);
         test.done();
     },
     'env MAIL FROM, case insensitive': function (test) {
         test.expect(1);
         this.connection.transaction.mail_from = new Address.Address('<test@Example.cOm>');
-        var r = this.plugin.get_sender_domain(this.connection.transaction);
+        const r = this.plugin.get_sender_domain(this.connection.transaction);
         test.equal('example.com', r);
         test.done();
     },
     'from header, simple': function (test) {
         test.expect(1);
         this.connection.transaction.header.add('From', 'John Doe <jdoe@example.com>');
-        var r = this.plugin.get_sender_domain(this.connection.transaction);
+        const r = this.plugin.get_sender_domain(this.connection.transaction);
         test.equal('example.com', r);
         test.done();
     },
     'from header, case insensitive': function (test) {
         test.expect(1);
         this.connection.transaction.header.add('From', 'John Doe <jdoe@Example.Com>');
-        var r = this.plugin.get_sender_domain(this.connection.transaction);
+        const r = this.plugin.get_sender_domain(this.connection.transaction);
         test.equal('example.com', r);
         test.done();
     },
     'from header, less simple': function (test) {
         test.expect(1);
         this.connection.transaction.header.add('From', '"Joe Q. Public" <john.q.public@example.com>');
-        var r = this.plugin.get_sender_domain(this.connection.transaction);
+        const r = this.plugin.get_sender_domain(this.connection.transaction);
         test.equal('example.com', r);
         test.done();
     },
     'from header, RFC 5322 odd': function (test) {
         test.expect(1);
         this.connection.transaction.header.add('From', 'Pete(A nice \\) chap) <pete(his account)@silly.test(his host)>');
-        var r = this.plugin.get_sender_domain(this.connection.transaction);
+        const r = this.plugin.get_sender_domain(this.connection.transaction);
         test.equal('silly.test', r);
         test.done();
     },
@@ -94,7 +94,7 @@ exports.get_sender_domain = {
         test.expect(1);
         this.connection.transaction.header.add('From', 'ben@example.com,carol@example.com');
         this.connection.transaction.header.add('Sender', 'dave@example.net');
-        var r = this.plugin.get_sender_domain(this.connection.transaction);
+        const r = this.plugin.get_sender_domain(this.connection.transaction);
         test.equal('example.net', r);
         test.done();
     },
@@ -104,7 +104,7 @@ exports.get_sender_domain = {
         // addr parser doesn't support the RFC 6854 Group Syntax
         this.connection.transaction.header.add('From', 'Managing Partners:ben@example.com,carol@example.com;');
         this.connection.transaction.header.add('Sender', 'dave@example.net');
-        var r = this.plugin.get_sender_domain(this.connection.transaction);
+        const r = this.plugin.get_sender_domain(this.connection.transaction);
         test.equal('example.net', r);
         test.done();
     },
@@ -150,7 +150,7 @@ exports.get_key_dir = {
             new Address.Address('<matt@example.com>');
         this.plugin.get_key_dir(this.connection, function (err, dir) {
             // console.log(arguments);
-            var expected = path.resolve('tests','config','dkim','example.com');
+            const expected = path.resolve('tests','config','dkim','example.com');
             test.equal(dir, expected);
             test.done();
         });

@@ -1,16 +1,16 @@
 // DNS list module
-var dns         = require('dns');
-var net         = require('net');
-var net_utils   = require('haraka-net-utils');
-var async       = require('async');
+const dns         = require('dns');
+const net         = require('net');
+const net_utils   = require('haraka-net-utils');
+const async       = require('async');
 
 exports.enable_stats = false;
 exports.disable_allowed = false;
 exports.redis_host = '127.0.0.1:6379';
-var redis_client;
+let redis_client;
 
 exports.lookup = function (lookup, zone, cb) {
-    var self = this;
+    const self = this;
 
     if (!lookup || !zone) {
         return setImmediate(function () {
@@ -28,12 +28,13 @@ exports.lookup = function (lookup, zone, cb) {
         lookup = net_utils.ipv6_reverse(lookup);
     }
 
+    let start;
     if (this.enable_stats) {
-        var start = new Date().getTime();
+        start = new Date().getTime();
     }
 
     // Build the query, adding the root dot if missing
-    var query = [lookup, zone].join('.');
+    let query = [lookup, zone].join('.');
     if (query[query.length - 1] !== '.') {
         query += '.';
     }
@@ -62,30 +63,30 @@ exports.lookup = function (lookup, zone, cb) {
 };
 
 exports.stats_incr_zone = function (err, zone, start) {
-    var plugin = this;
+    const plugin = this;
     if (!plugin.enable_stats) return;
 
-    var rkey = 'dns-list-stat:' + zone;
-    var elapsed = new Date().getTime() - start;
+    const rkey = 'dns-list-stat:' + zone;
+    const elapsed = new Date().getTime() - start;
     redis_client.hincrby(rkey, 'TOTAL', 1);
-    var foo = (err) ? err.code : 'LISTED';
+    const foo = (err) ? err.code : 'LISTED';
     redis_client.hincrby(rkey, foo, 1);
     redis_client.hget(rkey, 'AVG_RT', function (err2, rt) {
         if (err2) return;
-        var avg = parseInt(rt) ? (parseInt(elapsed) + parseInt(rt))/2
+        const avg = parseInt(rt) ? (parseInt(elapsed) + parseInt(rt))/2
             : parseInt(elapsed);
         redis_client.hset(rkey, 'AVG_RT', avg);
     });
 };
 
 exports.init_redis = function () {
-    var plugin = this;
+    const plugin = this;
     if (redis_client) { return; }
 
-    var redis = require('redis');
-    var host_port = plugin.redis_host.split(':');
-    var host = host_port[0] || '127.0.0.1';
-    var port = parseInt(host_port[1], 10) || 6379;
+    const redis = require('redis');
+    const host_port = plugin.redis_host.split(':');
+    const host = host_port[0] || '127.0.0.1';
+    const port = parseInt(host_port[1], 10) || 6379;
 
     redis_client = redis.createClient(port, host);
     redis_client.on('error', function (err) {
@@ -100,15 +101,15 @@ exports.multi = function (lookup, zones, cb) {
     if (!lookup) return cb();
     if (!zones ) return cb();
     if (typeof zones === 'string') zones = [ '' + zones ];
-    var self = this;
-    var listed = [];
+    const self = this;
+    const listed = [];
 
-    var redis_incr = function (zone) {
+    const redis_incr = function (zone) {
         if (!self.enable_stats) return;
 
         // Statistics: check hit overlap
-        for (var i=0; i < listed.length; i++) {
-            var foo = (listed[i] === zone) ? 'TOTAL' : listed[i];
+        for (let i=0; i < listed.length; i++) {
+            const foo = (listed[i] === zone) ? 'TOTAL' : listed[i];
             redis_client.hincrby('dns-list-overlap:' + zone, foo, 1);
         }
     };
@@ -133,7 +134,7 @@ exports.multi = function (lookup, zones, cb) {
 exports.first = function (lookup, zones, cb, cb_each) {
     if (!lookup || !zones) return cb();
     if (typeof zones === 'string') zones = [ '' + zones ];
-    var ran_cb = false;
+    let ran_cb = false;
     this.multi(lookup, zones, function (err, zone, a, pending) {
         if (zone && cb_each && typeof cb_each === 'function') {
             cb_each(err, zone, a);
@@ -148,12 +149,12 @@ exports.first = function (lookup, zones, cb, cb_each) {
 };
 
 exports.check_zones = function (interval) {
-    var self = this;
+    const self = this;
     this.disable_allowed = true;
     if (interval) interval = parseInt(interval);
     if ((this.zones && this.zones.length) ||
         (this.disabled_zones && this.disabled_zones.length)) {
-        var zones = [];
+        let zones = [];
         if (this.zones && this.zones.length) zones = zones.concat(this.zones);
         if (this.disabled_zones && this.disabled_zones.length) {
             zones = zones.concat(this.disabled_zones);
@@ -205,7 +206,7 @@ exports.disable_zone = function (zone, result) {
     if (!this.zones.length) return false;
     if (!this.disable_allowed) return false;
 
-    var idx = this.zones.indexOf(zone);
+    const idx = this.zones.indexOf(zone);
     if (idx === -1) return false;  // not enabled
 
     this.zones.splice(idx, 1);

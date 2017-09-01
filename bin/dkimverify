@@ -2,13 +2,13 @@
 
 // DKIM test tool
 
-var nopt = require('nopt');
-var path = require('path');
-var base_path = path.join(__dirname, '..');
-var dkim = require(base_path + '/dkim');
-var DKIMVerifyStream = dkim.DKIMVerifyStream;
+const nopt = require('nopt');
+const path = require('path');
+const base_path = path.join(__dirname, '..');
+const dkim = require(base_path + '/dkim');
+const DKIMVerifyStream = dkim.DKIMVerifyStream;
 
-var parsed = nopt({ 'debug': Boolean });
+const parsed = nopt({ 'debug': Boolean });
 
 // function print_usage() {
 //     console.log('Usage: dkimverify [--debug] < message');
@@ -20,7 +20,7 @@ if (!parsed.debug) {
     DKIMVerifyStream.prototype.debug = function (str) {}
 }
 
-var verifier = new DKIMVerifyStream(function (err, result, results) {
+const verifier = new DKIMVerifyStream(function (err, result, results) {
     if (err) console.log(err.message);
     if (Array.isArray(results)) {
         results.forEach(function (res) {

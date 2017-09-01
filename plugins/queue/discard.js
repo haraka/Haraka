@@ -6,6 +6,7 @@ exports.register = function () {
 }
 
 exports.discard = function (next, connection) {
+
     const txn = connection.transaction;
 
     const q_wants = txn.notes.get('queue.wants');

@@ -78,7 +78,7 @@
   "scripts": {
     "test": "node run_tests",
     "lint": "node node_modules/.bin/eslint *.js outbound/*.js plugins/*.js plugins/*/*.js tests/*.js tests/*/*.js bin/haraka bin/spf bin/dkimverify",
-    "lintfix": "node node_modules/.bin/eslint --fix *.js plugins/*.js plugins/*/*.js tests/*.js tests/*/*.js bin/haraka bin/spf bin/dkimverify",
+    "lintfix": "node node_modules/.bin/eslint --fix *.js outbound/*.js plugins/*.js plugins/*/*.js tests/*.js tests/*/*.js bin/haraka bin/spf bin/dkimverify",
     "cover": "NODE_ENV=cov node node_modules/.bin/istanbul cov run_tests"
   }
 }

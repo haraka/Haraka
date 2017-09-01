@@ -1,10 +1,10 @@
-var MessageStream = require('./messagestream');
+const MessageStream = require('./messagestream');
 
 test.expect(21);
-var server = {notes: {}};
+const server = {notes: {}};
 
 exports.get_pool(server);
-var pool_name = '25:localhost:300';
+const pool_name = '25:localhost:300';
 test.equals(1, Object.keys(server.notes.pool).length);
 test.equals(pool_name, Object.keys(server.notes.pool)[0]);
 test.equals(0, server.notes.pool[pool_name].getPoolSize());
@@ -15,12 +15,12 @@ exports.get_client(server, function (err, smtp_client) {
     test.equals(1, server.notes.pool[pool_name].getPoolSize());
     test.equals(0, server.notes.pool[pool_name].availableObjectsCount());
 
-    var message_stream = new MessageStream(
+    const message_stream = new MessageStream(
         { main : { spool_after : 1024 } }, "123456789"
     );
 
-    var data = [];
-    var reading_body = false;
+    const data = [];
+    let reading_body = false;
     data.push('220 hi');
 
     smtp_client.on('greeting', function (command) {
@@ -99,7 +99,7 @@ exports.get_client(server, function (err, smtp_client) {
             reading_body = true;
         }
         while (true) {
-            var line2 = data.shift();
+            const line2 = data.shift();
             this.emit('line', line2 + '\r\n');
             if (line2[3] == ' ') break;
         }

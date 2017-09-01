@@ -9,14 +9,14 @@ exports.register = function () {
 };
 
 exports.hook_connect = function (next, connection) {
-    var deny_list = this.config.get('rdns.deny_regexps', 'list');
-    var allow_list = this.config.get('rdns.allow_regexps', 'list');
+    const deny_list = this.config.get('rdns.deny_regexps', 'list');
+    const allow_list = this.config.get('rdns.allow_regexps', 'list');
 
-    for (var i=0, l=deny_list.length; i < l; i++) {
-        var re = new RegExp(deny_list[i]);
+    for (let i=0, l=deny_list.length; i < l; i++) {
+        let re = new RegExp(deny_list[i]);
         if (!re.test(connection.remote.host)) continue;
 
-        for (var j=0, m=allow_list.length; j < m; j++) {
+        for (let j=0, m=allow_list.length; j < m; j++) {
             re = new RegExp(allow_list[j]);
             if (re.test(connection.remote.host)) {
                 connection.loginfo(this, "rdns matched: " + allow_list[j] +

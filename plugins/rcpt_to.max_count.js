@@ -13,7 +13,7 @@ exports.hook_rcpt = function (next, connection) {
         connection.transaction.notes.rcpt_to_count = 1;
     }
 
-    var max_count = this.config.get('rcpt_to.max_count') || 40;
+    const max_count = this.config.get('rcpt_to.max_count') || 40;
 
     if (connection.transaction.notes.rcpt_to_count > max_count) {
         return next(DENYDISCONNECT, "Too many recipient attempts");

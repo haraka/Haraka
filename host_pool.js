@@ -1,7 +1,7 @@
 'use strict';
 
-var net    = require('net');
-var utils  = require('haraka-utils');
+const net    = require('net');
+const utils  = require('haraka-utils');
 
 /* HostPool:
  *
@@ -21,18 +21,18 @@ var utils  = require('haraka-utils');
  * network failure from taking the whole system down.
  */
 
-var logger = require('./logger');
+const logger = require('./logger');
 
 // takes a comma/space-separated list of ip:ports
 //  1.1.1.1:22,  3.3.3.3:44
 function HostPool (hostports_str, retry_secs) {
-    var self = this;
+    const self = this;
 
-    var hosts = (hostports_str || '')
+    const hosts = (hostports_str || '')
         .trim()
         .split(/[\s,]+/)
         .map(function (hostport){
-            var splithost = hostport.split(/:/);
+            const splithost = hostport.split(/:/);
             if (! splithost[1]){
                 splithost[1] = 25;
             }
@@ -56,12 +56,12 @@ function HostPool (hostports_str, retry_secs) {
  * timer.
  */
 HostPool.prototype.failed = function (host, port) {
-    var self = this;
-    var key = host + ':' + port;
-    var retry_msecs = self.retry_secs * 1000;
+    const self = this;
+    const key = host + ':' + port;
+    const retry_msecs = self.retry_secs * 1000;
     self.dead_hosts[key] = true;
 
-    var cb_if_still_dead = function (){
+    function cb_if_still_dead () {
         logger.logwarn("host " + key + " is still dead, will retry in " +
                         self.retry_secs + " secs");
         self.dead_hosts[key] = true;
@@ -69,13 +69,13 @@ HostPool.prototype.failed = function (host, port) {
         setTimeout(function () {
             self.probe_dead_host(host, port, cb_if_still_dead, cb_if_alive);
         }, retry_msecs);
-    };
+    }
 
-    var cb_if_alive = function (){
+    function cb_if_alive () {
         // console.log(2);
         logger.loginfo("host " + key + " is back! adding back into pool");
         delete self.dead_hosts[key];
-    };
+    }
 
     setTimeout(function () {
         self.probe_dead_host(host, port, cb_if_still_dead, cb_if_alive);
@@ -93,11 +93,11 @@ HostPool.prototype.probe_dead_host = function (
     host, port, cb_if_still_dead, cb_if_alive
 ){
 
-    var self = this;
+    const self = this;
     logger.loginfo("probing dead host " + host + ":" + port);
 
-    var connect_timeout_ms = 200; // keep it snappy
-    var s;
+    const connect_timeout_ms = 200; // keep it snappy
+    let s;
     try {
         s = self.get_socket();
         s.setTimeout(connect_timeout_ms, function () {
@@ -128,7 +128,7 @@ HostPool.prototype.probe_dead_host = function (
  * so we can override in unit test
  */
 HostPool.prototype.get_socket = function () {
-    var s = new net.Socket();
+    const s = new net.Socket();
     return s;
 };
 
@@ -142,21 +142,21 @@ HostPool.prototype.get_socket = function () {
  * network problems that make all the hosts look dead.
  */
 HostPool.prototype.get_host = function () {
-    var host;
-    var found;
+    let host;
+    let found;
 
-    var first_i = this.last_i + 1;
+    let first_i = this.last_i + 1;
     if (first_i >= this.hosts.length){
         first_i = 0;
     }
 
-    for (var i = 0; i < this.hosts.length; ++i){
-        var j = i + first_i;
+    for (let i = 0; i < this.hosts.length; ++i){
+        let j = i + first_i;
         if (j >= this.hosts.length) {
             j = j - this.hosts.length;
         }
         host = this.hosts[j];
-        var key = host.host + ':' + host.port;
+        const key = host.host + ':' + host.port;
         if (this.dead_hosts[key]) {
             continue;
         }

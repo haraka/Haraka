@@ -1,11 +1,11 @@
 'use strict';
 
-var path         = require('path');
-var fixtures     = require('haraka-test-fixtures');
+const path         = require('path');
+const fixtures     = require('haraka-test-fixtures');
 
-var Connection   = fixtures.connection;
+const Connection   = fixtures.connection;
 
-var _set_up = function (done) {
+const _set_up = function (done) {
 
     this.plugin = new fixtures.plugin('dnsbl');
     this.plugin.config.root_path = path.resolve(__dirname, '../../config');

@@ -1,12 +1,12 @@
 'use strict';
 
-var Address      = require('address-rfc2821').Address;
-var fixtures     = require('haraka-test-fixtures');
+const Address      = require('address-rfc2821').Address;
+const fixtures     = require('haraka-test-fixtures');
 
-var SPF          = require('../../spf').SPF;
-var spf          = new SPF();
+const SPF          = require('../../spf').SPF;
+const spf          = new SPF();
 
-var _set_up = function (done) {
+const _set_up = function (done) {
 
     this.plugin = new fixtures.plugin('spf');
     this.plugin.load_config();
@@ -25,7 +25,7 @@ var _set_up = function (done) {
 exports.return_results = {
     setUp : _set_up,
     'result, none': function (test) {
-        var next = function () {
+        const next = function () {
             test.equal(undefined, arguments[0]);
             test.done();
         };
@@ -34,7 +34,7 @@ exports.return_results = {
             spf, 'mfrom', spf.NONE, 'test@example.com');
     },
     'result, neutral': function (test) {
-        var next = function () {
+        const next = function () {
             test.equal(undefined, arguments[0]);
             test.done();
         };
@@ -43,7 +43,7 @@ exports.return_results = {
             spf, 'mfrom', spf.NEUTRAL, 'test@example.com');
     },
     'result, pass': function (test) {
-        var next = function () {
+        const next = function () {
             test.equal(undefined, arguments[0]);
             test.done();
         };
@@ -52,7 +52,7 @@ exports.return_results = {
             spf, 'mfrom', spf.SPF_PASS, 'test@example.com');
     },
     'result, softfail, reject=false': function (test) {
-        var next = function () {
+        const next = function () {
             test.equal(undefined, arguments[0]);
             test.done();
         };
@@ -62,7 +62,7 @@ exports.return_results = {
             spf, 'mfrom', spf.SPF_SOFTFAIL, 'test@example.com');
     },
     'result, softfail, reject=true': function (test) {
-        var next = function () {
+        const next = function () {
             test.equal(DENY, arguments[0]);
             test.done();
         };
@@ -72,7 +72,7 @@ exports.return_results = {
             'mfrom', spf.SPF_SOFTFAIL, 'test@example.com');
     },
     'result, fail, reject=false': function (test) {
-        var next = function () {
+        const next = function () {
             test.equal(undefined, arguments[0]);
             test.done();
         };
@@ -82,7 +82,7 @@ exports.return_results = {
             'mfrom', spf.SPF_FAIL, 'test@example.com');
     },
     'result, fail, reject=true': function (test) {
-        var next = function () {
+        const next = function () {
             test.equal(DENY, arguments[0]);
             test.done();
         };
@@ -92,7 +92,7 @@ exports.return_results = {
             'mfrom', spf.SPF_FAIL, 'test@example.com');
     },
     'result, temperror, reject=false': function (test) {
-        var next = function () {
+        const next = function () {
             test.equal(undefined, arguments[0]);
             test.done();
         };
@@ -102,7 +102,7 @@ exports.return_results = {
             'mfrom', spf.SPF_TEMPERROR, 'test@example.com');
     },
     'result, temperror, reject=true': function (test) {
-        var next = function () {
+        const next = function () {
             test.equal(DENYSOFT, arguments[0]);
             test.done();
         };
@@ -112,7 +112,7 @@ exports.return_results = {
             'mfrom', spf.SPF_TEMPERROR, 'test@example.com');
     },
     'result, permerror, reject=false': function (test) {
-        var next = function () {
+        const next = function () {
             test.equal(undefined, arguments[0]);
             test.done();
         };
@@ -122,7 +122,7 @@ exports.return_results = {
             'mfrom', spf.SPF_PERMERROR, 'test@example.com');
     },
     'result, permerror, reject=true': function (test) {
-        var next = function () {
+        const next = function () {
             test.equal(DENY, arguments[0]);
             test.done();
         };
@@ -132,7 +132,7 @@ exports.return_results = {
             'mfrom', spf.SPF_PERMERROR, 'test@example.com');
     },
     'result, unknown': function (test) {
-        var next = function () {
+        const next = function () {
             test.equal(undefined, arguments[0]);
             test.done();
         };
@@ -145,8 +145,8 @@ exports.return_results = {
 exports.hook_helo = {
     setUp : _set_up,
     'rfc1918': function (test) {
-        var completed = 0;
-        var next = function (rc) {
+        let completed = 0;
+        const next = function (rc) {
             completed++;
             test.equal(undefined, rc);
             if (completed >= 2) test.done();
@@ -157,7 +157,7 @@ exports.hook_helo = {
         this.plugin.hook_helo(next, this.connection, 'helo.sender.com');
     },
     'IPv4 literal': function (test) {
-        var next = function (rc) {
+        const next = function (rc) {
             test.equal(undefined, rc);
             test.done();
         };
@@ -168,12 +168,12 @@ exports.hook_helo = {
 
 };
 
-var test_addr = new Address('<test@example.com>');
+const test_addr = new Address('<test@example.com>');
 
 exports.hook_mail = {
     setUp : _set_up,
     'rfc1918': function (test) {
-        var next = function () {
+        const next = function () {
             test.equal(undefined, arguments[0]);
             test.done();
         };
@@ -183,7 +183,7 @@ exports.hook_mail = {
         this.plugin.hook_mail(next, this.connection, [test_addr]);
     },
     'rfc1918 relaying': function (test) {
-        var next = function () {
+        const next = function () {
             test.equal(undefined, arguments[0]);
             test.done();
         };
@@ -194,7 +194,7 @@ exports.hook_mail = {
         this.plugin.hook_mail(next, this.connection, [test_addr]);
     },
     'no txn': function (test) {
-        var next = function () {
+        const next = function () {
             test.equal(undefined, arguments[0]);
             test.done();
         };
@@ -204,7 +204,7 @@ exports.hook_mail = {
         this.plugin.hook_mail(next, this.connection);
     },
     'txn, no helo': function (test) {
-        var next = function () {
+        const next = function () {
             test.equal(undefined, arguments[0]);
             test.done();
         };
@@ -214,7 +214,7 @@ exports.hook_mail = {
         this.plugin.hook_mail(next, this.connection, [test_addr]);
     },
     'txn': function (test) {
-        var next = function (rc) {
+        const next = function (rc) {
             test.equal(undefined, rc);
             test.done();
         };
@@ -224,7 +224,7 @@ exports.hook_mail = {
         this.plugin.hook_mail(next, this.connection, [test_addr]);
     },
     'txn, relaying': function (test) {
-        var next = function (rc) {
+        const next = function (rc) {
             test.equal(undefined, rc);
             test.done();
         };
@@ -235,7 +235,7 @@ exports.hook_mail = {
         this.plugin.hook_mail(next, this.connection, [test_addr]);
     },
     'txn, relaying, is_private': function (test) {
-        var next = function (rc) {
+        const next = function (rc) {
             test.equal(undefined, rc);
             test.done();
         };

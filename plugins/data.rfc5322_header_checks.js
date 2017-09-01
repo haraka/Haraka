@@ -1,8 +1,8 @@
 'use strict';
 
 // Enforce RFC 5322 Section 3.6
-var required_headers = ['Date', 'From'];
-var singular_headers =  [
+const required_headers = ['Date', 'From'];
+const singular_headers =  [
     'Date', 'From', 'Sender', 'Reply-To', 'To', 'Cc',
     'Bcc', 'Message-Id', 'In-Reply-To', 'References',
     'Subject'
@@ -13,7 +13,7 @@ exports.register = function () {
 };
 
 exports.hook_data_post = function (next, connection) {
-    var header = connection.transaction.header;
+    const header = connection.transaction.header;
     // Headers that MUST be present
     for (let i=0,l=required_headers.length; i < l; i++) {
         if (header.get_all(required_headers[i]).length === 0) {

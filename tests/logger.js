@@ -1,5 +1,5 @@
 
-var util         = require('util');
+const util         = require('util');
 
 function _set_up (callback) {
     this.logger = require('../logger');
@@ -160,7 +160,7 @@ exports.log_respond = {
     },
     'valid retval' : function (test) {
         test.expect(1);
-        var data = { level: 'INFO', data: "test data" };
+        const data = { level: 'INFO', data: "test data" };
         test.equal(true, this.logger.log_respond(900, 'test msg', data));
         test.done();
     },
@@ -198,7 +198,7 @@ exports.colors = {
         test.ok(this.logger.colorize);
         test.equal('function', typeof this.logger.colorize);
         test.equal('error', this.logger.colorize('bad-color', 'error'));
-        var expected = util.inspect.colors ? '\u001b[34mgood\u001b[39m' : 'good';
+        const expected = util.inspect.colors ? '\u001b[34mgood\u001b[39m' : 'good';
         test.equal(expected, this.logger.colorize('blue', 'good'));
         test.done();
     },
@@ -215,7 +215,7 @@ exports.log_if_level = {
     'log_if_level test log entry' : function (test) {
         test.expect(5);
         this.logger.loglevel = 9;
-        var f = this.logger.log_if_level('INFO', 'LOGINFO');
+        const f = this.logger.log_if_level('INFO', 'LOGINFO');
         test.ok(f);
         test.ok('function' === typeof f);
         test.ok(f('test info message'));
@@ -227,7 +227,7 @@ exports.log_if_level = {
     'log_if_level null case' : function (test) {
         test.expect(2);
         this.logger.loglevel = 9;
-        var f = this.logger.log_if_level('INFO', 'LOGINFO');
+        const f = this.logger.log_if_level('INFO', 'LOGINFO');
         test.ok(f(null));
         test.equal(2, this.logger.deferred_logs.length);
         test.done();
@@ -235,7 +235,7 @@ exports.log_if_level = {
     'log_if_level false' : function (test) {
         test.expect(2);
         this.logger.loglevel = 9;
-        var f = this.logger.log_if_level('INFO', 'LOGINFO');
+        const f = this.logger.log_if_level('INFO', 'LOGINFO');
         test.ok(f(false));
         test.equal(3, this.logger.deferred_logs.length);
         test.done();
@@ -243,7 +243,7 @@ exports.log_if_level = {
     'log_if_level 0' : function (test) {
         test.expect(2);
         this.logger.loglevel = 9;
-        var f = this.logger.log_if_level('INFO', 'LOGINFO');
+        const f = this.logger.log_if_level('INFO', 'LOGINFO');
         test.ok(f(0));
         test.equal(4, this.logger.deferred_logs.length);
         test.done();
@@ -260,11 +260,11 @@ exports.add_log_methods = {
         test.done();
     },
     'adds functions to an object' : function (test) {
-        var testObj = {};
+        const testObj = {};
         this.logger.add_log_methods(testObj);
-        var levels = ['DATA','PROTOCOL','DEBUG','INFO','NOTICE','WARN','ERROR','CRIT','ALERT','EMERG'];
+        const levels = ['DATA','PROTOCOL','DEBUG','INFO','NOTICE','WARN','ERROR','CRIT','ALERT','EMERG'];
         test.expect(levels.length);
-        for (var i=0; i<levels.length; i++) {
+        for (let i=0; i<levels.length; i++) {
             test.ok('function' === typeof(testObj['log'+levels[i].toLowerCase()]));
         }
         test.done();

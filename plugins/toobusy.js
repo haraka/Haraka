@@ -1,10 +1,10 @@
 // Stop accepting new connections when we are too busy
 
-var toobusy;
-var was_busy = false;
+let toobusy;
+let was_busy = false;
 
 exports.register = function () {
-    var plugin = this;
+    const plugin = this;
 
     try {
         toobusy = require('toobusy-js');
@@ -21,8 +21,8 @@ exports.register = function () {
 };
 
 exports.loadConfig = function () {
-    var plugin = this;
-    var maxLag = plugin.config.get('toobusy.maxlag','value', function () {
+    const plugin = this;
+    let maxLag = plugin.config.get('toobusy.maxlag','value', function () {
         plugin.loadConfig();
     });
 
@@ -42,8 +42,8 @@ exports.check_busy = function (next, connection) {
     if (!was_busy) {
         was_busy = true;
         // Log a CRIT error at the first occurrence
-        var currentLag = toobusy.lag();
-        var maxLag = toobusy.maxLag();
+        const currentLag = toobusy.lag();
+        const maxLag = toobusy.maxLag();
         this.logcrit(
             'deferring connections: lag=' + currentLag + ' max=' + maxLag);
     }

@@ -1,11 +1,11 @@
 'use strict';
 
-var path         = require('path');
-var fixtures     = require('haraka-test-fixtures');
+const path         = require('path');
+const fixtures     = require('haraka-test-fixtures');
 
-var stub         = fixtures.stub.stub;
+const stub         = fixtures.stub.stub;
 
-var _set_up = function (done) {
+const _set_up = function (done) {
 
     this.plugin = new fixtures.plugin('helo.checks');
     this.plugin.config.root_path = path.resolve(__dirname, '../../config');
@@ -34,8 +34,8 @@ exports.host_mismatch = {
     setUp : _set_up,
     'host_mismatch, reject=false' : function (test) {
         test.expect(2);
-        var outer = this;
-        var cb = function () {
+        const outer = this;
+        const cb = function () {
             test.equal(undefined, arguments[0]);
             test.ok(outer.connection.results.get('helo.checks').fail.length);
         };
@@ -47,8 +47,8 @@ exports.host_mismatch = {
     },
     'host_mismatch, reject=true' : function (test) {
         test.expect(2);
-        var outer = this;
-        var cb = function () {
+        const outer = this;
+        const cb = function () {
             test.equal(DENY, arguments[0]);
             // console.log(outer.connection.results.get('helo.checks'));
             test.ok(outer.connection.results.get('helo.checks').fail.length);
@@ -65,8 +65,8 @@ exports.proto_mismatch = {
     setUp : _set_up,
     'proto_mismatch, reject=false, esmtp=false' : function (test) {
         test.expect(2);
-        var outer = this;
-        var cb = function () {
+        const outer = this;
+        const cb = function () {
             test.equal(undefined, arguments[0]);
             // console.log(outer.connection.results.get('helo.checks'));
             test.ok(outer.connection.results.get('helo.checks').fail.length);
@@ -80,8 +80,8 @@ exports.proto_mismatch = {
     },
     'proto_mismatch, reject=false, esmtp=true' : function (test) {
         test.expect(2);
-        var outer = this;
-        var cb = function () {
+        const outer = this;
+        const cb = function () {
             test.equal(undefined, arguments[0]);
             // console.log(outer.connection.results.get('helo.checks'));
             test.ok(outer.connection.results.get('helo.checks').fail.length === 0);
@@ -95,8 +95,8 @@ exports.proto_mismatch = {
     },
     'proto_mismatch, reject=true' : function (test) {
         test.expect(2);
-        var outer = this;
-        var cb = function () {
+        const outer = this;
+        const cb = function () {
             test.equal(DENY, arguments[0]);
             // console.log(outer.connection.results.get('helo.checks'));
             test.ok(outer.connection.results.get('helo.checks').fail.length);
@@ -114,8 +114,8 @@ exports.rdns_match = {
     setUp : _set_up,
     'pass' : function (test) {
         test.expect(2);
-        var outer = this;
-        var cb = function () {
+        const outer = this;
+        const cb = function () {
             test.equal(undefined, arguments[0]);
             test.ok(outer.connection.results.get('helo.checks').pass.length);
         };
@@ -128,8 +128,8 @@ exports.rdns_match = {
     },
     'pass (org dom match)' : function (test) {
         test.expect(2);
-        var outer = this;
-        var cb = function () {
+        const outer = this;
+        const cb = function () {
             test.equal(undefined, arguments[0]);
             // console.log(outer.connection.results.get('helo.checks'));
             test.ok(outer.connection.results.get('helo.checks').pass.length);
@@ -143,8 +143,8 @@ exports.rdns_match = {
     },
     'fail' : function (test) {
         test.expect(2);
-        var outer = this;
-        var cb = function () {
+        const outer = this;
+        const cb = function () {
             test.equal(undefined, arguments[0]);
             // console.log(outer.connection.results.get('helo.checks'));
             test.ok(outer.connection.results.get('helo.checks').fail.length);
@@ -158,8 +158,8 @@ exports.rdns_match = {
     },
     'fail, reject' : function (test) {
         test.expect(2);
-        var outer = this;
-        var cb = function () {
+        const outer = this;
+        const cb = function () {
             test.equal(DENY, arguments[0]);
             // console.log(outer.connection.results.get('helo.checks'));
             test.ok(outer.connection.results.get('helo.checks').fail.length);
@@ -177,8 +177,8 @@ exports.bare_ip = {
     setUp : _set_up,
     'pass' : function (test) {
         test.expect(2);
-        var outer = this;
-        var cb = function () {
+        const outer = this;
+        const cb = function () {
             test.equal(undefined, arguments[0]);
             test.ok(outer.connection.results.get('helo.checks').pass.length);
         };
@@ -190,8 +190,8 @@ exports.bare_ip = {
     },
     'fail' : function (test) {
         test.expect(2);
-        var outer = this;
-        var cb = function () {
+        const outer = this;
+        const cb = function () {
             test.equal(undefined, arguments[0]);
             test.ok(outer.connection.results.get('helo.checks').fail.length);
         };
@@ -203,8 +203,8 @@ exports.bare_ip = {
     },
     'fail, reject' : function (test) {
         test.expect(2);
-        var outer = this;
-        var cb = function () {
+        const outer = this;
+        const cb = function () {
             test.equal(DENY, arguments[0]);
             // console.log(outer.connection.results.get('helo.checks'));
             test.ok(outer.connection.results.get('helo.checks').fail.length);
@@ -221,9 +221,9 @@ exports.dynamic = {
     setUp : _set_up,
     'pass' : function (test) {
         test.expect(2);
-        var outer = this;
-        var test_helo = 'matt.simerson.tld';
-        var cb = function () {
+        const outer = this;
+        const test_helo = 'matt.simerson.tld';
+        const cb = function () {
             test.equal(undefined, arguments[0]);
             test.ok(outer.connection.results.get('helo.checks').pass.length);
         };
@@ -236,9 +236,9 @@ exports.dynamic = {
     },
     'fail' : function (test) {
         test.expect(2);
-        var outer = this;
-        var test_helo = 'c-76-121-96-159.hsd1.wa.comcast.net';
-        var cb = function () {
+        const outer = this;
+        const test_helo = 'c-76-121-96-159.hsd1.wa.comcast.net';
+        const cb = function () {
             test.equal(undefined, arguments[0]);
             // console.log(outer.connection.results.get('helo.checks'));
             test.ok(outer.connection.results.get('helo.checks').fail.length);
@@ -252,9 +252,9 @@ exports.dynamic = {
     },
     'fail, reject' : function (test) {
         test.expect(2);
-        var outer = this;
-        var test_helo = 'c-76-121-96-159.hsd1.wa.comcast.net';
-        var cb = function () {
+        const outer = this;
+        const test_helo = 'c-76-121-96-159.hsd1.wa.comcast.net';
+        const cb = function () {
             test.equal(DENY, arguments[0]);
             // console.log(outer.connection.results.get('helo.checks'));
             test.ok(outer.connection.results.get('helo.checks').fail.length);
@@ -272,9 +272,9 @@ exports.big_company = {
     setUp : _set_up,
     'pass, reject=false' : function (test) {
         test.expect(2);
-        var outer = this;
-        var test_helo = 'yahoo.com';
-        var cb = function () {
+        const outer = this;
+        const test_helo = 'yahoo.com';
+        const cb = function () {
             test.equal(undefined, arguments[0]);
             test.ok(outer.connection.results.get('helo.checks').pass.length);
             test.done();
@@ -287,9 +287,9 @@ exports.big_company = {
     },
     'fail, reject=false' : function (test) {
         test.expect(2);
-        var outer = this;
-        var test_helo = 'yahoo.com';
-        var cb = function () {
+        const outer = this;
+        const test_helo = 'yahoo.com';
+        const cb = function () {
             test.equal(undefined, arguments[0]);
             test.ok(outer.connection.results.get('helo.checks').fail.length);
             test.done();
@@ -303,9 +303,9 @@ exports.big_company = {
     },
     'fail, reject=true' : function (test) {
         test.expect(2);
-        var outer = this;
-        var test_helo = 'yahoo.com';
-        var cb = function () {
+        const outer = this;
+        const test_helo = 'yahoo.com';
+        const cb = function () {
             test.equal(DENY, arguments[0]);
             test.ok(outer.connection.results.get('helo.checks').fail.length);
             test.done();
@@ -322,9 +322,9 @@ exports.literal_mismatch = {
     setUp : _set_up,
     'pass' : function (test) {
         test.expect(2);
-        var outer = this;
-        var test_helo = '[10.0.1.1]';
-        var cb = function () {
+        const outer = this;
+        const test_helo = '[10.0.1.1]';
+        const cb = function () {
             // console.log(outer.connection.results.get('helo.checks'));
             test.equal(undefined, arguments[0]);
             test.ok(outer.connection.results.get('helo.checks').skip.length);
@@ -339,9 +339,9 @@ exports.literal_mismatch = {
     },
     'pass, network' : function (test) {
         test.expect(2);
-        var outer = this;
-        var test_helo = '[10.0.1.1]';
-        var cb = function () {
+        const outer = this;
+        const test_helo = '[10.0.1.1]';
+        const cb = function () {
             // console.log(outer.connection.results.get('helo.checks'));
             test.equal(undefined, arguments[0]);
             test.ok(outer.connection.results.get('helo.checks').skip.length);
@@ -356,9 +356,9 @@ exports.literal_mismatch = {
     },
     'fail, reject=false' : function (test) {
         test.expect(2);
-        var outer = this;
-        var test_helo = '[10.0.1.1]';
-        var cb = function () {
+        const outer = this;
+        const test_helo = '[10.0.1.1]';
+        const cb = function () {
             test.equal(undefined, arguments[0]);
             test.ok(outer.connection.results.get('helo.checks').skip.length);
             test.done();
@@ -372,9 +372,9 @@ exports.literal_mismatch = {
     },
     'fail, reject=true' : function (test) {
         test.expect(2);
-        var outer = this;
-        var test_helo = '[10.0.1.1]';
-        var cb = function () {
+        const outer = this;
+        const test_helo = '[10.0.1.1]';
+        const cb = function () {
             test.equal(undefined, arguments[0]);
             test.ok(outer.connection.results.get('helo.checks').skip.length);
             test.done();
@@ -392,9 +392,9 @@ exports.valid_hostname = {
     setUp : _set_up,
     'pass' : function (test) {
         test.expect(2);
-        var test_helo = 'great.domain.com';
-        var outer = this;
-        var cb = function () {
+        const test_helo = 'great.domain.com';
+        const outer = this;
+        const cb = function () {
             // console.log(outer.connection.results.get('helo.checks'));
             test.equal(undefined, arguments[0]);
             test.ok(outer.connection.results.get('helo.checks').pass.length);
@@ -407,9 +407,9 @@ exports.valid_hostname = {
     },
     'fail, reject=false' : function (test) {
         test.expect(2);
-        var test_helo = 'great.domain.non-existent-tld';
-        var outer = this;
-        var cb = function () {
+        const test_helo = 'great.domain.non-existent-tld';
+        const outer = this;
+        const cb = function () {
             // console.log(outer.connection.results.get('helo.checks'));
             test.equal(undefined, arguments[0]);
             test.ok(outer.connection.results.get('helo.checks').fail.length);
@@ -422,9 +422,9 @@ exports.valid_hostname = {
     },
     'fail, reject=true' : function (test) {
         test.expect(2);
-        var test_helo = 'great.domain.non-existent-tld';
-        var outer = this;
-        var cb = function () {
+        const test_helo = 'great.domain.non-existent-tld';
+        const outer = this;
+        const cb = function () {
             // console.log(outer.connection.results.get('helo.checks'));
             test.equal(DENY, arguments[0]);
             test.ok(outer.connection.results.get('helo.checks').fail.length);
@@ -441,9 +441,9 @@ exports.forward_dns = {
     setUp : _set_up,
     'pass' : function (test) {
         test.expect(2);
-        var outer = this;
-        var test_helo = 'b.resolvers.level3.net';
-        var cb = function () {
+        const outer = this;
+        const test_helo = 'b.resolvers.level3.net';
+        const cb = function () {
             // console.log(arguments);
             // console.log(outer.connection.results.get('helo.checks'));
             test.equal(undefined, arguments[0]);
@@ -459,9 +459,9 @@ exports.forward_dns = {
     },
     'fail, reject=false' : function (test) {
         test.expect(2);
-        var outer = this;
-        var test_helo = 'www.google.com';
-        var cb = function () {
+        const outer = this;
+        const test_helo = 'www.google.com';
+        const cb = function () {
             // console.log(outer.connection.results.get('helo.checks'));
             test.equal(undefined, arguments[0]);
             test.ok(outer.connection.results.get('helo.checks').fail.length);
@@ -475,9 +475,9 @@ exports.forward_dns = {
     },
     'fail, reject=true' : function (test) {
         test.expect(2);
-        var outer = this;
-        var test_helo = 'www.google.com';
-        var cb = function () {
+        const outer = this;
+        const test_helo = 'www.google.com';
+        const cb = function () {
             // console.log(arguments);
             // console.log(outer.connection.results.get('helo.checks'));
             test.equal(DENY, arguments[0]);
@@ -496,8 +496,8 @@ exports.match_re = {
     setUp : _set_up,
     'miss' : function (test) {
         test.expect(3);
-        var test_helo = 'not_in_re_list.net';
-        var cb = function (rc, msg) {
+        const test_helo = 'not_in_re_list.net';
+        const cb = function (rc, msg) {
             test.equal(undefined, rc);
             test.equal(undefined, msg);
             test.ok(this.connection.results.get('helo.checks').pass.length);
@@ -509,8 +509,8 @@ exports.match_re = {
     },
     'hit, reject=no' : function (test) {
         test.expect(3);
-        var test_helo = 'ylmf-pc';
-        var cb = function (rc, msg) {
+        const test_helo = 'ylmf-pc';
+        const cb = function (rc, msg) {
             test.equal(undefined, rc);
             test.equal(undefined, msg);
             test.ok(this.connection.results.get('helo.checks').fail.length);
@@ -523,8 +523,8 @@ exports.match_re = {
     },
     'hit, reject=yes, exact' : function (test) {
         test.expect(3);
-        var test_helo = 'ylmf-pc';
-        var cb = function (rc, msg) {
+        const test_helo = 'ylmf-pc';
+        const cb = function (rc, msg) {
             test.equal(DENY, rc);
             test.equal('That HELO not allowed here', msg);
             test.ok(this.connection.results.get('helo.checks').fail.length);
@@ -537,8 +537,8 @@ exports.match_re = {
     },
     'hit, reject=yes, pattern' : function (test) {
         test.expect(3);
-        var test_helo = 'ylmf-pc';
-        var cb = function (rc, msg) {
+        const test_helo = 'ylmf-pc';
+        const cb = function (rc, msg) {
             test.equal(DENY, rc);
             test.equal('That HELO not allowed here', msg);
             test.ok(this.connection.results.get('helo.checks').fail.length);

@@ -1,7 +1,7 @@
 // quarantine
 
-var fs   = require('fs');
-var path = require('path');
+const fs   = require('fs');
+const path = require('path');
 
 exports.register = function () {
     const plugin = this;
@@ -24,16 +24,17 @@ exports.load_quarantine_ini = function () {
 }
 
 // http://unknownerror.net/2011-05/16260-nodejs-mkdirs-recursion-create-directory.html
-var mkdirs = exports.mkdirs = function (dirpath, mode, callback) {
+function mkdirs (dirpath, mode, callback) {
     if (fs.existsSync(dirpath)) {
         return callback(dirpath);
     }
     mkdirs(path.dirname(dirpath), mode, function () {
         fs.mkdir(dirpath, mode, callback);
     });
-};
+}
+exports.mkdirs = mkdirs;
 
-var zeroPad = exports.zeroPad = function (n, digits) {
+const zeroPad = exports.zeroPad = function (n, digits) {
     n = n.toString();
     while (n.length < digits) {
         n = '0' + n;
@@ -45,11 +46,13 @@ exports.hook_init_master = function (next) {
     // At start-up; delete any files in the temporary directory
     // NOTE: This is deliberately syncronous to ensure that this
     //       is completed prior to any messages being received.
-    var tmp_dir = path.join(this.get_base_dir(), 'tmp');
+    const plugin = this;
+    const tmp_dir = path.join(plugin.get_base_dir(), 'tmp');
+
     if (fs.existsSync(tmp_dir)) {
-        var dirent = fs.readdirSync(tmp_dir);
-        this.loginfo('Removing temporary files from: ' + tmp_dir);
-        for (var i=0; i<dirent.length; i++) {
+        const dirent = fs.readdirSync(tmp_dir);
+        plugin.loginfo('Removing temporary files from: ' + tmp_dir);
+        for (let i=0; i<dirent.length; i++) {
             fs.unlinkSync(path.join(tmp_dir, dirent[i]));
         }
     }
@@ -134,7 +137,7 @@ exports.quarantine = function (next, connection) {
                 }
                 // Using notes.quarantine_action to decide what to do after the message is quarantined.
                 // Format can be either action = [ code, msg ] or action = code
-                var action = (connection.notes.quarantine_action || txn.notes.quarantine_action);
+                const action = (connection.notes.quarantine_action || txn.notes.quarantine_action);
                 if (!action) return next();
                 if (Array.isArray(action)) return next(action[0], action[1]);
                 return next(action);
