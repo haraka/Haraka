@@ -114,7 +114,7 @@ exports.release_client = function (socket, port, host, local_addr, error) {
     logger.logdebug("[outbound] release_client: " + host + ":" + port + " to " + local_addr);
 
     var pool_timeout = cfg.pool_timeout;
-    var name = `outbound:: ${port}:${host}:${local_addr}:${pool_timeout}`;
+    var name = `outbound::${port}:${host}:${local_addr}:${pool_timeout}`;
 
     if (cfg.pool_concurrency_max == 0) {
         return sockend();
