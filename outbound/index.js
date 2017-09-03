@@ -14,16 +14,14 @@ var logger      = require('../logger');
 var config      = require('../config');
 var trans       = require('../transaction');
 var plugins     = require('../plugins');
-var DSN         = require('../dsn');
 var FsyncWriteStream = require('./fsync_writestream');
-var server      = require('../server');
 
 var cfg         = require('./config');
 var queuelib    = require('./queue');
 var HMailItem   = require('./hmail');
 var TODOItem    = require('./todo');
 var pools       = require('./client_pool');
-var _qfile      = require('./qfile');
+var _qfile = exports.qfile = require('./qfile');
 
 var queue_dir = queuelib.queue_dir;
 var temp_fail_queue = queuelib.temp_fail_queue;
@@ -44,7 +42,6 @@ exports._add_file = queuelib._add_file;
 exports.stats = queuelib.stats;
 exports.drain_pools = pools.drain_pools;
 
-var _qfile = exports.qfile = require('./qfile');
 
 process.on('message', function (msg) {
     if (msg.event && msg.event === 'outbound.load_pid_queue') {

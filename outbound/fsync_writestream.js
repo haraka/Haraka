@@ -1,10 +1,9 @@
 'use strict';
 
 var fs      = require('fs');
-var util    = require('util');
 
 class FsyncWriteStream extends fs.WriteStream {
-    constructor(path, options) {
+    constructor (path, options) {
         super(path, options);
     }
 }

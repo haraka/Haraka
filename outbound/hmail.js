@@ -1,5 +1,5 @@
 "use strict";
-var util         = require('util');
+
 var events       = require('events');
 var fs           = require('fs');
 var dns          = require('dns');
@@ -7,7 +7,6 @@ var path         = require('path');
 var net          = require('net');
 
 var Address     = require('address-rfc2821').Address;
-
 var constants   = require('haraka-constants');
 var net_utils   = require('haraka-net-utils');
 var utils       = require('haraka-utils');
@@ -36,15 +35,12 @@ setImmediate(function () {
     delivery_queue = queuelib.delivery_queue;
 });
 
-var mx = require('./mx_lookup');
-var _qfile = require('./qfile');
 var cfg = require('./config');
 
 /////////////////////////////////////////////////////////////////////////////
 // HMailItem - encapsulates an individual outbound mail item
 
-var dummy_func = function () {};
-
+function dummy_func () {}
 
 class HMailItem extends events.EventEmitter {
     constructor (filename, filePath, notes) {
@@ -119,7 +115,7 @@ HMailItem.prototype.read_todo = function () {
         var todo_len = (buf[0] << 24) + (buf[1] << 16) + (buf[2] << 8) + buf[3];
         var td_reader = fs.createReadStream(self.path, {encoding: 'utf8', start: 4, end: todo_len + 3});
         self.data_start = todo_len + 4;
-        var todo = '';
+        let todo = '';
         td_reader.on('data', function (str) {
             todo += str;
             if (Buffer.byteLength(todo) === todo_len) {
@@ -613,7 +609,7 @@ HMailItem.prototype.try_deliver_host_on_socket = function (mx, host, port, socke
         if (success) {
             var reason = response.join(' ');
             self.delivered(host, port, (mx.using_lmtp ? 'LMTP' : 'SMTP'), mx.exchange,
-                           reason, ok_recips, fail_recips, bounce_recips, secured, authenticated);
+                reason, ok_recips, fail_recips, bounce_recips, secured, authenticated);
         }
         else {
             self.discard();

@@ -5,11 +5,10 @@ var path        = require('path');
 var fs          = require('fs');
 var Address     = require('address-rfc2821').Address;
 
-var TimerQueue  = require('../timer_queue');
 var config      = require('../config');
 var logger      = require('../logger');
-var server      = require('../server');
 
+var TimerQueue  = require('./timer_queue');
 var HMailItem   = require('./hmail');
 var cfg         = require('./config');
 var _qfile      = require('./qfile');
