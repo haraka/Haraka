@@ -98,13 +98,13 @@ exports.set_queue = function (connection, queue_wanted, domain) {
     var dst_host = dom_cfg.host || plugin.cfg.main.host;
     if (dst_host) queue_wanted += ':' + dst_host;
 
-    if (!connection.transaction.notes.queue) {
-        connection.transaction.notes.queue = queue_wanted;
+    if (!connection.transaction.queue.wants) {
+        connection.transaction.queue.wants = queue_wanted;
         return true;
     }
 
     // multiple recipients with same destination
-    if (connection.transaction.notes.queue === queue_wanted) {
+    if (connection.transaction.queue.wants === queue_wanted) {
         return true;
     }
 
@@ -192,7 +192,7 @@ exports.queue_forward = function (next, connection) {
     var plugin = this;
     var txn = connection.transaction;
 
-    if (txn.notes.queue && !/^smtp_forward/.test(txn.notes.queue))
+    if (txn.queue.wants && !/^smtp_forward/.test(txn.queue.wants))
         return next();
 
     var cfg = plugin.get_config(connection);

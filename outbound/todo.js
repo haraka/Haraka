@@ -8,6 +8,7 @@ function TODOItem (domain, recipients, transaction) {
     this.mail_from = transaction.mail_from;
     this.message_stream = transaction.message_stream;
     this.notes = transaction.notes;
+    this.queue = transaction.queue;
     this.uuid = transaction.uuid;
     return this;
 }

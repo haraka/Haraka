@@ -37,6 +37,9 @@ function Transaction () {
     this.data_post_start = null;
     this.data_post_delay = 0;
     this.encoding = 'utf8';
+    this.queue = {
+        wants: null,    // smtp_forward, quarantine, outbound, lmtp, etc.
+    };
 }
 
 exports.Transaction = Transaction;
