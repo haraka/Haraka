@@ -21,7 +21,7 @@ An Array of `Address` objects of recipients from the RCPT TO command.
 
 * transaction.message\_stream
 
-A node.js Readable Stream object for the message. 
+A node.js Readable Stream object for the message.
 
 You use it like this:
 
@@ -161,3 +161,12 @@ body in the same encoding.
 * transaction.results
 
 Store results of processing in a structured format. See [docs/Results](http://haraka.github.io/manual/Results.html)
+
+* transaction.queue
+
+An object populated with queue related data, including:
+
+* transaction.queue.wants (Default: undefined)
+
+The name of a queue plugin. When using more than one queue plugin, plugins can set this property to specify which one should enqueue the transaction.
+

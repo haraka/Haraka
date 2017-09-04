@@ -4,6 +4,7 @@
     * Permit log settings to be set w/o LOG prefix #2057
 * New Features
     * TLS certificate directory (config/tls). #2032
+    * transaction.queue.wants #2079
 
 ## 2.8.14 - Jul 26, 2017
 

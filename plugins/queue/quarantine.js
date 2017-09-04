@@ -45,9 +45,23 @@ exports.hook_init_master = function (next) {
     return next();
 };
 
+function wants_quarantine (connection) {
+    if (connection.notes.quarantine)
+        return connection.notes.quarantine;
+
+    if (connection.transaction.notes.quarantine)
+        return connection.transaction.notes.quarantine;
+
+    if (connection.transaction.queue.wants === 'quarantine')
+        return true;
+
+    return false;
+}
+
 exports.quarantine = function (next, connection) {
+
     var transaction = connection.transaction;
-    if ((connection.notes.quarantine || transaction.notes.quarantine)) {
+    if (wants_quarantine(connection)) {
         // Calculate date in YYYYMMDD format
         var d = new Date();
         var yyyymmdd = d.getFullYear() + zeroPad(d.getMonth()+1, 2)

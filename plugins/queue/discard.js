@@ -7,6 +7,12 @@ exports.register = function () {
 
 exports.discard = function (next, connection) {
     var transaction = connection.transaction;
+
+    if (transaction.queue.wants) {
+        if (transaction.queue.wants === 'discard') return next(OK);
+        return next();
+    }
+
     if (connection.notes.discard || transaction.notes.discard) {
         connection.loginfo(this, 'discarding message');
         // Pretend we delivered the message
