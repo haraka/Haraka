@@ -166,7 +166,7 @@ Store results of processing in a structured format. See [docs/Results](http://ha
 
 An object populated with queue related data, including:
 
-    * **wants** Default: undefined.
+* transaction.queue.wants (Default: undefined)
 
-    The name of a queue plugin. When using more than one queue plugin, plugins can set this property to specify which one should enqueue the transaction.
+The name of a queue plugin. When using more than one queue plugin, plugins can set this property to specify which one should enqueue the transaction.
 
