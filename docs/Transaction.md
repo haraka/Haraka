@@ -21,7 +21,7 @@ An Array of `Address` objects of recipients from the RCPT TO command.
 
 * transaction.message\_stream
 
-A node.js Readable Stream object for the message. 
+A node.js Readable Stream object for the message.
 
 You use it like this:
 
@@ -55,7 +55,7 @@ for adding banners to the email.
 
 * transaction.notes
 
-A safe place to store transaction specific values.
+A safe place to store transaction specific values. See also [haraka-results](https://github.com/haraka/haraka-results) and [haraka-notes](https://github.com/haraka/haraka-notes).
 
 * transaction.add\_leading\_header(key, value)
 

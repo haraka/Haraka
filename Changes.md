@@ -6,7 +6,7 @@
 * New Features
     * TLS certificate directory (config/tls) #2032
     * plugins can specify a queue plugin & next_hop route #2067
-    * connection/transaction notes now have get/set #
+    * connection/transaction notes now have get/set #2082
 
 ## 2.8.14 - Jul 26, 2017
 

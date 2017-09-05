@@ -33,7 +33,7 @@ A unique UUID for this connection.
 
 * connection.notes
 
-An object which persists during the lifetime of the connection. It is used to store connection-specific properties. See also, connection.results.
+An object which persists during the lifetime of the connection. It is used to store connection-specific properties. See also, connection.results and [haraka-notes](https://github.com/haraka/haraka-notes).
 
 * connection.transaction
 
