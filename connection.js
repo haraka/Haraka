@@ -12,6 +12,7 @@ var path        = require('path');
 var ipaddr      = require('ipaddr.js');
 var constants   = require('haraka-constants');
 var net_utils   = require('haraka-net-utils');
+const Notes     = require('haraka-notes');
 var utils       = require('haraka-utils');
 var Address     = require('address-rfc2821').Address;
 var ResultStore = require('haraka-results');
@@ -206,7 +207,7 @@ function Connection (client, server) {
     this.loop_code = null;
     this.loop_msg = null;
     this.uuid = utils.uuid();
-    this.notes = {};
+    this.notes = new Notes();
     this.transaction = null;
     this.tran_count = 0;
     this.capabilities = null;

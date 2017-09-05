@@ -30,6 +30,7 @@
     "haraka-tld"            : "*",
     "haraka-constants"      : ">=1.0.4",
     "haraka-net-utils"      : ">=1.0.10",
+    "haraka-notes"          : "*",
     "haraka-results"        : "^2.0.0",
     "haraka-utils"          : "*",
     "haraka-plugin-access"  : "*",

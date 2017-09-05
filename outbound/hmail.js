@@ -9,6 +9,7 @@ var net          = require('net');
 var Address     = require('address-rfc2821').Address;
 var constants   = require('haraka-constants');
 var net_utils   = require('haraka-net-utils');
+const Notes     = require('haraka-notes');
 var utils       = require('haraka-utils');
 
 var logger      = require('../logger');
@@ -54,7 +55,7 @@ class HMailItem extends events.EventEmitter {
         this.next_process = parts.next_attempt;
         this.num_failures = parts.attempts;
         this.pid          = parts.pid;
-        this.notes        = notes || {};
+        this.notes        = notes || new Notes();
         this.refcount     = 1;
         this.todo         = null;
         this.file_size    = 0;
