@@ -8,6 +8,7 @@ var utils  = require('haraka-utils');
 var config = require('./config');
 var Header = require('./mailheader').Header;
 var body   = require('./mailbody');
+const Notes = require('haraka-notes');
 var MessageStream = require('./messagestream');
 
 var MAX_HEADER_LINES = config.get('max_header_lines') || 1000;
@@ -26,7 +27,7 @@ function Transaction () {
     this.found_hb_sep = false;
     this.body = null;
     this.parse_body = false;
-    this.notes = {};
+    this.notes = new Notes();
     this.header = new Header();
     this.message_stream = null;
     this.discard_data = false;
