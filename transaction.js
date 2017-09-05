@@ -1,11 +1,13 @@
-"use strict";
+'use strict';
 // An SMTP Transaction
+
+var util   = require('util');
+
+var utils  = require('haraka-utils');
 
 var config = require('./config');
 var Header = require('./mailheader').Header;
 var body   = require('./mailbody');
-var utils  = require('haraka-utils');
-var util   = require('util');
 var MessageStream = require('./messagestream');
 
 var MAX_HEADER_LINES = config.get('max_header_lines') || 1000;
