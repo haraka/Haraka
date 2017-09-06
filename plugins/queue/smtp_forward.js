@@ -98,16 +98,22 @@ exports.set_queue = function (connection, queue_wanted, domain) {
     if (!queue_wanted) return true;
 
     var dst_host = dom_cfg.host || plugin.cfg.main.host;
-    if (dst_host) queue_wanted += ':' + dst_host;
 
-    if (!connection.transaction.notes.queue) {
-        connection.transaction.notes.queue = queue_wanted;
+    const notes = connection.transaction.notes;
+    if (!notes.get('queue.wanted')) {
+        notes.set('queue.wanted', queue_wanted);
+        if (dst_host) {
+            notes.set('queue.next_hop', `smtp://${dst_host}`);
+        }
         return true;
     }
 
     // multiple recipients with same destination
-    if (connection.transaction.notes.queue === queue_wanted) {
-        return true;
+    if (notes.get('queue.wanted') === queue_wanted) {
+        if (!dst_host) return true;
+        const next_hop = notes.get('queue.next_hop');
+        if (!next_hop) return true;
+        if (next_hop === dst_host) return true;
     }
 
     // multiple recipients with different forward host, soft deny
