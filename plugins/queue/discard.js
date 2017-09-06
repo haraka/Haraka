@@ -7,7 +7,9 @@ exports.register = function () {
 
 exports.discard = function (next, connection) {
     const txn = connection.transaction;
-    if (txn.notes.queue && txn.notes.queue !== 'discard') return next();
+
+    const q_wants = txn.notes.get('queue.wants');
+    if (q_wants && q_wants !== 'discard') return next();
 
     function discard () {
         connection.loginfo(this, 'discarding message');
@@ -17,7 +19,7 @@ exports.discard = function (next, connection) {
 
     if (connection.notes.discard)          return discard();
     if (txn.notes.discard)                 return discard();
-    if (txn.notes.queue === 'discard')     return discard();
+    if (q_wants === 'discard')             return discard();
     if (process.env.YES_REALLY_DO_DISCARD) return discard();
 
     // Allow other queue plugins to deliver

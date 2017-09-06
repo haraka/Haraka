@@ -63,7 +63,7 @@ function wants_quarantine (connection) {
     if (connection.transaction.notes.quarantine)
         return connection.transaction.notes.quarantine;
 
-    if (connection.transaction.notes.queue === 'quarantine')
+    if (connection.transaction.notes.get('queue.wants') === 'quarantine')
         return true;
 
     return false;

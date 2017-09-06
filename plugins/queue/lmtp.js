@@ -39,7 +39,10 @@ exports.hook_get_mx = function (next, hmail, domain) {
 
 exports.hook_queue = function (next, connection) {
     const txn = connection.transaction;
-    if (txn.notes.queue && txn.notes.queue !== 'lmtp') return next();
+
+    const q_wants = txn.notes.get('queue.wants');
+    if (q_wants && q_wants !== 'lmtp') return next();
+
     txn.notes.using_lmtp = true;
     outbound.send_email(txn, next);
 }
