@@ -260,7 +260,7 @@ var packageJson = JSON.stringify({
     "dependencies": {},
     "repository": "",
     "license": "MIT"
-});
+}, null, 2);
 
 var plugin_src = [
     "// %plugin%",
@@ -654,10 +654,6 @@ else if (parsed.install) {
     var pa = parsed.install;
     mkDir(parsed.install);
     mkDir(path.join(pa, 'plugins'));
-    mkDir(path.join(pa, 'plugins/auth'));
-    mkDir(path.join(pa, 'docs'));
-    mkDir(path.join(pa, 'docs/plugins'));
-    mkDir(path.join(pa, 'docs/plugins/auth'));
     mkDir(path.join(pa, 'config'));
     createFile(path.join(pa, 'README'), readme);
     createFile(path.join(pa, 'package.json'), packageJson);
