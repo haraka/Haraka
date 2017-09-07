@@ -4,6 +4,7 @@
     * Permit log settings to be set w/o LOG prefix #2057
     * additional results storing in smtp_forward and quarantine #2067
     * publish p0f plugin to NPM #2076
+    * smtp_forward stores queue note at queue.wants #2083
 * New Features
     * TLS certificate directory (config/tls) #2032
     * plugins can specify a queue plugin & next_hop route #2067

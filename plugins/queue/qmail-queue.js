@@ -35,7 +35,9 @@ exports.hook_queue = function (next, connection) {
     var plugin = this;
 
     const txn = connection.transaction;
-    if (txn.notes.queue && txn.notes.queue !== 'qmail-queue') return next();
+
+    const q_wants = txn.notes.get('queue.wants');
+    if (q_wants && q_wants !== 'qmail-queue') return next();
 
     var qmail_queue = childproc.spawn(
         this.queue_exec, // process name
