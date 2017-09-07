@@ -10,6 +10,7 @@ var nopt = require('nopt');
 var os   = require('os');
 
 var utils   = require('haraka-utils');
+var mkdirp  = require('mkdirpsync');
 var sprintf = require('sprintf-js').sprintf;
 var base = path.join(__dirname, '..');
 var ver  = JSON.parse(fs.readFileSync(base+'/package.json', 'utf8')).version;
@@ -113,7 +114,7 @@ var listPlugins = function (b, dir) {
 
 // Show message when create
 function create (dirPath) {
-//  console.log('\x1b[32mcreate\x1b[0m: ' + dirPath);
+    console.log('\x1b[32mcreate\x1b[0m: ' + dirPath);
 }
 
 // Warning messsage
@@ -134,7 +135,7 @@ function mkDir (dstPath) {
     catch (ignore) {}
 
     try {
-        fs.mkdirSync(dstPath, fs.statSync(__dirname).mode);
+        mkdirp(dstPath);
         create(dstPath)
     }
     catch (e) {
@@ -193,6 +194,7 @@ function copyFile (srcFile, dstFile) {
     catch (e) {
         // File NOT exists
         if (e.code == 'ENOENT') {
+            mkDir(path.dirname(dstFile));
             fs.writeFileSync(dstFile, fs.readFileSync(srcFile));
             create(dstFile)
         }
@@ -204,6 +206,7 @@ function copyFile (srcFile, dstFile) {
 }
 
 function setupHostname (confPath) {
+    mkDir(confPath);
     var hlPath = path.join(confPath, 'host_list');
     try {
         if (fs.statSync(hlPath).isFile()) return;
@@ -290,6 +293,7 @@ function createFile (filePath, data, info) {
         if (fs.existsSync(filePath) && !parsed.force) {
             throw filePath + " already exists";
         }
+        mkDir(path.dirname(filePath));
         var fd = fs.openSync(filePath, 'w');
         var output = data.replace(/\%(\w+)\%/g, function (i, m1) { return info[m1] });
         fs.writeSync(fd, output, null);
@@ -654,6 +658,7 @@ else if (parsed.install) {
     var pa = parsed.install;
     mkDir(parsed.install);
     mkDir(path.join(pa, 'plugins'));
+    mkDir(path.join(pa, 'docs'));
     mkDir(path.join(pa, 'config'));
     createFile(path.join(pa, 'README'), readme);
     createFile(path.join(pa, 'package.json'), packageJson);
