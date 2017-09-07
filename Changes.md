@@ -4,11 +4,13 @@
     * Permit log settings to be set w/o LOG prefix #2057
     * additional results storing in smtp_forward and quarantine #2067
     * smtp_forward stores queue note at queue.wants #2083
-    * Remove unused folders from installation #2086
+    * Remove unused folders from installation #2088
 * New Features
     * TLS certificate directory (config/tls) #2032
     * plugins can specify a queue plugin & next_hop route #2067
     * connection/transaction notes now have get/set #2082
+* Fixes
+    * haraka cli will now create folders if they don't exist #2088
 
 ## 2.8.14 - Jul 26, 2017
 
