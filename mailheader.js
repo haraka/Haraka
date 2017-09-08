@@ -100,6 +100,24 @@ function _decode_header (matched, encoding, lang, cte, data) {
 }
 
 function _decode_rfc2231 (params, str) {
+    /*
+    To explain the regexp below, the params are:
+
+    parameter := attribute "=" value
+
+    attribute := token
+                 ; Matching of attributes
+                 ; is ALWAYS case-insensitive.
+
+    token := 1*<any (US-ASCII) CHAR except SPACE, CTLs,
+                or tspecials>
+
+    tspecials :=  "(" / ")" / "<" / ">" / "@" /
+                  "," / ";" / ":" / "\" / <">
+                  "/" / "[" / "]" / "?" / "="
+                  ; Must be in quoted-string,
+                  ; to use within parameter values
+    */
     var sub_matches = /(([!#$%&'*+.0-9A-Zdiff^_`a-z{|}~-]*)\*)(\d*)=(\s*".*?[^\\]";?|\S*)/.exec(str);
     if (!sub_matches) {
         return;
