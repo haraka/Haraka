@@ -26,6 +26,9 @@ function _fill_body (body, quote) {
     body.parse_more(" title*0*=us-ascii'en'This%20is%20even%20more%20\n");
     body.parse_more(" title*1*=%2A%2A%2Afun%2A%2A%2A%20\n");
     body.parse_more(" title*2=\"isn't it!\"\n");
+    body.parse_more("Content-Disposition: inline; \n");
+    body.parse_more("  filename*0=\"marketron_lbasubmission_FTA Cricket Brentwood 3006445\n");
+    body.parse_more(" Jackso\"; filename*1=\"n TN_08282017.xlsx\"\n");
     body.parse_more("\n");
     body.parse_more("<p>This is some HTML, yo.<br>\n");
     body.parse_more("It's pretty rad.</p>\n");
@@ -244,12 +247,13 @@ exports.filters = {
 
 exports.rfc2231 = {
     'multi-value': function (test) {
-        test.expect(1);
+        test.expect(2);
 
         var body = new Body();
         _fill_body(body);
 
         test.ok(body.children[0].header.get_decoded('content-type').indexOf('URL="ftp://cs.utk.edu/pub/moore/bulk-mailer/bulk-mailer.tar";') > 0);
+        test.ok(body.children[1].header.get_decoded('content-disposition').indexOf('filename="marketron_lbasubmission_FTA Cricket Brentwood 3006445 Jackson TN_08282017.xlsx"') > 0);
         test.done();
     },
 

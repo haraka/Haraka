@@ -99,57 +99,59 @@ function _decode_header (matched, encoding, lang, cte, data) {
     return data.toString();
 }
 
-function _decode_rfc2231 (params) {
-    return function (matched, str) {
-        var sub_matches = /^(([^=]*)\*)(\d*)=(\s*".*?[^\\]";?|\S*)\s*$/.exec(str);
-        if (!sub_matches) {
-            return " " + str;
-        }
-        var key = sub_matches[1];
-        var key_actual = sub_matches[2];
-        var key_id = sub_matches[3] || '0';
-        var value = sub_matches[4].replace(/;$/, '');
-
-        var key_extract = /^(.*?)(\*(\d+)\*)$/.exec(key);
-        if (key_extract) {
-            key_actual = key_extract[1];
-            key_id = key_extract[3];
-        }
-
-        var quote = /^\s*"(.*)"$/.exec(value);
-        if (quote) {
-            value = quote[1];
-        }
-
-        var lang_match = /^(.*?)'(.*?)'(.*)/.exec(value);
-        if (lang_match) {
-            if (key_actual == params.cur_key && lang_match[2] != params.cur_lang) {
-                return ''; // same key, different lang, throw it away
-            }
-            params.cur_enc = lang_match[1];
-            params.cur_lang = lang_match[2];
-            value = lang_match[3];
-        }
-        else if (key_actual != params.cur_key) {
-            params.cur_lang = '';
-            params.cur_enc = '';
-        }
-
-        params.cur_key = key_actual;
-        params.keys[key_actual] = '';
-        try {
-            value = decodeURIComponent(value);
-        }
-        catch (e) {
-            logger.logerror("Decode header failed: " + key + ": " + value);
-        }
-        params.kv[key_actual + '*' + key_id] = params.cur_enc ? try_convert(value, params.cur_enc) : value;
-        return '';
+function _decode_rfc2231 (params, str) {
+    var sub_matches = /(([!#$%&'*+.0-9A-Zdiff^_`a-z{|}~-]*)\*)(\d*)=(\s*".*?[^\\]";?|\S*)/.exec(str);
+    if (!sub_matches) {
+        return;
     }
+    var key = sub_matches[1];
+    var key_actual = sub_matches[2];
+    var key_id = sub_matches[3] || '0';
+    var value = sub_matches[4].replace(/;$/, '');
+
+    str = str.replace(sub_matches[0], ''); // strip it out, so we move to next
+
+    var key_extract = /^(.*?)(\*(\d+)\*)$/.exec(key);
+    if (key_extract) {
+        key_actual = key_extract[1];
+        key_id = key_extract[3];
+    }
+
+    var quote = /^\s*"(.*)"$/.exec(value);
+    if (quote) {
+        value = quote[1];
+    }
+
+    var lang_match = /^(.*?)'(.*?)'(.*)/.exec(value);
+    if (lang_match) {
+        if (key_actual == params.cur_key && lang_match[2] != params.cur_lang) {
+            return _decode_rfc2231(params, str); // same key, different lang, throw it away
+        }
+        params.cur_enc = lang_match[1];
+        params.cur_lang = lang_match[2];
+        value = lang_match[3];
+    }
+    else if (key_actual != params.cur_key) {
+        params.cur_lang = '';
+        params.cur_enc = '';
+    }
+
+    params.cur_key = key_actual;
+    params.keys[key_actual] = '';
+    try {
+        value = decodeURIComponent(value);
+    }
+    catch (e) {
+        logger.logerror("Decode header failed: " + key + ": " + value);
+    }
+    params.kv[key_actual + '*' + key_id] = params.cur_enc ? try_convert(value, params.cur_enc) : value;
+    return _decode_rfc2231(params, str); // Get next one
 }
 
 Header.prototype.decode_header = function decode_header (val) {
     // Fold continuations
+    val = val.replace(/\r?\n/g, '');
+
     var rfc2231_params = {
         kv: {},
         keys: {},
@@ -158,7 +160,10 @@ Header.prototype.decode_header = function decode_header (val) {
         cur_lang: '', // Secondary languages are ignored for our purposes
     };
 
-    val = val.replace(/\n[ \t]+([^\n]*)/g, _decode_rfc2231(rfc2231_params));
+    _decode_rfc2231(rfc2231_params, val);
+
+    // console.log(rfc2231_params);
+
     for (var key in rfc2231_params.keys) {
         val = val + ' ' + key + '="';
         /* eslint no-constant-condition: 0 */
@@ -171,15 +176,12 @@ Header.prototype.decode_header = function decode_header (val) {
         val = val + '";';
     }
 
-    // remove end carriage return
-    val = val.replace(/\r?\n$/, '');
-
     // strip 822 comments in the most basic way - does not support nested comments
     // val = val.replace(/\([^\)]*\)/, '');
 
     if (Iconv && !/^[\x00-\x7f]*$/.test(val)) {
         // 8 bit values in the header
-        var matches = /\bcharset\s*=\s*["']?([\w_\-]*)/.exec(this.get('content-type'));
+        var matches = /\bcharset\s*=\s*["']?([\w_-]*)/.exec(this.get('content-type'));
         if (matches && !/UTF-?8/i.test(matches[1])) {
             var encoding = matches[1];
             var source = new Buffer(val, 'binary');
