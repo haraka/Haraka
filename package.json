@@ -35,7 +35,7 @@
     "haraka-utils"          : "*",
     "haraka-plugin-access"  : "*",
     "haraka-plugin-limit"   : "*",
-    "mkdirpsync"            : "~0.1.0"
+    "mkdirp"                : "~0.5.1"
   },
   "optionalDependencies": {
     "haraka-plugin-asn"     : "*",

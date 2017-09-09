@@ -10,7 +10,7 @@ var nopt = require('nopt');
 var os   = require('os');
 
 var utils   = require('haraka-utils');
-var mkdirp  = require('mkdirpsync');
+var mkdirp  = require('mkdirp');
 var sprintf = require('sprintf-js').sprintf;
 var base = path.join(__dirname, '..');
 var ver  = JSON.parse(fs.readFileSync(base+'/package.json', 'utf8')).version;
@@ -135,7 +135,7 @@ function mkDir (dstPath) {
     catch (ignore) {}
 
     try {
-        mkdirp(dstPath);
+        mkdirp.sync(dstPath);
         create(dstPath)
     }
     catch (e) {
