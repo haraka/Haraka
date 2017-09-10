@@ -26,7 +26,7 @@
     * maybe fix for #1852 503 response #2064
     * crash when 'AUTH LOGIN' is sent after a successful auth #2039
     * docs: fixed swaks test command #2034
-
+    * dkim: prevent dkim_verify from causing 'cannot pipe' #1693
 
 ## 2.8.14 - Jul 26, 2017
 
