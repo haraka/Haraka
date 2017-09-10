@@ -32,7 +32,7 @@ exports.basic = {
         test.equal(h.lines().length, 12);
         test.equal(
             h.get_decoded('content-type'),
-            'multipart/alternative; boundary=Apple-Mail-F2C5DAD3-7EB3-409D-9FE0-135C9FD43B69'
+            'multipart/alternative;   boundary=Apple-Mail-F2C5DAD3-7EB3-409D-9FE0-135C9FD43B69'
         );
         test.done();
     },
