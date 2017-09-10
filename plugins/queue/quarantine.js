@@ -73,7 +73,7 @@ exports.init_quarantine_dir = function (done) {
             plugin.logerror(`Unable to create ${tmp_dir}`);
         }
         plugin.loginfo(`created ${tmp_dir}`);
-        return done();
+        done();
     });
 }
 
