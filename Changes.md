@@ -9,6 +9,7 @@
 * Changes
     * Permit log settings to be set w/o LOG prefix #2057
     * additional results storing in smtp_forward and quarantine #2067
+    * publish p0f plugin to NPM #2076
     * smtp_forward stores queue note at queue.wants #2083
     * Remove unused folders from installation #2088
     * smtp_forward stores queue note at queue.wants #2083

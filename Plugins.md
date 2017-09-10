@@ -124,7 +124,7 @@ Create a PR adding yours to this list.
 [url-clamd]: https://github.com/haraka/Haraka/blob/master/docs/plugins/clamd.md
 [url-dovecot]: https://github.com/haraka/haraka-plugin-dovecot
 [url-fcrdns]: https://github.com/haraka/haraka-plugin-fcrdns
-[url-p0f]: https://github.com/haraka/Haraka/blob/master/docs/plugins/connect.p0f.md
+[url-p0f]: https://github.com/haraka/haraka-plugin-p0f
 [url-headers]: https://github.com/haraka/Haraka/blob/master/docs/plugins/data.headers.md
 [url-sigs]: https://github.com/haraka/Haraka/blob/master/docs/plugins/data.signatures.md
 [url-uribl]: https://github.com/haraka/Haraka/blob/master/docs/plugins/data.uribl.md
