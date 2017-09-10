@@ -1,16 +1,31 @@
-## 2.8.15 - Mmm DD, YYYY
+## 2.8.15 - Sep 10, 2017
 
 * Changes
-    * Permit log settings to be set w/o LOG prefix #2057
-    * additional results storing in smtp_forward and quarantine #2067
-    * smtp_forward stores queue note at queue.wants #2083
     * Remove unused folders from installation #2088
+    * smtp_forward stores queue note at queue.wants #2083
+    * add get/set to conn/txn.notes #2082
+    * additional results storing in smtp_forward and quarantine #2067
+    * Permit log settings to be set w/o LOG prefix #2057
+    * support INFO *and* LOGINFO as config settings #2056
+    * log.ini, new default location for log related settings #2054
+    * dcc: replace with npm packaged version #2052
+    * qmd: replace rcpt_to.qmail_deliverable with npm #2051
+    * rspamd: pass SPF evaluation #2050
+    * add logfmt support #2047
+    * update ipaddr.js to version 1.5.0 #2037
+    * update redis to version 2.8.0 #2033
+    * disable graceful for SIGTERM #2028
+    * add additional integration tests #2026
+    * move most npm packaged plugins into optionalDependencies #2023
 * New Features
     * TLS certificate directory (config/tls) #2032
     * plugins can specify a queue plugin & next_hop route #2067
     * connection/transaction notes now have get/set #2082
 * Fixes
     * haraka cli will now create folders if they don't exist #2088
+    * maybe fix for #1852 503 response #2064
+    * crash when 'AUTH LOGIN' is sent after a successful auth #2039
+    * docs: fixed swaks test command #2034
     * dkim: prevent dkim_verify from causing 'cannot pipe' #1693
 
 ## 2.8.14 - Jul 26, 2017
