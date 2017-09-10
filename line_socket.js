@@ -1,10 +1,10 @@
 "use strict";
 // A subclass of Socket which reads data by line
 
-var net   = require('net');
-var utils = require('haraka-utils');
+const net   = require('net');
+const utils = require('haraka-utils');
 
-var tls_socket = require('./tls_socket');
+const tls_socket = require('./tls_socket');
 
 class Socket extends net.Socket {
     constructor (options) {
@@ -14,12 +14,12 @@ class Socket extends net.Socket {
 }
 
 function setup_line_processor (socket) {
-    var current_data = '';
+    let current_data = '';
     socket.process_data = function (data) {
         current_data += data;
-        var results;
+        let results;
         while ((results = utils.line_regexp.exec(current_data))) {
-            var this_line = results[1];
+            const this_line = results[1];
             current_data = current_data.slice(this_line.length);
             socket.emit('line', this_line);
         }
@@ -40,7 +40,7 @@ exports.Socket = Socket;
 
 // New interface - uses TLS
 exports.connect = function (port, host, cb) {
-    var options = {};
+    let options = {};
     if (typeof port === 'object') {
         options = port;
         cb = host;
@@ -49,7 +49,7 @@ exports.connect = function (port, host, cb) {
         options.port = port;
         options.host = host;
     }
-    var sock = tls_socket.connect(options, cb);
+    const sock = tls_socket.connect(options, cb);
     setup_line_processor(sock);
     return sock;
 };

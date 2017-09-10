@@ -1,8 +1,8 @@
 'use strict';
 
-var events   = require('events');
-var fixtures = require('haraka-test-fixtures');
-var stub     = fixtures.stub.stub;
+const events   = require('events');
+const fixtures = require('haraka-test-fixtures');
+const stub     = fixtures.stub.stub;
 
 class Socket extends events.EventEmitter {
     constructor (port, host) {

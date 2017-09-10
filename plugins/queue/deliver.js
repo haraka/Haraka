@@ -2,7 +2,7 @@
 // automatically just like this. It is kept here for backwards compatibility
 // purposes only.
 
-var outbound = require('./outbound');
+const outbound = require('./outbound');
 
 exports.hook_queue_outbound = function (next, connection) {
     if (!connection.relaying) {

@@ -1,4 +1,4 @@
-var SPF = require('../spf').SPF;
+const SPF = require('../spf').SPF;
 SPF.prototype.log_debug = function () {};  // noop, hush debug output
 
 function _set_up (done) {
@@ -27,7 +27,7 @@ exports.SPF = {
     },
     'mod_redirect, true': function (test) {
         test.expect(2);
-        var cb = function (err, rc) {
+        const cb = function (err, rc) {
             test.equal(null, err);
             test.equal(1, rc);
             test.done();
@@ -38,7 +38,7 @@ exports.SPF = {
     'mod_redirect, false': function (test) {
         test.expect(2);
         // var outer = this;
-        var cb = function (err, rc) {
+        const cb = function (err, rc) {
             test.equal(null, err);
             if (rc === 7) {
                 // from time to time (this is the third time we've seen it,

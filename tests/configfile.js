@@ -1,6 +1,6 @@
 'use strict';
 
-var _set_up = function (done) {
+const _set_up = function (done) {
     this.cfreader = require('../configfile');
     this.opts = { booleans: ['main.bool_true','main.bool_false'] };
     done();
@@ -79,7 +79,7 @@ exports.load_ini_config = {
     },
     'test.ini, no opts' : function (test) {
         test.expect(4);
-        var r = this.cfreader.load_ini_config('tests/config/test.ini');
+        const r = this.cfreader.load_ini_config('tests/config/test.ini');
         test.strictEqual(r.main.bool_true, 'true');
         test.strictEqual(r.main.bool_false, 'false');
         test.strictEqual(r.main.str_true, 'true');
@@ -88,7 +88,7 @@ exports.load_ini_config = {
     },
     'test.ini, opts' : function (test) {
         test.expect(4);
-        var r = this.cfreader.load_ini_config('tests/config/test.ini', this.opts);
+        const r = this.cfreader.load_ini_config('tests/config/test.ini', this.opts);
         test.strictEqual(r.main.bool_true, true);
         test.strictEqual(r.main.bool_false, false);
         test.strictEqual(r.main.str_true, 'true');
@@ -97,7 +97,7 @@ exports.load_ini_config = {
     },
     'test.ini, sect1, opts' : function (test) {
         test.expect(4);
-        var r = this.cfreader.load_ini_config('tests/config/test.ini', {
+        const r = this.cfreader.load_ini_config('tests/config/test.ini', {
             booleans: ['sect1.bool_true','sect1.bool_false']
         });
         test.strictEqual(r.sect1.bool_true, true);
@@ -108,7 +108,7 @@ exports.load_ini_config = {
     },
     'test.ini, sect1, opts, w/defaults' : function (test) {
         test.expect(6);
-        var r = this.cfreader.load_ini_config('tests/config/test.ini', {
+        const r = this.cfreader.load_ini_config('tests/config/test.ini', {
             booleans: [
                 '+sect1.bool_true','-sect1.bool_false',
                 '+sect1.bool_true_default', 'sect1.-bool_false_default'
@@ -124,31 +124,31 @@ exports.load_ini_config = {
     },
     'test.ini, funnychars, /' : function (test) {
         test.expect(1);
-        var r = this.cfreader.load_ini_config('tests/config/test.ini');
+        const r = this.cfreader.load_ini_config('tests/config/test.ini');
         test.strictEqual(r.funnychars['results.auth/auth_base.fail'], 'fun');
         test.done();
     },
     'test.ini, funnychars, _' : function (test) {
         test.expect(1);
-        var r = this.cfreader.load_ini_config('tests/config/test.ini');
+        const r = this.cfreader.load_ini_config('tests/config/test.ini');
         test.strictEqual(r.funnychars['results.auth/auth_base.fail'], 'fun');
         test.done();
     },
     'test.ini, ipv6 addr, :' : function (test) {
         test.expect(1);
-        var r = this.cfreader.load_ini_config('tests/config/test.ini');
+        const r = this.cfreader.load_ini_config('tests/config/test.ini');
         test.ok( '2605:ae00:329::2' in r.has_ipv6 );
         test.done();
     },
     'test.ini, empty value' : function (test) {
         test.expect(1);
-        var r = this.cfreader.load_ini_config('tests/config/test.ini');
+        const r = this.cfreader.load_ini_config('tests/config/test.ini');
         test.deepEqual({ first: undefined, second: undefined}, r.empty_values);
         test.done();
     },
     'test.ini, array' : function (test){
         test.expect(2);
-        var r = this.cfreader.load_ini_config('tests/config/test.ini');
+        const r = this.cfreader.load_ini_config('tests/config/test.ini');
         test.deepEqual(['first_host', 'second_host', 'third_host'], r.array_test.hostlist);
         test.deepEqual([123, 456, 789], r.array_test.intlist);
         test.done();
@@ -161,7 +161,7 @@ exports.non_existing = {
 
     'empty object for JSON files': function (test) {
         test.expect(1);
-        var result = this.cfreader.load_config(
+        const result = this.cfreader.load_config(
             'tests/config/non-existent.json',
             'json'
         );
@@ -170,7 +170,7 @@ exports.non_existing = {
     },
     'empty object for YAML files': function (test) {
         test.expect(1);
-        var result = this.cfreader.load_config(
+        const result = this.cfreader.load_config(
             'tests/config/non-existent.yaml',
             'yaml'
         );
@@ -179,7 +179,7 @@ exports.non_existing = {
     },
     'null for binary file': function (test) {
         test.expect(1);
-        var result = this.cfreader.load_config(
+        const result = this.cfreader.load_config(
             'tests/config/non-existent.bin',
             'binary'
         );
@@ -188,7 +188,7 @@ exports.non_existing = {
     },
     'null for flat file': function (test) {
         test.expect(1);
-        var result = this.cfreader.load_config(
+        const result = this.cfreader.load_config(
             'tests/config/non-existent.flat',
             'flat'
         );
@@ -197,7 +197,7 @@ exports.non_existing = {
     },
     'null for value file': function (test) {
         test.expect(1);
-        var result = this.cfreader.load_config(
+        const result = this.cfreader.load_config(
             'tests/config/non-existent.value',
             'value'
         );
@@ -206,7 +206,7 @@ exports.non_existing = {
     },
     'empty array for list file': function (test) {
         test.expect(1);
-        var result = this.cfreader.load_config(
+        const result = this.cfreader.load_config(
             'tests/config/non-existent.list',
             'list'
         );
@@ -215,7 +215,7 @@ exports.non_existing = {
     },
     'template ini for INI file': function (test) {
         test.expect(1);
-        var result = this.cfreader.load_config(
+        const result = this.cfreader.load_config(
             'tests/config/non-existent.ini',
             'ini'
         );

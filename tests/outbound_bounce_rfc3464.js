@@ -12,23 +12,23 @@
 //   * or, in case of 4XX: that temp_fail is called and dsn vars are available)
 
 require('../configfile').watch_files = false;
-var fs          = require('fs');
-var path        = require('path');
-var util_hmailitem = require('./fixtures/util_hmailitem');
-var TODOItem    = require('../outbound/todo');
-var HMailItem    = require('../outbound/hmail');
-var ob_cfg      = require('../outbound/config');
-var outbound    = require('../outbound');
-var mock_sock   = require('./fixtures/line_socket');
+const fs          = require('fs');
+const path        = require('path');
+const util_hmailitem = require('./fixtures/util_hmailitem');
+const TODOItem    = require('../outbound/todo');
+const HMailItem    = require('../outbound/hmail');
+const ob_cfg      = require('../outbound/config');
+const outbound    = require('../outbound');
+const mock_sock   = require('./fixtures/line_socket');
 
 ob_cfg.pool_concurrency_max = 0;
 
-var outbound_context = {
+const outbound_context = {
     TODOItem: TODOItem,
     exports: outbound
 };
 
-var queue_dir = path.resolve(__dirname, 'test-queue');
+const queue_dir = path.resolve(__dirname, 'test-queue');
 
 exports.bounce_3464 = {
     setUp : function (done) {
@@ -49,15 +49,15 @@ exports.bounce_3464 = {
     tearDown: function (done) {
         fs.exists(queue_dir, function (exists) {
             if (exists) {
-                var files = fs.readdirSync(queue_dir);
+                const files = fs.readdirSync(queue_dir);
                 files.forEach(function (file,index){
-                    var curPath = path.resolve(queue_dir, file);
+                    const curPath = path.resolve(queue_dir, file);
                     if (fs.lstatSync(curPath).isDirectory()) { // recurse
                         return done(new Error('did not expect an sub folder here ("' + curPath + '")! cancel'));
                     }
                 });
                 files.forEach(function (file,index){
-                    var curPath = path.resolve(queue_dir, file);
+                    const curPath = path.resolve(queue_dir, file);
                     fs.unlinkSync(curPath);
                 });
                 done();
@@ -71,10 +71,10 @@ exports.bounce_3464 = {
         test.expect(9);
 
         util_hmailitem.newMockHMailItem(outbound_context, test, {}, function (mock_hmail){
-            var mock_socket = mock_sock.connect('testhost', 'testport');
+            const mock_socket = mock_sock.connect('testhost', 'testport');
             mock_socket.writable = true;
 
-            var orig_send_email = outbound_context.exports.send_email;
+            const orig_send_email = outbound_context.exports.send_email;
             outbound_context.exports.send_email = function (from, to, contents, cb, opts) {
                 test.ok(true, 'outbound.send_email called');
                 test.ok(contents.match(/^Content-type: message\/delivery-status/m), 'its a bounce report');
@@ -91,7 +91,7 @@ exports.bounce_3464 = {
             // from remote: This line is to be sent (from an mocked remote SMTP) to haraka outbound. This is done in this test.
             // from haraka: Expected answer from haraka-outbound to the mocked remote SMTP.
             //              'test' can hold a function(line) returning true for success, or a string tested for equality
-            var testPlaybook = [
+            const testPlaybook = [
                 // Haraka connects, we say first
                 { 'from': 'remote', 'line': '220 testing-smtp' },
 
@@ -114,10 +114,10 @@ exports.bounce_3464 = {
         test.expect(7);
 
         util_hmailitem.newMockHMailItem(outbound_context, test, {}, function (mock_hmail){
-            var mock_socket = mock_sock.connect('testhost', 'testport');
+            const mock_socket = mock_sock.connect('testhost', 'testport');
             mock_socket.writable = true;
 
-            var orig_temp_fail = HMailItem.prototype.temp_fail;
+            const orig_temp_fail = HMailItem.prototype.temp_fail;
             HMailItem.prototype.temp_fail = function (err, opts) {
                 test.ok(true, 'early-3XX: outbound.temp_fail called');
                 test.equal('3.0.0', this.todo.rcpt_to[0].dsn_status, 'early-3XX: dsn status = 3.0.0');
@@ -126,7 +126,7 @@ exports.bounce_3464 = {
                 HMailItem.prototype.temp_fail = orig_temp_fail;
                 test.done();
             };
-            var testPlaybook = [
+            const testPlaybook = [
                 { 'from': 'remote', 'line': '220 testing-smtp' },
 
                 { 'from': 'haraka', 'test': function (line) { return line.match(/^EHLO /); }, 'description': 'Haraka should say EHLO' },
@@ -148,10 +148,10 @@ exports.bounce_3464 = {
         test.expect(8);
 
         util_hmailitem.newMockHMailItem(outbound_context, test, {}, function (mock_hmail){
-            var mock_socket = mock_sock.connect('testhost', 'testport');
+            const mock_socket = mock_sock.connect('testhost', 'testport');
             mock_socket.writable = true;
 
-            var orig_temp_fail = HMailItem.prototype.temp_fail;
+            const orig_temp_fail = HMailItem.prototype.temp_fail;
             HMailItem.prototype.temp_fail = function (err, opts) {
                 test.ok(true, 'RCPT-TO-4XX: outbound.temp_fail called');
                 test.equal('4.0.0', this.todo.rcpt_to[0].dsn_status, 'RCPT-TO-4XX: dsn status = 4.0.0');
@@ -160,7 +160,7 @@ exports.bounce_3464 = {
                 HMailItem.prototype.temp_fail = orig_temp_fail;
                 test.done();
             };
-            var testPlaybook = [
+            const testPlaybook = [
                 { 'from': 'remote', 'line': '220 testing-smtp' },
 
                 { 'from': 'haraka', 'test': function (line) { return line.match(/^EHLO /); }, 'description': 'Haraka should say EHLO' },
@@ -185,10 +185,10 @@ exports.bounce_3464 = {
         test.expect(9);
 
         util_hmailitem.newMockHMailItem(outbound_context, test, {}, function (mock_hmail){
-            var mock_socket = mock_sock.connect('testhost', 'testport');
+            const mock_socket = mock_sock.connect('testhost', 'testport');
             mock_socket.writable = true;
 
-            var orig_temp_fail = HMailItem.prototype.temp_fail;
+            const orig_temp_fail = HMailItem.prototype.temp_fail;
             HMailItem.prototype.temp_fail = function (err, opts) {
                 test.ok(true, 'DATA-4XX: outbound.temp_fail called');
                 test.equal('4.6.0', this.todo.rcpt_to[0].dsn_status, 'DATA-4XX: dsn status = 4.6.0');
@@ -197,7 +197,7 @@ exports.bounce_3464 = {
                 HMailItem.prototype.temp_fail = orig_temp_fail;
                 test.done();
             };
-            var testPlaybook = [
+            const testPlaybook = [
                 { 'from': 'remote', 'line': '220 testing-smtp' },
 
                 { 'from': 'haraka', 'test': function (line) { return line.match(/^EHLO /); }, 'description': 'Haraka should say EHLO' },
@@ -226,10 +226,10 @@ exports.bounce_3464 = {
         test.expect(10);
 
         util_hmailitem.newMockHMailItem(outbound_context, test, {}, function (mock_hmail){
-            var mock_socket = mock_sock.connect('testhost', 'testport');
+            const mock_socket = mock_sock.connect('testhost', 'testport');
             mock_socket.writable = true;
 
-            var orig_send_email = outbound_context.exports.send_email;
+            const orig_send_email = outbound_context.exports.send_email;
             outbound_context.exports.send_email = function (from, to, contents, cb, opts) {
                 test.ok(true, 'RCPT-TO-5XX: outbound.send_email called');
                 test.ok(contents.match(/^Content-type: message\/delivery-status/m), 'RCPT-TO-5XX: its a bounce report');
@@ -240,7 +240,7 @@ exports.bounce_3464 = {
                 outbound_context.exports.send_email = orig_send_email;
                 test.done();
             };
-            var testPlaybook = [
+            const testPlaybook = [
                 { 'from': 'remote', 'line': '220 testing-smtp' },
 
                 { 'from': 'haraka', 'test': function (line) { return line.match(/^EHLO /); }, 'description': 'Haraka should say EHLO' },
@@ -265,10 +265,10 @@ exports.bounce_3464 = {
         test.expect(11);
 
         util_hmailitem.newMockHMailItem(outbound_context, test, {}, function (mock_hmail){
-            var mock_socket = mock_sock.connect('testhost', 'testport');
+            const mock_socket = mock_sock.connect('testhost', 'testport');
             mock_socket.writable = true;
 
-            var orig_send_email = outbound_context.exports.send_email;
+            const orig_send_email = outbound_context.exports.send_email;
             outbound_context.exports.send_email = function (from, to, contents, cb, opts) {
                 test.ok(true, 'DATA-5XX: outbound.send_email called');
                 test.ok(contents.match(/^Content-type: message\/delivery-status/m), 'DATA-5XX: its a bounce report');
@@ -279,7 +279,7 @@ exports.bounce_3464 = {
                 outbound_context.exports.send_email = orig_send_email;
                 test.done();
             };
-            var testPlaybook = [
+            const testPlaybook = [
                 { 'from': 'remote', 'line': '220 testing-smtp' },
 
                 { 'from': 'haraka', 'test': function (line) { return line.match(/^EHLO /); }, 'description': 'Haraka should say EHLO' },

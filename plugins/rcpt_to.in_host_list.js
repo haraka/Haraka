@@ -10,7 +10,7 @@
 // is enabled and the sending domain is local, the receipt is OK.
 
 exports.register = function () {
-    var plugin = this;
+    const plugin = this;
     plugin.inherits('rcpt_to.host_list_base');
 
     plugin.load_host_list();
@@ -18,11 +18,11 @@ exports.register = function () {
 };
 
 exports.hook_rcpt = function (next, connection, params) {
-    var plugin = this;
-    var txn = connection.transaction;
+    const plugin = this;
+    const txn = connection.transaction;
     if (!txn) { return; }
 
-    var rcpt = params[0];
+    const rcpt = params[0];
     // Check for RCPT TO without an @ first - ignore those here
     if (!rcpt.host) {
         txn.results.add(plugin, {fail: 'rcpt!domain'});
@@ -31,7 +31,7 @@ exports.hook_rcpt = function (next, connection, params) {
 
     connection.logdebug(plugin, "Checking if " + rcpt + " host is in host_list");
 
-    var domain = rcpt.host.toLowerCase();
+    const domain = rcpt.host.toLowerCase();
 
     if (plugin.in_host_list(domain)) {
         txn.results.add(plugin, {pass: 'rcpt_to'});

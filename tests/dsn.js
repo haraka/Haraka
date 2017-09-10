@@ -1,6 +1,6 @@
 'use strict';
 
-var constants    = require('haraka-constants');
+const constants    = require('haraka-constants');
 
 constants.import(global);
 

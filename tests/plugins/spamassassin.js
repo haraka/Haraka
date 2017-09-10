@@ -1,12 +1,12 @@
 'use strict';
 
-var Address      = require('address-rfc2821');
-var fixtures     = require('haraka-test-fixtures');
+const Address      = require('address-rfc2821');
+const fixtures     = require('haraka-test-fixtures');
 
-var Connection   = fixtures.connection;
-var stub         = fixtures.stub.stub;
+const Connection   = fixtures.connection;
+const stub         = fixtures.stub.stub;
 
-var _set_up = function (done) {
+const _set_up = function (done) {
 
     this.plugin = new fixtures.plugin('spamassassin');
     this.plugin.cfg = { main: { } };
@@ -76,8 +76,8 @@ exports.get_spamd_headers = {
         test.expect(1);
         this.connection.transaction.mail_from = new Address.Address('<matt@example.com>');
         this.connection.transaction.uuid = 'THIS-IS-A-TEST-UUID';
-        var headers = this.plugin.get_spamd_headers(this.connection, 'test_user');
-        var expected_headers = [
+        const headers = this.plugin.get_spamd_headers(this.connection, 'test_user');
+        const expected_headers = [
             'HEADERS SPAMC/1.3',
             'User: test_user',
             '',

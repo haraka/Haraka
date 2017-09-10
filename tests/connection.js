@@ -1,20 +1,20 @@
-var constants    = require('haraka-constants');
+const constants    = require('haraka-constants');
 
 /*eslint no-unused-vars: ["error", { "varsIgnorePattern": "config" }]*/
-var config      = require('./config');
-var connection   = require('../connection');
+const config      = require('./config');
+const connection   = require('../connection');
 
 // huge hack here, but plugin tests need constants
 constants.import(global);
 
 function _set_up (done) {
     this.backup = {};
-    var client = {
+    const client = {
         remotePort: null,
         remoteAddress: null,
         destroy: function () { true; },
     };
-    var server = {
+    const server = {
         ip_address: null,
         address: function () {
             return this.ip_address;
@@ -183,12 +183,12 @@ exports.connectionRaw = {
 exports.connectionPrivate = {
     setUp: function (done) {
         this.backup = {};
-        var client = {
+        const client = {
             remotePort: 2525,
             remoteAddress: '172.16.15.1',
             destroy: function () { true; },
         };
-        var server = {
+        const server = {
             ip_address: '172.16.15.254',
             address: function () {
                 return this.ip_address;

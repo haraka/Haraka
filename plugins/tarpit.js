@@ -1,6 +1,6 @@
 // tarpit
 
-var hooks_to_delay = [
+let hooks_to_delay = [
     'connect', 'helo', 'ehlo', 'mail', 'rcpt', 'rcpt_ok',
     'data', 'data_post', 'queue', 'unrecognized_command', 'vrfy', 'noop',
     'rset', 'quit'
@@ -8,23 +8,23 @@ var hooks_to_delay = [
 
 exports.register = function () {
     // Register tarpit function last
-    var plugin = this;
+    const plugin = this;
 
-    var cfg = plugin.config.get('tarpit.ini');
+    const cfg = plugin.config.get('tarpit.ini');
     if (cfg && cfg.main.hooks_to_delay) {
         hooks_to_delay = cfg.main.hooks_to_delay.split(/[\s,;]+/);
     }
 
-    for (var i=0; i < hooks_to_delay.length; i++) {
-        var hook = hooks_to_delay[i];
+    for (let i=0; i < hooks_to_delay.length; i++) {
+        const hook = hooks_to_delay[i];
         plugin.register_hook(hook, 'tarpit');
     }
 };
 
 exports.tarpit = function (next, connection) {
-    var plugin = this;
+    const plugin = this;
 
-    var delay = connection.notes.tarpit;
+    let delay = connection.notes.tarpit;
 
     if (!delay && connection.transaction) {
         delay = connection.transaction.notes.tarpit;

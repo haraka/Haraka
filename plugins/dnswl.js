@@ -2,7 +2,7 @@
 // dnswl plugin
 
 exports.register = function () {
-    var plugin = this;
+    const plugin = this;
     plugin.inherits('dns_list_base');
 
     plugin.load_dnswl_ini();
@@ -14,7 +14,7 @@ exports.register = function () {
 };
 
 exports.load_dnswl_ini = function () {
-    var plugin = this;
+    const plugin = this;
     plugin.cfg = plugin.config.get('dnswl.ini', function () {
         plugin.load_dnswl_ini();
     });
@@ -49,7 +49,7 @@ exports.check_dnswl = function (next, connection) {
 };
 
 exports.hook_connect = function (next, connection) {
-    var plugin = this;
+    const plugin = this;
     if (!plugin.zones || !plugin.zones.length) {
         connection.logerror(plugin, 'no zones');
         return next();

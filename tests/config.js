@@ -1,13 +1,13 @@
 'use strict';
 /*eslint no-unused-vars: ["error", { "varsIgnorePattern": "logger" }]*/
 
-var logger    = require('../logger');
-var config    = require('../config');
-var plugin    = require('../plugins');
-var path      = require('path');
+const logger    = require('../logger');
+const config    = require('../config');
+const plugin    = require('../plugins');
+const path      = require('path');
 
-var cb = function () { return false; };
-var opts = { booleans: ['arg1'] };
+const cb = function () { return false; };
+const opts = { booleans: ['arg1'] };
 
 exports.arrange_args = {
     // config.get('name');
@@ -116,13 +116,13 @@ exports.arrange_args = {
     },
 };
 
-var jsonRes = {
+const jsonRes = {
     matt: 'waz here',
     array: [ 'has an element' ],
     objecty: { 'has a property': 'with a value' }
 };
 
-var yamlRes = {
+const yamlRes = {
     main: {
         bool_true: true,
         bool_false: false,
@@ -230,7 +230,7 @@ exports.get = {
     // config.get('test.bin', 'binary');
     'test.bin, type=binary' : function (test) {
         test.expect(2);
-        var res = config.get('../tests/config/test.binary', 'binary');
+        const res = config.get('../tests/config/test.binary', 'binary');
         test.equal(res.length, 120);
         test.ok(Buffer.isBuffer(res));
         test.done();
@@ -245,14 +245,14 @@ exports.plugin_get_merge = {
     'INSTALLED node_modules package plugin: (test-plugin), flat': function (test) {
         test.expect(2);
         // process.env.HARAKA = path.resolve(__dirname, '..', 'tests', 'installation');
-        var p = new plugin.Plugin('test-plugin');
+        const p = new plugin.Plugin('test-plugin');
 
         // HARAKA env not set, neither config file found
         test.equal(p.config.get('test-plugin-flat'), null);
 
         // calling module_config is the equivalant of setting process.env.HARAKA
         // without side effects
-        var lc = p.config.module_config(
+        const lc = p.config.module_config(
             // module's "default" config file
             path.resolve('tests', 'installation', 'node_modules','test-plugin'),
             // installed path (overrides)
@@ -265,14 +265,14 @@ exports.plugin_get_merge = {
     'INSTALLED node_modules package plugin: (test-plugin), ini': function (test) {
         // setting process.env.HARAKA doesn't work here on Windows (see Appveyor tests)
         // process.env.HARAKA = path.resolve(__dirname, '..', 'tests', 'installation');
-        var p = new plugin.Plugin('test-plugin');
-        var lc = p.config.module_config(
+        const p = new plugin.Plugin('test-plugin');
+        const lc = p.config.module_config(
             path.resolve('tests', 'installation', 'node_modules','test-plugin'),
             path.resolve('tests', 'installation')
         );
 
         test.expect(1);
-        var ini_config = lc.get('test-plugin.ini', 'ini');
+        const ini_config = lc.get('test-plugin.ini', 'ini');
         test.deepEqual(ini_config, {
             main: { main1: 'foo', main2: 'blah' },
             sub1: { sub1: 'foo', sub2: 'blah' },

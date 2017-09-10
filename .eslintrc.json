@@ -9,6 +9,8 @@
     "no-cond-assign": ["error", "except-parens"],
     "no-constant-condition": ["error", { "checkLoops": false }],
     "no-useless-escape": "warn",
-    "no-path-concat": "error"
+    "no-path-concat": "error",
+    "prefer-const": ["error", {"ignoreReadBeforeAssign": true}],
+    "no-var": "warn"
   }
 }

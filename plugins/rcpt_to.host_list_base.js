@@ -2,14 +2,14 @@
 // Base class for plugins that use config/host_list
 
 exports.load_host_list = function () {
-    var plugin = this;
+    const plugin = this;
 
-    var lowered_list = {};  // assemble
-    var raw_list = plugin.config.get('host_list', 'list', function () {
+    const lowered_list = {};  // assemble
+    const raw_list = plugin.config.get('host_list', 'list', function () {
         plugin.load_host_list();
     });
 
-    for (var i in raw_list) {
+    for (const i in raw_list) {
         lowered_list[raw_list[i].toLowerCase()] = true;
     }
 
@@ -17,7 +17,7 @@ exports.load_host_list = function () {
 };
 
 exports.load_host_list_regex = function () {
-    var plugin = this;
+    const plugin = this;
 
     plugin.host_list_regex = plugin.config.get(
         'host_list_regex',
@@ -30,19 +30,19 @@ exports.load_host_list_regex = function () {
 };
 
 exports.hook_mail = function (next, connection, params) {
-    var plugin = this;
-    var txn = connection.transaction;
+    const plugin = this;
+    const txn = connection.transaction;
     if (!txn) { return; }
 
-    var email = params[0].address();
+    const email = params[0].address();
     if (!email) {
         txn.results.add(plugin, {skip: 'mail_from.null', emit: true});
         return next();
     }
 
-    var domain = params[0].host.toLowerCase();
+    const domain = params[0].host.toLowerCase();
 
-    var anti_spoof = plugin.config.get('host_list.anti_spoof') || false;
+    const anti_spoof = plugin.config.get('host_list.anti_spoof') || false;
 
     if (plugin.in_host_list(domain) || plugin.in_host_regex(domain)) {
         if (anti_spoof && !connection.relaying) {
@@ -60,7 +60,7 @@ exports.hook_mail = function (next, connection, params) {
 };
 
 exports.in_host_list = function (domain) {
-    var plugin = this;
+    const plugin = this;
     plugin.logdebug("checking " + domain + " in config/host_list");
     if (plugin.host_list[domain]) {
         return true;
@@ -69,7 +69,7 @@ exports.in_host_list = function (domain) {
 };
 
 exports.in_host_regex = function (domain) {
-    var plugin = this;
+    const plugin = this;
     if (!plugin.host_list_regex) return false;
     if (!plugin.host_list_regex.length) return false;
 

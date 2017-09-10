@@ -1,17 +1,17 @@
 'use strict';
 
 // node built-ins
-var http = require('http');
+const http = require('http');
 
 // haraka libs
-var DSN = require('./dsn');
+const DSN = require('./dsn');
 
 exports.register = function () {
     this.load_rspamd_ini();
 };
 
 exports.load_rspamd_ini = function () {
-    var plugin = this;
+    const plugin = this;
 
     plugin.cfg = plugin.config.get('rspamd.ini', {
         booleans: [
@@ -52,11 +52,11 @@ exports.load_rspamd_ini = function () {
 };
 
 exports.get_options = function (connection) {
-    var plugin = this;
+    const plugin = this;
 
     // https://rspamd.com/doc/architecture/protocol.html
     // https://github.com/vstakhov/rspamd/blob/master/rules/http_headers.lua
-    var options = {
+    const options = {
         headers: {},
         port: plugin.cfg.main.port,
         host: plugin.cfg.main.host,
@@ -70,7 +70,7 @@ exports.get_options = function (connection) {
 
     if (connection.remote.ip) options.headers.IP = connection.remote.ip;
 
-    var fcrdns = connection.results.get('connect.fcrdns');
+    const fcrdns = connection.results.get('connect.fcrdns');
     if (fcrdns && fcrdns.fcrdns && fcrdns.fcrdns[0]) {
         options.headers.Hostname = fcrdns.fcrdns[0];
     }
@@ -94,16 +94,16 @@ exports.get_options = function (connection) {
     }
 
     if (connection.transaction.mail_from) {
-        var mfaddr = connection.transaction.mail_from.address().toString();
+        const mfaddr = connection.transaction.mail_from.address().toString();
         if (mfaddr) {
             options.headers.From = mfaddr;
         }
     }
 
-    var rcpts = connection.transaction.rcpt_to;
+    const rcpts = connection.transaction.rcpt_to;
     if (rcpts) {
         options.headers.Rcpt = [];
-        for (var i=0; i < rcpts.length; i++) {
+        for (let i=0; i < rcpts.length; i++) {
             options.headers.Rcpt.push(rcpts[i].address());
         }
 
@@ -122,20 +122,20 @@ exports.get_options = function (connection) {
 exports.hook_data_post = function (next, connection) {
     if (!connection.transaction) return next();
 
-    var plugin = this;
-    var cfg = plugin.cfg;
+    const plugin = this;
+    const cfg = plugin.cfg;
 
-    var authed = connection.notes.auth_user;
+    const authed = connection.notes.auth_user;
     if (authed && !cfg.check.authenticated) return next();
     if (!cfg.check.private_ip && connection.remote.is_private) {
         return next();
     }
 
-    var timer;
-    var timeout = plugin.cfg.main.timeout || plugin.timeout - 1;
+    let timer;
+    const timeout = plugin.cfg.main.timeout || plugin.timeout - 1;
 
-    var calledNext=false;
-    var callNext = function (code, msg) {
+    let calledNext=false;
+    const callNext = function (code, msg) {
         clearTimeout(timer);
         if (calledNext) return;
         calledNext=true;
@@ -149,16 +149,16 @@ exports.hook_data_post = function (next, connection) {
         callNext();
     }, timeout * 1000);
 
-    var options = plugin.get_options(connection);
+    const options = plugin.get_options(connection);
 
-    var req;
-    var rawData = '';
-    var start = Date.now();
+    let req;
+    let rawData = '';
+    const start = Date.now();
     connection.transaction.message_stream.pipe(
         req = http.request(options, function (res) {
             res.on('data', function (chunk) { rawData += chunk; });
             res.on('end', function () {
-                var r = plugin.parse_response(rawData, connection);
+                const r = plugin.parse_response(rawData, connection);
                 if (!r) return callNext();
                 if (!r.data) return callNext();
                 if (!r.data.default) return callNext();
@@ -212,7 +212,7 @@ exports.hook_data_post = function (next, connection) {
 };
 
 exports.wants_headers_added = function (rspamd_data) {
-    var plugin = this;
+    const plugin = this;
 
     if (plugin.cfg.main.add_headers === 'never') return false;
     if (plugin.cfg.main.add_headers === 'always') return true;
@@ -223,10 +223,11 @@ exports.wants_headers_added = function (rspamd_data) {
 };
 
 exports.parse_response = function (rawData, connection) {
-    var plugin = this;
+    const plugin = this;
 
+    let data;
     try {
-        var data = JSON.parse(rawData);
+        data = JSON.parse(rawData);
     }
     catch (err) {
         connection.transaction.results.add(plugin, {
@@ -243,9 +244,9 @@ exports.parse_response = function (rawData, connection) {
     }
 
     // copy those nested objects into a higher level object
-    var dataClean = {};
+    const dataClean = {};
     Object.keys(data.default).forEach(function (key) {
-        var a = data.default[key];
+        const a = data.default[key];
         switch (typeof a) {
             case 'object':
                 // transform { name: KEY, score: VAL } -> { KEY: VAL }
@@ -279,13 +280,13 @@ exports.parse_response = function (rawData, connection) {
 };
 
 exports.add_headers = function (connection, data) {
-    var plugin = this;
-    var cfg = plugin.cfg;
+    const plugin = this;
+    const cfg = plugin.cfg;
 
     if (cfg.header && cfg.header.bar) {
-        var spamBar = '';
-        var spamBarScore = 1;
-        var spamBarChar = cfg.spambar.neutral || '/';
+        let spamBar = '';
+        let spamBarScore = 1;
+        let spamBarChar = cfg.spambar.neutral || '/';
         if (data.default.score >= 1) {
             spamBarScore = Math.floor(data.default.score);
             spamBarChar = cfg.spambar.positive || '+';
@@ -294,7 +295,7 @@ exports.add_headers = function (connection, data) {
             spamBarScore = Math.floor(data.default.score * -1);
             spamBarChar = cfg.spambar.negative || '-';
         }
-        for (var i = 0; i < spamBarScore; i++) {
+        for (let i = 0; i < spamBarScore; i++) {
             spamBar += spamBarChar;
         }
         connection.transaction.remove_header(cfg.header.bar);
@@ -302,8 +303,8 @@ exports.add_headers = function (connection, data) {
     }
 
     if (cfg.header && cfg.header.report) {
-        var prettySymbols = [];
-        for (var k in data.default) {
+        const prettySymbols = [];
+        for (const k in data.default) {
             if (data.default[k].score) {
                 prettySymbols.push(data.default[k].name +
                     '(' + data.default[k].score + ')');
