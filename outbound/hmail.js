@@ -1041,26 +1041,26 @@ HMailItem.prototype.populate_bounce_message_with_headers = function (from, to, r
     bounce_body.push(CRLF);
 
     if (bounce_html_lines.length > 1) {
-      bounce_body.push('--' + boundary + boundary_incr + CRLF);
-      bounce_body.push('Content-Type: text/html; charset=us-ascii' + CRLF);
-      bounce_body.push(CRLF);
-      bounce_html_lines.forEach(function (line) {
-          bounce_body.push(line + CRLF);
-      });
-      bounce_body.push(CRLF);
-      bounce_body.push('--' + boundary + boundary_incr + '--' + CRLF);
-
-      if (bounce_image_lines.length > 1) {
-        boundary_incr = 'a'
         bounce_body.push('--' + boundary + boundary_incr + CRLF);
-        //bounce_body.push('Content-Type: text/html; charset=us-ascii' + CRLF);
-        //bounce_body.push(CRLF);
-        bounce_image_lines.forEach(function (line) {
+        bounce_body.push('Content-Type: text/html; charset=us-ascii' + CRLF);
+        bounce_body.push(CRLF);
+        bounce_html_lines.forEach(function (line) {
             bounce_body.push(line + CRLF);
         });
         bounce_body.push(CRLF);
         bounce_body.push('--' + boundary + boundary_incr + '--' + CRLF);
-      }
+
+        if (bounce_image_lines.length > 1) {
+            boundary_incr = 'a'
+            bounce_body.push('--' + boundary + boundary_incr + CRLF);
+            //bounce_body.push('Content-Type: text/html; charset=us-ascii' + CRLF);
+            //bounce_body.push(CRLF);
+            bounce_image_lines.forEach(function (line) {
+                bounce_body.push(line + CRLF);
+            });
+            bounce_body.push(CRLF);
+            bounce_body.push('--' + boundary + boundary_incr + '--' + CRLF);
+        }
     }
 
     bounce_body.push('--' + boundary + CRLF);
