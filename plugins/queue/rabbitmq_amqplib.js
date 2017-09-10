@@ -1,17 +1,17 @@
 // queue/rabbitmq_amqplib
 
-var amqp = require("amqplib/callback_api");
+const amqp = require("amqplib/callback_api");
 
-var channel;
-var queue;
-var deliveryMode;
+let channel;
+let queue;
+let deliveryMode;
 
 exports.register = function () {
     this.init_amqp_connection();
 }
 
 exports.rabbitmq_queue = function (next, connection) {
-    var plugin = this;
+    const plugin = this;
     connection.transaction.message_stream.get_data(function (str) {
         if (channel && channel.sendToQueue(queue, new Buffer(str), {deliveryMode: deliveryMode})) {
             return next(OK);
@@ -24,20 +24,20 @@ exports.rabbitmq_queue = function (next, connection) {
 };
 
 exports.init_amqp_connection = function () {
-    var plugin = this;
-    var cfg = this.config.get("rabbitmq.ini").rabbitmq;
+    const plugin = this;
+    const cfg = this.config.get("rabbitmq.ini").rabbitmq;
 
-    var host = cfg.host || "127.0.0.1";
-    var port = cfg.port || "5672";
-    var vhost = cfg.vhost || "";
-    var user = cfg.user || "guest";
-    var password = cfg.password || "guest";
-    var exchangeName = cfg.exchangeName || "emailMessages";
-    var exchangeType = cfg.exchangeType || "direct";
-    var queueName = cfg.queueName || "emails";
-    var durable = cfg.durable === "true" || true;
+    const host = cfg.host || "127.0.0.1";
+    const port = cfg.port || "5672";
+    const vhost = cfg.vhost || "";
+    const user = cfg.user || "guest";
+    const password = cfg.password || "guest";
+    const exchangeName = cfg.exchangeName || "emailMessages";
+    const exchangeType = cfg.exchangeType || "direct";
+    const queueName = cfg.queueName || "emails";
+    const durable = cfg.durable === "true" || true;
     // var confirm = cfg.confirm === "true" || true;
-    var autoDelete = cfg.autoDelete === "true" || false;
+    const autoDelete = cfg.autoDelete === "true" || false;
     deliveryMode = cfg.deliveryMode || 2;
 
     amqp.connect("amqp://"+encodeURIComponent(user)+":"+encodeURIComponent(password)+"@"+host+":"+port+vhost, function (err, conn){

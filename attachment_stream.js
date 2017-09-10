@@ -1,6 +1,6 @@
 'use strict';
 
-var Stream = require('stream');
+const Stream = require('stream');
 
 class AttachmentStream extends Stream {
     constructor (header) {
@@ -45,7 +45,7 @@ AttachmentStream.prototype.emit_end = function (force) {
 };
 
 AttachmentStream.prototype.pipe = function (dest, options) {
-    var self = this;
+    const self = this;
     this.paused = false;
     Stream.prototype.pipe.call(this, dest, options);
     dest.on('drain', function () {

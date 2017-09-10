@@ -2,9 +2,9 @@
 // An RFC 2822 email header parser
 /* eslint no-control-regex: 0 */
 
-var logger = require('./logger');
-var utils  = require('haraka-utils');
-var Iconv;
+const logger = require('./logger');
+const utils  = require('haraka-utils');
+let Iconv;
 try { Iconv = require('iconv').Iconv }
 catch (err) {
     logger.logdebug("No iconv available - install with 'npm install iconv'");
@@ -21,10 +21,10 @@ exports.Header = Header;
 exports.Iconv  = Iconv;
 
 Header.prototype.parse = function (lines) {
-    var self = this;
+    const self = this;
 
     for (let i=0,l=lines.length; i < l; i++) {
-        var line = lines[i];
+        const line = lines[i];
         if (/^[ \t]/.test(line)) {
             // continuation
             this.header_list[this.header_list.length - 1] += line;
@@ -35,10 +35,10 @@ Header.prototype.parse = function (lines) {
     }
 
     for (let i=0,l=this.header_list.length; i < l; i++) {
-        var match = this.header_list[i].match(/^([^\s:]*):\s*([\s\S]*)$/);
+        const match = this.header_list[i].match(/^([^\s:]*):\s*([\s\S]*)$/);
         if (match) {
-            var key = match[1].toLowerCase();
-            var val = match[2];
+            const key = match[1].toLowerCase();
+            const val = match[2];
 
             this._add_header(key, val, "push");
         }
@@ -57,7 +57,7 @@ Header.prototype.parse = function (lines) {
 
 function try_convert (data, encoding) {
     try {
-        let converter = new Iconv(encoding, "UTF-8");
+        const converter = new Iconv(encoding, "UTF-8");
         data = converter.convert(data);
     }
     catch (err) {
@@ -65,7 +65,7 @@ function try_convert (data, encoding) {
         logger.logwarn("initial iconv conversion from " + encoding + " to UTF-8 failed: " + err.message);
         if (err.code !== 'EINVAL') {
             try {
-                let converter = new Iconv(encoding, "UTF-8//TRANSLIT//IGNORE");
+                const converter = new Iconv(encoding, "UTF-8//TRANSLIT//IGNORE");
                 data = converter.convert(data);
             }
             catch (e) {
@@ -101,27 +101,27 @@ function _decode_header (matched, encoding, lang, cte, data) {
 
 function _decode_rfc2231 (params) {
     return function (matched, str) {
-        var sub_matches = /^(([^=]*)\*)(\d*)=(\s*".*?[^\\]";?|\S*)\s*$/.exec(str);
+        const sub_matches = /^(([^=]*)\*)(\d*)=(\s*".*?[^\\]";?|\S*)\s*$/.exec(str);
         if (!sub_matches) {
             return " " + str;
         }
-        var key = sub_matches[1];
-        var key_actual = sub_matches[2];
-        var key_id = sub_matches[3] || '0';
-        var value = sub_matches[4].replace(/;$/, '');
+        const key = sub_matches[1];
+        let key_actual = sub_matches[2];
+        let key_id = sub_matches[3] || '0';
+        let value = sub_matches[4].replace(/;$/, '');
 
-        var key_extract = /^(.*?)(\*(\d+)\*)$/.exec(key);
+        const key_extract = /^(.*?)(\*(\d+)\*)$/.exec(key);
         if (key_extract) {
             key_actual = key_extract[1];
             key_id = key_extract[3];
         }
 
-        var quote = /^\s*"(.*)"$/.exec(value);
+        const quote = /^\s*"(.*)"$/.exec(value);
         if (quote) {
             value = quote[1];
         }
 
-        var lang_match = /^(.*?)'(.*?)'(.*)/.exec(value);
+        const lang_match = /^(.*?)'(.*?)'(.*)/.exec(value);
         if (lang_match) {
             if (key_actual == params.cur_key && lang_match[2] != params.cur_lang) {
                 return ''; // same key, different lang, throw it away
@@ -150,7 +150,7 @@ function _decode_rfc2231 (params) {
 
 Header.prototype.decode_header = function decode_header (val) {
     // Fold continuations
-    var rfc2231_params = {
+    const rfc2231_params = {
         kv: {},
         keys: {},
         cur_key: '',
@@ -159,12 +159,12 @@ Header.prototype.decode_header = function decode_header (val) {
     };
 
     val = val.replace(/\n[ \t]+([^\n]*)/g, _decode_rfc2231(rfc2231_params));
-    for (var key in rfc2231_params.keys) {
+    for (const key in rfc2231_params.keys) {
         val = val + ' ' + key + '="';
         /* eslint no-constant-condition: 0 */
         for (let i=0; true; i++) {
-            var _key = key + '*' + i;
-            var _val = rfc2231_params.kv[_key];
+            const _key = key + '*' + i;
+            const _val = rfc2231_params.kv[_key];
             if (_val === undefined) break;
             val = val + _val;
         }
@@ -179,10 +179,10 @@ Header.prototype.decode_header = function decode_header (val) {
 
     if (Iconv && !/^[\x00-\x7f]*$/.test(val)) {
         // 8 bit values in the header
-        var matches = /\bcharset\s*=\s*["']?([\w_\-]*)/.exec(this.get('content-type'));
+        const matches = /\bcharset\s*=\s*["']?([\w_\-]*)/.exec(this.get('content-type'));
         if (matches && !/UTF-?8/i.test(matches[1])) {
-            var encoding = matches[1];
-            var source = new Buffer(val, 'binary');
+            const encoding = matches[1];
+            const source = new Buffer(val, 'binary');
             val = try_convert(source, encoding).toString();
         }
     }
@@ -218,8 +218,8 @@ Header.prototype.remove = function (key) {
 }
 
 Header.prototype._remove_more = function (key) {
-    var key_len = key.length;
-    for (var i=0,l=this.header_list.length; i < l; i++) {
+    const key_len = key.length;
+    for (let i=0,l=this.header_list.length; i < l; i++) {
         if (this.header_list[i].substring(0, key_len).toLowerCase() === key) {
             this.header_list.splice(i, 1);
             return this._remove_more(key);
@@ -233,7 +233,7 @@ Header.prototype._add_header = function (key, value, method) {
 };
 
 Header.prototype._add_header_decode = function (key, value, method) {
-    var val = this.decode_header(value);
+    const val = this.decode_header(value);
     // console.log(key + ': ' + val);
     this.headers_decoded[key] = this.headers_decoded[key] || [];
     this.headers_decoded[key][method](val);

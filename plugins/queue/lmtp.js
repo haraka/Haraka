@@ -2,7 +2,7 @@
 
 'use strict';
 
-var outbound;
+let outbound;
 
 exports.register = function () {
     this.load_lmtp_ini();
@@ -10,7 +10,7 @@ exports.register = function () {
 }
 
 exports.load_lmtp_ini = function () {
-    var plugin = this;
+    const plugin = this;
     plugin.cfg = plugin.config.get('lmtp.ini', function () {
         plugin.load_lmtp_ini();
     })
@@ -18,8 +18,8 @@ exports.load_lmtp_ini = function () {
 
 exports.hook_get_mx = function (next, hmail, domain) {
     const plugin = this;
-    const notes = hmail.todo.notes;
-    if (!notes.using_lmtp) return next();
+
+    if (!hmail.todo.notes.using_lmtp) return next();
 
     const mx = { using_lmtp: true, priority: 0, exchange: '127.0.0.1' };
 

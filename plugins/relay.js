@@ -2,11 +2,11 @@
 //
 // documentation via: haraka -h relay
 
-var ipaddr = require('ipaddr.js');
-var net    = require('net');
+const ipaddr = require('ipaddr.js');
+const net    = require('net');
 
 exports.register = function () {
-    var plugin = this;
+    const plugin = this;
 
     plugin.load_relay_ini();             // plugin.cfg = { }
 
@@ -33,7 +33,7 @@ exports.register = function () {
 };
 
 exports.load_relay_ini = function () {
-    var plugin = this;
+    const plugin = this;
     plugin.cfg = plugin.config.get('relay.ini', {
         booleans: [
             '+relay.acl',
@@ -47,7 +47,7 @@ exports.load_relay_ini = function () {
 };
 
 exports.load_dest_domains = function () {
-    var plugin = this;
+    const plugin = this;
     plugin.dest = plugin.config.get(
         'relay_dest_domains.ini',
         'ini',
@@ -56,16 +56,16 @@ exports.load_dest_domains = function () {
 };
 
 exports.load_acls = function () {
-    var plugin = this;
-    var file_name = 'relay_acl_allow';
+    const plugin = this;
+    const file_name = 'relay_acl_allow';
 
     // load with a self-referential callback
     plugin.acl_allow = plugin.config.get(file_name, 'list', function () {
         plugin.load_acls();
     });
 
-    for (var i=0; i<plugin.acl_allow.length; i++) {
-        var cidr = plugin.acl_allow[i].split('/');
+    for (let i=0; i<plugin.acl_allow.length; i++) {
+        const cidr = plugin.acl_allow[i].split('/');
         if (!net.isIP(cidr[0])) {
             plugin.logerror(plugin, "invalid entry in " + file_name + ": " + cidr[0]);
         }
@@ -77,7 +77,7 @@ exports.load_acls = function () {
 };
 
 exports.acl = function (next, connection) {
-    var plugin = this;
+    const plugin = this;
     if (!plugin.cfg.relay.acl) { return next(); }
 
     connection.logdebug(this, 'checking ' + connection.remote.ip + ' in relay_acl_allow');
@@ -93,18 +93,18 @@ exports.acl = function (next, connection) {
 };
 
 exports.is_acl_allowed = function (connection) {
-    var plugin = this;
+    const plugin = this;
     if (!plugin.acl_allow) { return false; }
     if (!plugin.acl_allow.length) { return false; }
 
-    var ip = connection.remote.ip;
+    const ip = connection.remote.ip;
 
-    for (var i=0; i < plugin.acl_allow.length; i++) {
-        var item = plugin.acl_allow[i];
+    for (let i=0; i < plugin.acl_allow.length; i++) {
+        const item = plugin.acl_allow[i];
         connection.logdebug(plugin, 'checking if ' + ip + ' is in ' + item);
-        var cidr = plugin.acl_allow[i].split('/');
-        var c_net  = cidr[0];
-        var c_mask = cidr[1] || 32;
+        const cidr = plugin.acl_allow[i].split('/');
+        const c_net  = cidr[0];
+        const c_mask = cidr[1] || 32;
 
         if (!net.isIP(c_net)) continue;  // bad config entry
         if (net.isIPv4(ip) && net.isIPv6(c_net)) continue;
@@ -119,9 +119,9 @@ exports.is_acl_allowed = function (connection) {
 };
 
 exports.dest_domains = function (next, connection, params) {
-    var plugin = this;
+    const plugin = this;
     if (!plugin.cfg.relay.dest_domains) { return next(); }
-    var transaction = connection.transaction;
+    const transaction = connection.transaction;
 
     // Skip this if the host is already allowed to relay
     if (connection.relaying) {
@@ -139,16 +139,16 @@ exports.dest_domains = function (next, connection, params) {
         return next();
     }
 
-    var dest_domain = params[0].host;
+    const dest_domain = params[0].host;
     connection.logdebug(plugin, 'dest_domain = ' + dest_domain);
 
-    var dst_cfg = plugin.dest.domains[dest_domain];
+    const dst_cfg = plugin.dest.domains[dest_domain];
     if (!dst_cfg) {
         transaction.results.add(plugin, {fail: 'relay_dest_domain'});
         return next(DENY, "You are not allowed to relay");
     }
 
-    var action = JSON.parse(dst_cfg).action;
+    const action = JSON.parse(dst_cfg).action;
     connection.logdebug(plugin, 'found config for ' + dest_domain + ': ' + action);
 
     switch (action) {
@@ -174,18 +174,18 @@ exports.dest_domains = function (next, connection, params) {
 };
 
 exports.force_routing = function (next, hmail, domain) {
-    var plugin = this;
+    const plugin = this;
     if (!plugin.cfg.relay.force_routing) { return next(); }
     if (!plugin.dest) { return next(); }
     if (!plugin.dest.domains) { return next(); }
-    var route = plugin.dest.domains[domain];
+    const route = plugin.dest.domains[domain];
 
     if (!route) {
         plugin.logdebug(plugin, 'using normal MX lookup for: ' + domain);
         return next();
     }
 
-    var nexthop = JSON.parse(route).nexthop;
+    const nexthop = JSON.parse(route).nexthop;
     if (!nexthop) {
         plugin.logdebug(plugin, 'using normal MX lookup for: ' + domain);
         return next();
@@ -197,7 +197,7 @@ exports.force_routing = function (next, hmail, domain) {
 
 exports.all = function (next, connection, params) {
 // relay everything - could be useful for a spamtrap
-    var plugin = this;
+    const plugin = this;
     if (!plugin.cfg.relay.all) { return next(); }
 
     connection.loginfo(plugin, "confirming recipient " + params[0]);

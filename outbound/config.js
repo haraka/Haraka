@@ -1,8 +1,8 @@
 "use strict";
 
-var config      = require('../config');
+const config      = require('../config');
 
-var cfg = module.exports;
+let cfg = module.exports;
 
 function load_config () {
     cfg = config.get('outbound.ini', {

@@ -1,10 +1,10 @@
 // spf
 
-var SPF = require('./spf').SPF;
-var net_utils = require('haraka-net-utils');
+const SPF = require('./spf').SPF;
+const net_utils = require('haraka-net-utils');
 
 exports.register = function () {
-    var plugin = this;
+    const plugin = this;
 
     // Override logging in SPF module
     SPF.prototype.log_debug = function (str) {
@@ -15,7 +15,7 @@ exports.register = function () {
 };
 
 exports.load_config = function () {
-    var plugin = this;
+    const plugin = this;
     plugin.nu = net_utils;   // so tests can set public_ip
     plugin.SPF = SPF;
 
@@ -69,7 +69,7 @@ exports.load_config = function () {
 };
 
 exports.hook_helo = exports.hook_ehlo = function (next, connection, helo) {
-    var plugin = this;
+    const plugin = this;
 
     // Bypass private IPs
     if (connection.remote.is_private) { return next(); }
@@ -81,9 +81,9 @@ exports.hook_helo = exports.hook_ehlo = function (next, connection, helo) {
         return next();
     }
 
-    var timeout = false;
-    var spf = new SPF();
-    var timer = setTimeout(function () {
+    let timeout = false;
+    const spf = new SPF();
+    const timer = setTimeout(function () {
         timeout = true;
         connection.logerror(plugin, 'timeout');
         return next();
@@ -96,7 +96,7 @@ exports.hook_helo = exports.hook_ehlo = function (next, connection, helo) {
             connection.logerror(plugin, err);
             return next();
         }
-        var host = connection.hello.host;
+        const host = connection.hello.host;
         plugin.log_result(connection, 'helo', host, 'postmaster@' +
             host, spf.result(result));
 
@@ -112,7 +112,7 @@ exports.hook_helo = exports.hook_ehlo = function (next, connection, helo) {
 };
 
 exports.hook_mail = function (next, connection, params) {
-    var plugin = this;
+    const plugin = this;
 
     // For messages from private IP space...
     if (connection.remote.is_private) {
@@ -120,23 +120,23 @@ exports.hook_mail = function (next, connection, params) {
         if (connection.relaying && plugin.cfg.relay.context !== 'myself') return next();
     }
 
-    var txn = connection.transaction;
+    const txn = connection.transaction;
     if (!txn) return next();
 
-    var mfrom = params[0].address();
-    var host = params[0].host;
-    var spf = new SPF();
-    var auth_result;
+    const mfrom = params[0].address();
+    const host = params[0].host;
+    let spf = new SPF();
+    let auth_result;
 
     if (connection.notes.spf_helo) {
-        var h_result = connection.notes.spf_helo;
-        var h_host = connection.hello.host;
+        const h_result = connection.notes.spf_helo;
+        const h_host = connection.hello.host;
         plugin.save_to_header(connection, spf, h_result, mfrom, h_host, 'helo');
         if (!host) {   // Use results from HELO if the return-path is null
             auth_result = spf.result(h_result).toLowerCase();
             connection.auth_results( "spf="+auth_result+" smtp.helo=" + h_host);
 
-            var sender = '<> via ' + h_host;
+            const sender = '<> via ' + h_host;
             return plugin.return_results(next, connection, spf, 'helo',
                 h_result, sender);
         }
@@ -144,8 +144,8 @@ exports.hook_mail = function (next, connection, params) {
 
     if (!host) return next();  // null-sender
 
-    var timeout = false;
-    var timer = setTimeout(function () {
+    let timeout = false;
+    const timer = setTimeout(function () {
         timeout = true;
         connection.logerror(plugin, 'timeout');
         return next();
@@ -153,7 +153,7 @@ exports.hook_mail = function (next, connection, params) {
 
     spf.helo = connection.hello.host;
 
-    var ch_cb = function (err, result, ip) {
+    const ch_cb = function (err, result, ip) {
         if (timer) clearTimeout(timer);
         if (timeout) return;
         if (err) {
@@ -197,7 +197,7 @@ exports.hook_mail = function (next, connection, params) {
         // check the public IP first, so we only check the public
         // IP if the client IP returns a result other than 'Pass'.
         spf.check_host(connection.remote.ip, host, mfrom, function (err, result) {
-            var spf_result;
+            let spf_result;
             if (result) {
                 spf_result = spf.result(result).toLowerCase();
             }
@@ -231,10 +231,10 @@ exports.log_result = function (connection, scope, host, mfrom, result, ip) {
 };
 
 exports.return_results = function (next, connection, spf, scope, result, sender) {
-    var plugin = this;
-    var msgpre = 'sender ' + sender;
-    var deny = connection.relaying ? 'deny_relay' : 'deny';
-    var defer = connection.relaying ? 'defer_relay' : 'defer';
+    const plugin = this;
+    const msgpre = 'sender ' + sender;
+    const deny = connection.relaying ? 'deny_relay' : 'deny';
+    const defer = connection.relaying ? 'defer_relay' : 'defer';
 
     switch (result) {
         case spf.SPF_NONE:
@@ -269,7 +269,7 @@ exports.return_results = function (next, connection, spf, scope, result, sender)
 };
 
 exports.save_to_header = function (connection, spf, result, mfrom, host, id, ip) {
-    var plugin = this;
+    const plugin = this;
     // Add a trace header
     if (!connection) return;
     if (!connection.transaction) return;

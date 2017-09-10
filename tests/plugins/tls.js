@@ -6,7 +6,7 @@ const fixtures     = require('haraka-test-fixtures');
 const Plugin       = fixtures.plugin;
 
 function _set_up (done) {
-    let plugin = new Plugin('tls');
+    const plugin = new Plugin('tls');
     this.plugin = plugin;
     this.connection = new fixtures.connection.createConnection();
 

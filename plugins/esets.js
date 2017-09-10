@@ -1,51 +1,51 @@
 // esets
-var fs = require('fs');
-var child_process = require('child_process');
-var virus_re = new RegExp('virus="([^"]+)"');
+const fs = require('fs');
+const child_process = require('child_process');
+const virus_re = new RegExp('virus="([^"]+)"');
 
 exports.hook_data_post = function (next, connection) {
-    var plugin = this;
-    var txn = connection.transaction;
-    var cfg = this.config.get('esets.ini');
+    const plugin = this;
+    const txn = connection.transaction;
+    const cfg = this.config.get('esets.ini');
 
     // Write message to temporary file
-    var tmpdir = cfg.main.tmpdir || '/tmp';
-    var tmpfile = tmpdir + '/' + txn.uuid + '.esets';
-    var ws = fs.createWriteStream(tmpfile);
+    const tmpdir = cfg.main.tmpdir || '/tmp';
+    const tmpfile = tmpdir + '/' + txn.uuid + '.esets';
+    const ws = fs.createWriteStream(tmpfile);
 
     ws.once('error', function (err) {
         connection.logerror(plugin, 'Error writing temporary file: ' + err.message);
         return next();
     });
 
-    var start_time;
+    let start_time;
 
-    var wsOnClose = function (error, stdout, stderr) {
+    const wsOnClose = function (error, stdout, stderr) {
         // Remove the temporary file
         fs.unlink(tmpfile, function (){});
 
         // Timing
-        var end_time = Date.now();
-        var elapsed = end_time - start_time;
+        const end_time = Date.now();
+        const elapsed = end_time - start_time;
 
         // Debugging
         [stdout, stderr].forEach(function (channel) {
             if (channel) {
-                var lines = channel.split('\n');
-                for (var i=0; i<lines.length; i++) {
+                const lines = channel.split('\n');
+                for (let i=0; i<lines.length; i++) {
                     if (lines[i]) connection.logdebug(plugin, 'recv: ' + lines[i]);
                 }
             }
         });
 
         // Get virus name
-        var virus;
+        let virus;
         if ((virus = virus_re.exec(stdout))) {
             virus = virus[1];
         }
 
         // Log a summary
-        var exit_code = parseInt((error) ? error.code : 0)
+        const exit_code = parseInt((error) ? error.code : 0)
         connection.loginfo(plugin, 'elapsed=' + elapsed + 'ms' +
                                    ' code=' + exit_code +
                                    (exit_code === 0 || (exit_code > 1 && exit_code < 4)

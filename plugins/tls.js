@@ -8,7 +8,7 @@ const tls_socket = require('./tls_socket');
 exports.net_utils = require('haraka-net-utils');
 
 exports.register = function () {
-    let plugin = this;
+    const plugin = this;
 
     plugin.load_tls_ini();
 
@@ -21,7 +21,7 @@ exports.shutdown = function () {
 }
 
 exports.load_tls_ini = function () {
-    let plugin = this;
+    const plugin = this;
 
     plugin.cfg = tls_socket.load_tls_ini(function () {
         plugin.load_tls_ini();
@@ -29,7 +29,7 @@ exports.load_tls_ini = function () {
 }
 
 exports.advertise_starttls = function (next, connection) {
-    let plugin = this;
+    const plugin = this;
 
     // if no TLS setup incomplete/invalid, don't advertise
     if (!tls_socket.tls_valid) {
@@ -44,7 +44,7 @@ exports.advertise_starttls = function (next, connection) {
         return next();
     }
 
-    var enable_tls = function () {
+    const enable_tls = function () {
         connection.capabilities.push('STARTTLS');
         connection.tls.advertised = true;
         next();
@@ -54,8 +54,8 @@ exports.advertise_starttls = function (next, connection) {
         return enable_tls();
     }
 
-    var redis = server.notes.redis;
-    var dbkey = 'no_tls|' + connection.remote.ip;
+    const redis = server.notes.redis;
+    const dbkey = 'no_tls|' + connection.remote.ip;
 
     redis.get(dbkey, (err, dbr) => {
         if (err) {
@@ -77,7 +77,7 @@ exports.advertise_starttls = function (next, connection) {
 }
 
 exports.set_notls = function (ip) {
-    let plugin = this;
+    const plugin = this;
 
     if (!plugin.cfg.redis) return;
     if (!plugin.cfg.redis.disable_for_failed_hosts) return;
@@ -95,10 +95,10 @@ exports.upgrade_connection = function (next, connection, params) {
     /* Respond to STARTTLS command. */
     connection.respond(220, "Go ahead.");
 
-    let plugin = this;
+    const plugin = this;
     let called_next = false;
     // adjust plugin.timeout like so: echo '45' > config/tls.timeout
-    let timeout = plugin.timeout - 1;
+    const timeout = plugin.timeout - 1;
 
     function nextOnce (disconnected) {
         if (called_next) return;
@@ -144,7 +144,7 @@ exports.hook_disconnect = function (next, connection) {
 }
 
 exports.emit_upgrade_msg = function (conn, verified, verifyErr, cert, cipher) {
-    let plugin = this;
+    const plugin = this;
     let msg = 'secured:';
     if (cipher) {
         msg += ` cipher=${cipher.name} version=${cipher.version}`;

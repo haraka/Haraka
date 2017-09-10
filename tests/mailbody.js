@@ -1,4 +1,4 @@
-var Body   = require('../mailbody').Body;
+const Body   = require('../mailbody').Body;
 
 function _fill_body (body, quote) {
     // Body.bodytext retains the original received text before filters are
@@ -21,7 +21,7 @@ function _fill_body (body, quote) {
     body.parse_more("Some text for your testing pleasure.\n");
     body.parse_more("Yup that was some text all right.\n");
     body.parse_more("\n");
-    var text = body.parse_more("--abcdef\n");
+    let text = body.parse_more("--abcdef\n");
     body.parse_more("Content-Type: text/html; charset=UTF-8;\n");
     body.parse_more(" title*0*=us-ascii'en'This%20is%20even%20more%20\n");
     body.parse_more(" title*1*=%2A%2A%2Afun%2A%2A%2A%20\n");
@@ -30,7 +30,7 @@ function _fill_body (body, quote) {
     body.parse_more("<p>This is some HTML, yo.<br>\n");
     body.parse_more("It's pretty rad.</p>\n");
     body.parse_more("\n");
-    var html = body.parse_more("--abcdef--\n");
+    let html = body.parse_more("--abcdef--\n");
     body.parse_end();
 
     text = text.replace(/--abcdef\n$/, '').trim();
@@ -51,10 +51,10 @@ function _fill_empty_body (body) {
     body.parse_more("--abcdef\n");
     body.parse_more("Content-Type: text/plain; charset=UTF-8; format=flowed;\n");
     body.parse_more("\n");
-    var text = body.parse_more("--abcdef\n");
+    let text = body.parse_more("--abcdef\n");
     body.parse_more("Content-Type: text/html; charset=UTF-8;\n");
     body.parse_more("\n");
-    var html = body.parse_more("--abcdef--\n");
+    let html = body.parse_more("--abcdef--\n");
     body.parse_end();
 
     text = text.replace(/--abcdef\n$/, '').trim();
@@ -67,7 +67,7 @@ exports.basic = {
     'children': function (test) {
         test.expect(1);
 
-        var body = new Body();
+        const body = new Body();
         _fill_body(body);
 
         test.equal(body.children.length, 2);
@@ -79,9 +79,9 @@ exports.banners = {
     'banner': function (test) {
         test.expect(2);
 
-        var body = new Body();
+        const body = new Body();
         body.set_banner(['A text banner', 'An HTML banner']);
-        var parts = _fill_body(body);
+        const parts = _fill_body(body);
 
         test.ok(/A text banner$/.test(parts[0]));
         test.ok(/<P>An HTML banner<\/P>$/.test(parts[1]));
@@ -91,17 +91,17 @@ exports.banners = {
     'insert_banner': function (test){
         test.expect(2);
 
-        var content_type;
-        var buf;
-        var new_buf;
-        var enc = 'UTF-8';
+        let content_type;
+        let buf;
+        let new_buf;
+        const enc = 'UTF-8';
 
-        var body = new Body();
-        var banners = [ 'textbanner', 'htmlbanner' ];
+        const body = new Body();
+        const banners = [ 'textbanner', 'htmlbanner' ];
 
         // this is a kind of roundabout way to get at the insert_banners code
         body.set_banner(banners);
-        var insert_banners_fn = body.filters[0];
+        const insert_banners_fn = body.filters[0];
 
         content_type = 'text/html';
         buf = new Buffer("winter </html>");
@@ -125,21 +125,20 @@ exports.banners = {
     'insert_banner_empty_buffer': function (test){
         test.expect(2);
 
-        var content_type;
-        var empty_buf;
-        var new_buf;
-        var enc = 'UTF-8';
+        let content_type;
+        let new_buf;
+        const enc = 'UTF-8';
 
-        var body = new Body();
-        var banners = [ 'textbanner', 'htmlbanner' ];
+        const body = new Body();
+        const banners = [ 'textbanner', 'htmlbanner' ];
 
         // this is a kind of roundabout way to get at the insert_banners code
         body.set_banner(banners);
-        var insert_banners_fn = body.filters[0];
+        const insert_banners_fn = body.filters[0];
 
 
         content_type = 'text/html';
-        empty_buf = new Buffer("");
+        const empty_buf = new Buffer('');
         new_buf = insert_banners_fn (content_type, enc, empty_buf);
         test.equal(new_buf.toString(), "<P>htmlbanner</P>",
             "empty html part gets a banner" );
@@ -155,11 +154,11 @@ exports.banners = {
     'insert_banner_empty_body': function (test) {
         test.expect(2);
 
-        var body = new Body();
-        var banners = [ 'textbanner', 'htmlbanner' ];
+        const body = new Body();
+        const banners = [ 'textbanner', 'htmlbanner' ];
 
         body.set_banner(banners);
-        var results = _fill_empty_body(body);
+        const results = _fill_empty_body(body);
 
         test.equal(results[0], banners[0]);
         test.equal(results[1], '<P>' + banners[1] + '</P>');
@@ -172,9 +171,9 @@ exports.filters = {
     'empty': function (test) {
         test.expect(2);
 
-        var body = new Body();
+        const body = new Body();
         body.add_filter(function (ct, enc, buf) { });
-        var parts = _fill_body(body);
+        const parts = _fill_body(body);
 
         test.ok(/Some text/.test(parts[0]));
         test.ok(/This is some HTML/.test(parts[1]));
@@ -184,7 +183,7 @@ exports.filters = {
     'search/replace': function (test) {
         test.expect(2);
 
-        var body = new Body();
+        const body = new Body();
         body.add_filter(function (ct, enc, buf) {
             if (/^text\/plain/.test(ct)) {
                 return new Buffer("TEXT FILTERED");
@@ -193,7 +192,7 @@ exports.filters = {
                 return new Buffer("<p>HTML FILTERED</p>");
             }
         });
-        var parts = _fill_body(body);
+        const parts = _fill_body(body);
 
         test.equal(parts[0], "TEXT FILTERED");
         test.equal(parts[1], "<p>HTML FILTERED</p>");
@@ -204,10 +203,10 @@ exports.filters = {
     function (test) {
         test.expect(1);
 
-        var body = new Body();
+        const body = new Body();
         body.add_filter(function () {});
 
-        var lines = [];
+        let lines = [];
 
         body.state = 'headers'; // HACK
         [
@@ -229,8 +228,8 @@ exports.filters = {
             return l.trim();
         });
 
-        var dupe = false;
-        var line;
+        let dupe = false;
+        let line;
         while ((line = lines.pop())) {
             lines.forEach(function (l) {
                 dupe = dupe || line === l;
@@ -246,7 +245,7 @@ exports.rfc2231 = {
     'multi-value': function (test) {
         test.expect(1);
 
-        var body = new Body();
+        const body = new Body();
         _fill_body(body);
 
         test.ok(body.children[0].header.get_decoded('content-type').indexOf('URL="ftp://cs.utk.edu/pub/moore/bulk-mailer/bulk-mailer.tar";') > 0);
@@ -256,7 +255,7 @@ exports.rfc2231 = {
     'enc-and-lang': function (test) {
         test.expect(1);
 
-        var body = new Body();
+        const body = new Body();
         _fill_body(body);
 
         test.ok(body.children[0].header.get_decoded('content-type').indexOf('title="This is ***fun***";') > 0);
@@ -266,7 +265,7 @@ exports.rfc2231 = {
     'multi-value-enc-and-lang': function (test) {
         test.expect(1);
 
-        var body = new Body();
+        const body = new Body();
         _fill_body(body);
 
         test.ok(body.children[1].header.get_decoded('content-type').indexOf('title="This is even more ***fun*** isn\'t it!";') > 0);
@@ -278,7 +277,7 @@ exports.boundaries = {
     'with-quotes': function (test) {
         test.expect(1);
 
-        var body = new Body();
+        const body = new Body();
         _fill_body(body, '"');
 
         test.equal(body.children.length, 2);
@@ -288,7 +287,7 @@ exports.boundaries = {
     'without-quotes': function (test) {
         test.expect(1);
 
-        var body = new Body();
+        const body = new Body();
         _fill_body(body, "");
 
         test.equal(body.children.length, 2);
@@ -298,7 +297,7 @@ exports.boundaries = {
     'with-bad-quotes': function (test) {
         test.expect(1);
 
-        var body = new Body();
+        const body = new Body();
         _fill_body(body, "'");
 
         test.equal(body.children.length, 0);

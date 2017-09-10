@@ -1,10 +1,10 @@
 'use strict';
 
-var path = require('path');
-var fixtures     = require('haraka-test-fixtures');
-var ipaddr       = require('ipaddr.js');
+const path = require('path');
+const fixtures     = require('haraka-test-fixtures');
+const ipaddr       = require('ipaddr.js');
 
-var _set_up = function (done) {
+const _set_up = function (done) {
 
     this.plugin = new fixtures.plugin('greylist');
     this.plugin.config.root_path = path.resolve(__dirname, '../../config');

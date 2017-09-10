@@ -1,17 +1,17 @@
 // This plugin checks for clients that talk before we sent a response
 
-var ipaddr = require('ipaddr.js');
-var isIPv6 = require('net').isIPv6;
+const ipaddr = require('ipaddr.js');
+const isIPv6 = require('net').isIPv6;
 
 exports.register = function () {
-    var plugin = this;
+    const plugin = this;
     plugin.load_config();
     plugin.register_hook('connect_init', 'early_talker');
     plugin.register_hook('data',         'early_talker');
 };
 
 exports.load_config = function () {
-    var plugin = this;
+    const plugin = this;
 
     plugin.cfg = plugin.config.get('early_talker.ini', {
         booleans: [
@@ -37,7 +37,7 @@ exports.load_config = function () {
 };
 
 exports.early_talker = function (next, connection) {
-    var plugin = this;
+    const plugin = this;
     if (!plugin.pause) return next();
 
     if (connection.relaying) {    // Don't delay AUTH/RELAY clients
@@ -53,7 +53,7 @@ exports.early_talker = function (next, connection) {
         return next();
     }
 
-    var check = function () {
+    const check = function () {
         if (!connection) return next();
         if (!connection.early_talker) {
             connection.results.add(plugin, {pass: 'early'});
@@ -64,9 +64,9 @@ exports.early_talker = function (next, connection) {
         return next(DENYDISCONNECT, "You talk too soon");
     };
 
-    var pause = plugin.pause;
+    let pause = plugin.pause;
     if (plugin.hook === 'connect_init') {
-        var elapsed = (Date.now() - connection.start_time);
+        const elapsed = (Date.now() - connection.start_time);
         if (elapsed > plugin.pause) {
             // Something else already waited
             return check();
@@ -85,15 +85,15 @@ exports.early_talker = function (next, connection) {
  * @return {Boolean}         True if is whitelisted
  */
 exports.ip_in_list = function (ip) {
-    var plugin = this;
+    const plugin = this;
 
     if (!plugin.whitelist) {
         return false;
     }
 
-    var ipobj = ipaddr.parse(ip);
+    const ipobj = ipaddr.parse(ip);
 
-    for (var i = 0; i < plugin.whitelist.length; i++) {
+    for (let i = 0; i < plugin.whitelist.length; i++) {
         try {
             if (ipobj.match(plugin.whitelist[i])) {
                 return true;
@@ -112,11 +112,11 @@ exports.ip_in_list = function (ip) {
  * @return {Array}      The converted array
  */
 exports.load_ip_list = function (list) {
-    var whitelist = [];
+    const whitelist = [];
 
-    for (var i = 0; i < list.length; i++) {
+    for (let i = 0; i < list.length; i++) {
         try {
-            var addr = list[i];
+            let addr = list[i];
             if (addr.match(/\/\d+$/)) {
                 addr = ipaddr.parseCIDR(addr);
             }

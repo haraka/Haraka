@@ -1,12 +1,12 @@
 // auth/auth_ldap
 
-var ldap  = require('ldapjs');
-var async = require('async');
+const ldap  = require('ldapjs');
+const async = require('async');
 
 exports.hook_capabilities = function (next, connection) {
     // Don't offer AUTH capabilities by default unless session is encrypted
     if (connection.tls.enabled) {
-        var methods = [ 'LOGIN' ];
+        const methods = [ 'LOGIN' ];
         connection.capabilities.push('AUTH ' + methods.join(' '));
         connection.notes.allowed_auth_methods = methods;
     }
@@ -19,15 +19,15 @@ exports.register = function () {
 
 exports.check_plain_passwd = function (connection, user, passwd, cb) {
     // Get LDAP config
-    var config = this.config.get('auth_ldap.ini');
-    var ldap_url = 'ldap://127.0.0.1';
+    const config = this.config.get('auth_ldap.ini');
+    let ldap_url = 'ldap://127.0.0.1';
     if (config.core.server) {
         ldap_url = config.core.server;
     }
-    var rejectUnauthorized = (config.core.rejectUnauthorized != undefined) ?
+    const rejectUnauthorized = (config.core.rejectUnauthorized != undefined) ?
         config.core.rejectUnauthorized : true;
 
-    var client = ldap.createClient({
+    const client = ldap.createClient({
         url: ldap_url,
         timeout: (config.core.timeout != undefined) ? config.core.timeout : 5000,
         tlsOptions: {

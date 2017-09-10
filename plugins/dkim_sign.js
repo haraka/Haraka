@@ -1,14 +1,14 @@
 // dkim_signer
 // Implements DKIM core as per www.dkimcore.org
 
-var addrparser = require('address-rfc2822');
-var async      = require('async');
-var crypto     = require('crypto');
-var fs         = require('fs');
-var path       = require('path');
-var Stream     = require('stream').Stream;
+const addrparser = require('address-rfc2822');
+const async      = require('async');
+const crypto     = require('crypto');
+const fs         = require('fs');
+const path       = require('path');
+const Stream     = require('stream').Stream;
 
-var utils      = require('haraka-utils');
+const utils      = require('haraka-utils');
 
 class DKIMSignStream extends Stream {
     constructor (selector, domain, private_key, headers_to_sign, header, end_callback) {
@@ -37,14 +37,14 @@ DKIMSignStream.prototype.write = function (buf) {
     if (this.buffer.ar.length) {
         this.buffer.ar.push(buf);
         this.buffer.len += buf.length;
-        var nb = Buffer.concat(this.buffer.ar, this.buffer.len);
+        const nb = Buffer.concat(this.buffer.ar, this.buffer.len);
         buf = nb;
         this.buffer = { ar: [], len: 0 };
     }
     // Process input buffer into lines
-    var offset = 0;
+    let offset = 0;
     while ((offset = utils.indexOfLF(buf)) !== -1) {
-        var line = buf.slice(0, offset+1);
+        const line = buf.slice(0, offset+1);
         if (buf.length > offset) {
             buf = buf.slice(offset+1);
         }
@@ -65,7 +65,7 @@ DKIMSignStream.prototype.write = function (buf) {
             if (!this.found_eoh) continue; // Skip headers
             if (this.line_buffer.ar.length) {
                 // We need to process the buffered CRLFs
-                var lb = Buffer.concat(this.line_buffer.ar, this.line_buffer.len);
+                const lb = Buffer.concat(this.line_buffer.ar, this.line_buffer.len);
                 this.line_buffer = { ar: [], len: 0 };
                 this.hash.update(lb);
             }
@@ -86,20 +86,20 @@ DKIMSignStream.prototype.end = function (buf) {
     if (this.buffer.ar.length) {
         this.buffer.ar.push(new Buffer("\r\n"));
         this.buffer.len += 2;
-        var le = Buffer.concat(this.buffer.ar, this.buffer.len);
+        const le = Buffer.concat(this.buffer.ar, this.buffer.len);
         this.hash.update(le);
         this.buffer = { ar: [], len: 0 };
     }
 
-    var bodyhash = this.hash.digest('base64');
+    const bodyhash = this.hash.digest('base64');
 
     /*
     ** HEADERS (relaxed canonicaliztion)
     */
 
-    var headers = [];
-    for (var i=0; i < this.headers_to_sign.length; i++) {
-        var head = this.header.get(this.headers_to_sign[i]);
+    const headers = [];
+    for (let i=0; i < this.headers_to_sign.length; i++) {
+        let head = this.header.get(this.headers_to_sign[i]);
         if (head) {
             head = head.replace(/\r?\n/gm, '');
             head = head.replace(/\s+/gm, ' ');
@@ -110,13 +110,13 @@ DKIMSignStream.prototype.end = function (buf) {
     }
 
     // Create DKIM header
-    var dkim_header = 'v=1;a=rsa-sha256;bh=' + bodyhash +
+    let dkim_header = 'v=1;a=rsa-sha256;bh=' + bodyhash +
                       ';c=relaxed/simple;d=' + this.domain +
                       ';h=' + headers.join(':') +
                       ';s=' + this.selector +
                       ';b=';
     this.signer.update('dkim-signature:' + dkim_header);
-    var signature = this.signer.sign(this.private_key, 'base64');
+    const signature = this.signer.sign(this.private_key, 'base64');
     dkim_header += signature;
 
     if (this.end_callback) this.end_callback(null, dkim_header);
@@ -134,13 +134,13 @@ DKIMSignStream.prototype.destroy = function () {
 exports.DKIMSignStream = DKIMSignStream;
 
 exports.register = function () {
-    var plugin = this;
+    const plugin = this;
     plugin.load_dkim_sign_ini();
     plugin.load_dkim_key();
 };
 
 exports.load_dkim_sign_ini = function () {
-    var plugin = this;
+    const plugin = this;
     plugin.cfg = plugin.config.get('dkim_sign.ini', {
         booleans: [
             '-disabled',
@@ -151,7 +151,7 @@ exports.load_dkim_sign_ini = function () {
 };
 
 exports.load_dkim_key = function () {
-    var plugin = this;
+    const plugin = this;
     plugin.private_key = plugin.config.get(
         'dkim.private.key',
         'data',
@@ -164,7 +164,7 @@ exports.load_key = function (file) {
 };
 
 exports.hook_queue_outbound = exports.hook_pre_send_trans_email = function (next, connection) {
-    var plugin = this;
+    const plugin = this;
     if (plugin.cfg.main.disabled) { return next(); }
     if (connection.transaction.notes.dkim_signed) {
         connection.logdebug(plugin, 'email already signed');
@@ -176,9 +176,9 @@ exports.hook_queue_outbound = exports.hook_pre_send_trans_email = function (next
             connection.logerror(plugin, err);
             return next(DENYSOFT, "Error getting key_dir in dkim_sign");
         }
-        var domain;
-        var selector;
-        var private_key;
+        let domain;
+        let selector;
+        let private_key;
         if (!keydir) {
             domain = plugin.cfg.main.domain;
             private_key = plugin.private_key;
@@ -195,9 +195,9 @@ exports.hook_queue_outbound = exports.hook_pre_send_trans_email = function (next
             return next();
         }
 
-        var headers_to_sign = plugin.get_headers_to_sign();
-        var txn = connection.transaction;
-        var dkimCallback = function (err2, dkim_header) {
+        const headers_to_sign = plugin.get_headers_to_sign();
+        const txn = connection.transaction;
+        const dkimCallback = function (err2, dkim_header) {
             if (err2) {
                 txn.results.add(plugin, {err: err2.message});
             }
@@ -216,18 +216,18 @@ exports.hook_queue_outbound = exports.hook_pre_send_trans_email = function (next
 };
 
 exports.get_key_dir = function (connection, done) {
-    var plugin = this;
-    var domain = plugin.get_sender_domain(connection.transaction);
+    const plugin = this;
+    const domain = plugin.get_sender_domain(connection.transaction);
     if (!domain) { return done(); }
 
     // split the domain name into labels
-    var labels     = domain.split('.');
-    var haraka_dir = process.env.HARAKA || '';
+    const labels     = domain.split('.');
+    const haraka_dir = process.env.HARAKA || '';
 
     // list possible matches (ex: mail.example.com, example.com, com)
-    var dom_hier = [];
-    for (var i=0; i<labels.length; i++) {
-        var dom = labels.slice(i).join('.');
+    const dom_hier = [];
+    for (let i=0; i<labels.length; i++) {
+        const dom = labels.slice(i).join('.');
         dom_hier[i] = path.resolve(haraka_dir, 'config', 'dkim', dom);
     }
 
@@ -246,7 +246,7 @@ exports.get_key_dir = function (connection, done) {
 };
 
 exports.has_key_data = function (conn, domain, selector, private_key) {
-    var plugin = this;
+    const plugin = this;
 
     // Make sure we have all the relevant configuration
     if (!private_key) {
@@ -267,8 +267,8 @@ exports.has_key_data = function (conn, domain, selector, private_key) {
 };
 
 exports.get_headers_to_sign = function () {
-    var plugin = this;
-    var headers = [];
+    const plugin = this;
+    let headers = [];
     if (!plugin.cfg.main.headers_to_sign) {
         return headers;
     }
@@ -286,11 +286,11 @@ exports.get_headers_to_sign = function () {
 };
 
 exports.get_sender_domain = function (txn) {
-    var plugin = this;
+    const plugin = this;
     if (!txn) { return; }
 
     // a fallback, when header parsing fails
-    var domain;
+    let domain;
     try { domain = txn.mail_from.host && txn.mail_from.host.toLowerCase(); }
     catch (e) {
         plugin.logerror(e);
@@ -300,17 +300,17 @@ exports.get_sender_domain = function (txn) {
 
     // the DKIM signing key should be aligned with the domain in the From
     // header (see DMARC). Try to parse the domain from there.
-    var from_hdr = txn.header.get('From');
+    const from_hdr = txn.header.get('From');
     if (!from_hdr) { return domain; }
 
     // The From header can contain multiple addresses and should be
     // parsed as described in RFC 2822 3.6.2.
-    var addrs = addrparser.parse(from_hdr);
+    const addrs = addrparser.parse(from_hdr);
     if (!addrs || ! addrs.length) { return domain; }
 
     // If From has a single address, we're done
     if (addrs.length === 1 && addrs[0].host) {
-        var fromHost = addrs[0].host();
+        let fromHost = addrs[0].host();
         if (fromHost) {
             // don't attempt to lower a null or undefined value #1575
             fromHost = fromHost.toLowerCase();
@@ -320,7 +320,7 @@ exports.get_sender_domain = function (txn) {
 
     // If From has multiple-addresses, we must parse and
     // use the domain in the Sender header.
-    var sender = txn.header.get('Sender');
+    const sender = txn.header.get('Sender');
     if (sender) {
         try {
             domain = (addrparser.parse(sender))[0].host().toLowerCase();

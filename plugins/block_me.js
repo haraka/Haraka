@@ -3,8 +3,8 @@
 // in the mail_from.blocklist file. You need to be running the
 // mail_from.blocklist plugin for this to work fully.
 
-var fs = require('fs');
-var utils = require('haraka-utils');
+const fs = require('fs');
+const utils = require('haraka-utils');
 
 exports.hook_data = function (next, connection) {
     // enable mail body parsing
@@ -17,10 +17,10 @@ exports.hook_data_post = function (next, connection) {
         return next();
     }
 
-    var recip = (this.config.get('block_me.recipient') || '').toLowerCase();
-    var senders = this.config.get('block_me.senders', 'list');
+    const recip = (this.config.get('block_me.recipient') || '').toLowerCase();
+    const senders = this.config.get('block_me.senders', 'list');
 
-    var self = this;
+    const self = this;
 
     // Make sure only 1 recipient
     if (connection.transaction.rcpt_to.length != 1) {
@@ -33,13 +33,13 @@ exports.hook_data_post = function (next, connection) {
     }
 
     // Check sender is in list
-    var sender = connection.transaction.mail_from.address();
+    const sender = connection.transaction.mail_from.address();
     if (!utils.in_array(sender, senders)) {
         return next(DENY, "You are not allowed to block mail, " + sender);
     }
 
     // Now extract the "From" from the body...
-    var to_block = extract_from_line(connection.transaction.body);
+    const to_block = extract_from_line(connection.transaction.body);
     if (!to_block) {
         connection.logerror(this, "No sender found in email");
         return next();
@@ -74,13 +74,13 @@ exports.hook_queue = function (next, connection) {
 
 // Example: From: 	Site Tucano Gold <contato@tucanogold.com.br>
 function extract_from_line (body) {
-    var matches = body.bodytext.match(/\bFrom:[^<\n]*<([^>\n]*)>/);
+    const matches = body.bodytext.match(/\bFrom:[^<\n]*<([^>\n]*)>/);
     if (matches) {
         return matches[1];
     }
 
-    for (var i=0,l=body.children.length; i < l; i++) {
-        var from = extract_from_line(body.children[i]);
+    for (let i=0,l=body.children.length; i < l; i++) {
+        const from = extract_from_line(body.children[i]);
         if (from) {
             return from;
         }

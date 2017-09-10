@@ -1,13 +1,13 @@
-var amqp = require('amqp');
-var logger = require('./logger');
+const amqp = require('amqp');
+const logger = require('./logger');
 
-var rabbitqueue;
-var exchangeName;
-var queueName;
-var deliveryMode;
-var connExchange_;
-var connQueue_;
-var routing_;
+let rabbitqueue;
+let exchangeName;
+let queueName;
+let deliveryMode;
+let connExchange_;
+let connQueue_;
+let routing_;
 exports.exchangeMapping = {}
 
 //This method registers the hook and try to initialize the connection to rabbitmq server for later use.
@@ -22,7 +22,7 @@ exports.register = function () {
 exports.hook_queue = function (next, connection) {
     //Calling the get_data method and when it gets the data on callback, publish the message to queue with routing key.
     connection.transaction.message_stream.get_data(function (buffere) {
-        var exchangeData = exports.exchangeMapping[exchangeName + queueName]
+        const exchangeData = exports.exchangeMapping[exchangeName + queueName]
         logger.logdebug("Sending the data: "+ queueName+" Routing : "+ exchangeData + " exchange :"+connExchange_);
         if (connExchange_ && routing_) {
             //This is publish function of rabbitmq amqp library, currently direct queue is configured and routing is fixed.
@@ -51,17 +51,17 @@ exports.hook_queue = function (next, connection) {
 
 //This initializes the connection to rabbitmq server, It reads values from rabbitmq.ini file in config directory.
 exports.init_rabbitmq_server = function () {
-    var plugin = this;
+    const plugin = this;
     // this is called during init of rabbitmq
 
     //Read the config file rabbitmq
-    var config     = plugin.config.get('rabbitmq.ini');
+    const config     = plugin.config.get('rabbitmq.ini');
     //Just putting the defaults
-    var options = {};
-    var confirm = true;
-    var durable = true;
-    var autoDelete = false;
-    var exchangeType = 'direct';
+    const options = {};
+    let confirm = true;
+    let durable = true;
+    let autoDelete = false;
+    let exchangeType = 'direct';
 
     //Getting the values from config file rabbitmq.ini
     if (config.rabbitmq) {
@@ -122,13 +122,11 @@ exports.init_rabbitmq_server = function () {
                 logger.logdebug("connQueue with server "+connQueue);
 
                 //Creating the Routing key to bind the queue and exchange.
-                var key;
-                var routing;
-                routing = "" + queueName + "Routing";
+                const routing = "" + queueName + "Routing";
 
                 // Will try to bing queue and exchange which was created above.
                 connQueue.bind(connExchange, routing);
-                key = exchangeName + queueName;
+                const key = exchangeName + queueName;
 
                 //Save the variables for publising later.
                 if (!exports.exchangeMapping[key]) {
