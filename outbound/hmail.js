@@ -974,8 +974,13 @@ HMailItem.prototype.populate_bounce_message_with_headers = function (from, to, r
     var originalMessageId = header.get('Message-Id');
 
     var bounce_msg_ = config.get('outbound.bounce_message', 'data');
+    var bounce_msg_html_ = config.get('outbound.bounce_message_html', 'data');
+    var bounce_msg_image_ = config.get('outbound.bounce_message_image', 'data');
+
     var bounce_header_lines = [];
     var bounce_body_lines = [];
+    var bounce_html_lines = [];
+    var bounce_image_lines = [];
     var bounce_headers_done = false;
     bounce_msg_.forEach(function (line) {
         if (bounce_headers_done == false && line == '') {
@@ -987,6 +992,14 @@ HMailItem.prototype.populate_bounce_message_with_headers = function (from, to, r
         else if (bounce_headers_done == true) {
             bounce_body_lines.push(line);
         }
+    });
+
+    bounce_msg_html_.forEach(function (line) {
+        bounce_html_lines.push(line)
+    });
+
+    bounce_msg_image_.forEach(function (line) {
+        bounce_image_lines.push(line)
     });
 
 
@@ -1007,13 +1020,48 @@ HMailItem.prototype.populate_bounce_message_with_headers = function (from, to, r
     bounce_body.push('This is a MIME-encapsulated message.' + CRLF);
     bounce_body.push(CRLF);
 
-    bounce_body.push('--' + boundary + CRLF);
+    var boundary_incr = ''
+    if (bounce_html_lines.length > 1) {
+        boundary_incr = 'a'
+        bounce_body.push('--' + boundary + CRLF);
+        bounce_body.push('Content-Type: multipart/related; boundary="' + boundary + boundary_incr + '"' + CRLF);
+        bounce_body.push(CRLF);
+        bounce_body.push('--' + boundary + boundary_incr + CRLF);
+        boundary_incr = 'b'
+        bounce_body.push('Content-Type: multipart/alternative; boundary="' + boundary + boundary_incr + '"' + CRLF);
+        bounce_body.push(CRLF);
+    }
+
+    bounce_body.push('--' + boundary + boundary_incr + CRLF);
     bounce_body.push('Content-Type: text/plain; charset=us-ascii' + CRLF);
     bounce_body.push(CRLF);
     bounce_body_lines.forEach(function (line) {
         bounce_body.push(line + CRLF);
     });
     bounce_body.push(CRLF);
+
+    if (bounce_html_lines.length > 1) {
+      bounce_body.push('--' + boundary + boundary_incr + CRLF);
+      bounce_body.push('Content-Type: text/html; charset=us-ascii' + CRLF);
+      bounce_body.push(CRLF);
+      bounce_html_lines.forEach(function (line) {
+          bounce_body.push(line + CRLF);
+      });
+      bounce_body.push(CRLF);
+      bounce_body.push('--' + boundary + boundary_incr + '--' + CRLF);
+
+      if (bounce_image_lines.length > 1) {
+        boundary_incr = 'a'
+        bounce_body.push('--' + boundary + boundary_incr + CRLF);
+        //bounce_body.push('Content-Type: text/html; charset=us-ascii' + CRLF);
+        //bounce_body.push(CRLF);
+        bounce_image_lines.forEach(function (line) {
+            bounce_body.push(line + CRLF);
+        });
+        bounce_body.push(CRLF);
+        bounce_body.push('--' + boundary + boundary_incr + '--' + CRLF);
+      }
+    }
 
     bounce_body.push('--' + boundary + CRLF);
     bounce_body.push('Content-type: message/delivery-status' + CRLF);
