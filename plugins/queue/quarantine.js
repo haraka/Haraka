@@ -2,6 +2,7 @@
 
 var fs   = require('fs');
 var path = require('path');
+var mkdirp = require('mkdirp');
 
 exports.register = function () {
     const plugin = this;
@@ -22,16 +23,6 @@ exports.load_quarantine_ini = function () {
         plugin.load_quarantine_ini();
     })
 }
-
-// http://unknownerror.net/2011-05/16260-nodejs-mkdirs-recursion-create-directory.html
-var mkdirs = exports.mkdirs = function (dirpath, mode, callback) {
-    if (fs.existsSync(dirpath)) {
-        return callback(dirpath);
-    }
-    mkdirs(path.dirname(dirpath), mode, function () {
-        fs.mkdir(dirpath, mode, callback);
-    });
-};
 
 var zeroPad = exports.zeroPad = function (n, digits) {
     n = n.toString();
@@ -77,7 +68,10 @@ exports.get_base_dir = function () {
 exports.init_quarantine_dir = function (done) {
     const plugin = this;
     const tmp_dir = path.join(plugin.get_base_dir(), 'tmp');
-    mkdirs(tmp_dir, parseInt('0770', 8), function () {
+    mkdirp(tmp_dir, function (err) {
+        if (err) {
+            plugin.logerror(`Unable to create ${tmp_dir}`);
+        }
         plugin.loginfo(`created ${tmp_dir}`);
         done();
     });
@@ -113,7 +107,12 @@ exports.quarantine = function (next, connection) {
     // successful we hardlink the file to the final destination and then
     // remove the temporary file to guarantee a complete file in the
     // final destination.
-    mkdirs(msg_dir, parseInt('0770', 8), function () {
+    mkdirp(msg_dir, function (error) {
+        if (error) {
+            connection.logerror(plugin, 'Error creating directory: ' + msg_dir);
+            return next();
+        }
+
         const ws = fs.createWriteStream(tmp_path);
 
         ws.on('error', function (err) {
