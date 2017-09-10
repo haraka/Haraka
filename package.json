@@ -34,7 +34,8 @@
     "haraka-results"        : "^2.0.0",
     "haraka-utils"          : "*",
     "haraka-plugin-access"  : "*",
-    "haraka-plugin-limit"   : "*"
+    "haraka-plugin-limit"   : "*",
+    "mkdirp"                : "~0.5.1"
   },
   "optionalDependencies": {
     "haraka-plugin-asn"     : "*",

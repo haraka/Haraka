@@ -5,10 +5,13 @@
     * additional results storing in smtp_forward and quarantine #2067
     * smtp_forward stores queue note at queue.wants #2083
     * ES6: replace var with const or let  #2073
+    * Remove unused folders from installation #2088
 * New Features
     * TLS certificate directory (config/tls) #2032
     * plugins can specify a queue plugin & next_hop route #2067
     * connection/transaction notes now have get/set #2082
+* Fixes
+    * haraka cli will now create folders if they don't exist #2088
 
 ## 2.8.14 - Jul 26, 2017
 
@@ -376,7 +379,7 @@
     * removed TLD stuff to haraka/haraka-tld (#1301)
     * removed unused 'require('redis') in plugins/karma (#1348)
     * improved MIME header support per rfc2231 (#1344)
-    * tls options can be defined for outbound and smtp\_\* (#1357) 
+    * tls options can be defined for outbound and smtp\_\* (#1357)
     * explicitly disable SSLv2 (#1395)
     * cache STUN results
     * xclient plugin improvements (#1405)
@@ -428,7 +431,7 @@
     * connection: pause for hook_reset_transaction (#1303)
     * rcpt_to.routes: update redis usage for compat with redis plugin (#1302)
     * smtp_forward: use correct config path to auth settings (#1327)
-    * messagestream: correctly pass options parameter to get_data (#1316) 
+    * messagestream: correctly pass options parameter to get_data (#1316)
     * spf: honour configuration for mfrom scope (#1322)
     * outbound: Add missing dash to 'Final-Recipient' header name (#1320)
 

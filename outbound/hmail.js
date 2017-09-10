@@ -124,6 +124,7 @@ HMailItem.prototype.read_todo = function () {
                 self.todo = JSON.parse(todo);
                 self.todo.rcpt_to = self.todo.rcpt_to.map(function (a) { return new Address (a); });
                 self.todo.mail_from = new Address (self.todo.mail_from);
+                self.todo.notes = new Notes(self.todo.notes);
                 self.emit('ready');
             }
         });
