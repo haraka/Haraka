@@ -1,4 +1,4 @@
-var Transaction  = require('../transaction');
+const Transaction  = require('../transaction');
 
 function _set_up (done) {
     this.transaction = Transaction.createTransaction();
@@ -14,7 +14,7 @@ exports.transaction = {
     tearDown : _tear_down,
 
     'add_body_filter': function (test) {
-        var self = this;
+        const self = this;
 
         test.expect(3);
 
@@ -48,7 +48,7 @@ exports.transaction = {
     },
 
     'regression: attachment_hooks before set_banner/add_body_filter': function (test) {
-        var self = this;
+        const self = this;
 
         test.expect(2);
 

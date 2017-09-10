@@ -2,9 +2,9 @@
 // An RFC 2822 email header parser
 /* eslint no-control-regex: 0 */
 
-var logger = require('./logger');
-var utils  = require('haraka-utils');
-var Iconv;
+const logger = require('./logger');
+const utils  = require('haraka-utils');
+let Iconv;
 try { Iconv = require('iconv').Iconv }
 catch (err) {
     logger.logdebug("No iconv available - install with 'npm install iconv'");
@@ -21,10 +21,10 @@ exports.Header = Header;
 exports.Iconv  = Iconv;
 
 Header.prototype.parse = function (lines) {
-    var self = this;
+    const self = this;
 
     for (let i=0,l=lines.length; i < l; i++) {
-        var line = lines[i];
+        const line = lines[i];
         if (/^[ \t]/.test(line)) {
             // continuation
             this.header_list[this.header_list.length - 1] += line;
@@ -35,10 +35,10 @@ Header.prototype.parse = function (lines) {
     }
 
     for (let i=0,l=this.header_list.length; i < l; i++) {
-        var match = this.header_list[i].match(/^([^\s:]*):\s*([\s\S]*)$/);
+        const match = this.header_list[i].match(/^([^\s:]*):\s*([\s\S]*)$/);
         if (match) {
-            var key = match[1].toLowerCase();
-            var val = match[2];
+            const key = match[1].toLowerCase();
+            const val = match[2];
 
             this._add_header(key, val, "push");
         }
@@ -57,7 +57,7 @@ Header.prototype.parse = function (lines) {
 
 function try_convert (data, encoding) {
     try {
-        let converter = new Iconv(encoding, "UTF-8");
+        const converter = new Iconv(encoding, "UTF-8");
         data = converter.convert(data);
     }
     catch (err) {
@@ -65,7 +65,7 @@ function try_convert (data, encoding) {
         logger.logwarn("initial iconv conversion from " + encoding + " to UTF-8 failed: " + err.message);
         if (err.code !== 'EINVAL') {
             try {
-                let converter = new Iconv(encoding, "UTF-8//TRANSLIT//IGNORE");
+                const converter = new Iconv(encoding, "UTF-8//TRANSLIT//IGNORE");
                 data = converter.convert(data);
             }
             catch (e) {
@@ -168,9 +168,9 @@ function _decode_rfc2231 (params, str) {
 
 Header.prototype.decode_header = function decode_header (val) {
     // Fold continuations
-    val = val.replace(/\r?\n/g, '');
+    const = val.replace(/\r?\n/g, '');
 
-    var rfc2231_params = {
+    const rfc2231_params = {
         kv: {},
         keys: {},
         cur_key: '',
@@ -186,8 +186,8 @@ Header.prototype.decode_header = function decode_header (val) {
         val = val + ' ' + key + '="';
         /* eslint no-constant-condition: 0 */
         for (let i=0; true; i++) {
-            var _key = key + '*' + i;
-            var _val = rfc2231_params.kv[_key];
+            const _key = key + '*' + i;
+            const _val = rfc2231_params.kv[_key];
             if (_val === undefined) break;
             val = val + _val;
         }
@@ -199,10 +199,10 @@ Header.prototype.decode_header = function decode_header (val) {
 
     if (Iconv && !/^[\x00-\x7f]*$/.test(val)) {
         // 8 bit values in the header
-        var matches = /\bcharset\s*=\s*["']?([\w_-]*)/.exec(this.get('content-type'));
+        const matches = /\bcharset\s*=\s*["']?([\w_-]*)/.exec(this.get('content-type'));
         if (matches && !/UTF-?8/i.test(matches[1])) {
-            var encoding = matches[1];
-            var source = new Buffer(val, 'binary');
+            const encoding = matches[1];
+            const source = new Buffer(val, 'binary');
             val = try_convert(source, encoding).toString();
         }
     }
@@ -238,8 +238,8 @@ Header.prototype.remove = function (key) {
 }
 
 Header.prototype._remove_more = function (key) {
-    var key_len = key.length;
-    for (var i=0,l=this.header_list.length; i < l; i++) {
+    const key_len = key.length;
+    for (let i=0,l=this.header_list.length; i < l; i++) {
         if (this.header_list[i].substring(0, key_len).toLowerCase() === key) {
             this.header_list.splice(i, 1);
             return this._remove_more(key);
@@ -253,7 +253,7 @@ Header.prototype._add_header = function (key, value, method) {
 };
 
 Header.prototype._add_header_decode = function (key, value, method) {
-    var val = this.decode_header(value);
+    const val = this.decode_header(value);
     // console.log(key + ': ' + val);
     this.headers_decoded[key] = this.headers_decoded[key] || [];
     this.headers_decoded[key][method](val);

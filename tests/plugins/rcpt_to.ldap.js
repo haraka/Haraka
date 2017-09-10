@@ -1,9 +1,9 @@
 'use strict';
 
-var Address      = require('address-rfc2821').Address;
-var fixtures     = require('haraka-test-fixtures');
+const Address      = require('address-rfc2821').Address;
+const fixtures     = require('haraka-test-fixtures');
 
-var _set_up = function (done) {
+const _set_up = function (done) {
 
     this.plugin = new fixtures.plugin('rcpt_to.ldap');
     this.plugin.inherits('rcpt_to.host_list_base');
@@ -55,7 +55,7 @@ exports.ldap_rcpt = {
     'missing txn' : function (test) {
         test.expect(3);
         // sometimes txn goes away, make sure it's handled
-        var next = function (rc, msg) {
+        const next = function (rc, msg) {
             test.equal(undefined, rc);
             test.equal(undefined, msg);
         };
@@ -66,7 +66,7 @@ exports.ldap_rcpt = {
     },
     'not in host_list or rcpt_to.ldap.ini' : function (test) {
         test.expect(2);
-        var next = function (rc, msg) {
+        const next = function (rc, msg) {
             test.equal(undefined, rc);
             test.equal(undefined, msg);
             test.done();
@@ -75,7 +75,7 @@ exports.ldap_rcpt = {
     },
     'in host_list' : function (test) {
         test.expect(1);
-        var next = function (rc, msg) {
+        const next = function (rc, msg) {
             test.equal('connecting', this.connection.transaction.results.get('rcpt_to.ldap').msg[0]);
             test.done();
         }.bind(this);
@@ -84,7 +84,7 @@ exports.ldap_rcpt = {
     },
     'in rcpt_to.ldap.ini' : function (test) {
         test.expect(1);
-        var next = function (rc, msg) {
+        const next = function (rc, msg) {
             test.equal('connecting', this.connection.transaction.results.get('rcpt_to.ldap').msg[0]);
             test.done();
         }.bind(this);

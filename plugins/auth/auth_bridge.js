@@ -6,14 +6,14 @@ exports.register = function () {
 };
 
 exports.load_flat_ini = function () {
-    var plugin = this;
+    const plugin = this;
     plugin.cfg = plugin.config.get('smtp_bridge.ini', function () {
         plugin.load_flat_ini();
     });
 };
 
 exports.check_plain_passwd = function (connection, user, passwd, cb) {
-    var host = this.cfg.main.host;
+    let host = this.cfg.main.host;
     if (this.cfg.main.port) {
         host = host + ':' + this.cfg.main.port;
     }

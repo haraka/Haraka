@@ -15,17 +15,17 @@ const fixtures    = require('haraka-test-fixtures');
 exports.testUpgradeIsCalledOnSTARTTLS = function (test) {
     test.expect(1);
 
-    var plugin = new fixtures.plugin('queue/smtp_forward');
+    const plugin = new fixtures.plugin('queue/smtp_forward');
 
     // switch config directory to 'tests/config'
     plugin.config = plugin.config.module_config(path.resolve('tests'));
 
     plugin.register();
 
-    var cmds = {};
-    var upgradeArgs = {};
+    const cmds = {};
+    let upgradeArgs = {};
 
-    var socket = {
+    const socket = {
         setTimeout: function (arg) {  },
         setKeepAlive: function (arg) {  },
         on: function (eventName, callback) {
@@ -36,16 +36,16 @@ exports.testUpgradeIsCalledOnSTARTTLS = function (test) {
         }
     };
 
-    var client = new smtp_client.smtp_client(25, 'localhost', 30, 30, socket);
+    const client = new smtp_client.smtp_client(25, 'localhost', 30, 30, socket);
     client.load_tls_config({ key: Buffer.from('OutboundTlsKeyLoaded')});
 
     client.command = 'starttls';
     cmds.line('250 Hello client.example.com\r\n');
 
-    var StringDecoder = require('string_decoder').StringDecoder;
-    var decoder = new StringDecoder('utf8');
+    const StringDecoder = require('string_decoder').StringDecoder;
+    const decoder = new StringDecoder('utf8');
 
-    var cent = Buffer.from(upgradeArgs.key);
+    const cent = Buffer.from(upgradeArgs.key);
     test.equal(decoder.write(cent), 'OutboundTlsKeyLoaded');
 
     test.done();
@@ -54,9 +54,9 @@ exports.testUpgradeIsCalledOnSTARTTLS = function (test) {
 exports.startTLS = function (test) {
     test.expect(1);
 
-    var cmd = '';
+    let cmd = '';
 
-    var socket = {
+    const socket = {
         setTimeout: function (arg) {  },
         setKeepAlive: function (arg) {  },
         on: function (eventName, callback) {  },
@@ -64,7 +64,7 @@ exports.startTLS = function (test) {
         write: function (arg) { cmd = arg; }
     };
 
-    var client = new smtp_client.smtp_client(25, 'localhost', 30, 30, socket);
+    const client = new smtp_client.smtp_client(25, 'localhost', 30, 30, socket);
     client.tls_options = {};
 
     client.secured = false;

@@ -334,7 +334,7 @@ folder of the same name that will not take preference, so avoid using names
 similar to core modules.
 
 Plugins loaded as modules do not have the special `require()`. To load
-a core Haraka module you must use `this.haraka_require('name')`. 
+a core Haraka module you must use `this.haraka_require('name')`.
 This should also be preferred for plain JS plugins, as the
 `./` hack is likely to be removed in the future.
 
@@ -347,10 +347,10 @@ Module plugins support default config in their local `config` directory. See the
 
 ## Shutdown
 
-On shutdown and graceful reload, Haraka will call a plugin's `shutdown` method.
+On graceful reload, Haraka will call a plugin's `shutdown` method.
 
 This is so you can clear any timers or intervals, or shut down any connections
-to remote servers.
+to remote servers. See [Issue 2024](https://github.com/haraka/Haraka/issues/2024).
 
 e.g.
 

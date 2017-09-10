@@ -1,7 +1,7 @@
 // dnsbl plugin
 
 exports.register = function () {
-    var plugin = this;
+    const plugin = this;
     plugin.inherits('dns_list_base');
 
     plugin.load_config();
@@ -19,7 +19,7 @@ exports.register = function () {
 };
 
 exports.load_config = function () {
-    var plugin = this;
+    const plugin = this;
 
     plugin.cfg = plugin.config.get('dnsbl.ini', {
         booleans: ['+main.reject', '-main.enable_stats'],
@@ -46,30 +46,30 @@ exports.load_config = function () {
 };
 
 exports.get_uniq_zones = function () {
-    var plugin = this;
+    const plugin = this;
     plugin.zones = [];
 
-    var unique_zones = {};
+    const unique_zones = {};
 
     // Compatibility with old plugin
-    var legacy_zones = plugin.config.get('dnsbl.zones', 'list');
-    for (var i=0; i < legacy_zones.length; i++) {
+    const legacy_zones = plugin.config.get('dnsbl.zones', 'list');
+    for (let i=0; i < legacy_zones.length; i++) {
         unique_zones[legacy_zones[i]] = true;
     }
 
     if (plugin.cfg.main.zones) {
-        var new_zones = plugin.cfg.main.zones.split(/[\s,;]+/);
-        for (var h=0; h < new_zones.length; h++) {
+        const new_zones = plugin.cfg.main.zones.split(/[\s,;]+/);
+        for (let h=0; h < new_zones.length; h++) {
             unique_zones[new_zones[h]] = true;
         }
     }
 
-    for (var key in unique_zones) { plugin.zones.push(key); }
+    for (const key in unique_zones) { plugin.zones.push(key); }
     return plugin.zones;
 };
 
 exports.should_skip = function (connection) {
-    var plugin = this;
+    const plugin = this;
 
     if (!connection) { return true; }
 
@@ -87,8 +87,8 @@ exports.should_skip = function (connection) {
 };
 
 exports.connect_first = function (next, connection) {
-    var plugin = this;
-    var remote_ip = connection.remote.ip;
+    const plugin = this;
+    const remote_ip = connection.remote.ip;
 
     if (plugin.should_skip(connection)) { return next(); }
 
@@ -99,25 +99,25 @@ exports.connect_first = function (next, connection) {
         }
         if (!a) return next();
 
-        var msg = 'host [' + remote_ip + '] is blacklisted by ' + zone;
+        const msg = 'host [' + remote_ip + '] is blacklisted by ' + zone;
         if (plugin.cfg.main.reject) return next(DENY, msg);
 
         connection.loginfo(plugin, msg);
         return next();
     }, function each_result (err, zone, a) {
         if (err) return;
-        var result = a ? {fail: zone} : {pass: zone};
+        const result = a ? {fail: zone} : {pass: zone};
         connection.results.add(plugin, result);
     });
 };
 
 exports.connect_multi = function (next, connection) {
-    var plugin = this;
-    var remote_ip = connection.remote.ip;
+    const plugin = this;
+    const remote_ip = connection.remote.ip;
 
     if (plugin.should_skip(connection)) { return next(); }
 
-    var hits = [];
+    const hits = [];
     function get_deny_msg () {
         return 'host [' + remote_ip + '] is blacklisted by ' + hits.join(', ');
     }

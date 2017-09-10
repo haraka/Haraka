@@ -1,14 +1,14 @@
 "use strict";
 
-var HostPool = require('../host_pool');
+const HostPool = require('../host_pool');
 
 exports.HostPool = {
     "get a host": function (test) {
         test.expect(2);
 
-        var pool = new HostPool('1.1.1.1:1111, 2.2.2.2:2222');
+        const pool = new HostPool('1.1.1.1:1111, 2.2.2.2:2222');
 
-        var host = pool.get_host();
+        const host = pool.get_host();
 
         test.ok( /\d\.\d\.\d\.\d/.test(host.host),
             "'" + host.host + "' looks like a IP");
@@ -20,11 +20,11 @@ exports.HostPool = {
     "uses all the list": function (test) {
         test.expect(3);
 
-        var pool = new HostPool('1.1.1.1:1111, 2.2.2.2:2222');
+        const pool = new HostPool('1.1.1.1:1111, 2.2.2.2:2222');
 
-        var host1 = pool.get_host();
-        var host2 = pool.get_host();
-        var host3 = pool.get_host();
+        const host1 = pool.get_host();
+        const host2 = pool.get_host();
+        const host3 = pool.get_host();
 
         test.notEqual(host1.host, host2.host);
         test.notEqual(host3.host, host2.host);
@@ -35,10 +35,10 @@ exports.HostPool = {
     "default port 25": function (test) {
         test.expect(2);
 
-        var pool = new HostPool('1.1.1.1, 2.2.2.2');
+        const pool = new HostPool('1.1.1.1, 2.2.2.2');
 
-        var host1 = pool.get_host();
-        var host2 = pool.get_host();
+        const host1 = pool.get_host();
+        const host2 = pool.get_host();
 
         test.equal(host1.port, 25, "is port 25: " + host1.port);
         test.equal(host2.port, 25, "is port 25: " + host2.port);
@@ -49,11 +49,11 @@ exports.HostPool = {
     "dead host": function (test){
         test.expect(3);
 
-        var pool = new HostPool('1.1.1.1:1111, 2.2.2.2:2222');
+        const pool = new HostPool('1.1.1.1:1111, 2.2.2.2:2222');
 
         pool.failed('1.1.1.1', '1111');
 
-        var host;
+        let host;
 
         host = pool.get_host();
         test.equal(host.host, '2.2.2.2', 'dead host is not returned');
@@ -71,10 +71,10 @@ exports.HostPool = {
     "they're all dead": function (test){
         test.expect(6);
 
-        var host1;
-        var host2;
+        let host1;
+        let host2;
 
-        var pool = new HostPool('1.1.1.1:1111, 2.2.2.2:2222');
+        const pool = new HostPool('1.1.1.1:1111, 2.2.2.2:2222');
 
         host1 = pool.get_host();
 
@@ -103,9 +103,9 @@ exports.HostPool = {
     "host dead checking timer": function (test) {
         test.expect(2);
 
-        var num_reqs = 0;
-        var MockSocket = function MockSocket (pool) {
-            var self = this;
+        let num_reqs = 0;
+        const MockSocket = function MockSocket (pool) {
+            const self = this;
 
             // these are the methods called from probe_dead_host
 
@@ -148,8 +148,8 @@ exports.HostPool = {
 
         };
 
-        var retry_secs = 0.001; // 1ms
-        var pool = new HostPool('1.1.1.1:1111, 2.2.2.2:2222', retry_secs);
+        const retry_secs = 0.001; // 1ms
+        const pool = new HostPool('1.1.1.1:1111, 2.2.2.2:2222', retry_secs);
 
         // override the pool's get_socket method to return our mock
         pool.get_socket = function (){ return new MockSocket(pool); };
@@ -161,13 +161,13 @@ exports.HostPool = {
 
         // probe_dead_host() will hit two failures and one success (based on
         // num_reqs above). So we wait at least 10s for that to happen:
-        var timer = setTimeout(function (){
+        const timer = setTimeout(() => {
             clearInterval(interval);
             test.ok(false, 'probe_dead_host failed');
             test.done();
         }, 10 * 1000);
 
-        var interval = setInterval(function (){
+        const interval = setInterval(() => {
             if (!pool.dead_hosts["1.1.1.1:1111"]) {
                 clearTimeout(timer);
                 clearInterval(interval);
@@ -177,5 +177,4 @@ exports.HostPool = {
         }, retry_secs * 1000 * 3 );
 
     }
-
-};
+}

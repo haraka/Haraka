@@ -6,7 +6,7 @@ directory, which will be created automatically if it does not already exist,
 a dated sub-folder is also added to the end of the path specified in YYYYMMDD
 format.
 
-It is designed to be used by other plugins which request the message be 
+It is designed to be used by other plugins which request the message be
 quarantined by setting a connection or transaction note that this plugin
 checks.
 
@@ -21,7 +21,7 @@ To ensure that only completely written files are present in the quarantine,
 the files are written to a temporary directory first and then hardlinked to
 the final destination before the temporary file is deleted.
 
-The temporary directory is 'quarantine_path/tmp' which defaults to: 
+The temporary directory is 'quarantine_path/tmp' which defaults to:
 /var/spool/haraka/quarantine/tmp.
 
 Upon start-up, any files present in the temporary directory are deleted
@@ -31,7 +31,7 @@ syncronously prior to any messages being accepted.
 Configuration
 -------------
 
-This plugin looks for 'quarantine.ini' in the config directory.  
+This plugin looks for 'quarantine.ini' in the config directory.
 
 * quarantine\_path                   (default: /var/spool/haraka/quarantine)
 

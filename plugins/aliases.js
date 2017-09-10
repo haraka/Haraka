@@ -1,6 +1,6 @@
 // This is the aliases plugin
 // One must not run this plugin with the queue/smtp_proxy plugin.
-var Address = require('address-rfc2821').Address;
+const Address = require('address-rfc2821').Address;
 
 exports.register = function () {
     this.inherits('queue/discard');
@@ -9,13 +9,13 @@ exports.register = function () {
 };
 
 exports.aliases = function (next, connection, params) {
-    var plugin = this;
-    var config = this.config.get('aliases', 'json') || {};
-    var rcpt   = params[0].address();
-    var user   = params[0].user;
-    var host   = params[0].host;
-    var match  = user.split(/[+-]/, 1);
-    var action = "<missing>";
+    const plugin = this;
+    const config = this.config.get('aliases', 'json') || {};
+    const rcpt   = params[0].address();
+    const user   = params[0].user;
+    const host   = params[0].host;
+    let match  = user.split(/[+-]/, 1);
+    let action = "<missing>";
 
     if (config[rcpt]) {
 
@@ -86,14 +86,14 @@ function _drop (plugin, connection, rcpt) {
 }
 
 function _alias (plugin, connection, key, config, host) {
-    var to;
-    var toAddress;
+    let to;
+    let toAddress;
 
     if (config.to) {
         if (Array.isArray(config.to)) {
             connection.logdebug(plugin, "aliasing " + connection.transaction.rcpt_to + " to " + config.to);
             connection.transaction.rcpt_to.pop();
-            for (var i = 0, len = config.to.length; i < len; i++) {
+            for (let i = 0, len = config.to.length; i < len; i++) {
                 toAddress = new Address('<' + config.to[i] + '>');
                 connection.transaction.rcpt_to.push(toAddress);
             }

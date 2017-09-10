@@ -2,8 +2,8 @@
 
 // documentation via: haraka -h plugins/relay_acl
 
-var ipaddr = require('ipaddr.js');
-var net    = require('net');
+const ipaddr = require('ipaddr.js');
+const net    = require('net');
 
 exports.register = function () {
     this.logerror(this, "deprecated. see 'haraka -h relay'");
@@ -32,8 +32,8 @@ exports.relay_acl = function (next, connection, params) {
 };
 
 exports.relay_dest_domains = function (next, connection, params) {
-    var plugin = this;
-    var transaction = connection.transaction;
+    const plugin = this;
+    const transaction = connection.transaction;
 
     // Skip this if the host is already allowed to relay
     if (connection.relaying) {
@@ -46,16 +46,16 @@ exports.relay_dest_domains = function (next, connection, params) {
         return next();
     }
 
-    var dest_domain = params[0].host;
+    const dest_domain = params[0].host;
     connection.logdebug(plugin, 'dest_domain = ' + dest_domain);
 
-    var dst_cfg = plugin.cfg.domains[dest_domain];
+    const dst_cfg = plugin.cfg.domains[dest_domain];
     if (!dst_cfg) {
         transaction.results.add(plugin, {fail: 'relay_dest_domain'});
         return next(DENY, "You are not allowed to relay");
     }
 
-    var action = JSON.parse(dst_cfg).action;
+    const action = JSON.parse(dst_cfg).action;
     connection.logdebug(plugin, 'found config for ' + dest_domain + ': ' + action);
 
     switch (action) {
@@ -80,18 +80,18 @@ exports.relay_dest_domains = function (next, connection, params) {
  * @return bool}
  */
 exports.is_acl_allowed = function (connection) {
-    var plugin = this;
+    const plugin = this;
     if (!plugin.acl_allow) return false;
     if (!plugin.acl_allow.length) return false;
 
-    var ip = connection.remote_ip;
+    const ip = connection.remote_ip;
 
-    for (var i=0; i < plugin.acl_allow.length; i++) {
-        var item = plugin.acl_allow[i];
+    for (let i=0; i < plugin.acl_allow.length; i++) {
+        const item = plugin.acl_allow[i];
         connection.logdebug(plugin, 'checking if ' + ip + ' is in ' + item);
-        var cidr = plugin.acl_allow[i].split("/");
-        var c_net  = cidr[0];
-        var c_mask = cidr[1] || 32;
+        const cidr = plugin.acl_allow[i].split("/");
+        const c_net  = cidr[0];
+        const c_mask = cidr[1] || 32;
 
         if (net.isIPv4(ip) && net.isIPv6(c_net)) continue;
         if (net.isIPv6(ip) && net.isIPv4(c_net)) continue;

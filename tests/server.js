@@ -1,4 +1,4 @@
-var path = require('path');
+const path = require('path');
 
 function _set_up (done) {
 
@@ -12,19 +12,19 @@ exports.get_listen_addrs = {
     setUp : _set_up,
     'IPv4 fully qualified' : function (test) {
         test.expect(1);
-        var listeners = this.server.get_listen_addrs({listen: '127.0.0.1:25'});
+        const listeners = this.server.get_listen_addrs({listen: '127.0.0.1:25'});
         test.deepEqual(['127.0.0.1:25'], listeners);
         test.done();
     },
     'IPv4, default port' : function (test) {
         test.expect(1);
-        var listeners = this.server.get_listen_addrs({listen: '127.0.0.1'});
+        const listeners = this.server.get_listen_addrs({listen: '127.0.0.1'});
         test.deepEqual(['127.0.0.1:25'], listeners);
         test.done();
     },
     'IPv4, custom port' : function (test) {
         test.expect(1);
-        var listeners = this.server.get_listen_addrs({
+        const listeners = this.server.get_listen_addrs({
             listen: '127.0.0.1'
         }, 250);
         test.deepEqual(['127.0.0.1:250'], listeners);
@@ -32,25 +32,25 @@ exports.get_listen_addrs = {
     },
     'IPv6 fully qualified' : function (test) {
         test.expect(1);
-        var listeners = this.server.get_listen_addrs({listen: '[::1]:25'});
+        const listeners = this.server.get_listen_addrs({listen: '[::1]:25'});
         test.deepEqual(['[::1]:25'], listeners);
         test.done();
     },
     'IPv6, default port' : function (test) {
         test.expect(1);
-        var listeners = this.server.get_listen_addrs({listen: '[::1]'});
+        const listeners = this.server.get_listen_addrs({listen: '[::1]'});
         test.deepEqual(['[::1]:25'], listeners);
         test.done();
     },
     'IPv6, custom port' : function (test) {
         test.expect(1);
-        var listeners = this.server.get_listen_addrs({listen: '[::1]'}, 250);
+        const listeners = this.server.get_listen_addrs({listen: '[::1]'}, 250);
         test.deepEqual(['[::1]:250'], listeners);
         test.done();
     },
     'IPv4 & IPv6 fully qualified' : function (test) {
         test.expect(1);
-        var listeners = this.server.get_listen_addrs({
+        const listeners = this.server.get_listen_addrs({
             listen: '127.0.0.1:25,[::1]:25'
         });
         test.deepEqual(['127.0.0.1:25','[::1]:25'], listeners);
@@ -58,7 +58,7 @@ exports.get_listen_addrs = {
     },
     'IPv4 & IPv6, default port' : function (test) {
         test.expect(1);
-        var listeners = this.server.get_listen_addrs({
+        const listeners = this.server.get_listen_addrs({
             listen: '127.0.0.1:25,[::1]'
         });
         test.deepEqual(['127.0.0.1:25','[::1]:25'], listeners);
@@ -66,7 +66,7 @@ exports.get_listen_addrs = {
     },
     'IPv4 & IPv6, custom port' : function (test) {
         test.expect(1);
-        var listeners = this.server.get_listen_addrs({
+        const listeners = this.server.get_listen_addrs({
             listen: '127.0.0.1,[::1]'
         }, 250);
         test.deepEqual(['127.0.0.1:250','[::1]:250'], listeners);
@@ -80,7 +80,7 @@ exports.load_smtp_ini = {
         test.expect(3);
         this.server.load_smtp_ini();
         // console.log(this.server.cfg);
-        var c = this.server.cfg.main;
+        const c = this.server.cfg.main;
         test.notEqual(c.daemonize, undefined);
         test.notEqual(c.daemon_log_file, undefined);
         test.notEqual(c.daemon_pid_file, undefined);
@@ -100,7 +100,7 @@ exports.get_smtp_server = {
         done();
     },
     'gets a net server object': function (test) {
-        var server;
+        let server;
         try { server = this.server.get_smtp_server('0.0.0.0', 2501, 10); }
         catch (ignore) {
             test.done();
@@ -125,7 +125,7 @@ exports.get_http_docroot = {
     setUp : _set_up,
     'gets a fs path': function (test) {
         test.expect(1);
-        var docroot = this.server.get_http_docroot();
+        const docroot = this.server.get_http_docroot();
         test.ok(docroot);
         test.done();
     },
@@ -136,7 +136,7 @@ function _setupServer (done) {
     process.env.HARAKA_TEST_DIR=path.resolve('tests');
 
     // this sets the default path for plugin instances to the test dir
-    var test_cfg_path=path.resolve('tests');
+    const test_cfg_path=path.resolve('tests');
 
     this.server = require('../server');
     this.config = require('../config').module_config(test_cfg_path);
@@ -170,8 +170,8 @@ exports.smtp_client = {
     'accepts SMTP message': function (test) {
 
         test.expect(1);
-        let server = { notes: { } };
-        let cfg = {
+        const server = { notes: { } };
+        const cfg = {
             connect_timeout: 2,
             pool_timeout: 5,
             max_connections: 3,
@@ -196,7 +196,7 @@ exports.smtp_client = {
                     client.send_command('DATA');
                 })
                 .on('data', function () {
-                    var message_stream = new MessageStream(
+                    const message_stream = new MessageStream(
                         { main : { spool_after : 1024 } }, "theMessageId"
                     );
 
@@ -230,8 +230,8 @@ exports.nodemailer = {
     'accepts SMTP message': function (test) {
 
         test.expect(1);
-        var nodemailer = require('nodemailer');
-        var transporter = nodemailer.createTransport({
+        const nodemailer = require('nodemailer');
+        const transporter = nodemailer.createTransport({
             host: 'localhost',
             port: 2500,
             tls: {
@@ -264,8 +264,8 @@ exports.nodemailer = {
     'accepts authenticated SMTP': function (test) {
 
         test.expect(1);
-        var nodemailer = require('nodemailer');
-        var transporter = nodemailer.createTransport({
+        const nodemailer = require('nodemailer');
+        const transporter = nodemailer.createTransport({
             host: 'localhost',
             port: 2500,
             auth: {
@@ -303,8 +303,8 @@ exports.nodemailer = {
     'rejects invalid auth': function (test) {
 
         test.expect(1);
-        let nodemailer = require('nodemailer');
-        let transporter = nodemailer.createTransport({
+        const nodemailer = require('nodemailer');
+        const transporter = nodemailer.createTransport({
             host: 'localhost',
             port: 2500,
             auth: {
@@ -341,8 +341,8 @@ exports.nodemailer = {
     'DKIM validates signed message': function (test) {
 
         test.expect(1);
-        var nodemailer = require('nodemailer');
-        var transporter = nodemailer.createTransport({
+        const nodemailer = require('nodemailer');
+        const transporter = nodemailer.createTransport({
             host: 'localhost',
             port: 2500,
             tls: {

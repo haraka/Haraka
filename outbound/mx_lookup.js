@@ -1,9 +1,9 @@
 "use strict";
 
-var dns         = require('dns');
+const dns         = require('dns');
 
 exports.lookup_mx = function lookup_mx (domain, cb) {
-    var mxs = [];
+    const mxs = [];
 
     // Possible DNS errors
     // NODATA
@@ -20,8 +20,8 @@ exports.lookup_mx = function lookup_mx (domain, cb) {
     // SERVFAIL
 
     // default wrap_mx just returns our object with "priority" and "exchange" keys
-    var wrap_mx = function (a) { return a; };
-    var process_dns = function (err, addresses) {
+    let wrap_mx = function (a) { return a; };
+    const process_dns = function (err, addresses) {
         if (err) {
             if (err.code === 'ENODATA') {
                 // Most likely this is a hostname with no MX record
@@ -31,8 +31,8 @@ exports.lookup_mx = function lookup_mx (domain, cb) {
             cb(err);
         }
         else if (addresses && addresses.length) {
-            for (var i=0,l=addresses.length; i < l; i++) {
-                var mx = wrap_mx(addresses[i]);
+            for (let i=0,l=addresses.length; i < l; i++) {
+                const mx = wrap_mx(addresses[i]);
                 mxs.push(mx);
             }
             cb(null, mxs);

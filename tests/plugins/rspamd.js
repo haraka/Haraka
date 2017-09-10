@@ -1,12 +1,12 @@
 'use strict';
 
 // var Address      = require('address-rfc2821');
-var fixtures     = require('haraka-test-fixtures');
+const fixtures     = require('haraka-test-fixtures');
 
-var Connection   = fixtures.connection;
-var Transaction  = fixtures.transaction;
+const Connection   = fixtures.connection;
+const Transaction  = fixtures.transaction;
 
-var _set_up = function (done) {
+const _set_up = function (done) {
 
     this.plugin = new fixtures.plugin('rspamd');
     this.plugin.register();
@@ -53,7 +53,7 @@ exports.add_headers = {
     },
     'adds a header to a message with positive score': function (test) {
         test.expect(3);
-        var test_data = {
+        const test_data = {
             default: {
                 score: 1.1,
                 FOO: {
@@ -77,7 +77,7 @@ exports.add_headers = {
     },
     'adds a header to a message with negative score': function (test) {
         test.expect(2);
-        var test_data = {
+        const test_data = {
             default: {
                 score: -1,
             }

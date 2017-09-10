@@ -1,28 +1,26 @@
 queue/lmtp
 ========
 
-This plugin delivers mails to inbound domains via LMTP.
+This plugin delivers inbound mail via LMTP.
 
-Configuration
--------------
+## Configuration
 
-* `config/lmtp.ini`
-    This config file provides server address and port of LMTP server to deliver for different inbound domains.
-    Syntax is equal to that used in the config of the queue/smtp_forward plugin.
+LMTP is enabled by adding `queue/lmtp` to config/plugins. LMTP delivery is configured in `config/lmtp.ini` . By default, all inbound messages are forwarded to the host specified in the `[main]` section. Domain specific routes can be specified by creating additional sections with the same host/port or path options.
 
-    Example:
+### lmtp.ini
 
-    ```
-    ; defaults
-    host=localhost
-    port=24
+```ini
+; defaults
+host=localhost
+port=24
 
-    [example.com]
-    ; Goes elsewhere
-    host=10.1.1.1
-    port=2400
+[example1.com]
+; Goes elsewhere
+host=10.1.1.1
+port=2400
 
-    [blah.com]
-    ; Using unix domain sockets
-    path = /tmp/blah_com_socket
-    ```
+[example2.com]
+; Using unix domain sockets
+path = /tmp/blah_com_socket
+```
+

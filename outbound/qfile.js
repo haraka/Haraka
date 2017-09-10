@@ -1,15 +1,15 @@
 "use strict";
 
-var my_hostname = require('os').hostname().replace(/\\/, '\\057').replace(/:/, '\\072');
-var platform_dot = ((['win32','win64'].indexOf( process.platform ) !== -1) ? '' : '__tmp__') + '.';
+const my_hostname = require('os').hostname().replace(/\\/, '\\057').replace(/:/, '\\072');
+const platform_dot = ((['win32','win64'].indexOf( process.platform ) !== -1) ? '' : '__tmp__') + '.';
 
-var QFILECOUNTER = 0;
+let QFILECOUNTER = 0;
 
-var _qfile = module.exports = {
+const _qfile = module.exports = {
     // File Name Format: $arrival_$nextattempt_$attempts_$pid_$uniquetag_$counter_$host
     name : function (overrides) {
-        var o = overrides || {};
-        var time = _qfile.time();
+        const o = overrides || {};
+        const time = _qfile.time();
         return [
             o.arrival       || time,
             o.next_attempt  || time,
@@ -32,9 +32,9 @@ var _qfile = module.exports = {
 
     rnd_unique: function (len) {
         len = len || 6;
-        var chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-        var result = [];
-        for (var i = len; i > 0; --i){
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+        const result = [];
+        for (let i = len; i > 0; --i){
             result.push(chars[Math.floor(Math.random() * chars.length)]);
         }
         return result.join('');
@@ -45,9 +45,9 @@ var _qfile = module.exports = {
             throw new Error("No filename provided");
         }
 
-        var PARTS_EXPECTED_OLD = 4;
-        var PARTS_EXPECTED_CURRENT = 7;
-        var p = filename.split('_');
+        const PARTS_EXPECTED_OLD = 4;
+        const PARTS_EXPECTED_CURRENT = 7;
+        let p = filename.split('_');
 
         // bail on unknown split lengths
         if (p.length !== PARTS_EXPECTED_OLD
@@ -55,7 +55,7 @@ var _qfile = module.exports = {
             return null;
         }
 
-        var time = _qfile.time();
+        const time = _qfile.time();
         if (p.length === PARTS_EXPECTED_OLD){
             // parse the previous string structure
             // $nextattempt_$attempts_$pid_$uniq.$host
@@ -65,8 +65,8 @@ var _qfile = module.exports = {
             // match[2] = $attempts
             // match[3] = $pid
             // match[4] = $uniq.$my_hostname
-            var fn_re = /^(\d+)_(\d+)_(\d+)_(\d+)\.(.*)$/;
-            var match = filename.match(fn_re);
+            const fn_re = /^(\d+)_(\d+)_(\d+)_(\d+)\.(.*)$/;
+            const match = filename.match(fn_re);
             if (!match){
                 return null;
             }

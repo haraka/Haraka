@@ -4,10 +4,10 @@
 // and passes back any errors seen on the ongoing server to the
 // originating server.
 
-var smtp_client_mod = require('./smtp_client');
+const smtp_client_mod = require('./smtp_client');
 
 exports.register = function () {
-    var plugin = this;
+    const plugin = this;
 
     plugin.load_smtp_proxy_ini();
 
@@ -17,7 +17,7 @@ exports.register = function () {
 };
 
 exports.load_smtp_proxy_ini = function () {
-    var plugin = this;
+    const plugin = this;
 
     plugin.cfg = plugin.config.get('smtp_proxy.ini', {
         booleans: [
@@ -31,8 +31,8 @@ exports.load_smtp_proxy_ini = function () {
 };
 
 exports.hook_mail = function (next, connection, params) {
-    var plugin = this;
-    var c = plugin.cfg.main;
+    const plugin = this;
+    const c = plugin.cfg.main;
     connection.loginfo(plugin, 'forwarding to ' +
             (c.forwarding_host_pool ? "configured forwarding_host_pool" : c.host + ':' + c.port)
     );
@@ -76,22 +76,22 @@ exports.hook_mail = function (next, connection, params) {
 };
 
 exports.hook_rcpt_ok = function (next, connection, recipient) {
-    var smtp_client = connection.notes.smtp_client;
+    const smtp_client = connection.notes.smtp_client;
     if (!smtp_client) return next();
     smtp_client.next = next;
     smtp_client.send_command('RCPT', 'TO:' + recipient.format(!smtp_client.smtp_utf8));
 };
 
 exports.hook_data = function (next, connection) {
-    var smtp_client = connection.notes.smtp_client;
+    const smtp_client = connection.notes.smtp_client;
     if (!smtp_client) return next();
     smtp_client.next = next;
     smtp_client.send_command("DATA");
 };
 
 exports.hook_queue = function (next, connection) {
-    var plugin = this;
-    var smtp_client = connection.notes.smtp_client;
+    const plugin = this;
+    const smtp_client = connection.notes.smtp_client;
     if (!smtp_client) return next();
     smtp_client.next = next;
     if (smtp_client.is_dead_sender(plugin, connection)) {
@@ -102,7 +102,7 @@ exports.hook_queue = function (next, connection) {
 };
 
 exports.hook_rset = function (next, connection) {
-    var smtp_client = connection.notes.smtp_client;
+    const smtp_client = connection.notes.smtp_client;
     if (!smtp_client) return next();
     smtp_client.release();
     delete connection.notes.smtp_client;
@@ -112,7 +112,7 @@ exports.hook_rset = function (next, connection) {
 exports.hook_quit = exports.hook_rset;
 
 exports.hook_disconnect = function (next, connection) {
-    var smtp_client = connection.notes.smtp_client;
+    const smtp_client = connection.notes.smtp_client;
     if (!smtp_client) return next();
     smtp_client.release();
     delete connection.notes.smtp_client;

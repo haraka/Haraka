@@ -1,20 +1,20 @@
 // messagesniffer
 
-var fs = require('fs');
-var net = require('net');
-var plugin = exports;
+const fs = require('fs');
+const net = require('net');
+const plugin = exports;
 
 // Defaults
-var port = 9001;
+let port = 9001;
 
 exports.register = function () {
-    var cfg = this.config.get('messagesniffer.ini');
+    const cfg = this.config.get('messagesniffer.ini');
     if (cfg.main.port) port = parseInt(cfg.main.port);
 };
 
 exports.hook_connect = function (next, connection) {
-    var self = this;
-    var cfg = this.config.get('messagesniffer.ini');
+    const self = this;
+    const cfg = this.config.get('messagesniffer.ini');
 
     // Skip any private IP ranges
     if (connection.remote.is_private) return next();
@@ -25,15 +25,15 @@ exports.hook_connect = function (next, connection) {
             connection.logerror(self, err.message);
             return next();
         }
-        var match;
+        let match;
         if ((match = /<result ((?:(?!\/>)[^])+)\/>/.exec(result))) {
             // Log result
             connection.loginfo(self, match[1]);
             // Populate result
-            var gbudb = {};
-            var split = match[1].toString().split(/\s+/);
-            for (var i=0; i<split.length; i++) {
-                var split2 = split[i].split(/=/);
+            const gbudb = {};
+            const split = match[1].toString().split(/\s+/);
+            for (let i=0; i<split.length; i++) {
+                const split2 = split[i].split(/=/);
                 gbudb[split2[0]] = split2[1].replace(/(?:^'|'$)/g,'');
             }
             // Set notes for other plugins
@@ -100,16 +100,16 @@ exports.hook_connect = function (next, connection) {
 };
 
 exports.hook_data_post = function (next, connection) {
-    var self = this;
-    var cfg = this.config.get('messagesniffer.ini');
-    var txn = connection.transaction;
+    const self = this;
+    const cfg = this.config.get('messagesniffer.ini');
+    const txn = connection.transaction;
     if (!txn) return next();
 
-    var tag_subject = function () {
-        var tag = cfg.main.tag_string || '[SPAM]';
-        var subj = txn.header.get('Subject');
+    const tag_subject = function () {
+        const tag = cfg.main.tag_string || '[SPAM]';
+        const subj = txn.header.get('Subject');
         // Try and prevent any double subject modifications
-        var subject_re = new RegExp('^' + tag);
+        const subject_re = new RegExp('^' + tag);
         if (!subject_re.test(subj)) {
             txn.remove_header('Subject');
             txn.add_header('Subject', tag + " " + subj);
@@ -132,9 +132,9 @@ exports.hook_data_post = function (next, connection) {
         }
     }
 
-    var tmpdir = cfg.main.tmpdir || '/tmp';
-    var tmpfile = tmpdir + '/' + txn.uuid + '.tmp';
-    var ws = fs.createWriteStream(tmpfile);
+    const tmpdir = cfg.main.tmpdir || '/tmp';
+    const tmpfile = tmpdir + '/' + txn.uuid + '.tmp';
+    const ws = fs.createWriteStream(tmpfile);
 
     ws.once('error', function (err) {
         connection.logerror(self, 'Error writing temporary file: ' + err.message);
@@ -142,28 +142,28 @@ exports.hook_data_post = function (next, connection) {
     });
 
     ws.once('close', function () {
-        var start_time = Date.now();
+        const start_time = Date.now();
         SNFClient("<snf><xci><scanner><scan file='" + tmpfile + "' xhdr='yes'/></scanner></xci></snf>", function (err, result) {
-            var end_time = Date.now();
-            var elapsed = end_time - start_time;
+            const end_time = Date.now();
+            const elapsed = end_time - start_time;
             // Delete the tempfile
             fs.unlink(tmpfile, function (){});
-            var match;
+            let match;
             // Make sure we actually got a result
             if ((match = /<result code='(\d+)'/.exec(result))) {
-                var code = parseInt(match[1]);
-                var group;
-                var rules;
-                var gbudb_ip;
+                const code = parseInt(match[1]);
+                let group;
+                let rules;
+                let gbudb_ip;
                 // Make a note that we actually ran
                 connection.notes.snf_run = true;
                 // Get the returned headers
                 if ((match = /<xhdr>((?:(?!<\/xhdr>)[^])+)/.exec(result,'m'))) {
                     // Parse the returned headers and add them to the message
-                    var xhdr = match[1].split('\r\n');
-                    var headers = [];
-                    for (var i=0; i < xhdr.length; i++) {
-                        var line = xhdr[i];
+                    const xhdr = match[1].split('\r\n');
+                    const headers = [];
+                    for (let i=0; i < xhdr.length; i++) {
+                        const line = xhdr[i];
                         // Check for continuation
                         if (/^\s/.test(line)) {
                             // Continuation; add to previous header value
@@ -180,8 +180,8 @@ exports.hook_data_post = function (next, connection) {
                         }
                     }
                     // Add headers to message
-                    for (var h=0; h < headers.length; h++) {
-                        var header = headers[h];
+                    for (let h=0; h < headers.length; h++) {
+                        const header = headers[h];
                         // If present save the group for logging purposes
                         if (header.header === 'X-MessageSniffer-SNF-Group') {
                             group = header.value.replace(/\r?\n/gm, '');
@@ -189,7 +189,7 @@ exports.hook_data_post = function (next, connection) {
                         // Log GBUdb analysis
                         if (header.header === 'X-GBUdb-Analysis') {
                             // Retrieve IP address determined by GBUdb
-                            var gbudb_split = header.value.split(/,\s*/);
+                            const gbudb_split = header.value.split(/,\s*/);
                             gbudb_ip = gbudb_split[1];
                             connection.logdebug(self, 'GBUdb: ' + header.value.replace(/\r?\n/gm, ''));
                         }
@@ -212,7 +212,7 @@ exports.hook_data_post = function (next, connection) {
                 // http://www.armresearch.com/support/articles/software/snfServer/errors.jsp
                 if (code === 0 || (code && code <= 63)) {
                     // Handle result
-                    var action;
+                    let action;
                     if (cfg.message) {
                         if (code === 0 && cfg.message.white) {
                             action = cfg.message.white;
@@ -295,7 +295,7 @@ exports.hook_data_post = function (next, connection) {
                     // Out-of-band code returned
                     // Handle Bulk/Noisy special rule by re-writing the Precedence header
                     if (code === 100) {
-                        var precedence = txn.header.get('precedence');
+                        let precedence = txn.header.get('precedence');
                         if (precedence) {
                             // We already have a precedence header
                             precedence = precedence.trim().toLowerCase();
@@ -331,14 +331,14 @@ exports.hook_data_post = function (next, connection) {
 };
 
 exports.hook_disconnect = function (next, connection) {
-    var self = this;
-    var cfg = this.config.get('messagesniffer.ini');
+    const self = this;
+    const cfg = this.config.get('messagesniffer.ini');
 
     // Train GBUdb on rejected messages and recipients
     if (cfg.main.gbudb_report_deny && !connection.notes.snf_run &&
         (connection.rcpt_count.reject > 0 || connection.msg_count.reject > 0))
     {
-        var snfreq = "<snf><xci><gbudb><bad ip='" + connection.remote.ip + "'/></gbudb></xci></snf>";
+        const snfreq = "<snf><xci><gbudb><bad ip='" + connection.remote.ip + "'/></gbudb></xci></snf>";
         SNFClient(snfreq, function (err, result) {
             if (err) {
                 connection.logerror(self, err.message);
@@ -355,8 +355,8 @@ exports.hook_disconnect = function (next, connection) {
 }
 
 function SNFClient (req, cb) {
-    var result;
-    var sock = new net.Socket();
+    let result;
+    const sock = new net.Socket();
     sock.setTimeout(30 * 1000); // Connection timeout
     sock.once('timeout', function () {
         this.destroy();
@@ -377,7 +377,7 @@ function SNFClient (req, cb) {
     });
     sock.once('end', function () {
         // Check for result
-        var match;
+        let match;
         if (/<result /.exec(result)) {
             return cb(null, result);
         }

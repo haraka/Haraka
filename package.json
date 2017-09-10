@@ -4,7 +4,7 @@
   "license": "MIT",
   "description": "An SMTP Server project.",
   "keywords": [ "haraka", "smtp", "server", "email" ],
-  "version": "2.8.14",
+  "version": "2.8.15",
   "homepage": "http://haraka.github.io",
   "repository": {
     "type": "git",
@@ -12,7 +12,7 @@
   },
   "main": "haraka.js",
   "engines": {
-    "node": ">= v6.11.1"
+    "node": ">= v6.11.3"
   },
   "dependencies": {
     "address-rfc2821"       : "^1.1.1",
@@ -30,10 +30,12 @@
     "haraka-tld"            : "*",
     "haraka-constants"      : ">=1.0.4",
     "haraka-net-utils"      : ">=1.0.10",
+    "haraka-notes"          : "*",
     "haraka-results"        : "^2.0.0",
     "haraka-utils"          : "*",
     "haraka-plugin-access"  : "*",
-    "haraka-plugin-limit"   : "*"
+    "haraka-plugin-limit"   : "*",
+    "mkdirp"                : "~0.5.1"
   },
   "optionalDependencies": {
     "haraka-plugin-asn"     : "*",
@@ -65,8 +67,7 @@
   },
   "greenkeeper": {
     "ignore": [
-      "generic-pool",
-      "nodemailer"
+      "generic-pool"
     ]
   },
   "bin": {
@@ -77,8 +78,8 @@
   },
   "scripts": {
     "test": "node run_tests",
-    "lint": "node node_modules/.bin/eslint *.js plugins/*.js plugins/*/*.js tests/*.js tests/*/*.js bin/haraka bin/spf bin/dkimverify",
-    "lintfix": "node node_modules/.bin/eslint --fix *.js plugins/*.js plugins/*/*.js tests/*.js tests/*/*.js bin/haraka bin/spf bin/dkimverify",
+    "lint": "node node_modules/.bin/eslint *.js outbound/*.js plugins/*.js plugins/*/*.js tests/*.js tests/*/*.js bin/haraka bin/spf bin/dkimverify",
+    "lintfix": "node node_modules/.bin/eslint --fix *.js outbound/*.js plugins/*.js plugins/*/*.js tests/*.js tests/*/*.js bin/haraka bin/spf bin/dkimverify",
     "cover": "NODE_ENV=cov node node_modules/.bin/istanbul cov run_tests"
   }
 }

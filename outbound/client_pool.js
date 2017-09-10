@@ -1,13 +1,15 @@
 "use strict";
 
-var generic_pool = require('generic-pool');
-var sock         = require('../line_socket');
-var server       = require('../server');
-var logger       = require('../logger');
-var cfg          = require('./config');
+const generic_pool = require('generic-pool');
+
+const sock         = require('../line_socket');
+const server       = require('../server');
+const logger       = require('../logger');
+
+const cfg          = require('./config');
 
 function _create_socket (port, host, local_addr, is_unix_socket, callback) {
-    var socket = is_unix_socket ? sock.connect({path: host}) :
+    const socket = is_unix_socket ? sock.connect({path: host}) :
         sock.connect({port: port, host: host, localAddress: local_addr});
     socket.setTimeout(cfg.connect_timeout * 1000);
     logger.logdebug(
@@ -24,7 +26,7 @@ function _create_socket (port, host, local_addr, is_unix_socket, callback) {
     });
     socket.once('error', function (err) {
         socket.end();
-        var name = 'outbound::' + port + ':' + host + ':' + local_addr + ':' + cfg.pool_timeout;
+        const name = `outbound::${port}:${host}:${local_addr}:${cfg.pool_timeout}`;
         if (server.notes.pool && server.notes.pool[name]) {
             delete server.notes.pool[name];
         }
@@ -40,12 +42,12 @@ function _create_socket (port, host, local_addr, is_unix_socket, callback) {
 function get_pool (port, host, local_addr, is_unix_socket, max) {
     port = port || 25;
     host = host || 'localhost';
-    var name = 'outbound::' + port + ':' + host + ':' + local_addr + ':' + cfg.pool_timeout;
+    const name = `outbound::${port}:${host}:${local_addr}:${cfg.pool_timeout}`;
     if (!server.notes.pool) {
         server.notes.pool = {};
     }
     if (!server.notes.pool[name]) {
-        var pool = generic_pool.Pool({
+        const pool = generic_pool.Pool({
             name: name,
             create: function (done) {
                 _create_socket(port, host, local_addr, is_unix_socket, done);
@@ -56,7 +58,7 @@ function get_pool (port, host, local_addr, is_unix_socket, max) {
             destroy: function (socket) {
                 logger.logdebug('[outbound] destroying pool entry for ' + host + ':' + port);
                 // Remove pool object from server notes once empty
-                var size = pool.getPoolSize();
+                const size = pool.getPoolSize();
                 if (size === 0) {
                     delete server.notes.pool[name];
                 }
@@ -65,7 +67,7 @@ function get_pool (port, host, local_addr, is_unix_socket, max) {
                     logger.logwarn("[outbound] Socket got an error while shutting down: " + err);
                 });
                 socket.once('end', function () {
-                    logger.loginfo("[outbound] Remote end half closed juring destroy()");
+                    logger.loginfo("[outbound] Remote end half closed during destroy()");
                     socket.destroy();
                 })
                 if (!socket.writable) return;
@@ -97,7 +99,7 @@ exports.get_client = function (port, host, local_addr, is_unix_socket, callback)
         return _create_socket(port, host, local_addr, is_unix_socket, callback);
     }
 
-    var pool = get_pool(port, host, local_addr, is_unix_socket, cfg.pool_concurrency_max);
+    const pool = get_pool(port, host, local_addr, is_unix_socket, cfg.pool_concurrency_max);
     if (pool.waitingClientsCount() >= cfg.pool_concurrency_max) {
         return callback("Too many waiting clients for pool", null);
     }
@@ -111,8 +113,8 @@ exports.get_client = function (port, host, local_addr, is_unix_socket, callback)
 exports.release_client = function (socket, port, host, local_addr, error) {
     logger.logdebug("[outbound] release_client: " + host + ":" + port + " to " + local_addr);
 
-    var pool_timeout = cfg.pool_timeout;
-    var name = 'outbound::' + port + ':' + host + ':' + local_addr + ':' + pool_timeout;
+    const pool_timeout = cfg.pool_timeout;
+    const name = `outbound::${port}:${host}:${local_addr}:${pool_timeout}`;
 
     if (cfg.pool_concurrency_max == 0) {
         return sockend();
@@ -128,7 +130,7 @@ exports.release_client = function (socket, port, host, local_addr, error) {
         logger.logcrit("[outbound] Releasing a pool (" + name + ") that doesn't exist!");
         return;
     }
-    var pool = server.notes.pool[name];
+    const pool = server.notes.pool[name];
     if (!pool) {
         logger.logcrit("[outbound] Releasing a pool (" + name + ") that doesn't exist!");
         return;

@@ -1,16 +1,16 @@
 'use strict';
 // Check MAIL FROM domain is resolvable to an MX
-var dns = require('dns');
-var net = require('net');
+const dns = require('dns');
+const net = require('net');
 
-var net_utils = require('haraka-net-utils');
+const net_utils = require('haraka-net-utils');
 
 exports.register = function () {
     this.load_ini();
 };
 
 exports.load_ini = function () {
-    var plugin = this;
+    const plugin = this;
     plugin.cfg = plugin.config.get('mail_from.is_resolvable.ini', {
         booleans: [
             '-main.allow_mx_ip',
@@ -25,10 +25,10 @@ exports.load_ini = function () {
 };
 
 exports.hook_mail = function (next, connection, params) {
-    var plugin    = this;
-    var mail_from = params[0];
-    var txn       = connection.transaction;
-    var results   = txn.results;
+    const plugin    = this;
+    const mail_from = params[0];
+    const txn       = connection.transaction;
+    const results   = txn.results;
 
     // Check for MAIL FROM without an @ first - ignore those here
     if (!mail_from.host) {
@@ -36,10 +36,10 @@ exports.hook_mail = function (next, connection, params) {
         return next();
     }
 
-    var called_next  = 0;
-    var domain       = mail_from.host;
-    var c            = plugin.cfg.main;
-    var timeout_id   = setTimeout(function () {
+    let called_next  = 0;
+    const domain       = mail_from.host;
+    const c            = plugin.cfg.main;
+    const timeout_id   = setTimeout(function () {
         // DNS answer didn't return (UDP)
         connection.loginfo(plugin, 'timed out resolving MX for ' + domain);
         called_next++;
@@ -47,7 +47,7 @@ exports.hook_mail = function (next, connection, params) {
         return next(DENYSOFT, 'Temporary resolver error (timeout)');
     }, ((c.timeout) ? c.timeout : 30) * 1000);
 
-    var mxDone = function (code, reply) {
+    const mxDone = function (code, reply) {
         if (called_next) return;
         clearTimeout(timeout_id);
         called_next++;
@@ -65,8 +65,8 @@ exports.hook_mail = function (next, connection, params) {
         }
 
         // Verify that the MX records resolve to valid addresses
-        var records = {};
-        var pending_queries = 0;
+        let records = {};
+        let pending_queries = 0;
         function check_results () {
             if (pending_queries !== 0) return;
 
@@ -106,7 +106,7 @@ exports.hook_mail = function (next, connection, params) {
                 }
                 connection.logdebug(plugin, domain + ': MX ' + addr.priority +
                         ' ' + addr.exchange + ' => ' + addresses2);
-                for (var i=0; i < addresses2.length; i++) {
+                for (let i=0; i < addresses2.length; i++) {
                     // Ignore anything obviously bogus
                     if (net.isIPv4(addresses2[i])){
                         if (plugin.re_bogus_ip.test(addresses2[i])) {
@@ -133,8 +133,8 @@ exports.hook_mail = function (next, connection, params) {
 };
 
 exports.mxErr = function (connection, domain, type, err, mxDone) {
-    var plugin = this;
-    var txn = connection.transaction;
+    const plugin = this;
+    const txn = connection.transaction;
     if (!txn) return;
     txn.results.add(plugin, {msg: domain + ':' + type + ':' + err.message});
     connection.logdebug(plugin, domain + ':' + type + ' => ' + err.message);
@@ -153,8 +153,8 @@ exports.mxErr = function (connection, domain, type, err, mxDone) {
 
 // IS: IPv6 compatible
 exports.implicit_mx = function (connection, domain, mxDone) {
-    var plugin = this;
-    var txn = connection.transaction;
+    const plugin = this;
+    const txn = connection.transaction;
 
     net_utils.get_ips_by_host(domain, function (err, addresses) {
         if (!txn) return;
@@ -165,9 +165,9 @@ exports.implicit_mx = function (connection, domain, mxDone) {
         }
 
         connection.logdebug(plugin, domain + ': A/AAAA => ' + addresses);
-        var records = {};
-        for (var i=0; i < addresses.length; i++) {
-            var addr = addresses[i];
+        let records = {};
+        for (let i=0; i < addresses.length; i++) {
+            const addr = addresses[i];
             // Ignore anything obviously bogus
             if (net.isIPv4(addr)){
                 if (plugin.re_bogus_ip.test(addr)) {

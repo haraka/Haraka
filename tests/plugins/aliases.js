@@ -1,12 +1,12 @@
 'use strict';
 
-var Address      = require('address-rfc2821').Address;
-var fixtures     = require('haraka-test-fixtures');
+const Address      = require('address-rfc2821').Address;
+const fixtures     = require('haraka-test-fixtures');
 
-var stub         = fixtures.stub.stub;
-var Connection   = fixtures.connection;
+const stub         = fixtures.stub.stub;
+const Connection   = fixtures.connection;
 
-var _set_up = function (done) {
+const _set_up = function (done) {
 
     // needed for tests
     this.plugin = new fixtures.plugin('aliases');
@@ -83,7 +83,7 @@ exports.aliases = {
         test.done();
     },
     'aliases hook always returns next()' : function (test) {
-        var next = function (action) {
+        const next = function (action) {
             test.expect(1);
             test.equals(undefined, action);
             test.done();
@@ -92,7 +92,7 @@ exports.aliases = {
         this.plugin.aliases(next, this.connection, this.params);
     },
     'should drop test1@example.com' : function (test) {
-        var next = function (action) {
+        const next = function (action) {
             test.expect(1);
             test.ok(this.connection.transaction.notes.discard);
             test.done();
@@ -105,7 +105,7 @@ exports.aliases = {
         this.recip = new Address('<test2-testing@example.com>');
         this.params = [this.recip];
 
-        var next = function (action) {
+        const next = function (action) {
             test.expect(1);
             test.ok(this.connection.transaction.notes.discard);
             test.done();
@@ -117,9 +117,9 @@ exports.aliases = {
         // these will get reset in _set_up everytime
         this.recip = new Address('<test2-specific@example.com>');
         this.params = [this.recip];
-        var result = new Address('<test2@example.com>');
+        const result = new Address('<test2@example.com>');
 
-        var next = function (action) {
+        const next = function (action) {
             test.expect(4);
             test.equals(undefined, this.connection.transaction.notes.discard);
             test.ok(this.connection.transaction.rcpt_to);
@@ -134,9 +134,9 @@ exports.aliases = {
         // these will get reset in _set_up everytime
         this.recip = new Address('<test3@example.com>');
         this.params = [this.recip];
-        var result = new Address('<test3-works@example.com>');
+        const result = new Address('<test3-works@example.com>');
 
-        var next = function (action) {
+        const next = function (action) {
             test.expect(3);
             test.ok(this.connection.transaction.rcpt_to);
             test.ok(Array.isArray(this.connection.transaction.rcpt_to));
@@ -150,9 +150,9 @@ exports.aliases = {
         // these will get reset in _set_up everytime
         this.recip = new Address('<test4-testing@example.com>');
         this.params = [this.recip];
-        var result = new Address('<test4@example.com>');
+        const result = new Address('<test4@example.com>');
 
-        var next = function (action) {
+        const next = function (action) {
             test.expect(3);
             test.ok(this.connection.transaction.rcpt_to);
             test.ok(Array.isArray(this.connection.transaction.rcpt_to));
@@ -166,9 +166,9 @@ exports.aliases = {
         // these will get reset in _set_up everytime
         this.recip = new Address('<test4+testing@example.com>');
         this.params = [this.recip];
-        var result = new Address('<test4@example.com>');
+        const result = new Address('<test4@example.com>');
 
-        var next = function (action) {
+        const next = function (action) {
             test.expect(3);
             test.ok(this.connection.transaction.rcpt_to);
             test.ok(Array.isArray(this.connection.transaction.rcpt_to));
@@ -182,9 +182,9 @@ exports.aliases = {
         // these will get reset in _set_up everytime
         this.recip = new Address('<test5@example.com>');
         this.params = [this.recip];
-        var result = new Address('<test5-works@success.com>');
+        const result = new Address('<test5-works@success.com>');
 
-        var next = function (action) {
+        const next = function (action) {
             test.expect(3);
             test.ok(this.connection.transaction.rcpt_to);
             test.ok(Array.isArray(this.connection.transaction.rcpt_to));
@@ -198,9 +198,9 @@ exports.aliases = {
         // these will get reset in _set_up everytime
         this.recip = new Address('<test6-testing@example.com>');
         this.params = [this.recip];
-        var result = new Address('<test6-works@success.com>');
+        const result = new Address('<test6-works@success.com>');
 
-        var next = function (action) {
+        const next = function (action) {
             test.expect(3);
             test.ok(this.connection.transaction.rcpt_to);
             test.ok(Array.isArray(this.connection.transaction.rcpt_to));
@@ -214,7 +214,7 @@ exports.aliases = {
         this.recip = new Address('<oc.elpmaxe@example.co>');
         this.params = [this.recip];
 
-        var next = function (action) {
+        const next = function (action) {
             test.expect(1);
             test.ok(this.connection.transaction.notes.discard);
             test.done();
@@ -226,7 +226,7 @@ exports.aliases = {
         this.recip = new Address('<test11@example.org>');
         this.params = [this.recip];
 
-        var next = function (action) {
+        const next = function (action) {
             test.expect(1);
             test.ok(this.connection.transaction.notes.discard);
             test.done();
@@ -238,9 +238,9 @@ exports.aliases = {
         // these will get reset in _set_up everytime
         this.recip = new Address('<demo2014@demo.com>');
         this.params = [this.recip];
-        var result = new Address('<test12-works@success.com>');
+        const result = new Address('<test12-works@success.com>');
 
-        var next = function (action) {
+        const next = function (action) {
             test.expect(3);
             test.ok(this.connection.transaction.rcpt_to);
             test.ok(Array.isArray(this.connection.transaction.rcpt_to));
@@ -254,9 +254,9 @@ exports.aliases = {
         // these will get reset in _set_up everytime
         this.recip = new Address('<test13@example.net>');
         this.params = [this.recip];
-        var result = new Address('<test13-works@success.com>');
+        const result = new Address('<test13-works@success.com>');
 
-        var next = function (action) {
+        const next = function (action) {
             test.expect(3);
             test.ok(this.connection.transaction.rcpt_to);
             test.ok(Array.isArray(this.connection.transaction.rcpt_to));
@@ -270,9 +270,9 @@ exports.aliases = {
         // these will get reset in _set_up everytime
         this.recip = new Address('<test13+subaddress@example.net>');
         this.params = [this.recip];
-        var result = new Address('<test13-works@success.com>');
+        const result = new Address('<test13-works@success.com>');
 
-        var next = function (action) {
+        const next = function (action) {
             test.expect(3);
             test.ok(this.connection.transaction.rcpt_to);
             test.ok(Array.isArray(this.connection.transaction.rcpt_to));
@@ -286,9 +286,9 @@ exports.aliases = {
         // these will get reset in _set_up everytime
         this.recip = new Address('<test14@example.net>');
         this.params = [this.recip];
-        var result = [new Address('<alice@success.com>'), new Address('<bob@success.com>')];
+        const result = [new Address('<alice@success.com>'), new Address('<bob@success.com>')];
 
-        var next = function (action) {
+        const next = function (action) {
             test.expect(3);
             test.ok(this.connection.transaction.rcpt_to);
             test.ok(Array.isArray(this.connection.transaction.rcpt_to));
@@ -305,7 +305,7 @@ exports.aliases = {
             return this.configfile;
         }.bind(this);
 
-        var next = function (action) {
+        const next = function (action) {
             test.expect(1);
             test.equals(undefined, this.connection.transaction.notes.discard);
             test.done();
@@ -320,7 +320,7 @@ exports.aliases = {
             return this.configfile;
         }.bind(this);
 
-        var next = function (action) {
+        const next = function (action) {
             test.expect(1);
             test.equals(undefined, this.connection.transaction.notes.discard);
             test.done();
@@ -333,7 +333,7 @@ exports.aliases = {
         this.recip = new Address('<test7@example.com>');
         this.params = [this.recip];
 
-        var next = function (action) {
+        const next = function (action) {
             test.expect(2);
             test.ok(this.connection.loginfo.called);
             test.equals(this.connection.loginfo.args[1],
@@ -348,7 +348,7 @@ exports.aliases = {
         this.recip = new Address('<test8@example.com>');
         this.params = [this.recip];
 
-        var next = function (action) {
+        const next = function (action) {
             test.expect(2);
             test.ok(this.connection.loginfo.called);
             test.equals(this.connection.loginfo.args[1],
@@ -363,7 +363,7 @@ exports.aliases = {
         this.recip = new Address('<test9@example.com>');
         this.params = [this.recip];
 
-        var next = function (action) {
+        const next = function (action) {
             test.expect(2);
             test.ok(this.connection.loginfo.called);
             test.equals(this.connection.loginfo.args[1],

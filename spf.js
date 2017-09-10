@@ -1,8 +1,8 @@
 'use strict';
 // spf
 
-var dns = require('dns');
-var ipaddr = require('ipaddr.js');
+const dns = require('dns');
+const ipaddr = require('ipaddr.js');
 
 // Constructor
 function SPF (count, been_there) {
@@ -41,8 +41,8 @@ SPF.prototype.SPF_TEMPERROR = 6;
 SPF.prototype.SPF_PERMERROR = 7;
 
 SPF.prototype.const_translate = function (value) {
-    var t = {};
-    for (var k in this) {
+    const t = {};
+    for (const k in this) {
         if (typeof this[k] === 'number') {
             t[this[k]] = k.toUpperCase();
         }
@@ -75,20 +75,20 @@ SPF.prototype.return_const = function (qualifier) {
 };
 
 SPF.prototype.expand_macros = function (str) {
-    var macro = /%{([slodipvh])((?:(?:\d+)?r?)?)?([-.+,/_=])?}/ig;
-    var match;
+    const macro = /%{([slodipvh])((?:(?:\d+)?r?)?)?([-.+,/_=])?}/ig;
+    let match;
     while ((match = macro.exec(str))) {
         // match[1] = macro-letter
         // match[2] = transformers
         // match[3] = delimiter
         if (!match[3]) match[3] = '.';
-        var strip = /(\d+)/.exec(match[2]);
+        let strip = /(\d+)/.exec(match[2]);
         if (strip) {
             strip = strip[1];
         }
-        var reverse = ((('' + match[2]).indexOf('r')) !== -1 ? true : false);
-        var replace;
-        var kind;
+        const reverse = ((('' + match[2]).indexOf('r')) !== -1 ? true : false);
+        let replace;
+        let kind;
         switch (match[1]) {
             case 's':   // sender
                 replace = this.mail_from;
@@ -147,7 +147,7 @@ SPF.prototype.log_debug = function (str) {
 };
 
 SPF.prototype.check_host = function (ip, domain, mail_from, cb) {
-    var self = this;
+    const self = this;
     domain = domain.toLowerCase();
     if (mail_from) {
         mail_from = mail_from.toLowerCase();
@@ -179,10 +179,9 @@ SPF.prototype.check_host = function (ip, domain, mail_from, cb) {
             }
         }
 
-        var i;
-        var spf_record;
-        var match;
-        for (i=0; i < txt_rrs.length; i++) {
+        let spf_record;
+        let match;
+        for (let i=0; i < txt_rrs.length; i++) {
             // Node 0.11.x compatibility
             if (Array.isArray(txt_rrs[i])) {
                 txt_rrs[i] = txt_rrs[i].join('');
@@ -213,15 +212,15 @@ SPF.prototype.check_host = function (ip, domain, mail_from, cb) {
         self.spf_record = spf_record;
 
         // Validate SPF record and build call chain
-        var mech_array = [];
-        var mod_array = [];
-        var mech_regexp1 = /^([-+~?])?(all|a|mx|ptr)$/;
-        var mech_regexp2 = /^([-+~?])?(a|mx|ptr|ip4|ip6|include|exists)((?::[^\/ ]+(?:\/\d+(?:\/\/\d+)?)?)|\/\d+(?:\/\/\d+)?)$/;
-        var mod_regexp = /^([^ =]+)=([a-z0-9:\/._-]+)$/;
-        var split = spf_record.split(' ');
-        for (i=1; i<split.length; i++) {
+        const mech_array = [];
+        const mod_array = [];
+        const mech_regexp1 = /^([-+~?])?(all|a|mx|ptr)$/;
+        const mech_regexp2 = /^([-+~?])?(a|mx|ptr|ip4|ip6|include|exists)((?::[^\/ ]+(?:\/\d+(?:\/\/\d+)?)?)|\/\d+(?:\/\/\d+)?)$/;
+        const mod_regexp = /^([^ =]+)=([a-z0-9:\/._-]+)$/;
+        const split = spf_record.split(' ');
+        for (let i=1; i<split.length; i++) {
             // Skip blanks
-            var obj;
+            let obj;
             if (!split[i]) continue;
             if ((match = (mech_regexp1.exec(split[i]) || mech_regexp2.exec(split[i])))) {
                 // match[1] = qualifier
@@ -231,7 +230,7 @@ SPF.prototype.check_host = function (ip, domain, mail_from, cb) {
                 self.log_debug('found mechanism: ' + match);
                 // Validate IP addresses
                 if (match[2] === 'ip4' || match[2] === 'ip6') {
-                    var ip_split = /^:([^\/ ]+)(?:\/([^ ]+))?$/.exec(match[3]);
+                    const ip_split = /^:([^\/ ]+)(?:\/([^ ]+))?$/.exec(match[3]);
                     // Make sure the IP address is valid
                     if (!ip_split || (ip_split && !ipaddr.isValid(ip_split[1]))) {
                         self.log_debug('invalid IP address: ' + ip_split[1]);
@@ -278,7 +277,7 @@ SPF.prototype.check_host = function (ip, domain, mail_from, cb) {
         self.log_debug('SPF record for \'' + self.domain + '\' validated OK');
 
         // Set-up modifier run chain
-        var mod_chain_caller = function (err2, result) {
+        function mod_chain_caller (err2, result) {
             // Throw any errors
             if (err2) throw err2;
             // Check limits
@@ -293,15 +292,15 @@ SPF.prototype.check_host = function (ip, domain, mail_from, cb) {
             if (!mod_array.length) {
                 return cb(null, self.SPF_NEUTRAL);
             }
-            var next_in_chain = mod_array.shift();
-            var func = Object.keys(next_in_chain);
-            var args = next_in_chain[func];
+            const next_in_chain = mod_array.shift();
+            const func = Object.keys(next_in_chain);
+            const args = next_in_chain[func];
             self.log_debug('running modifier: ' + func + ' args=' + args + ' domain=' + self.domain);
             self['mod_' + func](args, mod_chain_caller);
-        };
+        }
 
         // Run all the mechanisms first
-        var mech_chain_caller = function (err3, result) {
+        function mech_chain_caller (err3, result) {
             // Throw any errors
             if (err3) throw err3;
             // Check limits
@@ -323,12 +322,12 @@ SPF.prototype.check_host = function (ip, domain, mail_from, cb) {
                     return cb(null, self.SPF_NEUTRAL);
                 }
             }
-            var next_in_chain = mech_array.shift();
-            var func = Object.keys(next_in_chain);
-            var args = next_in_chain[func];
+            const next_in_chain = mech_array.shift();
+            const func = Object.keys(next_in_chain);
+            const args = next_in_chain[func];
             self.log_debug('running mechanism: ' + func + ' args=' + args + ' domain=' + self.domain);
             self['mech_' + func](((args && args.length) ? args[0] : null), ((args && args.length) ? args[1] : null), mech_chain_caller);
-        };
+        }
         // Start the chain
         mech_chain_caller();
     });
@@ -339,8 +338,8 @@ SPF.prototype.mech_all = function (qualifier, args, cb) {
 };
 
 SPF.prototype.mech_include = function (qualifier, args, cb) {
-    var self = this;
-    var domain = args.substr(1);
+    const self = this;
+    const domain = args.substr(1);
     // Avoid circular references
     if (this.been_there[domain]) {
         self.log_debug('circular reference detected: ' + domain);
@@ -349,7 +348,7 @@ SPF.prototype.mech_include = function (qualifier, args, cb) {
     this.count++;
     this.been_there[domain] = true;
     // Recurse
-    var recurse = new SPF(self.count, self.been_there);
+    const recurse = new SPF(self.count, self.been_there);
     recurse.check_host(self.ip, domain, self.mail_from, function (err, result) {
         if (!err) {
             self.log_debug('mech_include: domain=' + domain + ' returned=' + self.const_translate(result));
@@ -366,9 +365,9 @@ SPF.prototype.mech_include = function (qualifier, args, cb) {
 };
 
 SPF.prototype.mech_exists = function (qualifier, args, cb) {
-    var self = this;
+    const self = this;
     this.count++;
-    var exists = args.substr(1);
+    const exists = args.substr(1);
     dns.resolve(exists, function (err, addrs) {
         if (err) {
             self.log_debug('mech_exists: ' + err);
@@ -387,24 +386,24 @@ SPF.prototype.mech_exists = function (qualifier, args, cb) {
 };
 
 SPF.prototype.mech_a = function (qualifier, args, cb) {
-    var self = this;
+    const self = this;
     this.count++;
     // Parse any arguments
-    var cm;
-    var cidr4;
-    var cidr6;
+    let cm;
+    let cidr4;
+    let cidr6;
     if (args && (cm = /\/(\d+)(?:\/\/(\d+))?$/.exec(args))) {
         cidr4 = cm[1];
         cidr6 = cm[2];
     }
-    var dm;
-    var domain = this.domain;
+    let dm;
+    let domain = this.domain;
     if (args && (dm = /^:([^\/ ]+)/.exec(args))) {
         domain = dm[1];
     }
     // Calculate with IP method to use
-    var resolve_method;
-    var cidr;
+    let resolve_method;
+    let cidr;
     if (this.ip_ver === 'ipv4') {
         cidr = cidr4;
         resolve_method = 'resolve4';
@@ -424,10 +423,10 @@ SPF.prototype.mech_a = function (qualifier, args, cb) {
                 default:            return cb(null, self.SPF_TEMPERROR);
             }
         }
-        for (var a=0; a<addrs.length; a++) {
+        for (let a=0; a<addrs.length; a++) {
             if (cidr) {
                 // CIDR
-                var range = ipaddr.parse(addrs[a]);
+                const range = ipaddr.parse(addrs[a]);
                 if (self.ipaddr.match(range, cidr)) {
                     self.log_debug('mech_a: ' + self.ip + ' => ' + addrs[a] + '/' + cidr + ': MATCH!');
                     return cb(null, self.return_const(qualifier));
@@ -450,18 +449,18 @@ SPF.prototype.mech_a = function (qualifier, args, cb) {
 };
 
 SPF.prototype.mech_mx = function (qualifier, args, cb) {
-    var self = this;
+    const self = this;
     this.count++;
     // Parse any arguments
-    var cm;
-    var cidr4;
-    var cidr6;
+    let cm;
+    let cidr4;
+    let cidr6;
     if (args && (cm = /\/(\d+)((?:\/\/(\d+))?)$/.exec(args))) {
         cidr4 = cm[1];
         cidr6 = cm[2];
     }
-    var dm;
-    var domain = this.domain;
+    let dm;
+    let domain = this.domain;
     if (args && (dm = /^:([^\/ ]+)/.exec(args))) {
         domain = dm[1];
     }
@@ -475,18 +474,18 @@ SPF.prototype.mech_mx = function (qualifier, args, cb) {
                 default:            return cb(null, self.SPF_TEMPERROR);
             }
         }
-        var pending = 0;
-        var addresses = [];
+        let pending = 0;
+        let addresses = [];
         // RFC 4408 Section 10.1
         if (mxes.length > self.LIMIT) {
             return cb(null, self.SPF_PERMERROR);
         }
-        for (var a=0; a<mxes.length; a++) {
+        for (let a=0; a<mxes.length; a++) {
             pending++;
-            var mx = mxes[a].exchange;
+            const mx = mxes[a].exchange;
             // Calculate which IP method to use
-            var resolve_method;
-            var cidr;
+            let resolve_method;
+            let cidr;
             if (self.ip_ver === 'ipv4') {
                 cidr = cidr4;
                 resolve_method = 'resolve4';
@@ -514,8 +513,8 @@ SPF.prototype.mech_mx = function (qualifier, args, cb) {
                     // All queries run; see if our IP matches
                     if (cidr) {
                         // CIDR match type
-                        for (var i=0; i<addresses.length; i++) {
-                            var range = ipaddr.parse(addresses[i]);
+                        for (let i=0; i<addresses.length; i++) {
+                            const range = ipaddr.parse(addresses[i]);
                             if (self.ipaddr.match(range, cidr)) {
                                 self.log_debug('mech_mx: ' + self.ip + ' => ' + addresses[i] + '/' + cidr + ': MATCH!');
                                 return cb(null, self.return_const(qualifier));
@@ -551,10 +550,10 @@ SPF.prototype.mech_mx = function (qualifier, args, cb) {
 };
 
 SPF.prototype.mech_ptr = function (qualifier, args, cb) {
-    var self = this;
+    const self = this;
     this.count++;
-    var dm;
-    var domain = this.domain;
+    let dm;
+    let domain = this.domain;
     if (args && (dm = /^:([^\/ ]+)/.exec(args))) {
         domain = dm[1];
     }
@@ -565,17 +564,17 @@ SPF.prototype.mech_ptr = function (qualifier, args, cb) {
             return cb(null, self.SPF_NONE);
         }
         else {
-            var resolve_method;
+            let resolve_method;
             if (self.ip_ver === 'ipv4') resolve_method = 'resolve4';
             if (self.ip_ver === 'ipv6') resolve_method = 'resolve6';
-            var pending = 0;
-            var names = [];
+            let pending = 0;
+            const names = [];
             // RFC 4408 Section 10.1
             if (ptrs.length > self.LIMIT) {
                 return cb(null, self.SPF_PERMERROR);
             }
-            for (var i=0; i<ptrs.length; i++) {
-                var ptr = ptrs[i];
+            for (let i=0; i<ptrs.length; i++) {
+                const ptr = ptrs[i];
                 pending++;
                 dns[resolve_method](ptr, function (err3, addrs) {
                     pending--;
@@ -584,7 +583,7 @@ SPF.prototype.mech_ptr = function (qualifier, args, cb) {
                         self.log_debug('mech_ptr: lookup=' + ptr + ' => ' + err3);
                     }
                     else {
-                        for (var a=0; a<addrs.length; a++) {
+                        for (let a=0; a<addrs.length; a++) {
                             if (addrs[a] === self.ip) {
                                 self.log_debug('mech_ptr: ' + self.ip + ' => ' + ptr + ' => ' + addrs[a] + ': MATCH!');
                                 names.push(ptr.toLowerCase());
@@ -596,7 +595,7 @@ SPF.prototype.mech_ptr = function (qualifier, args, cb) {
                     }
                     // Finished
                     if (pending === 0) {
-                        var re;
+                        let re;
                         // Catch bogus PTR matches e.g. ptr:*.bahnhof.se (should be ptr:bahnhof.se)
                         // These will cause a regexp error, so we can catch them.
                         try {
@@ -612,7 +611,7 @@ SPF.prototype.mech_ptr = function (qualifier, args, cb) {
                             );
                             return cb(null, self.SPF_PERMERROR);
                         }
-                        for (var t=0; t<names.length; t++) {
+                        for (let t=0; t<names.length; t++) {
                             if (re.test(names[t])) {
                                 self.log_debug('mech_ptr: ' + names[t] + ' => ' + domain + ': MATCH!');
                                 return cb(null, self.return_const(qualifier));
@@ -634,8 +633,8 @@ SPF.prototype.mech_ptr = function (qualifier, args, cb) {
 };
 
 SPF.prototype.mech_ip = function (qualifier, args, cb) {
-    var cidr = args.substr(1);
-    var match = /^([^\/ ]+)(?:\/(\d+))?$/.exec(cidr);
+    const cidr = args.substr(1);
+    const match = /^([^\/ ]+)(?:\/(\d+))?$/.exec(cidr);
     if (!match) { return cb(null, this.SPF_NONE); }
 
     // match[1] == ip
@@ -646,8 +645,8 @@ SPF.prototype.mech_ip = function (qualifier, args, cb) {
             if (this.ip_ver === 'ipv4') match[2] = '32';
             if (this.ip_ver === 'ipv6') match[2] = '128';
         }
-        var range = ipaddr.parse(match[1]);
-        var rtype = range.kind();
+        const range = ipaddr.parse(match[1]);
+        const rtype = range.kind();
         if (this.ip_ver !== rtype) {
             this.log_debug('mech_ip: ' + this.ip + ' => ' + cidr + ': SKIP');
             return cb(null, this.SPF_NONE);

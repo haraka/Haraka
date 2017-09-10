@@ -20,10 +20,10 @@
 //                        ("RCPT TO:" forward-path)
 
 /* eslint no-control-regex: 0 */
-var chew_regexp = /\s+([A-Za-z0-9][A-Za-z0-9\-]*(?:=[^= \x00-\x1f]+)?)$/;
+const chew_regexp = /\s+([A-Za-z0-9][A-Za-z0-9\-]*(?:=[^= \x00-\x1f]+)?)$/;
 
 exports.parse = function (type, line, strict) {
-    var params = [];
+    let params = [];
     line = (new String(line)).replace(/\s*$/, '');
     if (type === "mail") {
         line = line.replace(strict ? /from:/i : /from:\s*/i, "");
@@ -33,7 +33,7 @@ exports.parse = function (type, line, strict) {
     }
 
     while (1) {
-        var old_length = line.length;
+        const old_length = line.length;
         line = line.replace(chew_regexp, function repl (str, p1) {
             params.push(p1);
             return '';

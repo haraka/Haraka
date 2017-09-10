@@ -1,8 +1,8 @@
 'use strict';
 
-var fixtures     = require('haraka-test-fixtures');
+const fixtures     = require('haraka-test-fixtures');
 
-var _set_up = function (done) {
+const _set_up = function (done) {
 
     this.plugin = new fixtures.plugin('dns_list_base');
 
@@ -13,13 +13,13 @@ exports.disable_zone = {
     setUp : _set_up,
     'empty request': function (test) {
         test.expect(1);
-        var res = this.plugin.disable_zone();
+        const res = this.plugin.disable_zone();
         test.equal(false, res);
         test.done();
     },
     'testbl1, no zones': function (test) {
         test.expect(1);
-        var res = this.plugin.disable_zone('testbl1', 'test result');
+        const res = this.plugin.disable_zone('testbl1', 'test result');
         test.equal(false, res);
         test.done();
     },
@@ -27,7 +27,7 @@ exports.disable_zone = {
         test.expect(2);
         this.plugin.disable_allowed=true;
         this.plugin.zones = [ 'testbl2' ];
-        var res = this.plugin.disable_zone('testbl1', 'test result');
+        const res = this.plugin.disable_zone('testbl1', 'test result');
         test.equal(false, res);
         test.equal(1, this.plugin.zones.length);
         test.done();
@@ -36,7 +36,7 @@ exports.disable_zone = {
         test.expect(2);
         this.plugin.disable_allowed=true;
         this.plugin.zones = [ 'testbl1' ];
-        var res = this.plugin.disable_zone('testbl1', 'test result');
+        const res = this.plugin.disable_zone('testbl1', 'test result');
         test.equal(true, res);
         test.equal(0, this.plugin.zones.length);
         test.done();
@@ -47,7 +47,7 @@ exports.lookup = {
     setUp : _set_up,
     'Spamcop, test IP': function (test) {
         test.expect(2);
-        var cb = function (err, a) {
+        const cb = function (err, a) {
             test.equal(null, err);
             test.ok(a);
             test.done();
@@ -56,7 +56,7 @@ exports.lookup = {
     },
     'Spamcop, unlisted IP': function (test) {
         test.expect(2);
-        var cb = function (err, a) {
+        const cb = function (err, a) {
             test.equal(null, err);
             test.equal(null, a);
             test.done();
@@ -69,7 +69,7 @@ exports.multi = {
     setUp : _set_up,
     'Spamcop': function (test) {
         test.expect(4);
-        var cb = function (err, zone, a, pending) {
+        const cb = function (err, zone, a, pending) {
             test.equal(null, err);
             if (pending) {
                 test.ok((Array.isArray(a) && a.length > 0));
@@ -83,7 +83,7 @@ exports.multi = {
     },
     'CBL': function (test) {
         test.expect(4);
-        var cb = function (err, zone, a, pending) {
+        const cb = function (err, zone, a, pending) {
             test.equal(null, err);
             if (pending) {
                 test.ok((Array.isArray(a) && a.length > 0));
@@ -97,7 +97,7 @@ exports.multi = {
     },
     'Spamcop + CBL': function (test) {
         test.expect(12);
-        var cb = function (err, zone, a, pending) {
+        const cb = function (err, zone, a, pending) {
             test.equal(null, err);
             if (pending) {
                 test.ok(zone);
@@ -111,12 +111,12 @@ exports.multi = {
                 test.done();
             }
         };
-        var dnsbls = ['bl.spamcop.net','cbl.abuseat.org'];
+        const dnsbls = ['bl.spamcop.net','cbl.abuseat.org'];
         this.plugin.multi('127.0.0.2', dnsbls, cb);
     },
     'Spamcop + CBL + negative result': function (test) {
         test.expect(12);
-        var cb = function (err, zone, a, pending) {
+        const cb = function (err, zone, a, pending) {
             test.equal(null, err);
             test.equal(null, a);
             if (pending) {
@@ -129,12 +129,12 @@ exports.multi = {
                 test.done();
             }
         };
-        var dnsbls = ['bl.spamcop.net','cbl.abuseat.org'];
+        const dnsbls = ['bl.spamcop.net','cbl.abuseat.org'];
         this.plugin.multi('127.0.0.1', dnsbls, cb);
     },
     'IPv6 addresses supported': function (test) {
         test.expect(12);
-        var cb = function (err, zone, a, pending) {
+        const cb = function (err, zone, a, pending) {
             test.equal(null, a);
             if (pending) {
                 test.deepEqual(null, err);
@@ -148,7 +148,7 @@ exports.multi = {
                 test.done();
             }
         };
-        var dnsbls = ['bl.spamcop.net','cbl.abuseat.org'];
+        const dnsbls = ['bl.spamcop.net','cbl.abuseat.org'];
         this.plugin.multi('::1', dnsbls, cb);
     }
 };
@@ -157,34 +157,34 @@ exports.first = {
     setUp : _set_up,
     'positive result': function (test) {
         test.expect(3);
-        var cb = function (err, zone, a) {
+        const cb = function (err, zone, a) {
             test.equal(null, err);
             test.ok(zone);
             test.ok((Array.isArray(a) && a.length > 0));
             test.done();
         };
-        var dnsbls = [ 'cbl.abuseat.org', 'bl.spamcop.net' ];
+        const dnsbls = [ 'cbl.abuseat.org', 'bl.spamcop.net' ];
         this.plugin.first('127.0.0.2', dnsbls , cb);
     },
     'negative result': function (test) {
         test.expect(3);
-        var cb = function (err, zone, a) {
+        const cb = function (err, zone, a) {
             test.equal(null, err);
             test.equal(null, zone);
             test.equal(null, a);
             test.done();
         };
-        var dnsbls = [ 'cbl.abuseat.org', 'bl.spamcop.net' ];
+        const dnsbls = [ 'cbl.abuseat.org', 'bl.spamcop.net' ];
         this.plugin.first('127.0.0.1', dnsbls, cb);
     },
     'each_cb': function (test) {
         test.expect(7);
-        var dnsbls = [ 'cbl.abuseat.org', 'bl.spamcop.net' ];
-        var pending = dnsbls.length;
-        var cb = function () {
+        const dnsbls = [ 'cbl.abuseat.org', 'bl.spamcop.net' ];
+        let pending = dnsbls.length;
+        const cb = function () {
             test.ok(pending);
         };
-        var cb_each = function (err, zone, a) {
+        const cb_each = function (err, zone, a) {
             pending--;
             test.equal(null, err);
             test.ok(zone);
