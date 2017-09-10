@@ -473,8 +473,10 @@ DKIMVerifyStream.prototype.handle_buf = function (buf) {
 
         self.debug(JSON.stringify(result));
 
-        if (self.pending === 0 && self.cb) {
-            return self.cb(null, self.result, self.results);
+        if (self.pending === 0 && self.b) {
+            return process.nextTick(function () {
+                self.cb(null, self.result, self.results);
+            });
         }
     };
 
@@ -507,7 +509,9 @@ DKIMVerifyStream.prototype.handle_buf = function (buf) {
                 }
                 if (!this.header_idx['dkim-signature']) {
                     this._no_signatures_found = true;
-                    return this.cb(null, this.result, this.results);
+                    return process.nextTick(function () {
+                        self.cb(null, self.result, self.results);
+                    });
                 }
                 else {
                     // Create new DKIM objects for each header
@@ -518,7 +522,9 @@ DKIMVerifyStream.prototype.handle_buf = function (buf) {
                         this.dkim_objects.push(new DKIMObject(dkim_headers[d], this.header_idx, callback, this.timeout));
                     }
                     if (this.pending === 0) {
-                        if (this.cb) this.cb(new Error('no signatures found'));
+                        process.nextTick(function () {
+                            if (self.cb) self.cb(new Error('no signatures found'));
+                        });
                     }
                 }
                 continue;  // while()
@@ -559,7 +565,10 @@ DKIMVerifyStream.prototype.end = function (buf) {
         this.dkim_objects[d].end();
     }
     if (this.pending === 0 && this._no_signatures_found === false) {
-        this.cb(null, this.result, this.results);
+        var self = this;
+        process.nextTick(function () {
+            self.cb(null, self.result, self.results);
+        });
     }
 };
 
