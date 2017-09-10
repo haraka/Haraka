@@ -168,7 +168,7 @@ function _decode_rfc2231 (params, str) {
 
 Header.prototype.decode_header = function decode_header (val) {
     // Fold continuations
-    const = val.replace(/\r?\n/g, '');
+    val.replace(/\r?\n/g, '');
 
     const rfc2231_params = {
         kv: {},
