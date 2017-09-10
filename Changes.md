@@ -11,6 +11,7 @@
     * connection/transaction notes now have get/set #2082
 * Fixes
     * haraka cli will now create folders if they don't exist #2088
+    * dkim: prevent dkim_verify from causing 'cannot pipe' #1693
 
 ## 2.8.14 - Jul 26, 2017
 
