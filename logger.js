@@ -224,11 +224,7 @@ logger.would_log = function (level) {
 };
 
 logger.set_timestamps = function (value) {
-    if (!value) {
-        logger.timestamps = false;
-        return;
-    }
-    logger.timestamps = true;
+    logger.timestamps = !!value;
 }
 
 logger._init_timestamps = function () {
@@ -238,7 +234,7 @@ logger._init_timestamps = function () {
         self._init_timestamps();
     });
 
-    this.set_timestamps(_timestamps);
+    self.set_timestamps(_timestamps);
 };
 
 logger._init();
