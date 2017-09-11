@@ -3,6 +3,7 @@
 
 * Changes
     * ES6: replace var with const or let  #2073
+    * Replace console.log with stdout #2100
 
 ## 2.8.15 - Sep 10, 2017
 
