@@ -227,7 +227,6 @@ logger.would_log = function (level) {
 
 logger.set_timestamps = function (value) {
     logger.timestamps = !!value;
-    this.log('INFO', `log timestamps: ${logger.timestamps}`);
 }
 
 logger._init_timestamps = function () {
