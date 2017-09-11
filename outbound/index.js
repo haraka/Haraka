@@ -190,10 +190,34 @@ function stream_line_reader (stream, transaction, cb) {
     stream.once('error', cb);
 }
 
+function get_deliveries (transaction) {
+    const deliveries = [];
+
+    if (cfg.always_split) {
+        logger.logdebug({name: "outbound"}, "always split");
+        transaction.rcpt_to.forEach(function (rcpt) {
+            deliveries.push({domain: rcpt.host, rcpts: [ rcpt ]});
+        });
+        return deliveries;
+    }
+
+    // First get each domain
+    const recips = {};
+    transaction.rcpt_to.forEach(function (rcpt) {
+        const domain = rcpt.host;
+        if (!recips[domain]) { recips[domain] = []; }
+        recips[domain].push(rcpt);
+    });
+    Object.keys(recips).forEach(function (domain) {
+        deliveries.push({'domain': domain, 'rcpts': recips[domain]});
+    });
+    return deliveries;
+}
+
 exports.send_trans_email = function (transaction, next) {
     const self = this;
 
-    // add in potentially missing headers
+    // add potentially missing headers
     if (!transaction.header.get_all('Message-Id').length) {
         logger.loginfo("[outbound] Adding missing Message-Id header");
         transaction.add_header('Message-Id', '<' + transaction.uuid + '@' + config.get('me') + '>');
@@ -210,30 +234,13 @@ exports.send_trans_email = function (transaction, next) {
     };
 
     logger.add_log_methods(connection);
-    transaction.results = transaction.results || new ResultStore(connection);
+    if (!transaction.results) {
+        logger.logerror('adding missing results store');
+        transaction.results = new ResultStore(connection);
+    }
 
     connection.pre_send_trans_email_respond = function (retval) {
-        const deliveries = [];
-        const always_split = cfg.always_split;
-        if (always_split) {
-            logger.logdebug({name: "outbound"}, "always split");
-            transaction.rcpt_to.forEach(function (rcpt) {
-                deliveries.push({domain: rcpt.host, rcpts: [ rcpt ]});
-            });
-        }
-        else {
-            // First get each domain
-            const recips = {};
-            transaction.rcpt_to.forEach(function (rcpt) {
-                const domain = rcpt.host;
-                if (!recips[domain]) { recips[domain] = []; }
-                recips[domain].push(rcpt);
-            });
-            Object.keys(recips).forEach(function (domain) {
-                deliveries.push({'domain': domain, 'rcpts': recips[domain]});
-            });
-        }
-
+        const deliveries = get_deliveries(transaction);
         const hmails = [];
         const ok_paths = [];
 
@@ -245,11 +252,12 @@ exports.send_trans_email = function (transaction, next) {
             todo_index++;
             self.process_delivery(ok_paths, todo, hmails, cb);
         },
-        function (err) {
+        (err) => {
             if (err) {
-                for (let i=0,l=ok_paths.length; i<l; i++) {
+                for (let i=0, l=ok_paths.length; i<l; i++) {
                     fs.unlink(ok_paths[i], function () {});
                 }
+                transaction.results.add({ name: 'outbound'}, { err: err });
                 if (next) next(constants.denysoft, err);
                 return;
             }
@@ -259,6 +267,7 @@ exports.send_trans_email = function (transaction, next) {
                 delivery_queue.push(hmail);
             }
 
+            transaction.results.add({ name: 'outbound'}, { pass: "queued" });
             if (next) {
                 next(constants.ok, "Message Queued");
             }
