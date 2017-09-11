@@ -99,6 +99,8 @@ logger.load_log_ini = function () {
     this.set_loglevel(this.cfg.main.level);
     this.set_timestamps(this.cfg.main.timestamps);
     this.set_format(this.cfg.main.format);
+
+    console.log('cfg');
 }
 
 logger.colorize = function (color, str) {
@@ -225,6 +227,7 @@ logger.would_log = function (level) {
 
 logger.set_timestamps = function (value) {
     logger.timestamps = !!value;
+    this.log('INFO', `log timestamps: ${logger.timestamps}`);
 }
 
 logger._init_timestamps = function () {
@@ -234,7 +237,9 @@ logger._init_timestamps = function () {
         self._init_timestamps();
     });
 
-    self.set_timestamps(_timestamps);
+    // If we've already been toggled to true by the cfg, we should respect
+    // this.
+    self.set_timestamps(logger.timestamps || _timestamps);
 };
 
 logger._init();
