@@ -473,7 +473,7 @@ DKIMVerifyStream.prototype.handle_buf = function (buf) {
 
         self.debug(JSON.stringify(result));
 
-        if (self.pending === 0 && self.b) {
+        if (self.pending === 0 && self.cb) {
             return process.nextTick(function () {
                 self.cb(null, self.result, self.results);
             });
