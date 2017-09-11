@@ -3,6 +3,7 @@
 
 * Changes
     * ES6: replace var with const or let  #2073
+    * spamassassin: skip adding headers when value us empty #2102
 
 ## 2.8.15 - Sep 10, 2017
 
