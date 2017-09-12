@@ -29,7 +29,7 @@ exports.hook_data_post = function (next, connection) {
             let res_err = '';
             if (res.error) res_err = ` (${res.error})`;
             connection.auth_results(`dkim=${res.result}${res_err} header.i=${res.identity}`);
-            connection.loginfo(self, `identity="${res.identity}" domain="${res.domain}" selector="${res.selector}" result=${res.result} {res_err}`);
+            connection.loginfo(self, `identity="${res.identity}" domain="${res.domain}" selector="${res.selector}" result=${res.result} ${res_err}`);
 
             // save to ResultStore
             const rs_obj = JSON.parse(JSON.stringify(res));
