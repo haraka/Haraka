@@ -99,8 +99,6 @@ logger.load_log_ini = function () {
     this.set_loglevel(this.cfg.main.level);
     this.set_timestamps(this.cfg.main.timestamps);
     this.set_format(this.cfg.main.format);
-
-    console.log('cfg');
 }
 
 logger.colorize = function (color, str) {
