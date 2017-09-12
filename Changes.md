@@ -2,7 +2,10 @@
 ## 2.8.16 - Mmm dd, 2017
 
 * Changes
+    * outbound: add results when queueing #2103
     * ES6: replace var with const or let  #2073
+* Fixes
+    * haraka was adding TLS header on non-TLS connection #2103
 
 ## 2.8.15 - Sep 10, 2017
 
