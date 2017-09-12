@@ -10,8 +10,8 @@ failures for DENYSOFT or 550 permanent failures for DENY or DENYDISCONNECT) in
 the SMTP response sent back to the client along with an optional message text 
 that you return as arguments to the next() function.
 
-The **DSN** module was designed to allow a plugin to return RFC 3463 compliant 
-extended status codes and to allow a plugin author to override the SMTP status 
+The [DSN](https://github.com/haraka/haraka-dsn) allows a plugin to return RFC 3463
+compliant extended status codes and allows plugins to override the SMTP status 
 code returned by Haraka.
 
 The DSN module exposes a callable function for each status condition defined 
@@ -26,7 +26,7 @@ information and background.
 Firstly you need to load the DSN module by adding the following line to 
 the top of your plugin:
 
-	var DSN = require('./dsn');
+	var DSN = require('haraka-dsn');
 
 Then instead of:
 
