@@ -8,6 +8,7 @@ const net          = require('net');
 
 const Address     = require('address-rfc2821').Address;
 const constants   = require('haraka-constants');
+const DSN         = require('haraka-dsn');
 const net_utils   = require('haraka-net-utils');
 const Notes       = require('haraka-notes');
 const utils       = require('haraka-utils');
@@ -16,7 +17,6 @@ const logger      = require('../logger');
 const config      = require('../config');
 const plugins     = require('../plugins');
 const Header      = require('../mailheader').Header;
-const DSN         = require('../dsn');
 
 const client_pool = require('./client_pool');
 const _qfile      = require('./qfile');

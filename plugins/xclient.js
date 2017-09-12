@@ -2,7 +2,7 @@
 // See http://www.postfix.org/XCLIENT_README.html
 
 const utils = require('haraka-utils');
-const DSN = require('./dsn');
+const DSN = require('haraka-dsn');
 const net = require('net');
 let allowed_hosts = {};
 

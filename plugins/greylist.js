@@ -2,15 +2,18 @@
 
 // version 0.1.4
 
-const util = require('util');
-const tlds  = require('haraka-tld');
-const isIPv6 = require('net').isIPv6;
+// node builtins
+const net    = require('net');
+const util   = require('util');
 
-const ipaddr = require('ipaddr.js');
-
-const DSN = require('./dsn');
+// Haraka modules
+const DSN       = require('haraka-dsn');
+const tlds      = require('haraka-tld');
 const net_utils = require('haraka-net-utils');
-const Address = require('address-rfc2821').Address;
+const Address   = require('address-rfc2821').Address;
+
+// External NPM modules
+const ipaddr    = require('ipaddr.js');
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 exports.register = function (next) {
@@ -75,7 +78,7 @@ exports.load_config_lists = function () {
                     addr = ipaddr.parseCIDR(addr);
                 }
                 else {
-                    addr = ipaddr.parseCIDR(addr + ((isIPv6(addr)) ? '/128' : '/32'));
+                    addr = ipaddr.parseCIDR(addr + ((net.isIPv6(addr)) ? '/128' : '/32'));
                 }
 
                 plugin.whitelist[type].push(addr);
