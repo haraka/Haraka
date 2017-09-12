@@ -172,7 +172,7 @@ Create a PR adding yours to this list.
 [url-recordenv]: https://github.com/haraka/Haraka/blob/master/docs/plugins/record_envelope_addresses.md
 [url-relay]: https://github.com/haraka/Haraka/blob/master/docs/plugins/relay.md
 [url-rng]: https://github.com/haraka/Haraka/blob/master/docs/plugins/reseed_rng.md
-[url-rspamd]: https://github.com/haraka/Haraka/blob/master/docs/plugins/rspamd.md
+[url-rspamd]: https://github.com/haraka/haraka-plugin-rspamd
 [url-spamass]: https://github.com/haraka/Haraka/blob/master/docs/plugins/spamassassin.md
 [url-spf]: https://github.com/haraka/Haraka/blob/master/docs/plugins/spf.md
 [url-tarpit]: https://github.com/haraka/Haraka/blob/master/docs/plugins/tarpit.md
