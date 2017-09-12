@@ -4,7 +4,7 @@
 const http = require('http');
 
 // haraka libs
-const DSN = require('./dsn');
+const DSN = require('haraka-dsn');
 
 exports.register = function () {
     this.load_rspamd_ini();
