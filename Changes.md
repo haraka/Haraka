@@ -2,8 +2,9 @@
 ## 2.8.16 - Mmm dd, 2017
 
 * Changes
-    * ES6: replace var with const or let  #2073
+    * rspamd: repackaged as NPM module #2106
     * dsn: repackaged as NPM module haraka-dsn #2105
+    * ES6: replace var with const or let  #2073
 
 ## 2.8.15 - Sep 10, 2017
 
