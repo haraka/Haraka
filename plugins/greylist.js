@@ -328,7 +328,7 @@ exports.should_skip_check = function (connection) {
     }
 
     if (ctr) {
-        if (ctr.has(plugin, 'skip', /^config\-whitelist/)) {
+        if (ctr.has(plugin, 'skip', /^config-whitelist/)) {
             plugin.loginfo(connection, 'skipping GL for host whitelisted in config');
             return true;
         }

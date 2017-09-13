@@ -56,7 +56,7 @@ pluggableStream.prototype.attach = function (socket) {
     self.targetsocket.on('data', function (data) {
         self.emit('data', data);
     });
-    self.targetsocket.on('connect', function (a, b) {
+    self.targetsocket.on('connect', (a, b) => {
         self.emit('connect', a, b);
     });
     self.targetsocket.on('secureConnection', function (a, b) {
@@ -156,7 +156,7 @@ exports.parse_x509_names = function (string) {
 
     // log.loginfo(string);
 
-    let match = /Subject:.*?CN=([^\/\s]+)/.exec(string);
+    let match = /Subject:.*?CN=([^/\s]+)/.exec(string);
     if (match) {
         // log.loginfo(match[0]);
         if (match[1]) {
@@ -191,7 +191,7 @@ exports.parse_x509_expire = function (file, string) {
 exports.parse_x509 = function (string) {
     const res = {};
 
-    const match = /^([^\-]*)?([\-]+BEGIN (?:\w+\s)?PRIVATE KEY[\-]+[^\-]+[\-]+END (?:\w+\s)?PRIVATE KEY[\-]+\n)([^]*)$/.exec(string);
+    const match = /^([^-]*)?([-]+BEGIN (?:\w+\s)?PRIVATE KEY[-]+[^-]+[-]+END (?:\w+\s)?PRIVATE KEY[-]+\n)([^]*)$/.exec(string);
     if (!match) return res;
 
     if (match[1] && match[1].length) {

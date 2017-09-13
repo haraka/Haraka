@@ -296,7 +296,7 @@ function createFile (filePath, data, info) {
         }
         mkDir(path.dirname(filePath));
         const fd = fs.openSync(filePath, 'w');
-        const output = data.replace(/\%(\w+)\%/g, function (i, m1) { return info[m1] });
+        const output = data.replace(/%(\w+)%/g, function (i, m1) { return info[m1] });
         fs.writeSync(fd, output, null);
     }
     catch (e) {

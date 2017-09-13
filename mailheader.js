@@ -118,29 +118,29 @@ function _decode_rfc2231 (params, str) {
                   ; Must be in quoted-string,
                   ; to use within parameter values
     */
-    var sub_matches = /(([!#$%&'*+.0-9A-Zdiff^_`a-z{|}~-]*)\*)(\d*)=(\s*".*?[^\\]";?|\S*)/.exec(str);
+    const sub_matches = /(([!#$%&'*+.0-9A-Zdiff^_`a-z{|}~-]*)\*)(\d*)=(\s*".*?[^\\]";?|\S*)/.exec(str);
     if (!sub_matches) {
         return;
     }
-    var key = sub_matches[1];
-    var key_actual = sub_matches[2];
-    var key_id = sub_matches[3] || '0';
-    var value = sub_matches[4].replace(/;$/, '');
+    const key = sub_matches[1];
+    let key_actual = sub_matches[2];
+    let key_id = sub_matches[3] || '0';
+    let value = sub_matches[4].replace(/;$/, '');
 
     str = str.replace(sub_matches[0], ''); // strip it out, so we move to next
 
-    var key_extract = /^(.*?)(\*(\d+)\*)$/.exec(key);
+    const key_extract = /^(.*?)(\*(\d+)\*)$/.exec(key);
     if (key_extract) {
         key_actual = key_extract[1];
         key_id = key_extract[3];
     }
 
-    var quote = /^\s*"(.*)"$/.exec(value);
+    const quote = /^\s*"(.*)"$/.exec(value);
     if (quote) {
         value = quote[1];
     }
 
-    var lang_match = /^(.*?)'(.*?)'(.*)/.exec(value);
+    const lang_match = /^(.*?)'(.*?)'(.*)/.exec(value);
     if (lang_match) {
         if (key_actual == params.cur_key && lang_match[2] != params.cur_lang) {
             return _decode_rfc2231(params, str); // same key, different lang, throw it away
@@ -182,7 +182,7 @@ Header.prototype.decode_header = function decode_header (val) {
 
     // console.log(rfc2231_params);
 
-    for (var key in rfc2231_params.keys) {
+    for (const key in rfc2231_params.keys) {
         val = val + ' ' + key + '="';
         /* eslint no-constant-condition: 0 */
         for (let i=0; true; i++) {
@@ -287,8 +287,8 @@ Header.prototype.add_end = function (key, value) {
 
 Header.prototype.lines = function () {
     return this.header_list;
-};
+}
 
 Header.prototype.toString = function () {
     return this.header_list.join("\n");
-};
+}
