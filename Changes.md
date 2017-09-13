@@ -2,10 +2,12 @@
 ## 2.8.16 - Mmm dd, 2017
 
 * Changes
+    * dsn: repackaged as NPM module haraka-dsn #2105
+    * outbound: add results when queueing #2103
     * ES6: replace var with const or let  #2073
     * Replace console.log with stdout #2100
-    * dsn: repackaged as NPM module haraka-dsn #2105
 * Fixes
+    * haraka was adding TLS header on non-TLS connection #2103
     * dkim_verify: fix formatting of auth results #2107
     * smtp_forward: consistently use queue.wants #2107
 
