@@ -4,6 +4,9 @@
 * Changes
     * ES6: replace var with const or let  #2073
     * dsn: repackaged as NPM module haraka-dsn #2105
+* Fixes
+    * dkim_verify: fix formatting of auth results #2107
+    * smtp_forward: consistently use queue.wants #2107
 
 ## 2.8.15 - Sep 10, 2017
 
