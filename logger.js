@@ -61,6 +61,7 @@ logger.formats = {
 
 logger.loglevel      = logger.levels.WARN;
 logger.format        = logger.formats.DEFAULT;
+logger.timestamps    = false;
 logger.deferred_logs = [];
 
 logger.colors = {
@@ -160,14 +161,17 @@ logger.log = function (level, data) {
 logger.log_respond = function (retval, msg, data) {
     // any other return code is irrelevant
     if (retval !== constants.cont) { return false; }
-
+    let timestamp_string = '';
+    if (logger.timestamps) {
+        timestamp_string = `${new Date().toISOString()} `;
+    }
     const color = logger.colors[data.level];
     if (color && stdout_is_tty) {
-        console.log(logger.colorize(color,data.data));
+        process.stdout.write(`${timestamp_string}${logger.colorize(color,data.data)}\n`);
         return true;
     }
 
-    console.log(data.data);
+    process.stdout.write(`${timestamp_string}${data.data}\n`);
     return true;
 };
 
@@ -219,22 +223,8 @@ logger.would_log = function (level) {
     return true;
 };
 
-const original_console_log = console.log;
-
 logger.set_timestamps = function (value) {
-
-    if (!value) {
-        console.log = original_console_log;
-        return;
-    }
-
-    console.log = function () {
-        const new_arguments = [new Date().toISOString()];
-        for (const key in arguments) {
-            new_arguments.push(arguments[key]);
-        }
-        original_console_log.apply(console, new_arguments);
-    };
+    logger.timestamps = !!value;
 }
 
 logger._init_timestamps = function () {
@@ -244,7 +234,9 @@ logger._init_timestamps = function () {
         self._init_timestamps();
     });
 
-    this.set_timestamps(_timestamps);
+    // If we've already been toggled to true by the cfg, we should respect
+    // this.
+    self.set_timestamps(logger.timestamps || _timestamps);
 };
 
 logger._init();

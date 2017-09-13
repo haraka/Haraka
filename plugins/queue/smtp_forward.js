@@ -101,8 +101,8 @@ exports.set_queue = function (connection, queue_wanted, domain) {
     if (dst_host) dst_host = `smtp://${dst_host}`;
 
     const notes = connection.transaction.notes;
-    if (!notes.get('queue.wanted')) {
-        notes.set('queue.wanted', queue_wanted);
+    if (!notes.get('queue.wants')) {
+        notes.set('queue.wants', queue_wanted);
         if (dst_host) {
             notes.set('queue.next_hop', dst_host);
         }
@@ -110,7 +110,7 @@ exports.set_queue = function (connection, queue_wanted, domain) {
     }
 
     // multiple recipients with same destination
-    if (notes.get('queue.wanted') === queue_wanted) {
+    if (notes.get('queue.wants') === queue_wanted) {
         if (!dst_host) return true;
         const next_hop = notes.get('queue.next_hop');
         if (!next_hop) return true;
@@ -201,8 +201,9 @@ exports.queue_forward = function (next, connection) {
     const plugin = this;
     const txn = connection.transaction;
 
-    if (txn.notes.queue && txn.notes.queue !== 'smtp_forward') {
-        connection.logdebug(plugin, 'skipping, unwanted');
+    const q_wants = txn.notes.get('queue.wants');
+    if (q_wants && q_wants !== 'smtp_forward') {
+        connection.logdebug(plugin, `skipping, unwanted (${q_wants})`);
         return next();
     }
 
