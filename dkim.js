@@ -565,7 +565,7 @@ DKIMVerifyStream.prototype.end = function (buf) {
         this.dkim_objects[d].end();
     }
     if (this.pending === 0 && this._no_signatures_found === false) {
-        var self = this;
+        const self = this;
         process.nextTick(function () {
             self.cb(null, self.result, self.results);
         });

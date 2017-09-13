@@ -141,7 +141,7 @@ exports.get_plain_passwd = function (user, connection, cb) {
             socket.end();             // disconnect
         }
         if (chunk_count > 2) {
-            if (/^\-ERR/.test(chunk)) {
+            if (/^-ERR/.test(chunk)) {
                 plugin.lognotice("get_plain failed: " + chunk);
                 socket.end();         // disconnect
                 return;
