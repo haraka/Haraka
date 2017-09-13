@@ -128,6 +128,25 @@ exports.set_loglevel = {
     },
 };
 
+exports.set_timestamps = {
+    setUp : _set_up,
+    tearDown : _tear_down,
+    'set timestamps to false' : function (test) {
+        test.expect(1);
+        this.logger.timestamps = undefined;
+        this.logger.set_timestamps(false);
+        test.equal(this.logger.timestamps, false);
+        test.done();
+    },
+    'set timestamps to true' : function (test) {
+        test.expect(1);
+        this.logger.timestamps = undefined;
+        this.logger.set_timestamps(true);
+        test.equal(this.logger.timestamps, true);
+        test.done();
+    },
+};
+
 exports.would_log = {
     setUp : _set_up,
     tearDown : _tear_down,
