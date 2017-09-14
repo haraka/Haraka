@@ -293,7 +293,8 @@ exports.applySocketOpts = function (name) {
             tlss.saveOpt(name, opt, tlss.cfg[name][opt]);
             return;
         }
-        else if (tlss.cfg.main[opt] !== undefined) {
+
+        if (tlss.cfg.main[opt] !== undefined) {
             // if the setting exists in tls.ini [main]
             // then save it to the certsByHost options
             tlss.saveOpt(name, opt, tlss.cfg.main[opt]);
