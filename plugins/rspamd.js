@@ -70,7 +70,7 @@ exports.get_options = function (connection) {
 
     if (connection.remote.ip) options.headers.IP = connection.remote.ip;
 
-    const fcrdns = connection.results.get('connect.fcrdns');
+    const fcrdns = connection.results.get('fcrdns');
     if (fcrdns && fcrdns.fcrdns && fcrdns.fcrdns[0]) {
         options.headers.Hostname = fcrdns.fcrdns[0];
     }
