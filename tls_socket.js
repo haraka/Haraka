@@ -513,7 +513,7 @@ exports.ensureDhparams = function (done) {
 
     log.loginfo(`Generating a 2048 bit dhparams file at ${fpResolved}`);
 
-    const o = spawn('openssl', ['dhparam', '-out', `${fpResolved}`, '1024']);
+    const o = spawn('openssl', ['dhparam', '-out', `${fpResolved}`, '2048']);
     o.stdout.on('data', data => {
         // normally empty output
         log.logdebug(data);
