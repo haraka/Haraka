@@ -330,6 +330,7 @@ exports.load_default_opts = function () {
     const cfg = certsByHost['*'];
 
     if (cfg.dhparam && typeof cfg.dhparam === 'string') {
+        log.logdebug(`loading dhparams from ${cfg.dhparam}`);
         tlss.saveOpt('*', 'dhparam', tlss.config.get(cfg.dhparam, 'binary'));
     }
 
