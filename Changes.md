@@ -2,7 +2,6 @@
 ## 2.8.16 - Mmm dd, 2017
 
 * Changes
-    * ES6: replace var with const or let  #2073
     * rspamd: repackaged as NPM module #2106
     * dsn: repackaged as NPM module haraka-dsn #2105
     * outbound: add results when queueing #2103
