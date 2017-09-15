@@ -6,7 +6,7 @@
 //
 //         To achieve the same results using FCrDNS (in addition to
 //         the additional features), set [reject] no_rdns=true in
-//         connect.fcrdns.ini.
+//         fcrdns.ini.
 //
 //         The FCrDNS plugin uses the white/blacklist functionality in the
 //         access plugin.
