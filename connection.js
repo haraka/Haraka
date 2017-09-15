@@ -275,7 +275,7 @@ Connection.prototype.setTLS = function (obj) {
 Connection.prototype.set = function (obj, prop, val) {
     if (!this[obj]) this.obj = {};   // initialize
 
-    this[obj][prop] = val;  // normalized propery location
+    this[obj][prop] = val;  // normalized property location
 
     // sunset 3.0.0
     if (obj === 'hello' && prop === 'verb') {
@@ -291,6 +291,12 @@ Connection.prototype.set = function (obj, prop, val) {
         this[obj + '_' + prop] = val;
     }
     // /sunset
+}
+
+Connection.prototype.get = function (prop_str) {
+    return prop_str.split('.').reduce((prev, curr) => {
+        return prev ? prev[curr] : undefined
+    }, this)
 }
 
 Connection.prototype.process_line = function (line) {
@@ -1473,7 +1479,7 @@ Connection.prototype.received_line = function () {
 
     let sslheader;
 
-    if (this.tls && this.tls.cipher) {
+    if (this.get('tls.cipher.version')) {
         sslheader = `(version=${this.tls.cipher.version} cipher=${this.tls.cipher.name} verify=`;
         if (this.tls.verified) {
             sslheader += 'OK)';

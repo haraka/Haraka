@@ -3,10 +3,15 @@
 
 * Changes
     * ES6: replace var with const or let  #2073
+    * rspamd: repackaged as NPM module #2106
+    * dsn: repackaged as NPM module haraka-dsn #2105
+    * outbound: add results when queueing #2103
     * spamassassin: skip adding headers when value is empty #2102
     * Replace console.log with stdout #2100
-    * dsn: repackaged as NPM module haraka-dsn #2105
+    * ES6: replace var with const or let  #2073
 * Fixes
+    * tls: only apply default key/cert paths when undefined #2111
+    * haraka was adding TLS header on non-TLS connection #2103
     * dkim_verify: fix formatting of auth results #2107
     * smtp_forward: consistently use queue.wants #2107
 
@@ -86,7 +91,7 @@
     * helo.checks: bring plugin into alignment with docs #1833
     * when proxy enabled, update remote.is_private too #1811
     * create an outbound queue filename handler #1792
-    * replace connect.fcrdns with npm package #1810
+    * replace fcrdns with npm package #1810
     * add an additional node_modules plugin search path #1805
     * Set graceful shutdown off by default #1927
     * Allow outbound pools to be disabled #1917
@@ -699,7 +704,7 @@
   results, optionally adds headers. Includes tests.
 * access: new plugin that merges rdns_access, mail_from.access, and
   rcpt_to.access.
-* connect.fcrdns: new plugin (Forward Confirmed Reverse DNS)
+* fcrdns: new plugin (Forward Confirmed Reverse DNS)
 * bounce: new plugin (merges
 * data.headers: new plugin added direct_to_mx, check & reject settings, added MLM detection,
   tests.

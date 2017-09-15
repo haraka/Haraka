@@ -49,6 +49,7 @@
     "haraka-plugin-qmail-deliverable" : "*",
     "haraka-plugin-recipient-routes" : "*",
     "haraka-plugin-redis"   : "*",
+    "haraka-plugin-rspamd"  : "*",
     "haraka-plugin-syslog"  : "*",
     "haraka-plugin-watch"   : "*",
     "ldapjs"                : "~1.0.0",

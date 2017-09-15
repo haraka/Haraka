@@ -328,7 +328,7 @@ exports.should_skip_check = function (connection) {
     }
 
     if (ctr) {
-        if (ctr.has(plugin, 'skip', /^config\-whitelist/)) {
+        if (ctr.has(plugin, 'skip', /^config-whitelist/)) {
             plugin.loginfo(connection, 'skipping GL for host whitelisted in config');
             return true;
         }
@@ -415,22 +415,22 @@ exports.craft_hostid = function (connection) {
 
     rdns = rdns.replace(/\.$/, ''); // strip ending dot, just in case
 
-    const fcrdns = connection.results.get('connect.fcrdns');
+    const fcrdns = connection.results.get('fcrdns');
     if (!fcrdns) {
         plugin.logwarn(connection, 'No FcrDNS plugin results, fix this.');
         return chsit(null, 'no FcrDNS plugin results');
     }
 
-    if (!connection.results.has('connect.fcrdns', 'pass', 'fcrdns')) // FcrDNS failed
+    if (!connection.results.has('fcrdns', 'pass', 'fcrdns')) // FcrDNS failed
         return chsit(null, 'FcrDNS failed');
 
-    if (connection.results.get('connect.fcrdns').ptr_names.length > 1) // multiple PTR returned
+    if (connection.results.get('fcrdns').ptr_names.length > 1) // multiple PTR returned
         return chsit(null, 'multiple PTR returned');
 
-    if (connection.results.has('connect.fcrdns', 'fail', /^is_generic/)) // generic/dynamic rDNS record
+    if (connection.results.has('fcrdns', 'fail', /^is_generic/)) // generic/dynamic rDNS record
         return chsit(null, 'rDNS is a generic record');
 
-    if (connection.results.has('connect.fcrdns', 'fail', /^valid_tld/)) // invalid org domain in rDNS
+    if (connection.results.has('fcrdns', 'fail', /^valid_tld/)) // invalid org domain in rDNS
         return chsit(null, 'invalid org domain in rDNS');
 
     // strip first label up until the tld boundary.
