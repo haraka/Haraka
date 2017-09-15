@@ -291,11 +291,14 @@ exports.applySocketOpts = function (name) {
         if (tlss.cfg[name] && tlss.cfg[name][opt] !== undefined) {
             // if the setting exists in tls.ini [name]
             tlss.saveOpt(name, opt, tlss.cfg[name][opt]);
+            return;
         }
-        else if (tlss.cfg.main[opt] !== undefined) {
+
+        if (tlss.cfg.main[opt] !== undefined) {
             // if the setting exists in tls.ini [main]
             // then save it to the certsByHost options
             tlss.saveOpt(name, opt, tlss.cfg.main[opt]);
+            return;
         }
 
         // defaults
@@ -328,6 +331,7 @@ exports.load_default_opts = function () {
     const cfg = certsByHost['*'];
 
     if (cfg.dhparam && typeof cfg.dhparam === 'string') {
+        log.logdebug(`loading dhparams from ${cfg.dhparam}`);
         tlss.saveOpt('*', 'dhparam', tlss.config.get(cfg.dhparam, 'binary'));
     }
 
@@ -506,11 +510,12 @@ exports.ensureDhparams = function (done) {
         return done(null, certsByHost['*'].dhparam);
     }
 
-    let filePath = tlss.cfg.main.dhparam;
-    if (!filePath) filePath = path.resolve(exports.config.root_path, 'dhparams.pem');
-    log.loginfo(`Generating a 2048 bit dhparams file at ${filePath}`);
+    const filePath = tlss.cfg.main.dhparam || 'dhparams.pem';
+    const fpResolved = path.resolve(exports.config.root_path, filePath);
 
-    const o = spawn('openssl', ['dhparam', '-out', `${filePath}`, '2048']);
+    log.loginfo(`Generating a 2048 bit dhparams file at ${fpResolved}`);
+
+    const o = spawn('openssl', ['dhparam', '-out', `${fpResolved}`, '2048']);
     o.stdout.on('data', data => {
         // normally empty output
         log.logdebug(data);
@@ -525,7 +530,7 @@ exports.ensureDhparams = function (done) {
             return done('Error code: ' + code);
         }
 
-        log.loginfo(`Saved to ${filePath}`);
+        log.loginfo(`Saved to ${fpResolved}`);
         const content = tlss.config.get(filePath, 'binary');
 
         tlss.saveOpt('*', 'dhparam', content);
