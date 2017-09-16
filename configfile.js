@@ -13,7 +13,7 @@ setImmediate(function () {
 // for "ini" type files
 const regex = exports.regex = {
     section:        /^\s*\[\s*([^\]]*?)\s*\]\s*$/,
-    param:          /^\s*([\w@:\._\-\/\[\]]+)\s*(?:=\s*(.*?)\s*)?$/,
+    param:          /^\s*([\w@:._\-/[\]]+)\s*(?:=\s*(.*?)\s*)?$/,
     comment:        /^\s*[;#].*$/,
     line:           /^\s*(.*?)\s*$/,
     blank:          /^\s*$/,
@@ -441,7 +441,7 @@ cfreader.init_booleans = function (options, result) {
     // Initialize any booleans
     if (options && Array.isArray(options.booleans)) {
         for (let i=0; i<options.booleans.length; i++) {
-            const m = /^(?:([^\. ]+)\.)?(.+)/.exec(options.booleans[i]);
+            const m = /^(?:([^. ]+)\.)?(.+)/.exec(options.booleans[i]);
             if (!m) continue;
 
             let section = m[1] || 'main';
@@ -451,8 +451,8 @@ cfreader.init_booleans = function (options, result) {
                 :     key[0] === '+' ? true
                     :     false;
 
-            if (section.match(/^(\-|\+)/)) section = section.substr(1);
-            if (    key.match(/^(\-|\+)/)) key     =     key.substr(1);
+            if (section.match(/^(-|\+)/)) section = section.substr(1);
+            if (    key.match(/^(-|\+)/)) key     =     key.substr(1);
 
             // so the boolean detection in the next section will match
             if (options.booleans.indexOf(section+'.'+key) === -1) {

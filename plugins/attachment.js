@@ -269,7 +269,7 @@ exports.start_attachment = function (connection, ctype, filename, body, stream) 
 
     // Parse Content-Type
     let ct;
-    if ((ct = ctype.match(/^([^\/]+\/[^;\r\n ]+)/)) && ct[1]) {
+    if ((ct = ctype.match(/^([^/]+\/[^;\r\n ]+)/)) && ct[1]) {
         connection.logdebug(plugin, 'found content type: ' + ct[1]);
         txn.notes.attachment_ctypes.push(ct[1]);
     }
@@ -278,7 +278,7 @@ exports.start_attachment = function (connection, ctype, filename, body, stream) 
     let ext;
     let fileext = '.unknown';
     if (filename) {
-        if ((ext = filename.match(/(\.[^\. ]+)$/)) && ext[1]) {
+        if ((ext = filename.match(/(\.[^. ]+)$/)) && ext[1]) {
             fileext = ext[1].toLowerCase();
         }
         txn.notes.attachment_files.push(filename);
@@ -433,7 +433,7 @@ exports.check_attachments = function (next, connection) {
     // Add in any content type from message body
     const body = txn.body;
     let body_ct;
-    if (body && (body_ct = /^([^\/]+\/[^;\r\n ]+)/.exec(body.header.get('content-type')))) {
+    if (body && (body_ct = /^([^/]+\/[^;\r\n ]+)/.exec(body.header.get('content-type')))) {
         connection.logdebug(this, 'found content type: ' + body_ct[1]);
         ctypes.push(body_ct[1]);
     }
@@ -441,7 +441,7 @@ exports.check_attachments = function (next, connection) {
     if (body && body.children) {
         for (let c=0; c<body.children.length; c++) {
             let child_ct;
-            if (body.children[c] && (child_ct = /^([^\/]+\/[^;\r\n ]+)/.exec(body.children[c].header.get('content-type')))) {
+            if (body.children[c] && (child_ct = /^([^/]+\/[^;\r\n ]+)/.exec(body.children[c].header.get('content-type')))) {
                 connection.logdebug(this, 'found content type: ' + child_ct[1]);
                 ctypes.push(child_ct[1]);
             }

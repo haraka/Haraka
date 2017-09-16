@@ -2,14 +2,14 @@
 // This is a simple, primitive form of anti-phishing.
 
 function escapeRegExp (str) {
-    return str.replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, "\\$&");
+    return str.replace(/[-[\]/{}()*+?.\\^$|]/g, "\\$&");
 }
 
 exports.hook_data = function (next, connection) {
     if (connection.notes.auth_user && connection.notes.auth_passwd) {
         connection.transaction.parse_body = true;
     }
-    return next();
+    next();
 };
 
 exports.hook_data_post = function (next, connection) {
@@ -38,7 +38,7 @@ exports.hook_data_post = function (next, connection) {
         return next(DENY, "Credential leak detected: never give out your username/password to anyone!");
     }
 
-    return next();
+    next();
 };
 
 function look_for_credentials (user_regexp, passwd_regexp, body) {
