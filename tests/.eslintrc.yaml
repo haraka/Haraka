@@ -1,0 +1,12 @@
+
+globals:
+  test: true
+  OK: true
+  CONT: true
+  DENY: true
+  DENYSOFT: true
+  DENYDISCONNECT: true
+  DENYSOFTDISCONNECT: true
+  HMailItem: true
+  TODOItem: true
+  test_queue_dir: true

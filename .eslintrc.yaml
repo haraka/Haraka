@@ -1,0 +1,6 @@
+plugins:
+  haraka
+
+root: true
+
+extends: ["eslint:recommended", "plugin:haraka/recommended"]
