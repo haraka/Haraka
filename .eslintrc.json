@@ -1,8 +1,0 @@
-{
-  "plugins": [
-    "haraka"
-  ],
-  "extends": ["eslint:recommended", "plugin:haraka/recommended"],
-  "rules": {
-  }
-}
