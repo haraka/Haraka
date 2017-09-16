@@ -429,7 +429,7 @@ else if (parsed.graceful) {
     logger = require(path.join(base, "logger"));
     if (!parsed.verbose)
         logger.log = function () {} // disable logging for this
-    config = require(path.join(base, "config"));
+    config = require('haraka-config');
     if (!config.get("smtp.ini").main.nodes) {
         console.log("Graceful restart not possible without `nodes` value in smtp.ini");
         process.exit();
@@ -674,7 +674,7 @@ else {
 }
 
 function send_internal_command (cmd, done) {
-    config = require(path.join(base, "config"));
+    config = require('haraka-config');
     const key = config.get("internalcmd_key");
     const smtp_ini = config.get("smtp.ini");
     const listen_addrs = require(path.join(base, "server")).get_listen_addrs(smtp_ini.main);

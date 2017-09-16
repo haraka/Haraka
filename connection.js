@@ -10,6 +10,7 @@ const path        = require('path');
 
 // npm libs
 const ipaddr      = require('ipaddr.js');
+const config      = require('haraka-config');
 const constants   = require('haraka-constants');
 const net_utils   = require('haraka-net-utils');
 const Notes       = require('haraka-notes');
@@ -18,7 +19,6 @@ const Address     = require('address-rfc2821').Address;
 const ResultStore = require('haraka-results');
 
 // Haraka libs
-const config      = require('./config');
 const logger      = require('./logger');
 const trans       = require('./transaction');
 const plugins     = require('./plugins');

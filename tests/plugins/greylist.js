@@ -1,8 +1,8 @@
 'use strict';
 
-const path = require('path');
-const fixtures     = require('haraka-test-fixtures');
-const ipaddr       = require('ipaddr.js');
+const path      = require('path');
+const fixtures  = require('haraka-test-fixtures');
+const ipaddr    = require('ipaddr.js');
 
 const _set_up = function (done) {
 

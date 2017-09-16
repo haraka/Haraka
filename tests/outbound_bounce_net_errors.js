@@ -8,15 +8,18 @@
 // - Talk some STMP in the playbook
 // - Test the outcome by replacing trigger functions with our testing code (outbound.send_email, HMailItem.temp_fail, ...)
 
-require('../configfile').watch_files = false;
+const dns         = require('dns');
 const fs          = require('fs');
 const path        = require('path');
+
+const constants   = require('haraka-constants');
+
+require('../configfile').watch_files = false;
+
 const util_hmailitem = require('./fixtures/util_hmailitem');
-const TODOItem    = require('../outbound/todo');
-const HMailItem    = require('../outbound/hmail');
-const outbound    = require('../outbound');
-const dns            = require('dns');
-const constants      = require('haraka-constants');
+const TODOItem       = require('../outbound/todo');
+const HMailItem      = require('../outbound/hmail');
+const outbound       = require('../outbound');
 
 const outbound_context = {
     TODOItem: TODOItem,

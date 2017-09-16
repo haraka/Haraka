@@ -3,7 +3,7 @@ const path = require('path');
 function _set_up (done) {
 
     this.server = require('../server');
-    this.config = require('../config');
+    this.config = require('haraka-config');
 
     done();
 }
@@ -90,7 +90,7 @@ exports.load_smtp_ini = {
 
 exports.get_smtp_server = {
     setUp : function (done) {
-        this.config = require('../config');
+        this.config = require('haraka-config');
         this.config = this.config.module_config(path.resolve('tests'));
 
         this.server = require('../server');
@@ -139,7 +139,7 @@ function _setupServer (done) {
     const test_cfg_path=path.resolve('tests');
 
     this.server = require('../server');
-    this.config = require('../config').module_config(test_cfg_path);
+    this.config = require('haraka-config').module_config(test_cfg_path);
     this.server.logger.loglevel = 6;  // INFO
 
     // set the default path for the plugin loader
