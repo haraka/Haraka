@@ -3,7 +3,7 @@ env:
   node: true
 
 plugins:
-  haraka
+  - haraka
 
 root: true
 
