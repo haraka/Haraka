@@ -269,7 +269,7 @@ Body.prototype.parse_end = function (line) {
     const ct  = this.header.get_decoded('content-type') || 'text/plain';
     let enc = 'UTF-8';
     let pre_enc = '';
-    const matches = /\bcharset\s*=\s*(?:\"|3D|')?([\w_\-]*)(?:\"|3D|')?/.exec(ct);
+    const matches = /\bcharset\s*=\s*(?:"|3D|')?([\w_-]*)(?:"|3D|')?/.exec(ct);
     if (matches) {
         pre_enc = (matches[1]).trim();
         if (pre_enc.length > 0) {

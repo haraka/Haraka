@@ -215,8 +215,8 @@ SPF.prototype.check_host = function (ip, domain, mail_from, cb) {
         const mech_array = [];
         const mod_array = [];
         const mech_regexp1 = /^([-+~?])?(all|a|mx|ptr)$/;
-        const mech_regexp2 = /^([-+~?])?(a|mx|ptr|ip4|ip6|include|exists)((?::[^\/ ]+(?:\/\d+(?:\/\/\d+)?)?)|\/\d+(?:\/\/\d+)?)$/;
-        const mod_regexp = /^([^ =]+)=([a-z0-9:\/._-]+)$/;
+        const mech_regexp2 = /^([-+~?])?(a|mx|ptr|ip4|ip6|include|exists)((?::[^/ ]+(?:\/\d+(?:\/\/\d+)?)?)|\/\d+(?:\/\/\d+)?)$/;
+        const mod_regexp = /^([^ =]+)=([a-z0-9:/._-]+)$/;
         const split = spf_record.split(' ');
         for (let i=1; i<split.length; i++) {
             // Skip blanks
@@ -230,7 +230,7 @@ SPF.prototype.check_host = function (ip, domain, mail_from, cb) {
                 self.log_debug('found mechanism: ' + match);
                 // Validate IP addresses
                 if (match[2] === 'ip4' || match[2] === 'ip6') {
-                    const ip_split = /^:([^\/ ]+)(?:\/([^ ]+))?$/.exec(match[3]);
+                    const ip_split = /^:([^/ ]+)(?:\/([^ ]+))?$/.exec(match[3]);
                     // Make sure the IP address is valid
                     if (!ip_split || (ip_split && !ipaddr.isValid(ip_split[1]))) {
                         self.log_debug('invalid IP address: ' + ip_split[1]);
@@ -398,7 +398,7 @@ SPF.prototype.mech_a = function (qualifier, args, cb) {
     }
     let dm;
     let domain = this.domain;
-    if (args && (dm = /^:([^\/ ]+)/.exec(args))) {
+    if (args && (dm = /^:([^/ ]+)/.exec(args))) {
         domain = dm[1];
     }
     // Calculate with IP method to use
@@ -461,7 +461,7 @@ SPF.prototype.mech_mx = function (qualifier, args, cb) {
     }
     let dm;
     let domain = this.domain;
-    if (args && (dm = /^:([^\/ ]+)/.exec(args))) {
+    if (args && (dm = /^:([^/ ]+)/.exec(args))) {
         domain = dm[1];
     }
     // Fetch the MX records for the specified domain
@@ -554,7 +554,7 @@ SPF.prototype.mech_ptr = function (qualifier, args, cb) {
     this.count++;
     let dm;
     let domain = this.domain;
-    if (args && (dm = /^:([^\/ ]+)/.exec(args))) {
+    if (args && (dm = /^:([^/ ]+)/.exec(args))) {
         domain = dm[1];
     }
     // First do a PTR lookup for the connecting IP
@@ -599,7 +599,7 @@ SPF.prototype.mech_ptr = function (qualifier, args, cb) {
                         // Catch bogus PTR matches e.g. ptr:*.bahnhof.se (should be ptr:bahnhof.se)
                         // These will cause a regexp error, so we can catch them.
                         try {
-                            re = new RegExp(domain.replace('\.','\\.') + '$', 'i');
+                            re = new RegExp(domain.replace('.','\\.') + '$', 'i');
                         }
                         catch (e) {
                             self.log_debug(
@@ -634,7 +634,7 @@ SPF.prototype.mech_ptr = function (qualifier, args, cb) {
 
 SPF.prototype.mech_ip = function (qualifier, args, cb) {
     const cidr = args.substr(1);
-    const match = /^([^\/ ]+)(?:\/(\d+))?$/.exec(cidr);
+    const match = /^([^/ ]+)(?:\/(\d+))?$/.exec(cidr);
     if (!match) { return cb(null, this.SPF_NONE); }
 
     // match[1] == ip

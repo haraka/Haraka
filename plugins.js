@@ -79,8 +79,8 @@ Plugin.prototype._get_plugin_path = function () {
 
     plugin.hasPackageJson = false;
     let name = plugin.name;
-    if (/^haraka\-plugin\-/.test(name)) {
-        name = name.replace(/^haraka\-plugin\-/, '');
+    if (/^haraka-plugin-/.test(name)) {
+        name = name.replace(/^haraka-plugin-/, '');
     }
 
     let paths = [];
