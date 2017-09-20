@@ -155,8 +155,8 @@ function _setupServer (done) {
 }
 
 function _tearDownServer (done) {
-    process.env.YES_REALLY_DO_DISCARD='';
-    process.env.HARAKA_TEST_DIR='';
+    delete process.env.YES_REALLY_DO_DISCARD;
+    delete process.env.HARAKA_TEST_DIR;
     this.server.stopListeners();
     this.server.plugins.registered_hooks = {};
     setTimeout(() => {

@@ -11,7 +11,6 @@ const constants   = require('haraka-constants');
 
 // local modules
 const logger      = require('./logger');
-const states      = require('./connection').states;
 exports.config  = require('./config');
 
 exports.registered_hooks = {};
@@ -517,7 +516,7 @@ plugins.run_next_hook = function (hook, object, params) {
 
 function client_disconnected (object) {
     if (object.constructor.name === 'Connection' &&
-        object.state >= states.DISCONNECTING) {
+        object.state >= constants.connection.state.DISCONNECTING) {
         object.logdebug('client has disconnected');
         return true;
     }
