@@ -2,8 +2,8 @@ const path = require('path');
 
 function _set_up (done) {
 
-    this.server = require('../server');
     this.config = require('haraka-config');
+    this.server = require('../server');
 
     done();
 }

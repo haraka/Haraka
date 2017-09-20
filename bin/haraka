@@ -461,7 +461,6 @@ else if (parsed.order) {
             (path.join(process.env.HARAKA, 'node_modules'));
         require('module')._initPaths(); // Horrible hack
     }
-    require(path.join(base, 'configfile')).watch_files = false;
     logger = require(path.join(base, "logger"));
     if (!parsed.verbose)
         logger.log = function () {} // disable logging for this
@@ -497,7 +496,6 @@ else if (parsed.test) {
             (path.join(process.env.HARAKA, 'node_modules'));
         require('module')._initPaths(); // Horrible hack
     }
-    require(path.join(base, 'configfile')).watch_files = false;
     logger = require(path.join(base, "logger"));
     logger.loglevel = logger.levels.PROTOCOL;
 

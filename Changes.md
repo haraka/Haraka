@@ -2,6 +2,7 @@
 ## 2.8.16 - Mmm dd, 2017
 
 * Changes
+    * config: replace ./config.js with haraka-config #2119
     * lint: remove useless escapes #2117
     * rspamd: repackaged as NPM module #2106
     * dsn: repackaged as NPM module haraka-dsn #2105

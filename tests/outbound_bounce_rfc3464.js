@@ -14,7 +14,6 @@
 const fs          = require('fs');
 const path        = require('path');
 
-require('../configfile').watch_files = false;
 const util_hmailitem = require('./fixtures/util_hmailitem');
 const TODOItem    = require('../outbound/todo');
 const HMailItem   = require('../outbound/hmail');
