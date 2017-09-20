@@ -29,16 +29,7 @@ const hostname    = (os.hostname().split(/\./))[0];
 const version     = JSON.parse(
     fs.readFileSync(path.join(__dirname, 'package.json'))).version;
 
-const states = exports.states = {
-    STATE_CMD:             1,
-    STATE_LOOP:            2,
-    STATE_DATA:            3,
-    STATE_PAUSE:           4,
-    STATE_PAUSE_SMTP:      5,
-    STATE_PAUSE_DATA:      6,
-    STATE_DISCONNECTING:   99,
-    STATE_DISCONNECTED:    100,
-};
+const states = constants.connection.state;
 
 // copy logger methods into Connection:
 for (const key in logger) {
@@ -115,27 +106,27 @@ function setupClient (self) {
         return;
     }
     self.client.on('end', function () {
-        if (self.state >= states.STATE_DISCONNECTING) return;
+        if (self.state >= states.DISCONNECTING) return;
         self.remote.closed = true;
         self.loginfo(rhost + ' half closed connection');
         self.fail();
     });
 
     self.client.on('close', function (has_error) {
-        if (self.state >= states.STATE_DISCONNECTING) return;
+        if (self.state >= states.DISCONNECTING) return;
         self.remote.closed = true;
         self.loginfo(rhost + ' dropped connection');
         self.fail();
     });
 
     self.client.on('error', function (err) {
-        if (self.state >= states.STATE_DISCONNECTING) return;
+        if (self.state >= states.DISCONNECTING) return;
         self.loginfo(rhost + ' connection error: ' + err);
         self.fail();
     });
 
     self.client.on('timeout', function () {
-        if (self.state >= states.STATE_DISCONNECTING) return;
+        if (self.state >= states.DISCONNECTING) return;
         self.respond(421, 'timeout', function () {
             self.fail(rhost + ' connection timed out');
         });
@@ -201,7 +192,7 @@ function Connection (client, server) {
 
     this.current_data = null;
     this.current_line = null;
-    this.state = states.STATE_PAUSE;
+    this.state = states.PAUSE;
     this.encoding = 'utf8';
     this.prev_state = null;
     this.loop_code = null;
@@ -302,7 +293,7 @@ Connection.prototype.get = function (prop_str) {
 Connection.prototype.process_line = function (line) {
     const self = this;
 
-    if (this.state >= states.STATE_DISCONNECTING) {
+    if (this.state >= states.DISCONNECTING) {
         if (logger.would_log(logger.LOGPROTOCOL)) {
             this.logprotocol(
                 "C: (after-disconnect): " +
@@ -312,7 +303,7 @@ Connection.prototype.process_line = function (line) {
         return;
     }
 
-    if (this.state === states.STATE_DATA) {
+    if (this.state === states.DATA) {
         if (logger.would_log(logger.LOGDATA)) {
             this.logdata("C: " + line);
         }
@@ -344,8 +335,8 @@ Connection.prototype.process_line = function (line) {
         }
     }
 
-    if (this.state === states.STATE_CMD) {
-        this.state = states.STATE_PAUSE_SMTP;
+    if (this.state === states.CMD) {
+        this.state = states.PAUSE_SMTP;
         const matches = /^([^ ]*)( +(.*))?$/.exec(this.current_line);
         if (!matches) {
             return plugins.run_hooks('unrecognized_command',
@@ -378,7 +369,7 @@ Connection.prototype.process_line = function (line) {
             plugins.run_hooks('unrecognized_command', this, matches);
         }
     }
-    else if (this.state === states.STATE_LOOP) {
+    else if (this.state === states.LOOP) {
         // Allow QUIT
         if (this.current_line.toUpperCase() === 'QUIT') {
             this.cmd_quit();
@@ -393,7 +384,7 @@ Connection.prototype.process_line = function (line) {
 };
 
 Connection.prototype.process_data = function (data) {
-    if (this.state >= states.STATE_DISCONNECTING) {
+    if (this.state >= states.DISCONNECTING) {
         this.logwarn("data after disconnect from " + this.remote.ip);
         return;
     }
@@ -416,13 +407,13 @@ Connection.prototype.process_data = function (data) {
 Connection.prototype._process_data = function () {
     const self = this;
     // We *must* detect disconnected connections here as the state
-    // only transitions to states.STATE_CMD in the respond function below.
+    // only transitions to states.CMD in the respond function below.
     // Otherwise if multiple commands are pipelined and then the
     // connection is dropped; we'll end up in the function forever.
-    if (this.state >= states.STATE_DISCONNECTING) return;
+    if (this.state >= states.DISCONNECTING) return;
 
     let maxlength;
-    if (this.state === states.STATE_PAUSE_DATA || this.state === states.STATE_DATA) {
+    if (this.state === states.PAUSE_DATA || this.state === states.DATA) {
         maxlength = this.max_data_line_length;
     }
     else {
@@ -431,21 +422,21 @@ Connection.prototype._process_data = function () {
 
     let offset;
     while (this.current_data && ((offset = utils.indexOfLF(this.current_data, maxlength)) !== -1)) {
-        if (this.state === states.STATE_PAUSE_DATA) {
+        if (this.state === states.PAUSE_DATA) {
             return;
         }
         let this_line = this.current_data.slice(0, offset+1);
         // Hack: bypass this code to allow HAProxy's PROXY extension
-        if (this.state === states.STATE_PAUSE &&
+        if (this.state === states.PAUSE &&
             this.proxy.allowed && /^PROXY /.test(this_line))
         {
             if (this.proxy.timer) clearTimeout(this.proxy.timer);
-            this.state = states.STATE_CMD;
+            this.state = states.CMD;
             this.current_data = this.current_data.slice(this_line.length);
             this.process_line(this_line);
         }
         // Detect early_talker but allow PIPELINING extension (ESMTP)
-        else if ((this.state === states.STATE_PAUSE || this.state === states.STATE_PAUSE_SMTP) && !this.esmtp) {
+        else if ((this.state === states.PAUSE || this.state === states.PAUSE_SMTP) && !this.esmtp) {
             // Allow EHLO/HELO to be pipelined with PROXY
             if (this.proxy.allowed && /^(?:EH|HE)LO /i.test(this_line)) return;
             if (!this.early_talker) {
@@ -456,7 +447,7 @@ Connection.prototype._process_data = function () {
             setImmediate(function () { self._process_data() });
             break;
         }
-        else if ((this.state === states.STATE_PAUSE || this.state === states.STATE_PAUSE_SMTP) && this.esmtp) {
+        else if ((this.state === states.PAUSE || this.state === states.PAUSE_SMTP) && this.esmtp) {
             let valid = true;
             const cmd = this_line.toString('ascii').slice(0,4).toUpperCase();
             switch (cmd) {
@@ -480,7 +471,7 @@ Connection.prototype._process_data = function () {
                 // We *don't want to process this yet otherwise the
                 // current_data buffer will be lost.  The respond()
                 // function will call this function again once it
-                // has reset the state back to states.STATE_CMD and this
+                // has reset the state back to states.CMD and this
                 // ensures that we only process one command at a
                 // time.
                 this.pipelining = true;
@@ -505,8 +496,8 @@ Connection.prototype._process_data = function () {
 
     if (this.current_data && (this.current_data.length > maxlength) &&
             (utils.indexOfLF(this.current_data, maxlength) === -1)) {
-        if (this.state !== states.STATE_DATA       &&
-            this.state !== states.STATE_PAUSE_DATA)
+        if (this.state !== states.DATA       &&
+            this.state !== states.PAUSE_DATA)
         {
             // In command mode, reject:
             this.client.pause();
@@ -533,7 +524,7 @@ Connection.prototype.respond = function (code, msg, func) {
     let uuid = '';
     let messages;
 
-    if (this.state === states.STATE_DISCONNECTED) {
+    if (this.state === states.DISCONNECTED) {
         if (func) func();
         return;
     }
@@ -588,8 +579,8 @@ Connection.prototype.respond = function (code, msg, func) {
     this.last_response = buf;
 
     // Don't change loop state
-    if (this.state !== states.STATE_LOOP) {
-        this.state = states.STATE_CMD;
+    if (this.state !== states.LOOP) {
+        this.state = states.CMD;
     }
 
     // Run optional closure before handling and further commands
@@ -606,9 +597,9 @@ Connection.prototype.fail = function (err) {
 };
 
 Connection.prototype.disconnect = function () {
-    if (this.state >= states.STATE_DISCONNECTING) return;
+    if (this.state >= states.DISCONNECTING) return;
     const self = this;
-    self.state = states.STATE_DISCONNECTING;
+    self.state = states.DISCONNECTING;
     this.reset_transaction(function () {
         plugins.run_hooks('disconnect', self);
     });
@@ -640,7 +631,7 @@ Connection.prototype.disconnect_respond = function () {
         duration: (Date.now() - this.start_time)/1000,
     });
     this.lognotice('disconnect', logdetail);
-    this.state = states.STATE_DISCONNECTED;
+    this.state = states.DISCONNECTED;
     this.client.end();
 };
 
@@ -698,8 +689,8 @@ Connection.prototype.init_transaction = function (cb) {
 };
 
 Connection.prototype.loop_respond = function (code, msg) {
-    if (this.state >= states.STATE_DISCONNECTING) return;
-    this.state = states.STATE_LOOP;
+    if (this.state >= states.DISCONNECTING) return;
+    this.state = states.LOOP;
     this.loop_code = code;
     this.loop_msg = msg;
     this.respond(code, msg);
@@ -707,15 +698,15 @@ Connection.prototype.loop_respond = function (code, msg) {
 
 Connection.prototype.pause = function () {
     const self = this;
-    if (self.state >= states.STATE_DISCONNECTING) return;
+    if (self.state >= states.DISCONNECTING) return;
     self.client.pause();
-    if (self.state !== states.STATE_PAUSE_DATA) self.prev_state = self.state;
-    self.state = states.STATE_PAUSE_DATA;
+    if (self.state !== states.PAUSE_DATA) self.prev_state = self.state;
+    self.state = states.PAUSE_DATA;
 };
 
 Connection.prototype.resume = function () {
     const self = this;
-    if (self.state >= states.STATE_DISCONNECTING) return;
+    if (self.state >= states.DISCONNECTING) return;
     self.client.resume();
     if (self.prev_state) {
         self.state = self.prev_state;
@@ -1626,7 +1617,7 @@ Connection.prototype.data_respond = function (retval, msg) {
     // We already checked for MAIL/RCPT in cmd_data
     this.respond(354, "go ahead, make my day", function () {
         // OK... now we get the data
-        self.state = states.STATE_DATA;
+        self.state = states.DATA;
         self.transaction.data_bytes = 0;
     });
 };

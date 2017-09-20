@@ -64,6 +64,7 @@ exports.get_timeout = {
         });
     },
     tearDown : function (done) {
+        delete process.env.WITHOUT_CONFIG_CACHE;
         fs.unlink(toPath, done);
     },
     '0s' : function (test) {
@@ -90,11 +91,11 @@ exports.get_timeout = {
 
 exports.plugin_paths = {
     setUp : function (done) {
-        process.env.HARAKA = '';
+        delete process.env.HARAKA;
         done();
     },
     tearDown : function (done) {
-        process.env.HARAKA = '';
+        delete process.env.HARAKA;
         done();
     },
     'CORE plugin: (tls)' : function (test) {
@@ -205,11 +206,11 @@ exports.plugin_paths = {
 
 exports.plugin_config = {
     setUp : function (done) {
-        process.env.HARAKA = '';
+        delete process.env.HARAKA;
         done();
     },
     tearDown : function (done) {
-        process.env.HARAKA = '';
+        delete process.env.HARAKA;
         done();
     },
     'CORE plugin: (tls)' : function (test) {

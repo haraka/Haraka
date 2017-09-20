@@ -137,7 +137,7 @@ exports.get_tls_options = {
         done();
     },
     tearDown: function (done) {
-        process.env.HARAKA_TEST_DIR='';
+        delete process.env.HARAKA_TEST_DIR;
         done();
     },
     'gets TLS properties from tls.ini.outbound': function (test) {
