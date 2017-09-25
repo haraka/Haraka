@@ -8,7 +8,7 @@ const outbound    = require('./outbound');
 const async       = require('async');
 const cluster     = require('cluster');
 const constants   = require('haraka-constants');
-const daemon      = require('daemon')({ cwd: process.cwd() });
+const daemon      = require('daemon');
 const os          = require('os');
 const path        = require('path');
 const tls         = require('tls');
@@ -71,7 +71,7 @@ Server.daemonize = function () {
     }
 
     const log_fd = require('fs').openSync(c.daemon_log_file, 'a');
-    daemon({stdout: log_fd});
+    daemon({ cwd: process.cwd(), stdout: log_fd });
 
     // We are the daemon from here on...
     const npid = require('npid');
