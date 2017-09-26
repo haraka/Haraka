@@ -188,7 +188,7 @@ logger.set_loglevel = function (level) {
         logger.loglevel = loglevel_num;
     }
 
-    if (!logger.loglevel) {
+    if (!Number.isInteger(logger.loglevel)) {
         this.log('WARN', 'invalid loglevel: ' + level + ' defaulting to LOGWARN');
         logger.loglevel = logger.levels.WARN;
     }
