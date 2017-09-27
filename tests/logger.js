@@ -76,6 +76,13 @@ exports.set_format = {
         test.equal(this.logger.format, this.logger.formats.DEFAULT);
         test.done();
     },
+    'set format to EMERG' : function (test) {
+        test.expect(1);
+        this.logger.format = '';
+        this.logger.set_format('EMERG');
+        test.equal(this.logger.format, this.logger.formats.EMERG);
+        test.done();
+    },
     'set format to LOGFMT' : function (test) {
         test.expect(1);
         this.logger.format = '';
