@@ -340,8 +340,7 @@ exports.load_default_opts = function () {
     if (!(Array.isArray(cfg.cert))) cfg.cert = [cfg.cert];
 
     if (cfg.key.length != cfg.cert.length) {
-        log.logerror("number of keys (" + cfg.key.length +
-            ") not equal to certs (" + cfg.cert.length + ").");
+        log.logerror(`number of keys (${cfg.key.length}) not equal to certs (${cfg.cert.length}).`);
     }
 
     // if key file has already been loaded, it'll be a Buffer.
@@ -351,7 +350,7 @@ exports.load_default_opts = function () {
             if (!keyFileName) return;
             const key = tlss.config.get(keyFileName, 'binary');
             if (!key) {
-                log.logerror("tls key " + keyFileName + " could not be loaded.");
+                log.logerror(`tls key ${keyFileName} could not be loaded.`);
                 log.logerror(tlss.config);
             }
             return key;
@@ -364,7 +363,7 @@ exports.load_default_opts = function () {
             if (!certFileName) return;
             const cert = tlss.config.get(certFileName, 'binary');
             if (!cert) {
-                log.logerror("tls cert " + certFileName + " could not be loaded.");
+                log.logerror(`tls cert ${certFileName} could not be loaded.`);
             }
             return cert;
         })
@@ -382,7 +381,7 @@ exports.load_default_opts = function () {
 }
 
 function SNICallback (servername, sniDone) {
-    log.logdebug('SNI servername: ' + servername);
+    log.logdebug(`SNI servername: ${servername}`);
 
     if (ctxByHost[servername] === undefined) servername = '*';
 
@@ -399,11 +398,11 @@ exports.get_certs_dir = function (tlsDir, done) {
 
             const parsed = exports.parse_x509(file.data.toString());
             if (!parsed.key) {
-                return iter_done('no PRIVATE key in ' + file.path);
+                return iter_done(`no PRIVATE key in ${file.path}`);
             }
             if (!parsed.cert) {
-                log.logerror('no CERT in ' + file.path);
-                return iter_done('no CERT in ' + file.path);
+                log.logerror(`no CERT in ${file.path}`);
+                return iter_done(`no CERT in ${file.path}`);
             }
 
             const x509args = { noout: true, text: true };
@@ -416,7 +415,7 @@ exports.get_certs_dir = function (tlsDir, done) {
 
                 const expire = tlss.parse_x509_expire(file, as_str);
                 if (expire && expire < new Date()) {
-                    log.logerror(file.path + ' expired on ' + expire);
+                    log.logerror(`${file.path} expired on ${expire}`);
                 }
 
                 iter_done(null, {
@@ -527,7 +526,7 @@ exports.ensureDhparams = function (done) {
 
     o.on('close', code => {
         if (code !== 0) {
-            return done('Error code: ' + code);
+            return done(`Error code: ${code}`);
         }
 
         log.loginfo(`Saved to ${fpResolved}`);
@@ -551,9 +550,9 @@ exports.addOCSP = function (server) {
 
     log.logdebug('adding OCSPRequest listener');
     server.on('OCSPRequest', function (cert, issuer, ocr_cb) {
-        log.logdebug('OCSPRequest: ' + cert);
+        log.logdebug(`OCSPRequest: ${cert}`);
         ocsp.getOCSPURI(cert, function (err, uri) {
-            log.logdebug('OCSP Request, URI: ' + uri + ', err=' +err);
+            log.logdebug(`OCSP Request, URI: ${uri}, err=${err}`);
             if (err) return ocr_cb(err);
             if (uri === null) return ocr_cb();  // not working OCSP server
 
@@ -564,7 +563,7 @@ exports.addOCSP = function (server) {
                 if (err2) return ocr_cb(err2);
 
                 if (cached) {
-                    log.logdebug('OCSP cache: ' + util.inspect(cached));
+                    log.logdebug(`OCSP cache: ${util.inspect(cached)}`);
                     return ocr_cb(err2, cached.response);
                 }
 
@@ -573,7 +572,7 @@ exports.addOCSP = function (server) {
                     ocsp: req.data
                 };
 
-                log.logdebug('OCSP req:' + util.inspect(req));
+                log.logdebug(`OCSP req:${util.inspect(req)}`);
                 ocspCache.request(req.id, options, ocr_cb);
             })
         })
@@ -585,7 +584,7 @@ exports.shutdown = function () {
 }
 
 function cleanOcspCache () {
-    log.logdebug('Cleaning ocspCache. How many keys? ' + Object.keys(ocspCache.cache).length);
+    log.logdebug(`Cleaning ocspCache. How many keys? ${Object.keys(ocspCache.cache).length}`);
     Object.keys(ocspCache.cache).forEach(function (key) {
         clearTimeout(ocspCache.cache[key].timer);
     });
