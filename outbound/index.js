@@ -328,7 +328,7 @@ exports.build_todo = function (todo, ws, write_more) {
     const continue_writing = ws.write(buf);
     if (continue_writing) return process.nextTick(write_more);
 
-    ws.once('drain', write);
+    ws.once('drain', write_more);
 };
 
 // exported for testability
