@@ -103,8 +103,8 @@ logger.load_log_ini = function () {
 
 logger.colorize = function (color, str) {
     if (!util.inspect.colors[color]) { return str; }  // unknown color
-    return '\u001b[' + util.inspect.colors[color][0] + 'm' + str +
-           '\u001b[' + util.inspect.colors[color][1] + 'm';
+    return `\u001b[${util.inspect.colors[color][0]}m${str}` +
+           `\u001b[${util.inspect.colors[color][1]}m`;
 };
 
 logger.dump_logs = function (cb) {
@@ -189,7 +189,7 @@ logger.set_loglevel = function (level) {
     }
 
     if (!logger.loglevel) {
-        this.log('WARN', 'invalid loglevel: ' + level + ' defaulting to LOGWARN');
+        this.log('WARN', `invalid loglevel: ${level} defaulting to LOGWARN`);
         logger.loglevel = logger.levels.WARN;
     }
 }
@@ -197,13 +197,13 @@ logger.set_loglevel = function (level) {
 logger.set_format = function (format) {
     if (format) {
         logger.format = logger.formats[format.toUpperCase()];
-        this.log('INFO', 'log format: ' + format.toUpperCase());
+        this.log('INFO', `log format: ${format.toUpperCase()}`);
     }
     else {
         logger.format = null;
     }
     if (!logger.format) {
-        this.log('WARN', 'invalid log format: ' + format + ' defaulting to DEFAULT');
+        this.log('WARN', `invalid log format: ${format} defaulting to DEFAULT`);
         logger.format = logger.formats.DEFAULT;
     }
 };
@@ -305,9 +305,9 @@ logger.log_if_level = function (level, key, plugin) {
                 logger.log(
                     level,
                     [
-                        '[' + logobj.level + ']',
-                        '[' + logobj.uuid + ']',
-                        '[' + logobj.origin + ']',
+                        `[${logobj.level}]`,
+                        `[${logobj.uuid}]`,
+                        `[${logobj.origin}]`,
                         logobj.message
                     ].join(' ')
                 );
