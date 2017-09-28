@@ -16,7 +16,7 @@ exports.hook_capabilities = function (next, connection) {
     if (!connection.tls.enabled) { return next(); }
 
     const methods = [ 'PLAIN', 'LOGIN', 'CRAM-MD5' ];
-    connection.capabilities.push('AUTH ' + methods.join(' '));
+    connection.capabilities.push(`AUTH ${methods.join(' ')}`);
     connection.notes.allowed_auth_methods = methods;
     next();
 };
@@ -60,7 +60,7 @@ exports.check_plain_passwd = function (connection, user, passwd, cb) {
         this.get_plain_passwd(user, connection, callback);
     }
     else {
-        throw "Invalid number of arguments for get_plain_passwd";
+        throw 'Invalid number of arguments for get_plain_passwd';
     }
 };
 
@@ -85,7 +85,7 @@ exports.check_cram_md5_passwd = function (connection, user, passwd, cb) {
         this.get_plain_passwd(user, connection, callback);
     }
     else {
-        throw "Invalid number of arguments for get_plain_passwd";
+        throw 'Invalid number of arguments for get_plain_passwd';
     }
 };
 
@@ -93,7 +93,7 @@ exports.check_user = function (next, connection, credentials, method) {
     const plugin = this;
     connection.notes.authenticating = false;
     if (!(credentials[0] && credentials[1])) {
-        connection.respond(504, "Invalid AUTH string", function () {
+        connection.respond(504, 'Invalid AUTH string', function () {
             connection.reset_transaction(function () {
                 return next(OK);
             });
@@ -110,10 +110,9 @@ exports.check_user = function (next, connection, credentials, method) {
                 method: method,
                 user: credentials[0],
             });
-            connection.respond(235, ((message) ? message : "Authentication successful"), function () {
+            connection.respond(235, ((message) ? message : 'Authentication successful'), function () {
                 connection.authheader = "(authenticated bits=0)\n";
-                connection.auth_results('auth=pass (' +
-                            method.toLowerCase() + ')' );
+                connection.auth_results(`auth=pass (${method.toLowerCase()})`);
                 connection.notes.auth_user = credentials[0];
                 connection.notes.auth_passwd = credentials[1];
                 return next(OK);
@@ -126,19 +125,18 @@ exports.check_user = function (next, connection, credentials, method) {
         }
         connection.notes.auth_fails++;
         connection.results.add({name: 'auth'}, {
-            fail: plugin.name + '/' + method,
+            fail:`${plugin.name}/${method}`,
         });
 
         let delay = Math.pow(2, connection.notes.auth_fails - 1);
         if (plugin.timeout && delay >= plugin.timeout) {
             delay = plugin.timeout - 1;
         }
-        connection.lognotice(plugin, 'delaying for ' + delay + ' seconds');
+        connection.lognotice(plugin, `delaying for ${delay} seconds`);
         // here we include the username, as shown in RFC 5451 example
-        connection.auth_results('auth=fail (' + method.toLowerCase() +
-                    ') smtp.auth='+ credentials[0]);
+        connection.auth_results(`auth=fail (${method.toLowerCase()}) smtp.auth=${credentials[0]}`);
         setTimeout(function () {
-            connection.respond(535, ((message) ? message : "Authentication failed"), function () {
+            connection.respond(535, ((message) ? message : 'Authentication failed'), function () {
                 connection.reset_transaction(function () {
                     return next(OK);
                 });
@@ -250,10 +248,9 @@ exports.auth_cram_md5 = function (next, connection, params) {
             AUTH_METHOD_CRAM_MD5);
     }
 
-    const ticket = '<' + plugin.hexi(Math.floor(Math.random() * 1000000)) + '.' +
-                plugin.hexi(Date.now()) + '@' + plugin.config.get('me') + '>';
+    const ticket = `<${plugin.hexi(Math.floor(Math.random() * 1000000))}. ${plugin.hexi(Date.now())}@${plugin.config.get('me')}>`;
 
-    connection.loginfo(plugin, "ticket: " + ticket);
+    connection.loginfo(plugin, `ticket: ${ticket}`);
     connection.respond(334, utils.base64(ticket), function () {
         connection.notes.auth_ticket = ticket;
         return next(OK);
