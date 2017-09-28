@@ -303,7 +303,7 @@ MessageStream.prototype._read_finish = function () {
     const self = this;
     // End dot required?
     if (this.ending_dot) {
-        this.read_ce.fill('.' + this.line_endings);
+        this.read_ce.fill(`.${this.line_endings}`);
     }
     // Tell the chunk emitter to send whatever is left
     // We don't close the fd here so we can re-use it later.
