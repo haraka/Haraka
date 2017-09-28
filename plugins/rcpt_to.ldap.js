@@ -1,9 +1,9 @@
 'use strict';
 
-var util = require('util');
+const util = require('util');
 
 exports.register = function () {
-    var plugin = this;
+    const plugin = this;
     plugin.inherits('rcpt_to.host_list_base');
 
     try {
@@ -22,30 +22,30 @@ exports.register = function () {
 };
 
 exports.load_ldap_ini = function () {
-    var plugin = this;
+    const plugin = this;
     plugin.cfg = plugin.config.get('rcpt_to.ldap.ini', 'ini', function () {
         plugin.load_ldap_ini();
     });
 };
 
 exports.ldap_rcpt = function (next, connection, params) {
-    var plugin = this;
-    var txn = connection.transaction;
+    const plugin = this;
+    const txn = connection.transaction;
     if (!txn) return next();
 
-    var rcpt = txn.rcpt_to[txn.rcpt_to.length - 1];
+    const rcpt = txn.rcpt_to[txn.rcpt_to.length - 1];
     if (!rcpt.host) {
         txn.results.add(plugin, {fail: '!domain'});
         return next();
     }
-    var domain = rcpt.host.toLowerCase();
+    const domain = rcpt.host.toLowerCase();
 
     if (!plugin.in_host_list(domain) && !plugin.in_ldap_ini(domain)) {
         connection.logdebug(plugin, "domain '" + domain + "' is not local; skip ldap");
         return next();
     }
 
-    var ar = txn.results.get('access');
+    const ar = txn.results.get('access');
     if (ar && ar.pass.length > 0 && ar.pass.indexOf("rcpt_to.access.whitelist") !== -1) {
         connection.loginfo(plugin, "skip whitelisted recipient");
         return next();
@@ -53,13 +53,13 @@ exports.ldap_rcpt = function (next, connection, params) {
 
     txn.results.add(plugin, { msg: 'connecting' });
 
-    var cfg = plugin.cfg[domain] || plugin.cfg.main;
+    const cfg = plugin.cfg[domain] || plugin.cfg.main;
     if (!cfg) {
         connection.logerror(plugin, 'no LDAP config for ' + domain);
         return next();
     }
 
-    var client;
+    let client;
     try { client = plugin.ldap.createClient({ url: cfg.server }); }
     catch (e) {
         connection.logerror(plugin, 'connect error: ' + e);
@@ -75,15 +75,15 @@ exports.ldap_rcpt = function (next, connection, params) {
         connection.logerror(plugin, 'error: ' + err);
     });
 
-    var opts = plugin.get_search_opts(cfg, rcpt);
+    const opts = plugin.get_search_opts(cfg, rcpt);
     connection.logdebug(plugin, "Search filter is: " + util.inspect(opts));
 
-    var search_result = function (err, res) {
+    const search_result = function (err, res) {
         if (err) {
             connection.logerror(plugin, 'LDAP search error: ' + err);
             return next(DENYSOFT, 'Backend failure. Please, retry later');
         }
-        var items = [];
+        const items = [];
         res.on('searchEntry', function (entry) {
             connection.logdebug(plugin, 'entry: ' + JSON.stringify(entry.object));
             items.push(entry.object);
@@ -107,7 +107,7 @@ exports.ldap_rcpt = function (next, connection, params) {
 
 exports.get_search_opts = function (cfg, rcpt) {
 
-    var plain_rcpt = rcpt.address().toLowerCase();
+    const plain_rcpt = rcpt.address().toLowerCase();
     // JSON.stringify(rcpt.original).replace(/</, '').replace(/>/, '').replace(/"/g, '');
 
     return {
@@ -118,7 +118,7 @@ exports.get_search_opts = function (cfg, rcpt) {
 };
 
 exports.in_ldap_ini = function (domain) {
-    var plugin = this;
+    const plugin = this;
     if (!domain) return false;
     if (!plugin.cfg) return false;
     if (!plugin.cfg[domain]) return false;

@@ -1,14 +1,14 @@
 'use strict';
 
-var Address      = require('address-rfc2821');
-var fixtures     = require('haraka-test-fixtures');
+const Address      = require('address-rfc2821');
+const fixtures     = require('haraka-test-fixtures');
 
-var Connection   = fixtures.connection;
+const Connection   = fixtures.connection;
 
-var Body         = require('../../mailbody').Body;
-var Header       = require('../../mailheader').Header;
+const Body         = require('../../mailbody').Body;
+const Header       = require('../../mailheader').Header;
 
-var _set_up = function (done) {
+const _set_up = function (done) {
 
     this.plugin = new fixtures.plugin('bounce');
     this.plugin.cfg = {
@@ -64,7 +64,7 @@ exports.reject_all = {
         test.expect(1);
         this.connection.transaction.mail_from= new Address.Address('<matt@example.com>');
         this.connection.transaction.rcpt_to= [ new Address.Address('test@any.com') ];
-        var cb = function () {
+        const cb = function () {
             test.equal(undefined, arguments[0]);
         };
         this.plugin.cfg.check.reject_all=false;
@@ -75,7 +75,7 @@ exports.reject_all = {
         test.expect(1);
         this.connection.transaction.mail_from= new Address.Address('<matt@example.com>');
         this.connection.transaction.rcpt_to= [ new Address.Address('test@any.com') ];
-        var cb = function () {
+        const cb = function () {
             test.equal(undefined, arguments[0]);
         };
         this.plugin.cfg.check.reject_all=true;
@@ -86,7 +86,7 @@ exports.reject_all = {
         test.expect(1);
         this.connection.transaction.mail_from= new Address.Address('<>');
         this.connection.transaction.rcpt_to= [ new Address.Address('test@any.com') ];
-        var cb = function () {
+        const cb = function () {
             test.equal(DENY, arguments[0]);
         };
         this.plugin.cfg.check.reject_all=true;
@@ -101,7 +101,7 @@ exports.empty_return_path = {
         test.expect(1);
         this.connection.transaction.mail_from= new Address.Address('<>');
         this.connection.transaction.rcpt_to= [ new Address.Address('test@good.com') ];
-        var cb = function () {
+        const cb = function () {
             test.equal(undefined, arguments[0]);
         };
         this.plugin.empty_return_path(cb, this.connection);
@@ -112,7 +112,7 @@ exports.empty_return_path = {
         this.connection.transaction.mail_from= new Address.Address('<>');
         this.connection.transaction.rcpt_to= [ new Address.Address('test@good.com') ];
         this.connection.transaction.header.add('Return-Path', "Content doesn't matter");
-        var cb = function () {
+        const cb = function () {
             test.equal(DENY, arguments[0]);
         };
         this.plugin.empty_return_path(cb, this.connection);
@@ -128,7 +128,7 @@ exports.non_local_msgid = {
         this.connection.transaction.rcpt_to= [ new Address.Address('test@good.com') ];
         this.connection.transaction.body = new Body();
         this.connection.transaction.body.bodytext = '';
-        var cb = function () {
+        const cb = function () {
             test.equal(DENY, arguments[0]);
         }
         this.plugin.non_local_msgid(cb, this.connection);
@@ -140,7 +140,7 @@ exports.non_local_msgid = {
         this.connection.transaction.rcpt_to= [ new Address.Address('test@good.com') ];
         this.connection.transaction.body = new Body();
         this.connection.transaction.body.bodytext = 'Message-ID:<blah>';
-        var cb = function () {
+        const cb = function () {
             test.equal(DENY, arguments[0]);
         }
         this.plugin.non_local_msgid(cb, this.connection);
@@ -152,7 +152,7 @@ exports.non_local_msgid = {
         this.connection.transaction.rcpt_to= [ new Address.Address('test@good.com') ];
         this.connection.transaction.body = new Body();
         this.connection.transaction.body.bodytext = 'Message-ID: <blah@foo.cooooooom>';
-        var cb = function () {
+        const cb = function () {
             test.equal(DENY, arguments[0]);
             test.ok(/without valid domain/.test(arguments[1]));
         }
@@ -182,7 +182,7 @@ exports.single_recipient = {
         test.expect(1);
         this.connection.transaction.mail_from= new Address.Address('<>');
         this.connection.transaction.rcpt_to= [ new Address.Address('test@good.com') ];
-        var cb = function () {
+        const cb = function () {
             test.equal(undefined, arguments[0]);
         };
         this.plugin.single_recipient(cb, this.connection);
@@ -195,7 +195,7 @@ exports.single_recipient = {
             new Address.Address('test@good.com'),
             new Address.Address('test2@good.com')
         ];
-        var cb = function () {
+        const cb = function () {
             console.log(arguments[0]);
             test.equal(DENY, arguments[0]);
         };
@@ -206,7 +206,7 @@ exports.single_recipient = {
         test.expect(1);
         this.connection.transaction.mail_from= new Address.Address('<>');
         this.connection.transaction.rcpt_to= [ new Address.Address('test@example.com') ];
-        var cb = function () {
+        const cb = function () {
             test.equal(undefined, arguments[0]);
         };
         this.plugin.single_recipient(cb, this.connection);
@@ -219,7 +219,7 @@ exports.single_recipient = {
             new Address.Address('test1@example.com'),
             new Address.Address('test2@example.com'),
         ];
-        var cb = function () {
+        const cb = function () {
             test.equal(DENY, arguments[0]);
         };
         this.plugin.single_recipient(cb, this.connection);
@@ -233,7 +233,7 @@ exports.bad_rcpt = {
         test.expect(1);
         this.connection.transaction.mail_from= new Address.Address('<>');
         this.connection.transaction.rcpt_to= [ new Address.Address('test@good.com') ];
-        var cb = function (rc) {
+        const cb = function (rc) {
             test.equal(undefined, rc);
         };
         this.plugin.bad_rcpt(cb, this.connection);
@@ -243,7 +243,7 @@ exports.bad_rcpt = {
         test.expect(1);
         this.connection.transaction.mail_from= new Address.Address('<>');
         this.connection.transaction.rcpt_to= [ new Address.Address('test@bad1.com') ];
-        var cb = function (rc) {
+        const cb = function (rc) {
             test.equal(DENY, rc);
         };
         this.plugin.cfg.invalid_addrs = {'test@bad1.com': true, 'test@bad2.com': true };
@@ -257,7 +257,7 @@ exports.bad_rcpt = {
             new Address.Address('test@bad1.com'),
             new Address.Address('test@bad2.com')
         ];
-        var cb = function (rc) {
+        const cb = function (rc) {
             test.equal(DENY, rc);
         };
         this.plugin.cfg.invalid_addrs = {'test@bad1.com': true, 'test@bad2.com': true };
@@ -271,7 +271,7 @@ exports.bad_rcpt = {
             new Address.Address('test@good.com'),
             new Address.Address('test@bad2.com')
         ];
-        var cb = function (rc) {
+        const cb = function (rc) {
             test.equal(DENY, rc);
         };
         this.plugin.cfg.invalid_addrs = {'test@bad1.com': true, 'test@bad2.com': true };

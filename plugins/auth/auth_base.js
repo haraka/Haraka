@@ -2,20 +2,20 @@
 // This cannot be used on its own. You need to inherit from it.
 // See plugins/auth/flat_file.js for an example.
 
-var crypto = require('crypto');
-var utils = require('haraka-utils');
-var AUTH_COMMAND = 'AUTH';
-var AUTH_METHOD_CRAM_MD5 = 'CRAM-MD5';
-var AUTH_METHOD_PLAIN = 'PLAIN';
-var AUTH_METHOD_LOGIN = 'LOGIN';
-var LOGIN_STRING1 = 'VXNlcm5hbWU6'; //UserLogin: base64 coded
-var LOGIN_STRING2 = 'UGFzc3dvcmQ6'; //Password: base64 coded
+const crypto = require('crypto');
+const utils = require('haraka-utils');
+const AUTH_COMMAND = 'AUTH';
+const AUTH_METHOD_CRAM_MD5 = 'CRAM-MD5';
+const AUTH_METHOD_PLAIN = 'PLAIN';
+const AUTH_METHOD_LOGIN = 'LOGIN';
+const LOGIN_STRING1 = 'VXNlcm5hbWU6'; //UserLogin: base64 coded
+const LOGIN_STRING2 = 'UGFzc3dvcmQ6'; //Password: base64 coded
 
 exports.hook_capabilities = function (next, connection) {
     // Don't offer AUTH capabilities unless session is encrypted
     if (!connection.tls.enabled) { return next(); }
 
-    var methods = [ 'PLAIN', 'LOGIN', 'CRAM-MD5' ];
+    const methods = [ 'PLAIN', 'LOGIN', 'CRAM-MD5' ];
     connection.capabilities.push('AUTH ' + methods.join(' '));
     connection.notes.allowed_auth_methods = methods;
     next();
@@ -27,14 +27,14 @@ exports.get_plain_passwd = function (user, connection, cb) {
 };
 
 exports.hook_unrecognized_command = function (next, connection, params) {
-    var plugin = this;
+    const plugin = this;
     if (params[0].toUpperCase() === AUTH_COMMAND && params[1]) {
         return plugin.select_auth_method(next, connection,
             params.slice(1).join(' '));
     }
     if (!connection.notes.authenticating) { return next(); }
 
-    var am = connection.notes.auth_method;
+    const am = connection.notes.auth_method;
     if (am === AUTH_METHOD_CRAM_MD5 && connection.notes.auth_ticket) {
         return plugin.auth_cram_md5(next, connection, params);
     }
@@ -48,7 +48,7 @@ exports.hook_unrecognized_command = function (next, connection, params) {
 };
 
 exports.check_plain_passwd = function (connection, user, passwd, cb) {
-    var callback = function (plain_pw) {
+    const callback = function (plain_pw) {
         if (plain_pw === null  ) { return cb(false); }
         if (plain_pw !== passwd) { return cb(false); }
         return cb(true);
@@ -65,12 +65,12 @@ exports.check_plain_passwd = function (connection, user, passwd, cb) {
 };
 
 exports.check_cram_md5_passwd = function (connection, user, passwd, cb) {
-    var callback = function (plain_pw) {
+    const callback = function (plain_pw) {
         if (plain_pw == null) {
             return cb(false);
         }
 
-        var hmac = crypto.createHmac('md5', plain_pw.toString());
+        const hmac = crypto.createHmac('md5', plain_pw.toString());
         hmac.update(connection.notes.auth_ticket);
 
         if (hmac.digest('hex') === passwd) {
@@ -90,7 +90,7 @@ exports.check_cram_md5_passwd = function (connection, user, passwd, cb) {
 };
 
 exports.check_user = function (next, connection, credentials, method) {
-    var plugin = this;
+    const plugin = this;
     connection.notes.authenticating = false;
     if (!(credentials[0] && credentials[1])) {
         connection.respond(504, "Invalid AUTH string", function () {
@@ -101,7 +101,7 @@ exports.check_user = function (next, connection, credentials, method) {
         return;
     }
 
-    var passwd_ok = function (valid, message) {
+    const passwd_ok = function (valid, message) {
         if (valid) {
             connection.relaying = true;
             connection.results.add({name:'relay'}, {pass: plugin.name});
@@ -129,7 +129,7 @@ exports.check_user = function (next, connection, credentials, method) {
             fail: plugin.name + '/' + method,
         });
 
-        var delay = Math.pow(2, connection.notes.auth_fails - 1);
+        let delay = Math.pow(2, connection.notes.auth_fails - 1);
         if (plugin.timeout && delay >= plugin.timeout) {
             delay = plugin.timeout - 1;
         }
@@ -157,7 +157,7 @@ exports.check_user = function (next, connection, credentials, method) {
 };
 
 exports.select_auth_method = function (next, connection, method) {
-    var split = method.split(/\s+/);
+    const split = method.split(/\s+/);
     method = split.shift().toUpperCase();
     if (!connection.notes.allowed_auth_methods) return next();
     if (connection.notes.allowed_auth_methods.indexOf(method) === -1) {
@@ -181,14 +181,14 @@ exports.select_auth_method = function (next, connection, method) {
 };
 
 exports.auth_plain = function (next, connection, params) {
-    var plugin = this;
+    const plugin = this;
     // one parameter given on line, either:
     //    AUTH PLAIN <param> or
     //    AUTH PLAIN\n
     //...
     //    <param>
     if (params[0]) {
-        var credentials = utils.unbase64(params[0]).split(/\0/);
+        const credentials = utils.unbase64(params[0]).split(/\0/);
         credentials.shift();  // Discard authid
         return plugin.check_user(next, connection, credentials, AUTH_METHOD_PLAIN);
     } else {
@@ -205,7 +205,7 @@ exports.auth_plain = function (next, connection, params) {
 };
 
 exports.auth_login = function (next, connection, params) {
-    var plugin = this;
+    const plugin = this;
     if ((!connection.notes.auth_login_asked_login && params[0]) ||
         ( connection.notes.auth_login_asked_login &&
          !connection.notes.auth_login_userlogin))
@@ -214,7 +214,7 @@ exports.auth_login = function (next, connection, params) {
             return next(DENYDISCONNECT, 'bad protocol');
         }
 
-        var login = utils.unbase64(params[0]);
+        const login = utils.unbase64(params[0]);
         connection.respond(334, LOGIN_STRING2, function () {
             connection.notes.auth_login_userlogin = login;
             connection.notes.auth_login_asked_login = true;
@@ -224,7 +224,7 @@ exports.auth_login = function (next, connection, params) {
     }
 
     if (connection.notes.auth_login_userlogin) {
-        var credentials = [
+        const credentials = [
             connection.notes.auth_login_userlogin,
             utils.unbase64(params[0])
         ];
@@ -243,14 +243,14 @@ exports.auth_login = function (next, connection, params) {
 };
 
 exports.auth_cram_md5 = function (next, connection, params) {
-    var plugin = this;
+    const plugin = this;
     if (params) {
-        var credentials = utils.unbase64(params[0]).split(' ');
+        const credentials = utils.unbase64(params[0]).split(' ');
         return plugin.check_user(next, connection, credentials,
             AUTH_METHOD_CRAM_MD5);
     }
 
-    var ticket = '<' + plugin.hexi(Math.floor(Math.random() * 1000000)) + '.' +
+    const ticket = '<' + plugin.hexi(Math.floor(Math.random() * 1000000)) + '.' +
                 plugin.hexi(Date.now()) + '@' + plugin.config.get('me') + '>';
 
     connection.loginfo(plugin, "ticket: " + ticket);

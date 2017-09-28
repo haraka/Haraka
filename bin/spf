@@ -2,13 +2,13 @@
 
 // SPF test tool
 
-var nopt = require('nopt');
-var path = require('path');
-var base_path = path.join(__dirname, '..');
-var SPF = require(base_path + '/spf').SPF;
-var spf = new SPF();
+const nopt = require('nopt');
+const path = require('path');
+const base_path = path.join(__dirname, '..');
+const SPF = require(base_path + '/spf').SPF;
+const spf = new SPF();
 
-var parsed = nopt({ 'debug': Boolean, 'ip': String, 'helo': String, 'domain': String  });
+const parsed = nopt({ 'debug': Boolean, 'ip': String, 'helo': String, 'domain': String  });
 
 function print_usage () {
     console.log('Usage: spf [--debug] --ip <ip> --helo <helo> --domain <domain>');
@@ -23,8 +23,9 @@ if (!parsed.debug) {
     SPF.prototype.log_debug = function (str) {}
 }
 
+let domain;
 if (parsed.domain) {
-    var domain = /\@(.+)$/.exec(parsed.domain);
+    domain = /@(.+)$/.exec(parsed.domain);
     if (domain) {
         domain = domain[1];
     }

@@ -1,0 +1,10 @@
+env:
+  es6: true
+  node: true
+
+plugins:
+  - haraka
+
+root: true
+
+extends: ["eslint:recommended", "plugin:haraka/recommended"]

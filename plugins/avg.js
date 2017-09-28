@@ -3,20 +3,20 @@
 
 // TODO: use pooled connections
 
-var fs   = require('fs');
-var path = require('path');
+const fs   = require('fs');
+const path = require('path');
 
-var sock = require('./line_socket');
-var smtp_regexp = /^([0-9]{3})([ -])(.*)/;
+const sock = require('./line_socket');
+const smtp_regexp = /^([0-9]{3})([ -])(.*)/;
 
 exports.register = function () {
-    var plugin = this;
+    const plugin = this;
 
     plugin.load_avg_ini();
 };
 
 exports.load_avg_ini = function () {
-    var plugin = this;
+    const plugin = this;
 
     plugin.cfg = plugin.config.get('avg.ini', {
         booleans: [
@@ -29,17 +29,17 @@ exports.load_avg_ini = function () {
 };
 
 exports.get_tmp_file = function (transaction) {
-    var plugin = this;
-    var tmpdir  = plugin.cfg.main.tmpdir || '/tmp';
+    const plugin = this;
+    const tmpdir  = plugin.cfg.main.tmpdir || '/tmp';
     return path.join(tmpdir, transaction.uuid + '.tmp');
 };
 
 exports.hook_data_post = function (next, connection) {
-    var plugin = this;
+    const plugin = this;
     if (!connection.transaction) return next();
 
-    var tmpfile = plugin.get_tmp_file(connection.transaction);
-    var ws      = fs.createWriteStream(tmpfile);
+    const tmpfile = plugin.get_tmp_file(connection.transaction);
+    const ws      = fs.createWriteStream(tmpfile);
 
     ws.once('error', function (err) {
         connection.results.add(plugin, {
@@ -50,20 +50,20 @@ exports.hook_data_post = function (next, connection) {
     });
 
     ws.once('close', function () {
-        var start_time = Date.now();
-        var socket = new sock.Socket();
+        const start_time = Date.now();
+        const socket = new sock.Socket();
         socket.setTimeout((plugin.cfg.main.connect_timeout || 10) * 1000);
-        var connected = false;
-        var command = 'connect';
-        var response = [];
+        let connected = false;
+        let command = 'connect';
+        let response = [];
 
-        var do_next = function (code, msg) {
+        const do_next = function (code, msg) {
             fs.unlink(tmpfile, function (){});
             return next(code, msg);
         };
 
         socket.send_command = function (cmd, data) {
-            var line = cmd + (data ? (' ' + data) : '');
+            const line = cmd + (data ? (' ' + data) : '');
             connection.logprotocol(plugin, '> ' + line);
             this.write(line + '\r\n');
             command = cmd.toLowerCase();
@@ -71,7 +71,7 @@ exports.hook_data_post = function (next, connection) {
         };
 
         socket.on('timeout', function () {
-            var msg = (connected ? 'connection' : 'session') +  ' timed out';
+            const msg = (connected ? 'connection' : 'session') +  ' timed out';
             connection.results.add(plugin, { err: msg });
             if (!plugin.cfg.defer.timeout) return do_next();
             return do_next(DENYSOFT, 'Virus scanner timeout (AVG)');
@@ -89,7 +89,7 @@ exports.hook_data_post = function (next, connection) {
         });
 
         socket.on('line', function (line) {
-            var matches = smtp_regexp.exec(line);
+            const matches = smtp_regexp.exec(line);
             connection.logprotocol(plugin, '< ' + line);
             if (!matches) {
                 connection.results.add(plugin,
@@ -99,9 +99,9 @@ exports.hook_data_post = function (next, connection) {
                 return do_next(DENYSOFT, 'Virus scanner error (AVG)');
             }
 
-            var code = matches[1];
-            var cont = matches[2];
-            var rest = matches[3];
+            const code = matches[1];
+            const cont = matches[2];
+            const rest = matches[3];
             response.push(rest);
             if (cont !== ' ') { return; }
 
@@ -119,9 +119,8 @@ exports.hook_data_post = function (next, connection) {
                         socket.send_command('SCAN', tmpfile);
                     }
                     break;
-                case 'scan':
-                    var end_time = Date.now();
-                    var elapsed = end_time - start_time;
+                case 'scan': {
+                    const elapsed = Date.now() - start_time;
                     connection.loginfo(plugin, 'time=' + elapsed + 'ms ' +
                                     'code=' + code + ' ' +
                                     'response="' + response.join(' ') + '"');
@@ -148,6 +147,7 @@ exports.hook_data_post = function (next, connection) {
                     socket.send_command('QUIT');
                     if (!plugin.cfg.defer.error) return do_next();
                     return do_next(DENYSOFT, 'Virus scanner error (AVG)');
+                }
                 case 'quit':
                     socket.end();
                     break;

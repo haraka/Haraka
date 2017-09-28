@@ -1,20 +1,20 @@
 // clamd
 
-var sock = require('./line_socket');
-var utils = require('haraka-utils');
+const sock = require('./line_socket');
+const utils = require('haraka-utils');
 
 exports.load_excludes = function () {
-    var plugin = this;
+    const plugin = this;
 
     plugin.loginfo('Loading excludes file');
-    var list = plugin.config.get('clamd.excludes','list', function () {
+    const list = plugin.config.get('clamd.excludes','list', function () {
         plugin.load_excludes();
     });
 
-    var new_skip_list_exclude = [];
-    var new_skip_list = [];
-    for (var i=0; i < list.length; i++) {
-        var re;
+    const new_skip_list_exclude = [];
+    const new_skip_list = [];
+    for (let i=0; i < list.length; i++) {
+        let re;
         switch (list[i][0]) {
             case '!':
 
@@ -68,7 +68,7 @@ exports.load_excludes = function () {
 };
 
 exports.load_clamd_ini = function () {
-    var plugin = this;
+    const plugin = this;
 
     plugin.cfg = plugin.config.get('clamd.ini', {
         booleans: [
@@ -95,20 +95,20 @@ exports.load_clamd_ini = function () {
         plugin.load_clamd_ini();
     });
 
-    var defaults = {
+    const defaults = {
         clamd_socket: 'localhost:3310',
         timeout: 30,
         connect_timeout: 10,
         max_size: 26214400,
     };
 
-    for (var key in defaults) {
+    for (const key in defaults) {
         if (plugin.cfg.main[key] === undefined) {
             plugin.cfg.main[key] = defaults[key];
         }
     }
 
-    var rejectPatterns = {
+    const rejectPatterns = {
         'Broken.Executable': '^Broken\\.Executable\\.?',
         Encrypted:           '^Encrypted\\.',
         PUA:                 '^PUA\\.',
@@ -119,8 +119,8 @@ exports.load_clamd_ini = function () {
         UNOFFICIAL:          '\\.UNOFFICIAL$',
     };
 
-    var all_reject_opts = [];
-    var enabled_reject_opts = [];
+    const all_reject_opts = [];
+    const enabled_reject_opts = [];
     Object.keys(rejectPatterns).forEach(function (opt) {
         all_reject_opts.push(rejectPatterns[opt]);
         if (!plugin.cfg.reject[opt]) return;
@@ -140,16 +140,16 @@ exports.load_clamd_ini = function () {
 };
 
 exports.register = function () {
-    var plugin = this;
+    const plugin = this;
     plugin.load_excludes();
     plugin.load_clamd_ini();
 };
 
 exports.hook_data = function (next, connection) {
-    var plugin = this;
+    const plugin = this;
     if (!plugin.cfg.main.only_with_attachments) return next();
 
-    var txn = connection.transaction;
+    const txn = connection.transaction;
     txn.parse_body = true;
     txn.attachment_hooks(function (ctype, filename, body) {
         connection.logdebug(plugin,
@@ -161,9 +161,9 @@ exports.hook_data = function (next, connection) {
 };
 
 exports.hook_data_post = function (next, connection) {
-    var plugin = this;
-    var txn = connection.transaction;
-    var cfg = plugin.cfg;
+    const plugin = this;
+    const txn = connection.transaction;
+    const cfg = plugin.cfg;
 
     // Do we need to run?
     if (cfg.main.only_with_attachments && !txn.notes.clamd_found_attachment) {
@@ -178,22 +178,22 @@ exports.hook_data_post = function (next, connection) {
         return next();
     }
 
-    var hosts = cfg.main.clamd_socket.split(/[,; ]+/);
+    const hosts = cfg.main.clamd_socket.split(/[,; ]+/);
 
     if (cfg.main.randomize_host_order) {
         hosts.sort(function () {return 0.5 - Math.random();});
     }
 
-    var try_next_host = function () {
-        var connected = false;
+    function try_next_host () {
+        let connected = false;
         if (!hosts.length) {
             if (txn) txn.results.add(plugin, {err: 'connecting' });
             if (!plugin.cfg.reject.error) return next();
             return next(DENYSOFT, 'Error connecting to virus scanner');
         }
-        var host = hosts.shift();
+        const host = hosts.shift();
         connection.logdebug(plugin, 'trying host: ' + host);
-        var socket = new sock.Socket();
+        const socket = new sock.Socket();
 
         socket.on('timeout', function () {
             socket.destroy();
@@ -228,15 +228,15 @@ exports.hook_data_post = function (next, connection) {
         socket.on('connect', function () {
             connected = true;
             socket.setTimeout((cfg.main.timeout || 30) * 1000);
-            var hp = socket.address();
-            var addressInfo = hp === null ? '' : ' ' + hp.address + ':' + hp.port;
+            const hp = socket.address();
+            const addressInfo = hp === null ? '' : ' ' + hp.address + ':' + hp.port;
             connection.logdebug(plugin, 'connected to host' + addressInfo);
             socket.write("zINSTREAM\0", function () {
                 txn.message_stream.pipe(socket, { clamd_style: true });
             });
         });
 
-        var result = '';
+        let result = '';
         socket.on('line', function (line) {
             connection.logprotocol(plugin, 'C:' + line.split('').filter((x) => {
                 return 31 < x.charCodeAt(0) && 127 > x.charCodeAt(0)
@@ -253,9 +253,9 @@ exports.hook_data_post = function (next, connection) {
                 return next();
             }
 
-            var m = /^stream: (\S+) FOUND/.exec(result);
+            const m = /^stream: (\S+) FOUND/.exec(result);
             if (m) {
-                var virus;                                   // Virus found
+                let virus;                                   // Virus found
                 if (m[1]) { virus = m[1]; }
                 txn.results.add(plugin, {
                     fail: virus ? virus : 'virus',
@@ -270,14 +270,14 @@ exports.hook_data_post = function (next, connection) {
                 if (!plugin.cfg.reject.virus) { return next(); }
 
                 // Check skip list exclusions
-                for (var i=0; i < plugin.skip_list_exclude.length; i++) {
+                for (let i=0; i < plugin.skip_list_exclude.length; i++) {
                     if (!plugin.skip_list_exclude[i].test(virus)) continue;
                     return next(DENY,
                         'Message is infected with ' + (virus || 'UNKNOWN'));
                 }
 
                 // Check skip list
-                for (var j=0; j < plugin.skip_list.length; j++) {
+                for (let j=0; j < plugin.skip_list.length; j++) {
                     if (!plugin.skip_list[j].test(virus)) continue;
                     connection.logwarn(plugin, virus + ' matches exclusion');
                     txn.add_header('X-Haraka-Virus', virus);
@@ -309,14 +309,14 @@ exports.hook_data_post = function (next, connection) {
         });
 
         clamd_connect(socket, host);
-    };
+    }
 
     // Start the process
     try_next_host();
 };
 
 function clamd_connect (socket, host) {
-    var match;
+    let match;
     if (host.match(/^\//)) {
         // assume unix socket
         socket.connect(host);
@@ -327,7 +327,7 @@ function clamd_connect (socket, host) {
     }
     else {
         // IP:port, hostname:port or hostname
-        var hostport = host.split(/:/);
+        const hostport = host.split(/:/);
         socket.connect((hostport[1] || 3310), hostport[0]);
     }
 }

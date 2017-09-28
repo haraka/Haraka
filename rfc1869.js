@@ -1,4 +1,4 @@
-"use strict";
+'use strict';
 // RFC 1869 command parser
 
 // 6.  MAIL FROM and RCPT TO Parameters
@@ -20,10 +20,10 @@
 //                        ("RCPT TO:" forward-path)
 
 /* eslint no-control-regex: 0 */
-var chew_regexp = /\s+([A-Za-z0-9][A-Za-z0-9\-]*(?:=[^= \x00-\x1f]+)?)$/;
+const chew_regexp = /\s+([A-Za-z0-9][A-Za-z0-9-]*(?:=[^= \x00-\x1f]+)?)$/;
 
 exports.parse = function (type, line, strict) {
-    var params = [];
+    let params = [];
     line = (new String(line)).replace(/\s*$/, '');
     if (type === "mail") {
         line = line.replace(strict ? /from:/i : /from:\s*/i, "");
@@ -33,7 +33,7 @@ exports.parse = function (type, line, strict) {
     }
 
     while (1) {
-        var old_length = line.length;
+        const old_length = line.length;
         line = line.replace(chew_regexp, function repl (str, p1) {
             params.push(p1);
             return '';
@@ -54,7 +54,7 @@ exports.parse = function (type, line, strict) {
     if (line.length) {
         // parameter syntax error, i.e. not all of the arguments were
         // stripped by the while() loop:
-        if (line.match(/\@.*\s/)) {
+        if (line.match(/@.*\s/)) {
             throw new Error("Syntax error in parameters (" + line + ")");
         }
 
@@ -72,20 +72,20 @@ exports.parse = function (type, line, strict) {
         if (!line.length) {
             return ["<>"]; // 'MAIL FROM:' --> 'MAIL FROM:<>'
         }
-        if (line.match(/\@.*\s/)) {
+        if (line.match(/@.*\s/)) {
             throw new Error("Syntax error in parameters");
         }
     }
     else {
         // console.log("Looking at " + line);
-        if (line.match(/\@.*\s/)) {
+        if (line.match(/@.*\s/)) {
             throw new Error("Syntax error in parameters");
         }
         else {
             if (line.match(/\s/)) {
                 throw new Error("Syntax error in parameters");
             }
-            else if (line.match(/\@/)) {
+            else if (line.match(/@/)) {
                 if (!line.match(/^<.*>$/)) {
                     line = '<' + line + '>';
                 }

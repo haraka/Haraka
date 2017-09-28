@@ -1,14 +1,55 @@
-## 2.8.15 - Mmm DD, YYYY
+
+## 2.8.16 - Mmm dd, 2017
+
+* Changes
+    * lint: remove useless escapes #2117
+    * rspamd: repackaged as NPM module #2106
+    * dsn: repackaged as NPM module haraka-dsn #2105
+    * outbound: add results when queueing #2103
+    * spamassassin: skip adding headers when value is empty #2102
+    * Replace console.log with stdout #2100
+    * ES6: replace var with const or let  #2073
+* New Features
+    * Bounces can have an HTML part #2091
+* Fixes
+    * tls: only apply default key/cert paths when undefined #2111
+    * haraka was adding TLS header on non-TLS connection #2103
+    * dkim_verify: fix formatting of auth results #2107
+    * smtp_forward: consistently use queue.wants #2107
+
+## 2.8.15 - Sep 10, 2017
 
 * Changes
     * Permit log settings to be set w/o LOG prefix #2057
     * additional results storing in smtp_forward and quarantine #2067
+    * publish p0f plugin to NPM #2076
     * smtp_forward stores queue note at queue.wants #2083
+    * Remove unused folders from installation #2088
+    * smtp_forward stores queue note at queue.wants #2083
+    * add get/set to conn/txn.notes #2082
+    * additional results storing in smtp_forward and quarantine #2067
+    * Permit log settings to be set w/o LOG prefix #2057
+    * support INFO *and* LOGINFO as config settings #2056
+    * log.ini, new default location for log related settings #2054
+    * dcc: replace with npm packaged version #2052
+    * qmd: replace rcpt_to.qmail_deliverable with npm #2051
+    * rspamd: pass SPF evaluation #2050
+    * add logfmt support #2047
+    * update ipaddr.js to version 1.5.0 #2037
+    * update redis to version 2.8.0 #2033
+    * disable graceful for SIGTERM #2028
+    * add additional integration tests #2026
+    * move most npm packaged plugins into optionalDependencies #2023
 * New Features
     * TLS certificate directory (config/tls) #2032
     * plugins can specify a queue plugin & next_hop route #2067
     * connection/transaction notes now have get/set #2082
-    * Bounces can have an HTML part #2091
+* Fixes
+    * haraka cli will now create folders if they don't exist #2088
+    * maybe fix for #1852 503 response #2064
+    * crash when 'AUTH LOGIN' is sent after a successful auth #2039
+    * docs: fixed swaks test command #2034
+    * dkim: prevent dkim_verify from causing 'cannot pipe' #1693
 
 ## 2.8.14 - Jul 26, 2017
 
@@ -52,7 +93,7 @@
     * helo.checks: bring plugin into alignment with docs #1833
     * when proxy enabled, update remote.is_private too #1811
     * create an outbound queue filename handler #1792
-    * replace connect.fcrdns with npm package #1810
+    * replace fcrdns with npm package #1810
     * add an additional node_modules plugin search path #1805
     * Set graceful shutdown off by default #1927
     * Allow outbound pools to be disabled #1917
@@ -376,7 +417,7 @@
     * removed TLD stuff to haraka/haraka-tld (#1301)
     * removed unused 'require('redis') in plugins/karma (#1348)
     * improved MIME header support per rfc2231 (#1344)
-    * tls options can be defined for outbound and smtp\_\* (#1357) 
+    * tls options can be defined for outbound and smtp\_\* (#1357)
     * explicitly disable SSLv2 (#1395)
     * cache STUN results
     * xclient plugin improvements (#1405)
@@ -428,7 +469,7 @@
     * connection: pause for hook_reset_transaction (#1303)
     * rcpt_to.routes: update redis usage for compat with redis plugin (#1302)
     * smtp_forward: use correct config path to auth settings (#1327)
-    * messagestream: correctly pass options parameter to get_data (#1316) 
+    * messagestream: correctly pass options parameter to get_data (#1316)
     * spf: honour configuration for mfrom scope (#1322)
     * outbound: Add missing dash to 'Final-Recipient' header name (#1320)
 
@@ -665,7 +706,7 @@
   results, optionally adds headers. Includes tests.
 * access: new plugin that merges rdns_access, mail_from.access, and
   rcpt_to.access.
-* connect.fcrdns: new plugin (Forward Confirmed Reverse DNS)
+* fcrdns: new plugin (Forward Confirmed Reverse DNS)
 * bounce: new plugin (merges
 * data.headers: new plugin added direct_to_mx, check & reject settings, added MLM detection,
   tests.

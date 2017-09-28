@@ -1,6 +1,6 @@
 "use strict";
 // RFC 3463 Enhanced Status Codes
-var enum_status_codes = [
+const enum_status_codes = [
     [   // X.0.XXX Other or Undefined Status        (unspecified)
         "Other undefined status",                                   // X.0.0
     ],
@@ -83,7 +83,7 @@ function DSN (code, msg, def, subject, detail) {
     // Handle multi-line replies
     if (Array.isArray(this.msg)) {
         this.reply = [];
-        var m;
+        let m;
         while ((m = this.msg.shift())) {
             this.reply.push([this.cls, this.sub, this.det].join('.') + ' ' + m);
         }

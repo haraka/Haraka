@@ -12,21 +12,21 @@ exports.hook_deny = function (next, connection, params) {
     ** [1] = plugin return message
     */
 
-    var pi_name     = params[2];
-    var pi_function = params[3];
+    const pi_name     = params[2];
+    const pi_function = params[3];
     // var pi_params   = params[4];
-    var pi_hook     = params[5];
+    const pi_hook     = params[5];
 
-    var plugin = this;
-    var transaction = connection.transaction;
+    const plugin = this;
+    const transaction = connection.transaction;
 
     // Don't delay ourselves...
     if (pi_name == 'delay_deny') return next();
 
     // Load config
-    var cfg = this.config.get('delay_deny.ini');
-    var skip;
-    var included;
+    const cfg = this.config.get('delay_deny.ini');
+    let skip;
+    let included;
     if (cfg.main.included_plugins) {
         included = cfg.main.included_plugins.split(/[;, ]+/);
     } else if (cfg.main.excluded_plugins) {
@@ -99,8 +99,8 @@ exports.hook_deny = function (next, connection, params) {
 };
 
 exports.hook_rcpt_ok = function (next, connection, rcpt) {
-    var plugin = this;
-    var transaction = connection.transaction;
+    const plugin = this;
+    const transaction = connection.transaction;
 
     // Bypass all pre-DATA deny for AUTH/RELAY
     if (connection.relaying) {
@@ -112,7 +112,7 @@ exports.hook_rcpt_ok = function (next, connection, rcpt) {
     // Check connection level pre-DATA rejections first
     if (connection.notes.delay_deny_pre) {
         for (let i=0; i<connection.notes.delay_deny_pre.length; i++) {
-            let params = connection.notes.delay_deny_pre[i];
+            const params = connection.notes.delay_deny_pre[i];
             return next(params[0], params[1]);
         }
     }
@@ -120,7 +120,7 @@ exports.hook_rcpt_ok = function (next, connection, rcpt) {
     // Then check transaction level pre-DATA
     if (transaction.notes.delay_deny_pre) {
         for (let i=0; i<transaction.notes.delay_deny_pre.length; i++) {
-            let params = transaction.notes.delay_deny_pre[i];
+            const params = transaction.notes.delay_deny_pre[i];
 
             // Remove rejection from the array if it was on the rcpt hooks
             if (params[5] === 'rcpt' || params[5] === 'rcpt_ok') {
@@ -134,10 +134,10 @@ exports.hook_rcpt_ok = function (next, connection, rcpt) {
 };
 
 exports.hook_data = function (next, connection) {
-    var transaction = connection.transaction;
+    const transaction = connection.transaction;
 
     // Add a header showing all pre-DATA rejections
-    var fails = [];
+    const fails = [];
     if (connection.notes.delay_deny_pre_fail) {
         fails.push.apply(Object.keys(connection.notes.delay_deny_pre_fail));
     }

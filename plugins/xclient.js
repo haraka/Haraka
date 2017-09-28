@@ -1,22 +1,22 @@
 // Implementation of XCLIENT protocol
 // See http://www.postfix.org/XCLIENT_README.html
 
-var utils = require('haraka-utils');
-var DSN = require('./dsn');
-var net = require('net');
-var allowed_hosts = {};
+const utils = require('haraka-utils');
+const DSN = require('haraka-dsn');
+const net = require('net');
+let allowed_hosts = {};
 
 exports.register = function () {
     this.load_xclient_hosts();
 }
 
 exports.load_xclient_hosts = function () {
-    var self = this;
-    var cfg = this.config.get('xclient.hosts', 'list', function () {
+    const self = this;
+    const cfg = this.config.get('xclient.hosts', 'list', function () {
         self.load_xclient_hosts();
     });
-    var ah = {};
-    for (var i in cfg) {
+    const ah = {};
+    for (const i in cfg) {
         ah[cfg[i]] = true;
     }
     allowed_hosts = ah;
@@ -53,16 +53,16 @@ exports.hook_unrecognized_command = function (next, connection, params) {
 
     // If we get here - the client is allowed to use XCLIENT
     // Process arguments
-    var args = (new String(params[1])).toLowerCase().split(/ /);
-    var xclient = {};
-    for (var a=0; a < args.length; a++) {
-        var match = /^([^=]+)=([^ ]+)/.exec(args[a]);
+    const args = (new String(params[1])).toLowerCase().split(/ /);
+    const xclient = {};
+    for (let a=0; a < args.length; a++) {
+        const match = /^([^=]+)=([^ ]+)/.exec(args[a]);
         if (match) {
             connection.logdebug(this, 'found key=' + match[1] + ' value=' + match[2]);
             switch (match[1]) {
-                case 'addr':
+                case 'addr': {
                     // IPv6 is prefixed in the XCLIENT protocol
-                    var ipv6;
+                    let ipv6;
                     if ((ipv6 = /^IPV6:(.+)$/i.exec(match[2]))) {
                         // Validate
                         if (net.isIPv6(ipv6[1])) {
@@ -76,6 +76,7 @@ exports.hook_unrecognized_command = function (next, connection, params) {
                         }
                     }
                     break;
+                }
                 case 'proto':
                     // SMTP or ESMTP
                     if (/^e?smtp/i.test(match[2])) {
@@ -106,7 +107,7 @@ exports.hook_unrecognized_command = function (next, connection, params) {
     }
 
     // Apply changes
-    var new_uuid = utils.uuid();
+    const new_uuid = utils.uuid();
     connection.loginfo(this, 'new uuid=' + new_uuid);
     connection.uuid = new_uuid;
     connection.reset_transaction();

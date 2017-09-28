@@ -3,7 +3,7 @@
 // documentation via: haraka -h plugins/record_envelope_addresses
 
 exports.hook_rcpt = function (next, connection, params) {
-    var txn = connection.transaction;
+    const txn = connection.transaction;
     if (txn) {
         txn.add_header('X-Envelope-To', params[0].address());
     }
@@ -11,7 +11,7 @@ exports.hook_rcpt = function (next, connection, params) {
 };
 
 exports.hook_mail = function (next, connection, params) {
-    var txn = connection.transaction;
+    const txn = connection.transaction;
     if (txn) {
         txn.add_header('X-Envelope-From', params[0].address());
     }

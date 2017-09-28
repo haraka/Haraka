@@ -42,7 +42,7 @@ exports.createServer = {
     setUp: _setup,
     'returns a net.Server' : function (test) {
         test.expect(1);
-        var server = this.socket.createServer(sock => {
+        const server = this.socket.createServer(sock => {
             console.log(sock);
         });
         test.ok(server);
@@ -79,7 +79,7 @@ exports.get_certs_dir = {
         test.expect(2);
         this.socket.get_certs_dir('tls', function (err, certs) {
             test.ifError(err);
-            console.error(certs);
+            // console.error(certs);
             test.ok(certs);
             test.done();
         })
@@ -168,12 +168,12 @@ exports.load_tls_ini = {
 exports.parse_x509 = {
     setUp: _setup,
     'returns empty object on empty input' : function (test) {
-        var res = this.socket.parse_x509();
+        const res = this.socket.parse_x509();
         test.deepEqual(res, {});
         test.done();
     },
     'returns key from BEGIN PRIVATE KEY block' : function (test) {
-        var res = this.socket.parse_x509('-BEGIN PRIVATE KEY-\nhello\n--END PRIVATE KEY--\n-its me-\n');
+        const res = this.socket.parse_x509('-BEGIN PRIVATE KEY-\nhello\n--END PRIVATE KEY--\n-its me-\n');
         res.key.toString();
         test.deepEqual(
             res.key.toString(),
@@ -184,7 +184,7 @@ exports.parse_x509 = {
         test.done();
     },
     'returns key from BEGIN RSA PRIVATE KEY block' : function (test) {
-        var res = this.socket.parse_x509('-BEGIN RSA PRIVATE KEY-\nhello\n--END RSA PRIVATE KEY--\n-its me-\n');
+        const res = this.socket.parse_x509('-BEGIN RSA PRIVATE KEY-\nhello\n--END RSA PRIVATE KEY--\n-its me-\n');
         res.key.toString();
         test.deepEqual(
             res.key.toString(),
@@ -200,26 +200,26 @@ exports.parse_x509_names = {
     setUp: _setup,
     'extracts nictool.com from x509 Subject CN': function (test) {
         test.expect(1);
-        var r = this.socket.parse_x509_names('        Validity\n            Not Before: Jan 15 22:47:00 2017 GMT\n            Not After : Apr 15 22:47:00 2017 GMT\n        Subject: CN=nictool.com\n        Subject Public Key Info:\n');
+        const r = this.socket.parse_x509_names('        Validity\n            Not Before: Jan 15 22:47:00 2017 GMT\n            Not After : Apr 15 22:47:00 2017 GMT\n        Subject: CN=nictool.com\n        Subject Public Key Info:\n');
         test.deepEqual(r, ['nictool.com']);
         test.done();
     },
     'extracts haraka.local from x509 Subject CN': function (test) {
         test.expect(1);
-        var r = this.socket.parse_x509_names('        Validity\n            Not Before: Mar  4 23:28:49 2017 GMT\n            Not After : Mar  3 23:28:49 2023 GMT\n        Subject: C=US, ST=Washington, L=Seattle, O=Haraka, CN=haraka.local/emailAddress=matt@haraka.local\n        Subject Public Key Info:\n            Public Key Algorithm: rsaEncryption\n');
+        const r = this.socket.parse_x509_names('        Validity\n            Not Before: Mar  4 23:28:49 2017 GMT\n            Not After : Mar  3 23:28:49 2023 GMT\n        Subject: C=US, ST=Washington, L=Seattle, O=Haraka, CN=haraka.local/emailAddress=matt@haraka.local\n        Subject Public Key Info:\n            Public Key Algorithm: rsaEncryption\n');
         test.deepEqual(r, ['haraka.local']);
         test.done();
     },
     'extracts host names from X509v3 Subject Alternative Name': function (test) {
         test.expect(1);
-        var r = this.socket.parse_x509_names('                CA Issuers - URI:http://cert.int-x3.letsencrypt.org/\n\n            X509v3 Subject Alternative Name: \n                DNS:nictool.com, DNS:nictool.org, DNS:www.nictool.com, DNS:www.nictool.org\n            X509v3 Certificate Policies: \n                Policy: 2.23.140.1.2.1\n');
+        const r = this.socket.parse_x509_names('                CA Issuers - URI:http://cert.int-x3.letsencrypt.org/\n\n            X509v3 Subject Alternative Name: \n                DNS:nictool.com, DNS:nictool.org, DNS:www.nictool.com, DNS:www.nictool.org\n            X509v3 Certificate Policies: \n                Policy: 2.23.140.1.2.1\n');
         test.deepEqual(r, ['nictool.com', 'nictool.org', 'www.nictool.com', 'www.nictool.org']);
         test.done();
     },
     'extracts host names from both': function (test) {
         test.expect(2);
 
-        var r = this.socket.parse_x509_names('        Validity\n            Not Before: Jan 15 22:47:00 2017 GMT\n            Not After : Apr 15 22:47:00 2017 GMT\n        Subject: CN=nictool.com\n        Subject Public Key Info:\n                CA Issuers - URI:http://cert.int-x3.letsencrypt.org/\n\n            X509v3 Subject Alternative Name: \n                DNS:nictool.com, DNS:nictool.org, DNS:www.nictool.com, DNS:www.nictool.org\n            X509v3 Certificate Policies: \n                Policy: 2.23.140.1.2.1\n');
+        let r = this.socket.parse_x509_names('        Validity\n            Not Before: Jan 15 22:47:00 2017 GMT\n            Not After : Apr 15 22:47:00 2017 GMT\n        Subject: CN=nictool.com\n        Subject Public Key Info:\n                CA Issuers - URI:http://cert.int-x3.letsencrypt.org/\n\n            X509v3 Subject Alternative Name: \n                DNS:nictool.com, DNS:nictool.org, DNS:www.nictool.com, DNS:www.nictool.org\n            X509v3 Certificate Policies: \n                Policy: 2.23.140.1.2.1\n');
         test.deepEqual(r, ['nictool.com', 'nictool.org', 'www.nictool.com', 'www.nictool.org']);
 
         r = this.socket.parse_x509_names('        Validity\n            Not Before: Jan 15 22:47:00 2017 GMT\n            Not After : Apr 15 22:47:00 2017 GMT\n        Subject: CN=foo.nictool.com\n        Subject Public Key Info:\n                CA Issuers - URI:http://cert.int-x3.letsencrypt.org/\n\n            X509v3 Subject Alternative Name: \n                DNS:nictool.com, DNS:nictool.org, DNS:www.nictool.com, DNS:www.nictool.org\n            X509v3 Certificate Policies: \n                Policy: 2.23.140.1.2.1\n');
@@ -229,7 +229,7 @@ exports.parse_x509_names = {
     },
     'extracts expiration date': function (test) {
         test.expect(1);
-        var r = this.socket.parse_x509_expire('foo', 'Validity\n            Not Before: Mar  4 23:28:49 2017 GMT\n            Not After : Mar  3 23:28:49 2023 GMT\n        Subject');
+        const r = this.socket.parse_x509_expire('foo', 'Validity\n            Not Before: Mar  4 23:28:49 2017 GMT\n            Not After : Mar  3 23:28:49 2023 GMT\n        Subject');
         test.deepEqual(r, new Date('2023-03-03T23:28:49.000Z'));
         test.done();
     },

@@ -1,8 +1,8 @@
 'use strict';
 
-var fixtures     = require('haraka-test-fixtures');
+const fixtures     = require('haraka-test-fixtures');
 
-var _set_up = function (callback) {
+const _set_up = function (callback) {
 
     this.plugin = new fixtures.plugin('relay_all');
     this.connection = fixtures.connection.createConnection();
@@ -39,7 +39,7 @@ exports.relay_all = {
         test.done();
     },
     'confirm_all hook always returns OK' : function (test) {
-        var next = function (action) {
+        const next = function (action) {
             test.expect(1);
             test.equals(action, OK);
             test.done();
@@ -48,7 +48,7 @@ exports.relay_all = {
         this.plugin.confirm_all(next, this.connection, this.params);
     },
     'confirm_all hook always sets connection.relaying to 1' : function (test) {
-        var next = function (action) {
+        const next = function (action) {
             test.expect(1);
             test.equals(this.connection.relaying, 1);
             test.done();

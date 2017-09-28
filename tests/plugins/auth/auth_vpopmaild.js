@@ -1,13 +1,13 @@
 'use strict';
 
-var path         = require('path');
+const path         = require('path');
 
-var fixtures     = require('haraka-test-fixtures');
+const fixtures     = require('haraka-test-fixtures');
 
-var Connection   = fixtures.connection;
-var Plugin       = fixtures.plugin;
+const Connection   = fixtures.connection;
+const Plugin       = fixtures.plugin;
 
-var _set_up = function(done) {
+const _set_up = function (done) {
     this.backup = {};
 
     // needed for tests
@@ -26,7 +26,7 @@ var _set_up = function(done) {
 exports.hook_capabilities = {
     setUp : _set_up,
     'no TLS': function (test) {
-        var cb = function (rc, msg) {
+        const cb = function (rc, msg) {
             test.expect(3);
             test.equal(undefined, rc);
             test.equal(undefined, msg);
@@ -36,7 +36,7 @@ exports.hook_capabilities = {
         this.plugin.hook_capabilities(cb, this.connection);
     },
     'with TLS': function (test) {
-        var cb = function (rc, msg) {
+        const cb = function (rc, msg) {
             test.expect(3);
             test.equal(undefined, rc);
             test.equal(undefined, msg);
@@ -49,7 +49,7 @@ exports.hook_capabilities = {
         this.plugin.hook_capabilities(cb, this.connection);
     },
     'with TLS, sysadmin': function (test) {
-        var cb = function (rc, msg) {
+        const cb = function (rc, msg) {
             test.expect(3);
             test.equal(undefined, rc);
             test.equal(undefined, msg);
@@ -67,7 +67,7 @@ exports.get_vpopmaild_socket = {
     setUp : _set_up,
     'any': function (test) {
         test.expect(1);
-        var socket = this.plugin.get_vpopmaild_socket('foo@localhost.com');
+        const socket = this.plugin.get_vpopmaild_socket('foo@localhost.com');
         // console.log(socket);
         test.ok(socket);
         socket.end();
@@ -78,7 +78,7 @@ exports.get_vpopmaild_socket = {
 exports.get_plain_passwd = {
     setUp : _set_up,
     'matt@example.com': function (test) {
-        var cb = function (pass) {
+        const cb = function (pass) {
             test.expect(1);
             test.ok(pass);
             test.done();

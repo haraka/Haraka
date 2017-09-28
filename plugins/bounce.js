@@ -1,8 +1,8 @@
 // bounce tests
-var tlds = require('haraka-tld');
+const tlds = require('haraka-tld');
 
-var net_utils = require('haraka-net-utils');
-var SPF = require('./spf').SPF;
+const net_utils = require('haraka-net-utils');
+const SPF = require('./spf').SPF;
 
 // Override logging in SPF module
 SPF.prototype.log_debug = function (str) {
@@ -10,7 +10,7 @@ SPF.prototype.log_debug = function (str) {
 };
 
 exports.register = function () {
-    var plugin = this;
+    const plugin = this;
     plugin.load_bounce_ini();
     plugin.load_bounce_bad_rcpt();
 
@@ -24,14 +24,14 @@ exports.register = function () {
 };
 
 exports.load_bounce_bad_rcpt = function () {
-    var plugin = this;
+    const plugin = this;
 
-    var new_list = plugin.config.get('bounce_bad_rcpt', 'list', function () {
+    const new_list = plugin.config.get('bounce_bad_rcpt', 'list', function () {
         plugin.load_bounce_bad_rcpt();
     });
 
-    var invalids = {};
-    for (var i=0; i < new_list.length; i++) {
+    const invalids = {};
+    for (let i=0; i < new_list.length; i++) {
         invalids[new_list[i]] = true;
     }
 
@@ -39,7 +39,7 @@ exports.load_bounce_bad_rcpt = function () {
 };
 
 exports.load_bounce_ini = function () {
-    var plugin = this;
+    const plugin = this;
     plugin.cfg = plugin.config.get('bounce.ini', {
         booleans: [
             '-check.reject_all',
@@ -72,10 +72,10 @@ exports.load_bounce_ini = function () {
 };
 
 exports.reject_all = function (next, connection, params) {
-    var plugin = this;
+    const plugin = this;
     if (!plugin.cfg.check.reject_all) { return next(); }
 
-    var mail_from = params[0];
+    const mail_from = params[0];
 
     if (!plugin.has_null_sender(connection, mail_from)) {
         return next(); // bounce messages are from null senders
@@ -87,11 +87,11 @@ exports.reject_all = function (next, connection, params) {
 };
 
 exports.single_recipient = function (next, connection) {
-    var plugin = this;
+    const plugin = this;
     if (!plugin.cfg.check.single_recipient) return next();
     if (!plugin.has_null_sender(connection)) return next();
 
-    var transaction = connection.transaction;
+    const transaction = connection.transaction;
 
     // Valid bounces have a single recipient
     if (connection.transaction.rcpt_to.length === 1) {
@@ -127,11 +127,11 @@ exports.single_recipient = function (next, connection) {
 };
 
 exports.empty_return_path = function (next, connection) {
-    var plugin = this;
+    const plugin = this;
     if (!plugin.cfg.check.empty_return_path) return next();
     if (!plugin.has_null_sender(connection)) return next();
 
-    var transaction = connection.transaction;
+    const transaction = connection.transaction;
 
     // Bounce messages generally do not have a Return-Path set. This checks
     // for that. But whether it should is worth questioning...
@@ -147,7 +147,7 @@ exports.empty_return_path = function (next, connection) {
     // Return-Path, aka Reverse-PATH, Envelope FROM, RFC5321.MailFrom
     // validate that the Return-Path header is empty, RFC 3834
 
-    var rp = connection.transaction.header.get('Return-Path');
+    const rp = connection.transaction.header.get('Return-Path');
     if (!rp) {
         transaction.results.add(plugin, {pass: 'empty_return_path' });
         return next();
@@ -163,15 +163,15 @@ exports.empty_return_path = function (next, connection) {
 };
 
 exports.bad_rcpt = function (next, connection) {
-    var plugin = this;
-    var transaction = connection.transaction;
+    const plugin = this;
+    const transaction = connection.transaction;
 
     if (!plugin.cfg.check.bad_rcpt) return next();
     if (!plugin.has_null_sender(connection)) return next();
     if (!plugin.cfg.invalid_addrs) return next();
 
-    for (var i=0; i < connection.transaction.rcpt_to.length; i++) {
-        var rcpt = connection.transaction.rcpt_to[i].address();
+    for (let i=0; i < connection.transaction.rcpt_to.length; i++) {
+        const rcpt = connection.transaction.rcpt_to[i].address();
         if (!plugin.cfg.invalid_addrs[rcpt]) continue;
         transaction.results.add(plugin, {fail: 'bad_rcpt', emit: true });
         return next(DENY, "That recipient does not accept bounces");
@@ -182,8 +182,8 @@ exports.bad_rcpt = function (next, connection) {
 };
 
 exports.has_null_sender = function (connection, mail_from) {
-    var plugin = this;
-    var transaction = connection.transaction;
+    const plugin = this;
+    const transaction = connection.transaction;
 
     if (!mail_from) mail_from = connection.transaction.mail_from;
 
@@ -200,27 +200,27 @@ exports.has_null_sender = function (connection, mail_from) {
     return false;
 };
 
-var message_id_re = /^Message-ID:\s*(<?[^>]+>?)/mig;
+const message_id_re = /^Message-ID:\s*(<?[^>]+>?)/mig;
 
 function find_message_id_headers (headers, body, connection, self) {
     if (!body) return;
-    var match;
+    let match;
     while ((match = message_id_re.exec(body.bodytext))) {
-        var mid = match[1];
+        const mid = match[1];
         headers[mid] = true;
     }
-    for (var i=0,l=body.children.length; i < l; i++) {
+    for (let i=0,l=body.children.length; i < l; i++) {
         // Recure to any MIME children
         find_message_id_headers(headers, body.children[i], connection, self);
     }
 }
 
 exports.non_local_msgid = function (next, connection) {
-    var plugin = this;
+    const plugin = this;
     if (!plugin.cfg.check.non_local_msgid) return next();
     if (!plugin.has_null_sender(connection)) return next();
 
-    var transaction = connection.transaction;
+    const transaction = connection.transaction;
 
     // Bounce messages usually contain the headers of the original message
     // in the body. This parses the body, searching for the Message-ID header.
@@ -236,7 +236,7 @@ exports.non_local_msgid = function (next, connection) {
     //     http://lamsonproject.org/blog/2009-07-09.html
     //     http://lamsonproject.org/docs/bounce_detection.html
 
-    var matches = {}
+    let matches = {}
     find_message_id_headers(matches, transaction.body, connection, plugin);
     matches = Object.keys(matches);
     connection.logdebug(plugin, 'found Message-IDs: ' + matches.join(', '));
@@ -249,9 +249,9 @@ exports.non_local_msgid = function (next, connection) {
                 ' verify that I sent it');
     }
 
-    var domains=[];
-    for (var i=0; i < matches.length; i++) {
-        var res = matches[i].match(/@([^>]*)>?/i);
+    const domains=[];
+    for (let i=0; i < matches.length; i++) {
+        const res = matches[i].match(/@([^>]*)>?/i);
         if (!res) continue;
         domains.push(res[1]);
     }
@@ -266,9 +266,9 @@ exports.non_local_msgid = function (next, connection) {
 
     connection.logdebug(plugin, domains);
 
-    var valid_domains=[];
-    for (var j=0; j < domains.length; j++) {
-        var org_dom = tlds.get_organizational_domain(domains[j]);
+    const valid_domains=[];
+    for (let j=0; j < domains.length; j++) {
+        const org_dom = tlds.get_organizational_domain(domains[j]);
         if (!org_dom) { continue; }
         valid_domains.push(org_dom);
     }
@@ -295,24 +295,24 @@ exports.non_local_msgid = function (next, connection) {
 };
 
 // Lazy regexp to get IPs from Received: headers in bounces
-var received_re = net_utils.get_ipany_re('^Received:[\\s\\S]*?[\\[\\(](?:IPv6:)?', '[\\]\\)]');
+const received_re = net_utils.get_ipany_re('^Received:[\\s\\S]*?[\\[\\(](?:IPv6:)?', '[\\]\\)]');
 
 function find_received_headers (ips, body, connection, self) {
     if (!body) return;
-    var match;
+    let match;
     while ((match = received_re.exec(body.bodytext))) {
-        var ip = match[1];
+        const ip = match[1];
         if (net_utils.is_private_ip(ip)) continue;
         ips[ip] = true;
     }
-    for (var i=0,l=body.children.length; i < l; i++) {
+    for (let i=0,l=body.children.length; i < l; i++) {
         // Recurse in any MIME children
         find_received_headers(ips, body.children[i], connection, self);
     }
 }
 
 exports.bounce_spf_enable = function (next, connection) {
-    var plugin = this;
+    const plugin = this;
     if (plugin.cfg.check.bounce_spf) {
         connection.transaction.parse_body = true;
     }
@@ -320,14 +320,14 @@ exports.bounce_spf_enable = function (next, connection) {
 }
 
 exports.bounce_spf = function (next, connection) {
-    var plugin = this;
+    const plugin = this;
     if (!plugin.cfg.check.bounce_spf) return next();
     if (!plugin.has_null_sender(connection)) return next();
-    var txn = connection.transaction;
+    const txn = connection.transaction;
 
     // Recurse through all textual parts and store all parsed IPs
     // in an object to remove any duplicates which might appear.
-    var ips = {};
+    let ips = {};
     find_received_headers(ips, txn.body, connection, plugin);
     ips = Object.keys(ips);
     if (!ips.length) {
@@ -337,17 +337,12 @@ exports.bounce_spf = function (next, connection) {
 
     connection.logdebug(plugin, 'found IPs to check: ' + ips.join(', '));
 
-    var pending = 0;
-    var aborted = false;
-    var called_cb = false;
+    let pending = 0;
+    let aborted = false;
+    let called_cb = false;
+    let timer;
 
-    var timer = setTimeout(function () {
-        connection.logerror(plugin, 'Timed out');
-        txn.results.add(plugin, { skip: 'bounce_spf(timeout)' });
-        return run_cb(true);
-    }, (plugin.timeout - 1) * 1000);
-
-    var run_cb = function (abort, retval, msg) {
+    function run_cb (abort, retval, msg) {
         if (aborted) return;
         if (abort) aborted = true;
         if (!aborted && pending > 0) return;
@@ -357,9 +352,15 @@ exports.bounce_spf = function (next, connection) {
         return next(retval, msg);
     }
 
+    timer = setTimeout(function () {
+        connection.logerror(plugin, 'Timed out');
+        txn.results.add(plugin, { skip: 'bounce_spf(timeout)' });
+        return run_cb(true);
+    }, (plugin.timeout - 1) * 1000);
+
     ips.forEach(function (ip) {
         if (aborted) return;
-        var spf = new SPF();
+        const spf = new SPF();
         pending++;
         spf.check_host(ip, txn.rcpt_to[0].host, txn.rcpt_to[0].address(),
             function (err, result) {

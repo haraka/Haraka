@@ -9,8 +9,9 @@ function dot_files (element) {
 
 exports.sandbox_require = function (id) {
     if (id[0] == '.' && id[1] != '.') {
+        let override;
         try {
-            var override = path.join(__dirname, id + '.js');
+            override = path.join(__dirname, id + '.js');
             fs.statSync(override);
             id = override;
         }
@@ -33,9 +34,9 @@ exports.sandbox_require = function (id) {
 
 function make_test (module_path, test_path, additional_sandbox) {
     return function (test) {
-        var code = fs.readFileSync(module_path);
+        let code = fs.readFileSync(module_path);
         code += fs.readFileSync(test_path);
-        var sandbox = {
+        const sandbox = {
             require: exports.sandbox_require,
             console: console,
             Buffer: Buffer,
@@ -50,9 +51,9 @@ function make_test (module_path, test_path, additional_sandbox) {
 }
 
 exports.add_tests = function (module_path, tests_path, test_exports, add_to_sandbox) {
-    var additional_sandbox = add_to_sandbox || {};
-    var tests = fs.readdirSync(tests_path).filter(dot_files);
-    for (var x = 0; x < tests.length; x++) {
+    const additional_sandbox = add_to_sandbox || {};
+    const tests = fs.readdirSync(tests_path).filter(dot_files);
+    for (let x = 0; x < tests.length; x++) {
         test_exports[tests[x]] = make_test(module_path, tests_path + tests[x], additional_sandbox);
     }
 };

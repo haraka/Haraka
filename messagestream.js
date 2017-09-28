@@ -6,8 +6,8 @@ const utils  = require('haraka-utils');
 
 const ChunkEmitter = require('./chunkemitter');
 
-var STATE_HEADERS = 1;
-var STATE_BODY = 2;
+const STATE_HEADERS = 1;
+const STATE_BODY = 2;
 
 class MessageStream extends Stream {
     constructor (config, id, headers) {
@@ -51,7 +51,7 @@ class MessageStream extends Stream {
 }
 
 MessageStream.prototype.add_line = function (line) {
-    var self = this;
+    const self = this;
 
     if (typeof line === 'string') {
         line = new Buffer(line);
@@ -80,7 +80,7 @@ MessageStream.prototype.add_line = function (line) {
     if (this.state === STATE_BODY) {
         // Look for MIME boundaries
         if (line.length > 4 && line[0] === 0x2d && line[1] == 0x2d) {
-            var boundary = line.slice(2).toString().replace(/\s*$/,'');
+            let boundary = line.slice(2).toString().replace(/\s*$/,'');
             if (/--\s*$/.test(line)) {
                 // End of boundary?
                 boundary = boundary.slice(0, -2);
@@ -118,7 +118,7 @@ MessageStream.prototype.add_line_end = function (cb) {
 };
 
 MessageStream.prototype._write = function (data) {
-    var self = this;
+    const self = this;
     if (data) {
         this.buffered += data.length;
         this._queue.push(data);
@@ -176,7 +176,7 @@ MessageStream.prototype._write = function (data) {
     }
 
     if (!this.fd) return false;
-    var to_send = this._queue.shift();
+    const to_send = this._queue.shift();
     this.buffered -= to_send.length;
     // TODO: try and implement backpressure
     if (!this.ws.write(to_send)) {
@@ -202,7 +202,7 @@ MessageStream.prototype._write = function (data) {
 */
 
 MessageStream.prototype._read = function () {
-    var self = this;
+    const self = this;
     if (!this.end_called) {
         throw new Error('end not called!');
     }
@@ -262,9 +262,9 @@ MessageStream.prototype._read = function () {
 };
 
 MessageStream.prototype.process_buf = function (buf) {
-    var offset = 0;
+    let offset = 0;
     while ((offset = utils.indexOfLF(buf)) !== -1) {
-        var line = buf.slice(0, offset+1);
+        let line = buf.slice(0, offset+1);
         buf = buf.slice(line.length);
         // Don't output headers if they where sent already
         if (this.headers_done && !this.headers_found_eoh) {
@@ -300,7 +300,7 @@ MessageStream.prototype.process_buf = function (buf) {
 };
 
 MessageStream.prototype._read_finish = function () {
-    var self = this;
+    const self = this;
     // End dot required?
     if (this.ending_dot) {
         this.read_ce.fill('.' + this.line_endings);
@@ -310,7 +310,7 @@ MessageStream.prototype._read_finish = function () {
     this.read_ce.end(function () {
         if (self.clamd_style) {
             // Add 0 length to notify end
-            var buf = new Buffer(4);
+            const buf = new Buffer(4);
             buf.writeUInt32BE(0, 0);
             self.emit('data', buf);
         }
@@ -320,7 +320,7 @@ MessageStream.prototype._read_finish = function () {
 };
 
 MessageStream.prototype.pipe = function (destination, options) {
-    var self = this;
+    const self = this;
     if (this.in_pipe) {
         throw new Error('Cannot pipe while currently piping');
     }
@@ -343,7 +343,7 @@ MessageStream.prototype.pipe = function (destination, options) {
     this.read_ce.on('data', function (chunk) {
         if (self.clamd_style) {
             // Prefix data length to the beginning of line
-            var buf = new Buffer(chunk.length+4);
+            const buf = new Buffer(chunk.length+4);
             buf.writeUInt32BE(chunk.length, 0);
             chunk.copy(buf, 4);
             self.emit('data', buf);
@@ -387,7 +387,7 @@ MessageStream.prototype.resume = function () {
 };
 
 MessageStream.prototype.destroy = function () {
-    var self = this;
+    const self = this;
     try {
         if (this.fd) {
             fs.close(this.fd, function (err) {
@@ -408,7 +408,7 @@ MessageStream.prototype.get_data = function (options, cb) { // Or: (cb)
         cb = arguments[0];
         options = {};
     }
-    var ws = new GetDataStream(cb);
+    const ws = new GetDataStream(cb);
     this.pipe(ws, options);
 };
 

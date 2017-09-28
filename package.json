@@ -4,7 +4,7 @@
   "license": "MIT",
   "description": "An SMTP Server project.",
   "keywords": [ "haraka", "smtp", "server", "email" ],
-  "version": "2.8.14",
+  "version": "2.8.15",
   "homepage": "http://haraka.github.io",
   "repository": {
     "type": "git",
@@ -12,7 +12,7 @@
   },
   "main": "haraka.js",
   "engines": {
-    "node": ">= v6.11.1"
+    "node": ">= v6.11.3"
   },
   "dependencies": {
     "address-rfc2821"       : "^1.1.1",
@@ -22,32 +22,36 @@
     "generic-pool"          : "~2.5.0",
     "iconv"                 : "~2.3.0",
     "ipaddr.js"             : "~1.5.0",
-    "js-yaml"               : "~3.9.0",
+    "js-yaml"               : "~3.10.0",
     "nopt"                  : "~4.0.1",
     "npid"                  : "~0.4.0",
     "semver"                : "~5.4.0",
     "sprintf-js"            : "~1.1.0",
-    "haraka-tld"            : "*",
-    "haraka-constants"      : ">=1.0.4",
+    "haraka-constants"      : ">=1.0.5",
+    "haraka-dsn"            : "*",
     "haraka-net-utils"      : ">=1.0.10",
     "haraka-notes"          : "*",
     "haraka-results"        : "^2.0.0",
+    "haraka-tld"            : "*",
     "haraka-utils"          : "*",
-    "haraka-plugin-access"  : "*",
-    "haraka-plugin-limit"   : "*"
+    "mkdirp"                : "~0.5.1"
   },
   "optionalDependencies": {
+    "haraka-plugin-access"  : "*",
     "haraka-plugin-asn"     : "*",
+    "haraka-plugin-dcc"     : "*",
     "haraka-plugin-elasticsearch" : "*",
     "haraka-plugin-fcrdns"  : "*",
     "haraka-plugin-geoip"   : "*",
     "haraka-plugin-karma"   : "*",
+    "haraka-plugin-limit"   : "*",
+    "haraka-plugin-p0f"     : "*",
     "haraka-plugin-qmail-deliverable" : "*",
     "haraka-plugin-recipient-routes" : "*",
     "haraka-plugin-redis"   : "*",
+    "haraka-plugin-rspamd"  : "*",
     "haraka-plugin-syslog"  : "*",
     "haraka-plugin-watch"   : "*",
-    "haraka-plugin-dcc"     : "*",
     "ldapjs"                : "~1.0.0",
     "ocsp"                  : "~1.2.0",
     "redis"                 : "~2.8.0",
@@ -77,8 +81,8 @@
   },
   "scripts": {
     "test": "node run_tests",
-    "lint": "node node_modules/.bin/eslint *.js outbound/*.js plugins/*.js plugins/*/*.js tests/*.js tests/*/*.js bin/haraka bin/spf bin/dkimverify",
-    "lintfix": "node node_modules/.bin/eslint --fix *.js plugins/*.js plugins/*/*.js tests/*.js tests/*/*.js bin/haraka bin/spf bin/dkimverify",
+    "lint": "node node_modules/.bin/eslint *.js outbound/*.js plugins/*.js plugins/*/*.js tests/*.js tests/*/*.js tests/*/*/*.js bin/haraka bin/spf bin/dkimverify",
+    "lintfix": "node node_modules/.bin/eslint --fix *.js outbound/*.js plugins/*.js plugins/*/*.js tests/*.js tests/*/*.js tests/*/*/*.js bin/haraka bin/spf bin/dkimverify",
     "cover": "NODE_ENV=cov node node_modules/.bin/istanbul cov run_tests"
   }
 }

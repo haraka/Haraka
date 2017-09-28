@@ -6,14 +6,14 @@
 //
 //         To achieve the same results using FCrDNS (in addition to
 //         the additional features), set [reject] no_rdns=true in
-//         connect.fcrdns.ini.
+//         fcrdns.ini.
 //
 //         The FCrDNS plugin uses the white/blacklist functionality in the
 //         access plugin.
 
-var dns = require('dns');
+const dns = require('dns');
 
-var net_utils = require('haraka-net-utils');
+const net_utils = require('haraka-net-utils');
 
 // _dns_error handles err from node.dns callbacks.  It will always call next()
 // with a DENYDISCONNECT for this plugin.
@@ -38,16 +38,16 @@ function _dns_error (connection, next, err, host, plugin, nxdomain, dnserror) {
 }
 
 function _in_whitelist (connection, plugin, address) {
-    var domain          = address.toLowerCase();
-    var host_list       =
+    const domain          = address.toLowerCase();
+    const host_list       =
         plugin.config.get('lookup_rdns.strict.whitelist', 'list');
-    var host_list_regex =
+    const host_list_regex =
         plugin.config.get('lookup_rdns.strict.whitelist_regex', 'list');
 
     connection.logdebug(plugin, "Checking if " + address + " is in the " +
         "lookup_rdns.strict.whitelist files");
 
-    var i;
+    let i;
     for (i in host_list) {
         connection.logdebug(plugin, "checking " + domain + " against " +
                 host_list[i]);
@@ -59,7 +59,7 @@ function _in_whitelist (connection, plugin, address) {
     }
 
     if (host_list_regex.length) {
-        var regex = new RegExp ('^(?:' + host_list_regex.join('|') + ')$', 'i');
+        const regex = new RegExp ('^(?:' + host_list_regex.join('|') + ')$', 'i');
 
         connection.logdebug(plugin, "checking " + domain + " against " +
                 regex.source);
@@ -74,25 +74,25 @@ function _in_whitelist (connection, plugin, address) {
 }
 
 exports.hook_lookup_rdns = function (next, connection) {
-    var plugin       = this;
-    var total_checks = 0;
-    var called_next  = 0;
-    var timeout_id   = 0;
-    var config       = this.config.get('lookup_rdns.strict.ini');
-    var fwd_nxdomain = config.forward && (config.forward.nxdomain    || '');
-    var fwd_dnserror = config.forward && (config.forward.dnserror    || '');
-    var rev_nxdomain = config.reverse && (config.reverse.nxdomain    || '');
-    var rev_dnserror = config.reverse && (config.reverse.dnserror    || '');
-    var nomatch      = config.general && (config.general.nomatch     || '');
-    var timeout      = config.general && (config.general.timeout     || 60);
-    var timeout_msg  = config.general && (config.general.timeout_msg || '');
+    const plugin       = this;
+    let total_checks = 0;
+    let called_next  = 0;
+    let timeout_id   = 0;
+    const config       = this.config.get('lookup_rdns.strict.ini');
+    const fwd_nxdomain = config.forward && (config.forward.nxdomain    || '');
+    const fwd_dnserror = config.forward && (config.forward.dnserror    || '');
+    const rev_nxdomain = config.reverse && (config.reverse.nxdomain    || '');
+    const rev_dnserror = config.reverse && (config.reverse.dnserror    || '');
+    const nomatch      = config.general && (config.general.nomatch     || '');
+    const timeout      = config.general && (config.general.timeout     || 60);
+    const timeout_msg  = config.general && (config.general.timeout_msg || '');
 
     if (_in_whitelist(connection, plugin, connection.remote.ip)) {
         called_next++;
         return next(OK, connection.remote.ip);
     }
 
-    var call_next = function (code, msg) {
+    const call_next = function (code, msg) {
         clearTimeout(timeout_id);
         if (called_next) return;
         called_next++;
@@ -124,7 +124,7 @@ exports.hook_lookup_rdns = function (next, connection) {
         total_checks = domains.length;
 
         // Check whitelist before we start doing a bunch more DNS queries.
-        for (var i = 0; i < domains.length; i++) {
+        for (let i = 0; i < domains.length; i++) {
             if (_in_whitelist(connection, plugin, domains[i])) {
                 return call_next(OK, domains[i]);
             }
@@ -147,7 +147,7 @@ exports.hook_lookup_rdns = function (next, connection) {
                     }
                     return;
                 }
-                for (var j = 0; j < addresses.length ; j++) {
+                for (let j = 0; j < addresses.length ; j++) {
                     if (addresses[j] === connection.remote.ip) {
                         // We found a match, call next() and return
                         if (!called_next) {
