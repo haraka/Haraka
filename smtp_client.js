@@ -54,7 +54,7 @@ class SMTPClient extends events.EventEmitter {
             client.emit('server_protocol', line);
             const matches = smtp_regexp.exec(line);
             if (!matches) {
-                client.emit('error', client.uuid + ': Unrecognized response from upstream server: ' + line);
+                client.emit('error', `${client.uuid}: Unrecognized response from upstream server: ${line}`);
                 client.destroy();
                 return;
             }
@@ -67,7 +67,7 @@ class SMTPClient extends events.EventEmitter {
             if (cont !== ' ') return;
 
             if (client.command === 'auth' || client.authenticating) {
-                logger.loginfo('SERVER RESPONSE, CLIENT ' + client.command + ", authenticating=" + client.authenticating + ",code="+code + ",cont="+cont+",msg=" +msg);
+                logger.loginfo(`SERVER RESPONSE, CLIENT ${client.command}, authenticating=${client.authenticating}, code=${code}, cont=${cont}, msg=${msg}`);
                 if (code.match(/^3/) && msg === 'VXNlcm5hbWU6') {
                     client.emit('auth_username');
                     return;
@@ -136,7 +136,7 @@ class SMTPClient extends events.EventEmitter {
                     client.destroy();
                     break;
                 default:
-                    throw new Error("Unknown command: " + client.command);
+                    throw new Error(`Unknown command: ${client.command}`);
             }
         });
 
@@ -158,9 +158,7 @@ class SMTPClient extends events.EventEmitter {
                 }
                 // msg is e.g. "errored" or "timed out"
                 // error is e.g. "Error: connect ECONNREFUSE"
-                const errMsg = client.uuid +
-                    ': [' + client.host + ':' + client.port + '] ' +
-                    'SMTP connection ' + msg + ' ' + error;
+                const errMsg = `${client.uuid}: [${client.host}:${client.port}] SMTP connection ${msg} ${error}`;
                 switch (client.state) {
                     case STATE.ACTIVE:
                     case STATE.IDLE:
@@ -178,7 +176,7 @@ class SMTPClient extends events.EventEmitter {
                     client.emit('connection-error', errMsg);
                 } // don't return, continue (original behavior)
 
-                logger.logdebug('[smtp_client_pool] ' + errMsg + ' (state=' + client.state + ')');
+                logger.logdebug(`[smtp_client_pool] ${errMsg} (state=${client.state})`);
             };
         };
 
@@ -200,7 +198,7 @@ SMTPClient.prototype.load_tls_config = function (opts) {
 }
 
 SMTPClient.prototype.send_command = function (command, data) {
-    const line = (command === 'dot') ? '.' : command + (data ? (' ' + data) : '');
+    const line = (command === 'dot') ? '.' : command + (data ? (` ${data}`) : '');
     this.emit('client_protocol', line);
     this.command = command.toLowerCase();
     this.response = [];
@@ -220,7 +218,7 @@ SMTPClient.prototype.release = function () {
         return;
     }
 
-    logger.logdebug('[smtp_client_pool] ' + this.uuid + ' resetting, state=' + this.state);
+    logger.logdebug(`[smtp_client_pool] ${this.uuid} resetting, state=${this.state}`);
     if (this.state === STATE.DESTROYED) {
         return;
     }
@@ -245,7 +243,7 @@ SMTPClient.prototype.release = function () {
     });
 
     this.on('rset', function () {
-        logger.logdebug('[smtp_client_pool] ' + this.uuid + ' releasing, state=' + this.state);
+        logger.logdebug(`[smtp_client_pool] ${this.uuid} releasing, state=${this.state}`);
         if (this.state === STATE.DESTROYED) {
             return;
         }
@@ -268,15 +266,14 @@ SMTPClient.prototype.upgrade = function (tls_options) {
     const this_logger = logger;
 
     this.socket.upgrade(tls_options, function (verified, verifyError, cert, cipher) {
-        this_logger.loginfo('secured:' +
-            ((cipher) ? ' cipher=' + cipher.name + ' version=' + cipher.version : '') +
-            ' verified=' + verified +
-            ((verifyError) ? ' error="' + verifyError + '"' : '' ) +
-            ((cert && cert.subject) ? ' cn="' + cert.subject.CN + '"' +
-            ' organization="' + cert.subject.O + '"' : '') +
-            ((cert && cert.issuer) ? ' issuer="' + cert.issuer.O + '"' : '') +
-            ((cert && cert.valid_to) ? ' expires="' + cert.valid_to + '"' : '') +
-            ((cert && cert.fingerprint) ? ' fingerprint=' + cert.fingerprint : ''));
+        this_logger.loginfo(`secured:
+            ${((cipher) ? ` cipher=${cipher.name} version=${cipher.version}` : '')}
+            verified=${verified}
+            ${((verifyError) ? ` error="${verifyError}"` : '' )}
+            ${((cert && cert.subject) ? ` cn="${cert.subject.CN}" organization="${cert.subject.O}"` : '')}
+            ${((cert && cert.issuer) ? ` issuer="${cert.issuer.O}"` : '')}
+            ${((cert && cert.valid_to) ? ` expires="${cert.valid_to}"` : '')}
+            ${((cert && cert.fingerprint) ? ` fingerprint=${cert.fingerprint}` : '')}`);
     });
 };
 
@@ -299,7 +296,7 @@ exports.get_pool = function (server, port, host, cfg) {
     if (cfg === undefined) cfg = {};
     const connect_timeout = cfg.connect_timeout || 30;
     const pool_timeout = cfg.pool_timeout || cfg.timeout || 300;
-    const name = port + ':' + host + ':' + pool_timeout;
+    const name = `${port}:${host}:${pool_timeout}`;
     if (!server.notes.pool) {
         server.notes.pool = {};
     }
@@ -311,12 +308,11 @@ exports.get_pool = function (server, port, host, cfg) {
         name: name,
         create: function (callback) {
             const smtp_client = new SMTPClient(port, host, connect_timeout);
-            logger.logdebug('[smtp_client_pool] uuid=' + smtp_client.uuid + ' host=' +
-                host + ' port=' + port + ' pool_timeout=' + pool_timeout + ' created');
+            logger.logdebug(`[smtp_client_pool] uuid=${smtp_client.uuid} host=${host} port=${port} pool_timeout=${pool_timeout} created`);
             callback(null, smtp_client);
         },
         destroy: function (smtp_client) {
-            logger.logdebug('[smtp_client_pool] ' + smtp_client.uuid + ' destroyed, state=' + smtp_client.state);
+            logger.logdebug(`[smtp_client_pool] ${smtp_client.uuid} destroyed, state=${smtp_client.state}`);
             smtp_client.state = STATE.DESTROYED;
             smtp_client.socket.destroy();
             // Remove pool object from server notes once empty
@@ -329,7 +325,7 @@ exports.get_pool = function (server, port, host, cfg) {
         idleTimeoutMillis: (pool_timeout -1) * 1000,
         log: function (str, level) {
             level = (level === 'verbose') ? 'debug' : level;
-            logger['log' + level]('[smtp_client_pool] [' + name + '] ' + str);
+            logger[`log ${level}`](`[smtp_client_pool] [${name}] ${str}`);
         }
     });
 
@@ -357,7 +353,7 @@ exports.onCapabilitiesOutbound = function (smtp_client, secured, connection, con
     for (const line in smtp_client.response) {
         if (smtp_client.response[line].match(/^XCLIENT/)) {
             if (!smtp_client.xclient) {
-                smtp_client.send_command('XCLIENT', 'ADDR=' + connection.remote.ip);
+                smtp_client.send_command('XCLIENT', `ADDR=${connection.remote.ip}`);
                 return;
             }
         }
@@ -418,7 +414,7 @@ exports.get_client_plugin = function (plugin, connection, c, callback) {
     const pool = exports.get_pool(connection.server, hostport.port, hostport.host, c);
 
     pool.acquire(function (err, smtp_client) {
-        connection.logdebug(plugin, 'Got smtp_client: ' + smtp_client.uuid);
+        connection.logdebug(plugin, `Got smtp_client: ${smtp_client.uuid}`);
 
         let secured = false;
 
@@ -433,11 +429,11 @@ exports.get_client_plugin = function (plugin, connection, c, callback) {
         };
 
         smtp_client.on('client_protocol', function (line) {
-            connection.logprotocol(plugin, 'C: ' + line);
+            connection.logprotocol(plugin, `C: ${line}`);
         });
 
         smtp_client.on('server_protocol', function (line) {
-            connection.logprotocol(plugin, 'S: ' + line);
+            connection.logprotocol(plugin, `S: ${line}`);
         });
 
         const helo = function (command) {
@@ -466,28 +462,28 @@ exports.get_client_plugin = function (plugin, connection, c, callback) {
                 if (smtp_client.is_dead_sender(plugin, connection)) {
                     return;
                 }
-                smtp_client.send_command('MAIL', 'FROM:' + connection.transaction.mail_from.format(!smtp_client.smtp_utf8));
+                smtp_client.send_command('MAIL', `FROM:${connection.transaction.mail_from.format(!smtp_client.smtp_utf8)}`);
                 return;
             }
 
             if (c.auth.type === null || typeof(c.auth.type) === 'undefined') { return; } // Ignore blank
             const auth_type = c.auth.type.toLowerCase();
             if (smtp_client.auth_capabilities.indexOf(auth_type) === -1) {
-                throw new Error("Auth type \"" + auth_type + "\" not supported by server (supports: " + smtp_client.auth_capabilities.join(',') + ")");
+                throw new Error(`Auth type "${auth_type}" not supported by server (supports: ${smtp_client.auth_capabilities.join(',')})`);
             }
             switch (auth_type) {
                 case 'plain':
                     if (!c.auth.user || !c.auth.pass) {
                         throw new Error("Must include auth.user and auth.pass for PLAIN auth.");
                     }
-                    logger.logdebug('[smtp_client_pool] uuid=' + smtp_client.uuid + ' authenticating as "' + c.auth.user + '"');
+                    logger.logdebug(`[smtp_client_pool] uuid=${smtp_client.uuid} authenticating as "${c.auth.user}"`);
                     smtp_client.send_command('AUTH',
-                        'PLAIN ' + utils.base64(c.auth.user + "\0" + c.auth.user + "\0" + c.auth.pass) );
+                        `PLAIN ${utils.base64(`${c.auth.user} \0 ${c.auth.user} \0 ${c.auth.pass}`)}`);
                     break;
                 case 'cram-md5':
                     throw new Error("Not implemented");
                 default:
-                    throw new Error("Unknown AUTH type: " + auth_type);
+                    throw new Error(`Unknown AUTH type: ${auth_type}`);
             }
         });
 
@@ -500,7 +496,7 @@ exports.get_client_plugin = function (plugin, connection, c, callback) {
                 return;
             }
             smtp_client.authenticated = true;
-            smtp_client.send_command('MAIL', 'FROM:' + connection.transaction.mail_from.format(!smtp_client.smtp_utf8));
+            smtp_client.send_command('MAIL', `FROM: ${connection.transaction.mail_from.format(!smtp_client.smtp_utf8)}`);
         });
 
         // these errors only get thrown when the connection is still active
@@ -512,7 +508,7 @@ exports.get_client_plugin = function (plugin, connection, c, callback) {
         // these are the errors thrown when the connection is dead
         smtp_client.on('connection-error', function (error){
             // error contains e.g. "Error: connect ECONNREFUSE"
-            logger.logerror("backend failure: " + smtp_client.host + ':' + smtp_client.port + ' - ' + error);
+            logger.logerror(`backend failure: ${smtp_client.host}:${smtp_client.port} - ${error}`);
             const host_pool = connection.server.notes.host_pool;
             // only exists for if forwarding_host_pool is set in the config
             if (host_pool){
@@ -523,7 +519,7 @@ exports.get_client_plugin = function (plugin, connection, c, callback) {
 
         if (smtp_client.connected) {
             if (smtp_client.xclient) {
-                smtp_client.send_command('XCLIENT', 'ADDR=' + connection.remote.ip);
+                smtp_client.send_command('XCLIENT', `ADDR=${connection.remote.ip}`);
             }
             else {
                 smtp_client.emit('helo');
@@ -538,7 +534,7 @@ function get_hostport (connection, server, cfg) {
 
     if (cfg.forwarding_host_pool) {
         if (! server.notes.host_pool) {
-            connection.logwarn("creating host_pool from " + cfg.forwarding_host_pool);
+            connection.logwarn(`creating host_pool from ${cfg.forwarding_host_pool}`);
             server.notes.host_pool =
                 new HostPool(
                     cfg.forwarding_host_pool, // 1.2.3.4:420, 5.6.7.8:420
