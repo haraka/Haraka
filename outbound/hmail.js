@@ -1022,7 +1022,7 @@ HMailItem.prototype.populate_bounce_message_with_headers = function (from, to, r
     bounce_body.push('This is a MIME-encapsulated message.' + CRLF);
     bounce_body.push(CRLF);
 
-    var boundary_incr = ''
+    let boundary_incr = ''
     if (bounce_html_lines.length > 1) {
         boundary_incr = 'a'
         bounce_body.push('--' + boundary + CRLF);
@@ -1319,7 +1319,7 @@ HMailItem.prototype.deferred_respond = function (retval, msg, params) {
     parts.next_attempt = Date.now() + delay;
     parts.attempts = this.num_failures;
     const new_filename = _qfile.name(parts);
-    // var new_filename = this`.filename.replace(/^(\d+)_(\d+)_/, until + '_' + this.num_failures + '_');
+    // const new_filename = this`.filename.replace(/^(\d+)_(\d+)_/, until + '_' + this.num_failures + '_');
 
     const hmail = this;
     fs.rename(this.path, path.join(queue_dir, new_filename), function (err) {
