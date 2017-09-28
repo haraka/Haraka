@@ -104,7 +104,7 @@ function DKIMObject (header, header_idx, cb, timeout) {
                 this.verifier = crypto.createVerify('RSA-SHA256');
                 break;
             default:
-                this.debug('Invalid algorithm: ' + this.fields.a);
+                this.debug(`Invalid algorithm: ${this.fields.a}`);
                 return this.result('invalid algorithm', 'invalid');
         }
     }
@@ -168,12 +168,12 @@ function DKIMObject (header, header_idx, cb, timeout) {
         }
     }
 
-    this.debug(this.identity + ': DKIM fields validated OK');
+    this.debug(`${this.identity} : DKIM fields validated OK`);
     this.debug([
-        this.identity + ':',
-        'a=' + this.fields.a,
-        'c=' + this.headercanon + '/' + this.bodycanon,
-        'h=' + this.signed_headers,
+        `${this.identity} :`,
+        `a= ${this.fields.a}`,
+        `c=${this.headercanon}/${this.bodycanon}`,
+        `h=${this.signed_headers}`,
     ].join(' '));
 }
 
@@ -285,8 +285,8 @@ DKIMObject.prototype.end = function () {
         timeout = true;
         return self.result('DNS timeout', 'tempfail');
     }, this.timeout * 1000);
-    const lookup = this.fields.s + '._domainkey.' + this.fields.d;
-    this.debug(this.identity + ': DNS lookup ' + lookup + ' (timeout=' + this.timeout + 's)');
+    const lookup = `${this.fields.s}._domainkey.${this.fields.d}`;
+    this.debug(`${this.identity}: DNS lookup ${lookup} (timeout=${this.timeout}s)`);
     dns.resolveTxt(lookup, function (err, res) {
         if (timeout) return;
         clearTimeout(timer);
@@ -297,7 +297,7 @@ DKIMObject.prototype.end = function () {
                 case dns.NXDOMAIN:
                     return self.result('no key for signature', 'invalid');
                 default:
-                    self.debug(self.identity + ': DNS lookup error: ' + err.code);
+                    self.debug(`${self.identity}: DNS lookup error: ${err.code}`);
                     return self.result('key unavailable', 'tempfail');
             }
         }
@@ -309,10 +309,10 @@ DKIMObject.prototype.end = function () {
                 record = record.join('');
             }
             if (record.indexOf('p=') === -1) {
-                self.debug(self.identity + ': ignoring TXT record: ' + record);
+                self.debug(`${self.identity}: ignoring TXT record: ${record}`);
                 continue;
             }
-            self.debug(self.identity + ': got DNS record: ' + record);
+            self.debug(`${self.identity}: got DNS record: ${record}`);
             const rec = record.replace(/\r?\n/g, '').replace(/\s+/g,'');
             const split = rec.split(';');
             for (let j=0; j<split.length; j++) {
@@ -332,8 +332,7 @@ DKIMObject.prototype.end = function () {
                     // Make * a non-greedy match against anything except @
                     s = s.replace('\\*','[^@]*?');
                     const reg = new RegExp('^' + s + '@');
-                    self.debug(self.identity + ': matching ' + self.dns_fields.g +
-                                      ' against i=' + self.fields.i + ' regexp=' + reg.toString());
+                    self.debug(`${self.identity}: matching ${self.dns_fields.g} against i=${self.fields.i} regexp=${reg.toString()}`);
                     if (!reg.test(self.fields.i)) {
                         return self.result('inapplicable key', 'invalid');
                     }
@@ -384,10 +383,10 @@ DKIMObject.prototype.end = function () {
             let verified;
             try {
                 verified = self.verifier.verify(self.public_key, self.fields.b, 'base64');
-                self.debug(self.identity + ': verified=' + verified);
+                self.debug(`${self.identity}: verified=${verified}`);
             }
             catch (e) {
-                self.debug(self.identity + ': verification error: ' + e.message);
+                self.debug(`${self.identity}: verification error: ${e.message}`);
                 return self.result('verification error', 'invalid');
             }
             return self.result(null, ((verified) ? 'pass' : 'fail'));
