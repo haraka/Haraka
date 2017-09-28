@@ -153,7 +153,7 @@ SPF.prototype.check_host = function (ip, domain, mail_from, cb) {
         mail_from = mail_from.toLowerCase();
     }
     else {
-        mail_from = 'postmaster@' + domain;
+        mail_from = `postmaster@${domain}`;
     }
     this.ipaddr = ipaddr.parse(ip);
     this.ip_ver = this.ipaddr.kind();
@@ -166,11 +166,11 @@ SPF.prototype.check_host = function (ip, domain, mail_from, cb) {
     this.domain = domain;
     this.mail_from = mail_from;
 
-    this.log_debug('ip=' + ip + ' domain=' + domain + ' mail_from=' + mail_from);
+    this.log_debug(`ip=${ip} domain=${domain} mail_from=${mail_from}`);
     // Get the SPF record for domain
     dns.resolveTxt(domain, function (err, txt_rrs) {
         if (err) {
-            self.log_debug('error looking up TXT record: ' + err.message);
+            self.log_debug(`error looking up TXT record: ${err.message}`);
             switch (err.code) {
                 case dns.NOTFOUND:
                 case dns.NODATA:
@@ -189,17 +189,17 @@ SPF.prototype.check_host = function (ip, domain, mail_from, cb) {
             match = /^(v=spf1(?:$|\s.+$))/i.exec(txt_rrs[i]);
             if (match) {
                 if (!spf_record) {
-                    self.log_debug('found SPF record for domain ' + domain + ': ' + match[1]);
+                    self.log_debug(`found SPF record for domain ${domain}: ${match[1]}`);
                     spf_record = match[1].replace(/\s+/, ' ').toLowerCase();
                 }
                 else {
                     // We've already found an MX record
-                    self.log_debug('found additional SPF record for domain ' + domain + ': ' + match[1]);
+                    self.log_debug(`found additional SPF record for domain ${domain}: ${match[1]}`);
                     return cb(null, self.SPF_PERMERROR);
                 }
             }
             else {
-                self.log_debug('discarding TXT record: ' + txt_rrs[i]);
+                self.log_debug(`discarding TXT record: ${txt_rrs[i]}`);
             }
         }
 
@@ -227,13 +227,13 @@ SPF.prototype.check_host = function (ip, domain, mail_from, cb) {
                 // match[2] = mechanism
                 // match[3] = optional args
                 if (!match[1]) match[1] = '+';
-                self.log_debug('found mechanism: ' + match);
+                self.log_debug(`found mechanism: ${match}`);
                 // Validate IP addresses
                 if (match[2] === 'ip4' || match[2] === 'ip6') {
                     const ip_split = /^:([^/ ]+)(?:\/([^ ]+))?$/.exec(match[3]);
                     // Make sure the IP address is valid
                     if (!ip_split || (ip_split && !ipaddr.isValid(ip_split[1]))) {
-                        self.log_debug('invalid IP address: ' + ip_split[1]);
+                        self.log_debug(`invalid IP address: ${ip_split[1]}`);
                         return cb(null, self.SPF_PERMERROR);
                     }
                 }
@@ -254,12 +254,12 @@ SPF.prototype.check_host = function (ip, domain, mail_from, cb) {
                 mech_array.push(obj);
             }
             else if ((match = mod_regexp.exec(split[i]))) {
-                self.log_debug('found modifier: ' + match);
+                self.log_debug(`found modifier: ${match}`);
                 // match[1] = modifier
                 // match[2] = name
                 // Make sure we have a method
-                if (!self['mod_' + match[1]]) {
-                    self.log_debug('skipping unknown modifier: ' + match[1]);
+                if (!self[`mod_${match[1]}`]) {
+                    self.log_debug(`skipping unknown modifier: ${match[1]}`);
                 }
                 else {
                     obj = {};
@@ -269,12 +269,12 @@ SPF.prototype.check_host = function (ip, domain, mail_from, cb) {
             }
             else {
                 // Syntax error
-                self.log_debug('syntax error: ' + split[i]);
+                self.log_debug(`syntax error: ${split[i]}`);
                 return cb(null, self.SPF_PERMERROR);
             }
         }
 
-        self.log_debug('SPF record for \'' + self.domain + '\' validated OK');
+        self.log_debug(`SPF record for '${self.domain}' validated OK`);
 
         // Set-up modifier run chain
         function mod_chain_caller (err2, result) {
@@ -295,8 +295,8 @@ SPF.prototype.check_host = function (ip, domain, mail_from, cb) {
             const next_in_chain = mod_array.shift();
             const func = Object.keys(next_in_chain);
             const args = next_in_chain[func];
-            self.log_debug('running modifier: ' + func + ' args=' + args + ' domain=' + self.domain);
-            self['mod_' + func](args, mod_chain_caller);
+            self.log_debug(`running modifier: ${func} args=${args} domain=${self.domain}`);
+            self[`mod_${func}`](args, mod_chain_caller);
         }
 
         // Run all the mechanisms first
@@ -325,8 +325,8 @@ SPF.prototype.check_host = function (ip, domain, mail_from, cb) {
             const next_in_chain = mech_array.shift();
             const func = Object.keys(next_in_chain);
             const args = next_in_chain[func];
-            self.log_debug('running mechanism: ' + func + ' args=' + args + ' domain=' + self.domain);
-            self['mech_' + func](((args && args.length) ? args[0] : null), ((args && args.length) ? args[1] : null), mech_chain_caller);
+            self.log_debug(`running mechanism: ${func} args=${args} domain=${self.domain}`);
+            self[`mech_${func}`](((args && args.length) ? args[0] : null), ((args && args.length) ? args[1] : null), mech_chain_caller);
         }
         // Start the chain
         mech_chain_caller();
@@ -342,7 +342,7 @@ SPF.prototype.mech_include = function (qualifier, args, cb) {
     const domain = args.substr(1);
     // Avoid circular references
     if (this.been_there[domain]) {
-        self.log_debug('circular reference detected: ' + domain);
+        self.log_debug(`circular reference detected: ${domain}`);
         return cb(null, self.SPF_NONE);
     }
     this.count++;
@@ -351,7 +351,7 @@ SPF.prototype.mech_include = function (qualifier, args, cb) {
     const recurse = new SPF(self.count, self.been_there);
     recurse.check_host(self.ip, domain, self.mail_from, function (err, result) {
         if (!err) {
-            self.log_debug('mech_include: domain=' + domain + ' returned=' + self.const_translate(result));
+            self.log_debug(`mech_include: domain=${domain} returned=${self.const_translate(result)}`);
             switch (result) {
                 case self.SPF_PASS:         return cb(null, self.SPF_PASS);
                 case self.SPF_FAIL:
@@ -370,7 +370,7 @@ SPF.prototype.mech_exists = function (qualifier, args, cb) {
     const exists = args.substr(1);
     dns.resolve(exists, function (err, addrs) {
         if (err) {
-            self.log_debug('mech_exists: ' + err);
+            self.log_debug(`mech_exists: ${err}`);
             switch (err.code) {
                 case dns.NOTFOUND:
                 case dns.NODATA:
@@ -380,7 +380,7 @@ SPF.prototype.mech_exists = function (qualifier, args, cb) {
                     return cb(null, self.SPF_TEMPERROR);
             }
         }
-        self.log_debug('mech_exists: ' + exists + ' result=' + addrs.join(','));
+        self.log_debug(`mech_exists: ${exists} result=${addrs.join(',')}`);
         return cb(null, self.return_const(qualifier));
     });
 };
@@ -415,7 +415,7 @@ SPF.prototype.mech_a = function (qualifier, args, cb) {
     // Use current domain
     dns[resolve_method](domain, function (err, addrs) {
         if (err) {
-            self.log_debug('mech_a: ' + err);
+            self.log_debug(`mech_a: ${err}`);
             switch (err.code) {
                 case dns.NOTFOUND:
                 case dns.NODATA:
@@ -428,11 +428,11 @@ SPF.prototype.mech_a = function (qualifier, args, cb) {
                 // CIDR
                 const range = ipaddr.parse(addrs[a]);
                 if (self.ipaddr.match(range, cidr)) {
-                    self.log_debug('mech_a: ' + self.ip + ' => ' + addrs[a] + '/' + cidr + ': MATCH!');
+                    self.log_debug(`mech_a: ${self.ip} => ${addrs[a]}/${cidr}: MATCH!`);
                     return cb(null, self.return_const(qualifier));
                 }
                 else {
-                    self.log_debug('mech_a: ' + self.ip + ' => ' + addrs[a] + '/' + cidr + ': NO MATCH');
+                    self.log_debug(`mech_a: ${self.ip} => ${addrs[a]}/${cidr}: NO MATCH`);
                 }
             }
             else {
@@ -440,7 +440,7 @@ SPF.prototype.mech_a = function (qualifier, args, cb) {
                     return cb(null, self.return_const(qualifier));
                 }
                 else {
-                    self.log_debug('mech_a: ' + self.ip + ' => ' + addrs[a] + ': NO MATCH');
+                    self.log_debug(`mech_a: ${self.ip} => ${addrs[a]}: NO MATCH`);
                 }
             }
         }
@@ -505,7 +505,7 @@ SPF.prototype.mech_mx = function (qualifier, args, cb) {
                     }
                 }
                 else {
-                    self.log_debug('mech_mx: mx=' + mx + ' addresses=' + addrs.join(','));
+                    self.log_debug(`mech_mx: mx=${mx} addresses=${addrs.join(',')}`);
                     addresses = addrs.concat(addresses);
                 }
                 if (pending === 0) {
@@ -516,11 +516,11 @@ SPF.prototype.mech_mx = function (qualifier, args, cb) {
                         for (let i=0; i<addresses.length; i++) {
                             const range = ipaddr.parse(addresses[i]);
                             if (self.ipaddr.match(range, cidr)) {
-                                self.log_debug('mech_mx: ' + self.ip + ' => ' + addresses[i] + '/' + cidr + ': MATCH!');
+                                self.log_debug(`mech_mx: ${self.ip} => ${addresses[i]}/${cidr}: MATCH!`);
                                 return cb(null, self.return_const(qualifier));
                             }
                             else {
-                                self.log_debug('mech_mx: ' + self.ip + ' => ' + addresses[i] + '/' + cidr + ': NO MATCH');
+                                self.log_debug(`mech_mx: ${self.ip} => ${addresses[i]}/${cidr}: NO MATCH`);
                             }
                         }
                         // No matches
@@ -528,11 +528,11 @@ SPF.prototype.mech_mx = function (qualifier, args, cb) {
                     }
                     else {
                         if (addresses.indexOf(self.ip) !== -1) {
-                            self.log_debug('mech_mx: ' + self.ip + ' => ' + addresses.join(',') + ': MATCH!');
+                            self.log_debug(`mech_mx: ${self.ip} => ${addresses.join(',')}: MATCH!`);
                             return cb(null, self.return_const(qualifier));
                         }
                         else {
-                            self.log_debug('mech_mx: ' + self.ip + ' => ' + addresses.join(',') + ': NO MATCH');
+                            self.log_debug(`mech_mx: ${self.ip} => ${addresses.join(',')}: NO MATCH`);
                             return cb(null, self.SPF_NONE);
                         }
                     }
@@ -560,7 +560,7 @@ SPF.prototype.mech_ptr = function (qualifier, args, cb) {
     // First do a PTR lookup for the connecting IP
     dns.reverse(this.ip, function (err, ptrs) {
         if (err) {
-            self.log_debug('mech_ptr: lookup=' + self.ip + ' => ' + err);
+            self.log_debug(`mech_ptr: lookup=${self.ip} => ${err}`);
             return cb(null, self.SPF_NONE);
         }
         else {
@@ -580,16 +580,16 @@ SPF.prototype.mech_ptr = function (qualifier, args, cb) {
                     pending--;
                     if (err3) {
                         // Skip on error
-                        self.log_debug('mech_ptr: lookup=' + ptr + ' => ' + err3);
+                        self.log_debug(`mech_ptr: lookup=${ptr} => ${err3}`);
                     }
                     else {
                         for (let a=0; a<addrs.length; a++) {
                             if (addrs[a] === self.ip) {
-                                self.log_debug('mech_ptr: ' + self.ip + ' => ' + ptr + ' => ' + addrs[a] + ': MATCH!');
+                                self.log_debug(`mech_ptr: ${self.ip} => ${ptr} => ${addrs[a]}: MATCH!`);
                                 names.push(ptr.toLowerCase());
                             }
                             else {
-                                self.log_debug('mech_ptr: ' + self.ip + ' => ' + ptr + ' => ' + addrs[a] + ': NO MATCH');
+                                self.log_debug(`mech_ptr: ${self.ip} => ${ptr} => ${addrs[a]}: NO MATCH`);
                             }
                         }
                     }
@@ -613,11 +613,11 @@ SPF.prototype.mech_ptr = function (qualifier, args, cb) {
                         }
                         for (let t=0; t<names.length; t++) {
                             if (re.test(names[t])) {
-                                self.log_debug('mech_ptr: ' + names[t] + ' => ' + domain + ': MATCH!');
+                                self.log_debug(`mech_ptr: ${names[t]} => ${domain}: MATCH!`);
                                 return cb(null, self.return_const(qualifier));
                             }
                             else {
-                                self.log_debug('mech_ptr: ' + names[t] + ' => ' + domain + ': NO MATCH');
+                                self.log_debug(`mech_ptr: ${names[t]} => ${domain}: NO MATCH`);
                             }
                         }
                         return cb(null, self.SPF_NONE);
@@ -648,15 +648,15 @@ SPF.prototype.mech_ip = function (qualifier, args, cb) {
         const range = ipaddr.parse(match[1]);
         const rtype = range.kind();
         if (this.ip_ver !== rtype) {
-            this.log_debug('mech_ip: ' + this.ip + ' => ' + cidr + ': SKIP');
+            this.log_debug(`mech_ip: ${this.ip} => ${cidr}: SKIP`);
             return cb(null, this.SPF_NONE);
         }
         if (this.ipaddr.match(range, match[2])) {
-            this.log_debug('mech_ip: ' + this.ip + ' => ' + cidr + ': MATCH!');
+            this.log_debug(`mech_ip: ${this.ip} => ${cidr}: MATCH!`);
             return cb(null, this.return_const(qualifier));
         }
         else {
-            this.log_debug('mech_ip: ' + this.ip + ' => ' + cidr + ': NO MATCH');
+            this.log_debug(`mech_ip: ${this.ip} => ${cidr}: NO MATCH`);
         }
     }
     catch (e) {
@@ -672,7 +672,7 @@ SPF.prototype.mech_ip6 = SPF.prototype.mech_ip;
 SPF.prototype.mod_redirect = function (domain, cb) {
     // Avoid circular references
     if (this.been_there[domain]) {
-        this.log_debug('circular reference detected: ' + domain);
+        this.log_debug(`circular reference detected: ${domain}`);
         return cb(null, this.SPF_NONE);
     }
     this.count++;
