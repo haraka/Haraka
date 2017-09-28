@@ -55,7 +55,7 @@ exports.parse = function (type, line, strict) {
         // parameter syntax error, i.e. not all of the arguments were
         // stripped by the while() loop:
         if (line.match(/@.*\s/)) {
-            throw new Error("Syntax error in parameters (" + line + ")");
+            throw new Error(`Syntax error in parameters (${line}")`);
         }
 
         params.unshift(line);
@@ -64,7 +64,7 @@ exports.parse = function (type, line, strict) {
     line = params.shift() || '';
     if (strict) {
         if (!line.match(/^<.*>$/)) {
-            throw new Error("Invalid format of " + type + " command: " + line);
+            throw new Error(`Invalid format of ${type} command: ${line}`);
         }
     }
 
