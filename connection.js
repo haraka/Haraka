@@ -108,27 +108,27 @@ function setupClient (self) {
     self.client.on('end', function () {
         if (self.state >= states.DISCONNECTING) return;
         self.remote.closed = true;
-        self.loginfo(rhost + ' half closed connection');
+        self.loginfo(`${rhost} half closed connection`);
         self.fail();
     });
 
     self.client.on('close', function (has_error) {
         if (self.state >= states.DISCONNECTING) return;
         self.remote.closed = true;
-        self.loginfo(rhost + ' dropped connection');
+        self.loginfo(`${rhost} dropped connection`);
         self.fail();
     });
 
     self.client.on('error', function (err) {
         if (self.state >= states.DISCONNECTING) return;
-        self.loginfo(rhost + ' connection error: ' + err);
+        self.loginfo(`${rhost} connection error: ${err}`);
         self.fail();
     });
 
     self.client.on('timeout', function () {
         if (self.state >= states.DISCONNECTING) return;
         self.respond(421, 'timeout', function () {
-            self.fail(rhost + ' connection timed out');
+            self.fail(`${rhost} connection timed out`);
         });
     });
 
@@ -296,16 +296,16 @@ Connection.prototype.process_line = function (line) {
     if (this.state >= states.DISCONNECTING) {
         if (logger.would_log(logger.LOGPROTOCOL)) {
             this.logprotocol(
-                "C: (after-disconnect): " +
-                    this.current_line, {'state': this.state});
+                `C: (after-disconnect): 
+                    ${this.current_line}`, {'state': this.state});
         }
-        this.loginfo("data after disconnect from " + this.remote.ip);
+        this.loginfo(`data after disconnect from ${this.remote.ip}`);
         return;
     }
 
     if (this.state === states.DATA) {
         if (logger.would_log(logger.LOGDATA)) {
-            this.logdata("C: " + line);
+            this.logdata(`C: ${line}`);
         }
         this.accumulate_data(line);
         return;
@@ -313,7 +313,7 @@ Connection.prototype.process_line = function (line) {
 
     this.current_line = line.toString(this.encoding).replace(/\r?\n/, '');
     if (logger.would_log(logger.LOGPROTOCOL)) {
-        this.logprotocol("C: " + this.current_line, {'state': this.state});
+        this.logprotocol(`C: ${this.current_line}`, {'state': this.state});
     }
 
     // Check for non-ASCII characters
@@ -342,7 +342,7 @@ Connection.prototype.process_line = function (line) {
             return plugins.run_hooks('unrecognized_command',
                 this, this.current_line);
         }
-        const method = "cmd_" + matches[1].toLowerCase();
+        const method = `cmd_ ${matches[1].toLowerCase()}`;
         const remaining = matches[3] || '';
         if (this[method]) {
             try {
@@ -351,11 +351,11 @@ Connection.prototype.process_line = function (line) {
             catch (err) {
                 if (err.stack) {
                     const c = this;
-                    c.logerror(method + " failed: " + err);
+                    c.logerror(`${method} failed: ${err}`);
                     err.stack.split("\n").forEach(c.logerror);
                 }
                 else {
-                    this.logerror(method + " failed: " + err);
+                    this.logerror(`${method} failed: ${err}`);
                 }
                 this.respond(421, "Internal Server Error", function () {
                     self.disconnect();
@@ -379,13 +379,13 @@ Connection.prototype.process_line = function (line) {
         }
     }
     else {
-        throw new Error('unknown state ' + this.state);
+        throw new Error(`unknown state ${this.state}`);
     }
 };
 
 Connection.prototype.process_data = function (data) {
     if (this.state >= states.DISCONNECTING) {
-        this.logwarn("data after disconnect from " + this.remote.ip);
+        this.logwarn(`data after disconnect from ${this.remote.ip}`);
         return;
     }
 
@@ -475,7 +475,7 @@ Connection.prototype._process_data = function () {
                 // ensures that we only process one command at a
                 // time.
                 this.pipelining = true;
-                this.logdebug('pipeline: ' + this_line);
+                this.logdebug(`pipeline: ${this_line}`);
             }
             else {
                 // Invalid pipeline sequence
@@ -507,7 +507,7 @@ Connection.prototype._process_data = function () {
             });
         }
         else {
-            this.loginfo('DATA line length (' + this.current_data.length + ') exceeds limit of ' + maxlength + ' bytes');
+            this.loginfo(`DATA line length (${this.current_data.length}) exceeds limit of ${maxlength} bytes`);
             this.transaction.notes.data_line_length_exceeded = true;
             const b = Buffer.concat([
                 this.current_data.slice(0, maxlength - 2),
@@ -564,6 +564,7 @@ Connection.prototype.respond = function (code, msg, func) {
     while ((mess = messages.shift())) {
         const line = code + (messages.length ? "-" : " ") +
             (uuid ? '[' + uuid + '@' + hostname + '] ' : '' ) + mess;
+            (uuid ? `[${uuid}@${hostname}]` : '' ) + mess;
         this.logprotocol("S: " + line);
         buf = buf + line + "\r\n";
     }
@@ -572,7 +573,7 @@ Connection.prototype.respond = function (code, msg, func) {
         this.client.write(buf);
     }
     catch (err) {
-        return this.fail("Writing response: " + buf + " failed: " + err);
+        return this.fail(`Writing response: ${buf} failed: ${err}`);
     }
 
     // Store the last response
@@ -678,7 +679,7 @@ Connection.prototype.init_transaction = function (cb) {
         self.transaction = trans.createTransaction(self.tran_uuid());
         // Catch any errors from the message_stream
         self.transaction.message_stream.on('error', function (err) {
-            self.logcrit('message_stream error: ' + err.message);
+            self.logcrit(`message stream error: ${error.message}`);
             self.respond('421', 'Internal Server Error', function () {
                 self.disconnect();
             });
@@ -912,9 +913,8 @@ Connection.prototype.ehlo_respond = function (retval, msg) {
             const response = [
                 config.get('me') + " Hello " +
                 ((this.remote.host && this.remote.host !== 'DNSERROR' &&
-                this.remote.host !== 'NXDOMAIN') ? this.remote.host + ' ' : '') +
-                "[" + this.remote.ip + "]" +
-                ", Haraka is at your service.",
+                this.remote.host !== 'NXDOMAIN') ? `${this.remote.host} ` : '') +
+                `[ ${this.remote.ip}], Haraka is at your service.`,
                 "PIPELINING",
                 "8BITMIME",
                 "SMTPUTF8",
@@ -936,7 +936,7 @@ Connection.prototype.capabilities_respond = function (retval, msg) {
 
 Connection.prototype.quit_respond = function (retval, msg) {
     const self = this;
-    this.respond(221, msg || config.get('me') + " closing connection. Have a jolly good day.", function () {
+    this.respond(221, msg || `${config.get('me')} closing connection. Have a jolly good day.`, function () {
         self.disconnect();
     });
 };
@@ -1003,7 +1003,7 @@ Connection.prototype.mail_respond = function (retval, msg) {
         return;
     }
     const sender = this.transaction.mail_from;
-    const dmsg   = "sender " + sender.format();
+    const dmsg   = `sender ${sender.format()}`;
     this.lognotice(
         dmsg,
         {
@@ -1026,25 +1026,25 @@ Connection.prototype.mail_respond = function (retval, msg) {
 
     switch (retval) {
         case constants.deny:
-            this.respond(550, msg || dmsg + " denied", function () {
+            this.respond(550, msg || `${dmsg} denied`, function () {
                 store_results('reject');
                 self.reset_transaction();
             });
             break;
         case constants.denydisconnect:
-            this.respond(550, msg || dmsg + " denied", function () {
+            this.respond(550, msg || `${dmsg} denied`, function () {
                 store_results('reject');
                 self.disconnect();
             });
             break;
         case constants.denysoft:
-            this.respond(450, msg || dmsg + " denied", function () {
+            this.respond(450, msg || `${dmsg} denied`, function () {
                 store_results('tempfail');
                 self.reset_transaction();
             });
             break;
         case constants.denysoftdisconnect:
-            this.respond(450, msg || dmsg + " denied", function () {
+            this.respond(450, msg || `${dmsg} denied`, function () {
                 store_results('tempfail');
                 self.disconnect();
             });
@@ -1100,25 +1100,25 @@ Connection.prototype.rcpt_ok_respond = function (retval, msg) {
     );
     switch (retval) {
         case constants.deny:
-            this.respond(550, msg || dmsg + " denied", function () {
+            this.respond(550, msg || `${dmsg} denied`, function () {
                 self.rcpt_incr(rcpt, 'reject', msg, retval);
                 self.transaction.rcpt_to.pop();
             });
             break;
         case constants.denydisconnect:
-            this.respond(550, msg || dmsg + " denied", function () {
+            this.respond(550, msg || `${dmsg} denied`, function () {
                 self.rcpt_incr(rcpt, 'reject', msg, retval);
                 self.disconnect();
             });
             break;
         case constants.denysoft:
-            this.respond(450, msg || dmsg + " denied", function () {
+            this.respond(450, msg || `${dmsg} denied`, function () {
                 self.rcpt_incr(rcpt, 'tempfail', msg, retval);
                 self.transaction.rcpt_to.pop();
             });
             break;
         case constants.denysoftdisconnect:
-            this.respond(450, msg || dmsg + " denied", function () {
+            this.respond(450, msg || `${dmsg} denied`, function () {
                 self.rcpt_incr(rcpt, 'tempfail', msg, retval);
                 self.disconnect();
             });
@@ -1154,25 +1154,25 @@ Connection.prototype.rcpt_respond = function (retval, msg) {
     }
     switch (retval) {
         case constants.deny:
-            this.respond(550, msg || dmsg + " denied", function () {
+            this.respond(550, msg || `${dmsg} denied`, function () {
                 self.rcpt_incr(rcpt, 'reject', msg, retval);
                 self.transaction.rcpt_to.pop();
             });
             break;
         case constants.denydisconnect:
-            this.respond(550, msg || dmsg + " denied", function () {
+            this.respond(550, msg || `${dmsg} denied`, function () {
                 self.rcpt_incr(rcpt, 'reject', msg, retval);
                 self.disconnect();
             });
             break;
         case constants.denysoft:
-            this.respond(450, msg || dmsg + " denied", function () {
+            this.respond(450, msg || `${dmsg} denied`, function () {
                 self.rcpt_incr(rcpt, 'tempfail', msg, retval);
                 self.transaction.rcpt_to.pop();
             });
             break;
         case constants.denysoftdisconnect:
-            this.respond(450, msg || dmsg + " denied", function () {
+            this.respond(450, msg || `${dmsg} denied`, function () {
                 self.rcpt_incr(rcpt, 'tempfail', msg, retval);
                 self.disconnect();
             });
@@ -1186,7 +1186,7 @@ Connection.prototype.rcpt_respond = function (retval, msg) {
             if (retval !== constants.cont) {
                 this.logalert("No plugin determined if relaying was allowed");
             }
-            const rej_msg = 'I cannot deliver mail for ' + rcpt.format();
+            const rej_msg = `I cannot deliver mail for ${rcpt.format()}`;
             this.respond(550, rej_msg, function () {
                 self.rcpt_incr(rcpt, 'reject', rej_msg, retval);
                 self.transaction.rcpt_to.pop();
@@ -1202,7 +1202,7 @@ Connection.prototype.cmd_proxy = function (line) {
     const self = this;
 
     if (!this.proxy.allowed) {
-        this.respond(421, 'PROXY not allowed from ' + this.remote.ip);
+        this.respond(421, `PROXY not allowed from ${this.remote.ip}`);
         return this.disconnect();
     }
 
@@ -1489,7 +1489,7 @@ Connection.prototype.received_line = function () {
         'from ',
         this.hello.host, ' (',
         // If no rDNS, don't display it
-        ((!/^(?:DNSERROR|NXDOMAIN)/.test(this.remote.info)) ? this.remote.info + ' ' : ''),
+        ((!/^(?:DNSERROR|NXDOMAIN)/.test(this.remote.info)) ? `${this.remote.info} ` : ''),
         '[', this.remote.ip, '])',
         "\n\t",
         'by ',
@@ -1578,7 +1578,7 @@ Connection.prototype.cmd_data = function (args) {
         return this.respond(503, "RCPT required first");
     }
 
-    this.accumulate_data('Received: ' + this.received_line() + "\r\n");
+    this.accumulate_data(`Received: ${this.received_line()}\r\n`);
     plugins.run_hooks('data', this);
 };
 
@@ -1664,7 +1664,7 @@ Connection.prototype.data_done = function () {
 
     // Check message size limit
     if (this.max_bytes && this.transaction.data_bytes > this.max_bytes) {
-        this.logerror("Incoming message exceeded databytes size of " + this.max_bytes);
+        this.logerror(`Incoming message exceeded databytes size of ${this.max_bytes}`);
         return plugins.run_hooks('max_data_exceeded', this);
     }
 
@@ -1801,7 +1801,7 @@ Connection.prototype.queue_outbound_respond = function (retval, msg) {
     const self = this;
     if (!msg) msg = this.queue_msg(retval, msg);
     this.store_queue_result(retval, msg);
-    msg = msg + ' (' + this.transaction.uuid + ')';
+    msg = `${msg} (${this.transaction.uuid})`;
     if (retval !== constants.ok) {
         this.lognotice(
             'queue',
@@ -1857,7 +1857,7 @@ Connection.prototype.queue_outbound_respond = function (retval, msg) {
                         });
                         break;
                     default:
-                        self.logerror("Unrecognized response from outbound layer: " + retval2 + " : " + msg2);
+                        self.logerror(`Unrecognized response from outbound layer: ${retval2} : ${msg2}`);
                         self.respond(550, msg2 || "Internal Server Error", function () {
                             self.msg_count.reject++;
                             self.reset_transaction(function () {
