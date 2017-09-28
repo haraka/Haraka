@@ -1,8 +1,8 @@
 // validate message headers and some fields
-var tlds = require('haraka-tld');
+const tlds = require('haraka-tld');
 
 exports.register = function () {
-    var plugin = this;
+    const plugin = this;
 
     plugin.load_headers_ini();
 
@@ -26,7 +26,7 @@ exports.register = function () {
 };
 
 exports.load_headers_ini = function () {
-    var plugin = this;
+    const plugin = this;
     plugin.cfg = plugin.config.get('data.headers.ini', {
         booleans: [
             '+check.duplicate_singular',
@@ -51,24 +51,24 @@ exports.load_headers_ini = function () {
 };
 
 exports.duplicate_singular = function (next, connection) {
-    var plugin = this;
+    const plugin = this;
     if (!plugin.cfg.check.duplicate_singular) { return next(); }
 
     // RFC 5322 Section 3.6, Headers that MUST be unique if present
-    var singular = plugin.cfg.main.singular !== undefined ?
+    const singular = plugin.cfg.main.singular !== undefined ?
         plugin.cfg.main.singular.split(',') : [
             'Date', 'From', 'Sender', 'Reply-To', 'To', 'Cc',
             'Bcc', 'Message-Id', 'In-Reply-To', 'References',
             'Subject'
         ];
 
-    var failures = [];
-    for (var i=0; i < singular.length; i++ ) {
+    const failures = [];
+    for (let i=0; i < singular.length; i++ ) {
         if (connection.transaction.header.get_all(singular[i]).length <= 1) {
             continue;
         }
 
-        var name = singular[i];
+        const name = singular[i];
         connection.transaction.results.add(plugin, {fail: 'duplicate:'+name});
         failures.push(name);
     }
@@ -86,17 +86,17 @@ exports.duplicate_singular = function (next, connection) {
 };
 
 exports.missing_required = function (next, connection) {
-    var plugin = this;
+    const plugin = this;
     if (!plugin.cfg.check.missing_required) { return next(); }
 
     // Enforce RFC 5322 Section 3.6, Headers that MUST be present
-    var required = plugin.cfg.main.required !== undefined ?
+    const required = plugin.cfg.main.required !== undefined ?
         plugin.cfg.main.required.split(',') :
         ['Date', 'From'];
 
-    var failures = [];
-    for (var i=0; i < required.length; i++) {
-        var h = required[i];
+    const failures = [];
+    for (let i=0; i < required.length; i++) {
+        const h = required[i];
         if (connection.transaction.header.get_all(h).length === 0) {
             connection.transaction.results.add(plugin, {fail: 'missing:'+h});
             failures.push(h);
@@ -115,7 +115,7 @@ exports.missing_required = function (next, connection) {
 };
 
 exports.invalid_return_path = function (next, connection) {
-    var plugin = this;
+    const plugin = this;
     if (!plugin.cfg.check.invalid_return_path) { return next(); }
 
     // Tests for Return-Path headers that shouldn't be present
@@ -125,7 +125,7 @@ exports.invalid_return_path = function (next, connection) {
     //   already contains a Return-path header field.
 
     // Return-Path, aka Reverse-PATH, Envelope FROM, RFC5321.MailFrom
-    var rp = connection.transaction.header.get('Return-Path');
+    const rp = connection.transaction.header.get('Return-Path');
     if (rp) {
         if (connection.relaying) {      // On messages we originate
             connection.transaction.results.add(plugin, {fail: 'Return-Path', emit: true});
@@ -148,23 +148,23 @@ exports.invalid_return_path = function (next, connection) {
 };
 
 exports.invalid_date = function (next, connection) {
-    var plugin = this;
+    const plugin = this;
     if (!plugin.cfg.check.invalid_date) { return next(); }
 
     // Assure Date header value is [somewhat] sane
 
-    var msg_date = connection.transaction.header.get_all('Date');
+    let msg_date = connection.transaction.header.get_all('Date');
     if (!msg_date || msg_date.length === 0) { return next(); }
 
     connection.logdebug(plugin, "message date: " + msg_date);
     msg_date = Date.parse(msg_date);
 
-    var date_future_days = plugin.cfg.main.date_future_days !== undefined ?
+    const date_future_days = plugin.cfg.main.date_future_days !== undefined ?
         plugin.cfg.main.date_future_days :
         2;
 
     if (date_future_days > 0) {
-        var too_future = new Date();
+        const too_future = new Date();
         too_future.setHours(too_future.getHours() + 24 * date_future_days);
         // connection.logdebug(plugin, "too future: " + too_future);
         if (msg_date > too_future) {
@@ -176,12 +176,12 @@ exports.invalid_date = function (next, connection) {
         }
     }
 
-    var date_past_days = plugin.cfg.main.date_past_days !== undefined ?
+    const date_past_days = plugin.cfg.main.date_past_days !== undefined ?
         plugin.cfg.main.date_past_days :
         15;
 
     if (date_past_days > 0) {
-        var too_old = new Date();
+        const too_old = new Date();
         too_old.setHours(too_old.getHours() - 24 * date_past_days);
         // connection.logdebug(plugin, "too old: " + too_old);
         if (msg_date < too_old) {
@@ -199,12 +199,12 @@ exports.invalid_date = function (next, connection) {
 };
 
 exports.user_agent = function (next, connection) {
-    var plugin = this;
+    const plugin = this;
     if (!plugin.cfg.check.user_agent) { return next(); }
 
     if (!connection.transaction) { return next(); }
 
-    var found_ua = 0;
+    let found_ua = 0;
 
     // User-Agent: Thunderbird, Squirrelmail, Roundcube, Mutt, MacOutlook,
     //             Kmail, IMP
@@ -214,13 +214,13 @@ exports.user_agent = function (next, connection) {
     // X-MS-Has-Attach: Outlook 15
 
     // Check for User-Agent
-    var headers = [
+    const headers = [
         'user-agent','x-mailer','x-mua','x-yahoo-newman-property',
         'x-ms-has-attach'
     ];
-    for (var i=0; i < headers.length; i++) {
-        var name = headers[i];
-        var header = connection.transaction.header.get(name);
+    for (let i=0; i < headers.length; i++) {
+        const name = headers[i];
+        const header = connection.transaction.header.get(name);
         if (!header) { continue; }   // header not present
         found_ua++;
         connection.transaction.results.add(plugin,
@@ -233,7 +233,7 @@ exports.user_agent = function (next, connection) {
 };
 
 exports.direct_to_mx = function (next, connection) {
-    var plugin = this;
+    const plugin = this;
     if (!plugin.cfg.check.direct_to_mx) { return next(); }
 
     if (!connection.transaction) { return next(); }
@@ -248,13 +248,13 @@ exports.direct_to_mx = function (next, connection) {
 
     // what about connection.relaying?
 
-    var received = connection.transaction.header.get_all('received');
+    const received = connection.transaction.header.get_all('received');
     if (!received) {
         connection.transaction.results.add(plugin, {fail: 'direct-to-mx(none)'});
         return next();
     }
 
-    var c = received.length;
+    const c = received.length;
     if (c < 2) {
         connection.transaction.results.add(plugin, {fail: 'direct-to-mx(too few Received('+c+'))'});
         return next();
@@ -265,7 +265,7 @@ exports.direct_to_mx = function (next, connection) {
 };
 
 exports.from_match = function (next, connection) {
-    var plugin = this;
+    const plugin = this;
     if (!plugin.cfg.check.from_match) { return next(); }
 
     // see if the header From matches the envelope FROM. There are valid
@@ -273,19 +273,19 @@ exports.from_match = function (next, connection) {
     // likely to be spam than ham. This test is useful for heuristics.
     if (!connection.transaction) { return next(); }
 
-    var env_addr = connection.transaction.mail_from;
+    const env_addr = connection.transaction.mail_from;
     if (!env_addr) {
         connection.transaction.results.add(plugin, {fail: 'from_match(null)'});
         return next();
     }
 
-    var hdr_from = connection.transaction.header.get('From');
+    const hdr_from = connection.transaction.header.get('From');
     if (!hdr_from) {
         connection.transaction.results.add(plugin, {fail: 'from_match(missing)'});
         return next();
     }
 
-    var hdr_addr = (plugin.addrparser.parse(hdr_from))[0];
+    const hdr_addr = (plugin.addrparser.parse(hdr_from))[0];
     if (!hdr_addr) {
         connection.transaction.results.add(plugin, {fail: 'from_match(unparsable)'});
         return next();
@@ -296,15 +296,15 @@ exports.from_match = function (next, connection) {
         return next();
     }
 
-    var extra = ['domain'];
-    var env_dom = tlds.get_organizational_domain(env_addr.host);
-    var msg_dom = tlds.get_organizational_domain(hdr_addr.host());
+    const extra = ['domain'];
+    const env_dom = tlds.get_organizational_domain(env_addr.host);
+    const msg_dom = tlds.get_organizational_domain(hdr_addr.host());
     if (env_dom && msg_dom && env_dom.toLowerCase() === msg_dom.toLowerCase()) {
-        var fcrdns  = connection.results.get('connect.fcrdns');
+        const fcrdns  = connection.results.get('fcrdns');
         if (fcrdns && fcrdns.fcrdns && new RegExp(msg_dom + '\\b', 'i').test(fcrdns.fcrdns)) {
             extra.push('fcrdns');
         }
-        var helo = connection.results.get('helo.checks');
+        const helo = connection.results.get('helo.checks');
         if (helo && helo.helo_host && /msg_dom$/.test(helo.helo_host)) {
             extra.push('helo');
         }
@@ -320,17 +320,17 @@ exports.from_match = function (next, connection) {
 };
 
 exports.delivered_to = function (next, connection) {
-    var plugin = this;
+    const plugin = this;
     if (!plugin.cfg.check.delivered_to) { return next(); }
 
-    var txn = connection.transaction;
+    const txn = connection.transaction;
     if (!txn) return next();
-    var del_to = txn.header.get('Delivered-To');
+    const del_to = txn.header.get('Delivered-To');
     if (!del_to) return next();
 
-    var rcpts = connection.transaction.rcpt_to;
-    for (var i=0; i<rcpts.length; i++) {
-        var rcpt = rcpts[i].address();
+    const rcpts = connection.transaction.rcpt_to;
+    for (let i=0; i<rcpts.length; i++) {
+        const rcpt = rcpts[i].address();
         if (rcpt !== del_to) continue;
         connection.transaction.results.add(plugin, {emit: true, fail: 'delivered_to'});
         if (!plugin.cfg.reject.delivered_to) continue;
@@ -341,11 +341,11 @@ exports.delivered_to = function (next, connection) {
 };
 
 exports.mailing_list = function (next, connection) {
-    var plugin = this;
+    const plugin = this;
     if (!plugin.cfg.check.mailing_list) { return next(); }
     if (!connection.transaction) { return next(); }
 
-    var mlms = {
+    const mlms = {
         'Mailing-List'       : [
             { mlm: 'ezmlm',       match: 'ezmlm' },
             { mlm: 'yahoogroups', match: 'yahoogroups' },
@@ -358,14 +358,14 @@ exports.mailing_list = function (next, connection) {
         'X-Google-Loop'      : [ { mlm: 'googlegroups' } ],
     };
 
-    var found_mlm = 0;
-    var txr = connection.transaction.results;
+    let found_mlm = 0;
+    const txr = connection.transaction.results;
 
     Object.keys(mlms).forEach(function (name) {
-        var header = connection.transaction.header.get(name);
+        const header = connection.transaction.header.get(name);
         if (!header) { return; }  // header not present
-        for (var i=0; i < mlms[name].length; i++) {
-            var j = mlms[name][i];
+        for (let i=0; i < mlms[name].length; i++) {
+            const j = mlms[name][i];
             if (j.start) {
                 if (header.substring(0,j.start.length) === j.start) {
                     txr.add(plugin, {pass: 'MLM('+j.mlm+')'});

@@ -1,15 +1,15 @@
 // Auth against vpopmaild
 
-var net    = require('net');
+const net    = require('net');
 
 exports.register = function () {
-    var plugin = this;
+    const plugin = this;
     plugin.inherits('auth/auth_base');
     plugin.load_vpop_ini();
 };
 
 exports.load_vpop_ini = function () {
-    var plugin = this;
+    const plugin = this;
     plugin.cfg = plugin.config.get('auth_vpopmaild.ini', function () {
         plugin.load_vpop_ini();
     });
@@ -17,9 +17,9 @@ exports.load_vpop_ini = function () {
 
 exports.hook_capabilities = function (next, connection) {
     if (!connection.tls.enabled) { return next(); }
-    var plugin = this;
+    const plugin = this;
 
-    var methods = [ 'PLAIN', 'LOGIN' ];
+    const methods = [ 'PLAIN', 'LOGIN' ];
     if (plugin.cfg.main.sysadmin) { methods.push('CRAM-MD5'); }
 
     connection.capabilities.push('AUTH ' + methods.join(' '));
@@ -29,12 +29,12 @@ exports.hook_capabilities = function (next, connection) {
 };
 
 exports.check_plain_passwd = function (connection, user, passwd, cb) {
-    var plugin = this;
+    const plugin = this;
 
-    var chunk_count = 0;
-    var auth_success = false;
+    let chunk_count = 0;
+    let auth_success = false;
 
-    var socket = plugin.get_vpopmaild_socket(user);
+    const socket = plugin.get_vpopmaild_socket(user);
     socket.setEncoding('utf8');
 
     socket.on('data', function (chunk) {
@@ -61,7 +61,7 @@ exports.check_plain_passwd = function (connection, user, passwd, cb) {
 };
 
 exports.get_sock_opts = function (user) {
-    var plugin = this;
+    const plugin = this;
 
     plugin.sock_opts = {
         port: 89,
@@ -69,8 +69,8 @@ exports.get_sock_opts = function (user) {
         sysadmin: undefined,
     };
 
-    var domain = (user.split('@'))[1];
-    var sect = plugin.cfg.main;
+    const domain = (user.split('@'))[1];
+    let sect = plugin.cfg.main;
     if (domain && plugin.cfg[domain]) {
         sect = plugin.cfg[domain];
     }
@@ -84,10 +84,10 @@ exports.get_sock_opts = function (user) {
 };
 
 exports.get_vpopmaild_socket = function (user) {
-    var plugin = this;
+    const plugin = this;
     plugin.get_sock_opts(user);
 
-    var socket = new net.Socket();
+    const socket = new net.Socket();
     socket.connect(plugin.sock_opts.port, plugin.sock_opts.host);
     socket.setTimeout(300 * 1000);
     socket.setEncoding('utf8');
@@ -107,17 +107,17 @@ exports.get_vpopmaild_socket = function (user) {
 };
 
 exports.get_plain_passwd = function (user, connection, cb) {
-    var plugin = this;
+    const plugin = this;
 
-    var socket = plugin.get_vpopmaild_socket(user);
+    const socket = plugin.get_vpopmaild_socket(user);
     if (!plugin.sock_opts.sysadmin) {
         plugin.logerror("missing sysadmin credentials");
         return cb(null);
     }
 
-    var sys = plugin.sock_opts.sysadmin.split(':');
-    var plain_pass = null;
-    var chunk_count = 0;
+    const sys = plugin.sock_opts.sysadmin.split(':');
+    let plain_pass = null;
+    let chunk_count = 0;
 
     socket.on('data', function (chunk) {
         chunk_count++;
@@ -141,7 +141,7 @@ exports.get_plain_passwd = function (user, connection, cb) {
             socket.end();             // disconnect
         }
         if (chunk_count > 2) {
-            if (/^\-ERR/.test(chunk)) {
+            if (/^-ERR/.test(chunk)) {
                 plugin.lognotice("get_plain failed: " + chunk);
                 socket.end();         // disconnect
                 return;
@@ -149,7 +149,7 @@ exports.get_plain_passwd = function (user, connection, cb) {
             if (!/clear_text_password/.test(chunk)) {
                 return;   // pass might be in the next chunk
             }
-            var pass = chunk.match(/clear_text_password\s(\S+)\s/);
+            const pass = chunk.match(/clear_text_password\s(\S+)\s/);
             plain_pass = pass[1];
             socket.write("quit\n\r");
         }

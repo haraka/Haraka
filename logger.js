@@ -1,22 +1,22 @@
 'use strict';
 // Log class
 
-var util      = require('util');
-var tty       = require('tty');
+const util      = require('util');
+const tty       = require('tty');
 
-var constants = require('haraka-constants');
+const constants = require('haraka-constants');
 
-var config    = require('./config');
-var plugins;
-var connection;
-var outbound;
+const config    = require('./config');
+let plugins;
+let connection;
+let outbound;
 
 const regex = /(^$|[ ="\\])/;
 const escape_replace_regex = /["\\]/g;
 
 function stringify (obj) {
-    var str = '';
-    var key;
+    let str = '';
+    let key;
     for (key in obj) {
         let v = obj[key];
         if (v == null) {
@@ -34,7 +34,7 @@ function stringify (obj) {
     return str.trim();
 }
 
-var logger = exports;
+const logger = exports;
 
 logger.levels = {
     DATA:     9,
@@ -49,7 +49,7 @@ logger.levels = {
     EMERG:    0,
 };
 
-for (var le in logger.levels) {
+for (const le in logger.levels) {
     logger.levels[`LOG${le}`] = logger.levels[le];
     logger['LOG' + le] = logger.levels[le];
 }
@@ -61,6 +61,7 @@ logger.formats = {
 
 logger.loglevel      = logger.levels.WARN;
 logger.format        = logger.formats.DEFAULT;
+logger.timestamps    = false;
 logger.deferred_logs = [];
 
 logger.colors = {
@@ -76,7 +77,7 @@ logger.colors = {
     "EMERG" : "red",
 };
 
-var stdout_is_tty = tty.isatty(process.stdout.fd);
+const stdout_is_tty = tty.isatty(process.stdout.fd);
 
 logger._init = function () {
     this.load_log_ini();
@@ -85,7 +86,7 @@ logger._init = function () {
 }
 
 logger.load_log_ini = function () {
-    let self = this;
+    const self = this;
     self.cfg = config.get('log.ini', {
         booleans: [
             '+main.timestamps',
@@ -108,7 +109,7 @@ logger.colorize = function (color, str) {
 
 logger.dump_logs = function (cb) {
     while (logger.deferred_logs.length > 0) {
-        var log_item = logger.deferred_logs.shift();
+        const log_item = logger.deferred_logs.shift();
         plugins.run_hooks('log', logger, log_item);
     }
     // Run callback after flush
@@ -118,7 +119,7 @@ logger.dump_logs = function (cb) {
 
 if (!util.isFunction) {
     util.isFunction = function (functionToCheck) {
-        var getType = {};
+        const getType = {};
         return functionToCheck && getType.toString.call(functionToCheck) === '[object Function]';
     };
 }
@@ -137,7 +138,7 @@ logger.log = function (level, data) {
     data = data.replace(/\r/g, '\\r')
         .replace(/\n$/, '');
 
-    var item = { 'level' : level, 'data'  : data };
+    const item = { 'level' : level, 'data'  : data };
 
     // buffer until plugins are loaded
     if (!plugins || (Array.isArray(plugins.plugin_list) &&
@@ -149,7 +150,7 @@ logger.log = function (level, data) {
 
     // process buffered logs
     while (logger.deferred_logs.length > 0) {
-        var log_item = logger.deferred_logs.shift();
+        const log_item = logger.deferred_logs.shift();
         plugins.run_hooks('log', logger, log_item);
     }
 
@@ -160,14 +161,17 @@ logger.log = function (level, data) {
 logger.log_respond = function (retval, msg, data) {
     // any other return code is irrelevant
     if (retval !== constants.cont) { return false; }
-
-    var color = logger.colors[data.level];
+    let timestamp_string = '';
+    if (logger.timestamps) {
+        timestamp_string = `${new Date().toISOString()} `;
+    }
+    const color = logger.colors[data.level];
     if (color && stdout_is_tty) {
-        console.log(logger.colorize(color,data.data));
+        process.stdout.write(`${timestamp_string}${logger.colorize(color,data.data)}\n`);
         return true;
     }
 
-    console.log(data.data);
+    process.stdout.write(`${timestamp_string}${data.data}\n`);
     return true;
 };
 
@@ -175,7 +179,7 @@ logger.set_loglevel = function (level) {
 
     if (!level) return;
 
-    let loglevel_num = parseInt(level);
+    const loglevel_num = parseInt(level);
     if (!loglevel_num || isNaN(loglevel_num)) {
         this.log('INFO', 'loglevel: ' + level.toUpperCase());
         logger.loglevel = logger.levels[level.toUpperCase()];
@@ -205,9 +209,9 @@ logger.set_format = function (format) {
 };
 
 logger._init_loglevel = function () {
-    let self = this;
+    const self = this;
 
-    let _loglevel = config.get('loglevel', 'value', function () {
+    const _loglevel = config.get('loglevel', 'value', function () {
         self._init_loglevel();
     });
 
@@ -219,32 +223,20 @@ logger.would_log = function (level) {
     return true;
 };
 
-var original_console_log = console.log;
-
 logger.set_timestamps = function (value) {
-
-    if (!value) {
-        console.log = original_console_log;
-        return;
-    }
-
-    console.log = function () {
-        let new_arguments = [new Date().toISOString()];
-        for (let key in arguments) {
-            new_arguments.push(arguments[key]);
-        }
-        original_console_log.apply(console, new_arguments);
-    };
+    logger.timestamps = !!value;
 }
 
 logger._init_timestamps = function () {
-    let self = this;
+    const self = this;
 
-    let _timestamps = config.get('log_timestamps', 'value', function () {
+    const _timestamps = config.get('log_timestamps', 'value', function () {
         self._init_timestamps();
     });
 
-    this.set_timestamps(_timestamps);
+    // If we've already been toggled to true by the cfg, we should respect
+    // this.
+    self.set_timestamps(logger.timestamps || _timestamps);
 };
 
 logger._init();
@@ -252,14 +244,14 @@ logger._init();
 logger.log_if_level = function (level, key, plugin) {
     return function () {
         if (logger.loglevel < logger[key]) { return; }
-        var logobj = {
+        let logobj = {
             level,
             uuid: '-',
             origin: (plugin || 'core'),
             message: ''
         };
-        for (var i=0; i < arguments.length; i++) {
-            var data = arguments[i];
+        for (let i=0; i < arguments.length; i++) {
+            const data = arguments[i];
             if (typeof data !== 'object') {
                 logobj.message += (data);
                 continue;
@@ -327,8 +319,8 @@ logger.log_if_level = function (level, key, plugin) {
 logger.add_log_methods = function (object, plugin) {
     if (!object) return;
     if (typeof(object) !== 'object') return;
-    for (var level in logger.levels) {
-        var fname = 'log' + level.toLowerCase();
+    for (const level in logger.levels) {
+        const fname = 'log' + level.toLowerCase();
         if (object[fname]) continue;  // already added
         object[fname] = logger.log_if_level(level, 'LOG'+level, plugin);
     }

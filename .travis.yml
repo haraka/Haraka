@@ -15,17 +15,6 @@ matrix:
 
 services:
     - redis-server
-    
-# these are required for building on node.js v4+
-addons:
-  apt:
-    sources:
-      - ubuntu-toolchain-r-test
-    packages:
-      - g++-4.8
-env:
-  - "CXX=g++-4.8"
-# end: these are required for building on node.js v4+
 
 before_script:
 

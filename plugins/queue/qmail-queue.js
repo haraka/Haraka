@@ -1,10 +1,10 @@
 // Queue to qmail-queue
 
-var childproc = require('child_process');
-var fs        = require('fs');
+const childproc = require('child_process');
+const fs        = require('fs');
 
 exports.register = function () {
-    var plugin = this;
+    const plugin = this;
 
     plugin.queue_exec = plugin.config.get('qmail-queue.path') || '/var/qmail/bin/qmail-queue';
     if (!fs.existsSync(plugin.queue_exec)) {
@@ -19,7 +19,7 @@ exports.register = function () {
 };
 
 exports.load_qmail_queue_ini = function () {
-    var plugin = this;
+    const plugin = this;
 
     plugin.cfg = plugin.config.get('qmail-queue.ini', {
         booleans: [
@@ -32,14 +32,20 @@ exports.load_qmail_queue_ini = function () {
 };
 
 exports.hook_queue = function (next, connection) {
-    var plugin = this;
-    var qmail_queue = childproc.spawn(
+    const plugin = this;
+
+    const txn = connection.transaction;
+
+    const q_wants = txn.notes.get('queue.wants');
+    if (q_wants && q_wants !== 'qmail-queue') return next();
+
+    const qmail_queue = childproc.spawn(
         this.queue_exec, // process name
         [],              // arguments
         { stdio: ['pipe', 'pipe', process.stderr] }
     );
 
-    var finished = function (code) {
+    qmail_queue.on('exit', function finished (code) {
         if (code !== 0) {
             connection.logerror(plugin, "Unable to queue message to qmail-queue: " + code);
             next();
@@ -47,9 +53,7 @@ exports.hook_queue = function (next, connection) {
         else {
             next(OK, "Queued!");
         }
-    };
-
-    qmail_queue.on('exit', finished);
+    });
 
     connection.transaction.message_stream.pipe(qmail_queue.stdin, { line_endings: '\n' });
 
@@ -61,18 +65,18 @@ exports.hook_queue = function (next, connection) {
         plugin.loginfo("Message Stream sent to qmail. Now sending envelope");
         // now send envelope
         // Hope this will be big enough...
-        var buf = new Buffer(4096);
-        var p = 0;
+        const buf = new Buffer(4096);
+        let p = 0;
         buf[p++] = 70;
-        var mail_from = connection.transaction.mail_from.address();
-        for (var i = 0; i < mail_from.length; i++) {
+        const mail_from = connection.transaction.mail_from.address();
+        for (let i = 0; i < mail_from.length; i++) {
             buf[p++] = mail_from.charCodeAt(i);
         }
         buf[p++] = 0;
         connection.transaction.rcpt_to.forEach(function (rcpt) {
             buf[p++] = 84;
-            var rcpt_to = rcpt.address();
-            for (var j = 0; j < rcpt_to.length; j++) {
+            const rcpt_to = rcpt.address();
+            for (let j = 0; j < rcpt_to.length; j++) {
                 buf[p++] = rcpt_to.charCodeAt(j);
             }
             buf[p++] = 0;

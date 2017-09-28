@@ -1,34 +1,48 @@
 //queue/lmtp
 
-"use strict";
+'use strict';
 
-var outbound = require('./outbound');
+let outbound;
+
+exports.register = function () {
+    this.load_lmtp_ini();
+    outbound = this.haraka_require('outbound');
+}
+
+exports.load_lmtp_ini = function () {
+    const plugin = this;
+    plugin.cfg = plugin.config.get('lmtp.ini', function () {
+        plugin.load_lmtp_ini();
+    })
+}
 
 exports.hook_get_mx = function (next, hmail, domain) {
+    const plugin = this;
+
     if (!hmail.todo.notes.using_lmtp) return next();
-    var config = this.config.get('lmtp.ini', 'ini');
-    var section = config[domain] || config.main;
-    var mx;
+
+    const mx = { using_lmtp: true, priority: 0, exchange: '127.0.0.1' };
+
+    const section = plugin.cfg[domain] || plugin.cfg.main;
     if (section.path) {
-        mx = {
-            priority: 0,
-            exchange: '127.0.0.1', // here to just pass dns lookups
-            path: section.path,
-            using_lmtp: true
-        };
+        Object.assign(mx, { path: section.path });
+        return next(OK, mx);
     }
-    else {
-        mx = {
-            priority: 0,
-            exchange: section.host || '127.0.0.1',
-            port: section.port || 24,
-            using_lmtp: true
-        };
-    }
+
+    Object.assign(mx, {
+        exchange: section.host || '127.0.0.1',
+        port: section.port || 24,
+    });
+
     return next(OK, mx);
 }
 
 exports.hook_queue = function (next, connection) {
-    connection.transaction.notes.using_lmtp = true;
-    outbound.send_email(connection.transaction, next);
+    const txn = connection.transaction;
+
+    const q_wants = txn.notes.get('queue.wants');
+    if (q_wants && q_wants !== 'lmtp') return next();
+
+    txn.notes.using_lmtp = true;
+    outbound.send_email(txn, next);
 }

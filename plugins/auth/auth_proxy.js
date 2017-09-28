@@ -1,7 +1,7 @@
 // Proxy AUTH requests selectively by domain
-var sock  = require('./line_socket');
-var utils = require('haraka-utils');
-var smtp_regexp = /^([0-9]{3})([ -])(.*)/;
+const sock  = require('./line_socket');
+const utils = require('haraka-utils');
+const smtp_regexp = /^([0-9]{3})([ -])(.*)/;
 
 exports.register = function () {
     this.inherits('auth/auth_base');
@@ -9,7 +9,7 @@ exports.register = function () {
 
 exports.hook_capabilities = function (next, connection) {
     if (connection.tls.enabled) {
-        var methods = [ 'PLAIN', 'LOGIN' ];
+        const methods = [ 'PLAIN', 'LOGIN' ];
         connection.capabilities.push('AUTH ' + methods.join(' '));
         connection.notes.allowed_auth_methods = methods;
     }
@@ -17,7 +17,7 @@ exports.hook_capabilities = function (next, connection) {
 };
 
 exports.check_plain_passwd = function (connection, user, passwd, cb) {
-    var domain;
+    let domain;
     if ((domain = /@([^@]+)$/.exec(user))) {
         domain = domain[1].toLowerCase();
     }
@@ -28,7 +28,7 @@ exports.check_plain_passwd = function (connection, user, passwd, cb) {
     }
 
     // Check if domain exists in configuration file
-    var config = this.config.get('auth_proxy.ini');
+    const config = this.config.get('auth_proxy.ini');
     if (!config.domains[domain]) {
         connection.logerror(this, 'AUTH user="' + user + '" error="domain \'' + domain + '\' is not defined"');
         return cb(false);
@@ -43,17 +43,17 @@ exports.try_auth_proxy = function (connection, hosts, user, passwd, cb) {
         hosts = [ hosts ];
     }
 
-    var self = this;
-    var host = hosts.shift();
-    var methods = [];
-    var auth_complete = false;
-    var auth_success = false;
-    var command = 'connect';
-    var response = [];
-    var secure = false;
+    const self = this;
+    const host = hosts.shift();
+    let methods = [];
+    let auth_complete = false;
+    let auth_success = false;
+    let command = 'connect';
+    let response = [];
+    let secure = false;
 
-    var hostport = host.split(/:/);
-    var socket = sock.connect(((hostport[1]) ? hostport[1] : 25), hostport[0]);
+    const hostport = host.split(/:/);
+    const socket = sock.connect(((hostport[1]) ? hostport[1] : 25), hostport[0]);
     connection.logdebug(self, 'attempting connection to host=' + hostport[0] + ' port=' + ((hostport[1]) ? hostport[1] : 25));
     socket.setTimeout(30 * 1000);
     socket.on('connect', function () {
@@ -78,7 +78,7 @@ exports.try_auth_proxy = function (connection, hosts, user, passwd, cb) {
         return;
     });
     socket.send_command = function (cmd, data) {
-        var line = cmd + (data ? (' ' + data) : '');
+        let line = cmd + (data ? (' ' + data) : '');
         if (cmd === 'dot') {
             line = '.';
         }
@@ -90,19 +90,21 @@ exports.try_auth_proxy = function (connection, hosts, user, passwd, cb) {
     };
     socket.on('line', function (line) {
         connection.logprotocol(self, "S: " + line);
-        var matches = smtp_regexp.exec(line);
+        const matches = smtp_regexp.exec(line);
         if (!matches) {
             connection.logerror(self, "unrecognised response: " + line);
             socket.end();
             return;
         }
 
-        var code = matches[1];
-        var cont = matches[2];
-        var rest = matches[3];
+        const code = matches[1];
+        const cont = matches[2];
+        const rest = matches[3];
         response.push(rest);
-
         if (cont !== ' ') return;
+
+        let key;
+        let cert;
 
         connection.logdebug(self, 'command state: ' + command);
         if (command === 'ehlo') {
@@ -112,12 +114,11 @@ exports.try_auth_proxy = function (connection, hosts, user, passwd, cb) {
                 return;
             }
             // Parse CAPABILITIES
-            var i;
-            for (i in response) {
+            for (const i in response) {
                 if (/^STARTTLS/.test(response[i])) {
                     if (secure) continue;    // silly remote, we've already upgraded
-                    var key = self.config.get('tls_key.pem', 'binary');
-                    var cert = self.config.get('tls_cert.pem', 'binary');
+                    key = self.config.get('tls_key.pem', 'binary');
+                    cert = self.config.get('tls_cert.pem', 'binary');
                     // Use TLS opportunistically if we found the key and certificate
                     if (key && cert) {
                         this.on('secure', function () {
@@ -130,7 +131,7 @@ exports.try_auth_proxy = function (connection, hosts, user, passwd, cb) {
                 }
                 else if (/^AUTH /.test(response[i])) {
                     // Parse supported AUTH methods
-                    var parse = /^AUTH (.+)$/.exec(response[i]);
+                    const parse = /^AUTH (.+)$/.exec(response[i]);
                     methods = parse[1].split(/\s+/);
                     connection.logdebug(self, 'found supported AUTH methods: ' + methods);
                     // Prefer PLAIN as it's easiest
@@ -166,7 +167,7 @@ exports.try_auth_proxy = function (connection, hosts, user, passwd, cb) {
             }
             if (code[0] === '5') {
                 // Initial attempt failed; strip domain and retry.
-                var u;
+                let u;
                 if ((u = /^([^@]+)@.+$/.exec(user))) {
                     user = u[1];
                     if (methods.indexOf('PLAIN') !== -1) {
@@ -191,8 +192,7 @@ exports.try_auth_proxy = function (connection, hosts, user, passwd, cb) {
         }
         switch (command) {
             case 'starttls':
-                var tls_options = { key: key, cert: cert };
-                this.upgrade(tls_options);
+                this.upgrade({ key: key, cert: cert });
                 break;
             case 'connect':
                 socket.send_command('EHLO', self.config.get('me'));

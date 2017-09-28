@@ -1,7 +1,7 @@
 "use strict";
 
 exports.register = function () {
-    var plugin = this;
+    const plugin = this;
     plugin.inherits('base_plugin');
 }
 

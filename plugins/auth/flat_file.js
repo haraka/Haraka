@@ -1,20 +1,20 @@
 // Auth against a flat file
 
 exports.register = function () {
-    var plugin = this;
+    const plugin = this;
     plugin.inherits('auth/auth_base');
     plugin.load_flat_ini();
 };
 
 exports.load_flat_ini = function () {
-    var plugin = this;
+    const plugin = this;
     plugin.cfg = plugin.config.get('auth_flat_file.ini', function () {
         plugin.load_flat_ini();
     });
 };
 
 exports.hook_capabilities = function (next, connection) {
-    var plugin = this;
+    const plugin = this;
     // don't allow AUTH unless private IP or encrypted
     if (!connection.remote.is_private && !connection.tls.enabled) {
         connection.logdebug(plugin,
@@ -22,7 +22,7 @@ exports.hook_capabilities = function (next, connection) {
         return next();
     }
 
-    var methods = null;
+    let methods = null;
     if (plugin.cfg.core && plugin.cfg.core.methods ) {
         methods = plugin.cfg.core.methods.split(',');
     }
@@ -34,7 +34,7 @@ exports.hook_capabilities = function (next, connection) {
 };
 
 exports.get_plain_passwd = function (user, connection, cb) {
-    var plugin = this;
+    const plugin = this;
     if (plugin.cfg.users[user]) {
         return cb(plugin.cfg.users[user].toString());
     }

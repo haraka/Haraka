@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 'use strict';
-var path = require('path');
+const path = require('path');
 
 if (!process.env.HARAKA) {
     console.warn("WARNING: Not running installed Haraka - command line arguments ignored")
@@ -21,9 +21,9 @@ catch (e) {
     require('module')._initPaths(); // Horrible hack
 }
 
-var fs     = require('fs');
-var logger = require('./logger');
-var server = require('./server');
+const fs     = require('fs');
+const logger = require('./logger');
+const server = require('./server');
 
 exports.version = JSON.parse(
     fs.readFileSync(path.join(__dirname, './package.json'), 'utf8')
@@ -41,8 +41,8 @@ process.on('uncaughtException', function (err) {
     logger.dump_and_exit(1);
 });
 
-var shutting_down = false;
-['SIGTERM', 'SIGINT'].forEach(function (sig) {
+let shutting_down = false;
+['SIGINT'].forEach(function (sig) {
     process.on(sig, function () {
         if (shutting_down) return process.exit(1);
         shutting_down = true;

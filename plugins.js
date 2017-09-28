@@ -2,23 +2,22 @@
 // load all defined plugins
 
 // node built-ins
-var fs          = require('fs');
-var path        = require('path');
-var vm          = require('vm');
+const fs          = require('fs');
+const path        = require('path');
+const vm          = require('vm');
 
 // npm modules
-var constants   = require('haraka-constants');
+const constants   = require('haraka-constants');
 
 // local modules
-var logger      = require('./logger');
-var states      = require('./connection').states;
+const logger      = require('./logger');
 exports.config  = require('./config');
 
 exports.registered_hooks = {};
 exports.registered_plugins = {};
 exports.plugin_list = [];
 
-var order = 0;
+let order = 0;
 
 function Plugin (name) {
     this.name = name;
@@ -30,7 +29,7 @@ function Plugin (name) {
 }
 
 exports.shutdown_plugins = function () {
-    for (var i in exports.registered_plugins) {
+    for (const i in exports.registered_plugins) {
         if (exports.registered_plugins[i].shutdown) {
             exports.registered_plugins[i].shutdown();
         }
@@ -59,7 +58,7 @@ function plugin_search_paths (prefix, name) {
 }
 
 Plugin.prototype._get_plugin_path = function () {
-    var plugin = this;
+    const plugin = this;
     /* From https://github.com/haraka/Haraka/pull/1278#issuecomment-168856528
     In Development mode, or install via a plain "git clone":
 
@@ -78,12 +77,12 @@ Plugin.prototype._get_plugin_path = function () {
     */
 
     plugin.hasPackageJson = false;
-    var name = plugin.name;
-    if (/^haraka\-plugin\-/.test(name)) {
-        name = name.replace(/^haraka\-plugin\-/, '');
+    let name = plugin.name;
+    if (/^haraka-plugin-/.test(name)) {
+        name = name.replace(/^haraka-plugin-/, '');
     }
 
-    var paths = [];
+    let paths = [];
     if (process.env.HARAKA) {
         // Installed mode - started via bin/haraka
         paths = paths.concat(plugin_search_paths(process.env.HARAKA, name));
@@ -159,8 +158,8 @@ Plugin.prototype.register_hook = function (hook_name, method_name, priority) {
 Plugin.prototype.register = function () {}; // noop
 
 Plugin.prototype.inherits = function (parent_name) {
-    var parent_plugin = plugins._load_and_compile_plugin(parent_name);
-    for (var method in parent_plugin) {
+    const parent_plugin = plugins._load_and_compile_plugin(parent_name);
+    for (const method in parent_plugin) {
         if (!this[method]) {
             this[method] = parent_plugin[method];
         }
@@ -178,10 +177,10 @@ Plugin.prototype.inherits = function (parent_name) {
 };
 
 Plugin.prototype._make_custom_require = function () {
-    var plugin = this;
+    const plugin = this;
     return function (module) {
         if (plugin.hasPackageJson) {
-            var mod = require(module);
+            const mod = require(module);
             constants.import(global);
             global.server = plugins.server;
             return mod;
@@ -205,10 +204,10 @@ Plugin.prototype._make_custom_require = function () {
 };
 
 Plugin.prototype._get_code = function (pp) {
-    var plugin = this;
+    const plugin = this;
 
     if (plugin.hasPackageJson) {
-        var packageDir = path.dirname(pp);
+        let packageDir = path.dirname(pp);
         if (/^win(32|64)/.test(process.platform)) {
             // escape the c:\path\back\slashes else they disappear
             packageDir = packageDir.replace(/\\/g, '\\\\');
@@ -229,13 +228,13 @@ Plugin.prototype._get_code = function (pp) {
 }
 
 Plugin.prototype._compile = function () {
-    var plugin = this;
+    const plugin = this;
 
-    var pp = plugin.plugin_path;
-    var code = plugin._get_code(pp);
+    const pp = plugin.plugin_path;
+    const code = plugin._get_code(pp);
     if (!code) return;
 
-    var sandbox = {
+    const sandbox = {
         require: plugin._make_custom_require(),
         __filename: pp,
         __dirname:  path.dirname(pp),
@@ -271,7 +270,7 @@ Plugin.prototype._compile = function () {
 };
 
 function get_timeout (name) {
-    var timeout = parseFloat((exports.config.get(name + '.timeout')));
+    let timeout = parseFloat((exports.config.get(name + '.timeout')));
     if (isNaN(timeout)) {
         logger.logdebug('no timeout in ' + name + '.timeout');
         timeout = parseFloat(exports.config.get('plugin_timeout'));
@@ -286,13 +285,13 @@ function get_timeout (name) {
 }
 
 // copy logger methods into Plugin:
-for (var key in logger) {
+for (const key in logger) {
     if (!/^log\w/.test(key)) continue;
     // console.log('adding Plugin.' + key + ' method');
     Plugin.prototype[key] = (function (lev) {
         return function () {
-            var args = [this];
-            for (var i=0, l=arguments.length; i<l; i++) {
+            const args = [this];
+            for (let i=0, l=arguments.length; i<l; i++) {
                 args.push(arguments[i]);
             }
             logger[lev].apply(logger, args);
@@ -300,13 +299,13 @@ for (var key in logger) {
     })(key);
 }
 
-var plugins = exports;
+const plugins = exports;
 
 plugins.Plugin = Plugin;
 
 plugins.load_plugins = function (override) {
     logger.loginfo("Loading plugins");
-    var plugin_list;
+    let plugin_list;
     if (override) {
         if (!Array.isArray(override)) override = [ override ];
         plugin_list = override;
@@ -322,9 +321,9 @@ plugins.load_plugins = function (override) {
     plugins.plugin_list = Object.keys(plugins.registered_plugins);
 
     // Sort registered_hooks by priority
-    var hooks = Object.keys(plugins.registered_hooks);
-    for (var h=0; h<hooks.length; h++) {
-        var hook = hooks[h];
+    const hooks = Object.keys(plugins.registered_hooks);
+    for (let h=0; h<hooks.length; h++) {
+        const hook = hooks[h];
         plugins.registered_hooks[hook].sort(function (a, b) {
             if (a.priority < b.priority) return -1;
             if (a.priority > b.priority) return 1;
@@ -342,7 +341,7 @@ plugins.load_plugins = function (override) {
 plugins.load_plugin = function (name) {
     logger.loginfo('Loading plugin: ' + name);
 
-    var plugin = plugins._load_and_compile_plugin(name);
+    const plugin = plugins._load_and_compile_plugin(name);
     if (plugin) {
         plugins._register_plugin(plugin);
     }
@@ -356,9 +355,9 @@ plugins.load_plugin = function (name) {
 plugins.server = { notes: {} };
 
 plugins._load_and_compile_plugin = function (name) {
-    var plugin = new Plugin(name);
+    const plugin = new Plugin(name);
     if (!plugin.plugin_path) {
-        var err = 'Loading plugin ' + plugin.name +
+        const err = 'Loading plugin ' + plugin.name +
             ' failed: No plugin with this name found';
         if (exports.config.get('smtp.ini').main.ignore_bad_plugins) {
             logger.logcrit(err);
@@ -374,8 +373,8 @@ plugins._register_plugin = function (plugin) {
     plugin.register();
 
     // register any hook_blah methods.
-    for (var method in plugin) {
-        var result = method.match(/^hook_(\w+)\b/);
+    for (const method in plugin) {
+        const result = method.match(/^hook_(\w+)\b/);
         if (result) {
             plugin.register_hook(result[1], method);
         }
@@ -412,9 +411,9 @@ plugins.run_hooks = function (hook, object, params) {
     object.hooks_to_run = [];
 
     if (plugins.registered_hooks[hook]) {
-        for (var i=0; i<plugins.registered_hooks[hook].length; i++) {
-            var item = plugins.registered_hooks[hook][i];
-            var plugin = plugins.registered_plugins[item.plugin];
+        for (let i=0; i<plugins.registered_hooks[hook].length; i++) {
+            const item = plugins.registered_hooks[hook][i];
+            const plugin = plugins.registered_plugins[item.plugin];
             object.hooks_to_run.push([plugin, item.method]);
         }
     }
@@ -427,13 +426,14 @@ plugins.run_next_hook = function (hook, object, params) {
         object.logdebug('aborting ' + hook + ' hook');
         return;
     }
-    var called_once = false;
-    var timeout_id;
-    var timed_out = false;
-    var cancelled = false;
-    var cancel = function () { cancelled = true; };
-    var item;
-    var callback = function (retval, msg) {
+    let called_once = false;
+    let timeout_id;
+    let timed_out = false;
+    let cancelled = false;
+    let item;
+
+    function cancel () { cancelled = true; }
+    function callback (retval, msg) {
         if (timeout_id) clearTimeout(timeout_id);
         object.current_hook = null;
         if (cancelled) return; // This hook has been cancelled
@@ -467,7 +467,7 @@ plugins.run_next_hook = function (hook, object, params) {
             }
         }
 
-        var respond_method = hook + '_respond';
+        const respond_method = hook + '_respond';
         if (item && is_deny_retval(retval) && hook.substr(0,5) !== 'init_') {
             object.deny_respond =
                 get_denyfn(object, hook, params, retval, msg, respond_method);
@@ -478,7 +478,7 @@ plugins.run_next_hook = function (hook, object, params) {
             object.hooks_to_run = [];
             object[respond_method](retval, msg, params);
         }
-    };
+    }
 
     if (!object.hooks_to_run.length) return callback();
 
@@ -516,7 +516,7 @@ plugins.run_next_hook = function (hook, object, params) {
 
 function client_disconnected (object) {
     if (object.constructor.name === 'Connection' &&
-        object.state >= states.DISCONNECTING) {
+        object.state >= constants.connection.state.DISCONNECTING) {
         object.logdebug('client has disconnected');
         return true;
     }
@@ -527,8 +527,8 @@ function log_run_item (item, hook, retval, object, params, msg) {
     if (!item) return;
     if (hook === 'log') return;
 
-    var log = 'logdebug';
-    var is_not_cont = (retval !== constants.cont &&
+    let log = 'logdebug';
+    const is_not_cont = (retval !== constants.cont &&
                        logger.would_log(logger.LOGINFO));
     if (is_not_cont) log = 'loginfo';
     if (is_not_cont || logger.would_log(logger.LOGDEBUG)) {

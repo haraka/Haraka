@@ -3,14 +3,14 @@
 // NOTICE: this plugin is deprecated. See 'haraka -h access' to upgrade
 
 exports.register = function () {
-    var config = this.config.get('connect.rdns_access.ini');
+    const config = this.config.get('connect.rdns_access.ini');
     this.wl = this.config.get('connect.rdns_access.whitelist', 'list');
     this.bl = this.config.get('connect.rdns_access.blacklist', 'list');
     this.deny_msg = config.general && (config.general.deny_msg ||
         'Connection rejected.');
-    var white_regex =
+    const white_regex =
         this.config.get('connect.rdns_access.whitelist_regex', 'list');
-    var black_regex =
+    const black_regex =
         this.config.get('connect.rdns_access.blacklist_regex', 'list');
 
     if (white_regex.length) {
@@ -27,7 +27,7 @@ exports.register = function () {
 };
 
 exports.rdns_access = function (next, connection) {
-    var plugin = this;
+    const plugin = this;
 
     // IP whitelist checks
     if (connection.remote.ip) {
@@ -85,7 +85,7 @@ exports.rdns_access = function (next, connection) {
 }
 
 function _in_whitelist (connection, plugin, host) {
-    var i;
+    let i;
     for (i in plugin.wl) {
         connection.logdebug(plugin, 'checking ' + host + ' against ' +
             plugin.wl[i]);
@@ -108,7 +108,7 @@ function _in_whitelist (connection, plugin, host) {
 }
 
 function _in_blacklist (connection, plugin, host) {
-    var i;
+    let i;
     for (i in plugin.bl) {
         connection.logdebug(plugin, 'checking ' + host + ' against ' +
             plugin.bl[i]);

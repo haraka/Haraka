@@ -1,14 +1,17 @@
-"use strict";
+'use strict';
 // An SMTP Transaction
 
-var config = require('./config');
-var Header = require('./mailheader').Header;
-var body   = require('./mailbody');
-var utils  = require('haraka-utils');
-var util   = require('util');
-var MessageStream = require('./messagestream');
+const util   = require('util');
 
-var MAX_HEADER_LINES = config.get('max_header_lines') || 1000;
+const Notes  = require('haraka-notes');
+const utils  = require('haraka-utils');
+
+const config = require('./config');
+const Header = require('./mailheader').Header;
+const body   = require('./mailbody');
+const MessageStream = require('./messagestream');
+
+const MAX_HEADER_LINES = config.get('max_header_lines') || 1000;
 
 function Transaction () {
     this.uuid = null;
@@ -24,7 +27,7 @@ function Transaction () {
     this.found_hb_sep = false;
     this.body = null;
     this.parse_body = false;
-    this.notes = {};
+    this.notes = new Notes();
     this.header = new Header();
     this.message_stream = null;
     this.discard_data = false;
@@ -42,7 +45,7 @@ function Transaction () {
 exports.Transaction = Transaction;
 
 exports.createTransaction = function (uuid) {
-    var t = new Transaction();
+    const t = new Transaction();
     t.uuid = uuid || utils.uuid();
     // Initialize MessageStream here to pass in the UUID
     t.message_stream = new MessageStream(
@@ -51,7 +54,7 @@ exports.createTransaction = function (uuid) {
 };
 
 Transaction.prototype.ensure_body = function () {
-    var self = this;
+    const self = this;
     if (this.body) {
         return;
     }
@@ -100,7 +103,7 @@ Transaction.prototype.add_data = function (line) {
     }
     else if (this.header_pos && this.parse_body) {
         if (line[0] === 0x2E) line = line.slice(1); // Strip leading "."
-        var new_line = this.body.parse_more(
+        let new_line = this.body.parse_more(
             line.toString(this.encoding).replace(/\r\n$/, '\n'));
 
         if (!new_line.length) {
@@ -119,31 +122,31 @@ Transaction.prototype.end_data = function (cb) {
         // Headers not parsed yet - must be a busted email
         // Strategy: Find the first line that doesn't look like a header.
         // Treat anything before that as headers, anything after as body.
-        var header_pos = 0;
-        for (var i = 0; i < this.header_lines.length; i++) {
+        let header_pos = 0;
+        for (let i = 0; i < this.header_lines.length; i++) {
             // Anything that doesn't match a header or continuation
             if (!/^(?:([^\s:]*):\s*([\s\S]*)$|[ \t])/.test(this.header_lines[i])) {
                 break;
             }
             header_pos = i;
         }
-        var body_lines = this.header_lines.splice(header_pos + 1);
+        const body_lines = this.header_lines.splice(header_pos + 1);
         this.header.parse(this.header_lines);
         this.header_pos = header_pos;
         if (this.parse_body) {
             this.ensure_body();
-            for (var j = 0; j < body_lines.length; j++) {
+            for (let j = 0; j < body_lines.length; j++) {
                 this.body.parse_more(body_lines[j]);
             }
         }
     }
     if (this.header_pos && this.parse_body) {
-        var data = this.body.parse_end();
+        let data = this.body.parse_end();
         if (data.length) {
             data = data.toString(this.encoding)
                 .replace(/^\./gm, '..')
                 .replace(/\r?\n/gm, '\r\n');
-            var line = new Buffer(data, this.encoding);
+            const line = new Buffer(data, this.encoding);
 
             this.body.force_end();
 
@@ -170,7 +173,7 @@ Transaction.prototype.add_leading_header = function (key, value) {
 };
 
 Transaction.prototype.reset_headers = function () {
-    var header_lines = this.header.lines();
+    const header_lines = this.header.lines();
     this.header_pos = header_lines.length;
 };
 

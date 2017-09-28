@@ -1,10 +1,10 @@
 'use strict';
 
-var fs     = require('fs');
-var path   = require('path');
-var plugin = require('../plugins');
+const fs     = require('fs');
+const path   = require('path');
+const plugin = require('../plugins');
 
-var piName = 'testPlugin';
+const piName = 'testPlugin';
 
 /*
 
@@ -39,17 +39,17 @@ From: https://github.com/haraka/Haraka/pull/1278#issuecomment-172134064
 
 exports.plugin = {
     'new Plugin() object': function (test) {
-        var pi = new plugin.Plugin(piName);
+        const pi = new plugin.Plugin(piName);
         test.expect(1);
         test.ok(pi);
         test.done();
     }
 };
 
-var toPath = './config/' + piName + '.timeout';
+const toPath = './config/' + piName + '.timeout';
 
-var toVals = [ '0', '3', '60', 'apple'];
-var getVal = function () {
+const toVals = [ '0', '3', '60', 'apple'];
+const getVal = function () {
     return toVals.shift();
 };
 
@@ -57,13 +57,14 @@ exports.get_timeout = {
     setUp : function (done) {
         process.env.WITHOUT_CONFIG_CACHE=true;
         this.to = getVal();
-        var self = this;
+        const self = this;
         fs.writeFile(toPath, this.to, function () {
             self.plugin = new plugin.Plugin(piName);
             done();
         });
     },
     tearDown : function (done) {
+        delete process.env.WITHOUT_CONFIG_CACHE;
         fs.unlink(toPath, done);
     },
     '0s' : function (test) {
@@ -90,15 +91,15 @@ exports.get_timeout = {
 
 exports.plugin_paths = {
     setUp : function (done) {
-        process.env.HARAKA = '';
+        delete process.env.HARAKA;
         done();
     },
     tearDown : function (done) {
-        process.env.HARAKA = '';
+        delete process.env.HARAKA;
         done();
     },
     'CORE plugin: (tls)' : function (test) {
-        var p = new plugin.Plugin('tls');
+        const p = new plugin.Plugin('tls');
 
         test.expect(1);
         test.equal(p.plugin_path, path.resolve(__dirname, '..', 'plugins', 'tls.js'));
@@ -108,7 +109,7 @@ exports.plugin_paths = {
     'INSTALLED override: (tls)': function (test) {
         process.env.HARAKA = path.resolve(__dirname, '..', 'tests', 'installation');
 
-        var p = new plugin.Plugin('tls');
+        const p = new plugin.Plugin('tls');
 
         test.expect(1);
         test.equal(p.plugin_path, path.resolve(__dirname, 'installation', 'plugins', 'tls.js'));
@@ -118,7 +119,7 @@ exports.plugin_paths = {
     'INSTALLED node_modules package plugin: (test-plugin)': function (test) {
         process.env.HARAKA = path.resolve(__dirname, '..', 'tests', 'installation');
 
-        var p = new plugin.Plugin('test-plugin');
+        const p = new plugin.Plugin('test-plugin');
 
         test.expect(3);
         test.equal(p.plugin_path, path.resolve(__dirname, 'installation', 'node_modules', 'test-plugin', 'package.json'));
@@ -135,7 +136,7 @@ exports.plugin_paths = {
     },
 
     'CORE package plugin: asn': function (test) {
-        var p = new plugin.Plugin('haraka-plugin-asn');
+        const p = new plugin.Plugin('haraka-plugin-asn');
 
         test.expect(2);
         test.equal(p.plugin_path, path.resolve(__dirname, '..', 'node_modules', 'haraka-plugin-asn', 'package.json'));
@@ -146,7 +147,7 @@ exports.plugin_paths = {
     'plugins overrides node_modules': function (test) {
         process.env.HARAKA = path.resolve(__dirname, '..', 'tests', 'installation');
 
-        var p = new plugin.Plugin('load_first');
+        const p = new plugin.Plugin('load_first');
 
         test.expect(3);
         test.equal(p.plugin_path, path.resolve(__dirname, 'installation', 'plugins', 'load_first.js'));
@@ -165,7 +166,7 @@ exports.plugin_paths = {
     'INSTALLED plugins folder plugin: (folder_plugin)': function (test) {
         process.env.HARAKA = path.resolve(__dirname, '..', 'tests', 'installation');
 
-        var p = new plugin.Plugin('folder_plugin');
+        const p = new plugin.Plugin('folder_plugin');
 
         test.expect(3);
         test.equal(p.plugin_path, path.resolve(__dirname, 'installation', 'plugins', 'folder_plugin', 'package.json'));
@@ -184,7 +185,7 @@ exports.plugin_paths = {
     'Inheritance: (inherits)': function (test) {
         process.env.HARAKA = path.resolve(__dirname, '..', 'tests', 'installation');
 
-        var p = new plugin.Plugin('inherits');
+        const p = new plugin.Plugin('inherits');
 
         test.expect(3);
         test.equal(p.plugin_path, path.resolve(__dirname, 'installation', 'plugins', 'inherits.js'));
@@ -205,16 +206,16 @@ exports.plugin_paths = {
 
 exports.plugin_config = {
     setUp : function (done) {
-        process.env.HARAKA = '';
+        delete process.env.HARAKA;
         done();
     },
     tearDown : function (done) {
-        process.env.HARAKA = '';
+        delete process.env.HARAKA;
         done();
     },
     'CORE plugin: (tls)' : function (test) {
 
-        var p = new plugin.Plugin('tls');
+        const p = new plugin.Plugin('tls');
 
         test.expect(2);
         test.equal(p.config.root_path, path.resolve(__dirname, '..', 'config'));
@@ -225,12 +226,12 @@ exports.plugin_config = {
     'INSTALLED override: (tls)': function (test) {
         process.env.HARAKA = path.resolve(__dirname, '..', 'tests', 'installation');
 
-        var p = new plugin.Plugin('tls');
+        const p = new plugin.Plugin('tls');
 
         test.expect(3);
         test.equal(p.config.root_path, path.resolve(__dirname, '..', 'config'));
         test.equal(p.config.overrides_path, path.resolve(__dirname, 'installation', 'config'));
-        var tls_ini = p.config.get('tls.ini');
+        const tls_ini = p.config.get('tls.ini');
         test.equal(tls_ini.main.ciphers, 'test');
         test.done();
     },
@@ -238,7 +239,7 @@ exports.plugin_config = {
     'INSTALLED node_modules package plugin: (test-plugin)': function (test) {
         process.env.HARAKA = path.resolve(__dirname, '..', 'tests', 'installation');
 
-        var p = new plugin.Plugin('test-plugin');
+        const p = new plugin.Plugin('test-plugin');
 
         test.expect(2);
         test.equal(p.config.root_path, path.resolve(__dirname, 'installation', 'node_modules', 'test-plugin', 'config'));

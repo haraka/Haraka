@@ -1,9 +1,9 @@
 'use strict';
 
-var path         = require('path');
+const path         = require('path');
 
-var Address      = require('address-rfc2821').Address;
-var fixtures     = require('haraka-test-fixtures');
+const Address      = require('address-rfc2821').Address;
+const fixtures     = require('haraka-test-fixtures');
 
 const OK = 906;
 
@@ -22,8 +22,8 @@ function _setup (done) {
 }
 
 exports.loadingTLSConfig = {
-    'TLS enabled but no outbound config in tls.ini': function(test) {
-        var plugin = new fixtures.plugin('queue/smtp_forward');
+    'TLS enabled but no outbound config in tls.ini': function (test) {
+        const plugin = new fixtures.plugin('queue/smtp_forward');
         test.expect(2);
 
         plugin.register();
@@ -49,7 +49,7 @@ exports.get_config = {
     setUp : _setup,
     'no recipient': function (test) {
         test.expect(3);
-        var cfg = this.plugin.get_config(this.connection);
+        const cfg = this.plugin.get_config(this.connection);
         test.equal(cfg.host, 'localhost');
         test.equal(cfg.enable_tls, true);
         test.equal(cfg.one_message_per_rcpt, true);
@@ -58,7 +58,7 @@ exports.get_config = {
     'null recipient': function (test) {
         test.expect(3);
         this.connection.transaction.rcpt_to.push(new Address('<>'));
-        var cfg = this.plugin.get_config(this.connection);
+        const cfg = this.plugin.get_config(this.connection);
         test.equal(cfg.host, 'localhost');
         test.equal(cfg.enable_tls, true);
         test.equal(cfg.one_message_per_rcpt, true);
@@ -68,8 +68,8 @@ exports.get_config = {
         test.expect(3);
         this.connection.transaction.rcpt_to.push(
             new Address('<matt@example.com>')
-            );
-        var cfg = this.plugin.get_config(this.connection);
+        );
+        const cfg = this.plugin.get_config(this.connection);
         test.equal(cfg.enable_tls, true);
         test.equal(cfg.one_message_per_rcpt, true);
         test.equal(cfg.host, 'localhost');
@@ -79,7 +79,7 @@ exports.get_config = {
         test.expect(1);
         this.connection.transaction.rcpt_to.push(
             new Address('<matt@test.com>')
-            );
+        );
         test.deepEqual(this.plugin.get_config(this.connection), {
             host: '1.2.3.4',
             enable_tls: true,
@@ -92,8 +92,8 @@ exports.get_config = {
         test.expect(1);
         this.connection.transaction.rcpt_to.push(
             new Address('<matt@test1.com>')
-            );
-        var cfg = this.plugin.get_config(this.connection);
+        );
+        const cfg = this.plugin.get_config(this.connection);
         test.deepEqual(cfg, {
             host: '1.2.3.4',
             enable_tls: false
@@ -105,27 +105,28 @@ exports.get_config = {
         this.connection.transaction.rcpt_to.push(
             new Address('<matt@test.com>'),
             new Address('<matt@test.com>')
-            );
-        var cfg = this.plugin.get_config(this.connection);
+        );
+        const cfg = this.plugin.get_config(this.connection);
         test.deepEqual(cfg.host, '1.2.3.4' );
         test.done();
     },
 };
 
+const hmail = { todo: { notes: {} } };
 exports.get_mx = {
     setUp : _setup,
     'returns no outbound route for undefined domains' : function (test) {
         test.expect(2);
-        var cb = function (code, mx) {
+        const cb = function (code, mx) {
             test.equal(code, undefined);
             test.deepEqual(mx, undefined);
             test.done();
         };
-        this.plugin.get_mx(cb, {}, 'undefined.com');
+        this.plugin.get_mx(cb, hmail, 'undefined.com');
     },
     'returns an outbound route for defined domains' : function (test) {
         test.expect(2);
-        var cb = function (code, mx) {
+        const cb = function (code, mx) {
             test.equal(code, OK);
             test.deepEqual(mx, {
                 priority: 0, exchange: '1.2.3.4', port: 2555,
@@ -134,6 +135,6 @@ exports.get_mx = {
             });
             test.done();
         };
-        this.plugin.get_mx(cb, {}, 'test.com');
+        this.plugin.get_mx(cb, hmail, 'test.com');
     },
 }

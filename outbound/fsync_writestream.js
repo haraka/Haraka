@@ -1,16 +1,15 @@
 'use strict';
 
-var fs      = require('fs');
-var util    = require('util');
+const fs      = require('fs');
 
 class FsyncWriteStream extends fs.WriteStream {
-    constructor(path, options) {
+    constructor (path, options) {
         super(path, options);
     }
 }
 
 FsyncWriteStream.prototype.close = function (cb) {
-    var self = this;
+    const self = this;
     if (cb)
         this.once('close', cb);
     if (this.closed || 'number' !== typeof this.fd) {

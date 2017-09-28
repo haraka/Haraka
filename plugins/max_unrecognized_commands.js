@@ -2,7 +2,7 @@
 // Defaults to 10 max unrecognized commands
 
 exports.hook_connect = function (next, connection) {
-    var plugin = this;
+    const plugin = this;
     connection.results.add(plugin, {
         max: plugin.config.get('max_unrecognized_commands') || 10,
         count: 0,
@@ -11,12 +11,12 @@ exports.hook_connect = function (next, connection) {
 };
 
 exports.hook_unrecognized_command = function (next, connection, cmd) {
-    var plugin = this;
+    const plugin = this;
 
     connection.results.add(plugin, {fail: "Unrecognized command: " + cmd, emit: true});
     connection.results.incr(plugin, {count: 1});
 
-    var uc = connection.results.get('max_unrecognized_commands');
+    const uc = connection.results.get('max_unrecognized_commands');
     if (uc.count >= uc.max) {
         connection.loginfo(plugin, "Closing connection. Too many bad commands.");
         return next(DENYDISCONNECT, "Too many bad commands");

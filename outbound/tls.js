@@ -1,14 +1,15 @@
 "use strict";
 
-var net_utils   = require('haraka-net-utils');
+const net_utils   = require('haraka-net-utils');
 
 exports.config = require('../config');
 
+// TODO: replace this with newer tls_ini loading in tls_socket
 exports.get_tls_options = function (mx) {
-    
-    var tls_options = net_utils.tls_ini_section_with_defaults('outbound');
+
+    const tls_options = net_utils.tls_ini_section_with_defaults('outbound');
     tls_options.servername = mx.exchange;
-    
+
     if (tls_options.key) {
         if (Array.isArray(tls_options.key)) {
             tls_options.key = tls_options.key[0];

@@ -2,51 +2,43 @@
 // a single connection
 
 // node.js built-in libs
-var dns         = require('dns');
-var fs          = require('fs');
-var net         = require('net');
-var os          = require('os');
-var path        = require('path');
+const dns         = require('dns');
+const fs          = require('fs');
+const net         = require('net');
+const os          = require('os');
+const path        = require('path');
 
 // npm libs
-var ipaddr      = require('ipaddr.js');
-var constants   = require('haraka-constants');
-var net_utils   = require('haraka-net-utils');
-var utils       = require('haraka-utils');
-var Address     = require('address-rfc2821').Address;
-var ResultStore = require('haraka-results');
+const ipaddr      = require('ipaddr.js');
+const constants   = require('haraka-constants');
+const net_utils   = require('haraka-net-utils');
+const Notes       = require('haraka-notes');
+const utils       = require('haraka-utils');
+const Address     = require('address-rfc2821').Address;
+const ResultStore = require('haraka-results');
 
 // Haraka libs
-var config      = require('./config');
-var logger      = require('./logger');
-var trans       = require('./transaction');
-var plugins     = require('./plugins');
-var rfc1869     = require('./rfc1869');
-var outbound    = require('./outbound');
+const config      = require('./config');
+const logger      = require('./logger');
+const trans       = require('./transaction');
+const plugins     = require('./plugins');
+const rfc1869     = require('./rfc1869');
+const outbound    = require('./outbound');
 
-var hostname    = (os.hostname().split(/\./))[0];
-var version     = JSON.parse(
+const hostname    = (os.hostname().split(/\./))[0];
+const version     = JSON.parse(
     fs.readFileSync(path.join(__dirname, 'package.json'))).version;
 
-var states = exports.states = {
-    STATE_CMD:             1,
-    STATE_LOOP:            2,
-    STATE_DATA:            3,
-    STATE_PAUSE:           4,
-    STATE_PAUSE_SMTP:      5,
-    STATE_PAUSE_DATA:      6,
-    STATE_DISCONNECTING:   99,
-    STATE_DISCONNECTED:    100,
-};
+const states = constants.connection.state;
 
 // copy logger methods into Connection:
-for (var key in logger) {
+for (const key in logger) {
     if (!/^log\w/.test(key)) continue;
     Connection.prototype[key] = (function (level) {
         return function () {
             // pass the connection instance to logger
-            var args = [ this ];
-            for (var i=0, l=arguments.length; i<l; i++) {
+            const args = [ this ];
+            for (let i=0, l=arguments.length; i<l; i++) {
                 args.push(arguments[i]);
             }
             logger[level].apply(logger, args);
@@ -56,14 +48,14 @@ for (var key in logger) {
 
 // Load HAProxy hosts into an object for fast lookups
 // as this list is checked on every new connection.
-var haproxy_hosts_ipv4 = [];
-var haproxy_hosts_ipv6 = [];
+let haproxy_hosts_ipv4 = [];
+let haproxy_hosts_ipv6 = [];
 function loadHAProxyHosts () {
-    var hosts = config.get('haproxy_hosts', 'list', loadHAProxyHosts);
-    var new_ipv4_hosts = [];
-    var new_ipv6_hosts = [];
-    for (var i=0; i<hosts.length; i++) {
-        var host = hosts[i].split(/\//);
+    const hosts = config.get('haproxy_hosts', 'list', loadHAProxyHosts);
+    const new_ipv4_hosts = [];
+    const new_ipv6_hosts = [];
+    for (let i=0; i<hosts.length; i++) {
+        const host = hosts[i].split(/\//);
         if (net.isIPv6(host[0])) {
             new_ipv6_hosts[i] =
                 [ipaddr.IPv6.parse(host[0]), parseInt(host[1] || 64)];
@@ -79,14 +71,14 @@ function loadHAProxyHosts () {
 loadHAProxyHosts();
 
 function setupClient (self) {
-    var ip = self.client.remoteAddress;
+    const ip = self.client.remoteAddress;
     if (!ip) {
         self.logdebug('setupClient got no IP address for this connection!');
         self.client.destroy();
         return;
     }
 
-    var local_addr = self.server.address();
+    const local_addr = self.server.address();
     if (local_addr && local_addr.address) {
         self.set('local', 'ip', ipaddr.process(local_addr.address).toString());
         self.set('local', 'port', local_addr.port);
@@ -107,34 +99,34 @@ function setupClient (self) {
         }
     );
 
-    var rhost = 'client ' + ((self.remote.host) ? self.remote.host + ' ' : '') +
+    const rhost = 'client ' + ((self.remote.host) ? self.remote.host + ' ' : '') +
                 '[' + self.remote.ip + ']';
     if (!self.client.on) {
         // end of tests
         return;
     }
     self.client.on('end', function () {
-        if (self.state >= states.STATE_DISCONNECTING) return;
+        if (self.state >= states.DISCONNECTING) return;
         self.remote.closed = true;
         self.loginfo(rhost + ' half closed connection');
         self.fail();
     });
 
     self.client.on('close', function (has_error) {
-        if (self.state >= states.STATE_DISCONNECTING) return;
+        if (self.state >= states.DISCONNECTING) return;
         self.remote.closed = true;
         self.loginfo(rhost + ' dropped connection');
         self.fail();
     });
 
     self.client.on('error', function (err) {
-        if (self.state >= states.STATE_DISCONNECTING) return;
+        if (self.state >= states.DISCONNECTING) return;
         self.loginfo(rhost + ' connection error: ' + err);
         self.fail();
     });
 
     self.client.on('timeout', function () {
-        if (self.state >= states.STATE_DISCONNECTING) return;
+        if (self.state >= states.DISCONNECTING) return;
         self.respond(421, 'timeout', function () {
             self.fail(rhost + ' connection timed out');
         });
@@ -144,7 +136,7 @@ function setupClient (self) {
         self.process_data(data);
     });
 
-    var ha_list = net.isIPv6(self.remote.ip) ?
+    const ha_list = net.isIPv6(self.remote.ip) ?
         haproxy_hosts_ipv6
         : haproxy_hosts_ipv4;
 
@@ -200,13 +192,13 @@ function Connection (client, server) {
 
     this.current_data = null;
     this.current_line = null;
-    this.state = states.STATE_PAUSE;
+    this.state = states.PAUSE;
     this.encoding = 'utf8';
     this.prev_state = null;
     this.loop_code = null;
     this.loop_msg = null;
     this.uuid = utils.uuid();
-    this.notes = {};
+    this.notes = new Notes();
     this.transaction = null;
     this.tran_count = 0;
     this.capabilities = null;
@@ -221,7 +213,7 @@ function Connection (client, server) {
     this.hooks_to_run = [];
     this.start_time = Date.now();
     this.last_reject = '';
-    this.max_bytes = config.get('databytes');
+    this.max_bytes = parseInt(config.get('databytes')) || 0;
     this.totalbytes = 0;
     this.rcpt_count = {
         accept:   0,
@@ -274,7 +266,7 @@ Connection.prototype.setTLS = function (obj) {
 Connection.prototype.set = function (obj, prop, val) {
     if (!this[obj]) this.obj = {};   // initialize
 
-    this[obj][prop] = val;  // normalized propery location
+    this[obj][prop] = val;  // normalized property location
 
     // sunset 3.0.0
     if (obj === 'hello' && prop === 'verb') {
@@ -292,10 +284,16 @@ Connection.prototype.set = function (obj, prop, val) {
     // /sunset
 }
 
-Connection.prototype.process_line = function (line) {
-    var self = this;
+Connection.prototype.get = function (prop_str) {
+    return prop_str.split('.').reduce((prev, curr) => {
+        return prev ? prev[curr] : undefined
+    }, this)
+}
 
-    if (this.state >= states.STATE_DISCONNECTING) {
+Connection.prototype.process_line = function (line) {
+    const self = this;
+
+    if (this.state >= states.DISCONNECTING) {
         if (logger.would_log(logger.LOGPROTOCOL)) {
             this.logprotocol(
                 "C: (after-disconnect): " +
@@ -305,7 +303,7 @@ Connection.prototype.process_line = function (line) {
         return;
     }
 
-    if (this.state === states.STATE_DATA) {
+    if (this.state === states.DATA) {
         if (logger.would_log(logger.LOGDATA)) {
             this.logdata("C: " + line);
         }
@@ -322,7 +320,7 @@ Connection.prototype.process_line = function (line) {
     /* eslint no-control-regex: 0 */
     if (/[^\x00-\x7F]/.test(this.current_line)) {
         // See if this is a TLS handshake
-        var buf = new Buffer(this.current_line.substr(0,3), 'binary');
+        const buf = new Buffer(this.current_line.substr(0,3), 'binary');
         if (buf[0] === 0x16 && buf[1] === 0x03 &&
            (buf[2] === 0x00 || buf[2] === 0x01)) // SSLv3/TLS1.x format
         {
@@ -337,22 +335,22 @@ Connection.prototype.process_line = function (line) {
         }
     }
 
-    if (this.state === states.STATE_CMD) {
-        this.state = states.STATE_PAUSE_SMTP;
-        var matches = /^([^ ]*)( +(.*))?$/.exec(this.current_line);
+    if (this.state === states.CMD) {
+        this.state = states.PAUSE_SMTP;
+        const matches = /^([^ ]*)( +(.*))?$/.exec(this.current_line);
         if (!matches) {
             return plugins.run_hooks('unrecognized_command',
                 this, this.current_line);
         }
-        var method = "cmd_" + matches[1].toLowerCase();
-        var remaining = matches[3] || '';
+        const method = "cmd_" + matches[1].toLowerCase();
+        const remaining = matches[3] || '';
         if (this[method]) {
             try {
                 this[method](remaining);
             }
             catch (err) {
                 if (err.stack) {
-                    var c = this;
+                    const c = this;
                     c.logerror(method + " failed: " + err);
                     err.stack.split("\n").forEach(c.logerror);
                 }
@@ -371,7 +369,7 @@ Connection.prototype.process_line = function (line) {
             plugins.run_hooks('unrecognized_command', this, matches);
         }
     }
-    else if (this.state === states.STATE_LOOP) {
+    else if (this.state === states.LOOP) {
         // Allow QUIT
         if (this.current_line.toUpperCase() === 'QUIT') {
             this.cmd_quit();
@@ -386,7 +384,7 @@ Connection.prototype.process_line = function (line) {
 };
 
 Connection.prototype.process_data = function (data) {
-    if (this.state >= states.STATE_DISCONNECTING) {
+    if (this.state >= states.DISCONNECTING) {
         this.logwarn("data after disconnect from " + this.remote.ip);
         return;
     }
@@ -396,7 +394,7 @@ Connection.prototype.process_data = function (data) {
     }
     else {
         // Data left over in buffer
-        var buf = Buffer.concat(
+        const buf = Buffer.concat(
             [ this.current_data, data ],
             (this.current_data.length + data.length)
         );
@@ -407,38 +405,38 @@ Connection.prototype.process_data = function (data) {
 };
 
 Connection.prototype._process_data = function () {
-    var self = this;
+    const self = this;
     // We *must* detect disconnected connections here as the state
-    // only transitions to states.STATE_CMD in the respond function below.
+    // only transitions to states.CMD in the respond function below.
     // Otherwise if multiple commands are pipelined and then the
     // connection is dropped; we'll end up in the function forever.
-    if (this.state >= states.STATE_DISCONNECTING) return;
+    if (this.state >= states.DISCONNECTING) return;
 
-    var maxlength;
-    if (this.state === states.STATE_PAUSE_DATA || this.state === states.STATE_DATA) {
+    let maxlength;
+    if (this.state === states.PAUSE_DATA || this.state === states.DATA) {
         maxlength = this.max_data_line_length;
     }
     else {
         maxlength = this.max_line_length;
     }
 
-    var offset;
+    let offset;
     while (this.current_data && ((offset = utils.indexOfLF(this.current_data, maxlength)) !== -1)) {
-        if (this.state === states.STATE_PAUSE_DATA) {
+        if (this.state === states.PAUSE_DATA) {
             return;
         }
-        var this_line = this.current_data.slice(0, offset+1);
+        let this_line = this.current_data.slice(0, offset+1);
         // Hack: bypass this code to allow HAProxy's PROXY extension
-        if (this.state === states.STATE_PAUSE &&
+        if (this.state === states.PAUSE &&
             this.proxy.allowed && /^PROXY /.test(this_line))
         {
             if (this.proxy.timer) clearTimeout(this.proxy.timer);
-            this.state = states.STATE_CMD;
+            this.state = states.CMD;
             this.current_data = this.current_data.slice(this_line.length);
             this.process_line(this_line);
         }
         // Detect early_talker but allow PIPELINING extension (ESMTP)
-        else if ((this.state === states.STATE_PAUSE || this.state === states.STATE_PAUSE_SMTP) && !this.esmtp) {
+        else if ((this.state === states.PAUSE || this.state === states.PAUSE_SMTP) && !this.esmtp) {
             // Allow EHLO/HELO to be pipelined with PROXY
             if (this.proxy.allowed && /^(?:EH|HE)LO /i.test(this_line)) return;
             if (!this.early_talker) {
@@ -449,9 +447,9 @@ Connection.prototype._process_data = function () {
             setImmediate(function () { self._process_data() });
             break;
         }
-        else if ((this.state === states.STATE_PAUSE || this.state === states.STATE_PAUSE_SMTP) && this.esmtp) {
-            var valid = true;
-            var cmd = this_line.toString('ascii').slice(0,4).toUpperCase();
+        else if ((this.state === states.PAUSE || this.state === states.PAUSE_SMTP) && this.esmtp) {
+            let valid = true;
+            const cmd = this_line.toString('ascii').slice(0,4).toUpperCase();
             switch (cmd) {
                 case 'RSET':
                 case 'MAIL':
@@ -473,7 +471,7 @@ Connection.prototype._process_data = function () {
                 // We *don't want to process this yet otherwise the
                 // current_data buffer will be lost.  The respond()
                 // function will call this function again once it
-                // has reset the state back to states.STATE_CMD and this
+                // has reset the state back to states.CMD and this
                 // ensures that we only process one command at a
                 // time.
                 this.pipelining = true;
@@ -498,8 +496,8 @@ Connection.prototype._process_data = function () {
 
     if (this.current_data && (this.current_data.length > maxlength) &&
             (utils.indexOfLF(this.current_data, maxlength) === -1)) {
-        if (this.state !== states.STATE_DATA       &&
-            this.state !== states.STATE_PAUSE_DATA)
+        if (this.state !== states.DATA       &&
+            this.state !== states.PAUSE_DATA)
         {
             // In command mode, reject:
             this.client.pause();
@@ -511,7 +509,7 @@ Connection.prototype._process_data = function () {
         else {
             this.loginfo('DATA line length (' + this.current_data.length + ') exceeds limit of ' + maxlength + ' bytes');
             this.transaction.notes.data_line_length_exceeded = true;
-            var b = Buffer.concat([
+            const b = Buffer.concat([
                 this.current_data.slice(0, maxlength - 2),
                 new Buffer("\r\n ", 'utf8'),
                 this.current_data.slice(maxlength - 2)
@@ -523,10 +521,10 @@ Connection.prototype._process_data = function () {
 };
 
 Connection.prototype.respond = function (code, msg, func) {
-    var uuid = '';
-    var messages;
+    let uuid = '';
+    let messages;
 
-    if (this.state === states.STATE_DISCONNECTED) {
+    if (this.state === states.DISCONNECTED) {
         if (func) func();
         return;
     }
@@ -560,11 +558,11 @@ Connection.prototype.respond = function (code, msg, func) {
         }
     }
 
-    var mess;
-    var buf = '';
+    let mess;
+    let buf = '';
 
     while ((mess = messages.shift())) {
-        var line = code + (messages.length ? "-" : " ") +
+        const line = code + (messages.length ? "-" : " ") +
             (uuid ? '[' + uuid + '@' + hostname + '] ' : '' ) + mess;
         this.logprotocol("S: " + line);
         buf = buf + line + "\r\n";
@@ -581,8 +579,8 @@ Connection.prototype.respond = function (code, msg, func) {
     this.last_response = buf;
 
     // Don't change loop state
-    if (this.state !== states.STATE_LOOP) {
-        this.state = states.STATE_CMD;
+    if (this.state !== states.LOOP) {
+        this.state = states.CMD;
     }
 
     // Run optional closure before handling and further commands
@@ -599,16 +597,16 @@ Connection.prototype.fail = function (err) {
 };
 
 Connection.prototype.disconnect = function () {
-    if (this.state >= states.STATE_DISCONNECTING) return;
-    var self = this;
-    self.state = states.STATE_DISCONNECTING;
+    if (this.state >= states.DISCONNECTING) return;
+    const self = this;
+    self.state = states.DISCONNECTING;
     this.reset_transaction(function () {
         plugins.run_hooks('disconnect', self);
     });
 };
 
 Connection.prototype.disconnect_respond = function () {
-    var logdetail = {
+    const logdetail = {
         'ip': this.remote.ip,
         'rdns': ((this.remote.host) ? this.remote.host : ''),
         'helo': ((this.hello.host) ? this.hello.host : ''),
@@ -633,12 +631,12 @@ Connection.prototype.disconnect_respond = function () {
         duration: (Date.now() - this.start_time)/1000,
     });
     this.lognotice('disconnect', logdetail);
-    this.state = states.STATE_DISCONNECTED;
+    this.state = states.DISCONNECTED;
     this.client.end();
 };
 
 Connection.prototype.get_capabilities = function () {
-    var capabilities = [];
+    const capabilities = [];
 
     return capabilities;
 };
@@ -675,7 +673,7 @@ Connection.prototype.reset_transaction_respond = function (retval, msg, cb) {
 };
 
 Connection.prototype.init_transaction = function (cb) {
-    var self = this;
+    const self = this;
     this.reset_transaction(function () {
         self.transaction = trans.createTransaction(self.tran_uuid());
         // Catch any errors from the message_stream
@@ -691,24 +689,24 @@ Connection.prototype.init_transaction = function (cb) {
 };
 
 Connection.prototype.loop_respond = function (code, msg) {
-    if (this.state >= states.STATE_DISCONNECTING) return;
-    this.state = states.STATE_LOOP;
+    if (this.state >= states.DISCONNECTING) return;
+    this.state = states.LOOP;
     this.loop_code = code;
     this.loop_msg = msg;
     this.respond(code, msg);
 };
 
 Connection.prototype.pause = function () {
-    var self = this;
-    if (self.state >= states.STATE_DISCONNECTING) return;
+    const self = this;
+    if (self.state >= states.DISCONNECTING) return;
     self.client.pause();
-    if (self.state !== states.STATE_PAUSE_DATA) self.prev_state = self.state;
-    self.state = states.STATE_PAUSE_DATA;
+    if (self.state !== states.PAUSE_DATA) self.prev_state = self.state;
+    self.state = states.PAUSE_DATA;
 };
 
 Connection.prototype.resume = function () {
-    var self = this;
-    if (self.state >= states.STATE_DISCONNECTING) return;
+    const self = this;
+    if (self.state >= states.DISCONNECTING) return;
     self.client.resume();
     if (self.prev_state) {
         self.state = self.prev_state;
@@ -727,7 +725,7 @@ Connection.prototype.connect_init_respond = function (retval, msg) {
 };
 
 Connection.prototype.lookup_rdns_respond = function (retval, msg) {
-    var self = this;
+    const self = this;
     switch (retval) {
         case constants.ok:
             this.set('remote', 'host', (msg || 'Unknown'));
@@ -779,7 +777,7 @@ Connection.prototype.rdns_response = function (err, domains) {
 };
 
 Connection.prototype.unrecognized_command_respond = function (retval, msg) {
-    var self = this;
+    const self = this;
     switch (retval) {
         case constants.ok:
             // response already sent, cool...
@@ -802,7 +800,7 @@ Connection.prototype.unrecognized_command_respond = function (retval, msg) {
 };
 
 Connection.prototype.connect_respond = function (retval, msg) {
-    var self = this;
+    const self = this;
     // RFC 5321 Section 4.3.2 states that the only valid SMTP codes here are:
     // 220 = Service ready
     // 554 = Transaction failed (no SMTP service here)
@@ -825,8 +823,8 @@ Connection.prototype.connect_respond = function (retval, msg) {
                 self.disconnect();
             });
             break;
-        default:
-            var greeting = config.get('smtpgreeting', 'list');
+        default: {
+            let greeting = config.get('smtpgreeting', 'list');
             if (greeting.length) {
                 // RFC5321 section 4.2
                 // Hostname/domain should appear after the 220
@@ -842,11 +840,12 @@ Connection.prototype.connect_respond = function (retval, msg) {
                 }
             }
             this.respond(220, msg || greeting);
+        }
     }
 };
 
 Connection.prototype.helo_respond = function (retval, msg) {
-    var self = this;
+    const self = this;
     switch (retval) {
         case constants.deny:
             this.respond(550, msg || "HELO denied", function () {
@@ -882,7 +881,8 @@ Connection.prototype.helo_respond = function (retval, msg) {
 };
 
 Connection.prototype.ehlo_respond = function (retval, msg) {
-    var self = this;
+    const self = this;
+
     switch (retval) {
         case constants.deny:
             this.respond(550, msg || "EHLO denied", function () {
@@ -906,10 +906,10 @@ Connection.prototype.ehlo_respond = function (retval, msg) {
                 self.disconnect();
             });
             break;
-        default:
+        default: {
             // RFC5321 section 4.1.1.1
             // Hostname/domain should appear after 250
-            var response = [
+            const response = [
                 config.get('me') + " Hello " +
                 ((this.remote.host && this.remote.host !== 'DNSERROR' &&
                 this.remote.host !== 'NXDOMAIN') ? this.remote.host + ' ' : '') +
@@ -920,13 +920,13 @@ Connection.prototype.ehlo_respond = function (retval, msg) {
                 "SMTPUTF8",
             ];
 
-            var databytes = parseInt(config.get('databytes')) || 0;
-            response.push("SIZE " + databytes);
+            response.push("SIZE " + this.max_bytes);
 
             this.capabilities = response;
 
             plugins.run_hooks('capabilities', this);
             this.esmtp = true;
+        }
     }
 };
 
@@ -935,14 +935,14 @@ Connection.prototype.capabilities_respond = function (retval, msg) {
 };
 
 Connection.prototype.quit_respond = function (retval, msg) {
-    var self = this;
+    const self = this;
     this.respond(221, msg || config.get('me') + " closing connection. Have a jolly good day.", function () {
         self.disconnect();
     });
 };
 
 Connection.prototype.vrfy_respond = function (retval, msg) {
-    var self = this;
+    const self = this;
     switch (retval) {
         case constants.deny:
             this.respond(550, msg || "Access Denied", function () {
@@ -973,7 +973,7 @@ Connection.prototype.vrfy_respond = function (retval, msg) {
 };
 
 Connection.prototype.noop_respond = function (retval, msg) {
-    var self = this;
+    const self = this;
     switch (retval) {
         case constants.deny:
             this.respond(500, msg || "Stop wasting my time");
@@ -990,20 +990,20 @@ Connection.prototype.noop_respond = function (retval, msg) {
 
 Connection.prototype.rset_respond = function (retval, msg) {
     // We ignore any plugin responses
-    var self = this;
+    const self = this;
     this.respond(250, "OK", function () {
         self.reset_transaction();
     });
 };
 
 Connection.prototype.mail_respond = function (retval, msg) {
-    var self = this;
+    const self = this;
     if (!this.transaction) {
         this.logerror("mail_respond found no transaction!");
         return;
     }
-    var sender = this.transaction.mail_from;
-    var dmsg   = "sender " + sender.format();
+    const sender = this.transaction.mail_from;
+    const dmsg   = "sender " + sender.format();
     this.lognotice(
         dmsg,
         {
@@ -1013,7 +1013,7 @@ Connection.prototype.mail_respond = function (retval, msg) {
     );
 
     function store_results (action) {
-        var addr = sender.format();
+        let addr = sender.format();
         if (addr.length > 2) {  // all but null sender
             addr = addr.substr(1, addr.length -2); // trim off < >
         }
@@ -1059,8 +1059,8 @@ Connection.prototype.rcpt_incr = function (rcpt, action, msg, retval) {
     this.transaction.rcpt_count[action]++;
     this.rcpt_count[action]++;
 
-    var addr = rcpt.format();
-    var recipient = {
+    const addr = rcpt.format();
+    const recipient = {
         address: addr.substr(1, addr.length -2),
         action:  action
     };
@@ -1081,14 +1081,14 @@ Connection.prototype.rcpt_incr = function (rcpt, action, msg, retval) {
 };
 
 Connection.prototype.rcpt_ok_respond = function (retval, msg) {
-    var self = this;
+    const self = this;
     if (!this.transaction) {
         self.results.add(this, {err: 'rcpt_ok_respond found no transaction'});
         return;
     }
     if (!msg) msg = this.last_rcpt_msg;
-    var rcpt = this.transaction.rcpt_to[this.transaction.rcpt_to.length - 1];
-    var dmsg = "recipient " + rcpt.format();
+    const rcpt = this.transaction.rcpt_to[this.transaction.rcpt_to.length - 1];
+    const dmsg = "recipient " + rcpt.format();
     // Log OK instead of CONT as this hook only runs if hook_rcpt returns OK
     this.lognotice(
         dmsg,
@@ -1135,13 +1135,13 @@ Connection.prototype.rcpt_respond = function (retval, msg) {
         retval = constants.ok;
     }
 
-    var self = this;
+    const self = this;
     if (!this.transaction) {
         this.results.add(this, {err: 'rcpt_respond found no transaction'});
         return;
     }
-    var rcpt = this.transaction.rcpt_to[this.transaction.rcpt_to.length - 1];
-    var dmsg = "recipient " + rcpt.format();
+    const rcpt = this.transaction.rcpt_to[this.transaction.rcpt_to.length - 1];
+    const dmsg = "recipient " + rcpt.format();
     if (retval !== constants.ok) {
         this.lognotice(
             dmsg,
@@ -1182,15 +1182,16 @@ Connection.prototype.rcpt_respond = function (retval, msg) {
             this.last_rcpt_msg = msg;
             plugins.run_hooks('rcpt_ok', this, rcpt);
             break;
-        default:
+        default: {
             if (retval !== constants.cont) {
                 this.logalert("No plugin determined if relaying was allowed");
             }
-            var rej_msg = 'I cannot deliver mail for ' + rcpt.format();
+            const rej_msg = 'I cannot deliver mail for ' + rcpt.format();
             this.respond(550, rej_msg, function () {
                 self.rcpt_incr(rcpt, 'reject', rej_msg, retval);
                 self.transaction.rcpt_to.pop();
             });
+        }
     }
 };
 
@@ -1198,23 +1199,23 @@ Connection.prototype.rcpt_respond = function (retval, msg) {
 // HAProxy support
 
 Connection.prototype.cmd_proxy = function (line) {
-    var self = this;
+    const self = this;
 
     if (!this.proxy.allowed) {
         this.respond(421, 'PROXY not allowed from ' + this.remote.ip);
         return this.disconnect();
     }
 
-    var match = /(TCP4|TCP6|UNKNOWN) (\S+) (\S+) (\d+) (\d+)$/.exec(line);
+    const match = /(TCP4|TCP6|UNKNOWN) (\S+) (\S+) (\d+) (\d+)$/.exec(line);
     if (!match) {
         this.respond(421, 'Invalid PROXY format');
         return this.disconnect();
     }
-    var proto = match[1];
-    var src_ip = match[2];
-    var dst_ip = match[3];
-    var src_port = match[4];
-    var dst_port = match[5];
+    const proto = match[1];
+    const src_ip = match[2];
+    const dst_ip = match[3];
+    const src_port = match[4];
+    const dst_port = match[5];
 
     // Validate source/destination IP
     /*eslint no-fallthrough: 0 */
@@ -1263,13 +1264,13 @@ Connection.prototype.cmd_proxy = function (line) {
 // SMTP Commands
 
 Connection.prototype.cmd_internalcmd = function (line) {
-    var self = this;
+    const self = this;
     if (self.remote.ip != '127.0.0.1' && self.remote.ip != '::1') {
         return this.respond(501, "INTERNALCMD not allowed remotely");
     }
-    var results = (String(line)).split(/ +/);
+    const results = (String(line)).split(/ +/);
     if (/key:/.test(results[0])) {
-        var internal_key = config.get('internalcmd_key');
+        const internal_key = config.get('internalcmd_key');
         if (results[0] != "key:" + internal_key) {
             return this.respond(501, "Invalid internalcmd_key - check config");
         }
@@ -1277,7 +1278,7 @@ Connection.prototype.cmd_internalcmd = function (line) {
     }
 
     // Now send the internal command to the master process
-    var command = results.shift();
+    const command = results.shift();
     if (!command) {
         return this.respond(501, "No command given");
     }
@@ -1287,9 +1288,9 @@ Connection.prototype.cmd_internalcmd = function (line) {
 }
 
 Connection.prototype.cmd_helo = function (line) {
-    var self = this;
-    var results = (String(line)).split(/ +/);
-    var host = results[0];
+    const self = this;
+    const results = (String(line)).split(/ +/);
+    const host = results[0];
     if (!host) {
         return this.respond(501, "HELO requires domain/address - see RFC-2821 4.1.1.1");
     }
@@ -1303,9 +1304,9 @@ Connection.prototype.cmd_helo = function (line) {
 };
 
 Connection.prototype.cmd_ehlo = function (line) {
-    var self = this;
-    var results = (String(line)).split(/ +/);
-    var host = results[0];
+    const self = this;
+    const results = (String(line)).split(/ +/);
+    const host = results[0];
     if (!host) {
         return this.respond(501, "EHLO requires domain/address - see RFC-2821 4.1.1.1");
     }
@@ -1359,8 +1360,8 @@ Connection.prototype.cmd_mail = function (line) {
         this.errors++;
         return this.respond(550, 'Authentication required');
     }
-    var results;
-    var from;
+    let results;
+    let from;
     try {
         results = rfc1869.parse("mail", line, config.get('strict_rfc1869') &&
                   !this.relaying);
@@ -1384,9 +1385,9 @@ Connection.prototype.cmd_mail = function (line) {
     }
 
     // Get rest of key=value pairs
-    var params = {};
+    const params = {};
     results.forEach(function (param) {
-        var kv = param.match(/^([^=]+)(?:=(.+))?$/);
+        const kv = param.match(/^([^=]+)(?:=(.+))?$/);
         if (kv)
             params[kv[1].toUpperCase()] = kv[2] || null;
     });
@@ -1398,13 +1399,12 @@ Connection.prototype.cmd_mail = function (line) {
 
     // Handle SIZE extension
     if (params && params.SIZE && params.SIZE > 0) {
-        var databytes = config.get('databytes');
-        if (databytes && databytes > 0 && params.SIZE > databytes) {
+        if (this.max_bytes > 0 && params.SIZE > this.max_bytes) {
             return this.respond(550, 'Message too big!');
         }
     }
 
-    var self = this;
+    const self = this;
     this.init_transaction(function () {
         self.transaction.mail_from = from;
         if (self.hello.verb == 'HELO') {
@@ -1421,8 +1421,8 @@ Connection.prototype.cmd_rcpt = function (line) {
         return this.respond(503, "Use MAIL before RCPT");
     }
 
-    var results;
-    var recip;
+    let results;
+    let recip;
     try {
         results = rfc1869.parse("rcpt", line, config.get('strict_rfc1869') &&
                       !this.relaying);
@@ -1446,9 +1446,9 @@ Connection.prototype.cmd_rcpt = function (line) {
     }
 
     // Get rest of key=value pairs
-    var params = {};
+    const params = {};
     results.forEach(function (param) {
-        var kv = param.match(/^([^=]+)(?:=(.+))?$/);
+        const kv = param.match(/^([^=]+)(?:=(.+))?$/);
         if (kv)
             params[kv[1].toUpperCase()] = kv[2] || null;
     });
@@ -1463,14 +1463,14 @@ Connection.prototype.cmd_rcpt = function (line) {
 };
 
 Connection.prototype.received_line = function () {
-    var smtp = this.hello.verb === 'EHLO' ? 'ESMTP' : 'SMTP';
+    let smtp = this.hello.verb === 'EHLO' ? 'ESMTP' : 'SMTP';
     // Implement RFC3848
     if (this.tls.enabled) smtp = smtp + 'S';
     if (this.authheader) smtp = smtp + 'A';
 
-    var sslheader;
+    let sslheader;
 
-    if (this.tls && this.tls.cipher) {
+    if (this.get('tls.cipher.version')) {
         sslheader = `(version=${this.tls.cipher.version} cipher=${this.tls.cipher.name} verify=`;
         if (this.tls.verified) {
             sslheader += 'OK)';
@@ -1485,7 +1485,7 @@ Connection.prototype.received_line = function () {
         }
     }
 
-    var received_header = [
+    const received_header = [
         'from ',
         this.hello.host, ' (',
         // If no rDNS, don't display it
@@ -1514,7 +1514,7 @@ Connection.prototype.received_line = function () {
 
 Connection.prototype.auth_results = function (message) {
     // http://tools.ietf.org/search/rfc7001
-    var has_tran = (this.transaction && this.transaction.notes) ? true : false;
+    const has_tran = (this.transaction && this.transaction.notes) ? true : false;
 
     // initialize connection note
     if (!this.notes.authentication_results) {
@@ -1537,7 +1537,7 @@ Connection.prototype.auth_results = function (message) {
     }
 
     // assemble the new header
-    var header = [ config.get('me') ];
+    let header = [ config.get('me') ];
     header = header.concat(this.notes.authentication_results);
     if (has_tran === true) {
         header = header.concat(this.transaction.notes.authentication_results);
@@ -1549,10 +1549,10 @@ Connection.prototype.auth_results = function (message) {
 Connection.prototype.auth_results_clean = function () {
     // move any existing Auth-Res headers to Original-Auth-Res headers
     // http://tools.ietf.org/html/draft-kucherawy-original-authres-00.html
-    var ars = this.transaction.header.get_all('Authentication-Results');
+    const ars = this.transaction.header.get_all('Authentication-Results');
     if (ars.length === 0) return;
 
-    for (var i=0; i < ars.length; i++) {
+    for (let i=0; i < ars.length; i++) {
         this.transaction.remove_header( ars[i] );
         this.transaction.add_header('Original-Authentication-Results', ars[i]);
     }
@@ -1583,8 +1583,8 @@ Connection.prototype.cmd_data = function (args) {
 };
 
 Connection.prototype.data_respond = function (retval, msg) {
-    var self = this;
-    var cont = 0;
+    const self = this;
+    let cont = 0;
     switch (retval) {
         case constants.deny:
             this.respond(554, msg || "Message denied", function () {
@@ -1617,13 +1617,13 @@ Connection.prototype.data_respond = function (retval, msg) {
     // We already checked for MAIL/RCPT in cmd_data
     this.respond(354, "go ahead, make my day", function () {
         // OK... now we get the data
-        self.state = states.STATE_DATA;
+        self.state = states.DATA;
         self.transaction.data_bytes = 0;
     });
 };
 
 Connection.prototype.accumulate_data = function (line) {
-    var self = this;
+    const self = this;
 
     this.transaction.data_bytes += line.length;
 
@@ -1658,7 +1658,7 @@ Connection.prototype.accumulate_data = function (line) {
 };
 
 Connection.prototype.data_done = function () {
-    var self = this;
+    const self = this;
     this.pause();
     this.totalbytes += this.transaction.data_bytes;
 
@@ -1669,7 +1669,7 @@ Connection.prototype.data_done = function () {
     }
 
     // Check max received headers count
-    var max_received = config.get('max_received_count') || 100;
+    const max_received = config.get('max_received_count') || 100;
     if (this.transaction.header.get_all('received').length > max_received) {
         this.logerror("Incoming message had too many Received headers");
         this.respond(550, "Too many received headers - possible mail loop", function () {
@@ -1679,7 +1679,7 @@ Connection.prototype.data_done = function () {
     }
 
     this.auth_results_clean();   // rename old A-R headers
-    var ar_field = this.auth_results();  // assemble new one
+    const ar_field = this.auth_results();  // assemble new one
     if (ar_field) {
         this.transaction.add_header('Authentication-Results', ar_field);
     }
@@ -1699,7 +1699,7 @@ Connection.prototype.data_done = function () {
 Connection.prototype.data_post_respond = function (retval, msg) {
     if (!this.transaction) return;
     this.transaction.data_post_delay = (Date.now() - this.transaction.data_post_start)/1000;
-    var mid = this.transaction.header.get('Message-ID') || '';
+    const mid = this.transaction.header.get('Message-ID') || '';
     this.lognotice(
         'message',
         {
@@ -1713,12 +1713,12 @@ Connection.prototype.data_post_respond = function (retval, msg) {
             'msg': (msg || ''),
         }
     );
-    var ar_field = this.auth_results();  // assemble A-R header
+    const ar_field = this.auth_results();  // assemble A-R header
     if (ar_field) {
         this.transaction.remove_header('Authentication-Results');
         this.transaction.add_leading_header('Authentication-Results', ar_field);
     }
-    var self = this;
+    const self = this;
     switch (retval) {
         case constants.deny:
             this.respond(550, msg || "Message denied", function () {
@@ -1755,7 +1755,7 @@ Connection.prototype.data_post_respond = function (retval, msg) {
 };
 
 Connection.prototype.max_data_exceeded_respond = function (retval, msg) {
-    var self = this;
+    const self = this;
     // TODO: Maybe figure out what to do with other return codes
     this.respond(retval === constants.denysoft ? 450 : 550, "Message too big!", function () {
         self.reset_transaction();
@@ -1780,7 +1780,7 @@ Connection.prototype.queue_msg = function (retval, msg) {
 };
 
 Connection.prototype.store_queue_result = function (retval, msg) {
-    var res_as = {name: 'queue'};
+    const res_as = {name: 'queue'};
     switch (retval) {
         case constants.ok:
             this.transaction.results.add(res_as, { pass: msg });
@@ -1798,7 +1798,7 @@ Connection.prototype.store_queue_result = function (retval, msg) {
 };
 
 Connection.prototype.queue_outbound_respond = function (retval, msg) {
-    var self = this;
+    const self = this;
     if (!msg) msg = this.queue_msg(retval, msg);
     this.store_queue_result(retval, msg);
     msg = msg + ' (' + this.transaction.uuid + ')';
@@ -1870,7 +1870,7 @@ Connection.prototype.queue_outbound_respond = function (retval, msg) {
 };
 
 Connection.prototype.queue_respond = function (retval, msg) {
-    var self = this;
+    const self = this;
     if (!msg) msg = this.queue_msg(retval, msg);
     this.store_queue_result(retval, msg);
     msg = msg + ' (' + this.transaction.uuid + ')';
@@ -1923,7 +1923,7 @@ Connection.prototype.queue_respond = function (retval, msg) {
 };
 
 Connection.prototype.queue_ok_respond = function (retval, msg, params) {
-    var self = this;
+    const self = this;
     // This hook is common to both hook_queue and hook_queue_outbound
     // retval and msg are ignored in this hook so we always log OK
     this.lognotice(

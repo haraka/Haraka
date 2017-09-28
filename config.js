@@ -1,15 +1,15 @@
 'use strict';
 
-var path         = require('path');
+const path         = require('path');
 
-var cfreader     = require('./configfile');
+const cfreader     = require('./configfile');
 
 module.exports = new Config();
 
 function Config (root_path, no_overrides) {
     this.root_path = root_path || cfreader.config_path;
     this.module_config = function (defaults_path, overrides_path) {
-        var cfg = new Config(path.join(defaults_path, 'config'), true);
+        const cfg = new Config(path.join(defaults_path, 'config'), true);
         if (overrides_path) {
             cfg.overrides_path = path.join(overrides_path, 'config');
         }
@@ -26,17 +26,17 @@ function Config (root_path, no_overrides) {
 }
 
 Config.prototype.get = function (name, type, cb, options) {
-    var a = this.arrange_args([name, type, cb, options]);
+    const a = this.arrange_args([name, type, cb, options]);
     if (!a[1]) a[1] = 'value';
 
-    var full_path = path.resolve(this.root_path, a[0]);
+    const full_path = path.resolve(this.root_path, a[0]);
 
-    var results = cfreader.read_config(full_path, a[1], a[2], a[3]);
+    let results = cfreader.read_config(full_path, a[1], a[2], a[3]);
 
     if (this.overrides_path) {
-        var overrides_path = path.resolve(this.overrides_path, a[0]);
+        const overrides_path = path.resolve(this.overrides_path, a[0]);
 
-        var overrides = cfreader.read_config(overrides_path, a[1], a[2], a[3]);
+        const overrides = cfreader.read_config(overrides_path, a[1], a[2], a[3]);
 
         results = merge_config(results, overrides, a[1]);
     }
@@ -66,7 +66,7 @@ function merge_config (defaults, overrides, type) {
 }
 
 function merge_struct (defaults, overrides) {
-    for (var k in overrides) {
+    for (const k in overrides) {
         if (k in defaults) {
             if (typeof overrides[k] === 'object' &&
                 typeof defaults[k] === 'object') {
@@ -95,12 +95,12 @@ config.get('thing', type, cb, options);
 */
 
 Config.prototype.arrange_args = function (args) {
-    var fs_name = args.shift();
-    var fs_type = null;
-    var cb;
-    var options;
+    const fs_name = args.shift();
+    let fs_type = null;
+    let cb;
+    let options;
 
-    for (var i=0; i < args.length; i++) {
+    for (let i=0; i < args.length; i++) {
         if (args[i] === undefined) continue;
         switch (typeof args[i]) {   // what is it?
             case 'function':

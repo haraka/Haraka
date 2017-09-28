@@ -1,10 +1,10 @@
 'use strict';
 
-var crypto = require('crypto');
-var dns    = require('dns');
-var Stream = require('stream').Stream;
-var utils  = require('haraka-utils');
-var util   = require('util');
+const crypto = require('crypto');
+const dns    = require('dns');
+const Stream = require('stream').Stream;
+const utils  = require('haraka-utils');
+const util   = require('util');
 
 //////////////////////
 // Common functions //
@@ -12,7 +12,7 @@ var util   = require('util');
 
 function md5 (str) {
     if (!str) str = '';
-    var h = crypto.createHash('md5');
+    const h = crypto.createHash('md5');
     return h.update(str).digest('hex');
 }
 
@@ -28,7 +28,7 @@ function Buf () {
             this.bar.push(buf);
             this.blen += buf.length;
         }
-        var nb = Buffer.concat(this.bar, this.blen);
+        const nb = Buffer.concat(this.bar, this.blen);
         this.bar = [];
         this.blen = 0;
         return nb;
@@ -65,11 +65,11 @@ function DKIMObject (header, header_idx, cb, timeout) {
         'g': '*',
     };
 
-    var m = /^([^:]+):\s*((?:.|[\r\n])*)$/.exec(header);
-    var sig = m[2].trim().replace(/\s+/g,'');
-    var keys = sig.split(';');
-    for (var k=0; k<keys.length; k++) {
-        var key = keys[k].trim();
+    let m = /^([^:]+):\s*((?:.|[\r\n])*)$/.exec(header);
+    const sig = m[2].trim().replace(/\s+/g,'');
+    const keys = sig.split(';');
+    for (let k=0; k<keys.length; k++) {
+        const key = keys[k].trim();
         if (!key) continue;  // skip empty keys
         m = /^([^= ]+)=((?:.|[\r\n])+)$/.exec(key);
         if (m) {
@@ -116,7 +116,7 @@ function DKIMObject (header, header_idx, cb, timeout) {
     if (!this.fields.bh) return this.result('body hash missing', 'invalid');
 
     if (this.fields.c) {
-        var c = this.fields.c.split('/');
+        const c = this.fields.c.split('/');
         if (c[0]) this.headercanon = c[0];
         if (c[1]) this.bodycanon = c[1];
     }
@@ -124,8 +124,8 @@ function DKIMObject (header, header_idx, cb, timeout) {
     if (!this.fields.d) return this.result('domain missing', 'invalid');
 
     if (this.fields.h) {
-        var headers = this.fields.h.split(':');
-        for (var h=0; h<headers.length; h++) {
+        const headers = this.fields.h.split(':');
+        for (let h=0; h<headers.length; h++) {
             this.signed_headers.push(headers[h].trim().toLowerCase());
         }
         if (this.signed_headers.indexOf('from') === -1) {
@@ -138,7 +138,7 @@ function DKIMObject (header, header_idx, cb, timeout) {
 
     if (this.fields.i) {
         // Make sure that this is a sub-domain of the 'd' field
-        var dom = this.fields.i.substr(this.fields.i.length - this.fields.d.length);
+        const dom = this.fields.i.substr(this.fields.i.length - this.fields.d.length);
         if (dom !== this.fields.d) {
             return this.result('domain mismatch', 'invalid');
         }
@@ -152,7 +152,7 @@ function DKIMObject (header, header_idx, cb, timeout) {
         return this.result('unknown query method', 'invalid');
     }
 
-    var now = new Date().getTime()/1000;
+    const now = new Date().getTime()/1000;
     if (this.fields.t) {
         if (this.fields.t > now) {
             return this.result('bad creation date', 'invalid');
@@ -182,10 +182,10 @@ DKIMObject.prototype.debug = function (str) {
 };
 
 DKIMObject.prototype.header_canon_relaxed = function (header) {
-    var m = /^([^:]+):\s*((?:.|[\r\n])*)$/.exec(header);
+    const m = /^([^:]+):\s*((?:.|[\r\n])*)$/.exec(header);
     if (!m) return header;
 
-    var hc = m[1].toLowerCase() + ':' + m[2];
+    let hc = m[1].toLowerCase() + ':' + m[2];
     hc = hc.replace(/\r\n([\t ]+)/g, "$1");
     hc = hc.replace(/[\t ]+/g, ' ');
     hc = hc.replace(/[\t ]+(\r?\n)$/, "$1");
@@ -204,7 +204,7 @@ DKIMObject.prototype.add_body_line = function (line) {
         this.line_buffer.push(line);
     }
     else {
-        var l;
+        let l;
         if (this.bodycanon === 'simple') {
             l = this.line_buffer.pop(line);
             this.bh.update(l);
@@ -235,7 +235,7 @@ DKIMObject.prototype.result = function (error, result) {
 DKIMObject.prototype.end = function () {
     if (this.run_cb) return;
 
-    var bh = this.bh.digest('base64');
+    const bh = this.bh.digest('base64');
     this.debug(this.identity + ':' +
                ' bodyhash=' + this.fields.bh +
                ' computed=' + bh);
@@ -244,16 +244,16 @@ DKIMObject.prototype.end = function () {
     }
 
     // Now we canonicalize the specified headers
-    for (var h=0; h<this.signed_headers.length; h++) {
-        var header = this.signed_headers[h];
+    for (let h=0; h<this.signed_headers.length; h++) {
+        const header = this.signed_headers[h];
         this.debug(this.identity + ': canonicalize header: ' + header);
         if (this.header_idx[header]) {
             // RFC 6376 section 5.4.2, read headers from bottom to top
-            var this_header = this.header_idx[header].pop();
+            const this_header = this.header_idx[header].pop();
             if (this_header) {
                 // Skip this signature if dkim-signature is specified
                 if (header === 'dkim-signature') {
-                    var h_md5 = md5(this_header);
+                    const h_md5 = md5(this_header);
                     if (h_md5 === this.sig_md5) {
                         this.debug(this.identity + ': skipped our own DKIM-Signature');
                         continue;
@@ -263,7 +263,7 @@ DKIMObject.prototype.end = function () {
                     this.verifier.update(this_header);
                 }
                 else if (this.headercanon === 'relaxed') {
-                    var hc = this.header_canon_relaxed(this_header);
+                    const hc = this.header_canon_relaxed(this_header);
                     this.verifier.update(hc);
                 }
             }
@@ -271,7 +271,7 @@ DKIMObject.prototype.end = function () {
     }
 
     // Now add in our original DKIM-Signature header without the b= and trailing CRLF
-    var our_sig = this.sig.replace(/b=([^;]+)/,'b=');
+    let our_sig = this.sig.replace(/b=([^;]+)/,'b=');
     if (this.headercanon === 'relaxed') {
         our_sig = this.header_canon_relaxed(our_sig);
     }
@@ -279,13 +279,13 @@ DKIMObject.prototype.end = function () {
     this.verifier.update(our_sig);
 
     // Do the DNS lookup to retrieve the public key
-    var self = this;
-    var timeout = false;
-    var timer = setTimeout(function () {
+    const self = this;
+    let timeout = false;
+    const timer = setTimeout(function () {
         timeout = true;
         return self.result('DNS timeout', 'tempfail');
     }, this.timeout * 1000);
-    var lookup = this.fields.s + '._domainkey.' + this.fields.d;
+    const lookup = this.fields.s + '._domainkey.' + this.fields.d;
     this.debug(this.identity + ': DNS lookup ' + lookup + ' (timeout=' + this.timeout + 's)');
     dns.resolveTxt(lookup, function (err, res) {
         if (timeout) return;
@@ -302,8 +302,8 @@ DKIMObject.prototype.end = function () {
             }
         }
         if (!res) return self.result('no key for signature', 'invalid');
-        for (var r=0; r<res.length; r++) {
-            var record = res[r];
+        for (let r=0; r<res.length; r++) {
+            let record = res[r];
             // Node 0.11.x compatibility
             if (Array.isArray(record)) {
                 record = record.join('');
@@ -313,10 +313,10 @@ DKIMObject.prototype.end = function () {
                 continue;
             }
             self.debug(self.identity + ': got DNS record: ' + record);
-            var rec = record.replace(/\r?\n/g, '').replace(/\s+/g,'');
-            var split = rec.split(';');
+            const rec = record.replace(/\r?\n/g, '').replace(/\s+/g,'');
+            const split = rec.split(';');
             for (let j=0; j<split.length; j++) {
-                var split2 = split[j].split('=');
+                const split2 = split[j].split('=');
                 if (split2[0]) self.dns_fields[split2[0]] = split2[1];
             }
 
@@ -326,12 +326,12 @@ DKIMObject.prototype.end = function () {
             }
             if (self.dns_fields.g) {
                 if (self.dns_fields.g !== '*') {
-                    var s = self.dns_fields.g;
+                    let s = self.dns_fields.g;
                     // Escape any special regexp characters
                     s = s.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
                     // Make * a non-greedy match against anything except @
                     s = s.replace('\\*','[^@]*?');
-                    var reg = new RegExp('^' + s + '@');
+                    const reg = new RegExp('^' + s + '@');
                     self.debug(self.identity + ': matching ' + self.dns_fields.g +
                                       ' against i=' + self.fields.i + ' regexp=' + reg.toString());
                     if (!reg.test(self.fields.i)) {
@@ -343,9 +343,9 @@ DKIMObject.prototype.end = function () {
                 return self.result('inapplicable key', 'invalid');
             }
             if (self.dns_fields.h) {
-                var hashes = self.dns_fields.h.split(':');
-                for (var k=0; k<hashes.length; k++) {
-                    var hash = hashes[k].trim();
+                const hashes = self.dns_fields.h.split(':');
+                for (let k=0; k<hashes.length; k++) {
+                    const hash = hashes[k].trim();
                     if (self.fields.a.indexOf(hash) === -1) {
                         return self.result('inappropriate hash algorithm', 'invalid');
                     }
@@ -357,9 +357,9 @@ DKIMObject.prototype.end = function () {
                 }
             }
             if (self.dns_fields.t) {
-                var flags = self.dns_fields.t.split(':');
-                for (var f=0; f<flags.length; f++) {
-                    var flag = flags[f].trim();
+                const flags = self.dns_fields.t.split(':');
+                for (let f=0; f<flags.length; f++) {
+                    const flag = flags[f].trim();
                     if (flag === 'y') {
                         // Test mode
                         self.test_mode = true;
@@ -381,7 +381,7 @@ DKIMObject.prototype.end = function () {
                               self.dns_fields.p.replace(/(.{1,76})/g, '$1\r\n') +
                               '-----END PUBLIC KEY-----\r\n';
 
-            var verified;
+            let verified;
             try {
                 verified = self.verifier.verify(self.public_key, self.fields.b, 'base64');
                 self.debug(self.identity + ': verified=' + verified);
@@ -433,13 +433,13 @@ DKIMVerifyStream.prototype.debug = function (str) {
 };
 
 DKIMVerifyStream.prototype.handle_buf = function (buf) {
-    var self = this;
+    const self = this;
     // Abort any further processing if the headers
     // did not contain any DKIM-Signature fields.
     if (this._in_body && this._no_signatures_found) {
         return true;
     }
-    var once = false;
+    let once = false;
     if (buf === null) {
         once = true;
         buf = this.buffer.pop();
@@ -451,7 +451,7 @@ DKIMVerifyStream.prototype.handle_buf = function (buf) {
         buf = this.buffer.pop(buf);
     }
 
-    var callback = function (err, result) {
+    const callback = function (err, result) {
         self.pending--;
         if (result) {
             self.results.push({
@@ -463,8 +463,8 @@ DKIMVerifyStream.prototype.handle_buf = function (buf) {
             });
 
             // Set the overall result based on this precedence order
-            var rr = ['pass','tempfail','fail','invalid','none'];
-            for (var r=0; r<rr.length; r++) {
+            const rr = ['pass','tempfail','fail','invalid','none'];
+            for (let r=0; r<rr.length; r++) {
                 if (!self.result || (self.result && self.result !== rr[r] && result.result === rr[r])) {
                     self.result = rr[r];
                 }
@@ -474,14 +474,16 @@ DKIMVerifyStream.prototype.handle_buf = function (buf) {
         self.debug(JSON.stringify(result));
 
         if (self.pending === 0 && self.cb) {
-            return self.cb(null, self.result, self.results);
+            return process.nextTick(function () {
+                self.cb(null, self.result, self.results);
+            });
         }
     };
 
     // Process input buffer into lines
-    var offset = 0;
+    let offset = 0;
     while ((offset = utils.indexOfLF(buf)) !== -1) {
-        var line = buf.slice(0, offset+1);
+        let line = buf.slice(0, offset+1);
         if (buf.length > offset) {
             buf = buf.slice(offset+1);
         }
@@ -497,28 +499,32 @@ DKIMVerifyStream.prototype.handle_buf = function (buf) {
             if (!this._in_body) {
                 this._in_body = true;
                 // Parse the headers
-                for (var h=0; h<this.headers.length; h++) {
-                    var header;
+                for (let h=0; h<this.headers.length; h++) {
+                    let header;
                     if ((header = /^([^: ]+):\s*((:?.|[\r\n])*)/.exec(this.headers[h]))) {
-                        var hn = header[1].toLowerCase();
+                        const hn = header[1].toLowerCase();
                         if (!this.header_idx[hn]) this.header_idx[hn] = [];
                         this.header_idx[hn].push(this.headers[h]);
                     }
                 }
                 if (!this.header_idx['dkim-signature']) {
                     this._no_signatures_found = true;
-                    return this.cb(null, this.result, this.results);
+                    return process.nextTick(function () {
+                        self.cb(null, self.result, self.results);
+                    });
                 }
                 else {
                     // Create new DKIM objects for each header
-                    var dkim_headers = this.header_idx['dkim-signature'];
+                    const dkim_headers = this.header_idx['dkim-signature'];
                     this.debug('Found ' + dkim_headers.length + ' DKIM signatures');
                     this.pending = dkim_headers.length;
-                    for (var d=0; d<dkim_headers.length; d++) {
+                    for (let d=0; d<dkim_headers.length; d++) {
                         this.dkim_objects.push(new DKIMObject(dkim_headers[d], this.header_idx, callback, this.timeout));
                     }
                     if (this.pending === 0) {
-                        if (this.cb) this.cb(new Error('no signatures found'));
+                        process.nextTick(function () {
+                            if (self.cb) self.cb(new Error('no signatures found'));
+                        });
                     }
                 }
                 continue;  // while()
@@ -536,7 +542,7 @@ DKIMVerifyStream.prototype.handle_buf = function (buf) {
             }
         }
         else {
-            for (var e=0; e<this.dkim_objects.length; e++) {
+            for (let e=0; e<this.dkim_objects.length; e++) {
                 this.dkim_objects[e].add_body_line(line);
             }
         }
@@ -555,11 +561,14 @@ DKIMVerifyStream.prototype.write = function (buf) {
 
 DKIMVerifyStream.prototype.end = function (buf) {
     this.handle_buf(((buf) ? buf : null));
-    for (var d=0; d<this.dkim_objects.length; d++) {
+    for (let d=0; d<this.dkim_objects.length; d++) {
         this.dkim_objects[d].end();
     }
     if (this.pending === 0 && this._no_signatures_found === false) {
-        this.cb(null, this.result, this.results);
+        const self = this;
+        process.nextTick(function () {
+            self.cb(null, self.result, self.results);
+        });
     }
 };
 

@@ -2,19 +2,22 @@
 
 // version 0.1.4
 
-var util = require('util');
-var tlds  = require('haraka-tld');
-var isIPv6 = require('net').isIPv6;
+// node builtins
+const net    = require('net');
+const util   = require('util');
 
-var ipaddr = require('ipaddr.js');
+// Haraka modules
+const DSN       = require('haraka-dsn');
+const tlds      = require('haraka-tld');
+const net_utils = require('haraka-net-utils');
+const Address   = require('address-rfc2821').Address;
 
-var DSN = require('./dsn');
-var net_utils = require('haraka-net-utils');
-var Address = require('address-rfc2821').Address;
+// External NPM modules
+const ipaddr    = require('ipaddr.js');
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 exports.register = function (next) {
-    var plugin = this;
+    const plugin = this;
     plugin.inherits('haraka-plugin-redis');
 
     plugin.load_config();
@@ -28,7 +31,7 @@ exports.register = function (next) {
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 exports.load_config = function () {
-    var plugin = this;
+    const plugin = this;
 
     plugin.cfg = plugin.config.get('greylist.ini', {
         booleans : [
@@ -45,7 +48,7 @@ exports.load_config = function () {
 
 // Load various configuration lists
 exports.load_config_lists = function () {
-    var plugin = this;
+    const plugin = this;
 
     plugin.whitelist = {};
     plugin.list = {};
@@ -53,11 +56,11 @@ exports.load_config_lists = function () {
     function load_list (type, file_name) {
         plugin.whitelist[type] = {};
 
-        var list = Object.keys(plugin.cfg[file_name]);
+        const list = Object.keys(plugin.cfg[file_name]);
 
         // toLower when loading spends a fraction of a second at load time
         // to save millions of seconds during run time.
-        for (var i = 0; i < list.length; i++) {
+        for (let i = 0; i < list.length; i++) {
             plugin.whitelist[type][list[i].toLowerCase()] = true;
         }
         plugin.logdebug('whitelist {' + type + '} loaded from ' + file_name + ' with ' + list.length + ' entries');
@@ -66,16 +69,16 @@ exports.load_config_lists = function () {
     function load_ip_list (type, file_name) {
         plugin.whitelist[type] = [];
 
-        var list = Object.keys(plugin.cfg[file_name]);
+        const list = Object.keys(plugin.cfg[file_name]);
 
-        for (var i = 0; i < list.length; i++) {
+        for (let i = 0; i < list.length; i++) {
             try {
-                var addr = list[i];
+                let addr = list[i];
                 if (addr.match(/\/\d+$/)) {
                     addr = ipaddr.parseCIDR(addr);
                 }
                 else {
-                    addr = ipaddr.parseCIDR(addr + ((isIPv6(addr)) ? '/128' : '/32'));
+                    addr = ipaddr.parseCIDR(addr + ((net.isIPv6(addr)) ? '/128' : '/32'));
                 }
 
                 plugin.whitelist[type].push(addr);
@@ -107,8 +110,8 @@ exports.shutdown = function () {
 
 // We check for IP and envelope whitelist
 exports.hook_mail = function (next, connection, params) {
-    var plugin = this;
-    var mail_from = params[0];
+    const plugin = this;
+    const mail_from = params[0];
 
     // whitelist checks
     if (plugin.ip_in_list(connection.remote.ip)) { // check connecting IP
@@ -128,7 +131,7 @@ exports.hook_mail = function (next, connection, params) {
 
     }
     else {
-        var why_skip = plugin.process_skip_rules(connection);
+        const why_skip = plugin.process_skip_rules(connection);
 
         if (why_skip) {
             plugin.loginfo(connection, 'Requested to skip the GL because skip rule matched: ' + why_skip);
@@ -143,7 +146,7 @@ exports.hook_mail = function (next, connection, params) {
 
 //
 exports.hook_rcpt_ok = function (next, connection, rcpt) {
-    var plugin = this;
+    const plugin = this;
 
     if (plugin.should_skip_check(connection)) return next();
 
@@ -152,8 +155,8 @@ exports.hook_rcpt_ok = function (next, connection, rcpt) {
         return next();
     }
 
-    var ctr = connection.transaction.results;
-    var mail_from = connection.transaction.mail_from;
+    const ctr = connection.transaction.results;
+    const mail_from = connection.transaction.mail_from;
 
     // check rcpt in whitelist (email & domain)
     if (plugin.addr_in_list('rcpt', rcpt.address().toLowerCase())) {
@@ -234,9 +237,9 @@ exports.hook_rcpt_ok = function (next, connection, rcpt) {
 
 // Main GL engine that accepts tuple and returns matched record or a rejection.
 exports.process_tuple = function (connection, sender, rcpt, cb) {
-    var plugin = this;
+    const plugin = this;
 
-    var key = plugin.craft_grey_key(connection, sender, rcpt);
+    const key = plugin.craft_grey_key(connection, sender, rcpt);
 
     return plugin.db_lookup(key, function (err, record) {
         if (err) {
@@ -247,7 +250,7 @@ exports.process_tuple = function (connection, sender, rcpt, cb) {
         plugin.logdebug(connection, 'got record: ' + util.inspect(record));
 
         // { created: TS, updated: TS, lifetime: TTL, tried: Integer }
-        var now = Date.now() / 1000;
+        const now = Date.now() / 1000;
 
         if (record &&
             (record.created + plugin.cfg.period.black < now) &&
@@ -257,7 +260,7 @@ exports.process_tuple = function (connection, sender, rcpt, cb) {
         }
 
         return plugin.update_grey(key, !record, function (err2, created_record) {
-            var err3 = new Error('in black zone');
+            const err3 = new Error('in black zone');
             err3.record = created_record || record;
             err3.notanerror = true;
             return cb(err3, null);
@@ -267,9 +270,9 @@ exports.process_tuple = function (connection, sender, rcpt, cb) {
 
 // Checks if host is _white_. Updates stats if so.
 exports.check_and_update_white = function (connection, cb) {
-    var plugin = this;
+    const plugin = this;
 
-    var key = plugin.craft_white_key(connection);
+    const key = plugin.craft_white_key(connection);
 
     return plugin.db_lookup(key, function (err, record) {
         if (err) {
@@ -291,13 +294,13 @@ exports.check_and_update_white = function (connection, cb) {
 
 // invokes next() depending on outcome param
 exports.invoke_outcome_cb = function (next, is_whitelisted) {
-    var plugin = this;
+    const plugin = this;
 
     if (is_whitelisted) {
         return next();
     }
     else {
-        var text = plugin.cfg.main.text || '';
+        const text = plugin.cfg.main.text || '';
 
         return next(DENYSOFT, DSN.sec_unauthorized(text, '451'));
     }
@@ -305,8 +308,8 @@ exports.invoke_outcome_cb = function (next, is_whitelisted) {
 
 // Should we skip greylisting invokation altogether?
 exports.should_skip_check = function (connection) {
-    var plugin = this;
-    var ctr = connection.transaction && connection.transaction.results;
+    const plugin = this;
+    const ctr = connection.transaction && connection.transaction.results;
 
     if (connection.relaying) {
         plugin.logdebug(connection, 'skipping GL for relaying host');
@@ -325,7 +328,7 @@ exports.should_skip_check = function (connection) {
     }
 
     if (ctr) {
-        if (ctr.has(plugin, 'skip', /^config\-whitelist/)) {
+        if (ctr.has(plugin, 'skip', /^config-whitelist/)) {
             plugin.loginfo(connection, 'skipping GL for host whitelisted in config');
             return true;
         }
@@ -344,10 +347,10 @@ exports.was_whitelisted_in_session = function (connection) {
 };
 
 exports.process_skip_rules = function (connection) {
-    var plugin = this;
-    var cr = connection.results;
+    const plugin = this;
+    const cr = connection.results;
 
-    var skip_cfg = plugin.cfg.skip;
+    const skip_cfg = plugin.cfg.skip;
     if (skip_cfg) {
         if (skip_cfg.dnswlorg && cr.has('dnswl.org', 'pass', /^list\.dnswl\.org\([123]\)$/)) {
             return 'dnswl.org(MED)'
@@ -367,8 +370,8 @@ exports.process_skip_rules = function (connection) {
 // When _to_ is false, we craft +sender+ key
 // When _to_ is String, we craft +rcpt+ key
 exports.craft_grey_key = function (connection, from, to) {
-    var plugin = this;
-    var key = 'grey:' + plugin.craft_hostid(connection) + ':' + (from || '<>');
+    const plugin = this;
+    let key = 'grey:' + plugin.craft_hostid(connection) + ':' + (from || '<>');
     if (to != undefined) {
         key += ':' + (to || '<>');
     }
@@ -377,22 +380,22 @@ exports.craft_grey_key = function (connection, from, to) {
 
 // Build white DB key off supplied params.
 exports.craft_white_key = function (connection) {
-    var plugin = this;
+    const plugin = this;
     return 'white:' + plugin.craft_hostid(connection);
 };
 
 // Return so-called +hostid+.
 exports.craft_hostid = function (connection) {
-    var plugin = this;
-    var trx = connection.transaction;
+    const plugin = this;
+    const trx = connection.transaction;
 
     if (trx.notes.greylist && trx.notes.greylist.hostid)
         return trx.notes.greylist.hostid; // "caching"
 
-    var ip = connection.remote.ip;
-    var rdns = connection.remote.host;
+    const ip = connection.remote.ip;
+    let rdns = connection.remote.host;
 
-    var chsit = function (value, reason) { // cache the return value
+    const chsit = function (value, reason) { // cache the return value
         if (!value)
             plugin.logdebug(connection, 'hostid set to IP: ' + reason);
 
@@ -412,36 +415,36 @@ exports.craft_hostid = function (connection) {
 
     rdns = rdns.replace(/\.$/, ''); // strip ending dot, just in case
 
-    var fcrdns = connection.results.get('connect.fcrdns');
+    const fcrdns = connection.results.get('fcrdns');
     if (!fcrdns) {
         plugin.logwarn(connection, 'No FcrDNS plugin results, fix this.');
         return chsit(null, 'no FcrDNS plugin results');
     }
 
-    if (!connection.results.has('connect.fcrdns', 'pass', 'fcrdns')) // FcrDNS failed
+    if (!connection.results.has('fcrdns', 'pass', 'fcrdns')) // FcrDNS failed
         return chsit(null, 'FcrDNS failed');
 
-    if (connection.results.get('connect.fcrdns').ptr_names.length > 1) // multiple PTR returned
+    if (connection.results.get('fcrdns').ptr_names.length > 1) // multiple PTR returned
         return chsit(null, 'multiple PTR returned');
 
-    if (connection.results.has('connect.fcrdns', 'fail', /^is_generic/)) // generic/dynamic rDNS record
+    if (connection.results.has('fcrdns', 'fail', /^is_generic/)) // generic/dynamic rDNS record
         return chsit(null, 'rDNS is a generic record');
 
-    if (connection.results.has('connect.fcrdns', 'fail', /^valid_tld/)) // invalid org domain in rDNS
+    if (connection.results.has('fcrdns', 'fail', /^valid_tld/)) // invalid org domain in rDNS
         return chsit(null, 'invalid org domain in rDNS');
 
     // strip first label up until the tld boundary.
-    var decoupled = tlds.split_hostname(rdns, 3);
-    var vardom = decoupled[0]; // "variable" portion of domain
-    var dom = decoupled[1]; // "static" portion of domain
+    const decoupled = tlds.split_hostname(rdns, 3);
+    const vardom = decoupled[0]; // "variable" portion of domain
+    const dom = decoupled[1]; // "static" portion of domain
 
     // we check for special cases where rdns looks custom/static, but really is dynamic
-    var special_case_info = plugin.check_rdns_for_special_cases(rdns, vardom);
+    const special_case_info = plugin.check_rdns_for_special_cases(rdns, vardom);
     if (special_case_info) {
         return chsit(null, special_case_info.why);
     }
 
-    var stripped_dom = dom;
+    let stripped_dom = dom;
 
     if (vardom) {
 
@@ -450,7 +453,7 @@ exports.craft_hostid = function (connection) {
             return chsit(null, 'decimal IP');
 
         // craft the +hostid+
-        var label = vardom.split('.').slice(1).join('.');
+        const label = vardom.split('.').slice(1).join('.');
         if (label)
             stripped_dom = label + '.' + stripped_dom;
     }
@@ -463,8 +466,8 @@ exports.craft_hostid = function (connection) {
 // Retrieve _grey_ record
 // not implemented
 exports.retrieve_grey = function (rcpt_key, sender_key, cb) {
-    var plugin = this;
-    var multi = plugin.db.multi();
+    const plugin = this;
+    const multi = plugin.db.multi();
 
     multi.hgetall(rcpt_key);
     multi.hgetall(sender_key);
@@ -482,14 +485,15 @@ exports.retrieve_grey = function (rcpt_key, sender_key, cb) {
 // Update or create _grey_ record
 exports.update_grey = function (key, create, cb) {
     // { created: TS, updated: TS, lifetime: TTL, tried: Integer }
-    var plugin = this;
-    var multi = plugin.db.multi();
+    const plugin = this;
+    const multi = plugin.db.multi();
 
-    var ts_now = Math.round(Date.now() / 1000);
+    const ts_now = Math.round(Date.now() / 1000);
+    let new_record;
 
     if (create) {
-        var lifetime = plugin.cfg.period.grey;
-        var new_record = {
+        const lifetime = plugin.cfg.period.grey;
+        new_record = {
             created : ts_now,
             updated : ts_now,
             lifetime : lifetime,
@@ -518,13 +522,13 @@ exports.update_grey = function (key, create, cb) {
 
 // Promote _grey_ record to _white_.
 exports.promote_to_white = function (connection, grey_rec, cb) {
-    var plugin = this;
+    const plugin = this;
 
-    var ts_now = Math.round(Date.now() / 1000);
-    var white_ttl = plugin.cfg.period.white;
+    const ts_now = Math.round(Date.now() / 1000);
+    const white_ttl = plugin.cfg.period.white;
 
     // { first_connect: TS, whitelisted: TS, updated: TS, lifetime: TTL, tried: Integer, tried_when_greylisted: Integer }
-    var white_rec = {
+    const white_rec = {
         first_connect : grey_rec.created,
         whitelisted : ts_now,
         updated : ts_now,
@@ -533,7 +537,7 @@ exports.promote_to_white = function (connection, grey_rec, cb) {
         tried : 1
     };
 
-    var white_key = plugin.craft_white_key(connection);
+    const white_key = plugin.craft_white_key(connection);
 
     return plugin.db.hmset(white_key, white_rec, function (err, result) {
         if (err) {
@@ -550,10 +554,10 @@ exports.promote_to_white = function (connection, grey_rec, cb) {
 
 // Update _white_ record
 exports.update_white_record = function (key, record, cb) {
-    var plugin = this;
+    const plugin = this;
 
-    var multi = plugin.db.multi();
-    var ts_now = Math.round(Date.now() / 1000);
+    const multi = plugin.db.multi();
+    const ts_now = Math.round(Date.now() / 1000);
 
     // { first_connect: TS, whitelisted: TS, updated: TS, lifetime: TTL, tried: Integer, tried_when_greylisted: Integer }
     multi.hincrby(key, 'tried', 1);
@@ -575,7 +579,7 @@ exports.update_white_record = function (key, record, cb) {
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 exports.db_lookup = function (key, cb) {
-    var plugin = this;
+    const plugin = this;
 
     plugin.db.hgetall(key, function (err, result) {
         if (err) {
@@ -583,7 +587,7 @@ exports.db_lookup = function (key, cb) {
         }
         if (result && typeof result === 'object') { // groom known-to-be numeric values
             ['created', 'updated', 'lifetime', 'tried', 'first_connect', 'whitelisted', 'tried_when_greylisted'].forEach(function (kk) {
-                var val = result[kk];
+                const val = result[kk];
                 if (val !== undefined) {
                     result[kk] = Number(val);
                 }
@@ -595,7 +599,7 @@ exports.db_lookup = function (key, cb) {
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 exports.addr_in_list = function (type, address) {
-    var plugin = this;
+    const plugin = this;
 
     if (!plugin.whitelist[type]) {
         plugin.logwarn("List not defined: " + type);
@@ -607,7 +611,7 @@ exports.addr_in_list = function (type, address) {
     }
 
     try {
-        var addr = new Address(address);
+        const addr = new Address(address);
         return !!plugin.whitelist[type][addr.host];
     } catch (err) {
         return false;
@@ -615,12 +619,12 @@ exports.addr_in_list = function (type, address) {
 };
 
 exports.ip_in_list = function (ip) {
-    var plugin = this;
-    var ipobj = ipaddr.parse(ip);
+    const plugin = this;
+    const ipobj = ipaddr.parse(ip);
 
-    var list = plugin.whitelist.ip;
+    const list = plugin.whitelist.ip;
 
-    for (var i = 0; i < list.length; i++) {
+    for (let i = 0; i < list.length; i++) {
         try {
             if (ipobj.match(list[i])) {
                 return true;
@@ -633,15 +637,15 @@ exports.ip_in_list = function (ip) {
 
 // Match patterns in the list against (end of) domain
 exports.domain_in_list = function (list_name, domain) {
-    var plugin = this;
-    var list = plugin.list[list_name];
+    const plugin = this;
+    const list = plugin.list[list_name];
 
     if (!list) {
         plugin.logwarn("List not defined: " + list_name);
         return false;
     }
 
-    for (var i = 0; i < list.length; i++) {
+    for (let i = 0; i < list.length; i++) {
         if (domain.length - domain.lastIndexOf(list[i]) == list[i].length)
             return true;
     }
@@ -652,7 +656,7 @@ exports.domain_in_list = function (list_name, domain) {
 // Check for special rDNS cases
 // @return {type: 'dynamic'} if rnds is dynamic (hostid should be IP)
 exports.check_rdns_for_special_cases = function (domain, label) {
-    var plugin = this;
+    const plugin = this;
 
     // ptr for these is in fact dynamic
     if (plugin.domain_in_list('dyndom', domain))

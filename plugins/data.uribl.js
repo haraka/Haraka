@@ -1,27 +1,27 @@
 'use strict';
 // Look up URLs in SURBL
 
-var url       = require('url');
-var dns       = require('dns');
-var net       = require('net');
-var tlds      = require('haraka-tld');
+const url       = require('url');
+const dns       = require('dns');
+const net       = require('net');
+const tlds      = require('haraka-tld');
 
-var net_utils = require('haraka-net-utils');
-var utils     = require('haraka-utils');
+const net_utils = require('haraka-net-utils');
+const utils     = require('haraka-utils');
 
 // Default regexps to extract the URIs from the message
-var numeric_ip = /\w{3,16}:\/+(\S+@)?(\d+|0[xX][0-9A-Fa-f]+)\.(\d+|0[xX][0-9A-Fa-f]+)\.(\d+|0[xX][0-9A-Fa-f]+)\.(\d+|0[xX][0-9A-Fa-f]+)/gi;
-var schemeless = /(?:%(?:25)?(?:2F|3D|40))?((?:www\.)?[a-zA-Z0-9][a-zA-Z0-9\-.]{0,250}\.(?:aero|arpa|asia|biz|cat|com|coop|edu|gov|info|int|jobs|mil|mobi|museum|name|net|org|pro|tel|travel|xxx|[a-zA-Z]{2}))(?!\w)/gi;
-var schemed    = /(\w{3,16}:\/+(?:\S+@)?([a-zA-Z0-9][a-zA-Z0-9\-.]+\.(?:aero|arpa|asia|biz|cat|com|coop|edu|gov|info|int|jobs|mil|mobi|museum|name|net|org|pro|tel|travel|xxx|[a-zA-Z]{2})))(?!\w)/gi;
+const numeric_ip = /\w{3,16}:\/+(\S+@)?(\d+|0[xX][0-9A-Fa-f]+)\.(\d+|0[xX][0-9A-Fa-f]+)\.(\d+|0[xX][0-9A-Fa-f]+)\.(\d+|0[xX][0-9A-Fa-f]+)/gi;
+let schemeless = /(?:%(?:25)?(?:2F|3D|40))?((?:www\.)?[a-zA-Z0-9][a-zA-Z0-9\-.]{0,250}\.(?:aero|arpa|asia|biz|cat|com|coop|edu|gov|info|int|jobs|mil|mobi|museum|name|net|org|pro|tel|travel|xxx|[a-zA-Z]{2}))(?!\w)/gi;
+let schemed    = /(\w{3,16}:\/+(?:\S+@)?([a-zA-Z0-9][a-zA-Z0-9\-.]+\.(?:aero|arpa|asia|biz|cat|com|coop|edu|gov|info|int|jobs|mil|mobi|museum|name|net|org|pro|tel|travel|xxx|[a-zA-Z]{2})))(?!\w)/gi;
 
-var lists;
-var zones;
-var excludes = {};
+let lists;
+let zones;
+const excludes = {};
 
 function check_excludes_list (host) {
     host = host.toLowerCase().split('.').reverse();
-    for (var i=0; i < host.length; i++) {
-        var check;
+    for (let i=0; i < host.length; i++) {
+        let check;
         if (i === 0) {
             check = host[i];
         }
@@ -41,10 +41,10 @@ exports.register = function () {
     if (!Object.keys(tlds.top_level_tlds).length) return;
 
     this.logdebug('Building new regexps from TLD file');
-    var re_schemeless = '(?:%(?:25)?(?:2F|3D|40))?((?:www\\.)?[a-zA-Z0-9][a-zA-Z0-9\\-.]{0,250}\\.(?:' +
+    const re_schemeless = '(?:%(?:25)?(?:2F|3D|40))?((?:www\\.)?[a-zA-Z0-9][a-zA-Z0-9\\-.]{0,250}\\.(?:' +
         Object.keys(tlds.top_level_tlds).join('|') + '))(?!\\w)';
     schemeless = new RegExp(re_schemeless, 'gi');
-    var re_schemed = '(\\w{3,16}:\\/+(?:\\S+@)?([a-zA-Z0-9][a-zA-Z0-9\\-.]+\\.(?:' +
+    const re_schemed = '(\\w{3,16}:\\/+(?:\\S+@)?([a-zA-Z0-9][a-zA-Z0-9\\-.]+\\.(?:' +
         Object.keys(tlds.top_level_tlds).join('|') + ')))(?!\\w)';
     schemed = new RegExp(re_schemed, 'gi');
 };
@@ -69,10 +69,10 @@ exports.load_uri_config = function (next) {
 
 // IS: IPv6 compatible (maybe; if the BL is support IPv6 requests)
 exports.do_lookups = function (connection, next, hosts, type) {
-    var plugin = this;
+    const plugin = this;
 
     // Store the results in the correct place based on the lookup type
-    var results = connection.results;
+    let results = connection.results;
     if (connection.transaction) {
         results = connection.transaction.results;
     }
@@ -88,10 +88,10 @@ exports.do_lookups = function (connection, next, hosts, type) {
     connection.logdebug(plugin, '(' + type + ') found ' + hosts.length + ' items for lookup');
     utils.shuffle(hosts);
 
-    var j;
-    var queries = {};
-    for (var i=0; i < hosts.length; i++) {
-        var host = hosts[i].toLowerCase();
+    let j;
+    const queries = {};
+    for (let i=0; i < hosts.length; i++) {
+        let host = hosts[i].toLowerCase();
         connection.logdebug(plugin, '(' + type + ') checking: ' + host);
         // Make sure we have a valid TLD
         if (!net.isIPv4(host) && !net.isIPv6(host) && !tlds.top_level_tlds[(host.split('.').reverse())[0]]) {
@@ -104,16 +104,16 @@ exports.do_lookups = function (connection, next, hosts, type) {
         }
         // Loop through the zones
         for (j=0; j < zones.length; j++) {
-            var zone = zones[j];
+            const zone = zones[j];
             if (zone === 'main') continue;  // skip config
             if (!lists[zone] || (lists[zone] && !/^(?:1|true|yes|enabled|on)$/i.test(lists[zone][type]))) {
                 results.add(plugin, {skip: type + ' unsupported for ' + zone });
                 continue;
             }
             // Convert in-addr.arpa into bare IPv4/v6 lookup
-            var arpa = host.split(/\./).reverse();
+            const arpa = host.split(/\./).reverse();
             if (arpa.shift() === 'arpa'){
-                var ip_format = arpa.shift();
+                const ip_format = arpa.shift();
                 if ( ip_format === 'in-addr') {
                     if (arpa.length < 4) continue; // Only full IP addresses
                     host = arpa.join('.');
@@ -123,7 +123,7 @@ exports.do_lookups = function (connection, next, hosts, type) {
                     host = arpa.join('.');
                 }
             }
-            var lookup;
+            let lookup;
             // Handle zones that do not allow IP queries (e.g. Spamhaus DBL)
             if (net.isIPv4(host)) {
                 if (/^(?:1|true|yes|enabled|on)$/i.test(lists[zone].no_ip_lookups)) {
@@ -172,9 +172,9 @@ exports.do_lookups = function (connection, next, hosts, type) {
     }
 
     // Flatten object into array for easier querying
-    var queries_to_run = [];
+    const queries_to_run = [];
     for (j=0; j < Object.keys(queries).length; j++) {
-        for (var k=0; k < Object.keys(queries[Object.keys(queries)[j]]).length; k++) {
+        for (let k=0; k < Object.keys(queries[Object.keys(queries)[j]]).length; k++) {
             // host/domain, zone
             queries_to_run.push( [ Object.keys(queries[Object.keys(queries)[j]])[k], Object.keys(queries)[j] ] );
         }
@@ -188,9 +188,9 @@ exports.do_lookups = function (connection, next, hosts, type) {
     utils.shuffle(queries_to_run); // Randomize the order
 
     // Perform the lookups
-    var pending_queries = 0;
-    var called_next = false;
-    var timer;
+    let pending_queries = 0;
+    let called_next = false;
+    let timer;
     function call_next (code, msg) {
         clearTimeout(timer);
         if (called_next) return;
@@ -211,7 +211,7 @@ exports.do_lookups = function (connection, next, hosts, type) {
     }
 
     queries_to_run.forEach(function (query) {
-        lookup = query.join('.');
+        let lookup = query.join('.');
         // Add root dot if necessary
         if (lookup[lookup.length-1] !== '.') {
             lookup = lookup + '.';
@@ -223,8 +223,8 @@ exports.do_lookups = function (connection, next, hosts, type) {
 
             if (err) return conclude_if_no_pending();
 
-            var skip = false;
-            var do_reject = function (msg) {
+            let skip = false;
+            function do_reject (msg) {
                 if (skip) return;
                 if (called_next) return;
                 if (!msg) {
@@ -239,10 +239,10 @@ exports.do_lookups = function (connection, next, hosts, type) {
                 results.add(plugin,
                     {fail: [type, query[0], query[1]].join('/') });
                 call_next(DENY, msg);
-            };
+            }
             // Optionally validate first result against a regexp
             if (lists[query[1]] && lists[query[1]].validate) {
-                var re = new RegExp(lists[query[1]].validate);
+                const re = new RegExp(lists[query[1]].validate);
                 if (!re.test(addrs[0])) {
                     connection.logdebug(plugin, 'ignoring result (' + addrs[0] + ') for: ' +
                             lookup + ' as it did not match validation rule');
@@ -253,8 +253,8 @@ exports.do_lookups = function (connection, next, hosts, type) {
             if (lists[query[1]] && lists[query[1]].bitmask) {
                 // A bitmask zone should only return a single result
                 // We only support a bitmask of up to 128 in a single octet
-                var last_octet = Number((addrs[0].split('.'))[3]);
-                var bitmask = Number(lists[query[1]].bitmask);
+                const last_octet = Number((addrs[0].split('.'))[3]);
+                const bitmask = Number(lists[query[1]].bitmask);
                 if ((last_octet & bitmask) > 0) {
                     connection.loginfo(plugin, 'found ' + query[0] + ' in zone ' + query[1] +
                         ' (' + addrs.join(',') + '; bitmask=' + bitmask + ')');
@@ -281,7 +281,7 @@ exports.do_lookups = function (connection, next, hosts, type) {
 
 exports.hook_lookup_rdns = function (next, connection) {
     this.load_uri_config(next);
-    var plugin = this;
+    const plugin = this;
     dns.reverse(connection.remote.ip, function (err, rdns) {
         if (err) {
             if (err.code) {
@@ -298,7 +298,7 @@ exports.hook_lookup_rdns = function (next, connection) {
 exports.hook_ehlo = function (next, connection, helo) {
     this.load_uri_config(next);
     // Handle IP literals
-    var literal;
+    let literal;
     if ((literal = net_utils.get_ipany_re('^\\[(?:IPv6:)?', '\\]$','').exec(helo))) {
         this.do_lookups(connection, next, literal[1], 'helo');
     }
@@ -321,14 +321,14 @@ exports.hook_data = function (next, connection) {
 
 exports.hook_data_post = function (next, connection) {
     this.load_uri_config(next);
-    var email_re = /<?[^@]+@([^> ]+)>?/;
-    var plugin = this;
-    var trans = connection.transaction;
+    const email_re = /<?[^@]+@([^> ]+)>?/;
+    const plugin = this;
+    const trans = connection.transaction;
 
     // From header
-    var do_from_header = function (cb) {
-        var from = trans.header.get('from');
-        var fmatch = email_re.exec(from);
+    const do_from_header = function (cb) {
+        const from = trans.header.get('from');
+        const fmatch = email_re.exec(from);
         if (fmatch) {
             return plugin.do_lookups(connection, cb, fmatch[1], 'from');
         }
@@ -336,9 +336,9 @@ exports.hook_data_post = function (next, connection) {
     };
 
     // Reply-To header
-    var do_replyto_header = function (cb) {
-        var replyto = trans.header.get('reply-to');
-        var rmatch = email_re.exec(replyto);
+    const do_replyto_header = function (cb) {
+        const replyto = trans.header.get('reply-to');
+        const rmatch = email_re.exec(replyto);
         if (rmatch) {
             return plugin.do_lookups(connection, cb, rmatch[1], 'replyto');
         }
@@ -346,9 +346,9 @@ exports.hook_data_post = function (next, connection) {
     };
 
     // Message-Id header
-    var do_msgid_header = function (cb) {
-        var msgid = trans.header.get('message-id');
-        var mmatch = /@([^>]+)>/.exec(msgid);
+    const do_msgid_header = function (cb) {
+        const msgid = trans.header.get('message-id');
+        const mmatch = /@([^>]+)>/.exec(msgid);
         if (mmatch) {
             return plugin.do_lookups(connection, cb, mmatch[1], 'msgid');
         }
@@ -356,32 +356,32 @@ exports.hook_data_post = function (next, connection) {
     };
 
     // Body
-    var do_body = function (cb) {
-        var urls = {};
+    const do_body = function (cb) {
+        const urls = {};
         extract_urls(urls, trans.body, connection, plugin);
         return plugin.do_lookups(connection, cb, Object.keys(urls), 'body');
     };
 
-    var chain = [ do_from_header, do_replyto_header, do_msgid_header, do_body ];
-    var chain_caller = function (code, msg) {
+    const chain = [ do_from_header, do_replyto_header, do_msgid_header, do_body ];
+    function chain_caller (code, msg) {
         if (code) {
             return next(code, msg);
         }
         if (!chain.length) {
             return next();
         }
-        var next_in_chain = chain.shift();
+        const next_in_chain = chain.shift();
         next_in_chain(chain_caller);
-    };
+    }
     chain_caller();
 };
 
 function extract_urls (urls, body, connection, self) {
     // extract from body.bodytext
-    var match;
+    let match;
     if (!body || !body.bodytext) { return; }
 
-    var uri;
+    let uri;
     // extract numeric URIs
     while ((match = numeric_ip.exec(body.bodytext))) {
         try {
@@ -422,7 +422,7 @@ function extract_urls (urls, body, connection, self) {
     // TODO: URIHASH
     // TODO: MAILHASH
 
-    for (var i=0,l=body.children.length; i < l; i++) {
+    for (let i=0,l=body.children.length; i < l; i++) {
         extract_urls(urls, body.children[i], connection, self);
     }
 }

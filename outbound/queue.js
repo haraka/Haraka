@@ -1,20 +1,19 @@
 "use strict";
 
-var async       = require('async');
-var path        = require('path');
-var fs          = require('fs');
-var Address     = require('address-rfc2821').Address;
+const async       = require('async');
+const path        = require('path');
+const fs          = require('fs');
+const Address     = require('address-rfc2821').Address;
 
-var TimerQueue  = require('../timer_queue');
-var config      = require('../config');
-var logger      = require('../logger');
-var server      = require('../server');
+const config      = require('../config');
+const logger      = require('../logger');
 
-var HMailItem   = require('./hmail');
-var cfg         = require('./config');
-var _qfile      = require('./qfile');
+const TimerQueue  = require('./timer_queue');
+const HMailItem   = require('./hmail');
+const cfg         = require('./config');
+const _qfile      = require('./qfile');
 
-var queue_dir;
+let queue_dir;
 if (config.get('queue_dir')) {
     queue_dir = path.resolve(config.get('queue_dir'));
 }
@@ -27,14 +26,14 @@ else {
 
 exports.queue_dir = queue_dir;
 
-var load_queue = async.queue(function (file, cb) {
-    var hmail = new HMailItem(file, path.join(queue_dir, file));
+const load_queue = async.queue(function (file, cb) {
+    const hmail = new HMailItem(file, path.join(queue_dir, file));
     exports._add_file(hmail);
     hmail.once('ready', cb);
 }, cfg.concurrency_max);
 
-var in_progress = 0;
-var delivery_queue = exports.delivery_queue = async.queue(function (hmail, cb) {
+let in_progress = 0;
+const delivery_queue = exports.delivery_queue = async.queue(function (hmail, cb) {
     in_progress++;
     hmail.next_cb = function () {
         in_progress--;
@@ -43,9 +42,9 @@ var delivery_queue = exports.delivery_queue = async.queue(function (hmail, cb) {
     hmail.send();
 }, cfg.concurrency_max);
 
-var temp_fail_queue = exports.temp_fail_queue = new TimerQueue();
+const temp_fail_queue = exports.temp_fail_queue = new TimerQueue();
 
-var queue_count = 0;
+let queue_count = 0;
 
 exports.get_stats = function () {
     return in_progress + '/' + exports.delivery_queue.length() + '/' + exports.temp_fail_queue.length();
@@ -61,7 +60,7 @@ exports._stat_file = function (file, cb) {
 };
 
 exports.stat_queue = function (cb) {
-    var self = exports;
+    const self = exports;
     exports._load_cur_queue(null, "_stat_file", function (err) {
         if (err) return cb(err);
         return cb(null, self.stats());
@@ -77,7 +76,7 @@ exports.load_queue = function (pid) {
 };
 
 exports._load_cur_queue = function (pid, cb_name, cb) {
-    var self = exports;
+    const self = exports;
     logger.loginfo("[outbound] Loading outbound queue from ", queue_dir);
     fs.readdir(queue_dir, function (err, files) {
         if (err) {
@@ -92,7 +91,7 @@ exports._load_cur_queue = function (pid, cb_name, cb) {
 };
 
 exports.load_queue_files = function (pid, cb_name, files, callback) {
-    var self = exports;
+    const self = exports;
     if (files.length === 0) return;
 
     if (cfg.disabled && cb_name === '_add_file') {
@@ -108,11 +107,11 @@ exports.load_queue_files = function (pid, cb_name, files, callback) {
         logger.loginfo("[outbound] Grabbing queue files for pid: " + pid);
         async.eachLimit(files, 200, function (file, cb) {
 
-            var parts = _qfile.parts(file);
+            const parts = _qfile.parts(file);
             if (parts && parts.pid === parseInt(pid)) {
-                var next_process = parts.next_attempt;
+                const next_process = parts.next_attempt;
                 // maintain some original details for the rename
-                var new_filename = _qfile.name({
+                const new_filename = _qfile.name({
                     arrival      : parts.arrival,
                     uid          : parts.uid,
                     next_attempt : parts.next_attempt,
@@ -165,7 +164,7 @@ exports.load_queue_files = function (pid, cb_name, files, callback) {
     }
     else {
         logger.loginfo("[outbound] Loading the queue...");
-        var good_file = function (file) {
+        const good_file = function (file) {
             if (/^\./.test(file)) {
                 logger.logwarn("[outbound] Removing left over dot-file: " + file);
                 fs.unlink(path.join(queue_dir, file), function (err) {
@@ -183,8 +182,8 @@ exports.load_queue_files = function (pid, cb_name, files, callback) {
         async.mapSeries(files.filter(good_file), function (file, cb) {
             // logger.logdebug("Loading queue file: " + file);
             if (cb_name === '_add_file') {
-                var parts = _qfile.parts(file);
-                var next_process = parts.next_attempt;
+                const parts = _qfile.parts(file);
+                const next_process = parts.next_attempt;
 
                 if (next_process <= self.cur_time) {
                     logger.logdebug("[outbound] File needs processing now");
@@ -205,7 +204,7 @@ exports.load_queue_files = function (pid, cb_name, files, callback) {
 
 exports.stats = function () {
     // TODO: output more data here
-    var results = {
+    const results = {
         queue_dir:   queue_dir,
         queue_count: queue_count,
     };
@@ -214,7 +213,7 @@ exports.stats = function () {
 };
 
 exports._list_file = function (file, cb) {
-    var tl_reader = fs.createReadStream(path.join(queue_dir, file), {start: 0, end: 3});
+    const tl_reader = fs.createReadStream(path.join(queue_dir, file), {start: 0, end: 3});
     tl_reader.on('error', function (err) {
         console.error("Error reading queue file: " + file + ":", err);
     });
@@ -222,19 +221,19 @@ exports._list_file = function (file, cb) {
         // I'm making the assumption here we won't ever read less than 4 bytes
         // as no filesystem on the planet should be that dumb...
         tl_reader.destroy();
-        var todo_len = (buf[0] << 24) + (buf[1] << 16) + (buf[2] << 8) + buf[3];
-        var td_reader = fs.createReadStream(path.join(queue_dir, file), {encoding: 'utf8', start: 4, end: todo_len + 3});
-        var todo = '';
+        const todo_len = (buf[0] << 24) + (buf[1] << 16) + (buf[2] << 8) + buf[3];
+        const td_reader = fs.createReadStream(path.join(queue_dir, file), {encoding: 'utf8', start: 4, end: todo_len + 3});
+        let todo = '';
         td_reader.on('data', function (str) {
             todo += str;
             if (Buffer.byteLength(todo) === todo_len) {
                 // we read everything
-                var todo_struct = JSON.parse(todo);
+                const todo_struct = JSON.parse(todo);
                 todo_struct.rcpt_to = todo_struct.rcpt_to.map(function (a) { return new Address (a); });
                 todo_struct.mail_from = new Address (todo_struct.mail_from);
                 todo_struct.file = file;
                 todo_struct.full_path = path.join(queue_dir, file);
-                var parts = _qfile.parts(file);
+                const parts = _qfile.parts(file);
                 todo_struct.pid = (parts && parts.pid) || null;
                 cb(null, todo_struct);
             }
@@ -309,7 +308,7 @@ exports.scan_queue_pids = function (cb) {
             return cb(err);
         }
 
-        var pids = {};
+        const pids = {};
 
         files.forEach(function (file) {
             if (/^\./.test(file)) {
@@ -318,7 +317,7 @@ exports.scan_queue_pids = function (cb) {
                 return fs.unlink(file, function () {});
             }
 
-            var parts = _qfile.parts(file);
+            const parts = _qfile.parts(file);
             if (!parts) {
                 logger.logerror("[outbound] Unrecognized file in queue directory: " + queue_dir + '/' + file);
                 return;

@@ -96,6 +96,7 @@ Create a PR adding yours to this list.
 | [toobusy][url-toobusy]             | Defers connections when too busy |
 | [vmta][url-vmta]                   | Virtual MTA management |
 | [watch][url-watch]                 | Watch live SMTP traffic in a web interface |
+| [wildduck][url-wildduck]           | provides recipient checks against Wild Duck |
 | [xclient][url-xclient]             | Implements XCLIENT |
 
 
@@ -112,7 +113,7 @@ Create a PR adding yours to this list.
 [url-attach]: https://github.com/haraka/Haraka/blob/master/docs/plugins/attachment.md
 [url-authflat]: https://github.com/haraka/Haraka/blob/master/docs/plugins/auth/flat_file.md
 [url-authbridge]: https://github.com/haraka/Haraka/blob/master/docs/plugins/auth/auth_bridge.md
-[url-authimap]: https://github.com/haraka/haraka-plugin-auth-imap
+[url-auth-imap]: https://github.com/haraka/haraka-plugin-auth-imap
 [url-authldap]: https://github.com/haraka/Haraka/blob/master/docs/plugins/auth/auth_ldap.md
 [url-authproxy]: https://github.com/haraka/Haraka/blob/master/docs/plugins/auth/auth_proxy.md
 [url-authvpop]: https://github.com/haraka/Haraka/blob/master/docs/plugins/auth/auth_vpopmaild.md
@@ -123,7 +124,7 @@ Create a PR adding yours to this list.
 [url-clamd]: https://github.com/haraka/Haraka/blob/master/docs/plugins/clamd.md
 [url-dovecot]: https://github.com/haraka/haraka-plugin-dovecot
 [url-fcrdns]: https://github.com/haraka/haraka-plugin-fcrdns
-[url-p0f]: https://github.com/haraka/Haraka/blob/master/docs/plugins/connect.p0f.md
+[url-p0f]: https://github.com/haraka/haraka-plugin-p0f
 [url-headers]: https://github.com/haraka/Haraka/blob/master/docs/plugins/data.headers.md
 [url-sigs]: https://github.com/haraka/Haraka/blob/master/docs/plugins/data.signatures.md
 [url-uribl]: https://github.com/haraka/Haraka/blob/master/docs/plugins/data.uribl.md
@@ -141,6 +142,7 @@ Create a PR adding yours to this list.
 [url-greylist]: https://github.com/haraka/Haraka/blob/master/docs/plugins/greylist.md
 [url-helo]: https://github.com/haraka/Haraka/blob/master/docs/plugins/helo.checks.md
 [url-karma]: https://github.com/haraka/haraka-plugin-karma
+[url-known-senders]: https://github.com/haraka/haraka-plugin-known-senders
 [url-elastic]: https://github.com/haraka/haraka-plugin-elasticsearch/
 [url-syslog]: https://github.com/haraka/haraka-plugin-syslog
 [url-ldap]: https://github.com/haraka/haraka-plugin-ldap
@@ -170,7 +172,7 @@ Create a PR adding yours to this list.
 [url-recordenv]: https://github.com/haraka/Haraka/blob/master/docs/plugins/record_envelope_addresses.md
 [url-relay]: https://github.com/haraka/Haraka/blob/master/docs/plugins/relay.md
 [url-rng]: https://github.com/haraka/Haraka/blob/master/docs/plugins/reseed_rng.md
-[url-rspamd]: https://github.com/haraka/Haraka/blob/master/docs/plugins/rspamd.md
+[url-rspamd]: https://github.com/haraka/haraka-plugin-rspamd
 [url-spamass]: https://github.com/haraka/Haraka/blob/master/docs/plugins/spamassassin.md
 [url-spf]: https://github.com/haraka/Haraka/blob/master/docs/plugins/spf.md
 [url-tarpit]: https://github.com/haraka/Haraka/blob/master/docs/plugins/tarpit.md
@@ -178,6 +180,7 @@ Create a PR adding yours to this list.
 [url-toobusy]: https://github.com/haraka/Haraka/blob/master/docs/plugins/toobusy.md
 [url-vmta]: https://github.com/haraka/haraka-plugin-vmta/blob/master/README.md
 [url-watch]: https://github.com/haraka/haraka-plugin-watch
+[url-wildduck]: https://github.com/nodemailer/haraka-plugin-wildduck
 [url-xclient]: https://github.com/haraka/Haraka/blob/master/docs/plugins/xclient.md
 [mongo-url]: https://github.com/Helpmonks/haraka-plugin-mongodb
 

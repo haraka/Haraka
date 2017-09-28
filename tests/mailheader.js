@@ -1,6 +1,6 @@
-var Header   = require('../mailheader').Header;
+const Header   = require('../mailheader').Header;
 
-var lines = [
+const lines = [
     'Return-Path: <helpme@gmail.com>',
     'Received: from [1.1.1.1] ([2.2.2.2])',
     '       by smtp.gmail.com with ESMTPSA id abcdef.28.2016.03.31.12.51.37',
@@ -20,28 +20,28 @@ var lines = [
     'X-Mailer: iPhone Mail (13E233)',
 ];
 
-for (var i=0; i<lines.length; i++) {
+for (let i=0; i<lines.length; i++) {
     lines[i] = lines[i] + '\n';
 }
 
 exports.basic = {
     parse_basic: function (test) {
         test.expect(2);
-        var h = new Header();
+        const h = new Header();
         h.parse(lines);
         test.equal(h.lines().length, 12);
         test.equal(
             h.get_decoded('content-type'),
-            'multipart/alternative; boundary=Apple-Mail-F2C5DAD3-7EB3-409D-9FE0-135C9FD43B69'
+            'multipart/alternative;   boundary=Apple-Mail-F2C5DAD3-7EB3-409D-9FE0-135C9FD43B69'
         );
         test.done();
     },
     'content type w/parens': function (test) {
         test.expect(2);
-        var h = new Header();
+        const h = new Header();
         h.parse(lines);
         test.equal(h.lines().length, 12);
-        var ct = h.get_decoded('content-type2');
+        const ct = h.get_decoded('content-type2');
         test.equal(ct, 'multipart/mixed; boundary="nqp=nb64=()I9WT8XjoN"');
         test.done();
     }
@@ -50,7 +50,7 @@ exports.basic = {
 exports.add_headers = {
     add_basic: function (test) {
         test.expect(2);
-        var h = new Header();
+        const h = new Header();
         h.parse(lines);
         h.add('Foo', 'bar');
         test.equal(h.lines()[0], 'Foo: bar\n');
@@ -60,7 +60,7 @@ exports.add_headers = {
     },
     add_utf8: function (test) {
         test.expect(4);
-        var h = new Header();
+        const h = new Header();
         h.parse(lines);
         h.add('Foo', 'bøø');
         test.equal(h.lines()[0], 'Foo: =?UTF-8?q?b=C3=B8=C3=B8?=\n');
@@ -76,7 +76,7 @@ exports.add_headers = {
 exports.continuations = {
     continuations_decoded: function (test) {
         test.expect(1);
-        var h = new Header();
+        const h = new Header();
         h.parse(lines);
         test.ok(!/\n/.test(h.get_decoded('content-type')));
         test.done();

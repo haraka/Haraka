@@ -1,10 +1,10 @@
 
 'use strict';
-var fs   = require('fs');
-var path = require('path');
-var os   = require('os');
+const fs   = require('fs');
+const path = require('path');
+const os   = require('os');
 
-var lines = [
+const lines = [
     'From: John Johnson <john@example.com>',
     'To: Jane Johnson <jane@example.com>',
     "Subject: What's for dinner?",
@@ -18,14 +18,14 @@ exports.outbound = {
         test.expect(2);
 
         ['\n', '\r\n'].forEach(function (ending) {
-            var contents = lines.join(ending);
-            var result = '';
+            let contents = lines.join(ending);
+            let result = '';
 
             // Set data_lines to lines in contents
-            var match;
-            var re = /^([^\n]*\n?)/;
+            let match;
+            const re = /^([^\n]*\n?)/;
             while ((match = re.exec(contents))) {
-                var line = match[1];
+                let line = match[1];
                 line = line.replace(/\r?\n?$/, '\r\n'); // assure \r\n ending
                 // transaction.add_data(new Buffer(line));
                 result += line;
@@ -40,10 +40,10 @@ exports.outbound = {
         test.done();
     },
     'log_methods added': function (test) {
-        var logger = require('../logger');
+        const logger = require('../logger');
         test.expect(Object.keys(logger.levels).length);
 
-        var HMailItem = require('../outbound').HMailItem;
+        const HMailItem = require('../outbound').HMailItem;
 
         Object.keys(logger.levels).forEach(function (level) {
             test.ok(HMailItem.prototype['log' + level.toLowerCase()], "Log method for level: " + level);
@@ -59,8 +59,8 @@ exports.qfile = {
     },
     'name() basic functions': function (test){
         test.expect(3);
-        var name = this.qfile.name();
-        var split = name.split('_');
+        const name = this.qfile.name();
+        const split = name.split('_');
         test.equal(split.length, 7);
         test.equal(split[2], 0);
         test.equal(split[3], process.pid);
@@ -68,7 +68,7 @@ exports.qfile = {
     },
     'name() with overrides': function (test){
         test.expect(7);
-        var overrides = {
+        const overrides = {
             arrival : 12345,
             next_attempt : 12345,
             attempts : 15,
@@ -76,8 +76,8 @@ exports.qfile = {
             uid : 'XXYYZZ',
             host : os.hostname(),
         };
-        var name = this.qfile.name(overrides);
-        var split = name.split('_');
+        const name = this.qfile.name(overrides);
+        const split = name.split('_');
         test.equal(split.length, 7);
         test.equal(split[0], overrides.arrival);
         test.equal(split[1], overrides.next_attempt);
@@ -88,10 +88,10 @@ exports.qfile = {
         test.done();
     },
     'rnd_unique() is unique-ish': function (test){
-        var repeats = 1000;
+        const repeats = 1000;
         test.expect(repeats);
-        var u = this.qfile.rnd_unique();
-        for (var i = 0; i < repeats; i++){
+        const u = this.qfile.rnd_unique();
+        for (let i = 0; i < repeats; i++){
             test.notEqual(u, this.qfile.rnd_unique());
         }
         test.done();
@@ -99,8 +99,8 @@ exports.qfile = {
     'parts() updates previous queue filenames': function (test){
         test.expect(4);
         // $nextattempt_$attempts_$pid_$uniq.$host
-        var name = "1111_0_2222_3333.foo.example.com"
-        var parts = this.qfile.parts(name);
+        const name = "1111_0_2222_3333.foo.example.com"
+        const parts = this.qfile.parts(name);
         test.equal(parts.next_attempt, 1111);
         test.equal(parts.attempts, 0);
         test.equal(parts.pid, 2222);
@@ -109,7 +109,7 @@ exports.qfile = {
     },
     'parts() handles standard queue filenames': function (test){
         test.expect(6);
-        var overrides = {
+        const overrides = {
             arrival : 12345,
             next_attempt : 12345,
             attempts : 15,
@@ -117,8 +117,8 @@ exports.qfile = {
             uid : 'XXYYZZ',
             host : os.hostname(),
         };
-        var name = this.qfile.name(overrides);
-        var parts = this.qfile.parts(name);
+        const name = this.qfile.name(overrides);
+        const parts = this.qfile.parts(name);
         test.equal(parts.arrival, overrides.arrival);
         test.equal(parts.next_attempt, overrides.next_attempt);
         test.equal(parts.attempts, overrides.attempts);
@@ -137,19 +137,19 @@ exports.get_tls_options = {
         done();
     },
     tearDown: function (done) {
-        process.env.HARAKA_TEST_DIR='';
+        delete process.env.HARAKA_TEST_DIR;
         done();
     },
     'gets TLS properties from tls.ini.outbound': function (test) {
         test.expect(1);
 
         // reset config to load from tests directory
-        var testDir = path.resolve('tests');
+        const testDir = path.resolve('tests');
         this.outbound.net_utils.config = this.outbound.net_utils.config.module_config(testDir);
         this.outbound.config = this.outbound.config.module_config(testDir);
         this.obtls.config = this.outbound.config;
 
-        var tls_config = this.obtls.get_tls_options(
+        const tls_config = this.obtls.get_tls_options(
             { exchange: 'mail.example.com'}
         );
 

@@ -1,10 +1,10 @@
 'use strict';
 
-var fixtures     = require('haraka-test-fixtures');
+const fixtures     = require('haraka-test-fixtures');
 
-var Connection   = fixtures.connection;
+const Connection   = fixtures.connection;
 
-var _set_up = function (done) {
+const _set_up = function (done) {
 
     this.plugin = new fixtures.plugin('clamd');
     this.plugin.register();
@@ -28,7 +28,7 @@ exports.load_clamd_ini = {
     },
     'defaults': function (test) {
         test.expect(6);
-        var cfg = this.plugin.cfg.main;
+        const cfg = this.plugin.cfg.main;
         test.equal('localhost:3310', cfg.clamd_socket);
         test.equal(30, cfg.timeout);
         test.equal(10, cfg.connect_timeout);
@@ -68,7 +68,7 @@ exports.hook_data = {
     'only_with_attachments, false': function (test) {
         test.expect(2);
         test.equal(false, this.plugin.cfg.main.only_with_attachments);
-        var next = function () {
+        const next = function () {
             test.equal(undefined, this.connection.transaction.parse_body);
             test.done();
         }.bind(this);
@@ -78,7 +78,7 @@ exports.hook_data = {
         this.plugin.cfg.main.only_with_attachments=true;
         test.expect(2);
         this.connection.transaction.attachment_hooks = function () {};
-        var next = function () {
+        const next = function () {
             test.equal(true, this.plugin.cfg.main.only_with_attachments);
             test.equal(true, this.connection.transaction.parse_body);
             test.done();
@@ -93,7 +93,7 @@ exports.hook_data_post = {
         this.connection.transaction.notes = { clamd_found_attachment: false };
         this.plugin.cfg.main.only_with_attachments=true;
         test.expect(1);
-        var next = function () {
+        const next = function () {
             test.ok(this.connection.transaction.results.get('clamd').skip);
             test.done();
         }.bind(this);
@@ -103,7 +103,7 @@ exports.hook_data_post = {
         this.connection.transaction.data_bytes=513;
         this.plugin.cfg.main.max_size=512;
         test.expect(1);
-        var next = function () {
+        const next = function () {
             test.ok(this.connection.transaction.results.get('clamd').skip);
             test.done();
         }.bind(this);

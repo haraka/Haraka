@@ -1,19 +1,19 @@
 'use strict';
 // Config file loader
 
-var fs   = require('fs');
-var path = require('path');
-var yaml = require('js-yaml');
+const fs   = require('fs');
+const path = require('path');
+const yaml = require('js-yaml');
 
-var logger = getStubLogger();
+let logger = getStubLogger();
 setImmediate(function () {
     logger = require('./logger');
 });
 
 // for "ini" type files
-var regex = exports.regex = {
+const regex = exports.regex = {
     section:        /^\s*\[\s*([^\]]*?)\s*\]\s*$/,
-    param:          /^\s*([\w@:\._\-\/\[\]]+)\s*(?:=\s*(.*?)\s*)?$/,
+    param:          /^\s*([\w@:._\-/[\]]+)\s*(?:=\s*(.*?)\s*)?$/,
     comment:        /^\s*[;#].*$/,
     line:           /^\s*(.*?)\s*$/,
     blank:          /^\s*$/,
@@ -24,7 +24,7 @@ var regex = exports.regex = {
     is_array:       /(.+)\[\]$/,
 };
 
-var cfreader = exports;
+const cfreader = exports;
 
 cfreader.watch_files = true;
 cfreader._config_cache = {};
@@ -35,7 +35,7 @@ cfreader._enoent_files = {};
 cfreader._sedation_timers = {};
 cfreader._overrides = {};
 
-var config_dir_candidates = [
+const config_dir_candidates = [
     path.join(__dirname, 'config'),    // Haraka ./config dir
     __dirname,                         // npm packaged plugins
 ];
@@ -60,9 +60,9 @@ function get_path_to_config_dir () {
     }
 
     for (let i=0; i < config_dir_candidates.length; i++) {
-        let candidate = config_dir_candidates[i];
+        const candidate = config_dir_candidates[i];
         try {
-            var stat = fs.statSync(candidate);
+            const stat = fs.statSync(candidate);
             if (stat && stat.isDirectory()) {
                 cfreader.config_path = candidate;
                 return;
@@ -127,13 +127,13 @@ cfreader.on_watch_event = function (name, type, options, cb) {
 
 cfreader.watch_dir = function () {
     // NOTE: This only works on Linux and Windows
-    var cp = cfreader.config_path;
+    const cp = cfreader.config_path;
     if (cfreader._watchers[cp]) return;
-    var watcher = function (fse, filename) {
+    const watcher = function (fse, filename) {
         if (!filename) return;
-        var full_path = path.join(cp, filename);
+        const full_path = path.join(cp, filename);
         if (!cfreader._read_args[full_path]) return;
-        var args = cfreader._read_args[full_path];
+        const args = cfreader._read_args[full_path];
         if (args.options && args.options.no_watch) return;
         if (cfreader._sedation_timers[filename]) {
             clearTimeout(cfreader._sedation_timers[filename]);
@@ -180,7 +180,7 @@ cfreader.watch_file = function (name, type, cb, options) {
 };
 
 cfreader.get_cache_key = function (name, options) {
-    var result;
+    let result;
 
     // Ignore options etc. if this is an overriden value
     if (cfreader._overrides[name]) {
@@ -214,10 +214,10 @@ cfreader.read_config = function (name, type, cb, options) {
 
     // Check cache first
     if (!process.env.WITHOUT_CONFIG_CACHE) {
-        var cache_key = cfreader.get_cache_key(name, options);
+        const cache_key = cfreader.get_cache_key(name, options);
         if (cfreader._config_cache[cache_key] !== undefined) {
             //logger.logdebug('Returning cached file: ' + name);
-            var cached = cfreader._config_cache[cache_key];
+            const cached = cfreader._config_cache[cache_key];
             // Make sure that any .ini file booleans are applied
             if (type === 'ini' && (options && options.booleans &&
                 Array.isArray(options.booleans)))
@@ -229,7 +229,7 @@ cfreader.read_config = function (name, type, cb, options) {
     }
 
     // load config file
-    var result = cfreader.load_config(name, type, options);
+    const result = cfreader.load_config(name, type, options);
     if (!cfreader.watch_files) return result;
 
     // We can watch the directory on these platforms which
@@ -252,15 +252,15 @@ cfreader.ensure_enoent_timer = function () {
     if (cfreader._enoent_timer) return;
     // Create timer
     cfreader._enoent_timer = setInterval(function () {
-        var files = Object.keys(cfreader._enoent_files);
-        for (var i=0; i<files.length; i++) {
+        const files = Object.keys(cfreader._enoent_files);
+        for (let i=0; i<files.length; i++) {
             /* BLOCK SCOPE */
             (function (file) {
                 fs.stat(file, function (err) {
                     if (err) return;
                     // File now exists
                     delete(cfreader._enoent_files[file]);
-                    var args = cfreader._read_args[file];
+                    const args = cfreader._read_args[file];
                     cfreader.load_config(file, args.type, args.options, args.cb);
                     cfreader._watchers[file] = fs.watch(
                         file, {persistent: false},
@@ -277,12 +277,12 @@ process.on('message', function (msg) {
         logger.loginfo("[cfreader] Shutting down enoent timer");
         clearInterval(cfreader._enoent_timer);
         logger.loginfo("[cfreader] Clearing any sedation timers");
-        for (var k in cfreader._sedation_timers) {
+        for (const k in cfreader._sedation_timers) {
             clearTimeout(cfreader._sedation_timers[k]);
         }
         logger.loginfo("[cfreader] Removing watchers");
-        for (var k2 in cfreader._watchers) {
-            cfreader._watchers[k2].close();
+        for (const k in cfreader._watchers) {
+            cfreader._watchers[k].close();
         }
     }
 });
@@ -300,7 +300,7 @@ cfreader.empty_config = function (type) {
 };
 
 cfreader.load_config = function (name, type, options) {
-    var result;
+    let result;
 
     switch (type) {
         case 'ini':
@@ -333,7 +333,7 @@ cfreader.load_config = function (name, type, options) {
     }
 
     if (!options || !options.no_cache) {
-        var cache_key = cfreader.get_cache_key(name, options);
+        const cache_key = cfreader.get_cache_key(name, options);
         cfreader._config_cache[cache_key] = result;
     }
 
@@ -341,8 +341,8 @@ cfreader.load_config = function (name, type, options) {
 };
 
 cfreader.load_json_config = function (name) {
-    var result = cfreader.empty_config('json');
-    var cache_key = cfreader.get_cache_key(name);
+    let result = cfreader.empty_config('json');
+    const cache_key = cfreader.get_cache_key(name);
     try {
         if (fs.existsSync(name)) {
             result = JSON.parse(fs.readFileSync(name));
@@ -351,7 +351,7 @@ cfreader.load_json_config = function (name) {
             // File doesn't exist
             // If filename ends in .json, try .yaml instead
             if (/\.json$/.test(name)) {
-                var yaml_name = name.replace(/\.json$/, '.yaml');
+                const yaml_name = name.replace(/\.json$/, '.yaml');
                 if (fs.existsSync(yaml_name)) {
                     // We have to read_config() here, so the file is watched
                     result = cfreader.read_config(yaml_name, 'yaml');
@@ -380,9 +380,9 @@ cfreader.process_file_overrides = function (name, result) {
     // We might be re-loading this file, so build a list
     // of currently cached overrides so we can remove
     // them before we add them in again.
-    var cache_key = cfreader.get_cache_key(name);
+    const cache_key = cfreader.get_cache_key(name);
     if (cfreader._config_cache[cache_key]) {
-        var ck_keys = Object.keys(cfreader._config_cache[cache_key]);
+        const ck_keys = Object.keys(cfreader._config_cache[cache_key]);
         for (let i=0; i<ck_keys.length; i++) {
             if (ck_keys[i].substr(0,1) === '!') {
                 delete cfreader._config_cache[path.join(cfreader.config_path, ck_keys[i].substr(1))];
@@ -393,10 +393,10 @@ cfreader.process_file_overrides = function (name, result) {
     // Allow JSON files to create or overwrite other
     // configuration file data using by prefixing the
     // outer variable name with ! e.g. !smtp.ini
-    var keys = Object.keys(result);
+    const keys = Object.keys(result);
     for (let i=0; i<keys.length; i++) {
         if (keys[i].substr(0,1) === '!') {
-            var ofp = path.join(cfreader.config_path, keys[i].substr(1));
+            const ofp = path.join(cfreader.config_path, keys[i].substr(1));
             cfreader._overrides[ofp] = true;
             // Overwrite the config cache for this filename
             cfreader._config_cache[ofp] = result[keys[i]];
@@ -413,7 +413,7 @@ cfreader.process_file_overrides = function (name, result) {
 };
 
 cfreader.load_yaml_config = function (name) {
-    var result = cfreader.empty_config('yaml');
+    let result = cfreader.empty_config('yaml');
     try {
         if (fs.existsSync(name)) {
             result = yaml.safeLoad(fs.readFileSync(name, 'utf8'));
@@ -421,7 +421,7 @@ cfreader.load_yaml_config = function (name) {
     }
     catch (err) {
         if (err.code === 'EBADF') {
-            var cache_key = cfreader.get_cache_key(name);
+            const cache_key = cfreader.get_cache_key(name);
             if (cfreader._config_cache[cache_key]) {
                 return cfreader._config_cache[cache_key];
             }
@@ -435,24 +435,24 @@ cfreader.load_yaml_config = function (name) {
 };
 
 cfreader.init_booleans = function (options, result) {
-    var bool_matches = [];
+    let bool_matches = [];
     if (options && options.booleans) bool_matches = options.booleans.slice();
 
     // Initialize any booleans
     if (options && Array.isArray(options.booleans)) {
-        for (var i=0; i<options.booleans.length; i++) {
-            var m = /^(?:([^\. ]+)\.)?(.+)/.exec(options.booleans[i]);
+        for (let i=0; i<options.booleans.length; i++) {
+            const m = /^(?:([^. ]+)\.)?(.+)/.exec(options.booleans[i]);
             if (!m) continue;
 
-            var section = m[1] || 'main';
-            var key     = m[2];
+            let section = m[1] || 'main';
+            let key     = m[2];
 
-            var bool_default = section[0] === '+' ? true
+            const bool_default = section[0] === '+' ? true
                 :     key[0] === '+' ? true
                     :     false;
 
-            if (section.match(/^(\-|\+)/)) section = section.substr(1);
-            if (    key.match(/^(\-|\+)/)) key     =     key.substr(1);
+            if (section.match(/^(-|\+)/)) section = section.substr(1);
+            if (    key.match(/^(-|\+)/)) key     =     key.substr(1);
 
             // so the boolean detection in the next section will match
             if (options.booleans.indexOf(section+'.'+key) === -1) {
@@ -467,20 +467,20 @@ cfreader.init_booleans = function (options, result) {
 };
 
 cfreader.load_ini_config = function (name, options) {
-    var result       = cfreader.empty_config('ini');
-    var current_sect = result.main;
-    var current_sect_name = 'main';
-    var bool_matches = cfreader.init_booleans(options, result);
+    const result = cfreader.empty_config('ini');
+    let current_sect = result.main;
+    let current_sect_name = 'main';
+    const bool_matches = cfreader.init_booleans(options, result);
 
     if (!fs.existsSync(name)) { return result; }
 
     try {
-        var data = fs.readFileSync(name, 'UTF-8');
-        var lines = data.split(/\r\n|\r|\n/);
-        var match;
-        var is_array_match;
-        var setter;
-        var pre = '';
+        const data = fs.readFileSync(name, 'UTF-8');
+        const lines = data.split(/\r\n|\r|\n/);
+        let match;
+        let is_array_match;
+        let setter;
+        let pre = '';
 
         lines.forEach(function (line) {
             if (regex.comment.test(line)) {
@@ -554,30 +554,29 @@ cfreader.load_ini_config = function (name, options) {
 };
 
 cfreader.load_flat_config = function (name, type) {
-    var result = cfreader.empty_config();
+    const result = cfreader.empty_config();
 
     try {
         if (fs.existsSync(name)) {
-            var data   = fs.readFileSync(name, "UTF-8");
+            let data   = fs.readFileSync(name, "UTF-8");
             if (type === 'data') {
                 while (data.length > 0) {
-                    var match = data.match(/^([^\r\n]*)\r?\n?/);
+                    const match = data.match(/^([^\r\n]*)\r?\n?/);
                     result.push(match[1]);
                     data = data.slice(match[0].length);
                 }
                 return result;
             }
-            var lines  = data.split(/\r\n|\r|\n/);
+            const lines  = data.split(/\r\n|\r|\n/);
 
             lines.forEach( function (line) {
-                var line_data;
                 if (regex.comment.test(line)) {
                     return;
                 }
                 if (regex.blank.test(line)) {
                     return;
                 }
-                line_data = regex.line.exec(line);
+                const line_data = regex.line.exec(line);
                 if (line_data) {
                     result.push(line_data[1].trim());
                 }
