@@ -46,7 +46,7 @@ Body.prototype.set_banner = function (banners) {
 };
 
 Body.prototype.parse_more = function (line) {
-    return this["parse_" + this.state](line);
+    return this[`parse_${this.state(line)}`;
 };
 
 Body.prototype.parse_child = function (line) {
@@ -98,14 +98,14 @@ Body.prototype.parse_start = function (line) {
 
     enc = enc.toLowerCase().split("\n").pop().trim();
     if (!enc.match(/^base64|quoted-printable|[78]bit$/i)) {
-        logger.logerror("Invalid CTE on email: " + enc + ", using 8bit");
+        logger.logerror(`Invalid CTE on email: ${enc}, using 8bit`);
         enc = '8bit';
     }
     enc = enc.replace(/^quoted-printable$/i, 'qp');
 
     this.decode_function = this["decode_" + enc];
     if (!this.decode_function) {
-        logger.logerror("No decode function found for: " + enc);
+        logger.logerror(`No decode function found for: ${enc}`);
         this.decode_function = this.decode_8bit;
     }
     this.ct = ct;
@@ -131,7 +131,7 @@ Body.prototype.parse_start = function (line) {
         this.state = 'attachment';
     }
 
-    return this["parse_" + this.state](line);
+    return this[`parse_${this.state](line)}`;
 };
 
 function _get_html_insert_position (buf) {
@@ -183,7 +183,7 @@ function insert_banner (ct, enc, buf, banners) {
             banner_buf = converter.convert(banner_str);
         }
         catch (err) {
-            logger.logerror("iconv conversion of banner to " + enc + " failed: " + err);
+            logger.logerror(`iconv conversion of banner to ${enc} failed: ${err}`);
         }
     }
 
@@ -332,8 +332,8 @@ Body.prototype.try_iconv = function (buf, enc) {
         this.bodytext = converter.convert(buf).toString();
     }
     catch (err) {
-        logger.logwarn("initial iconv conversion from " + enc + " to UTF-8 failed: " + err.message);
-        this.body_encoding = 'broken//' + enc;
+        logger.logwarn(`initial iconv conversion from ${enc} to UTF-8 failed: ${err.message}`);
+        this.body_encoding = `broken//${enc}`;
         // EINVAL is returned when the encoding type is not recognized/supported (e.g. ANSI_X3)
         if (err.code !== 'EINVAL') {
             // Perform the conversion again, but ignore any errors
@@ -342,7 +342,7 @@ Body.prototype.try_iconv = function (buf, enc) {
                 this.bodytext = converter.convert(buf).toString();
             }
             catch (e) {
-                logger.logerror('iconv conversion from ' + enc + ' to UTF-8 failed: ' + e.message);
+                logger.logerror(`iconv conversion from ${enc} to UTF-8 failed: ${e.message}`);
                 this.bodytext = buf.toString();
             }
         }
