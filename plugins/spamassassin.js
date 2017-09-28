@@ -199,7 +199,7 @@ exports.do_header_updates = function (connection, spamd_response) {
             connection.transaction.add_header('X-Spam-Status', legacy);
             continue;
         }
-        if (!val) continue;
+        if (val === '') continue;
         connection.transaction.add_header('X-Spam-' + key, val);
     }
 };
