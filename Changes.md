@@ -6,6 +6,7 @@
     * rspamd: repackaged as NPM module #2106
     * dsn: repackaged as NPM module haraka-dsn #2105
     * outbound: add results when queueing #2103
+    * spamassassin: skip adding headers when value is empty #2102
     * Replace console.log with stdout #2100
     * ES6: replace var with const or let  #2073
 * Fixes
