@@ -43,7 +43,7 @@ Header.prototype.parse = function (lines) {
             this._add_header(key, val, "push");
         }
         else {
-            logger.logerror("Header did not look right: " + this.header_list[i]);
+            logger.logerror(`Header did not look right: ${this.header_list[i]}`);
         }
     }
 
@@ -62,14 +62,14 @@ function try_convert (data, encoding) {
     }
     catch (err) {
         // TODO: raise a flag for this for possible scoring
-        logger.logwarn("initial iconv conversion from " + encoding + " to UTF-8 failed: " + err.message);
+        logger.logwarn(`initial iconv conversion from ${encoding} to UTF-8 failed: ${err.message}`);
         if (err.code !== 'EINVAL') {
             try {
                 const converter = new Iconv(encoding, "UTF-8//TRANSLIT//IGNORE");
                 data = converter.convert(data);
             }
             catch (e) {
-                logger.logerror("iconv from " + encoding + " to UTF-8 failed: " + e.message);
+                logger.logerror(`iconv from ${encoding} to UTF-8 failed: ${e.message}`);
             }
         }
     }
@@ -88,7 +88,7 @@ function _decode_header (matched, encoding, lang, cte, data) {
             data = new Buffer(data, "base64");
             break;
         default:
-            logger.logerror("Invalid header encoding type: " + cte);
+            logger.logerror(`Invalid header encoding type: ${cte}`);
     }
 
     // convert with iconv if encoding != UTF-8
@@ -160,7 +160,7 @@ function _decode_rfc2231 (params, str) {
         value = decodeURIComponent(value);
     }
     catch (e) {
-        logger.logerror("Decode header failed: " + key + ": " + value);
+        logger.logerror(`Decode header failed: ${key}: ${value}`);
     }
     params.kv[key_actual + '*' + key_id] = params.cur_enc ? try_convert(value, params.cur_enc) : value;
     return _decode_rfc2231(params, str); // Get next one
