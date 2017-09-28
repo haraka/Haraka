@@ -129,7 +129,7 @@ Server.gracefulShutdown = function () {
 Server._graceful = function (shutdown) {
     if (!Server.cluster && shutdown) {
         ['outbound', 'cfreader', 'plugins'].forEach(function (module) {
-            process.emit('message', {event: module + '.shutdown'});
+            process.emit('message', {event: `${module}.shutdown`});
         });
         const t = setTimeout(shutdown, Server.cfg.main.force_shutdown_timeout * 1000);
         return t.unref();
@@ -152,10 +152,10 @@ Server._graceful = function (shutdown) {
     let limit = worker_ids.length - 1;
     if (limit < 2) limit = 1;
     async.eachLimit(worker_ids, limit, function (id, cb) {
-        logger.lognotice("Killing node: " + id);
+        logger.lognotice(`Killing node: ${id}`);
         const worker = cluster.workers[id];
         ['outbound', 'cfreader', 'plugins'].forEach(function (module) {
-            worker.send({event: module + '.shutdown'});
+            worker.send({event: `${module}.shutdown`});
         })
         worker.disconnect();
         let disconnect_received = false;
@@ -172,7 +172,7 @@ Server._graceful = function (shutdown) {
             let dead = false;
             const timer = setTimeout(function () {
                 if (!dead) {
-                    logger.logcrit("Worker " + id + " failed to shutdown. Killing.");
+                    logger.logcrit(`Worker ${id} failed to shutdown. Killing.`);
                     worker.kill();
                 }
             }, exit_timeout * 1000);
@@ -197,13 +197,13 @@ Server._graceful = function (shutdown) {
         if (shutdown) {
             logger.loginfo("Workers closed. Shutting down master process subsystems");
             ['outbound', 'cfreader', 'plugins'].forEach(function (module) {
-                process.emit('message', {event: module + '.shutdown'});
+                process.emit('message', {event: `${module}.shutdown`});
             })
             const t2 = setTimeout(shutdown, Server.cfg.main.force_shutdown_timeout * 1000);
             return t2.unref();
         }
         gracefull_in_progress = false;
-        logger.lognotice("Reload complete, workers: " + JSON.stringify(Object.keys(cluster.workers)));
+        logger.lognotice(`Reload complete, workers: ${JSON.stringify(Object.keys(cluster.workers))}`);
     });
 }
 
@@ -234,7 +234,7 @@ Server.sendToMaster = function (command, params) {
 
 Server.receiveAsMaster = function (command, params) {
     if (!Server[command]) {
-        logger.logerror("Invalid command: " + command);
+        logger.logerror(`Invalid command: ${command}`);
     }
     Server[command].apply(Server, params);
 }
@@ -348,7 +348,7 @@ Server.get_smtp_server = function (host, port, inactivity_timeout, done) {
     if (port === '465') {
         logger.loginfo("getting SocketOpts for SMTPS server");
         tls_socket.getSocketOpts('*', opts => {
-            logger.loginfo("Creating TLS server on " + host + ':465');
+            logger.loginfo(`Creating TLS server on ${host}:465`);
             server = tls.createServer(opts, onConnect);
             tls_socket.addOCSP(server);
             server.has_tls=true;
@@ -390,7 +390,7 @@ Server.setup_smtp_listeners = function (plugins2, type, inactivity_timeout) {
                 server
                     .on('listening', function () {
                         const addr = this.address();
-                        logger.lognotice("Listening on " + addr.address + ':' + addr.port);
+                        logger.lognotice(`Listening on ${addr.address}:${addr.port}`);
                         listenerDone();
                     })
                     .on('close', function () {
@@ -412,7 +412,7 @@ Server.setup_smtp_listeners = function (plugins2, type, inactivity_timeout) {
         },
         function runInitHooks (err) {
             if (err) {
-                logger.logerror("Failed to setup listeners: " + err.message);
+                logger.logerror(`Failed to setup listeners: ${err.message}`);
                 return logger.dump_and_exit(-1);
             }
             Server.listening();
@@ -463,7 +463,7 @@ Server.setup_http_listeners = function () {
 
         Server.http.server.on('listening', function () {
             const addr = this.address();
-            logger.lognotice('Listening on ' + addr.address + ':' + addr.port);
+            logger.lognotice(`Listening on ${addr.address}:${addr.port}`);
             cb();
         });
 
@@ -477,7 +477,7 @@ Server.setup_http_listeners = function () {
 
     const registerRoutes = function (err) {
         if (err) {
-            logger.logerror('Failed to setup http routes: ' + err.message);
+            logger.logerror(`Failed to setup http routes: ${err.message}`);
         }
 
         Server.plugins.run_hooks('init_http', Server);
@@ -491,7 +491,7 @@ Server.setup_http_listeners = function () {
 Server.init_master_respond = function (retval, msg) {
     if (!(retval === constants.ok || retval === constants.cont)) {
         Server.logerror("init_master returned error" +
-                ((msg) ? ': ' + msg : ''));
+                ((msg) ? `: ${msg}` : ''));
         return logger.dump_and_exit(1);
     }
 
@@ -530,8 +530,7 @@ Server.init_master_respond = function (retval, msg) {
             );
         });
         cluster.on('listening', function (worker, address) {
-            logger.lognotice('worker ' + worker.id + ' listening on ' +
-                    address.address + ':' + address.port);
+            logger.lognotice(`worker ${worker.id} listening on ${address.address}:${address.port}`);
         });
         cluster.on('exit', cluster_exit_listener);
     });
@@ -539,12 +538,10 @@ Server.init_master_respond = function (retval, msg) {
 
 function cluster_exit_listener (worker, code, signal) {
     if (signal) {
-        logger.lognotice('worker ' + worker.id +
-                ' killed by signal ' + signal);
+        logger.lognotice(`worker ${worker.id} killed by signal ${signal}`);
     }
     else if (code !== 0) {
-        logger.lognotice('worker ' + worker.id +
-                ' exited with error code: ' + code);
+        logger.lognotice(`worker ${worker.id} exited with error code: ${code}`);
     }
     if (signal || code !== 0) {
         // Restart worker
@@ -566,11 +563,11 @@ Server.init_child_respond = function (retval, msg) {
     }
 
     const pid = process.env.CLUSTER_MASTER_PID;
-    Server.logerror("init_child returned error" + ((msg) ? ': ' + msg : ''));
+    Server.logerror(`init_child returned error${((msg) ? `: ${msg}` : '')}`);
     try {
         if (pid) {
             process.kill(pid);
-            Server.logerror('Killing master (pid=' + pid + ')');
+            Server.logerror(`Killing master (pid=${pid})`);
         }
     }
     catch (err) {
@@ -584,14 +581,14 @@ Server.listening = function () {
 
     // Drop privileges
     if (c.group) {
-        Server.lognotice('Switching from current gid: ' + process.getgid());
+        Server.lognotice(`Switching from current gid: ${process.getgid()}`);
         process.setgid(c.group);
-        Server.lognotice('New gid: ' + process.getgid());
+        Server.lognotice(`New gid: ${process.getgid()}`);
     }
     if (c.user) {
-        Server.lognotice('Switching from current uid: ' + process.getuid());
+        Server.lognotice(`Switching from current uid: ${process.getuid()}`);
         process.setuid(c.user);
-        Server.lognotice('New uid: ' + process.getuid());
+        Server.lognotice(`New uid: ${process.getuid()}`);
     }
 
     Server.ready = 1;
@@ -630,7 +627,7 @@ Server.get_http_docroot = function () {
         (process.env.HARAKA || __dirname),
         '/html'
     );
-    logger.loginfo('using html docroot: ' + Server.http.cfg.docroot);
+    logger.loginfo(`using html docroot: ${Server.http.cfg.docroot}`);
     return Server.http.cfg.docroot;
 };
 
