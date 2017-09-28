@@ -57,13 +57,12 @@ function HostPool (hostports_str, retry_secs) {
  */
 HostPool.prototype.failed = function (host, port) {
     const self = this;
-    const key = host + ':' + port;
+    const key = `${host}:${port}`;
     const retry_msecs = self.retry_secs * 1000;
     self.dead_hosts[key] = true;
 
     function cb_if_still_dead () {
-        logger.logwarn("host " + key + " is still dead, will retry in " +
-                        self.retry_secs + " secs");
+        logger.logwarn(`host ${key} is still dead, will retry in ${self.retry_secs} secs`);
         self.dead_hosts[key] = true;
         // console.log(1);
         setTimeout(function () {
@@ -73,7 +72,7 @@ HostPool.prototype.failed = function (host, port) {
 
     function cb_if_alive () {
         // console.log(2);
-        logger.loginfo("host " + key + " is back! adding back into pool");
+        logger.loginfo(`host ${key} is back! adding back into pool`);
         delete self.dead_hosts[key];
     }
 
@@ -94,7 +93,7 @@ HostPool.prototype.probe_dead_host = function (
 ){
 
     const self = this;
-    logger.loginfo("probing dead host " + host + ":" + port);
+    logger.loginfo(`probing dead host ${host}:${port}`);
 
     const connect_timeout_ms = 200; // keep it snappy
     let s;
@@ -118,7 +117,7 @@ HostPool.prototype.probe_dead_host = function (
     }
     catch (e) {
         // only way to catch run-time javascript errors in here;
-        console.log("ERROR in probe_dead_host, got error " + e);
+        console.log(`ERROR in probe_dead_host, got error ${e}`);
         throw e;
     }
 };
@@ -169,9 +168,7 @@ HostPool.prototype.get_host = function () {
     }
     else {
         logger.logwarn(
-            "no working hosts found, retrying a dead one, config " +
-                "(probably from smtp_forward.forwarding_host_pool) is " +
-                "'" + this.hostports_str + "'"
+            `no working hosts found, retrying a dead one, config (probably from smtp_forward.forwarding_host_pool) is '${this.hostports_str}'`
         );
         this.last_i = first_i;
         return this.hosts[ first_i ];
