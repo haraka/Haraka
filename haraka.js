@@ -71,6 +71,6 @@ process.on('exit', function (code) {
     logger.dump_logs();
 });
 
-logger.log("NOTICE", "Starting up Haraka version " + exports.version);
+logger.log("NOTICE", `Starting up Haraka version ${exports.version}`);
 
 server.createServer();
