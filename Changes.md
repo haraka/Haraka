@@ -8,12 +8,13 @@
     * outbound: add results when queueing #2103
     * Replace console.log with stdout #2100
     * ES6: replace var with const or let  #2073
+    * Replaced concatenated strings with template literals in plugins/attachment.js ##2130
+
 * Fixes
     * tls: only apply default key/cert paths when undefined #2111
     * haraka was adding TLS header on non-TLS connection #2103
     * dkim_verify: fix formatting of auth results #2107
     * smtp_forward: consistently use queue.wants #2107
-    * Replaced concatenated strings with template literals in plugins/attachment.js ##2130
 
 ## 2.8.15 - Sep 10, 2017
 
