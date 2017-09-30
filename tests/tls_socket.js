@@ -1,4 +1,3 @@
-// require('haraka-config').watch_files = false;
 
 const path   = require('path');
 

@@ -4,6 +4,7 @@
 * New Features
 * Fixes
 * Changes
+    * config: replace ./config.js with haraka-config #2119
 
 ## 2.8.16 - Sep 30, 2017
 

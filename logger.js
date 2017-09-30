@@ -4,9 +4,9 @@
 const util      = require('util');
 const tty       = require('tty');
 
+const config    = require('haraka-config');
 const constants = require('haraka-constants');
 
-const config    = require('./config');
 let plugins;
 let connection;
 let outbound;
