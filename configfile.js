@@ -42,7 +42,7 @@ const config_dir_candidates = [
 
 function get_path_to_config_dir () {
     if (process.env.HARAKA) {
-        // logger.logdebug('process.env.HARAKA: ' + process.env.HARAKA);
+        //logger.logdebug(`process.env.HARAKA: ${process.env.HARAKA}`);
         cfreader.config_path = path.join(process.env.HARAKA, 'config');
         return;
     }
@@ -74,7 +74,7 @@ function get_path_to_config_dir () {
     }
 }
 get_path_to_config_dir();
-// logger.logdebug('cfreader.config_path: ' + cfreader.config_path);
+//logger.logdebug(`cfreader.config_path: ${cfreader.config_path}`);
 
 function getStubLogger () {
     // stubs used before logger is loaded
@@ -97,12 +97,12 @@ cfreader.on_watch_event = function (name, type, options, cb) {
             clearTimeout(cfreader._sedation_timers[name]);
         }
         cfreader._sedation_timers[name] = setTimeout(function () {
-            logger.loginfo('Reloading file: ' + name);
+            logger.loginfo(`Reloading file: ${name}`);
             cfreader.load_config(name, type, options);
             delete cfreader._sedation_timers[name];
             if (typeof cb === 'function') cb();
         }, 5 * 1000);
-        logger.logdebug('Detected ' + fse + ' on ' + name);
+        logger.logdebug(`Detected ${fse} on ${name}`);
         if (fse !== 'rename') return;
         // https://github.com/joyent/node/issues/2062
         // After a rename event, re-watch the file
@@ -119,7 +119,7 @@ cfreader.on_watch_event = function (name, type, options, cb) {
                 cfreader.ensure_enoent_timer();
             }
             else {
-                logger.logerror('Error watching file: ' + name + ' : ' + e);
+                logger.logerror(`Error watching file: ${name} : ${e}`);
             }
         }
     };
@@ -139,18 +139,18 @@ cfreader.watch_dir = function () {
             clearTimeout(cfreader._sedation_timers[filename]);
         }
         cfreader._sedation_timers[filename] = setTimeout(function () {
-            logger.loginfo('Reloading file: ' + full_path);
+            logger.loginfo(`Reloading file: ${full_path}`);
             cfreader.load_config(full_path, args.type, args.options);
             delete cfreader._sedation_timers[filename];
             if (typeof args.cb === 'function') args.cb();
         }, 5 * 1000);
-        logger.logdebug('Detected ' + fse + ' on ' + filename);
+        logger.logdebug(`Detected ${fse} on ${filename}`);
     };
     try {
         cfreader._watchers[cp] = fs.watch(cp, { persistent: false }, watcher);
     }
     catch (e) {
-        logger.logerror('Error watching directory ' + cp + '(' + e + ')');
+        logger.logerror(`Error watching directory ${cp}(${e})`);
     }
     return;
 };
@@ -169,7 +169,7 @@ cfreader.watch_file = function (name, type, cb, options) {
     }
     catch (e) {
         if (e.code !== 'ENOENT') { // ignore error when ENOENT
-            logger.logerror('Error watching config file: ' + name + ' : ' + e);
+            logger.logerror(`Error watching config file: ${name} : ${e}`);
         }
         else {
             cfreader._enoent_files[name] = true;
@@ -216,7 +216,7 @@ cfreader.read_config = function (name, type, cb, options) {
     if (!process.env.WITHOUT_CONFIG_CACHE) {
         const cache_key = cfreader.get_cache_key(name, options);
         if (cfreader._config_cache[cache_key] !== undefined) {
-            //logger.logdebug('Returning cached file: ' + name);
+            //logger.logdebug(`Returning cached file: ${name}`);
             const cached = cfreader._config_cache[cache_key];
             // Make sure that any .ini file booleans are applied
             if (type === 'ini' && (options && options.booleans &&
@@ -427,7 +427,7 @@ cfreader.load_yaml_config = function (name) {
             }
         }
         else {
-            logger.logerror('EXCEPTION processing ' + name + ': ' + err);
+            logger.logerror(`EXCEPTION processing ${name}: ${err}`);
         }
     }
     cfreader.process_file_overrides(name, result);
@@ -516,14 +516,13 @@ cfreader.load_ini_config = function (name, options) {
                 }
                 if (options && Array.isArray(options.booleans) &&
                     (
-                        bool_matches.indexOf(current_sect_name + '.' + match[1]) !== -1
+                        bool_matches.indexOf(`${current_sect_name}.${match[1]}`) !== -1
                         ||
-                        bool_matches.indexOf('*.' + match[1]) !== -1
+                        bool_matches.indexOf(`*.${match[1]}`) !== -1
                     ))
                 {
                     setter(match[1], regex.is_truth.test(match[2]));
-                    logger.logdebug('Returning boolean ' + current_sect[match[1]] +
-                                    ' for ' + current_sect_name + '.' + match[1] + '=' + match[2]);
+                    logger.logdebug(`Returning boolean ${current_sect[match[1]]} for ${current_sect_name}.${match[1]}=${match[2]}`);
                 }
                 else if (regex.is_integer.test(match[2])) {
                     setter(match[1], parseInt(match[2], 10));
@@ -536,7 +535,7 @@ cfreader.load_ini_config = function (name, options) {
                 }
                 return;
             }
-            logger.logerror('Invalid line in config file \'' + name + '\': ' + line);
+            logger.logerror(`Invalid line in config file '${name}': ${line}`);
         });
     }
     catch (err) {
