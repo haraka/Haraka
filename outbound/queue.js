@@ -1,13 +1,13 @@
-"use strict";
+'use strict';
 
 const async       = require('async');
-const path        = require('path');
 const fs          = require('fs');
+const path        = require('path');
+
 const Address     = require('address-rfc2821').Address;
+const config      = require('haraka-config');
 
-const config      = require('../config');
 const logger      = require('../logger');
-
 const TimerQueue  = require('./timer_queue');
 const HMailItem   = require('./hmail');
 const cfg         = require('./config');

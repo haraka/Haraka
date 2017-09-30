@@ -5,13 +5,13 @@ const fs          = require('fs');
 const path        = require('path');
 
 const Address     = require('address-rfc2821').Address;
+const config      = require('haraka-config');
 const constants   = require('haraka-constants');
 const net_utils   = require('haraka-net-utils');
 const utils       = require('haraka-utils');
 const ResultStore = require('haraka-results');
 
 const logger      = require('../logger');
-const config      = require('../config');
 const trans       = require('../transaction');
 const plugins     = require('../plugins');
 const FsyncWriteStream = require('./fsync_writestream');
