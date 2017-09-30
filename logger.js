@@ -176,11 +176,10 @@ logger.log_respond = function (retval, msg, data) {
 };
 
 logger.set_loglevel = function (level) {
-
-    if (!level) return;
+    if (level === undefined || level === null) return;
 
     const loglevel_num = parseInt(level);
-    if (!loglevel_num || isNaN(loglevel_num)) {
+    if (typeof level === 'string') {
         this.log('INFO', 'loglevel: ' + level.toUpperCase());
         logger.loglevel = logger.levels[level.toUpperCase()];
     }
@@ -188,7 +187,7 @@ logger.set_loglevel = function (level) {
         logger.loglevel = loglevel_num;
     }
 
-    if (!logger.loglevel) {
+    if (!Number.isInteger(logger.loglevel)) {
         this.log('WARN', 'invalid loglevel: ' + level + ' defaulting to LOGWARN');
         logger.loglevel = logger.levels.WARN;
     }
