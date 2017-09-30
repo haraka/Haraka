@@ -71,7 +71,7 @@ Server.daemonize = function () {
     }
 
     const log_fd = require('fs').openSync(c.daemon_log_file, 'a');
-    daemon({stdout: log_fd});
+    daemon({ cwd: process.cwd(), stdout: log_fd });
 
     // We are the daemon from here on...
     const npid = require('npid');
