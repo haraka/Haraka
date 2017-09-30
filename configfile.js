@@ -42,7 +42,6 @@ const config_dir_candidates = [
 
 function get_path_to_config_dir () {
     if (process.env.HARAKA) {
-        // logger.logdebug('process.env.HARAKA: ' + process.env.HARAKA);
         cfreader.config_path = path.join(process.env.HARAKA, 'config');
         return;
     }
@@ -74,7 +73,6 @@ function get_path_to_config_dir () {
     }
 }
 get_path_to_config_dir();
-// logger.logdebug('cfreader.config_path: ' + cfreader.config_path);
 
 function getStubLogger () {
     // stubs used before logger is loaded
@@ -216,7 +214,6 @@ cfreader.read_config = function (name, type, cb, options) {
     if (!process.env.WITHOUT_CONFIG_CACHE) {
         const cache_key = cfreader.get_cache_key(name, options);
         if (cfreader._config_cache[cache_key] !== undefined) {
-            //logger.logdebug('Returning cached file: ' + name);
             const cached = cfreader._config_cache[cache_key];
             // Make sure that any .ini file booleans are applied
             if (type === 'ini' && (options && options.booleans &&
