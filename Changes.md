@@ -3,6 +3,7 @@
 
 * New Features
 * Fixes
+    * Fix ability to set log level to emerg #2128
 * Changes
     * config: replace ./config.js with haraka-config #2119
 
