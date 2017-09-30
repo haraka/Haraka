@@ -179,7 +179,7 @@ logger.set_loglevel = function (level) {
     if (level === undefined || level === null) return;
 
     const loglevel_num = parseInt(level);
-    if (level instanceof String) {
+    if (typeof level === 'string' || level instanceof String) {
         this.log('INFO', 'loglevel: ' + level.toUpperCase());
         logger.loglevel = logger.levels[level.toUpperCase()];
     }
