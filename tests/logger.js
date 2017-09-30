@@ -124,7 +124,7 @@ exports.set_loglevel = {
     'set loglevel to EMERG' : function (test) {
         test.expect(1);
         this.logger.set_loglevel('emerg');
-        test.equal(this.logger.loglevel, this.logger.levels.INFO);
+        test.equal(this.logger.loglevel, this.logger.levels.EMERG);
         test.done();
     },
     'set loglevel to 6' : function (test) {

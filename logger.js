@@ -177,7 +177,7 @@ logger.log_respond = function (retval, msg, data) {
 
 logger.set_loglevel = function (level) {
     const loglevel_num = parseInt(level);
-    if (loglevel_num < 0 || isNaN(loglevel_num)) {
+    if (level instanceof String) {
         this.log('INFO', 'loglevel: ' + level.toUpperCase());
         logger.loglevel = logger.levels[level.toUpperCase()];
     }
