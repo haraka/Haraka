@@ -110,7 +110,7 @@ exports.hook_data_post = function (next, connection) {
                     if (code !== '220') {
                         // Error
                         connection.results.add(plugin, {
-                            err: `Unrecognized response: '${line}`,
+                            err: `Unrecognized response: ${line}`,
                         });
                         if (!plugin.cfg.defer.timeout) return do_next();
                         return do_next(DENYSOFT, 'Virus scanner error (AVG)');
@@ -121,8 +121,8 @@ exports.hook_data_post = function (next, connection) {
                     break;
                 case 'scan': {
                     const elapsed = Date.now() - start_time;
-                    connection.loginfo(plugin, `time= ${elapsed} ms 
-                                     code= ${code} 
+                    connection.loginfo(plugin, `time= ${elapsed} ms\ 
+                                     code= ${code}\
                                      response="${response.join(' ')}"`);
                     // Check code
                     switch (code) {
