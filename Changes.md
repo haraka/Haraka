@@ -13,6 +13,7 @@
     * haraka was adding TLS header on non-TLS connection #2103
     * dkim_verify: fix formatting of auth results #2107
     * smtp_forward: consistently use queue.wants #2107
+    * Replaced concatenated strings with template literals in the plugins/avg.js #2156
 
 ## 2.8.15 - Sep 10, 2017
 
