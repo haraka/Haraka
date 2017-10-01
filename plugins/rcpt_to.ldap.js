@@ -1,3 +1,3 @@
 exports.register = function () {
-    this.logerror('This plugin has moved. See https://github.com/haraka/haraka-plugin-rcpt_to.ldap');
+    this.logerror('This plugin has moved. See https://github.com/haraka/haraka-plugin-rcpt-ldap');
 }
