@@ -679,7 +679,7 @@ Connection.prototype.init_transaction = function (cb) {
         self.transaction = trans.createTransaction(self.tran_uuid());
         // Catch any errors from the message_stream
         self.transaction.message_stream.on('error', function (err) {
-            self.logcrit(`message stream error: ${error.message}`);
+            self.logcrit(`message_stream error: ${err.message}`);
             self.respond('421', 'Internal Server Error', function () {
                 self.disconnect();
             });
