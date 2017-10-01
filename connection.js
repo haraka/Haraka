@@ -296,8 +296,7 @@ Connection.prototype.process_line = function (line) {
     if (this.state >= states.DISCONNECTING) {
         if (logger.would_log(logger.LOGPROTOCOL)) {
             this.logprotocol(
-                `C: (after-disconnect): 
-                    ${this.current_line}`, {'state': this.state});
+                `C: (after-disconnect): ${this.current_line}`, {'state': this.state});
         }
         this.loginfo(`data after disconnect from ${this.remote.ip}`);
         return;
