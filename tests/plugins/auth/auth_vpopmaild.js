@@ -4,20 +4,17 @@ const path         = require('path');
 
 const fixtures     = require('haraka-test-fixtures');
 
-const Connection   = fixtures.connection;
-const Plugin       = fixtures.plugin;
-
 const _set_up = function (done) {
     this.backup = {};
 
     // needed for tests
-    this.plugin = new Plugin('auth/auth_vpopmaild');
+    this.plugin = new fixtures.plugin('auth/auth_vpopmaild');
     this.plugin.inherits('auth/auth_base');
     // reset the config/root_path
     this.plugin.config.root_path = path.resolve(__dirname, '../../../config');
     this.plugin.cfg = this.plugin.config.get('auth_vpopmaild.ini');
 
-    this.connection = Connection.createConnection();
+    this.connection = fixtures.connection.createConnection();
     this.connection.capabilities=null;
 
     done();

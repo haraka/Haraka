@@ -284,6 +284,10 @@ The contents of the bounce message are configured by a file called
 contains several template entries wrapped in curly brackets. These will be
 populated as follows:
 
+Optional: Possibility to add HTML code (with optional image) to the bounce message is possible 
+by adding the files `config/outbound.bounce_message_html`. An image can be attached 
+to the mail by using `config/outbound.bounce_message_image`.
+
 * pid - the current process id
 * date - the current date when the bounce occurred
 * me - the contents of `config/me`
