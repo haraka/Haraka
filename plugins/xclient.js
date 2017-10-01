@@ -58,7 +58,7 @@ exports.hook_unrecognized_command = function (next, connection, params) {
     for (let a=0; a < args.length; a++) {
         const match = /^([^=]+)=([^ ]+)/.exec(args[a]);
         if (match) {
-            connection.logdebug(this, 'found key=' + match[1] + ' value=' + match[2]);
+            connection.logdebug(this, `found key=${match[1]} value=${match[2]}`);
             switch (match[1]) {
                 case 'addr': {
                     // IPv6 is prefixed in the XCLIENT protocol
@@ -92,11 +92,11 @@ exports.hook_unrecognized_command = function (next, connection, params) {
                     }
                     break;
                 default:
-                    connection.logwarn(this, 'unknown argument: ' + args[a]);
+                    connection.logwarn(this, `unknown argument: ${args[a]}`);
             }
         }
         else {
-            connection.logwarn(this, 'unknown argument: ' + args[a]);
+            connection.logwarn(this, `unknown argument: ${args[a]}`);
         }
     }
 
@@ -108,7 +108,7 @@ exports.hook_unrecognized_command = function (next, connection, params) {
 
     // Apply changes
     const new_uuid = utils.uuid();
-    connection.loginfo(this, 'new uuid=' + new_uuid);
+    connection.loginfo(this, `new uuid= ${new_uuid}`);
     connection.uuid = new_uuid;
     connection.reset_transaction();
     connection.relaying = false;
