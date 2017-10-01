@@ -8,6 +8,7 @@
     * outbound: add results when queueing #2103
     * Replace console.log with stdout #2100
     * ES6: replace var with const or let  #2073
+    * Replaced concatenated strings with template literals in the plugins/attachment.js #2155
 * Fixes
     * tls: only apply default key/cert paths when undefined #2111
     * haraka was adding TLS header on non-TLS connection #2103
