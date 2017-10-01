@@ -31,7 +31,7 @@ exports.load_avg_ini = function () {
 exports.get_tmp_file = function (transaction) {
     const plugin = this;
     const tmpdir  = plugin.cfg.main.tmpdir || '/tmp';
-    return path.join(tmpdir, transaction.uuid + '.tmp');
+    return path.join(tmpdir, `${transaction.uuid}.tmp`);
 };
 
 exports.hook_data_post = function (next, connection) {
@@ -43,7 +43,7 @@ exports.hook_data_post = function (next, connection) {
 
     ws.once('error', function (err) {
         connection.results.add(plugin, {
-            err: 'Error writing temporary file: ' + err.message
+            err: `Error writing temporary file: ${err.message}`
         });
         if (!plugin.cfg.defer.error) return next();
         return next(DENYSOFT, 'Virus scanner error (AVG)');
@@ -64,7 +64,7 @@ exports.hook_data_post = function (next, connection) {
 
         socket.send_command = function (cmd, data) {
             const line = cmd + (data ? (' ' + data) : '');
-            connection.logprotocol(plugin, '> ' + line);
+            connection.logprotocol(plugin, `> ${line}`);
             this.write(line + '\r\n');
             command = cmd.toLowerCase();
             response = [];
@@ -93,7 +93,7 @@ exports.hook_data_post = function (next, connection) {
             connection.logprotocol(plugin, '< ' + line);
             if (!matches) {
                 connection.results.add(plugin,
-                    { err: 'Unrecognized response: ' + line });
+                    { err: `Unrecognized response: ${line}` });
                 socket.end();
                 if (!plugin.cfg.defer.error) return do_next();
                 return do_next(DENYSOFT, 'Virus scanner error (AVG)');
@@ -110,7 +110,7 @@ exports.hook_data_post = function (next, connection) {
                     if (code !== '220') {
                         // Error
                         connection.results.add(plugin, {
-                            err: 'Unrecognized response: ' + line,
+                            err: `Unrecognized response: '${line}`,
                         });
                         if (!plugin.cfg.defer.timeout) return do_next();
                         return do_next(DENYSOFT, 'Virus scanner error (AVG)');
@@ -121,9 +121,9 @@ exports.hook_data_post = function (next, connection) {
                     break;
                 case 'scan': {
                     const elapsed = Date.now() - start_time;
-                    connection.loginfo(plugin, 'time=' + elapsed + 'ms ' +
-                                    'code=' + code + ' ' +
-                                    'response="' + response.join(' ') + '"');
+                    connection.loginfo(plugin, `time= ${elapsed} ms 
+                                     code= ${code} 
+                                     response="${response.join(' ')}"`);
                     // Check code
                     switch (code) {
                         case '200':  // 200 ok
@@ -141,7 +141,7 @@ exports.hook_data_post = function (next, connection) {
                         default:
                             // Any other result is an error
                             connection.results.add(plugin, {
-                                err: 'Bad response: ' + response.join(' ')
+                                err: `Bad response: ${response.join(' ')}`
                             });
                     }
                     socket.send_command('QUIT');
@@ -152,7 +152,7 @@ exports.hook_data_post = function (next, connection) {
                     socket.end();
                     break;
                 default:
-                    throw new Error('Unknown command: ' + command);
+                    throw new Error(`Unknown command: ${command}`);
             }
         });
         socket.connect((plugin.cfg.main.port || 54322), plugin.cfg.main.host);
