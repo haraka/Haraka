@@ -1,19 +1,40 @@
 
-## 2.8.16 - Mmm dd, 2017
+## 2.8.17 - Mmm NN, 2017
+
+* New Features
+* Fixes
+    * Fix ability to set log level to emerg #2128
+* Changes
+    * config: replace ./config.js with haraka-config #2119
+    * Replaced concatenated strings with template literals in the plugins/attachment.js #2155
+
+## 2.8.16 - Sep 30, 2017
 
 * Changes
+    * additional tests get var -> const/let medicine #2122
+    * move connection states into haraka-constants #2121
     * lint: remove useless escapes #2117
+    * lint: switch no-var to error #2109
     * rspamd: repackaged as NPM module #2106
     * dsn: repackaged as NPM module haraka-dsn #2105
     * outbound: add results when queueing #2103
+    * spamassassin: skip adding headers when value is empty #2102
     * Replace console.log with stdout #2100
+    * update js-yaml to version 3.10.0 #2097
+    * repackage p0f plugin to NPM #2076
     * ES6: replace var with const or let  #2073
-    * Replaced concatenated strings with template literals in the plugins/attachment.js #2155
+    
+* New Features
+    * Bounces can have an HTML part #2091
 * Fixes
+    * daemon cwd #2126
+    * updated fcrdns plugin name passed to results #2115
     * tls: only apply default key/cert paths when undefined #2111
-    * haraka was adding TLS header on non-TLS connection #2103
     * dkim_verify: fix formatting of auth results #2107
     * smtp_forward: consistently use queue.wants #2107
+    * haraka was adding TLS header on non-TLS connection #2103
+    * dkim typo fix #2101
+    * fix rfc2231 parsing code to cope with continuation #2089
 
 ## 2.8.15 - Sep 10, 2017
 
