@@ -1,7 +1,6 @@
+
 const constants    = require('haraka-constants');
 
-/*eslint no-unused-vars: ["error", { "varsIgnorePattern": "config" }]*/
-const config      = require('./config');
 const connection   = require('../connection');
 
 // huge hack here, but plugin tests need constants

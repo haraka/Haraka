@@ -1,5 +1,4 @@
 
-require('../configfile').watch_files = false;
 const path        = require('path');
 const vm_harness  = require('./fixtures/vm_harness');
 
