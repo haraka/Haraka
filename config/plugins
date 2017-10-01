@@ -16,7 +16,7 @@
 #relay
 # control which IPs, rDNS hostnames, HELO hostnames, MAIL FROM addresses, and
 # RCPT TO address you accept mail from. See 'haraka -h access'.
-access
+# access
 # p0f
 # geoip
 # asn

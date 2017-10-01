@@ -7,11 +7,11 @@ const path        = require('path');
 const vm          = require('vm');
 
 // npm modules
+exports.config    = require('haraka-config');
 const constants   = require('haraka-constants');
 
 // local modules
 const logger      = require('./logger');
-exports.config  = require('./config');
 
 exports.registered_hooks = {};
 exports.registered_plugins = {};

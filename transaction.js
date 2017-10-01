@@ -3,10 +3,10 @@
 
 const util   = require('util');
 
+const config = require('haraka-config');
 const Notes  = require('haraka-notes');
 const utils  = require('haraka-utils');
 
-const config = require('./config');
 const Header = require('./mailheader').Header;
 const body   = require('./mailbody');
 const MessageStream = require('./messagestream');
