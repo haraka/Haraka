@@ -22,8 +22,11 @@
     * update js-yaml to version 3.10.0 #2097
     * repackage p0f plugin to NPM #2076
     * ES6: replace var with const or let  #2073
+    * Replaced concatenated strings with template literals in plugins/attachment.js #2130
+
 * New Features
     * Bounces can have an HTML part #2091
+    
 * Fixes
     * daemon cwd #2126
     * updated fcrdns plugin name passed to results #2115
