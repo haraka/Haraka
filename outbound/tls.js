@@ -1,8 +1,8 @@
-"use strict";
+'use strict';
 
 const net_utils   = require('haraka-net-utils');
 
-exports.config = require('../config');
+exports.config = require('haraka-config');
 
 // TODO: replace this with newer tls_ini loading in tls_socket
 exports.get_tls_options = function (mx) {
