@@ -116,8 +116,8 @@ exports.single_recipient = function (next, connection) {
         return next();
     }
 
-    connection.loginfo(plugin, `bounce with too many recipients to: 
-        ${connection.transaction.rcpt_to.join(',')}`);
+    connection.loginfo(plugin, `bounce with too many recipients to: \
+    ${connection.transaction.rcpt_to.join(',')}`);
 
     transaction.results.add(plugin, {fail: 'single_recipient', emit: true });
 
@@ -370,16 +370,16 @@ exports.bounce_spf = function (next, connection) {
                     connection.logerror(plugin, err.message);
                     return run_cb();
                 }
-                connection.logdebug(plugin, `ip=${ip} 
-                                             spf_result=${spf.result(result)}`);
+                connection.logdebug(plugin, `ip=${ip} \
+                spf_result=${spf.result(result)}`);
                 switch (result) {
                     case (spf.SPF_NONE):
                         // falls through, domain doesn't publish an SPF record
                     case (spf.SPF_TEMPERROR):
                     case (spf.SPF_PERMERROR):
                         // Abort as all subsequent lookups will return this
-                        connection.logdebug(plugin, `Aborted: SPF returned 
-                                                    ${spf.result(result)}`);
+                        connection.logdebug(plugin, `Aborted: SPF returned \
+                        ${spf.result(result)}`);
                         txn.results.add(plugin, { skip: 'bounce_spf' });
                         return run_cb(true);
                     case (spf.SPF_PASS):
