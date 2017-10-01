@@ -31,7 +31,7 @@ Create a PR adding yours to this list.
 | auth/[flat_file][url-authflat] | Auth against user/pass in a file |
 | auth/[auth_bridge][url-authbridge] | Auth against remote MTA |
 | [auth-imap][url-auth-imap] | Auth against IMAP server |
-| auth/[auth_ldap][url-authldap] | Auth against LDAP |
+| auth/[auth_ldap][url-auth-ldap] | Auth against LDAP |
 | auth/[auth_proxy][url-authproxy] | Auth against remote MTA |
 | auth/[auth_vpopmaild][url-authvpop] | Auth against vpopmaild |
 | [avg][url-avg]              | AVG antivirus scanner |
@@ -114,7 +114,7 @@ Create a PR adding yours to this list.
 [url-authflat]: https://github.com/haraka/Haraka/blob/master/docs/plugins/auth/flat_file.md
 [url-authbridge]: https://github.com/haraka/Haraka/blob/master/docs/plugins/auth/auth_bridge.md
 [url-auth-imap]: https://github.com/haraka/haraka-plugin-auth-imap
-[url-authldap]: https://github.com/haraka/Haraka/blob/master/docs/plugins/auth/auth_ldap.md
+[url-auth-ldap]: https://github.com/haraka/haraka-plugin-auth-ldap
 [url-authproxy]: https://github.com/haraka/Haraka/blob/master/docs/plugins/auth/auth_proxy.md
 [url-authvpop]: https://github.com/haraka/Haraka/blob/master/docs/plugins/auth/auth_vpopmaild.md
 [url-avg]: https://github.com/haraka/Haraka/blob/master/docs/plugins/avg.md
@@ -166,7 +166,7 @@ Create a PR adding yours to this list.
 [url-qproxy]: https://github.com/haraka/Haraka/blob/master/docs/plugins/queue/smtp_proxy.md
 [url-redis]: https://github.com/haraka/haraka-plugin-redis
 [url-rhost]: https://github.com/haraka/Haraka/blob/master/docs/plugins/rcpt_to.in_host_list.md
-[url-rcpt-ldap]: https://github.com/haraka/Haraka/blob/master/docs/plugins/rcpt_to.ldap.md
+[url-rcpt-ldap]: https://github.com/haraka/haraka-plugin-rcpt-ldap
 [url-rqmd]: https://github.com/haraka/haraka-plugin-qmail-deliverable
 [url-rroutes]: https://github.com/haraka/haraka-plugin-recipient-routes
 [url-recordenv]: https://github.com/haraka/Haraka/blob/master/docs/plugins/record_envelope_addresses.md

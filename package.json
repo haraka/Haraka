@@ -39,6 +39,7 @@
   "optionalDependencies": {
     "haraka-plugin-access"  : "*",
     "haraka-plugin-asn"     : "*",
+    "haraka-plugin-auth-ldap": "*",
     "haraka-plugin-dcc"     : "*",
     "haraka-plugin-elasticsearch" : "*",
     "haraka-plugin-fcrdns"  : "*",
@@ -47,6 +48,7 @@
     "haraka-plugin-limit"   : "*",
     "haraka-plugin-p0f"     : "*",
     "haraka-plugin-qmail-deliverable" : "*",
+    "haraka-plugin-rcpt-ldap": "*",
     "haraka-plugin-recipient-routes" : "*",
     "haraka-plugin-redis"   : "*",
     "haraka-plugin-rspamd"  : "*",
