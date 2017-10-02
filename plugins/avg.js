@@ -121,9 +121,11 @@ exports.hook_data_post = function (next, connection) {
                     break;
                 case 'scan': {
                     const elapsed = Date.now() - start_time;
-                    connection.loginfo(plugin, `time= ${elapsed} ms\ 
-                    code= ${code}\ 
-                    response="${response.join(' ')}"`);
+                    connection.loginfo(plugin, {
+                        time: `${elapsed}ms`,
+                        code: code,
+                        response: `"${response.join(' ')}"`
+                    })
                     // Check code
                     switch (code) {
                         case '200':  // 200 ok
