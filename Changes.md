@@ -7,7 +7,9 @@
 * Changes
     * config: replace ./config.js with haraka-config #2119
     * Replaced concatenated strings with template literals max_unrecognised_commands.js #2171
-
+    * replaced concatenated strings with template literals in the plugins/xclient.js #2159
+    * replaced concatenated strings with template literals in the tests/host_pool.js #2159
+    * replaced concatenated strings with template literals in the rfc1869.js #2159
 
 ## 2.8.16 - Sep 30, 2017
 
