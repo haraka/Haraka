@@ -30,7 +30,8 @@ exports.version = JSON.parse(
 process.on('uncaughtException', err => {
     if (err.stack) {
         err.stack.split("\n").forEach(line => logger.logcrit(line));
-    } else {
+    }
+    else {
         logger.logcrit(`Caught exception: ${JSON.stringify(err)}`);
     }
     logger.dump_and_exit(1);
@@ -48,7 +49,8 @@ let shutting_down = false;
         logger.dump_and_exit(() => {
             if (server.cluster && server.cluster.isMaster) {
                 server.performShutdown();
-            } else if (!server.cluster) {
+            }
+            else if (!server.cluster) {
                 server.performShutdown();
             }
         });
