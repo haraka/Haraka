@@ -162,8 +162,8 @@ exports.unarchive_recursive = function (connection, f, archive_file_name, cb) {
             clearTimeout(t1_timer);
             if (code && code > 0) {
                 // Error was returned
-                return do_cb(new Error(`bsdtar returned error code: ${code}
-                            error=${stderr.replace(/\r?\n/,' ')}`));
+                return do_cb(new Error(`bsdtar returned error code: ${code} \
+                error=${stderr.replace(/\r?\n/,' ')}`));
             }
             if (signal) {
                 // Process terminated due to signal
@@ -175,7 +175,7 @@ exports.unarchive_recursive = function (connection, f, archive_file_name, cb) {
                 const file = fl[i];
                 // Skip any blank lines
                 if (!file) continue;
-                connection.logdebug(plugin, `file: ${file} depth= ${depth}`);
+                connection.logdebug(plugin, `file: ${file} depth=${depth}`);
                 files.push((prefix ? prefix + '/' : '') + file);
                 const extn = path.extname(file.toLowerCase());
                 if (plugin.archive_exts.indexOf(extn) === -1 &&
@@ -191,9 +191,9 @@ exports.unarchive_recursive = function (connection, f, archive_file_name, cb) {
                     tmp.file(function (err, tmpfile, fd) {
                         count--;
                         if (err) return do_cb(err.message);
-                        connection.logdebug(plugin, `created tmp file: ${tmpfile}
-                                                  (fd= ${fd}) for file
-                                                  ${(prefix ? prefix + '/' : '')} ${file}`);
+                        connection.logdebug(plugin, `created tmp file: ${tmpfile} \
+                        (fd= ${fd}) for file \
+                        ${(prefix ? prefix + '/' : '')} ${file}`);
                         tmpfiles.push([fd, tmpfile]);
                         // Extract this file from the archive
                         count++;
@@ -210,8 +210,8 @@ exports.unarchive_recursive = function (connection, f, archive_file_name, cb) {
                         let t2_timeout = false;
                         const t2_timer = setTimeout(function () {
                             t2_timeout = true;
-                            return do_cb(new Error(`bsdtar timed out extracting file 
-                                                   ${file}`));
+                            return do_cb(new Error(`bsdtar timed out extracting file \
+                            ${file}`));
                         }, plugin.cfg.timeout);
                         // Create WriteStream for this file
                         const tws = fs.createWriteStream(tmpfile, { "fd": fd });
@@ -225,13 +225,13 @@ exports.unarchive_recursive = function (connection, f, archive_file_name, cb) {
                             clearTimeout(t2_timer);
                             if (code && code > 0) {
                                 // Error was returned
-                                return do_cb(new Error(`bsdtar returned error code: 
-                                              ${code} error= ${err.replace(/\r?\n/,' ')}`));
+                                return do_cb(new Error(`bsdtar returned error code: \
+                                ${code} error= ${err.replace(/\r?\n/,' ')}`));
                             }
                             if (signal) {
                                 // Process terminated due to signal
-                                return do_cb(new Error(`bsdtar terminated by signal: 
-                                                        ${signal}`));
+                                return do_cb(new Error(`bsdtar terminated by signal: \
+                                ${signal}`));
                             }
                             // Recurse
                             return listFiles(tmpfile, (prefix ? prefix + '/' : '') +
@@ -338,9 +338,8 @@ exports.start_attachment = function (connection, ctype, filename, body, stream) 
             stream.resume();
             return next();
         }
-        connection.logdebug(plugin, `Got tmpfile: attachment="
-                                    ${filename} " tmpfile=" ${fn}
-                                    " fd= ${fd}`);
+        connection.logdebug(plugin, `Got tmpfile: attachment=" \
+        ${filename} " tmpfile="${fn}" fd= ${fd}`);
         const ws = fs.createWriteStream(fn);
         stream.pipe(ws);
         stream.resume();
@@ -442,7 +441,7 @@ exports.check_attachments = function (next, connection) {
         for (let c=0; c<body.children.length; c++) {
             let child_ct;
             if (body.children[c] && (child_ct = /^([^/]+\/[^;\r\n ]+)/.exec(body.children[c].header.get('content-type')))) {
-                connection.logdebug(this, `found content type:  ${child_ct[1]}`);
+                connection.logdebug(this, `found content type: ${child_ct[1]}`);
                 ctypes.push(child_ct[1]);
             }
         }
@@ -481,7 +480,7 @@ exports.check_items_against_regexps = function (items, regexps) {
                 reg = new RegExp(regexps[r], 'i');
             }
             catch (e) {
-                this.logerror(`skipping invalid regexp: / ${regexps[r]}/ (${e})`);
+                this.logerror(`skipping invalid regexp: /${regexps[r]}/ (${e})`);
             }
             if (reg) {
                 for (let i=0; i < items.length; i++) {
