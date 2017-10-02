@@ -47,7 +47,7 @@ exports.check_plain_passwd = function (connection, user, passwd, cb) {
         dn = dn.replace(/%u/g, user);
         client.bind(dn, passwd, function (err) {
             if (err) {
-                connection.loginfo(`auth_ldap: (${dn})  ${err.message}`);
+                connection.loginfo(`auth_ldap: (${dn}) ${err.message}`);
                 return callback(false);
             }
             else {
