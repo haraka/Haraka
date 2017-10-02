@@ -10,7 +10,6 @@ const path        = require('path');
 
 // npm libs
 const ipaddr      = require('ipaddr.js');
-const config      = require('haraka-config');
 const constants   = require('haraka-constants');
 const net_utils   = require('haraka-net-utils');
 const Notes       = require('haraka-notes');
@@ -19,6 +18,7 @@ const Address     = require('address-rfc2821').Address;
 const ResultStore = require('haraka-results');
 
 // Haraka libs
+const config      = require('haraka-config');
 const logger      = require('./logger');
 const trans       = require('./transaction');
 const plugins     = require('./plugins');
@@ -31,20 +31,6 @@ const version     = JSON.parse(
 
 const states = constants.connection.state;
 
-// copy logger methods into Connection:
-for (const key in logger) {
-    if (!/^log\w/.test(key)) continue;
-    Connection.prototype[key] = (function (level) {
-        return function () {
-            // pass the connection instance to logger
-            const args = [ this ];
-            for (let i=0, l=arguments.length; i<l; i++) {
-                args.push(arguments[i]);
-            }
-            logger[level].apply(logger, args);
-        };
-    })(key);
-}
 
 // Load HAProxy hosts into an object for fast lookups
 // as this list is checked on every new connection.
@@ -70,169 +56,213 @@ function loadHAProxyHosts () {
 }
 loadHAProxyHosts();
 
-function setupClient (self) {
-    const ip = self.client.remoteAddress;
-    if (!ip) {
-        self.logdebug('setupClient got no IP address for this connection!');
-        self.client.destroy();
-        return;
-    }
+class Connection {
+    constructor(client,server) {
+        this.client = client;
+        this.server = server;
+        this.local = {           // legacy property locations
+            ip: null,            // c.local_ip
+            port: null,          // c.local_port
+            host: null,
+        };
+        this.remote = {
+            ip:   null,          // c.remote_ip
+            port: null,          // c.remote_port
+            host: null,          // c.remote_host
+            info: null,          // c.remote_info
+            closed: false,       // c.remote_closed
+            is_private: false,
+        };
+        this.hello = {
+            host: null,          // c.hello_host
+            verb: null,          // c.greeting
+        };
+        this.tls = {
+            enabled: false,      // c.using_tls
+            advertised: false,   // c.notes.tls_enabled
+            verified: false,
+            cipher: {},
+        };
+        this.proxy = {
+            allowed: false,      // c.proxy
+            ip: null,            // c.haproxy_ip
+            type: null,
+            timer: null,         // c.proxy_timer
+        };
+        this.set('tls', 'enabled', (server.has_tls ? true : false));
 
-    const local_addr = self.server.address();
-    if (local_addr && local_addr.address) {
-        self.set('local', 'ip', ipaddr.process(local_addr.address).toString());
-        self.set('local', 'port', local_addr.port);
-        self.results.add({name: 'local'}, self.local);
-    }
-    self.set('remote', 'ip', ipaddr.process(ip).toString());
-    self.set('remote', 'port', self.client.remotePort);
-    self.set('remote', 'is_private', net_utils.is_private_ip(self.remote.ip));
-    self.results.add({name: 'remote'}, self.remote);
+        this.current_data = null;
+        this.current_line = null;
+        this.state = states.PAUSE;
+        this.encoding = 'utf8';
+        this.prev_state = null;
+        this.loop_code = null;
+        this.loop_msg = null;
+        this.uuid = utils.uuid();
+        this.notes = new Notes();
+        this.transaction = null;
+        this.tran_count = 0;
+        this.capabilities = null;
+        this.banner_includes_uuid =
+            config.get('banner_includes_uuid') ? true : false;
+        this.deny_includes_uuid = config.get('deny_includes_uuid') || null;
+        this.early_talker = false;
+        this.pipelining = false;
+        this.relaying = false;
+        this.esmtp = false;
+        this.last_response = null;
+        this.hooks_to_run = [];
+        this.start_time = Date.now();
+        this.last_reject = '';
+        this.max_bytes = parseInt(config.get('databytes')) || 0;
+        this.totalbytes = 0;
+        this.rcpt_count = {
+            accept:   0,
+            tempfail: 0,
+            reject:   0,
+        };
+        this.msg_count = {
+            accept:   0,
+            tempfail: 0,
+            reject:   0,
+        };
+        this.max_line_length = config.get('max_line_length') || 512;
+        this.max_data_line_length = config.get('max_data_line_length') || 992;
+        this.results = new ResultStore(this);
+        this.errors = 0;
+        this.last_rcpt_msg = null;
+        this.hook = null;
+        this.header_hide_version = config.get('header_hide_version') ? true : false;
+        Connection.setupClient(this);
+  }
+  static setupClient(self) {
+      const ip = self.client.remoteAddress;
+      if (!ip) {
+          self.logdebug('setupClient got no IP address for this connection!');
+          self.client.destroy();
+          return;
+      }
 
-    self.lognotice(
-        'connect',
-        {
-            ip: self.remote.ip,
-            port: self.remote.port,
-            local_ip: self.local.ip,
-            local_port: self.local.port
-        }
-    );
+      const local_addr = self.server.address();
+      if (local_addr && local_addr.address) {
+          self.set('local', 'ip', ipaddr.process(local_addr.address).toString());
+          self.set('local', 'port', local_addr.port);
+          self.results.add({name: 'local'}, self.local);
+      }
+      self.set('remote', 'ip', ipaddr.process(ip).toString());
+      self.set('remote', 'port', self.client.remotePort);
+      self.set('remote', 'is_private', net_utils.is_private_ip(self.remote.ip));
+      self.results.add({name: 'remote'}, self.remote);
 
-    const rhost = 'client ' + ((self.remote.host) ? self.remote.host + ' ' : '') +
-                '[' + self.remote.ip + ']';
-    if (!self.client.on) {
-        // end of tests
-        return;
-    }
-    self.client.on('end', function () {
-        if (self.state >= states.DISCONNECTING) return;
-        self.remote.closed = true;
-        self.loginfo(rhost + ' half closed connection');
-        self.fail();
-    });
+      self.lognotice(
+          'connect',
+          {
+              ip: self.remote.ip,
+              port: self.remote.port,
+              local_ip: self.local.ip,
+              local_port: self.local.port
+          }
+      );
+      const hasHost = self.remote.host ? `${self.remote.host} ` : '';
+      const rhost = `client ${hasHost}[${self.remote.ip}]`
+      
+      if (!self.client.on) {
+          return;
+      }
+      self.client.on('end', () => {
+          if (self.state >= states.DISCONNECTING) return;
+          self.remote.closed = true;
+          self.loginfo(rhost + ' half closed connection');
+          self.fail();
+      });
 
-    self.client.on('close', function (has_error) {
-        if (self.state >= states.DISCONNECTING) return;
-        self.remote.closed = true;
-        self.loginfo(rhost + ' dropped connection');
-        self.fail();
-    });
+      self.client.on('close', has_error => {
+          if (self.state >= states.DISCONNECTING) return;
+          self.remote.closed = true;
+          self.loginfo(rhost + ' dropped connection');
+          self.fail();
+      });
 
-    self.client.on('error', function (err) {
-        if (self.state >= states.DISCONNECTING) return;
-        self.loginfo(rhost + ' connection error: ' + err);
-        self.fail();
-    });
+      self.client.on('error', err => {
+          if (self.state >= states.DISCONNECTING) return;
+          self.loginfo(rhost + ' connection error: ' + err);
+          self.fail();
+      });
 
-    self.client.on('timeout', function () {
-        if (self.state >= states.DISCONNECTING) return;
-        self.respond(421, 'timeout', function () {
-            self.fail(rhost + ' connection timed out');
-        });
-    });
+      self.client.on('timeout', () => {
+          if (self.state >= states.DISCONNECTING) return;
+          self.respond(421, 'timeout', function () {
+              self.fail(rhost + ' connection timed out');
+          });
+      });
 
-    self.client.on('data', function (data) {
-        self.process_data(data);
-    });
+      self.client.on('data', data => {
+          self.process_data(data);
+      });
 
-    const ha_list = net.isIPv6(self.remote.ip) ?
-        haproxy_hosts_ipv6
-        : haproxy_hosts_ipv4;
+      const ha_list = net.isIPv6(self.remote.ip) ?
+          haproxy_hosts_ipv6
+          : haproxy_hosts_ipv4;
 
-    if (ha_list.some(function (element, index, array) {
-        return ipaddr.parse(self.remote.ip).match(element[0], element[1]);
-    })) {
-        self.proxy.allowed = true;
-        // Wait for PROXY command
-        self.proxy.timer = setTimeout(function () {
-            self.respond(421, 'PROXY timeout', function () {
-                self.disconnect();
-            });
-        }, 30 * 1000);
-    }
-    else {
-        plugins.run_hooks('connect_init', self);
-    }
-}
+      if (ha_list.some((element, index, array) => {
+          return ipaddr.parse(self.remote.ip).match(element[0], element[1]);
+      })) {
+          self.proxy.allowed = true;
+          // Wait for PROXY command
+          self.proxy.timer = setTimeout(() => {
+              self.respond(421, 'PROXY timeout',() => {
+                  self.disconnect();
+              });
+          }, 30 * 1000);
+      }
+      else {
+          plugins.run_hooks('connect_init', self);
+      }
+  }
+  setTLS (obj) {
+      this.set('hello', 'host', undefined);
+      this.set('tls',   'enabled', true);
+      const options = ['cipher','verified','verifyError','peerCertificate'];
+      options.forEach(t => {
+          if (obj[t] === undefined) return;
+          this.set('tls', t, obj[t]);
+      })
+      // prior to 2017-07, authorized and verified were both used. Verified
+      // seems to be the more common and has the property updated in the
+      // tls object. However, authorized has been up-to-date in the notes. Store
+      // in both, for backwards compatibility.
+      this.notes.tls = {
+          authorized: obj.verified,   // legacy name
+          authorizationError: obj.verifyError,
+          cipher: obj.cipher,
+          peerCertificate: obj.peerCertificate,
+      }
+  }
+  set (obj, prop, val) {
+      if (!this[obj]) this.obj = {};   // initialize
 
-function Connection (client, server) {
-    this.client = client;
-    this.server = server;
-    this.local = {           // legacy property locations
-        ip: null,            // c.local_ip
-        port: null,          // c.local_port
-        host: null,
-    };
-    this.remote = {
-        ip:   null,          // c.remote_ip
-        port: null,          // c.remote_port
-        host: null,          // c.remote_host
-        info: null,          // c.remote_info
-        closed: false,       // c.remote_closed
-        is_private: false,
-    };
-    this.hello = {
-        host: null,          // c.hello_host
-        verb: null,          // c.greeting
-    };
-    this.tls = {
-        enabled: false,      // c.using_tls
-        advertised: false,   // c.notes.tls_enabled
-        verified: false,
-        cipher: {},
-    };
-    this.proxy = {
-        allowed: false,      // c.proxy
-        ip: null,            // c.haproxy_ip
-        type: null,
-        timer: null,         // c.proxy_timer
-    };
-    this.set('tls', 'enabled', (server.has_tls ? true : false));
+      this[obj][prop] = val;  // normalized property location
 
-    this.current_data = null;
-    this.current_line = null;
-    this.state = states.PAUSE;
-    this.encoding = 'utf8';
-    this.prev_state = null;
-    this.loop_code = null;
-    this.loop_msg = null;
-    this.uuid = utils.uuid();
-    this.notes = new Notes();
-    this.transaction = null;
-    this.tran_count = 0;
-    this.capabilities = null;
-    this.banner_includes_uuid =
-        config.get('banner_includes_uuid') ? true : false;
-    this.deny_includes_uuid = config.get('deny_includes_uuid') || null;
-    this.early_talker = false;
-    this.pipelining = false;
-    this.relaying = false;
-    this.esmtp = false;
-    this.last_response = null;
-    this.hooks_to_run = [];
-    this.start_time = Date.now();
-    this.last_reject = '';
-    this.max_bytes = parseInt(config.get('databytes')) || 0;
-    this.totalbytes = 0;
-    this.rcpt_count = {
-        accept:   0,
-        tempfail: 0,
-        reject:   0,
-    };
-    this.msg_count = {
-        accept:   0,
-        tempfail: 0,
-        reject:   0,
-    };
-    this.max_line_length = config.get('max_line_length') || 512;
-    this.max_data_line_length = config.get('max_data_line_length') || 992;
-    this.results = new ResultStore(this);
-    this.errors = 0;
-    this.last_rcpt_msg = null;
-    this.hook = null;
-    this.header_hide_version = config.get('header_hide_version') ? true : false;
-    setupClient(this);
+      // sunset 3.0.0
+      if (obj === 'hello' && prop === 'verb') {
+          this.greeting = val;
+      }
+      else if (obj === 'tls' && prop === 'enabled') {
+          this.using_tls = val;
+      }
+      else if (obj === 'proxy' && prop === 'ip') {
+          this.haproxy_ip = val;
+      }
+      else {
+          this[obj + '_' + prop] = val;
+      }
+      // /sunset
+  }
+  get (prop_str) {
+      return prop_str.split('.').reduce((prev, curr) => {
+          return prev ? prev[curr] : undefined
+      }, this)
+  }
 }
 
 exports.Connection = Connection;
@@ -241,54 +271,23 @@ exports.createConnection = function (client, server) {
     return new Connection(client, server);
 };
 
-Connection.prototype.setTLS = function (obj) {
-
-    this.set('hello', 'host', undefined);
-    this.set('tls',   'enabled', true);
-
-    ['cipher','verified','verifyError','peerCertificate'].forEach(t => {
-        if (obj[t] === undefined) return;
-        this.set('tls', t, obj[t]);
-    })
-
-    // prior to 2017-07, authorized and verified were both used. Verified
-    // seems to be the more common and has the property updated in the
-    // tls object. However, authorized has been up-to-date in the notes. Store
-    // in both, for backwards compatibility.
-    this.notes.tls = {
-        authorized: obj.verified,   // legacy name
-        authorizationError: obj.verifyError,
-        cipher: obj.cipher,
-        peerCertificate: obj.peerCertificate,
-    }
+// copy logger methods into Connection:
+for (const key in logger) {
+    if (!/^log\w/.test(key)) continue;
+    Connection.prototype[key] = (function (level) {
+        return function () {
+            // pass the connection instance to logger
+            const args = [ this ];
+            for (let i=0, l=arguments.length; i<l; i++) {
+                args.push(arguments[i]);
+            }
+            logger[level].apply(logger, args);
+        };
+    })(key);
 }
 
-Connection.prototype.set = function (obj, prop, val) {
-    if (!this[obj]) this.obj = {};   // initialize
 
-    this[obj][prop] = val;  // normalized property location
 
-    // sunset 3.0.0
-    if (obj === 'hello' && prop === 'verb') {
-        this.greeting = val;
-    }
-    else if (obj === 'tls' && prop === 'enabled') {
-        this.using_tls = val;
-    }
-    else if (obj === 'proxy' && prop === 'ip') {
-        this.haproxy_ip = val;
-    }
-    else {
-        this[obj + '_' + prop] = val;
-    }
-    // /sunset
-}
-
-Connection.prototype.get = function (prop_str) {
-    return prop_str.split('.').reduce((prev, curr) => {
-        return prev ? prev[curr] : undefined
-    }, this)
-}
 
 Connection.prototype.process_line = function (line) {
     const self = this;
