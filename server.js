@@ -15,7 +15,7 @@ const tls         = require('tls');
 
 const Server        = exports;
 Server.logger     = require('./logger');
-Server.config     = require('./config');
+Server.config     = require('haraka-config');
 Server.plugins    = require('./plugins');
 Server.notes      = {};
 

@@ -3,7 +3,7 @@
 // in the mail_from.blocklist file. You need to be running the
 // mail_from.blocklist plugin for this to work fully.
 
-const fs = require('fs');
+const fs    = require('fs');
 const utils = require('haraka-utils');
 
 exports.hook_data = function (next, connection) {
