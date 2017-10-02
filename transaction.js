@@ -14,7 +14,7 @@ const MessageStream = require('./messagestream');
 const MAX_HEADER_LINES = config.get('max_header_lines') || 1000;
 
 class Transaction {
-    constructor() {
+    constructor () {
         this.uuid = null;
         this.mail_from = null;
         this.rcpt_to = [];
@@ -43,7 +43,7 @@ class Transaction {
         this.encoding = 'utf8';
     }
 
-    ensure_body() {
+    ensure_body () {
         if (this.body) {
             return;
         }
@@ -70,7 +70,7 @@ class Transaction {
         });
     }
 
-    add_data(line) {
+    add_data (line) {
         if (typeof line === 'string') { // This shouldn't ever really happen...
             line = new Buffer(line, this.encoding);
         }
@@ -108,7 +108,7 @@ class Transaction {
         if (!this.discard_data) this.message_stream.add_line(line);
     }
 
-    end_data(cb) {
+    end_data (cb) {
         if (!this.found_hb_sep && this.header_lines.length) {
             // Headers not parsed yet - must be a busted email
             // Strategy: Find the first line that doesn't look like a header.
@@ -153,32 +153,32 @@ class Transaction {
         }
     }
 
-    add_header(key, value) {
+    add_header (key, value) {
         this.header.add_end(key, value);
         if (this.header_pos > 0) this.reset_headers();
     }
 
-    add_leading_header(key, value) {
+    add_leading_header (key, value) {
         this.header.add(key, value);
         if (this.header_pos > 0) this.reset_headers();
     }
 
-    reset_headers() {
+    reset_headers () {
         const header_lines = this.header.lines();
         this.header_pos = header_lines.length;
     }
 
-    remove_header(key) {
+    remove_header (key) {
         this.header.remove(key);
         if (this.header_pos > 0) this.reset_headers();
     }
 
-    attachment_hooks(start, data, end) {
+    attachment_hooks (start, data, end) {
         this.parse_body = 1;
         this.attachment_start_hooks.push(start);
     }
 
-    set_banner(text, html) {
+    set_banner (text, html) {
         // throw "transaction.set_banner is currently non-functional";
         this.parse_body = true;
         if (!html) {
@@ -187,7 +187,7 @@ class Transaction {
         this.banner = [text, html];
     }
 
-    add_body_filter(ct_match, filter) {
+    add_body_filter (ct_match, filter) {
         this.parse_body = true;
         this.body_filters.push({ 'ct_match': ct_match, 'filter': filter });
     }
