@@ -234,3 +234,13 @@ exports.get_remote = {
         test.done();
     },
 }
+
+exports.local_info = {
+    setUp : _set_up,
+    tearDown : _tear_down,
+    'is Haraka/version': function (test) {
+        test.expect(1);
+        test.ok(/Haraka\/\d.\d/.test(this.connection.local.info), this.connection.local.info);
+        test.done();
+    }
+}
