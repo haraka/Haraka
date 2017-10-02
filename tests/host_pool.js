@@ -11,7 +11,7 @@ exports.HostPool = {
         const host = pool.get_host();
 
         test.ok( /\d\.\d\.\d\.\d/.test(host.host),
-            `' ${host.host}' looks like a IP`);
+            `'${host.host}' looks like a IP`);
         test.ok( /\d\d\d\d/.test(host.port),
             `'${host.port}' looks like a port`);
 
