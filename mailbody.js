@@ -1,12 +1,12 @@
 'use strict';
 
 const events = require('events');
+const config = require('haraka-config');
 const utils  = require('haraka-utils');
 
 // Mail Body Parser
 const logger = require('./logger');
 const Header = require('./mailheader').Header;
-const config = require('./config');
 const Iconv  = require('./mailheader').Iconv;
 const attstr = require('./attachment_stream');
 
