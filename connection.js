@@ -26,10 +26,9 @@ const rfc1869     = require('./rfc1869');
 const outbound    = require('./outbound');
 
 const hostname    = (os.hostname().split(/\./))[0];
-const version     = JSON.parse(
-    fs.readFileSync(path.join(__dirname, 'package.json'))).version;
-
-const states = constants.connection.state;
+const hpj         = fs.readFileSync(path.join(__dirname, 'package.json'));
+const version     = JSON.parse(hpj).version;
+const states      = constants.connection.state;
 
 
 // Load HAProxy hosts into an object for fast lookups
@@ -796,6 +795,18 @@ class Connection {
             }
         }
     }
+    get_remote (prop) {
+        switch (this.remote[prop]) {
+            case 'NXDOMAIN':
+            case 'DNSERROR':
+            case '':
+            case undefined:
+            case null:
+                return `[${this.remote.ip}]`;
+            default:
+                return `${this.remote[prop]} [${this.remote.ip}]`;
+        }
+    }
     helo_respond (retval, msg) {
         const self = this;
         switch (retval) {
@@ -825,9 +836,7 @@ class Connection {
                 // RFC5321 section 4.1.1.1
                 // Hostname/domain should appear after 250
                 this.respond(250, config.get('me') + " Hello " +
-                    ((this.remote.host && this.remote.host !== 'DNSERROR' &&
-                    this.remote.host !== 'NXDOMAIN') ? this.remote.host + ' ' : '') +
-                    "[" + this.remote.ip + "]" +
+                    this.get_remote('host') +
                     ", Haraka is at your service.");
         }
     }
@@ -862,9 +871,7 @@ class Connection {
                 // Hostname/domain should appear after 250
                 const response = [
                     config.get('me') + " Hello " +
-                    ((this.remote.host && this.remote.host !== 'DNSERROR' &&
-                    this.remote.host !== 'NXDOMAIN') ? this.remote.host + ' ' : '') +
-                    "[" + this.remote.ip + "]" +
+                    this.get_remote('host') +
                     ", Haraka is at your service.",
                     "PIPELINING",
                     "8BITMIME",
@@ -1415,10 +1422,8 @@ class Connection {
         const received_header = [
             'from ',
             this.hello.host, ' (',
-            // If no rDNS, don't display it
-            ((!/^(?:DNSERROR|NXDOMAIN)/.test(this.remote.info)) ? this.remote.info + ' ' : ''),
-            '[', this.remote.ip, '])',
-            "\n\t",
+            this.get_remote('info'),
+            ")\n\t",
             'by ',
             config.get('me')
         ]
@@ -1531,10 +1536,7 @@ class Connection {
             default:
                 cont = 1;
         }
-
-        if (!cont) {
-            return;
-        }
+        if (!cont) return;
 
         // We already checked for MAIL/RCPT in cmd_data
         this.respond(354, "go ahead, make my day", () => {
