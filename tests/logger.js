@@ -83,14 +83,21 @@ exports.set_format = {
         test.equal(this.logger.format, this.logger.formats.LOGFMT);
         test.done();
     },
-    'set format to WARN if empty' : function (test) {
+    'set format to DEFAULT if empty' : function (test) {
         test.expect(1);
         this.logger.format = '';
         this.logger.set_format('');
         test.equal(this.logger.format, this.logger.formats.DEFAULT);
         test.done();
     },
-    'set format to WARN if invalid' : function (test) {
+    'set format to DEFAULT if lowercase' : function (test) {
+        test.expect(1);
+        this.logger.format = '';
+        this.logger.set_format('default');
+        test.equal(this.logger.format, this.logger.formats.DEFAULT);
+        test.done();
+    },
+    'set format to DEFAULT if invalid' : function (test) {
         test.expect(1);
         this.logger.format = '';
         this.logger.set_format('invalid');
@@ -112,6 +119,12 @@ exports.set_loglevel = {
         test.expect(1);
         this.logger.set_loglevel('INFO');
         test.equal(this.logger.loglevel, this.logger.levels.INFO);
+        test.done();
+    },
+    'set loglevel to EMERG' : function (test) {
+        test.expect(1);
+        this.logger.set_loglevel('emerg');
+        test.equal(this.logger.loglevel, this.logger.levels.EMERG);
         test.done();
     },
     'set loglevel to 6' : function (test) {

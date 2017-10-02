@@ -5,13 +5,13 @@ const fs          = require('fs');
 const path        = require('path');
 
 const Address     = require('address-rfc2821').Address;
+const config      = require('haraka-config');
 const constants   = require('haraka-constants');
 const net_utils   = require('haraka-net-utils');
 const utils       = require('haraka-utils');
 const ResultStore = require('haraka-results');
 
 const logger      = require('../logger');
-const config      = require('../config');
 const trans       = require('../transaction');
 const plugins     = require('../plugins');
 const FsyncWriteStream = require('./fsync_writestream');
@@ -319,20 +319,15 @@ exports.build_todo = function (todo, ws, write_more) {
                 return value;
         }
     }
-    const todo_str = new Buffer(JSON.stringify(todo, exclude_from_json));
 
-    // since JS has no pack() we have to manually write the bytes of a long
-    const todo_length = new Buffer(4);
-    const todo_l = todo_str.length;
-    todo_length[3] =  todo_l        & 0xff;
-    todo_length[2] = (todo_l >>  8) & 0xff;
-    todo_length[1] = (todo_l >> 16) & 0xff;
-    todo_length[0] = (todo_l >> 24) & 0xff;
-
-    const buf = Buffer.concat([todo_length, todo_str], todo_str.length + 4);
+    const todo_json = JSON.stringify(todo, exclude_from_json);
+    const buf = new Buffer(4 + todo_json.length);
+    buf.writeUInt32BE(todo_json.length, 0);
+    buf.write(todo_json, 4);
 
     const continue_writing = ws.write(buf);
-    if (continue_writing) return write_more();
+    if (continue_writing) return process.nextTick(write_more);
+
     ws.once('drain', write_more);
 };
 

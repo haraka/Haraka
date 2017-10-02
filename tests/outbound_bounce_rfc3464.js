@@ -11,12 +11,12 @@
 //   * outbound.send_email is called with a RFC3464 bounce message
 //   * or, in case of 4XX: that temp_fail is called and dsn vars are available)
 
-require('../configfile').watch_files = false;
 const fs          = require('fs');
 const path        = require('path');
+
 const util_hmailitem = require('./fixtures/util_hmailitem');
 const TODOItem    = require('../outbound/todo');
-const HMailItem    = require('../outbound/hmail');
+const HMailItem   = require('../outbound/hmail');
 const ob_cfg      = require('../outbound/config');
 const outbound    = require('../outbound');
 const mock_sock   = require('./fixtures/line_socket');
