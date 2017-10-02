@@ -62,8 +62,8 @@ class Transaction {
                 if ((util.isRegExp(o.ct_match) &&
                         o.ct_match.test(ct.toLowerCase())) ||
                     ct.toLowerCase()
-                    .indexOf(String(o.ct_match)
-                        .toLowerCase()) === 0) {
+                        .indexOf(String(o.ct_match)
+                            .toLowerCase()) === 0) {
                     return o.filter(ct, enc, buf);
                 }
             });
