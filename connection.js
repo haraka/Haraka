@@ -1136,8 +1136,8 @@ class Connection {
             }
         }
     }
-    /////////////////////////////////////////////////////////////////////////////
-    // HAProxy support
+/////////////////////////////////////////////////////////////////////////////
+// HAProxy support
 
     cmd_proxy (line) {
         const self = this;
@@ -1199,8 +1199,8 @@ class Connection {
             plugins.run_hooks('connect_init', self);
         });
     }
-    /////////////////////////////////////////////////////////////////////////////
-    // SMTP Commands
+/////////////////////////////////////////////////////////////////////////////
+// SMTP Commands
 
     cmd_internalcmd (line) {
         const self = this;
@@ -1678,7 +1678,7 @@ class Connection {
         this.respond(retval === constants.denysoft ? 450 : 550, "Message too big!", () => {
             self.reset_transaction();
         });
-    }
+    };
     queue_msg (retval, msg) {
         if (msg) return msg;
 
@@ -1847,11 +1847,11 @@ class Connection {
             }
         );
 
-        this.respond(250, params, () => {
+    this.respond(250, params, () => {
             self.msg_count.accept++;
             self.reset_transaction(() => self.resume());
         });
-    }
+    };
 }
 
 exports.Connection = Connection;
@@ -1863,8 +1863,8 @@ exports.createConnection = (client, server) => {
 // copy logger methods into Connection:
 for (const key in logger) {
     if (!/^log\w/.test(key)) continue;
-    Connection.prototype[key] = ((level) => {
-        return () => {
+    Connection.prototype[key] = (function (level) {
+        return function () {
             // pass the connection instance to logger
             const args = [ this ];
             for (let i=0, l=arguments.length; i<l; i++) {
