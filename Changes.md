@@ -7,7 +7,7 @@
 * Changes
     * config: replace ./config.js with haraka-config #2119
     * Replaced concatenated strings with template literals in the plugins/avg.js #2156
-
+    * replaced concatenated strings with template literals in the rfc1869.js #2159
 
 ## 2.8.16 - Sep 30, 2017
 
