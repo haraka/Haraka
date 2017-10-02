@@ -57,7 +57,7 @@ function loadHAProxyHosts () {
 loadHAProxyHosts();
 
 class Connection {
-    constructor(client,server) {
+    constructor (client,server) {
         this.client = client;
         this.server = server;
         this.local = {           // legacy property locations
@@ -104,7 +104,7 @@ class Connection {
         this.tran_count = 0;
         this.capabilities = null;
         this.banner_includes_uuid =
-            config.get('banner_includes_uuid') ? true : false;
+        config.get('banner_includes_uuid') ? true : false;
         this.deny_includes_uuid = config.get('deny_includes_uuid') || null;
         this.early_talker = false;
         this.pipelining = false;
@@ -134,135 +134,136 @@ class Connection {
         this.hook = null;
         this.header_hide_version = config.get('header_hide_version') ? true : false;
         Connection.setupClient(this);
-  }
-  static setupClient(self) {
-      const ip = self.client.remoteAddress;
-      if (!ip) {
-          self.logdebug('setupClient got no IP address for this connection!');
-          self.client.destroy();
-          return;
-      }
+    }
+    static setupClient (self) {
+        const ip = self.client.remoteAddress;
+        if (!ip) {
+            self.logdebug('setupClient got no IP address for this connection!');
+            self.client.destroy();
+            return;
+        }
 
-      const local_addr = self.server.address();
-      if (local_addr && local_addr.address) {
-          self.set('local', 'ip', ipaddr.process(local_addr.address).toString());
-          self.set('local', 'port', local_addr.port);
-          self.results.add({name: 'local'}, self.local);
-      }
-      self.set('remote', 'ip', ipaddr.process(ip).toString());
-      self.set('remote', 'port', self.client.remotePort);
-      self.set('remote', 'is_private', net_utils.is_private_ip(self.remote.ip));
-      self.results.add({name: 'remote'}, self.remote);
+        const local_addr = self.server.address();
+        if (local_addr && local_addr.address) {
+            self.set('local', 'ip', ipaddr.process(local_addr.address).toString());
+            self.set('local', 'port', local_addr.port);
+            self.results.add({name: 'local'}, self.local);
+        }
+        self.set('remote', 'ip', ipaddr.process(ip).toString());
+        self.set('remote', 'port', self.client.remotePort);
+        self.set('remote', 'is_private', net_utils.is_private_ip(self.remote.ip));
+        self.results.add({name: 'remote'}, self.remote);
 
-      self.lognotice(
-          'connect',
-          {
-              ip: self.remote.ip,
-              port: self.remote.port,
-              local_ip: self.local.ip,
-              local_port: self.local.port
-          }
-      );
-      const hasHost = self.remote.host ? `${self.remote.host} ` : '';
-      const rhost = `client ${hasHost}[${self.remote.ip}]`
-      
-      if (!self.client.on) {
-          return;
-      }
-      self.client.on('end', () => {
-          if (self.state >= states.DISCONNECTING) return;
-          self.remote.closed = true;
-          self.loginfo(rhost + ' half closed connection');
-          self.fail();
-      });
+        self.lognotice(
+            'connect',
+            {
+                ip: self.remote.ip,
+                port: self.remote.port,
+                local_ip: self.local.ip,
+                local_port: self.local.port
+            }
+        );
 
-      self.client.on('close', has_error => {
-          if (self.state >= states.DISCONNECTING) return;
-          self.remote.closed = true;
-          self.loginfo(rhost + ' dropped connection');
-          self.fail();
-      });
+        const has_host = self.remote.host ? `${self.remote.host} ` : '';
+        const rhost = `client ${has_host}[${self.remote.ip}]`
 
-      self.client.on('error', err => {
-          if (self.state >= states.DISCONNECTING) return;
-          self.loginfo(rhost + ' connection error: ' + err);
-          self.fail();
-      });
+        if (!self.client.on) {
+            return;
+        }
+        self.client.on('end', () => {
+            if (self.state >= states.DISCONNECTING) return;
+            self.remote.closed = true;
+            self.loginfo(rhost + ' half closed connection');
+            self.fail();
+        });
 
-      self.client.on('timeout', () => {
-          if (self.state >= states.DISCONNECTING) return;
-          self.respond(421, 'timeout', function () {
-              self.fail(rhost + ' connection timed out');
-          });
-      });
+        self.client.on('close', has_error => {
+            if (self.state >= states.DISCONNECTING) return;
+            self.remote.closed = true;
+            self.loginfo(rhost + ' dropped connection');
+            self.fail();
+        });
 
-      self.client.on('data', data => {
-          self.process_data(data);
-      });
+        self.client.on('error', err => {
+            if (self.state >= states.DISCONNECTING) return;
+            self.loginfo(rhost + ' connection error: ' + err);
+            self.fail();
+        });
 
-      const ha_list = net.isIPv6(self.remote.ip) ?
-          haproxy_hosts_ipv6
-          : haproxy_hosts_ipv4;
+        self.client.on('timeout', () => {
+            if (self.state >= states.DISCONNECTING) return;
+            self.respond(421, 'timeout', function () {
+                self.fail(rhost + ' connection timed out');
+            });
+        });
 
-      if (ha_list.some((element, index, array) => {
-          return ipaddr.parse(self.remote.ip).match(element[0], element[1]);
-      })) {
-          self.proxy.allowed = true;
-          // Wait for PROXY command
-          self.proxy.timer = setTimeout(() => {
-              self.respond(421, 'PROXY timeout',() => {
-                  self.disconnect();
-              });
-          }, 30 * 1000);
-      }
-      else {
-          plugins.run_hooks('connect_init', self);
-      }
-  }
-  setTLS (obj) {
-      this.set('hello', 'host', undefined);
-      this.set('tls',   'enabled', true);
-      const options = ['cipher','verified','verifyError','peerCertificate'];
-      options.forEach(t => {
-          if (obj[t] === undefined) return;
-          this.set('tls', t, obj[t]);
-      })
-      // prior to 2017-07, authorized and verified were both used. Verified
-      // seems to be the more common and has the property updated in the
-      // tls object. However, authorized has been up-to-date in the notes. Store
-      // in both, for backwards compatibility.
-      this.notes.tls = {
-          authorized: obj.verified,   // legacy name
-          authorizationError: obj.verifyError,
-          cipher: obj.cipher,
-          peerCertificate: obj.peerCertificate,
-      }
-  }
-  set (obj, prop, val) {
-      if (!this[obj]) this.obj = {};   // initialize
+        self.client.on('data', data => {
+            self.process_data(data);
+        });
 
-      this[obj][prop] = val;  // normalized property location
+        const ha_list = net.isIPv6(self.remote.ip) ?
+            haproxy_hosts_ipv6
+            : haproxy_hosts_ipv4;
 
-      // sunset 3.0.0
-      if (obj === 'hello' && prop === 'verb') {
-          this.greeting = val;
-      }
-      else if (obj === 'tls' && prop === 'enabled') {
-          this.using_tls = val;
-      }
-      else if (obj === 'proxy' && prop === 'ip') {
-          this.haproxy_ip = val;
-      }
-      else {
-          this[obj + '_' + prop] = val;
-      }
-      // /sunset
-  }
-  get (prop_str) {
-      return prop_str.split('.').reduce((prev, curr) => {
-          return prev ? prev[curr] : undefined
-      }, this)
-  }
+        if (ha_list.some((element, index, array) => {
+            return ipaddr.parse(self.remote.ip).match(element[0], element[1]);
+        })) {
+            self.proxy.allowed = true;
+            // Wait for PROXY command
+            self.proxy.timer = setTimeout(() => {
+                self.respond(421, 'PROXY timeout',() => {
+                    self.disconnect();
+                });
+            }, 30 * 1000);
+        }
+        else {
+            plugins.run_hooks('connect_init', self);
+        }
+    }
+    setTLS (obj) {
+        this.set('hello', 'host', undefined);
+        this.set('tls',   'enabled', true);
+        const options = ['cipher','verified','verifyError','peerCertificate'];
+        options.forEach(t => {
+            if (obj[t] === undefined) return;
+            this.set('tls', t, obj[t]);
+        })
+        // prior to 2017-07, authorized and verified were both used. Verified
+        // seems to be the more common and has the property updated in the
+        // tls object. However, authorized has been up-to-date in the notes. Store
+        // in both, for backwards compatibility.
+        this.notes.tls = {
+            authorized: obj.verified,   // legacy name
+            authorizationError: obj.verifyError,
+            cipher: obj.cipher,
+            peerCertificate: obj.peerCertificate,
+        }
+    }
+    set (obj, prop, val) {
+        if (!this[obj]) this.obj = {};   // initialize
+
+        this[obj][prop] = val;  // normalized property location
+
+        // sunset 3.0.0
+        if (obj === 'hello' && prop === 'verb') {
+            this.greeting = val;
+        }
+        else if (obj === 'tls' && prop === 'enabled') {
+            this.using_tls = val;
+        }
+        else if (obj === 'proxy' && prop === 'ip') {
+            this.haproxy_ip = val;
+        }
+        else {
+            this[obj + '_' + prop] = val;
+        }
+        // /sunset
+    }
+    get (prop_str) {
+        return prop_str.split('.').reduce((prev, curr) => {
+            return prev ? prev[curr] : undefined
+        }, this)
+    }
 }
 
 exports.Connection = Connection;
