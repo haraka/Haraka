@@ -11,9 +11,9 @@ exports.HostPool = {
         const host = pool.get_host();
 
         test.ok( /\d\.\d\.\d\.\d/.test(host.host),
-            "'" + host.host + "' looks like a IP");
+            `'${host.host}' looks like a IP`);
         test.ok( /\d\d\d\d/.test(host.port),
-            "'" + host.port + "' looks like a port");
+            `'${host.port}' looks like a port`);
 
         test.done();
     },
@@ -40,8 +40,8 @@ exports.HostPool = {
         const host1 = pool.get_host();
         const host2 = pool.get_host();
 
-        test.equal(host1.port, 25, "is port 25: " + host1.port);
-        test.equal(host2.port, 25, "is port 25: " + host2.port);
+        test.equal(host1.port, 25, `is port 25: ${host1.port}`);
+        test.equal(host2.port, 25, `is port 25: ${host2.port}`);
 
         test.done();
     },
@@ -140,7 +140,7 @@ exports.HostPool = {
                         break;
                     default:
                         // failsafe
-                        console.log("num_reqs hit " + num_reqs + ", wtf?");
+                        console.log(`num_reqs hit ${num_reqs}, wtf?`);
                         process.exit(1);
                 }
             };
