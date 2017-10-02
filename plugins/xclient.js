@@ -108,7 +108,7 @@ exports.hook_unrecognized_command = function (next, connection, params) {
 
     // Apply changes
     const new_uuid = utils.uuid();
-    connection.loginfo(this, `new uuid= ${new_uuid}`);
+    connection.loginfo(this, `new uuid=${new_uuid}`);
     connection.uuid = new_uuid;
     connection.reset_transaction();
     connection.relaying = false;
