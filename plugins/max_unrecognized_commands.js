@@ -13,7 +13,7 @@ exports.hook_connect = function (next, connection) {
 exports.hook_unrecognized_command = function (next, connection, cmd) {
     const plugin = this;
 
-    connection.results.add(plugin, {fail: "Unrecognized command: " + cmd, emit: true});
+    connection.results.add(plugin, {fail: `Unrecognized command: ${cmd}`, emit: true});
     connection.results.incr(plugin, {count: 1});
 
     const uc = connection.results.get('max_unrecognized_commands');
