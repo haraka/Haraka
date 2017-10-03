@@ -67,10 +67,10 @@ exports.load_acls = function () {
     for (let i=0; i<plugin.acl_allow.length; i++) {
         const cidr = plugin.acl_allow[i].split('/');
         if (!net.isIP(cidr[0])) {
-            plugin.logerror(plugin, "invalid entry in " + file_name + ": " + cidr[0]);
+            plugin.logerror(plugin, `invalid entry in ${file_name}: ${cidr[0]}`);
         }
         if (!cidr[1]) {
-            plugin.logerror(plugin, "appending missing CIDR suffix in: " + file_name);
+            plugin.logerror(plugin, `appending missing CIDR suffix in: ${file_name}`);
             plugin.acl_allow[i] = cidr[0] + '/32';
         }
     }
@@ -80,7 +80,7 @@ exports.acl = function (next, connection) {
     const plugin = this;
     if (!plugin.cfg.relay.acl) { return next(); }
 
-    connection.logdebug(this, 'checking ' + connection.remote.ip + ' in relay_acl_allow');
+    connection.logdebug(this, `checking ${connection.remote.ip} in relay_acl_allow`);
 
     if (!plugin.is_acl_allowed(connection)) {
         connection.results.add(plugin, {skip: 'acl(unlisted)'});
@@ -101,7 +101,7 @@ exports.is_acl_allowed = function (connection) {
 
     for (let i=0; i < plugin.acl_allow.length; i++) {
         const item = plugin.acl_allow[i];
-        connection.logdebug(plugin, 'checking if ' + ip + ' is in ' + item);
+        connection.logdebug(plugin, `checking if ${ip} is in ${item}`);
         const cidr = plugin.acl_allow[i].split('/');
         const c_net  = cidr[0];
         const c_mask = cidr[1] || 32;
@@ -111,7 +111,7 @@ exports.is_acl_allowed = function (connection) {
         if (net.isIPv6(ip) && net.isIPv4(c_net)) continue;
 
         if (ipaddr.parse(ip).match(ipaddr.parse(c_net), c_mask)) {
-            connection.logdebug(plugin, 'checking if ' + ip + ' is in ' + item + ": yes");
+            connection.logdebug(plugin, `checking if ${ip} is in ${item}: yes`);
             return true;
         }
     }
@@ -140,7 +140,7 @@ exports.dest_domains = function (next, connection, params) {
     }
 
     const dest_domain = params[0].host;
-    connection.logdebug(plugin, 'dest_domain = ' + dest_domain);
+    connection.logdebug(plugin, `dest_domain = ${dest_domain}`);
 
     const dst_cfg = plugin.dest.domains[dest_domain];
     if (!dst_cfg) {
@@ -149,7 +149,7 @@ exports.dest_domains = function (next, connection, params) {
     }
 
     const action = JSON.parse(dst_cfg).action;
-    connection.logdebug(plugin, 'found config for ' + dest_domain + ': ' + action);
+    connection.logdebug(plugin, `found config for ${dest_domain}: ${action}`);
 
     switch (action) {
         case "accept":
@@ -181,17 +181,17 @@ exports.force_routing = function (next, hmail, domain) {
     const route = plugin.dest.domains[domain];
 
     if (!route) {
-        plugin.logdebug(plugin, 'using normal MX lookup for: ' + domain);
+        plugin.logdebug(plugin, `using normal MX lookup for: ${domain}`);
         return next();
     }
 
     const nexthop = JSON.parse(route).nexthop;
     if (!nexthop) {
-        plugin.logdebug(plugin, 'using normal MX lookup for: ' + domain);
+        plugin.logdebug(plugin, `using normal MX lookup for: ${domain}`);
         return next();
     }
 
-    plugin.logdebug(plugin, 'using ' + nexthop + ' for: ' + domain);
+    plugin.logdebug(plugin, `using ${nexthop} for: ${domain}`);
     return next(OK, nexthop);
 };
 
@@ -200,7 +200,7 @@ exports.all = function (next, connection, params) {
     const plugin = this;
     if (!plugin.cfg.relay.all) { return next(); }
 
-    connection.loginfo(plugin, "confirming recipient " + params[0]);
+    connection.loginfo(plugin, `confirming recipient ${params[0]}`);
     connection.relaying = true;
     next(OK);
 };

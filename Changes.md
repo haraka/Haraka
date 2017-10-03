@@ -11,6 +11,7 @@
     * replaced concatenated strings with template literals in the plugins/xclient.js #2159
     * replaced concatenated strings with template literals in the tests/host_pool.js #2159
     * replaced concatenated strings with template literals in the rfc1869.js #2159
+    * replaced concatenated strings with template literals in the plugins/relay.js #2174
 
 ## 2.8.16 - Sep 30, 2017
 
