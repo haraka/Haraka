@@ -49,7 +49,7 @@ class MessageStream extends Stream {
         this.in_pipe = false;
     }
 
-    add_line(line) {
+    add_line (line) {
         const self = this;
 
         if (typeof line === 'string') {
@@ -97,9 +97,9 @@ class MessageStream extends Stream {
         }
 
         this.write_ce.fill(line);
-    };
+    }
 
-    add_line_end(cb) {
+    add_line_end (cb) {
         // Record body end position
         if (this.idx.body) {
             this.idx.body.end = this.bytes_read;
@@ -114,9 +114,9 @@ class MessageStream extends Stream {
         if (!this.write_ce.end()) {
             this._write();
         }
-    };
+    }
 
-    _write(data) {
+    _write (data) {
         const self = this;
         if (data) {
             this.buffered += data.length;
@@ -194,13 +194,13 @@ class MessageStream extends Stream {
             }
             return true;
         }
-    };
+    }
 
     /*
     ** READABLE STREAM
     */
 
-    _read() {
+    _read () {
         const self = this;
         if (!this.end_called) {
             throw new Error('end not called!');
@@ -258,9 +258,9 @@ class MessageStream extends Stream {
                 });
             }
         }
-    };
+    }
 
-    process_buf(buf) {
+    process_buf (buf) {
         let offset = 0;
         while ((offset = utils.indexOfLF(buf)) !== -1) {
             let line = buf.slice(0, offset+1);
@@ -296,9 +296,9 @@ class MessageStream extends Stream {
         if (buf.length > 0) {
             this.read_ce.fill(buf);
         }
-    };
+    }
 
-    _read_finish() {
+    _read_finish () {
         const self = this;
         // End dot required?
         if (this.ending_dot) {
@@ -316,9 +316,9 @@ class MessageStream extends Stream {
             self.in_pipe = false;
             self.emit('end');
         });
-    };
+    }
 
-    pipe(destination, options) {
+    pipe (destination, options) {
         const self = this;
         if (this.in_pipe) {
             throw new Error('Cannot pipe while currently piping');
@@ -368,14 +368,14 @@ class MessageStream extends Stream {
             self._read();
         }
         return destination;
-    };
+    }
 
-    pause() {
+    pause () {
         this.paused = true;
         if (this.rs) this.rs.pause();
-    };
+    }
 
-    resume() {
+    resume () {
         this.paused = false;
         if (this.rs) {
             this.rs.resume();
@@ -383,9 +383,9 @@ class MessageStream extends Stream {
         else {
             this._read();
         }
-    };
+    }
 
-    destroy() {
+    destroy () {
         const self = this;
         try {
             if (this.fd) {
@@ -400,16 +400,16 @@ class MessageStream extends Stream {
         catch (err) {
             // Ignore any errors
         }
-    };
+    }
 
-    get_data(options, cb) { // Or: (cb)
+    get_data (options, cb) { // Or: (cb)
         if (arguments.length === 1) {
             cb = arguments[0];
             options = {};
         }
         const ws = new GetDataStream(cb);
         this.pipe(ws, options);
-    };
+    }
 }
 
 module.exports = MessageStream;
@@ -422,21 +422,21 @@ class GetDataStream extends Stream {
         this.writable = true;
     }
 
-    write(obj, enc) {
+    write (obj, enc) {
         this.buf += obj;
         return true;
-    };
+    }
 
-    end(obj, enc) {
+    end (obj, enc) {
         if (obj) this.buf += obj;
         this.cb(this.buf);
-    };
+    }
 
-    destroy() {
+    destroy () {
         // ignore
-    };
+    }
 
-    destroySoon() {
+    destroySoon () {
         // ignore
-    };
+    }
 }
