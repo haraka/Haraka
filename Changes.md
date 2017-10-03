@@ -6,6 +6,7 @@
     * Fix ability to set log level to emerg #2128
 * Changes
     * config: replace ./config.js with haraka-config #2119
+    * Replaced concatenated strings with template literals in the plugins/profile.js #2170
     * Replaced concatenated strings with template literals max_unrecognised_commands.js #2171
     * Replaced concatenated strings with template literals in the plugins/avg.js #2156
     * replaced concatenated strings with template literals in the plugins/xclient.js #2159
