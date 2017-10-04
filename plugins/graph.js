@@ -210,7 +210,7 @@ exports.get_data = function (res, earliest, today, group_by) {
 
     function write_to (data) {
         // plugin.loginfo(data);
-        res.write(`${data} \n`);
+        res.write(`${data}\n`);
     }
 
     db.each(select, [earliest, next_stop], function (err, row) {
