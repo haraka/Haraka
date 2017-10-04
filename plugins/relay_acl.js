@@ -19,7 +19,7 @@ exports.refresh_config = function (next, connection) {
 };
 
 exports.relay_acl = function (next, connection, params) {
-    connection.logdebug(this, 'checking ' + connection.remote_ip + ' in relay_acl_allow');
+    connection.logdebug(this, `checking ${connection.remote_ip} in relay_acl_allow`);
 
     if (!this.is_acl_allowed(connection)) {
         connection.results.add(this, {skip: 'relay_acl(unlisted)'});
@@ -47,7 +47,7 @@ exports.relay_dest_domains = function (next, connection, params) {
     }
 
     const dest_domain = params[0].host;
-    connection.logdebug(plugin, 'dest_domain = ' + dest_domain);
+    connection.logdebug(plugin, `dest_domain = ${dest_domain}`);
 
     const dst_cfg = plugin.cfg.domains[dest_domain];
     if (!dst_cfg) {
@@ -56,7 +56,7 @@ exports.relay_dest_domains = function (next, connection, params) {
     }
 
     const action = JSON.parse(dst_cfg).action;
-    connection.logdebug(plugin, 'found config for ' + dest_domain + ': ' + action);
+    connection.logdebug(plugin, `found config for ${dest_domain}: ${action}`);
 
     switch (action) {
         case "accept":
@@ -88,7 +88,7 @@ exports.is_acl_allowed = function (connection) {
 
     for (let i=0; i < plugin.acl_allow.length; i++) {
         const item = plugin.acl_allow[i];
-        connection.logdebug(plugin, 'checking if ' + ip + ' is in ' + item);
+        connection.logdebug(plugin, `checking if ${ip} is in ${item}`);
         const cidr = plugin.acl_allow[i].split("/");
         const c_net  = cidr[0];
         const c_mask = cidr[1] || 32;
@@ -97,7 +97,7 @@ exports.is_acl_allowed = function (connection) {
         if (net.isIPv6(ip) && net.isIPv4(c_net)) continue;
 
         if (ipaddr.parse(ip).match(ipaddr.parse(c_net), c_mask)) {
-            connection.logdebug(plugin, 'checking if ' + ip + ' is in ' + item + ": yes");
+            connection.logdebug(plugin, `checking if ${ip} is in ${item}: yes`);
             return true;
         }
     }

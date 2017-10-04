@@ -6,7 +6,18 @@
     * Fix ability to set log level to emerg #2128
 * Changes
     * config: replace ./config.js with haraka-config #2119
-    * replace concatenated strings with template literals in plugins/toobusy.js #2186
+    * Replaced concatenated strings with template literals in the plugins/profile.js #2170
+    * Replaced concatenated strings with template literals max_unrecognised_commands.js #2171
+    * Replaced concatenated strings with template literals in the plugins/avg.js #2156
+    * replaced concatenated strings with template literals in the plugins/xclient.js #2159
+    * replaced concatenated strings with template literals in the tests/host_pool.js #2159
+    * replaced concatenated strings with template literals in the rfc1869.js #2159
+    * replaced concatenated strings with template literals in the plugins/relay.js #2174
+    * replaced concatenated strings with template literals in the plugins/relay_acl.js #2177
+    * replaced concatenated strings with template literals in the connection.js #2129
+    * replaced concatenated strings with template literals in plugins/toobusy.js #2186
+
+
 
 ## 2.8.16 - Sep 30, 2017
 
