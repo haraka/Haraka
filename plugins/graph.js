@@ -73,12 +73,12 @@ exports.deny = function (next, connection, params) {
     const plugin = this;
     insert.bind([new Date().getTime(), params[2]], function (err) {
         if (err) {
-            plugin.logerror("Insert DENY failed: " + err);
+            plugin.logerror(`Insert DENY failed: ${err}`);
             return next();
         }
         insert.run(function (err2, rows) {
             if (err2) {
-                plugin.logerror("Insert failed: " + err2);
+                plugin.logerror(`Insert failed: ${err2}`);
             }
             try { insert.reset(); }
             catch (e) {}
@@ -91,12 +91,12 @@ exports.queue_ok = function (next, connection, params) {
     const plugin = this;
     insert.bind([new Date().getTime(), 'accepted'], function (err) {
         if (err) {
-            plugin.logerror("Insert DENY failed: " + err);
+            plugin.logerror(`Insert DENY failed: ${err}`);
             return next();
         }
         insert.run(function (err2, rows) {
             if (err2) {
-                plugin.logerror("Insert failed: " + err2);
+                plugin.logerror(`Insert failed: ${err2}`);
             }
             try { insert.reset(); }
             catch (ignore) {}
@@ -190,7 +190,7 @@ exports.handle_data = function (req, res) {
     const earliest = today - distance;
     const group_by = distance/width; // one data point per pixel
 
-    res.write("Date," + utils.sort_keys(plugins).join(',') + "\n");
+    res.write(`Date,${utils.sort_keys(plugins).join(',')}\n`);
 
     this.get_data(res, earliest, today, group_by);
 };
@@ -204,21 +204,21 @@ function reset_agg () {
 }
 
 exports.get_data = function (res, earliest, today, group_by) {
-    const next_stop = earliest + group_by;
+    const next_stop = `${earliest}${group_by}`;
     const aggregate = reset_agg();
     const plugin = this;
 
     function write_to (data) {
         // plugin.loginfo(data);
-        res.write(data + "\n");
+        res.write(`${data} \n`);
     }
 
     db.each(select, [earliest, next_stop], function (err, row) {
         if (err) {
             res.end();
-            return plugin.logerror("SELECT failed: " + err);
+            return plugin.logerror(`SELECT failed: ${err}`);
         }
-        plugin.loginfo("got: " + row.hits + ", " + row.plugin + " next_stop: " + next_stop);
+        plugin.loginfo(`got: ${row.hits}, ${row.plugin} next_stop: ${next_stop}`);
         aggregate[row.plugin] = row.hits;
     },
     function (err, rows ) {
