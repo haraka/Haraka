@@ -173,27 +173,27 @@ class Connection {
         self.client.on('end', () => {
             if (self.state >= states.DISCONNECTING) return;
             self.remote.closed = true;
-            self.loginfo(rhost + ' half closed connection');
+            self.loginfo(`${rhost} half closed connection`);
             self.fail();
         });
 
         self.client.on('close', has_error => {
             if (self.state >= states.DISCONNECTING) return;
             self.remote.closed = true;
-            self.loginfo(rhost + ' dropped connection');
+            self.loginfo(`${rhost} dropped connection`);
             self.fail();
         });
 
         self.client.on('error', err => {
             if (self.state >= states.DISCONNECTING) return;
-            self.loginfo(rhost + ' connection error: ' + err);
+            self.loginfo(`${rhost} connection error: ${err}`);
             self.fail();
         });
 
         self.client.on('timeout', () => {
             if (self.state >= states.DISCONNECTING) return;
             self.respond(421, 'timeout', function () {
-                self.fail(rhost + ' connection timed out');
+                self.fail(`${rhost} connection timed out`);
             });
         });
 
@@ -255,7 +255,7 @@ class Connection {
             this.haproxy_ip = val;
         }
         else {
-            this[obj + '_' + prop] = val;
+            this[`${obj}_${prop}`] = val;
         }
         // /sunset
     }
@@ -277,7 +277,7 @@ class Connection {
 
         if (this.state === states.DATA) {
             if (logger.would_log(logger.LOGDATA)) {
-                this.logdata("C: " + line);
+                this.logdata(`C: ${line}`);
             }
             this.accumulate_data(line);
             return;
@@ -314,7 +314,7 @@ class Connection {
                 return plugins.run_hooks('unrecognized_command',
                     this, this.current_line);
             }
-            const method = "cmd_" + matches[1].toLowerCase();
+            const method = `cmd_${matches[1].toLowerCase()}`;
             const remaining = matches[3] || '';
             if (this[method]) {
                 try {
@@ -323,11 +323,11 @@ class Connection {
                 catch (err) {
                     if (err.stack) {
                         const c = this;
-                        c.logerror(method + " failed: " + err);
+                        c.logerror(`${method} failed: ${err}`);
                         err.stack.split("\n").forEach(c.logerror);
                     }
                     else {
-                        this.logerror(method + " failed: " + err);
+                        this.logerror(`${method} failed: ${err}`);
                     }
                     this.respond(421, "Internal Server Error", () => {
                         self.disconnect();
@@ -351,12 +351,12 @@ class Connection {
             }
         }
         else {
-            throw new Error('unknown state ' + this.state);
+            throw new Error(`unknown state ${this.state}`);
         }
     }
     process_data (data) {
         if (this.state >= states.DISCONNECTING) {
-            this.logwarn("data after disconnect from " + this.remote.ip);
+            this.logwarn(`data after disconnect from ${this.remote.ip}`);
             return;
         }
 
@@ -477,7 +477,7 @@ class Connection {
                 });
             }
             else {
-                this.loginfo('DATA line length (' + this.current_data.length + ') exceeds limit of ' + maxlength + ' bytes');
+                this.loginfo(`DATA line length (${this.current_data.length}) exceeds limit of ${maxlength} bytes`);
                 this.transaction.notes.data_line_length_exceeded = true;
                 const b = Buffer.concat([
                     this.current_data.slice(0, maxlength - 2),
@@ -531,17 +531,16 @@ class Connection {
         let buf = '';
 
         while ((mess = messages.shift())) {
-            const line = code + (messages.length ? "-" : " ") +
-                (uuid ? '[' + uuid + '@' + hostname + '] ' : '' ) + mess;
-            this.logprotocol("S: " + line);
-            buf = buf + line + "\r\n";
+            const line = `${code}${(messages.length ? "-" : " ")}${(uuid ? `[${uuid}@${hostname}]` : '' )}${mess}`;
+            this.logprotocol(`S: ${line}`);
+            buf = `${buf}${line}\r\n`;
         }
 
         try {
             this.client.write(buf);
         }
         catch (err) {
-            return this.fail("Writing response: " + buf + " failed: " + err);
+            return this.fail(`Writing response: ${buf} failed: ${err}`);
         }
 
         // Store the last response
@@ -583,12 +582,8 @@ class Connection {
             'pipe': (this.pipelining ? 'Y' : 'N'),
             'errors': this.errors,
             'txns': this.tran_count,
-            'rcpts': this.rcpt_count.accept + '/' +
-                       this.rcpt_count.tempfail + '/' +
-                       this.rcpt_count.reject,
-            'msgs': this.msg_count.accept + '/' +
-                       this.msg_count.tempfail + '/' +
-                       this.msg_count.reject,
+            'rcpts': `${this.rcpt_count.accept}/${this.rcpt_count.tempfail}/${this.rcpt_count.reject}`,
+            'msgs': `${this.msg_count.accept}/${this.msg_count.tempfail}/${this.msg_count.reject}`,
             'bytes': this.totalbytes,
             'lr': ((this.last_reject) ? this.last_reject : ''),
             'time': (Date.now() - this.start_time)/1000,
@@ -608,7 +603,7 @@ class Connection {
     }
     tran_uuid () {
         this.tran_count++;
-        return this.uuid + '.' + this.tran_count;
+        return `${this.uuid}.${this.tran_count}`;
     }
     reset_transaction (cb) {
         this.results.add({name: 'reset'}, {
@@ -640,7 +635,7 @@ class Connection {
             self.transaction = trans.createTransaction(self.tran_uuid());
             // Catch any errors from the message_stream
             self.transaction.message_stream.on('error', (err) => {
-                self.logcrit('message_stream error: ' + err.message);
+                self.logcrit(`message_stream error: ${err.message}`);
                 self.respond('421', 'Internal Server Error', () => {
                     self.disconnect();
                 });
@@ -781,15 +776,15 @@ class Connection {
                 if (greeting.length) {
                     // RFC5321 section 4.2
                     // Hostname/domain should appear after the 220
-                    greeting[0] = config.get('me') + ' ESMTP ' + greeting[0];
+                    greeting[0] = `${config.get('me')} ESMTP ${greeting[0]}`;
                     if (this.banner_includes_uuid) {
-                        greeting[0] += ' (' + this.uuid + ')';
+                        greeting[0] += ` (${this.uuid})`;
                     }
                 }
                 else {
-                    greeting = `${config.get('me')} ESMTP Haraka  ${(this.header_hide_version  ? '' : ' ' + version)} ready`;
+                    greeting = `${config.get('me')} ESMTP Haraka  ${(this.header_hide_version  ? '' : ` ${version}`)} ready`;
                     if (this.banner_includes_uuid) {
-                        greeting += ' (' + this.uuid + ')';
+                        greeting += ` (${this.uuid})`;
                     }
                 }
                 this.respond(220, msg || greeting);
@@ -824,11 +819,8 @@ class Connection {
             default:
                 // RFC5321 section 4.1.1.1
                 // Hostname/domain should appear after 250
-                this.respond(250, config.get('me') + " Hello " +
-                    ((this.remote.host && this.remote.host !== 'DNSERROR' &&
-                    this.remote.host !== 'NXDOMAIN') ? this.remote.host + ' ' : '') +
-                    "[" + this.remote.ip + "]" +
-                    ", Haraka is at your service.");
+                this.respond(250, `${config.get('me')} Hello ${((this.remote.host && this.remote.host !== 'DNSERROR' &&
+                    this.remote.host !== 'NXDOMAIN') ? `${this.remote.host} ` : '')}[${this.remote.ip}], Haraka is at your service.`);
         }
     }
     ehlo_respond (retval, msg) {
@@ -860,12 +852,10 @@ class Connection {
             default: {
                 // RFC5321 section 4.1.1.1
                 // Hostname/domain should appear after 250
+
                 const response = [
-                    config.get('me') + " Hello " +
-                    ((this.remote.host && this.remote.host !== 'DNSERROR' &&
-                    this.remote.host !== 'NXDOMAIN') ? this.remote.host + ' ' : '') +
-                    "[" + this.remote.ip + "]" +
-                    ", Haraka is at your service.",
+                    `${config.get('me')} Hello ${((this.remote.host && this.remote.host !== 'DNSERROR' &&
+                    this.remote.host !== 'NXDOMAIN') ? `${this.remote.host} ` : '') }[${this.remote.ip}], Haraka is at your service.`,
                     "PIPELINING",
                     "8BITMIME",
                     "SMTPUTF8",
@@ -1180,8 +1170,8 @@ class Connection {
             'HAProxy',
             {
                 proto: proto,
-                src_ip: src_ip + ':' + src_port,
-                dst_ip: dst_ip + ':' + dst_port,
+                src_ip: `${src_ip}:${src_port}`,
+                dst_ip: `${dst_ip}:${dst_port}`,
             }
         );
 
@@ -1416,8 +1406,8 @@ class Connection {
             'from ',
             this.hello.host, ' (',
             // If no rDNS, don't display it
-            ((!/^(?:DNSERROR|NXDOMAIN)/.test(this.remote.info)) ? this.remote.info + ' ' : ''),
-            '[', this.remote.ip, '])',
+            ((!/^(?:DNSERROR|NXDOMAIN)/.test(this.remote.info)) ? `${this.remote.info} ` : ''),
+            `[${this.remote.ip}])`,
             "\n\t",
             'by ',
             config.get('me')
@@ -1431,8 +1421,8 @@ class Connection {
             ' id ', this.transaction.uuid,
             "\n\t",
             'envelope-from ', this.transaction.mail_from.format(),
-            ((this.authheader) ? ' ' + this.authheader.replace(/\r?\n\t?$/, '') : ''),
-            ((sslheader) ? "\n\t" + sslheader.replace(/\r?\n\t?$/,'') : ''),
+            ((this.authheader) ? ` ${this.authheader.replace(/\r?\n\t?$/, '')}` : ''),
+            ((sslheader) ? `\n\t${sslheader.replace(/\r?\n\t?$/,'')}` : ''),
             ";\n\t", utils.date_to_str(new Date())
         )
         return received_header.join('');
@@ -1501,7 +1491,7 @@ class Connection {
             return this.respond(503, "RCPT required first");
         }
 
-        this.accumulate_data('Received: ' + this.received_line() + "\r\n");
+        this.accumulate_data(`Received: ${this.received_line()}\r\n`);
         plugins.run_hooks('data', this);
     }
     data_respond (retval, msg) {
@@ -1584,7 +1574,7 @@ class Connection {
 
         // Check message size limit
         if (this.max_bytes && this.transaction.data_bytes > this.max_bytes) {
-            this.logerror("Incoming message exceeded databytes size of " + this.max_bytes);
+            this.logerror(`Incoming message exceeded databytes size of ${this.max_bytes}`);
             return plugins.run_hooks('max_data_exceeded', this);
         }
 
@@ -1624,9 +1614,7 @@ class Connection {
             {
                 'mid': mid.replace(/\r?\n/,''),
                 'size': this.transaction.data_bytes,
-                'rcpts': this.transaction.rcpt_count.accept + '/' +
-                        this.transaction.rcpt_count.tempfail + '/' +
-                        this.transaction.rcpt_count.reject,
+                'rcpts': `${this.transaction.rcpt_count.accept}/${this.transaction.rcpt_count.tempfail}/${this.transaction.rcpt_count.reject}`,
                 'delay': this.transaction.data_post_delay,
                 'code':  constants.translate(retval),
                 'msg': (msg || ''),
@@ -1716,7 +1704,7 @@ class Connection {
         const self = this;
         if (!msg) msg = this.queue_msg(retval, msg);
         this.store_queue_result(retval, msg);
-        msg = msg + ' (' + this.transaction.uuid + ')';
+        msg = `${msg} (${this.transaction.uuid})`;
         if (retval !== constants.ok) {
             this.lognotice(
                 'queue',
@@ -1772,7 +1760,7 @@ class Connection {
                             });
                             break;
                         default:
-                            self.logerror("Unrecognized response from outbound layer: " + retval2 + " : " + msg2);
+                            self.logerror(`Unrecognized response from outbound layer: ${retval2} : ${msg2}`);
                             self.respond(550, msg2 || "Internal Server Error", () => {
                                 self.msg_count.reject++;
                                 self.reset_transaction(() => {
@@ -1787,7 +1775,7 @@ class Connection {
         const self = this;
         if (!msg) msg = this.queue_msg(retval, msg);
         this.store_queue_result(retval, msg);
-        msg = msg + ' (' + this.transaction.uuid + ')';
+        msg = `${msg} (${this.transaction.uuid})`;
 
         if (retval !== constants.ok) {
             this.lognotice(
