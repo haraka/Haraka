@@ -6,6 +6,7 @@
     * Fix ability to set log level to emerg #2128
 * Changes
     * config: replace ./config.js with haraka-config #2119
+    * replace concatenated strings with template literals in plugins/toobusy.js #2186
 
 ## 2.8.16 - Sep 30, 2017
 
