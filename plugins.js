@@ -528,7 +528,6 @@ function is_required_hook (hook) {
         case 'disconnect':
         case 'log':
             return true;
-            break;
         default:
             return false;
     }
