@@ -327,7 +327,7 @@ class Connection {
                         err.stack.split("\n").forEach(c.logerror);
                     }
                     else {
-                        c.logerror(`${method} failed: ${err}`);
+                        this.logerror(`${method} failed: ${err}`);
                     }
                     this.respond(421, "Internal Server Error", () => {
                         self.disconnect();
@@ -477,7 +477,7 @@ class Connection {
                 });
             }
             else {
-                this.loginfo(`DATA line length (${this.current_data.length}) exceeds limit of ${maxlength} ${bytes}`);
+                this.loginfo(`DATA line length (${this.current_data.length}) exceeds limit of ${maxlength} bytes`);
                 this.transaction.notes.data_line_length_exceeded = true;
                 const b = Buffer.concat([
                     this.current_data.slice(0, maxlength - 2),
@@ -852,7 +852,7 @@ class Connection {
             default: {
                 // RFC5321 section 4.1.1.1
                 // Hostname/domain should appear after 250
-                
+
                 const response = [
                     `${config.get('me')} Hello ${((this.remote.host && this.remote.host !== 'DNSERROR' &&
                     this.remote.host !== 'NXDOMAIN') ? `${this.remote.host} ` : '') }[${this.remote.ip}], Haraka is at your service.`,
