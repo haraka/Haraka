@@ -63,7 +63,7 @@ exports.load_config_lists = function () {
         for (let i = 0; i < list.length; i++) {
             plugin.whitelist[type][list[i].toLowerCase()] = true;
         }
-        plugin.logdebug('whitelist {' + type + '} loaded from ' + file_name + ' with ' + list.length + ' entries');
+        plugin.logdebug(`whitelist {${type}} loaded from ${file_name} with ${list.length} entries`);
     }
 
     function load_ip_list (type, file_name) {
@@ -78,20 +78,20 @@ exports.load_config_lists = function () {
                     addr = ipaddr.parseCIDR(addr);
                 }
                 else {
-                    addr = ipaddr.parseCIDR(addr + ((net.isIPv6(addr)) ? '/128' : '/32'));
+                    addr = ipaddr.parseCIDR(`${addr}${((net.isIPv6(addr)) ? '/128' : '/32')}`);
                 }
 
                 plugin.whitelist[type].push(addr);
             } catch (e) {}
         }
 
-        plugin.logdebug('whitelist {' + type + '} loaded from ' + file_name + ' with ' + plugin.whitelist[type].length + ' entries');
+        plugin.logdebug(`whitelist {${type}} loaded from ${file_name} with ${plugin.whitelist[type].length} entries`);
     }
 
     function load_config_list (type, file_name) {
         plugin.list[type] = Object.keys(plugin.cfg[file_name]);
 
-        plugin.logdebug('list {' + type + '} loaded from ' + file_name + ' with ' + plugin.list[type].length + ' entries');
+        plugin.logdebug(`list {${type}} loaded from ${file_name} with ${plugin.list[type].length} entries`);
     }
 
     load_list('mail', 'envelope_whitelist');
@@ -134,9 +134,9 @@ exports.hook_mail = function (next, connection, params) {
         const why_skip = plugin.process_skip_rules(connection);
 
         if (why_skip) {
-            plugin.loginfo(connection, 'Requested to skip the GL because skip rule matched: ' + why_skip);
+            plugin.loginfo(connection, `Requested to skip the GL because skip rule matched: ${why_skip}`);
             connection.transaction.results.add(plugin, {
-                skip : 'requested(' + why_skip + ')'
+                skip : `requested(${why_skip})`
             });
         }
     }
@@ -169,7 +169,7 @@ exports.hook_rcpt_ok = function (next, connection, rcpt) {
 
     plugin.check_and_update_white(connection, function (err, white_rec) {
         if (err) {
-            plugin.logerror(connection, 'Got error: ' + util.inspect(err));
+            plugin.logerror(connection, `Got error: ${util.inspect(err)}`);
             return next(DENYSOFT, DSN.sec_unspecified('Backend failure. Please, retry later or contact our support.'));
         }
         if (white_rec) {
@@ -244,10 +244,10 @@ exports.process_tuple = function (connection, sender, rcpt, cb) {
     return plugin.db_lookup(key, function (err, record) {
         if (err) {
             if (err instanceof Error && err.what == 'db_error')
-                plugin.logwarn(connection, "got err from DB: " + util.inspect(err));
+                plugin.logwarn(connection, `got err from DB: ${util.inspect(err)}`);
             throw err;
         }
-        plugin.logdebug(connection, 'got record: ' + util.inspect(record));
+        plugin.logdebug(connection, `got record: ${util.inspect(record)}`);
 
         // { created: TS, updated: TS, lifetime: TTL, tried: Integer }
         const now = Date.now() / 1000;
@@ -276,7 +276,7 @@ exports.check_and_update_white = function (connection, cb) {
 
     return plugin.db_lookup(key, function (err, record) {
         if (err) {
-            plugin.logwarn(connection, "got err from DB: " + util.inspect(err));
+            plugin.logwarn(connection, `got err from DB: ${util.inspect(err)}`);
             throw err;
         }
         if (record) {
@@ -320,7 +320,7 @@ exports.should_skip_check = function (connection) {
     }
 
     if (connection.remote.is_private) {
-        connection.logdebug(plugin, 'skipping private IP: ' + connection.remote.ip);
+        connection.logdebug(plugin, `skipping private IP: ${connection.remote.ip}`);
         ctr.add(plugin, {
             skip : 'private-ip'
         });
@@ -371,9 +371,9 @@ exports.process_skip_rules = function (connection) {
 // When _to_ is String, we craft +rcpt+ key
 exports.craft_grey_key = function (connection, from, to) {
     const plugin = this;
-    let key = 'grey:' + plugin.craft_hostid(connection) + ':' + (from || '<>');
+    let key = `grey:${plugin.craft_hostid(connection)}:${(from || '<>')}`;
     if (to != undefined) {
-        key += ':' + (to || '<>');
+        key += `:${(to || '<>')}`;
     }
     return key;
 };
@@ -397,7 +397,7 @@ exports.craft_hostid = function (connection) {
 
     const chsit = function (value, reason) { // cache the return value
         if (!value)
-            plugin.logdebug(connection, 'hostid set to IP: ' + reason);
+            plugin.logdebug(connection, `hostid set to IP: ${reason}`);
 
         trx.results.add(plugin, {
             hostid_type : value ? 'domain' : 'ip',
@@ -455,7 +455,7 @@ exports.craft_hostid = function (connection) {
         // craft the +hostid+
         const label = vardom.split('.').slice(1).join('.');
         if (label)
-            stripped_dom = label + '.' + stripped_dom;
+            stripped_dom = `${label}.${stripped_dom}`;
     }
 
     return chsit(stripped_dom);
@@ -474,7 +474,7 @@ exports.retrieve_grey = function (rcpt_key, sender_key, cb) {
 
     multi.exec(function (err, result) {
         if (err) {
-            plugin.lognotice("DB error: " + util.inspect(err));
+            plugin.lognotice(`DB error: ${util.inspect(err)}`);
             err.what = 'db_error';
             throw err;
         }
@@ -512,7 +512,7 @@ exports.update_grey = function (key, create, cb) {
 
     multi.exec(function (err, records) {
         if (err) {
-            plugin.lognotice("DB error: " + util.inspect(err));
+            plugin.lognotice(`DB error: ${util.inspect(err)}`);
             err.what = 'db_error';
             throw err;
         }
@@ -541,12 +541,12 @@ exports.promote_to_white = function (connection, grey_rec, cb) {
 
     return plugin.db.hmset(white_key, white_rec, function (err, result) {
         if (err) {
-            plugin.lognotice("DB error: " + util.inspect(err));
+            plugin.lognotice(`DB error: ${util.inspect(err)}`);
             err.what = 'db_error';
             throw err;
         }
         plugin.db.expire(white_key, white_ttl, function (err2, result2) {
-            plugin.lognotice("DB error: " + util.inspect(err2));
+            plugin.lognotice(`DB error: ${util.inspect(err2)}`);
             return cb(err2, result2);
         });
     });
@@ -568,7 +568,7 @@ exports.update_white_record = function (key, record, cb) {
 
     return multi.exec(function (err2, record2) {
         if (err2) {
-            plugin.lognotice("DB error: " + util.inspect(err2));
+            plugin.lognotice(`DB error: ${util.inspect(err2)}`);
             err2.what = 'db_error';
             throw err2;
         }
@@ -583,7 +583,7 @@ exports.db_lookup = function (key, cb) {
 
     plugin.db.hgetall(key, function (err, result) {
         if (err) {
-            plugin.lognotice("DB error: " + util.inspect(err), key);
+            plugin.lognotice(`DB error: ${util.inspect(err)}`, key);
         }
         if (result && typeof result === 'object') { // groom known-to-be numeric values
             ['created', 'updated', 'lifetime', 'tried', 'first_connect', 'whitelisted', 'tried_when_greylisted'].forEach(function (kk) {
@@ -602,7 +602,7 @@ exports.addr_in_list = function (type, address) {
     const plugin = this;
 
     if (!plugin.whitelist[type]) {
-        plugin.logwarn("List not defined: " + type);
+        plugin.logwarn(`List not defined: ${type}`);
         return false;
     }
 
@@ -641,7 +641,7 @@ exports.domain_in_list = function (list_name, domain) {
     const list = plugin.list[list_name];
 
     if (!list) {
-        plugin.logwarn("List not defined: " + list_name);
+        plugin.logwarn(`List not defined: ${list_name}`);
         return false;
     }
 
