@@ -5,6 +5,8 @@
 * Fixes
     * Fix ability to set log level to emerg #2128
 * Changes
+    * plugins/rcpt_to.ldap -> haraka-plugin-rcpt-ldap #2144
+    * plugins/auth/auth_ldap -> haraka-plugin-auth-ldap #2144
     * config: replace ./config.js with haraka-config #2119
     * Replaced concatenated strings with template literals in the plugins/profile.js #2170
     * Replaced concatenated strings with template literals max_unrecognised_commands.js #2171
