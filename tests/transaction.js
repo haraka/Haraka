@@ -1,10 +1,10 @@
 const fs = require('fs');
 const path = require('path');
 
-const Transaction = require('../transaction');
+const transaction = require('../transaction');
 
 function _set_up (done) {
-    this.transaction = Transaction.createTransaction();
+    this.transaction = transaction.createTransaction();
     done();
 }
 
