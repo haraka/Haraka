@@ -1,7 +1,10 @@
-const Transaction  = require('../transaction');
+const fs = require('fs');
+const path = require('path');
+
+const transaction = require('../transaction');
 
 function _set_up (done) {
-    this.transaction = Transaction.createTransaction();
+    this.transaction = transaction.createTransaction();
     done();
 }
 
@@ -99,3 +102,57 @@ exports.transaction = {
         });
     }
 };
+
+function write_file_data_to_transaction (test_transaction, filename) {
+    const specimen = fs.readFileSync(filename, 'utf8');
+    const matcher = /[^\n]*([\n]|$)/g;
+
+    let line;
+    do {
+        line = matcher.exec(specimen);
+        if (line[0] == '') {
+            break;
+        }
+        test_transaction.add_data(line[0]);
+    } while (line[0] != '');
+
+    test_transaction.end_data();
+}
+
+exports.base64_handling = {
+    setUp : _set_up,
+    tearDown: _tear_down,
+
+    'varied-base64-fold-lengths-preserve-data': function (test) {
+        const self = this;
+
+        const parsed_attachments = {};
+        self.transaction.parse_body = true;
+        //accumulate attachment buffers.
+        self.transaction.attachment_hooks(function (ct, filename, body, stream) {
+            let attachment = new Buffer(0);
+            stream.on('data', function (data) {
+                attachment = Buffer.concat([attachment, data]);
+            });
+            stream.on('end', function () {
+                parsed_attachments[filename] = attachment;
+            });
+        });
+
+        const specimen_path = path.join(__dirname, 'mail_specimen', 'varied-fold-lengths-preserve-data.txt');
+        write_file_data_to_transaction(self.transaction, specimen_path);
+
+        test.equal(self.transaction.body.children.length, 6);
+
+        let first_attachment = null;
+        for (const i in parsed_attachments) {
+            const current_attachment = parsed_attachments[i];
+            first_attachment = first_attachment || current_attachment;
+            // All buffers from data that was encoded with varied line lengths should
+            // still have the same final data.
+            test.equal(true, first_attachment.equals(current_attachment),
+                `The buffer data for '${i}' doesn't appear to be equal to the other attachments, and is likely corrupted.`);
+        }
+        test.done();
+    },
+}

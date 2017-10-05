@@ -30,6 +30,7 @@ class Body extends events.EventEmitter {
         this.state = 'start';
         this.buf = new Buffer(buf_siz);
         this.buf_fill = 0;
+        this.decode_accumulator = '';
     }
 }
 
@@ -421,7 +422,39 @@ Body.prototype.parse_attachment = function (line) {
 Body.prototype.decode_qp = utils.decode_qp;
 
 Body.prototype.decode_base64 = function (line) {
-    return new Buffer(line, 'base64');
+    let to_process = this.decode_accumulator + line.trim();
+
+    // Sometimes base64 data lines will not be aligned with
+    // byte boundaries. This is because each char in base64
+    // represents 6 bits. 24 is the LCM between 6 and 8 bits.
+    // (i.e. 4 * 6-bit chars === 3 * bytes)
+
+    // As a result, 24 bits is our word boundary for base64.
+    // Failure to align here will result in truncated/incorrect
+    // node Buffers later on.
+
+    // Walk back from the toProcess.length to the first 
+    // position that aligns with a 24-bit boundary.
+    const emit_length = to_process.length - (to_process.length % 4)
+
+    if (emit_length > 0) {
+        const emit_now = to_process.substring(0, emit_length);
+        this.decode_accumulator = to_process.substring(emit_length);
+        return new Buffer(emit_now, 'base64');
+    } else {
+        this.decode_accumulator = '';
+        // This is the end of the base64 data, we don't really have enough bits
+        // to fill up the bytes, but that's because we're on the last line, and ==
+        // might have been elided.
+
+        // In order to prevent any weird boundary issues, we'll re-pad
+        // the string if there's any data left. As above, our target
+        // is a 24-bit boundary, pad to 4 characters.
+        while (to_process.length > 0 && to_process.length < 4) {
+            to_process += '=';
+        }
+        return new Buffer(to_process, 'base64');
+    }
 };
 
 Body.prototype.decode_8bit = function (line) {
