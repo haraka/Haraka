@@ -72,7 +72,7 @@ exports.transaction = {
         });
     },
 
-    'correct output encoding when content in non-utf8 #2184': function (test) {
+    'correct output encoding when content in non-utf8 #2176': function (test) {
         const self = this;
 
         // Czech panagram "Příliš žluťoučký kůň úpěl ďábelské ódy.\n" in ISO-8859-2 encoding
