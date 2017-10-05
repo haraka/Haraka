@@ -15,6 +15,8 @@
     * replaced concatenated strings with template literals in the plugins/relay.js #2174
     * replaced concatenated strings with template literals in the plugins/relay_acl.js #2177
     * replaced concatenated strings with template literals in the connection.js #2129
+    * replaced concatenated strings with template literals in plugins/toobusy.js #2186
+
 
 
 ## 2.8.16 - Sep 30, 2017
