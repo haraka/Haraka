@@ -76,53 +76,56 @@ exports.transaction = {
     },
 };
 
-function write_file_data_to_transaction(transaction, filename) {
-    var specimen = fs.readFileSync(filename , 'utf8');
-    var matcher = /[^\n]*([\n]|$)/g;
+function write_file_data_to_transaction (transaction, filename) {
+    const specimen = fs.readFileSync(filename, 'utf8');
+    const matcher = /[^\n]*([\n]|$)/g;
+
+    var line;
     do {
-        var line = matcher.exec(specimen);
+        line = matcher.exec(specimen);
         if (line[0] == '') {
             break;
         }
         transaction.add_data(line[0]);
-    } while (true);
+    } while (line[0] != '');
+
     transaction.end_data();
 }
 
 exports.base64_handling = {
     setUp : _set_up,
     tearDown: _tear_down,
-    
-    'varied-base64-fold-lengths-preserve-data': function (test) {    
-    const self = this;
 
-    var parsed_attachments = {};
-    self.transaction.parse_body = true;
-    //accumulate attachment buffers.
-    self.transaction.attachment_hooks(function (ct, filename, body, stream) {
-        var attachment = new Buffer(0);
-        stream.on('data', function (data) {
-            attachment = Buffer.concat([attachment, data]);
+    'varied-base64-fold-lengths-preserve-data': function (test) {
+        const self = this;
+
+        var parsed_attachments = {};
+        self.transaction.parse_body = true;
+        //accumulate attachment buffers.
+        self.transaction.attachment_hooks(function (ct, filename, body, stream) {
+            var attachment = new Buffer(0);
+            stream.on('data', function (data) {
+                attachment = Buffer.concat([attachment, data]);
+            });
+            stream.on('end', function () {
+                parsed_attachments[filename] = attachment;
+            });
         });
-        stream.on('end', function () {
-            parsed_attachments[filename] = attachment;
-        });
-    });
-        
-    var specimen_path = path.join(__dirname, 'mail_specimen', 'varied-fold-lengths-preserve-data.txt');
-    write_file_data_to_transaction(self.transaction, specimen_path);
 
-    test.equal(self.transaction.body.children.length, 6);
+        var specimen_path = path.join(__dirname, 'mail_specimen', 'varied-fold-lengths-preserve-data.txt');
+        write_file_data_to_transaction(self.transaction, specimen_path);
 
-    var first_attachment = null;
-    for (var i in parsed_attachments) {
-        var current_attachment = parsed_attachments[i];
-        first_attachment = first_attachment || current_attachment;
-        // All buffers from data that was encoded with varied line lengths should
-        // still have the same final data.
-        test.equal(true, first_attachment.equals(current_attachment),
-            `The buffer data for '${i}' doesn't appear to be equal to the other attachments, and is likely corrupted.`);
-    }
+        test.equal(self.transaction.body.children.length, 6);
+
+        var first_attachment = null;
+        for (var i in parsed_attachments) {
+            var current_attachment = parsed_attachments[i];
+            first_attachment = first_attachment || current_attachment;
+            // All buffers from data that was encoded with varied line lengths should
+            // still have the same final data.
+            test.equal(true, first_attachment.equals(current_attachment),
+                `The buffer data for '${i}' doesn't appear to be equal to the other attachments, and is likely corrupted.`);
+        }
         test.done();
     },
 }
