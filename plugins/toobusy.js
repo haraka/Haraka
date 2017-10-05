@@ -45,7 +45,7 @@ exports.check_busy = function (next, connection) {
         const currentLag = toobusy.lag();
         const maxLag = toobusy.maxLag();
         this.logcrit(
-            'deferring connections: lag=' + currentLag + ' max=' + maxLag);
+            `deferring connections: lag=${currentLag} max=${maxLag}`);
     }
 
     return next(DENYSOFTDISCONNECT, 'Too busy; please try again later');

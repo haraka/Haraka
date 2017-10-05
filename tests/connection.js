@@ -48,12 +48,10 @@ exports.connectionRaw = {
         test.done();
     },
     'has local object': function (test) {
-        test.expect(3);
-        test.deepEqual(this.connection.local, {
-            ip: null,
-            port: null,
-            host: null,
-        });
+        test.expect(4);
+        test.equal(this.connection.local.ip, null);
+        test.equal(this.connection.local.port, null);
+        // test.ok(this.connection.local.host, this.connection.local.host);
         // backwards compat, sunset v3.0.0
         test.equal(this.connection.local_ip, null);
         test.equal(this.connection.local_port, null);
@@ -201,6 +199,38 @@ exports.connectionPrivate = {
         test.expect(2);
         test.equal(true, this.connection.remote.is_private);
         test.equal(2525, this.connection.remote.port);
+        test.done();
+    },
+}
+
+exports.get_remote = {
+    setUp : _set_up,
+    tearDown : _tear_down,
+    'valid hostname': function (test) {
+        test.expect(1);
+        this.connection.remote.host='a.host.tld'
+        this.connection.remote.ip='172.16.199.198'
+        test.equal(this.connection.get_remote('host'), 'a.host.tld [172.16.199.198]');
+        test.done();
+    },
+    'no hostname': function (test) {
+        test.expect(1);
+        this.connection.remote.ip='172.16.199.198'
+        test.equal(this.connection.get_remote('host'), '[172.16.199.198]');
+        test.done();
+    },
+    'DNSERROR': function (test) {
+        test.expect(1);
+        this.connection.remote.host='DNSERROR'
+        this.connection.remote.ip='172.16.199.198'
+        test.equal(this.connection.get_remote('host'), '[172.16.199.198]');
+        test.done();
+    },
+    'NXDOMAIN': function (test) {
+        test.expect(1);
+        this.connection.remote.host='NXDOMAIN'
+        this.connection.remote.ip='172.16.199.198'
+        test.equal(this.connection.get_remote('host'), '[172.16.199.198]');
         test.done();
     },
 }
