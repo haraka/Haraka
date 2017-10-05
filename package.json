@@ -42,6 +42,7 @@
     "haraka-plugin-dcc"     : "*",
     "haraka-plugin-elasticsearch" : "*",
     "haraka-plugin-fcrdns"  : "*",
+    "haraka-plugin-graph"   : "*",
     "haraka-plugin-geoip"   : "*",
     "haraka-plugin-karma"   : "*",
     "haraka-plugin-limit"   : "*",
