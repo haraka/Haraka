@@ -76,7 +76,7 @@ exports.transaction = {
     },
 };
 
-function write_file_data_to_transaction (transaction, filename) {
+function write_file_data_to_transaction (test_transaction, filename) {
     const specimen = fs.readFileSync(filename, 'utf8');
     const matcher = /[^\n]*([\n]|$)/g;
 
@@ -86,10 +86,10 @@ function write_file_data_to_transaction (transaction, filename) {
         if (line[0] == '') {
             break;
         }
-        transaction.add_data(line[0]);
+        test_transaction.add_data(line[0]);
     } while (line[0] != '');
 
-    transaction.end_data();
+    test_transaction.end_data();
 }
 
 exports.base64_handling = {
@@ -99,7 +99,7 @@ exports.base64_handling = {
     'varied-base64-fold-lengths-preserve-data': function (test) {
         const self = this;
 
-        let parsed_attachments = {};
+        const parsed_attachments = {};
         self.transaction.parse_body = true;
         //accumulate attachment buffers.
         self.transaction.attachment_hooks(function (ct, filename, body, stream) {
@@ -112,14 +112,14 @@ exports.base64_handling = {
             });
         });
 
-        let specimen_path = path.join(__dirname, 'mail_specimen', 'varied-fold-lengths-preserve-data.txt');
+        const specimen_path = path.join(__dirname, 'mail_specimen', 'varied-fold-lengths-preserve-data.txt');
         write_file_data_to_transaction(self.transaction, specimen_path);
 
         test.equal(self.transaction.body.children.length, 6);
 
         let first_attachment = null;
-        for (let i in parsed_attachments) {
-            let current_attachment = parsed_attachments[i];
+        for (const i in parsed_attachments) {
+            const current_attachment = parsed_attachments[i];
             first_attachment = first_attachment || current_attachment;
             // All buffers from data that was encoded with varied line lengths should
             // still have the same final data.
