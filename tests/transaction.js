@@ -66,7 +66,7 @@ exports.transaction = {
         });
         this.transaction.end_data(function () {
             self.transaction.message_stream.get_data(function (body) {
-                test.ok(/banner$/.test(body.trim()), "banner applied");
+                test.ok(/banner$/.test(body.toString().trim()), "banner applied");
                 test.done();
             });
         });
