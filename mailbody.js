@@ -435,10 +435,10 @@ Body.prototype.decode_base64 = function (line) {
 
     // Walk back from the toProcess.length to the first 
     // position that aligns with a 24-bit boundary.
-    let emit_length = to_process.length - (to_process.length % 4)
+    const emit_length = to_process.length - (to_process.length % 4)
 
     if (emit_length > 0) {
-        let emit_now = to_process.substring(0, emit_length);
+        const emit_now = to_process.substring(0, emit_length);
         this.decode_accumulator = to_process.substring(emit_length);
         return new Buffer(emit_now, 'base64');
     } else {

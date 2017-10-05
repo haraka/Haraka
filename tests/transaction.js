@@ -80,7 +80,7 @@ function write_file_data_to_transaction (transaction, filename) {
     const specimen = fs.readFileSync(filename, 'utf8');
     const matcher = /[^\n]*([\n]|$)/g;
 
-    var line;
+    let line;
     do {
         line = matcher.exec(specimen);
         if (line[0] == '') {
@@ -99,11 +99,11 @@ exports.base64_handling = {
     'varied-base64-fold-lengths-preserve-data': function (test) {
         const self = this;
 
-        var parsed_attachments = {};
+        let parsed_attachments = {};
         self.transaction.parse_body = true;
         //accumulate attachment buffers.
         self.transaction.attachment_hooks(function (ct, filename, body, stream) {
-            var attachment = new Buffer(0);
+            let attachment = new Buffer(0);
             stream.on('data', function (data) {
                 attachment = Buffer.concat([attachment, data]);
             });
@@ -112,14 +112,14 @@ exports.base64_handling = {
             });
         });
 
-        var specimen_path = path.join(__dirname, 'mail_specimen', 'varied-fold-lengths-preserve-data.txt');
+        let specimen_path = path.join(__dirname, 'mail_specimen', 'varied-fold-lengths-preserve-data.txt');
         write_file_data_to_transaction(self.transaction, specimen_path);
 
         test.equal(self.transaction.body.children.length, 6);
 
-        var first_attachment = null;
-        for (var i in parsed_attachments) {
-            var current_attachment = parsed_attachments[i];
+        let first_attachment = null;
+        for (let i in parsed_attachments) {
+            let current_attachment = parsed_attachments[i];
             first_attachment = first_attachment || current_attachment;
             // All buffers from data that was encoded with varied line lengths should
             // still have the same final data.
