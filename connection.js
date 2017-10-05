@@ -529,11 +529,9 @@ class Connection {
 
         let mess;
         let buf = '';
-        const hostname = os.hostname().split('.').shift();
 
         while ((mess = messages.shift())) {
-            let _uuid='';
-            if (uuid) _uuid=`[${uuid}@${hostname}] `;
+            const _uuid = uuid ? `[${uuid}@${os.hostname().split('.').shift()}] ` : '';
             const line = `${code}${(messages.length ? "-" : " ")}${_uuid}${mess}`;
             this.logprotocol(`S: ${line}`);
             buf = `${buf}${line}\r\n`;
@@ -1415,27 +1413,18 @@ class Connection {
             }
         }
 
-        const received_header = [
-            'from ',
-            `${this.hello.host} (`,
-            this.get_remote('info'),
-            ")\n\t",
-            `by ${this.local.host}`
-        ]
+        let received_header = `from ${this.hello.host} (${this.get_remote('info')})\n\tby ${this.local.host}`
 
-        if (!this.header_hide_version) {
-            received_header.push(' (Haraka/', version, ')');
-        }
-        received_header.push(
-            ' with ', smtp,
-            ' id ', this.transaction.uuid,
-            "\n\t",
-            'envelope-from ', this.transaction.mail_from.format(),
-            ((this.authheader) ? ` ${this.authheader.replace(/\r?\n\t?$/, '')}` : ''),
-            ((sslheader) ? `\n\t${sslheader.replace(/\r?\n\t?$/,'')}` : ''),
-            ";\n\t", utils.date_to_str(new Date())
-        )
-        return received_header.join('');
+        if (!this.header_hide_version) received_header += ` (Haraka/${version})`
+
+        received_header += ` with ${smtp} id ${this.transaction.uuid}\n\tenvelope-from ${this.transaction.mail_from.format()}`;
+
+        if (this.authheader) received_header += ` ${this.authheader.replace(/\r?\n\t?$/, '')}`
+        if (sslheader)       received_header += `\n\t${sslheader.replace(/\r?\n\t?$/,'')}`
+
+        received_header += `;\n\t${utils.date_to_str(new Date())}`
+
+        return received_header;
     }
     auth_results (message) {
         // http://tools.ietf.org/search/rfc7001
