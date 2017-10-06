@@ -493,7 +493,7 @@ function pipe (cleartext, socket) {
     const onerror = e => {
     }
 
-    const onclose = () => {
+    function onclose () {
         socket.removeListener('error', onerror);
         socket.removeListener('close', onclose);
     }
@@ -584,7 +584,7 @@ exports.shutdown = () => {
     if (ocsp) cleanOcspCache();
 }
 
-function cleanOcspCache() {
+function cleanOcspCache () {
     log.logdebug('Cleaning ocspCache. How many keys? ' + Object.keys(ocspCache.cache).length);
     Object.keys(ocspCache.cache).forEach(function (key) {
         clearTimeout(ocspCache.cache[key].timer);
