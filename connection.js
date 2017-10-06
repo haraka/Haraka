@@ -238,7 +238,7 @@ class Connection {
         }
     }
     set (obj, prop, val) {
-        var self = this;
+        const self = this;
         if (!this[obj]) this.obj = {};   // initialize
 
         this[obj][prop] = val;  // normalized property location
