@@ -381,7 +381,7 @@ exports.load_default_opts = () => {
     }
 }
 
-const SNICallback = (servername, sniDone) => {
+function SNICallback(servername, sniDone) {
     log.logdebug('SNI servername: ' + servername);
 
     if (ctxByHost[servername] === undefined) servername = '*';
@@ -487,7 +487,7 @@ exports.getSocketOpts = (name, done) => {
     getTlsOpts();
 }
 
-const pipe = (cleartext, socket) => {
+function pipe (cleartext, socket) {
     cleartext.socket = socket;
 
     const onerror = e => {
@@ -584,7 +584,7 @@ exports.shutdown = () => {
     if (ocsp) cleanOcspCache();
 }
 
-const cleanOcspCache = () => {
+function cleanOcspCache() {
     log.logdebug('Cleaning ocspCache. How many keys? ' + Object.keys(ocspCache.cache).length);
     Object.keys(ocspCache.cache).forEach(function (key) {
         clearTimeout(ocspCache.cache[key].timer);
@@ -594,7 +594,7 @@ const cleanOcspCache = () => {
 exports.certsByHost = certsByHost;
 exports.ocsp = ocsp;
 
-const createServer = cb => {
+function createServer (cb) {
     const server = net.createServer(cryptoSocket => {
 
         const socket = new pluggableStream(cryptoSocket);
@@ -647,7 +647,7 @@ const createServer = cb => {
     return server;
 }
 
-const connect = (port, host, cb) => {
+function connect (port, host, cb) {
     let conn_options = {};
     if (typeof port === 'object') {
         conn_options = port;
