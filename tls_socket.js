@@ -381,7 +381,7 @@ exports.load_default_opts = () => {
     }
 }
 
-function SNICallback(servername, sniDone) {
+function SNICallback (servername, sniDone) {
     log.logdebug('SNI servername: ' + servername);
 
     if (ctxByHost[servername] === undefined) servername = '*';
