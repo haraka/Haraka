@@ -5,7 +5,7 @@ const dns = require('dns');
 const ipaddr = require('ipaddr.js');
 
 class SPF {
-    constructor(count, been_there) {
+    constructor (count, been_there) {
         // This should be set before check_host() is called
         this.helo = 'unknown';
         this.spf_record = '';
@@ -26,13 +26,13 @@ class SPF {
             this.been_there = been_there;
         }
     }
-// RFC 4408 Section 10.1
+    // RFC 4408 Section 10.1
     get LIMIT () {
         return 10;
     }
-// Constants
+    // Constants
     get SPF_NONE () {
-        return 1;       
+        return 1;
     }
     get SPF_PASS () {
         return 2;
@@ -86,7 +86,7 @@ class SPF {
     expand_macros (str) {
         const macro = /%{([slodipvh])((?:(?:\d+)?r?)?)?([-.+,/_=])?}/ig;
         let match;
-        while (match = macro.exec(str)) {
+        while ((match = macro.exec(str))) {
             // match[1] = macro-letter
             // match[2] = transformers
             // match[3] = delimiter
@@ -665,10 +665,10 @@ class SPF {
         }
         return cb(null, this.SPF_NONE);
     }
-    get mech_ip4() {
+    get mech_ip4 () {
         return this.mech_ip;
     }
-    get mech_ip6() {
+    get mech_ip6 () {
         return this.mech_ip;
     }
     mod_redirect (domain, cb) {
