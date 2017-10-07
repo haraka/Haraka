@@ -13,7 +13,7 @@ exports.register = function () {
 exports.rabbitmq_queue = function (next, connection) {
     const plugin = this;
     connection.transaction.message_stream.get_data(function (str) {
-        if (channel && channel.sendToQueue(queue, new Buffer(str), {deliveryMode: deliveryMode})) {
+        if (channel && channel.sendToQueue(queue, str, {deliveryMode: deliveryMode})) {
             return next(OK);
         }
         else {
