@@ -9,31 +9,31 @@ const tls_socket = require('./tls_socket');
 class Socket extends net.Socket {
     constructor (options) {
         super(options);
-        setup_line_processor(this);
+        this.setup_line_processor = this.setup_line_processor;
     }
-}
 
-function setup_line_processor (socket) {
-    let current_data = '';
-    socket.process_data = function (data) {
-        current_data += data;
-        let results;
-        while ((results = utils.line_regexp.exec(current_data))) {
-            const this_line = results[1];
-            current_data = current_data.slice(this_line.length);
-            socket.emit('line', this_line);
-        }
-    };
+    setup_line_processor (socket) {
+        let current_data = '';
+        socket.process_data = function (data) {
+            current_data += data;
+            let results;
+            while ((results = utils.line_regexp.exec(current_data))) {
+                const this_line = results[1];
+                current_data = current_data.slice(this_line.length);
+                socket.emit('line', this_line);
+            }
+        };
 
-    socket.process_end = function () {
-        if (current_data.length) {
-            socket.emit('line', current_data);
-        }
-        current_data = '';
-    };
+        socket.process_end = function () {
+            if (current_data.length) {
+                socket.emit('line', current_data);
+            }
+            current_data = '';
+        };
 
-    socket.on('data', function (data) { socket.process_data(data);});
-    socket.on('end',  function ()     { socket.process_end();     });
+        socket.on('data', function (data) { socket.process_data(data);});
+        socket.on('end',  function ()     { socket.process_end();     });
+    }
 }
 
 exports.Socket = Socket;
@@ -50,6 +50,7 @@ exports.connect = function (port, host, cb) {
         options.host = host;
     }
     const sock = tls_socket.connect(options, cb);
-    setup_line_processor(sock);
+    const socket = new Socket()
+    socket.setup_line_processor(sock);
     return sock;
-};
+}
