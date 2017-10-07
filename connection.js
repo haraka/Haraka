@@ -238,14 +238,13 @@ class Connection {
         }
     }
     set (obj, prop, val) {
-        const self = this;
         if (!this[obj]) this.obj = {};   // initialize
 
         this[obj][prop] = val;  // normalized property location
 
         // Set is_private automatically when remote.ip is set
         if (obj === 'remote' && prop === 'ip') {
-            self.set('remote', 'is_private', net_utils.is_private_ip(self.remote.ip));
+            this.set('remote', 'is_private', net_utils.is_private_ip(this.remote.ip));
         }
 
         // sunset 3.0.0
