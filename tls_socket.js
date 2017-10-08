@@ -34,122 +34,122 @@ class pluggableStream extends stream.Stream {
         this._pendingCallbacks = [];
         if (socket) this.attach(socket);
     }
+
+    pause () {
+        if (this.targetsocket.pause) {
+            this.targetsocket.pause();
+            this.readable = false;
+        }
+    }
+
+    resume () {
+        if (this.targetsocket.resume) {
+            this.readable = true;
+            this.targetsocket.resume();
+        }
+    }
+
+    attach (socket) {
+        const self = this;
+        self.targetsocket = socket;
+        self.targetsocket.on('data', function (data) {
+            self.emit('data', data);
+        });
+        self.targetsocket.on('connect', (a, b) => {
+            self.emit('connect', a, b);
+        });
+        self.targetsocket.on('secureConnection', function (a, b) {
+            self.emit('secureConnection', a, b);
+            self.emit('secure', a, b);
+        });
+        self.targetsocket.on('secure', function (a, b) {
+            self.emit('secureConnection', a, b);
+            self.emit('secure', a, b);
+        });
+        self.targetsocket.on('end', function () {
+            self.writable = self.targetsocket.writable;
+            self.emit('end');
+        });
+        self.targetsocket.on('close', function (had_error) {
+            self.writable = self.targetsocket.writable;
+            self.emit('close', had_error);
+        });
+        self.targetsocket.on('drain', function () {
+            self.emit('drain');
+        });
+        self.targetsocket.once('error', function (exception) {
+            self.writable = self.targetsocket.writable;
+            self.emit('error', exception);
+        });
+        self.targetsocket.on('timeout', function () {
+            self.emit('timeout');
+        });
+        if (self.targetsocket.remotePort) {
+            self.remotePort = self.targetsocket.remotePort;
+        }
+        if (self.targetsocket.remoteAddress) {
+            self.remoteAddress = self.targetsocket.remoteAddress;
+        }
+    }
+
+    clean (data) {
+        if (this.targetsocket && this.targetsocket.removeAllListeners) {
+            this.targetsocket.removeAllListeners('data');
+            this.targetsocket.removeAllListeners('secureConnection');
+            this.targetsocket.removeAllListeners('secure');
+            this.targetsocket.removeAllListeners('end');
+            this.targetsocket.removeAllListeners('close');
+            this.targetsocket.removeAllListeners('error');
+            this.targetsocket.removeAllListeners('drain');
+        }
+        this.targetsocket = {};
+        this.targetsocket.write = function () {};
+    }
+
+    write (data, encoding, callback) {
+        if (this.targetsocket.write) {
+            return this.targetsocket.write(data, encoding, callback);
+        }
+        return false;
+    }
+
+    end (data, encoding) {
+        if (this.targetsocket.end) {
+            return this.targetsocket.end(data, encoding);
+        }
+    }
+
+    destroySoon () {
+        if (this.targetsocket.destroySoon) {
+            return this.targetsocket.destroySoon();
+        }
+    }
+
+    destroy () {
+        if (this.targetsocket.destroy) {
+            return this.targetsocket.destroy();
+        }
+    }
+
+    setKeepAlive (bool) {
+        this._keepalive = bool;
+        return this.targetsocket.setKeepAlive(bool);
+    }
+
+    setNoDelay (/* true||false */) {
+    }
+
+    unref () {
+        return this.targetsocket.unref();
+    }
+
+    setTimeout (timeout) {
+        this._timeout = timeout;
+        return this.targetsocket.setTimeout(timeout);
+    }
 }
 
-pluggableStream.prototype.pause = function () {
-    if (this.targetsocket.pause) {
-        this.targetsocket.pause();
-        this.readable = false;
-    }
-};
-
-pluggableStream.prototype.resume = function () {
-    if (this.targetsocket.resume) {
-        this.readable = true;
-        this.targetsocket.resume();
-    }
-};
-
-pluggableStream.prototype.attach = function (socket) {
-    const self = this;
-    self.targetsocket = socket;
-    self.targetsocket.on('data', function (data) {
-        self.emit('data', data);
-    });
-    self.targetsocket.on('connect', (a, b) => {
-        self.emit('connect', a, b);
-    });
-    self.targetsocket.on('secureConnection', function (a, b) {
-        self.emit('secureConnection', a, b);
-        self.emit('secure', a, b);
-    });
-    self.targetsocket.on('secure', function (a, b) {
-        self.emit('secureConnection', a, b);
-        self.emit('secure', a, b);
-    });
-    self.targetsocket.on('end', function () {
-        self.writable = self.targetsocket.writable;
-        self.emit('end');
-    });
-    self.targetsocket.on('close', function (had_error) {
-        self.writable = self.targetsocket.writable;
-        self.emit('close', had_error);
-    });
-    self.targetsocket.on('drain', function () {
-        self.emit('drain');
-    });
-    self.targetsocket.once('error', function (exception) {
-        self.writable = self.targetsocket.writable;
-        self.emit('error', exception);
-    });
-    self.targetsocket.on('timeout', function () {
-        self.emit('timeout');
-    });
-    if (self.targetsocket.remotePort) {
-        self.remotePort = self.targetsocket.remotePort;
-    }
-    if (self.targetsocket.remoteAddress) {
-        self.remoteAddress = self.targetsocket.remoteAddress;
-    }
-};
-
-pluggableStream.prototype.clean = function (data) {
-    if (this.targetsocket && this.targetsocket.removeAllListeners) {
-        this.targetsocket.removeAllListeners('data');
-        this.targetsocket.removeAllListeners('secureConnection');
-        this.targetsocket.removeAllListeners('secure');
-        this.targetsocket.removeAllListeners('end');
-        this.targetsocket.removeAllListeners('close');
-        this.targetsocket.removeAllListeners('error');
-        this.targetsocket.removeAllListeners('drain');
-    }
-    this.targetsocket = {};
-    this.targetsocket.write = function () {};
-};
-
-pluggableStream.prototype.write = function (data, encoding, callback) {
-    if (this.targetsocket.write) {
-        return this.targetsocket.write(data, encoding, callback);
-    }
-    return false;
-};
-
-pluggableStream.prototype.end = function (data, encoding) {
-    if (this.targetsocket.end) {
-        return this.targetsocket.end(data, encoding);
-    }
-};
-
-pluggableStream.prototype.destroySoon = function () {
-    if (this.targetsocket.destroySoon) {
-        return this.targetsocket.destroySoon();
-    }
-};
-
-pluggableStream.prototype.destroy = function () {
-    if (this.targetsocket.destroy) {
-        return this.targetsocket.destroy();
-    }
-};
-
-pluggableStream.prototype.setKeepAlive = function (bool) {
-    this._keepalive = bool;
-    return this.targetsocket.setKeepAlive(bool);
-};
-
-pluggableStream.prototype.setNoDelay = function (/* true||false */) {
-};
-
-pluggableStream.prototype.unref = function () {
-    return this.targetsocket.unref();
-};
-
-pluggableStream.prototype.setTimeout = function (timeout) {
-    this._timeout = timeout;
-    return this.targetsocket.setTimeout(timeout);
-};
-
-exports.parse_x509_names = function (string) {
+exports.parse_x509_names = string => {
     // receives the text value of a x509 certificate and returns an array of
     // of names extracted from the Subject CN and the v3 Subject Alternate Names
     const names_found = [];
@@ -179,7 +179,7 @@ exports.parse_x509_names = function (string) {
     return names_found;
 }
 
-exports.parse_x509_expire = function (file, string) {
+exports.parse_x509_expire = (file, string) => {
 
     const dateMatch = /Not After : (.*)/.exec(string);
     if (!dateMatch) return;
@@ -188,7 +188,7 @@ exports.parse_x509_expire = function (file, string) {
     return new Date(dateMatch[1]);
 }
 
-exports.parse_x509 = function (string) {
+exports.parse_x509 = string => {
     const res = {};
 
     const match = /^([^-]*)?([-]+BEGIN (?:\w+\s)?PRIVATE KEY[-]+[^-]+[-]+END (?:\w+\s)?PRIVATE KEY[-]+\n)([^]*)$/.exec(string);
@@ -207,7 +207,7 @@ exports.parse_x509 = function (string) {
     return res;
 }
 
-exports.load_tls_ini = function () {
+exports.load_tls_ini = () => {
     const tlss = this;
 
     log.loginfo('loading tls.ini');
@@ -229,7 +229,7 @@ exports.load_tls_ini = function () {
             '+main.honorCipherOrder',
             '-main.requestOCSP',
         ]
-    }, function () {
+    }, () => {
         tlss.load_tls_ini();
     });
 
@@ -259,12 +259,12 @@ exports.load_tls_ini = function () {
     return cfg;
 }
 
-exports.saveOpt = function (name, opt, val) {
+exports.saveOpt = (name, opt, val) => {
     if (certsByHost[name] === undefined) certsByHost[name] = {};
     certsByHost[name][opt] = val;
 }
 
-exports.applySocketOpts = function (name) {
+exports.applySocketOpts = name => {
     const tlss = this;
 
     if (!certsByHost[name]) certsByHost[name] = {};
@@ -325,7 +325,7 @@ exports.applySocketOpts = function (name) {
     })
 }
 
-exports.load_default_opts = function () {
+exports.load_default_opts = () => {
     const tlss = this;
 
     const cfg = certsByHost['*'];
@@ -389,7 +389,7 @@ function SNICallback (servername, sniDone) {
     sniDone(null, ctxByHost[servername]);
 }
 
-exports.get_certs_dir = function (tlsDir, done) {
+exports.get_certs_dir = (tlsDir, done) => {
     const tlss = this;
 
     tlss.config.getDir(tlsDir, {}, (iterErr, files) => {
@@ -465,7 +465,7 @@ exports.get_certs_dir = function (tlsDir, done) {
     })
 }
 
-exports.getSocketOpts = function (name, done) {
+exports.getSocketOpts = (name, done) => {
     const tlss = this;
 
     function getTlsOpts () {
@@ -490,7 +490,7 @@ exports.getSocketOpts = function (name, done) {
 function pipe (cleartext, socket) {
     cleartext.socket = socket;
 
-    function onerror (e) {
+    const onerror = e => {
     }
 
     function onclose () {
@@ -502,7 +502,7 @@ function pipe (cleartext, socket) {
     socket.on('close', onclose);
 }
 
-exports.ensureDhparams = function (done) {
+exports.ensureDhparams = done => {
     const tlss = this;
 
     // empty/missing dhparams file
@@ -538,7 +538,7 @@ exports.ensureDhparams = function (done) {
     });
 }
 
-exports.addOCSP = function (server) {
+exports.addOCSP = server => {
     if (!ocsp) {
         log.logdebug('addOCSP: not available');
         return;
@@ -550,9 +550,9 @@ exports.addOCSP = function (server) {
     }
 
     log.logdebug('adding OCSPRequest listener');
-    server.on('OCSPRequest', function (cert, issuer, ocr_cb) {
+    server.on('OCSPRequest', (cert, issuer, ocr_cb) => {
         log.logdebug('OCSPRequest: ' + cert);
-        ocsp.getOCSPURI(cert, function (err, uri) {
+        ocsp.getOCSPURI(cert, (err, uri) => {
             log.logdebug('OCSP Request, URI: ' + uri + ', err=' +err);
             if (err) return ocr_cb(err);
             if (uri === null) return ocr_cb();  // not working OCSP server
@@ -560,7 +560,7 @@ exports.addOCSP = function (server) {
             const req = ocsp.request.generate(cert, issuer);
 
             // look for a cached value first
-            ocspCache.probe(req.id, function (err2, cached) {
+            ocspCache.probe(req.id, (err2, cached) => {
                 if (err2) return ocr_cb(err2);
 
                 if (cached) {
@@ -580,7 +580,7 @@ exports.addOCSP = function (server) {
     })
 }
 
-exports.shutdown = function () {
+exports.shutdown = () => {
     if (ocsp) cleanOcspCache();
 }
 
@@ -595,13 +595,13 @@ exports.certsByHost = certsByHost;
 exports.ocsp = ocsp;
 
 function createServer (cb) {
-    const server = net.createServer(function (cryptoSocket) {
+    const server = net.createServer(cryptoSocket => {
 
         const socket = new pluggableStream(cryptoSocket);
 
         exports.addOCSP(server);
 
-        socket.upgrade = function (cb2) {
+        socket.upgrade = cb2 => {
             log.logdebug('Upgrading to TLS');
 
             socket.clean();
@@ -616,10 +616,10 @@ function createServer (cb) {
             pipe(cleartext, cryptoSocket);
 
             cleartext
-                .on('error', (exception) => {
+                .on('error', exception => {
                     socket.emit('error', exception);
                 })
-                .on('secure', function () {
+                .on('secure', () => {
                     log.logdebug('TLS secured.');
                     socket.emit('secure');
                     if (cb2) cb2(
@@ -662,7 +662,7 @@ function connect (port, host, cb) {
 
     const socket = new pluggableStream(cryptoSocket);
 
-    socket.upgrade = function (options, cb2) {
+    socket.upgrade = (options, cb2) => {
         socket.clean();
         cryptoSocket.removeAllListeners('data');
 
@@ -673,7 +673,7 @@ function connect (port, host, cb) {
 
         pipe(cleartext, cryptoSocket);
 
-        cleartext.on('error', function (err) {
+        cleartext.on('error', err => {
             if (err.reason) {
                 log.logerror("client TLS error: " + err);
             }

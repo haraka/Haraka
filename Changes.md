@@ -5,6 +5,8 @@
 * Fixes
     * Fix ability to set log level to emerg #2128
 * Changes
+    * plugins/rcpt_to.ldap -> haraka-plugin-rcpt-ldap #2144
+    * plugins/auth/auth_ldap -> haraka-plugin-auth-ldap #2144
     * config: replace ./config.js with haraka-config #2119
     * Replaced concatenated strings with template literals in the plugins/profile.js #2170
     * Replaced concatenated strings with template literals max_unrecognised_commands.js #2171
@@ -13,6 +15,11 @@
     * replaced concatenated strings with template literals in the tests/host_pool.js #2159
     * replaced concatenated strings with template literals in the rfc1869.js #2159
     * replaced concatenated strings with template literals in the plugins/relay.js #2174
+    * replaced concatenated strings with template literals in the plugins/relay_acl.js #2177
+    * replaced concatenated strings with template literals in the connection.js #2129
+    * replaced concatenated strings with template literals in plugins/toobusy.js #2186
+    * Automatically set connection.remote.is_private when connection.remote.ip is set #2192
+
 
 ## 2.8.16 - Sep 30, 2017
 

@@ -384,20 +384,18 @@ plugins._register_plugin = function (plugin) {
 };
 
 plugins.run_hooks = function (hook, object, params) {
-    if (client_disconnected(object)) {
-        if (hook !== 'log') {
-            object.logdebug('aborting ' + hook + ' hook');
-        }
+    if (client_disconnected(object) && !is_required_hook(hook)) {
+        object.logdebug('aborting ' + hook + ' hook');
         return;
     }
 
     if (hook !== 'log') object.logdebug('running ' + hook + ' hooks');
 
-    if (/^(reset_transaction|disconnect)$/.test(hook) && object.current_hook) {
+    if (is_required_hook(hook) && object.current_hook) {
         object.current_hook[2](); // call cancel function
     }
 
-    if (!/^(reset_transaction|disconnect|deny|log)$/.test(hook) &&
+    if (!is_required_hook(hook) && hook !== 'deny' &&
         object.hooks_to_run && object.hooks_to_run.length)
     {
         throw new Error('We are already running hooks! Fatal error!');
@@ -422,7 +420,7 @@ plugins.run_hooks = function (hook, object, params) {
 };
 
 plugins.run_next_hook = function (hook, object, params) {
-    if (client_disconnected(object)) {
+    if (client_disconnected(object) && !is_required_hook(hook)) {
         object.logdebug('aborting ' + hook + ' hook');
         return;
     }
@@ -439,7 +437,7 @@ plugins.run_next_hook = function (hook, object, params) {
         if (cancelled) return; // This hook has been cancelled
 
         // Bail if client has disconnected
-        if (client_disconnected(object)) {
+        if (client_disconnected(object) && !is_required_hook(hook)) {
             object.logdebug('ignoring ' + item[0].name + ' plugin callback');
             return;
         }
@@ -461,7 +459,7 @@ plugins.run_next_hook = function (hook, object, params) {
             if (retval === constants.cont) {
                 return plugins.run_next_hook(hook, object, params);
             }
-            if (/^(connect_init|disconnect)$/.test(hook)) {
+            if (hook === 'connect_init' || hook === 'disconnect') {
                 // these hooks ignore retval and always run for every plugin
                 return plugins.run_next_hook(hook, object, params);
             }
@@ -521,6 +519,18 @@ function client_disconnected (object) {
         return true;
     }
     return false;
+}
+
+function is_required_hook (hook) {
+    // Hooks that must always run
+    switch (hook) {
+        case 'reset_transaction':
+        case 'disconnect':
+        case 'log':
+            return true;
+        default:
+            return false;
+    }
 }
 
 function log_run_item (item, hook, retval, object, params, msg) {
