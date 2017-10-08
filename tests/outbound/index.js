@@ -4,6 +4,8 @@ const fs   = require('fs');
 const path = require('path');
 const os   = require('os');
 
+const logger = require('../../logger');
+
 const lines = [
     'From: John Johnson <john@example.com>',
     'To: Jane Johnson <jane@example.com>',
@@ -40,10 +42,9 @@ exports.outbound = {
         test.done();
     },
     'log_methods added': function (test) {
-        const logger = require('../logger');
         test.expect(Object.keys(logger.levels).length);
 
-        const HMailItem = require('../outbound').HMailItem;
+        const HMailItem = require('../../outbound').HMailItem;
 
         Object.keys(logger.levels).forEach(function (level) {
             test.ok(HMailItem.prototype['log' + level.toLowerCase()], "Log method for level: " + level);
@@ -54,7 +55,7 @@ exports.outbound = {
 
 exports.qfile = {
     setUp : function (done) {
-        this.qfile = require('../outbound').qfile;
+        this.qfile = require('../../outbound').qfile;
         done();
     },
     'name() basic functions': function (test){
@@ -132,8 +133,8 @@ exports.qfile = {
 exports.get_tls_options = {
     setUp : function (done) {
         process.env.HARAKA_TEST_DIR=path.resolve('tests');
-        this.outbound = require('../outbound');
-        this.obtls = require('../outbound/tls');
+        this.outbound = require('../../outbound');
+        this.obtls = require('../../outbound/tls');
         done();
     },
     tearDown: function (done) {
