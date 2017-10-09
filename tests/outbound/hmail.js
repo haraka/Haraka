@@ -6,7 +6,7 @@ exports.HMailItem = {
     //     done();
     // },
     'truncated TODO does not crash': function (test) {
-        this.hmail = new Hmail('1507509981169_1507509981169_0_61403_e0Y0Ym_1_haraka', 'tests/test-queue/1507509981169_1507509981169_0_61403_e0Y0Ym_1_haraka', {});
+        this.hmail = new Hmail('1507509981169_1507509981169_0_61403_e0Y0Ym_1_haraka', 'tests/queue/1507509981169_1507509981169_0_61403_e0Y0Ym_1_haraka', {});
         this.hmail.on('ready', function () {
             test.expect(1);
             console.log(this.hmail);

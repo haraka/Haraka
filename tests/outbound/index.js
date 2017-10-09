@@ -45,7 +45,7 @@ exports.outbound = {
     'log_methods added': function (test) {
         test.expect(Object.keys(logger.levels).length);
 
-        const HMailItem = require('../../outbound').HMailItem;
+        const HMailItem = require('../../outbound/hmail');
 
         Object.keys(logger.levels).forEach(function (level) {
             test.ok(HMailItem.prototype['log' + level.toLowerCase()], "Log method for level: " + level);
@@ -147,9 +147,9 @@ exports.get_tls_options = {
 
         // reset config to load from tests directory
         const testDir = path.resolve('tests');
-        this.outbound.net_utils.config = this.outbound.net_utils.config.module_config(testDir);
+        this.obtls.tls_socket.config = this.obtls.tls_socket.config.module_config(testDir);
         this.outbound.config = this.outbound.config.module_config(testDir);
-        this.obtls.config = this.outbound.config;
+        this.obtls.config = this.outbound.config.module_config(testDir);
 
         const tls_config = this.obtls.get_tls_options(
             { exchange: 'mail.example.com'}

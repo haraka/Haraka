@@ -90,16 +90,15 @@ class HMailItem extends events.EventEmitter {
         const tl_reader = fs.createReadStream(self.path, {start: 0, end: 3});
 
         tl_reader.on('error', (err) => {
-            const errMsg = `Error reading queue file ${self.path}: ${err}`;
+            const errMsg = `Error reading queue file ${self.filename}: ${err}`;
             self.logerror(errMsg);
             self.temp_fail(errMsg);
         });
 
         let todo_len_raw = '';
         tl_reader.on('data', (data) => { todo_len_raw += data; });
-        tl_reader.on('end', function () {
+        tl_reader.on('end', () => {
             const todo_len = new Buffer(todo_len_raw).readUInt32BE(0);
-
             const td_reader = fs.createReadStream(self.path, {encoding: 'utf8', start: 4, end: todo_len + 3});
             self.data_start = todo_len + 4;
 
