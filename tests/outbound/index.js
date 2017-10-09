@@ -4,6 +4,7 @@ const fs   = require('fs');
 const path = require('path');
 const os   = require('os');
 
+const constants = require('haraka-constants');
 const logger = require('../../logger');
 
 const lines = [
@@ -166,4 +167,59 @@ exports.get_tls_options = {
         });
         test.done();
     },
+}
+
+exports.build_todo = {
+    setUp : function (done) {
+        this.outbound = require('../../outbound');
+        try {
+            fs.unlinkSync('tests/queue/multibyte');
+            fs.unlinkSync('tests/queue/plain');
+        }
+        catch (ignore) {}
+        done();
+    },
+    tearDown: function (done) {
+        // fs.unlink('tests/queue/multibyte', done);
+        done();
+    },
+    'saves a file': function (test) {
+        const todo = JSON.parse('{"queue_time":1507509981169,"domain":"redacteed.com","rcpt_to":[{"original":"<postmaster@redacteed.com>","original_host":"redacteed.com","host":"redacteed.com","user":"postmaster"}],"mail_from":{"original":"<matt@tnpi.net>","original_host":"tnpi.net","host":"tnpi.net","user":"matt"},"notes":{"authentication_results":["spf=pass smtp.mailfrom=tnpi.net"],"spf_mail_result":"Pass","spf_mail_record":"v=spf1 a mx include:mx.theartfarm.com ?include:forwards._spf.tnpi.net include:lists._spf.tnpi.net -all","attachment_count":0,"attachments":[{"ctype":"application/pdf","filename":"FileWithoutAccent Chars.pdf","extension":".pdf","md5":"6c1d5f5c047cff3f6320b1210970bdf6"}],"attachment_ctypes":["application/pdf","multipart/mixed","text/plain","application/pdf"],"attachment_files":["FileWithoutaccent Chars.pdf"],"attachment_archive_files":[]},"uuid":"1D5483B0-3E00-4280-A961-3AFD2017B4FC.1"}');
+        const fd = fs.openSync('tests/queue/plain', 'w');
+        const ws = new fs.createWriteStream('tests/queue/plain', { fd: fd, flags: constants.WRITE_EXCL });
+        ws.on('close', function () {
+            // console.log(arguments);
+            test.ok(1);
+            test.done();
+        })
+        ws.on('error', (e) => {
+            console.error(e);
+            test.done();
+        })
+        this.outbound.build_todo(todo, ws, () => {
+            ws.write(new Buffer('This is the message body'));
+            fs.fsync(fd, () => { ws.close(); })
+        })
+    },
+    'saves a file with multibyte chars': function (test) {
+        const todo = JSON.parse('{"queue_time":1507509981169,"domain":"redacteed.com","rcpt_to":[{"original":"<postmaster@redacteed.com>","original_host":"redacteed.com","host":"redacteed.com","user":"postmaster"}],"mail_from":{"original":"<matt@tnpi.net>","original_host":"tnpi.net","host":"tnpi.net","user":"matt"},"notes":{"authentication_results":["spf=pass smtp.mailfrom=tnpi.net"],"spf_mail_result":"Pass","spf_mail_record":"v=spf1 a mx include:mx.theartfarm.com ?include:forwards._spf.tnpi.net include:lists._spf.tnpi.net -all","attachment_count":0,"attachments":[{"ctype":"application/pdf","filename":"FileWîthÁccent Chars.pdf","extension":".pdf","md5":"6c1d5f5c047cff3f6320b1210970bdf6"}],"attachment_ctypes":["application/pdf","multipart/mixed","text/plain","application/pdf"],"attachment_files":["FileWîthÁccent Chars.pdf"],"attachment_archive_files":[]},"uuid":"1D5483B0-3E00-4280-A961-3AFD2017B4FC.1"}');
+        const fd = fs.openSync('tests/queue/multibyte', 'w');
+        const ws = new fs.WriteStream('tests/queue/multibyte', { fd: fd, flags: constants.WRITE_EXCL });
+        ws.on('close', function () {
+            test.ok(1);
+            test.done();
+        })
+        ws.on('error', (e) => {
+            console.error(e);
+            test.done();
+        })
+        this.outbound.build_todo(todo, ws, () => {
+            ws.write(new Buffer('This is the message body'));
+            fs.fsync(fd, () => { ws.close(); })
+        })
+    },
+    // '': function (test) {
+
+    //     test.done();
+    // },
 }

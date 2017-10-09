@@ -1,4 +1,4 @@
-"use strict";
+'use strict';
 
 const events       = require('events');
 const fs           = require('fs');
@@ -88,32 +88,33 @@ class HMailItem extends events.EventEmitter {
     read_todo () {
         const self = this;
         const tl_reader = fs.createReadStream(self.path, {start: 0, end: 3});
+
         tl_reader.on('error', (err) => {
-            self.logerror("Error reading queue file: " + self.path + ": " + err);
-            return self.temp_fail("Error reading queue file: " + err);
+            const errMsg = `Error reading queue file ${self.path}: ${err}`;
+            self.logerror(errMsg);
+            self.temp_fail(errMsg);
         });
 
-        tl_reader.once('data', (buf) => {
-            // I'm making the assumption here we won't ever read less than 4 bytes
-            // as no filesystem on the planet should be that dumb...
-            tl_reader.destroy();
-            const todo_len = buf.readUInt32BE(0);
+        let todo_len_raw = '';
+        tl_reader.on('data', (data) => { todo_len_raw += data; });
+        tl_reader.on('end', function () {
+            const todo_len = new Buffer(todo_len_raw).readUInt32BE(0);
+
             const td_reader = fs.createReadStream(self.path, {encoding: 'utf8', start: 4, end: todo_len + 3});
             self.data_start = todo_len + 4;
-            let todo = '';
-            td_reader.on('data', (str) => {
-                todo += str;
-                if (Buffer.byteLength(todo) !== todo_len) return;
 
-                // we read everything
-                self.todo = JSON.parse(todo);
-                this.todo.rcpt_to = this.todo.rcpt_to.map(a => { return new Address (a); });
-                this.todo.mail_from = new Address (this.todo.mail_from);
-                this.todo.notes = new Notes(this.todo.notes);
-                this.emit('ready');
-            });
+            let todo_raw = '';
+            td_reader.on('data', (data) => { todo_raw += data; });
             td_reader.on('end', () => {
-                if (Buffer.byteLength(todo) === todo_len) return;
+                if (Buffer.byteLength(todo_raw) === todo_len) {
+                    // we read everything
+                    self.todo = JSON.parse(todo_raw);
+                    self.todo.rcpt_to = self.todo.rcpt_to.map(a => { return new Address (a); });
+                    self.todo.mail_from = new Address (self.todo.mail_from);
+                    self.todo.notes = new Notes(self.todo.notes);
+                    self.emit('ready');
+                    return;
+                }
 
                 self.logcrit("Didn't find right amount of data in todo!");
                 fs.rename(self.path, path.join(queue_dir, "error." + self.filename), (err) => {
