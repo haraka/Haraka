@@ -361,3 +361,11 @@ In case you need notes in the new transaction that `send_email()` creates, you s
 ```notes``` option, like so:
 
     outbound.send_email(from, to, contents, outnext, { notes: transaction.notes });
+
+If you are reading a message in from the filesystem and you want to ensure that a generated
+Message-Id header is used in preference over the original. Pass the ```remove_msgid``` option, like so:
+
+    outbound.send_email(from, to, contents, outnext, { remove_msgid: true });
+
+Some mail systems use the Message-Id header to prevent duplicate messages from being delivered, so
+this is useful when re-sending messages from a quarantine.
