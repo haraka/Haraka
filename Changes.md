@@ -19,6 +19,7 @@
     * replaced concatenated strings with template literals in the connection.js #2129
     * replaced concatenated strings with template literals in plugins/toobusy.js #2186
     * Automatically set connection.remote.is_private when connection.remote.ip is set #2192
+    * Add remove_msgid option to outbound.send_email #2209
 
 
 ## 2.8.16 - Sep 30, 2017
