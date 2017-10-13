@@ -1,1 +1,0 @@
-Oliver Mensah

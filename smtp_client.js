@@ -187,35 +187,34 @@ class SMTPClient extends events.EventEmitter {
         client.socket.on('close',   closed('closed'));
         client.socket.on('end',     closed('ended'));
     }
-    load_tlss_config(opts){
+    load_tlss_config (opts) {
         const tls_options = { servername: this.host };
         if (opts) {
             Object.assign(tls_options, opts);
-        }    
+        }
         this.tls_options = tls_options;
     }
 
-    send_command(command, data) {
+    send_command (command, data) {
         const line = (command === 'dot') ? '.' : command + (data ? (' ' + data) : '');
         this.emit('client_protocol', line);
         this.command = command.toLowerCase();
         this.response = [];
         this.socket.write(line + "\r\n");
-    };
+    }
 
-    start_data(data){
+    start_data (data) {
         this.response = [];
         this.command = 'dot';
         data.pipe(this.socket, { dot_stuffing: true, ending_dot: true, end: false });
     }
 
-    release(){
+    release () {
         if (!this.connected || this.command === 'data' || this.command === 'mailbody') {
             // Destroy here, we can't reuse a connection that was mid-data.
             this.destroy();
             return;
         }
-    
         logger.logdebug('[smtp_client_pool] ' + this.uuid + ' resetting, state=' + this.state);
         if (this.state === STATE.DESTROYED) {
             return;
@@ -235,11 +234,9 @@ class SMTPClient extends events.EventEmitter {
         this.removeAllListeners('server_protocol');
         this.removeAllListeners('error');
         this.removeAllListeners('bad_code');
-    
         this.on('bad_code', function (code, msg) {
             this.destroy();
         });
-    
         this.on('rset', function () {
             logger.logdebug('[smtp_client_pool] ' + this.uuid + ' releasing, state=' + this.state);
             if (this.state === STATE.DESTROYED) {
@@ -250,18 +247,16 @@ class SMTPClient extends events.EventEmitter {
             this.removeAllListeners('bad_code');
             this.pool.release(this);
         });
-    
         this.send_command('RSET');
     }
-    destroy(){
+    destroy () {
         if (this.state !== STATE.DESTROYED) {
             this.pool.destroy(this);
         }
-    };
+    }
 
-    upgrade(tls_options) {
+    upgrade (tls_options) {
         const this_logger = logger;
-    
         this.socket.upgrade(tls_options, function (verified, verifyError, cert, cipher) {
             this_logger.loginfo('secured:' +
                 ((cipher) ? ' cipher=' + cipher.name + ' version=' + cipher.version : '') +
@@ -273,14 +268,14 @@ class SMTPClient extends events.EventEmitter {
                 ((cert && cert.valid_to) ? ' expires="' + cert.valid_to + '"' : '') +
                 ((cert && cert.fingerprint) ? ' fingerprint=' + cert.fingerprint : ''));
         });
-    };
+    }
 
-    is_dead_sender(plugin, connection){
+    is_dead_sender (plugin, connection) {
         if (connection.transaction) { return false; }
-            // This likely means the sender went away on us, cleanup.
-            connection.logwarn(plugin, "transaction went away, releasing smtp_client");
-            this.release();
-            return true;
+        // This likely means the sender went away on us, cleanup.
+        connection.logwarn(plugin, "transaction went away, releasing smtp_client");
+        this.release();
+        return true;
     }
 }
 
