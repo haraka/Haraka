@@ -38,7 +38,7 @@ queued for outbound delivery.
 
 ### Why Use Haraka?
 
-Haraka's plugin architecure provides an easily extensible MTA that
+Haraka's plugin architecture provides an easily extensible MTA that
 complements traditional MTAs that excel at managing mail stores but do
 not have sufficient filtering.
 
