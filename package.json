@@ -63,7 +63,7 @@
     "nodeunit"              : "*",
     "haraka-test-fixtures"  : ">=1.0.17",
     "eslint"                : ">=3",
-    "eslint-plugin-haraka"  : "*",
+    "eslint-plugin-haraka"  : ">=1.0.9",
     "nodemailer"            : "*"
   },
   "bugs": {
