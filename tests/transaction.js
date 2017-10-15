@@ -69,11 +69,38 @@ exports.transaction = {
         });
         this.transaction.end_data(function () {
             self.transaction.message_stream.get_data(function (body) {
-                test.ok(/banner$/.test(body.trim()), "banner applied");
+                test.ok(/banner$/.test(body.toString().trim()), "banner applied");
                 test.done();
             });
         });
     },
+
+    'correct output encoding when content in non-utf8 #2176': function (test) {
+        const self = this;
+
+        // Czech panagram "Příliš žluťoučký kůň úpěl ďábelské ódy.\n" in ISO-8859-2 encoding
+        const message = new Buffer([0x50, 0xF8, 0xED, 0x6C, 0x69, 0xB9, 0x20, 0xBE, 0x6C, 0x75, 0xBB, 0x6F, 0x76, 0xE8, 0x6B, 0xFD, 0x20, 0x6B, 0xF9, 0xF2, 0xFA, 0xEC, 0x6C, 0x20, 0xEF, 0xE2, 0x62, 0x65, 0x6C, 0x73, 0x6b, 0xE9, 0x20, 0xF3, 0x64, 0x79, 0x2E, 0x0A]);
+        const payload = [
+            "Content-Type: text/plain; charset=iso-8859-2; format=flowed\n",
+            "\n",
+            message
+        ];
+
+        test.expect(1);
+
+        this.transaction.parse_body = true;
+        this.transaction.attachment_hooks(function () {});
+
+        payload.forEach(function (line) {
+            self.transaction.add_data(line);
+        });
+        this.transaction.end_data(function () {
+            self.transaction.message_stream.get_data(function (body) {
+                test.ok(body.toString('binary').indexOf(message.toString('binary')) !== -1, "message not damaged");
+                test.done();
+            });
+        });
+    }
 };
 
 function write_file_data_to_transaction (test_transaction, filename) {
@@ -126,6 +153,18 @@ exports.base64_handling = {
             test.equal(true, first_attachment.equals(current_attachment),
                 `The buffer data for '${i}' doesn't appear to be equal to the other attachments, and is likely corrupted.`);
         }
+        test.done();
+    },
+
+    'base64-root-html-decodes-correct-number-of-bytes': function (test) {
+        const self = this;
+
+        const parsed_attachments = {};
+        self.transaction.parse_body = true;
+        const specimen_path = path.join(__dirname, 'mail_specimen', 'base64-root-part.txt');
+        write_file_data_to_transaction(self.transaction, specimen_path);
+
+        test.equal(self.transaction.body.bodytext.length, 425);
         test.done();
     },
 }
