@@ -155,4 +155,16 @@ exports.base64_handling = {
         }
         test.done();
     },
+
+    'base64-root-html-decodes-correct-number-of-bytes': function (test) {
+        const self = this;
+
+        const parsed_attachments = {};
+        self.transaction.parse_body = true;
+        const specimen_path = path.join(__dirname, 'mail_specimen', 'base64-root-part.txt');
+        write_file_data_to_transaction(self.transaction, specimen_path);
+
+        test.equal(self.transaction.body.bodytext.length, 425);
+        test.done();
+    },
 }
