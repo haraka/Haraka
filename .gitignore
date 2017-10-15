@@ -6,3 +6,5 @@ Haraka
 bower_components
 coverage
 .idea
+tests/queue/plain
+tests/queue/multibyte
