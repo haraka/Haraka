@@ -103,8 +103,9 @@ exports.try_auth_proxy = function (connection, hosts, user, passwd, cb) {
         response.push(rest);
         if (cont !== ' ') return;
 
-        let key;
-        let cert;
+        const tls_ini = config.get('tls.ini');
+        const key = self.config.get(tls_ini.main.key || 'tls_key.pem', 'binary');
+        const cert = self.config.get(tls_ini.main.cert || 'tls_cert.pem', 'binary');
 
         connection.logdebug(self, 'command state: ' + command);
         if (command === 'ehlo') {
@@ -117,8 +118,6 @@ exports.try_auth_proxy = function (connection, hosts, user, passwd, cb) {
             for (const i in response) {
                 if (/^STARTTLS/.test(response[i])) {
                     if (secure) continue;    // silly remote, we've already upgraded
-                    key = self.config.get('tls_key.pem', 'binary');
-                    cert = self.config.get('tls_cert.pem', 'binary');
                     // Use TLS opportunistically if we found the key and certificate
                     if (key && cert) {
                         this.on('secure', function () {
