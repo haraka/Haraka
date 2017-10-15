@@ -4,8 +4,18 @@ const utils = require('haraka-utils');
 const smtp_regexp = /^([0-9]{3})([ -])(.*)/;
 
 exports.register = function () {
-    this.inherits('auth/auth_base');
+    const plugin = this;
+    plugin.inherits('auth/auth_base');
+    plugin.load_tls_ini();
 };
+
+exports.load_tls_ini = function () {
+    const plugin = this;
+    plugin.tls_cfg = plugin.config.get('tls.ini', function () {
+        plugin.load_tls_ini();
+    });
+};
+
 
 exports.hook_capabilities = function (next, connection) {
     if (connection.tls.enabled) {
@@ -103,9 +113,8 @@ exports.try_auth_proxy = function (connection, hosts, user, passwd, cb) {
         response.push(rest);
         if (cont !== ' ') return;
 
-        const tls_ini = config.get('tls.ini');
-        const key = self.config.get(tls_ini.main.key || 'tls_key.pem', 'binary');
-        const cert = self.config.get(tls_ini.main.cert || 'tls_cert.pem', 'binary');
+        const key = self.config.get(self.tls_cfg.main.key || 'tls_key.pem', 'binary');
+        const cert = self.config.get(self.tls_cfg.main.cert || 'tls_cert.pem', 'binary');
 
         connection.logdebug(self, 'command state: ' + command);
         if (command === 'ehlo') {
