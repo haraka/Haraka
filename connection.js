@@ -150,7 +150,6 @@ class Connection {
         }
         self.set('remote', 'ip', ipaddr.process(ip).toString());
         self.set('remote', 'port', self.client.remotePort);
-        self.set('remote', 'is_private', net_utils.is_private_ip(self.remote.ip));
         self.results.add({name: 'remote'}, self.remote);
 
         self.lognotice(
@@ -242,6 +241,11 @@ class Connection {
         if (!this[obj]) this.obj = {};   // initialize
 
         this[obj][prop] = val;  // normalized property location
+
+        // Set is_private automatically when remote.ip is set
+        if (obj === 'remote' && prop === 'ip') {
+            this.set('remote', 'is_private', net_utils.is_private_ip(this.remote.ip));
+        }
 
         // sunset 3.0.0
         if (obj === 'hello' && prop === 'verb') {
@@ -1193,7 +1197,6 @@ class Connection {
             self.set('remote', 'ip', src_ip);
             self.set('remote', 'port', parseInt(src_port, 10));
             self.set('remote', 'host', null);
-            self.set('remote', 'is_private', net_utils.is_private_ip(src_ip));
             self.set('hello', 'host', null);
             plugins.run_hooks('connect_init', self);
         });

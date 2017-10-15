@@ -418,17 +418,17 @@ class GetDataStream extends Stream {
     constructor (cb) {
         super();
         this.cb = cb;
-        this.buf = '';
+        this.buf = Buffer.alloc(0);
         this.writable = true;
     }
 
     write (obj, enc) {
-        this.buf += obj;
+        this.buf = Buffer.concat([this.buf, obj]);
         return true;
     }
 
     end (obj, enc) {
-        if (obj) this.buf += obj;
+        if (obj) this.buf = Buffer.concat([this.buf, obj]);
         this.cb(this.buf);
     }
 

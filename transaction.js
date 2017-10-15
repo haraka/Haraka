@@ -93,16 +93,15 @@ class Transaction {
             }
         }
         else if (this.header_pos && this.parse_body) {
-            if (line[0] === 0x2E) line = line.slice(1); // Strip leading "."
-            let new_line = this.body.parse_more(
-                line.toString(this.encoding).replace(/\r\n$/, '\n'));
+            let new_line = line;
+            if (new_line[0] === 0x2E) new_line = new_line.slice(1); // Strip leading "."
+
+            new_line = this.body.parse_more(
+                new_line.toString(this.encoding).replace(/\r\n$/, '\n'));
 
             if (!new_line.length) {
                 return; // buffering for banners
             }
-
-            new_line = new_line.replace(/^\./gm, '..').replace(/\r?\n/gm, '\r\n');
-            line = new Buffer(new_line, this.encoding);
         }
 
         if (!this.discard_data) this.message_stream.add_line(line);
