@@ -31,109 +31,342 @@ class Body extends events.EventEmitter {
         this.buf = new Buffer(buf_siz);
         this.buf_fill = 0;
         this.decode_accumulator = '';
+        this.decode_qp = utils.decode_qp;
+        this.decode_7bit = this.decode_8bit;
+    }
+
+    add_filter (filter) {
+        this.filters.push(filter);
+    }
+
+    set_banner (banners) {
+        this.add_filter(function (ct, enc, buf) {
+            return insert_banner(ct, enc, buf, banners);
+        });
+    }
+
+    parse_more (line) {
+        return this["parse_" + this.state](line);
+    }
+
+    parse_child (line) {
+        // check for MIME boundary
+        if (line.substr(0, (this.boundary.length + 2)) === ('--' + this.boundary)) {
+
+            line = this.children[this.children.length -1].parse_end(line);
+
+            if (line.substr(this.boundary.length + 2, 2) === '--') {
+                // end
+                this.state = 'end';
+            }
+            else {
+                const bod = new Body(new Header(), this.options);
+                this.listeners('attachment_start').forEach(function (cb) { bod.on('attachment_start', cb) });
+                this.listeners('attachment_data' ).forEach(function (cb) { bod.on('attachment_data', cb) });
+                this.listeners('attachment_end'  ).forEach(function (cb) { bod.on('attachment_end', cb) });
+                this.filters.forEach(function (f) { bod.add_filter(f); });
+                this.children.push(bod);
+                bod.state = 'headers';
+            }
+            return line;
+        }
+        // Pass data into last child
+        return this.children[this.children.length - 1].parse_more(line);
+    }
+
+    parse_headers (line) {
+        if (/^\s*$/.test(line)) {
+            // end of headers
+            this.header.parse(this.header_lines);
+            delete this.header_lines;
+            this.state = 'start';
+        }
+        else {
+            this.header_lines.push(line);
+        }
+        return line;
+    }
+
+    parse_start (line) {
+        const ct = this.header.get_decoded('content-type') || 'text/plain';
+        let enc = this.header.get_decoded('content-transfer-encoding') || '8bit';
+        const cd = this.header.get_decoded('content-disposition') || '';
+
+        if (/text\/html/i.test(ct)) {
+            this.is_html = true;
+        }
+
+        enc = enc.toLowerCase().split("\n").pop().trim();
+        if (!enc.match(/^base64|quoted-printable|[78]bit$/i)) {
+            logger.logerror("Invalid CTE on email: " + enc + ", using 8bit");
+            enc = '8bit';
+        }
+        enc = enc.replace(/^quoted-printable$/i, 'qp');
+
+        this.decode_function = this["decode_" + enc];
+        if (!this.decode_function) {
+            logger.logerror("No decode function found for: " + enc);
+            this.decode_function = this.decode_8bit;
+        }
+        this.ct = ct;
+
+        let match;
+        if (/^(?:text|message)\//i.test(ct) && !/^attachment/i.test(cd) ) {
+            this.state = 'body';
+        }
+        else if (/^multipart\//i.test(ct)) {
+            match = ct.match(/boundary\s*=\s*"?([^";]+)"?/i);
+            this.boundary = match ? match[1] : '';
+            this.state = 'multipart_preamble';
+        }
+        else {
+            match = cd.match(/name\s*=\s*"?([^";]+)"?/i);
+            if (!match) {
+                match = ct.match(/name\s*=\s*"?([^";]+)"?/i);
+            }
+            const filename = match ? match[1] : '';
+            this.attachment_stream = attstr.createStream(this.header);
+            this.emit('attachment_start', ct, filename, this, this.attachment_stream);
+            this.buf_fill = 0;
+            this.state = 'attachment';
+        }
+
+        return this["parse_" + this.state](line);
+    }
+
+    _empty_filter (ct, enc) {
+        let new_buf = new Buffer('');
+        this.filters.forEach(function (filter) {
+            new_buf = filter(ct, enc, new_buf) || new_buf;
+        });
+
+        return new_buf.toString("binary");
+    }
+
+    force_end () {
+        if (this.state === 'attachment') {
+            if (this.buf_fill > 0) {
+                // see below for why we create a new buffer here.
+                const to_emit = new Buffer(this.buf_fill);
+                this.buf.copy(to_emit, 0, 0, this.buf_fill);
+                this.attachment_stream.emit_data(to_emit);
+            }
+            this.attachment_stream.emit_end(true);
+        }
+    }
+
+    parse_end (line) {
+        if (!line) {
+            line = '';
+        }
+
+        if (this.state === 'attachment') {
+            if (this.buf_fill > 0) {
+                // see below for why we create a new buffer here.
+                const to_emit = new Buffer(this.buf_fill);
+                this.buf.copy(to_emit, 0, 0, this.buf_fill);
+                this.attachment_stream.emit_data(to_emit);
+            }
+            this.attachment_stream.emit_end();
+        }
+
+        const ct  = this.header.get_decoded('content-type') || 'text/plain';
+        let enc = 'UTF-8';
+        let pre_enc = '';
+        const matches = /\bcharset\s*=\s*(?:"|3D|')?([\w_-]*)(?:"|3D|')?/.exec(ct);
+        if (matches) {
+            pre_enc = (matches[1]).trim();
+            if (pre_enc.length > 0) {
+                enc = pre_enc;
+            }
+        }
+        this.body_encoding = enc;
+
+        // ignore these lines - but we could store somewhere I guess.
+        if (!this.body_text_encoded.length) return this._empty_filter(ct, enc) + line; // nothing to decode
+        if (this.bodytext.length !== 0) return line;     // already decoded?
+
+        const buf = this.decode_function(this.body_text_encoded);
+
+        if (this.filters.length) {
+            // up until this point we've returned '' for line, so now we run
+            // the filters and return the whole lot as one line, re-encoded using
+            // whatever encoding scheme we used to decode it.
+
+            let new_buf = buf;
+            this.filters.forEach(function (filter) {
+                new_buf = filter(ct, enc, new_buf) || new_buf;
+            });
+
+            // convert back to base_64 or QP if required:
+            if (this.decode_function === this.decode_qp) {
+                line = utils.encode_qp(new_buf) + "\n" + line;
+            }
+            else if (this.decode_function === this.decode_base64) {
+                line = new_buf.toString("base64").replace(/(.{1,76})/g, "$1\n") + line;
+            }
+            else {
+                // "binary" is deprecated, lets hope this works...
+                line = new_buf.toString("binary") + line;
+            }
+        }
+
+        // convert the buffer to UTF-8, stored in this.bodytext
+        this.try_iconv(buf, enc);
+
+        // delete this.body_text_encoded;
+        return line;
+    }
+
+    try_iconv (buf, enc) {
+
+        if (!Iconv) {
+            this.body_encoding = 'no_iconv';
+            this.bodytext = buf.toString();
+            return;
+        }
+
+        if (/UTF-?8/i.test(enc)) {
+            this.bodytext = buf.toString();
+            return;
+        }
+
+        try {
+            const converter = new Iconv(enc, "UTF-8");
+            this.bodytext = converter.convert(buf).toString();
+        }
+        catch (err) {
+            logger.logwarn("initial iconv conversion from " + enc + " to UTF-8 failed: " + err.message);
+            this.body_encoding = 'broken//' + enc;
+            // EINVAL is returned when the encoding type is not recognized/supported (e.g. ANSI_X3)
+            if (err.code !== 'EINVAL') {
+                // Perform the conversion again, but ignore any errors
+                try {
+                    const converter = new Iconv(enc, 'UTF-8//TRANSLIT//IGNORE');
+                    this.bodytext = converter.convert(buf).toString();
+                }
+                catch (e) {
+                    logger.logerror('iconv conversion from ' + enc + ' to UTF-8 failed: ' + e.message);
+                    this.bodytext = buf.toString();
+                }
+            }
+        }
+    }
+
+    parse_body (line) {
+        this.body_text_encoded += line;
+        if (this.filters.length) return '';
+        return line;
+    }
+
+    parse_multipart_preamble (line) {
+        if (!this.boundary) return line;
+
+        if (line.substr(0, (this.boundary.length + 2)) === ('--' + this.boundary)) {
+            if (line.substr(this.boundary.length + 2, 2) === '--') {
+                // end
+            }
+            else {
+                // next section
+                const bod = new Body(new Header(), this.options);
+                this.listeners('attachment_start').forEach(function (cb) { bod.on('attachment_start', cb) });
+                this.filters.forEach(function (f) { bod.add_filter(f); });
+                this.children.push(bod);
+                bod.state = 'headers';
+                this.state = 'child';
+            }
+            return line;
+        }
+
+        return line;
+    }
+
+    parse_attachment (line) {
+        if (this.boundary) {
+            if (line.substr(0, (this.boundary.length + 2)) === ('--' + this.boundary)) {
+                if (line.substr(this.boundary.length + 2, 2) === '--') {
+                    // end
+                }
+                else {
+                    // next section
+                    this.state = 'headers';
+                }
+                return line;
+            }
+        }
+
+        const buf = this.decode_function(line);
+        if ((buf.length + this.buf_fill) > buf_siz) {
+            // now we have to create a new buffer, because if we write this out
+            // using async code, it will get overwritten under us. Creating a new
+            // buffer eliminates that problem (at the expense of a malloc and a
+            // memcpy())
+            const to_emit = new Buffer(this.buf_fill);
+            this.buf.copy(to_emit, 0, 0, this.buf_fill);
+            this.attachment_stream.emit_data(to_emit);
+            if (buf.length > buf_siz) {
+                // this is an unusual case - the base64/whatever data is larger
+                // than our buffer size, so we just emit it and reset the counter.
+                this.attachment_stream.emit_data(buf);
+                this.buf_fill = 0;
+            }
+            else {
+                buf.copy(this.buf);
+                this.buf_fill = buf.length;
+            }
+        }
+        else {
+            buf.copy(this.buf, this.buf_fill);
+            this.buf_fill += buf.length;
+        }
+        return line;
+    }
+
+    decode_base64 (line) {
+        // Remove all whitespace (such as newlines and errant spaces) from base64
+        // before combining it with any previously unprocessed data.
+        let to_process = this.decode_accumulator + line.trim().replace(/[\s]+/g,'');
+
+        // Sometimes base64 data lines will not be aligned with
+        // byte boundaries. This is because each char in base64
+        // represents 6 bits. 24 is the LCM between 6 and 8 bits.
+        // (i.e. 4 * 6-bit chars === 3 * bytes)
+
+        // As a result, 24 bits is our word boundary for base64.
+        // Failure to align here will result in truncated/incorrect
+        // node Buffers later on.
+
+        // Walk back from the toProcess.length to the first
+        // position that aligns with a 24-bit boundary.
+        const emit_length = to_process.length - (to_process.length % 4)
+
+        if (emit_length > 0) {
+            const emit_now = to_process.substring(0, emit_length);
+            this.decode_accumulator = to_process.substring(emit_length);
+            return new Buffer(emit_now, 'base64');
+        } else {
+            this.decode_accumulator = '';
+            // This is the end of the base64 data, we don't really have enough bits
+            // to fill up the bytes, but that's because we're on the last line, and ==
+            // might have been elided.
+
+            // In order to prevent any weird boundary issues, we'll re-pad
+            // the string if there's any data left. As above, our target
+            // is a 24-bit boundary, pad to 4 characters.
+            while (to_process.length > 0 && to_process.length < 4) {
+                to_process += '=';
+            }
+            return new Buffer(to_process, 'base64');
+        }
+    }
+
+    decode_8bit (line) {
+        return new Buffer(line, 'binary');
     }
 }
 
 exports.Body = Body;
 
-Body.prototype.add_filter = function (filter) {
-    this.filters.push(filter);
-};
-
-Body.prototype.set_banner = function (banners) {
-    this.add_filter(function (ct, enc, buf) {
-        return insert_banner(ct, enc, buf, banners);
-    });
-};
-
-Body.prototype.parse_more = function (line) {
-    return this["parse_" + this.state](line);
-};
-
-Body.prototype.parse_child = function (line) {
-    // check for MIME boundary
-    if (line.substr(0, (this.boundary.length + 2)) === ('--' + this.boundary)) {
-
-        line = this.children[this.children.length -1].parse_end(line);
-
-        if (line.substr(this.boundary.length + 2, 2) === '--') {
-            // end
-            this.state = 'end';
-        }
-        else {
-            const bod = new Body(new Header(), this.options);
-            this.listeners('attachment_start').forEach(function (cb) { bod.on('attachment_start', cb) });
-            this.listeners('attachment_data' ).forEach(function (cb) { bod.on('attachment_data', cb) });
-            this.listeners('attachment_end'  ).forEach(function (cb) { bod.on('attachment_end', cb) });
-            this.filters.forEach(function (f) { bod.add_filter(f); });
-            this.children.push(bod);
-            bod.state = 'headers';
-        }
-        return line;
-    }
-    // Pass data into last child
-    return this.children[this.children.length - 1].parse_more(line);
-};
-
-Body.prototype.parse_headers = function (line) {
-    if (/^\s*$/.test(line)) {
-        // end of headers
-        this.header.parse(this.header_lines);
-        delete this.header_lines;
-        this.state = 'start';
-    }
-    else {
-        this.header_lines.push(line);
-    }
-    return line;
-};
-
-Body.prototype.parse_start = function (line) {
-    const ct = this.header.get_decoded('content-type') || 'text/plain';
-    let enc = this.header.get_decoded('content-transfer-encoding') || '8bit';
-    const cd = this.header.get_decoded('content-disposition') || '';
-
-    if (/text\/html/i.test(ct)) {
-        this.is_html = true;
-    }
-
-    enc = enc.toLowerCase().split("\n").pop().trim();
-    if (!enc.match(/^base64|quoted-printable|[78]bit$/i)) {
-        logger.logerror("Invalid CTE on email: " + enc + ", using 8bit");
-        enc = '8bit';
-    }
-    enc = enc.replace(/^quoted-printable$/i, 'qp');
-
-    this.decode_function = this["decode_" + enc];
-    if (!this.decode_function) {
-        logger.logerror("No decode function found for: " + enc);
-        this.decode_function = this.decode_8bit;
-    }
-    this.ct = ct;
-
-    let match;
-    if (/^(?:text|message)\//i.test(ct) && !/^attachment/i.test(cd) ) {
-        this.state = 'body';
-    }
-    else if (/^multipart\//i.test(ct)) {
-        match = ct.match(/boundary\s*=\s*"?([^";]+)"?/i);
-        this.boundary = match ? match[1] : '';
-        this.state = 'multipart_preamble';
-    }
-    else {
-        match = cd.match(/name\s*=\s*"?([^";]+)"?/i);
-        if (!match) {
-            match = ct.match(/name\s*=\s*"?([^";]+)"?/i);
-        }
-        const filename = match ? match[1] : '';
-        this.attachment_stream = attstr.createStream(this.header);
-        this.emit('attachment_start', ct, filename, this, this.attachment_stream);
-        this.buf_fill = 0;
-        this.state = 'attachment';
-    }
-
-    return this["parse_" + this.state](line);
-};
 
 function _get_html_insert_position (buf) {
 
@@ -230,237 +463,3 @@ function insert_banner (ct, enc, buf, banners) {
 
     return new_buf;
 }
-
-Body.prototype._empty_filter = function (ct, enc) {
-    let new_buf = new Buffer('');
-    this.filters.forEach(function (filter) {
-        new_buf = filter(ct, enc, new_buf) || new_buf;
-    });
-
-    return new_buf.toString("binary");
-}
-
-Body.prototype.force_end = function () {
-    if (this.state === 'attachment') {
-        if (this.buf_fill > 0) {
-            // see below for why we create a new buffer here.
-            const to_emit = new Buffer(this.buf_fill);
-            this.buf.copy(to_emit, 0, 0, this.buf_fill);
-            this.attachment_stream.emit_data(to_emit);
-        }
-        this.attachment_stream.emit_end(true);
-    }
-}
-
-Body.prototype.parse_end = function (line) {
-    if (!line) {
-        line = '';
-    }
-
-    if (this.state === 'attachment') {
-        if (this.buf_fill > 0) {
-            // see below for why we create a new buffer here.
-            const to_emit = new Buffer(this.buf_fill);
-            this.buf.copy(to_emit, 0, 0, this.buf_fill);
-            this.attachment_stream.emit_data(to_emit);
-        }
-        this.attachment_stream.emit_end();
-    }
-
-    const ct  = this.header.get_decoded('content-type') || 'text/plain';
-    let enc = 'UTF-8';
-    let pre_enc = '';
-    const matches = /\bcharset\s*=\s*(?:"|3D|')?([\w_-]*)(?:"|3D|')?/.exec(ct);
-    if (matches) {
-        pre_enc = (matches[1]).trim();
-        if (pre_enc.length > 0) {
-            enc = pre_enc;
-        }
-    }
-    this.body_encoding = enc;
-
-    // ignore these lines - but we could store somewhere I guess.
-    if (!this.body_text_encoded.length) return this._empty_filter(ct, enc) + line; // nothing to decode
-    if (this.bodytext.length !== 0) return line;     // already decoded?
-
-    const buf = this.decode_function(this.body_text_encoded);
-
-    if (this.filters.length) {
-        // up until this point we've returned '' for line, so now we run
-        // the filters and return the whole lot as one line, re-encoded using
-        // whatever encoding scheme we used to decode it.
-
-        let new_buf = buf;
-        this.filters.forEach(function (filter) {
-            new_buf = filter(ct, enc, new_buf) || new_buf;
-        });
-
-        // convert back to base_64 or QP if required:
-        if (this.decode_function === this.decode_qp) {
-            line = utils.encode_qp(new_buf) + "\n" + line;
-        }
-        else if (this.decode_function === this.decode_base64) {
-            line = new_buf.toString("base64").replace(/(.{1,76})/g, "$1\n") + line;
-        }
-        else {
-            // "binary" is deprecated, lets hope this works...
-            line = new_buf.toString("binary") + line;
-        }
-    }
-
-    // convert the buffer to UTF-8, stored in this.bodytext
-    this.try_iconv(buf, enc);
-
-    // delete this.body_text_encoded;
-    return line;
-};
-
-Body.prototype.try_iconv = function (buf, enc) {
-
-    if (!Iconv) {
-        this.body_encoding = 'no_iconv';
-        this.bodytext = buf.toString();
-        return;
-    }
-
-    if (/UTF-?8/i.test(enc)) {
-        this.bodytext = buf.toString();
-        return;
-    }
-
-    try {
-        const converter = new Iconv(enc, "UTF-8");
-        this.bodytext = converter.convert(buf).toString();
-    }
-    catch (err) {
-        logger.logwarn("initial iconv conversion from " + enc + " to UTF-8 failed: " + err.message);
-        this.body_encoding = 'broken//' + enc;
-        // EINVAL is returned when the encoding type is not recognized/supported (e.g. ANSI_X3)
-        if (err.code !== 'EINVAL') {
-            // Perform the conversion again, but ignore any errors
-            try {
-                const converter = new Iconv(enc, 'UTF-8//TRANSLIT//IGNORE');
-                this.bodytext = converter.convert(buf).toString();
-            }
-            catch (e) {
-                logger.logerror('iconv conversion from ' + enc + ' to UTF-8 failed: ' + e.message);
-                this.bodytext = buf.toString();
-            }
-        }
-    }
-};
-
-Body.prototype.parse_body = function (line) {
-    this.body_text_encoded += line;
-    if (this.filters.length) return '';
-    return line;
-};
-
-Body.prototype.parse_multipart_preamble = function (line) {
-    if (!this.boundary) return line;
-
-    if (line.substr(0, (this.boundary.length + 2)) === ('--' + this.boundary)) {
-        if (line.substr(this.boundary.length + 2, 2) === '--') {
-            // end
-        }
-        else {
-            // next section
-            const bod = new Body(new Header(), this.options);
-            this.listeners('attachment_start').forEach(function (cb) { bod.on('attachment_start', cb) });
-            this.filters.forEach(function (f) { bod.add_filter(f); });
-            this.children.push(bod);
-            bod.state = 'headers';
-            this.state = 'child';
-        }
-        return line;
-    }
-
-    return line;
-};
-
-Body.prototype.parse_attachment = function (line) {
-    if (this.boundary) {
-        if (line.substr(0, (this.boundary.length + 2)) === ('--' + this.boundary)) {
-            if (line.substr(this.boundary.length + 2, 2) === '--') {
-                // end
-            }
-            else {
-                // next section
-                this.state = 'headers';
-            }
-            return line;
-        }
-    }
-
-    const buf = this.decode_function(line);
-    if ((buf.length + this.buf_fill) > buf_siz) {
-        // now we have to create a new buffer, because if we write this out
-        // using async code, it will get overwritten under us. Creating a new
-        // buffer eliminates that problem (at the expense of a malloc and a
-        // memcpy())
-        const to_emit = new Buffer(this.buf_fill);
-        this.buf.copy(to_emit, 0, 0, this.buf_fill);
-        this.attachment_stream.emit_data(to_emit);
-        if (buf.length > buf_siz) {
-            // this is an unusual case - the base64/whatever data is larger
-            // than our buffer size, so we just emit it and reset the counter.
-            this.attachment_stream.emit_data(buf);
-            this.buf_fill = 0;
-        }
-        else {
-            buf.copy(this.buf);
-            this.buf_fill = buf.length;
-        }
-    }
-    else {
-        buf.copy(this.buf, this.buf_fill);
-        this.buf_fill += buf.length;
-    }
-    return line;
-};
-
-Body.prototype.decode_qp = utils.decode_qp;
-
-Body.prototype.decode_base64 = function (line) {
-    // Remove all whitespace (such as newlines and errant spaces) from base64
-    // before combining it with any previously unprocessed data.
-    let to_process = this.decode_accumulator + line.trim().replace(/[\s]+/g,'');
-
-    // Sometimes base64 data lines will not be aligned with
-    // byte boundaries. This is because each char in base64
-    // represents 6 bits. 24 is the LCM between 6 and 8 bits.
-    // (i.e. 4 * 6-bit chars === 3 * bytes)
-
-    // As a result, 24 bits is our word boundary for base64.
-    // Failure to align here will result in truncated/incorrect
-    // node Buffers later on.
-
-    // Walk back from the toProcess.length to the first 
-    // position that aligns with a 24-bit boundary.
-    const emit_length = to_process.length - (to_process.length % 4)
-
-    if (emit_length > 0) {
-        const emit_now = to_process.substring(0, emit_length);
-        this.decode_accumulator = to_process.substring(emit_length);
-        return new Buffer(emit_now, 'base64');
-    } else {
-        this.decode_accumulator = '';
-        // This is the end of the base64 data, we don't really have enough bits
-        // to fill up the bytes, but that's because we're on the last line, and ==
-        // might have been elided.
-
-        // In order to prevent any weird boundary issues, we'll re-pad
-        // the string if there's any data left. As above, our target
-        // is a 24-bit boundary, pad to 4 characters.
-        while (to_process.length > 0 && to_process.length < 4) {
-            to_process += '=';
-        }
-        return new Buffer(to_process, 'base64');
-    }
-};
-
-Body.prototype.decode_8bit = function (line) {
-    return new Buffer(line, 'binary');
-};
-
-Body.prototype.decode_7bit = Body.prototype.decode_8bit;
