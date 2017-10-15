@@ -295,7 +295,7 @@ exports.start_attachment = function (connection, ctype, filename, body, stream) 
         stream.pause();
 
         digest = md5.digest('hex');
-        connection.loginfo(plugin, `file="${filename} " ctype="${ctype}" md5=${digest} bytes=${bytes}`);
+        connection.loginfo(plugin, `file="${filename}" ctype="${ctype}" md5=${digest} bytes=${bytes}`);
         txn.notes.attachments.push({
             ctype: ((ct && ct[1]) ? ct[1].toLowerCase() : 'unknown/unknown'),
             filename: (filename ? filename : ''),
