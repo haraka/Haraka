@@ -162,7 +162,7 @@ exports.send_email = function () {
     // Allow for the removal of Message-Id headers which
     // is useful when resending mail from a quarantine.
     if (options && options.remove_msgid) {
-        transaction.remote_header('Message-Id');
+        transaction.remove_header('Message-Id');
     }
 
     this.send_trans_email(transaction, next);
