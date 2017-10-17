@@ -186,107 +186,107 @@ class SMTPClient extends events.EventEmitter {
         client.socket.on('close',   closed('closed'));
         client.socket.on('end',     closed('ended'));
     }
-}
 
-SMTPClient.prototype.load_tls_config = function (opts) {
+    load_tls_config (opts) {
 
-    const tls_options = { servername: this.host };
-    if (opts) {
-        Object.assign(tls_options, opts);
+        const tls_options = { servername: this.host };
+        if (opts) {
+            Object.assign(tls_options, opts);
+        }
+
+        this.tls_options = tls_options;
     }
 
-    this.tls_options = tls_options;
-}
-
-SMTPClient.prototype.send_command = function (command, data) {
-    const line = (command === 'dot') ? '.' : command + (data ? (' ' + data) : '');
-    this.emit('client_protocol', line);
-    this.command = command.toLowerCase();
-    this.response = [];
-    this.socket.write(line + "\r\n");
-};
-
-SMTPClient.prototype.start_data = function (data) {
-    this.response = [];
-    this.command = 'dot';
-    data.pipe(this.socket, { dot_stuffing: true, ending_dot: true, end: false });
-};
-
-SMTPClient.prototype.release = function () {
-    if (!this.connected || this.command === 'data' || this.command === 'mailbody') {
-        // Destroy here, we can't reuse a connection that was mid-data.
-        this.destroy();
-        return;
+    send_command (command, data) {
+        const line = (command === 'dot') ? '.' : command + (data ? (' ' + data) : '');
+        this.emit('client_protocol', line);
+        this.command = command.toLowerCase();
+        this.response = [];
+        this.socket.write(line + "\r\n");
     }
 
-    logger.logdebug(`[smtp_client_pool] ${this.uuid} resetting, state=${this.state}`);
-    if (this.state === STATE.DESTROYED) {
-        return;
+    start_data (data) {
+        this.response = [];
+        this.command = 'dot';
+        data.pipe(this.socket, { dot_stuffing: true, ending_dot: true, end: false });
     }
-    this.state = STATE.RELEASED;
-    this.removeAllListeners('greeting');
-    this.removeAllListeners('capabilities');
-    this.removeAllListeners('xclient');
-    this.removeAllListeners('helo');
-    this.removeAllListeners('mail');
-    this.removeAllListeners('rcpt');
-    this.removeAllListeners('data');
-    this.removeAllListeners('dot');
-    this.removeAllListeners('rset');
-    this.removeAllListeners('auth');
-    this.removeAllListeners('client_protocol');
-    this.removeAllListeners('server_protocol');
-    this.removeAllListeners('error');
-    this.removeAllListeners('bad_code');
 
-    this.on('bad_code', function (code, msg) {
-        this.destroy();
-    });
+    release () {
+        if (!this.connected || this.command === 'data' || this.command === 'mailbody') {
+            // Destroy here, we can't reuse a connection that was mid-data.
+            this.destroy();
+            return;
+        }
 
-    this.on('rset', function () {
-        logger.logdebug(`[smtp_client_pool] ${this.uuid} releasing, state=${this.state}`);
+        logger.logdebug(`[smtp_client_pool] ${this.uuid} resetting, state=${this.state}`);
         if (this.state === STATE.DESTROYED) {
             return;
         }
-        this.state = STATE.IDLE;
+        this.state = STATE.RELEASED;
+        this.removeAllListeners('greeting');
+        this.removeAllListeners('capabilities');
+        this.removeAllListeners('xclient');
+        this.removeAllListeners('helo');
+        this.removeAllListeners('mail');
+        this.removeAllListeners('rcpt');
+        this.removeAllListeners('data');
+        this.removeAllListeners('dot');
         this.removeAllListeners('rset');
+        this.removeAllListeners('auth');
+        this.removeAllListeners('client_protocol');
+        this.removeAllListeners('server_protocol');
+        this.removeAllListeners('error');
         this.removeAllListeners('bad_code');
-        this.pool.release(this);
-    });
 
-    this.send_command('RSET');
-};
+        this.on('bad_code', function (code, msg) {
+            this.destroy();
+        });
 
-SMTPClient.prototype.destroy = function () {
-    if (this.state !== STATE.DESTROYED) {
-        this.pool.destroy(this);
+        this.on('rset', function () {
+            logger.logdebug(`[smtp_client_pool] ${this.uuid} releasing, state=${this.state}`);
+            if (this.state === STATE.DESTROYED) {
+                return;
+            }
+            this.state = STATE.IDLE;
+            this.removeAllListeners('rset');
+            this.removeAllListeners('bad_code');
+            this.pool.release(this);
+        });
+
+        this.send_command('RSET');
     }
-};
 
-SMTPClient.prototype.upgrade = function (tls_options) {
-    const this_logger = logger;
+    destroy () {
+        if (this.state !== STATE.DESTROYED) {
+            this.pool.destroy(this);
+        }
+    }
 
-    this.socket.upgrade(tls_options, function (verified, verifyError, cert, cipher) {
-        this_logger.loginfo('secured:' +
-            ((cipher) ? ` cipher=${cipher.name} version=${cipher.version}` : '') +
-            ` verified=${verified}` +
-            ((verifyError) ? ` error="${verifyError}"` : '') +
-            ((cert && cert.subject) ? ` cn="${cert.subject.CN}" organization="${cert.subject.O}"` : '') +
-            ((cert && cert.issuer) ? ` issuer="${cert.issue.O}"` : '') +
-            ((cert && cert.valid_to) ? ` expires="${cert.valid_to}"` : '') +
-            ((cert && cert.fingerprint) ? ` fingerprint=${cert.fingerprint}` : ''));
-    });
-};
+    upgrade (tls_options) {
+        const this_logger = logger;
+
+        this.socket.upgrade(tls_options, function (verified, verifyError, cert, cipher) {
+            this_logger.loginfo('secured:' +
+                ((cipher) ? ` cipher=${cipher.name} version=${cipher.version}` : '') +
+                    ` verified=${verified}` +
+                    ((verifyError) ? ` error="${verifyError}"` : '') +
+                    ((cert && cert.subject) ? ` cn="${cert.subject.CN}" organization="${cert.subject.O}"` : '') +
+                    ((cert && cert.issuer) ? ` issuer="${cert.issue.O}"` : '') +
+                    ((cert && cert.valid_to) ? ` expires="${cert.valid_to}"` : '') +
+                    ((cert && cert.fingerprint) ? ` fingerprint=${cert.fingerprint}` : ''));
+        });
+    }
 
 
-SMTPClient.prototype.is_dead_sender = function (plugin, connection) {
-    if (connection.transaction) { return false; }
+    is_dead_sender (plugin, connection) {
+        if (connection.transaction) { return false; }
 
-    // This likely means the sender went away on us, cleanup.
-    connection.logwarn(plugin, "transaction went away, releasing smtp_client");
-    this.release();
-    return true;
-};
+        // This likely means the sender went away on us, cleanup.
+        connection.logwarn(plugin, "transaction went away, releasing smtp_client");
+        this.release();
+        return true;
+    }
+}
 
 exports.smtp_client = SMTPClient;
 
