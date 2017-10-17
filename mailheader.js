@@ -56,7 +56,7 @@ class Header {
     decode_header (val) {
         // unfold continuations, strip the leading
         // space char after the first line
-        let values = val.split(/[\r\n]+/);
+        const values = val.split(/[\r\n]+/);
         val = values.shift();
         while (values.length > 0) {
             val += values.shift().replace(/^[\s]/, '');
