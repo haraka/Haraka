@@ -174,12 +174,7 @@ class DKIMObject {
         }
 
         this.debug(`${this.identity}: DKIM fields validated OK`);
-        this.debug([
-            `${this.identity}:`,
-            `a=${this.fields.a}`,
-            `c=${this.headercanon}/${this.bodycanon}`,
-            `h=${this.signed_headers}`,
-        ].join(' '));
+        this.debug(`${this.identity}: a=${this.fields.a} c=${this.headercanon}/${this.bodycanon} h=${this.signed_headers}`);
     }
 
     debug (str) {
@@ -241,9 +236,7 @@ class DKIMObject {
         if (this.run_cb) return;
 
         const bh = this.bh.digest('base64');
-        this.debug(`${this.identity}:
-             bodyhash=${this.fields.bh}
-             computed=${bh}`);
+        this.debug(`${this.identity}: bodyhash=${this.fields.bh} computed=${bh}`);
         if (bh !== this.fields.bh) {
             return this.result('body hash did not verify', 'fail');
         }
@@ -337,8 +330,7 @@ class DKIMObject {
                         // Make * a non-greedy match against anything except @
                         s = s.replace('\\*','[^@]*?');
                         const reg = new RegExp(`^${s}@`);
-                        self.debug(`${self.identity}: matching ${self.dns_fields.g}
-                             against i=${self.fields.i} regexp=${reg.toString()}`);
+                        self.debug(`${self.identity}: matching ${self.dns_fields.g} against i=${self.fields.i} regexp=${reg.toString()}`);
                         if (!reg.test(self.fields.i)) {
                             return self.result('inapplicable key', 'invalid');
                         }
