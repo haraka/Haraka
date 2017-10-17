@@ -18,6 +18,7 @@ const lines = [
     'Date: Thu, 31 Mar 2016 15:51:36 -0400',
     'To: The World <world@example.com>',
     'X-Mailer: iPhone Mail (13E233)',
+    'X-Folded-QP: =?UTF-8?Q?=D0=BF=D1=80=D0=BE=D0=B1=D0=BD=D0=B8?=\r\n =?UTF-8?Q?_=D0=B5=D0=BC=D0=B0=D0=B8=D0=BB_1234?=\n  \tContinued',
 ];
 
 for (let i=0; i<lines.length; i++) {
@@ -29,10 +30,10 @@ exports.basic = {
         test.expect(2);
         const h = new Header();
         h.parse(lines);
-        test.equal(h.lines().length, 12);
+        test.equal(h.lines().length, 13);
         test.equal(
             h.get_decoded('content-type'),
-            'multipart/alternative;   boundary=Apple-Mail-F2C5DAD3-7EB3-409D-9FE0-135C9FD43B69'
+            'multipart/alternative;  boundary=Apple-Mail-F2C5DAD3-7EB3-409D-9FE0-135C9FD43B69'
         );
         test.done();
     },
@@ -40,7 +41,7 @@ exports.basic = {
         test.expect(2);
         const h = new Header();
         h.parse(lines);
-        test.equal(h.lines().length, 12);
+        test.equal(h.lines().length, 13);
         const ct = h.get_decoded('content-type2');
         test.equal(ct, 'multipart/mixed; boundary="nqp=nb64=()I9WT8XjoN"');
         test.done();
@@ -55,7 +56,7 @@ exports.add_headers = {
         h.add('Foo', 'bar');
         test.equal(h.lines()[0], 'Foo: bar\n');
         h.add_end('Fizz', 'buzz');
-        test.equal(h.lines()[13], 'Fizz: buzz\n');
+        test.equal(h.lines()[14], 'Fizz: buzz\n');
         test.done();
     },
     add_utf8: function (test) {
@@ -79,6 +80,13 @@ exports.continuations = {
         const h = new Header();
         h.parse(lines);
         test.ok(!/\n/.test(h.get_decoded('content-type')));
+        test.done();
+    },
+    leading_space_is_stripped_when_unfolding: function (test) {
+        test.expect(1);
+        const h = new Header();
+        h.parse(lines);
+        test.equal(h.get_decoded('X-Folded-QP'), "пробни емаил 1234 \tContinued");
         test.done();
     }
 }
