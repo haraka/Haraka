@@ -159,10 +159,13 @@ exports.send_email = function () {
 
     transaction.message_stream.add_line_end();
 
-    // Allow for the removal of Message-Id headers which
+    // Allow for the removal of Message-Id and/or Date headers which
     // is useful when resending mail from a quarantine.
     if (options && options.remove_msgid) {
         transaction.remove_header('Message-Id');
+    }
+    if (options && options.remove_date) {
+        transaction.remove_header('Date');
     }
 
     this.send_trans_email(transaction, next);
