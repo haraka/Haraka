@@ -109,7 +109,7 @@ class DKIMObject {
                     this.verifier = crypto.createVerify('RSA-SHA256');
                     break;
                 default:
-                    this.debug('Invalid algorithm: ' + this.fields.a);
+                    this.debug(`Invalid algorithm: ${this.fields.a}`);
                     return this.result('invalid algorithm', 'invalid');
             }
         }
@@ -149,7 +149,7 @@ class DKIMObject {
             }
         }
         else {
-            this.fields.i = '@' + this.fields.d;
+            this.fields.i = `@${this.fields.d}`;
         }
         this.identity = this.fields.i;
 
@@ -173,12 +173,12 @@ class DKIMObject {
             }
         }
 
-        this.debug(this.identity + ': DKIM fields validated OK');
+        this.debug(`${this.identity}: DKIM fields validated OK`);
         this.debug([
-            this.identity + ':',
-            'a=' + this.fields.a,
-            'c=' + this.headercanon + '/' + this.bodycanon,
-            'h=' + this.signed_headers,
+            `${this.identity}:`,
+            `a=${this.fields.a}`,
+            `c=${this.headercanon}/${this.bodycanon}`,
+            `h=${this.signed_headers}`,
         ].join(' '));
     }
 
@@ -241,9 +241,9 @@ class DKIMObject {
         if (this.run_cb) return;
 
         const bh = this.bh.digest('base64');
-        this.debug(this.identity + ':' +
-            ' bodyhash=' + this.fields.bh +
-            ' computed=' + bh);
+        this.debug(`${this.identity}:
+             bodyhash=${this.fields.bh}
+             computed=${bh}`);
         if (bh !== this.fields.bh) {
             return this.result('body hash did not verify', 'fail');
         }
@@ -251,7 +251,7 @@ class DKIMObject {
         // Now we canonicalize the specified headers
         for (let h=0; h<this.signed_headers.length; h++) {
             const header = this.signed_headers[h];
-            this.debug(this.identity + ': canonicalize header: ' + header);
+            this.debug(`${this.identity}: canonicalize header: ${header}`);
             if (this.header_idx[header]) {
                 // RFC 6376 section 5.4.2, read headers from bottom to top
                 const this_header = this.header_idx[header].pop();
@@ -260,7 +260,7 @@ class DKIMObject {
                     if (header === 'dkim-signature') {
                         const h_md5 = md5(this_header);
                         if (h_md5 === this.sig_md5) {
-                            this.debug(this.identity + ': skipped our own DKIM-Signature');
+                            this.debug(`${this.identity}: skipped our own DKIM-Signature`);
                             continue;
                         }
                     }
@@ -290,8 +290,8 @@ class DKIMObject {
             timeout = true;
             return self.result('DNS timeout', 'tempfail');
         }, this.timeout * 1000);
-        const lookup = this.fields.s + '._domainkey.' + this.fields.d;
-        this.debug(this.identity + ': DNS lookup ' + lookup + ' (timeout=' + this.timeout + 's)');
+        const lookup = `${this.fields.s}._domainkey.${this.fields.d}`;
+        this.debug(`${this.identity}: DNS lookup ${lookup} (timeout= ${this.timeout}s)`);
         dns.resolveTxt(lookup, function (err, res) {
             if (timeout) return;
             clearTimeout(timer);
@@ -302,7 +302,7 @@ class DKIMObject {
                     case dns.NXDOMAIN:
                         return self.result('no key for signature', 'invalid');
                     default:
-                        self.debug(self.identity + ': DNS lookup error: ' + err.code);
+                        self.debug(`${self.identity}: DNS lookup error: ${err.code}`);
                         return self.result('key unavailable', 'tempfail');
                 }
             }
@@ -314,10 +314,10 @@ class DKIMObject {
                     record = record.join('');
                 }
                 if (record.indexOf('p=') === -1) {
-                    self.debug(self.identity + ': ignoring TXT record: ' + record);
+                    self.debug(`${self.identity}: ignoring TXT record: ${record}`);
                     continue;
                 }
-                self.debug(self.identity + ': got DNS record: ' + record);
+                self.debug(`${self.identity}: got DNS record: ${record}`);
                 const rec = record.replace(/\r?\n/g, '').replace(/\s+/g,'');
                 const split = rec.split(';');
                 for (let j=0; j<split.length; j++) {
@@ -336,9 +336,9 @@ class DKIMObject {
                         s = s.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
                         // Make * a non-greedy match against anything except @
                         s = s.replace('\\*','[^@]*?');
-                        const reg = new RegExp('^' + s + '@');
-                        self.debug(self.identity + ': matching ' + self.dns_fields.g +
-                            ' against i=' + self.fields.i + ' regexp=' + reg.toString());
+                        const reg = new RegExp(`^${s}@`);
+                        self.debug(`${self.identity}: matching ${self.dns_fields.g}
+                             against i=${self.fields.i} regexp=${reg.toString()}`);
                         if (!reg.test(self.fields.i)) {
                             return self.result('inapplicable key', 'invalid');
                         }
@@ -389,10 +389,10 @@ class DKIMObject {
                 let verified;
                 try {
                     verified = self.verifier.verify(self.public_key, self.fields.b, 'base64');
-                    self.debug(self.identity + ': verified=' + verified);
+                    self.debug(`${self.identity}: verified=${verified}`);
                 }
                 catch (e) {
-                    self.debug(self.identity + ': verification error: ' + e.message);
+                    self.debug(`${self.identity}: verification error: ${e.message}`);
                     return self.result('verification error', 'invalid');
                 }
                 return self.result(null, ((verified) ? 'pass' : 'fail'));
@@ -520,7 +520,7 @@ class DKIMVerifyStream extends Stream {
                     else {
                         // Create new DKIM objects for each header
                         const dkim_headers = this.header_idx['dkim-signature'];
-                        this.debug('Found ' + dkim_headers.length + ' DKIM signatures');
+                        this.debug(`Found ${dkim_headers.length} DKIM signatures`);
                         this.pending = dkim_headers.length;
                         for (let d=0; d<dkim_headers.length; d++) {
                             this.dkim_objects.push(new DKIMObject(dkim_headers[d], this.header_idx, callback, this.timeout));
