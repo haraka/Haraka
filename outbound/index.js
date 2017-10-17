@@ -1,9 +1,9 @@
 'use strict';
 
-const async       = require('async');
 const fs          = require('fs');
 const path        = require('path');
 
+const async       = require('async');
 const Address     = require('address-rfc2821').Address;
 const config      = require('haraka-config');
 const constants   = require('haraka-constants');
@@ -293,6 +293,7 @@ exports.process_delivery = function (ok_paths, todo, hmails, cb) {
     const fname = _qfile.name();
     const tmp_path = path.join(queue_dir, _qfile.platformDOT + fname);
     const ws = new FsyncWriteStream(tmp_path, { flags: constants.WRITE_EXCL });
+
     ws.on('close', function () {
         const dest_path = path.join(queue_dir, fname);
         fs.rename(tmp_path, dest_path, function (err) {
@@ -306,14 +307,16 @@ exports.process_delivery = function (ok_paths, todo, hmails, cb) {
                 ok_paths.push(dest_path);
                 cb();
             }
-        });
-    });
+        })
+    })
+
     ws.on('error', function (err) {
         logger.logerror("[outbound] Unable to write queue file (" + fname + "): " + err);
         ws.destroy();
         fs.unlink(tmp_path, function () {});
         cb("Queueing failed");
-    });
+    })
+
     self.build_todo(todo, ws, function () {
         todo.message_stream.pipe(ws, { line_endings: '\r\n', dot_stuffing: true, ending_dot: false });
     });
@@ -330,9 +333,11 @@ exports.build_todo = function (todo, ws, write_more) {
         }
     }
 
-    const todo_json = JSON.stringify(todo, exclude_from_json);
-    const buf = new Buffer(4 + todo_json.length);
-    buf.writeUInt32BE(todo_json.length, 0);
+    const todo_json = JSON.stringify(todo, exclude_from_json)
+    const todo_len = new Buffer.from(todo_json).length
+
+    const buf = new Buffer(4 + todo_len);
+    buf.writeUInt32BE(todo_len, 0);
     buf.write(todo_json, 4);
 
     const continue_writing = ws.write(buf);
