@@ -51,7 +51,7 @@ Plugin.prototype.core_require = Plugin.prototype.haraka_require;
 
 function plugin_search_paths (prefix, name) {
     return [
-        path.resolve(prefix, `plugins${name}.js`),
+        path.resolve(prefix, 'plugins', `${name}.js`),
         path.resolve(prefix, 'node_modules', `haraka-plugin-${name}`, 'package.json'),
         path.resolve(prefix, '..', `haraka-plugin-${name}`, 'package.json')
     ];
@@ -150,8 +150,7 @@ Plugin.prototype.register_hook = function (hook_name, method_name, priority) {
     this.hooks[hook_name] = this.hooks[hook_name] || [];
     this.hooks[hook_name].push(method_name);
 
-    logger.logdebug(`registered hook ${hook_name} to
-      ${this.name}.${method_name} priority ${priority}`);
+    logger.logdebug(`registered hook ${hook_name} to ${this.name}.${method_name} priority ${priority}`);
 };
 
 Plugin.prototype.register = function () {}; // noop
