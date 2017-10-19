@@ -223,3 +223,54 @@ exports.build_todo = {
     //     test.done();
     // },
 }
+
+exports.timer_queue = {
+    setUp : function (done) {
+        process.env.HARAKA_TEST_DIR=path.resolve('tests');
+        this.outbound = require('../../outbound');
+        const TimerQueue = require('../../outbound/timer_queue');
+        this.ob_timer_queue = new TimerQueue(500);
+        done();
+    },
+    tearDown: function (done) {
+        delete process.env.HARAKA_TEST_DIR;
+        this.ob_timer_queue.shutdown();
+        done();
+    },
+    'has initial length of 0': function (test) {
+        test.expect(1);
+
+        const tq_length = this.ob_timer_queue.length();
+
+        test.equal(tq_length, 0);
+        test.done();
+    },
+    'can add items': function (test) {
+        test.expect(1);
+
+        this.ob_timer_queue.add(1000);
+        this.ob_timer_queue.add(2000);
+
+        const tq_length = this.ob_timer_queue.length();
+
+        test.equal(tq_length, 2);
+        test.done();
+    },
+    'can drain items': function (test) {
+        test.expect(2);
+
+        this.ob_timer_queue.add(1000);
+        this.ob_timer_queue.add(2000);
+
+        let tq_length = this.ob_timer_queue.length();
+
+        test.equal(tq_length, 2);
+
+        this.ob_timer_queue.drain();
+        tq_length = this.ob_timer_queue.length();
+
+        test.equal(tq_length, 0);
+
+        test.done();
+    },
+}

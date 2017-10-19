@@ -1070,7 +1070,7 @@ class Connection {
                 });
                 break;
             default:
-                this.respond(250, msg || `${dmsg} denied`, () => {
+                this.respond(250, msg || `${dmsg} OK`, () => {
                     self.rcpt_incr(rcpt, 'accept', msg, retval);
                 });
         }
