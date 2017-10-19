@@ -61,7 +61,7 @@ class Connection {
         this.local = {           // legacy property locations
             ip: null,            // c.local_ip
             port: null,          // c.local_port
-            host: config.get('me') || os.hostname(),
+            host: config.get('me'),
         };
         this.remote = {
             ip:   null,          // c.remote_ip
