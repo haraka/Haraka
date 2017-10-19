@@ -26,110 +26,110 @@ class DKIMSignStream extends Stream {
         this.line_buffer = { ar: [], len: 0 };
         this.signer = crypto.createSign('RSA-SHA256');
     }
-}
 
-DKIMSignStream.prototype.write = function (buf) {
-    /*
-    ** BODY (simple canonicalization)
-    */
+    write (buf) {
+        /*
+        ** BODY (simple canonicalization)
+        */
 
-    // Merge in any partial data from last iteration
-    if (this.buffer.ar.length) {
-        this.buffer.ar.push(buf);
-        this.buffer.len += buf.length;
-        const nb = Buffer.concat(this.buffer.ar, this.buffer.len);
-        buf = nb;
-        this.buffer = { ar: [], len: 0 };
-    }
-    // Process input buffer into lines
-    let offset = 0;
-    while ((offset = utils.indexOfLF(buf)) !== -1) {
-        const line = buf.slice(0, offset+1);
-        if (buf.length > offset) {
-            buf = buf.slice(offset+1);
+        // Merge in any partial data from last iteration
+        if (this.buffer.ar.length) {
+            this.buffer.ar.push(buf);
+            this.buffer.len += buf.length;
+            const nb = Buffer.concat(this.buffer.ar, this.buffer.len);
+            buf = nb;
+            this.buffer = { ar: [], len: 0 };
         }
-        // Look for CRLF
-        if (line.length === 2 && line[0] === 0x0d && line[1] === 0x0a) {
-            // Look for end of headers marker
-            if (!this.found_eoh) {
-                this.found_eoh = true;
+        // Process input buffer into lines
+        let offset = 0;
+        while ((offset = utils.indexOfLF(buf)) !== -1) {
+            const line = buf.slice(0, offset+1);
+            if (buf.length > offset) {
+                buf = buf.slice(offset+1);
+            }
+            // Look for CRLF
+            if (line.length === 2 && line[0] === 0x0d && line[1] === 0x0a) {
+                // Look for end of headers marker
+                if (!this.found_eoh) {
+                    this.found_eoh = true;
+                }
+                else {
+                    // Store any empty lines so that we can discard
+                    // any trailing CRLFs at the end of the message
+                    this.line_buffer.ar.push(line);
+                    this.line_buffer.len += line.length;
+                }
             }
             else {
-                // Store any empty lines so that we can discard
-                // any trailing CRLFs at the end of the message
-                this.line_buffer.ar.push(line);
-                this.line_buffer.len += line.length;
+                if (!this.found_eoh) continue; // Skip headers
+                if (this.line_buffer.ar.length) {
+                    // We need to process the buffered CRLFs
+                    const lb = Buffer.concat(this.line_buffer.ar, this.line_buffer.len);
+                    this.line_buffer = { ar: [], len: 0 };
+                    this.hash.update(lb);
+                }
+                this.hash.update(line);
             }
         }
-        else {
-            if (!this.found_eoh) continue; // Skip headers
-            if (this.line_buffer.ar.length) {
-                // We need to process the buffered CRLFs
-                const lb = Buffer.concat(this.line_buffer.ar, this.line_buffer.len);
-                this.line_buffer = { ar: [], len: 0 };
-                this.hash.update(lb);
+        if (buf.length) {
+            // We have partial data...
+            this.buffer.ar.push(buf);
+            this.buffer.len += buf.length;
+        }
+    }
+
+    end (buf) {
+        this.writable = false;
+
+        // Add trailing CRLF if we have data left over
+        if (this.buffer.ar.length) {
+            this.buffer.ar.push(new Buffer("\r\n"));
+            this.buffer.len += 2;
+            const le = Buffer.concat(this.buffer.ar, this.buffer.len);
+            this.hash.update(le);
+            this.buffer = { ar: [], len: 0 };
+        }
+
+        const bodyhash = this.hash.digest('base64');
+
+        /*
+        ** HEADERS (relaxed canonicaliztion)
+        */
+
+        const headers = [];
+        for (let i=0; i < this.headers_to_sign.length; i++) {
+            let head = this.header.get(this.headers_to_sign[i]);
+            if (head) {
+                head = head.replace(/\r?\n/gm, '');
+                head = head.replace(/\s+/gm, ' ');
+                head = head.replace(/\s+$/gm, '');
+                this.signer.update(this.headers_to_sign[i] + ':' + head + "\r\n");
+                headers.push(this.headers_to_sign[i]);
             }
-            this.hash.update(line);
+        }
+
+        // Create DKIM header
+        let dkim_header = 'v=1;a=rsa-sha256;bh=' + bodyhash +
+                        ';c=relaxed/simple;d=' + this.domain +
+                        ';h=' + headers.join(':') +
+                        ';s=' + this.selector +
+                        ';b=';
+        this.signer.update('dkim-signature:' + dkim_header);
+        const signature = this.signer.sign(this.private_key, 'base64');
+        dkim_header += signature;
+
+        if (this.end_callback) this.end_callback(null, dkim_header);
+        this.end_callback = null;
+    }
+
+    destroy () {
+        this.writable = false;
+        // Stream destroyed before the callback ran
+        if (this.end_callback) {
+            this.end_callback(new Error('Stream destroyed'));
         }
     }
-    if (buf.length) {
-        // We have partial data...
-        this.buffer.ar.push(buf);
-        this.buffer.len += buf.length;
-    }
-};
-
-DKIMSignStream.prototype.end = function (buf) {
-    this.writable = false;
-
-    // Add trailing CRLF if we have data left over
-    if (this.buffer.ar.length) {
-        this.buffer.ar.push(new Buffer("\r\n"));
-        this.buffer.len += 2;
-        const le = Buffer.concat(this.buffer.ar, this.buffer.len);
-        this.hash.update(le);
-        this.buffer = { ar: [], len: 0 };
-    }
-
-    const bodyhash = this.hash.digest('base64');
-
-    /*
-    ** HEADERS (relaxed canonicaliztion)
-    */
-
-    const headers = [];
-    for (let i=0; i < this.headers_to_sign.length; i++) {
-        let head = this.header.get(this.headers_to_sign[i]);
-        if (head) {
-            head = head.replace(/\r?\n/gm, '');
-            head = head.replace(/\s+/gm, ' ');
-            head = head.replace(/\s+$/gm, '');
-            this.signer.update(this.headers_to_sign[i] + ':' + head + "\r\n");
-            headers.push(this.headers_to_sign[i]);
-        }
-    }
-
-    // Create DKIM header
-    let dkim_header = 'v=1;a=rsa-sha256;bh=' + bodyhash +
-                      ';c=relaxed/simple;d=' + this.domain +
-                      ';h=' + headers.join(':') +
-                      ';s=' + this.selector +
-                      ';b=';
-    this.signer.update('dkim-signature:' + dkim_header);
-    const signature = this.signer.sign(this.private_key, 'base64');
-    dkim_header += signature;
-
-    if (this.end_callback) this.end_callback(null, dkim_header);
-    this.end_callback = null;
-};
-
-DKIMSignStream.prototype.destroy = function () {
-    this.writable = false;
-    // Stream destroyed before the callback ran
-    if (this.end_callback) {
-        this.end_callback(new Error('Stream destroyed'));
-    }
-};
+}
 
 exports.DKIMSignStream = DKIMSignStream;
 
