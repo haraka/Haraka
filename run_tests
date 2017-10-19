@@ -1,36 +1,31 @@
 #!/usr/bin/env node
 
 "use strict";
-
+let reporter;
 try {
-    var reporter = require('nodeunit').reporters.default;
+    reporter = require('nodeunit').reporters.default;
 }
 catch (e) {
-    console.log("Error: " + e.message);
-    console.log("");
-    console.log("Cannot find nodeunit module.");
-    console.log("Please run the following:");
-    console.log("");
-    console.log("    npm install");
-    console.log("");
+    console.log(`Error: ${e.message}
+
+Cannot find nodeunit module. Please run the following:
+
+    npm install\n`);
+
     process.exit();
 }
 
 process.chdir(__dirname);
 
+let tests = [
+    'tests', 'tests/outbound', 'tests/plugins',
+    'tests/plugins/auth', 'tests/plugins/queue'
+];
+
 if (process.argv[2]) {
     console.log("Running tests: ", process.argv.slice(2));
-    reporter.run(process.argv.slice(2), undefined, function (err) {
-        process.exit(((err) ? 1 : 0));
-    });
+    tests = process.argv.slice(2);
 }
-else {
-    reporter.run([
-        'tests',
-        'tests/plugins',
-        'tests/plugins/auth',
-        'tests/plugins/queue'
-    ], undefined, function (err) {
-        process.exit(((err) ? 1 : 0));
-    });
-}
+reporter.run(tests, undefined, function (err) {
+    process.exit(((err) ? 1 : 0));
+});

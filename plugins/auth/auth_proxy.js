@@ -4,8 +4,18 @@ const utils = require('haraka-utils');
 const smtp_regexp = /^([0-9]{3})([ -])(.*)/;
 
 exports.register = function () {
-    this.inherits('auth/auth_base');
+    const plugin = this;
+    plugin.inherits('auth/auth_base');
+    plugin.load_tls_ini();
 };
+
+exports.load_tls_ini = function () {
+    const plugin = this;
+    plugin.tls_cfg = plugin.config.get('tls.ini', function () {
+        plugin.load_tls_ini();
+    });
+};
+
 
 exports.hook_capabilities = function (next, connection) {
     if (connection.tls.enabled) {
@@ -117,9 +127,9 @@ exports.try_auth_proxy = function (connection, hosts, user, passwd, cb) {
             for (const i in response) {
                 if (/^STARTTLS/.test(response[i])) {
                     if (secure) continue;    // silly remote, we've already upgraded
-                    key = self.config.get('tls_key.pem', 'binary');
-                    cert = self.config.get('tls_cert.pem', 'binary');
                     // Use TLS opportunistically if we found the key and certificate
+                    key = self.config.get(self.tls_cfg.main.key || 'tls_key.pem', 'binary');
+                    cert = self.config.get(self.tls_cfg.main.cert || 'tls_cert.pem', 'binary');
                     if (key && cert) {
                         this.on('secure', function () {
                             secure = true;

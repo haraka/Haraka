@@ -13,11 +13,11 @@ where N increments for each transaction on this connection.
 
 * transaction.mail\_from
 
-The value of the MAIL FROM command as an `Address` object.
+The value of the MAIL FROM command as an `Address`[1] object.
 
 * transaction.rcpt\_to
 
-An Array of `Address` objects of recipients from the RCPT TO command.
+An Array of `Address`[1] objects of recipients from the RCPT TO command.
 
 * transaction.message\_stream
 
@@ -161,3 +161,5 @@ body in the same encoding.
 * transaction.results
 
 Store results of processing in a structured format. See [docs/Results](http://haraka.github.io/manual/Results.html)
+
+[1]: `Address` objects are address-rfc2821 objects. See https://github.com/haraka/node-address-rfc2821
