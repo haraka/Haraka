@@ -87,29 +87,36 @@ class HMailItem extends events.EventEmitter {
 
     read_todo () {
         const self = this;
-        const tl_reader = fs.createReadStream(self.path, {start: 0, end: 3});
+        const length_stream = fs.createReadStream(self.path, {start: 0, end: 3});
 
-        tl_reader.on('error', (err) => {
+        length_stream.on('error', (err) => {
             const errMsg = `Error reading queue file ${self.filename}: ${err}`;
             self.logerror(errMsg);
             self.temp_fail(errMsg);
         });
 
         let todo_len_raw = '';
-        tl_reader.on('data', (data) => { todo_len_raw += data; });
-        tl_reader.on('end', () => {
-            const todo_len = new Buffer(todo_len_raw).readUInt32BE(0);
-            const td_reader = fs.createReadStream(self.path, {encoding: 'utf8', start: 4, end: todo_len + 3});
+        length_stream.on('data', (data) => { todo_len_raw += data; });
+        length_stream.on('end', () => {
+            const todo_len = Buffer.from(todo_len_raw).readUInt32BE(0);
+            self.logdebug(`todo header length: ${todo_len}`);
+            const header_stream = fs.createReadStream(self.path, {encoding: 'utf8', start: 4, end: todo_len + 3});
             self.data_start = todo_len + 4;
 
             let todo_raw = '';
-            td_reader.on('data', (data) => { todo_raw += data; });
-            td_reader.on('end', () => {
+            header_stream.on('data', (data) => { todo_raw += data; });
+            header_stream.on('end', () => {
                 if (Buffer.byteLength(todo_raw) === todo_len) {
                     // we read everything
+                    todo_raw = todo_raw.trim()
+                    const last_char = todo_raw.charAt(todo_raw.length - 1);
+                    if (last_char !== '}') {
+                        self.emit('error', `invalid todo header end char: ${last_char} at pos ${todo_len} of ${self.filename}`)
+                        return
+                    }
                     self.todo = JSON.parse(todo_raw);
-                    self.todo.rcpt_to = self.todo.rcpt_to.map(a => { return new Address (a); });
                     self.todo.mail_from = new Address (self.todo.mail_from);
+                    self.todo.rcpt_to = self.todo.rcpt_to.map(a => { return new Address (a); });
                     self.todo.notes = new Notes(self.todo.notes);
                     self.emit('ready');
                     return;
