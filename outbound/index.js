@@ -314,14 +314,20 @@ exports.process_delivery = function (ok_paths, todo, hmails, cb) {
 
 exports.build_todo = function (todo, ws, write_more) {
 
-    const todo_str = `\n${JSON.stringify(todo, exclude_from_json)}\n`
+    const todo_str = '\n' + JSON.stringify(todo, exclude_from_json, '\t') + '\n'
     const todo_len = Buffer.byteLength(todo_str)
 
     const buf = Buffer.alloc(4 + todo_len);
     buf.writeUInt32BE(todo_len, 0);
     buf.write(todo_str, 4);
 
-    ws.write(buf, 'utf8', write_more);
+    const continue_writing = ws.write(buf);
+    if (continue_writing) {
+        process.nextTick(write_more);
+        return
+    }
+
+    ws.once('drain', write_more);
 };
 
 // Replacer function to exclude items from the queue file header
