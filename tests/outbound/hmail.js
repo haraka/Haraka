@@ -5,9 +5,23 @@ const path = require('path')
 const Hmail = require('../../outbound/hmail');
 const outbound = require('../../outbound/index');
 
-const fixtures = path.resolve('tests', 'fixtures');
+// const fixtures = path.resolve('tests', 'fixtures');
 
 exports.HMailItem = {
+    'normal queue file': function (test) {
+        test.expect(1);
+        this.hmail = new Hmail('1508455115683_1508455115683_0_90253_9Q4o4V_1_haraka', 'tests/queue/1508455115683_1508455115683_0_90253_9Q4o4V_1_haraka', {});
+        this.hmail.on('ready', () => {
+            // console.log(this.hmail);
+            test.ok(this.hmail)
+            test.done()
+        })
+        this.hmail.on('error', function (err) {
+            console.log(err)
+            test.equal(err, undefined)
+            test.done()
+        })
+    },
     'normal TODO w/multibyte chars loads w/o error': function (test) {
         test.expect(1);
         this.hmail = new Hmail('1507509981169_1507509981169_0_61403_e0Y0Ym_1_qfile', 'tests/fixtures/todo_qfile.txt', {});
@@ -76,7 +90,7 @@ exports.HMailItem = {
 
                 ws.on('close', () => {
                     // console.log(this.hmail.todo)
-                    test.equal(fs.statSync(tmpfile).size, 4037);
+                    test.equal(fs.statSync(tmpfile).size, 4204);
                     test.done();
                 })
             })
