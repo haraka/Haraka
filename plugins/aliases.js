@@ -15,7 +15,7 @@ exports.aliases = function (next, connection, params) {
     const user   = params[0].user;
     const host   = params[0].host;
     let match  = user.split(/[+-]/, 1);
-    let action = "<missing>";
+    let action = '<missing>';
 
     if (config[rcpt]) {
 
@@ -30,28 +30,28 @@ exports.aliases = function (next, connection, params) {
                 _alias(plugin, connection, match, config[match], host);
                 break;
             default:
-                connection.loginfo(plugin, "unknown action: " + action);
+                connection.loginfo(plugin, `unknown action: ${action}`);
         }
     }
 
-    if (config['@'+host]) {
+    if (config[`@${host}`]) {
 
-        action = config['@'+host].action || action;
-        match  = '@'+host;
+        action = config[`@${host}`].action || action;
+        match  = `@${host}`;
 
         switch (action.toLowerCase()) {
             case 'drop':
-                _drop(plugin, connection, '@'+host);
+                _drop(plugin, connection, `@${host}`);
                 break;
             case 'alias':
                 _alias(plugin, connection, match, config[match], host);
                 break;
             default:
-                connection.loginfo(plugin, "unknown action: " + action);
+                connection.loginfo(plugin, `unknown action: ${action}`);
         }
     }
 
-    if (config[user] || config[match[0]] || config[match[0] + '@' + host]) {
+    if (config[user] || config[match[0]] || config[`${match[0]}@${host}`]) {
         if (config[user]) {
             action = config[user].action || action;
             match  = user;
@@ -61,8 +61,8 @@ exports.aliases = function (next, connection, params) {
             match  = match[0];
         }
         else {
-            action = config[match[0] + '@' + host].action || action;
-            match  = match[0] + '@' + host;
+            action = config[`${match[0]}@${host}`].action || action;
+            match  = `${match[0]}@${host}`;
         }
 
         switch (action.toLowerCase()) {
@@ -73,7 +73,7 @@ exports.aliases = function (next, connection, params) {
                 _alias(plugin, connection, match, config[match], host);
                 break;
             default:
-                connection.loginfo(plugin, "unknown action: " + action);
+                connection.loginfo(plugin, `unknown action: ${action}`);
         }
     }
 
@@ -81,7 +81,7 @@ exports.aliases = function (next, connection, params) {
 };
 
 function _drop (plugin, connection, rcpt) {
-    connection.logdebug(plugin, "marking " + rcpt + " for drop");
+    connection.logdebug(plugin, `marking ${rcpt} for drop`);
     connection.transaction.notes.discard = true;
 }
 
@@ -91,31 +91,29 @@ function _alias (plugin, connection, key, config, host) {
 
     if (config.to) {
         if (Array.isArray(config.to)) {
-            connection.logdebug(plugin, "aliasing " + connection.transaction.rcpt_to + " to " + config.to);
+            connection.logdebug(plugin, `aliasing ${connection.transaction.rcpt_to} to ${config.to}`);
             connection.transaction.rcpt_to.pop();
             for (let i = 0, len = config.to.length; i < len; i++) {
-                toAddress = new Address('<' + config.to[i] + '>');
+                toAddress = new Address(`<${config.to[i]}>`);
                 connection.transaction.rcpt_to.push(toAddress);
             }
         }
         else {
-            if (config.to.search("@") !== -1) {
+            if (config.to.search('@') !== -1) {
                 to = config.to;
             }
             else {
-                to = config.to + '@' + host;
+                to = `${config.to}@${host}`;
             }
 
-            connection.logdebug(plugin, "aliasing " +
-                connection.transaction.rcpt_to + " to " + to);
+            connection.logdebug(plugin, `aliasing ${connection.transaction.rcpt_to} to ${to}`);
 
-            toAddress = new Address('<' + to + '>');
+            toAddress = new Address(`<${to}>`);
             connection.transaction.rcpt_to.pop();
             connection.transaction.rcpt_to.push(toAddress);
         }
     }
     else {
-        connection.loginfo(plugin, 'alias failed for ' + key +
-            ', no "to" field in alias config');
+        connection.loginfo(plugin, `alias failed for ${key}, no "to" field in alias config`);
     }
 }
