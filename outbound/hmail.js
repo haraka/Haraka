@@ -95,10 +95,12 @@ class HMailItem extends events.EventEmitter {
             self.temp_fail(errMsg);
         });
 
-        let todo_len_raw = '';
-        length_stream.on('data', (data) => { todo_len_raw += data; });
+        let todo_len_raw = Buffer.alloc(0);
+        length_stream.on('data', (data) => {
+            todo_len_raw = Buffer.concat([todo_len_raw, data])
+        })
         length_stream.on('end', () => {
-            const todo_len = Buffer.from(todo_len_raw).readUInt32BE(0);
+            const todo_len = todo_len_raw.readUInt32BE(0);
             self.logdebug(`todo header length: ${todo_len}`);
             const todo_json_stream = fs.createReadStream(self.path, {encoding: 'utf8', start: 4, end: todo_len + 3});
             self.data_start = todo_len + 4;
