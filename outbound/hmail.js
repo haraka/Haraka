@@ -100,12 +100,12 @@ class HMailItem extends events.EventEmitter {
         length_stream.on('end', () => {
             const todo_len = Buffer.from(todo_len_raw).readUInt32BE(0);
             self.logdebug(`todo header length: ${todo_len}`);
-            const header_stream = fs.createReadStream(self.path, {encoding: 'utf8', start: 4, end: todo_len + 3});
+            const todo_json_stream = fs.createReadStream(self.path, {encoding: 'utf8', start: 4, end: todo_len + 3});
             self.data_start = todo_len + 4;
 
             let todo_raw = '';
-            header_stream.on('data', (data) => { todo_raw += data; });
-            header_stream.on('end', () => {
+            todo_json_stream.on('data', (data) => { todo_raw += data; });
+            todo_json_stream.on('end', () => {
                 if (Buffer.byteLength(todo_raw) === todo_len) {
                     // we read everything
                     todo_raw = todo_raw.trim()
