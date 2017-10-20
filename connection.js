@@ -25,7 +25,6 @@ const plugins     = require('./plugins');
 const rfc1869     = require('./rfc1869');
 const outbound    = require('./outbound');
 
-const hostname    = (os.hostname().split(/\./))[0];
 const hpj         = fs.readFileSync(path.join(__dirname, 'package.json'));
 const version     = JSON.parse(hpj).version;
 const states      = constants.connection.state;
@@ -62,7 +61,7 @@ class Connection {
         this.local = {           // legacy property locations
             ip: null,            // c.local_ip
             port: null,          // c.local_port
-            host: null,
+            host: config.get('me'),
         };
         this.remote = {
             ip:   null,          // c.remote_ip
@@ -532,7 +531,8 @@ class Connection {
         let buf = '';
 
         while ((mess = messages.shift())) {
-            const line = `${code}${(messages.length ? "-" : " ")}${(uuid ? `[${uuid}@${hostname}]` : '' )}${mess}`;
+            const _uuid = uuid ? `[${uuid}@${os.hostname().split('.').shift()}] ` : '';
+            const line = `${code}${(messages.length ? "-" : " ")}${_uuid}${mess}`;
             this.logprotocol(`S: ${line}`);
             buf = `${buf}${line}\r\n`;
         }
@@ -777,13 +777,14 @@ class Connection {
                 if (greeting.length) {
                     // RFC5321 section 4.2
                     // Hostname/domain should appear after the 220
-                    greeting[0] = `${config.get('me')} ESMTP ${greeting[0]}`;
+                    greeting[0] = `${this.local.host} ESMTP ${greeting[0]}`;
                     if (this.banner_includes_uuid) {
                         greeting[0] += ` (${this.uuid})`;
                     }
                 }
                 else {
-                    greeting = `${config.get('me')} ESMTP Haraka  ${(this.header_hide_version  ? '' : ` ${version}`)} ready`;
+                    const showVer = (this.header_hide_version ? '' : ` ${version}`);
+                    greeting = `${this.local.host} ESMTP Haraka${showVer} ready`;
                     if (this.banner_includes_uuid) {
                         greeting += ` (${this.uuid})`;
                     }
@@ -832,7 +833,7 @@ class Connection {
             default:
                 // RFC5321 section 4.1.1.1
                 // Hostname/domain should appear after 250
-                this.respond(250, `${config.get('me')} Hello ${this.get_remote('host')}, Haraka is at your service.`);
+                this.respond(250, `${this.local.host} Hello ${this.get_remote('host')}, Haraka is at your service.`);
         }
     }
     ehlo_respond (retval, msg) {
@@ -866,7 +867,7 @@ class Connection {
                 // Hostname/domain should appear after 250
 
                 const response = [
-                    `${config.get('me')} Hello ${this.get_remote('host')}, Haraka is at your service.`,
+                    `${this.local.host} Hello ${this.get_remote('host')}, Haraka is at your service.`,
                     "PIPELINING",
                     "8BITMIME",
                     "SMTPUTF8",
@@ -886,7 +887,7 @@ class Connection {
     }
     quit_respond (retval, msg) {
         const self = this;
-        this.respond(221, msg || `${config.get('me')} closing connection. Have a jolly good day.`, () => {
+        this.respond(221, msg || `${this.local.host} closing connection. Have a jolly good day.`, () => {
             self.disconnect();
         });
     }
@@ -1412,28 +1413,18 @@ class Connection {
             }
         }
 
-        const received_header = [
-            'from ',
-            this.hello.host, ' (',
-            this.get_remote('info'),
-            ")\n\t",
-            'by ',
-            config.get('me')
-        ]
+        let received_header = `from ${this.hello.host} (${this.get_remote('info')})\n\tby ${this.local.host}`
 
-        if (!this.header_hide_version) {
-            received_header.push(' (Haraka/', version, ')');
-        }
-        received_header.push(
-            ' with ', smtp,
-            ' id ', this.transaction.uuid,
-            "\n\t",
-            'envelope-from ', this.transaction.mail_from.format(),
-            ((this.authheader) ? ` ${this.authheader.replace(/\r?\n\t?$/, '')}` : ''),
-            ((sslheader) ? `\n\t${sslheader.replace(/\r?\n\t?$/,'')}` : ''),
-            ";\n\t", utils.date_to_str(new Date())
-        )
-        return received_header.join('');
+        if (!this.header_hide_version) received_header += ` (Haraka/${version})`
+
+        received_header += ` with ${smtp} id ${this.transaction.uuid}\n\tenvelope-from ${this.transaction.mail_from.format()}`;
+
+        if (this.authheader) received_header += ` ${this.authheader.replace(/\r?\n\t?$/, '')}`
+        if (sslheader)       received_header += `\n\t${sslheader.replace(/\r?\n\t?$/,'')}`
+
+        received_header += `;\n\t${utils.date_to_str(new Date())}`
+
+        return received_header;
     }
     auth_results (message) {
         // http://tools.ietf.org/search/rfc7001
@@ -1460,7 +1451,7 @@ class Connection {
         }
 
         // assemble the new header
-        let header = [ config.get('me') ];
+        let header = [ this.local.host ];
         header = header.concat(this.notes.authentication_results);
         if (has_tran === true) {
             header = header.concat(this.transaction.notes.authentication_results);

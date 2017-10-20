@@ -48,10 +48,10 @@ exports.connectionRaw = {
         test.done();
     },
     'has local object': function (test) {
-        test.expect(4);
+        test.expect(5);
         test.equal(this.connection.local.ip, null);
         test.equal(this.connection.local.port, null);
-        // test.ok(this.connection.local.host, this.connection.local.host);
+        test.ok(this.connection.local.host, this.connection.local.host);
         // backwards compat, sunset v3.0.0
         test.equal(this.connection.local_ip, null);
         test.equal(this.connection.local_port, null);
