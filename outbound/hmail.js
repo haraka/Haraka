@@ -116,7 +116,7 @@ class HMailItem extends events.EventEmitter {
                     }
                     self.todo = JSON.parse(todo_raw);
                     self.todo.mail_from = new Address (self.todo.mail_from);
-                    self.todo.rcpt_to = self.todo.rcpt_to.map(a => { return new Address (a); });
+                    self.todo.rcpt_to = self.todo.rcpt_to.map(a => new Address (a));
                     self.todo.notes = new Notes(self.todo.notes);
                     self.emit('ready');
                     return;
