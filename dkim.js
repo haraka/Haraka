@@ -70,15 +70,15 @@ class DKIMObject {
             'g': '*',
         };
 
-        let m = /^([^:]+):\s*((?:.|[\r\n])*)$/.exec(header);
-        const sig = m[2].trim().replace(/\s+/g,'');
+        const [ , , dkim_signature] = /^([^:]+):\s*((?:.|[\r\n])*)$/.exec(header);
+        const sig = dkim_signature.trim().replace(/\s+/g,'');
         const keys = sig.split(';');
         for (let k=0; k<keys.length; k++) {
             const key = keys[k].trim();
             if (!key) continue;  // skip empty keys
-            m = /^([^= ]+)=((?:.|[\r\n])+)$/.exec(key);
-            if (m) {
-                this.fields[m[1]] = m[2];
+            const [ , key_name, key_value] = /^([^= ]+)=((?:.|[\r\n])+)$/.exec(key) || [];
+            if (key_name) {
+                this.fields[key_name] = key_value;
             }
             else {
                 return this.result('header parse error', 'invalid');
@@ -182,10 +182,12 @@ class DKIMObject {
     }
 
     header_canon_relaxed (header) {
-        const m = /^([^:]+):\s*((?:.|[\r\n])*)$/.exec(header);
-        if (!m) return header;
+        // || [] prevents errors thrown when no match
+        const [ , header_name, header_value] = /^([^:]+):\s*((?:.|[\r\n])*)$/.exec(header) || [];
 
-        let hc = m[1].toLowerCase() + ':' + m[2];
+        if (!header_name) return header;
+
+        let hc = header_name.toLowerCase() + ':' + header_value;
         hc = hc.replace(/\r\n([\t ]+)/g, "$1");
         hc = hc.replace(/[\t ]+/g, ' ');
         hc = hc.replace(/[\t ]+(\r?\n)$/, "$1");
@@ -496,9 +498,9 @@ class DKIMVerifyStream extends Stream {
                     this._in_body = true;
                     // Parse the headers
                     for (let h=0; h<this.headers.length; h++) {
-                        let header;
-                        if ((header = /^([^: ]+):\s*((:?.|[\r\n])*)/.exec(this.headers[h]))) {
-                            const hn = header[1].toLowerCase();
+                        const [ , header_name] = /^([^: ]+):\s*((:?.|[\r\n])*)/.exec(this.headers[h]);
+                        if (header_name) {
+                            const hn = header_name.toLowerCase();
                             if (!this.header_idx[hn]) this.header_idx[hn] = [];
                             this.header_idx[hn].push(this.headers[h]);
                         }
