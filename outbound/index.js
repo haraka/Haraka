@@ -140,7 +140,7 @@ exports.send_email = function () {
             if (dot_stuffed === false && line.length >= 3 && line.substr(0,1) === '.') {
                 line = "." + line;
             }
-            transaction.add_data(new Buffer(line));
+            transaction.add_data(Buffer.from(line));
             contents = contents.substr(match[1].length);
             if (contents.length === 0) {
                 break;
@@ -172,13 +172,13 @@ function stream_line_reader (stream, transaction, cb) {
             if (!(current_data.length || this_line.length)) {
                 return;
             }
-            transaction.add_data(new Buffer(this_line));
+            transaction.add_data(Buffer.from(this_line));
         }
     }
 
     function process_end () {
         if (current_data.length) {
-            transaction.add_data(new Buffer(current_data));
+            transaction.add_data(Buffer.from(current_data));
         }
         current_data = '';
         transaction.message_stream.add_line_end();
@@ -313,28 +313,32 @@ exports.process_delivery = function (ok_paths, todo, hmails, cb) {
 };
 
 exports.build_todo = function (todo, ws, write_more) {
-    // Replacer function to exclude items from the queue file header
-    function exclude_from_json (key, value) {
-        switch (key) {
-            case 'message_stream':
-                return undefined;
-            default:
-                return value;
-        }
-    }
 
-    const todo_json = JSON.stringify(todo, exclude_from_json)
-    const todo_len = new Buffer.from(todo_json).length
+    const todo_str = '\n' + JSON.stringify(todo, exclude_from_json, '\t') + '\n'
+    const todo_len = Buffer.byteLength(todo_str)
 
-    const buf = new Buffer(4 + todo_len);
+    const buf = Buffer.alloc(4 + todo_len);
     buf.writeUInt32BE(todo_len, 0);
-    buf.write(todo_json, 4);
+    buf.write(todo_str, 4);
 
     const continue_writing = ws.write(buf);
-    if (continue_writing) return process.nextTick(write_more);
+    if (continue_writing) {
+        process.nextTick(write_more);
+        return
+    }
 
     ws.once('drain', write_more);
 };
+
+// Replacer function to exclude items from the queue file header
+function exclude_from_json (key, value) {
+    switch (key) {
+        case 'message_stream':
+            return undefined;
+        default:
+            return value;
+    }
+}
 
 // exported for testability
 exports.TODOItem = TODOItem;
