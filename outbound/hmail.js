@@ -86,53 +86,68 @@ class HMailItem extends events.EventEmitter {
     }
 
     read_todo () {
-        const self = this;
-        const length_stream = fs.createReadStream(self.path, {start: 0, end: 3});
+        this._stream_bytes_from(this.path, {start: 0, end: 3}, (err, bytes) => {
+            if (err) {
+                const errMsg = `Error reading queue file ${this.filename}: ${err}`;
+                this.logerror(errMsg);
+                this.temp_fail(errMsg);
+                return
+            }
 
-        length_stream.on('error', (err) => {
-            const errMsg = `Error reading queue file ${self.filename}: ${err}`;
-            self.logerror(errMsg);
-            self.temp_fail(errMsg);
-        });
+            const todo_len = bytes.readUInt32BE(0);
+            this.logdebug(`todo header length: ${todo_len}`);
+            this.data_start = todo_len + 4;
 
-        let todo_len_raw = Buffer.alloc(0);
-        length_stream.on('data', (data) => {
-            todo_len_raw = Buffer.concat([todo_len_raw, data])
-        })
-        length_stream.on('end', () => {
-            const todo_len = todo_len_raw.readUInt32BE(0);
-            self.logdebug(`todo header length: ${todo_len}`);
-            const todo_json_stream = fs.createReadStream(self.path, {encoding: 'utf8', start: 4, end: todo_len + 3});
-            self.data_start = todo_len + 4;
-
-            let todo_raw = '';
-            todo_json_stream.on('data', (data) => { todo_raw += data; });
-            todo_json_stream.on('end', () => {
-                if (Buffer.byteLength(todo_raw) === todo_len) {
-                    // we read everything
-                    todo_raw = todo_raw.trim()
-                    const last_char = todo_raw.charAt(todo_raw.length - 1);
-                    if (last_char !== '}') {
-                        self.emit('error', `invalid todo header end char: ${last_char} at pos ${todo_len} of ${self.filename}`)
-                        return
-                    }
-                    self.todo = JSON.parse(todo_raw);
-                    self.todo.mail_from = new Address (self.todo.mail_from);
-                    self.todo.rcpt_to = self.todo.rcpt_to.map(a => new Address (a));
-                    self.todo.notes = new Notes(self.todo.notes);
-                    self.emit('ready');
-                    return;
+            this._stream_bytes_from(this.path, {start: 4, end: todo_len + 3}, (err2, todo_bytes) => {
+                if (todo_bytes.length !== todo_len) {
+                    const wrongLength = "Didn't find right amount of data in todo!"
+                    this.logcrit(wrongLength);
+                    fs.rename(this.path, path.join(queue_dir, "error." + this.filename), (err3) => {
+                        if (err3) {
+                            this.logerror("Error creating error file after todo read failure (" + this.filename + "): " + err);
+                        }
+                    });
+                    this.emit('error', wrongLength); // Note nothing picks this up yet
+                    return
                 }
 
-                self.logcrit("Didn't find right amount of data in todo!");
-                fs.rename(self.path, path.join(queue_dir, `error.${self.filename}`), (err) => {
-                    if (err) {
-                        self.logerror(`Error creating error file after todo read failure (${self.filename}): ${err}`);
-                    }
-                });
-                self.emit('error', "Didn't find right amount of data in todo!"); // Note nothing picks this up yet
+                // we read everything
+                const todo_json = todo_bytes.toString().trim()
+                const last_char = todo_json.charAt(todo_json.length - 1);
+                if (last_char !== '}') {
+                    this.emit('error', `invalid todo header end char: ${last_char} at pos ${todo_len} of ${this.filename}`)
+                    return
+                }
+                this.todo = JSON.parse(todo_json);
+                this.todo.mail_from = new Address (this.todo.mail_from);
+                this.todo.rcpt_to = this.todo.rcpt_to.map(a => new Address (a));
+                this.todo.notes = new Notes(this.todo.notes);
+                this.emit('ready');
             });
         });
+    }
+
+    _stream_bytes_from (file_path, opts, done) {
+        if (opts.encoding !== undefined) {
+            // passing an encoding to fs.createReadStream will change the type of data returned
+            // ex: instead of returning a buffer, it may return a String, which will cause
+            // Buffer.concat to barf. There's a reason this function has 'bytes' in the name
+            done(new Error("Thar be dragons here! Encode/decode on the result of this function"))
+            return
+        }
+
+        const stream = fs.createReadStream(file_path, opts);
+
+        stream.on('error', done)
+
+        let raw_bytes = Buffer.alloc(0);
+        stream.on('data', (data) => {
+            raw_bytes = Buffer.concat([raw_bytes, data])
+        })
+
+        stream.on('end', () => {
+            done(null, raw_bytes)
+        })
     }
 
     send () {
