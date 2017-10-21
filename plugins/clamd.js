@@ -25,7 +25,7 @@ exports.load_excludes = function () {
                         new_skip_list_exclude.push(re);
                     }
                     catch (e) {
-                        plugin.logerror(e.message + ` (entry: ${list[i]})`);
+                        plugin.logerror(`${e.message} (entry: ${list[i]})`);
                     }
                 }
                 else {
@@ -36,7 +36,7 @@ exports.load_excludes = function () {
                         new_skip_list_exclude.push(re);
                     }
                     catch (e) {
-                        plugin.logerror(e.message + ` (entry: ${list[i]})`);
+                        plugin.logerror(`${e.message} (entry: ${list[i]})`);
                     }
                 }
                 break;
@@ -47,7 +47,7 @@ exports.load_excludes = function () {
                     new_skip_list.push(re);
                 }
                 catch (e) {
-                    plugin.logerror(e.message + ` (entry: ${list[i]})`);
+                    plugin.logerror(`${e.message} (entry: ${list[i]})`);
                 }
                 break;
             default:
@@ -57,7 +57,7 @@ exports.load_excludes = function () {
                     new_skip_list.push(re);
                 }
                 catch (e) {
-                    plugin.logerror(e.message + ` (entry: ${list[i]})`);
+                    plugin.logerror(`${e.message} (entry: ${list[i]})`);
                 }
         }
     }
