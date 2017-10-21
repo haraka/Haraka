@@ -25,7 +25,7 @@ exports.load_excludes = function () {
                         new_skip_list_exclude.push(re);
                     }
                     catch (e) {
-                        plugin.logerror(e.message + ' (entry: ' + list[i] + ')');
+                        plugin.logerror(e.message + ` (entry: ${list[i]})`);
                     }
                 }
                 else {
@@ -36,7 +36,7 @@ exports.load_excludes = function () {
                         new_skip_list_exclude.push(re);
                     }
                     catch (e) {
-                        plugin.logerror(e.message + ' (entry: ' + list[i] + ')');
+                        plugin.logerror(e.message + ` (entry: ${list[i]})`);
                     }
                 }
                 break;
@@ -47,7 +47,7 @@ exports.load_excludes = function () {
                     new_skip_list.push(re);
                 }
                 catch (e) {
-                    plugin.logerror(e.message + ' (entry: ' + list[i] + ')');
+                    plugin.logerror(e.message + ` (entry: ${list[i]})`);
                 }
                 break;
             default:
@@ -57,7 +57,7 @@ exports.load_excludes = function () {
                     new_skip_list.push(re);
                 }
                 catch (e) {
-                    plugin.logerror(e.message + ' (entry: ' + list[i] + ')');
+                    plugin.logerror(e.message + ` (entry: ${list[i]})`);
                 }
         }
     }
@@ -153,7 +153,7 @@ exports.hook_data = function (next, connection) {
     txn.parse_body = true;
     txn.attachment_hooks(function (ctype, filename, body) {
         connection.logdebug(plugin,
-            'found ctype=' + ctype + ', filename=' + filename);
+            `found ctype=${ctype}, filename=${filename}`);
         txn.notes.clamd_found_attachment = true;
     });
 
@@ -192,13 +192,13 @@ exports.hook_data_post = function (next, connection) {
             return next(DENYSOFT, 'Error connecting to virus scanner');
         }
         const host = hosts.shift();
-        connection.logdebug(plugin, 'trying host: ' + host);
+        connection.logdebug(plugin, `trying host: ${host}`);
         const socket = new sock.Socket();
 
         socket.on('timeout', function () {
             socket.destroy();
             if (!connected) {
-                connection.logerror(plugin, 'Timeout connecting to ' + host);
+                connection.logerror(plugin, `Timeout connecting to ${host}`);
                 return try_next_host();
             }
             if (txn) txn.results.add(plugin, {err: 'clamd timed out' });
@@ -210,17 +210,17 @@ exports.hook_data_post = function (next, connection) {
             socket.destroy();
             if (!connected) {
                 connection.logerror(plugin,
-                    'Connection to ' + host + ' failed: ' + err.message);
+                    `Connection to ${host} failed: ${err.message}`);
                 return try_next_host();
             }
 
             // If an error occurred after connection and there are other hosts left to try,
             // then try those before returning DENYSOFT.
             if (hosts.length) {
-                connection.logwarn(plugin, 'error on host ' + host + ': ' + err.message);
+                connection.logwarn(plugin, `error on host ${host}: ${err.message}`);
                 return try_next_host();
             }
-            if (txn) txn.results.add(plugin, {err: 'error on host ' + host + ': ' + err.message });
+            if (txn) txn.results.add(plugin, {err: `error on host ${host}: ${err.message}` });
             if (!plugin.cfg.reject.error) return next();
             return next(DENYSOFT, 'Virus scanner error');
         });
@@ -229,8 +229,8 @@ exports.hook_data_post = function (next, connection) {
             connected = true;
             socket.setTimeout((cfg.main.timeout || 30) * 1000);
             const hp = socket.address();
-            const addressInfo = hp === null ? '' : ' ' + hp.address + ':' + hp.port;
-            connection.logdebug(plugin, 'connected to host' + addressInfo);
+            const addressInfo = hp === null ? '' : ` ${hp.address}:${hp.port}`;
+            connection.logdebug(plugin, `connected to host${addressInfo}`);
             socket.write("zINSTREAM\0", function () {
                 txn.message_stream.pipe(socket, { clamd_style: true });
             });
@@ -279,7 +279,7 @@ exports.hook_data_post = function (next, connection) {
                 // Check skip list
                 for (let j=0; j < plugin.skip_list.length; j++) {
                     if (!plugin.skip_list[j].test(virus)) continue;
-                    connection.logwarn(plugin, virus + ' matches exclusion');
+                    connection.logwarn(plugin, `${virus} matches exclusion`);
                     txn.add_header('X-Haraka-Virus', virus);
                     return next();
                 }
@@ -299,11 +299,11 @@ exports.hook_data_post = function (next, connection) {
             // The current host returned an unknown result.  If other hosts are available,
             // then try those before returning a DENYSOFT.
             if (hosts.length) {
-                connection.logwarn(plugin, 'unknown result: "' + result + '" from host ' + host);
+                connection.logwarn(plugin, `unknown result: "${result}" from host ' + ${host}`);
                 socket.destroy();
                 return try_next_host();
             }
-            txn.results.add(plugin, { err: 'unknown result: "' + result + '" from host ' + host });
+            txn.results.add(plugin, { err: `unknown result: "${result}" from host ' + ${host}`});
             if (!plugin.cfg.reject.error) return next();
             return next(DENYSOFT, 'Error running virus scanner');
         });
