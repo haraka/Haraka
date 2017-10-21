@@ -571,7 +571,7 @@ function is_deny_retval (val) {
 }
 
 get_denyfn = (object, hook, params, retval, msg, respond_method) => {
-    return function (deny_retval, deny_msg) {
+    return (deny_retval, deny_msg) => {
         switch (deny_retval) {
             case constants.ok:
                 // Override rejection
