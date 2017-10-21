@@ -299,11 +299,11 @@ exports.hook_data_post = function (next, connection) {
             // The current host returned an unknown result.  If other hosts are available,
             // then try those before returning a DENYSOFT.
             if (hosts.length) {
-                connection.logwarn(plugin, `unknown result: "${result}" from host ' + ${host}`);
+                connection.logwarn(plugin, `unknown result: '${result}' from host ' + ${host}`);
                 socket.destroy();
                 return try_next_host();
             }
-            txn.results.add(plugin, { err: `unknown result: "${result}" from host ' + ${host}`});
+            txn.results.add(plugin, { err: `unknown result: '${result}' from host ' + ${host}`});
             if (!plugin.cfg.reject.error) return next();
             return next(DENYSOFT, 'Error running virus scanner');
         });
