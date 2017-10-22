@@ -85,11 +85,11 @@ function DSN (code, msg, def, subject, detail) {
         this.reply = [];
         let m;
         while ((m = this.msg.shift())) {
-            this.reply.push([this.cls, this.sub, this.det].join('.') + ' ' + m);
+            this.reply.push(`${[this.cls, this.sub, this.det].join('.')} ${m}`);
         }
     }
     else {
-        this.reply = [this.cls, this.sub, this.det].join('.') + ' ' + (this.msg || this.default_msg);
+        this.reply = `${[this.cls, this.sub, this.det].join('.')} ${(this.msg || this.default_msg)}`;
     }
 }
 
