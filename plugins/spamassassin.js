@@ -54,7 +54,7 @@ exports.hook_data_post = function (next, connection) {
     const start = Date.now();
 
     socket.on('line', function (line) {
-        connection.logprotocol(plugin, "Spamd C: " + line + ' state=' + state);
+        connection.logprotocol(plugin, `Spamd C: ${line} state=${state}`);
         line = line.replace(/\r?\n/, '');
         if (state === 'line0') {
             spamd_response.line0 = line;
@@ -85,7 +85,7 @@ exports.hook_data_post = function (next, connection) {
             }
             let fold;
             if (last_header && (fold = line.match(/^(\s+.*)/))) {
-                spamd_response.headers[last_header] += "\r\n" + fold[1];
+                spamd_response.headers[last_header] += `\r\n${fold[1]}`;
                 return;
             }
             last_header = '';
@@ -145,7 +145,7 @@ exports.fixup_old_headers = function (transaction) {
         case "drop":
             for (key in headers) {
                 if (!key) continue;
-                transaction.remove_header('X-Spam-' + key);
+                transaction.remove_header(`X-Spam-${key}`);
             }
             break;
         // case 'rename':
@@ -156,7 +156,7 @@ exports.fixup_old_headers = function (transaction) {
                 const old_val = transaction.header.get(key);
                 transaction.remove_header(key);
                 if (old_val) {
-                    // plugin.logdebug(plugin, "header: " + key + ', ' + old_val);
+                    // plugin.logdebug(plugin, `header: ${key}, ${old_val}`);
                     transaction.add_header(key.replace(/^X-/, 'X-Old-'), old_val);
                 }
             }
@@ -175,7 +175,7 @@ exports.munge_subject = function (connection, score) {
     if (subject_re.test(subj)) return;    // prevent double munge
 
     connection.transaction.remove_header('Subject');
-    connection.transaction.add_header('Subject', plugin.cfg.main.subject_prefix + " " + subj);
+    connection.transaction.add_header('Subject', `${plugin.cfg.main.subject_prefix} ${subj}`);
 };
 
 exports.do_header_updates = function (connection, spamd_response) {
@@ -200,7 +200,7 @@ exports.do_header_updates = function (connection, spamd_response) {
             continue;
         }
         if (val === '') continue;
-        connection.transaction.add_header('X-Spam-' + key, val);
+        connection.transaction.add_header(`X-Spam-${key}`, val);
     }
 };
 
@@ -249,10 +249,10 @@ exports.get_spamd_headers = function (connection, username) {
     // http://svn.apache.org/repos/asf/spamassassin/trunk/spamd/PROTOCOL
     const headers = [
         'HEADERS SPAMC/1.3',
-        'User: ' + username,
+        `User: ${username}`,
         '',
-        'X-Envelope-From: ' + connection.transaction.mail_from.address(),
-        'X-Haraka-UUID: ' + connection.transaction.uuid,
+        `X-Envelope-From: ${connection.transaction.mail_from.address()}`,
+        `X-Haraka-UUID: ${connection.transaction.uuid}`,
     ];
     if (connection.relaying) {
         headers.push('X-Haraka-Relay: true');
@@ -276,12 +276,12 @@ exports.get_spamd_socket = function (next, connection, headers) {
         this.is_connected = true;
         // Reset timeout
         this.setTimeout(results_timeout * 1000);
-        socket.write(headers.join("\r\n") + "\r\n");
+        socket.write(`${headers.join("\r\n")}\r\n}`);
         connection.transaction.message_stream.pipe(socket);
     });
 
     socket.on('error', function (err) {
-        connection.logerror(plugin, 'connection failed: ' + err);
+        connection.logerror(plugin, `connection failed: ${err}`);
         // TODO: optionally DENYSOFT
         // TODO: add a transaction note
         return next();
@@ -320,18 +320,18 @@ exports.msg_too_big = function (connection) {
 
     const max = plugin.cfg.main.max_size;
     if (size <= max) { return false; }
-    connection.loginfo(plugin, 'skipping, size ' + utils.prettySize(size) +
-            ' exceeds max: ' + utils.prettySize(max));
+    connection.loginfo(plugin, `skipping, size ${utils.prettySize(size)}` +
+            ` exceeds max: ${utils.prettySize(max)}`);
     return true;
 };
 
 exports.log_results = function (connection, spamd_response) {
     const plugin = this;
     const cfg = plugin.cfg.main;
-    connection.loginfo(plugin, "status=" + spamd_response.flag +
-          ', score=' + spamd_response.score +
-          ', required=' + spamd_response.reqd +
-          ', reject=' + ((connection.relaying) ?
-            (cfg.relay_reject_threshold || cfg.reject_threshold) : cfg.reject_threshold) +
-          ', tests="' + spamd_response.tests + '"');
+    connection.loginfo(plugin, `status=${spamd_response.flag}` +
+          `, score=${spamd_response.score}` +
+          `, required=${spamd_response.reqd}` +
+          `, reject=${((connection.relaying) ?
+            (cfg.relay_reject_threshold || cfg.reject_threshold) : cfg.reject_threshold)}` +
+          `, tests="${spamd_response.tests}"`);
 };
