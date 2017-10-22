@@ -273,7 +273,7 @@ class Connection {
             if (logger.would_log(logger.LOGPROTOCOL)) {
                 this.logprotocol(`C: (after-disconnect): ${this.current_line}`, {'state': this.state});
             }
-            this.loginfo("data after disconnect from " + this.remote.ip);
+            this.loginfo(`data after disconnect from ${this.remote.ip}`);
             return;
         }
 
@@ -287,7 +287,7 @@ class Connection {
 
         this.current_line = line.toString(this.encoding).replace(/\r?\n/, '');
         if (logger.would_log(logger.LOGPROTOCOL)) {
-            this.logprotocol("C: " + this.current_line, {'state': this.state});
+            this.logprotocol(`C: ${this.current_line}`, {'state': this.state});
         }
 
         // Check for non-ASCII characters
@@ -445,7 +445,7 @@ class Connection {
                     // ensures that we only process one command at a
                     // time.
                     this.pipelining = true;
-                    this.logdebug('pipeline: ' + this_line);
+                    this.logdebug(`pipeline: ${this_line}`);
                 }
                 else {
                     // Invalid pipeline sequence
@@ -518,7 +518,7 @@ class Connection {
         }
 
         if (code >= 400) {
-            this.last_reject = code + ' ' + messages.join(' ');
+            this.last_reject = `${code} ${messages.join(' ')}`;
             if (this.deny_includes_uuid) {
                 uuid = (this.transaction || this).uuid;
                 if (this.deny_includes_uuid > 1) {
@@ -1130,7 +1130,7 @@ class Connection {
                 if (retval !== constants.cont) {
                     this.logalert("No plugin determined if relaying was allowed");
                 }
-                const rej_msg = 'I cannot deliver mail for ' + rcpt.format();
+                const rej_msg = `I cannot deliver mail for ${rcpt.format()}`;
                 this.respond(550, rej_msg, function () {
                     self.rcpt_incr(rcpt, 'reject', rej_msg, retval);
                     self.transaction.rcpt_to.pop();
@@ -1211,7 +1211,7 @@ class Connection {
         const results = (String(line)).split(/ +/);
         if (/key:/.test(results[0])) {
             const internal_key = config.get('internalcmd_key');
-            if (results[0] != "key:" + internal_key) {
+            if (results[0] != `key:${internal_key}`) {
                 return this.respond(501, "Invalid internalcmd_key - check config");
             }
             results.shift();
@@ -1393,8 +1393,8 @@ class Connection {
     received_line () {
         let smtp = this.hello.verb === 'EHLO' ? 'ESMTP' : 'SMTP';
         // Implement RFC3848
-        if (this.tls.enabled) smtp = smtp + 'S';
-        if (this.authheader) smtp = smtp + 'A';
+        if (this.tls.enabled) smtp += 'S';
+        if (this.authheader) smtp += 'A';
 
         let sslheader;
 
