@@ -85,7 +85,7 @@ exports.send_email = function () {
 
     const transaction = trans.createTransaction();
 
-    logger.loginfo("[outbound] Created transaction: " + transaction.uuid);
+    logger.loginfo(`[outbound] Created transaction: ${transaction.uuid}`);
 
     //Adding notes passed as parameter
     if (notes) {
@@ -101,7 +101,7 @@ exports.send_email = function () {
             from = new Address(from);
         }
         catch (err) {
-            return next(constants.deny, "Malformed from: " + err);
+            return next(constants.deny, `Malformed from: ${err}`);
         }
         transaction.mail_from = from;
     }
@@ -124,7 +124,7 @@ exports.send_email = function () {
             }
             catch (err) {
                 return next(constants.deny,
-                    "Malformed to address (" + to[i] + "): " + err);
+                    `Malformed to address (${to[i]}): ${err}`);
             }
         }
     }
@@ -138,7 +138,7 @@ exports.send_email = function () {
             let line = match[1];
             line = line.replace(/\r?\n?$/, '\r\n'); // make sure it ends in \r\n
             if (dot_stuffed === false && line.length >= 3 && line.substr(0,1) === '.') {
-                line = "." + line;
+                line = `.${line}`;
             }
             transaction.add_data(Buffer.from(line));
             contents = contents.substr(match[1].length);
@@ -151,7 +151,7 @@ exports.send_email = function () {
         // Assume a stream
         return stream_line_reader(contents, transaction, function (err) {
             if (err) {
-                return next(constants.denysoft, "Error from stream line reader: " + err);
+                return next(constants.denysoft, `Error from stream line reader: ${err}`);
             }
             exports.send_trans_email(transaction, next);
         });
@@ -220,14 +220,14 @@ exports.send_trans_email = function (transaction, next) {
     // add potentially missing headers
     if (!transaction.header.get_all('Message-Id').length) {
         logger.loginfo("[outbound] Adding missing Message-Id header");
-        transaction.add_header('Message-Id', '<' + transaction.uuid + '@' + config.get('me') + '>');
+        transaction.add_header(`Message-Id<${transaction.uuid}@${config.get('me')}>`);
     }
     if (!transaction.header.get_all('Date').length) {
         logger.loginfo("[outbound] Adding missing Date header");
         transaction.add_header('Date', utils.date_to_str(new Date()));
     }
 
-    transaction.add_leading_header('Received', '('+cfg.received_header+'); ' + utils.date_to_str(new Date()));
+    transaction.add_leading_header(`Received(${cfg.received_header}); ${utils.date_to_str(new Date())}`);
 
     const connection = {
         transaction: transaction,
@@ -279,7 +279,7 @@ exports.send_trans_email = function (transaction, next) {
 
 exports.process_delivery = function (ok_paths, todo, hmails, cb) {
     const self = this;
-    logger.loginfo("[outbound] Processing domain: " + todo.domain);
+    logger.loginfo(`[outbound] Processing domain: ${todo.domain}`);
     const fname = _qfile.name();
     const tmp_path = path.join(queue_dir, _qfile.platformDOT + fname);
     const ws = new FsyncWriteStream(tmp_path, { flags: constants.WRITE_EXCL });
@@ -288,7 +288,7 @@ exports.process_delivery = function (ok_paths, todo, hmails, cb) {
         const dest_path = path.join(queue_dir, fname);
         fs.rename(tmp_path, dest_path, function (err) {
             if (err) {
-                logger.logerror("[outbound] Unable to rename tmp file!: " + err);
+                logger.logerror(`[outbound] Unable to rename tmp file!: ${err}`);
                 fs.unlink(tmp_path, function () {});
                 cb("Queue error");
             }
@@ -301,7 +301,7 @@ exports.process_delivery = function (ok_paths, todo, hmails, cb) {
     })
 
     ws.on('error', function (err) {
-        logger.logerror("[outbound] Unable to write queue file (" + fname + "): " + err);
+        logger.logerror(`[outbound] Unable to write queue file (${fname}): ${err}`);
         ws.destroy();
         fs.unlink(tmp_path, function () {});
         cb("Queueing failed");
@@ -314,7 +314,7 @@ exports.process_delivery = function (ok_paths, todo, hmails, cb) {
 
 exports.build_todo = function (todo, ws, write_more) {
 
-    const todo_str = '\n' + JSON.stringify(todo, exclude_from_json, '\t') + '\n'
+    const todo_str = `\n${JSON.stringify(todo, exclude_from_json, '\t')}\n`
     const todo_len = Buffer.byteLength(todo_str)
 
     const buf = Buffer.alloc(4 + todo_len);
