@@ -517,6 +517,7 @@ else if (parsed.test) {
     const Connection = require(path.join(base, "connection"));
     // var Transaction = require(path.join(base, "transaction"));
     const Address = require('address-rfc2821').Address;
+    const Notes = require('haraka-notes');
     const constants = require('haraka-constants');
     const client = {
         remoteAddress: ((parsed.ip) ? parsed.ip : '1.2.3.4'),
@@ -534,6 +535,7 @@ else if (parsed.test) {
         address: function () {
             return { port: 25, family: 'ipv4', address: '127.0.0.1' };
         },
+        notes: new Notes(),
     }
     const connection = new Connection.createConnection(client, server);
     if (parsed['set-relay']) connection.relaying = true;
