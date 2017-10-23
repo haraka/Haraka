@@ -180,7 +180,7 @@ logger.set_loglevel = function (level) {
 
     const loglevel_num = parseInt(level);
     if (typeof level === 'string') {
-        this.log('INFO', 'loglevel: ' + level.toUpperCase());
+        this.log('INFO', `loglevel: ${level.toUpperCase()}`);
         logger.loglevel = logger.levels[level.toUpperCase()];
     }
     else {
@@ -188,7 +188,7 @@ logger.set_loglevel = function (level) {
     }
 
     if (!Number.isInteger(logger.loglevel)) {
-        this.log('WARN', 'invalid loglevel: ' + level + ' defaulting to LOGWARN');
+        this.log('WARN', `invalid loglevel: ${level} defaulting to LOGWARN`);
         logger.loglevel = logger.levels.WARN;
     }
 }
@@ -196,13 +196,13 @@ logger.set_loglevel = function (level) {
 logger.set_format = function (format) {
     if (format) {
         logger.format = logger.formats[format.toUpperCase()];
-        this.log('INFO', 'log format: ' + format.toUpperCase());
+        this.log('INFO', `log format: ${format.toUpperCase()}`);
     }
     else {
         logger.format = null;
     }
     if (!logger.format) {
-        this.log('WARN', 'invalid log format: ' + format + ' defaulting to DEFAULT');
+        this.log('WARN', `invalid log format: ${format} defaulting to DEFAULT`);
         logger.format = logger.formats.DEFAULT;
     }
 };
@@ -304,9 +304,9 @@ logger.log_if_level = function (level, key, plugin) {
                 logger.log(
                     level,
                     [
-                        '[' + logobj.level + ']',
-                        '[' + logobj.uuid + ']',
-                        '[' + logobj.origin + ']',
+                        `[${logobj.level}]`,
+                        `[${logobj.uuid}]`,
+                        `[${logobj.origin}]`,
                         logobj.message
                     ].join(' ')
                 );
