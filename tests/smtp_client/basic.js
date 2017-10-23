@@ -89,7 +89,7 @@ exports.get_client(server, function (err, smtp_client) {
             test.ok(false);
             return;
         }
-        test.equals(data.shift() + '\r\n', line);
+        test.equals(`${data.shift()}\r\n`, line);
         if (reading_body && line == '.\r\n') {
             reading_body = false;
         }
@@ -100,7 +100,7 @@ exports.get_client(server, function (err, smtp_client) {
         }
         while (true) {
             const line2 = data.shift();
-            this.emit('line', line2 + '\r\n');
+            this.emit('line', `${line2}\r\n`);
             if (line2[3] == ' ') break;
         }
 
