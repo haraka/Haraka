@@ -131,9 +131,8 @@ class Plugin {
         this.hooks[hook_name] = this.hooks[hook_name] || [];
         this.hooks[hook_name].push(method_name);
 
-        logger.logdebug("registered hook " + hook_name +
-                        " to " + this.name + '.' + method_name +
-                        " priority " + priority);
+        logger.logdebug(`registered hook ${hook_name} to ${this.name}.` +
+                        `${method_name} priority ${priority}`);
     }
 
     register () {} // noop
@@ -193,7 +192,7 @@ class Plugin {
                 // escape the c:\path\back\slashes else they disappear
                 packageDir = packageDir.replace(/\\/g, '\\\\');
             }
-            return 'var _p = require("' + packageDir + '"); for (var k in _p) { exports[k] = _p[k] }';
+            return `var _p = require("${packageDir}"); for (var k in _p) { exports[k] = _p[k] }`;
         }
 
         try {
@@ -201,10 +200,10 @@ class Plugin {
         }
         catch (err) {
             if (exports.config.get('smtp.ini').main.ignore_bad_plugins) {
-                logger.logcrit('Loading plugin ' + plugin.name + ' failed: ' + err);
+                logger.logcrit(`Loading plugin ${plugin.name} failed: ${err}`);
                 return;
             }
-            throw 'Loading plugin ' + plugin.name + ' failed: ' + err;
+            throw `Loading plugin ${plugin.name} failed: ${err}`;
         }
     }
 
@@ -238,10 +237,10 @@ class Plugin {
             vm.runInNewContext(code, sandbox, pp);
         }
         catch (err) {
-            logger.logcrit('Compiling plugin: ' + plugin.name + ' failed');
+            logger.logcrit(`Compiling plugin: ${plugin.name} failed`);
             if (exports.config.get('smtp.ini').main.ignore_bad_plugins) {
-                logger.logcrit('Loading plugin ' + plugin.name + ' failed: ',
-                    err.message + ' - will skip this plugin and continue');
+                logger.logcrit(`Loading plugin ${plugin.name} failed: `,
+                    `${err.message} - will skip this plugin and continue`);
                 return;
             }
             throw err; // default is to re-throw and stop Haraka
@@ -277,7 +276,7 @@ function plugin_search_paths (prefix, name) {
 function get_timeout (name) {
     let timeout = parseFloat((exports.config.get(name + '.timeout')));
     if (isNaN(timeout)) {
-        logger.logdebug('no timeout in ' + name + '.timeout');
+        logger.logdebug(`no timeout in ${name}.timeout`);
         timeout = parseFloat(exports.config.get('plugin_timeout'));
     }
     if (isNaN(timeout)) {
@@ -285,7 +284,7 @@ function get_timeout (name) {
         timeout = 30;
     }
 
-    logger.logdebug('plugin ' + name + ' timeout is: ' + timeout + 's');
+    logger.logdebug(`plugin ${name} timeout is: ${timeout}s`);
     return timeout;
 }
 
@@ -344,7 +343,7 @@ plugins.load_plugins = function (override) {
 };
 
 plugins.load_plugin = function (name) {
-    logger.loginfo('Loading plugin: ' + name);
+    logger.loginfo(`Loading plugin: ${name}`);
 
     const plugin = plugins._load_and_compile_plugin(name);
     if (plugin) {
@@ -362,7 +361,7 @@ plugins.server = { notes: {} };
 plugins._load_and_compile_plugin = function (name) {
     const plugin = new Plugin(name);
     if (!plugin.plugin_path) {
-        const err = 'Loading plugin ' + plugin.name +
+        const err = `Loading plugin ${plugin.name}` +
             ' failed: No plugin with this name found';
         if (exports.config.get('smtp.ini').main.ignore_bad_plugins) {
             logger.logcrit(err);
@@ -390,11 +389,11 @@ plugins._register_plugin = function (plugin) {
 
 plugins.run_hooks = function (hook, object, params) {
     if (client_disconnected(object) && !is_required_hook(hook)) {
-        object.logdebug('aborting ' + hook + ' hook');
+        object.logdebug(`aborting ${hook} hook`);
         return;
     }
 
-    if (hook !== 'log') object.logdebug('running ' + hook + ' hooks');
+    if (hook !== 'log') object.logdebug(`running ${hook} hooks`);
 
     if (is_required_hook(hook) && object.current_hook) {
         object.current_hook[2](); // call cancel function
@@ -426,7 +425,7 @@ plugins.run_hooks = function (hook, object, params) {
 
 plugins.run_next_hook = function (hook, object, params) {
     if (client_disconnected(object) && !is_required_hook(hook)) {
-        object.logdebug('aborting ' + hook + ' hook');
+        object.logdebug(`aborting ${hook} hook`);
         return;
     }
     let called_once = false;
@@ -443,12 +442,12 @@ plugins.run_next_hook = function (hook, object, params) {
 
         // Bail if client has disconnected
         if (client_disconnected(object) && !is_required_hook(hook)) {
-            object.logdebug('ignoring ' + item[0].name + ' plugin callback');
+            object.logdebug(`ignoring ${item[0].name} plugin callback`);
             return;
         }
         if (called_once && hook !== 'log') {
             if (!timed_out) {
-                object.logerror(item[0].name + ' plugin ran callback ' +
+                object.logerror(`${item[0].name} plugin ran callback ` +
                         'multiple times - ignoring subsequent calls');
                 // Write a stack trace to the log to aid debugging
                 object.logerror((new Error()).stack);
@@ -492,15 +491,14 @@ plugins.run_next_hook = function (hook, object, params) {
     if (hook !== 'log' && item[0].timeout) {
         timeout_id = setTimeout(function () {
             timed_out = true;
-            object.logcrit('Plugin ' + item[0].name + ' timed out on hook ' +
-                    hook + ' - make sure it calls the callback');
+            object.logcrit(`Plugin ${item[0].name} timed out on hook ${hook}` +
+                    ' - make sure it calls the callback');
             callback(constants.denysoft, 'plugin timeout');
         }, item[0].timeout * 1000);
     }
 
     if (hook !== 'log') {
-        object.logdebug('running ' + hook + ' hook in ' +
-                item[0].name + ' plugin');
+        object.logdebug(`running ${hook} hook in ${item[0].name} plugin`);
     }
 
     try {
@@ -510,7 +508,7 @@ plugins.run_next_hook = function (hook, object, params) {
     }
     catch (err) {
         if (hook !== 'log') {
-            object.logcrit('Plugin ' + item[0].name + ' failed: ' +
+            object.logcrit(`Plugin ${item[0].name} failed: ` +
                     (err.stack || err));
         }
         callback();
@@ -576,7 +574,7 @@ function get_denyfn (object, hook, params, retval, msg, respond_method) {
             case constants.ok:
                 // Override rejection
                 object.loginfo('deny(soft?) overriden by deny hook' +
-                                (deny_msg ? ': ' + deny_msg : ''));
+                                (deny_msg ? `: ${deny_msg}` : ''));
                 // Restore hooks_to_run with saved copy so that
                 // any other plugins on this hook can also run.
                 if (object.saved_hooks_to_run.length > 0) {
