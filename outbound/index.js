@@ -220,14 +220,14 @@ exports.send_trans_email = function (transaction, next) {
     // add potentially missing headers
     if (!transaction.header.get_all('Message-Id').length) {
         logger.loginfo("[outbound] Adding missing Message-Id header");
-        transaction.add_header(`Message-Id<${transaction.uuid}@${config.get('me')}>`);
+        transaction.add_header('Message-Id', `<${transaction.uuid}@${config.get('me')}>`);
     }
     if (!transaction.header.get_all('Date').length) {
         logger.loginfo("[outbound] Adding missing Date header");
         transaction.add_header('Date', utils.date_to_str(new Date()));
     }
 
-    transaction.add_leading_header(`Received(${cfg.received_header}); ${utils.date_to_str(new Date())}`);
+    transaction.add_leading_header('Received', `(${cfg.received_header}); ${utils.date_to_str(new Date())}`);
 
     const connection = {
         transaction: transaction,
