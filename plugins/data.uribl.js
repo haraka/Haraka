@@ -41,11 +41,9 @@ exports.register = function () {
     if (!Object.keys(tlds.top_level_tlds).length) return;
 
     this.logdebug('Building new regexps from TLD file');
-    const re_schemeless = '(?:%(?:25)?(?:2F|3D|40))?((?:www\\.)?[a-zA-Z0-9][a-zA-Z0-9\\-.]{0,250}\\.(?:' +
-        Object.keys(tlds.top_level_tlds).join('|') + '))(?!\\w)';
+    const re_schemeless = `(?:%(?:25)?(?:2F|3D|40))?((?:www\\.)?[a-zA-Z0-9][a-zA-Z0-9\\-.]{0,250}\\.(?:${Object.keys(tlds.top_level_tlds).join('|')}))(?!\\w)`;
     schemeless = new RegExp(re_schemeless, 'gi');
-    const re_schemed = '(\\w{3,16}:\\/+(?:\\S+@)?([a-zA-Z0-9][a-zA-Z0-9\\-.]+\\.(?:' +
-        Object.keys(tlds.top_level_tlds).join('|') + ')))(?!\\w)';
+    const re_schemed = `(\\w{3,16}:\\/+(?:\\S+@)?([a-zA-Z0-9][a-zA-Z0-9\\-.]+\\.(?:${Object.keys(tlds.top_level_tlds).join('|')})))(?!\\w)`;
     schemed = new RegExp(re_schemed, 'gi');
 };
 
@@ -81,25 +79,25 @@ exports.do_lookups = function (connection, next, hosts, type) {
         hosts = [ hosts ];
     }
     if (!hosts || !hosts.length) {
-        connection.logdebug(plugin, '(' + type + ') no items found for lookup');
+        connection.logdebug(plugin, `(${type}) no items found for lookup`);
         results.add(plugin, {skip: type});
         return next();
     }
-    connection.logdebug(plugin, '(' + type + ') found ' + hosts.length + ' items for lookup');
+    connection.logdebug(plugin, `(${type}) found ${hosts.length} items for lookup` );
     utils.shuffle(hosts);
 
     let j;
     const queries = {};
     for (let i=0; i < hosts.length; i++) {
         let host = hosts[i].toLowerCase();
-        connection.logdebug(plugin, '(' + type + ') checking: ' + host);
+        connection.logdebug(plugin, `(${type}) checking: ${host}`);
         // Make sure we have a valid TLD
         if (!net.isIPv4(host) && !net.isIPv6(host) && !tlds.top_level_tlds[(host.split('.').reverse())[0]]) {
             continue;
         }
         // Check the exclusion list
         if (check_excludes_list(host)) {
-            results.add(plugin, {skip: 'excluded domain:' + host });
+            results.add(plugin, {skip: `excluded domain:${host}`});
             continue;
         }
         // Loop through the zones
@@ -107,7 +105,7 @@ exports.do_lookups = function (connection, next, hosts, type) {
             const zone = zones[j];
             if (zone === 'main') continue;  // skip config
             if (!lists[zone] || (lists[zone] && !/^(?:1|true|yes|enabled|on)$/i.test(lists[zone][type]))) {
-                results.add(plugin, {skip: type + ' unsupported for ' + zone });
+                results.add(plugin, {skip: `${type} unsupported for ${zone}` });
                 continue;
             }
             // Convert in-addr.arpa into bare IPv4/v6 lookup
@@ -127,7 +125,7 @@ exports.do_lookups = function (connection, next, hosts, type) {
             // Handle zones that do not allow IP queries (e.g. Spamhaus DBL)
             if (net.isIPv4(host)) {
                 if (/^(?:1|true|yes|enabled|on)$/i.test(lists[zone].no_ip_lookups)) {
-                    results.add(plugin, {skip: 'IP (' + host + ') not supported for ' + zone });
+                    results.add(plugin, {skip: `IP (${host}) not supported for ${zone}` });
                     continue;
                 }
                 // Skip any private IPs
@@ -140,7 +138,7 @@ exports.do_lookups = function (connection, next, hosts, type) {
             }
             if (net.isIPv6(host)) {
                 if (/^(?:1|true|yes|enabled|on)$/i.test(lists[zone].not_ipv6_compatible) || /^(?:1|true|yes|enabled|on)$/i.test(lists[zone].no_ip_lookups)) {
-                    results.add(plugin, {skip: 'IP (' + host + ') not supported for ' + zone });
+                    results.add(plugin, {skip: `IP (${host}) not supported for ${zone}` });
                     continue;
                 }
                 // Skip any private IPs
@@ -162,9 +160,8 @@ exports.do_lookups = function (connection, next, hosts, type) {
             if (!lookup) continue;
             if (!queries[zone]) queries[zone] = {};
             if (Object.keys(queries[zone]).length > lists.main.max_uris_per_list) {
-                connection.logwarn(plugin, 'discarding lookup ' + lookup + ' for zone ' +
-                              zone + ' maximum query limit reached');
-                results.add(plugin, {skip: 'max query limit for ' + zone });
+                connection.logwarn(plugin, `discarding lookup ${lookup} for zone ${zone} maximum query limit reached`);
+                results.add(plugin, {skip: `max query limit for ${zone}` });
                 continue;
             }
             queries[zone][lookup] = 1;
@@ -181,7 +178,7 @@ exports.do_lookups = function (connection, next, hosts, type) {
     }
 
     if (!queries_to_run.length) {
-        results.add(plugin, {skip: type + ' (no queries)' });
+        results.add(plugin, {skip: `${type} (no queries)` });
         return next();
     }
 
@@ -200,7 +197,7 @@ exports.do_lookups = function (connection, next, hosts, type) {
 
     timer = setTimeout(function () {
         connection.logdebug(plugin, 'timeout');
-        results.add(plugin, {err: type + ' timeout' });
+        results.add(plugin, {err: `${type} timeout` });
         call_next();
     }, ((lists.main && lists.main.timeout) ? lists.main.timeout : 30) * 1000);
 
@@ -219,7 +216,7 @@ exports.do_lookups = function (connection, next, hosts, type) {
         pending_queries++;
         dns.resolve4(lookup, function (err, addrs) {
             pending_queries--;
-            connection.logdebug(plugin, lookup + ' => ' + ((err) ? err : addrs.join(', ')));
+            connection.logdebug(plugin, `${lookup} => (${(err) ? err : addrs.join(', ')})`);
 
             if (err) return conclude_if_no_pending();
 
@@ -228,7 +225,7 @@ exports.do_lookups = function (connection, next, hosts, type) {
                 if (skip) return;
                 if (called_next) return;
                 if (!msg) {
-                    msg = query[0] + ' blacklisted in ' + query[1];
+                    msg = `${query[0]} blacklisted in ${query[1]}`;
                 }
                 // Check for custom message
                 if (lists[query[1]] && lists[query[1]].custom_msg) {
@@ -244,8 +241,7 @@ exports.do_lookups = function (connection, next, hosts, type) {
             if (lists[query[1]] && lists[query[1]].validate) {
                 const re = new RegExp(lists[query[1]].validate);
                 if (!re.test(addrs[0])) {
-                    connection.logdebug(plugin, 'ignoring result (' + addrs[0] + ') for: ' +
-                            lookup + ' as it did not match validation rule');
+                    connection.logdebug(plugin, `ignoring result (${addrs[0]}) for: ${lookup} as it did not match validation rule`);
                     skip = true;
                 }
             }
@@ -256,19 +252,16 @@ exports.do_lookups = function (connection, next, hosts, type) {
                 const last_octet = Number((addrs[0].split('.'))[3]);
                 const bitmask = Number(lists[query[1]].bitmask);
                 if ((last_octet & bitmask) > 0) {
-                    connection.loginfo(plugin, 'found ' + query[0] + ' in zone ' + query[1] +
-                        ' (' + addrs.join(',') + '; bitmask=' + bitmask + ')');
+                    connection.loginfo(plugin, `found ${query[0]} in zone ${query[1]} (${addrs.join(',')}; bitmask=${bitmask})`);
                     do_reject();
                 }
                 else {
-                    connection.logdebug(plugin, 'ignoring result (' + addrs[0] + ') for: ' +
-                            lookup + ' as the bitmask did not match');
+                    connection.logdebug(plugin, `ignoring result (${addrs[0]}) for: ${lookup} as the bitmask did not match`);
                     skip = true;
                 }
             }
             else {
-                connection.loginfo(plugin, 'found ' + query[0] + ' in zone ' + query[1] +
-                    ' (' + addrs.join(',') + ')');
+                connection.loginfo(plugin, `found ${query[0]} in zone ${query[1]} (${addrs.join(',')})`);
                 do_reject();
             }
 
@@ -390,8 +383,7 @@ function extract_urls (urls, body, connection, self) {
             urls[uri.hostname] = uri;
         }
         catch (error) {
-            connection.logerror(self, 'parse error: ' + match[0] +
-                                      ' ' + error.message);
+            connection.logerror(self, `parse error: ${match[0]} ${error.message}`);
         }
     }
 
@@ -402,8 +394,7 @@ function extract_urls (urls, body, connection, self) {
             urls[uri.hostname] = uri;
         }
         catch (error) {
-            connection.logerror(self, 'parse error: ' + match[1] +
-                                      ' ' + error.message);
+            connection.logerror(self, `parse error: ${match[1]} ${error.message}`);
         }
     }
 
@@ -414,8 +405,7 @@ function extract_urls (urls, body, connection, self) {
             urls[uri.hostname] = uri;
         }
         catch (error) {
-            connection.logerror(self, 'parse error: ' + match[1] +
-                                      ' ' + error.message);
+            connection.logerror(self, `parse error: ${match[1]} ${error.message}`);
         }
     }
 
