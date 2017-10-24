@@ -504,7 +504,7 @@ exports.match_re = {
             test.done();
         }.bind(this);
         this.plugin.init(stub, this.connection, test_helo);
-        this.plugin.cfg.list_re = new RegExp('^(' + ['bad.tld'].join('|') + ')$', 'i');
+        this.plugin.cfg.list_re = new RegExp(`^(${['bad.tld'].join('|')})$`, 'i');
         this.plugin.match_re(cb, this.connection, test_helo);
     },
     'hit, reject=no' : function (test) {
@@ -518,7 +518,7 @@ exports.match_re = {
         }.bind(this);
         this.plugin.init(stub, this.connection, test_helo);
         this.plugin.cfg.reject = { match_re: false };
-        this.plugin.cfg.list_re = new RegExp('^(' + ['ylmf-pc'].join('|') + ')$', 'i');
+        this.plugin.cfg.list_re = new RegExp(`^(${['ylmf-pc'].join('|')})$`, 'i');
         this.plugin.match_re(cb, this.connection, test_helo);
     },
     'hit, reject=yes, exact' : function (test) {
@@ -532,7 +532,7 @@ exports.match_re = {
         }.bind(this);
         this.plugin.init(stub, this.connection, test_helo);
         this.plugin.cfg.reject = { match_re: true };
-        this.plugin.cfg.list_re = new RegExp('^(' + ['ylmf-pc'].join('|') + ')$', 'i');
+        this.plugin.cfg.list_re = new RegExp(`^(${['ylmf-pc'].join('|')})$`, 'i');
         this.plugin.match_re(cb, this.connection, test_helo);
     },
     'hit, reject=yes, pattern' : function (test) {
@@ -546,7 +546,7 @@ exports.match_re = {
         }.bind(this);
         this.plugin.init(stub, this.connection, test_helo);
         this.plugin.cfg.reject = { match_re: true };
-        this.plugin.cfg.list_re = new RegExp('^(' + ['ylm.*'].join('|') + ')$', 'i');
+        this.plugin.cfg.list_re = new RegExp(`^(${['ylm.*'].join('|')})$`, 'i');
         this.plugin.match_re(cb, this.connection, test_helo);
     },
 };
