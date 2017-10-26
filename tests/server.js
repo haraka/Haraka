@@ -100,23 +100,22 @@ exports.get_smtp_server = {
         done();
     },
     'gets a net server object': function (test) {
-        let server;
-        try { server = this.server.get_smtp_server('0.0.0.0', 2501, 10); }
-        catch (ignore) {
-            test.done();
-            return;
-        }
-        if (!server) {   // can't bind to IP/port (fails on Travis)
-            console.error('unable to bind to 0.0.0.0:2501')
-            // test.expect(0);
-            test.done();
-            return;
-        }
-        test.expect(2);
-        test.ok(server);
-        server.getConnections(function (err, count) {
-            test.equal(0, count);
-            test.done();
+        this.server.get_smtp_server('0.0.0.0', 2501, 10, (server) => {
+            if (!server) {
+                console.error('unable to bind to 0.0.0.0:2501');
+                // test.expect(0);
+                if (process.env.CI) { // can't bind to IP/port (fails on Travis)
+                    test.done();
+                    return;
+                }
+            }
+            test.expect(3);
+            test.ok(server);
+            test.equal(server.has_tls, false);
+            server.getConnections(function (err, count) {
+                test.equal(0, count);
+                test.done();
+            });
         });
     }
 };

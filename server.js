@@ -362,6 +362,7 @@ Server.get_smtp_server = function (host, port, inactivity_timeout, done) {
     }
     else {
         server = tls_socket.createServer(onConnect);
+        server.has_tls = false;
         Server.listeners.push(server);
         done(server);
     }
