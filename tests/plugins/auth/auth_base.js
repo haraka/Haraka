@@ -122,7 +122,7 @@ exports.select_auth_method = {
         }, this.connection, 'AUTH FOO');
     },
     'valid AUTH method, valid attempt': function (test) {
-        const method = 'PLAIN ' + utils.base64('discard\0test\0testpass');
+        const method = `PLAIN ${utils.base64('discard\0test\0testpass')}`;
         this.connection.notes.allowed_auth_methods = ['PLAIN','LOGIN'];
         this.plugin.select_auth_method((code) => {
             test.expect(2);
