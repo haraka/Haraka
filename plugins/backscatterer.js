@@ -17,9 +17,7 @@ exports.hook_mail = function (next, connection, params) {
             return next();
         }
         if (!a) return next();
-        const msg = 'Host ' + connection.remote.host +
-                  ' [' + connection.remote.ip + ']' +
-                  ' is blacklisted by ' + zone;
+        const msg = `Host ${connection.remote.host} [${connection.remote.ip}] is blacklisted by ${zone}`;
         return next(DENY, msg);
     }
 

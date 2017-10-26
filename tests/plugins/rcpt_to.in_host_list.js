@@ -47,7 +47,7 @@ exports.in_host_regex = {
     'miss' : function (test) {
         test.expect(1);
         this.plugin.host_list_regex=['miss.com'];
-        this.plugin.hl_re = new RegExp ('^(?:' + this.plugin.host_list_regex.join('|') + ')$', 'i');
+        this.plugin.hl_re = new RegExp (`^(?:${this.plugin.host_list_regex.join('|')})$`, 'i');
         const r = this.plugin.in_host_regex('test.com');
         test.equal(false, r);
         test.done();
@@ -55,7 +55,7 @@ exports.in_host_regex = {
     'exact hit' : function (test) {
         test.expect(1);
         this.plugin.host_list_regex=['test.com'];
-        this.plugin.hl_re = new RegExp ('^(?:' + this.plugin.host_list_regex.join('|') + ')$', 'i');
+        this.plugin.hl_re = new RegExp (`^(?:${this.plugin.host_list_regex.join('|')})$`, 'i');
         const r = this.plugin.in_host_regex('test.com');
         test.equal(true, r);
         test.done();
@@ -63,7 +63,7 @@ exports.in_host_regex = {
     're hit' : function (test) {
         test.expect(1);
         this.plugin.host_list_regex=['.*est.com'];
-        this.plugin.hl_re = new RegExp ('^(?:' + this.plugin.host_list_regex.join('|') + ')$', 'i');
+        this.plugin.hl_re = new RegExp (`^(?:${this.plugin.host_list_regex.join('|')})$`, 'i');
         const r = this.plugin.in_host_regex('test.com');
         test.equal(true, r);
         test.done();
@@ -118,7 +118,7 @@ exports.hook_mail = {
             test.done();
         }.bind(this);
         this.plugin.host_list_regex = ['example.com'];
-        this.plugin.hl_re = new RegExp ('^(?:' + this.plugin.host_list_regex.join('|') + ')$', 'i');
+        this.plugin.hl_re = new RegExp (`^(?:${this.plugin.host_list_regex.join('|')})$`, 'i');
         this.plugin.hook_mail(next, this.connection, [new Address('<user@example.com>')]);
     },
     'hit, regex, pattern' : function (test) {
@@ -132,7 +132,7 @@ exports.hook_mail = {
             test.done();
         }.bind(this);
         this.plugin.host_list_regex = ['.*mple.com'];
-        this.plugin.hl_re = new RegExp ('^(?:' + this.plugin.host_list_regex.join('|') + ')$', 'i');
+        this.plugin.hl_re = new RegExp (`^(?:${this.plugin.host_list_regex.join('|')})$`, 'i');
         this.plugin.hook_mail(next, this.connection, [new Address('<user@example.com>')]);
     },
 };
@@ -179,7 +179,7 @@ exports.hook_rcpt = {
             test.done();
         };
         this.plugin.host_list_regex=['test.com'];
-        this.plugin.hl_re = new RegExp ('^(?:' + this.plugin.host_list_regex.join('|') + ')$', 'i');
+        this.plugin.hl_re = new RegExp (`^(?:${this.plugin.host_list_regex.join('|')})$`, 'i');
         this.plugin.hook_rcpt(next, this.connection, [new Address('test@test.com')]);
     },
     'hit regex, pattern' : function (test) {
@@ -190,7 +190,7 @@ exports.hook_rcpt = {
             test.done();
         };
         this.plugin.host_list_regex=['.est.com'];
-        this.plugin.hl_re = new RegExp ('^(?:' + this.plugin.host_list_regex.join('|') + ')$', 'i');
+        this.plugin.hl_re = new RegExp (`^(?:${this.plugin.host_list_regex.join('|')})$`, 'i');
         this.plugin.hook_rcpt(next, this.connection, [new Address('test@test.com')]);
     },
     'miss regex, pattern' : function (test) {
@@ -201,7 +201,7 @@ exports.hook_rcpt = {
             test.done();
         };
         this.plugin.host_list_regex=['a.est.com'];
-        this.plugin.hl_re = new RegExp ('^(?:' + this.plugin.host_list_regex.join('|') + ')$', 'i');
+        this.plugin.hl_re = new RegExp (`^(?:${this.plugin.host_list_regex.join('|')})$`, 'i');
         this.plugin.hook_rcpt(next, this.connection, [new Address('test@test.com')]);
     },
     'rcpt miss, relaying to local sender' : function (test) {
