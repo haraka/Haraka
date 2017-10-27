@@ -303,7 +303,7 @@ logger.log_if_level = function (level, key, plugin) {
             default:
                 logger.log(
                     level,
-                    `[${logobj.level}] [${logobj.uuid}] [${logobj.origin}] logobj.message`
+                    `[${logobj.level}] [${logobj.uuid}] [${logobj.origin}] ${logobj.message}`
                 );
                 return true;
         }
