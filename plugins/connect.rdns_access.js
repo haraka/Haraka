@@ -14,11 +14,11 @@ exports.register = function () {
         this.config.get('connect.rdns_access.blacklist_regex', 'list');
 
     if (white_regex.length) {
-        this.wlregex = new RegExp('^(?:' + white_regex.join('|') + ')$', 'i');
+        this.wlregex = new RegExp(`^(?:${white_regex.join('|')})$`, 'i');
     }
 
     if (black_regex.length) {
-        this.blregex = new RegExp('^(?:' + black_regex.join('|') + ')$', 'i');
+        this.blregex = new RegExp(`^(?:${black_regex.join('|')})$`, 'i');
     }
 
     this.logerror(this, "plugin deprecated. see 'haraka -h access' for upgrade instructions");
@@ -31,11 +31,10 @@ exports.rdns_access = function (next, connection) {
 
     // IP whitelist checks
     if (connection.remote.ip) {
-        connection.logdebug(plugin, 'checking ' + connection.remote.ip +
-            ' against connect.rdns_access.whitelist');
+        connection.logdebug(plugin, `checking ${connection.remote.ip} against connect.rdns_access.whitelist`);
 
         if (_in_whitelist(connection, plugin, connection.remote.ip)) {
-            connection.logdebug(plugin, "Allowing " + connection.remote.ip);
+            connection.logdebug(plugin, `Allowing ${connection.remote.ip}`);
             connection.notes.rdns_access = 'white';
             return next();
         }
@@ -43,11 +42,10 @@ exports.rdns_access = function (next, connection) {
 
     // hostname whitelist checks
     if (connection.remote.host) {
-        connection.logdebug(plugin, 'checking ' + connection.remote.host +
-            ' against connect.rdns_access.whitelist');
+        connection.logdebug(plugin, `checking ${connection.remote.host} against connect.rdns_access.whitelist`);
 
         if (_in_whitelist(connection, plugin, connection.remote.host.toLowerCase())) {
-            connection.logdebug(plugin, "Allowing " + connection.remote.host);
+            connection.logdebug(plugin, `Allowing ${connection.remote.host}`);
             connection.notes.rdns_access = 'white';
             return next();
         }
@@ -55,29 +53,23 @@ exports.rdns_access = function (next, connection) {
 
     // IP blacklist checks
     if (connection.remote.ip) {
-        connection.logdebug(plugin, 'checking ' + connection.remote.ip +
-            ' against connect.rdns_access.blacklist');
+        connection.logdebug(plugin, `checking ${connection.remote.ip} against connect.rdns_access.blacklist`);
 
         if (_in_blacklist(connection, plugin, connection.remote.ip)) {
-            connection.logdebug(plugin, "Rejecting, matched: " +
-                connection.remote.ip);
+            connection.logdebug(plugin, `Rejecting, matched: ${connection.remote.ip}`);
             connection.notes.rdns_access = 'black';
-            return next(DENYDISCONNECT, connection.remote.host.toLowerCase() +
-                ' [' + connection.remote.ip + '] ' + plugin.deny_msg);
+            return next(DENYDISCONNECT, `${connection.remote.host.toLowerCase()} [${connection.remote.ip}] ${plugin.deny_msg}`);
         }
     }
 
     // hostname blacklist checks
     if (connection.remote.host) {
-        connection.logdebug(plugin, 'checking ' + connection.remote.host +
-            ' against connect.rdns_access.blacklist');
+        connection.logdebug(plugin, `checking ${connection.remote.host} against connect.rdns_access.blacklist`);
 
         if (_in_blacklist(connection, plugin, connection.remote.host.toLowerCase())) {
-            connection.logdebug(plugin, "Rejecting, matched: " +
-               connection.remote.host);
+            connection.logdebug(plugin, `Rejecting, matched: ${connection.remote.host}`);
             connection.notes.rdns_access = 'black';
-            return next(DENYDISCONNECT, connection.remote.host.toLowerCase() +
-                ' [' + connection.remote.ip + '] ' + plugin.deny_msg);
+            return next(DENYDISCONNECT, `${connection.remote.host.toLowerCase()} [${connection.remote.ip}] ${plugin.deny_msg}`);
         }
     }
 
@@ -87,8 +79,7 @@ exports.rdns_access = function (next, connection) {
 function _in_whitelist (connection, plugin, host) {
     let i;
     for (i in plugin.wl) {
-        connection.logdebug(plugin, 'checking ' + host + ' against ' +
-            plugin.wl[i]);
+        connection.logdebug(plugin, `checking ${host} against ${plugin.wl[i]}`);
 
         if (plugin.wl[i].toLowerCase() === host) {
             return 1;
@@ -96,8 +87,7 @@ function _in_whitelist (connection, plugin, host) {
     }
 
     if (plugin.wlregex) {
-        connection.logdebug(plugin, 'checking ' + host + ' against ' +
-            plugin.wlregex.source);
+        connection.logdebug(plugin, `checking ${host} against ${plugin.wlregex.source}`);
 
         if (host.match(plugin.wlregex)) {
             return 1;
@@ -110,8 +100,7 @@ function _in_whitelist (connection, plugin, host) {
 function _in_blacklist (connection, plugin, host) {
     let i;
     for (i in plugin.bl) {
-        connection.logdebug(plugin, 'checking ' + host + ' against ' +
-            plugin.bl[i]);
+        connection.logdebug(plugin, `checking ${host} against ${plugin.bl[i]}`);
 
         if (plugin.bl[i].toLowerCase() === host) {
             return 1;
@@ -119,8 +108,7 @@ function _in_blacklist (connection, plugin, host) {
     }
 
     if (plugin.blregex) {
-        connection.logdebug(plugin, 'checking ' + host + ' against ' +
-            plugin.blregex.source);
+        connection.logdebug(plugin, `checking ${host} against ${plugin.blregex.source}`);
 
         if (host.match(plugin.blregex)) {
             return 1;

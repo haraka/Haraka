@@ -36,6 +36,7 @@
         * max_unrecognised_commands #2171
         * outbound/todo #2233
         * plugins/aliases #2229
+        * plugins/attachment.js #2155
         * plugins/avg #2156
         * plugins/bounce #2229
         * plugins/profile #2170
@@ -61,6 +62,7 @@
         * tls_socket #2190
         * timer_queue #2226
         * outbound/hmail #2197
+    * Replaced concatenated strings with template literals in the 
     * Automatically set connection.remote.is_private when connection.remote.ip is set #2192
 
 
@@ -79,6 +81,7 @@
     * update js-yaml to version 3.10.0 #2097
     * repackage p0f plugin to NPM #2076
     * ES6: replace var with const or let  #2073
+    
 * New Features
     * Bounces can have an HTML part #2091
 * Fixes

@@ -69,14 +69,13 @@ exports.duplicate_singular = function (next, connection) {
         }
 
         const name = singular[i];
-        connection.transaction.results.add(plugin, {fail: 'duplicate:'+name});
+        connection.transaction.results.add(plugin, {fail: `duplicate:${name}`});
         failures.push(name);
     }
 
     if (failures.length) {
         if (plugin.cfg.reject.duplicate_singular) {
-            return next(DENY, "Only one " + failures[0] +
-                " header allowed. See RFC 5322, Section 3.6");
+            return next(DENY, `Only one ${failures[0]} header allowed. See RFC 5322, Section 3.6`);
         }
         return next();
     }
@@ -98,14 +97,14 @@ exports.missing_required = function (next, connection) {
     for (let i=0; i < required.length; i++) {
         const h = required[i];
         if (connection.transaction.header.get_all(h).length === 0) {
-            connection.transaction.results.add(plugin, {fail: 'missing:'+h});
+            connection.transaction.results.add(plugin, {fail: `missing:${h}`});
             failures.push(h);
         }
     }
 
     if (failures.length) {
         if (plugin.cfg.reject.missing_required) {
-            return next(DENY, "Required header '" + failures[0] + "' missing");
+            return next(DENY, `Required header '${failures[0]}' missing`);
         }
         return next();
     }
@@ -156,7 +155,7 @@ exports.invalid_date = function (next, connection) {
     let msg_date = connection.transaction.header.get_all('Date');
     if (!msg_date || msg_date.length === 0) { return next(); }
 
-    connection.logdebug(plugin, "message date: " + msg_date);
+    connection.logdebug(plugin, `message date: ${msg_date}`);
     msg_date = Date.parse(msg_date);
 
     const date_future_days = plugin.cfg.main.date_future_days !== undefined ?
@@ -185,7 +184,7 @@ exports.invalid_date = function (next, connection) {
         too_old.setHours(too_old.getHours() - 24 * date_past_days);
         // connection.logdebug(plugin, "too old: " + too_old);
         if (msg_date < too_old) {
-            connection.loginfo(plugin, "date is older than: " + too_old);
+            connection.loginfo(plugin, `date is older than: ${too_old}`);
             connection.transaction.results.add(plugin, {fail: 'invalid_date(past)'});
             if (plugin.cfg.reject.invalid_date) {
                 return next(DENY, "The Date header is too old");
@@ -224,7 +223,7 @@ exports.user_agent = function (next, connection) {
         if (!header) { continue; }   // header not present
         found_ua++;
         connection.transaction.results.add(plugin,
-            {pass: 'UA('+header.substring(0,12)+')'});
+            {pass: `UA(${header.substring(0,12)})`});
     }
     if (found_ua) { return next(); }
 
@@ -256,11 +255,11 @@ exports.direct_to_mx = function (next, connection) {
 
     const c = received.length;
     if (c < 2) {
-        connection.transaction.results.add(plugin, {fail: 'direct-to-mx(too few Received('+c+'))'});
+        connection.transaction.results.add(plugin, {fail: `direct-to-mx(too few Received(${c}))`});
         return next();
     }
 
-    connection.transaction.results.add(plugin, {pass: 'direct-to-mx('+c+')'});
+    connection.transaction.results.add(plugin, {pass: `direct-to-mx(${c})`});
     return next();
 };
 
@@ -309,12 +308,12 @@ exports.from_match = function (next, connection) {
             extra.push('helo');
         }
 
-        connection.transaction.results.add(plugin, {pass: 'from_match('+extra.join(',')+')'});
+        connection.transaction.results.add(plugin, {pass: `from_match(${extra.join(',')})`});
         return next();
     }
 
     connection.transaction.results.add(plugin, {emit: true,
-        fail: 'from_match(' + env_dom + ' / ' + msg_dom + ')'
+        fail: `from_match(${env_dom} / ${msg_dom})`
     });
     return next();
 };
@@ -368,34 +367,34 @@ exports.mailing_list = function (next, connection) {
             const j = mlms[name][i];
             if (j.start) {
                 if (header.substring(0,j.start.length) === j.start) {
-                    txr.add(plugin, {pass: 'MLM('+j.mlm+')'});
+                    txr.add(plugin, {pass: `MLM(${j.mlm})`});
                     found_mlm++;
                     continue;
                 }
                 // NOTE: Unlike the next "j.match" code block, this condition alone
                 //       (Sender header != "owner-...") should not log an error
-                connection.logdebug(plugin, "mlm start miss: " + name + ': ' + header);
+                connection.logdebug(plugin, `mlm start miss: ${name}: ${header}`);
             }
             if (j.match) {
                 if (header.match(new RegExp(j.match,'i'))) {
-                    txr.add(plugin, {pass: 'MLM('+j.mlm+')'});
+                    txr.add(plugin, {pass: `MLM(${j.mlm})`});
                     found_mlm++;
                     continue;
                 }
-                connection.logerror(plugin, "mlm match miss: " + name + ': ' + header);
+                connection.logerror(plugin, `mlm match miss: ${name}: ${header}`);
             }
             if (name === 'X-Mailman-Version') {
-                txr.add(plugin, {pass: 'MLM('+j.mlm+')'});
+                txr.add(plugin, {pass: `MLM(${j.mlm})`});
                 found_mlm++;
                 continue;
             }
             if (name === 'X-Majordomo-Version') {
-                txr.add(plugin, {pass: 'MLM('+j.mlm+')'});
+                txr.add(plugin, {pass: `MLM(${j.mlm})`});
                 found_mlm++;
                 continue;
             }
             if (name === 'X-Google-Loop') {
-                txr.add(plugin, {pass: 'MLM('+j.mlm+')'});
+                txr.add(plugin, {pass: `MLM(${j.mlm})`});
                 found_mlm++;
                 continue;
             }
