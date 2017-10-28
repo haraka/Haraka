@@ -12,6 +12,7 @@
     * plugins/rcpt_to.ldap -> haraka-plugin-rcpt-ldap #2144
     * plugins/auth/auth_ldap -> haraka-plugin-auth-ldap #2144
     * config: replace ./config.js with haraka-config #2119
+    * Replaced concatenated strings with template literals in the plugins/attachment.js #2155
     * Replaced concatenated strings with template literals in the plugins/profile.js #2170
     * Replaced concatenated strings with template literals max_unrecognised_commands.js #2171
     * Replaced concatenated strings with template literals in the plugins/avg.js #2156
@@ -43,6 +44,7 @@
     * update js-yaml to version 3.10.0 #2097
     * repackage p0f plugin to NPM #2076
     * ES6: replace var with const or let  #2073
+    
 * New Features
     * Bounces can have an HTML part #2091
 * Fixes
