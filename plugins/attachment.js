@@ -3,7 +3,7 @@
 // attachment
 
 const fs = require('fs');
-const spawn = require('child_process').spawn;
+const { spawn } = require('child_process');
 const path = require('path');
 const crypto = require('crypto');
 const utils = require('haraka-utils');
@@ -22,8 +22,7 @@ exports.register = function () {
     }
     catch (e) {
         archives_disabled = true;
-        this.logwarn('This plugin requires the \'tmp\' module to extract ' +
-            'filenames from archive files');
+        this.logwarn(`This plugin requires the 'tmp' module to extract filenames from archive files`);
     }
     this.load_attachment_ini();
     this.register_hook('data_post', 'wait_for_attachment_hooks');
@@ -33,7 +32,7 @@ exports.register = function () {
 exports.load_attachment_ini = function () {
     const plugin = this;
 
-    plugin.cfg = plugin.config.get('attachment.ini', function () {
+    plugin.cfg = plugin.config.get('attachment.ini', () => {
         plugin.load_attachment_ini();
     });
 
@@ -46,10 +45,10 @@ exports.load_attachment_ini = function () {
 exports.find_bsdtar_path = function (cb) {
     let found = false;
     let i = 0;
-    ['/bin', '/usr/bin', '/usr/local/bin'].forEach(function (dir) {
+    ['/bin', '/usr/bin', '/usr/local/bin'].forEach((dir) => {
         if (found) return;
         i++;
-        fs.stat(dir + '/bsdtar', function (err, stats) {
+        fs.stat(`${dir}/bsdtar`, (err, stats) => {
             i--;
             if (found) return;
             if (err) {
@@ -65,15 +64,14 @@ exports.find_bsdtar_path = function (cb) {
 
 exports.hook_init_master = exports.hook_init_child = function (next) {
     const plugin = this;
-    plugin.find_bsdtar_path(function (err, dir) {
+    plugin.find_bsdtar_path((err, dir) => {
         if (err) {
             archives_disabled = true;
-            plugin.logwarn('This plugin requires the \'bsdtar\' binary ' +
-                'to extract filenames from archive files');
+            plugin.logwarn(`This plugin requires the 'bsdtar' binary to extract filenames from archive files`);
         }
         else {
             plugin.logdebug(`found bsdtar in ${dir}`);
-            bsdtar_path = dir + '/bsdtar';
+            bsdtar_path = `${dir}/bsdtar`;
         }
         return next();
     });
@@ -112,6 +110,7 @@ exports.unarchive_recursive = function (connection, f, archive_file_name, cb) {
     function do_cb (err, files2) {
         if (timer) clearTimeout(timer);
         if (done_cb) return;
+
         done_cb = true;
         deleteTempFiles();
         return cb(err, files2);
@@ -141,29 +140,32 @@ exports.unarchive_recursive = function (connection, f, archive_file_name, cb) {
             'cwd': '/tmp',
             'env': { 'LANG': 'C' },
         });
+
         // Start timer
         let t1_timeout = false;
-        const t1_timer = setTimeout(function () {
+        const t1_timer = setTimeout(() => {
             t1_timeout = true;
             bsdtar.kill();
             return do_cb(new Error('bsdtar timed out'));
         }, plugin.cfg.timeout);
+
         let lines = "";
-        bsdtar.stdout.on('data', function (data) {
+        bsdtar.stdout.on('data', (data) => {
             lines += data;
         });
+
         let stderr = "";
-        bsdtar.stderr.on('data', function (data) {
+        bsdtar.stderr.on('data', (data) => {
             stderr += data;
         });
-        bsdtar.on('exit', function (code, signal) {
+
+        bsdtar.on('exit', (code, signal) => {
             count--;
             if (t1_timeout) return;
             clearTimeout(t1_timer);
             if (code && code > 0) {
                 // Error was returned
-                return do_cb(new Error(`bsdtar returned error code: ${code} \
-                error=${stderr.replace(/\r?\n/,' ')}`));
+                return do_cb(new Error(`bsdtar returned error code: ${code} error=${stderr.replace(/\r?\n/,' ')}`));
             }
             if (signal) {
                 // Process terminated due to signal
@@ -176,7 +178,7 @@ exports.unarchive_recursive = function (connection, f, archive_file_name, cb) {
                 // Skip any blank lines
                 if (!file) continue;
                 connection.logdebug(plugin, `file: ${file} depth=${depth}`);
-                files.push((prefix ? prefix + '/' : '') + file);
+                files.push((prefix ? `${prefix}/` : '') + file);
                 const extn = path.extname(file.toLowerCase());
                 if (plugin.archive_exts.indexOf(extn) === -1 &&
                     plugin.archive_exts.indexOf(extn.substring(1)) === -1)
@@ -187,13 +189,11 @@ exports.unarchive_recursive = function (connection, f, archive_file_name, cb) {
                 connection.logdebug(plugin, `need to extract file: ${file}`);
                 count++;
                 depth++;
-                (function (file, depth) {
-                    tmp.file(function (err, tmpfile, fd) {
+                ((file, depth) => {
+                    tmp.file((err, tmpfile, fd) => {
                         count--;
                         if (err) return do_cb(err.message);
-                        connection.logdebug(plugin, `created tmp file: ${tmpfile} \
-                        (fd= ${fd}) for file \
-                        ${(prefix ? prefix + '/' : '')} ${file}`);
+                        connection.logdebug(plugin, `created tmp file: ${tmpfile} (fd=${fd}) for file ${prefix ? `${prefix}/` : ''} ${file}`);
                         tmpfiles.push([fd, tmpfile]);
                         // Extract this file from the archive
                         count++;
@@ -208,30 +208,30 @@ exports.unarchive_recursive = function (connection, f, archive_file_name, cb) {
                         );
                         // Start timer
                         let t2_timeout = false;
-                        const t2_timer = setTimeout(function () {
+                        const t2_timer = setTimeout(() => {
                             t2_timeout = true;
-                            return do_cb(new Error(`bsdtar timed out extracting file \
-                            ${file}`));
+                            return do_cb(new Error(`bsdtar timed out extracting file ${file}`));
                         }, plugin.cfg.timeout);
+
                         // Create WriteStream for this file
                         const tws = fs.createWriteStream(tmpfile, { "fd": fd });
                         err = "";
-                        cmd.stderr.on('data', function (data) {
+
+                        cmd.stderr.on('data', (data) => {
                             err += data;
                         });
-                        cmd.on('exit', function (code, signal) {
+
+                        cmd.on('exit', (code, signal) => {
                             count--;
                             if (t2_timeout) return;
                             clearTimeout(t2_timer);
                             if (code && code > 0) {
                                 // Error was returned
-                                return do_cb(new Error(`bsdtar returned error code: \
-                                ${code} error= ${err.replace(/\r?\n/,' ')}`));
+                                return do_cb(new Error(`bsdtar returned error code: ${code} error=${err.replace(/\r?\n/,' ')}`));
                             }
                             if (signal) {
                                 // Process terminated due to signal
-                                return do_cb(new Error(`bsdtar terminated by signal: \
-                                ${signal}`));
+                                return do_cb(new Error(`bsdtar terminated by signal: ${signal}`));
                             }
                             // Recurse
                             return listFiles(tmpfile, (prefix ? prefix + '/' : '') +
@@ -248,7 +248,7 @@ exports.unarchive_recursive = function (connection, f, archive_file_name, cb) {
         });
     }
 
-    timer = setTimeout(function () {
+    timer = setTimeout(() => {
         return do_cb(new Error('timeout unpacking attachments'));
     }, plugin.cfg.timeout);
 
@@ -287,11 +287,13 @@ exports.start_attachment = function (connection, ctype, filename, body, stream) 
     const md5 = crypto.createHash('md5');
     let digest;
     let bytes = 0;
-    stream.on('data', function (data) {
+
+    stream.on('data', (data) => {
         md5.update(data);
         bytes += data.length;
     });
-    stream.once('end', function () {
+
+    stream.once('end', () => {
         stream.pause();
 
         digest = md5.digest('hex');
@@ -317,12 +319,12 @@ exports.start_attachment = function (connection, ctype, filename, body, stream) 
     txn.notes.attachment_count++;
     stream.connection = connection;
     stream.pause();
-    tmp.file(function (err, fn, fd) {
+    tmp.file((err, fn, fd) => {
         function cleanup () {
             fs.close(fd, function () {
                 connection.logdebug(plugin, `closed fd: ${fd}`);
                 fs.unlink(fn, function () {
-                    connection.logdebug(plugin, 'unlinked: ' + fn);
+                    connection.logdebug(plugin, `unlinked: ${fn}`);
                 });
             });
             stream.resume();
@@ -335,22 +337,24 @@ exports.start_attachment = function (connection, ctype, filename, body, stream) 
             stream.resume();
             return next();
         }
-        connection.logdebug(plugin, `Got tmpfile: attachment=" \
-        ${filename} " tmpfile="${fn}" fd= ${fd}`);
+        connection.logdebug(plugin, `Got tmpfile: attachment="${filename}" tmpfile="${fn}" fd={fd}`);
+
         const ws = fs.createWriteStream(fn);
         stream.pipe(ws);
         stream.resume();
-        ws.on('error', function (error) {
+
+        ws.on('error', (error) => {
             txn.notes.attachment_count--;
             txn.notes.attachment_result = [ DENYSOFT, error.message ];
             connection.logerror(plugin, `stream error: ${error.message}`);
             cleanup();
             return next();
         });
-        ws.on('close', function () {
+
+        ws.on('close', () => {
             connection.logdebug(plugin, 'end of stream reached');
             connection.pause();
-            plugin.unarchive_recursive(connection, fn, filename, function (error, files) {
+            plugin.unarchive_recursive(connection, fn, filename, (error, files) => {
                 txn.notes.attachment_count--;
                 cleanup();
                 if (err) {
@@ -392,7 +396,7 @@ exports.hook_data = function (next, connection) {
     txn.notes.attachment_ctypes = [];
     txn.notes.attachment_files = [];
     txn.notes.attachment_archive_files = [];
-    txn.attachment_hooks(function (ctype, filename, body, stream) {
+    txn.attachment_hooks((ctype, filename, body, stream) => {
         plugin.start_attachment(connection, ctype, filename, body, stream);
     });
     return next();

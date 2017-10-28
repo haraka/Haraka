@@ -154,7 +154,7 @@ class HostPool {
                 j = j - this.hosts.length;
             }
             host = this.hosts[j];
-            const key = host.host + ':' + host.port;
+            const key = `${host.host}:${host.port}`;
             if (this.dead_hosts[key]) {
                 continue;
             }

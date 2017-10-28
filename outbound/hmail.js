@@ -49,7 +49,7 @@ class HMailItem extends events.EventEmitter {
 
         const parts = _qfile.parts(filename);
         if (!parts) {
-            throw new Error("Bad filename: " + filename);
+            throw new Error(`Bad filename: ${filename}`);
         }
         this.path         = filePath;
         this.filename     = filename;
@@ -75,7 +75,7 @@ class HMailItem extends events.EventEmitter {
         fs.stat(self.path, (err, stats) => {
             if (err) {
                 // we are fucked... guess I need somewhere for this to go
-                self.logerror("Error obtaining file size: " + err);
+                self.logerror(`Error obtaining file size: ${err}`);
                 self.temp_fail("Error obtaining file size");
             }
             else {
@@ -87,38 +87,47 @@ class HMailItem extends events.EventEmitter {
 
     read_todo () {
         const self = this;
-        const tl_reader = fs.createReadStream(self.path, {start: 0, end: 3});
+        const length_stream = fs.createReadStream(self.path, {start: 0, end: 3});
 
-        tl_reader.on('error', (err) => {
+        length_stream.on('error', (err) => {
             const errMsg = `Error reading queue file ${self.filename}: ${err}`;
             self.logerror(errMsg);
             self.temp_fail(errMsg);
         });
 
-        let todo_len_raw = '';
-        tl_reader.on('data', (data) => { todo_len_raw += data; });
-        tl_reader.on('end', () => {
-            const todo_len = new Buffer(todo_len_raw).readUInt32BE(0);
-            const td_reader = fs.createReadStream(self.path, {encoding: 'utf8', start: 4, end: todo_len + 3});
+        let todo_len_raw = Buffer.alloc(0);
+        length_stream.on('data', (data) => {
+            todo_len_raw = Buffer.concat([todo_len_raw, data])
+        })
+        length_stream.on('end', () => {
+            const todo_len = todo_len_raw.readUInt32BE(0);
+            self.logdebug(`todo header length: ${todo_len}`);
+            const todo_json_stream = fs.createReadStream(self.path, {encoding: 'utf8', start: 4, end: todo_len + 3});
             self.data_start = todo_len + 4;
 
             let todo_raw = '';
-            td_reader.on('data', (data) => { todo_raw += data; });
-            td_reader.on('end', () => {
+            todo_json_stream.on('data', (data) => { todo_raw += data; });
+            todo_json_stream.on('end', () => {
                 if (Buffer.byteLength(todo_raw) === todo_len) {
                     // we read everything
+                    todo_raw = todo_raw.trim()
+                    const last_char = todo_raw.charAt(todo_raw.length - 1);
+                    if (last_char !== '}') {
+                        self.emit('error', `invalid todo header end char: ${last_char} at pos ${todo_len} of ${self.filename}`)
+                        return
+                    }
                     self.todo = JSON.parse(todo_raw);
-                    self.todo.rcpt_to = self.todo.rcpt_to.map(a => { return new Address (a); });
                     self.todo.mail_from = new Address (self.todo.mail_from);
+                    self.todo.rcpt_to = self.todo.rcpt_to.map(a => new Address (a));
                     self.todo.notes = new Notes(self.todo.notes);
                     self.emit('ready');
                     return;
                 }
 
                 self.logcrit("Didn't find right amount of data in todo!");
-                fs.rename(self.path, path.join(queue_dir, "error." + self.filename), (err) => {
+                fs.rename(self.path, path.join(queue_dir, `error.${self.filename}`), (err) => {
                     if (err) {
-                        self.logerror("Error creating error file after todo read failure (" + self.filename + "): " + err);
+                        self.logerror(`Error creating error file after todo read failure (${self.filename}): ${err}`);
                     }
                 });
                 self.emit('error', "Didn't find right amount of data in todo!"); // Note nothing picks this up yet
@@ -151,13 +160,13 @@ class HMailItem extends events.EventEmitter {
     send_email_respond (retval, delay_seconds) {
         if (retval === constants.delay) {
             // Try again in 'delay' seconds.
-            this.logdebug("Delivery of this email delayed for " + delay_seconds + " seconds");
+            this.logdebug(`Delivery of this email delayed for ${delay_seconds} seconds`);
             const hmail = this;
             hmail.next_cb();
             temp_fail_queue.add(delay_seconds * 1000, function () { delivery_queue.push(hmail); });
         }
         else {
-            this.logdebug("Sending mail: " + this.filename);
+            this.logdebug(`Sending mail: ${this.filename}`);
             this.get_mx();
         }
     }
@@ -186,21 +195,21 @@ class HMailItem extends events.EventEmitter {
                     }
                     mx_list = [{priority: 0, exchange: matches[1], port: matches[3]}];
                 }
-                hmail.logdebug("Got an MX from Plugin: " + hmail.todo.domain + " => 0 " + mx);
+                hmail.logdebug(`Got an MX from Plugin: ${hmail.todo.domain} => 0 ${mx}`);
                 return hmail.found_mx(null, mx_list);
             }
             case constants.deny:
-                hmail.logwarn("get_mx plugin returned DENY: " + mx);
+                hmail.logwarn(`get_mx plugin returned DENY: ${mx}`);
                 hmail.todo.rcpt_to.forEach(function (rcpt) {
-                    hmail.extend_rcpt_with_dsn(rcpt, DSN.addr_bad_dest_system("No MX for " + hmail.todo.domain));
+                    hmail.extend_rcpt_with_dsn(rcpt, DSN.addr_bad_dest_system(`No MX for ${hmail.todo.domain}`));
                 });
-                return hmail.bounce("No MX for " + hmail.todo.domain);
+                return hmail.bounce(`No MX for ${hmail.todo.domain}`);
             case constants.denysoft:
-                hmail.logwarn("get_mx plugin returned DENYSOFT: " + mx);
+                hmail.logwarn(`get_mx plugin returned DENYSOFT: ${mx}`);
                 hmail.todo.rcpt_to.forEach(function (rcpt) {
-                    hmail.extend_rcpt_with_dsn(rcpt, DSN.addr_bad_dest_system("Temporary MX lookup error for " + hmail.todo.domain, 450));
+                    hmail.extend_rcpt_with_dsn(rcpt, DSN.addr_bad_dest_system(`Temporary MX lookup error for ${hmail.todo.domain}`, 450));
                 });
-                return hmail.temp_fail("Temporary MX lookup error for " + hmail.todo.domain);
+                return hmail.temp_fail(`Temporary MX lookup error for ${hmail.todo.domain}`);
         }
 
         // if none of the above return codes, drop through to this...
@@ -212,25 +221,25 @@ class HMailItem extends events.EventEmitter {
     found_mx (err, mxs) {
         const hmail = this;
         if (err) {
-            this.logerror("MX Lookup for " + this.todo.domain + " failed: " + err);
+            this.logerror(`MX Lookup for ${this.todo.domain} failed: ${err}`);
             if (err.code === dns.NXDOMAIN || err.code === dns.NOTFOUND) {
                 this.todo.rcpt_to.forEach(function (rcpt) {
-                    hmail.extend_rcpt_with_dsn(rcpt, DSN.addr_bad_dest_system("No Such Domain: " + hmail.todo.domain));
+                    hmail.extend_rcpt_with_dsn(rcpt, DSN.addr_bad_dest_system(`No Such Domain: ${hmail.todo.domain}`));
                 });
-                this.bounce("No Such Domain: " + this.todo.domain);
+                this.bounce(`No Such Domain: ${this.todo.domain}`);
             }
             else if (err.code === 'NOMX') {
                 this.todo.rcpt_to.forEach(function (rcpt) {
-                    hmail.extend_rcpt_with_dsn(rcpt, DSN.addr_bad_dest_system("Nowhere to deliver mail to for domain: " + hmail.todo.domain));
+                    hmail.extend_rcpt_with_dsn(rcpt, DSN.addr_bad_dest_system(`Nowhere to deliver mail to for domain: ${hmail.todo.domain}`));
                 });
-                this.bounce("Nowhere to deliver mail to for domain: " + hmail.todo.domain);
+                this.bounce(`Nowhere to deliver mail to for domain: ${hmail.todo.domain}`);
             }
             else {
                 // every other error is transient
                 this.todo.rcpt_to.forEach(function (rcpt) {
-                    hmail.extend_rcpt_with_dsn(rcpt, DSN.addr_unspecified("DNS lookup failure: " + hmail.todo.domain));
+                    hmail.extend_rcpt_with_dsn(rcpt, DSN.addr_unspecified(`DNS lookup failure: ${hmail.todo.domain}`));
                 });
-                this.temp_fail("DNS lookup failure: " + err);
+                this.temp_fail(`DNS lookup failure: ${err}`);
             }
         }
         else {
@@ -239,9 +248,9 @@ class HMailItem extends events.EventEmitter {
             // support draft-delany-nullmx-02
             if (mxlist.length === 1 && mxlist[0].priority === 0 && mxlist[0].exchange === '') {
                 this.todo.rcpt_to.forEach(function (rcpt) {
-                    hmail.extend_rcpt_with_dsn(rcpt, DSN.addr_bad_dest_system("Domain " + hmail.todo.domain + " sends and receives no email (NULL MX)"));
+                    hmail.extend_rcpt_with_dsn(rcpt, DSN.addr_bad_dest_system(`Domain ${hmail.todo.domain} sends and receives no email (NULL MX)`));
                 });
-                return this.bounce("Domain " + this.todo.domain + " sends and receives no email (NULL MX)");
+                return this.bounce(`Domain ${this.todo.domain} sends and receives no email (NULL MX)`);
             }
             // duplicate each MX for each ip address family
             this.mxlist = [];
@@ -267,7 +276,7 @@ class HMailItem extends events.EventEmitter {
         // check if there are any MXs left
         if (this.mxlist.length === 0) {
             this.todo.rcpt_to.forEach(function (rcpt) {
-                self.extend_rcpt_with_dsn(rcpt, DSN.addr_bad_dest_system("Tried all MXs" + self.todo.domain));
+                self.extend_rcpt_with_dsn(rcpt, DSN.addr_bad_dest_system(`Tried all MXs${self.todo.domain}`));
             });
             return this.temp_fail("Tried all MXs");
         }
@@ -284,19 +293,19 @@ class HMailItem extends events.EventEmitter {
         host   = mx.exchange;
         const family = mx.family;
 
-        this.loginfo("Looking up " + family + " records for: " + host);
+        this.loginfo(`Looking up ${family} records for: ${host}`);
 
         // we have a host, look up the addresses for the host
         // and try each in order they appear
         // IS: IPv6 compatible
         dns.resolve(host, family, function (err, addresses) {
             if (err) {
-                self.logerror("DNS lookup of " + host + " failed: " + err);
+                self.logerror(`DNS lookup of ${host} failed: ${err}`);
                 return self.try_deliver(); // try next MX
             }
             if (addresses.length === 0) {
                 // NODATA or empty host list
-                self.logerror("DNS lookup of " + host + " resulted in no data");
+                self.logerror(`DNS lookup of ${host} resulted in no data`);
                 return self.try_deliver(); // try next MX
             }
             self.hostlist = addresses;
@@ -333,13 +342,10 @@ class HMailItem extends events.EventEmitter {
             host = mx.path;
         }
 
-        this.loginfo("Attempting to deliver to: " + host + ":" + port +
-            (mx.using_lmtp ? " using LMTP" : "") + " (" + delivery_queue.length() +
-            ") (" + temp_fail_queue.length() + ")");
-
+        this.loginfo(`Attempting to deliver to: ${host}:${port}${mx.using_lmtp ? " using LMTP" : ""} (${delivery_queue.length()}) (${temp_fail_queue.length()})`);
         client_pool.get_client(port, host, mx.bind, mx.path ? true : false, function (err, socket) {
             if (err) {
-                logger.logerror('[outbound] Failed to get pool entry: ' + err);
+                logger.logerror(`[outbound] Failed to get pool entry: ${err}`);
                 // try next host
                 return self.try_deliver_host(mx);
             }
@@ -357,7 +363,7 @@ class HMailItem extends events.EventEmitter {
 
         socket.once('error', function (err) {
             if (processing_mail) {
-                self.logerror("Ongoing connection failed to " + host + ":" + port + " : " + err);
+                self.logerror(`Ongoing connection failed to ${host}:${port} : ${err}`);
                 processing_mail = false;
                 client_pool.release_client(socket, port, host, mx.bind, true);
                 // try the next MX
@@ -367,7 +373,7 @@ class HMailItem extends events.EventEmitter {
 
         socket.once('close', function () {
             if (processing_mail) {
-                self.logerror("Remote end " + host + ":" + port + " closed connection while we were processing mail. Trying next MX.");
+                self.logerror(`Remote end ${host}:${port} closed connection while we were processing mail. Trying next MX.`);
                 processing_mail = false;
                 client_pool.release_client(socket, port, host, mx.bind, true);
                 return self.try_deliver_host(mx);
@@ -417,15 +423,15 @@ class HMailItem extends events.EventEmitter {
                 }
                 return;
             }
-            let line = cmd + (data ? (' ' + data) : '');
+            let line = `${cmd}${data ? ` ${data}` : ''}`;
             if (cmd === 'dot' || cmd === 'dot_lmtp') {
                 line = '.';
             }
             if (authenticating) cmd = 'auth';
-            self.logprotocol("C: " + line);
-            socket.write(line + "\r\n", "utf8", function (err) {
+            self.logprotocol(`C: ${line}`);
+            socket.write(`${line}\r\n`, "utf8", function (err) {
                 if (err) {
-                    self.logcrit("Socket write failed unexpectedly: " + err);
+                    self.logcrit(`Socket write failed unexpectedly: ${err}`);
                     // We may want to release client here - but I want to get this
                     // line of code in before we do that so we might see some logging
                     // in case of errors.
@@ -484,10 +490,9 @@ class HMailItem extends events.EventEmitter {
                 // We have AUTH credentials to send for this domain
                 if (!(Array.isArray(smtp_properties.auth) && smtp_properties.auth.length)) {
                     // AUTH not offered
-                    self.logwarn('AUTH configured for domain ' + self.todo.domain +
-                                 ' but host ' + host + ' did not advertise AUTH capability');
+                    self.logwarn(`AUTH configured for domain ${self.todo.domain} but host ${host} did not advertise AUTH capability`);
                     // Try and send the message without authentication
-                    return send_command('MAIL', 'FROM:' + self.todo.mail_from.format(!smtp_properties.smtp_utf8));
+                    return send_command('MAIL', `FROM:${self.todo.mail_from.format(!smtp_properties.smtp_utf8)}`);
                 }
 
                 if (!mx.auth_type) {
@@ -509,18 +514,14 @@ class HMailItem extends events.EventEmitter {
 
                 if (!mx.auth_type || (mx.auth_type && smtp_properties.auth.indexOf(mx.auth_type.toUpperCase()) === -1)) {
                     // No compatible authentication types offered by the server
-                    self.logwarn('AUTH configured for domain ' + self.todo.domain + ' but host ' +
-                                 host + 'did not offer any compatible types' +
-                                 ((mx.auth_type) ? ' (requested: ' + mx.auth_type + ')' : '') +
-                                 ' (offered: ' + smtp_properties.auth.join(',') + ')');
+                    self.logwarn(`AUTH configured for domain ${self.todo.domain} but host ${host}did not offer any compatible types${(mx.auth_type) ? ` (requested: ${mx.auth_type})` : ''} (offered: ${smtp_properties.auth.join(',')})`);
                     // Proceed without authentication
-                    return send_command('MAIL', 'FROM:' + self.todo.mail_from.format(!smtp_properties.smtp_utf8));
+                    return send_command('MAIL', `FROM:${self.todo.mail_from.format(!smtp_properties.smtp_utf8)}`);
                 }
 
                 switch (mx.auth_type.toUpperCase()) {
                     case 'PLAIN':
-                        return send_command('AUTH', 'PLAIN ' +
-                            utils.base64(mx.auth_user + "\0" + mx.auth_user + "\0" + mx.auth_pass));
+                        return send_command('AUTH', `PLAIN ${utils.base64(`${mx.auth_user}\0${mx.auth_user}\0${mx.auth_pass}`)}`);
                     case 'LOGIN':
                         authenticating = true;
                         return send_command('AUTH', 'LOGIN');
@@ -529,34 +530,33 @@ class HMailItem extends events.EventEmitter {
                         return send_command('AUTH', 'CRAM-MD5');
                     default:
                         // Unsupported AUTH type
-                        self.logwarn('Unsupported authentication type ' + mx.auth_type.toUpperCase() +
-                                     ' requested for domain ' + self.todo.domain);
-                        return send_command('MAIL', 'FROM:' + self.todo.mail_from.format(!smtp_properties.smtp_utf8));
+                        self.logwarn(`Unsupported authentication type ${mx.auth_type.toUpperCase()} requested for domain ${self.todo.domain}`);
+                        return send_command('MAIL', `FROM:${self.todo.mail_from.format(!smtp_properties.smtp_utf8)}`);
                 }
             }
 
-            return send_command('MAIL', 'FROM:' + self.todo.mail_from.format(!smtp_properties.smtp_utf8));
+            return send_command('MAIL', `FROM:${self.todo.mail_from.format(!smtp_properties.smtp_utf8)}`);
         };
 
         let fp_called = false;
 
         function finish_processing_mail (success) {
             if (fp_called) {
-                return self.logerror("finish_processing_mail called multiple times! Stack: " + (new Error()).stack);
+                return self.logerror(`finish_processing_mail called multiple times! Stack: ${(new Error()).stack}`);
             }
             fp_called = true;
             if (fail_recips.length) {
                 self.refcount++;
                 self.split_to_new_recipients(fail_recips, "Some recipients temporarily failed", function (hmail) {
                     self.discard();
-                    hmail.temp_fail("Some recipients temp failed: " + fail_recips.join(', '), { rcpt: fail_recips, mx: mx });
+                    hmail.temp_fail(`Some recipients temp failed: ${fail_recips.join(', ')}`, { rcpt: fail_recips, mx: mx });
                 });
             }
             if (bounce_recips.length) {
                 self.refcount++;
                 self.split_to_new_recipients(bounce_recips, "Some recipients rejected", function (hmail) {
                     self.discard();
-                    hmail.bounce("Some recipients failed: " + bounce_recips.join(', '), { rcpt: bounce_recips, mx: mx });
+                    hmail.bounce(`Some recipients failed: ${bounce_recips.join(', ')}`, { rcpt: bounce_recips, mx: mx });
                 });
             }
             processing_mail = false;
@@ -579,11 +579,11 @@ class HMailItem extends events.EventEmitter {
         socket.on('line', function (line) {
             if (!processing_mail && command !== 'rset') {
                 if (command !== 'quit') {
-                    self.logprotocol("Received data after stopping processing: " + line);
+                    self.logprotocol(`Received data after stopping processing: ${line}`);
                 }
                 return;
             }
-            self.logprotocol("S: " + line);
+            self.logprotocol(`S: ${line}`);
             const matches = smtp_regexp.exec(line);
             if (matches) {
                 let reason;
@@ -629,15 +629,15 @@ class HMailItem extends events.EventEmitter {
                         });
                         send_command(cfg.pool_concurrency_max ? 'RSET' : 'QUIT');
                         processing_mail = false;
-                        return self.temp_fail("Upstream error: " + code + " " + ((extc) ? extc + ' ' : '') + reason);
+                        return self.temp_fail(`Upstream error: ${code}${(extc) ? `${extc} ` : ''}${reason}`);
                     }
                     else if (code.match(/^4/)) {
                         authenticating = false;
                         if (/^rcpt/.test(command) || command === 'dot_lmtp') {
                             if (command === 'dot_lmtp') last_recip = ok_recips.shift();
                             // this recipient was rejected
-                            reason = code + ' ' + ((extc) ? extc + ' ' : '') + response.join(' ');
-                            self.lognotice('recipient ' + last_recip + ' deferred: ' + reason);
+                            reason = `${code} ${(extc) ? `${extc} ` : ''}${response.join(' ')}`;
+                            self.lognotice(`recipient ${last_recip} deferred: ${reason}`);
                             last_recip.reason = reason;
 
                             last_recip.dsn_action = 'delayed';
@@ -667,7 +667,7 @@ class HMailItem extends events.EventEmitter {
                             });
                             send_command(cfg.pool_concurrency_max ? 'RSET' : 'QUIT');
                             processing_mail = false;
-                            return self.temp_fail("Upstream error: " + code + " " + ((extc) ? extc + ' ' : '') + reason);
+                            return self.temp_fail(`Upstream error: ${code} ${(extc) ? `${extc} ` : ''}${reason}`);
                         }
                     }
                     else if (code.match(/^5/)) {
@@ -676,10 +676,10 @@ class HMailItem extends events.EventEmitter {
                             // EHLO command was rejected; fall-back to HELO
                             return send_command('HELO', mx.bind_helo);
                         }
-                        reason = code + ' ' + ((extc) ? extc + ' ' : '') + response.join(' ');
+                        reason = `${code} ${(extc) ? `${extc} ` : ''}${response.join(' ')}`;
                         if (/^rcpt/.test(command) || command === 'dot_lmtp') {
                             if (command === 'dot_lmtp') last_recip = ok_recips.shift();
-                            self.lognotice('recipient ' + last_recip + ' rejected: ' + reason);
+                            self.lognotice(`recipient ${last_recip} rejected: ${reason}`);
                             last_recip.reason = reason;
 
                             last_recip.dsn_action = 'failed';
@@ -760,15 +760,15 @@ class HMailItem extends events.EventEmitter {
                         case 'auth':
                             authenticating = false;
                             authenticated = true;
-                            send_command('MAIL', 'FROM:' + self.todo.mail_from.format(!smtp_properties.smtp_utf8));
+                            send_command('MAIL', `FROM:${self.todo.mail_from.format(!smtp_properties.smtp_utf8)}`);
                             break;
                         case 'helo':
-                            send_command('MAIL', 'FROM:' + self.todo.mail_from.format(!smtp_properties.smtp_utf8));
+                            send_command('MAIL', `FROM:${self.todo.mail_from.format(!smtp_properties.smtp_utf8)}`);
                             break;
                         case 'mail':
                             last_recip = recipients[recip_index];
                             recip_index++;
-                            send_command('RCPT', 'TO:' + last_recip.format(!smtp_properties.smtp_utf8));
+                            send_command('RCPT', `TO:${last_recip.format(!smtp_properties.smtp_utf8)}`);
                             break;
                         case 'rcpt':
                             if (last_recip && code.match(/^250/)) {
@@ -785,16 +785,16 @@ class HMailItem extends events.EventEmitter {
                             else {
                                 last_recip = recipients[recip_index];
                                 recip_index++;
-                                send_command('RCPT', 'TO:' + last_recip.format(!smtp_properties.smtp_utf8));
+                                send_command('RCPT', `TO:${last_recip.format(!smtp_properties.smtp_utf8)}`);
                             }
                             break;
                         case 'data': {
                             const data_stream = self.data_stream();
                             data_stream.on('data', function (data) {
-                                self.logdata("C: " + data);
+                                self.logdata(`C: ${data}`);
                             });
                             data_stream.on('error', function (err) {
-                                self.logerror("Reading from the data stream failed: " + err);
+                                self.logerror(`Reading from the data stream failed: ${err}`);
                             });
                             data_stream.on('end', function () {
                                 send_command(mx.using_lmtp ? 'dot_lmtp' : 'dot');
@@ -825,33 +825,33 @@ class HMailItem extends events.EventEmitter {
                         default:
                             // should never get here - means we did something
                             // wrong.
-                            throw new Error("Unknown command: " + command);
+                            throw new Error(`Unknown command: ${command}`);
                     }
                 }
             }
             else {
                 // Unrecognized response.
-                self.logerror("Unrecognized response from upstream server: " + line);
+                self.logerror(`Unrecognized response from upstream server: ${line}`);
                 processing_mail = false;
                 // Release back to the pool and instruct it to terminate this connection
                 client_pool.release_client(socket, port, host, mx.bind, true);
                 self.todo.rcpt_to.forEach(function (rcpt) {
-                    self.extend_rcpt_with_dsn(rcpt, DSN.proto_invalid_command("Unrecognized response from upstream server: " + line));
+                    self.extend_rcpt_with_dsn(rcpt, DSN.proto_invalid_command(`Unrecognized response from upstream server: ${line}`));
                 });
-                return self.bounce("Unrecognized response from upstream server: " + line, {mx: mx});
+                return self.bounce(`Unrecognized response from upstream server: ${line}`, {mx: mx});
             }
         });
 
         if (socket.__fromPool) {
             logger.logdebug('[outbound] got pooled socket, trying to deliver');
-            send_command('MAIL', 'FROM:' + self.todo.mail_from.format(!smtp_properties.smtp_utf8));
+            send_command('MAIL', `FROM:${self.todo.mail_from.format(!smtp_properties.smtp_utf8)}`);
         }
     }
 
     extend_rcpt_with_dsn (rcpt, dsn) {
         rcpt.dsn_code = dsn.code;
         rcpt.dsn_msg = dsn.msg;
-        rcpt.dsn_status = "" + dsn.cls + "." + dsn.sub + "." + dsn.det;
+        rcpt.dsn_status = `${dsn.cls}.${dsn.sub}.${dsn.det}`;
         if (dsn.cls == 4) {
             rcpt.dsn_action = 'delayed';
         }
@@ -957,79 +957,78 @@ class HMailItem extends events.EventEmitter {
         });
 
 
-        const boundary = 'boundary_' + utils.uuid();
+        const boundary = `boundary_${utils.uuid()}`;
         const bounce_body = [];
 
         bounce_header_lines.forEach(function (line) {
-            bounce_body.push(line + CRLF);
+            bounce_body.push(`${line}${CRLF}`);
         });
-        bounce_body.push('Content-Type: multipart/report; report-type=delivery-status;' + CRLF +
-            '    boundary="' + boundary + '"' + CRLF);
+        bounce_body.push(`Content-Type: multipart/report; report-type=delivery-status;${CRLF}    boundary="${boundary}"${CRLF}`);
         // Adding references to original msg id
         if (originalMessageId != '') {
-            bounce_body.push('References: ' + originalMessageId.replace(/(\r?\n)*$/, '') + CRLF);
+            bounce_body.push(`References: ${originalMessageId.replace(/(\r?\n)*$/, '')}${CRLF}`);
         }
 
         bounce_body.push(CRLF);
-        bounce_body.push('This is a MIME-encapsulated message.' + CRLF);
+        bounce_body.push(`This is a MIME-encapsulated message.${CRLF}`);
         bounce_body.push(CRLF);
 
         let boundary_incr = ''
         if (bounce_html_lines.length > 1) {
             boundary_incr = 'a'
-            bounce_body.push('--' + boundary + CRLF);
-            bounce_body.push('Content-Type: multipart/related; boundary="' + boundary + boundary_incr + '"' + CRLF);
+            bounce_body.push(`--${boundary}${CRLF}`);
+            bounce_body.push(`Content-Type: multipart/related; boundary="${boundary}${boundary_incr}"${CRLF}`);
             bounce_body.push(CRLF);
-            bounce_body.push('--' + boundary + boundary_incr + CRLF);
+            bounce_body.push(`--${boundary}${boundary_incr}${CRLF}`);
             boundary_incr = 'b'
-            bounce_body.push('Content-Type: multipart/alternative; boundary="' + boundary + boundary_incr + '"' + CRLF);
+            bounce_body.push(`Content-Type: multipart/alternative; boundary="${boundary}${boundary_incr}"${CRLF}`);
             bounce_body.push(CRLF);
         }
 
-        bounce_body.push('--' + boundary + boundary_incr + CRLF);
-        bounce_body.push('Content-Type: text/plain; charset=us-ascii' + CRLF);
+        bounce_body.push(`--${boundary}${boundary_incr}${CRLF}`);
+        bounce_body.push(`Content-Type: text/plain; charset=us-ascii${CRLF}`);
         bounce_body.push(CRLF);
         bounce_body_lines.forEach(function (line) {
-            bounce_body.push(line + CRLF);
+            bounce_body.push(`${line}${CRLF}`);
         });
         bounce_body.push(CRLF);
 
         if (bounce_html_lines.length > 1) {
-            bounce_body.push('--' + boundary + boundary_incr + CRLF);
-            bounce_body.push('Content-Type: text/html; charset=us-ascii' + CRLF);
+            bounce_body.push(`--${boundary}${boundary_incr}${CRLF}`);
+            bounce_body.push(`Content-Type: text/html; charset=us-ascii${CRLF}`);
             bounce_body.push(CRLF);
             bounce_html_lines.forEach(function (line) {
-                bounce_body.push(line + CRLF);
+                bounce_body.push(`${line}${CRLF}`);
             });
             bounce_body.push(CRLF);
-            bounce_body.push('--' + boundary + boundary_incr + '--' + CRLF);
+            bounce_body.push(`--${boundary}${boundary_incr}--${CRLF}`);
 
             if (bounce_image_lines.length > 1) {
                 boundary_incr = 'a'
-                bounce_body.push('--' + boundary + boundary_incr + CRLF);
-                //bounce_body.push('Content-Type: text/html; charset=us-ascii' + CRLF);
+                bounce_body.push(`--${boundary}${boundary_incr}${CRLF}`);
+                //bounce_body.push(`Content-Type: text/html; charset=us-ascii${CRLF}`);
                 //bounce_body.push(CRLF);
                 bounce_image_lines.forEach(function (line) {
-                    bounce_body.push(line + CRLF);
+                    bounce_body.push(`${line}${CRLF}`);
                 });
                 bounce_body.push(CRLF);
-                bounce_body.push('--' + boundary + boundary_incr + '--' + CRLF);
+                bounce_body.push(`--${boundary}${boundary_incr}--${CRLF}`);
             }
         }
 
-        bounce_body.push('--' + boundary + CRLF);
-        bounce_body.push('Content-type: message/delivery-status' + CRLF);
+        bounce_body.push(`--${boundary}${CRLF}`);
+        bounce_body.push(`Content-type: message/delivery-status${CRLF}`);
         bounce_body.push(CRLF);
         if (originalMessageId != '') {
-            bounce_body.push('Original-Envelope-Id: ' + originalMessageId.replace(/(\r?\n)*$/, '') + CRLF);
+            bounce_body.push(`Original-Envelope-Id: ${originalMessageId.replace(/(\r?\n)*$/, '')}${CRLF}`);
         }
-        bounce_body.push('Reporting-MTA: dns;' + config.get('me') + CRLF);
+        bounce_body.push(`Reporting-MTA: dns;${config.get('me')}${CRLF}`);
         if (self.todo.queue_time) {
-            bounce_body.push('Arrival-Date: ' + utils.date_to_str(new Date(self.todo.queue_time)) + CRLF);
+            bounce_body.push(`Arrival-Date: ${utils.date_to_str(new Date(self.todo.queue_time))}${CRLF}`);
         }
         self.todo.rcpt_to.forEach(function (rcpt_to) {
             bounce_body.push(CRLF);
-            bounce_body.push('Final-Recipient: rfc822;' + rcpt_to.address() + CRLF);
+            bounce_body.push(`Final-Recipient: rfc822;${rcpt_to.address()}${CRLF}`);
             let dsn_action = null;
             if (rcpt_to.dsn_action) {
                 dsn_action = rcpt_to.dsn_action;
@@ -1057,7 +1056,7 @@ class HMailItem extends events.EventEmitter {
                 }
             }
             if (dsn_action != null) {
-                bounce_body.push('Action: ' + dsn_action + CRLF);
+                bounce_body.push(`Action: ${dsn_action}${CRLF}`);
             }
             if (rcpt_to.dsn_status) {
                 let dsn_status = rcpt_to.dsn_status;
@@ -1074,40 +1073,40 @@ class HMailItem extends events.EventEmitter {
                     }
                     dsn_status += ")";
                 }
-                bounce_body.push('Status: ' + dsn_status + CRLF);
+                bounce_body.push(`Status: ${dsn_status}${CRLF}`);
             }
             if (rcpt_to.dsn_remote_mta) {
-                bounce_body.push('Remote-MTA: ' + rcpt_to.dsn_remote_mta + CRLF);
+                bounce_body.push(`Remote-MTA: ${rcpt_to.dsn_remote_mta}${CRLF}`);
             }
             let diag_code = null;
             if (rcpt_to.dsn_smtp_code || rcpt_to.dsn_smtp_extc || rcpt_to.dsn_smtp_response) {
                 diag_code = "smtp;";
                 if (rcpt_to.dsn_smtp_code) {
-                    diag_code += rcpt_to.dsn_smtp_code + " ";
+                    diag_code += `${rcpt_to.dsn_smtp_code} `;
                 }
                 if (rcpt_to.dsn_smtp_extc) {
-                    diag_code += rcpt_to.dsn_smtp_extc + " ";
+                    diag_code += `${rcpt_to.dsn_smtp_extc} `;
                 }
                 if (rcpt_to.dsn_smtp_response) {
-                    diag_code += rcpt_to.dsn_smtp_response + " ";
+                    diag_code += `${rcpt_to.dsn_smtp_response} `;
                 }
             }
             if (diag_code != null) {
-                bounce_body.push('Diagnostic-Code: ' + diag_code + CRLF);
+                bounce_body.push(`Diagnostic-Code: ${diag_code}${CRLF}`);
             }
         });
         bounce_body.push(CRLF);
 
-        bounce_body.push('--' + boundary + CRLF);
-        bounce_body.push('Content-Description: Undelivered Message Headers' + CRLF);
-        bounce_body.push('Content-Type: text/rfc822-headers' + CRLF);
+        bounce_body.push(`--${boundary}${CRLF}`);
+        bounce_body.push(`Content-Description: Undelivered Message Headers${CRLF}`);
+        bounce_body.push(`Content-Type: text/rfc822-headers${CRLF}`);
         bounce_body.push(CRLF);
         header.header_list.forEach(function (line) {
             bounce_body.push(line);
         });
         bounce_body.push(CRLF);
 
-        bounce_body.push('--' + boundary + '--' + CRLF);
+        bounce_body.push(`--${boundary}--${CRLF}`);
 
 
         const values = {
@@ -1120,11 +1119,11 @@ class HMailItem extends events.EventEmitter {
             reason: reason,
             extended_reason: this.todo.rcpt_to.map(function (recip) {
                 if (recip.reason) {
-                    return recip.original + ': ' + recip.reason;
+                    return `${recip.original}: ${recip.reason}`;
                 }
             }).join('\n'),
             pid: process.pid,
-            msgid: '<' + utils.uuid() + '@' + config.get('me') + '>',
+            msgid: `<${utils.uuid()}@${config.get('me')}>`,
         };
 
         cb(null, bounce_body.map(function (item) {
@@ -1133,7 +1132,7 @@ class HMailItem extends events.EventEmitter {
     }
 
     bounce (err, opts) {
-        this.loginfo("bouncing mail: " + err);
+        this.loginfo(`bouncing mail: ${err}`);
         if (!this.todo) {
             // haven't finished reading the todo, delay here...
             const self = this;
@@ -1156,7 +1155,7 @@ class HMailItem extends events.EventEmitter {
 
     bounce_respond (retval, msg) {
         if (retval !== constants.cont) {
-            this.loginfo("plugin responded with: " + retval + ". Not sending bounce.");
+            this.loginfo(`Plugin responded with: ${retval}. Not sending bounce.`);
             return this.discard(); // calls next_cb
         }
 
@@ -1172,7 +1171,7 @@ class HMailItem extends events.EventEmitter {
         const recip = new Address (this.todo.mail_from.user, this.todo.mail_from.host);
         this.populate_bounce_message(from, recip, err, function (err2, data_lines) {
             if (err2) {
-                return self.double_bounce("Error populating bounce message: " + err2);
+                return self.double_bounce(`Error populating bounce message: ${err2}`);
             }
 
             outbound.send_email(from, recip, data_lines.join(''), function (code, msg2) {
@@ -1186,7 +1185,7 @@ class HMailItem extends events.EventEmitter {
     }
 
     double_bounce (err) {
-        this.logerror("Double bounce: " + err);
+        this.logerror(`Double bounce: ${err}`);
         fs.unlink(this.path, function () {});
         this.next_cb();
         // TODO: fill this in... ?
@@ -1208,7 +1207,7 @@ class HMailItem extends events.EventEmitter {
             'response': response,
             'delay': delay,
             'fails': this.num_failures,
-            'rcpts': ok_recips.length + '/' + fail_recips.length + '/' + bounce_recips.length
+            'rcpts': `${ok_recips.length}/${fail_recips.length}/${bounce_recips.length}`
         });
         plugins.run_hooks("delivered", this, [host, ip, response, delay, port, mode, ok_recips, secured, authenticated]);
     }
@@ -1226,19 +1225,19 @@ class HMailItem extends events.EventEmitter {
         this.todo.rcpt_to.forEach(function (rcpt_to) {
             rcpt_to.dsn_action = 'failed';
             if (rcpt_to.dsn_status) {
-                rcpt_to.dsn_status = ("" + rcpt_to.dsn_status).replace(/^4/, '5');
+                rcpt_to.dsn_status = (`${rcpt_to.dsn_status}`).replace(/^4/, '5');
             }
         });
         return this.bounce(err, extra);
     }
 
     temp_fail (err, extra) {
-        logger.logdebug("Temp fail for: " + err);
+        logger.logdebug(`Temp fail for: ${err}`);
         this.num_failures++;
 
         // Test for max failures which is configurable.
         if (this.num_failures >= (cfg.maxTempFailures)) {
-            return this.convert_temp_failed_to_bounce("Too many failures (" + err + ")", extra);
+            return this.convert_temp_failed_to_bounce(`Too many failures (${err})`, extra);
         }
 
         // basic strategy is we exponentially grow the delay to the power
@@ -1256,7 +1255,7 @@ class HMailItem extends events.EventEmitter {
 
     deferred_respond (retval, msg, params) {
         if (retval !== constants.cont && retval !== constants.denysoft) {
-            this.loginfo("plugin responded with: " + retval + ". Not deferring. Deleting mail.");
+            this.loginfo(`plugin responded with: ${retval}. Not deferring. Deleting mail.`);
             return this.discard(); // calls next_cb
         }
 
@@ -1266,7 +1265,7 @@ class HMailItem extends events.EventEmitter {
             delay = parseInt(msg, 10) * 1000;
         }
 
-        this.loginfo("Temp failing " + this.filename + " for " + (delay/1000) + " seconds: " + params.err);
+        this.loginfo(`Temp failing ${this.filename} for ${delay/1000} seconds: ${params.err}`);
         const parts = _qfile.parts(this.filename);
         parts.next_attempt = Date.now() + delay;
         parts.attempts = this.num_failures;
@@ -1276,7 +1275,7 @@ class HMailItem extends events.EventEmitter {
         const hmail = this;
         fs.rename(this.path, path.join(queue_dir, new_filename), function (err) {
             if (err) {
-                return hmail.bounce("Error re-queueing email: " + err);
+                return hmail.bounce(`Error re-queueing email: ${err}`);
             }
 
             hmail.path = path.join(queue_dir, new_filename);
@@ -1307,14 +1306,14 @@ class HMailItem extends events.EventEmitter {
             return cb(hmail);
         }
         const fname = _qfile.name();
-        const tmp_path = path.join(queue_dir, _qfile.platformDOT + fname);
+        const tmp_path = path.join(queue_dir, `${_qfile.platformDOT}${fname}`);
         const ws = new FsyncWriteStream(tmp_path, { flags: constants.WRITE_EXCL });
         const err_handler = function (err, location) {
-            logger.logerror("[outbound] Error while splitting to new recipients (" + location + "): " + err);
+            logger.logerror(`[outbound] Error while splitting to new recipients (${location}): ${err}`);
             hmail.todo.rcpt_to.forEach(function (rcpt) {
-                hmail.extend_rcpt_with_dsn(rcpt, DSN.sys_unspecified("Error splitting to new recipients: " + err));
+                hmail.extend_rcpt_with_dsn(rcpt, DSN.sys_unspecified(`Error splitting to new recipients: ${err}`));
             });
-            hmail.bounce("Error splitting to new recipients: " + err);
+            hmail.bounce(`Error splitting to new recipients: ${err}`);
         };
 
         ws.on('error', function (err) { err_handler(err, "tmp file writer");});
@@ -1350,12 +1349,12 @@ class HMailItem extends events.EventEmitter {
         };
 
         ws.on('error', function (err) {
-            logger.logerror("[outbound] Unable to write queue file (" + fname + "): " + err);
+            logger.logerror(`[outbound] Unable to write queue file (${fname}): ${err}`);
             ws.destroy();
             hmail.todo.rcpt_to.forEach(function (rcpt) {
-                hmail.extend_rcpt_with_dsn(rcpt, DSN.sys_unspecified("Error re-queueing some recipients: " + err));
+                hmail.extend_rcpt_with_dsn(rcpt, DSN.sys_unspecified(`Error re-queueing some recipients: ${err}`));
             });
-            hmail.bounce("Error re-queueing some recipients: " + err);
+            hmail.bounce(`Error re-queueing some recipients: ${err}`);
         });
 
         const new_todo = JSON.parse(JSON.stringify(hmail.todo));
@@ -1409,5 +1408,5 @@ function cram_md5_response (username, password, challenge) {
     const hmac = crypto.createHmac('md5', password);
     hmac.update(c);
     const digest = hmac.digest('hex');
-    return utils.base64(username + ' ' + digest);
+    return utils.base64(`${username} ${digest}`);
 }

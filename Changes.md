@@ -4,7 +4,11 @@
 * New Features
 * Fixes
     * Fix ability to set log level to emerg #2128
+    * outbound/hmail: use Buffer to correctly read binary file data + tests #2231
 * Changes
+    * outbound/hmail: add JSON sanity test before JSON.parse #2231
+    * outbound/index: use newer Buffer.from syntax #2231
+    * outbound/hmail: make haraka queue files human friendly #2231
     * plugins/rcpt_to.ldap -> haraka-plugin-rcpt-ldap #2144
     * plugins/auth/auth_ldap -> haraka-plugin-auth-ldap #2144
     * config: replace ./config.js with haraka-config #2119
