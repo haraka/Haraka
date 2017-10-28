@@ -62,7 +62,6 @@
         * tls_socket #2190
         * timer_queue #2226
         * outbound/hmail #2197
-    * Replaced concatenated strings with template literals in the 
     * Automatically set connection.remote.is_private when connection.remote.ip is set #2192
 
 
