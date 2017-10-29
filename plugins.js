@@ -42,13 +42,13 @@ class Plugin {
         const plugin = this;
         /* From https://github.com/haraka/Haraka/pull/1278#issuecomment-168856528
         In Development mode, or install via a plain "git clone":
-    
+
             Plain plugin in plugins/ folder
             Plugin in a folder in plugins/<name>/ folder. Contains a package.json.
             Plugin in node_modules. Contains a package.json file.
-    
+
         In "installed" mode (via haraka -i <path>):
-    
+
             Plain plugin in <path>/plugins/ folder
             Plugin in a folder in <path>/plugins/<name>/folder. (same concept as above)
             Plugin in <path>/node_modules. Contains a package.json file.
