@@ -31,7 +31,7 @@ class Plugin {
     }
 
     haraka_require (name) {
-        return require('./' + name);
+        return require(`./${name}`);
     }
 
     core_require (name) {
@@ -42,13 +42,13 @@ class Plugin {
         const plugin = this;
         /* From https://github.com/haraka/Haraka/pull/1278#issuecomment-168856528
         In Development mode, or install via a plain "git clone":
-    
+
             Plain plugin in plugins/ folder
             Plugin in a folder in plugins/<name>/ folder. Contains a package.json.
             Plugin in node_modules. Contains a package.json file.
-    
+
         In "installed" mode (via haraka -i <path>):
-    
+
             Plain plugin in <path>/plugins/ folder
             Plugin in a folder in <path>/plugins/<name>/folder. (same concept as above)
             Plugin in <path>/node_modules. Contains a package.json file.
@@ -174,7 +174,7 @@ class Plugin {
                 return require(module);
             }
 
-            if (fs.existsSync(path.join(__dirname, module + '.js')) ||
+            if (fs.existsSync(path.join(__dirname, `${module}.js`)) ||
                 fs.existsSync(path.join(__dirname, module))) {
                 return require(module);
             }
@@ -267,14 +267,14 @@ process.on('message', function (msg) {
 
 function plugin_search_paths (prefix, name) {
     return [
-        path.resolve(prefix, 'plugins', name + '.js'),
-        path.resolve(prefix, 'node_modules', 'haraka-plugin-' + name, 'package.json'),
-        path.resolve(prefix, '..', 'haraka-plugin-' + name, 'package.json')
+        path.resolve(prefix, 'plugins', `${name}.js`),
+        path.resolve(prefix, 'node_modules', `haraka-plugin-${name}`, 'package.json'),
+        path.resolve(prefix, '..', `haraka-plugin-${name}`, 'package.json')
     ];
 }
 
 function get_timeout (name) {
-    let timeout = parseFloat((exports.config.get(name + '.timeout')));
+    let timeout = parseFloat((exports.config.get(`${name}.timeout`)));
     if (isNaN(timeout)) {
         logger.logdebug(`no timeout in ${name}.timeout`);
         timeout = parseFloat(exports.config.get('plugin_timeout'));
@@ -291,7 +291,7 @@ function get_timeout (name) {
 // copy logger methods into Plugin:
 for (const key in logger) {
     if (!/^log\w/.test(key)) continue;
-    // console.log('adding Plugin.' + key + ' method');
+    // console.log(`adding Plugin.${key} method`);
     Plugin.prototype[key] = (function (lev) {
         return function () {
             const args = [this];
@@ -361,8 +361,7 @@ plugins.server = { notes: {} };
 plugins._load_and_compile_plugin = function (name) {
     const plugin = new Plugin(name);
     if (!plugin.plugin_path) {
-        const err = `Loading plugin ${plugin.name}` +
-            ' failed: No plugin with this name found';
+        const err = `Loading plugin ${plugin.name} failed: No plugin with this name found`;
         if (exports.config.get('smtp.ini').main.ignore_bad_plugins) {
             logger.logcrit(err);
             return;
@@ -448,7 +447,7 @@ plugins.run_next_hook = function (hook, object, params) {
         if (called_once && hook !== 'log') {
             if (!timed_out) {
                 object.logerror(`${item[0].name} plugin ran callback ` +
-                        'multiple times - ignoring subsequent calls');
+                        `multiple times - ignoring subsequent calls`);
                 // Write a stack trace to the log to aid debugging
                 object.logerror((new Error()).stack);
             }
@@ -491,8 +490,7 @@ plugins.run_next_hook = function (hook, object, params) {
     if (hook !== 'log' && item[0].timeout) {
         timeout_id = setTimeout(function () {
             timed_out = true;
-            object.logcrit(`Plugin ${item[0].name} timed out on hook ${hook}` +
-                    ' - make sure it calls the callback');
+            object.logcrit(`Plugin ${item[0].name} timed out on hook ${hook} - make sure it calls the callback`);
             callback(constants.denysoft, 'plugin timeout');
         }, item[0].timeout * 1000);
     }
@@ -508,8 +506,7 @@ plugins.run_next_hook = function (hook, object, params) {
     }
     catch (err) {
         if (hook !== 'log') {
-            object.logcrit(`Plugin ${item[0].name} failed: ` +
-                    (err.stack || err));
+            object.logcrit(`Plugin ${item[0].name} failed: ${(err.stack || err)}`);
         }
         callback();
     }
@@ -549,8 +546,7 @@ function log_run_item (item, hook, retval, object, params, msg) {
             'hook'      :  hook,
             'plugin'    :  item[0].name,
             'function'  :  item[1],
-            'params'    :  ((params) ? ((typeof params === 'string') ?
-                params : params[0]) : ''),
+            'params'    :  ((params) ? ((typeof params === 'string') ? params : params[0]) : ''),
             'retval'    : constants.translate(retval),
             'msg'       :  ((msg) ? msg : ''),
         });
@@ -573,8 +569,7 @@ function get_denyfn (object, hook, params, retval, msg, respond_method) {
         switch (deny_retval) {
             case constants.ok:
                 // Override rejection
-                object.loginfo('deny(soft?) overriden by deny hook' +
-                                (deny_msg ? `: ${deny_msg}` : ''));
+                object.loginfo(`deny(soft?) overriden by deny hook${(deny_msg ? ': deny_msg' : '')}`);
                 // Restore hooks_to_run with saved copy so that
                 // any other plugins on this hook can also run.
                 if (object.saved_hooks_to_run.length > 0) {
