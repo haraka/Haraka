@@ -174,7 +174,7 @@ class Plugin {
                 return require(module);
             }
 
-            if (fs.existsSync(path.join(`${__dirname, module}.js`)) ||
+            if (fs.existsSync(path.join(__dirname, `${module}.js`)) ||
                 fs.existsSync(path.join(__dirname, module))) {
                 return require(module);
             }
@@ -490,8 +490,7 @@ plugins.run_next_hook = function (hook, object, params) {
     if (hook !== 'log' && item[0].timeout) {
         timeout_id = setTimeout(function () {
             timed_out = true;
-            object.logcrit(`Plugin ${item[0].name} timed out on hook ${hook}` +
-                    ` - make sure it calls the callback`);
+            object.logcrit(`Plugin ${item[0].name} timed out on hook ${hook} - make sure it calls the callback`);
             callback(constants.denysoft, 'plugin timeout');
         }, item[0].timeout * 1000);
     }
