@@ -24,7 +24,10 @@ const verifier = new DKIMVerifyStream(function (err, result, results) {
     if (err) console.log(err.message);
     if (Array.isArray(results)) {
         results.forEach(function (res) {
-            console.log(`identity="${res.identity}" domain="${res.domain}" result=${res.result} ${(res.error) ? `(${res.error})` : ''}`);
+            console.log('identity="' + res.identity + '" ' +
+                        'domain="' + res.domain + '" ' +
+                        'result=' + res.result + ' ' +
+                        ((res.error) ? '(' + res.error + ')' : ''));
         });
     }
     else {
