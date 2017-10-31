@@ -1,8 +1,4 @@
-#!/usr/bin/env node
 
-// this script takes inspiration from:
-// https://github.com/visionmedia/express/blob/master/bin/express
-// https://github.com/tnantoka/LooseLeaf/blob/master/bin/looseleaf
 
 const fs   = require('fs');
 const net  = require('net');
