@@ -51,7 +51,7 @@ class Body extends events.EventEmitter {
 
     parse_child (line) {
         // check for MIME boundary
-        if (line.substr(0, (this.boundary.length + 2)) === ('--' + this.boundary)) {
+        if (line.substr(0, (this.boundary.length + 2)) === (`--${this.boundary}`)) {
 
             line = this.children[this.children.length -1].parse_end(line);
 
@@ -237,7 +237,7 @@ class Body extends events.EventEmitter {
         }
         catch (err) {
             logger.logwarn("initial iconv conversion from " + enc + " to UTF-8 failed: " + err.message);
-            this.body_encoding = 'broken//' + enc;
+            this.body_encoding = `broken//${enc}`;
             // EINVAL is returned when the encoding type is not recognized/supported (e.g. ANSI_X3)
             if (err.code !== 'EINVAL') {
                 // Perform the conversion again, but ignore any errors
@@ -246,7 +246,7 @@ class Body extends events.EventEmitter {
                     this.bodytext = converter.convert(buf).toString();
                 }
                 catch (e) {
-                    logger.logerror('iconv conversion from ' + enc + ' to UTF-8 failed: ' + e.message);
+                    logger.logerror(`iconv conversion from ${enc} to UTF-8 failed: ${e.message}`);
                     this.bodytext = buf.toString();
                 }
             }
@@ -262,7 +262,7 @@ class Body extends events.EventEmitter {
     parse_multipart_preamble (line) {
         if (!this.boundary) return line;
 
-        if (line.substr(0, (this.boundary.length + 2)) === ('--' + this.boundary)) {
+        if (line.substr(0, (this.boundary.length + 2)) === (`--${this.boundary}`)) {
             if (line.substr(this.boundary.length + 2, 2) === '--') {
                 // end
             }
@@ -283,7 +283,7 @@ class Body extends events.EventEmitter {
 
     parse_attachment (line) {
         if (this.boundary) {
-            if (line.substr(0, (this.boundary.length + 2)) === ('--' + this.boundary)) {
+            if (line.substr(0, (this.boundary.length + 2)) === (`--${this.boundary}`)) {
                 if (line.substr(this.boundary.length + 2, 2) === '--') {
                     // end
                 }
