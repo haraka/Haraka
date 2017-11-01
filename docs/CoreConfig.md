@@ -23,8 +23,8 @@ The list of plugins to load
 
   Keys:
 
-  * port - the port to use (default: 25)
-  * listen\_address - default: 0.0.0.0 (i.e. all addresses)
+  * listen\_host, port - the host and port to listen on (default: ::0 and 25)
+  * listen - (default: [::0]:25) Comma separated IP:Port addresses to listen on
   * inactivity\_time - how long to let clients idle in seconds (default: 300)
   * nodes - if [cluster][1] is available, specifies how
     many processes to fork off. Can be the string "cpus" to fork off as many

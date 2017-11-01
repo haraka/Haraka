@@ -103,8 +103,7 @@ logger.load_log_ini = function () {
 
 logger.colorize = function (color, str) {
     if (!util.inspect.colors[color]) { return str; }  // unknown color
-    return '\u001b[' + util.inspect.colors[color][0] + 'm' + str +
-           '\u001b[' + util.inspect.colors[color][1] + 'm';
+    return `\u001b[${util.inspect.colors[color][0]}m${str}\u001b[${util.inspect.colors[color][1]}m`;
 };
 
 logger.dump_logs = function (cb) {

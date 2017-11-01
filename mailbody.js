@@ -46,12 +46,12 @@ class Body extends events.EventEmitter {
     }
 
     parse_more (line) {
-        return this["parse_" + this.state](line);
+        return this[`parse_${this.state}`](line);
     }
 
     parse_child (line) {
         // check for MIME boundary
-        if (line.substr(0, (this.boundary.length + 2)) === ('--' + this.boundary)) {
+        if (line.substr(0, (this.boundary.length + 2)) === (`--${this.boundary}`)) {
 
             line = this.children[this.children.length -1].parse_end(line);
 
@@ -98,14 +98,14 @@ class Body extends events.EventEmitter {
 
         enc = enc.toLowerCase().split("\n").pop().trim();
         if (!enc.match(/^base64|quoted-printable|[78]bit$/i)) {
-            logger.logerror("Invalid CTE on email: " + enc + ", using 8bit");
+            logger.logerror(`Invalid CTE on email: ${enc}, using 8bit`);
             enc = '8bit';
         }
         enc = enc.replace(/^quoted-printable$/i, 'qp');
 
-        this.decode_function = this["decode_" + enc];
+        this.decode_function = this[`decode_${enc}`];
         if (!this.decode_function) {
-            logger.logerror("No decode function found for: " + enc);
+            logger.logerror(`No decode function found for: ${enc}`);
             this.decode_function = this.decode_8bit;
         }
         this.ct = ct;
@@ -131,7 +131,7 @@ class Body extends events.EventEmitter {
             this.state = 'attachment';
         }
 
-        return this["parse_" + this.state](line);
+        return this[`parse_${this.state}`](line);
     }
 
     _empty_filter (ct, enc) {
@@ -200,7 +200,7 @@ class Body extends events.EventEmitter {
 
             // convert back to base_64 or QP if required:
             if (this.decode_function === this.decode_qp) {
-                line = utils.encode_qp(new_buf) + "\n" + line;
+                line = `${utils.encode_qp(new_buf)}\n${line}`;
             }
             else if (this.decode_function === this.decode_base64) {
                 line = new_buf.toString("base64").replace(/(.{1,76})/g, "$1\n") + line;
@@ -236,8 +236,8 @@ class Body extends events.EventEmitter {
             this.bodytext = converter.convert(buf).toString();
         }
         catch (err) {
-            logger.logwarn("initial iconv conversion from " + enc + " to UTF-8 failed: " + err.message);
-            this.body_encoding = 'broken//' + enc;
+            logger.logwarn(`initial iconv conversion from ${enc} to UTF-8 failed: ${err.message}`);
+            this.body_encoding = `broken//${enc}`;
             // EINVAL is returned when the encoding type is not recognized/supported (e.g. ANSI_X3)
             if (err.code !== 'EINVAL') {
                 // Perform the conversion again, but ignore any errors
@@ -246,7 +246,7 @@ class Body extends events.EventEmitter {
                     this.bodytext = converter.convert(buf).toString();
                 }
                 catch (e) {
-                    logger.logerror('iconv conversion from ' + enc + ' to UTF-8 failed: ' + e.message);
+                    logger.logerror(`iconv conversion from ${enc} to UTF-8 failed: ${e.message}`);
                     this.bodytext = buf.toString();
                 }
             }
@@ -262,7 +262,7 @@ class Body extends events.EventEmitter {
     parse_multipart_preamble (line) {
         if (!this.boundary) return line;
 
-        if (line.substr(0, (this.boundary.length + 2)) === ('--' + this.boundary)) {
+        if (line.substr(0, (this.boundary.length + 2)) === (`--${this.boundary}`)) {
             if (line.substr(this.boundary.length + 2, 2) === '--') {
                 // end
             }
@@ -283,7 +283,7 @@ class Body extends events.EventEmitter {
 
     parse_attachment (line) {
         if (this.boundary) {
-            if (line.substr(0, (this.boundary.length + 2)) === ('--' + this.boundary)) {
+            if (line.substr(0, (this.boundary.length + 2)) === (`--${this.boundary}`)) {
                 if (line.substr(this.boundary.length + 2, 2) === '--') {
                     // end
                 }
@@ -413,11 +413,11 @@ function insert_banner (ct, enc, buf, banners) {
     let banner_buf = null;
     if (Iconv) {
         try {
-            const converter = new Iconv("UTF-8", enc + "//IGNORE");
+            const converter = new Iconv("UTF-8", `${enc}//IGNORE`);
             banner_buf = converter.convert(banner_str);
         }
         catch (err) {
-            logger.logerror("iconv conversion of banner to " + enc + " failed: " + err);
+            logger.logerror(`iconv conversion of banner to ${enc} failed: ${err}`);
         }
     }
 
