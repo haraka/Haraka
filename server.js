@@ -41,6 +41,7 @@ Server.load_smtp_ini = function () {
         daemon_log_file: '/var/log/haraka.log',
         daemon_pid_file: '/var/run/haraka.pid',
         force_shutdown_timeout: 30,
+        smtps_port: 465,
     };
 
     for (const key in defaults) {
@@ -345,10 +346,10 @@ Server.get_smtp_server = function (host, port, inactivity_timeout, done) {
         });
     }
 
-    if (port === '465') {
+    if (port === Server.cfg.main.smtps_port) {
         logger.loginfo('getting SocketOpts for SMTPS server');
         tls_socket.getSocketOpts('*', opts => {
-            logger.loginfo(`Creating TLS server on ${host}:465`);
+            logger.loginfo(`Creating TLS server on ${host}:${Server.cfg.main.smtps_port}`);
             server = tls.createServer(opts, onConnect);
             tls_socket.addOCSP(server);
             server.has_tls=true;
@@ -362,6 +363,7 @@ Server.get_smtp_server = function (host, port, inactivity_timeout, done) {
     }
     else {
         server = tls_socket.createServer(onConnect);
+        server.has_tls = false;
         Server.listeners.push(server);
         done(server);
     }
@@ -379,7 +381,7 @@ Server.setup_smtp_listeners = function (plugins2, type, inactivity_timeout) {
                 new Error('Invalid "listen" format in smtp.ini'));
 
             const host = hp[1];
-            const port = hp[2];
+            const port = parseInt(hp[2], 10);
 
             Server.get_smtp_server(host, port, inactivity_timeout, (server) => {
                 if (!server) return listenerDone();
