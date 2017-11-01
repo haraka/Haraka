@@ -5,7 +5,7 @@
 const nopt = require('nopt');
 const path = require('path');
 const base_path = path.join(__dirname, '..');
-const SPF = require(base_path + '/spf').SPF;
+const SPF = require(`${base_path}/spf`).SPF;
 const spf = new SPF();
 
 const parsed = nopt({ 'debug': Boolean, 'ip': String, 'helo': String, 'domain': String  });
@@ -36,13 +36,13 @@ if (parsed.domain) {
 
 spf.check_host(parsed.ip, (domain ? domain : parsed.helo), null, function (err, result) {
     if (err) {
-        console.log('Error: ' + err.message);
+        console.log(`Error: ${err.message}`);
         process.exit(1);
     }
     console.log([
-        'ip=' + parsed.ip,
-        'helo="' + (parsed.helo ? parsed.helo : '') + '"',
-        'domain="' + (domain ? domain : '') + '"',
-        'result=' + spf.result(result)
+        `ip=${parsed.ip}`,
+        `helo="${(parsed.helo ? parsed.helo : '')}"`,
+        `domain="${(domain ? domain : '')}"`,
+        `result=${spf.result(result)}`
     ].join(' '));
 });

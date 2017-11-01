@@ -97,26 +97,45 @@ exports.get_smtp_server = {
         this.server.config = this.config.module_config(path.resolve('tests'));
         this.server.plugins.config = this.config.module_config(path.resolve('tests'));
 
-        done();
+        this.server.load_default_tls_config(() => done());
     },
     'gets a net server object': function (test) {
-        let server;
-        try { server = this.server.get_smtp_server('0.0.0.0', 2501, 10); }
-        catch (ignore) {
-            test.done();
-            return;
-        }
-        if (!server) {   // can't bind to IP/port (fails on Travis)
-            console.error('unable to bind to 0.0.0.0:2501')
-            // test.expect(0);
-            test.done();
-            return;
-        }
-        test.expect(2);
-        test.ok(server);
-        server.getConnections(function (err, count) {
-            test.equal(0, count);
-            test.done();
+        this.server.get_smtp_server('0.0.0.0', 2501, 10, (server) => {
+            if (!server) {
+                console.error('unable to bind to 0.0.0.0:2501');
+                // test.expect(0);
+                if (process.env.CI) { // can't bind to IP/port (fails on Travis)
+                    test.done();
+                    return;
+                }
+            }
+            test.expect(3);
+            test.ok(server);
+            test.equal(server.has_tls, false);
+            server.getConnections(function (err, count) {
+                test.equal(0, count);
+                test.done();
+            });
+        });
+    },
+    'gets a TLS net server object': function (test) {
+        this.server.cfg.main.smtps_port = 2502;
+        this.server.get_smtp_server('0.0.0.0', 2502, 10, (server) => {
+            if (!server) {
+                console.error('unable to bind to 0.0.0.0:2502');
+                // test.expect(0);
+                if (process.env.CI) { // can't bind to IP/port (fails on Travis)
+                    test.done();
+                    return;
+                }
+            }
+            test.expect(3);
+            test.ok(server);
+            test.equal(server.has_tls, true);
+            server.getConnections(function (err, count) {
+                test.equal(0, count);
+                test.done();
+            });
         });
     }
 };

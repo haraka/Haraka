@@ -39,7 +39,7 @@ exports.load_attachment_ini = function () {
     plugin.cfg.timeout = (plugin.cfg.main.timeout || 30) * 1000;
     plugin.archive_max_depth = plugin.cfg.main.archive_max_depth || 5;
     plugin.archive_exts = options_to_array(plugin.cfg.main.archive_extensions) ||
-                              default_archive_extns;
+        default_archive_extns;
 };
 
 exports.find_bsdtar_path = function (cb) {
@@ -165,7 +165,7 @@ exports.unarchive_recursive = function (connection, f, archive_file_name, cb) {
             clearTimeout(t1_timer);
             if (code && code > 0) {
                 // Error was returned
-                return do_cb(new Error(`bsdtar returned error code: ${code} error=${stderr.replace(/\r?\n/)} `));
+                return do_cb(new Error(`bsdtar returned error code: ${code} error=${stderr.replace(/\r?\n/,' ')}`));
             }
             if (signal) {
                 // Process terminated due to signal
@@ -193,7 +193,7 @@ exports.unarchive_recursive = function (connection, f, archive_file_name, cb) {
                     tmp.file((err, tmpfile, fd) => {
                         count--;
                         if (err) return do_cb(err.message);
-                        connection.logdebug(plugin, `created tmp file: ${tmpfile}(fd=${fd}) for file (${prefix ? `${prefix}/` : ''}) ${file}`);
+                        connection.logdebug(plugin, `created tmp file: ${tmpfile} (fd=${fd}) for file ${prefix ? `${prefix}/` : ''} ${file}`);
                         tmpfiles.push([fd, tmpfile]);
                         // Extract this file from the archive
                         count++;
@@ -234,8 +234,7 @@ exports.unarchive_recursive = function (connection, f, archive_file_name, cb) {
                                 return do_cb(new Error(`bsdtar terminated by signal: ${signal}`));
                             }
                             // Recurse
-                            return listFiles(tmpfile, (prefix ? prefix + '/' : '') +
-                                                      file, depth);
+                            return listFiles(tmpfile, (prefix ? prefix + '/' : '') + file, depth);
                         });
                         cmd.stdout.pipe(tws);
                     });
@@ -311,7 +310,7 @@ exports.start_attachment = function (connection, ctype, filename, body, stream) 
     // See if filename extension matches archive extension list
     // We check with the dot prefixed and without
     if (archives_disabled || (plugin.archive_exts.indexOf(fileext) === -1 &&
-        plugin.archive_exts.indexOf(fileext.substring(1)) === -1))
+            plugin.archive_exts.indexOf(fileext.substring(1)) === -1))
     {
         return;
     }
@@ -505,4 +504,3 @@ exports.wait_for_attachment_hooks = function (next, connection) {
         next();
     }
 };
-
