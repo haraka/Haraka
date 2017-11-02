@@ -498,12 +498,13 @@ class DKIMVerifyStream extends Stream {
                     this._in_body = true;
                     // Parse the headers
                     for (let h=0; h<this.headers.length; h++) {
-                        const [ , header_name] = /^([^: ]+):\s*((:?.|[\r\n])*)/.exec(this.headers[h]);
-                        if (header_name) {
-                            const hn = header_name.toLowerCase();
-                            if (!this.header_idx[hn]) this.header_idx[hn] = [];
-                            this.header_idx[hn].push(this.headers[h]);
-                        }
+                        const match = /^([^: ]+):\s*((:?.|[\r\n])*)/.exec(this.headers[h]);
+                        if (!match) continue;
+                        const header_name = match[1];
+                        if (!header_name) continue;
+                        const hn = header_name.toLowerCase();
+                        if (!this.header_idx[hn]) this.header_idx[hn] = [];
+                        this.header_idx[hn].push(this.headers[h]);
                     }
                     if (!this.header_idx['dkim-signature']) {
                         this._no_signatures_found = true;
