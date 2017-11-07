@@ -356,7 +356,7 @@ Where `options` is a Object that may contain the following keys:
 
 | Key/Value              | Description                                                                               |
 |------------------------|--------------------------------------------------------------------------------------------
-| `dot_stuffed: true`    | Use this if you are passing your content dot-stuffed (a dot at the start of a line is doubled, like it is in SMTP conversation, see https://tools.ietf.org/html/rfc2821#section-4.5.2).|
+| `dot_stuffed: true`    | Use this if you are passing your content dot-stuffed (a dot at the start of a line is doubled, like it is in SMTP conversation, see [RFC 2821](https://tools.ietf.org/html/rfc2821#section-4.5.2).|
 | `notes: { key: value}` | In case you need notes in the new transaction that `send_email()` creates. |
 | `remove_msgid: true`   | Remove any Message-Id header found in the message.  If you are reading a message in from the filesystem and you want to ensure that a generated Message-Id header is used in preference over the original.  This is useful if you are releasing mail from a quarantine. |
 | `remove_date: true`    | Remove any Date header found in the message.  If you are reading a message in from the filesystem and you want to ensure that a generated Date header is used in preference over the original.  This is useful if you are releasing mail from a quarantine. |
