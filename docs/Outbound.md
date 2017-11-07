@@ -123,8 +123,8 @@ The ToDo Object
 The `todo` object contains information about how to deliver this mail. Keys
 you may be interested in are:
 
-* rcpt_to - an Array of Address objects - the rfc.2821 recipients of this mail
-* mail_from - an Address object - the rfc.2821 sender of this mail
+* rcpt_to - an Array of `Address`[1] objects - the rfc.2821 recipients of this mail
+* mail_from - an `Address`[1] object - the rfc.2821 sender of this mail
 * domain - the domain this mail is going to (see `always_split` above)
 * notes - the original transaction.notes for this mail, also contains the
   following useful keys:
@@ -234,7 +234,7 @@ that received the message and will typically contain the remote queue ID and
 message being delivered.
 * `port` - Port number that the message was delivered to.
 * `mode` - Shows whether SMTP or LMTP was used to deliver the mail.
-* `ok_recips` - an Address array containing all of the recipients that were
+* `ok_recips` - an `Address`[1] array containing all of the recipients that were
 successfully delivered to.
 * `secured` - A boolean denoting if the connection used TLS or not.
 
@@ -362,3 +362,6 @@ Where `options` is a Object that may contain the following keys:
 | `remove_date: true`    | Remove any Date header found in the message.  If you are reading a message in from the filesystem and you want to ensure that a generated Date header is used in preference over the original.  This is useful if you are releasing mail from a quarantine. |
 
 
+    outbound.send_email(from, to, contents, outnext, { notes: transaction.notes });
+
+[1]: `Address` objects are [address-rfc2821 objects](https://github.com/haraka/node-address-rfc2821).

@@ -48,10 +48,10 @@ exports.connectionRaw = {
         test.done();
     },
     'has local object': function (test) {
-        test.expect(4);
+        test.expect(5);
         test.equal(this.connection.local.ip, null);
         test.equal(this.connection.local.port, null);
-        // test.ok(this.connection.local.host, this.connection.local.host);
+        test.ok(this.connection.local.host, this.connection.local.host);
         // backwards compat, sunset v3.0.0
         test.equal(this.connection.local_ip, null);
         test.equal(this.connection.local_port, null);
@@ -233,4 +233,14 @@ exports.get_remote = {
         test.equal(this.connection.get_remote('host'), '[172.16.199.198]');
         test.done();
     },
+}
+
+exports.local_info = {
+    setUp : _set_up,
+    tearDown : _tear_down,
+    'is Haraka/version': function (test) {
+        test.expect(1);
+        test.ok(/Haraka\/\d.\d/.test(this.connection.local.info), this.connection.local.info);
+        test.done();
+    }
 }

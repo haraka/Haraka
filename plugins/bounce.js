@@ -60,13 +60,13 @@ exports.load_bounce_ini = function () {
 
     // Legacy config handling
     if (plugin.cfg.main.reject_invalid) {
-        plugin.logerror("bounce.ini is out of date, please update!");
+        plugin.logerror('bounce.ini is out of date, please update!');
         plugin.cfg.check.single_recipient=true;
         plugin.cfg.reject.single_recipient=true;
     }
 
     if (plugin.cfg.main.reject_all) {
-        plugin.logerror("bounce.ini is out of date, please update!");
+        plugin.logerror('bounce.ini is out of date, please update!');
         plugin.cfg.check.reject_all=true;
     }
 };
@@ -83,7 +83,7 @@ exports.reject_all = function (next, connection, params) {
 
     connection.transaction.results.add(plugin,
         {fail: 'bounces_accepted', emit: true });
-    return next(DENY, "No bounces accepted here");
+    return next(DENY, 'No bounces accepted here');
 };
 
 exports.single_recipient = function (next, connection) {
@@ -116,14 +116,13 @@ exports.single_recipient = function (next, connection) {
         return next();
     }
 
-    connection.loginfo(plugin, "bounce with too many recipients to: " +
-        connection.transaction.rcpt_to.join(','));
+    connection.loginfo(plugin, `bounce with too many recipients to: ${connection.transaction.rcpt_to.join(',')}`);
 
     transaction.results.add(plugin, {fail: 'single_recipient', emit: true });
 
     if (!plugin.cfg.reject.single_recipient) return next();
 
-    return next(DENY, "this bounce message does not have 1 recipient");
+    return next(DENY, 'this bounce message does not have 1 recipient');
 };
 
 exports.empty_return_path = function (next, connection) {
@@ -159,7 +158,7 @@ exports.empty_return_path = function (next, connection) {
     }
 
     transaction.results.add(plugin, {fail: 'empty_return_path', emit: true });
-    return next(DENY, "bounce with non-empty Return-Path (RFC 3834)");
+    return next(DENY, 'bounce with non-empty Return-Path (RFC 3834)');
 };
 
 exports.bad_rcpt = function (next, connection) {
@@ -174,7 +173,7 @@ exports.bad_rcpt = function (next, connection) {
         const rcpt = connection.transaction.rcpt_to[i].address();
         if (!plugin.cfg.invalid_addrs[rcpt]) continue;
         transaction.results.add(plugin, {fail: 'bad_rcpt', emit: true });
-        return next(DENY, "That recipient does not accept bounces");
+        return next(DENY, 'That recipient does not accept bounces');
     }
 
     transaction.results.add(plugin, {pass: 'bad_rcpt'});
@@ -239,14 +238,13 @@ exports.non_local_msgid = function (next, connection) {
     let matches = {}
     find_message_id_headers(matches, transaction.body, connection, plugin);
     matches = Object.keys(matches);
-    connection.logdebug(plugin, 'found Message-IDs: ' + matches.join(', '));
+    connection.logdebug(plugin, `found Message-IDs: ${matches.join(', ')}`);
 
     if (!matches.length) {
-        connection.loginfo(plugin, "no Message-ID matches");
+        connection.loginfo(plugin, 'no Message-ID matches');
         transaction.results.add(plugin, { fail: 'Message-ID' });
         if (!plugin.cfg.reject.non_local_msgid) return next();
-        return next(DENY, 'bounce without Message-ID in headers, unable to ' +
-                ' verify that I sent it');
+        return next(DENY, `bounce without Message-ID in headers, unable to verify that I sent it`);
     }
 
     const domains=[];
@@ -261,7 +259,7 @@ exports.non_local_msgid = function (next, connection) {
             'no domain(s) parsed from Message-ID headers');
         transaction.results.add(plugin, { fail: 'Message-ID parseable' });
         if (!plugin.cfg.reject.non_local_msgid) return next();
-        return next(DENY, "bounce with invalid Message-ID, I didn't send it.");
+        return next(DENY, `bounce with invalid Message-ID, I didn't send it.`);
     }
 
     connection.logdebug(plugin, domains);
@@ -276,8 +274,7 @@ exports.non_local_msgid = function (next, connection) {
     if (valid_domains.length === 0) {
         transaction.results.add(plugin, { fail: 'Message-ID valid domain' });
         if (!plugin.cfg.reject.non_local_msgid) return next();
-        return next(DENY, 'bounce Message-ID without valid domain, ' +
-                "I didn't send it.");
+        return next(DENY, `bounce Message-ID without valid domain, I didn't send it.`);
     }
 
     return next();
@@ -335,7 +332,7 @@ exports.bounce_spf = function (next, connection) {
         return next();
     }
 
-    connection.logdebug(plugin, 'found IPs to check: ' + ips.join(', '));
+    connection.logdebug(plugin, `found IPs to check: ${ips.join(', ')}`);
 
     let pending = 0;
     let aborted = false;
@@ -370,22 +367,20 @@ exports.bounce_spf = function (next, connection) {
                     connection.logerror(plugin, err.message);
                     return run_cb();
                 }
-                connection.logdebug(plugin, 'ip=' + ip + ' ' +
-                                            'spf_result=' + spf.result(result));
+                connection.logdebug(plugin, `ip=${ip} spf_result=${spf.result(result)}`);
                 switch (result) {
                     case (spf.SPF_NONE):
                         // falls through, domain doesn't publish an SPF record
                     case (spf.SPF_TEMPERROR):
                     case (spf.SPF_PERMERROR):
                         // Abort as all subsequent lookups will return this
-                        connection.logdebug(plugin, 'Aborted: SPF returned ' +
-                                                    spf.result(result));
+                        connection.logdebug(plugin, `Aborted: SPF returned ${spf.result(result)}`);
                         txn.results.add(plugin, { skip: 'bounce_spf' });
                         return run_cb(true);
                     case (spf.SPF_PASS):
                         // Presume this is a valid bounce
                         // TODO: this could be spoofed; could weight each IP to combat
-                        connection.loginfo(plugin, 'Valid bounce originated from ' + ip);
+                        connection.loginfo(plugin, `Valid bounce originated from ${ip}`);
                         txn.results.add(plugin, { pass: 'bounce_spf' });
                         return run_cb(true);
                 }

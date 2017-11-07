@@ -10,6 +10,7 @@ const path        = require('path');
 
 // npm libs
 const ipaddr      = require('ipaddr.js');
+const config      = require('haraka-config');
 const constants   = require('haraka-constants');
 const net_utils   = require('haraka-net-utils');
 const Notes       = require('haraka-notes');
@@ -18,18 +19,14 @@ const Address     = require('address-rfc2821').Address;
 const ResultStore = require('haraka-results');
 
 // Haraka libs
-const config      = require('haraka-config');
 const logger      = require('./logger');
 const trans       = require('./transaction');
 const plugins     = require('./plugins');
 const rfc1869     = require('./rfc1869');
 const outbound    = require('./outbound');
 
-const hostname    = (os.hostname().split(/\./))[0];
 const hpj         = fs.readFileSync(path.join(__dirname, 'package.json'));
-const version     = JSON.parse(hpj).version;
 const states      = constants.connection.state;
-
 
 // Load HAProxy hosts into an object for fast lookups
 // as this list is checked on every new connection.
@@ -56,13 +53,14 @@ function loadHAProxyHosts () {
 loadHAProxyHosts();
 
 class Connection {
-    constructor (client,server) {
+    constructor (client, server) {
         this.client = client;
         this.server = server;
         this.local = {           // legacy property locations
             ip: null,            // c.local_ip
             port: null,          // c.local_port
-            host: null,
+            host: config.get('me'),
+            info: 'Haraka',
         };
         this.remote = {
             ip:   null,          // c.remote_ip
@@ -102,8 +100,7 @@ class Connection {
         this.transaction = null;
         this.tran_count = 0;
         this.capabilities = null;
-        this.banner_includes_uuid =
-        config.get('banner_includes_uuid') ? true : false;
+        this.banner_includes_uuid = config.get('banner_includes_uuid') ? true : false;
         this.deny_includes_uuid = config.get('deny_includes_uuid') || null;
         this.early_talker = false;
         this.pipelining = false;
@@ -132,6 +129,9 @@ class Connection {
         this.last_rcpt_msg = null;
         this.hook = null;
         this.header_hide_version = config.get('header_hide_version') ? true : false;
+        if (!this.header_hide_version) {
+            this.local.info += `/${JSON.parse(hpj).version}`;
+        }
         Connection.setupClient(this);
     }
     static setupClient (self) {
@@ -274,7 +274,7 @@ class Connection {
             if (logger.would_log(logger.LOGPROTOCOL)) {
                 this.logprotocol(`C: (after-disconnect): ${this.current_line}`, {'state': this.state});
             }
-            this.loginfo("data after disconnect from " + this.remote.ip);
+            this.loginfo(`data after disconnect from ${this.remote.ip}`);
             return;
         }
 
@@ -288,7 +288,7 @@ class Connection {
 
         this.current_line = line.toString(this.encoding).replace(/\r?\n/, '');
         if (logger.would_log(logger.LOGPROTOCOL)) {
-            this.logprotocol("C: " + this.current_line, {'state': this.state});
+            this.logprotocol(`C: ${this.current_line}`, {'state': this.state});
         }
 
         // Check for non-ASCII characters
@@ -312,13 +312,13 @@ class Connection {
 
         if (this.state === states.CMD) {
             this.state = states.PAUSE_SMTP;
-            const matches = /^([^ ]*)( +(.*))?$/.exec(this.current_line);
-            if (!matches) {
+            const [ , methodMatch, , remainingMatch] = /^([^ ]*)( +(.*))?$/.exec(this.current_line);
+            if (!methodMatch) {
                 return plugins.run_hooks('unrecognized_command',
                     this, this.current_line);
             }
-            const method = `cmd_${matches[1].toLowerCase()}`;
-            const remaining = matches[3] || '';
+            const method = `cmd_${methodMatch.toLowerCase()}`;
+            const remaining = remainingMatch || '';
             if (this[method]) {
                 try {
                     this[method](remaining);
@@ -339,9 +339,7 @@ class Connection {
             }
             else {
                 // unrecognized command
-                matches.splice(0,1);
-                matches.splice(1,1);
-                plugins.run_hooks('unrecognized_command', this, matches);
+                plugins.run_hooks('unrecognized_command', this, [methodMatch, remainingMatch]);
             }
         }
         else if (this.state === states.LOOP) {
@@ -448,7 +446,7 @@ class Connection {
                     // ensures that we only process one command at a
                     // time.
                     this.pipelining = true;
-                    this.logdebug('pipeline: ' + this_line);
+                    this.logdebug(`pipeline: ${this_line}`);
                 }
                 else {
                     // Invalid pipeline sequence
@@ -521,7 +519,7 @@ class Connection {
         }
 
         if (code >= 400) {
-            this.last_reject = code + ' ' + messages.join(' ');
+            this.last_reject = `${code} ${messages.join(' ')}`;
             if (this.deny_includes_uuid) {
                 uuid = (this.transaction || this).uuid;
                 if (this.deny_includes_uuid > 1) {
@@ -532,9 +530,11 @@ class Connection {
 
         let mess;
         let buf = '';
+        const hostname = os.hostname().split('.').shift();
+        const _uuid = uuid ? `[${uuid}@${hostname}] ` : '';
 
         while ((mess = messages.shift())) {
-            const line = `${code}${(messages.length ? "-" : " ")}${(uuid ? `[${uuid}@${hostname}]` : '' )}${mess}`;
+            const line = `${code}${(messages.length ? "-" : " ")}${_uuid}${mess}`;
             this.logprotocol(`S: ${line}`);
             buf = `${buf}${line}\r\n`;
         }
@@ -779,13 +779,13 @@ class Connection {
                 if (greeting.length) {
                     // RFC5321 section 4.2
                     // Hostname/domain should appear after the 220
-                    greeting[0] = `${config.get('me')} ESMTP ${greeting[0]}`;
+                    greeting[0] = `${this.local.host} ESMTP ${greeting[0]}`;
                     if (this.banner_includes_uuid) {
                         greeting[0] += ` (${this.uuid})`;
                     }
                 }
                 else {
-                    greeting = `${config.get('me')} ESMTP Haraka  ${(this.header_hide_version  ? '' : ` ${version}`)} ready`;
+                    greeting = `${this.local.host} ESMTP ${this.local.info} ready`;
                     if (this.banner_includes_uuid) {
                         greeting += ` (${this.uuid})`;
                     }
@@ -834,7 +834,7 @@ class Connection {
             default:
                 // RFC5321 section 4.1.1.1
                 // Hostname/domain should appear after 250
-                this.respond(250, `${config.get('me')} Hello ${this.get_remote('host')}, Haraka is at your service.`);
+                this.respond(250, `${this.local.host} Hello ${this.get_remote('host')}, Haraka is at your service.`);
         }
     }
     ehlo_respond (retval, msg) {
@@ -868,7 +868,7 @@ class Connection {
                 // Hostname/domain should appear after 250
 
                 const response = [
-                    `${config.get('me')} Hello ${this.get_remote('host')}, Haraka is at your service.`,
+                    `${this.local.host} Hello ${this.get_remote('host')}, Haraka is at your service.`,
                     "PIPELINING",
                     "8BITMIME",
                     "SMTPUTF8",
@@ -888,7 +888,7 @@ class Connection {
     }
     quit_respond (retval, msg) {
         const self = this;
-        this.respond(221, msg || `${config.get('me')} closing connection. Have a jolly good day.`, () => {
+        this.respond(221, msg || `${this.local.host} closing connection. Have a jolly good day.`, () => {
             self.disconnect();
         });
     }
@@ -1070,7 +1070,7 @@ class Connection {
                 });
                 break;
             default:
-                this.respond(250, msg || `${dmsg} denied`, () => {
+                this.respond(250, msg || `${dmsg} OK`, () => {
                     self.rcpt_incr(rcpt, 'accept', msg, retval);
                 });
         }
@@ -1086,7 +1086,7 @@ class Connection {
             return;
         }
         const rcpt = this.transaction.rcpt_to[this.transaction.rcpt_to.length - 1];
-        const dmsg = `recipient rcpt.format()`;
+        const dmsg = `recipient ${rcpt.format()}`;
         if (retval !== constants.ok) {
             this.lognotice(
                 dmsg,
@@ -1131,7 +1131,7 @@ class Connection {
                 if (retval !== constants.cont) {
                     this.logalert("No plugin determined if relaying was allowed");
                 }
-                const rej_msg = 'I cannot deliver mail for ' + rcpt.format();
+                const rej_msg = `I cannot deliver mail for ${rcpt.format()}`;
                 this.respond(550, rej_msg, function () {
                     self.rcpt_incr(rcpt, 'reject', rej_msg, retval);
                     self.transaction.rcpt_to.pop();
@@ -1212,7 +1212,7 @@ class Connection {
         const results = (String(line)).split(/ +/);
         if (/key:/.test(results[0])) {
             const internal_key = config.get('internalcmd_key');
-            if (results[0] != "key:" + internal_key) {
+            if (results[0] != `key:${internal_key}`) {
                 return this.respond(501, "Invalid internalcmd_key - check config");
             }
             results.shift();
@@ -1394,8 +1394,8 @@ class Connection {
     received_line () {
         let smtp = this.hello.verb === 'EHLO' ? 'ESMTP' : 'SMTP';
         // Implement RFC3848
-        if (this.tls.enabled) smtp = smtp + 'S';
-        if (this.authheader) smtp = smtp + 'A';
+        if (this.tls.enabled) smtp += 'S';
+        if (this.authheader) smtp += 'A';
 
         let sslheader;
 
@@ -1414,28 +1414,16 @@ class Connection {
             }
         }
 
-        const received_header = [
-            'from ',
-            this.hello.host, ' (',
-            this.get_remote('info'),
-            ")\n\t",
-            'by ',
-            config.get('me')
-        ]
+        let received_header = `from ${this.hello.host} (${this.get_remote('info')})
+\tby ${this.local.host} (${this.local.info}) with ${smtp} id ${this.transaction.uuid}
+\tenvelope-from ${this.transaction.mail_from.format()}`;
 
-        if (!this.header_hide_version) {
-            received_header.push(' (Haraka/', version, ')');
-        }
-        received_header.push(
-            ' with ', smtp,
-            ' id ', this.transaction.uuid,
-            "\n\t",
-            'envelope-from ', this.transaction.mail_from.format(),
-            ((this.authheader) ? ` ${this.authheader.replace(/\r?\n\t?$/, '')}` : ''),
-            ((sslheader) ? `\n\t${sslheader.replace(/\r?\n\t?$/,'')}` : ''),
-            ";\n\t", utils.date_to_str(new Date())
-        )
-        return received_header.join('');
+        if (this.authheader) received_header += ` ${this.authheader.replace(/\r?\n\t?$/, '')}`
+        if (sslheader)       received_header += `\n\t${sslheader.replace(/\r?\n\t?$/,'')}`
+
+        received_header += `;\n\t${utils.date_to_str(new Date())}`
+
+        return received_header;
     }
     auth_results (message) {
         // http://tools.ietf.org/search/rfc7001
@@ -1462,7 +1450,7 @@ class Connection {
         }
 
         // assemble the new header
-        let header = [ config.get('me') ];
+        let header = [ this.local.host ];
         header = header.concat(this.notes.authentication_results);
         if (has_tran === true) {
             header = header.concat(this.transaction.notes.authentication_results);
