@@ -434,10 +434,11 @@ exports.get_certs_dir = (tlsDir, done) => {
             if (finalErr) log.logerror(finalErr);
 
             if (!certs || !certs.length) {
-                log.loginfo('0 TLS certs in config/tls');
+                log.loginfo('found 0 TLS certs in config/tls');
                 return done(null, certs);
             }
 
+            log.loginfo(`found ${certs.length} TLS certs in config/tls`);
             certs.forEach(cert => {
                 if (cert.err) {
                     log.logerror(`${cert.file} had error: ${cert.err.message}`);
@@ -478,13 +479,9 @@ exports.getSocketOpts = (name, done) => {
     }
 
     // startup time, load the config/tls dir
-    if (!certsByHost['*']) {
-        tlss.load_tls_ini();
-        tlss.get_certs_dir('tls', getTlsOpts);
-        return;
-    }
+    if (!certsByHost['*']) tlss.load_tls_ini();
 
-    getTlsOpts();
+    tlss.get_certs_dir('tls', getTlsOpts);
 }
 
 function pipe (cleartext, socket) {
