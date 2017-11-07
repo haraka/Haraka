@@ -1085,7 +1085,7 @@ class Connection {
             return;
         }
         const rcpt = this.transaction.rcpt_to[this.transaction.rcpt_to.length - 1];
-        const dmsg = `recipient rcpt.format()`;
+        const dmsg = `recipient ${rcpt.format()}`;
         if (retval !== constants.ok) {
             this.lognotice(
                 dmsg,
