@@ -76,10 +76,10 @@ exports.send_email = function () {
     let to   = arguments[1];
     let contents = arguments[2];
     const next = arguments[3];
-    const options = arguments[4];
+    const options = arguments[4] || {};
 
-    const dot_stuffed = ((options && options.dot_stuffed) ? options.dot_stuffed : false);
-    const notes = ((options && options.notes) ? options.notes : null);
+    const dot_stuffed = options.dot_stuffed ? options.dot_stuffed : false;
+    const notes = options.notes ? options.notes : null;
 
     logger.loginfo("[outbound] Sending email via params");
 
@@ -161,10 +161,10 @@ exports.send_email = function () {
 
     // Allow for the removal of Message-Id and/or Date headers which
     // is useful when resending mail from a quarantine.
-    if (options && options.remove_msgid) {
+    if (options.remove_msgid) {
         transaction.remove_header('Message-Id');
     }
-    if (options && options.remove_date) {
+    if (options.remove_date) {
         transaction.remove_header('Date');
     }
 
