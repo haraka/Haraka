@@ -5,6 +5,7 @@
 * Fixes
     * Fix ability to set log level to emerg #2128
     * outbound/hmail: use Buffer to correctly read binary file data + tests #2231
+    * quarantine: consolidate 2x hook_init_master functions
 * Changes
     * outbound/hmail: add JSON sanity test before JSON.parse #2231
     * outbound/index: use newer Buffer.from syntax #2231
