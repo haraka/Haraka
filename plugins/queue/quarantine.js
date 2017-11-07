@@ -14,7 +14,9 @@ exports.register = function () {
 };
 
 exports.hook_init_master = function (next, server) {
-    this.init_quarantine_dir(next);
+    this.init_quarantine_dir(() => {
+        this.clean_tmp_directory(next);
+    });
 }
 
 exports.load_quarantine_ini = function () {
@@ -32,7 +34,7 @@ const zeroPad = exports.zeroPad = function (n, digits) {
     return n;
 };
 
-exports.hook_init_master = function (next) {
+exports.clean_tmp_directory = function (next) {
     // At start-up; delete any files in the temporary directory
     // NOTE: This is deliberately syncronous to ensure that this
     //       is completed prior to any messages being received.
@@ -46,7 +48,7 @@ exports.hook_init_master = function (next) {
             fs.unlinkSync(path.join(tmp_dir, dirent[i]));
         }
     }
-    return next();
+    next();
 };
 
 function wants_quarantine (connection) {
