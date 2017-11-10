@@ -348,18 +348,20 @@ should queueing to disk fail e.g:
 
     outbound.send_email(from, to, contents);
 
+You can pass various options to `outbound.send_email` like so:
 
-In case you are passing your content dot-stuffed (a dot at the start of a line
-is doubled, like it is in SMTP conversation, 
-see https://tools.ietf.org/html/rfc2821#section-4.5.2), you should pass the
-```dot_stuffed: true``` option, like so:
-    
-    outbound.send_email(from, to, contents, outnext, { dot_stuffed: true });
+    outbound.send_email(from, to, contents, outnext, options);
 
+Where `options` is a Object that may contain the following keys:
 
-In case you need notes in the new transaction that `send_email()` creates, you should pass the
-```notes``` option, like so:
+| Key/Value              | Description                                                                               |
+|------------------------|--------------------------------------------------------------------------------------------
+| `dot_stuffed: true`    | Use this if you are passing your content dot-stuffed (a dot at the start of a line is doubled, like it is in SMTP conversation, see [RFC 2821](https://tools.ietf.org/html/rfc2821#section-4.5.2).|
+| `notes: { key: value}` | In case you need notes in the new transaction that `send_email()` creates. |
+| `remove_msgid: true`   | Remove any Message-Id header found in the message.  If you are reading a message in from the filesystem and you want to ensure that a generated Message-Id header is used in preference over the original.  This is useful if you are releasing mail from a quarantine. |
+| `remove_date: true`    | Remove any Date header found in the message.  If you are reading a message in from the filesystem and you want to ensure that a generated Date header is used in preference over the original.  This is useful if you are releasing mail from a quarantine. |
+
 
     outbound.send_email(from, to, contents, outnext, { notes: transaction.notes });
 
-[1]: `Address` objects are address-rfc2821 objects. See https://github.com/haraka/node-address-rfc2821
+[1]: `Address` objects are [address-rfc2821 objects](https://github.com/haraka/node-address-rfc2821).

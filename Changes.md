@@ -64,6 +64,7 @@
         * timer_queue #2226
         * outbound/hmail #2197
     * Automatically set connection.remote.is_private when connection.remote.ip is set #2192
+    * Add remove_msgid and remove_date options to outbound.send_email #2209
 
 
 ## 2.8.16 - Sep 30, 2017
