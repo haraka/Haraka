@@ -348,6 +348,7 @@ exports.mailing_list = function (next, connection) {
         'Mailing-List'       : [
             { mlm: 'ezmlm',       match: 'ezmlm' },
             { mlm: 'yahoogroups', match: 'yahoogroups' },
+            { mlm: 'googlegroups', match: 'googlegroups' },
         ],
         'Sender'             : [
             { mlm: 'majordomo',   start: 'owner-' },
@@ -371,8 +372,6 @@ exports.mailing_list = function (next, connection) {
                     found_mlm++;
                     continue;
                 }
-                // NOTE: Unlike the next "j.match" code block, this condition alone
-                //       (Sender header != "owner-...") should not log an error
                 connection.logdebug(plugin, `mlm start miss: ${name}: ${header}`);
             }
             if (j.match) {
@@ -381,7 +380,7 @@ exports.mailing_list = function (next, connection) {
                     found_mlm++;
                     continue;
                 }
-                connection.logerror(plugin, `mlm match miss: ${name}: ${header}`);
+                connection.logdebug(plugin, `mlm match miss: ${name}: ${header}`);
             }
             if (name === 'X-Mailman-Version') {
                 txr.add(plugin, {pass: `MLM(${j.mlm})`});
