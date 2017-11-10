@@ -10,6 +10,7 @@ const path        = require('path');
 
 // npm libs
 const ipaddr      = require('ipaddr.js');
+const config      = require('haraka-config');
 const constants   = require('haraka-constants');
 const net_utils   = require('haraka-net-utils');
 const Notes       = require('haraka-notes');
@@ -18,7 +19,6 @@ const Address     = require('address-rfc2821').Address;
 const ResultStore = require('haraka-results');
 
 // Haraka libs
-const config      = require('haraka-config');
 const logger      = require('./logger');
 const trans       = require('./transaction');
 const plugins     = require('./plugins');
@@ -26,9 +26,7 @@ const rfc1869     = require('./rfc1869');
 const outbound    = require('./outbound');
 
 const hpj         = fs.readFileSync(path.join(__dirname, 'package.json'));
-const version     = JSON.parse(hpj).version;
 const states      = constants.connection.state;
-
 
 // Load HAProxy hosts into an object for fast lookups
 // as this list is checked on every new connection.
@@ -55,13 +53,14 @@ function loadHAProxyHosts () {
 loadHAProxyHosts();
 
 class Connection {
-    constructor (client,server) {
+    constructor (client, server) {
         this.client = client;
         this.server = server;
         this.local = {           // legacy property locations
             ip: null,            // c.local_ip
             port: null,          // c.local_port
             host: config.get('me'),
+            info: 'Haraka',
         };
         this.remote = {
             ip:   null,          // c.remote_ip
@@ -101,8 +100,7 @@ class Connection {
         this.transaction = null;
         this.tran_count = 0;
         this.capabilities = null;
-        this.banner_includes_uuid =
-        config.get('banner_includes_uuid') ? true : false;
+        this.banner_includes_uuid = config.get('banner_includes_uuid') ? true : false;
         this.deny_includes_uuid = config.get('deny_includes_uuid') || null;
         this.early_talker = false;
         this.pipelining = false;
@@ -131,6 +129,9 @@ class Connection {
         this.last_rcpt_msg = null;
         this.hook = null;
         this.header_hide_version = config.get('header_hide_version') ? true : false;
+        if (!this.header_hide_version) {
+            this.local.info += `/${JSON.parse(hpj).version}`;
+        }
         Connection.setupClient(this);
     }
     static setupClient (self) {
@@ -529,9 +530,10 @@ class Connection {
 
         let mess;
         let buf = '';
+        const hostname = os.hostname().split('.').shift();
+        const _uuid = uuid ? `[${uuid}@${hostname}] ` : '';
 
         while ((mess = messages.shift())) {
-            const _uuid = uuid ? `[${uuid}@${os.hostname().split('.').shift()}] ` : '';
             const line = `${code}${(messages.length ? "-" : " ")}${_uuid}${mess}`;
             this.logprotocol(`S: ${line}`);
             buf = `${buf}${line}\r\n`;
@@ -783,8 +785,7 @@ class Connection {
                     }
                 }
                 else {
-                    const showVer = (this.header_hide_version ? '' : ` ${version}`);
-                    greeting = `${this.local.host} ESMTP Haraka${showVer} ready`;
+                    greeting = `${this.local.host} ESMTP ${this.local.info} ready`;
                     if (this.banner_includes_uuid) {
                         greeting += ` (${this.uuid})`;
                     }
@@ -1085,7 +1086,7 @@ class Connection {
             return;
         }
         const rcpt = this.transaction.rcpt_to[this.transaction.rcpt_to.length - 1];
-        const dmsg = `recipient rcpt.format()`;
+        const dmsg = `recipient ${rcpt.format()}`;
         if (retval !== constants.ok) {
             this.lognotice(
                 dmsg,
@@ -1413,11 +1414,9 @@ class Connection {
             }
         }
 
-        let received_header = `from ${this.hello.host} (${this.get_remote('info')})\n\tby ${this.local.host}`
-
-        if (!this.header_hide_version) received_header += ` (Haraka/${version})`
-
-        received_header += ` with ${smtp} id ${this.transaction.uuid}\n\tenvelope-from ${this.transaction.mail_from.format()}`;
+        let received_header = `from ${this.hello.host} (${this.get_remote('info')})
+\tby ${this.local.host} (${this.local.info}) with ${smtp} id ${this.transaction.uuid}
+\tenvelope-from ${this.transaction.mail_from.format()}`;
 
         if (this.authheader) received_header += ` ${this.authheader.replace(/\r?\n\t?$/, '')}`
         if (sslheader)       received_header += `\n\t${sslheader.replace(/\r?\n\t?$/,'')}`

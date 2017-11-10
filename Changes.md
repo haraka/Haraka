@@ -11,22 +11,58 @@
     * outbound/hmail: make haraka queue files human friendly #2231
     * plugins/rcpt_to.ldap -> haraka-plugin-rcpt-ldap #2144
     * plugins/auth/auth_ldap -> haraka-plugin-auth-ldap #2144
+    * auth_proxy: read TLS key and cert files from tls.ini #2212
+    * README: typo fixes #2210
+    * incorrect RCPT TO reply message #2227
+    * Resolve decoding bug when root part is base64 encoded. #2204
+    * Resolve base64 data truncation #2188
+    * Fix damaged encoding when body is non-utf #2187
+    * Fix disconnect hooks #2184
+    * ability to set log level to emerg #2128
+    * Improve docs for `Address` objects #2224
+    * connection: replace 3x ternaries with get_remote() #2169
+    * connection.local.host populated with hostname (from config/me) #2165
+    * connection.local.info populated with Haraka/version #2196
+    * npm packaged plugins:
+        * plugins/rcpt_to.ldap -> haraka-plugin-rcpt-ldap #2144
+        * plugins/auth/auth_ldap -> haraka-plugin-auth-ldap #2144
+        * plugins/graph -> haraka-plugin-graph #2185
+        * plugins/graph -> haraka-plugin-graph #2185
     * config: replace ./config.js with haraka-config #2119
-    * Replaced concatenated strings with template literals in the plugins/attachment.js #2155
-    * Replaced concatenated strings with template literals in the plugins/profile.js #2170
-    * Replaced concatenated strings with template literals max_unrecognised_commands.js #2171
-    * Replaced concatenated strings with template literals in the plugins/avg.js #2156
-    * replaced concatenated strings with template literals in the plugins/xclient.js #2159
-    * replaced concatenated strings with template literals in the tests/host_pool.js #2159
-    * replaced concatenated strings with template literals in the rfc1869.js #2159
-    * replaced concatenated strings with template literals in the plugins/relay.js #2174
-    * replaced concatenated strings with template literals in the plugins/relay_acl.js #2177
-    * replaced concatenated strings with template literals in the connection.js #2129
-    * replaced concatenated strings with template literals in plugins/toobusy.js #2186
-    * replaced concatenated strings with template literals in dkim.js #2216
-    * replaced concatenated strings with template literals in smtp_client.js #2129
+    * Replace concatenated strings with template literals (#2129) in:
+        * connection #2129
+        * dkim #2216
+        * host_pool #2198
+        * max_unrecognised_commands #2171
+        * outbound/todo #2233
+        * plugins/aliases #2229
+        * plugins/attachment.js #2155
+        * plugins/avg #2156
+        * plugins/bounce #2229
+        * plugins/profile #2170
+        * plugins/xclient #2159
+        * plugins/relay #2174
+        * plugins/relay_acl #2177
+        * plugins/toobusy #2186
+        * rfc1869 #2159
+        * smtp_client #2129, #2208
+        * tests/host_pool #2159
+    * use es6 destructuring (#2075) in:
+        * connection #2230
+        * dkim #2232
+    * use es6 classes (#2133) in:
+        * attachment_stream #2215
+        * chunkemitter #2219
+        * dkim #2206
+        * host_pool #2194
+        * mailheader #2213
+        * mailbody #2213
+        * smtp_client #2221
+        * spf #2214
+        * tls_socket #2190
+        * timer_queue #2226
+        * outbound/hmail #2197
     * Automatically set connection.remote.is_private when connection.remote.ip is set #2192
-    * Fix docs for `Address` objects #2224
 
 
 ## 2.8.16 - Sep 30, 2017
