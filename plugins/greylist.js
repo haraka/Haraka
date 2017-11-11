@@ -546,7 +546,9 @@ exports.promote_to_white = function (connection, grey_rec, cb) {
             throw err;
         }
         plugin.db.expire(white_key, white_ttl, function (err2, result2) {
-            plugin.lognotice(`DB error: ${util.inspect(err2)}`);
+            if (err2) {
+                plugin.lognotice(`DB error: ${util.inspect(err2)}`);
+            }
             return cb(err2, result2);
         });
     });
