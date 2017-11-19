@@ -41,7 +41,7 @@ class Header {
                 this._add_header(key, val, "push");
             }
             else {
-                logger.logerror("Header did not look right: " + this.header_list[i]);
+                logger.lognotice("Header did not look right: " + this.header_list[i]);
             }
         }
 
