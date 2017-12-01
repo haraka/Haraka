@@ -246,7 +246,7 @@ class Body extends events.EventEmitter {
                     this.bodytext = converter.convert(buf).toString();
                 }
                 catch (e) {
-                    logger.logerror(`iconv conversion from ${enc} to UTF-8 failed: ${e.message}`);
+                    logger.logwarn(`iconv conversion from ${enc} to UTF-8 failed: ${e.message}`);
                     this.bodytext = buf.toString();
                 }
             }
