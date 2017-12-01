@@ -279,7 +279,7 @@ exports.send_trans_email = function (transaction, next) {
 
             transaction.results.add({ name: 'outbound'}, { pass: "queued" });
             if (next) {
-                next(constants.ok, "Message Queued");
+                next(constants.ok, `Message Queued (${transaction.uuid})`);
             }
         });
     }
