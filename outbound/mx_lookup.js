@@ -23,7 +23,7 @@ exports.lookup_mx = function lookup_mx (domain, cb) {
     let wrap_mx = function (a) { return a; };
     const process_dns = function (err, addresses) {
         if (err) {
-            if (err.code === 'ENODATA') {
+            if (err.code === 'ENODATA' || err.code === 'ENOTFOUND') {
                 // Most likely this is a hostname with no MX record
                 // Drop through and we'll get the A record instead.
                 return 0;
