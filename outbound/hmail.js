@@ -410,7 +410,7 @@ HMailItem.prototype.try_deliver_host_on_socket = function (mx, host, port, socke
             processing_mail = false;
             client_pool.release_client(socket, port, host, mx.bind, true);
             // try the next MX
-            return self.try_deliver_host(mx);
+            return self.try_deliver();
         }
     });
 
