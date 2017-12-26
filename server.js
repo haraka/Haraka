@@ -1,6 +1,12 @@
 'use strict';
 // smtp network server
 
+const daemon      = require('daemon');
+const fs          = require('fs');
+const os          = require('os');
+const path        = require('path');
+const tls         = require('tls');
+
 // let log = require('why-is-node-running');
 const tls_socket  = require('./tls_socket');
 const conn        = require('./connection');
@@ -8,12 +14,8 @@ const outbound    = require('./outbound');
 const async       = require('async');
 const cluster     = require('cluster');
 const constants   = require('haraka-constants');
-const daemon      = require('daemon');
-const os          = require('os');
-const path        = require('path');
-const tls         = require('tls');
 
-const Server        = exports;
+const Server      = exports;
 Server.logger     = require('./logger');
 Server.config     = require('haraka-config');
 Server.plugins    = require('./plugins');
@@ -71,7 +73,7 @@ Server.daemonize = function () {
         logger.lognotice('Daemonizing...');
     }
 
-    const log_fd = require('fs').openSync(c.daemon_log_file, 'a');
+    const log_fd = fs.openSync(c.daemon_log_file, 'a');
     daemon({ cwd: process.cwd(), stdout: log_fd });
 
     // We are the daemon from here on...
