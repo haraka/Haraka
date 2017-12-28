@@ -80,12 +80,13 @@ exports.send_email = function () {
 
     const dot_stuffed = options.dot_stuffed ? options.dot_stuffed : false;
     const notes = options.notes ? options.notes : null;
+    const origin = options.origin ? options.origin : null;
 
-    logger.loginfo("[outbound] Sending email via params");
+    logger.loginfo("[outbound] Sending email via params", origin);
 
     const transaction = trans.createTransaction();
 
-    logger.loginfo(`[outbound] Created transaction: ${transaction.uuid}`);
+    logger.loginfo(`[outbound] Created transaction: ${transaction.uuid}`, origin);
 
     //Adding notes passed as parameter
     if (notes) {
