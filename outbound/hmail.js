@@ -1195,7 +1195,7 @@ class HMailItem extends events.EventEmitter {
                     return self.double_bounce("Unable to queue the bounce message. Not sending bounce!");
                 }
                 self.discard();
-            });
+            }, {origin: this});
         });
     }
 
