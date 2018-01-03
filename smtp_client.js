@@ -157,9 +157,12 @@ class SMTPClient extends events.EventEmitter {
                     error = '';
                 }
                 // msg is e.g. "errored" or "timed out"
-                // error is e.g. "Error: connect ECONNREFUSE"
+                // error is e.g. "Error: connect ECONNREFUSED"
                 const errMsg = `${client.uuid}: [${client.host}:${client.port}] ` +
                     `SMTP connection ${msg} ${error}`;
+                if (client.state === STATE.ACTIVE) {
+                    client.emit('error', errMsg);
+                }
                 switch (client.state) {
                     case STATE.ACTIVE:
                     case STATE.IDLE:
@@ -167,10 +170,6 @@ class SMTPClient extends events.EventEmitter {
                         client.destroy();
                         break;
                     default:
-                }
-                if (client.state === STATE.ACTIVE) {
-                    client.emit('error', errMsg);
-                    return;
                 }
                 if ((msg === 'errored' || msg === 'timed out')
                       && client.state === STATE.DESTROYED){
