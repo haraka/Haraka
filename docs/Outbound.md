@@ -360,6 +360,7 @@ Where `options` is a Object that may contain the following keys:
 | `notes: { key: value}` | In case you need notes in the new transaction that `send_email()` creates. |
 | `remove_msgid: true`   | Remove any Message-Id header found in the message.  If you are reading a message in from the filesystem and you want to ensure that a generated Message-Id header is used in preference over the original.  This is useful if you are releasing mail from a quarantine. |
 | `remove_date: true`    | Remove any Date header found in the message.  If you are reading a message in from the filesystem and you want to ensure that a generated Date header is used in preference over the original.  This is useful if you are releasing mail from a quarantine. |
+| `origin: Object`       | Adds object as argument to logger.log calls inside outbound.send_email. Useful for tracking which Plugin/Connection/HMailItem object generated email. | 
 
 
     outbound.send_email(from, to, contents, outnext, { notes: transaction.notes });

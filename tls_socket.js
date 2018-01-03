@@ -3,15 +3,18 @@
 /* Obtained and modified from http://js.5sh.net/starttls.js on 8/18/2011.   */
 /*--------------------------------------------------------------------------*/
 
-const async     = require('async');
-const tls       = require('tls');
-const util      = require('util');
+// node.js built-ins
+const cluster   = require('cluster');
 const net       = require('net');
-const openssl   = require('openssl-wrapper').exec;
 const path      = require('path');
 const spawn     = require('child_process').spawn;
 const stream    = require('stream');
+const tls       = require('tls');
+const util      = require('util');
 
+// npm packages
+const async     = require('async');
+const openssl   = require('openssl-wrapper').exec;
 exports.config  = require('haraka-config');  // exported for tests
 
 const log       = require('./logger');
@@ -509,6 +512,8 @@ exports.ensureDhparams = done => {
 
     const filePath = tlss.cfg.main.dhparam || 'dhparams.pem';
     const fpResolved = path.resolve(exports.config.root_path, filePath);
+
+    if (cluster.isWorker) return; // only once, on the master process
 
     log.loginfo(`Generating a 2048 bit dhparams file at ${fpResolved}`);
 
