@@ -8,13 +8,18 @@ const logger       = require('../logger');
 
 const cfg          = require('./config');
 
-function _create_socket (port, host, local_addr, is_unix_socket, callback) {
+let socket_idx = 0;
+
+function _create_socket (pool_name, port, host, local_addr, is_unix_socket, callback) {
     const socket = is_unix_socket ? sock.connect({path: host}) :
         sock.connect({port: port, host: host, localAddress: local_addr});
+    socket.__pool_name = pool_name;
+    socket.__sock_idx = ++socket_idx;
     socket.setTimeout(cfg.connect_timeout * 1000);
     logger.logdebug(
         '[outbound] created',
         {
+            idx: socket_idx,
             host: host,
             port: port,
             pool_timeout: cfg.pool_timeout
@@ -22,14 +27,11 @@ function _create_socket (port, host, local_addr, is_unix_socket, callback) {
     );
     socket.once('connect', function () {
         socket.removeAllListeners('error'); // these get added after callback
+        socket.removeAllListeners('timeout');
         callback(null, socket);
     });
     socket.once('error', function (err) {
         socket.end();
-        const name = `outbound::${port}:${host}:${local_addr}:${cfg.pool_timeout}`;
-        if (server.notes.pool && server.notes.pool[name]) {
-            delete server.notes.pool[name];
-        }
         callback(`Outbound connection error: ${err}`, null);
     });
     socket.once('timeout', function () {
@@ -50,19 +52,19 @@ function get_pool (port, host, local_addr, is_unix_socket, max) {
         const pool = generic_pool.Pool({
             name: name,
             create: function (done) {
-                _create_socket(port, host, local_addr, is_unix_socket, done);
+                _create_socket(this.name, port, host, local_addr, is_unix_socket, done);
             },
             validate: function (socket) {
-                return socket.writable;
+                return socket.__fromPool && socket.writable;
             },
             destroy: function (socket) {
-                logger.logdebug(`[outbound] destroying pool entry for ${host}:${port}`);
-                // Remove pool object from server notes once empty
-                const size = pool.getPoolSize();
-                if (size === 0) {
-                    delete server.notes.pool[name];
-                }
+                logger.logdebug(`[outbound] destroying pool entry ${socket.__sock_idx} for ${host}:${port}`);
                 socket.removeAllListeners();
+                socket.__fromPool = false;
+                socket.on('line', function (line) {
+                    // Just assume this is a valid response
+                    logger.logprotocol(`[outbound] S: ${line}`);
+                });
                 socket.once('error', function (err) {
                     logger.logwarn(`[outbound] Socket got an error while shutting down: ${err}`);
                 });
@@ -70,15 +72,11 @@ function get_pool (port, host, local_addr, is_unix_socket, max) {
                     logger.loginfo("[outbound] Remote end half closed during destroy()");
                     socket.destroy();
                 })
-                if (!socket.writable) return;
-                logger.logprotocol("[outbound] C: QUIT");
-                socket.write("QUIT\r\n");
+                if (socket.writable) {
+                    logger.logprotocol("[outbound] C: QUIT");
+                    socket.write("QUIT\r\n");
+                }
                 socket.end(); // half close
-                socket.once('line', function (line) {
-                    // Just assume this is a valid response
-                    logger.logprotocol(`[outbound] S: ${line}`);
-                    socket.destroy();
-                });
             },
             max: max || 10,
             idleTimeoutMillis: cfg.pool_timeout * 1000,
@@ -96,7 +94,7 @@ function get_pool (port, host, local_addr, is_unix_socket, max) {
 // Get a socket for the given attributes.
 exports.get_client = function (port, host, local_addr, is_unix_socket, callback) {
     if (cfg.pool_concurrency_max == 0) {
-        return _create_socket(port, host, local_addr, is_unix_socket, callback);
+        return _create_socket(null, port, host, local_addr, is_unix_socket, callback);
     }
 
     const pool = get_pool(port, host, local_addr, is_unix_socket, cfg.pool_concurrency_max);
@@ -106,22 +104,22 @@ exports.get_client = function (port, host, local_addr, is_unix_socket, callback)
     pool.acquire(function (err, socket) {
         if (err) return callback(err);
         socket.__acquired = true;
+        logger.loginfo(`[outbound] acquired socket ${socket.__sock_idx} for ${socket.__pool_name}`);
         callback(null, socket);
     });
 }
 
 exports.release_client = function (socket, port, host, local_addr, error) {
-    logger.logdebug(`[outbound] release_client: ${host}:${port} to ${local_addr}`);
+    logger.logdebug(`[outbound] release_client: ${socket.__sock_idx} ${host}:${port} to ${local_addr}`);
 
-    const pool_timeout = cfg.pool_timeout;
-    const name = `outbound::${port}:${host}:${local_addr}:${pool_timeout}`;
+    const name = socket.__pool_name;
 
-    if (cfg.pool_concurrency_max == 0) {
+    if (!name && cfg.pool_concurrency_max == 0) {
         return sockend();
     }
 
     if (!socket.__acquired) {
-        logger.logerror(`Release an un-acquired socket. Stack: ${(new Error()).stack}`);
+        logger.logwarn(`Release an un-acquired socket. Stack: ${(new Error()).stack}`);
         return;
     }
     socket.__acquired = false;
@@ -159,7 +157,7 @@ exports.release_client = function (socket, port, host, local_addr, error) {
     });
 
     socket.once('end', function () {
-        logger.logwarn(`[outbound] Socket [${name}] in pool got FIN`);
+        logger.loginfo(`[outbound] Socket [${name}] in pool got FIN`);
         socket.writable = false;
         sockend();
     });
@@ -167,11 +165,13 @@ exports.release_client = function (socket, port, host, local_addr, error) {
     pool.release(socket);
 
     function sockend () {
+        socket.__fromPool = false;
         if (server.notes.pool && server.notes.pool[name]) {
             server.notes.pool[name].destroy(socket);
+        } else {
+            socket.removeAllListeners();
+            socket.destroy();
         }
-        socket.removeAllListeners();
-        socket.destroy();
     }
 }
 
