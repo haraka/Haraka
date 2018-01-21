@@ -1,6 +1,7 @@
 "use strict";
 
 const generic_pool = require('generic-pool');
+const utils        = require('haraka-utils');
 
 const sock         = require('../line_socket');
 const server       = require('../server');
@@ -8,18 +9,16 @@ const logger       = require('../logger');
 
 const cfg          = require('./config');
 
-let socket_idx = 0;
-
 function _create_socket (pool_name, port, host, local_addr, is_unix_socket, callback) {
     const socket = is_unix_socket ? sock.connect({path: host}) :
         sock.connect({port: port, host: host, localAddress: local_addr});
     socket.__pool_name = pool_name;
-    socket.__sock_idx = ++socket_idx;
+    socket.__uuid = utils.uuid();
     socket.setTimeout(cfg.connect_timeout * 1000);
     logger.logdebug(
         '[outbound] created',
         {
-            idx: socket_idx,
+            uuid: socket.__uuid,
             host: host,
             port: port,
             pool_timeout: cfg.pool_timeout
@@ -58,7 +57,7 @@ function get_pool (port, host, local_addr, is_unix_socket, max) {
                 return socket.__fromPool && socket.writable;
             },
             destroy: function (socket) {
-                logger.logdebug(`[outbound] destroying pool entry ${socket.__sock_idx} for ${host}:${port}`);
+                logger.logdebug(`[outbound] destroying pool entry ${socket.__uuid} for ${host}:${port}`);
                 socket.removeAllListeners();
                 socket.__fromPool = false;
                 socket.on('line', function (line) {
@@ -104,13 +103,13 @@ exports.get_client = function (port, host, local_addr, is_unix_socket, callback)
     pool.acquire(function (err, socket) {
         if (err) return callback(err);
         socket.__acquired = true;
-        logger.loginfo(`[outbound] acquired socket ${socket.__sock_idx} for ${socket.__pool_name}`);
+        logger.loginfo(`[outbound] acquired socket ${socket.__uuid} for ${socket.__pool_name}`);
         callback(null, socket);
     });
 }
 
 exports.release_client = function (socket, port, host, local_addr, error) {
-    logger.logdebug(`[outbound] release_client: ${socket.__sock_idx} ${host}:${port} to ${local_addr}`);
+    logger.logdebug(`[outbound] release_client: ${socket.__uuid} ${host}:${port} to ${local_addr}`);
 
     const name = socket.__pool_name;
 
