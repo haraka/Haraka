@@ -177,8 +177,8 @@ class SMTPClient extends events.EventEmitter {
                 } // don't return, continue (original behavior)
 
                 logger.logdebug(`[smtp_client_pool] ${errMsg} (state=${client.state})`);
-            };
-        };
+            }
+        }
 
         client.socket.on('error',   closed('errored'));
         client.socket.on('timeout', closed('timed out'));
