@@ -8,11 +8,11 @@ exports.parts = {
         // console.log(r);
         delete r.arrival
         delete r.uid
+        delete r.counter
         test.deepEqual(r, {
             next_attempt: 1484878079415,
             attempts: 0,
             pid: 12345,
-            counter: 1,
             host: 'mta1.example.com',
             age: 0
         })
