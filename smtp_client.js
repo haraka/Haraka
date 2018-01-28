@@ -279,7 +279,7 @@ class SMTPClient extends events.EventEmitter {
 
 
     is_dead_sender (plugin, connection) {
-        if (connection.transaction) { return false; }
+        if (connection.transaction) return false;
 
         // This likely means the sender went away on us, cleanup.
         connection.logwarn(plugin, "transaction went away, releasing smtp_client");
@@ -298,12 +298,8 @@ exports.get_pool = (server, port, host, cfg) => {
     const connect_timeout = cfg.connect_timeout || 30;
     const pool_timeout = cfg.pool_timeout || cfg.timeout || 300;
     const name = `${port}:${host}:${pool_timeout}`;
-    if (!server.notes.pool) {
-        server.notes.pool = {};
-    }
-    if (server.notes.pool[name]) {
-        return server.notes.pool[name];
-    }
+    if (!server.notes.pool) server.notes.pool = {};
+    if (server.notes.pool[name]) return server.notes.pool[name];
 
     const pool = generic_pool.Pool({
         name: name,
@@ -422,21 +418,21 @@ exports.get_client_plugin = function (plugin, connection, c, callback) {
 
         smtp_client.load_tls_config(plugin.tls_options);
 
-        smtp_client.call_next = (retval, msg) => {
+        smtp_client.call_next = function (retval, msg) {
             if (this.next) {
                 const next = this.next;
                 delete this.next;
                 next(retval, msg);
             }
-        };
+        }
 
         smtp_client.on('client_protocol', (line) => {
             connection.logprotocol(plugin, `C: ${line}`);
-        });
+        })
 
         smtp_client.on('server_protocol', (line) => {
             connection.logprotocol(plugin, `S: ${line}`);
-        });
+        })
 
         function helo (command) {
             if (smtp_client.xclient) {
