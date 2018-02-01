@@ -53,7 +53,7 @@ class Header {
         })
     }
 
-    decode_header (val) {
+    decode_header (val, key) {
         // Fold continuations
         val = val.replace(/\r?\n/g, '');
 
@@ -98,8 +98,22 @@ class Header {
             // no encoded stuff
             return val;
         }
+        let _decoder = _decode_header;
+        if (/^(resent-)?(from|to|cc|bcc|reply-to|sender)$/i.test(key)) {
+            // when names are decoded in address values, they must be quoted to ensure
+            // that extra spaces, commas, etc in the name don't cause address parsing problems.
+            // to do this, we customise the decoder function to quote decoded results
+            _decoder = () => {
+                let val = _decode_header.apply(this, arguments);
+                // add quotes to the result (if not already quoted)
+                if (!/^"[\d\D]*"$/.test(val)) {
+                    val = `"${val}"`;
+                }
+                return val;
+            }
+        }
 
-        val = val.replace(/=\?([\w_-]+)(\*[\w_-]+)?\?([bqBQ])\?([\s\S]*?)\?=/g, _decode_header);
+        val = val.replace(/=\?([\w_-]+)(\*[\w_-]+)?\?([bqBQ])\?([\s\S]*?)\?=/g, _decoder);
 
         return val;
     }
@@ -153,7 +167,7 @@ class Header {
     }
 
     _add_header_decode (key, value, method) {
-        const val = this.decode_header(value);
+        const val = this.decode_header(value, key);
         // console.log(key + ': ' + val);
         this.headers_decoded[key] = this.headers_decoded[key] || [];
         this.headers_decoded[key][method](val);
