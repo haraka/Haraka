@@ -472,34 +472,32 @@ exports.get_certs_dir = (tlsDir, done) => {
 exports.getSocketOpts = (name, done) => {
     const tlss = this;
 
-    function getTlsOpts () {
+    // startup time, load the config/tls dir
+    if (!certsByHost['*']) tlss.load_tls_ini();
+
+    tlss.get_certs_dir('tls', () => {
         if (certsByHost[name]) {
             // log.logdebug(certsByHost[name]);
             return done(certsByHost[name]);
         }
         // log.logdebug(certsByHost['*']);
         done(certsByHost['*']);
-    }
-
-    // startup time, load the config/tls dir
-    if (!certsByHost['*']) tlss.load_tls_ini();
-
-    tlss.get_certs_dir('tls', getTlsOpts);
+    });
 }
 
 function pipe (cleartext, socket) {
     cleartext.socket = socket;
 
-    const onerror = e => {
+    function onError (e) {
     }
 
-    function onclose () {
-        socket.removeListener('error', onerror);
-        socket.removeListener('close', onclose);
+    function onClose () {
+        socket.removeListener('error', onError);
+        socket.removeListener('close', onClose);
     }
 
-    socket.on('error', onerror);
-    socket.on('close', onclose);
+    socket.on('error', onError);
+    socket.on('close', onClose);
 }
 
 exports.ensureDhparams = done => {
@@ -510,10 +508,10 @@ exports.ensureDhparams = done => {
         return done(null, certsByHost['*'].dhparam);
     }
 
+    if (cluster.isWorker) return; // only once, on the master process
+
     const filePath = tlss.cfg.main.dhparam || 'dhparams.pem';
     const fpResolved = path.resolve(exports.config.root_path, filePath);
-
-    if (cluster.isWorker) return; // only once, on the master process
 
     log.loginfo(`Generating a 2048 bit dhparams file at ${fpResolved}`);
 
@@ -588,7 +586,7 @@ exports.shutdown = () => {
 
 function cleanOcspCache () {
     log.logdebug('Cleaning ocspCache. How many keys? ' + Object.keys(ocspCache.cache).length);
-    Object.keys(ocspCache.cache).forEach(function (key) {
+    Object.keys(ocspCache.cache).forEach((key) => {
         clearTimeout(ocspCache.cache[key].timer);
     });
 }
