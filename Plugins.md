@@ -91,6 +91,7 @@ Create a PR adding yours to this list.
 | [rspamd][url-rspamd]               | Scan emails with rspamd |
 | [spamassassin][url-spamass]        | Scan emails with SpamAssassin |
 | [spf][url-spf]                     | Perform SPF checks |
+| [srs][url-srs]                     | Sender Rewriting Scheme |
 | [tarpit][url-tarpit]               | Slow down connections |
 | [tls][url-tls]                     | Implements TLS |
 | [toobusy][url-toobusy]             | Defers connections when too busy |
@@ -175,6 +176,7 @@ Create a PR adding yours to this list.
 [url-rspamd]: https://github.com/haraka/haraka-plugin-rspamd
 [url-spamass]: https://github.com/haraka/Haraka/blob/master/docs/plugins/spamassassin.md
 [url-spf]: https://github.com/haraka/Haraka/blob/master/docs/plugins/spf.md
+[url-srs]: https://github.com/swerter/haraka-plugins/blob/master/plugins/srs.js
 [url-tarpit]: https://github.com/haraka/Haraka/blob/master/docs/plugins/tarpit.md
 [url-tls]: https://github.com/haraka/Haraka/blob/master/docs/plugins/tls.md
 [url-toobusy]: https://github.com/haraka/Haraka/blob/master/docs/plugins/toobusy.md
