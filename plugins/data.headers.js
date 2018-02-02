@@ -286,13 +286,13 @@ exports.from_match = function (next, connection) {
 
     try {
         const hdr_addr = (plugin.addrparser.parse(hdr_from))[0];
+        if (!hdr_addr) {
+            plugin.loginfo(`address at fault is: ${hdr_from}`);
+            connection.transaction.results.add(plugin, {fail: 'from_match(unparsable)'});
+            return next();
+        }
     } catch (error) {
         plugin.logwarn(`address-rfc2822 plugin returning: ${e.message}`);
-    }
-    if (!hdr_addr) {
-        plugin.loginfo(`address at fault is: ${hdr_from}`);
-        connection.transaction.results.add(plugin, {fail: 'from_match(unparsable)'});
-        return next();
     }
 
     if (env_addr.address().toLowerCase() === hdr_addr.address.toLowerCase()) {
