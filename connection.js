@@ -1584,7 +1584,7 @@ class Connection {
         }
 
         // Warn if we hit the maximum parsed header lines limit
-        const max_lines = config.get('max_header_lines') || 1000;
+        const max_lines = trans.MAX_HEADER_LINES;
         if (this.transaction.header_lines.length >= max_lines) {
             this.logwarn(`Incoming message reached maximum parsing limit of ${max_lines} header lines`);
         }
