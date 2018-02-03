@@ -53,7 +53,7 @@ class Header {
         })
     }
 
-    decode_header (val) {
+    decode_header (val, key) {
         // Fold continuations
         val = val.replace(/\r?\n/g, '');
 
@@ -69,16 +69,16 @@ class Header {
 
         // console.log(rfc2231_params);
 
-        for (const key in rfc2231_params.keys) {
-            val = val + ' ' + key + '="';
+        for (const param_key in rfc2231_params.keys) {
+            val = `${val} ${param_key}="`;
             /* eslint no-constant-condition: 0 */
             for (let i=0; true; i++) {
-                const _key = key + '*' + i;
+                const _key = `${param_key}*${i}`;
                 const _val = rfc2231_params.kv[_key];
                 if (_val === undefined) break;
-                val = val + _val;
+                val = `${val}${_val}`;
             }
-            val = val + '";';
+            val = `${val}";`;
         }
 
         // strip 822 comments in the most basic way - does not support nested comments
@@ -98,8 +98,22 @@ class Header {
             // no encoded stuff
             return val;
         }
+        let _decoder = _decode_header;
+        if (/^(resent-)?(from|to|cc|bcc|reply-to|sender)$/i.test(key)) {
+            // when names are decoded in address values, they must be quoted to ensure
+            // that extra spaces, commas, etc in the name don't cause address parsing problems.
+            // to do this, we customise the decoder function to quote decoded results
+            _decoder = () => {
+                let _val = _decode_header.apply(this, arguments);
+                // add quotes to the result (if not already quoted)
+                if (!/^"[\d\D]*"$/.test(_val)) {
+                    _val = `"${_val}"`;
+                }
+                return _val;
+            }
+        }
 
-        val = val.replace(/=\?([\w_-]+)(\*[\w_-]+)?\?([bqBQ])\?([\s\S]*?)\?=/g, _decode_header);
+        val = val.replace(/=\?([\w_-]+)(\*[\w_-]+)?\?([bqBQ])\?([\s\S]*?)\?=/g, _decoder);
 
         return val;
     }
@@ -153,7 +167,7 @@ class Header {
     }
 
     _add_header_decode (key, value, method) {
-        const val = this.decode_header(value);
+        const val = this.decode_header(value, key);
         // console.log(key + ': ' + val);
         this.headers_decoded[key] = this.headers_decoded[key] || [];
         this.headers_decoded[key][method](val);

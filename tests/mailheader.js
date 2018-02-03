@@ -16,7 +16,7 @@ const lines = [
     'Subject: Re: Haraka Rocks!',
     'Message-Id: <616DF75E-D799-4F3C-9901-1642B494C45D@gmail.com>',
     'Date: Thu, 31 Mar 2016 15:51:36 -0400',
-    'To: The World <world@example.com>',
+    'To: , The World \' <world@example.com>',
     'X-Mailer: iPhone Mail (13E233)',
 ];
 
@@ -70,7 +70,14 @@ exports.add_headers = {
         test.equal(h.lines()[0], 'Bar: =?UTF-8?q?b=C3=B8=C3=B8 1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890?=\n');
         test.equal(h.get_decoded('Bar'), 'bøø 1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890');
         test.done();
-    }
+    },
+    'dirty to header': function (test) {
+        test.expect(1);
+        const h = new Header();
+        h.parse(lines);
+        test.equal(h.lines()[0], '');
+        test.done();
+    },
 }
 
 exports.continuations = {
