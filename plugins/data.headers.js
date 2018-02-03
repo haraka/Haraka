@@ -284,14 +284,15 @@ exports.from_match = function (next, connection) {
         return next();
     }
 
+    let hdr_addr;
     try {
-        const hdr_addr = (plugin.addrparser.parse(hdr_from))[0];
+        hdr_addr = (plugin.addrparser.parse(hdr_from))[0];
         if (!hdr_addr) {
             plugin.loginfo(`address at fault is: ${hdr_from}`);
             connection.transaction.results.add(plugin, {fail: 'from_match(unparsable)'});
             return next();
         }
-    } catch (error) {
+    } catch (e) {
         plugin.logwarn(`address-rfc2822 plugin returning: ${e.message}`);
     }
 
