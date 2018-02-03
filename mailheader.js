@@ -69,16 +69,16 @@ class Header {
 
         // console.log(rfc2231_params);
 
-        for (const key in rfc2231_params.keys) {
-            val = val + ' ' + key + '="';
+        for (const param_key in rfc2231_params.keys) {
+            val = `${val} ${param_key}="`;
             /* eslint no-constant-condition: 0 */
             for (let i=0; true; i++) {
-                const _key = key + '*' + i;
+                const _key = `${param_key}*${i}`;
                 const _val = rfc2231_params.kv[_key];
                 if (_val === undefined) break;
-                val = val + _val;
+                val = `${val}${_val}`;
             }
-            val = val + '";';
+            val = `${val}";`;
         }
 
         // strip 822 comments in the most basic way - does not support nested comments
@@ -104,12 +104,12 @@ class Header {
             // that extra spaces, commas, etc in the name don't cause address parsing problems.
             // to do this, we customise the decoder function to quote decoded results
             _decoder = () => {
-                let val = _decode_header.apply(this, arguments);
+                let _val = _decode_header.apply(this, arguments);
                 // add quotes to the result (if not already quoted)
-                if (!/^"[\d\D]*"$/.test(val)) {
-                    val = `"${val}"`;
+                if (!/^"[\d\D]*"$/.test(_val)) {
+                    _val = `"${_val}"`;
                 }
-                return val;
+                return _val;
             }
         }
 
