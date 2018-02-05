@@ -193,6 +193,7 @@ class Transaction {
 }
 
 exports.Transaction = Transaction;
+exports.MAX_HEADER_LINES = MAX_HEADER_LINES;
 
 exports.createTransaction = uuid => {
     const t = new Transaction();

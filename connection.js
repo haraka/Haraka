@@ -1583,6 +1583,11 @@ class Connection {
             return;
         }
 
+        // Warn if we hit the maximum parsed header lines limit
+        if (this.transaction.header_lines.length >= trans.MAX_HEADER_LINES) {
+            this.logwarn(`Incoming message reached maximum parsing limit of ${max_lines} header lines`);
+        }
+
         this.auth_results_clean();   // rename old A-R headers
         const ar_field = this.auth_results();  // assemble new one
         if (ar_field) {
