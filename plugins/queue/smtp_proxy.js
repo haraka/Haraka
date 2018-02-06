@@ -14,7 +14,7 @@ exports.register = function () {
     if (plugin.cfg.main.enable_outbound) {
         plugin.register_hook('queue_outbound', 'hook_queue');
     }
-};
+}
 
 exports.load_smtp_proxy_ini = function () {
     const plugin = this;
@@ -28,7 +28,7 @@ exports.load_smtp_proxy_ini = function () {
     function () {
         plugin.load_smtp_proxy_ini();
     });
-};
+}
 
 exports.hook_mail = function (next, connection, params) {
     const plugin = this;
@@ -73,21 +73,21 @@ exports.hook_mail = function (next, connection, params) {
             }
         });
     });
-};
+}
 
 exports.hook_rcpt_ok = function (next, connection, recipient) {
     const smtp_client = connection.notes.smtp_client;
     if (!smtp_client) return next();
     smtp_client.next = next;
     smtp_client.send_command('RCPT', 'TO:' + recipient.format(!smtp_client.smtp_utf8));
-};
+}
 
 exports.hook_data = function (next, connection) {
     const smtp_client = connection.notes.smtp_client;
     if (!smtp_client) return next();
     smtp_client.next = next;
     smtp_client.send_command("DATA");
-};
+}
 
 exports.hook_queue = function (next, connection) {
     const plugin = this;
@@ -99,7 +99,7 @@ exports.hook_queue = function (next, connection) {
         return;
     }
     smtp_client.start_data(connection.transaction.message_stream);
-};
+}
 
 exports.hook_rset = function (next, connection) {
     const smtp_client = connection.notes.smtp_client;
@@ -107,7 +107,7 @@ exports.hook_rset = function (next, connection) {
     smtp_client.release();
     delete connection.notes.smtp_client;
     next();
-};
+}
 
 exports.hook_quit = exports.hook_rset;
 
@@ -118,4 +118,4 @@ exports.hook_disconnect = function (next, connection) {
     delete connection.notes.smtp_client;
     smtp_client.call_next();
     next();
-};
+}

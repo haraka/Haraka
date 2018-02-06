@@ -340,7 +340,7 @@ plugins.load_plugins = function (override) {
     }
 
     logger.dump_logs(); // now logging plugins are loaded.
-};
+}
 
 plugins.load_plugin = function (name) {
     logger.loginfo(`Loading plugin: ${name}`);
@@ -352,7 +352,7 @@ plugins.load_plugin = function (name) {
 
     plugins.registered_plugins[name] = plugin;
     return plugin;
-};
+}
 
 // Set in server.js; initialized to empty object
 // to prevent it from blowing up any unit tests.
@@ -370,7 +370,7 @@ plugins._load_and_compile_plugin = function (name) {
     }
     plugin._compile();
     return plugin;
-};
+}
 
 plugins._register_plugin = function (plugin) {
     plugin.register();
@@ -384,7 +384,7 @@ plugins._register_plugin = function (plugin) {
     }
 
     return plugin;
-};
+}
 
 plugins.run_hooks = function (hook, object, params) {
     if (client_disconnected(object) && !is_required_hook(hook)) {
@@ -420,7 +420,7 @@ plugins.run_hooks = function (hook, object, params) {
     }
 
     plugins.run_next_hook(hook, object, params);
-};
+}
 
 plugins.run_next_hook = function (hook, object, params) {
     if (client_disconnected(object) && !is_required_hook(hook)) {
@@ -510,7 +510,7 @@ plugins.run_next_hook = function (hook, object, params) {
         }
         callback();
     }
-};
+}
 
 function client_disconnected (object) {
     if (object.constructor.name === 'Connection' &&

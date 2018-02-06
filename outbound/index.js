@@ -170,7 +170,7 @@ exports.send_email = function () {
     }
 
     this.send_trans_email(transaction, next);
-};
+}
 
 function stream_line_reader (stream, transaction, cb) {
     let current_data = '';
@@ -286,7 +286,7 @@ exports.send_trans_email = function (transaction, next) {
     }
 
     plugins.run_hooks('pre_send_trans_email', connection);
-};
+}
 
 exports.process_delivery = function (ok_paths, todo, hmails, cb) {
     const self = this;
@@ -321,7 +321,7 @@ exports.process_delivery = function (ok_paths, todo, hmails, cb) {
     self.build_todo(todo, ws, function () {
         todo.message_stream.pipe(ws, { line_endings: '\r\n', dot_stuffing: true, ending_dot: false });
     });
-};
+}
 
 exports.build_todo = function (todo, ws, write_more) {
 
@@ -339,7 +339,7 @@ exports.build_todo = function (todo, ws, write_more) {
     }
 
     ws.once('drain', write_more);
-};
+}
 
 // Replacer function to exclude items from the queue file header
 function exclude_from_json (key, value) {

@@ -17,7 +17,7 @@ exports.init = {
         test.ok(this.logger);
         test.done();
     },
-};
+}
 
 exports.log = {
     setUp : _set_up,
@@ -53,7 +53,7 @@ exports.log = {
         test.ok(this.logger.log('INFO', 'another test info'));
         test.done();
     },
-};
+}
 
 exports.level = {
     setUp : _set_up,
@@ -139,7 +139,7 @@ exports.set_loglevel = {
         test.equal(this.logger.loglevel, this.logger.levels.WARN);
         test.done();
     },
-};
+}
 
 exports.set_timestamps = {
     setUp : _set_up,
@@ -158,7 +158,7 @@ exports.set_timestamps = {
         test.equal(this.logger.timestamps, true);
         test.done();
     },
-};
+}
 
 exports.would_log = {
     setUp : _set_up,
@@ -180,7 +180,7 @@ exports.would_log = {
         test.equal(true, this.logger.would_log(1));
         test.done();
     },
-};
+}
 
 exports.log_respond = {
     setUp : _set_up,
@@ -196,7 +196,7 @@ exports.log_respond = {
         test.equal(true, this.logger.log_respond(900, 'test msg', data));
         test.done();
     },
-};
+}
 
 exports.dump_logs = {
     setUp : _set_up,
@@ -215,7 +215,7 @@ exports.dump_logs = {
         test.ok(this.logger.deferred_logs.length === 0);
         test.done();
     },
-};
+}
 
 exports.colors = {
     setUp : _set_up,
@@ -234,7 +234,7 @@ exports.colors = {
         test.equal(expected, this.logger.colorize('blue', 'good'));
         test.done();
     },
-};
+}
 
 exports.log_if_level = {
     setUp : _set_up,
@@ -280,7 +280,7 @@ exports.log_if_level = {
         test.equal(4, this.logger.deferred_logs.length);
         test.done();
     },
-};
+}
 
 exports.add_log_methods = {
     setUp : _set_up,
@@ -301,4 +301,4 @@ exports.add_log_methods = {
         }
         test.done();
     },
-};
+}

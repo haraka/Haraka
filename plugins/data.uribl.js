@@ -45,7 +45,7 @@ exports.register = function () {
     schemeless = new RegExp(re_schemeless, 'gi');
     const re_schemed = `(\\w{3,16}:\\/+(?:\\S+@)?([a-zA-Z0-9][a-zA-Z0-9\\-.]+\\.(?:${Object.keys(tlds.top_level_tlds).join('|')})))(?!\\w)`;
     schemed = new RegExp(re_schemed, 'gi');
-};
+}
 
 exports.load_uri_config = function (next) {
     lists = this.config.get('data.uribl.ini');
@@ -62,7 +62,7 @@ exports.load_uri_config = function (next) {
     if (lists.main && !lists.main.max_uris_per_list) {
         lists.main.max_uris_per_list = 20;
     }
-};
+}
 
 
 // IS: IPv6 compatible (maybe; if the BL is support IPv6 requests)
@@ -270,7 +270,7 @@ exports.do_lookups = function (connection, next, hosts, type) {
     });
 
     conclude_if_no_pending();
-};
+}
 
 exports.hook_lookup_rdns = function (next, connection) {
     this.load_uri_config(next);
@@ -286,7 +286,7 @@ exports.hook_lookup_rdns = function (next, connection) {
         }
         plugin.do_lookups(connection, next, rdns, 'rdns');
     });
-};
+}
 
 exports.hook_ehlo = function (next, connection, helo) {
     this.load_uri_config(next);
@@ -298,19 +298,19 @@ exports.hook_ehlo = function (next, connection, helo) {
     else {
         this.do_lookups(connection, next, helo, 'helo');
     }
-};
+}
 exports.hook_helo = exports.hook_ehlo;
 
 exports.hook_mail = function (next, connection, params) {
     this.load_uri_config(next);
     this.do_lookups(connection, next, params[0].host, 'envfrom');
-};
+}
 
 exports.hook_data = function (next, connection) {
     // enable mail body parsing
     connection.transaction.parse_body = 1;
     return next();
-};
+}
 
 exports.hook_data_post = function (next, connection) {
     this.load_uri_config(next);
@@ -367,7 +367,7 @@ exports.hook_data_post = function (next, connection) {
         next_in_chain(chain_caller);
     }
     chain_caller();
-};
+}
 
 function extract_urls (urls, body, connection, self) {
     // extract from body.bodytext

@@ -45,4 +45,4 @@ exports.get_tls_options = function (mx) {
     }
 
     return tls_options;
-};
+}

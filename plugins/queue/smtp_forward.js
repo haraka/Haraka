@@ -29,7 +29,7 @@ exports.register = function () {
     if (plugin.cfg.main.enable_outbound) {
         plugin.register_hook('queue_outbound', 'queue_forward');
     }
-};
+}
 
 exports.load_smtp_forward_ini = function () {
     const plugin = this;
@@ -47,7 +47,7 @@ exports.load_smtp_forward_ini = function () {
     function () {
         plugin.load_smtp_forward_ini();
     });
-};
+}
 
 exports.get_config = function (connection) {
     const plugin = this;
@@ -60,7 +60,7 @@ exports.get_config = function (connection) {
     if (!plugin.cfg[dom]) return plugin.cfg.main;  // no specific route
 
     return plugin.cfg[dom];
-};
+}
 
 exports.check_sender = function (next, connection, params) {
     const plugin = this;
@@ -86,7 +86,7 @@ exports.check_sender = function (next, connection, params) {
 
     txn.results.add(plugin, {pass: 'mail_from'});
     return next();
-};
+}
 
 exports.set_queue = function (connection, queue_wanted, domain) {
     const plugin = this;
@@ -152,7 +152,7 @@ exports.check_recipient = function (next, connection, params) {
     // Another RCPT plugin may vouch for this recipient.
     txn.results.add(plugin, {msg: 'rcpt!local'});
     return next();
-};
+}
 
 exports.auth = function (cfg, connection, smtp_client) {
     const plugin = this;
@@ -282,7 +282,7 @@ exports.queue_forward = function (next, connection) {
             smtp_client.release();
         });
     });
-};
+}
 
 exports.get_mx_next_hop = function (next_hop) {
     const dest = url.parse(next_hop);
@@ -332,4 +332,4 @@ exports.get_mx = function (next, hmail, domain) {
     })
 
     return next(OK, mx);
-};
+}

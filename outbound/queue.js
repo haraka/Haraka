@@ -48,16 +48,16 @@ let queue_count = 0;
 
 exports.get_stats = function () {
     return in_progress + '/' + exports.delivery_queue.length() + '/' + exports.temp_fail_queue.length();
-};
+}
 
 exports.list_queue = function (cb) {
     exports._load_cur_queue(null, "_list_file", cb);
-};
+}
 
 exports._stat_file = function (file, cb) {
     queue_count++;
     setImmediate(cb);
-};
+}
 
 exports.stat_queue = function (cb) {
     const self = exports;
@@ -65,7 +65,7 @@ exports.stat_queue = function (cb) {
         if (err) return cb(err);
         return cb(null, self.stats());
     });
-};
+}
 
 exports.load_queue = function (pid) {
     // Initialise and load queue
@@ -73,7 +73,7 @@ exports.load_queue = function (pid) {
     // so we create the queue directory if it doesn't already exist.
     exports.ensure_queue_dir();
     exports._load_cur_queue(pid, "_add_file");
-};
+}
 
 exports._load_cur_queue = function (pid, cb_name, cb) {
     const self = exports;
@@ -88,7 +88,7 @@ exports._load_cur_queue = function (pid, cb_name, cb) {
 
         self.load_queue_files(pid, cb_name, files, cb);
     });
-};
+}
 
 exports.load_queue_files = function (pid, cb_name, files, callback) {
     const self = exports;
@@ -200,7 +200,7 @@ exports.load_queue_files = function (pid, cb_name, files, callback) {
             }
         }, callback);
     }
-};
+}
 
 exports.stats = function () {
     // TODO: output more data here
@@ -210,7 +210,7 @@ exports.stats = function () {
     };
 
     return results;
-};
+}
 
 exports._list_file = function (file, cb) {
     const tl_reader = fs.createReadStream(path.join(queue_dir, file), {start: 0, end: 3});
@@ -245,7 +245,7 @@ exports._list_file = function (file, cb) {
             }
         });
     });
-};
+}
 
 exports.flush_queue = function (domain, pid) {
     if (domain) {
@@ -262,12 +262,12 @@ exports.flush_queue = function (domain, pid) {
     else {
         temp_fail_queue.drain();
     }
-};
+}
 
 exports.load_pid_queue = function (pid) {
     logger.loginfo("[outbound] Loading queue for pid: " + pid);
     exports.load_queue(pid);
-};
+}
 
 exports.ensure_queue_dir = function () {
     // No reason not to do this stuff syncronously -
@@ -284,7 +284,7 @@ exports.ensure_queue_dir = function () {
             throw err;
         }
     }
-};
+}
 
 exports._add_file = function (hmail) {
     if (hmail.next_process < exports.cur_time) {
@@ -295,7 +295,7 @@ exports._add_file = function (hmail) {
             delivery_queue.push(hmail);
         });
     }
-};
+}
 
 exports.scan_queue_pids = function (cb) {
     // Under cluster, this is called first by the master so
@@ -328,4 +328,4 @@ exports.scan_queue_pids = function (cb) {
 
         return cb(null, Object.keys(pids));
     });
-};
+}

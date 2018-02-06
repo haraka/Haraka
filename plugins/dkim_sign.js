@@ -137,7 +137,7 @@ exports.register = function () {
     const plugin = this;
     plugin.load_dkim_sign_ini();
     plugin.load_dkim_key();
-};
+}
 
 exports.load_dkim_sign_ini = function () {
     const plugin = this;
@@ -148,7 +148,7 @@ exports.load_dkim_sign_ini = function () {
     },
     function () { plugin.load_dkim_sign_ini(); }
     );
-};
+}
 
 exports.load_dkim_key = function () {
     const plugin = this;
@@ -157,11 +157,11 @@ exports.load_dkim_key = function () {
         'data',
         function () { plugin.load_dkim_key(); }
     ).join('\n');
-};
+}
 
 exports.load_key = function (file) {
     return this.config.get(file, 'data').join('\n');
-};
+}
 
 exports.hook_queue_outbound = exports.hook_pre_send_trans_email = function (next, connection) {
     const plugin = this;
@@ -213,7 +213,7 @@ exports.hook_queue_outbound = exports.hook_pre_send_trans_email = function (next
             selector, domain, private_key, headers_to_sign,
             txn.header, dkimCallback));
     });
-};
+}
 
 exports.get_key_dir = function (connection, done) {
     const plugin = this;
@@ -243,7 +243,7 @@ exports.get_key_dir = function (connection, done) {
         connection.logdebug(plugin, results);
         done(err, results);
     });
-};
+}
 
 exports.has_key_data = function (conn, domain, selector, private_key) {
     const plugin = this;
@@ -264,7 +264,7 @@ exports.has_key_data = function (conn, domain, selector, private_key) {
 
     conn.logprotocol(plugin, 'selector: '+selector);
     return true;
-};
+}
 
 exports.get_headers_to_sign = function () {
     const plugin = this;
@@ -283,7 +283,7 @@ exports.get_headers_to_sign = function () {
         headers.push('from');
     }
     return headers;
-};
+}
 
 exports.get_sender_domain = function (txn) {
     const plugin = this;
@@ -330,4 +330,4 @@ exports.get_sender_domain = function (txn) {
         }
     }
     return domain;
-};
+}

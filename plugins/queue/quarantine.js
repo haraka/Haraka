@@ -11,7 +11,7 @@ exports.register = function () {
 
     plugin.register_hook('queue',          'quarantine');
     plugin.register_hook('queue_outbound', 'quarantine');
-};
+}
 
 exports.hook_init_master = function (next, server) {
     this.init_quarantine_dir(() => {
@@ -32,7 +32,7 @@ const zeroPad = exports.zeroPad = function (n, digits) {
         n = '0' + n;
     }
     return n;
-};
+}
 
 exports.clean_tmp_directory = function (next) {
     // At start-up; delete any files in the temporary directory
@@ -49,7 +49,7 @@ exports.clean_tmp_directory = function (next) {
         }
     }
     next();
-};
+}
 
 function wants_quarantine (connection) {
     if (connection.notes.quarantine)

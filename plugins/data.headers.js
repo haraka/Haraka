@@ -23,7 +23,7 @@ exports.register = function () {
         this.register_hook('data_post', 'delivered_to');
     }
     this.register_hook('data_post', 'mailing_list');
-};
+}
 
 exports.load_headers_ini = function () {
     const plugin = this;
@@ -48,7 +48,7 @@ exports.load_headers_ini = function () {
     }, function () {
         plugin.load_headers_ini();
     });
-};
+}
 
 exports.duplicate_singular = function (next, connection) {
     const plugin = this;
@@ -82,7 +82,7 @@ exports.duplicate_singular = function (next, connection) {
 
     connection.transaction.results.add(plugin, {pass: 'duplicate'});
     return next();
-};
+}
 
 exports.missing_required = function (next, connection) {
     const plugin = this;
@@ -111,7 +111,7 @@ exports.missing_required = function (next, connection) {
 
     connection.transaction.results.add(plugin, {pass: 'missing'});
     return next();
-};
+}
 
 exports.invalid_return_path = function (next, connection) {
     const plugin = this;
@@ -144,7 +144,7 @@ exports.invalid_return_path = function (next, connection) {
 
     connection.transaction.results.add(plugin, {pass: 'Return-Path'});
     return next();
-};
+}
 
 exports.invalid_date = function (next, connection) {
     const plugin = this;
@@ -195,7 +195,7 @@ exports.invalid_date = function (next, connection) {
 
     connection.transaction.results.add(plugin, {pass: 'invalid_date'});
     return next();
-};
+}
 
 exports.user_agent = function (next, connection) {
     const plugin = this;
@@ -229,7 +229,7 @@ exports.user_agent = function (next, connection) {
 
     connection.transaction.results.add(plugin, {fail: 'UA'});
     return next();
-};
+}
 
 exports.direct_to_mx = function (next, connection) {
     const plugin = this;
@@ -261,7 +261,7 @@ exports.direct_to_mx = function (next, connection) {
 
     connection.transaction.results.add(plugin, {pass: `direct-to-mx(${c})`});
     return next();
-};
+}
 
 exports.from_match = function (next, connection) {
     const plugin = this;
@@ -322,7 +322,7 @@ exports.from_match = function (next, connection) {
         fail: `from_match(${env_dom} / ${msg_dom})`
     });
     return next();
-};
+}
 
 exports.delivered_to = function (next, connection) {
     const plugin = this;
@@ -343,7 +343,7 @@ exports.delivered_to = function (next, connection) {
     }
 
     return next();
-};
+}
 
 exports.mailing_list = function (next, connection) {
     const plugin = this;
@@ -409,4 +409,4 @@ exports.mailing_list = function (next, connection) {
 
     connection.transaction.results.add(plugin, {msg: 'not MLM'});
     return next();
-};
+}

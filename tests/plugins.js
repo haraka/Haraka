@@ -44,14 +44,14 @@ exports.plugin = {
         test.ok(pi);
         test.done();
     }
-};
+}
 
 const toPath = path.join('config', piName + '.timeout');
 
 const toVals = [ '0', '3', '60', 'apple'];
-const getVal = function () {
+function getVal () {
     return toVals.shift();
-};
+}
 
 exports.get_timeout = {
     setUp : function (done) {
@@ -87,7 +87,7 @@ exports.get_timeout = {
         test.equal( this.plugin.timeout, 30 );
         test.done();
     },
-};
+}
 
 exports.plugin_paths = {
     setUp : function (done) {
@@ -201,8 +201,7 @@ exports.plugin_paths = {
         test.ok(p.base.base_plugin);
         test.done();
     },
-
-};
+}
 
 exports.plugin_config = {
     setUp : function (done) {
@@ -247,4 +246,3 @@ exports.plugin_config = {
         test.done();
     },
 }
-

@@ -47,7 +47,7 @@ logger.levels = {
     CRIT:     2,
     ALERT:    1,
     EMERG:    0,
-};
+}
 
 for (const le in logger.levels) {
     logger.levels[`LOG${le}`] = logger.levels[le];
@@ -57,7 +57,7 @@ for (const le in logger.levels) {
 logger.formats = {
     DEFAULT: "DEFAULT",
     LOGFMT: "LOGFMT",
-};
+}
 
 logger.loglevel      = logger.levels.WARN;
 logger.format        = logger.formats.DEFAULT;
@@ -75,7 +75,7 @@ logger.colors = {
     "CRIT" : "red",
     "ALERT" : "red",
     "EMERG" : "red",
-};
+}
 
 const stdout_is_tty = tty.isatty(process.stdout.fd);
 
@@ -104,7 +104,7 @@ logger.load_log_ini = function () {
 logger.colorize = function (color, str) {
     if (!util.inspect.colors[color]) { return str; }  // unknown color
     return `\u001b[${util.inspect.colors[color][0]}m${str}\u001b[${util.inspect.colors[color][1]}m`;
-};
+}
 
 logger.dump_logs = function (cb) {
     while (logger.deferred_logs.length > 0) {
@@ -114,7 +114,7 @@ logger.dump_logs = function (cb) {
     // Run callback after flush
     if (cb) process.stdout.write('', cb);
     return true;
-};
+}
 
 if (!util.isFunction) {
     util.isFunction = function (functionToCheck) {
@@ -155,7 +155,7 @@ logger.log = function (level, data) {
 
     plugins.run_hooks('log', logger, item );
     return true;
-};
+}
 
 logger.log_respond = function (retval, msg, data) {
     // any other return code is irrelevant
@@ -172,7 +172,7 @@ logger.log_respond = function (retval, msg, data) {
 
     process.stdout.write(`${timestamp_string}${data.data}\n`);
     return true;
-};
+}
 
 logger.set_loglevel = function (level) {
     if (level === undefined || level === null) return;
@@ -204,7 +204,7 @@ logger.set_format = function (format) {
         this.log('WARN', `invalid log format: ${format} defaulting to DEFAULT`);
         logger.format = logger.formats.DEFAULT;
     }
-};
+}
 
 logger._init_loglevel = function () {
     const self = this;
@@ -219,7 +219,7 @@ logger._init_loglevel = function () {
 logger.would_log = function (level) {
     if (logger.loglevel < level) { return false; }
     return true;
-};
+}
 
 logger.set_timestamps = function (value) {
     logger.timestamps = !!value;
@@ -235,7 +235,7 @@ logger._init_timestamps = function () {
     // If we've already been toggled to true by the cfg, we should respect
     // this.
     self.set_timestamps(logger.timestamps || _timestamps);
-};
+}
 
 logger._init();
 
@@ -307,7 +307,7 @@ logger.log_if_level = function (level, key, plugin) {
                 return true;
         }
     };
-};
+}
 
 logger.add_log_methods = function (object, plugin) {
     if (!object) return;
@@ -317,7 +317,7 @@ logger.add_log_methods = function (object, plugin) {
         if (object[fname]) continue;  // already added
         object[fname] = logger.log_if_level(level, 'LOG'+level, plugin);
     }
-};
+}
 
 logger.add_log_methods(logger);
 

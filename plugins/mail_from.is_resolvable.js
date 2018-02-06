@@ -7,7 +7,7 @@ const net_utils = require('haraka-net-utils');
 
 exports.register = function () {
     this.load_ini();
-};
+}
 
 exports.load_ini = function () {
     const plugin = this;
@@ -22,7 +22,7 @@ exports.load_ini = function () {
 
     plugin.re_bogus_ip = new RegExp(plugin.cfg.main.re_bogus_ip ||
             '^(?:0\\.0\\.0\\.0|255\\.255\\.255\\.255|127\\.)' );
-};
+}
 
 exports.hook_mail = function (next, connection, params) {
     const plugin    = this;
@@ -130,7 +130,7 @@ exports.hook_mail = function (next, connection, params) {
         // In case we don't run any queries
         check_results();
     });
-};
+}
 
 exports.mxErr = function (connection, domain, type, err, mxDone) {
     const plugin = this;
@@ -149,7 +149,7 @@ exports.mxErr = function (connection, domain, type, err, mxDone) {
             return true;
     }
     return false;
-};
+}
 
 // IS: IPv6 compatible
 exports.implicit_mx = function (connection, domain, mxDone) {
@@ -193,4 +193,4 @@ exports.implicit_mx = function (connection, domain, mxDone) {
         txn.results.add(plugin, {fail: 'implicit_mx('+domain+')'});
         return mxDone();
     });
-};
+}

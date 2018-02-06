@@ -27,18 +27,18 @@ exports.SPF = {
     },
     'mod_redirect, true': function (test) {
         test.expect(2);
-        const cb = function (err, rc) {
+        function cb (err, rc) {
             test.equal(null, err);
             test.equal(1, rc);
             test.done();
-        };
+        }
         this.SPF.been_there['example.com'] = true;
         this.SPF.mod_redirect('example.com', cb);
     },
     'mod_redirect, false': function (test) {
         test.expect(2);
         // var outer = this;
-        const cb = function (err, rc) {
+        function cb (err, rc) {
             test.equal(null, err);
             if (rc === 7) {
                 // from time to time (this is the third time we've seen it,
@@ -52,10 +52,10 @@ exports.SPF = {
             }
             test.done();
             // console.log(arguments);
-        };
+        }
         this.SPF.count=0;
         this.SPF.ip='212.70.129.94';
         this.SPF.mail_from='fraud@aexp.com';
         this.SPF.mod_redirect('aexp.com', cb);
     },
-};
+}

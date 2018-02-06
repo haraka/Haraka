@@ -27,7 +27,7 @@ exports.register = function (next) {
 
     // redundant - using the special hook_ nomenclature
     // this.register_hook('rcpt_ok', 'hook_rcpt_ok');
-};
+}
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 exports.load_config = function () {
@@ -44,7 +44,7 @@ exports.load_config = function () {
 
     plugin.merge_redis_ini();
     plugin.load_config_lists();
-};
+}
 
 // Load various configuration lists
 exports.load_config_lists = function () {
@@ -99,7 +99,7 @@ exports.load_config_lists = function () {
     load_ip_list('ip', 'ip_whitelist');
 
     load_config_list('dyndom', 'special_dynamic_domains');
-};
+}
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 exports.shutdown = function () {
@@ -142,7 +142,7 @@ exports.hook_mail = function (next, connection, params) {
     }
 
     return next();
-};
+}
 
 //
 exports.hook_rcpt_ok = function (next, connection, rcpt) {
@@ -231,7 +231,7 @@ exports.hook_rcpt_ok = function (next, connection, rcpt) {
             });
         }
     });
-};
+}
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -266,7 +266,7 @@ exports.process_tuple = function (connection, sender, rcpt, cb) {
             return cb(err3, null);
         });
     });
-};
+}
 
 // Checks if host is _white_. Updates stats if so.
 exports.check_and_update_white = function (connection, cb) {
@@ -290,7 +290,7 @@ exports.check_and_update_white = function (connection, cb) {
 
         return cb(null, false);
     });
-};
+}
 
 // invokes next() depending on outcome param
 exports.invoke_outcome_cb = function (next, is_whitelisted) {
@@ -304,7 +304,7 @@ exports.invoke_outcome_cb = function (next, is_whitelisted) {
 
         return next(DENYSOFT, DSN.sec_unauthorized(text, '451'));
     }
-};
+}
 
 // Should we skip greylisting invokation altogether?
 exports.should_skip_check = function (connection) {
@@ -339,12 +339,12 @@ exports.should_skip_check = function (connection) {
     }
 
     return false;
-};
+}
 
 // Was whitelisted previously in this session
 exports.was_whitelisted_in_session = function (connection) {
     return connection.transaction.results.has(this, 'pass', 'whitelisted');
-};
+}
 
 exports.process_skip_rules = function (connection) {
     const plugin = this;
@@ -362,7 +362,7 @@ exports.process_skip_rules = function (connection) {
     }
 
     return false;
-};
+}
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -376,13 +376,13 @@ exports.craft_grey_key = function (connection, from, to) {
         key += `:${(to || '<>')}`;
     }
     return key;
-};
+}
 
 // Build white DB key off supplied params.
 exports.craft_white_key = function (connection) {
     const plugin = this;
     return 'white:' + plugin.craft_hostid(connection);
-};
+}
 
 // Return so-called +hostid+.
 exports.craft_hostid = function (connection) {
@@ -459,7 +459,7 @@ exports.craft_hostid = function (connection) {
     }
 
     return chsit(stripped_dom);
-};
+}
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -480,7 +480,7 @@ exports.retrieve_grey = function (rcpt_key, sender_key, cb) {
         }
         return cb(err, result);
     });
-};
+}
 
 // Update or create _grey_ record
 exports.update_grey = function (key, create, cb) {
@@ -518,7 +518,7 @@ exports.update_grey = function (key, create, cb) {
         }
         return cb(null, ((create) ? new_record : false));
     });
-};
+}
 
 // Promote _grey_ record to _white_.
 exports.promote_to_white = function (connection, grey_rec, cb) {
@@ -552,7 +552,7 @@ exports.promote_to_white = function (connection, grey_rec, cb) {
             return cb(err2, result2);
         });
     });
-};
+}
 
 // Update _white_ record
 exports.update_white_record = function (key, record, cb) {
@@ -576,7 +576,7 @@ exports.update_white_record = function (key, record, cb) {
         }
         return cb(null, record2);
     });
-};
+}
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -597,7 +597,7 @@ exports.db_lookup = function (key, cb) {
         }
         return cb(null, result);
     });
-};
+}
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 exports.addr_in_list = function (type, address) {
@@ -618,7 +618,7 @@ exports.addr_in_list = function (type, address) {
     } catch (err) {
         return false;
     }
-};
+}
 
 exports.ip_in_list = function (ip) {
     const plugin = this;
@@ -635,7 +635,7 @@ exports.ip_in_list = function (ip) {
     }
 
     return false;
-};
+}
 
 // Match patterns in the list against (end of) domain
 exports.domain_in_list = function (list_name, domain) {
@@ -653,7 +653,7 @@ exports.domain_in_list = function (list_name, domain) {
     }
 
     return false;
-};
+}
 
 // Check for special rDNS cases
 // @return {type: 'dynamic'} if rnds is dynamic (hostid should be IP)
@@ -668,4 +668,4 @@ exports.check_rdns_for_special_cases = function (domain, label) {
         };
 
     return false;
-};
+}

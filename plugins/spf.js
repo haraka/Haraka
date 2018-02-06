@@ -12,7 +12,7 @@ exports.register = function () {
     };
 
     plugin.load_config();
-};
+}
 
 exports.load_config = function () {
     const plugin = this;
@@ -66,7 +66,7 @@ exports.load_config = function () {
     if (!plugin.cfg.relay) {
         plugin.cfg.relay = { context: 'sender' };  // default/legacy
     }
-};
+}
 
 exports.hook_helo = exports.hook_ehlo = function (next, connection, helo) {
     const plugin = this;
@@ -108,7 +108,7 @@ exports.hook_helo = exports.hook_ehlo = function (next, connection, helo) {
         });
         return next();
     });
-};
+}
 
 exports.hook_mail = function (next, connection, params) {
     const plugin = this;
@@ -217,12 +217,12 @@ exports.hook_mail = function (next, connection, params) {
             ch_cb(err, result, connection.remote.ip);
         });
     });
-};
+}
 
 exports.log_result = function (connection, scope, host, mfrom, result, ip) {
     const show_ip=ip ? ip : connection.remote.ip;
     connection.loginfo(this, `identity=${scope} ip=${show_ip} domain="${host}" mfrom=<${mfrom}> result=${result}`);
-};
+}
 
 exports.return_results = function (next, connection, spf, scope, result, sender) {
     const plugin = this;
@@ -260,7 +260,7 @@ exports.return_results = function (next, connection, spf, scope, result, sender)
             connection.logerror(plugin, `unknown result code=${result}`);
             return next();
     }
-};
+}
 
 exports.save_to_header = function (connection, spf, result, mfrom, host, id, ip) {
     const plugin = this;
@@ -270,4 +270,4 @@ exports.save_to_header = function (connection, spf, result, mfrom, host, id, ip)
     connection.transaction.add_leading_header('Received-SPF',
         `${spf.result(result)} (${plugin.config.get('me')}: domain of ${host}${result === spf.SPF_PASS ? ' designates ' : ' does not designate '}${connection.remote.ip} as permitted sender) receiver=${plugin.config.get('me')}; identity=${id}; client-ip=${ip ? ip : connection.remote.ip}; helo=${connection.hello.host}; envelope-from=<${mfrom}>`
     );
-};
+}

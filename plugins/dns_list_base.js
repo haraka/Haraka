@@ -60,7 +60,7 @@ exports.lookup = function (lookup, zone, cb) {
         }
         return cb(err, a);
     });
-};
+}
 
 exports.stats_incr_zone = function (err, zone, start) {
     const plugin = this;
@@ -77,7 +77,7 @@ exports.stats_incr_zone = function (err, zone, start) {
             : parseInt(elapsed);
         redis_client.hset(rkey, 'AVG_RT', avg);
     });
-};
+}
 
 exports.init_redis = function () {
     const plugin = this;
@@ -95,7 +95,7 @@ exports.init_redis = function () {
         redis_client = null; // should force a reconnect
         // not sure if that's the right thing but better than nothing...
     });
-};
+}
 
 exports.multi = function (lookup, zones, cb) {
     if (!lookup) return cb();
@@ -128,7 +128,7 @@ exports.multi = function (lookup, zones, cb) {
         cb(err, null, null, false);
     }
     async.each(zones, zoneIter, zonesDone);
-};
+}
 
 // Return first positive or last result.
 exports.first = function (lookup, zones, cb, cb_each) {
@@ -146,7 +146,7 @@ exports.first = function (lookup, zones, cb, cb_each) {
         ran_cb = true;
         return cb(err, zone, a);
     });
-};
+}
 
 exports.check_zones = function (interval) {
     const self = this;
@@ -191,14 +191,14 @@ exports.check_zones = function (interval) {
             self.check_zones();
         }, (interval * 60) * 1000);
     }
-};
+}
 
 exports.shutdown = function () {
     clearInterval(this._interval);
     if (redis_client) {
         redis_client.quit();
     }
-};
+}
 
 exports.disable_zone = function (zone, result) {
     if (!zone) return false;
@@ -219,4 +219,4 @@ exports.disable_zone = function (zone, result) {
     this.logwarn('disabling zone \'' + zone + '\'' + (result ? ': ' +
         result : ''));
     return true;
-};
+}

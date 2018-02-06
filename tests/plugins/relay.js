@@ -2,14 +2,14 @@
 
 const fixtures     = require('haraka-test-fixtures');
 
-const _set_up = function (done) {
+function _set_up (done) {
 
     this.plugin = new fixtures.plugin('relay');
     this.plugin.cfg = {};
     this.connection = fixtures.connection.createConnection();
 
     done();
-};
+}
 
 exports.plugin = {
     setUp : _set_up,
@@ -27,7 +27,7 @@ exports.plugin = {
         // console.log(this.plugin);
         test.done();
     },
-};
+}
 
 exports.load_config_files = {
     setUp : _set_up,
@@ -45,7 +45,7 @@ exports.load_config_files = {
         test.ok(typeof this.plugin.dest === 'object');
         test.done();
     },
-};
+}
 
 exports.is_acl_allowed = {
     setUp : _set_up,
@@ -86,7 +86,7 @@ exports.is_acl_allowed = {
 
         test.done();
     },
-};
+}
 
 exports.acl = {
     setUp : function (callback) {
@@ -150,7 +150,7 @@ exports.acl = {
         this.plugin.acl_allow=['1.1.1.1/24'];
         this.plugin.acl(next, this.connection);
     },
-};
+}
 
 exports.dest_domains = {
     setUp : function (callback) {
@@ -232,7 +232,7 @@ exports.dest_domains = {
         this.plugin.dest = { domains: { foo: '{"action":"continue"}' } };
         this.plugin.dest_domains(next, this.connection, [{host:'foo'}]);
     },
-};
+}
 
 exports.force_routing = {
     setUp : function (callback) {
@@ -285,7 +285,7 @@ exports.force_routing = {
         this.plugin.dest = { domains: { foo: '{"action":"blah blah","nexthop":"other-server"}' } };
         this.plugin.force_routing(next, this.connection, 'foo');
     },
-};
+}
 
 exports.all = {
     setUp : _set_up,
@@ -319,4 +319,4 @@ exports.all = {
         this.plugin.cfg.relay = { all: true };
         this.plugin.all(next, this.connection, ['foo@bar.com']);
     }
-};
+}

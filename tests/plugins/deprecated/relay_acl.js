@@ -2,7 +2,7 @@
 
 const fixtures     = require('haraka-test-fixtures');
 
-const _set_up = function (done) {
+function _set_up (done) {
 
     this.plugin = new fixtures.plugin('relay_acl');
     this.plugin.cfg = {};
@@ -13,7 +13,7 @@ const _set_up = function (done) {
     };
 
     done();
-};
+}
 
 exports.is_acl_allowed = {
     setUp : _set_up,
@@ -54,87 +54,87 @@ exports.is_acl_allowed = {
 
         test.done();
     },
-};
+}
 
 exports.relay_dest_domains = {
     setUp : _set_up,
     'relaying' : function (test) {
         test.expect(2);
         const outer = this;
-        const next = function () {
+        function next () {
             // console.log(outer.connection.results.get('relay_acl'));
             // console.log(outer.connection.transaction.results.get('relay_acl'));
             test.equal(undefined, arguments[0]);
             test.equal(1, outer.connection.transaction.results.get('relay_acl').skip.length);
             test.done();
-        };
+        }
         this.connection.relaying=true;
         this.plugin.relay_dest_domains(next, this.connection, [{host:'foo'}]);
     },
     'no config' : function (test) {
         test.expect(2);
         const outer = this;
-        const next = function () {
+        function next () {
             test.equal(undefined, arguments[0]);
             test.equal(1, outer.connection.transaction.results.get('relay_acl').skip.length);
             test.done();
-        };
+        }
         this.plugin.relay_dest_domains(next, this.connection, [{host:'foo'}]);
     },
     'action=undef' : function (test) {
         test.expect(2);
         const outer = this;
-        const next = function () {
+        function next () {
             test.equal(DENY, arguments[0]);
             test.equal(1, outer.connection.transaction.results.get('relay_acl').fail.length);
             test.done();
-        };
+        }
         this.plugin.cfg.domains = { foo: '{"action":"dunno"}' };
         this.plugin.relay_dest_domains(next, this.connection, [{host:'foo'}]);
     },
     'action=deny' : function (test) {
         test.expect(2);
         const outer = this;
-        const next = function () {
+        function next () {
             test.equal(DENY, arguments[0]);
             test.equal(1, outer.connection.transaction.results.get('relay_acl').fail.length);
             test.done();
-        };
+        }
         this.plugin.cfg.domains = { foo: '{"action":"deny"}' };
         this.plugin.relay_dest_domains(next, this.connection, [{host:'foo'}]);
     },
     'action=continue' : function (test) {
         test.expect(2);
         const outer = this;
-        const next = function () {
+        function next () {
             test.equal(CONT, arguments[0]);
             test.equal(1, outer.connection.transaction.results.get('relay_acl').pass.length);
             test.done();
-        };
+        }
         this.plugin.cfg.domains = { foo: '{"action":"continue"}' };
         this.plugin.relay_dest_domains(next, this.connection, [{host:'foo'}]);
     },
     'action=accept' : function (test) {
         test.expect(2);
         const outer = this;
-        const next = function () {
+        function next () {
             test.equal(CONT, arguments[0]);
             test.equal(1, outer.connection.transaction.results.get('relay_acl').pass.length);
             test.done();
-        };
+        }
         this.plugin.cfg.domains = { foo: '{"action":"continue"}' };
         this.plugin.relay_dest_domains(next, this.connection, [{host:'foo'}]);
     },
-};
+}
 
 exports.refresh_config = {
     setUp : _set_up,
     'callback' : function (test) {
         test.expect(1);
-        const next = function () {
+        function next () {
             test.equal(undefined, arguments[0]);
             test.done();
-        };
+        }
         this.plugin.refresh_config(next, this.connection);
     },
-};
+}

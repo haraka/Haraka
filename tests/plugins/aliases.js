@@ -49,7 +49,7 @@ const _set_up = function (done) {
     this.plugin.register();
 
     done();
-};
+}
 
 exports.aliases = {
     setUp : _set_up,
@@ -373,4 +373,4 @@ exports.aliases = {
 
         this.plugin.aliases(next, this.connection, this.params);
     }
-};
+}

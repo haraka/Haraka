@@ -26,7 +26,7 @@ ob_cfg.pool_concurrency_max = 0;
 const outbound_context = {
     TODOItem: TODOItem,
     exports: outbound
-};
+}
 
 const queue_dir = path.resolve(__dirname, 'test-queue');
 

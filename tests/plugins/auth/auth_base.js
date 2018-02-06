@@ -58,7 +58,7 @@ exports.hook_capabilities = {
             test.done();
         }, this.connection);
     },
-};
+}
 
 exports.get_plain_passwd = {
     setUp : _set_up,
@@ -76,7 +76,7 @@ exports.get_plain_passwd = {
             test.done();
         });
     },
-};
+}
 
 exports.check_plain_passwd = {
     setUp : _set_up,
@@ -101,7 +101,7 @@ exports.check_plain_passwd = {
             test.done();
         });
     },
-};
+}
 
 exports.select_auth_method = {
     setUp : _set_up,
@@ -131,7 +131,7 @@ exports.select_auth_method = {
             test.done();
         }, this.connection, method);
     },
-};
+}
 
 exports.auth_plain = {
     setUp : _set_up,
@@ -172,7 +172,7 @@ exports.auth_plain = {
         }.bind(this);
         this.plugin.auth_plain(next, this.connection, '');
     },
-};
+}
 
 exports.check_user = {
     setUp : _set_up_2,
@@ -196,7 +196,7 @@ exports.check_user = {
             test.done();
         }, this.connection, credentials, 'PLAIN');
     },
-};
+}
 
 exports.hook_unrecognized_command = {
     setUp : _set_up,
@@ -231,7 +231,7 @@ exports.hook_unrecognized_command = {
             test.done();
         }, this.connection, [utils.base64('discard\0test\0testpass')]);
     }
-};
+}
 
 exports.auth_login = {
     setUp : _set_up,
@@ -343,7 +343,7 @@ exports.auth_login = {
         this.connection.notes.allowed_auth_methods = ['PLAIN','LOGIN'];
         this.plugin.hook_unrecognized_command(next, this.connection, params);
     }
-};
+}
 
 exports.hexi = {
     setUp : _set_up,
@@ -353,5 +353,4 @@ exports.hexi = {
         test.equal(this.plugin.hexi(8), 8);
         test.done();
     },
-};
-
+}

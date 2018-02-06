@@ -96,4 +96,4 @@ const _qfile = module.exports = {
     },
 
     platformDOT : platform_dot
-};
+}

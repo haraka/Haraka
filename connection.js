@@ -1585,7 +1585,7 @@ class Connection {
 
         // Warn if we hit the maximum parsed header lines limit
         if (this.transaction.header_lines.length >= trans.MAX_HEADER_LINES) {
-            this.logwarn(`Incoming message reached maximum parsing limit of ${max_lines} header lines`);
+            this.logwarn(`Incoming message reached maximum parsing limit of ${trans.MAX_HEADER_LINES} header lines`);
         }
 
         this.auth_results_clean();   // rename old A-R headers
@@ -1846,7 +1846,7 @@ exports.Connection = Connection;
 
 exports.createConnection = (client, server) => {
     return new Connection(client, server);
-};
+}
 
 // copy logger methods into Connection:
 for (const key in logger) {

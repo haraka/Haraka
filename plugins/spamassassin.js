@@ -7,7 +7,7 @@ const utils = require('haraka-utils');
 exports.register = function () {
     const plugin = this;
     plugin.load_spamassassin_ini();
-};
+}
 
 exports.load_spamassassin_ini = function () {
     const plugin = this;
@@ -38,7 +38,7 @@ exports.load_spamassassin_ini = function () {
         if (!plugin.cfg.main[item]) return;
         plugin.cfg.main[item] = Number(plugin.cfg.main[item]);
     });
-};
+}
 
 exports.hook_data_post = function (next, connection) {
     const plugin = this;
@@ -131,7 +131,7 @@ exports.hook_data_post = function (next, connection) {
 
         return next();
     });
-};
+}
 
 exports.fixup_old_headers = function (transaction) {
     const plugin = this;
@@ -162,7 +162,7 @@ exports.fixup_old_headers = function (transaction) {
             }
             break;
     }
-};
+}
 
 exports.munge_subject = function (connection, score) {
     const plugin = this;
@@ -176,7 +176,7 @@ exports.munge_subject = function (connection, score) {
 
     connection.transaction.remove_header('Subject');
     connection.transaction.add_header('Subject', `${plugin.cfg.main.subject_prefix} ${subj}`);
-};
+}
 
 exports.do_header_updates = function (connection, spamd_response) {
     const plugin = this;
@@ -202,7 +202,7 @@ exports.do_header_updates = function (connection, spamd_response) {
         if (val === '') continue;
         connection.transaction.add_header(`X-Spam-${key}`, val);
     }
-};
+}
 
 exports.score_too_high = function (connection, spamd_response) {
     const plugin = this;
@@ -220,7 +220,7 @@ exports.score_too_high = function (connection, spamd_response) {
     }
 
     return false;
-};
+}
 
 exports.get_spamd_username = function (connection) {
     const plugin = this;
@@ -243,7 +243,7 @@ exports.get_spamd_username = function (connection) {
         // from. If this is something you care about, this is the spot.
     }
     return user;
-};
+}
 
 exports.get_spamd_headers = function (connection, username) {
     // http://svn.apache.org/repos/asf/spamassassin/trunk/spamd/PROTOCOL
@@ -258,7 +258,7 @@ exports.get_spamd_headers = function (connection, username) {
         headers.push('X-Haraka-Relay: true');
     }
     return headers;
-};
+}
 
 exports.get_spamd_socket = function (next, connection, headers) {
     const plugin = this;
@@ -310,7 +310,7 @@ exports.get_spamd_socket = function (next, connection, headers) {
     }
 
     return socket;
-};
+}
 
 exports.msg_too_big = function (connection) {
     const plugin = this;
@@ -322,7 +322,7 @@ exports.msg_too_big = function (connection) {
     if (size <= max) { return false; }
     connection.loginfo(plugin, `skipping, size ${utils.prettySize(size)} exceeds max: ${utils.prettySize(max)}`);
     return true;
-};
+}
 
 exports.log_results = function (connection, spamd_response) {
     const plugin = this;
@@ -332,5 +332,4 @@ exports.log_results = function (connection, spamd_response) {
           `, required=${spamd_response.reqd}` +
           `, reject=${((connection.relaying) ? (cfg.relay_reject_threshold || cfg.reject_threshold) : cfg.reject_threshold)}` +
           `, tests="${spamd_response.tests}"`);
-};
-
+}

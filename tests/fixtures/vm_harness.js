@@ -56,4 +56,4 @@ exports.add_tests = function (module_path, tests_path, test_exports, add_to_sand
     for (let x = 0; x < tests.length; x++) {
         test_exports[tests[x]] = make_test(module_path, tests_path + tests[x], additional_sandbox);
     }
-};
+}

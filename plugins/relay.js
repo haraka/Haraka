@@ -30,7 +30,7 @@ exports.register = function () {
     if (plugin.cfg.relay.all) {
         plugin.register_hook('rcpt', 'all');
     }
-};
+}
 
 exports.load_relay_ini = function () {
     const plugin = this;
@@ -44,7 +44,7 @@ exports.load_relay_ini = function () {
     }, function () {
         plugin.load_relay_ini();
     });
-};
+}
 
 exports.load_dest_domains = function () {
     const plugin = this;
@@ -53,7 +53,7 @@ exports.load_dest_domains = function () {
         'ini',
         function () { plugin.load_dest_domains(); }
     );
-};
+}
 
 exports.load_acls = function () {
     const plugin = this;
@@ -74,7 +74,7 @@ exports.load_acls = function () {
             plugin.acl_allow[i] = cidr[0] + '/32';
         }
     }
-};
+}
 
 exports.acl = function (next, connection) {
     const plugin = this;
@@ -90,7 +90,7 @@ exports.acl = function (next, connection) {
     connection.results.add(plugin, {pass: 'acl'});
     connection.relaying = true;
     return next(OK);
-};
+}
 
 exports.is_acl_allowed = function (connection) {
     const plugin = this;
@@ -116,7 +116,7 @@ exports.is_acl_allowed = function (connection) {
         }
     }
     return false;
-};
+}
 
 exports.dest_domains = function (next, connection, params) {
     const plugin = this;
@@ -171,7 +171,7 @@ exports.dest_domains = function (next, connection, params) {
 
     transaction.results.add(plugin, {fail: 'relay_dest_domain'});
     return next(DENY, "Mail for that recipient is not accepted here.");
-};
+}
 
 exports.force_routing = function (next, hmail, domain) {
     const plugin = this;
@@ -193,7 +193,7 @@ exports.force_routing = function (next, hmail, domain) {
 
     plugin.logdebug(plugin, `using ${nexthop} for: ${domain}`);
     return next(OK, nexthop);
-};
+}
 
 exports.all = function (next, connection, params) {
 // relay everything - could be useful for a spamtrap
@@ -203,5 +203,4 @@ exports.all = function (next, connection, params) {
     connection.loginfo(plugin, `confirming recipient ${params[0]}`);
     connection.relaying = true;
     next(OK);
-};
-
+}

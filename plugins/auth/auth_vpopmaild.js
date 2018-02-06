@@ -6,14 +6,14 @@ exports.register = function () {
     const plugin = this;
     plugin.inherits('auth/auth_base');
     plugin.load_vpop_ini();
-};
+}
 
 exports.load_vpop_ini = function () {
     const plugin = this;
     plugin.cfg = plugin.config.get('auth_vpopmaild.ini', function () {
         plugin.load_vpop_ini();
     });
-};
+}
 
 exports.hook_capabilities = function (next, connection) {
     if (!connection.tls.enabled) { return next(); }
@@ -26,7 +26,7 @@ exports.hook_capabilities = function (next, connection) {
     connection.notes.allowed_auth_methods = methods;
 
     return next();
-};
+}
 
 exports.check_plain_passwd = function (connection, user, passwd, cb) {
     const plugin = this;
@@ -58,7 +58,7 @@ exports.check_plain_passwd = function (connection, user, passwd, cb) {
         connection.loginfo(plugin, 'AUTH user="' + user + '" success=' + auth_success);
         return cb(auth_success);
     });
-};
+}
 
 exports.get_sock_opts = function (user) {
     const plugin = this;
@@ -81,7 +81,7 @@ exports.get_sock_opts = function (user) {
 
     plugin.logdebug('sock: ' + plugin.sock_opts.host + ':' + plugin.sock_opts.port);
     return plugin.sock_opts;
-};
+}
 
 exports.get_vpopmaild_socket = function (user) {
     const plugin = this;
@@ -104,7 +104,7 @@ exports.get_vpopmaild_socket = function (user) {
         plugin.logdebug('vpopmail connected');
     });
     return socket;
-};
+}
 
 exports.get_plain_passwd = function (user, connection, cb) {
     const plugin = this;
@@ -157,4 +157,4 @@ exports.get_plain_passwd = function (user, connection, cb) {
     socket.on('end', function () {
         cb(plain_pass ? plain_pass.toString() : plain_pass);
     });
-};
+}

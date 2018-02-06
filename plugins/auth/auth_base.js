@@ -19,12 +19,12 @@ exports.hook_capabilities = function (next, connection) {
     connection.capabilities.push(`AUTH ${methods.join(' ')}`);
     connection.notes.allowed_auth_methods = methods;
     next();
-};
+}
 
 // Override this at a minimum. Run cb(passwd) to provide a password.
 exports.get_plain_passwd = function (user, connection, cb) {
     return cb();
-};
+}
 
 exports.hook_unrecognized_command = function (next, connection, params) {
     const plugin = this;
@@ -45,7 +45,7 @@ exports.hook_unrecognized_command = function (next, connection, params) {
         return plugin.auth_plain(next, connection, params);
     }
     return next();
-};
+}
 
 exports.check_plain_passwd = function (connection, user, passwd, cb) {
     const callback = function (plain_pw) {
@@ -62,7 +62,7 @@ exports.check_plain_passwd = function (connection, user, passwd, cb) {
     else {
         throw 'Invalid number of arguments for get_plain_passwd';
     }
-};
+}
 
 exports.check_cram_md5_passwd = function (connection, user, passwd, cb) {
     const callback = function (plain_pw) {
@@ -87,7 +87,7 @@ exports.check_cram_md5_passwd = function (connection, user, passwd, cb) {
     else {
         throw 'Invalid number of arguments for get_plain_passwd';
     }
-};
+}
 
 exports.check_user = function (next, connection, credentials, method) {
     const plugin = this;
@@ -152,7 +152,7 @@ exports.check_user = function (next, connection, credentials, method) {
         plugin.check_cram_md5_passwd(connection, credentials[0], credentials[1],
             passwd_ok);
     }
-};
+}
 
 exports.select_auth_method = function (next, connection, method) {
     const split = method.split(/\s+/);
@@ -176,7 +176,7 @@ exports.select_auth_method = function (next, connection, method) {
     if (method === AUTH_METHOD_CRAM_MD5) {
         return this.auth_cram_md5(next, connection);
     }
-};
+}
 
 exports.auth_plain = function (next, connection, params) {
     const plugin = this;
@@ -200,7 +200,7 @@ exports.auth_plain = function (next, connection, params) {
             return;
         }
     }
-};
+}
 
 exports.auth_login = function (next, connection, params) {
     const plugin = this;
@@ -238,7 +238,7 @@ exports.auth_login = function (next, connection, params) {
         connection.notes.auth_login_asked_login = true;
         return next(OK);
     });
-};
+}
 
 exports.auth_cram_md5 = function (next, connection, params) {
     const plugin = this;
@@ -255,8 +255,8 @@ exports.auth_cram_md5 = function (next, connection, params) {
         connection.notes.auth_ticket = ticket;
         return next(OK);
     });
-};
+}
 
 exports.hexi = function (number) {
     return String(Math.abs(parseInt(number)).toString(16));
-};
+}
