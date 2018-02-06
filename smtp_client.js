@@ -271,7 +271,7 @@ class SMTPClient extends events.EventEmitter {
                     ` verified=${verified}` +
                     ((verifyError) ? ` error="${verifyError}"` : '') +
                     ((cert && cert.subject) ? ` cn="${cert.subject.CN}" organization="${cert.subject.O}"` : '') +
-                    ((cert && cert.issuer) ? ` issuer="${cert.issue.O}"` : '') +
+                    ((cert && cert.issuer) ? ` issuer="${cert.issuer.O}"` : '') +
                     ((cert && cert.valid_to) ? ` expires="${cert.valid_to}"` : '') +
                     ((cert && cert.fingerprint) ? ` fingerprint=${cert.fingerprint}` : ''));
         });
