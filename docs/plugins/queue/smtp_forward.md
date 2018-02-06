@@ -90,6 +90,9 @@ More specific forward routes for domains can be defined. More specific routes
 are only honored for SMTP connections with a single recipient or SMTP
 connections where every recipient host is identical.
 
+enable\_outbound can be set or unset on a per-domain level to enable or disable
+forwarding for specific domains.
+
     # default SMTP host
     host=1.2.3.4
     # auth_type=plain
@@ -108,6 +111,8 @@ connections where every recipient host is identical.
     [example3.com]
     host=1.2.3.6
 
+    [example4.com]
+    enable\_outbound=false
 
 # Split host forward routing
 

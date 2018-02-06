@@ -138,3 +138,37 @@ exports.get_mx = {
         this.plugin.get_mx(cb, hmail, 'test.com');
     },
 }
+
+exports.is_outbound_enabled = {
+    setUp : _setup,
+    'enable_outbound is true by default' : function (test) {
+        test.expect(1);
+        test.equal(this.plugin.is_outbound_enabled(this.plugin.cfg), true);
+        test.done();
+    },
+    'per-domain enable_outbound is true by default' : function (test) {
+        test.expect(1);
+        this.connection.transaction.rcpt_to = [ new Address('<postmaster@test.com>') ];
+        const cfg = this.plugin.get_config(this.connection);
+        test.equal(this.plugin.is_outbound_enabled(cfg), true);
+        test.done();
+    },
+    'per-domain enable_outbound can be set to false' : function (test) {
+        test.expect(1);
+        this.plugin.cfg['test.com'].enable_outbound = false;
+        this.connection.transaction.rcpt_to = [ new Address('<postmaster@test.com>') ];
+        const cfg = this.plugin.get_config(this.connection);
+        test.equal(this.plugin.is_outbound_enabled(cfg), false);
+        test.done();
+    },
+    'per-domain enable_outbound is true even if top level is false' : function (test) {
+        test.expect(1);
+        this.plugin.cfg.main.enable_outbound = false; // this will be ignored
+        this.plugin.cfg['test.com'].enable_outbound = true;
+        this.connection.transaction.rcpt_to = [ new Address('<postmaster@test.com>') ];
+        const cfg = this.plugin.get_config(this.connection);
+        test.equal(this.plugin.is_outbound_enabled(cfg), true);
+        test.done();
+    }
+}
+
