@@ -12,6 +12,7 @@
     * outbound/hmail: make haraka queue files human friendly #2231
     * plugins/rcpt_to.ldap -> haraka-plugin-rcpt-ldap #2144
     * plugins/auth/auth_ldap -> haraka-plugin-auth-ldap #2144
+    * plugins/smtp_forward: enable_outbound can be enabled/disabled for specific domains
     * auth_proxy: read TLS key and cert files from tls.ini #2212
     * README: typo fixes #2210
     * incorrect RCPT TO reply message #2227

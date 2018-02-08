@@ -26,9 +26,7 @@ exports.register = function () {
 
     plugin.register_hook('queue', 'queue_forward');
 
-    if (plugin.cfg.main.enable_outbound) {
-        plugin.register_hook('queue_outbound', 'queue_forward');
-    }
+    plugin.register_hook('queue_outbound', 'queue_forward');
 }
 
 exports.load_smtp_forward_ini = function () {
@@ -42,6 +40,7 @@ exports.load_smtp_forward_ini = function () {
             '-main.check_sender',
             '-main.check_recipient',
             '*.enable_tls',
+            '*.enable_outbound'
         ],
     },
     function () {
@@ -61,6 +60,14 @@ exports.get_config = function (connection) {
 
     return plugin.cfg[dom];
 }
+
+exports.is_outbound_enabled = function (cfg) {
+    const plugin = this;
+
+    if ('enable_outbound' in cfg) return cfg.enable_outbound; // pick up per-domain flag if set
+
+    return plugin.cfg.main.enable_outbound; // follow the global configuration
+};
 
 exports.check_sender = function (next, connection, params) {
     const plugin = this;
@@ -208,6 +215,11 @@ exports.queue_forward = function (next, connection) {
     }
 
     const cfg = plugin.get_config(connection);
+
+    if (connection.relaying && !plugin.is_outbound_enabled(cfg)) {
+        connection.logdebug(plugin, 'skipping, outbound disabled');
+        return next();
+    }
 
     smtp_client_mod.get_client_plugin(plugin, connection, cfg, function (err, smtp_client) {
         smtp_client.next = next;
