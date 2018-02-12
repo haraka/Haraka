@@ -72,7 +72,7 @@ exports.get_listen_addrs = {
         test.deepEqual(['127.0.0.1:250','[::1]:250'], listeners);
         test.done();
     },
-};
+}
 
 exports.load_smtp_ini = {
     setUp : _set_up,
@@ -86,7 +86,7 @@ exports.load_smtp_ini = {
         test.notEqual(c.daemon_pid_file, undefined);
         test.done();
     }
-};
+}
 
 exports.get_smtp_server = {
     setUp : function (done) {
@@ -138,7 +138,7 @@ exports.get_smtp_server = {
             });
         });
     }
-};
+}
 
 exports.get_http_docroot = {
     setUp : _set_up,
@@ -148,7 +148,7 @@ exports.get_http_docroot = {
         test.ok(docroot);
         test.done();
     },
-};
+}
 
 function _setupServer (done) {
     process.env.YES_REALLY_DO_DISCARD=1;   // for queue/discard plugin
@@ -194,7 +194,7 @@ exports.smtp_client = {
             connect_timeout: 2,
             pool_timeout: 5,
             max_connections: 3,
-        };
+        }
 
         const smtp_client   = require('../smtp_client');
         const MessageStream = require('../messagestream');
@@ -241,7 +241,7 @@ exports.smtp_client = {
 
         }, 2500, 'localhost', cfg);
     },
-};
+}
 
 exports.nodemailer = {
     setUp : _setupServer,

@@ -27,7 +27,7 @@ const STATE = {
     ACTIVE: 2,
     RELEASED: 3,
     DESTROYED: 4,
-};
+}
 
 class SMTPClient extends events.EventEmitter {
     constructor (port, host, connect_timeout, idle_timeout, socket) {
@@ -338,13 +338,13 @@ exports.get_pool = (server, port, host, cfg) => {
     };
     server.notes.pool[name] = pool;
     return pool;
-};
+}
 
 // Get a smtp_client for the given attributes.
 exports.get_client = function (server, callback, port, host, cfg) {
     const pool = exports.get_pool(server, port, host, cfg);
     pool.acquire(callback);
-};
+}
 
 
 exports.onCapabilitiesOutbound = function (smtp_client, secured, connection, config, on_secured) {
@@ -526,7 +526,7 @@ exports.get_client_plugin = function (plugin, connection, c, callback) {
 
         callback(err, smtp_client);
     });
-};
+}
 
 function get_hostport (connection, server, cfg) {
 

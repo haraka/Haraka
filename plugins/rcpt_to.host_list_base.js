@@ -14,7 +14,7 @@ exports.load_host_list = function () {
     }
 
     plugin.host_list = lowered_list;
-};
+}
 
 exports.load_host_list_regex = function () {
     const plugin = this;
@@ -27,7 +27,7 @@ exports.load_host_list_regex = function () {
 
     plugin.hl_re = new RegExp ('^(?:' +
                 plugin.host_list_regex.join('|') + ')$', 'i');
-};
+}
 
 exports.hook_mail = function (next, connection, params) {
     const plugin = this;
@@ -57,7 +57,7 @@ exports.hook_mail = function (next, connection, params) {
 
     txn.results.add(plugin, {msg: 'mail_from!local'});
     return next();
-};
+}
 
 exports.in_host_list = function (domain) {
     const plugin = this;
@@ -66,7 +66,7 @@ exports.in_host_list = function (domain) {
         return true;
     }
     return false;
-};
+}
 
 exports.in_host_regex = function (domain) {
     const plugin = this;
@@ -77,4 +77,4 @@ exports.in_host_regex = function (domain) {
 
     if (plugin.hl_re.test(domain)) { return true; }
     return false;
-};
+}

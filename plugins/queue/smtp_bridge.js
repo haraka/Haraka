@@ -3,14 +3,14 @@
 
 exports.register = function () {
     this.load_flat_ini();
-};
+}
 
 exports.load_flat_ini = function () {
     const plugin = this;
     plugin.cfg = plugin.config.get('smtp_bridge.ini', function () {
         plugin.load_flat_ini();
     });
-};
+}
 
 exports.hook_data_post = function (next, connection) {
     const txn = connection.transaction;

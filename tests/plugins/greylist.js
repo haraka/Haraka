@@ -28,7 +28,7 @@ const _set_up = function (done) {
     };
 
     done();
-};
+}
 
 exports.in_list = {
     setUp : _set_up,
@@ -55,4 +55,4 @@ exports.in_list = {
         test.ok(this.plugin.ip_in_list('2a02:8204:d600:8060:7920:eeee::ff00'));
         test.done();
     }
-};
+}

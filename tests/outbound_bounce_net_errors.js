@@ -21,7 +21,7 @@ const outbound       = require('../outbound');
 const outbound_context = {
     TODOItem: TODOItem,
     exports: outbound
-};
+}
 
 const queue_dir = path.resolve(__dirname, 'test-queue');
 

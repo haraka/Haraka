@@ -7,7 +7,7 @@ const _set_up = function (done) {
     this.plugin = new fixtures.plugin('dns_list_base');
 
     done();
-};
+}
 
 exports.disable_zone = {
     setUp : _set_up,
@@ -41,7 +41,7 @@ exports.disable_zone = {
         test.equal(0, this.plugin.zones.length);
         test.done();
     },
-};
+}
 
 exports.lookup = {
     setUp : _set_up,
@@ -63,7 +63,7 @@ exports.lookup = {
         }.bind(this);
         this.plugin.lookup('127.0.0.1', 'bl.spamcop.net', cb);
     },
-};
+}
 
 exports.multi = {
     setUp : _set_up,
@@ -151,7 +151,7 @@ exports.multi = {
         const dnsbls = ['bl.spamcop.net','cbl.abuseat.org'];
         this.plugin.multi('::1', dnsbls, cb);
     }
-};
+}
 
 exports.first = {
     setUp : _set_up,
@@ -193,4 +193,4 @@ exports.first = {
         };
         this.plugin.first('127.0.0.2', dnsbls, cb, cb_each);
     }
-};
+}

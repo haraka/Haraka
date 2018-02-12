@@ -175,7 +175,7 @@ exports.connectionRaw = {
         test.done();
     }
     */
-};
+}
 
 exports.connectionPrivate = {
     setUp: function (done) {

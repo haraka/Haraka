@@ -16,7 +16,7 @@ const _set_up = function (done) {
     this.plugin.register();
 
     done();
-};
+}
 
 exports.init = {
     setUp: _set_up,
@@ -59,7 +59,7 @@ exports.host_mismatch = {
         this.plugin.host_mismatch(cb, this.connection, 'anything');
         test.done();
     },
-};
+}
 
 exports.proto_mismatch = {
     setUp : _set_up,
@@ -108,7 +108,7 @@ exports.proto_mismatch = {
         this.plugin.proto_mismatch(cb, this.connection, 'anything', 'esmtp');
         test.done();
     },
-};
+}
 
 exports.rdns_match = {
     setUp : _set_up,
@@ -171,7 +171,7 @@ exports.rdns_match = {
         this.plugin.rdns_match(cb, this.connection, 'helo.example.com');
         test.done();
     },
-};
+}
 
 exports.bare_ip = {
     setUp : _set_up,
@@ -215,7 +215,7 @@ exports.bare_ip = {
         this.plugin.bare_ip(cb, this.connection, '192.168.1.1');
         test.done();
     },
-};
+}
 
 exports.dynamic = {
     setUp : _set_up,
@@ -266,7 +266,7 @@ exports.dynamic = {
         this.plugin.dynamic(cb, this.connection, test_helo);
         test.done();
     },
-};
+}
 
 exports.big_company = {
     setUp : _set_up,
@@ -316,7 +316,7 @@ exports.big_company = {
         this.plugin.cfg.reject.big_company=true;
         this.plugin.big_company(cb, this.connection, test_helo);
     },
-};
+}
 
 exports.literal_mismatch = {
     setUp : _set_up,
@@ -386,7 +386,7 @@ exports.literal_mismatch = {
         this.plugin.cfg.reject.literal_mismatch=true;
         this.plugin.literal_mismatch(cb, this.connection, test_helo);
     },
-};
+}
 
 exports.valid_hostname = {
     setUp : _set_up,
@@ -435,7 +435,7 @@ exports.valid_hostname = {
         this.plugin.cfg.reject.valid_hostname=true;
         this.plugin.valid_hostname(cb, this.connection, test_helo);
     },
-};
+}
 
 exports.forward_dns = {
     setUp : _set_up,
@@ -490,7 +490,7 @@ exports.forward_dns = {
         this.plugin.cfg.reject.forward_dns=true;
         this.plugin.forward_dns(cb, this.connection, test_helo);
     },
-};
+}
 
 exports.match_re = {
     setUp : _set_up,
@@ -549,4 +549,4 @@ exports.match_re = {
         this.plugin.cfg.list_re = new RegExp(`^(${['ylm.*'].join('|')})$`, 'i');
         this.plugin.match_re(cb, this.connection, test_helo);
     },
-};
+}

@@ -6,7 +6,7 @@ exports.register = function () {
     this.inherits('queue/discard');
 
     this.register_hook('rcpt','aliases');
-};
+}
 
 exports.aliases = function (next, connection, params) {
     const plugin = this;
@@ -78,7 +78,7 @@ exports.aliases = function (next, connection, params) {
     }
 
     next();
-};
+}
 
 function _drop (plugin, connection, rcpt) {
     connection.logdebug(plugin, `marking ${rcpt} for drop`);

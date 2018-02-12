@@ -51,7 +51,7 @@ exports.register = function () {
         };
         load_re_file();
     }
-};
+}
 
 exports.load_helo_checks_ini = function () {
     const plugin = this;
@@ -95,7 +95,7 @@ exports.load_helo_checks_ini = function () {
         plugin.logerror('deprecated setting mismatch renamed to host_mismatch');
         plugin.cfg.reject.host_mismatch = plugin.cfg.reject.mismatch;
     }
-};
+}
 
 exports.init = function (next, connection, helo) {
     const plugin = this;
@@ -110,7 +110,7 @@ exports.init = function (next, connection, helo) {
     connection.results.add(plugin, {multi: true});
 
     return next();
-};
+}
 
 exports.should_skip = function (connection, test_name) {
     const plugin = this;
@@ -131,7 +131,7 @@ exports.should_skip = function (connection, test_name) {
     }
 
     return false;
-};
+}
 
 exports.host_mismatch = function (next, connection, helo) {
     const plugin = this;
@@ -155,7 +155,7 @@ exports.host_mismatch = function (next, connection, helo) {
     if (!plugin.cfg.reject.host_mismatch) return next();
 
     return next(DENY, 'HELO host ' + msg);
-};
+}
 
 exports.valid_hostname = function (next, connection, helo) {
     const plugin = this;
@@ -193,7 +193,7 @@ exports.valid_hostname = function (next, connection, helo) {
 
     connection.results.add(plugin, {pass: 'valid_hostname'});
     return next();
-};
+}
 
 exports.match_re = function (next, connection, helo) {
     const plugin = this;
@@ -209,7 +209,7 @@ exports.match_re = function (next, connection, helo) {
     }
     connection.results.add(plugin, {pass: 'match_re'});
     return next();
-};
+}
 
 exports.rdns_match = function (next, connection, helo) {
     const plugin = this;
@@ -243,7 +243,7 @@ exports.rdns_match = function (next, connection, helo) {
         return next(DENY, 'HELO host does not match rDNS');
     }
     return next();
-};
+}
 
 exports.bare_ip = function (next, connection, helo) {
     const plugin = this;
@@ -262,7 +262,7 @@ exports.bare_ip = function (next, connection, helo) {
 
     connection.results.add(plugin, {pass: 'bare_ip'});
     return next();
-};
+}
 
 exports.dynamic = function (next, connection, helo) {
     const plugin = this;
@@ -290,7 +290,7 @@ exports.dynamic = function (next, connection, helo) {
 
     connection.results.add(plugin, {pass: 'dynamic'});
     return next();
-};
+}
 
 exports.big_company = function (next, connection, helo) {
     const plugin = this;
@@ -335,7 +335,7 @@ exports.big_company = function (next, connection, helo) {
         return next(DENY, "You are not who you say you are");
     }
     return next();
-};
+}
 
 exports.literal_mismatch = function (next, connection, helo) {
     const plugin = this;
@@ -378,7 +378,7 @@ exports.literal_mismatch = function (next, connection, helo) {
         return next(DENY, 'HELO IP literal does not match your IP address');
     }
     return next();
-};
+}
 
 exports.forward_dns = function (next, connection, helo) {
     const plugin = this;
@@ -449,7 +449,7 @@ exports.forward_dns = function (next, connection, helo) {
     };
 
     plugin.get_a_records(helo, cb);
-};
+}
 
 exports.proto_mismatch = function (next, connection, helo, proto) {
     const plugin = this;
@@ -469,15 +469,15 @@ exports.proto_mismatch = function (next, connection, helo, proto) {
     }
 
     return next();
-};
+}
 
 exports.proto_mismatch_smtp = function (next, connection, helo) {
     this.proto_mismatch(next, connection, helo, 'smtp');
-};
+}
 
 exports.proto_mismatch_esmtp = function (next, connection, helo) {
     this.proto_mismatch(next, connection, helo, 'esmtp');
-};
+}
 
 exports.emit_log = function (next, connection, helo) {
     const plugin = this;
@@ -499,7 +499,7 @@ exports.emit_log = function (next, connection, helo) {
     // [UUID] [helo.checks] fail:dynamic
     connection.loginfo(plugin, connection.results.collate(plugin));
     return next();
-};
+}
 
 exports.get_a_records = function (host, cb) {
     const plugin = this;
@@ -546,4 +546,4 @@ exports.get_a_records = function (host, cb) {
         // return the DNS results
         return cb(null, ips);
     });
-};
+}

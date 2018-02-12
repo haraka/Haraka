@@ -1846,7 +1846,7 @@ exports.Connection = Connection;
 
 exports.createConnection = (client, server) => {
     return new Connection(client, server);
-};
+}
 
 // copy logger methods into Connection:
 for (const key in logger) {

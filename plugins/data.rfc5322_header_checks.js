@@ -10,7 +10,7 @@ const singular_headers =  [
 
 exports.register = function () {
     this.logwarn("NOTICE: plugin deprecated, use 'data.headers' instead!");
-};
+}
 
 exports.hook_data_post = function (next, connection) {
     const header = connection.transaction.header;
@@ -29,4 +29,4 @@ exports.hook_data_post = function (next, connection) {
     }
 
     return next();
-};
+}

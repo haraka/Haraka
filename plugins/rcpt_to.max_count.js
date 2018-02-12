@@ -19,4 +19,4 @@ exports.hook_rcpt = function (next, connection) {
         return next(DENYDISCONNECT, "Too many recipient attempts");
     }
     return next();
-};
+}

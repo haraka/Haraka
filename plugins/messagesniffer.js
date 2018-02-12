@@ -10,7 +10,7 @@ let port = 9001;
 exports.register = function () {
     const cfg = this.config.get('messagesniffer.ini');
     if (cfg.main.port) port = parseInt(cfg.main.port);
-};
+}
 
 exports.hook_connect = function (next, connection) {
     const self = this;
@@ -97,7 +97,7 @@ exports.hook_connect = function (next, connection) {
             return next();
         }
     });
-};
+}
 
 exports.hook_data_post = function (next, connection) {
     const self = this;
@@ -328,7 +328,7 @@ exports.hook_data_post = function (next, connection) {
 
     // TODO: we only need the first 64Kb of the message
     txn.message_stream.pipe(ws, { line_endings: '\r\n' });
-};
+}
 
 exports.hook_disconnect = function (next, connection) {
     const self = this;

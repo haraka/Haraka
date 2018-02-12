@@ -40,7 +40,7 @@ FsyncWriteStream.prototype.close = function (cb) {
             }
         });
     }
-};
+}
 
 module.exports = FsyncWriteStream;
 

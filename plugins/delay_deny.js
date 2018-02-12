@@ -94,7 +94,7 @@ exports.hook_deny = function (next, connection, params) {
             // No delays
             return next();
     }
-};
+}
 
 exports.hook_rcpt_ok = function (next, connection, rcpt) {
     const plugin = this;
@@ -129,7 +129,7 @@ exports.hook_rcpt_ok = function (next, connection, rcpt) {
         }
     }
     return next();
-};
+}
 
 exports.hook_data = function (next, connection) {
     const transaction = connection.transaction;

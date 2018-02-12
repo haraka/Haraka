@@ -50,14 +50,14 @@ Server.load_smtp_ini = function () {
         if (Server.cfg.main[key] !== undefined) continue;
         Server.cfg.main[key] = defaults[key];
     }
-};
+}
 
 Server.load_http_ini = function () {
     Server.http = {};
     Server.http.cfg = Server.config.get('http.ini', function () {
         Server.load_http_ini();
     }).main;
-};
+}
 
 Server.load_smtp_ini();
 Server.load_http_ini();
@@ -85,7 +85,7 @@ Server.daemonize = function () {
         logger.logerror(err.message);
         logger.dump_and_exit(1);
     }
-};
+}
 
 Server.flushQueue = function (domain) {
     if (!Server.cluster) {
@@ -96,7 +96,7 @@ Server.flushQueue = function (domain) {
     for (const id in cluster.workers) {
         cluster.workers[id].send({event: 'outbound.flush_queue', domain: domain});
     }
-};
+}
 
 let gracefull_in_progress = false;
 
@@ -218,7 +218,7 @@ Server.drainPools = function () {
     for (const id in cluster.workers) {
         cluster.workers[id].send({event: 'outbound.drain_pools'});
     }
-};
+}
 
 Server.sendToMaster = function (command, params) {
     // console.log("Send to master: ", command);
@@ -280,7 +280,7 @@ Server.get_listen_addrs = function (cfg, port) {
     listeners.push(`[::0]:${port}`);
 
     return listeners;
-};
+}
 
 Server.createServer = function (params) {
     const c = Server.cfg.main;
@@ -318,7 +318,7 @@ Server.createServer = function (params) {
     // We fork workers in init_master_respond so that plugins
     // can put handlers on cluster events before they are emitted.
     Server.plugins.run_hooks('init_master', Server);
-};
+}
 
 Server.load_default_tls_config = function (done) {
     // this fn exists solely for testing
@@ -369,7 +369,7 @@ Server.get_smtp_server = function (host, port, inactivity_timeout, done) {
         Server.listeners.push(server);
         done(server);
     }
-};
+}
 
 Server.setup_smtp_listeners = function (plugins2, type, inactivity_timeout) {
 
@@ -490,7 +490,7 @@ Server.setup_http_listeners = function () {
     };
 
     async.each(listeners, setupListener, registerRoutes);
-};
+}
 
 Server.init_master_respond = function (retval, msg) {
     if (!(retval === constants.ok || retval === constants.cont)) {
@@ -537,7 +537,7 @@ Server.init_master_respond = function (retval, msg) {
         });
         cluster.on('exit', cluster_exit_listener);
     });
-};
+}
 
 function cluster_exit_listener (worker, code, signal) {
     if (signal) {
@@ -577,7 +577,7 @@ Server.init_child_respond = function (retval, msg) {
         Server.logerror('Terminating child');
     }
     logger.dump_and_exit(1);
-};
+}
 
 Server.listening = function () {
     const c = Server.cfg.main;
@@ -595,7 +595,7 @@ Server.listening = function () {
     }
 
     Server.ready = 1;
-};
+}
 
 Server.init_http_respond = function () {
     logger.loginfo('init_http_respond');
@@ -617,12 +617,12 @@ Server.init_http_respond = function () {
     logger.loginfo('Server.http.wss loaded');
 
     Server.plugins.run_hooks('init_wss', Server);
-};
+}
 
 Server.init_wss_respond = function () {
     logger.loginfo('init_wss_respond');
     // logger.logdebug(arguments);
-};
+}
 
 Server.get_http_docroot = function () {
     if (Server.http.cfg.docroot) return Server.http.cfg.docroot;
@@ -633,7 +633,7 @@ Server.get_http_docroot = function () {
     );
     logger.loginfo(`using html docroot: ${Server.http.cfg.docroot}`);
     return Server.http.cfg.docroot;
-};
+}
 
 Server.handle404 = function (req, res){
     // abandon all hope, serve up a 404
@@ -652,4 +652,4 @@ Server.handle404 = function (req, res){
     }
 
     res.status(404).send('Not found!');
-};
+}

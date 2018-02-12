@@ -2,14 +2,14 @@
 
 const fixtures     = require('haraka-test-fixtures');
 
-const _set_up = function (done) {
+function _set_up (done) {
 
     this.plugin = new fixtures.plugin('early_talker');
     this.plugin.cfg = { main: { reject: true } };
 
     this.connection = fixtures.connection.createConnection();
     done();
-};
+}
 
 function _tear_down (done) { done(); }
 
@@ -99,4 +99,4 @@ exports.early_talker = {
         test.equal(whitelist[1][1], 16);
         test.done();
     },
-};
+}

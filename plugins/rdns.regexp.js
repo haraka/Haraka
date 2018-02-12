@@ -6,7 +6,7 @@
 
 exports.register = function () {
     this.logwarn("NOTICE: deprecated, use 'connect.rdns_access' instead!");
-};
+}
 
 exports.hook_connect = function (next, connection) {
     const deny_list = this.config.get('rdns.deny_regexps', 'list');
@@ -30,4 +30,4 @@ exports.hook_connect = function (next, connection) {
     }
 
     return next();
-};
+}

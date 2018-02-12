@@ -2,7 +2,7 @@
 
 exports.register = function () {
     this.inherits('dns_list_base');
-};
+}
 
 exports.hook_mail = function (next, connection, params) {
     const user = ((params[0] && params[0].user) ?
@@ -22,4 +22,4 @@ exports.hook_mail = function (next, connection, params) {
     }
 
     this.first(connection.remote.ip, [ 'ips.backscatterer.org' ], resultCb);
-};
+}

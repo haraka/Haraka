@@ -34,7 +34,7 @@ exports.hook_capabilities = function (next, connection) {
         connection.capabilities.push('XCLIENT NAME ADDR PROTO HELO LOGIN');
     }
     next();
-};
+}
 
 exports.hook_unrecognized_command = function (next, connection, params) {
     if (params[0] !== 'XCLIENT') {
@@ -127,4 +127,4 @@ exports.hook_unrecognized_command = function (next, connection, params) {
     else {
         return next(NEXT_HOOK, 'connect');
     }
-};
+}

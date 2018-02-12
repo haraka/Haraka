@@ -7,7 +7,7 @@ const SPF = require('./spf').SPF;
 // Override logging in SPF module
 SPF.prototype.log_debug = function (str) {
     return exports.logdebug(str);
-};
+}
 
 exports.register = function () {
     const plugin = this;
@@ -21,7 +21,7 @@ exports.register = function () {
     plugin.register_hook('data',      'bounce_spf_enable');
     plugin.register_hook('data_post', 'bounce_spf');
     plugin.register_hook('data_post', 'non_local_msgid');
-};
+}
 
 exports.load_bounce_bad_rcpt = function () {
     const plugin = this;
@@ -36,7 +36,7 @@ exports.load_bounce_bad_rcpt = function () {
     }
 
     plugin.cfg.invalid_addrs = invalids;
-};
+}
 
 exports.load_bounce_ini = function () {
     const plugin = this;
@@ -69,7 +69,7 @@ exports.load_bounce_ini = function () {
         plugin.logerror('bounce.ini is out of date, please update!');
         plugin.cfg.check.reject_all=true;
     }
-};
+}
 
 exports.reject_all = function (next, connection, params) {
     const plugin = this;
@@ -84,7 +84,7 @@ exports.reject_all = function (next, connection, params) {
     connection.transaction.results.add(plugin,
         {fail: 'bounces_accepted', emit: true });
     return next(DENY, 'No bounces accepted here');
-};
+}
 
 exports.single_recipient = function (next, connection) {
     const plugin = this;
@@ -123,7 +123,7 @@ exports.single_recipient = function (next, connection) {
     if (!plugin.cfg.reject.single_recipient) return next();
 
     return next(DENY, 'this bounce message does not have 1 recipient');
-};
+}
 
 exports.empty_return_path = function (next, connection) {
     const plugin = this;
@@ -159,7 +159,7 @@ exports.empty_return_path = function (next, connection) {
 
     transaction.results.add(plugin, {fail: 'empty_return_path', emit: true });
     return next(DENY, 'bounce with non-empty Return-Path (RFC 3834)');
-};
+}
 
 exports.bad_rcpt = function (next, connection) {
     const plugin = this;
@@ -178,7 +178,7 @@ exports.bad_rcpt = function (next, connection) {
 
     transaction.results.add(plugin, {pass: 'bad_rcpt'});
     return next();
-};
+}
 
 exports.has_null_sender = function (connection, mail_from) {
     const plugin = this;
@@ -197,7 +197,7 @@ exports.has_null_sender = function (connection, mail_from) {
 
     transaction.results.add(plugin, {isa: 'no'});
     return false;
-};
+}
 
 const message_id_re = /^Message-ID:\s*(<?[^>]+>?)/mig;
 
@@ -289,7 +289,7 @@ exports.non_local_msgid = function (next, connection) {
     //         {fail: 'Message-ID not local', emit: true });
     // if (!plugin.cfg.reject.non_local_msgid) return next();
     // return next(DENY, "bounce with non-local Message-ID (RFC 3834)");
-};
+}
 
 // Lazy regexp to get IPs from Received: headers in bounces
 const received_re = net_utils.get_ipany_re('^Received:[\\s\\S]*?[\\[\\(](?:IPv6:)?', '[\\]\\)]');
