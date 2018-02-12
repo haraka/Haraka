@@ -18,7 +18,7 @@ const _set_up = function (done) {
     this.connection.transaction = fixtures.transaction.createTransaction();
 
     done();
-};
+}
 
 exports.get_sender_domain = {
     setUp : _set_up,
@@ -108,7 +108,7 @@ exports.get_sender_domain = {
         test.equal('example.net', r);
         test.done();
     },
-};
+}
 
 exports.get_key_dir = {
     setUp : function (done) {
@@ -155,7 +155,7 @@ exports.get_key_dir = {
             test.done();
         });
     },
-};
+}
 
 exports.get_headers_to_sign = {
     setUp : _set_up,
@@ -185,4 +185,4 @@ exports.get_headers_to_sign = {
         );
         test.done();
     },
-};
+}

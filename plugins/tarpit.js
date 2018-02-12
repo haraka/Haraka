@@ -19,7 +19,7 @@ exports.register = function () {
         const hook = hooks_to_delay[i];
         plugin.register_hook(hook, 'tarpit');
     }
-};
+}
 
 exports.tarpit = function (next, connection) {
     const plugin = this;
@@ -36,4 +36,4 @@ exports.tarpit = function (next, connection) {
     setTimeout(function () {
         return next();
     },  delay * 1000);
-};
+}

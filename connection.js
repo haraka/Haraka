@@ -59,7 +59,7 @@ class Connection {
         this.local = {           // legacy property locations
             ip: null,            // c.local_ip
             port: null,          // c.local_port
-            host: config.get('me'),
+            host: config.get('me') || os.hostname(),
             info: 'Haraka',
         };
         this.remote = {
@@ -1846,7 +1846,7 @@ exports.Connection = Connection;
 
 exports.createConnection = (client, server) => {
     return new Connection(client, server);
-};
+}
 
 // copy logger methods into Connection:
 for (const key in logger) {

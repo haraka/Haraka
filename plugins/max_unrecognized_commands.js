@@ -8,7 +8,7 @@ exports.hook_connect = function (next, connection) {
         count: 0,
     });
     return next();
-};
+}
 
 exports.hook_unrecognized_command = function (next, connection, cmd) {
     const plugin = this;
@@ -22,4 +22,4 @@ exports.hook_unrecognized_command = function (next, connection, cmd) {
         return next(DENYDISCONNECT, "Too many bad commands");
     }
     return next();
-};
+}

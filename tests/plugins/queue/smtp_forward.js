@@ -33,7 +33,7 @@ exports.loadingTLSConfig = {
 
         test.done();
     },
-};
+}
 
 exports.register = {
     setUp : _setup,
@@ -43,7 +43,7 @@ exports.register = {
         test.ok(this.plugin.cfg.main);
         test.done();
     },
-};
+}
 
 exports.get_config = {
     setUp : _setup,
@@ -110,23 +110,23 @@ exports.get_config = {
         test.deepEqual(cfg.host, '1.2.3.4' );
         test.done();
     },
-};
+}
 
 const hmail = { todo: { notes: {} } };
 exports.get_mx = {
     setUp : _setup,
     'returns no outbound route for undefined domains' : function (test) {
         test.expect(2);
-        const cb = function (code, mx) {
+        function cb (code, mx) {
             test.equal(code, undefined);
             test.deepEqual(mx, undefined);
             test.done();
-        };
+        }
         this.plugin.get_mx(cb, hmail, 'undefined.com');
     },
     'returns an outbound route for defined domains' : function (test) {
         test.expect(2);
-        const cb = function (code, mx) {
+        function cb (code, mx) {
             test.equal(code, OK);
             test.deepEqual(mx, {
                 priority: 0, exchange: '1.2.3.4', port: 2555,
@@ -134,7 +134,7 @@ exports.get_mx = {
                 auth_pass: 'superDuperSecret'
             });
             test.done();
-        };
+        }
         this.plugin.get_mx(cb, hmail, 'test.com');
     },
 }
@@ -171,4 +171,3 @@ exports.is_outbound_enabled = {
         test.done();
     }
 }
-

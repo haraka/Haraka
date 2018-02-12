@@ -2,7 +2,7 @@
 
 const fixtures     = require('haraka-test-fixtures');
 
-const _set_up = function (callback) {
+function _set_up (callback) {
 
     this.plugin = new fixtures.plugin('relay_all');
     this.connection = fixtures.connection.createConnection();
@@ -11,7 +11,7 @@ const _set_up = function (callback) {
     this.plugin.register();
 
     callback();
-};
+}
 
 exports.relay_all = {
     setUp : _set_up,
@@ -56,4 +56,4 @@ exports.relay_all = {
 
         this.plugin.confirm_all(next, this.connection, this.params);
     }
-};
+}

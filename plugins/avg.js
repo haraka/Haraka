@@ -13,7 +13,7 @@ exports.register = function () {
     const plugin = this;
 
     plugin.load_avg_ini();
-};
+}
 
 exports.load_avg_ini = function () {
     const plugin = this;
@@ -26,13 +26,13 @@ exports.load_avg_ini = function () {
     }, function () {
         plugin.load_avg_ini();
     });
-};
+}
 
 exports.get_tmp_file = function (transaction) {
     const plugin = this;
     const tmpdir  = plugin.cfg.main.tmpdir || '/tmp';
     return path.join(tmpdir, `${transaction.uuid}.tmp`);
-};
+}
 
 exports.hook_data_post = function (next, connection) {
     const plugin = this;
@@ -161,4 +161,4 @@ exports.hook_data_post = function (next, connection) {
     });
 
     connection.transaction.message_stream.pipe(ws, { line_endings: '\r\n' });
-};
+}

@@ -106,7 +106,7 @@ exports.hook_init_master = function (next, server) {
     }
     this._interval = setupInterval(title, server);
     return next();
-};
+}
 
 exports.hook_init_child = function (next, server) {
     server.notes.pt_connections = 0;
@@ -120,12 +120,12 @@ exports.hook_init_child = function (next, server) {
     process.title = title;
     this._interval = setupInterval(title, server);
     return next();
-};
+}
 
 exports.shutdown = function () {
     this.logdebug("Shutting down interval: " + this._interval);
     clearInterval(this._interval);
-};
+}
 
 exports.hook_connect_init = function (next, connection) {
     const server = connection.server;
@@ -137,7 +137,7 @@ exports.hook_connect_init = function (next, connection) {
     server.notes.pt_connections++;
     server.notes.pt_concurrent++;
     return next();
-};
+}
 
 exports.hook_disconnect = function (next, connection) {
     const server = connection.server;
@@ -160,7 +160,7 @@ exports.hook_disconnect = function (next, connection) {
     }
     server.notes.pt_concurrent--;
     return next();
-};
+}
 
 exports.hook_data = function (next, connection) {
     const server = connection.server;
@@ -170,4 +170,4 @@ exports.hook_data = function (next, connection) {
     }
     server.notes.pt_messages++;
     return next();
-};
+}

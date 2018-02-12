@@ -8,7 +8,7 @@ exports.hook_rcpt = function (next, connection, params) {
         txn.add_header('X-Envelope-To', params[0].address());
     }
     next();
-};
+}
 
 exports.hook_mail = function (next, connection, params) {
     const txn = connection.transaction;
@@ -16,4 +16,4 @@ exports.hook_mail = function (next, connection, params) {
         txn.add_header('X-Envelope-From', params[0].address());
     }
     next();
-};
+}

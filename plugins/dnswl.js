@@ -11,7 +11,7 @@ exports.register = function () {
     ['ehlo','helo','mail'].forEach(function (hook) {
         plugin.register_hook(hook, 'check_dnswl');
     });
-};
+}
 
 exports.load_dnswl_ini = function () {
     const plugin = this;
@@ -42,11 +42,11 @@ exports.load_dnswl_ini = function () {
     if (plugin.cfg.main.periodic_checks) {
         plugin.check_zones(plugin.cfg.main.periodic_checks);
     }
-};
+}
 
 exports.check_dnswl = function (next, connection) {
     return connection.notes.dnswl ? next(OK) : next();
-};
+}
 
 exports.hook_connect = function (next, connection) {
     const plugin = this;
@@ -61,4 +61,4 @@ exports.hook_connect = function (next, connection) {
         connection.notes.dnswl = true;
         return next(OK);
     });
-};
+}

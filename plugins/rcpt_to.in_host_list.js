@@ -15,7 +15,7 @@ exports.register = function () {
 
     plugin.load_host_list();
     plugin.load_host_list_regex();
-};
+}
 
 exports.hook_rcpt = function (next, connection, params) {
     const plugin = this;
@@ -54,4 +54,4 @@ exports.hook_rcpt = function (next, connection, params) {
     // Another RCPT plugin may yet vouch for this recipient.
     txn.results.add(plugin, {msg: 'rcpt!local'});
     return next();
-};
+}

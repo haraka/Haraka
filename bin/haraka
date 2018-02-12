@@ -41,7 +41,7 @@ const knownOpts = {
     "dump-stream": Boolean,
     "skip-deny":   Boolean,
     "set-relay":   Boolean,
-};
+}
 const shortHands = {
     "v": ["--version"],
     "h": ["--help"],
@@ -52,7 +52,7 @@ const shortHands = {
     "f": ["--force"],
     "o": ["--order"],
     "t": ["--test"],
-};
+}
 const parsed = nopt(knownOpts, shortHands, process.argv, 2);
 
 const usage = [

@@ -52,7 +52,7 @@ exports.outbound = {
         });
         test.done();
     }
-};
+}
 
 exports.qfile = {
     setUp : function (done) {
@@ -129,7 +129,7 @@ exports.qfile = {
         test.equal(parts.host, overrides.host);
         test.done();
     }
-};
+}
 
 exports.get_tls_options = {
     setUp : function (done) {

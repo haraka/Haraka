@@ -4,7 +4,7 @@
 
 exports.register = function () {
     this.logerror(this, "deprecated. see 'haraka -h relay'");
-};
+}
 
 exports.hook_get_mx = function (next, hmail, domain) {
     const domain_ini = this.config.get('relay_dest_domains.ini', 'ini');

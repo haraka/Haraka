@@ -72,4 +72,4 @@ exports.hook_data_post = function (next, connection) {
     });
 
     txn.message_stream.pipe(ws, { line_endings: '\r\n' });
-};
+}

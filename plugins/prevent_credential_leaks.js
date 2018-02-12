@@ -10,7 +10,7 @@ exports.hook_data = function (next, connection) {
         connection.transaction.parse_body = true;
     }
     next();
-};
+}
 
 exports.hook_data_post = function (next, connection) {
     if (!(connection.notes.auth_user && connection.notes.auth_passwd)) {
@@ -39,7 +39,7 @@ exports.hook_data_post = function (next, connection) {
     }
 
     next();
-};
+}
 
 function look_for_credentials (user_regexp, passwd_regexp, body) {
     if (user_regexp.test(body.bodytext) && passwd_regexp.test(body.bodytext)) {

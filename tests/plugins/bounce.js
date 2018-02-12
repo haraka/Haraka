@@ -8,7 +8,7 @@ const Connection   = fixtures.connection;
 const Body         = require('../../mailbody').Body;
 const Header       = require('../../mailheader').Header;
 
-const _set_up = function (done) {
+function _set_up (done) {
 
     this.plugin = new fixtures.plugin('bounce');
     this.plugin.cfg = {
@@ -36,7 +36,7 @@ const _set_up = function (done) {
     };
 
     done();
-};
+}
 
 exports.load_configs = {
     setUp : _set_up,
@@ -56,7 +56,7 @@ exports.load_configs = {
         test.ok(this.plugin.cfg.reject);
         test.done();
     },
-};
+}
 
 exports.reject_all = {
     setUp : _set_up,
@@ -93,7 +93,7 @@ exports.reject_all = {
         this.plugin.reject_all(cb, this.connection, new Address.Address('<>'));
         test.done();
     },
-};
+}
 
 exports.empty_return_path = {
     setUp : _set_up,
@@ -118,7 +118,7 @@ exports.empty_return_path = {
         this.plugin.empty_return_path(cb, this.connection);
         test.done();
     },
-};
+}
 
 exports.non_local_msgid = {
     setUp: _set_up,
@@ -225,7 +225,7 @@ exports.single_recipient = {
         this.plugin.single_recipient(cb, this.connection);
         test.done();
     },
-};
+}
 
 exports.bad_rcpt = {
     setUp : _set_up,
@@ -278,7 +278,7 @@ exports.bad_rcpt = {
         this.plugin.bad_rcpt(cb, this.connection);
         test.done();
     },
-};
+}
 
 exports.has_null_sender = {
     setUp : _set_up,
@@ -306,4 +306,4 @@ exports.has_null_sender = {
         test.equal(false, this.plugin.has_null_sender(this.connection));
         test.done();
     },
-};
+}

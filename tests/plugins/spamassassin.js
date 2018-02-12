@@ -6,7 +6,7 @@ const fixtures     = require('haraka-test-fixtures');
 const Connection   = fixtures.connection;
 const stub         = fixtures.stub.stub;
 
-const _set_up = function (done) {
+function _set_up (done) {
 
     this.plugin = new fixtures.plugin('spamassassin');
     this.plugin.cfg = { main: { } };
@@ -16,7 +16,7 @@ const _set_up = function (done) {
     this.connection.transaction.notes = {};
 
     done();
-};
+}
 
 exports.register = {
     setUp : _set_up,
@@ -32,7 +32,7 @@ exports.register = {
         test.ok(this.plugin.cfg.main.spamd_socket);
         test.done();
     },
-};
+}
 
 exports.load_spamassassin_ini = {
     setUp : _set_up,
@@ -43,7 +43,7 @@ exports.load_spamassassin_ini = {
         test.ok(this.plugin.cfg.main.spamd_socket);
         test.done();
     },
-};
+}
 
 exports.msg_too_big = {
     setUp : _set_up,
@@ -66,7 +66,7 @@ exports.msg_too_big = {
         test.equal(true, this.plugin.msg_too_big(this.connection));
         test.done();
     },
-};
+}
 
 // console.log(this.plugin.cfg);
 
@@ -87,7 +87,7 @@ exports.get_spamd_headers = {
         test.deepEqual(headers, expected_headers);
         test.done();
     },
-};
+}
 
 exports.get_spamd_username = {
     setUp : _set_up,
@@ -115,7 +115,7 @@ exports.get_spamd_username = {
 
         test.done();
     },
-};
+}
 
 exports.score_too_high = {
     setUp : _set_up,
@@ -144,4 +144,4 @@ exports.score_too_high = {
         test.equal('spam score exceeded relay threshold', this.plugin.score_too_high(this.connection, {score: 8}));
         test.done();
     },
-};
+}

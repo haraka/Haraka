@@ -65,7 +65,7 @@ exports.load_excludes = function () {
     // Make the new lists visible
     plugin.skip_list_exclude = new_skip_list_exclude;
     plugin.skip_list = new_skip_list;
-};
+}
 
 exports.load_clamd_ini = function () {
     const plugin = this;
@@ -137,13 +137,13 @@ exports.load_clamd_ini = function () {
         plugin.cfg.main.only_with_attachments =
             plugin.cfg.main.only_with_attachment ? true : false;
     }
-};
+}
 
 exports.register = function () {
     const plugin = this;
     plugin.load_excludes();
     plugin.load_clamd_ini();
-};
+}
 
 exports.hook_data = function (next, connection) {
     const plugin = this;
@@ -158,7 +158,7 @@ exports.hook_data = function (next, connection) {
     });
 
     return next();
-};
+}
 
 exports.hook_data_post = function (next, connection) {
     const plugin = this;
@@ -313,7 +313,7 @@ exports.hook_data_post = function (next, connection) {
 
     // Start the process
     try_next_host();
-};
+}
 
 function clamd_connect (socket, host) {
     let match;

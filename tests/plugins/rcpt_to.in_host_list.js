@@ -3,7 +3,7 @@
 const Address      = require('address-rfc2821').Address;
 const fixtures     = require('haraka-test-fixtures');
 
-const _set_up = function (done) {
+function _set_up (done) {
 
     this.plugin = new fixtures.plugin('rcpt_to.in_host_list');
     this.plugin.inherits('rcpt_to.host_list_base');
@@ -17,7 +17,7 @@ const _set_up = function (done) {
     };
 
     done();
-};
+}
 
 exports.in_host_list = {
     setUp : _set_up,
@@ -34,7 +34,7 @@ exports.in_host_list = {
         test.equal(true, r);
         test.done();
     },
-};
+}
 
 exports.in_host_regex = {
     setUp : _set_up,
@@ -68,7 +68,7 @@ exports.in_host_regex = {
         test.equal(true, r);
         test.done();
     },
-};
+}
 
 exports.hook_mail = {
     setUp : _set_up,
@@ -135,17 +135,17 @@ exports.hook_mail = {
         this.plugin.hl_re = new RegExp (`^(?:${this.plugin.host_list_regex.join('|')})$`, 'i');
         this.plugin.hook_mail(next, this.connection, [new Address('<user@example.com>')]);
     },
-};
+}
 
 exports.hook_rcpt = {
     setUp : _set_up,
     'missing txn' : function (test) {
         test.expect(1);
         // sometimes txn goes away, make sure it's handled
-        const next = function (rc, msg) {
+        function next (rc, msg) {
             test.equal(undefined, rc);
             test.equal(undefined, msg);
-        };
+        }
         delete this.connection.transaction;
         this.plugin.hook_rcpt(next, this.connection, [new Address('test@test.com')]);
         test.ok(true);
@@ -153,66 +153,66 @@ exports.hook_rcpt = {
     },
     'hit list' : function (test) {
         test.expect(2);
-        const next = function (rc, msg) {
+        function next (rc, msg) {
             test.equal(OK, rc);
             test.equal(undefined, msg);
             test.done();
-        };
+        }
         this.plugin.host_list = { 'test.com': true };
         this.plugin.hook_rcpt(next, this.connection, [new Address('test@test.com')]);
     },
     'miss list' : function (test) {
         test.expect(2);
-        const next = function (rc, msg) {
+        function next (rc, msg) {
             test.equal(undefined, rc);
             test.equal(undefined, msg);
             test.done();
-        };
+        }
         this.plugin.host_list = { 'miss.com': true };
         this.plugin.hook_rcpt(next, this.connection, [new Address('test@test.com')]);
     },
     'hit regex, exact' : function (test) {
         test.expect(2);
-        const next = function (rc, msg) {
+        function next (rc, msg) {
             test.equal(OK, rc);
             test.equal(undefined, msg);
             test.done();
-        };
+        }
         this.plugin.host_list_regex=['test.com'];
         this.plugin.hl_re = new RegExp (`^(?:${this.plugin.host_list_regex.join('|')})$`, 'i');
         this.plugin.hook_rcpt(next, this.connection, [new Address('test@test.com')]);
     },
     'hit regex, pattern' : function (test) {
         test.expect(2);
-        const next = function (rc, msg) {
+        function next (rc, msg) {
             test.equal(OK, rc);
             test.equal(undefined, msg);
             test.done();
-        };
+        }
         this.plugin.host_list_regex=['.est.com'];
         this.plugin.hl_re = new RegExp (`^(?:${this.plugin.host_list_regex.join('|')})$`, 'i');
         this.plugin.hook_rcpt(next, this.connection, [new Address('test@test.com')]);
     },
     'miss regex, pattern' : function (test) {
         test.expect(2);
-        const next = function (rc, msg) {
+        function next (rc, msg) {
             test.equal(undefined, rc);
             test.equal(undefined, msg);
             test.done();
-        };
+        }
         this.plugin.host_list_regex=['a.est.com'];
         this.plugin.hl_re = new RegExp (`^(?:${this.plugin.host_list_regex.join('|')})$`, 'i');
         this.plugin.hook_rcpt(next, this.connection, [new Address('test@test.com')]);
     },
     'rcpt miss, relaying to local sender' : function (test) {
         test.expect(2);
-        const next = function (rc, msg) {
+        function next (rc, msg) {
             test.equal(OK, rc);
             test.equal(undefined, msg);
             test.done();
-        };
+        }
         this.connection.relaying=true;
         this.connection.transaction.notes = { local_sender: true };
         this.plugin.hook_rcpt(next, this.connection, [new Address('test@test.com')]);
     },
-};
+}

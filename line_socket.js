@@ -50,4 +50,4 @@ exports.connect = function (port, host, cb) {
     const sock = tls_socket.connect(options, cb);
     setup_line_processor(sock);
     return sock;
-};
+}

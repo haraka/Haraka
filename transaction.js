@@ -37,16 +37,14 @@ class Transaction {
             accept: 0,
             tempfail: 0,
             reject: 0,
-        };
+        }
         this.data_post_start = null;
         this.data_post_delay = 0;
         this.encoding = 'utf8';
     }
 
     ensure_body () {
-        if (this.body) {
-            return;
-        }
+        if (this.body) return;
 
         this.body = new body.Body(this.header);
         this.attachment_start_hooks.forEach(h => {
@@ -202,4 +200,4 @@ exports.createTransaction = uuid => {
     t.message_stream = new MessageStream(
         config.get('smtp.ini'), t.uuid, t.header.header_list);
     return t;
-};
+}

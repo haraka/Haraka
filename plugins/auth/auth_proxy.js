@@ -7,14 +7,14 @@ exports.register = function () {
     const plugin = this;
     plugin.inherits('auth/auth_base');
     plugin.load_tls_ini();
-};
+}
 
 exports.load_tls_ini = function () {
     const plugin = this;
     plugin.tls_cfg = plugin.config.get('tls.ini', function () {
         plugin.load_tls_ini();
     });
-};
+}
 
 
 exports.hook_capabilities = function (next, connection) {
@@ -24,7 +24,7 @@ exports.hook_capabilities = function (next, connection) {
         connection.notes.allowed_auth_methods = methods;
     }
     next();
-};
+}
 
 exports.check_plain_passwd = function (connection, user, passwd, cb) {
     let domain;
@@ -45,7 +45,7 @@ exports.check_plain_passwd = function (connection, user, passwd, cb) {
     }
 
     this.try_auth_proxy(connection, config.domains[domain].split(/[,; ]/), user, passwd, cb);
-};
+}
 
 exports.try_auth_proxy = function (connection, hosts, user, passwd, cb) {
     if (!hosts || (hosts && !hosts.length)) return cb(false);
@@ -222,4 +222,4 @@ exports.try_auth_proxy = function (connection, hosts, user, passwd, cb) {
                 throw new Error("[auth/auth_proxy] unknown command: " + command);
         }
     });
-};
+}

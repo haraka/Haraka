@@ -4,7 +4,7 @@ const path         = require('path');
 
 const fixtures     = require('haraka-test-fixtures');
 
-const _set_up = function (done) {
+function _set_up (done) {
     this.backup = {};
 
     // needed for tests
@@ -18,7 +18,7 @@ const _set_up = function (done) {
     this.connection.capabilities=null;
 
     done();
-};
+}
 
 exports.hook_capabilities = {
     setUp : _set_up,
@@ -58,7 +58,7 @@ exports.hook_capabilities = {
         this.connection.capabilities=[];
         this.plugin.hook_capabilities(cb, this.connection);
     },
-};
+}
 
 exports.get_vpopmaild_socket = {
     setUp : _set_up,
@@ -70,7 +70,7 @@ exports.get_vpopmaild_socket = {
         socket.end();
         test.done();
     }
-};
+}
 
 exports.get_plain_passwd = {
     setUp : _set_up,
@@ -88,4 +88,4 @@ exports.get_plain_passwd = {
             test.done();
         }
     }
-};
+}
