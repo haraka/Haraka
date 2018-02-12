@@ -1,4 +1,4 @@
-"use strict";
+'use strict';
 // A subclass of Socket which reads data by line
 
 const net   = require('net');
@@ -15,7 +15,8 @@ class Socket extends net.Socket {
 
 function setup_line_processor (socket) {
     let current_data = '';
-    socket.process_data = function (data) {
+
+    socket.on('data', function on_socket_data (data) {
         current_data += data;
         let results;
         while ((results = utils.line_regexp.exec(current_data))) {
@@ -23,17 +24,14 @@ function setup_line_processor (socket) {
             current_data = current_data.slice(this_line.length);
             socket.emit('line', this_line);
         }
-    };
+    })
 
-    socket.process_end = function () {
+    socket.on('end', function on_socket_end () {
         if (current_data.length) {
             socket.emit('line', current_data);
         }
         current_data = '';
-    };
-
-    socket.on('data', function (data) { socket.process_data(data);});
-    socket.on('end',  function ()     { socket.process_end();     });
+    })
 }
 
 exports.Socket = Socket;
