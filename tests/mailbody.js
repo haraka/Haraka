@@ -76,7 +76,7 @@ exports.basic = {
         test.equal(body.children.length, 2);
         test.done();
     },
-};
+}
 
 exports.banners = {
     'banner': function (test) {
@@ -168,7 +168,7 @@ exports.banners = {
 
         test.done();
     },
-};
+}
 
 exports.filters = {
     'empty': function (test) {
@@ -242,7 +242,7 @@ exports.filters = {
         test.ok(!dupe, 'no duplicate lines found');
         test.done();
     },
-};
+}
 
 exports.rfc2231 = {
     'multi-value': function (test) {
@@ -275,7 +275,7 @@ exports.rfc2231 = {
         test.ok(body.children[1].header.get_decoded('content-type').indexOf('title="This is even more ***fun*** isn\'t it!";') > 0);
         test.done();
     }
-};
+}
 
 exports.boundaries = {
     'with-quotes': function (test) {

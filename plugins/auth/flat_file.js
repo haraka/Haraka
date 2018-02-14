@@ -4,14 +4,14 @@ exports.register = function () {
     const plugin = this;
     plugin.inherits('auth/auth_base');
     plugin.load_flat_ini();
-};
+}
 
 exports.load_flat_ini = function () {
     const plugin = this;
     plugin.cfg = plugin.config.get('auth_flat_file.ini', function () {
         plugin.load_flat_ini();
     });
-};
+}
 
 exports.hook_capabilities = function (next, connection) {
     const plugin = this;
@@ -31,7 +31,7 @@ exports.hook_capabilities = function (next, connection) {
         connection.notes.allowed_auth_methods = methods;
     }
     next();
-};
+}
 
 exports.get_plain_passwd = function (user, connection, cb) {
     const plugin = this;
@@ -39,4 +39,4 @@ exports.get_plain_passwd = function (user, connection, cb) {
         return cb(plugin.cfg.users[user].toString());
     }
     return cb();
-};
+}

@@ -5,7 +5,7 @@ const fixtures     = require('haraka-test-fixtures');
 
 const Connection   = fixtures.connection;
 
-const _set_up = function (done) {
+function _set_up (done) {
 
     this.plugin = new fixtures.plugin('dnsbl');
     this.plugin.config.root_path = path.resolve(__dirname, '../../config');
@@ -13,7 +13,7 @@ const _set_up = function (done) {
     this.connection = Connection.createConnection();
 
     done();
-};
+}
 
 exports.load_config = {
     setUp : _set_up,
@@ -30,7 +30,7 @@ exports.load_config = {
         test.equal('first', this.plugin.cfg.main.search);
         test.done();
     },
-};
+}
 
 exports.get_uniq_zones = {
     setUp : _set_up,
@@ -49,7 +49,7 @@ exports.get_uniq_zones = {
 
         test.done();
     },
-};
+}
 
 exports.should_skip = {
     setUp : _set_up,
@@ -98,4 +98,4 @@ exports.should_skip = {
         test.equal(true, this.plugin.should_skip(this.connection));
         test.done();
     },
-};
+}

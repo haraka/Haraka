@@ -4,7 +4,7 @@ const fixtures     = require('haraka-test-fixtures');
 
 const Connection   = fixtures.connection;
 
-const _set_up = function (done) {
+function _set_up (done) {
 
     this.plugin = new fixtures.plugin('clamd');
     this.plugin.register();
@@ -17,7 +17,7 @@ const _set_up = function (done) {
     };
 
     done();
-};
+}
 
 exports.load_clamd_ini = {
     setUp : _set_up,
@@ -61,7 +61,7 @@ exports.load_clamd_ini = {
         test.equal(false, this.plugin.rejectRE.test('MattWuzHere'));
         test.done();
     },
-};
+}
 
 exports.hook_data = {
     setUp : _set_up,
@@ -85,7 +85,7 @@ exports.hook_data = {
         }.bind(this);
         this.plugin.hook_data(next, this.connection);
     },
-};
+}
 
 exports.hook_data_post = {
     setUp : _set_up,
@@ -109,4 +109,4 @@ exports.hook_data_post = {
         }.bind(this);
         this.plugin.hook_data_post(next, this.connection);
     },
-};
+}

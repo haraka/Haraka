@@ -8,7 +8,7 @@ exports.register = function () {
     plugin.load_config();
     plugin.register_hook('connect_init', 'early_talker');
     plugin.register_hook('data',         'early_talker');
-};
+}
 
 exports.load_config = function () {
     const plugin = this;
@@ -34,7 +34,7 @@ exports.load_config = function () {
     plugin.pause = plugin.config.get('early_talker.pause', function () {
         plugin.load_config();
     });
-};
+}
 
 exports.early_talker = function (next, connection) {
     const plugin = this;
@@ -75,7 +75,7 @@ exports.early_talker = function (next, connection) {
     }
 
     setTimeout(function () { check(); }, pause);
-};
+}
 
 
 /**
@@ -102,7 +102,7 @@ exports.ip_in_list = function (ip) {
         }
     }
     return false;
-};
+}
 
 
 /**
@@ -129,4 +129,4 @@ exports.load_ip_list = function (list) {
         }
     }
     return whitelist;
-};
+}

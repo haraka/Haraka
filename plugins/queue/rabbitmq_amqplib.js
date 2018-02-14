@@ -21,7 +21,7 @@ exports.rabbitmq_queue = function (next, connection) {
             return next();
         }
     });
-};
+}
 
 exports.init_amqp_connection = function () {
     const plugin = this;
@@ -71,4 +71,4 @@ exports.init_amqp_connection = function () {
             });
         });
     });
-};
+}

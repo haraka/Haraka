@@ -27,7 +27,7 @@ exports.register = function () {
     this.load_attachment_ini();
     this.register_hook('data_post', 'wait_for_attachment_hooks');
     this.register_hook('data_post', 'check_attachments');
-};
+}
 
 exports.load_attachment_ini = function () {
     const plugin = this;
@@ -40,7 +40,7 @@ exports.load_attachment_ini = function () {
     plugin.archive_max_depth = plugin.cfg.main.archive_max_depth || 5;
     plugin.archive_exts = options_to_array(plugin.cfg.main.archive_extensions) ||
         default_archive_extns;
-};
+}
 
 exports.find_bsdtar_path = function (cb) {
     let found = false;
@@ -60,7 +60,7 @@ exports.find_bsdtar_path = function (cb) {
         });
         if (i===0) cb(new Error('bsdtar not found'));
     });
-};
+}
 
 exports.hook_init_master = exports.hook_init_child = function (next) {
     const plugin = this;
@@ -75,7 +75,7 @@ exports.hook_init_master = exports.hook_init_child = function (next) {
         }
         return next();
     });
-};
+}
 
 function options_to_array (options) {
     if (!options) return false;
@@ -252,7 +252,7 @@ exports.unarchive_recursive = function (connection, f, archive_file_name, cb) {
     }, plugin.cfg.timeout);
 
     listFiles(f, archive_file_name);
-};
+}
 
 exports.start_attachment = function (connection, ctype, filename, body, stream) {
     const plugin = this;
@@ -399,7 +399,7 @@ exports.hook_data = function (next, connection) {
         plugin.start_attachment(connection, ctype, filename, body, stream);
     });
     return next();
-};
+}
 
 exports.check_attachments = function (next, connection) {
     const txn = connection.transaction;
@@ -468,7 +468,7 @@ exports.check_attachments = function (next, connection) {
     }
 
     return next();
-};
+}
 
 exports.check_items_against_regexps = function (items, regexps) {
     if ((regexps && Array.isArray(regexps) && regexps.length > 0) &&
@@ -492,7 +492,7 @@ exports.check_items_against_regexps = function (items, regexps) {
         }
     }
     return false;
-};
+}
 
 exports.wait_for_attachment_hooks = function (next, connection) {
     const txn = connection.transaction;
@@ -503,4 +503,4 @@ exports.wait_for_attachment_hooks = function (next, connection) {
     else {
         next();
     }
-};
+}

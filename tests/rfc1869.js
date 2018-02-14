@@ -55,4 +55,4 @@ exports.basic = {
         _check(test, 'RCPT TO:<user=name@domain.com> foo=bar',
             ['<user=name@domain.com>', 'foo=bar']);
     },
-};
+}

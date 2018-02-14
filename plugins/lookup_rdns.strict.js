@@ -164,4 +164,4 @@ exports.hook_lookup_rdns = function (next, connection) {
             });
         });
     });
-};
+}

@@ -101,7 +101,7 @@ exports.transaction = {
             });
         });
     }
-};
+}
 
 function write_file_data_to_transaction (test_transaction, filename) {
     const specimen = fs.readFileSync(filename, 'utf8');

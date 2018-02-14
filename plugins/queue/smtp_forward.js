@@ -26,10 +26,8 @@ exports.register = function () {
 
     plugin.register_hook('queue', 'queue_forward');
 
-    if (plugin.cfg.main.enable_outbound) {
-        plugin.register_hook('queue_outbound', 'queue_forward');
-    }
-};
+    plugin.register_hook('queue_outbound', 'queue_forward');
+}
 
 exports.load_smtp_forward_ini = function () {
     const plugin = this;
@@ -42,12 +40,13 @@ exports.load_smtp_forward_ini = function () {
             '-main.check_sender',
             '-main.check_recipient',
             '*.enable_tls',
+            '*.enable_outbound'
         ],
     },
     function () {
         plugin.load_smtp_forward_ini();
     });
-};
+}
 
 exports.get_config = function (connection) {
     const plugin = this;
@@ -60,6 +59,14 @@ exports.get_config = function (connection) {
     if (!plugin.cfg[dom]) return plugin.cfg.main;  // no specific route
 
     return plugin.cfg[dom];
+}
+
+exports.is_outbound_enabled = function (cfg) {
+    const plugin = this;
+
+    if ('enable_outbound' in cfg) return cfg.enable_outbound; // pick up per-domain flag if set
+
+    return plugin.cfg.main.enable_outbound; // follow the global configuration
 };
 
 exports.check_sender = function (next, connection, params) {
@@ -86,7 +93,7 @@ exports.check_sender = function (next, connection, params) {
 
     txn.results.add(plugin, {pass: 'mail_from'});
     return next();
-};
+}
 
 exports.set_queue = function (connection, queue_wanted, domain) {
     const plugin = this;
@@ -152,7 +159,7 @@ exports.check_recipient = function (next, connection, params) {
     // Another RCPT plugin may vouch for this recipient.
     txn.results.add(plugin, {msg: 'rcpt!local'});
     return next();
-};
+}
 
 exports.auth = function (cfg, connection, smtp_client) {
     const plugin = this;
@@ -208,6 +215,11 @@ exports.queue_forward = function (next, connection) {
     }
 
     const cfg = plugin.get_config(connection);
+
+    if (connection.relaying && !plugin.is_outbound_enabled(cfg)) {
+        connection.logdebug(plugin, 'skipping, outbound disabled');
+        return next();
+    }
 
     smtp_client_mod.get_client_plugin(plugin, connection, cfg, function (err, smtp_client) {
         smtp_client.next = next;
@@ -282,7 +294,7 @@ exports.queue_forward = function (next, connection) {
             smtp_client.release();
         });
     });
-};
+}
 
 exports.get_mx_next_hop = function (next_hop) {
     const dest = url.parse(next_hop);
@@ -332,4 +344,4 @@ exports.get_mx = function (next, hmail, domain) {
     })
 
     return next(OK, mx);
-};
+}

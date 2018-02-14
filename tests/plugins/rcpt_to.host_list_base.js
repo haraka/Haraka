@@ -3,7 +3,7 @@
 const Address      = require('address-rfc2821').Address;
 const fixtures     = require('haraka-test-fixtures');
 
-const _set_up = function (done) {
+function _set_up (done) {
 
     this.plugin = new fixtures.plugin('rcpt_to.host_list_base');
     this.plugin.cfg = {};
@@ -16,7 +16,7 @@ const _set_up = function (done) {
     };
 
     done();
-};
+}
 
 exports.in_host_list = {
     setUp : _set_up,
@@ -31,7 +31,7 @@ exports.in_host_list = {
         test.equal(true, this.plugin.in_host_list('test.com'));
         test.done();
     },
-};
+}
 
 exports.in_host_regex = {
     setUp : _set_up,
@@ -65,7 +65,7 @@ exports.in_host_regex = {
         test.equal(true, r);
         test.done();
     },
-};
+}
 
 exports.hook_mail = {
     setUp : _set_up,
@@ -129,4 +129,4 @@ exports.hook_mail = {
         this.plugin.hl_re = new RegExp (`^(?:${this.plugin.host_list_regex.join('|')})$`, 'i');
         this.plugin.hook_mail(next, this.connection, [new Address('<user@example.com>')]);
     },
-};
+}

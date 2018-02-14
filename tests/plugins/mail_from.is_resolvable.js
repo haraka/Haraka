@@ -16,7 +16,7 @@ const _set_up = function (done) {
     };
 
     done();
-};
+}
 
 exports.mxErr = {
     setUp : _set_up,
@@ -50,7 +50,7 @@ exports.mxErr = {
         test.equal(mf.msg[0], 'any.com:MX:oops');
         test.done();
     }
-};
+}
 
 exports.implicit_mx = {
     setUp : _set_up,
@@ -157,5 +157,4 @@ exports.implicit_mx = {
             test.done();
         });
     },
-};
-
+}

@@ -15,7 +15,7 @@ exports.register = function () {
     logger.logdebug("About to connect and initialize queue object");
     this.init_rabbitmq_server();
     logger.logdebug("Finished initiating : " + exports.exchangeMapping[exchangeName + queueName]);
-};
+}
 
 
 //Actual magic of publishing message to rabbit when email comes happen here.
@@ -47,7 +47,7 @@ exports.hook_queue = function (next, connection) {
             return next();
         }
     });
-};
+}
 
 //This initializes the connection to rabbitmq server, It reads values from rabbitmq.ini file in config directory.
 exports.init_rabbitmq_server = function () {
@@ -145,4 +145,4 @@ exports.init_rabbitmq_server = function () {
             });
         });
     });
-};
+}

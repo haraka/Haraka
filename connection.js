@@ -59,7 +59,7 @@ class Connection {
         this.local = {           // legacy property locations
             ip: null,            // c.local_ip
             port: null,          // c.local_port
-            host: config.get('me'),
+            host: config.get('me') || os.hostname(),
             info: 'Haraka',
         };
         this.remote = {
@@ -1583,6 +1583,11 @@ class Connection {
             return;
         }
 
+        // Warn if we hit the maximum parsed header lines limit
+        if (this.transaction.header_lines.length >= trans.MAX_HEADER_LINES) {
+            this.logwarn(`Incoming message reached maximum parsing limit of ${trans.MAX_HEADER_LINES} header lines`);
+        }
+
         this.auth_results_clean();   // rename old A-R headers
         const ar_field = this.auth_results();  // assemble new one
         if (ar_field) {
@@ -1841,7 +1846,7 @@ exports.Connection = Connection;
 
 exports.createConnection = (client, server) => {
     return new Connection(client, server);
-};
+}
 
 // copy logger methods into Connection:
 for (const key in logger) {

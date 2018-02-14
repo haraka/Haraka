@@ -18,7 +18,7 @@ exports.register = function () {
     plugin.loadConfig();
 
     plugin.register_hook('connect_pre', 'check_busy');
-};
+}
 
 exports.loadConfig = function () {
     const plugin = this;
@@ -31,7 +31,7 @@ exports.loadConfig = function () {
         // This will throw an exception on error
         toobusy.maxLag(maxLag);
     }
-};
+}
 
 exports.check_busy = function (next, connection) {
     if (!toobusy()) {
@@ -49,4 +49,4 @@ exports.check_busy = function (next, connection) {
     }
 
     return next(DENYSOFTDISCONNECT, 'Too busy; please try again later');
-};
+}

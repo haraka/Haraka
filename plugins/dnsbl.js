@@ -16,7 +16,7 @@ exports.register = function () {
     else {
         plugin.register_hook('connect',  'connect_first');
     }
-};
+}
 
 exports.load_config = function () {
     const plugin = this;
@@ -43,7 +43,7 @@ exports.load_config = function () {
     }
 
     plugin.get_uniq_zones();
-};
+}
 
 exports.get_uniq_zones = function () {
     const plugin = this;
@@ -66,7 +66,7 @@ exports.get_uniq_zones = function () {
 
     for (const key in unique_zones) { plugin.zones.push(key); }
     return plugin.zones;
-};
+}
 
 exports.should_skip = function (connection) {
     const plugin = this;
@@ -84,7 +84,7 @@ exports.should_skip = function (connection) {
     }
 
     return false;
-};
+}
 
 exports.connect_first = function (next, connection) {
     const plugin = this;
@@ -109,7 +109,7 @@ exports.connect_first = function (next, connection) {
         const result = a ? {fail: zone} : {pass: zone};
         connection.results.add(plugin, result);
     });
-};
+}
 
 exports.connect_multi = function (next, connection) {
     const plugin = this;
@@ -148,4 +148,4 @@ exports.connect_multi = function (next, connection) {
         }
         return next();
     });
-};
+}

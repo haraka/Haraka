@@ -22,7 +22,7 @@ exports.register = function () {
 
     this.logerror(this, "plugin deprecated. see 'haraka -h access' for upgrade instructions");
     this.register_hook('rcpt', 'rcpt_to_access');
-};
+}
 
 exports.rcpt_to_access = function (next, connection, params) {
     const plugin = this;
@@ -55,7 +55,7 @@ exports.rcpt_to_access = function (next, connection, params) {
 
     connection.transaction.results.add(plugin, {pass: 'unlisted', emit: true});
     return next();
-};
+}
 
 function _in_whitelist (connection, plugin, address) {
     let i;

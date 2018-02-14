@@ -16,7 +16,7 @@ exports.register = function () {
     if (plugin.cfg.main.enable_outbound) {
         plugin.register_hook('queue_outbound', 'hook_queue');
     }
-};
+}
 
 exports.load_qmail_queue_ini = function () {
     const plugin = this;
@@ -29,7 +29,7 @@ exports.load_qmail_queue_ini = function () {
     function () {
         plugin.load_qmail_queue_ini();
     });
-};
+}
 
 exports.hook_queue = function (next, connection) {
     const plugin = this;
@@ -85,4 +85,4 @@ exports.hook_queue = function (next, connection) {
         qmail_queue.stdout.on('error', function (err) {}); // stdout throws an error on close
         qmail_queue.stdout.end(buf);
     });
-};
+}

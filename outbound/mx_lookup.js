@@ -62,4 +62,4 @@ exports.lookup_mx = function lookup_mx (domain, cb) {
             cb(err2);
         });
     });
-};
+}

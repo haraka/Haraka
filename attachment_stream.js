@@ -104,4 +104,4 @@ class AttachmentStream extends Stream {
 
 exports.createStream = function (header) {
     return new AttachmentStream (header);
-};
+}

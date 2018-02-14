@@ -670,7 +670,7 @@ class HMailItem extends events.EventEmitter {
                                 }
                             }
                         }
-                        else {
+                        else if (processing_mail) {
                             reason = response.join(' ');
                             recipients.forEach(function (rcpt) {
                                 rcpt.dsn_action = 'delayed';
@@ -683,6 +683,12 @@ class HMailItem extends events.EventEmitter {
                             send_command(cfg.pool_concurrency_max ? 'RSET' : 'QUIT');
                             processing_mail = false;
                             return self.temp_fail(`Upstream error: ${code} ${(extc) ? `${extc} ` : ''}${reason}`);
+                        }
+                        else {
+                            reason = response.join(' ');
+                            self.lognotice(`Error - but not processing mail: ${code} ${((extc) ? `${extc} ` : '')}${reason}`);
+                            // Release back to the pool and instruct it to terminate this connection
+                            return client_pool.release_client(socket, port, host, mx.bind, true);
                         }
                     }
                     else if (code.match(/^5/)) {

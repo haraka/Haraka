@@ -10,13 +10,13 @@ exports.register = function () {
     this.register_hook('lookup_rdns', 'refresh_config');
     this.register_hook('connect',     'relay_acl');
     this.register_hook('rcpt',        'relay_dest_domains');
-};
+}
 
 exports.refresh_config = function (next, connection) {
     this.cfg = this.config.get('relay_dest_domains.ini', 'ini');
     this.acl_allow = this.config.get('relay_acl_allow', 'list');
     return next();
-};
+}
 
 exports.relay_acl = function (next, connection, params) {
     connection.logdebug(this, `checking ${connection.remote_ip} in relay_acl_allow`);
@@ -29,7 +29,7 @@ exports.relay_acl = function (next, connection, params) {
     connection.results.add(this, {pass: 'relay_acl'});
     connection.relaying = true;
     return next(OK);
-};
+}
 
 exports.relay_dest_domains = function (next, connection, params) {
     const plugin = this;
@@ -74,7 +74,7 @@ exports.relay_dest_domains = function (next, connection, params) {
 
     transaction.results.add(plugin, {fail: 'relay_dest_domain'});
     return next(DENY, "This is not an open relay");
-};
+}
 
 /**
  * @return bool}
@@ -102,4 +102,4 @@ exports.is_acl_allowed = function (connection) {
         }
     }
     return false;
-};
+}
