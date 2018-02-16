@@ -1,12 +1,43 @@
 
-## 2.8.17 - Mmm NN, 2017
+## 2.8.17 - Feb 16, 2017
 
 * New Features
+    * SMTPS port is configurable #2269
+    * smtp_forward: enable_outbound can be set per domain #2335
 * Fixes
     * Fix ability to set log level to emerg #2128
     * outbound/hmail: use Buffer to correctly read binary file data + tests #2231
     * quarantine: consolidate 2x hook_init_master functions
+    * tls_socket: restore SNI functionality, emit count of TLS certs #2293
+    * fix smtp_client error handling #2298
+    * fix outbound pools #2317
+    * add openssl-wrapper as dependency #2320
+    * replace _ chars in hostnames with code points #2324
+    * add this.removeAllListeners('connection-error') #2323
+    * Fix crashing on RSET #2328
+    * Prevent data headers crit fail #2329
+    * Fix undefined max_lines in log message #2337
 * Changes
+    * line_socket: remove superfluous function #2339
+    * consistent end of function declaration semicolon #2336
+    * connection: assure hostname is set #2338
+    * smtp_client: Fix log message typo #2334
+    * Update ipaddr.js to version 1.6.0 #2333
+    * Warn on max_header_lines #2331
+    * update jquery version #2322
+    * plugins: add SRS plugin to registry #2318
+    * tls_socket: only generate dhparam.pem on master process #2313
+    * add ENOTFOUND to also check A record #2310
+    * smtp_forward: correct config file name in docs #2309
+    * reduce severity of iconv conversion failure #2307
+    * Add txn UUID to "250 Message Queued" #2305
+    * mailheader: reduce log level priority #2299
+    * greylist: only log redis DB errors when exist #2295
+    * data.headers: reduce undef MLM logerror to logdebug #2294
+    * quarantine: consolidate 2x hook_init_master() #2292
+    * move test_queue to queue/test #2291
+    * in haraka plugin test mode, add server.notes #2248
+    * outbound/hmail: refactor #2238
     * outbound/hmail: add JSON sanity test before JSON.parse #2231
     * outbound/index: use newer Buffer.from syntax #2231
     * outbound/hmail: make haraka queue files human friendly #2231
@@ -32,20 +63,41 @@
         * plugins/graph -> haraka-plugin-graph #2185
     * config: replace ./config.js with haraka-config #2119
     * Replace concatenated strings with template literals (#2129) in:
-        * connection #2129
+        * attachment #2260
+        * bin/spf #2129
+        * bin/dkimverify #2278
+        * connection #2129, #2243
+        * delay_deny #2264
         * dkim #2216
-        * host_pool #2198
+        * dsn #2265
+        * host_pool #2198, #2245
+        * logger #2277, #2246
+        * mailbody #2280
         * max_unrecognised_commands #2171
+        * outbound/hmail #2259
+        * outbound/index #2249
         * outbound/todo #2233
+        * plugins #2239
         * plugins/aliases #2229
-        * plugins/attachment.js #2155
+        * plugins/attachment #2155
+        * plugins/auth_base #2252
         * plugins/avg #2156
+        * plugins/backscatterer #2261
         * plugins/bounce #2229
+        * plugins/clamd #2237
+        * plugins/connect.rdns_access #2262
+        * plugins/data.headers #2263
+        * plugins/data.uribl #2258
+        * plugins/helo.checks #2255
+        * plugins/rcpt_to.in_host_list #2253
+        * plugins/spamassassin #2256
         * plugins/profile #2170
-        * plugins/xclient #2159
+        * plugins/rcpt_to.host_list_base #2254
         * plugins/relay #2174
         * plugins/relay_acl #2177
+        * plugins/spf #2266
         * plugins/toobusy #2186
+        * plugins/xclient #2159
         * rfc1869 #2159
         * smtp_client #2129, #2208
         * tests/host_pool #2159
@@ -53,9 +105,11 @@
         * connection #2230
         * dkim #2232
     * use es6 classes (#2133) in:
+        * attachment #2260
         * attachment_stream #2215
         * chunkemitter #2219
         * dkim #2206
+        * dsn #2247
         * host_pool #2194
         * mailheader #2213
         * mailbody #2213
@@ -64,6 +118,7 @@
         * tls_socket #2190
         * timer_queue #2226
         * outbound/hmail #2197
+        * outbound/todo #2233
     * Automatically set connection.remote.is_private when connection.remote.ip is set #2192
     * Add remove_msgid and remove_date options to outbound.send_email #2209
     * Add origin option to outbound.send_mail #2314
