@@ -1,6 +1,5 @@
 
-
-## 2.8.17 - Mmm NN, 2017
+## 2.8.17 - Feb 16, 2017
 
 * New Features
     * SMTPS port is configurable #2269
