@@ -4,12 +4,29 @@
 
 * New Features
     * SMTPS port is configurable #2269
+    * smtp_forward: enable_outbound can be set per domain #2335
 * Fixes
     * Fix ability to set log level to emerg #2128
     * outbound/hmail: use Buffer to correctly read binary file data + tests #2231
     * quarantine: consolidate 2x hook_init_master functions
     * tls_socket: restore SNI functionality, emit count of TLS certs #2293
+    * fix smtp_client error handling #2298
+    * fix outbound pools #2317
+    * add openssl-wrapper as dependency #2320
+    * replace _ chars in hostnames with code points #2324
+    * add this.removeAllListeners('connection-error') #2323
+    * Fix crashing on RSET #2328
+    * Prevent data headers crit fail #2329
+    * Fix undefined max_lines in log message #2337
 * Changes
+    * line_socket: remove superfluous function #2339
+    * consistent end of function declaration semicolon #2336
+    * connection: assure hostname is set #2338
+    * smtp_client: Fix log message typo #2334
+    * Update ipaddr.js to version 1.6.0 #2333
+    * Warn on max_header_lines #2331
+    * update jquery version #2322
+    * plugins: add SRS plugin to registry #2318
     * tls_socket: only generate dhparam.pem on master process #2313
     * add ENOTFOUND to also check A record #2310
     * smtp_forward: correct config file name in docs #2309
