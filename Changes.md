@@ -1,3 +1,7 @@
+## 2.8.18
+
+* New features
+    * smtp_forward: domain configuration is now chosen based on domain_selector #2346
 
 ## 2.8.17 - Feb 16, 2017
 

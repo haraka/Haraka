@@ -86,9 +86,15 @@ Configuration
 
 # Per-Domain Configuration
 
-More specific forward routes for domains can be defined. More specific routes
-are only honored for SMTP connections with a single recipient or SMTP
+More specific forward routes for domains can be defined. The domain is
+chosen based on the value of the `domain_selector` config variable.
+
+When `domain_selector` is set to `rcpt_to` (the default), more specific
+routes are only honored for SMTP connections with a single recipient or SMTP
 connections where every recipient host is identical.
+
+When `domain_selector` is set to `mail_from`, the domain of the MAIL FROM
+address is used.
 
 enable\_outbound can be set or unset on a per-domain level to enable or disable
 forwarding for specific domains.

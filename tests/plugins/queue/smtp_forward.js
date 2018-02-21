@@ -110,6 +110,25 @@ exports.get_config = {
         test.deepEqual(cfg.host, '1.2.3.4' );
         test.done();
     },
+    'null sender': function (test) {
+        test.expect(3);
+        this.plugin.cfg.main.domain_selector = 'mail_from';
+        this.connection.transaction.mail_from = new Address('<>');
+        const cfg = this.plugin.get_config(this.connection);
+        test.equal(cfg.host, 'localhost');
+        test.equal(cfg.enable_tls, true);
+        test.equal(cfg.one_message_per_rcpt, true);
+        test.done();
+    },
+    'return mail_from domain configuration': function (test) {
+        test.expect(1);
+        this.connection.transaction.mail_from = new Address('<matt@test2.com>');
+        this.plugin.cfg.main.domain_selector = 'mail_from';
+        const cfg = this.plugin.get_config(this.connection);
+        test.deepEqual(cfg.host, '2.3.4.5');
+        delete this.plugin.cfg.main.domain_selector; // clear this for future tests
+        test.done();
+    }
 }
 
 const hmail = { todo: { notes: {} } };
