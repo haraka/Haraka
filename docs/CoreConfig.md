@@ -40,6 +40,8 @@ The list of plugins to load
   * spool\_dir - (default: none) directory to create temporary spool files in
   * spool\_after - (default: -1) if message exceeds this size in bytes, then spool the message to disk
     specify -1 to disable spooling completely or 0 to force all messages to be spooled to disk.
+  * graceful\_shutdown - (default: false) enable this to wait for sockets on shutdown instead of closing them quickly
+  * force_shutdown_timeout - (default: 30) number of seconds to wait for a graceful shutdown
 
 [1]: http://learnboost.github.com/cluster/ or node version >= 0.8
 
