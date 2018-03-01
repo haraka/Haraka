@@ -52,8 +52,16 @@ exports.get_config = function (connection) {
     const plugin = this;
 
     if (!connection.transaction) return plugin.cfg.main;
-    if (!connection.transaction.rcpt_to[0]) return plugin.cfg.main;
-    const dom = connection.transaction.rcpt_to[0].host;
+
+    let dom;
+    if (plugin.cfg.main.domain_selector === 'mail_from') {
+        if (!connection.transaction.mail_from) return plugin.cfg.main;
+        dom = connection.transaction.mail_from.host;
+    }
+    else {
+        if (!connection.transaction.rcpt_to[0]) return plugin.cfg.main;
+        dom = connection.transaction.rcpt_to[0].host;
+    }
 
     if (!dom)             return plugin.cfg.main;
     if (!plugin.cfg[dom]) return plugin.cfg.main;  // no specific route
