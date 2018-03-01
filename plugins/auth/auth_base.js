@@ -8,7 +8,7 @@ const AUTH_COMMAND = 'AUTH';
 const AUTH_METHOD_CRAM_MD5 = 'CRAM-MD5';
 const AUTH_METHOD_PLAIN = 'PLAIN';
 const AUTH_METHOD_LOGIN = 'LOGIN';
-const LOGIN_STRING1 = 'VXNlcm5hbWU6'; //UserLogin: base64 coded
+const LOGIN_STRING1 = 'VXNlcm5hbWU6'; //Username: base64 coded
 const LOGIN_STRING2 = 'UGFzc3dvcmQ6'; //Password: base64 coded
 
 exports.hook_capabilities = function (next, connection) {
