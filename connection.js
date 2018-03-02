@@ -315,7 +315,7 @@ class Connection {
             const [ , methodMatch, , remainingMatch] = /^([^ ]*)( +(.*))?$/.exec(this.current_line);
             if (!methodMatch) {
                 return plugins.run_hooks('unrecognized_command',
-                    this, this.current_line);
+                    this, [this.current_line]);
             }
             const method = `cmd_${methodMatch.toLowerCase()}`;
             const remaining = remainingMatch || '';
