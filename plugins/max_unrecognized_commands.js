@@ -10,10 +10,10 @@ exports.hook_connect = function (next, connection) {
     return next();
 }
 
-exports.hook_unrecognized_command = function (next, connection, cmd) {
+exports.hook_unrecognized_command = function (next, connection, params) {
     const plugin = this;
 
-    connection.results.add(plugin, {fail: `Unrecognized command: ${cmd}`, emit: true});
+    connection.results.add(plugin, {fail: `Unrecognized command: ${params}`, emit: true});
     connection.results.incr(plugin, {count: 1});
 
     const uc = connection.results.get('max_unrecognized_commands');
