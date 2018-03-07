@@ -2,6 +2,12 @@
 
 * New features
     * smtp_forward: domain configuration is now chosen based on domain_selector #2346
+* Fixes
+    * queue/qmail-queue: fix crash bug when client disconnects unexpectedly #2360
+    * tls: fix crash bug in `unrecognized_command` hook
+    * `dkim_key_gen.sh`: improve usability and parameter parsing #2355
+* Changes
+    * document `force_shutdown_timeout` and `graceful_shutdown` settings #2350
 
 ## 2.8.17 - Feb 16, 2017
 
