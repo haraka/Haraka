@@ -26,7 +26,7 @@ The list of plugins to load
   * listen\_host, port - the host and port to listen on (default: ::0 and 25)
   * listen - (default: [::0]:25) Comma separated IP:Port addresses to listen on
   * inactivity\_time - how long to let clients idle in seconds (default: 300)
-  * nodes - if [cluster][1] is available, specifies how
+  * nodes - if [cluster][1] (or node version >= 0.8) is available, specifies how
     many processes to fork off. Can be the string "cpus" to fork off as many
     children as there are CPUs (default: 0, which disables cluster mode)
   * user - optionally a user to drop privileges to. Can be a string or UID.
@@ -43,7 +43,7 @@ The list of plugins to load
   * graceful\_shutdown - (default: false) enable this to wait for sockets on shutdown instead of closing them quickly
   * force_shutdown_timeout - (default: 30) number of seconds to wait for a graceful shutdown
 
-[1]: http://learnboost.github.com/cluster/ or node version >= 0.8
+[1]: http://learnboost.github.com/cluster/
 
 * me
 
