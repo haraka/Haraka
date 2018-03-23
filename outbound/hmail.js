@@ -270,6 +270,11 @@ class HMailItem extends events.EventEmitter {
             // duplicate each MX for each ip address family
             this.mxlist = [];
             for (const mx in mxlist) {
+                // Handle UNIX sockets for LMTP
+                if (mxlist[mx].path) {
+                    this.mxlist.push(mxlist[mx]);
+                    continue;
+                }
                 if (cfg.ipv6_enabled) {
                     this.mxlist.push(
                         { exchange: mxlist[mx].exchange, priority: mxlist[mx].priority, port: mxlist[mx].port, using_lmtp: mxlist[mx].using_lmtp, family: 'AAAA' },
