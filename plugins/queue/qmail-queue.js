@@ -60,7 +60,16 @@ exports.hook_queue = function (next, connection) {
     qmail_queue.stdin.on('close', function () {
         if (!connection.transaction) {
             plugin.logerror("Transaction went away while delivering mail to qmail-queue");
-            qmail_queue.stdout.end();
+
+            try {
+                qmail_queue.stdout.end();
+            } catch (error) {
+                if (err.code !== 'ENOTCONN') {
+                    // Ignore ENOTCONN and re throw anything else
+                    throw err
+                }
+            }
+
             connection.results.add(plugin, { err: 'dead sender' });
             return;
         }
