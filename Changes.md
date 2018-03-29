@@ -1,3 +1,8 @@
+## x.y.z - unreleased
+
+* Fixes
+  * queue/qmail-queue: fix a 2nd crash bug when client disconnects unexpectedly #2360
+
 ## 2.8.18 - Mar 8, 2018
 
 * New features
