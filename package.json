@@ -4,7 +4,7 @@
   "license": "MIT",
   "description": "An SMTP Server project.",
   "keywords": [ "haraka", "smtp", "server", "email" ],
-  "version": "2.8.18",
+  "version": "2.8.19",
   "homepage": "http://haraka.github.io",
   "repository": {
     "type": "git",
@@ -29,7 +29,7 @@
     "haraka-config"         : ">=1.0.15",
     "haraka-constants"      : ">=1.0.5",
     "haraka-dsn"            : "*",
-    "haraka-net-utils"      : ">=1.0.10",
+    "haraka-net-utils"      : ">=1.1.0",
     "haraka-notes"          : "*",
     "haraka-results"        : "^2.0.0",
     "haraka-tld"            : "*",

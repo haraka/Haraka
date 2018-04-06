@@ -263,11 +263,10 @@ exports.return_results = function (next, connection, spf, scope, result, sender)
 }
 
 exports.save_to_header = function (connection, spf, result, mfrom, host, id, ip) {
-    const plugin = this;
     // Add a trace header
     if (!connection) return;
     if (!connection.transaction) return;
     connection.transaction.add_leading_header('Received-SPF',
-        `${spf.result(result)} (${plugin.config.get('me')}: domain of ${host}${result === spf.SPF_PASS ? ' designates ' : ' does not designate '}${connection.remote.ip} as permitted sender) receiver=${plugin.config.get('me')}; identity=${id}; client-ip=${ip ? ip : connection.remote.ip}; helo=${connection.hello.host}; envelope-from=<${mfrom}>`
+        `${spf.result(result)} (${connection.local.host}: domain of ${host}${result === spf.SPF_PASS ? ' designates ' : ' does not designate '}${connection.remote.ip} as permitted sender) receiver=${connection.local.host}; identity=${id}; client-ip=${ip ? ip : connection.remote.ip}; helo=${connection.hello.host}; envelope-from=<${mfrom}>`
     );
 }

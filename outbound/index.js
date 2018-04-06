@@ -231,7 +231,7 @@ exports.send_trans_email = function (transaction, next) {
     // add potentially missing headers
     if (!transaction.header.get_all('Message-Id').length) {
         logger.loginfo("[outbound] Adding missing Message-Id header");
-        transaction.add_header('Message-Id', `<${transaction.uuid}@${config.get('me')}>`);
+        transaction.add_header('Message-Id', `<${transaction.uuid}@${net_utils.get_primary_host_name()}>`);
     }
     if (!transaction.header.get_all('Date').length) {
         logger.loginfo("[outbound] Adding missing Date header");

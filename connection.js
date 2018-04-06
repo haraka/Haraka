@@ -59,7 +59,7 @@ class Connection {
         this.local = {           // legacy property locations
             ip: null,            // c.local_ip
             port: null,          // c.local_port
-            host: config.get('me') || os.hostname(),
+            host: net_utils.get_primary_host_name(),
             info: 'Haraka',
         };
         this.remote = {
