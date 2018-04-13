@@ -677,8 +677,8 @@ class Connection {
     }
     warn_relay () {
         if (this.relay_warn !== this.relaying) {
-	    this.logwarn("connection.relaying was set by a plugin during a transaction.  Use of transaction.relaying instead is recommended as it is much safer");
-	}
+            this.logwarn("connection.relaying was set by a plugin during a transaction.  Use of transaction.relaying instead is recommended as it is much safer");
+        }
     }
     /////////////////////////////////////////////////////////////////////////////
     // SMTP Responses
@@ -1304,8 +1304,8 @@ class Connection {
         // Track connection.relaying state
         this.relay_warn = this.relaying;
         // Require authentication on connections to port 587 & 465
-        if (!(this.relaying || (this.transaction && this.transaction.relaying)) 
-            && [587,465].indexOf(this.local.port) !== -1) 
+        if (!(this.relaying || (this.transaction && this.transaction.relaying))
+            && [587,465].indexOf(this.local.port) !== -1)
         {
             this.errors++;
             return this.respond(550, 'Authentication required');
