@@ -654,9 +654,6 @@ class Connection {
                 });
             });
             self.transaction.results = new ResultStore(self);
-            // Convenince for plugin authors so they only need to check
-            // c.t.relaying instead of both c.relaying and c.t.relaying.
-            self.transaction.relaying = self.relaying;
             if (cb) cb();
         });
     }
@@ -1097,7 +1094,7 @@ class Connection {
         }
     }
     rcpt_respond (retval, msg) {
-        if (retval === constants.cont && (this.relaying || this.transaction.relaying)) {
+        if (retval === constants.cont && this.relaying) {
             retval = constants.ok;
         }
 
@@ -1315,17 +1312,14 @@ class Connection {
         // Track connection.relaying state
         this.relay_warn = this.relaying;
         // Require authentication on connections to port 587 & 465
-        if (!(this.relaying || (this.transaction && this.transaction.relaying))
-            && [587,465].indexOf(this.local.port) !== -1)
-        {
+        if (!this.relaying && [587,465].indexOf(this.local.port) !== -1) {
             this.errors++;
             return this.respond(550, 'Authentication required');
         }
         let results;
         let from;
         try {
-            results = rfc1869.parse("mail", line, config.get('strict_rfc1869') &&
-                      !(this.relaying || (this.transaction && this.transaction.relaying)));
+            results = rfc1869.parse("mail", line, config.get('strict_rfc1869') && !this.relaying);
             from    = new Address (results.shift());
         }
         catch (err) {
@@ -1384,8 +1378,7 @@ class Connection {
         let results;
         let recip;
         try {
-            results = rfc1869.parse("rcpt", line, config.get('strict_rfc1869') &&
-                          !(this.relaying || this.transaction.relaying));
+            results = rfc1869.parse("rcpt", line, config.get('strict_rfc1869') && !this.relaying);
             recip   = new Address(results.shift());
         }
         catch (err) {
@@ -1647,7 +1640,6 @@ class Connection {
                 'mid': mid.replace(/\r?\n/,''),
                 'size': this.transaction.data_bytes,
                 'rcpts': `${this.transaction.rcpt_count.accept}/${this.transaction.rcpt_count.tempfail}/${this.transaction.rcpt_count.reject}`,
-                'relay': (this.transaction.relaying ? 'Y' : 'N'),
                 'delay': this.transaction.data_post_delay,
                 'code':  constants.translate(retval),
                 'msg': (msg || ''),
@@ -1685,7 +1677,7 @@ class Connection {
                 });
                 break;
             default:
-                if (this.relaying || this.transaction.relaying) {
+                if (this.relaying) {
                     plugins.run_hooks("queue_outbound", this);
                 }
                 else {

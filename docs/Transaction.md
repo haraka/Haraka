@@ -19,23 +19,6 @@ The value of the MAIL FROM command as an `Address`[1] object.
 
 An Array of `Address`[1] objects of recipients from the RCPT TO command.
 
-* transaction.relaying
-
-A boolean flag to say whether this transaction is allowed to relay mails (i.e.
-deliver mails outbound).
-
-There are some circumstances where you might want to set this value
-in hook\_mail, hook\_rcpt or hook\_data and using this instead of
-`connection.relaying` in this case is much safer as this is unset
-at the end of the transaction, so it is *less easy* to inadvertantly 
-(but not impossible) to make your system an open-relay with this.
-
-Relaying is normally set on the `Connection` object (e.g. `connection.relaying`) which
-is normally set by SMTP AUTH, or sometimes via an IP address check and this
-flag will reflect the same value as `connection.relaying` if set as a 
-convenience to plugin authors, so that you only need to check this variable
-to see if relaying is enabled.
-
 * transaction.message\_stream
 
 A node.js Readable Stream object for the message.

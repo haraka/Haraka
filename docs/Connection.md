@@ -47,12 +47,6 @@ A boolean flag to say whether this connection is allowed to relay mails (i.e.
 deliver mails outbound). This is normally set by SMTP AUTH, or sometimes via
 an IP address check.
 
-**Important Note:** if you find yourself setting this in hook\_mail, hook\_rcpt
-or hook\_data, then you should use `transaction.relaying` instead as this
-will automatically remove the relaying permission when the transaction is reset.
-This makes it less easy (but not impossible) for you to inadvertantly make
-you system an open-relay.
-
 * connection.current\_line
 
 For low level use. Contains the current line sent from the remote end,
