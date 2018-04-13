@@ -33,8 +33,8 @@ function setupInterval (title, server) {
         let new_title = title + ' cn=' + server.notes.pt_connections +
             ' cc=' + server.notes.pt_concurrent + ' cps=' + cps + '/' + av_cps +
             '/' + server.notes.pt_cps_max + ' rcpts=' + server.notes.pt_recipients +
-            '/' + rpm + ' rps=' + rps + '/' + av_rps +  '/' + 
-            server.notes.pt_rps_max + ' msgs=' + server.notes.pt_messages + '/' + mpc + 
+            '/' + rpm + ' rps=' + rps + '/' + av_rps +  '/' +
+            server.notes.pt_rps_max + ' msgs=' + server.notes.pt_messages + '/' + mpc +
             ' mps=' + mps + '/' + av_mps + '/' + server.notes.pt_mps_max + ' out=' + out + ' ';
         if (/\(master\)/.test(title)) {
             new_title += 'respawn=' + server.notes.pt_child_exits + ' ';
