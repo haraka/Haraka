@@ -105,6 +105,7 @@ class Connection {
         this.early_talker = false;
         this.pipelining = false;
         this.relaying = false;
+        this.relay_warn = false;
         this.esmtp = false;
         this.last_response = null;
         this.hooks_to_run = [];
@@ -644,6 +645,9 @@ class Connection {
                 });
             });
             self.transaction.results = new ResultStore(self);
+            // Convenince for plugin authors so they only need to check
+            // c.t.relaying instead of both c.relaying and c.t.relaying.
+            self.transaction.relaying = self.relaying;
             if (cb) cb();
         });
     }
@@ -670,6 +674,11 @@ class Connection {
             self.prev_state = null;
         }
         setImmediate(() => self._process_data());
+    }
+    warn_relay () {
+        if (this.relay_warn !== this.relaying) {
+	    this.logwarn("connection.relaying was set by a plugin during a transaction.  Use of transaction.relaying instead is recommended as it is much safer");
+	}
     }
     /////////////////////////////////////////////////////////////////////////////
     // SMTP Responses
@@ -950,6 +959,7 @@ class Connection {
             this.logerror("mail_respond found no transaction!");
             return;
         }
+        this.warn_relay();
         const sender = this.transaction.mail_from;
         const dmsg   = `sender ${sender.format()}`;
         this.lognotice(
@@ -1076,7 +1086,7 @@ class Connection {
         }
     }
     rcpt_respond (retval, msg) {
-        if (retval === constants.cont && this.relaying) {
+        if (retval === constants.cont && (this.relaying || this.transaction.relaying)) {
             retval = constants.ok;
         }
 
@@ -1085,6 +1095,9 @@ class Connection {
             this.results.add(this, {err: 'rcpt_respond found no transaction'});
             return;
         }
+
+        this.warn_relay();
+
         const rcpt = this.transaction.rcpt_to[this.transaction.rcpt_to.length - 1];
         const dmsg = `recipient ${rcpt.format()}`;
         if (retval !== constants.ok) {
@@ -1288,8 +1301,12 @@ class Connection {
             this.errors++;
             return this.respond(503, 'Use EHLO/HELO before MAIL');
         }
+        // Track connection.relaying state
+        this.relay_warn = this.relaying;
         // Require authentication on connections to port 587 & 465
-        if (!this.relaying && [587,465].indexOf(this.local.port) !== -1) {
+        if (!(this.relaying || (this.transaction && this.transaction.relaying)) 
+            && [587,465].indexOf(this.local.port) !== -1) 
+        {
             this.errors++;
             return this.respond(550, 'Authentication required');
         }
@@ -1297,7 +1314,7 @@ class Connection {
         let from;
         try {
             results = rfc1869.parse("mail", line, config.get('strict_rfc1869') &&
-                      !this.relaying);
+                      !(this.relaying || (this.transaction && this.transaction.relaying)));
             from    = new Address (results.shift());
         }
         catch (err) {
@@ -1351,12 +1368,13 @@ class Connection {
             this.errors++;
             return this.respond(503, "Use MAIL before RCPT");
         }
-
+        // Track relay state
+        this.relay_warn = this.relaying;
         let results;
         let recip;
         try {
             results = rfc1869.parse("rcpt", line, config.get('strict_rfc1869') &&
-                          !this.relaying);
+                          !(this.relaying || this.transaction.relaying));
             recip   = new Address(results.shift());
         }
         catch (err) {
@@ -1471,6 +1489,8 @@ class Connection {
         this.logdebug("Authentication-Results moved to Original-Authentication-Results");
     }
     cmd_data (args) {
+        // Track relay state
+        this.relay_warn = this.relaying;
         // RFC 5321 Section 4.3.2
         // DATA does not accept arguments
         if (args) {
@@ -1494,6 +1514,7 @@ class Connection {
     }
     data_respond (retval, msg) {
         const self = this;
+        this.warn_relay();
         let cont = 0;
         switch (retval) {
             case constants.deny:
@@ -1615,6 +1636,7 @@ class Connection {
                 'mid': mid.replace(/\r?\n/,''),
                 'size': this.transaction.data_bytes,
                 'rcpts': `${this.transaction.rcpt_count.accept}/${this.transaction.rcpt_count.tempfail}/${this.transaction.rcpt_count.reject}`,
+                'relay': (this.transaction.relaying ? 'Y' : 'N'),
                 'delay': this.transaction.data_post_delay,
                 'code':  constants.translate(retval),
                 'msg': (msg || ''),
@@ -1652,7 +1674,7 @@ class Connection {
                 });
                 break;
             default:
-                if (this.relaying) {
+                if (this.relaying || this.transaction.relaying) {
                     plugins.run_hooks("queue_outbound", this);
                 }
                 else {

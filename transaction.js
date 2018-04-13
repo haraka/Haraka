@@ -41,6 +41,7 @@ class Transaction {
         this.data_post_start = null;
         this.data_post_delay = 0;
         this.encoding = 'utf8';
+        this.relaying = false;
     }
 
     ensure_body () {
