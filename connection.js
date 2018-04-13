@@ -106,6 +106,7 @@ class Connection {
         this.pipelining = false;
         this.relaying = false;
         this.relay_warn = false;
+        this.txn_set_relay = false;
         this.esmtp = false;
         this.last_response = null;
         this.hooks_to_run = [];
@@ -629,6 +630,14 @@ class Connection {
             this.transaction.message_stream.destroy();
             this.transaction = null;
         }
+        if (this.txn_set_relay && this.relaying) {
+            // connection.relaying was set by a transaction hook and
+            // is still enabled now after the transaction was reset
+            // this is usually very bad...
+            this.logcrit('Relaying explicitly disabled on this connection to prevent allowing open-relay');
+            this.relaying = false;
+            this.txn_set_relay = false;
+        }
         if (cb) cb();
         // Allow the connection to continue
         this.resume();
@@ -677,7 +686,9 @@ class Connection {
     }
     warn_relay () {
         if (this.relay_warn !== this.relaying) {
-            this.logwarn("connection.relaying was set by a plugin during a transaction.  Use of transaction.relaying instead is recommended as it is much safer");
+            // connection.relaying was set in mail/rcpt/data hooks
+            // we set txn_set_relay to check if it reset later
+            this.txn_set_relay = true;
         }
     }
     /////////////////////////////////////////////////////////////////////////////
