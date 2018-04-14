@@ -1,9 +1,9 @@
 ## x.y.z - unreleased
 
-* New features
-  * Add `transaction.relaying` flag, documentation and warning
 * Fixes
   * queue/qmail-queue: fix a 2nd crash bug when client disconnects unexpectedly #2360
+* Changes
+  * Detect and prevent improper use of `connection.relaying` when set in a transaction #2387
 
 ## 2.8.18 - Mar 8, 2018
 

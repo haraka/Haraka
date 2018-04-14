@@ -681,7 +681,7 @@ class Connection {
         }
         setImmediate(() => self._process_data());
     }
-    warn_relay () {
+    check_for_txn_relay () {
         if (this.relay_warn !== this.relaying) {
             // connection.relaying was set in mail/rcpt/data hooks
             // we set txn_set_relay to check if it reset later
@@ -967,7 +967,7 @@ class Connection {
             this.logerror("mail_respond found no transaction!");
             return;
         }
-        this.warn_relay();
+        this.check_for_txn_relay();
         const sender = this.transaction.mail_from;
         const dmsg   = `sender ${sender.format()}`;
         this.lognotice(
@@ -1104,7 +1104,7 @@ class Connection {
             return;
         }
 
-        this.warn_relay();
+        this.check_for_txn_relay();
 
         const rcpt = this.transaction.rcpt_to[this.transaction.rcpt_to.length - 1];
         const dmsg = `recipient ${rcpt.format()}`;
@@ -1518,7 +1518,7 @@ class Connection {
     }
     data_respond (retval, msg) {
         const self = this;
-        this.warn_relay();
+        this.check_for_txn_relay();
         let cont = 0;
         switch (retval) {
             case constants.deny:
