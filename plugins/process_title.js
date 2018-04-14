@@ -10,11 +10,21 @@ function setupInterval (title, server) {
         const cps = server.notes.pt_connections - server.notes.pt_cps_diff;
         if (cps > server.notes.pt_cps_max) server.notes.pt_cps_max = cps;
         server.notes.pt_cps_diff = server.notes.pt_connections;
+        // Recipients per second
+        const av_rps = Math.round((server.notes.pt_recipients/process.uptime()*100))/100;
+        const rps = server.notes.pt_recipients - server.notes.pt_rps_diff;
+        if (rps > server.notes.pt_rps_max) server.notes.pt_rps_max = rps;
+        server.notes.pt_rps_diff = server.notes.pt_recipients;
+        // Recipients per message
+        const rpm = Math.round((server.notes.pt_recipients / server.notes.pt_messages)*100)/100 || 0;
         // Messages per second
         const av_mps = Math.round((server.notes.pt_messages/process.uptime()*100))/100;
         const mps = server.notes.pt_messages - server.notes.pt_mps_diff;
         if (mps > server.notes.pt_mps_max) server.notes.pt_mps_max = mps;
         server.notes.pt_mps_diff = server.notes.pt_messages;
+        // Messages per connection
+        const mpc = Math.round((server.notes.pt_messages / server.notes.pt_connections)*100)/100 || 0;
+
         const out = server.notes.pt_out_stats || outbound.get_stats();
         if (/\(worker\)/.test(title)) {
             process.send({event: 'process_title.outbound_stats', data: out});
@@ -22,9 +32,10 @@ function setupInterval (title, server) {
         // Update title
         let new_title = title + ' cn=' + server.notes.pt_connections +
             ' cc=' + server.notes.pt_concurrent + ' cps=' + cps + '/' + av_cps +
-            '/' + server.notes.pt_cps_max + ' msgs=' + server.notes.pt_messages +
-            ' mps=' + mps + '/' + av_mps + '/' +
-            server.notes.pt_mps_max + ' out=' + out + ' ';
+            '/' + server.notes.pt_cps_max + ' rcpts=' + server.notes.pt_recipients +
+            '/' + rpm + ' rps=' + rps + '/' + av_rps +  '/' +
+            server.notes.pt_rps_max + ' msgs=' + server.notes.pt_messages + '/' + mpc +
+            ' mps=' + mps + '/' + av_mps + '/' + server.notes.pt_mps_max + ' out=' + out + ' ';
         if (/\(master\)/.test(title)) {
             new_title += 'respawn=' + server.notes.pt_child_exits + ' ';
         }
@@ -37,6 +48,9 @@ exports.hook_init_master = function (next, server) {
     server.notes.pt_concurrent = 0;
     server.notes.pt_cps_diff = 0;
     server.notes.pt_cps_max = 0;
+    server.notes.pt_recipients = 0;
+    server.notes.pt_rps_diff = 0;
+    server.notes.pt_rps_max = 0;
     server.notes.pt_messages = 0;
     server.notes.pt_mps_diff = 0;
     server.notes.pt_mps_max = 0;
@@ -67,6 +81,9 @@ exports.hook_init_master = function (next, server) {
                         count += server.notes.pt_concurrent_cluster[id];
                     });
                     server.notes.pt_concurrent = count;
+                    break;
+                case 'process_title.recipient':
+                    server.notes.pt_recipients++;
                     break;
                 case 'process_title.message':
                     server.notes.pt_messages++;
@@ -113,6 +130,9 @@ exports.hook_init_child = function (next, server) {
     server.notes.pt_concurrent = 0;
     server.notes.pt_cps_diff = 0;
     server.notes.pt_cps_max = 0;
+    server.notes.pt_recipients = 0;
+    server.notes.pt_rps_diff = 0;
+    server.notes.pt_rps_max = 0;
     server.notes.pt_messages = 0;
     server.notes.pt_mps_diff = 0;
     server.notes.pt_mps_max = 0;
@@ -159,6 +179,16 @@ exports.hook_disconnect = function (next, connection) {
         worker.send({event: 'process_title.disconnect', wid: worker.id});
     }
     server.notes.pt_concurrent--;
+    return next();
+}
+
+exports.hook_rcpt = function (next, connection) {
+    const server = connection.server;
+    if (server.cluster) {
+        const worker = server.cluster.worker;
+        worker.send({event: 'process_title.recipient'});
+    }
+    server.notes.pt_recipients++;
     return next();
 }
 

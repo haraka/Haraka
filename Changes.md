@@ -4,6 +4,8 @@
   * Add `transaction.relaying` flag, documentation and warning
 * Fixes
   * queue/qmail-queue: fix a 2nd crash bug when client disconnects unexpectedly #2360
+* Changes
+  * process\_title: add total recipients, avg rcpts/msg, recipients/sec cur/avg/max and messages/conn
 
 ## 2.8.18 - Mar 8, 2018
 
