@@ -104,7 +104,7 @@ class Connection {
         this.deny_includes_uuid = config.get('deny_includes_uuid') || null;
         this.early_talker = false;
         this.pipelining = false;
-        this.relaying = false;
+        this._relaying = false;
         this.esmtp = false;
         this.last_response = null;
         this.hooks_to_run = [];
@@ -266,6 +266,18 @@ class Connection {
         return prop_str.split('.').reduce((prev, curr) => {
             return prev ? prev[curr] : undefined
         }, this)
+    }
+    set relaying (val) {
+        if (this.transaction) {
+            this.transaction._relaying = val;
+        }
+        else {
+            this._relaying = val;
+        }
+    }
+    get relaying () {
+        if (this.transaction && this.transaction._relaying) return this.transaction._relaying;
+        return this._relaying;
     }
     process_line (line) {
         const self = this;
