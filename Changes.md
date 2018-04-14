@@ -4,6 +4,7 @@
   * queue/qmail-queue: fix a 2nd crash bug when client disconnects unexpectedly #2360
 * Changes
   * Detect and prevent improper use of `connection.relaying` when set in a transaction #2387
+  * process\_title: add total recipients, avg rcpts/msg, recipients/sec cur/avg/max and messages/conn
 
 ## 2.8.18 - Mar 8, 2018
 
