@@ -244,3 +244,24 @@ exports.local_info = {
         test.done();
     }
 }
+
+exports.relaying = {
+    setUp : _set_up,
+    tearDown : _tear_down,
+    'sets and gets': function (test) {
+        test.expect(3);
+        test.equal(this.connection.relaying, false);
+        test.ok(this.connection.relaying = 'alligators');
+        test.equal(this.connection.relaying, 'alligators');
+        test.done();
+    },
+    'sets and gets in a transaction': function (test) {
+        test.expect(4);
+        test.equal(this.connection.relaying, false);
+        this.connection.transaction = {};
+        test.ok(this.connection.relaying = 'crocodiles');
+        test.equal(this.connection.transaction._relaying, 'crocodiles');
+        test.equal(this.connection.relaying, 'crocodiles');
+        test.done();
+    }
+}

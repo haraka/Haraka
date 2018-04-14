@@ -276,7 +276,7 @@ class Connection {
         }
     }
     get relaying () {
-        if (this.transaction && this.transaction._relaying !== undefined) return this.transaction._relaying;
+        if (this.transaction && '_relaying' in this.transaction) return this.transaction._relaying;
         return this._relaying;
     }
     process_line (line) {

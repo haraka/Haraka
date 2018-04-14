@@ -4,6 +4,7 @@
   * queue/qmail-queue: fix a 2nd crash bug when client disconnects unexpectedly #2360
 * Changes
   * process\_title: add total recipients, avg rcpts/msg, recipients/sec cur/avg/max and messages/conn
+  * when relaying is set in a transaction, don't persist beyond the transaction
 
 ## 2.8.18 - Mar 8, 2018
 
