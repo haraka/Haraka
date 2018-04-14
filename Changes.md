@@ -3,6 +3,9 @@
 * Fixes
   * queue/qmail-queue: fix a 2nd crash bug when client disconnects unexpectedly #2360
   * config.get('me'): replace with a net-utils call that falls back go os.hostname() #2344
+* Changes
+  * process\_title: add total recipients, avg rcpts/msg, recipients/sec cur/avg/max and messages/conn
+  * when relaying is set in a transaction, don't persist beyond the transaction
 
 ## 2.8.18 - Mar 8, 2018
 
