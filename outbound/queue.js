@@ -135,8 +135,7 @@ exports.load_queue_files = function (pid, cb_name, files, callback) {
                     cb();
                 });
             }
-            else if (/^\./.test(file)) {
-                // dot-file...
+            else if (file.indexOf(_qfile.platformDOT) === 0) {
                 logger.logwarn("[outbound] Removing left over dot-file: " + file);
                 return fs.unlink(path.join(queue_dir, file), function (err) {
                     if (err) {
@@ -165,7 +164,7 @@ exports.load_queue_files = function (pid, cb_name, files, callback) {
     else {
         logger.loginfo("[outbound] Loading the queue...");
         const good_file = function (file) {
-            if (/^\./.test(file)) {
+            if (file.indexOf(_qfile.platformDOT) === 0) {
                 logger.logwarn("[outbound] Removing left over dot-file: " + file);
                 fs.unlink(path.join(queue_dir, file), function (err) {
                     if (err) console.error(err);
@@ -311,10 +310,9 @@ exports.scan_queue_pids = function (cb) {
         const pids = {};
 
         files.forEach(function (file) {
-            if (/^\./.test(file)) {
-                // dot-file...
+            if (file.indexOf(_qfile.platformDOT) === 0) {
                 logger.logwarn("[outbound] Removing left over dot-file: " + file);
-                return fs.unlink(file, function () {});
+                return fs.unlink(path.join(queue_dir, file), function () {});
             }
 
             const parts = _qfile.parts(file);
