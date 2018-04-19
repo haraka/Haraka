@@ -324,13 +324,13 @@ class Connection {
 
         if (this.state === states.CMD) {
             this.state = states.PAUSE_SMTP;
-            const [ , methodMatch, , remainingMatch] = /^([^ ]*)( +(.*))?$/.exec(this.current_line);
-            if (!methodMatch) {
+            const matches = /^([^ ]*)( +(.*))?$/.exec(this.current_line);
+            if (!matches) {
                 return plugins.run_hooks('unrecognized_command',
                     this, [this.current_line]);
             }
-            const method = `cmd_${methodMatch.toLowerCase()}`;
-            const remaining = remainingMatch || '';
+            const method = `cmd_${matches[1].toLowerCase()}`;
+            const remaining = matches[3] || '';
             if (this[method]) {
                 try {
                     this[method](remaining);
@@ -351,7 +351,9 @@ class Connection {
             }
             else {
                 // unrecognized command
-                plugins.run_hooks('unrecognized_command', this, [methodMatch, remainingMatch]);
+                matches.splice(0,1);
+                matches.splice(1,1);
+                plugins.run_hooks('unrecognized_command', this, matches);
             }
         }
         else if (this.state === states.LOOP) {
