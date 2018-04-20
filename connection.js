@@ -329,7 +329,7 @@ class Connection {
                 return plugins.run_hooks('unrecognized_command',
                     this, [this.current_line]);
             }
-            const method = `cmd_${matches[1].toLowerCase()}`;
+            var method = `cmd_${matches[1].toLowerCase()}`;
             const remaining = matches[3] || '';
             if (this[method]) {
                 try {
@@ -351,9 +351,8 @@ class Connection {
             }
             else {
                 // unrecognized command
-                matches.splice(0,1);
-                matches.splice(1,1);
-                plugins.run_hooks('unrecognized_command', this, matches);
+                method = matches[1];
+                plugins.run_hooks('unrecognized_command', this, [ method, remaining ]);
             }
         }
         else if (this.state === states.LOOP) {
