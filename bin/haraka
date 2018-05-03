@@ -28,6 +28,7 @@ const knownOpts = {
     "qstat":       Boolean,
     "qempty":      Boolean,
     "qunstick":    [String, null],
+    "oplist":      Boolean,
     "graceful":    Boolean,
     "order":       Boolean,
     "test":        [String, Array],
@@ -70,6 +71,7 @@ const usage = [
     "\t--qlist       \t\tList the outbound queue",
     "\t--qstat       \t\tGet statistics on the outbound queue",
     "\t--qunstick    \t\tUnstick (force delivery) for a given domain",
+    "\t--oplist      \t\tList pool information",
     "\t-o, --order   \t\tShow all registered plugins and their run order",
     "\t-t PLUGIN     \t\tPlugin test mode",
     "\t--------------- PLUGIN TEST MODE OPTIONS (all optional) --------------",
@@ -421,6 +423,10 @@ else if (parsed.qunstick) {
         send_internal_command('flushQueue ' + domain, cb);
     }
 }
+else if (parsed.oplist) {
+    process.env.HARAKA = parsed.configs;
+    send_internal_command('listOPool', process.exit);
+}
 else if (parsed.graceful) {
     if (!parsed.configs) {
         fail("graceful option requires config path");
@@ -681,6 +687,7 @@ function send_internal_command (cmd, done) {
     const hp = /^\[?([^\]]+)\]?:(\d+)$/.exec(listen_addrs[0]);
     if (!hp) throw "No listen address in smtp.ini";
     // console.log("Connecting to " + listen_addrs[0]);
+
     const sock = net.connect(hp[2], hp[1], function () {
         sock.once('data', function (data) {
             // this is the greeting. Ignore it...
@@ -694,5 +701,6 @@ function send_internal_command (cmd, done) {
             });
         });
     });
+    sock.on('error', (err) => { console.log(`Error connecting to daemon: ${err.message}`); process.exit(1); });
     sock.on('end', done);
 }
