@@ -271,8 +271,13 @@ logger.log_if_level = function (level, key, plugin) {
             }
             else if (data instanceof outbound.HMailItem) {
                 logobj.origin = 'outbound';
-                if (data.todo && data.todo.uuid) {
-                    logobj.uuid = data.todo.uuid;
+                if (data.todo) {
+                    if (data.todo.uuid)
+                        logobj.uuid = data.todo.uuid;
+                    if (data.todo.client_uuid) {
+                        // dirty hack
+                        logobj.origin = `outbound] [${data.todo.client_uuid}`;
+                    }
                 }
             }
             else if (
