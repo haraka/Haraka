@@ -16,6 +16,7 @@
 ## 2.8.19 - Jun 26, 2018
 
 * New features
+    * outbound: TLS NO-GO feature that "downgrades" to unsecure when remote host is misbehaving during TLS session
     * outbound: received_header=disabled supresses outbound Received header addition. #2409
     * auth_base.js: `check_plain_passwd` and `check_cram_md5_passwd` can now pass `message` and `code` to callback routine
     * spf: allow bypass for relay and AUTH clients #2417

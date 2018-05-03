@@ -82,6 +82,7 @@ class pluggableStream extends stream.Stream {
         });
         self.targetsocket.once('error', function (exception) {
             self.writable = self.targetsocket.writable;
+            exception.source = 'tls';
             self.emit('error', exception);
         });
         self.targetsocket.on('timeout', function () {
@@ -618,6 +619,7 @@ function createServer (cb) {
 
             cleartext
                 .on('error', exception => {
+                    exception.source = 'tls';
                     socket.emit('error', exception);
                 })
                 .on('secure', () => {
