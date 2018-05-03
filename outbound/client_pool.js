@@ -72,7 +72,7 @@ function get_pool (port, host, local_addr, is_unix_socket, max) {
                     socket.destroy();
                 })
                 if (socket.writable) {
-                    logger.logprotocol("[outbound] C: QUIT");
+                    logger.logprotocol(`[outbound] [${socket.__uuid}] C: QUIT`);
                     socket.write("QUIT\r\n");
                 }
                 socket.end(); // half close
