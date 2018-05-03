@@ -1260,8 +1260,13 @@ class Connection {
             return this.respond(501, "No command given");
         }
 
-        require('./server').sendToMaster(command, results);
-        return this.respond(250, "Command sent for execution. Check Haraka logs for results.");
+        let obj = require('./server').sendToMaster(command, results);
+        if (obj && obj.error)
+            return this.respond(500, `Error: ${obj.output}`);
+        if (obj && obj.output)
+            return this.respond(250, obj.output.join("\n"));
+
+        return this.respond(251, "Command sent for execution. Check Haraka logs for results.");
     }
     cmd_helo (line) {
         const self = this;
