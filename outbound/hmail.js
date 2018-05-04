@@ -172,17 +172,22 @@ class HMailItem extends events.EventEmitter {
         plugins.run_hooks('send_email', this);
     }
 
-    send_email_respond (retval, delay_seconds) {
-        if (retval === constants.delay) {
-            // Try again in 'delay' seconds.
-            this.logdebug(`Delivery of this email delayed for ${delay_seconds} seconds`);
-            const hmail = this;
-            hmail.next_cb();
-            temp_fail_queue.add(delay_seconds * 1000, function () { delivery_queue.push(hmail); });
-        }
-        else {
-            this.logdebug(`Sending mail: ${this.filename}`);
-            this.get_mx();
+    send_email_respond (retval, param) {
+        switch(retval) {
+            case constants.delay:
+                // Try again in 'delay' seconds.
+                this.logdebug(`Delivery of this email delayed for ${param} seconds`);
+                var hmail = this;
+                hmail.next_cb();
+                temp_fail_queue.add(param * 1000, function () { delivery_queue.push(hmail) });
+                break;
+            case constants.deny:
+                this.logwarn(`send_email plugin returned DENY: ${param}`);
+                this.bounce(param);
+                break;
+            default:
+                this.logdebug(`Sending mail: ${this.filename}`);
+                this.get_mx();
         }
     }
 
@@ -361,19 +366,23 @@ class HMailItem extends events.EventEmitter {
             host = mx.path;
         }
 
-        this.loginfo(`Attempting to deliver to: ${host}:${port}${mx.using_lmtp ? " using LMTP" : ""} (${delivery_queue.length()}) (${temp_fail_queue.length()})`);
+        this.loginfo(`Attempting to deliver${mx.bind ? ' {'+mx.bind+'} ': ' '}to: ${host}:${port}${mx.using_lmtp ? " using LMTP" : ""} (${delivery_queue.length()}) (${temp_fail_queue.length()})`);
         client_pool.get_client(port, host, mx.bind, mx.path ? true : false, function (err, socket) {
             if (err) {
                 logger.logerror(`[outbound] Failed to get pool entry: ${err}`);
                 // try next host
                 return self.try_deliver_host(mx);
             }
+
+            self.todo.client_uuid = socket.__uuid;
+            self.loginfo(`initiating delivery`);
+
             self.try_deliver_host_on_socket(mx, host, port, socket);
         });
     }
 
     try_deliver_host_on_socket (mx, host, port, socket) {
-        const self            = this;
+        const self          = this;
         let processing_mail = true;
 
         socket.removeAllListeners('error');
@@ -385,6 +394,8 @@ class HMailItem extends events.EventEmitter {
                 self.logerror(`Ongoing connection failed to ${host}:${port} : ${err}`);
                 processing_mail = false;
                 client_pool.release_client(socket, port, host, mx.bind, true);
+                if (err.source === 'tls') // exception thrown from tls_socket during tls upgrade
+                    return obtls.mark_tls_nogo(host, () => { return self.try_deliver_host(mx); });
                 // try the next MX
                 return self.try_deliver_host(mx);
             }
@@ -461,8 +472,8 @@ class HMailItem extends events.EventEmitter {
             response = [];
         };
 
-        const process_ehlo_data = function () {
-            for (let i=0,l=response.length; i < l; i++) {
+        const set_ehlo_props = function () {
+            for (let i = 0, l = response.length; i < l; i++) {
                 const r = response[i];
                 if (r.toUpperCase() === '8BITMIME') {
                     smtp_properties.eightbitmime = true;
@@ -489,21 +500,9 @@ class HMailItem extends events.EventEmitter {
                     }
                 }
             }
+        };
 
-            // TLS
-            if (!net_utils.ip_in_list(tls_config.no_tls_hosts, self.todo.domain) &&
-                !net_utils.ip_in_list(tls_config.no_tls_hosts, host) &&
-                smtp_properties.tls && cfg.enable_tls && !secured)
-            {
-                socket.on('secure', function () {
-                    // Set this flag so we don't try STARTTLS again if it
-                    // is incorrectly offered at EHLO once we are secured.
-                    secured = true;
-                    send_command(mx.using_lmtp ? 'LHLO' : 'EHLO', mx.bind_helo);
-                });
-                return send_command('STARTTLS');
-            }
-
+        const auth_and_mail_phase = function () {
             // IMPORTANT: we do STARTTLS before we attempt AUTH for extra security
             if (!authenticated && (mx.auth_user && mx.auth_pass)) {
                 // We have AUTH credentials to send for this domain
@@ -555,7 +554,39 @@ class HMailItem extends events.EventEmitter {
             }
 
             return send_command('MAIL', `FROM:${self.todo.mail_from.format(!smtp_properties.smtp_utf8)}`);
-        };
+        }; // auth_and_mail_phase()
+
+        const process_ehlo_data = function () {
+            set_ehlo_props();
+
+            // TLS
+            if (!net_utils.ip_in_list(tls_config.no_tls_hosts, self.todo.domain) &&
+                !net_utils.ip_in_list(tls_config.no_tls_hosts, host) &&
+                smtp_properties.tls && cfg.enable_tls && !secured)
+            {
+                self.logdebug(`Trying TLS for domain: ${self.todo.domain}, host: ${host}`);
+
+                return obtls.check_tls_nogo(host,
+                    () => { // Clear to GO
+                        socket.on('secure', function () {
+                            // Set this flag so we don't try STARTTLS again if it
+                            // is incorrectly offered at EHLO once we are secured.
+                            secured = true;
+                            send_command(mx.using_lmtp ? 'LHLO' : 'EHLO', mx.bind_helo);
+                        });
+                        return send_command('STARTTLS');
+                    },
+                    (when) => { // No GO
+                        self.loginfo(`TLS disabled for ${host} because it was marked as non-TLS on ${when}`);
+                        return auth_and_mail_phase();
+                    }
+                );
+            }
+
+            // IMPORTANT: we do STARTTLS before we attempt AUTH for extra security
+            return auth_and_mail_phase();
+
+        }; // process_ehlo_data()
 
         let fp_called = false;
 
@@ -731,6 +762,7 @@ class HMailItem extends events.EventEmitter {
                                 rcpt.dsn_smtp_response = response.join(' ');
                                 rcpt.dsn_remote_mta = mx.exchange;
                             });
+                            self.lognotice(`recipient domain <${self.todo.domain}> rejected: ${reason}`);
                             send_command(cfg.pool_concurrency_max ? 'RSET' : 'QUIT');
                             processing_mail = false;
                             return self.bounce(reason, { mx: mx });
@@ -775,10 +807,7 @@ class HMailItem extends events.EventEmitter {
                                 if (cert && cert.fingerprint) {
                                     loginfo.fingerprint = cert.fingerprint;
                                 }
-                                self.loginfo(
-                                    'secured',
-                                    loginfo
-                                );
+                                self.loginfo('secured', loginfo);
                             });
                             break;
                         }
@@ -1193,6 +1222,8 @@ class HMailItem extends events.EventEmitter {
         }
 
         const from = new Address ('<>');
+        if (msg && msg.notes) from.hack = msg.notes; // FIXME: special hack to pass params to bounce creation routine
+
         const recip = new Address (this.todo.mail_from.user, this.todo.mail_from.host);
         this.populate_bounce_message(from, recip, err, function (err2, data_lines) {
             if (err2) {
@@ -1226,6 +1257,7 @@ class HMailItem extends events.EventEmitter {
             'host': host,
             'ip': ip,
             'port': port,
+            'bindip': (this.bind_ip || 'default'),
             'mode': mode,
             'tls': ((secured) ? 'Y' : 'N'),
             'auth': ((authenticated) ? 'Y' : 'N'),
@@ -1234,7 +1266,10 @@ class HMailItem extends events.EventEmitter {
             'fails': this.num_failures,
             'rcpts': `${ok_recips.length}/${fail_recips.length}/${bounce_recips.length}`
         });
-        plugins.run_hooks("delivered", this, [host, ip, response, delay, port, mode, ok_recips, secured, authenticated]);
+
+        let hook_params = [host, ip, response, delay, port, mode, ok_recips, secured, authenticated];
+        hook_params.bind_ip = this.bind_ip;
+        plugins.run_hooks("delivered", this, hook_params);
     }
 
     discard () {
@@ -1275,7 +1310,7 @@ class HMailItem extends events.EventEmitter {
 
         const delay = Math.pow(2, (this.num_failures + 5));
 
-        plugins.run_hooks('deferred', this, {delay: delay, err: err});
+        plugins.run_hooks('deferred', this, {delay: delay, err: err, extra: extra});
     }
 
     deferred_respond (retval, msg, params) {
@@ -1389,6 +1424,7 @@ class HMailItem extends events.EventEmitter {
 }
 
 module.exports = HMailItem;
+module.exports.obtls = obtls;
 
 // copy logger methods into HMailItem:
 for (const key in logger) {
