@@ -234,8 +234,8 @@ exports.hook_data_post = function (next, connection) {
             socket.write("zINSTREAM\0", function () {
                 // We *MUST* ensure that the first line is a Received: header
                 // otherwise ClamAV will not interpret the input as MIME...
-                var fake_rcvd = "Received: from fake\r\n";
-                var buf = new Buffer(fake_rcvd.length+4);
+                const fake_rcvd = "Received: from fake\r\n";
+                const buf = new Buffer(fake_rcvd.length+4);
                 buf.writeUInt32BE(fake_rcvd.length, 0);
                 buf.write(fake_rcvd, 4);
                 socket.write(buf, function () {
