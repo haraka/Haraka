@@ -286,6 +286,9 @@ logger.log_if_level = function (level, key, plugin) {
             ) {
                 logobj = Object.assign(logobj, data);
             }
+            else if (typeof data === 'object' && data.hasOwnProperty('uuid')) {
+                logobj.uuid = data.uuid;
+            }
             else if (data.constructor === Object) {
                 if (!logobj.message.endsWith(' ')) {
                     logobj.message += ' ';
