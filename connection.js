@@ -239,8 +239,8 @@ class Connection {
     }
     set (prop_str, val) {
         if (arguments.length === 3) {
-          prop_str = `${arguments[0]}.${arguments[1]}`;
-          val = arguments[2];
+            prop_str = `${arguments[0]}.${arguments[1]}`;
+            val = arguments[2];
         }
 
         const path_parts = prop_str.split('.');
@@ -275,7 +275,7 @@ class Connection {
             this.haproxy_ip = val;
         }
         else {
-            let legacy_name = prop_str.split('.').join('_');
+            const legacy_name = prop_str.split('.').join('_');
             this[legacy_name] = val;
         }
         // /sunset
