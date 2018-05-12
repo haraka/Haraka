@@ -7,6 +7,7 @@
   * process\_title: add total recipients, avg rcpts/msg, recipients/sec cur/avg/max and messages/conn
   * when relaying is set in a transaction, don't persist beyond the transaction
   * remove deprecated (since 2.8.16) ./dsn.js
+  * add `received_header_disabled` outbound option to disable injecting new Received header
 
 ## 2.8.18 - Mar 8, 2018
 
