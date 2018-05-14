@@ -292,7 +292,7 @@ exports.process_delivery = function (ok_paths, todo, hmails, cb) {
     const self = this;
     logger.loginfo(`[outbound] Processing domain: ${todo.domain}`);
     const fname = _qfile.name();
-    const tmp_path = path.join(queue_dir, _qfile.platformDOT + fname);
+    const tmp_path = path.join(queue_dir, `${_qfile.platformDOT}${fname}`);
     const ws = new FsyncWriteStream(tmp_path, { flags: constants.WRITE_EXCL });
 
     ws.on('close', function () {

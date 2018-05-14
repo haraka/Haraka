@@ -60,6 +60,7 @@ exports.hook_unrecognized_command = function (next, connection, params) {
         if (match) {
             connection.logdebug(this, `found key=${match[1]} value=${match[2]}`);
             switch (match[1]) {
+                case 'destaddr':
                 case 'addr': {
                     // IPv6 is prefixed in the XCLIENT protocol
                     let ipv6;
@@ -87,6 +88,7 @@ exports.hook_unrecognized_command = function (next, connection, params) {
                 case 'port':
                 case 'helo':
                 case 'login':
+                case 'destport':
                     if (!/\[(UNAVAILABLE|TEMPUNAVAIL)\]/i.test(match[2])) {
                         xclient[match[1]] = match[2];
                     }
@@ -112,10 +114,12 @@ exports.hook_unrecognized_command = function (next, connection, params) {
     connection.uuid = new_uuid;
     connection.reset_transaction();
     connection.relaying = false;
-    connection.set('remote', 'ip', xclient.addr);
-    connection.set('remote', 'host', ((xclient.name) ? xclient.name : undefined));
-    connection.set('remote', 'login', ((xclient.login) ? xclient.login : undefined));
-    connection.set('hello', 'host', ((xclient.helo) ? xclient.helo : undefined));
+    connection.set('remote.ip', xclient.addr);
+    connection.set('remote.host', ((xclient.name) ? xclient.name : undefined));
+    connection.set('remote.login', ((xclient.login) ? xclient.login : undefined));
+    connection.set('hello.host', ((xclient.helo) ? xclient.helo : undefined));
+    connection.set('local.ip', ((xclient.destaddr) ? xclient.destaddr : undefined));
+    connection.set('local.port', ((xclient.destport) ? xclient.destport: undefined));
     if (xclient.proto) {
         connection.set('hello', 'verb', ((xclient.proto === 'esmtp') ? 'EHLO' : 'HELO'));
     }
