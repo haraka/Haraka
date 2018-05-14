@@ -3,10 +3,11 @@ node_js:
 #   - 0.6       # no longer supported by async
 #   - 0.8       # no longer supported by iconv
 #   - 0.10      # no longer maintained by node.js (2016-10-31)
-#   - 0.12      # no longer maintained by node.js (2016-12-31)
-#   - 4         # LTS ended 2017-04-01, maint. ends 2018-04
-    - "6"       # LTS until 2018-04
-    - "8"       # current as of 2017-04, LTS on 2017-10
+#   - 0.12      # maint. ended 2016-12-31
+#   - 4         # maint. ended 2018-04
+    - "6"       # maint. ends  2019-04
+    - "8"       # LTS
+    - "10"      # current
 
 matrix:
   fast_finish: true
