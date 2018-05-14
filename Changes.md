@@ -7,6 +7,7 @@
   * process\_title: add total recipients, avg rcpts/msg, recipients/sec cur/avg/max and messages/conn #2389
   * when relaying is set in a transaction, don't persist beyond the transaction #2393
   * connection.set supports dot delimited path syntax #2390
+  * remove deprecated (since 2.8.16) ./dsn.js
 
 ## 2.8.18 - Mar 8, 2018
 
