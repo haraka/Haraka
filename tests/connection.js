@@ -265,3 +265,29 @@ exports.relaying = {
         test.done();
     }
 }
+
+exports.get_set = {
+    setUp : _set_up,
+    tearDown : _tear_down,
+    'sets single level properties': function (test) {
+        test.expect(2);
+        this.connection.set('encoding', true);
+        test.ok(this.connection.encoding);
+        test.ok(this.connection.get('encoding'));
+        test.done();
+    },
+    'sets two level deep properties': function (test) {
+        test.expect(2);
+        this.connection.set('local.host', 'test');
+        test.equal(this.connection.local.host, 'test');
+        test.equal(this.connection.get('local.host'), 'test');
+        test.done();
+    },
+    'sets three level deep properties': function (test) {
+        test.expect(2);
+        this.connection.set('some.fine.example', true);
+        test.ok(this.connection.some.fine.example);
+        test.ok(this.connection.get('some.fine.example'));
+        test.done();
+    },
+}

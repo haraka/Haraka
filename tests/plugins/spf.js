@@ -176,8 +176,8 @@ exports.hook_mail = {
             test.done();
         }
         test.expect(1);
-        this.connection.remote.is_private=true;
-        this.connection.remote.ip='192.168.1.1';
+        this.connection.set('remote.is_private', true);
+        this.connection.set('remote.ip','192.168.1.1');
         this.connection.relaying=true;
         this.plugin.hook_mail(next, this.connection, [test_addr]);
     },
@@ -217,9 +217,9 @@ exports.hook_mail = {
             test.done();
         }
         test.expect(1);
-        this.connection.set('remote', 'ip', '207.85.1.1');
+        this.connection.set('remote.ip', '207.85.1.1');
         this.connection.relaying=true;
-        this.connection.set('hello', 'host', 'mail.example.com');
+        this.connection.set('hello.host', 'mail.example.com');
         this.plugin.hook_mail(next, this.connection, [test_addr]);
     },
     'txn, relaying, is_private': function (test) {
@@ -230,10 +230,10 @@ exports.hook_mail = {
         test.expect(1);
         this.plugin.cfg.relay.context='myself';
         this.plugin.cfg.deny_relay.mfrom_fail = true;
-        this.connection.set('remote', 'ip', '127.0.1.1');
-        this.connection.set('remote', 'is_private', true);
+        this.connection.set('remote.ip', '127.0.1.1');
+        this.connection.set('remote.is_private', true);
         this.connection.relaying = true;
-        this.connection.set('hello', 'host', 'www.tnpi.net');
+        this.connection.set('hello.host', 'www.tnpi.net');
         this.plugin.nu.public_ip = '66.128.51.165';
         this.plugin.hook_mail(next, this.connection, [new Address('<nonexist@tnpi.net>')]);
     },
