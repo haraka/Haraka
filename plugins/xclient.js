@@ -114,12 +114,12 @@ exports.hook_unrecognized_command = function (next, connection, params) {
     connection.uuid = new_uuid;
     connection.reset_transaction();
     connection.relaying = false;
-    connection.set('remote', 'ip', xclient.addr);
-    connection.set('remote', 'host', ((xclient.name) ? xclient.name : undefined));
-    connection.set('remote', 'login', ((xclient.login) ? xclient.login : undefined));
-    connection.set('hello', 'host', ((xclient.helo) ? xclient.helo : undefined));
-    connection.set('local', 'ip', ((xclient.destaddr) ? xclient.destaddr : undefined));
-    connection.set('local', 'port', ((xclient.destport) ? xclient.destport: undefined));
+    connection.set('remote.ip', xclient.addr);
+    connection.set('remote.host', ((xclient.name) ? xclient.name : undefined));
+    connection.set('remote.login', ((xclient.login) ? xclient.login : undefined));
+    connection.set('hello.host', ((xclient.helo) ? xclient.helo : undefined));
+    connection.set('local.ip', ((xclient.destaddr) ? xclient.destaddr : undefined));
+    connection.set('local.port', ((xclient.destport) ? xclient.destport: undefined));
     if (xclient.proto) {
         connection.set('hello', 'verb', ((xclient.proto === 'esmtp') ? 'EHLO' : 'HELO'));
     }
