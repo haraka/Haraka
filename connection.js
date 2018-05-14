@@ -237,28 +237,46 @@ class Connection {
             peerCertificate: obj.peerCertificate,
         }
     }
-    set (obj, prop, val) {
-        if (!this[obj]) this.obj = {};   // initialize
+    set (prop_str, val) {
+        if (arguments.length === 3) {
+            prop_str = `${arguments[0]}.${arguments[1]}`;
+            val = arguments[2];
+        }
 
-        this[obj][prop] = val;  // normalized property location
+        const path_parts = prop_str.split('.');
+        let loc = this;
+        for (let i=0; i < path_parts.length; i++) {
+            const part = path_parts[i];
+
+            // while another part remains
+            if (i < (path_parts.length - 1)) {
+                if (loc[part] === undefined) loc[part] = {};   // initialize
+                loc = loc[part];   // descend
+                continue;
+            }
+
+            // last part, so assign the value
+            loc[part] = val;
+        }
 
         // Set is_private automatically when remote.ip is set
-        if (obj === 'remote' && prop === 'ip') {
-            this.set('remote', 'is_private', net_utils.is_private_ip(this.remote.ip));
+        if (prop_str === 'remote.ip') {
+            this.set('remote.is_private', net_utils.is_private_ip(this.remote.ip));
         }
 
         // sunset 3.0.0
-        if (obj === 'hello' && prop === 'verb') {
+        if (prop_str === 'hello.verb') {
             this.greeting = val;
         }
-        else if (obj === 'tls' && prop === 'enabled') {
+        else if (prop_str === 'tls.enabled') {
             this.using_tls = val;
         }
-        else if (obj === 'proxy' && prop === 'ip') {
+        else if (prop_str === 'proxy.ip') {
             this.haproxy_ip = val;
         }
         else {
-            this[`${obj}_${prop}`] = val;
+            const legacy_name = prop_str.split('.').join('_');
+            this[legacy_name] = val;
         }
         // /sunset
     }
@@ -1204,15 +1222,15 @@ class Connection {
         );
 
         this.reset_transaction(function () {
-            self.set('proxy', 'ip', self.remote.ip);
-            self.set('proxy', 'type', 'haproxy');
+            self.set('proxy.ip', self.remote.ip);
+            self.set('proxy.type', 'haproxy');
             self.relaying = false;
-            self.set('local', 'ip', dst_ip);
-            self.set('local', 'port', parseInt(dst_port, 10));
-            self.set('remote', 'ip', src_ip);
-            self.set('remote', 'port', parseInt(src_port, 10));
-            self.set('remote', 'host', null);
-            self.set('hello', 'host', null);
+            self.set('local.ip', dst_ip);
+            self.set('local.port', parseInt(dst_port, 10));
+            self.set('remote.ip', src_ip);
+            self.set('remote.port', parseInt(src_port, 10));
+            self.set('remote.host', null);
+            self.set('hello.host', null);
             plugins.run_hooks('connect_init', self);
         });
     }
@@ -1311,8 +1329,7 @@ class Connection {
         let results;
         let from;
         try {
-            results = rfc1869.parse("mail", line, config.get('strict_rfc1869') &&
-                      !this.relaying);
+            results = rfc1869.parse("mail", line, config.get('strict_rfc1869') && !this.relaying);
             from    = new Address (results.shift());
         }
         catch (err) {
@@ -1370,8 +1387,7 @@ class Connection {
         let results;
         let recip;
         try {
-            results = rfc1869.parse("rcpt", line, config.get('strict_rfc1869') &&
-                          !this.relaying);
+            results = rfc1869.parse("rcpt", line, config.get('strict_rfc1869') && !this.relaying);
             recip   = new Address(results.shift());
         }
         catch (err) {
