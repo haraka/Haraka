@@ -4,8 +4,9 @@
   * queue/qmail-queue: fix a 2nd crash bug when client disconnects unexpectedly #2360
   * remove desconstruction of SMTP commands to prevent exception #2398
 * Changes
-  * process\_title: add total recipients, avg rcpts/msg, recipients/sec cur/avg/max and messages/conn
-  * when relaying is set in a transaction, don't persist beyond the transaction
+  * process\_title: add total recipients, avg rcpts/msg, recipients/sec cur/avg/max and messages/conn #2389
+  * when relaying is set in a transaction, don't persist beyond the transaction #2393
+  * connection.set supports dot delimited path syntax #2390
   * remove deprecated (since 2.8.16) ./dsn.js
 
 ## 2.8.18 - Mar 8, 2018
