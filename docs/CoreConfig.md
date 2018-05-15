@@ -1,7 +1,7 @@
 Core Configuration Files
 ========================
 
-See [Logging](Logging).
+See [Logging](Logging.md).
 
 The Haraka core reads some configuration files to determine a few actions:
 
@@ -26,8 +26,7 @@ The list of plugins to load
   * listen\_host, port - the host and port to listen on (default: ::0 and 25)
   * listen - (default: [::0]:25) Comma separated IP:Port addresses to listen on
   * inactivity\_time - how long to let clients idle in seconds (default: 300)
-  * nodes - if [cluster][1] (or node version >= 0.8) is available, specifies how
-    many processes to fork off. Can be the string "cpus" to fork off as many
+  * nodes - specifies how many processes to fork. The string "cpus" will fork as many
     children as there are CPUs (default: 0, which disables cluster mode)
   * user - optionally a user to drop privileges to. Can be a string or UID.
   * group - optionally a group to drop privileges to. Can be a string or GID.
@@ -42,8 +41,6 @@ The list of plugins to load
     specify -1 to disable spooling completely or 0 to force all messages to be spooled to disk.
   * graceful\_shutdown - (default: false) enable this to wait for sockets on shutdown instead of closing them quickly
   * force_shutdown_timeout - (default: 30) number of seconds to wait for a graceful shutdown
-
-[1]: http://learnboost.github.com/cluster/
 
 * me
 
@@ -116,19 +113,18 @@ The list of plugins to load
 
 * outbound.disabled
 
-  Put a `1` in this file to temporarily disable outbound delivery. Useful to
-  do while you're figuring out network issues, or just testing things.
+  Put a `1` in this file to temporarily disable outbound delivery. Useful 
+  while figuring out network issues or testing.
 
 * outbound.bounce\_message
 
-  The bounce message should delivery of the mail fail. See the source of. The
-  default is normally fine. Bounce messages contain a number of template
+  The bounce message if delivery of the message fails. The default is normally fine. Bounce messages contain a number of template
   replacement values which are best discovered by looking at the source code.
 
 * haproxy\_hosts
 
   A list of HAProxy hosts that Haraka should enable the PROXY protocol from.
-  See HAProxy.md
+  See [HAProxy.md](HAProxy.md)
 
 * strict\_rfc1869
 
