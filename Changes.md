@@ -1,6 +1,7 @@
 ## x.y.z - unreleased
 
 * Fixes
+  * when installing, creates config/me if missing #2413
   * queue/qmail-queue: fix a 2nd crash bug when client disconnects unexpectedly #2360
   * remove desconstruction of SMTP commands to prevent exception #2398
 * Changes
