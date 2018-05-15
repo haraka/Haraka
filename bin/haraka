@@ -209,7 +209,7 @@ function copyFile (srcFile, dstFile) {
 function setupHostname (confPath) {
     mkDir(confPath);
 
-    const hostname = `${os.hostname()}\n`;
+    const hostname = `${os.hostname()}${os.EOL}`;
 
     ['me','host_list'].forEach(f => {
         const cfPath = path.join(confPath, f);
