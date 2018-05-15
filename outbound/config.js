@@ -11,6 +11,7 @@ function load_config () {
             '-always_split',
             '+enable_tls',
             '-ipv6_enabled',
+            '-received_header_disabled'
         ],
     }, function () {
         load_config();
@@ -40,6 +41,9 @@ function load_config () {
     }
     if (!cfg.ipv6_enabled && config.get('outbound.ipv6_enabled')) {
         cfg.ipv6_enabled = true;
+    }
+    if (!cfg.received_header_disabled && config.get('outbound.received_header_disabled')) {
+        cfg.received_header_disabled = true;
     }
     if (!cfg.received_header) {
         cfg.received_header = config.get('outbound.received_header') || 'Haraka outbound';

@@ -8,6 +8,7 @@
   * when relaying is set in a transaction, don't persist beyond the transaction #2393
   * connection.set supports dot delimited path syntax #2390
   * remove deprecated (since 2.8.16) ./dsn.js
+  * add `received_header_disabled` outbound option to disable injecting new Received header
 
 ## 2.8.18 - Mar 8, 2018
 
