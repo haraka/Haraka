@@ -210,7 +210,7 @@ exports.parse_x509 = string => {
     return res;
 }
 
-exports.load_tls_ini = () => {
+exports.load_tls_ini = (opts) => {
     const tlss = this;
 
     log.loginfo('loading tls.ini');
@@ -256,8 +256,10 @@ exports.load_tls_ini = () => {
 
     tlss.cfg = cfg;
 
-    tlss.applySocketOpts('*');
-    tlss.load_default_opts();
+    if (!opts || opts.role === 'server') {
+        tlss.applySocketOpts('*');
+        tlss.load_default_opts();
+    }
 
     return cfg;
 }

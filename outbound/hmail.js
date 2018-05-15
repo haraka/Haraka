@@ -430,7 +430,7 @@ class HMailItem extends events.EventEmitter {
             "auth": [],
         };
 
-        const tls_config = obtls.tls_socket.load_tls_ini();
+        const tls_config = obtls.tls_socket.load_tls_ini({role: 'client'});
 
         const send_command = socket.send_command = function (cmd, data) {
             if (!socket.writable) {
