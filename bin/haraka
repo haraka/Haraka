@@ -208,20 +208,19 @@ function copyFile (srcFile, dstFile) {
 
 function setupHostname (confPath) {
     mkDir(confPath);
-    const hlPath = path.join(confPath, 'host_list');
-    try {
-        if (fs.statSync(hlPath).isFile()) return;
-    }
-    catch (ignore) {}
 
-    const hostname = os.hostname() + "\n";
-    try {
-        const fd = fs.openSync(hlPath, 'w');
-        fs.writeSync(fd, hostname, null);
-    }
-    catch (e) {
-        warning("Unable to write config/host_list file: " + e);
-    }
+    const hostname = `${os.hostname()}\n`;
+
+    ['me','host_list'].forEach(f => {
+        const cfPath = path.join(confPath, f);
+        try {
+            if (fs.statSync(cfPath).isFile()) return;
+            fs.writeFileSync(cfPath, hostname);
+        }
+        catch (e) {
+            warning(`Unable to write to config/${f}: ${e.message}`);
+        }
+    })
 }
 
 function setupBaseConfig (confPath) {
