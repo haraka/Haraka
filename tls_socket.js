@@ -354,8 +354,7 @@ exports.load_default_opts = () => {
             if (!keyFileName) return;
             const key = tlss.config.get(keyFileName, 'binary');
             if (!key) {
-                log.logerror("tls key " + keyFileName + " could not be loaded.");
-                log.logerror(tlss.config);
+                log.logerror(`tls key ${path.join(tlss.config.root_path, keyFileName)} could not be loaded.`);
             }
             return key;
         })
@@ -367,7 +366,7 @@ exports.load_default_opts = () => {
             if (!certFileName) return;
             const cert = tlss.config.get(certFileName, 'binary');
             if (!cert) {
-                log.logerror("tls cert " + certFileName + " could not be loaded.");
+                log.logerror(`tls cert ${path.join(tlss.config.root_path, certFileName)} could not be loaded.`);
             }
             return cert;
         })
@@ -666,7 +665,9 @@ function connect (port, host, cb) {
         socket.clean();
         cryptoSocket.removeAllListeners('data');
 
-        options = Object.assign(options, certsByHost['*']);
+        if (exports.tls_valid) {
+            options = Object.assign(options, certsByHost['*']);
+        }
         options.socket = cryptoSocket;
 
         const cleartext = new tls.connect(options);
