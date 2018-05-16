@@ -293,7 +293,9 @@ exports.from_match = function (next, connection) {
             return next();
         }
     } catch (e) {
-        plugin.logwarn(`address-rfc2822 plugin returning: ${e.message}`);
+        plugin.logwarn(`address-rfc2822 plugin for "${hdr_from.trim()}" returning: ${e.message}`);
+        connection.transaction.results.add(plugin, {fail: 'from_match(rfc_violation)'});
+        return next();
     }
 
     if (env_addr.address().toLowerCase() === hdr_addr.address.toLowerCase()) {
