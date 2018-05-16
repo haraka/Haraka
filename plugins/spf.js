@@ -2,6 +2,7 @@
 
 const SPF = require('./spf').SPF;
 const net_utils = require('haraka-net-utils');
+const DSN = require('haraka-dsn');
 
 exports.register = function () {
     const plugin = this;
@@ -30,6 +31,7 @@ exports.load_config = function () {
             '-deny.helo_softfail',
             '-deny.helo_fail',
             '-deny.helo_permerror',
+            '-deny.openspf_text',
 
             '-deny.mfrom_softfail',
             '-deny.mfrom_fail',
@@ -42,6 +44,9 @@ exports.load_config = function () {
             '-deny_relay.mfrom_softfail',
             '-deny_relay.mfrom_fail',
             '-deny_relay.mfrom_permerror',
+
+            '-bypass.relaying',
+            '-bypass.auth',
         ]
     },
     function () { plugin.load_config(); }
@@ -66,13 +71,18 @@ exports.load_config = function () {
     if (!plugin.cfg.relay) {
         plugin.cfg.relay = { context: 'sender' };  // default/legacy
     }
-}
+
+    plugin.cfg.lookup_timeout = plugin.cfg.main.lookup_timeout || 30;
+};
 
 exports.hook_helo = exports.hook_ehlo = function (next, connection, helo) {
     const plugin = this;
 
     // Bypass private IPs
-    if (connection.remote.is_private) { return next(); }
+    if (net_utils.is_private_ip(connection.remote_ip)) {
+        connection.results.add(plugin, {scope: 'helo', skip: 'private_ip'});
+        return next();
+    }
 
     // RFC 4408, 2.1: "SPF clients must be prepared for the "HELO"
     //           identity to be malformed or an IP address literal.
@@ -87,9 +97,9 @@ exports.hook_helo = exports.hook_ehlo = function (next, connection, helo) {
         timeout = true;
         connection.logerror(plugin, 'timeout');
         return next();
-    }, (plugin.timeout-1) * 1000);
-
-    spf.check_host(connection.remote.ip, helo, null, function (err, result) {
+    }, plugin.cfg.lookup_timeout * 1000);
+    spf.hello_host = helo;
+    spf.check_host(connection.remote_ip, helo, null, function (err, result) {
         if (timer) clearTimeout(timer);
         if (timeout) return;
         if (err) {
@@ -116,11 +126,17 @@ exports.hook_mail = function (next, connection, params) {
     // For messages from private IP space...
     if (connection.remote.is_private) {
         if (!connection.relaying) return next();
-        if (connection.relaying && plugin.cfg.relay.context !== 'myself') return next();
-    }
+        if (connection.relaying && plugin.cfg.relay.context !== 'myself') return next(CONT, 'envelope from private IP space');
+    } // TODO: txn.results.add(plugin, {skip: 'envelope_private_ip'});
 
     const txn = connection.transaction;
     if (!txn) return next();
+
+    // bypass auth'ed or relay'ing hosts if told to
+    if (exports.bypass_hosts(connection)) {
+        txn.results.add(plugin, {skip: 'envelope_host_bypass'});
+        return next(CONT, 'host bypass requested');
+    }
 
     const mfrom = params[0].address();
     const host = params[0].host;
@@ -148,7 +164,7 @@ exports.hook_mail = function (next, connection, params) {
         timeout = true;
         connection.logerror(plugin, 'timeout');
         return next();
-    }, (plugin.timeout-1) * 1000);
+    }, plugin.cfg.lookup_timeout * 1000);
 
     spf.helo = connection.hello.host;
 
@@ -175,7 +191,7 @@ exports.hook_mail = function (next, connection, params) {
             domain: host,
             emit: true,
         });
-        plugin.return_results(next, connection, spf, 'mfrom', result, `<${mfrom}>`);
+        plugin.return_results(next, connection, spf, 'mfrom', result, mfrom);
     };
 
     // typical inbound (!relay)
@@ -187,6 +203,9 @@ exports.hook_mail = function (next, connection, params) {
     if (plugin.cfg.relay.context === 'sender') {
         return spf.check_host(connection.remote.ip, host, mfrom, ch_cb);
     }
+
+    // outbound (relaying), context=myself, private IP
+    if (net_utils.is_private_ip(connection.remote_ip)) return next();
 
     // outbound (relaying), context=myself
     net_utils.get_public_ip(function (e, my_public_ip) {
@@ -226,9 +245,11 @@ exports.log_result = function (connection, scope, host, mfrom, result, ip) {
 
 exports.return_results = function (next, connection, spf, scope, result, sender) {
     const plugin = this;
-    const msgpre = `sender ${sender}`;
+    const msgpre = (scope === 'helo') ? `sender ${sender}` : `sender <${sender}>`;
     const deny = connection.relaying ? 'deny_relay' : 'deny';
     const defer = connection.relaying ? 'defer_relay' : 'defer';
+    const sender_id = (scope === 'helo') ? connection.hello_host : sender;
+    let text = DSN.sec_unauthorized(`http://www.openspf.org/Why?s=${scope}&id=${sender_id}&ip=${connection.remote_ip}`);
 
     switch (result) {
         case spf.SPF_NONE:
@@ -237,12 +258,14 @@ exports.return_results = function (next, connection, spf, scope, result, sender)
             return next();
         case spf.SPF_SOFTFAIL:
             if (plugin.cfg[deny][`${scope}_softfail`]) {
-                return next(DENY, `${msgpre} SPF SoftFail`);
+                text = plugin.cfg[deny]['openspf_text'] ? text : `${msgpre} SPF SoftFail`;
+                return next(DENY, text);
             }
             return next();
         case spf.SPF_FAIL:
             if (plugin.cfg[deny][`${scope}_fail`]) {
-                return next(DENY, `${msgpre} SPF Fail`);
+                text = plugin.cfg[deny]['openspf_text'] ? text : `${msgpre} SPF Fail`;
+                return next(DENY, text);
             }
             return next();
         case spf.SPF_TEMPERROR:
@@ -270,4 +293,16 @@ exports.save_to_header = function (connection, spf, result, mfrom, host, id, ip)
     connection.transaction.add_leading_header('Received-SPF',
         `${spf.result(result)} (${plugin.config.get('me')}: domain of ${host}${result === spf.SPF_PASS ? ' designates ' : ' does not designate '}${connection.remote.ip} as permitted sender) receiver=${plugin.config.get('me')}; identity=${id}; client-ip=${ip ? ip : connection.remote.ip}; helo=${connection.hello.host}; envelope-from=<${mfrom}>`
     );
-}
+};
+
+exports.bypass_hosts = function(connection) {
+    var plugin = this;
+
+    var cbypass = plugin.cfg.bypass;
+
+    return cbypass && (
+            (cbypass.relaying && connection.relaying)
+                ||
+            (cbypass.auth && connection.notes.auth_user));
+
+};
