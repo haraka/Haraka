@@ -98,6 +98,23 @@ Server.flushQueue = function (domain) {
     }
 }
 
+Server.listOPool = ()=> {
+    if (!Server.cluster) {
+        let out = (server.notes.pool && Object.keys(server.notes.pool).length > 0 ) ?
+            Object.keys(server.notes.pool).map((name) => {
+                let instance = server.notes.pool[name];
+                return `[${instance.inUseObjectsCount()}/${instance.getPoolSize()}] ${name}`;
+            })
+            : ['EMPTY Outbound POOL'];
+        return {output: out};
+    }
+
+    return {output: ['NOT supported in cluster mode']};
+    // for (const id in cluster.workers) {
+    //     cluster.workers[id].send({event: 'outbound.flush_queue', domain: domain});
+    // }
+}
+
 let gracefull_in_progress = false;
 
 Server.gracefulRestart = function () {
@@ -224,22 +241,25 @@ Server.sendToMaster = function (command, params) {
     // console.log("Send to master: ", command);
     if (Server.cluster) {
         if (Server.cluster.isMaster) {
-            Server.receiveAsMaster(command, params);
+            return Server.receiveAsMaster(command, params);
         }
         else {
             process.send({cmd: command, params: params});
         }
     }
     else {
-        Server.receiveAsMaster(command, params);
+        return Server.receiveAsMaster(command, params);
     }
 }
 
 Server.receiveAsMaster = function (command, params) {
     if (!Server[command]) {
-        logger.logerror(`Invalid command: ${command}`);
+        logger.logerror(`Unknown command: ${command}`);
+        return {output: ['Unknown command'], error: true}
     }
-    Server[command].apply(Server, params);
+
+    let ret = Server[command].apply(Server, params);
+    return ((ret instanceof Object || ret === undefined) ? ret : {output: [ret]});
 }
 
 function messageHandler (worker, msg, handle) {

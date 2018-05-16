@@ -37,7 +37,12 @@ class Transaction {
             accept: 0,
             tempfail: 0,
             reject: 0,
-        }
+        };
+        this.msg_status = {
+            accepted:   false,
+            tempfailed: false,
+            rejected:   false
+        };
         this.data_post_start = null;
         this.data_post_delay = 0;
         this.encoding = 'utf8';

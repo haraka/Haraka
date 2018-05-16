@@ -96,6 +96,7 @@ exports.send_email = function () {
     // set MAIL FROM address, and parse if it's not an Address object
     if (from instanceof Address) {
         transaction.mail_from = from;
+        if (from.hack) transaction.notes = from.hack;
     }
     else {
         try {
@@ -238,7 +239,7 @@ exports.send_trans_email = function (transaction, next) {
         transaction.add_header('Date', utils.date_to_str(new Date()));
     }
 
-    transaction.add_leading_header('Received', `(${cfg.received_header}); ${utils.date_to_str(new Date())}`);
+    transaction.add_leading_header('Received', `(${cfg.received_header}) with LOCAL id ${transaction.uuid}; ${utils.date_to_str(new Date())}`);
 
     const connection = {
         transaction: transaction,
@@ -246,7 +247,7 @@ exports.send_trans_email = function (transaction, next) {
 
     logger.add_log_methods(connection);
     if (!transaction.results) {
-        logger.logerror('adding missing results store');
+        logger.loginfo('adding missing results store');
         transaction.results = new ResultStore(connection);
     }
 

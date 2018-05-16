@@ -389,6 +389,11 @@ exports.forward_dns = function (next, connection, helo) {
         return next();
     }
 
+    if (net_utils.is_ip_literal(helo)) {
+        connection.results.add(plugin, {skip: 'forward_dns(literal)'});
+        return next();
+    }
+
     if (!connection.results.has('helo.checks', 'pass', /^valid_hostname/)) {
         connection.results.add(plugin, {fail: 'forward_dns(invalid_hostname)'});
         if (plugin.cfg.reject.forward_dns) {
@@ -397,14 +402,9 @@ exports.forward_dns = function (next, connection, helo) {
         return next();
     }
 
-    if (net_utils.is_ip_literal(helo)) {
-        connection.results.add(plugin, {skip: 'forward_dns(literal)'});
-        return next();
-    }
-
     const cb = function (err, ips) {
         if (err) {
-            if (err.code === dns.NOTFOUND || err.code === dns.NODATA) {
+            if (err.code === dns.NOTFOUND || err.code === dns.NODATA || err.code === dns.SERVFAIL) {
                 connection.results.add(plugin, {fail: 'forward_dns('+err.code+')'});
                 return next();
             }
@@ -412,7 +412,7 @@ exports.forward_dns = function (next, connection, helo) {
                 connection.results.add(plugin, {fail: 'forward_dns('+err.code+')'});
                 return next(DENYSOFT, "DNS timeout resolving your HELO hostname");
             }
-            connection.results.add(plugin, {err: 'forward_dns('+err+')'});
+            connection.results.add(plugin, {err: 'forward_dns('+err+')', emit_log_level: 'warn'});
             return next();
         }
 
@@ -530,15 +530,14 @@ exports.get_a_records = function (host, cb) {
         if (timed_out) { return; }
         if (timer) { clearTimeout(timer); }
         let err = '';
-        if (errs) {
-            for (let f=0; f < errs.length; f++) {
-                switch (errs[f].code) {
-                    case dns.NODATA:
-                    case dns.NOTFOUND:
-                        break;
-                    default:
-                        err += errs[f].message;
-                }
+        for (let error of errs) {
+            switch (error.code) {
+                case dns.NODATA:
+                case dns.NOTFOUND:
+                case dns.SERVFAIL:
+                    continue;
+                default:
+                    err = `${err}, ${error.message}`;
             }
         }
         if (!ips.length && err) { return cb(err, ips); }
