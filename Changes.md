@@ -1,8 +1,9 @@
-## x.y.z - unreleased
+## 2.8.19 - Apr 12, 2018
 
 * New features
     * outbound: received_header=disabled supresses outbound Received header addition. #2409
 * Fixes
+    * config.get('me'): replace with a net-utils call that falls back go os.hostname() #2344
     * when installing, creates config/me if missing #2413
     * queue/qmail-queue: fix a 2nd crash bug when client disconnects unexpectedly #2360
     * remove desconstruction of SMTP commands to prevent exception #2398
@@ -163,7 +164,7 @@
     * update js-yaml to version 3.10.0 #2097
     * repackage p0f plugin to NPM #2076
     * ES6: replace var with const or let  #2073
-    
+
 * New Features
     * Bounces can have an HTML part #2091
 * Fixes

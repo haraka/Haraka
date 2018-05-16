@@ -248,7 +248,7 @@ exports.auth_cram_md5 = function (next, connection, params) {
             AUTH_METHOD_CRAM_MD5);
     }
 
-    const ticket = `<${plugin.hexi(Math.floor(Math.random() * 1000000))}. ${plugin.hexi(Date.now())}@${plugin.config.get('me')}>`;
+    const ticket = `<${plugin.hexi(Math.floor(Math.random() * 1000000))}. ${plugin.hexi(Date.now())}@${connection.local.host}>`;
 
     connection.loginfo(plugin, `ticket: ${ticket}`);
     connection.respond(334, utils.base64(ticket), function () {
