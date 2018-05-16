@@ -213,13 +213,12 @@ function setupHostname (confPath) {
 
     ['me','host_list'].forEach(f => {
         const cfPath = path.join(confPath, f);
-        try {
-            if (fs.statSync(cfPath).isFile()) return;
-            fs.writeFileSync(cfPath, hostname);
-        }
-        catch (e) {
-            warning(`Unable to write to config/${f}: ${e.message}`);
-        }
+
+        try { if (fs.statSync(cfPath).isFile()) return; }
+        catch (ignore) { }
+
+        try { fs.writeFileSync(cfPath, hostname); }
+        catch (err) { warning(`Unable to write to config/${f}: ${err.message}`); }
     })
 }
 
