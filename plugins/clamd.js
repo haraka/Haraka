@@ -232,7 +232,15 @@ exports.hook_data_post = function (next, connection) {
             const addressInfo = hp === null ? '' : ` ${hp.address}:${hp.port}`;
             connection.logdebug(plugin, `connected to host${addressInfo}`);
             socket.write("zINSTREAM\0", function () {
-                txn.message_stream.pipe(socket, { clamd_style: true });
+                // We *MUST* ensure that the first line is a Received: header
+                // otherwise ClamAV will not interpret the input as MIME...
+                const fake_rcvd = "Received: from fake\r\n";
+                const buf = new Buffer(fake_rcvd.length+4);
+                buf.writeUInt32BE(fake_rcvd.length, 0);
+                buf.write(fake_rcvd, 4);
+                socket.write(buf, function () {
+                    txn.message_stream.pipe(socket, { clamd_style: true });
+                });
             });
         });
 
