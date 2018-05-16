@@ -1,14 +1,17 @@
 ## 2.8.19 - Apr 12, 2018
 
+* New features
+    * outbound: received_header=disabled supresses outbound Received header addition. #2409
 * Fixes
-  * queue/qmail-queue: fix a 2nd crash bug when client disconnects unexpectedly #2360
-  * config.get('me'): replace with a net-utils call that falls back go os.hostname() #2344
-  * remove desconstruction of SMTP commands to prevent exception #2398
+    * config.get('me'): replace with a net-utils call that falls back go os.hostname() #2344
+    * when installing, creates config/me if missing #2413
+    * queue/qmail-queue: fix a 2nd crash bug when client disconnects unexpectedly #2360
+    * remove desconstruction of SMTP commands to prevent exception #2398
 * Changes
-  * process\_title: add total recipients, avg rcpts/msg, recipients/sec cur/avg/max and messages/conn #2389
-  * when relaying is set in a transaction, don't persist beyond the transaction #2393
-  * connection.set supports dot delimited path syntax #2390
-  * remove deprecated (since 2.8.16) ./dsn.js
+    * process\_title: add total recipients, avg rcpts/msg, recipients/sec cur/avg/max and messages/conn #2389
+    * when relaying is set in a transaction, don't persist beyond the transaction #2393
+    * connection.set supports dot delimited path syntax #2390
+    * remove deprecated (since 2.8.16) ./dsn.js
 
 ## 2.8.18 - Mar 8, 2018
 
