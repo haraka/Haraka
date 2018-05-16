@@ -157,12 +157,10 @@ function copyDir (srcPath, dstPath) {
     mkDir(dstPath);
     const files = fs.readdirSync(srcPath);
 
-    for (let i = 0; i < files.length; i++) {
+    for (let i=0; i < files.length; i++) {
 
         // Ignore ".*"
-        if (/^\./.test(files[i])) {
-            continue;
-        }
+        if (/^\./.test(files[i])) continue;
 
         const srcFile = path.join(srcPath, files[i]);
         const dstFile = path.join(dstPath, files[i]);
@@ -185,12 +183,10 @@ function copyFile (srcFile, dstFile) {
 
     try {
         if (fs.statSync(dstFile).isFile()) {
-            // File exists
-            warning("EEXIST, File exists '" + dstFile + "'");
+            warning(`EEXIST, File exists '${dstFile}'`);
             return;
         }
-        // Something other than a file exists
-        throw "EEXIST but not a file: '" + dstFile + "'";
+        throw `EEXIST but not a file: '${dstFile}'`;
     }
     catch (e) {
         // File NOT exists
@@ -200,7 +196,7 @@ function copyFile (srcFile, dstFile) {
             create(dstFile)
         }
         else {
-            console.log('copy ' + srcFile + ' to ' + dstFile);
+            console.log(`copy ${srcFile} to ${dstFile}`);
             throw e;
         }
     }
