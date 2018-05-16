@@ -44,6 +44,9 @@ exports.hook_data_post = function (next, connection) {
     const plugin = this;
     if (plugin.msg_too_big(connection)) return next();
 
+    const header_name = plugin.cfg.main['spamc_auth_header'] || 'X-Haraka-Relay';
+    connection.transaction.remove_header(header_name); // just to be safe
+
     const username        = plugin.get_spamd_username(connection);
     const headers         = plugin.get_spamd_headers(connection, username);
     const socket          = plugin.get_spamd_socket(next, connection, headers);
@@ -246,17 +249,20 @@ exports.get_spamd_username = function (connection) {
 }
 
 exports.get_spamd_headers = function (connection, username) {
+    const plugin = this;
     // http://svn.apache.org/repos/asf/spamassassin/trunk/spamd/PROTOCOL
     const headers = [
-        'HEADERS SPAMC/1.3',
+        'HEADERS SPAMC/1.4',
         `User: ${username}`,
         '',
         `X-Envelope-From: ${connection.transaction.mail_from.address()}`,
         `X-Haraka-UUID: ${connection.transaction.uuid}`,
     ];
-    if (connection.relaying) {
-        headers.push('X-Haraka-Relay: true');
+    if (connection.notes.auth_user) {
+        const header_name = plugin.cfg.main['spamc_auth_header'] || 'X-Haraka-Relay';
+        headers.push(header_name + ': true');
     }
+
     return headers;
 }
 
@@ -269,10 +275,13 @@ exports.get_spamd_socket = function (next, connection, headers) {
     const results_timeout = parseInt(plugin.cfg.main.results_timeout) || 300;
 
     socket.on('connect', function () {
+        // Abort if the transaction is gone
         if (!connection.transaction) {
+            plugin.logwarn(connection, 'Transaction gone, cancelling SPAMD connection');
             socket.end();
-            return;
+            return false;  // next() is called in socket.on('end')
         }
+
         this.is_connected = true;
         // Reset timeout
         this.setTimeout(results_timeout * 1000);
@@ -327,9 +336,17 @@ exports.msg_too_big = function (connection) {
 exports.log_results = function (connection, spamd_response) {
     const plugin = this;
     const cfg = plugin.cfg.main;
-    connection.loginfo(plugin, `status=${spamd_response.flag}` +
-          `, score=${spamd_response.score}` +
-          `, required=${spamd_response.reqd}` +
-          `, reject=${((connection.relaying) ? (cfg.relay_reject_threshold || cfg.reject_threshold) : cfg.reject_threshold)}` +
-          `, tests="${spamd_response.tests}"`);
+    const reject_threshold = (connection.relaying) ? (cfg.relay_reject_threshold || cfg.reject_threshold) : cfg.reject_threshold;
+
+    const human_text = `status=${spamd_response.flag}` +
+              `, score=${spamd_response.score}` +
+              `, required=${spamd_response.reqd}` +
+              `, reject=${reject_threshold}` +
+              `, tests="${spamd_response.tests}"`;
+
+    connection.transaction.results.add(plugin, {
+        human: human_text,
+        status: spamd_response.flag, score: parseFloat(spamd_response.score),
+        required: parseFloat(spamd_response.reqd), reject: reject_threshold, tests: spamd_response.tests,
+        emit: true});
 }
