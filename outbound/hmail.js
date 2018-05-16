@@ -430,8 +430,6 @@ class HMailItem extends events.EventEmitter {
             "auth": [],
         };
 
-        const tls_config = obtls.tls_socket.load_tls_ini({role: 'client'});
-
         const send_command = socket.send_command = function (cmd, data) {
             if (!socket.writable) {
                 self.logerror("Socket writability went away");
@@ -491,17 +489,18 @@ class HMailItem extends events.EventEmitter {
             }
 
             // TLS
-            if (!secured && smtp_properties.tls && cfg.enable_tls &&
-                !net_utils.ip_in_list(tls_config.no_tls_hosts, self.todo.domain) &&
-                !net_utils.ip_in_list(tls_config.no_tls_hosts, host) )
-            {
-                socket.on('secure', function () {
-                    // Set this flag so we don't try STARTTLS again if it
-                    // is incorrectly offered at EHLO once we are secured.
-                    secured = true;
-                    send_command(mx.using_lmtp ? 'LHLO' : 'EHLO', mx.bind_helo);
-                });
-                return send_command('STARTTLS');
+            if (!secured && smtp_properties.tls && cfg.enable_tls) {
+                const tls_cfg = obtls.tls_socket.load_tls_ini({role: 'client'});
+                if (!net_utils.ip_in_list(tls_cfg.no_tls_hosts, host) &&
+                    !net_utils.ip_in_list(tls_cfg.no_tls_hosts, self.todo.domain)) {
+                    socket.on('secure', function () {
+                        // Set this flag so we don't try STARTTLS again if it
+                        // is incorrectly offered at EHLO once we are secured.
+                        secured = true;
+                        send_command(mx.using_lmtp ? 'LHLO' : 'EHLO', mx.bind_helo);
+                    });
+                    return send_command('STARTTLS');
+                }
             }
 
             // IMPORTANT: do STARTTLS before AUTH for security
