@@ -258,9 +258,9 @@ exports.get_spamd_headers = function (connection, username) {
         `X-Envelope-From: ${connection.transaction.mail_from.address()}`,
         `X-Haraka-UUID: ${connection.transaction.uuid}`,
     ];
-    if (connection.notes.auth_user) {
+    if (connection.relaying) {
         const header_name = plugin.cfg.main['spamc_auth_header'] || 'X-Haraka-Relay';
-        headers.push(header_name + ': true');
+        headers.push(`${header_name}: true`);
     }
 
     return headers;
