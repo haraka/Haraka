@@ -68,8 +68,8 @@ enables more flexibility in mail delivery and bounce handling.
 
 * `received_header`
 
-Default: "Haraka outbound". This text is attached as a `Received` header to
-all outbound mail just before it is queued.
+Default: "Haraka outbound". If this text is any string except *disabled*, the
+string is attached as a `Received` header to all outbound mail just before it is queued.
 
 * `connect_timeout`
 
