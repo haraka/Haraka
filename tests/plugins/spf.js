@@ -10,8 +10,8 @@ const spf          = new SPF();
 const _set_up = function (done) {
 
     this.plugin = new fixtures.plugin('spf');
-    this.plugin.load_config();
     this.plugin.timeout = 8000;
+    this.plugin.load_config();
 
     // uncomment this line to see detailed SPF evaluation
     this.plugin.SPF.prototype.log_debug = function () {};
