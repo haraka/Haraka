@@ -73,7 +73,7 @@ exports.load_config = function () {
         plugin.cfg.relay = { context: 'sender' };  // default/legacy
     }
 
-    plugin.cfg.lookup_timeout = plugin.cfg.main.lookup_timeout || 30;
+    plugin.cfg.lookup_timeout = plugin.cfg.main.lookup_timeout || plugin.timeout - 1;
 };
 
 exports.hook_helo = exports.hook_ehlo = function (next, connection, helo) {

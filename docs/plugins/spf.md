@@ -33,7 +33,7 @@ denying mail from senders whose SPF fails the checks.
 Additional settings allow you to control the small things (defaults are shown):
 
     ; The lookup timeout, in seconds. Better set it to something much lower than this.
-    lookup_timeout = 30
+    lookup_timeout = 29
 
     ; bypass hosts that match these conditions
     [skip]
