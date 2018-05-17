@@ -771,7 +771,8 @@ class Connection {
             case constants.deny:
                 this.respond(500, msg || "Unrecognized command");
                 break;
-            case constants.denydisconnect,constants.denysoftdisconnect:
+            case constants.denydisconnect:
+            case constants.denysoftdisconnect:
                 this.respond(521, msg || "Unrecognized command", () => {
                     self.disconnect();
                 });
