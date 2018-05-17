@@ -2,11 +2,13 @@
 
 * New features
     * outbound: received_header=disabled supresses outbound Received header addition. #2409
+    * auth_base.js: `check_plain_passwd` and `check_cram_md5_passwd` can now pass `message` and `code` to callback routine
 * Fixes
     * when installing, creates config/me if missing #2413
     * queue/qmail-queue: fix a 2nd crash bug when client disconnects unexpectedly #2360
     * remove desconstruction of SMTP commands to prevent exception #2398
 * Changes
+    * Breaking: auth_base.js: don't set `connection.notes.auth_passwd` 
     * process\_title: add total recipients, avg rcpts/msg, recipients/sec cur/avg/max and messages/conn #2389
     * when relaying is set in a transaction, don't persist beyond the transaction #2393
     * connection.set supports dot delimited path syntax #2390
