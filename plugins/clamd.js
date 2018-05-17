@@ -181,7 +181,7 @@ exports.hook_data_post = function (next, connection) {
     const hosts = cfg.main.clamd_socket.split(/[,; ]+/);
 
     if (cfg.main.randomize_host_order) {
-        hosts.sort(function () {return 0.5 - Math.random();});
+        hosts.sort(function () { return 0.5 - Math.random(); });
     }
 
     function try_next_host () {
@@ -231,9 +231,9 @@ exports.hook_data_post = function (next, connection) {
             const hp = socket.address();
             const addressInfo = hp === null ? '' : ` ${hp.address}:${hp.port}`;
             connection.logdebug(plugin, `connected to host${addressInfo}`);
-            socket.write("zINSTREAM\0", function () {
+            plugin.send_clamd_predata(socket, () => {
                 txn.message_stream.pipe(socket, { clamd_style: true });
-            });
+            })
         });
 
         let result = '';
@@ -313,6 +313,16 @@ exports.hook_data_post = function (next, connection) {
 
     // Start the process
     try_next_host();
+}
+
+exports.send_clamd_predata = function (socket, cb) {
+    socket.write("zINSTREAM\0", () => {
+        const received = 'Received: from Haraka clamd plugin\r\n';
+        const buf = Buffer.alloc(received.length + 4);
+        buf.writeUInt32BE(received.length, 0);
+        buf.write(received, 4);
+        socket.write(buf, cb)
+    })
 }
 
 function clamd_connect (socket, host) {

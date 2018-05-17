@@ -3,6 +3,7 @@
 * New features
     * outbound: received_header=disabled supresses outbound Received header addition. #2409
 * Fixes
+    * Always prefix ClamAV with a Received header #2407
     * plugins/data.headers.js: wrap address-rfc2822 header parse into try block #2373
     * tls_socket: as client, only apply TLS opts if config is valid #2414
     * when installing, creates config/me if missing #2413
