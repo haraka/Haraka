@@ -44,9 +44,10 @@ exports.load_config = function () {
             '-deny_relay.mfrom_softfail',
             '-deny_relay.mfrom_fail',
             '-deny_relay.mfrom_permerror',
+            '-deny_relay.openspf_text',
 
-            '-bypass.relaying',
-            '-bypass.auth',
+            '-skip.relaying',
+            '-skip.auth',
         ]
     },
     function () { plugin.load_config(); }
@@ -79,7 +80,7 @@ exports.hook_helo = exports.hook_ehlo = function (next, connection, helo) {
     const plugin = this;
 
     // Bypass private IPs
-    if (net_utils.is_private_ip(connection.remote_ip)) {
+    if (connection.remote.is_private) {
         connection.results.add(plugin, {scope: 'helo', skip: 'private_ip'});
         return next();
     }
@@ -99,7 +100,7 @@ exports.hook_helo = exports.hook_ehlo = function (next, connection, helo) {
         return next();
     }, plugin.cfg.lookup_timeout * 1000);
     spf.hello_host = helo;
-    spf.check_host(connection.remote_ip, helo, null, function (err, result) {
+    spf.check_host(connection.remote.ip, helo, null, function (err, result) {
         if (timer) clearTimeout(timer);
         if (timeout) return;
         if (err) {
@@ -205,7 +206,7 @@ exports.hook_mail = function (next, connection, params) {
     }
 
     // outbound (relaying), context=myself, private IP
-    if (net_utils.is_private_ip(connection.remote_ip)) return next();
+    if (connection.remote.is_private) return next();
 
     // outbound (relaying), context=myself
     net_utils.get_public_ip(function (e, my_public_ip) {
@@ -249,7 +250,7 @@ exports.return_results = function (next, connection, spf, scope, result, sender)
     const deny = connection.relaying ? 'deny_relay' : 'deny';
     const defer = connection.relaying ? 'defer_relay' : 'defer';
     const sender_id = (scope === 'helo') ? connection.hello_host : sender;
-    let text = DSN.sec_unauthorized(`http://www.openspf.org/Why?s=${scope}&id=${sender_id}&ip=${connection.remote_ip}`);
+    let text = DSN.sec_unauthorized(`http://www.openspf.org/Why?s=${scope}&id=${sender_id}&ip=${connection.remote.ip}`);
 
     switch (result) {
         case spf.SPF_NONE:
@@ -258,13 +259,13 @@ exports.return_results = function (next, connection, spf, scope, result, sender)
             return next();
         case spf.SPF_SOFTFAIL:
             if (plugin.cfg[deny][`${scope}_softfail`]) {
-                text = plugin.cfg[deny]['openspf_text'] ? text : `${msgpre} SPF SoftFail`;
+                text = plugin.cfg[deny].openspf_text ? text : `${msgpre} SPF SoftFail`;
                 return next(DENY, text);
             }
             return next();
         case spf.SPF_FAIL:
             if (plugin.cfg[deny][`${scope}_fail`]) {
-                text = plugin.cfg[deny]['openspf_text'] ? text : `${msgpre} SPF Fail`;
+                text = plugin.cfg[deny].openspf_text ? text : `${msgpre} SPF Fail`;
                 return next(DENY, text);
             }
             return next();
@@ -295,14 +296,14 @@ exports.save_to_header = function (connection, spf, result, mfrom, host, id, ip)
     );
 };
 
-exports.bypass_hosts = function(connection) {
-    var plugin = this;
+exports.bypass_hosts = function (connection) {
+    const plugin = this;
 
-    var cbypass = plugin.cfg.bypass;
+    const cbypass = plugin.cfg.skip;
 
     return cbypass && (
-            (cbypass.relaying && connection.relaying)
-                ||
-            (cbypass.auth && connection.notes.auth_user));
+        (cbypass.relaying && connection.relaying)
+            ||
+        (cbypass.auth && connection.notes.auth_user));
 
 };
