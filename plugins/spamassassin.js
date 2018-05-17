@@ -44,7 +44,7 @@ exports.hook_data_post = function (next, connection) {
     const plugin = this;
     if (plugin.msg_too_big(connection)) return next();
 
-    const header_name = plugin.cfg.main['spamc_auth_header'] || 'X-Haraka-Relay';
+    const header_name = plugin.cfg.main.spamc_auth_header || 'X-Haraka-Relay';
     connection.transaction.remove_header(header_name); // just to be safe
 
     const username        = plugin.get_spamd_username(connection);
@@ -259,7 +259,7 @@ exports.get_spamd_headers = function (connection, username) {
         `X-Haraka-UUID: ${connection.transaction.uuid}`,
     ];
     if (connection.relaying) {
-        const header_name = plugin.cfg.main['spamc_auth_header'] || 'X-Haraka-Relay';
+        const header_name = plugin.cfg.main.spamc_auth_header || 'X-Haraka-Relay';
         headers.push(`${header_name}: true`);
     }
 
@@ -279,7 +279,7 @@ exports.get_spamd_socket = function (next, connection, headers) {
         if (!connection.transaction) {
             plugin.logwarn(connection, 'Transaction gone, cancelling SPAMD connection');
             socket.end();
-            return false;  // next() is called in socket.on('end')
+            return;
         }
 
         this.is_connected = true;

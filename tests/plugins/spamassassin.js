@@ -9,7 +9,7 @@ const stub         = fixtures.stub.stub;
 function _set_up (done) {
 
     this.plugin = new fixtures.plugin('spamassassin');
-    this.plugin.cfg = { main: { } };
+    this.plugin.cfg = { main: {spamc_auth_header: 'X-Haraka-Relaying123' } };
 
     this.connection = Connection.createConnection();
     this.connection.transaction = stub;
@@ -78,11 +78,32 @@ exports.get_spamd_headers = {
         this.connection.transaction.uuid = 'THIS-IS-A-TEST-UUID';
         const headers = this.plugin.get_spamd_headers(this.connection, 'test_user');
         const expected_headers = [
-            'HEADERS SPAMC/1.3',
+            'HEADERS SPAMC/1.4',
             'User: test_user',
             '',
             'X-Envelope-From: matt@example.com',
             'X-Haraka-UUID: THIS-IS-A-TEST-UUID'
+        ];
+        test.deepEqual(headers, expected_headers);
+        test.done();
+    },
+}
+
+exports.get_spamd_headers_relaying = {
+    setUp : _set_up,
+    'returns a spamd protocol request when relaying': function (test) {
+        test.expect(1);
+        this.connection.transaction.mail_from = new Address.Address('<matt@example.com>');
+        this.connection.transaction.uuid = 'THIS-IS-A-TEST-UUID';
+        this.connection.set('relaying', true);
+        const headers = this.plugin.get_spamd_headers(this.connection, 'test_user');
+        const expected_headers = [
+            'HEADERS SPAMC/1.4',
+            'User: test_user',
+            '',
+            'X-Envelope-From: matt@example.com',
+            'X-Haraka-UUID: THIS-IS-A-TEST-UUID',
+            'X-Haraka-Relaying123: true',
         ];
         test.deepEqual(headers, expected_headers);
         test.done();
