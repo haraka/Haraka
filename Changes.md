@@ -3,6 +3,7 @@
 * Fixes
   * queue/qmail-queue: fix a 2nd crash bug when client disconnects unexpectedly #2360
   * remove desconstruction of SMTP commands to prevent exception #2398
+  * plugins/data.headers.js: wrap address-rfc2822 header parse into try block #2373
 * Changes
   * process\_title: add total recipients, avg rcpts/msg, recipients/sec cur/avg/max and messages/conn #2389
   * when relaying is set in a transaction, don't persist beyond the transaction #2393
