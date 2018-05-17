@@ -769,16 +769,18 @@ class Connection {
                 plugins.run_hooks(msg, this);
                 break;
             case constants.deny:
-                this.respond(500, msg || "Unrecognized command");
+            case constants.denysoft:
+                this.respond(500, msg || `Unrecognized command: ${this.current_line}`);
                 break;
             case constants.denydisconnect:
-                this.respond(521, msg || "Unrecognized command", () => {
+            case constants.denysoftdisconnect:
+                this.respond(521, msg || `Unrecognized command: ${this.current_line}`, () => {
                     self.disconnect();
                 });
                 break;
             default:
                 this.errors++;
-                this.respond(500, msg || "Unrecognized command");
+                this.respond(500, msg || `Unrecognized command: ${this.current_line}`);
         }
     }
     connect_respond (retval, msg) {
