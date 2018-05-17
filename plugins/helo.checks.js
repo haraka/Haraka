@@ -530,7 +530,7 @@ exports.get_a_records = function (host, cb) {
         if (timed_out) { return; }
         if (timer) { clearTimeout(timer); }
         let err = '';
-        for (let error of errs) {
+        for (const error of errs) {
             switch (error.code) {
                 case dns.NODATA:
                 case dns.NOTFOUND:
