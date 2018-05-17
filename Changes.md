@@ -3,6 +3,7 @@
 * New features
     * outbound: received_header=disabled supresses outbound Received header addition. #2409
 * Fixes
+    * tls_socket: as client, only apply TLS opts if config is valid #2414
     * when installing, creates config/me if missing #2413
     * queue/qmail-queue: fix a 2nd crash bug when client disconnects unexpectedly #2360
     * remove desconstruction of SMTP commands to prevent exception #2398
