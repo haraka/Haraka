@@ -46,7 +46,9 @@ class AttachmentStream extends Stream {
     pipe (dest, options) {
         const self = this;
         this.paused = false;
-        Stream.prototype.pipe.call(this, dest, options);
+
+        const pipe = Stream.prototype.pipe.call(this, dest, options);
+
         dest.on('drain', function () {
             // console.log("YYY: DRAIN!!!");
             if (self.paused) self.resume();
@@ -59,6 +61,8 @@ class AttachmentStream extends Stream {
             // console.log("YYY: CLOSE!!");
             if (self.paused) self.resume();
         });
+
+        return pipe;
     }
 
     setEncoding (enc) {
