@@ -103,9 +103,9 @@ exports.check_user = function (next, connection, credentials, method) {
 
     // valid: (true|false)
     // opts: ({ message, code }|String)
-    var passwd_ok = function (valid, opts) {
-        var status_code = (typeof(opts) == 'object' && opts['code']) || (valid ? 235 : 535);
-        var status_message = (typeof(opts) == 'object' ? opts['message'] : opts) ||
+    function passwd_ok (valid, opts) {
+        const status_code = (typeof(opts) === 'object' && opts.code) || (valid ? 235 : 535);
+        const status_message = (typeof(opts) === 'object' ? opts.message : opts) ||
                 (valid  ? '2.7.0 Authentication successful' : '5.7.8 Authentication failed');
 
         if (valid) {
@@ -116,7 +116,7 @@ exports.check_user = function (next, connection, credentials, method) {
             connection.results.add({name:'auth'}, {
                 pass: plugin.name,
                 method: method,
-                user: credentials[0]
+                user: credentials[0],
             });
 
             connection.respond(status_code, status_message, function () {
@@ -150,7 +150,7 @@ exports.check_user = function (next, connection, credentials, method) {
                 });
             });
         }, delay * 1000);
-    };
+    }
 
     if (method === AUTH_METHOD_PLAIN || method === AUTH_METHOD_LOGIN) {
         plugin.check_plain_passwd(connection, credentials[0], credentials[1],
