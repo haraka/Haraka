@@ -258,6 +258,7 @@ Server.receiveAsMaster = function (command, params) {
         return {output: ['Unknown command'], error: true}
     }
 
+    // FIXME: ripe for exploitation. Introduce an allowed commands list.
     const ret = Server[command].apply(Server, params);
     return ((ret instanceof Object || ret === undefined) ? ret : {output: [ret]});
 }
