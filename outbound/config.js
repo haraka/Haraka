@@ -1,6 +1,6 @@
-"use strict";
+'use strict';
 
-const config      = require('haraka-config');
+const config = require('haraka-config');
 
 let cfg = module.exports;
 

@@ -98,7 +98,7 @@ class Body extends events.EventEmitter {
 
         enc = enc.toLowerCase().split("\n").pop().trim();
         if (!enc.match(/^base64|quoted-printable|[78]bit$/i)) {
-            logger.logerror(`Invalid CTE on email: ${enc}, using 8bit`);
+            logger.logwarn(`Invalid CTE on email: ${enc}, using 8bit`);
             enc = '8bit';
         }
         enc = enc.replace(/^quoted-printable$/i, 'qp');
