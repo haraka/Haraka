@@ -1665,28 +1665,28 @@ class Connection {
             case constants.deny:
                 this.respond(550, msg || "Message denied", () => {
                     self.msg_count.reject++;
-                    self.transaction.msg_status.rejected = true;
+                    self.transaction.msg_status = 'rejected';
                     self.reset_transaction(() => self.resume());
                 });
                 break;
             case constants.denydisconnect:
                 this.respond(550, msg || "Message denied",() => {
                     self.msg_count.reject++;
-                    self.transaction.msg_status.rejected = true;
+                    self.transaction.msg_status = 'rejected';
                     self.disconnect();
                 });
                 break;
             case constants.denysoft:
                 this.respond(450, msg || "Message denied temporarily", () =>  {
                     self.msg_count.tempfail++;
-                    self.transaction.msg_status.tempfailed = true;
+                    self.transaction.msg_status = 'deferred';
                     self.reset_transaction(() => self.resume());
                 });
                 break;
             case constants.denysoftdisconnect:
                 this.respond(450, msg || "Message denied temporarily",() => {
                     self.msg_count.tempfail++;
-                    self.transaction.msg_status.tempfailed = true;
+                    self.transaction.msg_status = 'deferred';
                     self.disconnect();
                 });
                 break;
@@ -1762,28 +1762,28 @@ class Connection {
             case constants.deny:
                 this.respond(550, msg, () => {
                     self.msg_count.reject++;
-                    self.transaction.msg_status.rejected = true;
+                    self.transaction.msg_status = 'rejected';
                     self.reset_transaction(() => self.resume());
                 });
                 break;
             case constants.denydisconnect:
                 this.respond(550, msg, () => {
                     self.msg_count.reject++;
-                    self.transaction.msg_status.rejected = true;
+                    self.transaction.msg_status = 'rejected';
                     self.disconnect();
                 });
                 break;
             case constants.denysoft:
                 this.respond(450, msg, () => {
                     self.msg_count.tempfail++;
-                    self.transaction.msg_status.tempfailed = true;
+                    self.transaction.msg_status = 'deferred';
                     self.reset_transaction(() => self.resume());
                 });
                 break;
             case constants.denysoftdisconnect:
                 this.respond(450, msg, () => {
                     self.msg_count.tempfail++;
-                    self.transaction.msg_status.tempfailed = true;
+                    self.transaction.msg_status = 'deferred';
                     self.disconnect();
                 });
                 break;
@@ -1799,7 +1799,7 @@ class Connection {
                             if (!msg2) msg2 = self.queue_msg(retval2, msg2);
                             self.respond(550, msg2, () => {
                                 self.msg_count.reject++;
-                                self.transaction.msg_status.rejected = true;
+                                self.transaction.msg_status = 'rejected';
                                 self.reset_transaction(() => {
                                     self.resume();
                                 });
@@ -1809,7 +1809,7 @@ class Connection {
                             self.logerror(`Unrecognized response from outbound layer: ${retval2} : ${msg2}`);
                             self.respond(550, msg2 || "Internal Server Error", () => {
                                 self.msg_count.reject++;
-                                self.transaction.msg_status.rejected = true;
+                                self.transaction.msg_status = 'rejected';
                                 self.reset_transaction(() => {
                                     self.resume();
                                 });
@@ -1840,28 +1840,28 @@ class Connection {
             case constants.deny:
                 this.respond(550, msg, () => {
                     self.msg_count.reject++;
-                    self.transaction.msg_status.rejected = true;
+                    self.transaction.msg_status = 'rejected';
                     self.reset_transaction(() =>  self.resume());
                 });
                 break;
             case constants.denydisconnect:
                 this.respond(550, msg, () => {
                     self.msg_count.reject++;
-                    self.transaction.msg_status.rejected = true;
+                    self.transaction.msg_status = 'rejected';
                     self.disconnect();
                 });
                 break;
             case constants.denysoft:
                 this.respond(450, msg, () => {
                     self.msg_count.tempfail++;
-                    self.transaction.msg_status.tempfailed = true;
+                    self.transaction.msg_status = 'deferred';
                     self.reset_transaction(() => self.resume());
                 });
                 break;
             case constants.denysoftdisconnect:
                 this.respond(450, msg, () => {
                     self.msg_count.tempfail++;
-                    self.transaction.msg_status.tempfailed = true;
+                    self.transaction.msg_status = 'deferred';
                     self.disconnect();
                 });
                 break;
@@ -1869,7 +1869,7 @@ class Connection {
                 if (!msg) msg = 'Queuing declined or disabled, try later';
                 this.respond(451, msg, () => {
                     self.msg_count.tempfail++;
-                    self.transaction.msg_status.tempfailed = true;
+                    self.transaction.msg_status = 'deferred';
                     self.reset_transaction(() => self.resume());
                 });
                 break;
@@ -1889,7 +1889,7 @@ class Connection {
 
         this.respond(250, params, () => {
             self.msg_count.accept++;
-            if (self.transaction) self.transaction.msg_status.accepted = true;
+            if (self.transaction) self.transaction.msg_status = 'accepted';
             self.reset_transaction(() => self.resume());
         });
     }
