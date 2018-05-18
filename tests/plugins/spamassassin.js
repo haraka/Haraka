@@ -9,7 +9,7 @@ const stub         = fixtures.stub.stub;
 function _set_up (done) {
 
     this.plugin = new fixtures.plugin('spamassassin');
-    this.plugin.cfg = { main: {spamc_auth_header: 'X-Haraka-Relaying123' } };
+    this.plugin.cfg = { main: { spamc_auth_header: 'X-Haraka-Relaying123' } };
 
     this.connection = Connection.createConnection();
     this.connection.transaction = stub;
@@ -37,10 +37,11 @@ exports.register = {
 exports.load_spamassassin_ini = {
     setUp : _set_up,
     'loads spamassassin.ini': function (test) {
-        test.expect(2);
+        test.expect(3);
         test.equal(undefined, this.plugin.cfg.main.spamd_socket);
         this.plugin.load_spamassassin_ini();
         test.ok(this.plugin.cfg.main.spamd_socket);
+        test.equal(this.plugin.cfg.main.spamc_auth_header, 'X-Haraka-Relay');
         test.done();
     },
 }

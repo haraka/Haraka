@@ -24,6 +24,7 @@ exports.load_spamassassin_ini = function () {
         max_size:     500000,
         old_headers_action: "rename",
         subject_prefix: "*** SPAM ***",
+        spamc_auth_header: 'X-Haraka-Relay',
     };
 
     for (const key in defaults) {
@@ -44,8 +45,7 @@ exports.hook_data_post = function (next, connection) {
     const plugin = this;
     if (plugin.msg_too_big(connection)) return next();
 
-    const header_name = plugin.cfg.main.spamc_auth_header || 'X-Haraka-Relay';
-    connection.transaction.remove_header(header_name); // just to be safe
+    connection.transaction.remove_header(plugin.cfg.main.spamc_auth_header); // just to be safe
 
     const username        = plugin.get_spamd_username(connection);
     const headers         = plugin.get_spamd_headers(connection, username);
@@ -259,8 +259,7 @@ exports.get_spamd_headers = function (connection, username) {
         `X-Haraka-UUID: ${connection.transaction.uuid}`,
     ];
     if (connection.relaying) {
-        const header_name = plugin.cfg.main.spamc_auth_header || 'X-Haraka-Relay';
-        headers.push(`${header_name}: true`);
+        headers.push(`${plugin.cfg.main.spamc_auth_header}: true`);
     }
 
     return headers;
