@@ -2,6 +2,8 @@
 // This cannot be used on its own. You need to inherit from it.
 // See plugins/auth/flat_file.js for an example.
 
+// Note: You can disable setting `connection.notes.auth_passwd` by `plugin.blankout_password = true`
+
 const crypto = require('crypto');
 const utils = require('haraka-utils');
 const AUTH_COMMAND = 'AUTH';
@@ -123,6 +125,7 @@ exports.check_user = function (next, connection, credentials, method) {
                 connection.authheader = "(authenticated bits=0)\n";
                 connection.auth_results(`auth=pass (${method.toLowerCase()})`);
                 connection.notes.auth_user = credentials[0];
+                if (!plugin.blankout_password) connection.notes.auth_passwd = credentials[1];
                 return next(OK);
             });
             return;

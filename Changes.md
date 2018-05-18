@@ -11,7 +11,6 @@
     * queue/qmail-queue: fix a 2nd crash bug when client disconnects unexpectedly #2360
     * remove desconstruction of SMTP commands to prevent exception #2398
 * Changes
-    * Breaking: auth_base.js: don't set `connection.notes.auth_passwd` 
     * process\_title: add total recipients, avg rcpts/msg, recipients/sec cur/avg/max and messages/conn #2389
     * when relaying is set in a transaction, don't persist beyond the transaction #2393
     * connection.set supports dot delimited path syntax #2390

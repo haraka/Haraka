@@ -276,6 +276,35 @@ exports.check_user_custom_opts = {
     },
 }
 
+exports.auth_notes_are_set = {
+    setUp : _set_up_2,
+    'bad auth: no notes should be set': function (test) {
+        const credentials = ['matt','ttam'];
+        this.plugin.check_user((code) => {
+            test.equal(this.connection.notes.auth_user, undefined);
+            test.equal(this.connection.notes.auth_passwd, undefined);
+            test.done();
+        }, this.connection, credentials, 'PLAIN');
+    },
+    'good auth: dont store password': function (test) {
+        const creds = ['test','testpass'];
+        this.plugin.blankout_password = true;
+        this.plugin.check_user((code) => {
+            test.equal(this.connection.notes.auth_user, creds[0]);
+            test.equal(this.connection.notes.auth_passwd, undefined);
+            test.done();
+        }, this.connection, creds, 'PLAIN');
+    },
+    'good auth: store password (default)': function (test) {
+        const creds = ['test','testpass'];
+        this.plugin.check_user((code) => {
+            test.equal(this.connection.notes.auth_user, creds[0]);
+            test.equal(this.connection.notes.auth_passwd, creds[1]);
+            test.done();
+        }, this.connection, creds, 'PLAIN');
+    },
+}
+
 exports.hook_unrecognized_command = {
     setUp : _set_up,
     'AUTH type FOO': function (test) {
