@@ -172,17 +172,23 @@ class HMailItem extends events.EventEmitter {
         plugins.run_hooks('send_email', this);
     }
 
-    send_email_respond (retval, delay_seconds) {
-        if (retval === constants.delay) {
-            // Try again in 'delay' seconds.
-            this.logdebug(`Delivery of this email delayed for ${delay_seconds} seconds`);
-            const hmail = this;
-            hmail.next_cb();
-            temp_fail_queue.add(delay_seconds * 1000, function () { delivery_queue.push(hmail); });
-        }
-        else {
-            this.logdebug(`Sending mail: ${this.filename}`);
-            this.get_mx();
+    send_email_respond (retval, param) {
+        const hmail = this;
+
+        switch (retval) {
+            case constants.delay:
+                // Try again in 'delay' seconds.
+                this.logdebug(`Delivery of this email delayed for ${param} seconds`);
+                hmail.next_cb();
+                temp_fail_queue.add(param * 1000, function () { delivery_queue.push(hmail) });
+                break;
+            case constants.deny:
+                this.logwarn(`send_email plugin returned DENY: ${param}`);
+                this.bounce(param);
+                break;
+            default:
+                this.logdebug(`Sending mail: ${hmail.filename}`);
+                this.get_mx();
         }
     }
 
@@ -361,19 +367,23 @@ class HMailItem extends events.EventEmitter {
             host = mx.path;
         }
 
-        this.loginfo(`Attempting to deliver to: ${host}:${port}${mx.using_lmtp ? " using LMTP" : ""} (${delivery_queue.length()}) (${temp_fail_queue.length()})`);
+        this.loginfo(`Attempting to deliver${mx.bind ? ' {'+mx.bind+'} ': ' '}to: ${host}:${port}${mx.using_lmtp ? " using LMTP" : ""} (${delivery_queue.length()}) (${temp_fail_queue.length()})`);
         client_pool.get_client(port, host, mx.bind, mx.path ? true : false, function (err, socket) {
             if (err) {
                 logger.logerror(`[outbound] Failed to get pool entry: ${err}`);
                 // try next host
                 return self.try_deliver_host(mx);
             }
+
+            self.todo.client_uuid = socket.__uuid;
+            self.loginfo(`initiating delivery`);
+
             self.try_deliver_host_on_socket(mx, host, port, socket);
         });
     }
 
     try_deliver_host_on_socket (mx, host, port, socket) {
-        const self            = this;
+        const self          = this;
         let processing_mail = true;
 
         socket.removeAllListeners('error');
@@ -743,6 +753,7 @@ class HMailItem extends events.EventEmitter {
                         rcpt.dsn_smtp_response = response.join(' ');
                         rcpt.dsn_remote_mta = mx.exchange;
                     });
+                    self.lognotice(`recipient domain <${self.todo.domain}> rejected: ${reason}`);
                     send_command(cfg.pool_concurrency_max ? 'RSET' : 'QUIT');
                     processing_mail = false;
                     return self.bounce(reason, { mx: mx });
@@ -1182,6 +1193,8 @@ class HMailItem extends events.EventEmitter {
         }
 
         const from = new Address ('<>');
+        if (msg && msg.notes) from.hack = msg.notes; // FIXME: special hack to pass params to bounce creation routine
+
         const recip = new Address (this.todo.mail_from.user, this.todo.mail_from.host);
         this.populate_bounce_message(from, recip, err, function (err2, data_lines) {
             if (err2) {
@@ -1215,6 +1228,7 @@ class HMailItem extends events.EventEmitter {
             'host': host,
             'ip': ip,
             'port': port,
+            'bindip': (this.bind_ip || 'default'),
             'mode': mode,
             'tls': ((secured) ? 'Y' : 'N'),
             'auth': ((authenticated) ? 'Y' : 'N'),
@@ -1223,7 +1237,10 @@ class HMailItem extends events.EventEmitter {
             'fails': this.num_failures,
             'rcpts': `${ok_recips.length}/${fail_recips.length}/${bounce_recips.length}`
         });
-        plugins.run_hooks("delivered", this, [host, ip, response, delay, port, mode, ok_recips, secured, authenticated]);
+
+        const hook_params = [host, ip, response, delay, port, mode, ok_recips, secured, authenticated];
+        hook_params.bind_ip = this.bind_ip;
+        plugins.run_hooks("delivered", this, hook_params);
     }
 
     discard () {
@@ -1264,7 +1281,7 @@ class HMailItem extends events.EventEmitter {
 
         const delay = Math.pow(2, (this.num_failures + 5));
 
-        plugins.run_hooks('deferred', this, {delay: delay, err: err});
+        plugins.run_hooks('deferred', this, {delay: delay, err: err, extra: extra});
     }
 
     deferred_respond (retval, msg, params) {
