@@ -43,7 +43,7 @@ Additional settings allow you to control the small things (defaults are shown):
     auth = false
 
 There's a special setting that would allow the plugin to emit a funny explanation text on SPF DENY, essentially meant to be visible to end-users that will receive the bounce. 
-The text is `http://www.openspf.org/Why?s=${scope}&id=${sender_id}&ip=${connection.remote.ip}` and is enalbed by:
+The text is `http://www.openspf.org/Why?s=${scope}&id=${sender_id}&ip=${connection.remote.ip}` and is enabled by:
 
     [deny]
     openspf_text = true

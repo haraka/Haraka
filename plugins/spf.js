@@ -81,14 +81,14 @@ exports.hook_helo = exports.hook_ehlo = function (next, connection, helo) {
 
     // Bypass private IPs
     if (connection.remote.is_private) {
-        connection.results.add(plugin, {scope: 'helo', skip: 'private_ip'});
+        connection.results.add(plugin, {skip: 'host(private_ip)'});
         return next();
     }
 
     // RFC 4408, 2.1: "SPF clients must be prepared for the "HELO"
     //           identity to be malformed or an IP address literal.
     if (net_utils.is_ip_literal(helo)) {
-        connection.results.add(plugin, {skip: 'ip_literal'});
+        connection.results.add(plugin, {skip: 'helo(ip_literal)'});
         return next();
     }
 
@@ -99,7 +99,7 @@ exports.hook_helo = exports.hook_ehlo = function (next, connection, helo) {
         connection.logerror(plugin, 'timeout');
         return next();
     }, plugin.cfg.lookup_timeout * 1000);
-    spf.hello_host = helo;
+
     spf.check_host(connection.remote.ip, helo, null, function (err, result) {
         if (timer) clearTimeout(timer);
         if (timeout) return;
@@ -124,19 +124,23 @@ exports.hook_helo = exports.hook_ehlo = function (next, connection, helo) {
 exports.hook_mail = function (next, connection, params) {
     const plugin = this;
 
-    // For messages from private IP space...
-    if (connection.remote.is_private) {
-        if (!connection.relaying) return next();
-        if (connection.relaying && plugin.cfg.relay.context !== 'myself') return next(CONT, 'envelope from private IP space');
-    } // TODO: txn.results.add(plugin, {skip: 'envelope_private_ip'});
-
     const txn = connection.transaction;
     if (!txn) return next();
 
     // bypass auth'ed or relay'ing hosts if told to
-    if (exports.bypass_hosts(connection)) {
-        txn.results.add(plugin, {skip: 'envelope_host_bypass'});
-        return next(CONT, 'host bypass requested');
+    const skip_reason = exports.skip_hosts(connection);
+    if (skip_reason) {
+        txn.results.add(plugin, {skip: `host(${skip_reason})`});
+        return next(CONT, `skipped because host(${skip_reason})`);
+    }
+
+    // For messages from private IP space...
+    if (connection.remote.is_private) {
+        if (!connection.relaying) return next();
+        if (connection.relaying && plugin.cfg.relay.context !== 'myself') {
+            txn.results.add(plugin, {skip: 'host(private_ip)'});
+            return next(CONT, 'envelope from private IP space');
+        }
     }
 
     const mfrom = params[0].address();
@@ -204,9 +208,6 @@ exports.hook_mail = function (next, connection, params) {
     if (plugin.cfg.relay.context === 'sender') {
         return spf.check_host(connection.remote.ip, host, mfrom, ch_cb);
     }
-
-    // outbound (relaying), context=myself, private IP
-    if (connection.remote.is_private) return next();
 
     // outbound (relaying), context=myself
     net_utils.get_public_ip(function (e, my_public_ip) {
@@ -287,7 +288,6 @@ exports.return_results = function (next, connection, spf, scope, result, sender)
 }
 
 exports.save_to_header = function (connection, spf, result, mfrom, host, id, ip) {
-    const plugin = this;
     // Add a trace header
     if (!connection) return;
     if (!connection.transaction) return;
@@ -296,14 +296,12 @@ exports.save_to_header = function (connection, spf, result, mfrom, host, id, ip)
     );
 };
 
-exports.bypass_hosts = function (connection) {
+exports.skip_hosts = function (connection) {
     const plugin = this;
 
     const cbypass = plugin.cfg.skip;
-
-    return cbypass && (
-        (cbypass.relaying && connection.relaying)
-            ||
-        (cbypass.auth && connection.notes.auth_user));
-
-};
+    if (cbypass) {
+        if (cbypass.relaying && connection.relaying) return 'relay';
+        if (cbypass.auth && connection.notes.auth_user) return 'auth';
+    }
+}
