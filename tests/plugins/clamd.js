@@ -1,5 +1,7 @@
 'use strict';
 
+const net          = require('net');
+const stream       = require('stream');
 const fixtures     = require('haraka-test-fixtures');
 
 const Connection   = fixtures.connection;
@@ -10,11 +12,7 @@ function _set_up (done) {
     this.plugin.register();
 
     this.connection = Connection.createConnection();
-
-    this.connection.transaction = {
-        notes: {},
-        results: new fixtures.results(this.plugin),
-    };
+    this.connection.init_transaction();
 
     done();
 }
@@ -69,7 +67,7 @@ exports.hook_data = {
         test.expect(2);
         test.equal(false, this.plugin.cfg.main.only_with_attachments);
         const next = function () {
-            test.equal(undefined, this.connection.transaction.parse_body);
+            test.equal(false, this.connection.transaction.parse_body);
             test.done();
         }.bind(this);
         this.plugin.hook_data(next, this.connection);
@@ -108,5 +106,30 @@ exports.hook_data_post = {
             test.done();
         }.bind(this);
         this.plugin.hook_data_post(next, this.connection);
+    },
+}
+
+exports.send_clamd_predata = {
+    setUp : _set_up,
+    'writes the proper commands to clamd socket': function (test) {
+        test.expect(1);
+        const server = new net.createServer((socket) => {
+            socket.on('data', (data) => {
+                test.ok(data.toString(), `zINSTREAM\0Received: from Haraka clamd plugin\r\n`)
+                // console.log(`${data.toString()}`)
+            })
+            socket.on('end', () => {
+                test.done()
+            })
+        })
+
+        server.listen(65535, () => {
+            const client = new net.Socket();
+            client.connect(65535, () => {
+                this.plugin.send_clamd_predata(client, () => {
+                    client.end()
+                })
+            })
+        })
     },
 }

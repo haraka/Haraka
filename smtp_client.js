@@ -439,7 +439,7 @@ exports.get_client_plugin = function (plugin, connection, c, callback) {
                 smtp_client.send_command(command, connection.hello.host);
             }
             else {
-                smtp_client.send_command(command, plugin.config.get('me'));
+                smtp_client.send_command(command, connection.local.host);
             }
         }
         smtp_client.on('greeting', helo);
