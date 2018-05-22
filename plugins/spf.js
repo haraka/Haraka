@@ -96,7 +96,7 @@ exports.hook_helo = exports.hook_ehlo = function (next, connection, helo) {
     const spf = new SPF();
     const timer = setTimeout(function () {
         timeout = true;
-        connection.logerror(plugin, 'timeout');
+        connection.loginfo(plugin, 'timeout');
         return next();
     }, plugin.cfg.lookup_timeout * 1000);
 
@@ -167,7 +167,7 @@ exports.hook_mail = function (next, connection, params) {
     let timeout = false;
     const timer = setTimeout(function () {
         timeout = true;
-        connection.logerror(plugin, 'timeout');
+        connection.loginfo(plugin, 'timeout');
         return next();
     }, plugin.cfg.lookup_timeout * 1000);
 
