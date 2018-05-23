@@ -236,7 +236,7 @@ class HMailItem extends events.EventEmitter {
     found_mx (err, mxs) {
         const hmail = this;
         if (err) {
-            this.logerror(`MX Lookup for ${this.todo.domain} failed: ${err}`);
+            this.lognotice(`MX Lookup for ${this.todo.domain} failed: ${err}`);
             if (err.code === dns.NXDOMAIN || err.code === dns.NOTFOUND) {
                 this.todo.rcpt_to.forEach(function (rcpt) {
                     hmail.extend_rcpt_with_dsn(rcpt, DSN.addr_bad_dest_system(`No Such Domain: ${hmail.todo.domain}`));
@@ -319,12 +319,12 @@ class HMailItem extends events.EventEmitter {
         // IS: IPv6 compatible
         dns.resolve(host, family, function (err, addresses) {
             if (err) {
-                self.logerror(`DNS lookup of ${host} failed: ${err}`);
+                self.lognotice(`DNS lookup of ${host} failed: ${err}`);
                 return self.try_deliver(); // try next MX
             }
             if (addresses.length === 0) {
                 // NODATA or empty host list
-                self.logerror(`DNS lookup of ${host} resulted in no data`);
+                self.lognotice(`DNS lookup of ${host} resulted in no data`);
                 return self.try_deliver(); // try next MX
             }
             self.hostlist = addresses;
@@ -364,7 +364,11 @@ class HMailItem extends events.EventEmitter {
         this.loginfo(`Attempting to deliver to: ${host}:${port}${mx.using_lmtp ? " using LMTP" : ""} (${delivery_queue.length()}) (${temp_fail_queue.length()})`);
         client_pool.get_client(port, host, mx.bind, mx.path ? true : false, function (err, socket) {
             if (err) {
-                logger.logerror(`[outbound] Failed to get pool entry: ${err}`);
+                if (err.match(/connection timed out|connect ECONNREFUSED/)) {
+                    logger.lognotice(`[outbound] Failed to get pool entry: ${err}`);
+                } else {
+                    logger.logerror(`[outbound] Failed to get pool entry: ${err}`);
+                }
                 // try next host
                 return self.try_deliver_host(mx);
             }
@@ -1199,7 +1203,7 @@ class HMailItem extends events.EventEmitter {
     }
 
     double_bounce (err) {
-        this.logerror(`Double bounce: ${err}`);
+        this.lognotice(`Double bounce: ${err}`);
         fs.unlink(this.path, function () {});
         this.next_cb();
         // TODO: fill this in... ?
