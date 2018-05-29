@@ -157,12 +157,10 @@ function copyDir (srcPath, dstPath) {
     mkDir(dstPath);
     const files = fs.readdirSync(srcPath);
 
-    for (let i = 0; i < files.length; i++) {
+    for (let i=0; i < files.length; i++) {
 
         // Ignore ".*"
-        if (/^\./.test(files[i])) {
-            continue;
-        }
+        if (/^\./.test(files[i])) continue;
 
         const srcFile = path.join(srcPath, files[i]);
         const dstFile = path.join(dstPath, files[i]);
@@ -185,12 +183,10 @@ function copyFile (srcFile, dstFile) {
 
     try {
         if (fs.statSync(dstFile).isFile()) {
-            // File exists
-            warning("EEXIST, File exists '" + dstFile + "'");
+            warning(`EEXIST, File exists '${dstFile}'`);
             return;
         }
-        // Something other than a file exists
-        throw "EEXIST but not a file: '" + dstFile + "'";
+        throw `EEXIST but not a file: '${dstFile}'`;
     }
     catch (e) {
         // File NOT exists
@@ -200,7 +196,7 @@ function copyFile (srcFile, dstFile) {
             create(dstFile)
         }
         else {
-            console.log('copy ' + srcFile + ' to ' + dstFile);
+            console.log(`copy ${srcFile} to ${dstFile}`);
             throw e;
         }
     }
@@ -208,20 +204,18 @@ function copyFile (srcFile, dstFile) {
 
 function setupHostname (confPath) {
     mkDir(confPath);
-    const hlPath = path.join(confPath, 'host_list');
-    try {
-        if (fs.statSync(hlPath).isFile()) return;
-    }
-    catch (ignore) {}
 
-    const hostname = os.hostname() + "\n";
-    try {
-        const fd = fs.openSync(hlPath, 'w');
-        fs.writeSync(fd, hostname, null);
-    }
-    catch (e) {
-        warning("Unable to write config/host_list file: " + e);
-    }
+    const hostname = `${os.hostname()}${os.EOL}`;
+
+    ['me','host_list'].forEach(f => {
+        const cfPath = path.join(confPath, f);
+
+        try { if (fs.statSync(cfPath).isFile()) return; }
+        catch (ignore) { }
+
+        try { fs.writeFileSync(cfPath, hostname); }
+        catch (err) { warning(`Unable to write to config/${f}: ${err.message}`); }
+    })
 }
 
 function setupBaseConfig (confPath) {

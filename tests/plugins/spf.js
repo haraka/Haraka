@@ -2,6 +2,7 @@
 
 const Address      = require('address-rfc2821').Address;
 const fixtures     = require('haraka-test-fixtures');
+const constants    = require('haraka-constants');
 
 const SPF          = require('../../spf').SPF;
 const spf          = new SPF();
@@ -9,8 +10,8 @@ const spf          = new SPF();
 const _set_up = function (done) {
 
     this.plugin = new fixtures.plugin('spf');
-    this.plugin.load_config();
     this.plugin.timeout = 8000;
+    this.plugin.load_config();
 
     // uncomment this line to see detailed SPF evaluation
     this.plugin.SPF.prototype.log_debug = function () {};
@@ -172,7 +173,7 @@ exports.hook_mail = {
     },
     'rfc1918 relaying': function (test) {
         function next () {
-            test.equal(undefined, arguments[0]);
+            test.ok([undefined, constants.CONT].includes(arguments[0]));
             test.done();
         }
         test.expect(1);

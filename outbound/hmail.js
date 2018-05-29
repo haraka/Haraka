@@ -236,7 +236,7 @@ class HMailItem extends events.EventEmitter {
     found_mx (err, mxs) {
         const hmail = this;
         if (err) {
-            this.logerror(`MX Lookup for ${this.todo.domain} failed: ${err}`);
+            this.lognotice(`MX Lookup for ${this.todo.domain} failed: ${err}`);
             if (err.code === dns.NXDOMAIN || err.code === dns.NOTFOUND) {
                 this.todo.rcpt_to.forEach(function (rcpt) {
                     hmail.extend_rcpt_with_dsn(rcpt, DSN.addr_bad_dest_system(`No Such Domain: ${hmail.todo.domain}`));
@@ -319,12 +319,12 @@ class HMailItem extends events.EventEmitter {
         // IS: IPv6 compatible
         dns.resolve(host, family, function (err, addresses) {
             if (err) {
-                self.logerror(`DNS lookup of ${host} failed: ${err}`);
+                self.lognotice(`DNS lookup of ${host} failed: ${err}`);
                 return self.try_deliver(); // try next MX
             }
             if (addresses.length === 0) {
                 // NODATA or empty host list
-                self.logerror(`DNS lookup of ${host} resulted in no data`);
+                self.lognotice(`DNS lookup of ${host} resulted in no data`);
                 return self.try_deliver(); // try next MX
             }
             self.hostlist = addresses;
@@ -364,7 +364,11 @@ class HMailItem extends events.EventEmitter {
         this.loginfo(`Attempting to deliver to: ${host}:${port}${mx.using_lmtp ? " using LMTP" : ""} (${delivery_queue.length()}) (${temp_fail_queue.length()})`);
         client_pool.get_client(port, host, mx.bind, mx.path ? true : false, function (err, socket) {
             if (err) {
-                logger.logerror(`[outbound] Failed to get pool entry: ${err}`);
+                if (err.match(/connection timed out|connect ECONNREFUSED/)) {
+                    logger.lognotice(`[outbound] Failed to get pool entry: ${err}`);
+                } else {
+                    logger.logerror(`[outbound] Failed to get pool entry: ${err}`);
+                }
                 // try next host
                 return self.try_deliver_host(mx);
             }
@@ -430,8 +434,6 @@ class HMailItem extends events.EventEmitter {
             "auth": [],
         };
 
-        const tls_config = net_utils.load_tls_ini();
-
         const send_command = socket.send_command = function (cmd, data) {
             if (!socket.writable) {
                 self.logerror("Socket writability went away");
@@ -491,20 +493,21 @@ class HMailItem extends events.EventEmitter {
             }
 
             // TLS
-            if (!net_utils.ip_in_list(tls_config.no_tls_hosts, self.todo.domain) &&
-                !net_utils.ip_in_list(tls_config.no_tls_hosts, host) &&
-                smtp_properties.tls && cfg.enable_tls && !secured)
-            {
-                socket.on('secure', function () {
-                    // Set this flag so we don't try STARTTLS again if it
-                    // is incorrectly offered at EHLO once we are secured.
-                    secured = true;
-                    send_command(mx.using_lmtp ? 'LHLO' : 'EHLO', mx.bind_helo);
-                });
-                return send_command('STARTTLS');
+            if (!secured && smtp_properties.tls && cfg.enable_tls) {
+                const tls_cfg = obtls.tls_socket.load_tls_ini({role: 'client'});
+                if (!net_utils.ip_in_list(tls_cfg.no_tls_hosts, host) &&
+                    !net_utils.ip_in_list(tls_cfg.no_tls_hosts, self.todo.domain)) {
+                    socket.on('secure', function () {
+                        // Set this flag so we don't try STARTTLS again if it
+                        // is incorrectly offered at EHLO once we are secured.
+                        secured = true;
+                        send_command(mx.using_lmtp ? 'LHLO' : 'EHLO', mx.bind_helo);
+                    });
+                    return send_command('STARTTLS');
+                }
             }
 
-            // IMPORTANT: we do STARTTLS before we attempt AUTH for extra security
+            // IMPORTANT: do STARTTLS before AUTH for security
             if (!authenticated && (mx.auth_user && mx.auth_pass)) {
                 // We have AUTH credentials to send for this domain
                 if (!(Array.isArray(smtp_properties.auth) && smtp_properties.auth.length)) {
@@ -604,257 +607,7 @@ class HMailItem extends events.EventEmitter {
             }
             self.logprotocol(`S: ${line}`);
             const matches = smtp_regexp.exec(line);
-            if (matches) {
-                let reason;
-                const code = matches[1];
-                const cont = matches[2];
-                const extc = matches[3];
-                const rest = matches[4];
-                response.push(rest);
-                if (cont === ' ') {
-                    if (code.match(/^2/)) {
-                        // Successful command, fall through
-                    }
-                    else if (code.match(/^3/) && command !== 'data') {
-                        if (authenticating) {
-                            const resp = response.join(' ');
-                            switch (mx.auth_type.toUpperCase()) {
-                                case 'LOGIN':
-                                    if (resp === 'VXNlcm5hbWU6') {
-                                        // Username:
-                                        return send_command(utils.base64(mx.auth_user));
-                                    }
-                                    else if (resp === 'UGFzc3dvcmQ6') {
-                                        // Password:
-                                        return send_command(utils.base64(mx.auth_pass));
-                                    }
-                                    break;
-                                case 'CRAM-MD5':
-                                    // The response is our challenge
-                                    return send_command(cram_md5_response(mx.auth_user, mx.auth_pass, resp));
-                                default:
-                                    // This shouldn't happen...
-                            }
-                        }
-                        // Error
-                        reason = response.join(' ');
-                        recipients.forEach(function (rcpt) {
-                            rcpt.dsn_action = 'delayed';
-                            rcpt.dsn_smtp_code = code;
-                            rcpt.dsn_smtp_extc = extc;
-                            rcpt.dsn_status = extc;
-                            rcpt.dsn_smtp_response = response.join(' ');
-                            rcpt.dsn_remote_mta = mx.exchange;
-                        });
-                        send_command(cfg.pool_concurrency_max ? 'RSET' : 'QUIT');
-                        processing_mail = false;
-                        return self.temp_fail(`Upstream error: ${code}${(extc) ? `${extc} ` : ''}${reason}`);
-                    }
-                    else if (code.match(/^4/)) {
-                        authenticating = false;
-                        if (/^rcpt/.test(command) || command === 'dot_lmtp') {
-                            if (command === 'dot_lmtp') last_recip = ok_recips.shift();
-                            // this recipient was rejected
-                            reason = `${code} ${(extc) ? `${extc} ` : ''}${response.join(' ')}`;
-                            self.lognotice(`recipient ${last_recip} deferred: ${reason}`);
-                            last_recip.reason = reason;
-
-                            last_recip.dsn_action = 'delayed';
-                            last_recip.dsn_smtp_code = code;
-                            last_recip.dsn_smtp_extc = extc;
-                            last_recip.dsn_status = extc;
-                            last_recip.dsn_smtp_response = response.join(' ');
-                            last_recip.dsn_remote_mta = mx.exchange;
-
-                            fail_recips.push(last_recip);
-                            if (command === 'dot_lmtp') {
-                                response = [];
-                                if (ok_recips.length === 0) {
-                                    return finish_processing_mail(true);
-                                }
-                            }
-                        }
-                        else if (processing_mail) {
-                            reason = response.join(' ');
-                            recipients.forEach(function (rcpt) {
-                                rcpt.dsn_action = 'delayed';
-                                rcpt.dsn_smtp_code = code;
-                                rcpt.dsn_smtp_extc = extc;
-                                rcpt.dsn_status = extc;
-                                rcpt.dsn_smtp_response = response.join(' ');
-                                rcpt.dsn_remote_mta = mx.exchange;
-                            });
-                            send_command(cfg.pool_concurrency_max ? 'RSET' : 'QUIT');
-                            processing_mail = false;
-                            return self.temp_fail(`Upstream error: ${code} ${(extc) ? `${extc} ` : ''}${reason}`);
-                        }
-                        else {
-                            reason = response.join(' ');
-                            self.lognotice(`Error - but not processing mail: ${code} ${((extc) ? `${extc} ` : '')}${reason}`);
-                            // Release back to the pool and instruct it to terminate this connection
-                            return client_pool.release_client(socket, port, host, mx.bind, true);
-                        }
-                    }
-                    else if (code.match(/^5/)) {
-                        authenticating = false;
-                        if (command === 'ehlo') {
-                            // EHLO command was rejected; fall-back to HELO
-                            return send_command('HELO', mx.bind_helo);
-                        }
-                        reason = `${code} ${(extc) ? `${extc} ` : ''}${response.join(' ')}`;
-                        if (/^rcpt/.test(command) || command === 'dot_lmtp') {
-                            if (command === 'dot_lmtp') last_recip = ok_recips.shift();
-                            self.lognotice(`recipient ${last_recip} rejected: ${reason}`);
-                            last_recip.reason = reason;
-
-                            last_recip.dsn_action = 'failed';
-                            last_recip.dsn_smtp_code = code;
-                            last_recip.dsn_smtp_extc = extc;
-                            last_recip.dsn_status = extc;
-                            last_recip.dsn_smtp_response = response.join(' ');
-                            last_recip.dsn_remote_mta = mx.exchange;
-
-                            bounce_recips.push(last_recip);
-                            if (command === 'dot_lmtp') {
-                                response = [];
-                                if (ok_recips.length === 0) {
-                                    return finish_processing_mail(true);
-                                }
-                            }
-                        }
-                        else {
-                            recipients.forEach(function (rcpt) {
-                                rcpt.dsn_action = 'failed';
-                                rcpt.dsn_smtp_code = code;
-                                rcpt.dsn_smtp_extc = extc;
-                                rcpt.dsn_status = extc;
-                                rcpt.dsn_smtp_response = response.join(' ');
-                                rcpt.dsn_remote_mta = mx.exchange;
-                            });
-                            send_command(cfg.pool_concurrency_max ? 'RSET' : 'QUIT');
-                            processing_mail = false;
-                            return self.bounce(reason, { mx: mx });
-                        }
-                    }
-                    switch (command) {
-                        case 'connect':
-                            send_command('EHLO', mx.bind_helo);
-                            break;
-                        case 'connect_lmtp':
-                            send_command('LHLO', mx.bind_helo);
-                            break;
-                        case 'lhlo':
-                        case 'ehlo':
-                            process_ehlo_data();
-                            break;
-                        case 'starttls': {
-                            const tls_options = obtls.get_tls_options(mx);
-
-                            smtp_properties = {};
-                            socket.upgrade(tls_options, function (authorized, verifyError, cert, cipher) {
-                                const loginfo = {
-                                    verified: authorized
-                                };
-                                if (cipher) {
-                                    loginfo.cipher = cipher.name;
-                                    loginfo.version = cipher.version;
-                                }
-                                if (verifyError) {
-                                    loginfo.error = verifyError;
-                                }
-                                if (cert && cert.subject) {
-                                    loginfo.cn = cert.subject.CN;
-                                    loginfo.organization = cert.subject.O;
-                                }
-                                if (cert && cert.issuer) {
-                                    loginfo.issuer = cert.issuer.O;
-                                }
-                                if (cert && cert.valid_to) {
-                                    loginfo.expires = cert.valid_to;
-                                }
-                                if (cert && cert.fingerprint) {
-                                    loginfo.fingerprint = cert.fingerprint;
-                                }
-                                self.loginfo(
-                                    'secured',
-                                    loginfo
-                                );
-                            });
-                            break;
-                        }
-                        case 'auth':
-                            authenticating = false;
-                            authenticated = true;
-                            send_command('MAIL', `FROM:${self.todo.mail_from.format(!smtp_properties.smtp_utf8)}`);
-                            break;
-                        case 'helo':
-                            send_command('MAIL', `FROM:${self.todo.mail_from.format(!smtp_properties.smtp_utf8)}`);
-                            break;
-                        case 'mail':
-                            last_recip = recipients[recip_index];
-                            recip_index++;
-                            send_command('RCPT', `TO:${last_recip.format(!smtp_properties.smtp_utf8)}`);
-                            break;
-                        case 'rcpt':
-                            if (last_recip && code.match(/^250/)) {
-                                ok_recips.push(last_recip);
-                            }
-                            if (recip_index === recipients.length) { // End of RCPT TOs
-                                if (ok_recips.length > 0) {
-                                    send_command('DATA');
-                                }
-                                else {
-                                    finish_processing_mail(false);
-                                }
-                            }
-                            else {
-                                last_recip = recipients[recip_index];
-                                recip_index++;
-                                send_command('RCPT', `TO:${last_recip.format(!smtp_properties.smtp_utf8)}`);
-                            }
-                            break;
-                        case 'data': {
-                            const data_stream = self.data_stream();
-                            data_stream.on('data', function (data) {
-                                self.logdata(`C: ${data}`);
-                            });
-                            data_stream.on('error', function (err) {
-                                self.logerror(`Reading from the data stream failed: ${err}`);
-                            });
-                            data_stream.on('end', function () {
-                                send_command(mx.using_lmtp ? 'dot_lmtp' : 'dot');
-                            });
-                            data_stream.pipe(socket, {end: false});
-                            break;
-                        }
-                        case 'dot':
-                            finish_processing_mail(true);
-                            break;
-                        case 'dot_lmtp':
-                            if (code.match(/^2/)) lmtp_rcpt_idx++;
-                            if (lmtp_rcpt_idx === ok_recips.length) {
-                                finish_processing_mail(true);
-                            }
-                            break;
-                        case 'quit':
-                            if (cfg.pool_concurrency_max) {
-                                self.logerror("We should NOT have sent QUIT from here...");
-                            }
-                            else {
-                                client_pool.release_client(socket, port, host, mx.bind, fin_sent);
-                            }
-                            break;
-                        case 'rset':
-                            client_pool.release_client(socket, port, host, mx.bind, fin_sent);
-                            break;
-                        default:
-                            // should never get here - means we did something
-                            // wrong.
-                            throw new Error(`Unknown command: ${command}`);
-                    }
-                }
-            }
-            else {
+            if (!matches) {
                 // Unrecognized response.
                 self.logerror(`Unrecognized response from upstream server: ${line}`);
                 processing_mail = false;
@@ -863,7 +616,247 @@ class HMailItem extends events.EventEmitter {
                 self.todo.rcpt_to.forEach(function (rcpt) {
                     self.extend_rcpt_with_dsn(rcpt, DSN.proto_invalid_command(`Unrecognized response from upstream server: ${line}`));
                 });
-                return self.bounce(`Unrecognized response from upstream server: ${line}`, {mx: mx});
+                self.bounce(`Unrecognized response from upstream server: ${line}`, {mx: mx});
+                return;
+            }
+
+            let reason;
+            const code = matches[1];
+            const cont = matches[2];
+            const extc = matches[3];
+            const rest = matches[4];
+            response.push(rest);
+            if (cont !== ' ') return;
+
+            if (code.match(/^2/)) {
+                // Successful command, fall through
+            }
+            else if (code.match(/^3/) && command !== 'data') {
+                if (authenticating) {
+                    const resp = response.join(' ');
+                    switch (mx.auth_type.toUpperCase()) {
+                        case 'LOGIN':
+                            if (resp === 'VXNlcm5hbWU6') {
+                                // Username:
+                                return send_command(utils.base64(mx.auth_user));
+                            }
+                            else if (resp === 'UGFzc3dvcmQ6') {
+                                // Password:
+                                return send_command(utils.base64(mx.auth_pass));
+                            }
+                            break;
+                        case 'CRAM-MD5':
+                            // The response is our challenge
+                            return send_command(cram_md5_response(mx.auth_user, mx.auth_pass, resp));
+                        default:
+                            // This shouldn't happen...
+                    }
+                }
+                // Error
+                reason = response.join(' ');
+                recipients.forEach(function (rcpt) {
+                    rcpt.dsn_action = 'delayed';
+                    rcpt.dsn_smtp_code = code;
+                    rcpt.dsn_smtp_extc = extc;
+                    rcpt.dsn_status = extc;
+                    rcpt.dsn_smtp_response = response.join(' ');
+                    rcpt.dsn_remote_mta = mx.exchange;
+                });
+                send_command(cfg.pool_concurrency_max ? 'RSET' : 'QUIT');
+                processing_mail = false;
+                return self.temp_fail(`Upstream error: ${code}${(extc) ? `${extc} ` : ''}${reason}`);
+            }
+            else if (code.match(/^4/)) {
+                authenticating = false;
+                if (/^rcpt/.test(command) || command === 'dot_lmtp') {
+                    if (command === 'dot_lmtp') last_recip = ok_recips.shift();
+                    // this recipient was rejected
+                    reason = `${code} ${(extc) ? `${extc} ` : ''}${response.join(' ')}`;
+                    self.lognotice(`recipient ${last_recip} deferred: ${reason}`);
+                    last_recip.reason = reason;
+
+                    last_recip.dsn_action = 'delayed';
+                    last_recip.dsn_smtp_code = code;
+                    last_recip.dsn_smtp_extc = extc;
+                    last_recip.dsn_status = extc;
+                    last_recip.dsn_smtp_response = response.join(' ');
+                    last_recip.dsn_remote_mta = mx.exchange;
+
+                    fail_recips.push(last_recip);
+                    if (command === 'dot_lmtp') {
+                        response = [];
+                        if (ok_recips.length === 0) {
+                            return finish_processing_mail(true);
+                        }
+                    }
+                }
+                else if (processing_mail) {
+                    reason = response.join(' ');
+                    recipients.forEach(function (rcpt) {
+                        rcpt.dsn_action = 'delayed';
+                        rcpt.dsn_smtp_code = code;
+                        rcpt.dsn_smtp_extc = extc;
+                        rcpt.dsn_status = extc;
+                        rcpt.dsn_smtp_response = response.join(' ');
+                        rcpt.dsn_remote_mta = mx.exchange;
+                    });
+                    send_command(cfg.pool_concurrency_max ? 'RSET' : 'QUIT');
+                    processing_mail = false;
+                    return self.temp_fail(`Upstream error: ${code} ${(extc) ? `${extc} ` : ''}${reason}`);
+                }
+                else {
+                    reason = response.join(' ');
+                    self.lognotice(`Error - but not processing mail: ${code} ${((extc) ? `${extc} ` : '')}${reason}`);
+                    // Release back to the pool and instruct it to terminate this connection
+                    return client_pool.release_client(socket, port, host, mx.bind, true);
+                }
+            }
+            else if (code.match(/^5/)) {
+                authenticating = false;
+                if (command === 'ehlo') {
+                    // EHLO command was rejected; fall-back to HELO
+                    return send_command('HELO', mx.bind_helo);
+                }
+                reason = `${code} ${(extc) ? `${extc} ` : ''}${response.join(' ')}`;
+                if (/^rcpt/.test(command) || command === 'dot_lmtp') {
+                    if (command === 'dot_lmtp') last_recip = ok_recips.shift();
+                    self.lognotice(`recipient ${last_recip} rejected: ${reason}`);
+                    last_recip.reason = reason;
+
+                    last_recip.dsn_action = 'failed';
+                    last_recip.dsn_smtp_code = code;
+                    last_recip.dsn_smtp_extc = extc;
+                    last_recip.dsn_status = extc;
+                    last_recip.dsn_smtp_response = response.join(' ');
+                    last_recip.dsn_remote_mta = mx.exchange;
+
+                    bounce_recips.push(last_recip);
+                    if (command === 'dot_lmtp') {
+                        response = [];
+                        if (ok_recips.length === 0) {
+                            return finish_processing_mail(true);
+                        }
+                    }
+                }
+                else {
+                    recipients.forEach(function (rcpt) {
+                        rcpt.dsn_action = 'failed';
+                        rcpt.dsn_smtp_code = code;
+                        rcpt.dsn_smtp_extc = extc;
+                        rcpt.dsn_status = extc;
+                        rcpt.dsn_smtp_response = response.join(' ');
+                        rcpt.dsn_remote_mta = mx.exchange;
+                    });
+                    send_command(cfg.pool_concurrency_max ? 'RSET' : 'QUIT');
+                    processing_mail = false;
+                    return self.bounce(reason, { mx: mx });
+                }
+            }
+
+            switch (command) {
+                case 'connect':
+                    send_command('EHLO', mx.bind_helo);
+                    break;
+                case 'connect_lmtp':
+                    send_command('LHLO', mx.bind_helo);
+                    break;
+                case 'lhlo':
+                case 'ehlo':
+                    process_ehlo_data();
+                    break;
+                case 'starttls': {
+                    const tls_options = obtls.get_tls_options(mx);
+
+                    smtp_properties = {};
+                    socket.upgrade(tls_options, function (authorized, verifyError, cert, cipher) {
+                        const loginfo = {
+                            verified: authorized
+                        };
+                        if (cipher) {
+                            loginfo.cipher = cipher.name;
+                            loginfo.version = cipher.version;
+                        }
+                        if (verifyError) loginfo.error = verifyError;
+                        if (cert && cert.subject) {
+                            loginfo.cn = cert.subject.CN;
+                            loginfo.organization = cert.subject.O;
+                        }
+                        if (cert && cert.issuer)   loginfo.issuer = cert.issuer.O;
+                        if (cert && cert.valid_to) loginfo.expires = cert.valid_to;
+                        if (cert && cert.fingerprint) loginfo.fingerprint = cert.fingerprint;
+                        self.loginfo('secured', loginfo);
+                    });
+                    break;
+                }
+                case 'auth':
+                    authenticating = false;
+                    authenticated = true;
+                    send_command('MAIL', `FROM:${self.todo.mail_from.format(!smtp_properties.smtp_utf8)}`);
+                    break;
+                case 'helo':
+                    send_command('MAIL', `FROM:${self.todo.mail_from.format(!smtp_properties.smtp_utf8)}`);
+                    break;
+                case 'mail':
+                    last_recip = recipients[recip_index];
+                    recip_index++;
+                    send_command('RCPT', `TO:${last_recip.format(!smtp_properties.smtp_utf8)}`);
+                    break;
+                case 'rcpt':
+                    if (last_recip && code.match(/^250/)) {
+                        ok_recips.push(last_recip);
+                    }
+                    if (recip_index === recipients.length) { // End of RCPT TOs
+                        if (ok_recips.length > 0) {
+                            send_command('DATA');
+                        }
+                        else {
+                            finish_processing_mail(false);
+                        }
+                    }
+                    else {
+                        last_recip = recipients[recip_index];
+                        recip_index++;
+                        send_command('RCPT', `TO:${last_recip.format(!smtp_properties.smtp_utf8)}`);
+                    }
+                    break;
+                case 'data': {
+                    const data_stream = self.data_stream();
+                    data_stream.on('data', function (data) {
+                        self.logdata(`C: ${data}`);
+                    });
+                    data_stream.on('error', function (err) {
+                        self.logerror(`Reading from the data stream failed: ${err}`);
+                    });
+                    data_stream.on('end', function () {
+                        send_command(mx.using_lmtp ? 'dot_lmtp' : 'dot');
+                    });
+                    data_stream.pipe(socket, {end: false});
+                    break;
+                }
+                case 'dot':
+                    finish_processing_mail(true);
+                    break;
+                case 'dot_lmtp':
+                    if (code.match(/^2/)) lmtp_rcpt_idx++;
+                    if (lmtp_rcpt_idx === ok_recips.length) {
+                        finish_processing_mail(true);
+                    }
+                    break;
+                case 'quit':
+                    if (cfg.pool_concurrency_max) {
+                        self.logerror("We should NOT have sent QUIT from here...");
+                    }
+                    else {
+                        client_pool.release_client(socket, port, host, mx.bind, fin_sent);
+                    }
+                    break;
+                case 'rset':
+                    client_pool.release_client(socket, port, host, mx.bind, fin_sent);
+                    break;
+                default:
+                    // should never get here - means we did something
+                    // wrong.
+                    throw new Error(`Unknown command: ${command}`);
             }
         });
 
@@ -1210,7 +1203,7 @@ class HMailItem extends events.EventEmitter {
     }
 
     double_bounce (err) {
-        this.logerror(`Double bounce: ${err}`);
+        this.lognotice(`Double bounce: ${err}`);
         fs.unlink(this.path, function () {});
         this.next_cb();
         // TODO: fill this in... ?
