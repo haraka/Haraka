@@ -1339,7 +1339,7 @@ class Connection {
         catch (err) {
             this.errors++;
             if (err.stack) {
-                this.logerror(err.stack.split(/\n/)[0]);
+                this.lognotice(err.stack.split(/\n/)[0]);
             }
             else {
                 this.logerror(err);
@@ -1397,7 +1397,7 @@ class Connection {
         catch (err) {
             this.errors++;
             if (err.stack) {
-                this.logerror(err.stack.split(/\n/)[0]);
+                this.lognotice(err.stack.split(/\n/)[0]);
             }
             else {
                 this.logerror(err);
@@ -1583,7 +1583,7 @@ class Connection {
             line[0] === 0x2e &&
             line[1] === 0x0a)
         {
-            this.logerror('Client sent bare line-feed - .\\n rather than .\\r\\n');
+            this.lognotice('Client sent bare line-feed - .\\n rather than .\\r\\n');
             this.respond(451, "Bare line-feed; see http://haraka.github.com/barelf.html", function () {
                 self.reset_transaction();
             });
@@ -1604,7 +1604,7 @@ class Connection {
 
         // Check message size limit
         if (this.max_bytes && this.transaction.data_bytes > this.max_bytes) {
-            this.logerror(`Incoming message exceeded databytes size of ${this.max_bytes}`);
+            this.lognotice(`Incoming message exceeded databytes size of ${this.max_bytes}`);
             return plugins.run_hooks('max_data_exceeded', this);
         }
 
