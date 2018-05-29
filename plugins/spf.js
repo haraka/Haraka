@@ -2,6 +2,7 @@
 
 const SPF = require('./spf').SPF;
 const net_utils = require('haraka-net-utils');
+const DSN = require('haraka-dsn');
 
 exports.register = function () {
     const plugin = this;
@@ -30,6 +31,7 @@ exports.load_config = function () {
             '-deny.helo_softfail',
             '-deny.helo_fail',
             '-deny.helo_permerror',
+            '-deny.openspf_text',
 
             '-deny.mfrom_softfail',
             '-deny.mfrom_fail',
@@ -42,6 +44,10 @@ exports.load_config = function () {
             '-deny_relay.mfrom_softfail',
             '-deny_relay.mfrom_fail',
             '-deny_relay.mfrom_permerror',
+            '-deny_relay.openspf_text',
+
+            '-skip.relaying',
+            '-skip.auth',
         ]
     },
     function () { plugin.load_config(); }
@@ -66,18 +72,23 @@ exports.load_config = function () {
     if (!plugin.cfg.relay) {
         plugin.cfg.relay = { context: 'sender' };  // default/legacy
     }
-}
+
+    plugin.cfg.lookup_timeout = plugin.cfg.main.lookup_timeout || plugin.timeout - 1;
+};
 
 exports.hook_helo = exports.hook_ehlo = function (next, connection, helo) {
     const plugin = this;
 
     // Bypass private IPs
-    if (connection.remote.is_private) { return next(); }
+    if (connection.remote.is_private) {
+        connection.results.add(plugin, {skip: 'host(private_ip)'});
+        return next();
+    }
 
     // RFC 4408, 2.1: "SPF clients must be prepared for the "HELO"
     //           identity to be malformed or an IP address literal.
     if (net_utils.is_ip_literal(helo)) {
-        connection.results.add(plugin, {skip: 'ip_literal'});
+        connection.results.add(plugin, {skip: 'helo(ip_literal)'});
         return next();
     }
 
@@ -85,9 +96,9 @@ exports.hook_helo = exports.hook_ehlo = function (next, connection, helo) {
     const spf = new SPF();
     const timer = setTimeout(function () {
         timeout = true;
-        connection.logerror(plugin, 'timeout');
+        connection.loginfo(plugin, 'timeout');
         return next();
-    }, (plugin.timeout-1) * 1000);
+    }, plugin.cfg.lookup_timeout * 1000);
 
     spf.check_host(connection.remote.ip, helo, null, function (err, result) {
         if (timer) clearTimeout(timer);
@@ -113,14 +124,24 @@ exports.hook_helo = exports.hook_ehlo = function (next, connection, helo) {
 exports.hook_mail = function (next, connection, params) {
     const plugin = this;
 
+    const txn = connection.transaction;
+    if (!txn) return next();
+
+    // bypass auth'ed or relay'ing hosts if told to
+    const skip_reason = exports.skip_hosts(connection);
+    if (skip_reason) {
+        txn.results.add(plugin, {skip: `host(${skip_reason})`});
+        return next(CONT, `skipped because host(${skip_reason})`);
+    }
+
     // For messages from private IP space...
     if (connection.remote.is_private) {
         if (!connection.relaying) return next();
-        if (connection.relaying && plugin.cfg.relay.context !== 'myself') return next();
+        if (connection.relaying && plugin.cfg.relay.context !== 'myself') {
+            txn.results.add(plugin, {skip: 'host(private_ip)'});
+            return next(CONT, 'envelope from private IP space');
+        }
     }
-
-    const txn = connection.transaction;
-    if (!txn) return next();
 
     const mfrom = params[0].address();
     const host = params[0].host;
@@ -146,9 +167,9 @@ exports.hook_mail = function (next, connection, params) {
     let timeout = false;
     const timer = setTimeout(function () {
         timeout = true;
-        connection.logerror(plugin, 'timeout');
+        connection.loginfo(plugin, 'timeout');
         return next();
-    }, (plugin.timeout-1) * 1000);
+    }, plugin.cfg.lookup_timeout * 1000);
 
     spf.helo = connection.hello.host;
 
@@ -175,7 +196,7 @@ exports.hook_mail = function (next, connection, params) {
             domain: host,
             emit: true,
         });
-        plugin.return_results(next, connection, spf, 'mfrom', result, `<${mfrom}>`);
+        plugin.return_results(next, connection, spf, 'mfrom', result, mfrom);
     };
 
     // typical inbound (!relay)
@@ -226,9 +247,11 @@ exports.log_result = function (connection, scope, host, mfrom, result, ip) {
 
 exports.return_results = function (next, connection, spf, scope, result, sender) {
     const plugin = this;
-    const msgpre = `sender ${sender}`;
+    const msgpre = (scope === 'helo') ? `sender ${sender}` : `sender <${sender}>`;
     const deny = connection.relaying ? 'deny_relay' : 'deny';
     const defer = connection.relaying ? 'defer_relay' : 'defer';
+    const sender_id = (scope === 'helo') ? connection.hello_host : sender;
+    let text = DSN.sec_unauthorized(`http://www.openspf.org/Why?s=${scope}&id=${sender_id}&ip=${connection.remote.ip}`);
 
     switch (result) {
         case spf.SPF_NONE:
@@ -237,12 +260,14 @@ exports.return_results = function (next, connection, spf, scope, result, sender)
             return next();
         case spf.SPF_SOFTFAIL:
             if (plugin.cfg[deny][`${scope}_softfail`]) {
-                return next(DENY, `${msgpre} SPF SoftFail`);
+                text = plugin.cfg[deny].openspf_text ? text : `${msgpre} SPF SoftFail`;
+                return next(DENY, text);
             }
             return next();
         case spf.SPF_FAIL:
             if (plugin.cfg[deny][`${scope}_fail`]) {
-                return next(DENY, `${msgpre} SPF Fail`);
+                text = plugin.cfg[deny].openspf_text ? text : `${msgpre} SPF Fail`;
+                return next(DENY, text);
             }
             return next();
         case spf.SPF_TEMPERROR:
@@ -263,11 +288,20 @@ exports.return_results = function (next, connection, spf, scope, result, sender)
 }
 
 exports.save_to_header = function (connection, spf, result, mfrom, host, id, ip) {
-    const plugin = this;
     // Add a trace header
     if (!connection) return;
     if (!connection.transaction) return;
     connection.transaction.add_leading_header('Received-SPF',
         `${spf.result(result)} (${connection.local.host}: domain of ${host}${result === spf.SPF_PASS ? ' designates ' : ' does not designate '}${connection.remote.ip} as permitted sender) receiver=${connection.local.host}; identity=${id}; client-ip=${ip ? ip : connection.remote.ip}; helo=${connection.hello.host}; envelope-from=<${mfrom}>`
     );
+};
+
+exports.skip_hosts = function (connection) {
+    const plugin = this;
+
+    const cbypass = plugin.cfg.skip;
+    if (cbypass) {
+        if (cbypass.relaying && connection.relaying) return 'relay';
+        if (cbypass.auth && connection.notes.auth_user) return 'auth';
+    }
 }
