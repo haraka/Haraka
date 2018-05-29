@@ -104,7 +104,7 @@ exports.upgrade_connection = function (next, connection, params) {
         if (called_next) return;
         called_next = true;
         clearTimeout(connection.notes.tls_timer);
-        if (!disconnected) connection.logerror(plugin, 'timeout');
+        if (!disconnected) connection.lognotice(plugin, 'timeout');
         plugin.set_notls(connection.remote.ip);
         return next(DENYSOFTDISCONNECT);
     }
