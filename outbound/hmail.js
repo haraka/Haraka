@@ -295,7 +295,7 @@ class HMailItem extends events.EventEmitter {
         }
     }
 
-    try_deliver () {
+    try_deliver (previous_mx = null) {
         const self = this;
 
         // check if there are any MXs left
@@ -303,7 +303,7 @@ class HMailItem extends events.EventEmitter {
             this.todo.rcpt_to.forEach(function (rcpt) {
                 self.extend_rcpt_with_dsn(rcpt, DSN.addr_bad_dest_system(`Tried all MXs${self.todo.domain}`));
             });
-            return this.temp_fail("Tried all MXs");
+            return this.temp_fail("Tried all MXs", {mx: previous_mx});
         }
 
         const mx   = this.mxlist.shift();
@@ -342,7 +342,7 @@ class HMailItem extends events.EventEmitter {
         const self = this;
 
         if (self.hostlist.length === 0) {
-            return self.try_deliver(); // try next MX
+            return self.try_deliver(mx); // try next MX
         }
 
         // Allow transaction notes to set outbound IP
@@ -591,7 +591,7 @@ class HMailItem extends events.EventEmitter {
             if (success) {
                 const reason = response.join(' ');
                 self.delivered(host, port, (mx.using_lmtp ? 'LMTP' : 'SMTP'), mx.exchange,
-                    reason, ok_recips, fail_recips, bounce_recips, secured, authenticated);
+                    reason, ok_recips, fail_recips, bounce_recips, secured, authenticated, mx);
             }
             else {
                 self.discard();
@@ -1220,7 +1220,7 @@ class HMailItem extends events.EventEmitter {
         // Another strategy might be delivery "plugins" to cope with this.
     }
 
-    delivered (ip, port, mode, host, response, ok_recips, fail_recips, bounce_recips, secured, authenticated) {
+    delivered (ip, port, mode, host, response, ok_recips, fail_recips, bounce_recips, secured, authenticated, mx) {
         const delay = (Date.now() - this.todo.queue_time)/1000;
         this.lognotice({
             'delivered file': this.filename,
@@ -1228,7 +1228,7 @@ class HMailItem extends events.EventEmitter {
             'host': host,
             'ip': ip,
             'port': port,
-            'bindip': (this.bind_ip || 'default'),
+            'bindip': (mx.bind || 'default'),
             'mode': mode,
             'tls': ((secured) ? 'Y' : 'N'),
             'auth': ((authenticated) ? 'Y' : 'N'),
@@ -1239,7 +1239,7 @@ class HMailItem extends events.EventEmitter {
         });
 
         const hook_params = [host, ip, response, delay, port, mode, ok_recips, secured, authenticated];
-        hook_params.bind_ip = this.bind_ip;
+        hook_params.bind_ip = mx.bind;
         plugins.run_hooks("delivered", this, hook_params);
     }
 
