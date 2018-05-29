@@ -133,7 +133,7 @@ exports.try_auth_proxy = function (connection, hosts, user, passwd, cb) {
                     if (key && cert) {
                         this.on('secure', function () {
                             secure = true;
-                            socket.send_command('EHLO', self.config.get('me'));
+                            socket.send_command('EHLO', connection.local.host);
                         });
                         socket.send_command('STARTTLS');
                         return;
@@ -205,7 +205,7 @@ exports.try_auth_proxy = function (connection, hosts, user, passwd, cb) {
                 this.upgrade({ key: key, cert: cert });
                 break;
             case 'connect':
-                socket.send_command('EHLO', self.config.get('me'));
+                socket.send_command('EHLO', connection.local.host);
                 break;
             case 'auth':
                 // AUTH was successful

@@ -38,6 +38,7 @@ class Transaction {
             tempfail: 0,
             reject: 0,
         }
+        this.msg_status = undefined;
         this.data_post_start = null;
         this.data_post_delay = 0;
         this.encoding = 'utf8';
