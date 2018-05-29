@@ -772,6 +772,7 @@ class Connection {
                 this.respond(500, msg || "Unrecognized command");
                 break;
             case constants.denydisconnect:
+            case constants.denysoftdisconnect:
                 this.respond(521, msg || "Unrecognized command", () => {
                     self.disconnect();
                 });
@@ -1219,6 +1220,11 @@ class Connection {
             }
         );
 
+        this.notes.proxy = {
+            type: 'haproxy', proto: proto,
+            src_ip: src_ip, src_port: src_port, dst_ip: dst_ip, dst_port: dst_port, proxy_ip: this.remote.ip
+        };
+
         this.reset_transaction(function () {
             self.set('proxy.ip', self.remote.ip);
             self.set('proxy.type', 'haproxy');
@@ -1659,24 +1665,28 @@ class Connection {
             case constants.deny:
                 this.respond(550, msg || "Message denied", () => {
                     self.msg_count.reject++;
+                    self.transaction.msg_status = 'rejected';
                     self.reset_transaction(() => self.resume());
                 });
                 break;
             case constants.denydisconnect:
                 this.respond(550, msg || "Message denied",() => {
                     self.msg_count.reject++;
+                    self.transaction.msg_status = 'rejected';
                     self.disconnect();
                 });
                 break;
             case constants.denysoft:
                 this.respond(450, msg || "Message denied temporarily", () =>  {
                     self.msg_count.tempfail++;
+                    self.transaction.msg_status = 'deferred';
                     self.reset_transaction(() => self.resume());
                 });
                 break;
             case constants.denysoftdisconnect:
                 this.respond(450, msg || "Message denied temporarily",() => {
                     self.msg_count.tempfail++;
+                    self.transaction.msg_status = 'deferred';
                     self.disconnect();
                 });
                 break;
@@ -1724,6 +1734,8 @@ class Connection {
             case constants.denysoftdisconnect:
                 this.transaction.results.add(res_as, { fail: msg });
                 break;
+            case constants.cont:
+                break;
             default:
                 this.transaction.results.add(res_as, { msg: msg });
                 break;
@@ -1731,7 +1743,7 @@ class Connection {
     }
     queue_outbound_respond (retval, msg) {
         const self = this;
-        if (!msg) msg = this.queue_msg(retval, msg);
+        if (!msg) msg = this.queue_msg(retval, msg) || 'Message Queued';
         this.store_queue_result(retval, msg);
         msg = `${msg} (${this.transaction.uuid})`;
         if (retval !== constants.ok) {
@@ -1750,30 +1762,34 @@ class Connection {
             case constants.deny:
                 this.respond(550, msg, () => {
                     self.msg_count.reject++;
+                    self.transaction.msg_status = 'rejected';
                     self.reset_transaction(() => self.resume());
                 });
                 break;
             case constants.denydisconnect:
                 this.respond(550, msg, () => {
                     self.msg_count.reject++;
+                    self.transaction.msg_status = 'rejected';
                     self.disconnect();
                 });
                 break;
             case constants.denysoft:
                 this.respond(450, msg, () => {
                     self.msg_count.tempfail++;
+                    self.transaction.msg_status = 'deferred';
                     self.reset_transaction(() => self.resume());
                 });
                 break;
             case constants.denysoftdisconnect:
                 this.respond(450, msg, () => {
                     self.msg_count.tempfail++;
+                    self.transaction.msg_status = 'deferred';
                     self.disconnect();
                 });
                 break;
             default:
                 outbound.send_email(this.transaction, (retval2, msg2) => {
-                    if (!msg2) msg2 = self.queue_msg(retval2, msg2);
+                    if (!msg2) msg2 = self.queue_msg(retval2, msg);
                     switch (retval2) {
                         case constants.ok:
                             if (!msg2) msg2 = self.queue_msg(retval2, msg2);
@@ -1783,6 +1799,7 @@ class Connection {
                             if (!msg2) msg2 = self.queue_msg(retval2, msg2);
                             self.respond(550, msg2, () => {
                                 self.msg_count.reject++;
+                                self.transaction.msg_status = 'rejected';
                                 self.reset_transaction(() => {
                                     self.resume();
                                 });
@@ -1792,6 +1809,7 @@ class Connection {
                             self.logerror(`Unrecognized response from outbound layer: ${retval2} : ${msg2}`);
                             self.respond(550, msg2 || "Internal Server Error", () => {
                                 self.msg_count.reject++;
+                                self.transaction.msg_status = 'rejected';
                                 self.reset_transaction(() => {
                                     self.resume();
                                 });
@@ -1822,24 +1840,28 @@ class Connection {
             case constants.deny:
                 this.respond(550, msg, () => {
                     self.msg_count.reject++;
+                    self.transaction.msg_status = 'rejected';
                     self.reset_transaction(() =>  self.resume());
                 });
                 break;
             case constants.denydisconnect:
                 this.respond(550, msg, () => {
                     self.msg_count.reject++;
+                    self.transaction.msg_status = 'rejected';
                     self.disconnect();
                 });
                 break;
             case constants.denysoft:
                 this.respond(450, msg, () => {
                     self.msg_count.tempfail++;
+                    self.transaction.msg_status = 'deferred';
                     self.reset_transaction(() => self.resume());
                 });
                 break;
             case constants.denysoftdisconnect:
                 this.respond(450, msg, () => {
                     self.msg_count.tempfail++;
+                    self.transaction.msg_status = 'deferred';
                     self.disconnect();
                 });
                 break;
@@ -1847,6 +1869,7 @@ class Connection {
                 if (!msg) msg = 'Queuing declined or disabled, try later';
                 this.respond(451, msg, () => {
                     self.msg_count.tempfail++;
+                    self.transaction.msg_status = 'deferred';
                     self.reset_transaction(() => self.resume());
                 });
                 break;
@@ -1866,6 +1889,7 @@ class Connection {
 
         this.respond(250, params, () => {
             self.msg_count.accept++;
+            if (self.transaction) self.transaction.msg_status = 'accepted';
             self.reset_transaction(() => self.resume());
         });
     }
