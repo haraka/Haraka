@@ -34,6 +34,32 @@ function _set_up_2 (done) {
     done();
 }
 
+function _set_up_custom_pwcb_opts (done) {
+    this.plugin = new fixtures.plugin('auth/auth_base');
+
+    this.plugin.check_plain_passwd = function (connection, user, passwd, pwok_cb) {
+        switch (user) {
+            case 'legacyok_nomessage':      return pwok_cb(true);
+            case 'legacyfail_nomessage':    return pwok_cb(false);
+            case 'legacyok_message':        return pwok_cb(true, 'GREAT SUCCESS');
+            case 'legacyfail_message':      return pwok_cb(false, 'FAIL 123');
+            case 'newok':                   return pwok_cb(true, {message: 'KOKOKO', code: 215});
+            case 'newfail':                 return pwok_cb(false, {message: 'OHOHOH', code: 555});
+            default: throw 'what?!';
+        }
+    };
+
+    this.connection = fixtures.connection.createConnection();
+    this.connection.capabilities=null;
+    this.connection.notes.resp_strings = [];
+    this.connection.respond = (code, msg, cb) => {
+        this.connection.notes.resp_strings.push([code, msg]);
+        return cb();
+    }
+
+    done();
+}
+
 exports.hook_capabilities = {
     setUp : _set_up,
     'no TLS, no auth': function (test) {
@@ -195,6 +221,87 @@ exports.check_user = {
             test.equal(this.connection.notes.auth_custom_note, 'custom_note');
             test.done();
         }, this.connection, credentials, 'PLAIN');
+    },
+}
+
+exports.check_user_custom_opts = {
+    setUp: _set_up_custom_pwcb_opts,
+    'legacyok_nomessage': function (test) {
+        this.plugin.check_user((code, msg) => {
+            test.equal(code, OK);
+            test.equal(this.connection.relaying, true);
+            test.deepEqual(this.connection.notes.resp_strings, [[ 235, '2.7.0 Authentication successful' ]]);
+            test.done();
+        }, this.connection, ['legacyok_nomessage', 'any'], 'PLAIN');
+    },
+    'legacyfail_nomessage': function (test) {
+        this.plugin.check_user((code, msg) => {
+            test.equal(code, OK);
+            test.equal(this.connection.relaying, false);
+            test.deepEqual(this.connection.notes.resp_strings, [ [ 535, '5.7.8 Authentication failed' ] ]);
+            test.done();
+        }, this.connection, ['legacyfail_nomessage', 'any'], 'PLAIN');
+    },
+    'legacyok_message': function (test) {
+        this.plugin.check_user((code, msg) => {
+            test.equal(code, OK);
+            test.equal(this.connection.relaying, true);
+            test.deepEqual(this.connection.notes.resp_strings, [[ 235, 'GREAT SUCCESS' ]]);
+            test.done();
+        }, this.connection, ['legacyok_message', 'any'], 'PLAIN');
+    },
+    'legacyfail_message': function (test) {
+        this.plugin.check_user((code, msg) => {
+            test.equal(code, OK);
+            test.equal(this.connection.relaying, false);
+            test.deepEqual(this.connection.notes.resp_strings, [[ 535, 'FAIL 123' ]]);
+            test.done();
+        }, this.connection, ['legacyfail_message', 'any'], 'PLAIN');
+    },
+    'newok': function (test) {
+        this.plugin.check_user((code, msg) => {
+            test.equal(code, OK);
+            test.equal(this.connection.relaying, true);
+            test.deepEqual(this.connection.notes.resp_strings, [[ 215, 'KOKOKO' ]]);
+            test.done();
+        }, this.connection, ['newok', 'any'], 'PLAIN');
+    },
+    'newfail': function (test) {
+        this.plugin.check_user((code, msg) => {
+            test.equal(code, OK);
+            test.equal(this.connection.relaying, false);
+            test.deepEqual(this.connection.notes.resp_strings, [[ 555, 'OHOHOH' ]]);
+            test.done();
+        }, this.connection, ['newfail', 'any'], 'PLAIN');
+    },
+}
+
+exports.auth_notes_are_set = {
+    setUp : _set_up_2,
+    'bad auth: no notes should be set': function (test) {
+        const credentials = ['matt','ttam'];
+        this.plugin.check_user((code) => {
+            test.equal(this.connection.notes.auth_user, undefined);
+            test.equal(this.connection.notes.auth_passwd, undefined);
+            test.done();
+        }, this.connection, credentials, 'PLAIN');
+    },
+    'good auth: dont store password': function (test) {
+        const creds = ['test','testpass'];
+        this.plugin.blankout_password = true;
+        this.plugin.check_user((code) => {
+            test.equal(this.connection.notes.auth_user, creds[0]);
+            test.equal(this.connection.notes.auth_passwd, undefined);
+            test.done();
+        }, this.connection, creds, 'PLAIN');
+    },
+    'good auth: store password (default)': function (test) {
+        const creds = ['test','testpass'];
+        this.plugin.check_user((code) => {
+            test.equal(this.connection.notes.auth_user, creds[0]);
+            test.equal(this.connection.notes.auth_passwd, creds[1]);
+            test.done();
+        }, this.connection, creds, 'PLAIN');
     },
 }
 
