@@ -2,6 +2,7 @@
 
 * New features
     * outbound: received_header=disabled supresses outbound Received header addition. #2409
+    * auth_base.js: `check_plain_passwd` and `check_cram_md5_passwd` can now pass `message` and `code` to callback routine
 * Fixes
     * Always prefix ClamAV with a Received header #2407
     * plugins/data.headers.js: wrap address-rfc2822 header parse into try block #2373
