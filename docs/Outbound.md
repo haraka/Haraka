@@ -50,7 +50,7 @@ separate values by putting them under a key: `[outbound]`, such as:
 
 ```
 [outbound]
-ciphers=!DES
+ciphers=DEFAULT
 ```
 
 * `ipv6_enabled`
