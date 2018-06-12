@@ -12,7 +12,8 @@ exports.register = function () {
 
     if (plugin.cfg.relay.acl) {
         plugin.load_acls();             // plugin.acl_allow = [..]
-        plugin.register_hook('connect', 'acl');
+        plugin.register_hook('connect_init', 'acl');
+        plugin.register_hook('connect', 'pass_relaying');
     }
 
     if (plugin.cfg.relay.force_routing || plugin.cfg.relay.dest_domains) {
@@ -90,6 +91,14 @@ exports.acl = function (next, connection) {
     connection.results.add(plugin, {pass: 'acl'});
     connection.relaying = true;
     return next(OK);
+}
+
+exports.pass_relaying = function (next, connection) {
+    if (connection.relaying) {
+        return next(OK);
+    }
+
+    return next();
 }
 
 exports.is_acl_allowed = function (connection) {
