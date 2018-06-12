@@ -36,8 +36,7 @@ of CPUs that you have.
 
 * `enable_tls`
 
-Default: false. Switch to true to enable TLS for outbound mail when the
-remote end is capable.
+Default: true. Switch to false to disable TLS for outbound mail.
 
 This uses the same `tls_key.pem` and `tls_cert.pem` files that the `tls`
 plugin uses, along with other values in `tls.ini`. See the [tls plugin

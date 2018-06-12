@@ -102,7 +102,8 @@ exports.acl = {
             test.done();
         };
         this.plugin.cfg.relay.acl=false;
-        this.plugin.acl(next, this.connection);
+        this.plugin.acl(() => {}, this.connection);
+        this.plugin.pass_relaying(next, this.connection);
     },
     'relay.acl=true, miss' : function (test) {
         test.expect(2);
@@ -112,7 +113,8 @@ exports.acl = {
             test.done();
         }.bind(this);
         this.plugin.cfg.relay.acl=true;
-        this.plugin.acl(next, this.connection);
+        this.plugin.acl(() => {}, this.connection);
+        this.plugin.pass_relaying(next, this.connection);
     },
     'relay.acl=true, hit' : function (test) {
         test.expect(2);
@@ -124,7 +126,8 @@ exports.acl = {
         this.plugin.cfg.relay.acl=true;
         this.connection.remote.ip='1.1.1.1';
         this.plugin.acl_allow=['1.1.1.1/32'];
-        this.plugin.acl(next, this.connection);
+        this.plugin.acl(() => {}, this.connection);
+        this.plugin.pass_relaying(next, this.connection);
     },
     'relay.acl=true, hit, missing mask' : function (test) {
         test.expect(2);
@@ -136,7 +139,8 @@ exports.acl = {
         this.plugin.cfg.relay.acl=true;
         this.connection.remote.ip='1.1.1.1';
         this.plugin.acl_allow=['1.1.1.1'];
-        this.plugin.acl(next, this.connection);
+        this.plugin.acl(() => {}, this.connection);
+        this.plugin.pass_relaying(next, this.connection);
     },
     'relay.acl=true, hit, net': function (test) {
         test.expect(2);
@@ -148,7 +152,8 @@ exports.acl = {
         this.plugin.cfg.relay.acl=true;
         this.connection.remote.ip='1.1.1.1';
         this.plugin.acl_allow=['1.1.1.1/24'];
-        this.plugin.acl(next, this.connection);
+        this.plugin.acl(() => {}, this.connection);
+        this.plugin.pass_relaying(next, this.connection);
     },
 }
 
@@ -297,7 +302,8 @@ exports.all = {
         this.plugin.cfg.relay.all = true;
         this.plugin.register_hook('rcpt', 'all');  // register() doesn't b/c config is disabled
         // console.log(this.plugin.register_hook.args);
-        test.equals(this.plugin.register_hook.args[2][1], 'all');
+        console.log(this.plugin.register_hook.args);
+        test.equals(this.plugin.register_hook.args[3][1], 'all');
         test.done();
     },
     'all hook always returns OK' : function (test) {
