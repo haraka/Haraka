@@ -2,6 +2,8 @@
 // This cannot be used on its own. You need to inherit from it.
 // See plugins/auth/flat_file.js for an example.
 
+// Note: You can disable setting `connection.notes.auth_passwd` by `plugin.blankout_password = true`
+
 const crypto = require('crypto');
 const utils = require('haraka-utils');
 const AUTH_COMMAND = 'AUTH';
@@ -101,20 +103,29 @@ exports.check_user = function (next, connection, credentials, method) {
         return;
     }
 
-    const passwd_ok = function (valid, message) {
+    // valid: (true|false)
+    // opts: ({ message, code }|String)
+    function passwd_ok (valid, opts) {
+        const status_code = (typeof(opts) === 'object' && opts.code) || (valid ? 235 : 535);
+        const status_message = (typeof(opts) === 'object' ? opts.message : opts) ||
+                (valid  ? '2.7.0 Authentication successful' : '5.7.8 Authentication failed');
+
         if (valid) {
             connection.relaying = true;
             connection.results.add({name:'relay'}, {pass: plugin.name});
+            connection.results.add(plugin, {pass: method});
+
             connection.results.add({name:'auth'}, {
                 pass: plugin.name,
                 method: method,
                 user: credentials[0],
             });
-            connection.respond(235, ((message) ? message : 'Authentication successful'), function () {
+
+            connection.respond(status_code, status_message, function () {
                 connection.authheader = "(authenticated bits=0)\n";
                 connection.auth_results(`auth=pass (${method.toLowerCase()})`);
                 connection.notes.auth_user = credentials[0];
-                connection.notes.auth_passwd = credentials[1];
+                if (!plugin.blankout_password) connection.notes.auth_passwd = credentials[1];
                 return next(OK);
             });
             return;
@@ -136,13 +147,13 @@ exports.check_user = function (next, connection, credentials, method) {
         // here we include the username, as shown in RFC 5451 example
         connection.auth_results(`auth=fail (${method.toLowerCase()}) smtp.auth=${credentials[0]}`);
         setTimeout(function () {
-            connection.respond(535, ((message) ? message : 'Authentication failed'), function () {
+            connection.respond(status_code, status_message, function () {
                 connection.reset_transaction(function () {
                     return next(OK);
                 });
             });
         }, delay * 1000);
-    };
+    }
 
     if (method === AUTH_METHOD_PLAIN || method === AUTH_METHOD_LOGIN) {
         plugin.check_plain_passwd(connection, credentials[0], credentials[1],
