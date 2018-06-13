@@ -995,7 +995,7 @@ class HMailItem extends events.EventEmitter {
         bounce_msg_html_.forEach(function (line) {
             line = line.replace(/\{(\w+)\}/g, function (i, word) {
                 if (word in values) {
-                    return String(values[word]).replace(/[&<>]/g, function(m) { return escaped_chars[m]; });
+                    return String(values[word]).replace(/[&<>]/g, function (m) { return escaped_chars[m]; });
                 } else {
                     return '?';
                 }
