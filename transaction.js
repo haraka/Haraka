@@ -42,12 +42,14 @@ class Transaction {
         this.data_post_start = null;
         this.data_post_delay = 0;
         this.encoding = 'utf8';
+        this.mime_part_count = 0;
     }
 
     ensure_body () {
         if (this.body) return;
 
         this.body = new body.Body(this.header);
+        this.body.on('mime_boundary', m => this.incr_mime_count());
         this.attachment_start_hooks.forEach(h => {
             this.body.on('attachment_start', h);
         });
@@ -188,6 +190,13 @@ class Transaction {
     add_body_filter (ct_match, filter) {
         this.parse_body = true;
         this.body_filters.push({ 'ct_match': ct_match, 'filter': filter });
+    }
+
+    incr_mime_count (line) {
+        this.mime_part_count++;
+        if (this.mime_part_count >= 1000) {
+            throw "Too many MIME parts. Possible DoS";
+        }
     }
 }
 
