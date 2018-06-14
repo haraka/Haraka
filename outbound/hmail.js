@@ -987,15 +987,20 @@ class HMailItem extends events.EventEmitter {
         });
 
         const escaped_chars = {
-            "&": "&amp;",
-            "<": "&lt;",
-            ">": "&gt;"
+            "&": "amp",
+            "<": "lt",
+            ">": "gt",
+            '"': 'quot',
+            "'": 'apos',
+            "\r": '#10',
+            "\n": '#13'
         };
+        const escape_pattern = new RegExp('[' + Object.keys(escaped_chars).join() + ']', 'g');
 
         bounce_msg_html_.forEach(function (line) {
             line = line.replace(/\{(\w+)\}/g, function (i, word) {
                 if (word in values) {
-                    return String(values[word]).replace(/[&<>]/g, function (m) { return escaped_chars[m]; });
+                    return String(values[word]).replace(escape_pattern, function (m) { return '&' + escaped_chars[m] + ';'; });
                 } else {
                     return '?';
                 }
