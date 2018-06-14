@@ -194,9 +194,6 @@ class Transaction {
 
     incr_mime_count (line) {
         this.mime_part_count++;
-        if (this.mime_part_count >= 1000) {
-            throw "Too many MIME parts. Possible DoS";
-        }
     }
 }
 
