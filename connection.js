@@ -1598,7 +1598,7 @@ class Connection {
         if (this.transaction.mime_part_count >= 1000) {
             this.logcrit("Possible DoS attempt - too many MIME parts");
             this.respond(554, "Transaction failed due to too many MIME parts", function () {
-                self.reset_transaction();
+                self.disconnect();
             });
             return;
         }
