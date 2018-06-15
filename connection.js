@@ -600,6 +600,7 @@ class Connection {
         if (this.state >= states.DISCONNECTING) return;
         const self = this;
         self.state = states.DISCONNECTING;
+        self.current_data = null; // don't process any more data we have already received
         this.reset_transaction(() => {
             plugins.run_hooks('disconnect', self);
         });
