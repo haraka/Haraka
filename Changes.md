@@ -1,4 +1,4 @@
-## 2.8.18 - Jun 26, 2018
+## 2.8.19 - Jun 26, 2018
 
 * New features
     * outbound: received_header=disabled supresses outbound Received header addition. #2409
