@@ -26,11 +26,6 @@ exports.plugin = {
         test.equal('function', typeof this.plugin.register);
         test.done();
     },
-    'has function load_tls_ini' : function (test) {
-        test.expect(1);
-        test.equal('function', typeof this.plugin.load_tls_ini);
-        test.done();
-    },
     'has function upgrade_connection' : function (test) {
         test.expect(1);
         test.equal('function', typeof this.plugin.upgrade_connection);
@@ -54,9 +49,8 @@ exports.register = {
         done();
     },
     'with certs, should call register_hook()' : function (test) {
-        test.expect(2);
+        test.expect(1);
         this.plugin.register();
-        test.ok(this.plugin.cfg.main.requestCert);
         test.ok(this.plugin.register_hook.called);
         // console.log(this.plugin);
         test.done();
