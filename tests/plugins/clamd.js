@@ -1,7 +1,6 @@
 'use strict';
 
 const net          = require('net');
-const stream       = require('stream');
 const fixtures     = require('haraka-test-fixtures');
 
 const Connection   = fixtures.connection;
