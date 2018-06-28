@@ -1,9 +1,15 @@
-## 2.8.20 - Jul 02, 2018
+## 2.8.20 - Mmm DD, 2018
 
 * New Features
+    * n/a
 * Fixes
+    * tls: remove invalid opt from load_tls_ini #2456
+    * outbound: escape values in HTML bounce correctly #2446
     * dkim_sign: catch exceptions when address-rfc2822 fails to parse From #2457
 * Changes
+    * logger: Add "obj" log param to log hook that contains log data by type #2425
+    * logger: include outbound client ID in logging #2425
+    * logger: allow specifying uuid in params when logging #2425
 
 ## 2.8.19 - Jun 26, 2018
 
