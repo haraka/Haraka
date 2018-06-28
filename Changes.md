@@ -1,20 +1,33 @@
-## x.y.z - unreleased
+## 2.8.19 - Jun 26, 2018
 
 * New features
     * outbound: received_header=disabled supresses outbound Received header addition. #2409
     * auth_base.js: `check_plain_passwd` and `check_cram_md5_passwd` can now pass `message` and `code` to callback routine
+    * spf: allow bypass for relay and AUTH clients #2417
+    * spf: optionally add OpenSPF help text to rejection #2417
+    * auth_base: prevent storing of AUTH password in connection.notes.auth_passwd by setting plugin.blackout_password. #2421
 * Fixes
+    * Mitigate MIME part explosion attack #2447
     * Always prefix ClamAV with a Received header #2407
     * plugins/data.headers.js: wrap address-rfc2822 header parse into try block #2373
     * tls_socket: as client, only apply TLS opts if config is valid #2414
     * when installing, creates config/me if missing #2413
     * queue/qmail-queue: fix a 2nd crash bug when client disconnects unexpectedly #2360
     * remove desconstruction of SMTP commands to prevent exception #2398
+    * attstream: return self so that pipe() calls can be chained together. #2424
+    * outbound: fix dotfile cleanup to consider platform-based prefix. #2395
+    * outbound: fix handling of LMTP socket when a socket path is specified. #2376
 * Changes
+    * relay: move relay acl check to connect_init so flag is set earlier #2442
     * process\_title: add total recipients, avg rcpts/msg, recipients/sec cur/avg/max and messages/conn #2389
     * when relaying is set in a transaction, don't persist beyond the transaction #2393
     * connection.set supports dot delimited path syntax #2390
     * remove deprecated (since 2.8.16) ./dsn.js
+    * Add transaction.msg_status property that reflects message status. #2427
+    * Add transaction.notes.proxy object that hold HAProxy details. #2427
+    * spamassassin: make relay header configurable. #2418
+    * deprecate max_unrecognized_commands plugin in favor of limit. #2402
+    * xclient: add support for DESTADDR/DESTPORT. #2396
 
 ## 2.8.18 - Mar 8, 2018
 

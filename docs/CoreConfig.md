@@ -135,3 +135,8 @@ The list of plugins to load
   to enable:   `echo 1 > /path/to/haraka/config/strict_rfc1869`
   to disable:  `echo 0 > /path/to/haraka/config/strict_rfc1869`
 
+* max_mime_parts
+
+  Defaults to 1000. There's a potential denial of service in large numbers of
+  MIME parts in carefully crafted emails. If this limit is too low for some
+  reason you can increase it by setting a value in this file.
