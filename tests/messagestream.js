@@ -1,7 +1,5 @@
 
-const fs     = require('fs')
 const stream = require('stream')
-const { Writable } = require('stream');
 
 const MessageStream = require('../messagestream')
 
