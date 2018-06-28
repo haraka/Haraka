@@ -1,3 +1,10 @@
+## 2.8.20 - Jul 02, 2018
+
+* New Features
+* Fixes
+    * dkim_sign: catch exceptions when address-rfc2822 fails to parse From #2457
+* Changes
+
 ## 2.8.19 - Jun 26, 2018
 
 * New features
