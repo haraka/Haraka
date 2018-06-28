@@ -23,9 +23,7 @@ exports.shutdown = function () {
 exports.load_tls_ini = function () {
     const plugin = this;
 
-    plugin.cfg = tls_socket.load_tls_ini(function () {
-        plugin.load_tls_ini();
-    });
+    plugin.cfg = tls_socket.load_tls_ini();
 }
 
 exports.advertise_starttls = function (next, connection) {

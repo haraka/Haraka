@@ -965,7 +965,27 @@ class HMailItem extends events.EventEmitter {
         const bounce_html_lines = [];
         const bounce_image_lines = [];
         let bounce_headers_done = false;
+
+        const values = {
+            date: utils.date_to_str(new Date()),
+            me:   config.get('me'),
+            from: from,
+            to:   to,
+            subject: header.get_decoded('Subject').trim(),
+            recipients: this.todo.rcpt_to.join(', '),
+            reason: reason,
+            extended_reason: this.todo.rcpt_to.map(function (recip) {
+                if (recip.reason) {
+                    return `${recip.original}: ${recip.reason}`;
+                }
+            }).join('\n'),
+            pid: process.pid,
+            msgid: `<${utils.uuid()}@${config.get('me')}>`,
+        };
+
         bounce_msg_.forEach(function (line) {
+            line = line.replace(/\{(\w+)\}/g, function (i, word) { return values[word] || '?'; });
+
             if (bounce_headers_done == false && line == '') {
                 bounce_headers_done = true;
             }
@@ -977,8 +997,27 @@ class HMailItem extends events.EventEmitter {
             }
         });
 
+        const escaped_chars = {
+            "&": "amp",
+            "<": "lt",
+            ">": "gt",
+            '"': 'quot',
+            "'": 'apos',
+            "\r": '#10',
+            "\n": '#13'
+        };
+        const escape_pattern = new RegExp('[' + Object.keys(escaped_chars).join() + ']', 'g');
+
         bounce_msg_html_.forEach(function (line) {
-            bounce_html_lines.push(line)
+            line = line.replace(/\{(\w+)\}/g, function (i, word) {
+                if (word in values) {
+                    return String(values[word]).replace(escape_pattern, function (m) { return '&' + escaped_chars[m] + ';'; });
+                } else {
+                    return '?';
+                }
+            });
+
+            bounce_html_lines.push(line);
         });
 
         bounce_msg_image_.forEach(function (line) {
@@ -1002,14 +1041,14 @@ class HMailItem extends events.EventEmitter {
         bounce_body.push(`This is a MIME-encapsulated message.${CRLF}`);
         bounce_body.push(CRLF);
 
-        let boundary_incr = ''
+        let boundary_incr = '';
         if (bounce_html_lines.length > 1) {
-            boundary_incr = 'a'
+            boundary_incr = 'a';
             bounce_body.push(`--${boundary}${CRLF}`);
             bounce_body.push(`Content-Type: multipart/related; boundary="${boundary}${boundary_incr}"${CRLF}`);
             bounce_body.push(CRLF);
             bounce_body.push(`--${boundary}${boundary_incr}${CRLF}`);
-            boundary_incr = 'b'
+            boundary_incr = 'b';
             bounce_body.push(`Content-Type: multipart/alternative; boundary="${boundary}${boundary_incr}"${CRLF}`);
             bounce_body.push(CRLF);
         }
@@ -1033,7 +1072,7 @@ class HMailItem extends events.EventEmitter {
             bounce_body.push(`--${boundary}${boundary_incr}--${CRLF}`);
 
             if (bounce_image_lines.length > 1) {
-                boundary_incr = 'a'
+                boundary_incr = 'a';
                 bounce_body.push(`--${boundary}${boundary_incr}${CRLF}`);
                 //bounce_body.push(`Content-Type: text/html; charset=us-ascii${CRLF}`);
                 //bounce_body.push(CRLF);
@@ -1137,27 +1176,7 @@ class HMailItem extends events.EventEmitter {
 
         bounce_body.push(`--${boundary}--${CRLF}`);
 
-
-        const values = {
-            date: utils.date_to_str(new Date()),
-            me:   config.get('me'),
-            from: from,
-            to:   to,
-            subject: header.get_decoded('Subject').trim(),
-            recipients: this.todo.rcpt_to.join(', '),
-            reason: reason,
-            extended_reason: this.todo.rcpt_to.map(function (recip) {
-                if (recip.reason) {
-                    return `${recip.original}: ${recip.reason}`;
-                }
-            }).join('\n'),
-            pid: process.pid,
-            msgid: `<${utils.uuid()}@${config.get('me')}>`,
-        };
-
-        cb(null, bounce_body.map(function (item) {
-            return item.replace(/\{(\w+)\}/g, function (i, word) { return values[word] || '?'; });
-        }));
+        cb(null, bounce_body);
     }
 
     bounce (err, opts) {
