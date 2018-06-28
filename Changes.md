@@ -3,6 +3,8 @@
 * New Features
     * n/a
 * Fixes
+    * data_headers: check defined-ness of hdr_address *after* try/catch #2458
+    * tls: remove tls.ini loading from plugins/tls #2459
     * tls: remove invalid opt from load_tls_ini #2456
     * outbound: escape values in HTML bounce correctly #2446
     * dkim_sign: catch exceptions when address-rfc2822 fails to parse From #2457
