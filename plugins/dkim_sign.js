@@ -306,12 +306,12 @@ exports.get_sender_domain = function (txn) {
     let addrs;
     try {
         addrs = addrparser.parse(from_hdr);
-        if (!addrs || ! addrs.length) return domain;
     }
     catch (e) {
         plugin.logerror(`address-rfc2822 failed to parse From header: ${from_hdr}`)
         return domain;
     }
+    if (!addrs || ! addrs.length) return domain;
 
     // If From has a single address, we're done
     if (addrs.length === 1 && addrs[0].host) {
