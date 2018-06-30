@@ -300,7 +300,7 @@ class HMailItem extends events.EventEmitter {
             return this.temp_fail("Tried all MXs");
         }
 
-        const mx   = this.mxlist.shift();
+        const mx = this.mxlist.shift();
         let host = mx.exchange;
 
         // IP or IP:port
@@ -389,6 +389,8 @@ class HMailItem extends events.EventEmitter {
                 self.logerror(`Ongoing connection failed to ${host}:${port} : ${err}`);
                 processing_mail = false;
                 client_pool.release_client(socket, port, host, mx.bind, true);
+                if (err.source === 'tls') // exception thrown from tls_socket during tls upgrade
+                    return obtls.mark_tls_nogo(host, () => { return self.try_deliver_host(mx); });
                 // try the next MX
                 return self.try_deliver_host(mx);
             }
@@ -463,8 +465,8 @@ class HMailItem extends events.EventEmitter {
             response = [];
         };
 
-        const process_ehlo_data = function () {
-            for (let i=0,l=response.length; i < l; i++) {
+        function set_ehlo_props () {
+            for (let i = 0, l = response.length; i < l; i++) {
                 const r = response[i];
                 if (r.toUpperCase() === '8BITMIME') {
                     smtp_properties.eightbitmime = true;
@@ -491,23 +493,9 @@ class HMailItem extends events.EventEmitter {
                     }
                 }
             }
+        }
 
-            // TLS
-            if (!secured && smtp_properties.tls && cfg.enable_tls) {
-                const tls_cfg = obtls.tls_socket.load_tls_ini({role: 'client'});
-                if (!net_utils.ip_in_list(tls_cfg.no_tls_hosts, host) &&
-                    !net_utils.ip_in_list(tls_cfg.no_tls_hosts, self.todo.domain)) {
-                    socket.on('secure', function () {
-                        // Set this flag so we don't try STARTTLS again if it
-                        // is incorrectly offered at EHLO once we are secured.
-                        secured = true;
-                        send_command(mx.using_lmtp ? 'LHLO' : 'EHLO', mx.bind_helo);
-                    });
-                    return send_command('STARTTLS');
-                }
-            }
-
-            // IMPORTANT: do STARTTLS before AUTH for security
+        function auth_and_mail_phase () {
             if (!authenticated && (mx.auth_user && mx.auth_pass)) {
                 // We have AUTH credentials to send for this domain
                 if (!(Array.isArray(smtp_properties.auth) && smtp_properties.auth.length)) {
@@ -558,7 +546,41 @@ class HMailItem extends events.EventEmitter {
             }
 
             return send_command('MAIL', `FROM:${self.todo.mail_from.format(!smtp_properties.smtp_utf8)}`);
-        };
+        } // auth_and_mail_phase()
+
+        function process_ehlo_data () {
+            set_ehlo_props();
+
+            // TLS
+            if (!secured && smtp_properties.tls && cfg.enable_tls) {
+                const tls_cfg = obtls.tls_socket.load_tls_ini({role: 'client'});
+                if (!net_utils.ip_in_list(tls_cfg.no_tls_hosts, host) &&
+                    !net_utils.ip_in_list(tls_cfg.no_tls_hosts, self.todo.domain)) {
+
+                    self.logdebug(`Trying TLS for domain: ${self.todo.domain}, host: ${host}`);
+
+                    return obtls.check_tls_nogo(host,
+                        () => { // Clear to GO
+                            socket.on('secure', function () {
+                                // Set this flag so we don't try STARTTLS again if it
+                                // is incorrectly offered at EHLO once we are secured.
+                                secured = true;
+                                send_command(mx.using_lmtp ? 'LHLO' : 'EHLO', mx.bind_helo);
+                            });
+                            return send_command('STARTTLS');
+                        },
+                        (when) => { // No GO
+                            self.loginfo(`TLS disabled for ${host} because it was marked as non-TLS on ${when}`);
+                            return auth_and_mail_phase();
+                        }
+                    );
+                }
+            }
+
+            // IMPORTANT: we do STARTTLS before we attempt AUTH for extra security
+            return auth_and_mail_phase();
+
+        } // process_ehlo_data()
 
         let fp_called = false;
 
@@ -954,7 +976,27 @@ class HMailItem extends events.EventEmitter {
         const bounce_html_lines = [];
         const bounce_image_lines = [];
         let bounce_headers_done = false;
+
+        const values = {
+            date: utils.date_to_str(new Date()),
+            me:   config.get('me'),
+            from: from,
+            to:   to,
+            subject: header.get_decoded('Subject').trim(),
+            recipients: this.todo.rcpt_to.join(', '),
+            reason: reason,
+            extended_reason: this.todo.rcpt_to.map(function (recip) {
+                if (recip.reason) {
+                    return `${recip.original}: ${recip.reason}`;
+                }
+            }).join('\n'),
+            pid: process.pid,
+            msgid: `<${utils.uuid()}@${config.get('me')}>`,
+        };
+
         bounce_msg_.forEach(function (line) {
+            line = line.replace(/\{(\w+)\}/g, function (i, word) { return values[word] || '?'; });
+
             if (bounce_headers_done == false && line == '') {
                 bounce_headers_done = true;
             }
@@ -966,14 +1008,32 @@ class HMailItem extends events.EventEmitter {
             }
         });
 
+        const escaped_chars = {
+            "&": "amp",
+            "<": "lt",
+            ">": "gt",
+            '"': 'quot',
+            "'": 'apos',
+            "\r": '#10',
+            "\n": '#13'
+        };
+        const escape_pattern = new RegExp('[' + Object.keys(escaped_chars).join() + ']', 'g');
+
         bounce_msg_html_.forEach(function (line) {
-            bounce_html_lines.push(line)
+            line = line.replace(/\{(\w+)\}/g, function (i, word) {
+                if (word in values) {
+                    return String(values[word]).replace(escape_pattern, function (m) { return '&' + escaped_chars[m] + ';'; });
+                } else {
+                    return '?';
+                }
+            });
+
+            bounce_html_lines.push(line);
         });
 
         bounce_msg_image_.forEach(function (line) {
             bounce_image_lines.push(line)
         });
-
 
         const boundary = `boundary_${utils.uuid()}`;
         const bounce_body = [];
@@ -991,14 +1051,14 @@ class HMailItem extends events.EventEmitter {
         bounce_body.push(`This is a MIME-encapsulated message.${CRLF}`);
         bounce_body.push(CRLF);
 
-        let boundary_incr = ''
+        let boundary_incr = '';
         if (bounce_html_lines.length > 1) {
-            boundary_incr = 'a'
+            boundary_incr = 'a';
             bounce_body.push(`--${boundary}${CRLF}`);
             bounce_body.push(`Content-Type: multipart/related; boundary="${boundary}${boundary_incr}"${CRLF}`);
             bounce_body.push(CRLF);
             bounce_body.push(`--${boundary}${boundary_incr}${CRLF}`);
-            boundary_incr = 'b'
+            boundary_incr = 'b';
             bounce_body.push(`Content-Type: multipart/alternative; boundary="${boundary}${boundary_incr}"${CRLF}`);
             bounce_body.push(CRLF);
         }
@@ -1022,7 +1082,7 @@ class HMailItem extends events.EventEmitter {
             bounce_body.push(`--${boundary}${boundary_incr}--${CRLF}`);
 
             if (bounce_image_lines.length > 1) {
-                boundary_incr = 'a'
+                boundary_incr = 'a';
                 bounce_body.push(`--${boundary}${boundary_incr}${CRLF}`);
                 //bounce_body.push(`Content-Type: text/html; charset=us-ascii${CRLF}`);
                 //bounce_body.push(CRLF);
@@ -1126,27 +1186,7 @@ class HMailItem extends events.EventEmitter {
 
         bounce_body.push(`--${boundary}--${CRLF}`);
 
-
-        const values = {
-            date: utils.date_to_str(new Date()),
-            me:   config.get('me'),
-            from: from,
-            to:   to,
-            subject: header.get_decoded('Subject').trim(),
-            recipients: this.todo.rcpt_to.join(', '),
-            reason: reason,
-            extended_reason: this.todo.rcpt_to.map(function (recip) {
-                if (recip.reason) {
-                    return `${recip.original}: ${recip.reason}`;
-                }
-            }).join('\n'),
-            pid: process.pid,
-            msgid: `<${utils.uuid()}@${config.get('me')}>`,
-        };
-
-        cb(null, bounce_body.map(function (item) {
-            return item.replace(/\{(\w+)\}/g, function (i, word) { return values[word] || '?'; });
-        }));
+        cb(null, bounce_body);
     }
 
     bounce (err, opts) {
@@ -1382,6 +1422,7 @@ class HMailItem extends events.EventEmitter {
 }
 
 module.exports = HMailItem;
+module.exports.obtls = obtls;
 
 // copy logger methods into HMailItem:
 for (const key in logger) {

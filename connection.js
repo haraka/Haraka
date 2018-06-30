@@ -600,6 +600,7 @@ class Connection {
         if (this.state >= states.DISCONNECTING) return;
         const self = this;
         self.state = states.DISCONNECTING;
+        self.current_data = null; // don't process any more data we have already received
         this.reset_transaction(() => {
             plugins.run_hooks('disconnect', self);
         });
@@ -1596,6 +1597,15 @@ class Connection {
 
         // Stop accumulating data as we're going to reject at dot.
         if (this.max_bytes && this.transaction.data_bytes > this.max_bytes) {
+            return;
+        }
+
+        const max_mime_parts = config.get('max_mime_parts') || 1000;
+        if (this.transaction.mime_part_count >= max_mime_parts) {
+            this.logcrit("Possible DoS attempt - too many MIME parts");
+            this.respond(554, "Transaction failed due to too many MIME parts", function () {
+                self.disconnect();
+            });
             return;
         }
 

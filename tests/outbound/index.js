@@ -136,14 +136,6 @@ exports.get_tls_options = {
         process.env.HARAKA_TEST_DIR=path.resolve('tests');
         this.outbound = require('../../outbound');
         this.obtls = require('../../outbound/tls');
-        done();
-    },
-    tearDown: function (done) {
-        delete process.env.HARAKA_TEST_DIR;
-        done();
-    },
-    'gets TLS properties from tls.ini.outbound': function (test) {
-        test.expect(1);
 
         // reset config to load from tests directory
         const testDir = path.resolve('tests');
@@ -151,6 +143,14 @@ exports.get_tls_options = {
         this.outbound.config = this.outbound.config.module_config(testDir);
         this.obtls.config = this.outbound.config.module_config(testDir);
 
+        this.obtls.get_plugin_ready(()=> done());
+    },
+    tearDown: function (done) {
+        delete process.env.HARAKA_TEST_DIR;
+        done();
+    },
+    'gets TLS properties from tls.ini.outbound': function (test) {
+        test.expect(1);
         const tls_config = this.obtls.get_tls_options(
             { exchange: 'mail.example.com'}
         );
@@ -163,7 +163,8 @@ exports.get_tls_options = {
             ciphers: 'ECDHE-RSA-AES256-GCM-SHA384',
             rejectUnauthorized: false,
             requestCert: false,
-            honorCipherOrder: false
+            honorCipherOrder: false,
+            redis: { disable_for_failed_hosts: false },
         });
         test.done();
     },
