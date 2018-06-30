@@ -1,3 +1,6 @@
+
+* introduce global plugin.lookback_is_rejected flag #2422
+
 ## 2.8.20 - Mmm DD, 2018
 
 * New Features
