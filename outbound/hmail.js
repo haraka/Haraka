@@ -300,7 +300,7 @@ class HMailItem extends events.EventEmitter {
             return this.temp_fail("Tried all MXs");
         }
 
-        const mx   = this.mxlist.shift();
+        const mx = this.mxlist.shift();
         let host = mx.exchange;
 
         // IP or IP:port
@@ -465,7 +465,7 @@ class HMailItem extends events.EventEmitter {
             response = [];
         };
 
-        const set_ehlo_props = function () {
+        function set_ehlo_props () {
             for (let i = 0, l = response.length; i < l; i++) {
                 const r = response[i];
                 if (r.toUpperCase() === '8BITMIME') {
@@ -493,9 +493,9 @@ class HMailItem extends events.EventEmitter {
                     }
                 }
             }
-        };
+        }
 
-        const auth_and_mail_phase = function () {
+        function auth_and_mail_phase () {
             if (!authenticated && (mx.auth_user && mx.auth_pass)) {
                 // We have AUTH credentials to send for this domain
                 if (!(Array.isArray(smtp_properties.auth) && smtp_properties.auth.length)) {
@@ -546,9 +546,9 @@ class HMailItem extends events.EventEmitter {
             }
 
             return send_command('MAIL', `FROM:${self.todo.mail_from.format(!smtp_properties.smtp_utf8)}`);
-        }; // auth_and_mail_phase()
+        } // auth_and_mail_phase()
 
-        const process_ehlo_data = function () {
+        function process_ehlo_data () {
             set_ehlo_props();
 
             // TLS
@@ -580,7 +580,7 @@ class HMailItem extends events.EventEmitter {
             // IMPORTANT: we do STARTTLS before we attempt AUTH for extra security
             return auth_and_mail_phase();
 
-        }; // process_ehlo_data()
+        } // process_ehlo_data()
 
         let fp_called = false;
 
@@ -1034,7 +1034,6 @@ class HMailItem extends events.EventEmitter {
         bounce_msg_image_.forEach(function (line) {
             bounce_image_lines.push(line)
         });
-
 
         const boundary = `boundary_${utils.uuid()}`;
         const bounce_body = [];
