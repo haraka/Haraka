@@ -1,7 +1,13 @@
+## 2.8.21 - Mmm DD, 2018
 
-* introduce global plugin.lookback_is_rejected flag #2422
+* New Features
+    * outbound: skip STARTTLS after remote host fails TLS upgrade
+    * dns_list_base: introduce global plugin.lookback_is_rejected flag #2422
+* Fixes
+* Changes
 
-## 2.8.20 - Mmm DD, 2018
+
+## 2.8.20 - Jun 29, 2018
 
 * New Features
     * n/a
