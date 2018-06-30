@@ -67,6 +67,7 @@ exports.advertise_starttls = function (next, connection) {
 }
 
 exports.set_notls = function (ip) {
+
     if (!tls_socket.cfg.redis) return;
     if (!tls_socket.cfg.redis.disable_for_failed_hosts) return;
     if (!server.notes.redis) return;

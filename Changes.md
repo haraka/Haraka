@@ -1,3 +1,11 @@
+## 2.8.21 - Mmm DD, 2018
+
+* New Features
+    * outbound: skip STARTTLS after remote host fails TLS upgrade
+* Fixes
+* Changes
+
+
 ## 2.8.20 - Jun 29, 2018
 
 * New Features
