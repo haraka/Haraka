@@ -1,4 +1,4 @@
-## 2.8.20 - Mmm DD, 2018
+## 2.8.20 - Jun 29, 2018
 
 * New Features
     * n/a
