@@ -9,6 +9,8 @@ exports.net_utils = require('haraka-net-utils');
 
 exports.register = function () {
     const plugin = this;
+    
+    tls_socket.load_tls_ini();
 
     plugin.register_hook('capabilities',         'advertise_starttls');
     plugin.register_hook('unrecognized_command', 'upgrade_connection');
