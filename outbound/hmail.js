@@ -306,7 +306,7 @@ class HMailItem extends events.EventEmitter {
             return this.temp_fail("Tried all MXs", {mx: previous_mx});
         }
 
-        const mx   = this.mxlist.shift();
+        const mx = this.mxlist.shift();
         let host = mx.exchange;
 
         // IP or IP:port
@@ -399,6 +399,8 @@ class HMailItem extends events.EventEmitter {
                 self.logerror(`Ongoing connection failed to ${host}:${port} : ${err}`);
                 processing_mail = false;
                 client_pool.release_client(socket, port, host, mx.bind, true);
+                if (err.source === 'tls') // exception thrown from tls_socket during tls upgrade
+                    return obtls.mark_tls_nogo(host, () => { return self.try_deliver_host(mx); });
                 // try the next MX
                 return self.try_deliver_host(mx);
             }
@@ -473,8 +475,8 @@ class HMailItem extends events.EventEmitter {
             response = [];
         };
 
-        const process_ehlo_data = function () {
-            for (let i=0,l=response.length; i < l; i++) {
+        function set_ehlo_props () {
+            for (let i = 0, l = response.length; i < l; i++) {
                 const r = response[i];
                 if (r.toUpperCase() === '8BITMIME') {
                     smtp_properties.eightbitmime = true;
@@ -501,23 +503,9 @@ class HMailItem extends events.EventEmitter {
                     }
                 }
             }
+        }
 
-            // TLS
-            if (!secured && smtp_properties.tls && cfg.enable_tls) {
-                const tls_cfg = obtls.tls_socket.load_tls_ini({role: 'client'});
-                if (!net_utils.ip_in_list(tls_cfg.no_tls_hosts, host) &&
-                    !net_utils.ip_in_list(tls_cfg.no_tls_hosts, self.todo.domain)) {
-                    socket.on('secure', function () {
-                        // Set this flag so we don't try STARTTLS again if it
-                        // is incorrectly offered at EHLO once we are secured.
-                        secured = true;
-                        send_command(mx.using_lmtp ? 'LHLO' : 'EHLO', mx.bind_helo);
-                    });
-                    return send_command('STARTTLS');
-                }
-            }
-
-            // IMPORTANT: do STARTTLS before AUTH for security
+        function auth_and_mail_phase () {
             if (!authenticated && (mx.auth_user && mx.auth_pass)) {
                 // We have AUTH credentials to send for this domain
                 if (!(Array.isArray(smtp_properties.auth) && smtp_properties.auth.length)) {
@@ -568,7 +556,41 @@ class HMailItem extends events.EventEmitter {
             }
 
             return send_command('MAIL', `FROM:${self.todo.mail_from.format(!smtp_properties.smtp_utf8)}`);
-        };
+        } // auth_and_mail_phase()
+
+        function process_ehlo_data () {
+            set_ehlo_props();
+
+            // TLS
+            if (!secured && smtp_properties.tls && cfg.enable_tls) {
+                const tls_cfg = obtls.tls_socket.load_tls_ini({role: 'client'});
+                if (!net_utils.ip_in_list(tls_cfg.no_tls_hosts, host) &&
+                    !net_utils.ip_in_list(tls_cfg.no_tls_hosts, self.todo.domain)) {
+
+                    self.logdebug(`Trying TLS for domain: ${self.todo.domain}, host: ${host}`);
+
+                    return obtls.check_tls_nogo(host,
+                        () => { // Clear to GO
+                            socket.on('secure', function () {
+                                // Set this flag so we don't try STARTTLS again if it
+                                // is incorrectly offered at EHLO once we are secured.
+                                secured = true;
+                                send_command(mx.using_lmtp ? 'LHLO' : 'EHLO', mx.bind_helo);
+                            });
+                            return send_command('STARTTLS');
+                        },
+                        (when) => { // No GO
+                            self.loginfo(`TLS disabled for ${host} because it was marked as non-TLS on ${when}`);
+                            return auth_and_mail_phase();
+                        }
+                    );
+                }
+            }
+
+            // IMPORTANT: we do STARTTLS before we attempt AUTH for extra security
+            return auth_and_mail_phase();
+
+        } // process_ehlo_data()
 
         let fp_called = false;
 
@@ -1024,7 +1046,6 @@ class HMailItem extends events.EventEmitter {
             bounce_image_lines.push(line)
         });
 
-
         const boundary = `boundary_${utils.uuid()}`;
         const bounce_body = [];
 
@@ -1418,6 +1439,7 @@ class HMailItem extends events.EventEmitter {
 }
 
 module.exports = HMailItem;
+module.exports.obtls = obtls;
 
 // copy logger methods into HMailItem:
 for (const key in logger) {
