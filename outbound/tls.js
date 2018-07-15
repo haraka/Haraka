@@ -2,11 +2,12 @@
 
 const logger       = require('../logger');
 const hkredis      = require('haraka-plugin-redis');
+const tls_socket   = require('../tls_socket');
 
 class OutboundTLS {
     constructor () {
         logger.add_log_methods(this);
-        load_config();
+        this.load_config();
     }
 
     load_config () {
