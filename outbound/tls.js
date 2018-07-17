@@ -15,14 +15,14 @@ exports.get_plugin_ready = function (cb) {
     plugin.cfg = exports.load_config();
     // logger.logdebug(plugin, plugin.cfg.redis);
 
-    if (plugin.cfg.redis.disable_for_failed_hosts) { // which means changing this var in-flight won't work
-        logger.logdebug(plugin, 'Will disable outbound TLS for failing TLS hosts');
-        Object.assign(plugin, hkredis);
-        plugin.merge_redis_ini();
-        return plugin.init_redis_plugin(cb);
-    }
-    return cb();
-};
+    // changing this var in-flight won't work
+    if (plugin.cfg.redis && !plugin.cfg.redis.disable_for_failed_hosts) return cb();
+
+    logger.logdebug(plugin, 'Will disable outbound TLS for failing TLS hosts');
+    Object.assign(plugin, hkredis);
+    plugin.merge_redis_ini();
+    plugin.init_redis_plugin(cb);
+}
 
 exports.load_config = function () {
     const tls_cfg = exports.tls_socket.load_tls_ini();
@@ -63,19 +63,20 @@ exports.load_config = function () {
     }
 
     return cfg;
-};
+}
 
 exports.get_tls_options = function (mx) {
     return Object.assign(this.cfg, {servername: mx.exchange});
-};
+}
 
 // Check for if host is prohibited from TLS negotiation
-exports.check_tls_nogo = function (host, cb_ok, cb_nogo){
+exports.check_tls_nogo = function (host, cb_ok, cb_nogo) {
     const plugin = this;
     const dbkey = `no_tls|${host}`;
 
-    if (!plugin.cfg.redis.disable_for_failed_hosts)
-        return cb_ok();
+    if (plugin.cfg === undefined) return cb_ok();
+    if (plugin.cfg.redis === undefined) return cb_ok();
+    if (!plugin.cfg.redis.disable_for_failed_hosts) return cb_ok();
 
     plugin.db.get(dbkey, (err, dbr) => {
         if (err) {
@@ -85,15 +86,14 @@ exports.check_tls_nogo = function (host, cb_ok, cb_nogo){
 
         return dbr ? cb_nogo(dbr) : cb_ok();
     });
-};
+}
 
-exports.mark_tls_nogo = function (host, cb){
+exports.mark_tls_nogo = function (host, cb) {
     const plugin = this;
     const dbkey = `no_tls|${host}`;
     const expiry = plugin.cfg.redis.disable_expiry || 604800;
 
-    if (!plugin.cfg.redis.disable_for_failed_hosts)
-        return cb();
+    if (!plugin.cfg.redis.disable_for_failed_hosts) return cb();
 
     logger.lognotice(plugin, `TLS connection failed. Marking ${host} as non-TLS for ${expiry} seconds`);
 
@@ -102,6 +102,6 @@ exports.mark_tls_nogo = function (host, cb){
 
         cb();
     });
-};
+}
 
 logger.add_log_methods(this);
