@@ -194,3 +194,47 @@ exports.first = {
         this.plugin.first('127.0.0.2', dnsbls, cb, cb_each);
     }
 }
+
+function zone_disable_test_func (zones, test, cb) {
+    this.plugin.disabled_zones = zones;
+    this.plugin.zones = []
+
+    this.plugin.check_zones(9000);
+
+    const fin_check = () => {
+        this.plugin.shutdown();
+        cb();
+        test.done();
+    }
+
+    let i = 0;
+    const again = () => {
+        i++;
+        setTimeout(() => {
+            if (this.plugin.zones.length === zones.length) return fin_check();
+            if (i > 4) return fin_check();
+            again();
+        }, 1000);
+    };
+    again();
+}
+
+exports.lookback_is_rejected = {
+    setUp: _set_up,
+    'zones with quirks pass through when lookback_is_rejected=true': function (test) {
+        const zones = [ 'hostkarma.junkemailfilter.com', 'bl.spamcop.net' ];
+        this.plugin.lookback_is_rejected = true;
+
+        zone_disable_test_func.call(this, zones, test, () => {
+            test.deepEqual(this.plugin.zones.sort(), zones.sort(), "Didn't enable all zones back");
+        });
+    },
+    'zones with quirks are disabled when lookback_is_rejected=false': function (test) {
+        const zones = [ 'hostkarma.junkemailfilter.com', 'bl.spamcop.net' ];
+        // this.plugin.lookback_is_rejected = true;
+
+        zone_disable_test_func.call(this, zones, test, () => {
+            test.deepEqual(this.plugin.zones.sort(), ['bl.spamcop.net'], "Enabled all zones back? This should not have happened");
+        });
+    }
+}
