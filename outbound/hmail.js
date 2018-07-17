@@ -708,7 +708,7 @@ class HMailItem extends events.EventEmitter {
                     if (command === 'dot_lmtp') {
                         response = [];
                         if (ok_recips.length === 0) {
-                            return finish_processing_mail(true);
+                            return finish_processing_mail(false);
                         }
                     }
                 }
@@ -756,7 +756,7 @@ class HMailItem extends events.EventEmitter {
                     if (command === 'dot_lmtp') {
                         response = [];
                         if (ok_recips.length === 0) {
-                            return finish_processing_mail(true);
+                            return finish_processing_mail(false);
                         }
                     }
                 }
