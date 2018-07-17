@@ -165,7 +165,7 @@ exports.load_key = function (file) {
 
 exports.hook_queue_outbound = exports.hook_pre_send_trans_email = function (next, connection) {
     const plugin = this;
-    if (plugin.cfg.main.disabled) { return next(); }
+    if (plugin.cfg.main.disabled) return next();
     if (connection.transaction.notes.dkim_signed) {
         connection.logdebug(plugin, 'email already signed');
         return next();
@@ -186,18 +186,17 @@ exports.hook_queue_outbound = exports.hook_pre_send_trans_email = function (next
         }
         else {
             domain = path.basename(keydir);
-            connection.logdebug(plugin, 'dkim_domain: ' + domain);
             private_key = plugin.load_key(path.join('dkim', domain, 'private'));
             selector    = plugin.load_key(path.join('dkim', domain, 'selector')).trim();
         }
 
-        if (!plugin.has_key_data(connection,domain,selector,private_key)) {
-            return next();
-        }
+        if (!plugin.has_key_data(connection, domain, selector, private_key)) return next();
+        connection.logdebug(plugin, 'dkim_domain: ' + domain);
 
         const headers_to_sign = plugin.get_headers_to_sign();
         const txn = connection.transaction;
-        const dkimCallback = function (err2, dkim_header) {
+
+        function dkimCallback (err2, dkim_header) {
             if (err2) {
                 txn.results.add(plugin, {err: err2.message});
             }
@@ -208,17 +207,18 @@ exports.hook_queue_outbound = exports.hook_pre_send_trans_email = function (next
             }
             connection.transaction.notes.dkim_signed = true;
             return next();
-        };
-        txn.message_stream.pipe(new DKIMSignStream(
-            selector, domain, private_key, headers_to_sign,
-            txn.header, dkimCallback));
+        }
+
+        txn.message_stream.pipe(
+            new DKIMSignStream(selector, domain, private_key, headers_to_sign, txn.header, dkimCallback)
+        );
     });
 }
 
 exports.get_key_dir = function (connection, done) {
     const plugin = this;
     const domain = plugin.get_sender_domain(connection.transaction);
-    if (!domain) { return done(); }
+    if (!domain) return done();
 
     // split the domain name into labels
     const labels     = domain.split('.');
@@ -236,10 +236,8 @@ exports.get_key_dir = function (connection, done) {
             if (err) return iterDone(null, false);
             iterDone(null, stats.isDirectory());
         });
-    }, function (err, results) {
-        if (err) {
-            connection.logerror(err);
-        }
+    },
+    function (err, results) {
         connection.logdebug(plugin, results);
         done(err, results);
     });
@@ -262,7 +260,7 @@ exports.has_key_data = function (conn, domain, selector, private_key) {
         return false;
     }
 
-    conn.logprotocol(plugin, 'selector: '+selector);
+    conn.logprotocol(plugin, `selector: ${selector}`);
     return true;
 }
 
@@ -287,7 +285,7 @@ exports.get_headers_to_sign = function () {
 
 exports.get_sender_domain = function (txn) {
     const plugin = this;
-    if (!txn) { return; }
+    if (!txn) return;
 
     // a fallback, when header parsing fails
     let domain;
@@ -296,17 +294,24 @@ exports.get_sender_domain = function (txn) {
         plugin.logerror(e);
     }
 
-    if (!txn.header) { return domain; }
+    if (!txn.header) return domain;
 
     // the DKIM signing key should be aligned with the domain in the From
     // header (see DMARC). Try to parse the domain from there.
     const from_hdr = txn.header.get('From');
-    if (!from_hdr) { return domain; }
+    if (!from_hdr) return domain;
 
     // The From header can contain multiple addresses and should be
     // parsed as described in RFC 2822 3.6.2.
-    const addrs = addrparser.parse(from_hdr);
-    if (!addrs || ! addrs.length) { return domain; }
+    let addrs;
+    try {
+        addrs = addrparser.parse(from_hdr);
+    }
+    catch (e) {
+        plugin.logerror(`address-rfc2822 failed to parse From header: ${from_hdr}`)
+        return domain;
+    }
+    if (!addrs || ! addrs.length) return domain;
 
     // If From has a single address, we're done
     if (addrs.length === 1 && addrs[0].host) {

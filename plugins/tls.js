@@ -10,7 +10,7 @@ exports.net_utils = require('haraka-net-utils');
 exports.register = function () {
     const plugin = this;
 
-    plugin.load_tls_ini();
+    tls_socket.load_tls_ini();
 
     plugin.register_hook('capabilities',         'advertise_starttls');
     plugin.register_hook('unrecognized_command', 'upgrade_connection');
@@ -18,14 +18,6 @@ exports.register = function () {
 
 exports.shutdown = function () {
     if (tls_socket.shutdown) tls_socket.shutdown();
-}
-
-exports.load_tls_ini = function () {
-    const plugin = this;
-
-    plugin.cfg = tls_socket.load_tls_ini(function () {
-        plugin.load_tls_ini();
-    });
 }
 
 exports.advertise_starttls = function (next, connection) {
@@ -40,7 +32,7 @@ exports.advertise_starttls = function (next, connection) {
     /* Caution: do not advertise STARTTLS if already TLS upgraded */
     if (connection.tls.enabled) return next();
 
-    if (plugin.net_utils.ip_in_list(plugin.cfg.no_tls_hosts, connection.remote.ip)) {
+    if (plugin.net_utils.ip_in_list(tls_socket.cfg.no_tls_hosts, connection.remote.ip)) {
         return next();
     }
 
@@ -50,7 +42,7 @@ exports.advertise_starttls = function (next, connection) {
         next();
     };
 
-    if (!plugin.cfg.redis || !server.notes.redis) {
+    if (!tls_socket.cfg.redis || !server.notes.redis) {
         return enable_tls();
     }
 
@@ -77,10 +69,9 @@ exports.advertise_starttls = function (next, connection) {
 }
 
 exports.set_notls = function (ip) {
-    const plugin = this;
 
-    if (!plugin.cfg.redis) return;
-    if (!plugin.cfg.redis.disable_for_failed_hosts) return;
+    if (!tls_socket.cfg.redis) return;
+    if (!tls_socket.cfg.redis.disable_for_failed_hosts) return;
     if (!server.notes.redis) return;
 
     server.notes.redis.set('no_tls|' + ip, true);

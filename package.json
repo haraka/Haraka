@@ -4,7 +4,7 @@
   "license": "MIT",
   "description": "An SMTP Server project.",
   "keywords": [ "haraka", "smtp", "server", "email" ],
-  "version": "2.8.18",
+  "version": "2.8.20",
   "homepage": "http://haraka.github.io",
   "repository": {
     "type": "git",
@@ -12,7 +12,7 @@
   },
   "main": "haraka.js",
   "engines": {
-    "node": ">= v6.14.1"
+    "node": ">= v6.14.3"
   },
   "dependencies": {
     "address-rfc2821"       : "^1.1.1",
@@ -21,7 +21,7 @@
     "daemon"                : "~1.1.0",
     "generic-pool"          : "~2.5.0",
     "iconv"                 : "~2.3.0",
-    "ipaddr.js"             : "~1.7.0",
+    "ipaddr.js"             : "~1.8.0",
     "nopt"                  : "~4.0.1",
     "npid"                  : "~0.4.0",
     "semver"                : "~5.5.0",

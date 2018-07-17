@@ -287,14 +287,16 @@ exports.from_match = function (next, connection) {
     let hdr_addr;
     try {
         hdr_addr = (plugin.addrparser.parse(hdr_from))[0];
-        if (!hdr_addr) {
-            connection.loginfo(plugin, `address at fault is: ${hdr_from}`);
-            connection.transaction.results.add(plugin, {fail: 'from_match(unparsable)'});
-            return next();
-        }
-    } catch (e) {
+    }
+    catch (e) {
         connection.logwarn(plugin, `parsing "${hdr_from.trim()}" with address-rfc2822 plugin returned error: ${e.message}`);
         connection.transaction.results.add(plugin, {fail: 'from_match(rfc_violation)'});
+        return next();
+    }
+
+    if (!hdr_addr) {
+        connection.loginfo(plugin, `address at fault is: ${hdr_from}`);
+        connection.transaction.results.add(plugin, {fail: 'from_match(unparsable)'});
         return next();
     }
 

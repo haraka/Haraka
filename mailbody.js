@@ -60,10 +60,12 @@ class Body extends events.EventEmitter {
                 this.state = 'end';
             }
             else {
+                this.emit('mime_boundary', line);
                 const bod = new Body(new Header(), this.options);
                 this.listeners('attachment_start').forEach(function (cb) { bod.on('attachment_start', cb) });
                 this.listeners('attachment_data' ).forEach(function (cb) { bod.on('attachment_data', cb) });
                 this.listeners('attachment_end'  ).forEach(function (cb) { bod.on('attachment_end', cb) });
+                this.listeners('mime_boundary').forEach(cb => bod.on('mime_boundary', cb));
                 this.filters.forEach(function (f) { bod.add_filter(f); });
                 this.children.push(bod);
                 bod.state = 'headers';
@@ -268,8 +270,10 @@ class Body extends events.EventEmitter {
             }
             else {
                 // next section
+                this.emit('mime_boundary', line);
                 const bod = new Body(new Header(), this.options);
                 this.listeners('attachment_start').forEach(function (cb) { bod.on('attachment_start', cb) });
+                this.listeners('mime_boundary').forEach(cb => bod.on('mime_boundary', cb));
                 this.filters.forEach(function (f) { bod.add_filter(f); });
                 this.children.push(bod);
                 bod.state = 'headers';
