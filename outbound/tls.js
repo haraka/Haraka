@@ -2,8 +2,8 @@
 
 const logger       = require('../logger');
 const tls_socket   = require('../tls_socket');
+const config       = require('./index').config;
 const hkredis      = require('haraka-plugin-redis');
-const config       = require('haraka-config');
 
 const inheritable_opts = [
     'key', 'cert', 'ciphers', 'dhparam',
@@ -12,8 +12,13 @@ const inheritable_opts = [
 
 class OutboundTLS {
     constructor () {
+        this.config = config;
         logger.add_log_methods(this);
-        this.load_config();
+    }
+
+    test_config (tls_config, our_config) {
+        tls_socket.config = tls_config;
+        this.config = our_config;
     }
 
     load_config () {
@@ -35,24 +40,25 @@ class OutboundTLS {
             if (Array.isArray(cfg.key)) {
                 cfg.key = cfg.key[0];
             }
-            cfg.key = config.get(cfg.key, 'binary');
+            cfg.key = this.config.get(cfg.key, 'binary');
         }
 
         if (cfg.dhparam) {
-            cfg.dhparam = config.get(cfg.dhparam, 'binary');
+            cfg.dhparam = this.config.get(cfg.dhparam, 'binary');
         }
 
         if (cfg.cert) {
             if (Array.isArray(cfg.cert)) {
                 cfg.cert = cfg.cert[0];
             }
-            cfg.cert = config.get(cfg.cert, 'binary');
+            cfg.cert = this.config.get(cfg.cert, 'binary');
         }
 
         this.cfg = cfg;
     }
 
     init (cb) {
+        this.load_config();
         // changing this var in-flight won't work
         if (this.cfg.redis && !this.cfg.redis.disable_for_failed_hosts) return cb();
         logger.logdebug(this, 'Will disable outbound TLS for failing TLS hosts');

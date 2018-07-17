@@ -135,10 +135,13 @@ exports.get_tls_options = {
     setUp : function (done) {
         process.env.HARAKA_TEST_DIR=path.resolve('tests');
         this.outbound = require('../../outbound');
+        this.obtls = require('../../outbound/tls');
+        const tls_socket = require('../../tls_socket');
+
         // reset config to load from tests directory
         const testDir = path.resolve('tests');
         this.outbound.config = this.outbound.config.module_config(testDir);
-        this.obtls = require('../../outbound/tls');
+        this.obtls.test_config(tls_socket.config.module_config(testDir), this.outbound.config);
         this.obtls.init(() => {
             done();
         })
