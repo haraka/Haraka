@@ -94,14 +94,12 @@ class OutboundTLS {
         const dbkey = `no_tls|${host}`;
         const expiry = plugin.cfg.redis.disable_expiry || 604800;
 
-        if (!plugin.cfg.redis.disable_for_failed_hosts)
-            return cb();
+        if (!plugin.cfg.redis.disable_for_failed_hosts) return cb();
 
         logger.lognotice(plugin, `TLS connection failed. Marking ${host} as non-TLS for ${expiry} seconds`);
 
         plugin.db.setex(dbkey, expiry, new Date(), (err, dbr) => {
             if (err) logger.logerror(plugin, `Redis returned error: ${err}`);
-
             cb();
         });
     }

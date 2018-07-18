@@ -2,6 +2,7 @@
 
 * New Features
     * outbound: skip STARTTLS after remote host fails TLS upgrade
+    * dns_list_base: introduce global plugin.lookback_is_rejected flag #2422
 * Fixes
 * Changes
 
