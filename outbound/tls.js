@@ -2,7 +2,7 @@
 
 const logger       = require('../logger');
 const tls_socket   = require('../tls_socket');
-const config       = require('./index').config;
+const config       = require('haraka-config');
 const hkredis      = require('haraka-plugin-redis');
 
 const inheritable_opts = [
