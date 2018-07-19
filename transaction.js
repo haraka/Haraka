@@ -174,7 +174,7 @@ class Transaction {
     }
 
     attachment_hooks (start, data, end) {
-        this.parse_body = 1;
+        this.parse_body = true;
         this.attachment_start_hooks.push(start);
     }
 
