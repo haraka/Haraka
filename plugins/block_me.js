@@ -8,7 +8,7 @@ const utils = require('haraka-utils');
 
 exports.hook_data = function (next, connection) {
     // enable mail body parsing
-    connection.transaction.parse_body = 1;
+    connection.transaction.parse_body = true;
     next();
 }
 

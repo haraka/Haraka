@@ -553,9 +553,9 @@ class HMailItem extends events.EventEmitter {
 
             // TLS
             if (!secured && smtp_properties.tls && cfg.enable_tls) {
-                const tls_cfg = obtls.tls_socket.load_tls_ini({role: 'client'});
-                if (!net_utils.ip_in_list(tls_cfg.no_tls_hosts, host) &&
-                    !net_utils.ip_in_list(tls_cfg.no_tls_hosts, self.todo.domain)) {
+                if (obtls.cfg !== undefined && obtls.cfg.no_tls_hosts !== undefined &&
+                    !net_utils.ip_in_list(obtls.cfg.no_tls_hosts, host) &&
+                    !net_utils.ip_in_list(obtls.cfg.no_tls_hosts, self.todo.domain)) {
 
                     self.logdebug(`Trying TLS for domain: ${self.todo.domain}, host: ${host}`);
 
