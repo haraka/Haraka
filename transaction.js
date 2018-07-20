@@ -1,14 +1,17 @@
 'use strict';
 // An SMTP Transaction
 
-const util = require('util');
+// node.js built-in modules
+const util   = require('util');
 
+// haraka npm modules
 const config = require('haraka-config');
-const Notes = require('haraka-notes');
-const utils = require('haraka-utils');
+const Notes  = require('haraka-notes');
+const utils  = require('haraka-utils');
 
+// Haraka modules
 const Header = require('./mailheader').Header;
-const body = require('./mailbody');
+const body   = require('./mailbody');
 const MessageStream = require('./messagestream');
 
 const MAX_HEADER_LINES = config.get('max_header_lines') || 1000;
