@@ -1,10 +1,31 @@
-## 2.8.21 - Mmm DD, 2018
+
+## 2.8.22 - Mmm DD, 2018
 
 * New Features
-    * outbound: skip STARTTLS after remote host fails TLS upgrade
-    * dns_list_base: introduce global plugin.lookback_is_rejected flag #2422
 * Fixes
 * Changes
+
+
+## 2.8.21 - Jul 20, 2018
+
+### New Features
+
+* outbound: skip STARTTLS after remote host fails TLS upgrade #2429
+* dns_list_base: introduce global plugin.lookback_is_rejected flag #2422
+
+### Fixes
+
+* outbound: check list exists before attempting to use it #2478
+* tls: skip when redis is undefined #2472
+* Don't run delivered hook on LMTP fail #2470
+* Add tls_socket.load_tls_ini() to tls.register() #2465
+
+### Changes
+
+* outbound/tls: make into a class #2474
+* plugins: clear timeout on cancel #2477
+* txn.parse_body consistently a boolean #2476
+* update ipaddr.js to version 1.8.0 #2468
 
 
 ## 2.8.20 - Jun 29, 2018
