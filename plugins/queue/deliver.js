@@ -9,5 +9,5 @@ exports.hook_queue_outbound = function (next, connection) {
         return next(); // we're not relaying so don't deliver outbound
     }
 
-    outbound.send_email(connection.transaction, next);
+    outbound.send_trans_email(connection.transaction, next);
 }

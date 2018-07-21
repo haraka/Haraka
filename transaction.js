@@ -43,6 +43,7 @@ class Transaction {
         this.data_post_delay = 0;
         this.encoding = 'utf8';
         this.mime_part_count = 0;
+        this.qfiles = [];
     }
 
     ensure_body () {

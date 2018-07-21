@@ -259,13 +259,13 @@ exports.send_trans_email = function (transaction, next) {
 
         let todo_index = 1;
 
-        async.forEachSeries(deliveries, function (deliv, cb) {
+        async.mapSeries(deliveries, function (deliv, cb) {
             const todo = new TODOItem(deliv.domain, deliv.rcpts, transaction);
             todo.uuid = `${todo.uuid}.${todo_index}`;
             todo_index++;
             self.process_delivery(ok_paths, todo, hmails, cb);
         },
-        (err) => {
+        (err, qfiles) => {
             if (err) {
                 for (let i=0, l=ok_paths.length; i<l; i++) {
                     fs.unlink(ok_paths[i], function () {});
@@ -280,6 +280,7 @@ exports.send_trans_email = function (transaction, next) {
                 delivery_queue.push(hmail);
             }
 
+            transaction.qfiles = qfiles;
             transaction.results.add({ name: 'outbound'}, { pass: "queued" });
             if (next) {
                 next(constants.ok, `Message Queued (${transaction.uuid})`);
@@ -288,6 +289,16 @@ exports.send_trans_email = function (transaction, next) {
     }
 
     plugins.run_hooks('pre_send_trans_email', connection);
+}
+
+exports.timeout_occurred = function (transaction) {
+    const self = this;
+    logger.loginfo(`[outbound] Outbound timeout occurred on transaction ${transaction.uuid}`);
+    for (let qfile of transaction.qfiles) {
+        if (!qfile) continue;
+        logger.logerror(`[outbound] Cleaning up qfile: ${qfile}`);
+        fs.unlink(qfile, err => logger.logerror(`[outbound] Error removing qfile: ${err}`));
+    }
 }
 
 exports.process_delivery = function (ok_paths, todo, hmails, cb) {
@@ -303,12 +314,12 @@ exports.process_delivery = function (ok_paths, todo, hmails, cb) {
             if (err) {
                 logger.logerror(`[outbound] Unable to rename tmp file!: ${err}`);
                 fs.unlink(tmp_path, function () {});
-                cb("Queue error");
+                cb(`Queue error: ${err}`);
             }
             else {
                 hmails.push(new HMailItem (fname, dest_path, todo.notes));
                 ok_paths.push(dest_path);
-                cb();
+                cb(null, dest_path);
             }
         })
     })
@@ -317,7 +328,7 @@ exports.process_delivery = function (ok_paths, todo, hmails, cb) {
         logger.logerror(`[outbound] Unable to write queue file (${fname}): ${err}`);
         ws.destroy();
         fs.unlink(tmp_path, function () {});
-        cb("Queueing failed");
+        cb(`Queueing failed: ${err}`);
     })
 
     self.build_todo(todo, ws, function () {

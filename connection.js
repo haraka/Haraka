@@ -1798,7 +1798,7 @@ class Connection {
                 });
                 break;
             default:
-                outbound.send_email(this.transaction, (retval2, msg2) => {
+                outbound.send_trans_email(this.transaction, (retval2, msg2) => {
                     if (!msg2) msg2 = self.queue_msg(retval2, msg);
                     switch (retval2) {
                         case constants.ok:
@@ -1807,6 +1807,9 @@ class Connection {
                             break;
                         case constants.deny:
                             if (!msg2) msg2 = self.queue_msg(retval2, msg2);
+                            if (msg2 == 'plugin timeout') {
+                                outbound.timeout_occurred(this.transaction);
+                            }
                             self.respond(550, msg2, () => {
                                 self.msg_count.reject++;
                                 self.transaction.msg_status = 'rejected';
