@@ -136,14 +136,16 @@ exports.get_tls_options = {
         process.env.HARAKA_TEST_DIR=path.resolve('tests');
         this.outbound = require('../../outbound');
         this.obtls = require('../../outbound/tls');
+        const tls_socket = require('../../tls_socket');
 
         // reset config to load from tests directory
         const testDir = path.resolve('tests');
-        this.obtls.tls_socket.config = this.obtls.tls_socket.config.module_config(testDir);
         this.outbound.config = this.outbound.config.module_config(testDir);
-        this.obtls.config = this.outbound.config.module_config(testDir);
+        this.obtls.test_config(tls_socket.config.module_config(testDir), this.outbound.config);
+        this.obtls.init(() => {
+            done();
+        })
 
-        this.obtls.get_plugin_ready(()=> done());
     },
     tearDown: function (done) {
         delete process.env.HARAKA_TEST_DIR;

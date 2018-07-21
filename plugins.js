@@ -433,7 +433,10 @@ plugins.run_next_hook = function (hook, object, params) {
     let cancelled = false;
     let item;
 
-    function cancel () { cancelled = true; }
+    function cancel () {
+        if (timeout_id) clearTimeout(timeout_id);
+        cancelled = true;
+    }
     function callback (retval, msg) {
         if (timeout_id) clearTimeout(timeout_id);
         object.current_hook = null;

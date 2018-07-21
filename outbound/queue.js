@@ -12,6 +12,7 @@ const TimerQueue  = require('./timer_queue');
 const HMailItem   = require('./hmail');
 const cfg         = require('./config');
 const _qfile      = require('./qfile');
+const obtls       = require('./tls');
 
 let queue_dir;
 if (config.get('queue_dir')) {
@@ -70,7 +71,7 @@ exports.stat_queue = function (cb) {
 exports.load_queue = function (pid) {
     // Initialise and load queue
     // This function is called first when not running under cluster,
-    HMailItem.obtls.get_plugin_ready(function () {
+    obtls.init(function () {
         // so we create the queue directory if it doesn't already exist.
         exports.ensure_queue_dir();
         exports._load_cur_queue(pid, "_add_file");
