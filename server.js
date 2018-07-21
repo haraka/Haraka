@@ -238,6 +238,7 @@ Server.sendToMaster = function (command, params) {
 Server.receiveAsMaster = function (command, params) {
     if (!Server[command]) {
         logger.logerror(`Invalid command: ${command}`);
+        return;
     }
     Server[command].apply(Server, params);
 }
