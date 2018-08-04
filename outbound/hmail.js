@@ -548,37 +548,43 @@ class HMailItem extends events.EventEmitter {
             return send_command('MAIL', `FROM:${self.todo.mail_from.format(!smtp_properties.smtp_utf8)}`);
         } // auth_and_mail_phase()
 
+        // IMPORTANT: do STARTTLS before AUTH for security
         function process_ehlo_data () {
             set_ehlo_props();
 
-            // TLS
-            if (!secured && smtp_properties.tls && cfg.enable_tls) {
-                if (obtls.cfg !== undefined && obtls.cfg.no_tls_hosts !== undefined &&
-                    !net_utils.ip_in_list(obtls.cfg.no_tls_hosts, host) &&
-                    !net_utils.ip_in_list(obtls.cfg.no_tls_hosts, self.todo.domain)) {
+            if (secured) return auth_and_mail_phase();              // TLS already negotiated
+            if (!cfg.enable_tls) return auth_and_mail_phase();      // TLS not configured
+            if (!smtp_properties.tls) return auth_and_mail_phase(); // TLS not advertised by remote
 
+            if (obtls.cfg === undefined) return auth_and_mail_phase();  // no outbound TLS config
+
+            // TLS is configured and available
+
+            // net-utils before 1.1.1 would throw if sent an empty list
+            if (obtls.cfg.no_tls_hosts === undefined) obtls.cfg.no_tls_hosts = [];
+
+            // TLS exclude lists checks for MX host or remote domain
+            if (net_utils.ip_in_list(obtls.cfg.no_tls_hosts, host) return auth_and_mail_phase();
+            if (net_utils.ip_in_list(obtls.cfg.no_tls_hosts, self.todo.domain)) return auth_and_mail_phase();
+
+            // Check Redis and skip for hosts that failed past TLS upgrade
+            return obtls.check_tls_nogo(host,
+                () => { // Clear to GO
                     self.logdebug(`Trying TLS for domain: ${self.todo.domain}, host: ${host}`);
 
-                    return obtls.check_tls_nogo(host,
-                        () => { // Clear to GO
-                            socket.on('secure', function () {
-                                // Set this flag so we don't try STARTTLS again if it
-                                // is incorrectly offered at EHLO once we are secured.
-                                secured = true;
-                                send_command(mx.using_lmtp ? 'LHLO' : 'EHLO', mx.bind_helo);
-                            });
-                            return send_command('STARTTLS');
-                        },
-                        (when) => { // No GO
-                            self.loginfo(`TLS disabled for ${host} because it was marked as non-TLS on ${when}`);
-                            return auth_and_mail_phase();
-                        }
-                    );
+                    socket.on('secure', function () {
+                        // Set this flag so we don't try STARTTLS again if it
+                        // is incorrectly offered at EHLO once we are secured.
+                        secured = true;
+                        send_command(mx.using_lmtp ? 'LHLO' : 'EHLO', mx.bind_helo);
+                    });
+                    return send_command('STARTTLS');
+                },
+                (when) => { // No GO
+                    self.loginfo(`TLS disabled for ${host} because it was marked as non-TLS on ${when}`);
+                    return auth_and_mail_phase();
                 }
-            }
-
-            // IMPORTANT: we do STARTTLS before we attempt AUTH for extra security
-            return auth_and_mail_phase();
+            );
 
         } // process_ehlo_data()
 
