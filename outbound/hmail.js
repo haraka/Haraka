@@ -553,18 +553,15 @@ class HMailItem extends events.EventEmitter {
             set_ehlo_props();
 
             if (secured) return auth_and_mail_phase();              // TLS already negotiated
-            if (!cfg.enable_tls) return auth_and_mail_phase();      // TLS not configured
+            if (!cfg.enable_tls) return auth_and_mail_phase();      // TLS not enabled
             if (!smtp_properties.tls) return auth_and_mail_phase(); // TLS not advertised by remote
 
             if (obtls.cfg === undefined) return auth_and_mail_phase();  // no outbound TLS config
 
             // TLS is configured and available
 
-            // net-utils before 1.1.1 would throw if sent an empty list
-            if (obtls.cfg.no_tls_hosts === undefined) obtls.cfg.no_tls_hosts = [];
-
             // TLS exclude lists checks for MX host or remote domain
-            if (net_utils.ip_in_list(obtls.cfg.no_tls_hosts, host) return auth_and_mail_phase();
+            if (net_utils.ip_in_list(obtls.cfg.no_tls_hosts, host)) return auth_and_mail_phase();
             if (net_utils.ip_in_list(obtls.cfg.no_tls_hosts, self.todo.domain)) return auth_and_mail_phase();
 
             // Check Redis and skip for hosts that failed past TLS upgrade

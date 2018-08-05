@@ -54,6 +54,8 @@ class OutboundTLS {
             cfg.cert = this.config.get(cfg.cert, 'binary');
         }
 
+        if (!cfg.no_tls_hosts) cfg.no_tls_hosts = [];
+
         this.cfg = cfg;
     }
 
