@@ -556,7 +556,10 @@ class HMailItem extends events.EventEmitter {
             if (!cfg.enable_tls) return auth_and_mail_phase();      // TLS not enabled
             if (!smtp_properties.tls) return auth_and_mail_phase(); // TLS not advertised by remote
 
-            if (obtls.cfg === undefined) return auth_and_mail_phase();  // no outbound TLS config
+            if (obtls.cfg === undefined) {
+                self.logerror(`Oops, TLS config not loaded yet!`);
+                return auth_and_mail_phase();  // no outbound TLS config
+            }
 
             // TLS is configured and available
 
