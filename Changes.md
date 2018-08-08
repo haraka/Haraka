@@ -15,7 +15,10 @@
 
 ### Fixes
 
+* replace all _ chars in hostnames with code points #2485
+* Don't die on invalid commands #2481
 * outbound: check list exists before attempting to use it #2478
+    * refactor outbound/hmail.process_ehlo_data #2488
 * tls: skip when redis is undefined #2472
 * Don't run delivered hook on LMTP fail #2470
 * Add tls_socket.load_tls_ini() to tls.register() #2465
