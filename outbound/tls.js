@@ -54,6 +54,8 @@ class OutboundTLS {
             cfg.cert = this.config.get(cfg.cert, 'binary');
         }
 
+        if (!cfg.no_tls_hosts) cfg.no_tls_hosts = [];
+
         this.cfg = cfg;
     }
 
@@ -74,11 +76,9 @@ class OutboundTLS {
     // Check for if host is prohibited from TLS negotiation
     check_tls_nogo (host, cb_ok, cb_nogo) {
         const plugin = this;
+        if (!plugin.cfg.redis.disable_for_failed_hosts) return cb_ok();
+
         const dbkey = `no_tls|${host}`;
-
-        if (!plugin.cfg.redis.disable_for_failed_hosts)
-            return cb_ok();
-
         plugin.db.get(dbkey, (err, dbr) => {
             if (err) {
                 logger.logdebug(plugin, `Redis returned error: ${err}`);
@@ -89,7 +89,7 @@ class OutboundTLS {
         });
     }
 
-    mark_tls_nogo (host, cb){
+    mark_tls_nogo (host, cb) {
         const plugin = this;
         const dbkey = `no_tls|${host}`;
         const expiry = plugin.cfg.redis.disable_expiry || 604800;
