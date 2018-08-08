@@ -1,14 +1,17 @@
 'use strict';
 // An SMTP Transaction
 
-const util = require('util');
+// node.js built-in modules
+const util   = require('util');
 
+// haraka npm modules
 const config = require('haraka-config');
-const Notes = require('haraka-notes');
-const utils = require('haraka-utils');
+const Notes  = require('haraka-notes');
+const utils  = require('haraka-utils');
 
+// Haraka modules
 const Header = require('./mailheader').Header;
-const body = require('./mailbody');
+const body   = require('./mailbody');
 const MessageStream = require('./messagestream');
 
 const MAX_HEADER_LINES = config.get('max_header_lines') || 1000;
@@ -72,37 +75,31 @@ class Transaction {
     }
 
     add_data (line) {
-        if (typeof line === 'string') { // This shouldn't ever really happen...
+        if (typeof line === 'string') { // This shouldn't ever happen.
             line = new Buffer(line, this.encoding);
         }
-        // check if this is the end of headers line
+        // is this the end of headers line?
         if (this.header_pos === 0 &&
             (line[0] === 0x0A || (line[0] === 0x0D && line[1] === 0x0A))) {
             this.header.parse(this.header_lines);
             this.header_pos = this.header_lines.length;
             this.found_hb_sep = true;
-            if (this.parse_body) {
-                this.ensure_body();
-            }
+            if (this.parse_body) this.ensure_body();
         }
         else if (this.header_pos === 0) {
             // Build up headers
             if (this.header_lines.length < MAX_HEADER_LINES) {
-                if (line[0] === 0x2E) line = line.slice(1); // Strip leading "."
-                this.header_lines.push(
-                    line.toString(this.encoding).replace(/\r\n$/, '\n'));
+                if (line[0] === 0x2E) line = line.slice(1); // Strip leading '.'
+                this.header_lines.push(line.toString(this.encoding).replace(/\r\n$/, '\n'));
             }
         }
         else if (this.header_pos && this.parse_body) {
             let new_line = line;
             if (new_line[0] === 0x2E) new_line = new_line.slice(1); // Strip leading "."
 
-            new_line = this.body.parse_more(
-                new_line.toString(this.encoding).replace(/\r\n$/, '\n'));
+            new_line = this.body.parse_more(new_line.toString(this.encoding).replace(/\r\n$/, '\n'));
 
-            if (!new_line.length) {
-                return; // buffering for banners
-            }
+            if (!new_line.length) return; // buffering for banners
         }
 
         if (!this.discard_data) this.message_stream.add_line(line);
@@ -145,11 +142,11 @@ class Transaction {
             }
         }
 
-        if (!this.discard_data) {
-            this.message_stream.add_line_end(cb);
+        if (this.discard_data) {
+            cb();
         }
         else {
-            cb();
+            this.message_stream.add_line_end(cb);
         }
     }
 
@@ -174,7 +171,7 @@ class Transaction {
     }
 
     attachment_hooks (start, data, end) {
-        this.parse_body = 1;
+        this.parse_body = true;
         this.attachment_start_hooks.push(start);
     }
 

@@ -100,7 +100,7 @@ the `tmp` library from npm and tells us the size of the file:
 
     exports.hook_data = function (next, connection) {
         // enable mail body parsing
-        connection.transaction.parse_body = 1;
+        connection.transaction.parse_body = true;
         connection.transaction.attachment_hooks(
             function (ct, fn, body, stream) {
                 start_att(connection, ct, fn, body, stream)
