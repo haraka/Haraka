@@ -10,7 +10,7 @@ const STATE_HEADERS = 1;
 const STATE_BODY = 2;
 
 class MessageStream extends Stream {
-    constructor (config, id, headers) {
+    constructor (cfg, id, headers) {
         super();
         if (!id) throw new Error('id required');
         this.uuid = id;
@@ -24,12 +24,12 @@ class MessageStream extends Stream {
         this.buffered = 0;
         this._queue = [];
         this.max_data_inflight = 0;
-        this.buffer_max = (!isNaN(config.main.spool_after) ?
-            Number(config.main.spool_after) : -1);
+        this.buffer_max = (!isNaN(cfg.main.spool_after) ?
+            Number(cfg.main.spool_after) : -1);
         this.spooling = false;
         this.fd = null;
         this.open_pending = false;
-        this.spool_dir = config.main.spool_dir || '/tmp';
+        this.spool_dir = cfg.main.spool_dir || '/tmp';
         this.filename = this.spool_dir + '/' + id + '.eml';
         this.write_pending = false;
 
