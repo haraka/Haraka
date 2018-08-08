@@ -167,6 +167,7 @@ exports.get_tls_options = {
             requestCert: false,
             honorCipherOrder: false,
             redis: { disable_for_failed_hosts: false },
+            no_tls_hosts: []
         });
         test.done();
     },

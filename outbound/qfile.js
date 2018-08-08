@@ -10,9 +10,9 @@ const _qfile = module.exports = {
     hostname : function (hostname) {
         if (!hostname) hostname = os.hostname();
         return hostname
-            .replace(/\\/, '\\057')
-            .replace(/:/,  '\\072')
-            .replace(/_/,  '\\137');
+            .replace(/\\/g, '\\057')
+            .replace(/:/g,  '\\072')
+            .replace(/_/g,  '\\137');
     },
 
     name : function (overrides) {
