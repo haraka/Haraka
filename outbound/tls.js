@@ -13,6 +13,7 @@ const inheritable_opts = [
 class OutboundTLS {
     constructor () {
         this.config = config;
+        this.name = "OutboundTLS";
         logger.add_log_methods(this);
     }
 
