@@ -21,16 +21,20 @@ const line_socket = require('./line_socket');
 const logger      = require('./logger');
 const HostPool    = require('./host_pool');
 
+const DSN = require('haraka-dsn');
+const constants = require('haraka-constants');
+
 const smtp_regexp = /^([0-9]{3})([ -])(.*)/;
 const STATE = {
     IDLE: 1,
     ACTIVE: 2,
     RELEASED: 3,
     DESTROYED: 4,
+    SHUTDOWN: 5,
 }
 
 class SMTPClient extends events.EventEmitter {
-    constructor (port, host, connect_timeout, idle_timeout, socket) {
+    constructor (port, host, connect_timeout, idle_timeout, socket, max_mails) {
         super();
         this.uuid = utils.uuid();
         this.connect_timeout = parseInt(connect_timeout) || 30;
@@ -47,6 +51,8 @@ class SMTPClient extends events.EventEmitter {
         this.host = host;
         this.port = port;
         this.smtputf8 = false;
+        this.mails_sent = 0;
+        this.max_sent_mails = max_mails || 0;
 
         const client = this;
 
@@ -143,6 +149,8 @@ class SMTPClient extends events.EventEmitter {
         client.socket.on('connect', () => {
             // Remove connection timeout and set idle timeout
             client.socket.setTimeout(((idle_timeout) ? idle_timeout : 300) * 1000);
+            // util.error('See: ' + util.inspect(client.socket)); // FIXME: remove dbg
+            // client.remote_ip = ipaddr.process(client.socket.remoteAddress).toString();
             if (!client.socket.remoteAddress) {
                 // "Value may be undefined if the socket is destroyed"
                 logger.logdebug('socket.remoteAddress undefined');
@@ -160,9 +168,10 @@ class SMTPClient extends events.EventEmitter {
                 // error is e.g. "Error: connect ECONNREFUSED"
                 const errMsg = `${client.uuid}: [${client.host}:${client.port}] ` +
                     `SMTP connection ${msg} ${error}`;
-                if (client.state === STATE.ACTIVE) {
-                    client.emit('error', errMsg);
-                }
+
+                if (client.state === STATE.ACTIVE)
+                    client.closed_while_active = true;
+
                 switch (client.state) {
                     case STATE.ACTIVE:
                     case STATE.IDLE:
@@ -171,12 +180,18 @@ class SMTPClient extends events.EventEmitter {
                         break;
                     default:
                 }
-                if ((msg === 'errored' || msg === 'timed out')
-                      && client.state === STATE.DESTROYED){
-                    client.emit('connection-error', errMsg);
-                } // don't return, continue (original behavior)
 
                 logger.logdebug(`[smtp_client_pool] ${errMsg} (state=${client.state})`);
+
+                if (client.closed_while_active) {
+                    if (error instanceof Error)
+                        client.emit('error', errMsg);
+                    else if (!error && msg === 'closed') { // we skip when error == true because we already handled that case above
+                        const errMsg2 = `${client.uuid}: [${client.host}:${client.port}] Remote party abruptly terminated the connection`;
+                        client.emit('error', errMsg2);
+                    }
+                    logger.lognotice(`FIXME: investigate this case: ${utils.inspect(client)}`);
+                }
             }
         }
 
@@ -248,12 +263,60 @@ class SMTPClient extends events.EventEmitter {
                 return;
             }
             this.state = STATE.IDLE;
+            this.removeAllListeners('client_protocol');
+            this.removeAllListeners('server_protocol');
             this.removeAllListeners('rset');
             this.removeAllListeners('bad_code');
             this.pool.release(this);
         });
 
         this.send_command('RSET');
+    }
+
+    shutdown () {
+        if (!this.connected || this.command === 'data' || this.command === 'mailbody') {
+            // Destroy here, we can't reuse a connection that was mid-data.
+            this.destroy();
+            return;
+        }
+
+        logger.logdebug(`[smtp_client_pool] ${this.uuid} shutting down, state=${this.state}`);
+        if (this.state === STATE.DESTROYED) {
+            return;
+        }
+
+        this.state = STATE.SHUTDOWN;
+        this.removeAllListeners('greeting');
+        this.removeAllListeners('capabilities');
+        this.removeAllListeners('xclient');
+        this.removeAllListeners('helo');
+        this.removeAllListeners('mail');
+        this.removeAllListeners('rcpt');
+        this.removeAllListeners('data');
+        this.removeAllListeners('dot');
+        this.removeAllListeners('rset');
+        this.removeAllListeners('auth');
+        this.removeAllListeners('error');
+        this.removeAllListeners('bad_code');
+        this.removeAllListeners('rset');
+
+        this.on('bad_code', function (code, msg) {
+            this.destroy();
+        });
+
+        this.on('quit', function () {
+            logger.logdebug(`[smtp_client_pool] ${this.uuid} shutting down (on quit), state=${this.state}`);
+            if (this.state === STATE.DESTROYED) {
+                return;
+            }
+            this.removeAllListeners('quit');
+            this.removeAllListeners('client_protocol');
+            this.removeAllListeners('server_protocol');
+            this.removeAllListeners('bad_code');
+            this.destroy();
+        });
+
+        this.send_command('QUIT');
     }
 
     destroy () {
@@ -284,6 +347,7 @@ class SMTPClient extends events.EventEmitter {
         // This likely means the sender went away on us, cleanup.
         connection.logwarn(plugin, "transaction went away, releasing smtp_client");
         this.release();
+        this.call_next(constants['denysoft'], 'smtpclient said transaction went away');
         return true;
     }
 }
@@ -297,6 +361,8 @@ exports.get_pool = (server, port, host, cfg) => {
     if (cfg === undefined) cfg = {};
     const connect_timeout = cfg.connect_timeout || 30;
     const pool_timeout = cfg.pool_timeout || cfg.timeout || 300;
+    const max_mails = cfg.max_mails || 0;
+
     const name = `${port}:${host}:${pool_timeout}`;
     if (!server.notes.pool) server.notes.pool = {};
     if (server.notes.pool[name]) return server.notes.pool[name];
@@ -304,13 +370,18 @@ exports.get_pool = (server, port, host, cfg) => {
     const pool = generic_pool.Pool({
         name: name,
         create: function (callback) {
-            const smtp_client = new SMTPClient(port, host, connect_timeout);
+            const smtp_client = new SMTPClient(port, host, connect_timeout, null, null, max_mails);
             logger.logdebug(`[smtp_client_pool] uuid=${smtp_client.uuid} host=${host}` +
-                ` port=${port} pool_timeout=${pool_timeout} created`);
+                ` port=${port} pool_timeout=${pool_timeout} max_mails=${max_mails} created`);
             callback(null, smtp_client);
         },
         destroy: function (smtp_client) {
-            logger.logdebug(`[smtp_client_pool] ${smtp_client.uuid} destroyed, state={smtp_client.state}`);
+            if (smtp_client.state === STATE.IDLE && !smtp_client.want_to_die) { // destroy had fallen upon us probably because of timeout
+                smtp_client.want_to_die = true; // better safe than sorry
+                logger.logdebug(`[smtp_client_pool] ${smtp_client.uuid} is asked to be shutdown, state=${smtp_client.state}`);
+                smtp_client.shutdown();
+            }
+            logger.logdebug(`[smtp_client_pool] ${smtp_client.uuid} destroyed, state=${smtp_client.state}`);
             smtp_client.state = STATE.DESTROYED;
             smtp_client.socket.destroy();
             // Remove pool object from server notes once empty
@@ -321,9 +392,11 @@ exports.get_pool = (server, port, host, cfg) => {
         },
         max: cfg.max_connections || 1000,
         idleTimeoutMillis: (pool_timeout - 1) * 1000,
+        reapIntervalMillis: 1000,
         log: function (str, level) {
+            if (/this._availableObjects.length=/.test(str)) return;
             level = (level === 'verbose') ? 'debug' : level;
-            logger['log' + level](`[smtp_client_pool] [${name}] ${str}`);
+            logger['log' + level](`[smtp_client_pool] [${name}] ## ${str}`);
         }
     });
 
@@ -408,20 +481,22 @@ exports.get_client_plugin = function (plugin, connection, c, callback) {
     }
 
     const hostport = get_hostport(connection, connection.server, c);
+    const cfg_error_action = c.error_action && constants[c.error_action.toLowerCase()];
 
     const pool = exports.get_pool(connection.server, hostport.port, hostport.host, c);
 
     pool.acquire((err, smtp_client) => {
-        connection.logdebug(plugin, `Got smtp_client: ${smtp_client.uuid}`);
+        connection.logdebug(plugin, `Got smtp_client [sent: ${smtp_client.mails_sent}/${smtp_client.max_sent_mails}] uuid: ${smtp_client.uuid}`);
 
         let secured = false;
 
         smtp_client.load_tls_config(plugin.tls_options);
 
         smtp_client.call_next = function (retval, msg) {
-            if (this.next) {
+            if (this.next && !smtp_client.next_called) {
                 const next = this.next;
                 delete this.next;
+                smtp_client.next_called = true;
                 next(retval, msg);
             }
         }
@@ -500,7 +575,7 @@ exports.get_client_plugin = function (plugin, connection, c, callback) {
         // these errors only get thrown when the connection is still active
         smtp_client.on('error', (msg) => {
             connection.logwarn(plugin, msg);
-            smtp_client.call_next();
+            smtp_client.call_next(cfg_error_action, DSN.sys_not_accepting_mail(`backend said: ${msg}`));
         });
 
         // these are the errors thrown when the connection is dead
