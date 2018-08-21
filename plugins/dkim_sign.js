@@ -166,6 +166,7 @@ exports.load_key = function (file) {
 exports.hook_queue_outbound = exports.hook_pre_send_trans_email = function (next, connection) {
     const plugin = this;
     if (plugin.cfg.main.disabled) return next();
+
     if (connection.transaction.notes.dkim_signed) {
         connection.logdebug(plugin, 'email already signed');
         return next();
@@ -248,15 +249,15 @@ exports.has_key_data = function (conn, domain, selector, private_key) {
 
     // Make sure we have all the relevant configuration
     if (!private_key) {
-        conn.logerror(plugin, 'skipped: missing dkim private key');
+        conn.lognotice(plugin, 'skipped: missing dkim private key');
         return false;
     }
     if (!selector) {
-        conn.logerror(plugin, 'skipped: missing selector');
+        conn.lognotice(plugin, 'skipped: missing selector');
         return false;
     }
     if (!domain) {
-        conn.logerror(plugin, 'skipped: missing domain');
+        conn.lognotice(plugin, 'skipped: missing domain');
         return false;
     }
 
@@ -285,7 +286,10 @@ exports.get_headers_to_sign = function () {
 
 exports.get_sender_domain = function (txn) {
     const plugin = this;
-    if (!txn) return;
+    if (!txn) {
+        plugin.logerror('no transaction!')
+        return;
+    }
 
     // a fallback, when header parsing fails
     let domain;
