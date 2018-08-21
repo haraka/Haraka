@@ -5,7 +5,7 @@
 ### Fixes
 ### Changes
 
-* dkim_sign: improved log messages
+* dkim_sign: improved log messages #2499
 
 
 ## 2.8.21 - Jul 20, 2018

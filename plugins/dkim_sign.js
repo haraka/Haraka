@@ -273,10 +273,10 @@ exports.has_key_data = function (conn, domain, selector, private_key) {
 
     if (missing) {
         if (domain) {
-            conn.lognotice(plugin, `skipped: missing ${missing} for ${domain}`);
+            conn.lognotice(plugin, `skipped: no ${missing} for ${domain}`);
         }
         else {
-            conn.lognotice(plugin, `skipped: missing ${missing}`);
+            conn.lognotice(plugin, `skipped: no ${missing}`);
         }
         return false;
     }
