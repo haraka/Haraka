@@ -247,21 +247,30 @@ exports.get_key_dir = function (connection, done) {
 exports.has_key_data = function (conn, domain, selector, private_key) {
     const plugin = this;
 
+    let missing = undefined;
+
     // Make sure we have all the relevant configuration
     if (!private_key) {
-        conn.lognotice(plugin, 'skipped: missing dkim private key');
-        return false;
+        missing = 'dkim private key';
     }
-    if (!selector) {
-        conn.lognotice(plugin, 'skipped: missing selector');
-        return false;
+    else if (!selector) {
+        missing = 'selector';
     }
-    if (!domain) {
-        conn.lognotice(plugin, 'skipped: missing domain');
+    else if (!domain) {
+        missing = 'domain';
+    }
+
+    if (missing) {
+        if (domain) {
+            conn.lognotice(plugin, `skipped: missing ${missing} for ${domain}`);
+        }
+        else {
+            conn.lognotice(plugin, `skipped: missing ${missing}`);
+        }
         return false;
     }
 
-    conn.logprotocol(plugin, `selector: ${selector}`);
+    conn.logprotocol(plugin, `using selector: ${selector} at domain ${domain}`);
     return true;
 }
 
