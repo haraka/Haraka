@@ -5,6 +5,8 @@
 * Fixes
 * Changes
 
+* ehlo_hello_exclude_haraka: config/ehlo_hello_exclude_haraka allows you to hide `Haraka is at your service` from EHLO/HELO msg for security reasons 
+
 
 ## 2.8.21 - Jul 20, 2018
 
