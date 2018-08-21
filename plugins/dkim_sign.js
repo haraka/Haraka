@@ -168,31 +168,42 @@ exports.hook_queue_outbound = exports.hook_pre_send_trans_email = function (next
     if (plugin.cfg.main.disabled) return next();
 
     if (connection.transaction.notes.dkim_signed) {
-        connection.logdebug(plugin, 'email already signed');
+        connection.logdebug(plugin, 'already signed');
         return next();
     }
 
-    plugin.get_key_dir(connection, function (err, keydir) {
+    let selector;
+    let private_key;
+    let domain = plugin.get_sender_domain(connection);
+
+    if (!domain) {
+        connection.transaction.results.add(plugin, {skip: "sending domain not detected", emit: true });
+
+        if (!plugin.cfg.main.domain || !plugin.private_key || !plugin.cfg.main.selector) {
+            return next();
+        }
+
+        connection.transaction.results.add(plugin, {msg: "using default key", emit: true });
+
+        domain = plugin.cfg.main.domain;
+        private_key = plugin.private_key;
+        selector = plugin.cfg.main.selector;
+    }
+
+    plugin.get_key_dir(connection, domain, function (err, keydir) {
         if (err) {
             connection.logerror(plugin, err);
             return next(DENYSOFT, "Error getting key_dir in dkim_sign");
         }
-        let domain;
-        let selector;
-        let private_key;
-        if (!keydir) {
-            domain = plugin.cfg.main.domain;
-            private_key = plugin.private_key;
-            selector = plugin.cfg.main.selector;
-        }
-        else {
+
+        if (keydir) {
             domain = path.basename(keydir);
             private_key = plugin.load_key(path.join('dkim', domain, 'private'));
             selector    = plugin.load_key(path.join('dkim', domain, 'selector')).trim();
         }
 
         if (!plugin.has_key_data(connection, domain, selector, private_key)) return next();
-        connection.logdebug(plugin, 'dkim_domain: ' + domain);
+        connection.logdebug(plugin, `domain: ${domain}`);
 
         const headers_to_sign = plugin.get_headers_to_sign();
         const txn = connection.transaction;
@@ -202,12 +213,12 @@ exports.hook_queue_outbound = exports.hook_pre_send_trans_email = function (next
                 txn.results.add(plugin, {err: err2.message});
             }
             else {
-                connection.loginfo(plugin, 'signed for ' + domain);
+                connection.loginfo(plugin, `signed for ${domain}`);
                 txn.results.add(plugin, {pass: dkim_header});
                 txn.add_header('DKIM-Signature', dkim_header);
             }
             connection.transaction.notes.dkim_signed = true;
-            return next();
+            next();
         }
 
         txn.message_stream.pipe(
@@ -216,10 +227,10 @@ exports.hook_queue_outbound = exports.hook_pre_send_trans_email = function (next
     });
 }
 
-exports.get_key_dir = function (connection, done) {
+exports.get_key_dir = function (connection, domain, done) {
     const plugin = this;
-    const domain = plugin.get_sender_domain(connection.transaction);
-    if (!domain) return done();
+
+    if (!domain) return done(new Error('missing domain'));
 
     // split the domain name into labels
     const labels     = domain.split('.');
@@ -251,7 +262,7 @@ exports.has_key_data = function (conn, domain, selector, private_key) {
 
     // Make sure we have all the relevant configuration
     if (!private_key) {
-        missing = 'dkim private key';
+        missing = 'private key';
     }
     else if (!selector) {
         missing = 'selector';
@@ -277,9 +288,7 @@ exports.has_key_data = function (conn, domain, selector, private_key) {
 exports.get_headers_to_sign = function () {
     const plugin = this;
     let headers = [];
-    if (!plugin.cfg.main.headers_to_sign) {
-        return headers;
-    }
+    if (!plugin.cfg.main.headers_to_sign) return headers;
 
     headers = plugin.cfg.main.headers_to_sign
         .toLowerCase()
@@ -293,18 +302,22 @@ exports.get_headers_to_sign = function () {
     return headers;
 }
 
-exports.get_sender_domain = function (txn) {
+exports.get_sender_domain = function (connection) {
     const plugin = this;
-    if (!txn) {
-        plugin.logerror('no transaction!')
+    if (!connection.transaction) {
+        connection.logerror(plugin, 'no transaction!')
         return;
     }
 
-    // a fallback, when header parsing fails
+    const txn = connection.transaction;
+
+    // fallback to Envelope FROM when header parsing fails
     let domain;
-    try { domain = txn.mail_from.host && txn.mail_from.host.toLowerCase(); }
-    catch (e) {
-        plugin.logerror(e);
+    if (txn.mail_from.host) {
+        try { domain = txn.mail_from.host.toLowerCase(); }
+        catch (e) {
+            connection.logerror(plugin, e);
+        }
     }
 
     if (!txn.header) return domain;
