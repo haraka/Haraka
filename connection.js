@@ -100,7 +100,7 @@ class Connection {
         this.transaction = null;
         this.tran_count = 0;
         this.capabilities = null;
-        this.ehlo_hello_exclude_haraka = config.get('ehlo_hello_exclude_haraka') ? true : false;
+        this.ehlo_hello_message = config.get('ehlo_hello_message') || null;
         this.banner_includes_uuid = config.get('banner_includes_uuid') ? true : false;
         this.deny_includes_uuid = config.get('deny_includes_uuid') || null;
         this.early_talker = false;
@@ -868,7 +868,7 @@ class Connection {
             default:
                 // RFC5321 section 4.1.1.1
                 // Hostname/domain should appear after 250
-                this.respond(250, `${this.local.host} Hello ${this.get_remote('host')}${this.ehlo_hello_exclude_haraka ? '': ', Haraka is at your service.'}`);
+                this.respond(250, `${this.local.host} Hello ${this.get_remote('host')}${this.ehlo_hello_message ? this.ehlo_hello_message: ', Haraka is at your service.'}`);
         }
     }
     ehlo_respond (retval, msg) {
@@ -902,7 +902,7 @@ class Connection {
                 // Hostname/domain should appear after 250
 
                 const response = [
-                    `${this.local.host} Hello ${this.get_remote('host')}${this.ehlo_hello_exclude_haraka ? '': ', Haraka is at your service.'}`,
+                    `${this.local.host} Hello ${this.get_remote('host')}${this.ehlo_hello_message ? this.ehlo_hello_message: ', Haraka is at your service.'}`,
                     "PIPELINING",
                     "8BITMIME",
                     "SMTPUTF8",
