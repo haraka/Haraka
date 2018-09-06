@@ -347,6 +347,10 @@ Server.get_smtp_server = function (host, port, inactivity_timeout, done) {
             verifyError: client.authorizationError,
             peerCertificate: client.getPeerCertificate(),
         });
+
+        client.on('error', function (err) {
+            connection.fail(err);
+        });
     }
 
     if (port === Server.cfg.main.smtps_port) {
