@@ -1,9 +1,11 @@
 
 ## 2.8.22 - Mmm DD, 2018
 
-* New Features
-* Fixes
-* Changes
+### New Features
+### Fixes
+### Changes
+
+* dkim_sign: improved log messages #2499
 
 
 ## 2.8.21 - Jul 20, 2018
