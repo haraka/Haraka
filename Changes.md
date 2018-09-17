@@ -7,6 +7,8 @@
 
 * dkim_sign: improved log messages #2499
 
+* ehlo_hello_message: config/ehlo_hello_message can be used to overwrite the EHLO/HELO msg replacing `, Haraka is at your service` #2498
+
 
 ## 2.8.21 - Jul 20, 2018
 
