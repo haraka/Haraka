@@ -28,6 +28,7 @@ Create a PR adding yours to this list.
 | [aliases][url-aliases]     | Email aliases |
 | [ASN][url-asn]             | Get ASN info for remote senders |
 | [attachment][url-attach]   | Restrict attachment types |
+| auth/enc_file [url-authencflat] | Auth against user/pass in an encrypted file |
 | auth/[flat_file][url-authflat] | Auth against user/pass in a file |
 | auth/[auth_bridge][url-authbridge] | Auth against remote MTA |
 | [auth-imap][url-auth-imap] | Auth against IMAP server |
@@ -112,6 +113,7 @@ Create a PR adding yours to this list.
 [url-aliases]: https://github.com/haraka/Haraka/blob/master/docs/plugins/aliases.md
 [url-asn]: https://github.com/haraka/haraka-plugin-asn
 [url-attach]: https://github.com/haraka/Haraka/blob/master/docs/plugins/attachment.md
+[url-authencflat]: https://github.com/AuspeXeu/haraka-plugin-auth-enc-file
 [url-authflat]: https://github.com/haraka/Haraka/blob/master/docs/plugins/auth/flat_file.md
 [url-authbridge]: https://github.com/haraka/Haraka/blob/master/docs/plugins/auth/auth_bridge.md
 [url-auth-imap]: https://github.com/haraka/haraka-plugin-auth-imap

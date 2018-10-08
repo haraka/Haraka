@@ -9,6 +9,9 @@ Note that passwords are stored in clear-text, so this may not be a great idea
 for large scale systems. However the plugin would be a good start for someone
 looking to implement authentication using some other form of auth.
 
+**Security** - it is recommended to switch to `auth/enc_file` [url-authencflat]
+to protect your user credentials.
+
 **IMPORANT NOTE** - this plugin requires that STARTTLS be used via the tls plugin 
 before it will advertise AUTH capabilities by the EHLO command.  This is to 
 improve security out-of-the-box.   Localhost and any IP in RFC1918 ranges 
@@ -39,3 +42,6 @@ Example:
     [users]
     user1=password1
     user@domain.com=password2
+
+
+[url-authencflat]: https://github.com/AuspeXeu/haraka-plugin-auth-enc-file
