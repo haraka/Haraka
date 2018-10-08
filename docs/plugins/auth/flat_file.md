@@ -9,7 +9,7 @@ Note that passwords are stored in clear-text, so this may not be a great idea
 for large scale systems. However the plugin would be a good start for someone
 looking to implement authentication using some other form of auth.
 
-**Security** - it is recommended to switch to `auth/enc_file` [url-authencflat]
+**Security** - it is recommended to switch to [auth-encfile][url-authencflat]
 to protect your user credentials.
 
 **IMPORANT NOTE** - this plugin requires that STARTTLS be used via the tls plugin 
