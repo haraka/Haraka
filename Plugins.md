@@ -107,7 +107,7 @@ Create a PR adding yours to this list.
 
 [template]: https://github.com/haraka/haraka-plugin-template
 [write-plugin]: https://github.com/haraka/Haraka/wiki/Write-a-Plugin
-[plugins-doc]: http://haraka.github.io/manual/Plugins.html
+[plugins-doc]: https://haraka.github.io/manual/Plugins.html
 [url-access]: https://github.com/haraka/haraka-plugin-access
 [url-acc-files]: https://github.com/acharkizakaria/haraka-plugin-accounting-files/blob/master/README.md
 [url-aliases]: https://github.com/haraka/Haraka/blob/master/docs/plugins/aliases.md
