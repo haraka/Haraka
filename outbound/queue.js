@@ -40,7 +40,10 @@ const delivery_queue = exports.delivery_queue = async.queue(function (hmail, cb)
         in_progress--;
         cb();
     };
-    hmail.send();
+    if (obtls.cfg) return hmail.send();
+    obtls.init(function () {
+        hmail.send();
+    });
 }, cfg.concurrency_max);
 
 const temp_fail_queue = exports.temp_fail_queue = new TimerQueue();
@@ -71,11 +74,9 @@ exports.stat_queue = function (cb) {
 exports.load_queue = function (pid) {
     // Initialise and load queue
     // This function is called first when not running under cluster,
-    obtls.init(function () {
-        // so we create the queue directory if it doesn't already exist.
-        exports.ensure_queue_dir();
-        exports._load_cur_queue(pid, "_add_file");
-    });
+    // so we create the queue directory if it doesn't already exist.
+    exports.ensure_queue_dir();
+    exports._load_cur_queue(pid, "_add_file");
 }
 
 exports._load_cur_queue = function (pid, cb_name, cb) {

@@ -17,6 +17,8 @@ Configuration
     
         [rabbitmq]
         ; Connection
+		; Protocol. Either "amqp" or "amqps"
+		protocol = amqp
 		host = localhost
 		port = 5672
 		;Virtual Host. Start with "/". Leave blank or not use if you don't want to use virtual hosts.
