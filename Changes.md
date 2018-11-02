@@ -3,6 +3,8 @@
 
 ### New Features
 ### Fixes
+* connection: nove max_mime_part config load to connection init #2528
+
 ### Changes
 
 * dkim_sign: improved log messages #2499
