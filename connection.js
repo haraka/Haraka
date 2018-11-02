@@ -112,6 +112,7 @@ class Connection {
         this.start_time = Date.now();
         this.last_reject = '';
         this.max_bytes = parseInt(config.get('databytes')) || 0;
+        this.max_mime_parts = parseInt(config.get('max_mime_parts')) || 1000;
         this.totalbytes = 0;
         this.rcpt_count = {
             accept:   0,
@@ -123,8 +124,8 @@ class Connection {
             tempfail: 0,
             reject:   0,
         };
-        this.max_line_length = config.get('max_line_length') || 512;
-        this.max_data_line_length = config.get('max_data_line_length') || 992;
+        this.max_line_length = parseInt(config.get('max_line_length')) || 512;
+        this.max_data_line_length = parseInt(config.get('max_data_line_length')) || 992;
         this.results = new ResultStore(this);
         this.errors = 0;
         this.last_rcpt_msg = null;
@@ -1597,8 +1598,7 @@ class Connection {
             return;
         }
 
-        const max_mime_parts = config.get('max_mime_parts') || 1000;
-        if (this.transaction.mime_part_count >= max_mime_parts) {
+        if (this.transaction.mime_part_count >= this.max_mime_parts) {
             this.logcrit("Possible DoS attempt - too many MIME parts");
             this.respond(554, "Transaction failed due to too many MIME parts", function () {
                 self.disconnect();
@@ -1620,7 +1620,7 @@ class Connection {
         }
 
         // Check max received headers count
-        const max_received = config.get('max_received_count') || 100;
+        const max_received = parseInt(config.get('max_received_count')) || 100;
         if (this.transaction.header.get_all('received').length > max_received) {
             this.logerror("Incoming message had too many Received headers");
             this.respond(550, "Too many received headers - possible mail loop", function () {
