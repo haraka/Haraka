@@ -112,6 +112,7 @@ class Connection {
         this.start_time = Date.now();
         this.last_reject = '';
         this.max_bytes = parseInt(config.get('databytes')) || 0;
+        this.max_mime_parts = config.get('max_mime_parts') || 1000;
         this.totalbytes = 0;
         this.rcpt_count = {
             accept:   0,
@@ -1597,8 +1598,7 @@ class Connection {
             return;
         }
 
-        const max_mime_parts = config.get('max_mime_parts') || 1000;
-        if (this.transaction.mime_part_count >= max_mime_parts) {
+        if (this.transaction.mime_part_count >= this.max_mime_parts) {
             this.logcrit("Possible DoS attempt - too many MIME parts");
             this.respond(554, "Transaction failed due to too many MIME parts", function () {
                 self.disconnect();
