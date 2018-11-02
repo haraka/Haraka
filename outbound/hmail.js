@@ -618,7 +618,7 @@ class HMailItem extends events.EventEmitter {
             else {
                 self.discard();
             }
-            if (cfg.pool_concurrency_max) {
+            if (cfg.pool_concurrency_max && !mx.using_lmtp) {
                 send_command('RSET');
             }
             else {
@@ -690,7 +690,7 @@ class HMailItem extends events.EventEmitter {
                     rcpt.dsn_smtp_response = response.join(' ');
                     rcpt.dsn_remote_mta = mx.exchange;
                 });
-                send_command(cfg.pool_concurrency_max ? 'RSET' : 'QUIT');
+                send_command(cfg.pool_concurrency_max && !mx.using_lmtp ? 'RSET' : 'QUIT');
                 processing_mail = false;
                 return self.temp_fail(`Upstream error: ${code}${(extc) ? `${extc} ` : ''}${reason}`);
             }
@@ -728,7 +728,7 @@ class HMailItem extends events.EventEmitter {
                         rcpt.dsn_smtp_response = response.join(' ');
                         rcpt.dsn_remote_mta = mx.exchange;
                     });
-                    send_command(cfg.pool_concurrency_max ? 'RSET' : 'QUIT');
+                    send_command(cfg.pool_concurrency_max && !mx.using_lmtp ? 'RSET' : 'QUIT');
                     processing_mail = false;
                     return self.temp_fail(`Upstream error: ${code} ${(extc) ? `${extc} ` : ''}${reason}`);
                 }
@@ -775,7 +775,7 @@ class HMailItem extends events.EventEmitter {
                         rcpt.dsn_smtp_response = response.join(' ');
                         rcpt.dsn_remote_mta = mx.exchange;
                     });
-                    send_command(cfg.pool_concurrency_max ? 'RSET' : 'QUIT');
+                    send_command(cfg.pool_concurrency_max && !mx.using_lmtp ? 'RSET' : 'QUIT');
                     processing_mail = false;
                     return self.bounce(reason, { mx: mx });
                 }
