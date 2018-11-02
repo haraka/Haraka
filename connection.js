@@ -1620,7 +1620,7 @@ class Connection {
         }
 
         // Check max received headers count
-        const max_received = config.get('max_received_count') || 100;
+        const max_received = parseInt(config.get('max_received_count')) || 100;
         if (this.transaction.header.get_all('received').length > max_received) {
             this.logerror("Incoming message had too many Received headers");
             this.respond(550, "Too many received headers - possible mail loop", function () {
