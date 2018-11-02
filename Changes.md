@@ -3,7 +3,9 @@
 
 ### New Features
 ### Fixes
-* connection: nove max_mime_part config load to connection init #2528
+
+* hmail: don't send RSET to LMTP #2530
+* connection: move max_mime_part config load to connection init #2528
 
 ### Changes
 
