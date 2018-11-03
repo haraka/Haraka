@@ -96,6 +96,36 @@ exports.hook_data_post = {
         }.bind(this);
         this.plugin.hook_data_post(next, this.connection);
     },
+    'skip authenticated': function (test) {
+        this.connection.notes.auth_user = 'user';
+        this.plugin.cfg.check.authenticated = false;
+        test.expect(1);
+        const next = function () {
+            test.ok(this.connection.transaction.results.get('clamd').skip);
+            test.done();
+        }.bind(this);
+        this.plugin.hook_data_post(next, this.connection);
+    },
+    'skip private IP': function (test) {
+        this.connection.remote.is_private = true;
+        this.plugin.cfg.check.private_ip = false;
+        test.expect(1);
+        const next = function () {
+            test.ok(this.connection.transaction.results.get('clamd').skip);
+            test.done();
+        }.bind(this);
+        this.plugin.hook_data_post(next, this.connection);
+    },
+    'skip local IP': function (test) {
+        this.connection.remote.is_local = true;
+        this.plugin.cfg.check.local_ip = false;
+        test.expect(1);
+        const next = function () {
+            test.ok(this.connection.transaction.results.get('clamd').skip);
+            test.done();
+        }.bind(this);
+        this.plugin.hook_data_post(next, this.connection);
+    },
     'message too big': function (test) {
         this.connection.transaction.data_bytes=513;
         this.plugin.cfg.main.max_size=512;

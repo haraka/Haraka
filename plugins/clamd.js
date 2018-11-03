@@ -90,6 +90,10 @@ exports.load_clamd_ini = function () {
             // clamd.conf options enabled by default, but prone to false
             // positives.
             '-reject.Phishing',
+
+            '+check.authenticated',
+            '+check.private_ip',
+            '+check.local_ip'
         ],
     }, function () {
         plugin.load_clamd_ini();
@@ -147,7 +151,10 @@ exports.register = function () {
 
 exports.hook_data = function (next, connection) {
     const plugin = this;
+
     if (!plugin.cfg.main.only_with_attachments) return next();
+
+    if (plugin.wants_skip(connection)) return next();
 
     const txn = connection.transaction;
     txn.parse_body = true;
@@ -164,6 +171,11 @@ exports.hook_data_post = function (next, connection) {
     const plugin = this;
     const txn = connection.transaction;
     const cfg = plugin.cfg;
+
+    if (plugin.wants_skip(connection)) {
+        txn.results.add(plugin, {skip: 'criteria match'});
+        return next();
+    }
 
     // Do we need to run?
     if (cfg.main.only_with_attachments && !txn.notes.clamd_found_attachment) {
@@ -313,6 +325,18 @@ exports.hook_data_post = function (next, connection) {
 
     // Start the process
     try_next_host();
+}
+
+exports.wants_skip = function (connection) {
+    const plugin = this;
+
+    if (!plugin.cfg.check.authenticated && connection.notes.auth_user) return true;
+
+    if (connection.remote.is_local) return !plugin.cfg.check.local_ip;
+
+    if (!plugin.cfg.check.private_ip && connection.remote.is_private) return true;
+
+    return false;
 }
 
 exports.send_clamd_predata = function (socket, cb) {
