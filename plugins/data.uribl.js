@@ -320,7 +320,7 @@ exports.hook_data_post = function (next, connection) {
 
     // From header
     const do_from_header = function (cb) {
-        const from = trans.header.get('from');
+        const from = trans.header.get_decoded('from');
         const fmatch = email_re.exec(from);
         if (fmatch) {
             return plugin.do_lookups(connection, cb, fmatch[1], 'from');
