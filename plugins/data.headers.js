@@ -278,7 +278,7 @@ exports.from_match = function (next, connection) {
         return next();
     }
 
-    const hdr_from = connection.transaction.header.get('From');
+    const hdr_from = connection.transaction.header.get_decoded('From');
     if (!hdr_from) {
         connection.transaction.results.add(plugin, {fail: 'from_match(missing)'});
         return next();

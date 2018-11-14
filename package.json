@@ -29,7 +29,7 @@
     "haraka-config"         : ">=1.0.15",
     "haraka-constants"      : ">=1.0.5",
     "haraka-dsn"            : "*",
-    "haraka-net-utils"      : ">=1.0.10",
+    "haraka-net-utils"      : ">=1.1.2",
     "haraka-notes"          : "*",
     "haraka-results"        : "^2.0.0",
     "haraka-tld"            : "*",

@@ -107,7 +107,7 @@ exports.hook_data_post = function (next, connection) {
 
     const tag_subject = function () {
         const tag = cfg.main.tag_string || '[SPAM]';
-        const subj = txn.header.get('Subject');
+        const subj = txn.header.get_decoded('Subject');
         // Try and prevent any double subject modifications
         const subject_re = new RegExp('^' + tag);
         if (!subject_re.test(subj)) {
