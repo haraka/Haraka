@@ -100,11 +100,11 @@ class HMailItem extends events.EventEmitter {
 
             this._stream_bytes_from(this.path, {start: 4, end: todo_len + 3}, (err2, todo_bytes) => {
                 if (todo_bytes.length !== todo_len) {
-                    const wrongLength = "Didn't find right amount of data in todo!"
+                    const wrongLength = `Didn't find right amount of data in todo!: ${err2}`;
                     this.logcrit(wrongLength);
-                    fs.rename(this.path, path.join(queue_dir, "error." + this.filename), (err3) => {
+                    fs.rename(this.path, path.join(queue_dir, `error.${this.filename}`), (err3) => {
                         if (err3) {
-                            this.logerror("Error creating error file after todo read failure (" + this.filename + "): " + err);
+                            this.logerror(`Error creating (error.${this.filename}): ${err3}`);
                         }
                     });
                     this.emit('error', wrongLength); // Note nothing picks this up yet

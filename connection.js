@@ -69,6 +69,7 @@ class Connection {
             info: null,          // c.remote_info
             closed: false,       // c.remote_closed
             is_private: false,
+            is_local: false,
         };
         this.hello = {
             host: null,          // c.hello_host
@@ -261,9 +262,14 @@ class Connection {
             loc[part] = val;
         }
 
-        // Set is_private automatically when remote.ip is set
+        // Set is_private, is_local automatically when remote.ip is set
         if (prop_str === 'remote.ip') {
-            this.set('remote.is_private', net_utils.is_private_ip(this.remote.ip));
+            this.set('remote.is_local', net_utils.is_local_ip(this.remote.ip));
+            if (this.remote.is_local) {
+                this.set('remote.is_private', true);
+            } else {
+                this.set('remote.is_private', net_utils.is_private_ipv4(this.remote.ip));
+            }
         }
 
         // sunset 3.0.0

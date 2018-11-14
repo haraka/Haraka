@@ -8,6 +8,8 @@ const lines = [
     '       (version=TLSv1/SSLv3 cipher=OTHER);',
     '       Thu, 31 Mar 2016 12:51:37 -0700 (PDT)',
     'From: Matt Sergeant <helpme@gmail.com>',
+    `FromUTF8: =?UTF-8?B?S29obOKAmXM=?=
+ <Kohls@s.kohls.com>`,
     'Content-Type: multipart/alternative;',
     '   boundary=Apple-Mail-F2C5DAD3-7EB3-409D-9FE0-135C9FD43B69',
     'Content-Type2: multipart/mixed; boundary="nqp=nb64=()I9WT8XjoN"',
@@ -26,21 +28,22 @@ for (let i=0; i<lines.length; i++) {
 
 exports.basic = {
     parse_basic: function (test) {
-        test.expect(2);
+        test.expect(3);
         const h = new Header();
         h.parse(lines);
-        test.equal(h.lines().length, 12);
+        test.equal(h.lines().length, 13);
         test.equal(
             h.get_decoded('content-type'),
             'multipart/alternative;   boundary=Apple-Mail-F2C5DAD3-7EB3-409D-9FE0-135C9FD43B69'
         );
+        test.equal(h.get_decoded('fromUTF8'), 'Kohl’s <Kohls@s.kohls.com>');
         test.done();
     },
     'content type w/parens': function (test) {
         test.expect(2);
         const h = new Header();
         h.parse(lines);
-        test.equal(h.lines().length, 12);
+        test.equal(h.lines().length, 13);
         const ct = h.get_decoded('content-type2');
         test.equal(ct, 'multipart/mixed; boundary="nqp=nb64=()I9WT8XjoN"');
         test.done();
@@ -55,7 +58,7 @@ exports.add_headers = {
         h.add('Foo', 'bar');
         test.equal(h.lines()[0], 'Foo: bar\n');
         h.add_end('Fizz', 'buzz');
-        test.equal(h.lines()[13], 'Fizz: buzz\n');
+        test.equal(h.lines()[14], 'Fizz: buzz\n');
         test.done();
     },
     add_utf8: function (test) {
