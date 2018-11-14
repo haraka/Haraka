@@ -4,7 +4,7 @@
   "license": "MIT",
   "description": "An SMTP Server project.",
   "keywords": [ "haraka", "smtp", "server", "email" ],
-  "version": "2.8.21",
+  "version": "2.8.22",
   "homepage": "http://haraka.github.io",
   "repository": {
     "type": "git",
@@ -12,7 +12,7 @@
   },
   "main": "haraka.js",
   "engines": {
-    "node": ">= v6.14.3"
+    "node": ">= v6.14.4"
   },
   "dependencies": {
     "address-rfc2821"       : "^1.1.1",
