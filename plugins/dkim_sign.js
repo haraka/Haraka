@@ -324,7 +324,7 @@ exports.get_sender_domain = function (connection) {
 
     // the DKIM signing key should be aligned with the domain in the From
     // header (see DMARC). Try to parse the domain from there.
-    const from_hdr = txn.header.get('From');
+    const from_hdr = txn.header.get_decoded('From');
     if (!from_hdr) return domain;
 
     // The From header can contain multiple addresses and should be
