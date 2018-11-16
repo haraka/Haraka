@@ -172,10 +172,7 @@ exports.hook_data_post = function (next, connection) {
     const txn = connection.transaction;
     const cfg = plugin.cfg;
 
-    if (!plugin.should_check(connection)) {
-        txn.results.add(plugin, {skip: 'criteria match'});
-        return next();
-    }
+    if (!plugin.should_check(connection)) return next();
 
     // Do we need to run?
     if (cfg.main.only_with_attachments && !txn.notes.clamd_found_attachment) {
