@@ -154,7 +154,7 @@ exports.hook_data = function (next, connection) {
 
     if (!plugin.cfg.main.only_with_attachments) return next();
 
-    if (plugin.wants_skip(connection)) return next();
+    if (!plugin.should_check(connection)) return next();
 
     const txn = connection.transaction;
     txn.parse_body = true;
@@ -172,7 +172,7 @@ exports.hook_data_post = function (next, connection) {
     const txn = connection.transaction;
     const cfg = plugin.cfg;
 
-    if (plugin.wants_skip(connection)) {
+    if (!plugin.should_check(connection)) {
         txn.results.add(plugin, {skip: 'criteria match'});
         return next();
     }
@@ -327,16 +327,28 @@ exports.hook_data_post = function (next, connection) {
     try_next_host();
 }
 
-exports.wants_skip = function (connection) {
+exports.should_check = function (connection) {
     const plugin = this;
 
-    if (!plugin.cfg.check.authenticated && connection.notes.auth_user) return true;
+    if (plugin.cfg.check.authenticated == false && connection.notes.auth_user) {
+        connection.transaction.results.add(plugin, { skip: 'authed'});
+        return false;
+    }
 
-    if (connection.remote.is_local) return !plugin.cfg.check.local_ip;
+    // necessary because local IPs are included in private IPs
+    if (plugin.cfg.check.local_ip == true && connection.remote.is_local) return true;
 
-    if (!plugin.cfg.check.private_ip && connection.remote.is_private) return true;
+    if (plugin.cfg.check.local_ip == false && connection.remote.is_local) {
+        connection.transaction.results.add(plugin, { skip: 'local_ip'});
+        return false;
+    }
 
-    return false;
+    if (plugin.cfg.check.private_ip == false && connection.remote.is_private) {
+        connection.transaction.results.add(plugin, { skip: 'private_ip'});
+        return false;
+    }
+
+    return true;
 }
 
 exports.send_clamd_predata = function (socket, cb) {
