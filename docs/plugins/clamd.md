@@ -89,6 +89,29 @@ The following options are enabled by default in clamd but ClamAV suggests
 using them only for scoring.
 
     * Phishing=false
+    
+## [check]
+
+The optional check section can allow skipping ClamAV check for remote connection
+meeting following criteria.
+
+- authenticated
+
+    Default: true
+
+    If true, messages from authenticated users will be scanned.
+
+- private\_ip
+
+    Default: true
+
+    If true, messages from private IPs will be scanned.
+
+- local\_ip
+
+    Default: true
+
+    If true, messages from localhost will be scanned.
 
 ## clamd.excludes
 
@@ -116,4 +139,3 @@ using them only for scoring.
 # Phishing
 Heuristics.Phishing.*
 `````
-
