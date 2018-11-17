@@ -8,3 +8,4 @@ coverage
 .idea
 tests/queue/plain
 tests/queue/multibyte
+package-lock.json
