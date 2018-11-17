@@ -39,7 +39,7 @@ connection is secured with TLS:
     221 mail.example.com closing connection. Have a jolly good day.
     closed
 
-To avoid port 25 restrictions, in 1998 we developed [SMTP submission](http://tools.ietf.org/html/rfc2476) on port 587. For optimal security and reliability, [MUAs](http://en.wikipedia.org/wiki/Mail_user_agent) should be configured to send mail to port 587 with TLS/SSL and AUTH enabled.
+To avoid port 25 restrictions, in 1998 we developed [SMTP submission](http://tools.ietf.org/html/rfc2476) on port 587. As of January 2018, [RFC 8314](https://tools.ietf.org/html/rfc8314) resurrects [SMTPS](https://en.wikipedia.org/wiki/SMTPS) on port 465 in favor of port 587 with STARTTLS. For optimal security and reliability, [MUAs](http://en.wikipedia.org/wiki/Mail_user_agent) should be configured to send mail to port 465 with TLS.
 
 ## ACL (Access Control List)
 
