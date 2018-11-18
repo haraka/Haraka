@@ -1,7 +1,7 @@
 node_modules
 !tests/node_modules
 .coveralls.yml
-Haraka
+Haraka-*.gz
 *~
 bower_components
 coverage
