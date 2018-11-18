@@ -5,6 +5,13 @@
 ### Fixes
 
 
+## 2.8.23 - Nov 18, 2018
+
+### Changes
+
+* tighten Haraka pattern in .gitignore #2542
+
+
 ## 2.8.22 - Nov 17, 2018
 
 ### New Features
