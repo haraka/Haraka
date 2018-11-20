@@ -25,6 +25,13 @@ exports.load_ini = function () {
         plugin.cfg.main.timeout = 29;
     }
 
+    if (plugin.timeout) {
+        if (plugin.timeout <= plugin.cfg.main.timeout) {
+            plugin.cfg.main.timeout = plugin.timeout - 1;
+            plugin.logwarn(`reducing plugin timeout to ${plugin.cfg.main.timeout}s`);
+        }
+    }
+
     plugin.re_bogus_ip = new RegExp(plugin.cfg.main.re_bogus_ip ||
             '^(?:0\\.0\\.0\\.0|255\\.255\\.255\\.255|127\\.)' );
 }
