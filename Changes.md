@@ -1,7 +1,10 @@
 
-## 2.8.23 - Mmm DD, 201Y
+## 2.8.24 - Mmm DD, 201Y
 ### Changes
 ### New Features
+
+* tls: add `authorizationRequired` configuration option #2543
+
 ### Fixes
 
 

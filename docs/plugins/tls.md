@@ -118,6 +118,17 @@ Reject connections from clients without a CA validated TLS certificate.
     rejectUnauthorized=[true|false]  (default: false)
 
 
+### authorizationRequired
+
+List of ports for which to always require a valid certificate.
+
+    authorizationRequired=25
+
+If multiple ports are required:
+
+    authorizationRequired[]=25
+    authorizationRequired[]=26
+
 ### secureProtocol
 
 Specifies the OpenSSL API function used for handling the TLS session. Choose

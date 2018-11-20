@@ -255,6 +255,11 @@ exports.load_tls_ini = (opts) => {
         }
     }
 
+    if (!cfg.main.authorizationRequired) cfg.main.authorizationRequired = [];
+    else if (!(Array.isArray(cfg.main.authorizationRequired))) {
+        cfg.main.authorizationRequired = [cfg.main.authorizationRequired];
+    }
+
     tlss.cfg = cfg;
 
     if (!opts || opts.role === 'server') {
@@ -612,6 +617,11 @@ function createServer (cb) {
 
             const options = Object.assign({}, certsByHost['*']);
             options.server = server;  // TLSSocket needs server for SNI to work
+
+            if (exports.cfg.main.authorizationRequired.includes(cryptoSocket.localPort)) {
+                options.rejectUnauthorized = true;
+                log.logdebug('setting rejectUnauthorized for port ' + cryptoSocket.localPort);
+            }
 
             const cleartext = new tls.TLSSocket(cryptoSocket, options);
 
