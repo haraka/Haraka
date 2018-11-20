@@ -21,7 +21,7 @@ exports.load_ini = function () {
         plugin.load_ini();
     });
 
-    if (NaN(plugin.cfg.main.timeout)) {
+    if (isNaN(plugin.cfg.main.timeout)) {
         plugin.cfg.main.timeout = 29;
     }
 
