@@ -1,6 +1,7 @@
 
 ## 2.8.23 - Mmm DD, 201Y
 ### Changes
+* Implement SIGTERM graceful shutdown if pid is 1 #2547
 ### New Features
 ### Fixes
 
