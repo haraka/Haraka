@@ -1,4 +1,5 @@
 'use strict';
+
 // Check MAIL FROM domain is resolvable to an MX
 const dns = require('dns');
 const net = require('net');
@@ -19,6 +20,17 @@ exports.load_ini = function () {
     }, function () {
         plugin.load_ini();
     });
+
+    if (isNaN(plugin.cfg.main.timeout)) {
+        plugin.cfg.main.timeout = 29;
+    }
+
+    if (plugin.timeout) {
+        if (plugin.timeout <= plugin.cfg.main.timeout) {
+            plugin.cfg.main.timeout = plugin.timeout - 1;
+            plugin.logwarn(`reducing plugin timeout to ${plugin.cfg.main.timeout}s`);
+        }
+    }
 
     plugin.re_bogus_ip = new RegExp(plugin.cfg.main.re_bogus_ip ||
             '^(?:0\\.0\\.0\\.0|255\\.255\\.255\\.255|127\\.)' );
@@ -44,15 +56,15 @@ exports.hook_mail = function (next, connection, params) {
         connection.loginfo(plugin, 'timed out resolving MX for ' + domain);
         called_next++;
         if (txn) results.add(plugin, {err: 'timeout(' + domain + ')'});
-        return next(DENYSOFT, 'Temporary resolver error (timeout)');
-    }, ((c.timeout) ? c.timeout : 30) * 1000);
+        next(DENYSOFT, 'Temporary resolver error (timeout)');
+    }, c.timeout * 1000);
 
-    const mxDone = function (code, reply) {
+    function mxDone (code, reply) {
         if (called_next) return;
         clearTimeout(timeout_id);
         called_next++;
         next(code, reply);
-    };
+    }
 
     // IS: IPv6 compatible
     dns.resolveMx(domain, function (err, addresses) {
