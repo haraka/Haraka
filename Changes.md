@@ -2,6 +2,7 @@
 ## 2.8.23 - Mmm DD, 201Y
 ### Changes
 * Implement SIGTERM graceful shutdown if pid is 1 #2547
+* early_talker: skip if sender has good karma
 ### New Features
 ### Fixes
 
