@@ -1,3 +1,5 @@
+# NOTICE: This is user-contributed and not officially supported by the Haraka team. Use at your own risk.
+#
 # This file describes how to build Haraka into a runnable linux container with all dependencies installed
 # To build:
 # 1.) Install docker (http://docker.io)
@@ -22,7 +24,7 @@ RUN /etc/my_init.d/00_regen_ssh_host_keys.sh
 RUN sed 's/main$/main universe/' -i /etc/apt/sources.list
 RUN DEBIAN_FRONTEND=noninteractive apt-get -y -q update
 RUN DEBIAN_FRONTEND=noninteractive apt-get -y -q install python-software-properties g++ make git curl
-RUN curl -sL https://deb.nodesource.com/setup_5.x | setuser root bash -
+RUN curl -sL https://deb.nodesource.com/setup_10.x | setuser root bash -
 RUN DEBIAN_FRONTEND=noninteractive apt-get -y -q install nodejs && \
     apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
@@ -32,7 +34,7 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get -y -q install nodejs && \
 #RUN /usr/sbin/enable_insecure_key
 
 # Install Haraka
-RUN npm install -g Haraka
+RUN npm install -g Haraka --unsafe
 RUN haraka -i /usr/local/haraka
 ADD ./config/host_list /usr/local/haraka/config/host_list
 ADD ./config/plugins /usr/local/haraka/config/plugins
