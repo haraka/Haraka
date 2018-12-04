@@ -53,6 +53,13 @@ exports.early_talker = function (next, connection) {
         return next();
     }
 
+    // Don't delay historically good senders
+    const karma = connection.results.get('karma');
+    if (karma && karma.good > 0) {
+        connection.results.add(plugin, { skip: 'good karma' });
+        return next();
+    }
+
     const check = function () {
         if (!connection) return next();
         if (!connection.early_talker) {
