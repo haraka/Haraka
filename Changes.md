@@ -1,13 +1,23 @@
 
-## 2.8.23 - Mmm DD, 201Y
+## 2.8.24 - Mmm DD, 201Y
+
 ### Changes
+
 * Implement SIGTERM graceful shutdown if pid is 1 #2547
-* early_talker: skip if sender has good karma
+* early_talker: skip if sender has good karma #2551
+* dockerfile: update to node 10 #2552
+* Update deprecated usages of Buffer #2553
+
 ### New Features
+
+* Implement SIGTERM graceful shutdown if pid is 1 #2547
+
 ### Fixes
 
+* mf.resolvable: reduce timeout by one second (so < plugin.timeout) #2544
 
 ## 2.8.23 - Nov 18, 2018
+
 
 ### Changes
 
@@ -26,7 +36,7 @@
 
 ### Changes
 
-* clamd: add check.authenticated, check.private_ip, check.local_ip option 
+* clamd: add check.authenticated, check.private_ip, check.local_ip option
 * use get_decoded on headers that may be encoded #2537
 * connection: move max_mime_part config load to connection init #2528
 * outbound: init TLS when we send email, not when old queue file is loaded #2503

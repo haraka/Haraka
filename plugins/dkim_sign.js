@@ -83,7 +83,7 @@ class DKIMSignStream extends Stream {
 
         // Add trailing CRLF if we have data left over
         if (this.buffer.ar.length) {
-            this.buffer.ar.push(new Buffer("\r\n"));
+            this.buffer.ar.push(Buffer.from("\r\n"));
             this.buffer.len += 2;
             const le = Buffer.concat(this.buffer.ar, this.buffer.len);
             this.hash.update(le);
