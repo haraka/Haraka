@@ -107,14 +107,14 @@ exports.banners = {
         const insert_banners_fn = body.filters[0];
 
         content_type = 'text/html';
-        buf = new Buffer("winter </html>");
+        buf = Buffer.from("winter </html>");
         new_buf = insert_banners_fn (content_type, enc, buf);
         test.equal(new_buf.toString(), "winter <P>htmlbanner</P></html>",
             "html banner looks ok");
 
 
         content_type = 'text/plain';
-        buf = new Buffer("winter");
+        buf = Buffer.from("winter");
         new_buf = insert_banners_fn (content_type, enc, buf);
         test.equal(new_buf.toString(), "winter\ntextbanner\n",
             "text banner looks ok");
@@ -141,7 +141,7 @@ exports.banners = {
 
 
         content_type = 'text/html';
-        const empty_buf = new Buffer('');
+        const empty_buf = Buffer.from('');
         new_buf = insert_banners_fn (content_type, enc, empty_buf);
         test.equal(new_buf.toString(), "<P>htmlbanner</P>",
             "empty html part gets a banner" );
@@ -189,10 +189,10 @@ exports.filters = {
         const body = new Body();
         body.add_filter(function (ct, enc, buf) {
             if (/^text\/plain/.test(ct)) {
-                return new Buffer("TEXT FILTERED");
+                return Buffer.from("TEXT FILTERED");
             }
             else if (/text\/html/.test(ct)) {
-                return new Buffer("<p>HTML FILTERED</p>");
+                return Buffer.from("<p>HTML FILTERED</p>");
             }
         });
         const parts = _fill_body(body);

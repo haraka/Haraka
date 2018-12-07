@@ -72,7 +72,7 @@ exports.createHMailItem = function (outbound_context, options, callback) {
     while ((match = re.exec(contents))) {
         let line = match[1];
         line = line.replace(/\r?\n?$/, '\r\n'); // make sure it ends in \r\n
-        conn.transaction.add_data(new Buffer(line));
+        conn.transaction.add_data(Buffer.from(line));
         contents = contents.substr(match[1].length);
         if (contents.length === 0) {
             break;

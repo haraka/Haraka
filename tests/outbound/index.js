@@ -201,7 +201,7 @@ exports.build_todo = {
             test.done();
         })
         this.outbound.build_todo(todo, ws, () => {
-            ws.write(new Buffer('This is the message body'));
+            ws.write(Buffer.from('This is the message body'));
             fs.fsync(fd, () => { ws.close(); })
         })
     },
@@ -218,7 +218,7 @@ exports.build_todo = {
             test.done();
         })
         this.outbound.build_todo(todo, ws, () => {
-            ws.write(new Buffer('This is the message body'));
+            ws.write(Buffer.from('This is the message body'));
             fs.fsync(fd, () => { ws.close(); })
         })
     },
