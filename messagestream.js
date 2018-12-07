@@ -53,7 +53,7 @@ class MessageStream extends Stream {
         const self = this;
 
         if (typeof line === 'string') {
-            line = new Buffer(line);
+            line = Buffer.from(line);
         }
 
         // create a ChunkEmitter
@@ -286,7 +286,7 @@ class MessageStream extends Stream {
                 line[line.length-1] === 0x0a && line[line.length-2] === 0x0d)
             {
                 // We copy the line to a new buffer before modifying the copy
-                line = new Buffer(line);
+                line = Buffer.from(line);
                 line[line.length-2] = 0x0a;
                 line = line.slice(0, line.length-1);
             }
@@ -309,7 +309,7 @@ class MessageStream extends Stream {
         this.read_ce.end(function () {
             if (self.clamd_style) {
                 // Add 0 length to notify end
-                const buf = new Buffer(4);
+                const buf = Buffer.alloc(4);
                 buf.writeUInt32BE(0, 0);
                 self.emit('data', buf);
             }
@@ -342,7 +342,7 @@ class MessageStream extends Stream {
         this.read_ce.on('data', function (chunk) {
             if (self.clamd_style) {
                 // Prefix data length to the beginning of line
-                const buf = new Buffer(chunk.length+4);
+                const buf = Buffer.alloc(chunk.length+4);
                 buf.writeUInt32BE(chunk.length, 0);
                 chunk.copy(buf, 4);
                 self.emit('data', buf);

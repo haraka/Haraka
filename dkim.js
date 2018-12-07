@@ -24,7 +24,7 @@ class Buf {
 
     pop (buf) {
         if (!this.bar.length) {
-            if (!buf) buf = new Buffer('');
+            if (!buf) buf = Buffer.from('');
             return buf;
         }
         if (buf && buf.length) {
@@ -215,7 +215,7 @@ class DKIMObject {
                 l = this.line_buffer.pop(line).toString('utf-8');
                 l = l.replace(/[\t ]+(\r?\n)$/,"$1");
                 l = l.replace(/[\t ]+/g,' ');
-                l = this.line_buffer.pop(new Buffer(l));
+                l = this.line_buffer.pop(Buffer.from(l));
                 this.bh.update(l);
             }
         }
@@ -488,7 +488,7 @@ class DKIMVerifyStream extends Stream {
 
             // Check for LF line endings and convert to CRLF if necessary
             if (line[line.length-2] !== 0x0d) {
-                line = Buffer.concat([ line.slice(0, line.length-1), new Buffer("\r\n") ], line.length+1);
+                line = Buffer.concat([ line.slice(0, line.length-1), Buffer.from("\r\n") ], line.length+1);
             }
 
             // Look for CRLF
