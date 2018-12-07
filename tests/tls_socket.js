@@ -114,8 +114,12 @@ exports.ensureDhparams = {
     },
 }
 
-exports.load_tls_ini = {
-    setUp : _setup,
+exports.load_tls_ini2 = {
+    setUp : function (done) {
+        this.socket = require('../tls_socket');
+        delete process.env.HARAKA_TEST_DIR;
+        done();
+    },
     'loads missing tls.ini default config': function (test) {
         test.expect(1);
         this.socket.config = this.socket.config.module_config(path.resolve('non-exist'));
@@ -137,7 +141,6 @@ exports.load_tls_ini = {
     'loads tls.ini from test dir': function (test) {
         test.expect(1);
         this.socket.config = this.socket.config.module_config(path.resolve('tests'));
-        // console.log(this.socket);
         test.deepEqual(this.socket.load_tls_ini(), {
             main: {
                 requestCert: true,
@@ -148,7 +151,7 @@ exports.load_tls_ini = {
                 cert: 'tls_cert.pem',
                 dhparam: 'dhparams.pem',
                 ciphers: 'ECDHE-RSA-AES256-GCM-SHA384:ECDHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384:DHE-RSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-SHA384',
-                requireAuthorized: [2465],
+                requireAuthorized: [2465, 2587],
             },
             redis: { disable_for_failed_hosts: false },
             no_tls_hosts: {},
