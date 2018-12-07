@@ -6,8 +6,9 @@ node_js:
 #   - 0.12      # maint. ended 2016-12-31
 #   - 4         # maint. ended 2018-04
     - "6"       # maint. ends  2019-04
-    - "8"       # LTS
-    - "10"      # current
+    - "8"       # maint. ends  2020-01
+    - "10"      # active until 2020-04
+    - "11"      # current
 
 matrix:
   fast_finish: true
@@ -33,4 +34,3 @@ sudo: false
 cache:
     directories:
         - node_modules
-

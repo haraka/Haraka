@@ -27,6 +27,7 @@ exports.init_amqp_connection = function () {
     const plugin = this;
     const cfg = this.config.get("rabbitmq.ini").rabbitmq;
 
+    const protocol = cfg.protocol || "amqp";
     const host = cfg.host || "127.0.0.1";
     const port = cfg.port || "5672";
     const vhost = cfg.vhost || "";
@@ -40,7 +41,7 @@ exports.init_amqp_connection = function () {
     const autoDelete = cfg.autoDelete === "true" || false;
     deliveryMode = cfg.deliveryMode || 2;
 
-    amqp.connect("amqp://"+encodeURIComponent(user)+":"+encodeURIComponent(password)+"@"+host+":"+port+vhost, function (err, conn){
+    amqp.connect(protocol+"://"+encodeURIComponent(user)+":"+encodeURIComponent(password)+"@"+host+":"+port+vhost, function (err, conn){
         if (err) {
             plugin.logerror("Connection to rabbitmq failed: " + err);
             return;

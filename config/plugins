@@ -13,6 +13,7 @@
 
 # CONNECT
 #toobusy
+#karma
 #relay
 # control which IPs, rDNS hostnames, HELO hostnames, MAIL FROM addresses, and
 # RCPT TO address you accept mail from. See 'haraka -h access'.
@@ -59,7 +60,6 @@ data.headers
 #clamd
 #spamassassin
 #dkim_sign
-#karma
 #limit
 
 # QUEUE

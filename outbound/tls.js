@@ -13,6 +13,7 @@ const inheritable_opts = [
 class OutboundTLS {
     constructor () {
         this.config = config;
+        this.name = 'OutboundTLS';
         logger.add_log_methods(this);
     }
 
@@ -27,13 +28,9 @@ class OutboundTLS {
         cfg.redis = tls_cfg.redis; // Don't clone - contains methods
 
         for (const opt of inheritable_opts) {
-            if (cfg[opt] === undefined) {
-                // not declared in tls.ini[section]
-                if (tls_cfg.main[opt] !== undefined) {
-                    // use value from [main] section
-                    cfg[opt] = tls_cfg.main[opt];
-                }
-            }
+            if (cfg[opt] !== undefined) continue;          // option set in [outbound]
+            if (tls_cfg.main[opt] === undefined) continue; // opt unset in tls.ini[main]
+            cfg[opt] = tls_cfg.main[opt];                  // use value from [main] section
         }
 
         if (cfg.key) {
@@ -75,13 +72,13 @@ class OutboundTLS {
 
     // Check for if host is prohibited from TLS negotiation
     check_tls_nogo (host, cb_ok, cb_nogo) {
-        const plugin = this;
-        if (!plugin.cfg.redis.disable_for_failed_hosts) return cb_ok();
+        const obtls = this;
+        if (!obtls.cfg.redis.disable_for_failed_hosts) return cb_ok();
 
         const dbkey = `no_tls|${host}`;
-        plugin.db.get(dbkey, (err, dbr) => {
+        obtls.db.get(dbkey, (err, dbr) => {
             if (err) {
-                logger.logdebug(plugin, `Redis returned error: ${err}`);
+                obtls.logdebug(obtls, `Redis returned error: ${err}`);
                 return cb_ok();
             }
 
@@ -90,16 +87,16 @@ class OutboundTLS {
     }
 
     mark_tls_nogo (host, cb) {
-        const plugin = this;
+        const obtls = this;
         const dbkey = `no_tls|${host}`;
-        const expiry = plugin.cfg.redis.disable_expiry || 604800;
+        const expiry = obtls.cfg.redis.disable_expiry || 604800;
 
-        if (!plugin.cfg.redis.disable_for_failed_hosts) return cb();
+        if (!obtls.cfg.redis.disable_for_failed_hosts) return cb();
 
-        logger.lognotice(plugin, `TLS connection failed. Marking ${host} as non-TLS for ${expiry} seconds`);
+        logger.lognotice(obtls, `TLS connection failed. Marking ${host} as non-TLS for ${expiry} seconds`);
 
-        plugin.db.setex(dbkey, expiry, new Date(), (err, dbr) => {
-            if (err) logger.logerror(plugin, `Redis returned error: ${err}`);
+        obtls.db.setex(dbkey, expiry, new Date(), (err, dbr) => {
+            if (err) logger.logerror(obtls, `Redis returned error: ${err}`);
             cb();
         });
     }
