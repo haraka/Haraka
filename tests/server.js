@@ -445,7 +445,7 @@ exports.requireAuthorized_SMTPS = {
                         test.equal(error.message, 'socket hang up')
                     }
                     else {     // node 10+
-                        test.equal(error.message, 'Client network socket disconnected before secure TLS connection was established';
+                        test.equal(error.message, 'Client network socket disconnected before secure TLS connection was established');
                     }
                 }
                 test.done();
