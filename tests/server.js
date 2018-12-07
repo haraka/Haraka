@@ -441,7 +441,12 @@ exports.requireAuthorized_SMTPS = {
             function (error, info) {
                 if (error) {
                     // console.log(error);
-                    test.equal(error.message, ['socket hang up'])
+                    if (error.message === 'socket hang up') {   // node 6 & 8
+                        test.equal(error.message, 'socket hang up')
+                    }
+                    else {     // node 10+
+                        test.equal(error.message, 'Client network socket disconnected before secure TLS connection was established';
+                    }
                 }
                 test.done();
             });
