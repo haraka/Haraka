@@ -127,6 +127,7 @@ exports.load_tls_ini = {
                     honorCipherOrder: true,
                     requestOCSP: false,
                     // enableOCSPStapling: false,
+                    requireAuthorized: [],
                 },
                 redis: { disable_for_failed_hosts: false },
                 no_tls_hosts: {}
@@ -147,6 +148,7 @@ exports.load_tls_ini = {
                 cert: 'tls_cert.pem',
                 dhparam: 'dhparams.pem',
                 ciphers: 'ECDHE-RSA-AES256-GCM-SHA384:ECDHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384:DHE-RSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-SHA384',
+                requireAuthorized: [2465],
             },
             redis: { disable_for_failed_hosts: false },
             no_tls_hosts: {},
