@@ -214,7 +214,7 @@ exports.parse_x509 = string => {
 exports.load_tls_ini = (opts) => {
     const tlss = this;
 
-    log.loginfo('loading tls.ini');
+    log.loginfo(`loading tls.ini`); // from ${this.config.root_path}`);
 
     const cfg = exports.config.get('tls.ini', {
         booleans: [
@@ -253,6 +253,13 @@ exports.load_tls_ini = (opts) => {
         catch (ignore) {
             log.lognotice("OCSP Stapling not available.");
         }
+    }
+
+    if (cfg.main.requireAuthorized === undefined) {
+        cfg.main.requireAuthorized = [];
+    }
+    else if (!Array.isArray(cfg.main.requireAuthorized)) {
+        cfg.main.requireAuthorized = [cfg.main.requireAuthorized];
     }
 
     tlss.cfg = cfg;
@@ -596,6 +603,20 @@ function cleanOcspCache () {
 exports.certsByHost = certsByHost;
 exports.ocsp = ocsp;
 
+exports.get_rejectUnauthorized = function (rejectUnauthorized, port, port_list) {
+    // console.log(`rejectUnauthorized: ${rejectUnauthorized}, port ${port}, list: ${port_list}`)
+    if (rejectUnauthorized) {
+        // console.log('true for all ports');
+        return true;
+    }
+    if (port_list.includes(port)) {
+        // console.log('port matched true');
+        return true;
+    }
+    // console.log('returning default false');
+    return false;
+}
+
 function createServer (cb) {
     const server = net.createServer(cryptoSocket => {
 
@@ -612,6 +633,8 @@ function createServer (cb) {
 
             const options = Object.assign({}, certsByHost['*']);
             options.server = server;  // TLSSocket needs server for SNI to work
+
+            options.rejectUnauthorized = exports.get_rejectUnauthorized(options.rejectUnauthorized, cryptoSocket.localPort, exports.cfg.main.requireAuthorized);
 
             const cleartext = new tls.TLSSocket(cryptoSocket, options);
 
