@@ -28,7 +28,7 @@ $ echo -e -n '\r\n' | openssl dgst -binary -sha256 | openssl base64
 frcCV1k9oG9oKj3dpUqdJg1PxRT2RSN/XKdLCPjaYaY=
 */
 
-function getValueFromDKIM(dkim_header, key) {
+function getValueFromDKIM (dkim_header, key) {
     const kv = dkim_header.split(';');
     for (let i = 0, len = kv.length; i < len; i++) {
         const arr = kv[i].match(/^([^=]+)=(.*)$/);
