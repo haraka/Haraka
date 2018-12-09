@@ -100,11 +100,11 @@ class HMailItem extends events.EventEmitter {
 
             this._stream_bytes_from(this.path, {start: 4, end: todo_len + 3}, (err2, todo_bytes) => {
                 if (todo_bytes.length !== todo_len) {
-                    const wrongLength = "Didn't find right amount of data in todo!"
+                    const wrongLength = `Didn't find right amount of data in todo!: ${err2}`;
                     this.logcrit(wrongLength);
-                    fs.rename(this.path, path.join(queue_dir, "error." + this.filename), (err3) => {
+                    fs.rename(this.path, path.join(queue_dir, `error.${this.filename}`), (err3) => {
                         if (err3) {
-                            this.logerror("Error creating error file after todo read failure (" + this.filename + "): " + err);
+                            this.logerror(`Error creating (error.${this.filename}): ${err3}`);
                         }
                     });
                     this.emit('error', wrongLength); // Note nothing picks this up yet
@@ -618,7 +618,7 @@ class HMailItem extends events.EventEmitter {
             else {
                 self.discard();
             }
-            if (cfg.pool_concurrency_max) {
+            if (cfg.pool_concurrency_max && !mx.using_lmtp) {
                 send_command('RSET');
             }
             else {
@@ -690,7 +690,7 @@ class HMailItem extends events.EventEmitter {
                     rcpt.dsn_smtp_response = response.join(' ');
                     rcpt.dsn_remote_mta = mx.exchange;
                 });
-                send_command(cfg.pool_concurrency_max ? 'RSET' : 'QUIT');
+                send_command(cfg.pool_concurrency_max && !mx.using_lmtp ? 'RSET' : 'QUIT');
                 processing_mail = false;
                 return self.temp_fail(`Upstream error: ${code}${(extc) ? `${extc} ` : ''}${reason}`);
             }
@@ -728,7 +728,7 @@ class HMailItem extends events.EventEmitter {
                         rcpt.dsn_smtp_response = response.join(' ');
                         rcpt.dsn_remote_mta = mx.exchange;
                     });
-                    send_command(cfg.pool_concurrency_max ? 'RSET' : 'QUIT');
+                    send_command(cfg.pool_concurrency_max && !mx.using_lmtp ? 'RSET' : 'QUIT');
                     processing_mail = false;
                     return self.temp_fail(`Upstream error: ${code} ${(extc) ? `${extc} ` : ''}${reason}`);
                 }
@@ -744,6 +744,10 @@ class HMailItem extends events.EventEmitter {
                 if (command === 'ehlo') {
                     // EHLO command was rejected; fall-back to HELO
                     return send_command('HELO', mx.bind_helo);
+                }
+                if (command === 'rset') {
+                    // Broken server doesn't accept RSET, terminate the connection
+                    return client_pool.release_client(socket, port, host, mx.bind, true);
                 }
                 reason = `${code} ${(extc) ? `${extc} ` : ''}${response.join(' ')}`;
                 if (/^rcpt/.test(command) || command === 'dot_lmtp') {
@@ -775,7 +779,7 @@ class HMailItem extends events.EventEmitter {
                         rcpt.dsn_smtp_response = response.join(' ');
                         rcpt.dsn_remote_mta = mx.exchange;
                     });
-                    send_command(cfg.pool_concurrency_max ? 'RSET' : 'QUIT');
+                    send_command(cfg.pool_concurrency_max && !mx.using_lmtp ? 'RSET' : 'QUIT');
                     processing_mail = false;
                     return self.bounce(reason, { mx: mx });
                 }

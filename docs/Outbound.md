@@ -271,7 +271,7 @@ then you can use the `get_mx` hook documented above to do this by supplying
 both `auth_user` and `auth_pass` properties in an MX object.
 
 If AUTH properties are supplied and the remote end does not offer AUTH or there
-are no compatible AUTH methods, then the message with be sent without AUTH and
+are no compatible AUTH methods, then the message will be sent without AUTH and
 a warning will be logged.
 
 

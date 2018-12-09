@@ -69,6 +69,7 @@ class Connection {
             info: null,          // c.remote_info
             closed: false,       // c.remote_closed
             is_private: false,
+            is_local: false,
         };
         this.hello = {
             host: null,          // c.hello_host
@@ -100,6 +101,7 @@ class Connection {
         this.transaction = null;
         this.tran_count = 0;
         this.capabilities = null;
+        this.ehlo_hello_message = config.get('ehlo_hello_message') || 'Haraka is at your service.'
         this.banner_includes_uuid = config.get('banner_includes_uuid') ? true : false;
         this.deny_includes_uuid = config.get('deny_includes_uuid') || null;
         this.early_talker = false;
@@ -111,6 +113,7 @@ class Connection {
         this.start_time = Date.now();
         this.last_reject = '';
         this.max_bytes = parseInt(config.get('databytes')) || 0;
+        this.max_mime_parts = parseInt(config.get('max_mime_parts')) || 1000;
         this.totalbytes = 0;
         this.rcpt_count = {
             accept:   0,
@@ -122,8 +125,8 @@ class Connection {
             tempfail: 0,
             reject:   0,
         };
-        this.max_line_length = config.get('max_line_length') || 512;
-        this.max_data_line_length = config.get('max_data_line_length') || 992;
+        this.max_line_length = parseInt(config.get('max_line_length')) || 512;
+        this.max_data_line_length = parseInt(config.get('max_data_line_length')) || 992;
         this.results = new ResultStore(this);
         this.errors = 0;
         this.last_rcpt_msg = null;
@@ -165,9 +168,8 @@ class Connection {
         const has_host = self.remote.host ? `${self.remote.host} ` : '';
         const rhost = `client ${has_host}[${self.remote.ip}]`
 
-        if (!self.client.on) {
-            return;
-        }
+        if (!self.client.on) return;
+
         self.client.on('end', () => {
             if (self.state >= states.DISCONNECTING) return;
             self.remote.closed = true;
@@ -199,9 +201,7 @@ class Connection {
             self.process_data(data);
         });
 
-        const ha_list = net.isIPv6(self.remote.ip) ?
-            haproxy_hosts_ipv6
-            : haproxy_hosts_ipv4;
+        const ha_list = net.isIPv6(self.remote.ip) ? haproxy_hosts_ipv6 : haproxy_hosts_ipv4;
 
         if (ha_list.some((element, index, array) => {
             return ipaddr.parse(self.remote.ip).match(element[0], element[1]);
@@ -259,9 +259,14 @@ class Connection {
             loc[part] = val;
         }
 
-        // Set is_private automatically when remote.ip is set
+        // Set is_private, is_local automatically when remote.ip is set
         if (prop_str === 'remote.ip') {
-            this.set('remote.is_private', net_utils.is_private_ip(this.remote.ip));
+            this.set('remote.is_local', net_utils.is_local_ip(this.remote.ip));
+            if (this.remote.is_local) {
+                this.set('remote.is_private', true);
+            } else {
+                this.set('remote.is_private', net_utils.is_private_ipv4(this.remote.ip));
+            }
         }
 
         // sunset 3.0.0
@@ -325,7 +330,7 @@ class Connection {
         /* eslint no-control-regex: 0 */
         if (/[^\x00-\x7F]/.test(this.current_line)) {
             // See if this is a TLS handshake
-            const buf = new Buffer(this.current_line.substr(0,3), 'binary');
+            const buf = Buffer.from(this.current_line.substr(0,3), 'binary');
             if (buf[0] === 0x16 && buf[1] === 0x03 &&
                (buf[2] === 0x00 || buf[2] === 0x01)) // SSLv3/TLS1.x format
             {
@@ -513,7 +518,7 @@ class Connection {
                 this.transaction.notes.data_line_length_exceeded = true;
                 const b = Buffer.concat([
                     this.current_data.slice(0, maxlength - 2),
-                    new Buffer("\r\n ", 'utf8'),
+                    Buffer.from("\r\n ", 'utf8'),
                     this.current_data.slice(maxlength - 2)
                 ], this.current_data.length + 3);
                 this.current_data = b;
@@ -867,7 +872,7 @@ class Connection {
             default:
                 // RFC5321 section 4.1.1.1
                 // Hostname/domain should appear after 250
-                this.respond(250, `${this.local.host} Hello ${this.get_remote('host')}, Haraka is at your service.`);
+                this.respond(250, `${this.local.host} Hello ${this.get_remote('host')}${this.ehlo_hello_message}`);
         }
     }
     ehlo_respond (retval, msg) {
@@ -901,7 +906,7 @@ class Connection {
                 // Hostname/domain should appear after 250
 
                 const response = [
-                    `${this.local.host} Hello ${this.get_remote('host')}, Haraka is at your service.`,
+                    `${this.local.host} Hello ${this.get_remote('host')}${this.ehlo_hello_message}`,
                     "PIPELINING",
                     "8BITMIME",
                     "SMTPUTF8",
@@ -1596,8 +1601,7 @@ class Connection {
             return;
         }
 
-        const max_mime_parts = config.get('max_mime_parts') || 1000;
-        if (this.transaction.mime_part_count >= max_mime_parts) {
+        if (this.transaction.mime_part_count >= this.max_mime_parts) {
             this.logcrit("Possible DoS attempt - too many MIME parts");
             this.respond(554, "Transaction failed due to too many MIME parts", function () {
                 self.disconnect();
@@ -1619,7 +1623,7 @@ class Connection {
         }
 
         // Check max received headers count
-        const max_received = config.get('max_received_count') || 100;
+        const max_received = parseInt(config.get('max_received_count')) || 100;
         if (this.transaction.header.get_all('received').length > max_received) {
             this.logerror("Incoming message had too many Received headers");
             this.respond(550, "Too many received headers - possible mail loop", function () {

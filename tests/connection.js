@@ -38,7 +38,8 @@ exports.connectionRaw = {
             host: null,
             info: null,
             closed: false,
-            is_private: false
+            is_private: false,
+            is_local: false
         });
         // backwards compat, sunset v3.0.0
         test.equal(this.connection.remote_ip, null);
@@ -136,9 +137,10 @@ exports.connectionRaw = {
         test.equal(true, this.connection.tls.enabled);
         test.done();
     },
-    'sets remote.is_private': function (test) {
-        test.expect(1);
+    'sets remote.is_private and remote.is_local': function (test) {
+        test.expect(2);
         test.equal(false, this.connection.remote.is_private);
+        test.equal(false, this.connection.remote.is_local);
         test.done();
     },
     'has legacy proxy property set' : function (test) {
@@ -195,9 +197,36 @@ exports.connectionPrivate = {
         done();
     },
     tearDown : _tear_down,
-    'sets remote.is_private': function (test) {
-        test.expect(2);
+    'sets remote.is_private and remote.is_local': function (test) {
+        test.expect(3);
         test.equal(true, this.connection.remote.is_private);
+        test.equal(false, this.connection.remote.is_local);
+        test.equal(2525, this.connection.remote.port);
+        test.done();
+    },
+}
+
+exports.connectionLocal = {
+    setUp: function (done) {
+        const client = {
+            remotePort: 2525,
+            remoteAddress: '127.0.0.2',
+            destroy: function () { true; },
+        };
+        const server = {
+            ip_address: '127.0.0.1',
+            address: function () {
+                return this.ip_address;
+            }
+        };
+        this.connection = connection.createConnection(client, server);
+        done();
+    },
+    tearDown : _tear_down,
+    'sets remote.is_private and remote.is_local': function (test) {
+        test.expect(3);
+        test.equal(true, this.connection.remote.is_private);
+        test.equal(true, this.connection.remote.is_local);
         test.equal(2525, this.connection.remote.port);
         test.done();
     },

@@ -76,7 +76,7 @@ exports.hook_queue = function (next, connection) {
         plugin.loginfo("Message Stream sent to qmail. Now sending envelope");
         // now send envelope
         // Hope this will be big enough...
-        const buf = new Buffer(4096);
+        const buf = Buffer.alloc(4096);
         let p = 0;
         buf[p++] = 70;
         const mail_from = connection.transaction.mail_from.address();

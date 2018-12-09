@@ -90,6 +90,10 @@ exports.load_clamd_ini = function () {
             // clamd.conf options enabled by default, but prone to false
             // positives.
             '-reject.Phishing',
+
+            '+check.authenticated',
+            '+check.private_ip',
+            '+check.local_ip'
         ],
     }, function () {
         plugin.load_clamd_ini();
@@ -147,7 +151,10 @@ exports.register = function () {
 
 exports.hook_data = function (next, connection) {
     const plugin = this;
+
     if (!plugin.cfg.main.only_with_attachments) return next();
+
+    if (!plugin.should_check(connection)) return next();
 
     const txn = connection.transaction;
     txn.parse_body = true;
@@ -164,6 +171,8 @@ exports.hook_data_post = function (next, connection) {
     const plugin = this;
     const txn = connection.transaction;
     const cfg = plugin.cfg;
+
+    if (!plugin.should_check(connection)) return next();
 
     // Do we need to run?
     if (cfg.main.only_with_attachments && !txn.notes.clamd_found_attachment) {
@@ -313,6 +322,30 @@ exports.hook_data_post = function (next, connection) {
 
     // Start the process
     try_next_host();
+}
+
+exports.should_check = function (connection) {
+    const plugin = this;
+
+    if (plugin.cfg.check.authenticated == false && connection.notes.auth_user) {
+        connection.transaction.results.add(plugin, { skip: 'authed'});
+        return false;
+    }
+
+    // necessary because local IPs are included in private IPs
+    if (plugin.cfg.check.local_ip == true && connection.remote.is_local) return true;
+
+    if (plugin.cfg.check.local_ip == false && connection.remote.is_local) {
+        connection.transaction.results.add(plugin, { skip: 'local_ip'});
+        return false;
+    }
+
+    if (plugin.cfg.check.private_ip == false && connection.remote.is_private) {
+        connection.transaction.results.add(plugin, { skip: 'private_ip'});
+        return false;
+    }
+
+    return true;
 }
 
 exports.send_clamd_predata = function (socket, cb) {

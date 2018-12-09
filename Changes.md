@@ -1,10 +1,66 @@
 
-## 2.8.22 - Mmm DD, 2018
+## 2.8.24 - Mmm DD, 201Y
 
-* New Features
-* Fixes
-* Changes
+### Changes
 
+* Implement SIGTERM graceful shutdown if pid is 1 #2547
+* early_talker: skip if sender has good karma #2551
+* dockerfile: update to node 10 #2552
+* Update deprecated usages of Buffer #2553
+
+### New Features
+
+* Implement SIGTERM graceful shutdown if pid is 1 #2547
+
+### New Features
+
+* tls: require validated certs on some ports with requireAuthorized
+
+### Fixes
+
+* mf.resolvable: reduce timeout by one second (so < plugin.timeout) #2544
+* invalid DKIM when empty body #2410
+
+
+## 2.8.23 - Nov 18, 2018
+
+### Changes
+
+* tighten Haraka pattern in .gitignore #2542
+
+
+## 2.8.22 - Nov 17, 2018
+
+### New Features
+
+* enable tls/ssl for rabbitmq amqplib plugin #2518
+
+### Fixes
+
+* hmail: don't send RSET to LMTP #2530
+
+### Changes
+
+* clamd: add check.authenticated, check.private_ip, check.local_ip option
+* use get_decoded on headers that may be encoded #2537
+* connection: move max_mime_part config load to connection init #2528
+* outbound: init TLS when we send email, not when old queue file is loaded #2503
+
+### Changes
+
+* relay: update port 465 doc #2522
+* hmail: log the correct err message #2531
+* ob/tls: consistently use obtls (vs plugin) for "this" name #2524
+* outbound: add domain to loginfo message #2523
+* Add connection.remote.is_local #2532
+* update license #2525
+* perf: move max_mime_parts config load to connection init #2529
+* update semver to version 5.6.0 #2517
+* added hint to encrypted file authentication #2514
+* dkim_sign: improved log messages #2499
+* ehlo_hello_message: config/ehlo_hello_message can be used to overwrite the EHLO/HELO msg replacing `, Haraka is at your service` #2498
+* connection: add connection.remote.is_local flag for detecting loopback and link local IPs
+* add .name to outbound TLS for logs  #2492
 
 ## 2.8.21 - Jul 20, 2018
 
