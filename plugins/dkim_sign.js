@@ -81,6 +81,12 @@ class DKIMSignStream extends Stream {
     end (buf) {
         this.writable = false;
 
+        // If body is empty it still requires to contain CRLF
+        // RFC6376 - 3.4.3. The "simple" Body Canonicalization Algorithm
+        if (this.buffer.len == 0) {
+            this.hash.update(new Buffer("\r\n"));
+        }
+        
         // Add trailing CRLF if we have data left over
         if (this.buffer.ar.length) {
             this.buffer.ar.push(Buffer.from("\r\n"));
@@ -88,12 +94,6 @@ class DKIMSignStream extends Stream {
             const le = Buffer.concat(this.buffer.ar, this.buffer.len);
             this.hash.update(le);
             this.buffer = { ar: [], len: 0 };
-        }
-        
-        // If body is empty it still requires to contain CRLF
-        // RFC6376 - 3.4.3. The "simple" Body Canonicalization Algorithm
-        if (this.buffer.len == 0) {
-            this.hash.update(new Buffer("\r\n"));
         }
 
         const bodyhash = this.hash.digest('base64');
