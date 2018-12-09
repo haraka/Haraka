@@ -745,6 +745,10 @@ class HMailItem extends events.EventEmitter {
                     // EHLO command was rejected; fall-back to HELO
                     return send_command('HELO', mx.bind_helo);
                 }
+                if (command === 'rset') {
+                    // Broken server doesn't accept RSET, terminate the connection
+                    return client_pool.release_client(socket, port, host, mx.bind, true);
+                }
                 reason = `${code} ${(extc) ? `${extc} ` : ''}${response.join(' ')}`;
                 if (/^rcpt/.test(command) || command === 'dot_lmtp') {
                     if (command === 'dot_lmtp') last_recip = ok_recips.shift();

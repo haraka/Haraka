@@ -185,7 +185,7 @@ exports.auth = function (cfg, connection, smtp_client) {
         }
 
         const base64 = function (str) {
-            const buffer = new Buffer(str, 'UTF-8');
+            const buffer = Buffer.from(str, 'UTF-8');
             return buffer.toString('base64');
         };
 

@@ -89,7 +89,7 @@ class Header {
             const matches = /\bcharset\s*=\s*["']?([\w_-]*)/.exec(this.get('content-type'));
             if (matches && !/UTF-?8/i.test(matches[1])) {
                 const encoding = matches[1];
-                const source = new Buffer(val, 'binary');
+                const source = Buffer.from(val, 'binary');
                 val = try_convert(source, encoding).toString();
             }
         }
@@ -214,7 +214,7 @@ function _decode_header (matched, encoding, lang, cte, data) {
             data = utils.decode_qp(data.replace(/_/g, ' '));
             break;
         case 'B':
-            data = new Buffer(data, "base64");
+            data = Buffer.from(data, "base64");
             break;
         default:
             logger.logerror("Invalid header encoding type: " + cte);
