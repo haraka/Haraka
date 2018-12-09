@@ -25,6 +25,7 @@ class DKIMSignStream extends Stream {
         this.hash = crypto.createHash('SHA256');
         this.line_buffer = { ar: [], len: 0 };
         this.signer = crypto.createSign('RSA-SHA256');
+        this.body_found = false;
     }
 
     write (buf) {
@@ -69,6 +70,7 @@ class DKIMSignStream extends Stream {
                     this.hash.update(lb);
                 }
                 this.hash.update(line);
+                this.body_found = true;
             }
         }
         if (buf.length) {
@@ -88,6 +90,10 @@ class DKIMSignStream extends Stream {
             const le = Buffer.concat(this.buffer.ar, this.buffer.len);
             this.hash.update(le);
             this.buffer = { ar: [], len: 0 };
+        }
+
+        if (!this.body_found) {
+            this.hash.update(Buffer.from("\r\n"));
         }
 
         const bodyhash = this.hash.digest('base64');
