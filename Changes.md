@@ -15,6 +15,7 @@
 ### Fixes
 
 * mf.resolvable: reduce timeout by one second (so < plugin.timeout) #2544
+* LMTP blocks under stress #2556
 
 ## 2.8.23 - Nov 18, 2018
 

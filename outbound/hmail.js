@@ -618,10 +618,12 @@ class HMailItem extends events.EventEmitter {
             else {
                 self.discard();
             }
-            if (cfg.pool_concurrency_max && !mx.using_lmtp) {
+
+            if (cfg.pool_concurrency_max && success) {
+                client_pool.release_client(socket, port, host, mx.bind, fin_sent);
+            } else if (cfg.pool_concurrency_max && !mx.using_lmtp) {
                 send_command('RSET');
-            }
-            else {
+            } else {
                 send_command('QUIT');
             }
         }
