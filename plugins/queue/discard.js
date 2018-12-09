@@ -1,7 +1,7 @@
 // discard
 
 exports.register = function () {
-    this.register_hook('queue', 'discard');
+    this.register_hook('queue',          'discard');
     this.register_hook('queue_outbound', 'discard');
 }
 
@@ -24,5 +24,5 @@ exports.discard = function (next, connection) {
     if (process.env.YES_REALLY_DO_DISCARD) return discard();
 
     // Allow other queue plugins to deliver
-    return next();
+    next();
 }

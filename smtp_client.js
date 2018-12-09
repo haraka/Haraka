@@ -372,8 +372,7 @@ exports.onCapabilitiesOutbound = function (smtp_client, secured, connection, con
                 serverBanned = net_utils.ip_in_list(smtp_client.tls_config.no_tls_hosts, smtp_client.remote_ip);
             }
 
-            if (!hostBanned && !serverBanned && config.enable_tls)
-            {
+            if (!hostBanned && !serverBanned && config.enable_tls) {
                 smtp_client.socket.on('secure', on_secured);
                 smtp_client.secured = false;  // have to wait in forward plugin before we can do auth, even if capabilities are there on first EHLO
                 smtp_client.send_command('STARTTLS');
@@ -464,7 +463,7 @@ exports.get_client_plugin = function (plugin, connection, c, callback) {
                 return;
             }
 
-            if (c.auth.type === null || typeof (c.auth.type) === 'undefined') { return; } // Ignore blank
+            if (c.auth.type === null || typeof (c.auth.type) === 'undefined') return; // Ignore blank
             const auth_type = c.auth.type.toLowerCase();
             if (smtp_client.auth_capabilities.indexOf(auth_type) === -1) {
                 throw new Error(`Auth type "${auth_type}" not supported by server (supports: ${smtp_client.auth_capabilities.join(',')})`);
