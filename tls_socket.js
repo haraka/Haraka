@@ -707,7 +707,7 @@ function connect (port, host, cb) {
             }
         })
 
-        cleartext.on('secureConnect', function () {
+        cleartext.once('secureConnect', function () {
             log.logdebug('client TLS secured.');
             if (cb2) cb2(
                 cleartext.authorized,
