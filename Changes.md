@@ -21,6 +21,7 @@
 * mf.resolvable: reduce timeout by one second (so < plugin.timeout) #2544
 * LMTP blocks under stress #2556
 * invalid DKIM when empty body #2410
+* prevent running callback multiple times on TLS unix socket #2509
 
 
 ## 2.8.23 - Nov 18, 2018
