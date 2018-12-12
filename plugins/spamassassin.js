@@ -44,6 +44,7 @@ exports.load_spamassassin_ini = function () {
 exports.hook_data_post = function (next, connection) {
     const plugin = this;
     if (plugin.msg_too_big(connection)) return next();
+    if (!plugin.should_check(connection)) return next();
 
     connection.transaction.remove_header(plugin.cfg.main.spamc_auth_header); // just to be safe
 
@@ -348,4 +349,37 @@ exports.log_results = function (connection, spamd_response) {
         status: spamd_response.flag, score: parseFloat(spamd_response.score),
         required: parseFloat(spamd_response.reqd), reject: reject_threshold, tests: spamd_response.tests,
         emit: true});
+}
+
+exports.should_check = function (connection) {
+    const plugin = this;
+
+    let result = true;  // default
+
+    if (plugin.cfg.check.authenticated == false && connection.notes.auth_user) {
+        connection.transaction.results.add(plugin, { skip: 'authed'});
+        result = false;
+    }
+
+    if (plugin.cfg.check.relay == false && connection.relaying) {
+        connection.transaction.results.add(plugin, { skip: 'relay'});
+        result = false;
+    }
+
+    if (plugin.cfg.check.local_ip == false && connection.remote.is_local) {
+        connection.transaction.results.add(plugin, { skip: 'local_ip'});
+        result = false;
+    }
+
+    if (plugin.cfg.check.private_ip == false && connection.remote.is_private) {
+        if (plugin.cfg.check.local_ip == true && connection.remote.is_local) {
+            // local IPs are included in private IPs
+        }
+        else {
+            connection.transaction.results.add(plugin, { skip: 'private_ip'});
+            result = false;
+        }
+    }
+
+    return result;
 }
