@@ -7,14 +7,14 @@
 * early_talker: skip if sender has good karma #2551
 * dockerfile: update to node 10 #2552
 * Update deprecated usages of Buffer #2553
+* early_talker: extend reasons to skip checking #2564
 
 ### New Features
 
 * Implement SIGTERM graceful shutdown if pid is 1 #2547
-* tls: require validated certs on some ports with requireAuthorized
-* spamassassin: disable checks when requested
-* early_talker: extend reasons to skip checking
-* clamd: permit skipping for relay clients
+* tls: require validated certs on some ports with requireAuthorized #2554
+* spamassassin: disable checks when requested #2564
+* clamd: permit skipping for relay clients #2564
 
 ### Fixes
 
