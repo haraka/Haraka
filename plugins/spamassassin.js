@@ -14,6 +14,10 @@ exports.load_spamassassin_ini = function () {
     plugin.cfg = plugin.config.get('spamassassin.ini', {
         booleans: [
             '+add_headers',
+            '-check.authenticated',
+            '-check.private_ip',
+            '-check.local_ip',
+            '-check.relay',
         ],
     }, function () {
         plugin.load_spamassassin_ini();
