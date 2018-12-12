@@ -11,10 +11,10 @@
 ### New Features
 
 * Implement SIGTERM graceful shutdown if pid is 1 #2547
-
-### New Features
-
 * tls: require validated certs on some ports with requireAuthorized
+* spamassassin: disable checks when requested
+* early_talker: extend reasons to skip checking
+* clamd: permit skipping for relay clients
 
 ### Fixes
 
