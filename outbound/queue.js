@@ -132,7 +132,7 @@ exports.load_queue_files = function (pid, cb_name, files, callback) {
                         load_queue.push(new_filename);
                     }
                     else {
-                        temp_fail_queue.add(next_process - self.cur_time, function () {
+                        temp_fail_queue.add(new_filename, next_process - self.cur_time, function () {
                             load_queue.push(new_filename);
                         });
                     }
@@ -194,7 +194,7 @@ exports.load_queue_files = function (pid, cb_name, files, callback) {
                 }
                 else {
                     logger.logdebug("[outbound] File needs processing later: " + (next_process - self.cur_time) + "ms");
-                    temp_fail_queue.add(next_process - self.cur_time, function () { load_queue.push(file);});
+                    temp_fail_queue.add(file, next_process - self.cur_time, function () { load_queue.push(file);});
                 }
                 async.setImmediate(cb);
             }
@@ -294,7 +294,7 @@ exports._add_file = function (hmail) {
         delivery_queue.push(hmail);
     }
     else {
-        temp_fail_queue.add(hmail.next_process - exports.cur_time, function () {
+        temp_fail_queue.add(hmail.filename, hmail.next_process - exports.cur_time, function () {
             delivery_queue.push(hmail);
         });
     }

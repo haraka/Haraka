@@ -27,6 +27,9 @@ const queue_dir = queuelib.queue_dir;
 const temp_fail_queue = queuelib.temp_fail_queue;
 const delivery_queue = queuelib.delivery_queue;
 
+exports.temp_fail_queue = temp_fail_queue;
+exports.delivery_queue = delivery_queue;
+
 exports.net_utils = net_utils;
 exports.config    = config;
 
