@@ -357,7 +357,7 @@ exports.get_sender_domain = function (connection) {
 
     // If From has multiple-addresses, we must parse and
     // use the domain in the Sender header.
-    const sender = txn.header.get('Sender');
+    const sender = txn.header.get_decoded('Sender');
     if (sender) {
         try {
             domain = (addrparser.parse(sender))[0].host().toLowerCase();
