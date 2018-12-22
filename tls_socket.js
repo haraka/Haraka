@@ -348,13 +348,17 @@ exports.load_default_opts = () => {
         tlss.saveOpt('*', 'dhparam', tlss.config.get(cfg.dhparam, 'binary'));
     }
 
+    if (cfg.ca && typeof cfg.ca === 'string') {
+        log.loginfo(`loading CA certs from ${cfg.ca}`);
+        tlss.saveOpt('*', 'ca', tlss.config.get(cfg.ca, 'binary'));
+    }
+
     // make non-array key/cert option into Arrays with one entry
     if (!(Array.isArray(cfg.key ))) cfg.key  = [cfg.key];
     if (!(Array.isArray(cfg.cert))) cfg.cert = [cfg.cert];
 
     if (cfg.key.length != cfg.cert.length) {
-        log.logerror("number of keys (" + cfg.key.length +
-            ") not equal to certs (" + cfg.cert.length + ").");
+        log.logerror(`number of keys (${cfg.key.length}) not equal to certs (${cfg.cert.length}).`);
     }
 
     // if key file has already been loaded, it'll be a Buffer.
