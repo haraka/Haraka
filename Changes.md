@@ -8,6 +8,7 @@
 * Update deprecated usages of Buffer #2553
 * early_talker: extend reasons to skip checking #2564
 * tls: add 'ca' option (for CA root file) #2571
+* outbound: little cleanups #2572
 
 ### New Features
 
