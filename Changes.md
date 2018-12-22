@@ -8,6 +8,7 @@
 * dockerfile: update to node 10 #2552
 * Update deprecated usages of Buffer #2553
 * early_talker: extend reasons to skip checking #2564
+* outbound: little cleanups #2572
 
 ### New Features
 
