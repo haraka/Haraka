@@ -6,28 +6,28 @@ class FsyncWriteStream extends fs.WriteStream {
     constructor (path, options) {
         super(path, options);
     }
-}
 
-FsyncWriteStream.prototype.close = function (cb) {
-    const self = this;
-    if (cb)
-        this.once('close', cb);
-    if (this.closed || 'number' !== typeof this.fd) {
-        if ('number' !== typeof this.fd) {
-            this.once('open', close);
-            return;
-        }
-        return setImmediate(this.emit.bind(this, 'close'));
-    }
-    this.closed = true;
-    close();
+    close (cb) {
+        const self = this;
+        if (cb) this.once('close', cb);
 
-    function close (fd) {
-        fs.fsync(fd || self.fd, function (er) {
-            if (er) {
-                self.emit('error', er);
+        if (this.closed || 'number' !== typeof this.fd) {
+            if ('number' !== typeof this.fd) {
+                this.once('open', close);
+                return;
             }
-            else {
+            return setImmediate(this.emit.bind(this, 'close'));
+        }
+        this.closed = true;
+        close();
+
+        function close (fd) {
+            fs.fsync(fd || self.fd, function (er) {
+                if (er) {
+                    self.emit('error', er);
+                    return;
+                }
+
                 fs.close(fd || self.fd, function (err) {
                     if (err) {
                         self.emit('error', err);
@@ -37,10 +37,9 @@ FsyncWriteStream.prototype.close = function (cb) {
                     }
                 });
                 self.fd = null;
-            }
-        });
+            });
+        }
     }
 }
 
 module.exports = FsyncWriteStream;
-

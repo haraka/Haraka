@@ -251,7 +251,7 @@ exports.send_trans_email = function (transaction, next) {
 
     logger.add_log_methods(connection);
     if (!transaction.results) {
-        logger.logerror('adding missing results store');
+        logger.logdebug('adding results store');
         transaction.results = new ResultStore(connection);
     }
 

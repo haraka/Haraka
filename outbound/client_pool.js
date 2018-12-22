@@ -44,50 +44,49 @@ function get_pool (port, host, local_addr, is_unix_socket, max) {
     port = port || 25;
     host = host || 'localhost';
     const name = `outbound::${port}:${host}:${local_addr}:${cfg.pool_timeout}`;
-    if (!server.notes.pool) {
-        server.notes.pool = {};
-    }
-    if (!server.notes.pool[name]) {
-        const pool = generic_pool.Pool({
-            name: name,
-            create: function (done) {
-                _create_socket(this.name, port, host, local_addr, is_unix_socket, done);
-            },
-            validate: function (socket) {
-                return socket.__fromPool && socket.writable;
-            },
-            destroy: function (socket) {
-                logger.logdebug(`[outbound] destroying pool entry ${socket.__uuid} for ${host}:${port}`);
-                socket.removeAllListeners();
-                socket.__fromPool = false;
-                socket.on('line', function (line) {
-                    // Just assume this is a valid response
-                    logger.logprotocol(`[outbound] S: ${line}`);
-                });
-                socket.once('error', function (err) {
-                    logger.logwarn(`[outbound] Socket got an error while shutting down: ${err}`);
-                });
-                socket.once('end', function () {
-                    logger.loginfo("[outbound] Remote end half closed during destroy()");
-                    socket.destroy();
-                })
-                if (socket.writable) {
-                    logger.logprotocol(`[outbound] [${socket.__uuid}] C: QUIT`);
-                    socket.write("QUIT\r\n");
-                }
-                socket.end(); // half close
-            },
-            max: max || 10,
-            idleTimeoutMillis: cfg.pool_timeout * 1000,
-            log: function (str, level) {
-                if (/this._availableObjects.length=/.test(str)) return;
-                level = (level === 'verbose') ? 'debug' : level;
-                logger[`log${level}`](`[outbound] [${name}] ${str}`);
+    if (!server.notes.pool) server.notes.pool = {};
+    if (server.notes.pool[name]) return server.notes.pool[name];
+
+    const pool = generic_pool.Pool({
+        name: name,
+        create: function (done) {
+            _create_socket(this.name, port, host, local_addr, is_unix_socket, done);
+        },
+        validate: function (socket) {
+            return socket.__fromPool && socket.writable;
+        },
+        destroy: function (socket) {
+            logger.logdebug(`[outbound] destroying pool entry ${socket.__uuid} for ${host}:${port}`);
+            socket.removeAllListeners();
+            socket.__fromPool = false;
+            socket.on('line', function (line) {
+                // Just assume this is a valid response
+                logger.logprotocol(`[outbound] S: ${line}`);
+            });
+            socket.once('error', function (err) {
+                logger.logwarn(`[outbound] Socket got an error while shutting down: ${err}`);
+            });
+            socket.once('end', function () {
+                logger.loginfo("[outbound] Remote end half closed during destroy()");
+                socket.destroy();
+            })
+            if (socket.writable) {
+                logger.logprotocol(`[outbound] [${socket.__uuid}] C: QUIT`);
+                socket.write("QUIT\r\n");
             }
-        });
-        server.notes.pool[name] = pool;
-    }
-    return server.notes.pool[name];
+            socket.end(); // half close
+        },
+        max: max || 10,
+        idleTimeoutMillis: cfg.pool_timeout * 1000,
+        log: function (str, level) {
+            if (/this._availableObjects.length=/.test(str)) return;
+            level = (level === 'verbose') ? 'debug' : level;
+            logger[`log${level}`](`[outbound] [${name}] ${str}`);
+        }
+    });
+    server.notes.pool[name] = pool;
+
+    return pool;
 }
 
 // Get a socket for the given attributes.
@@ -142,11 +141,9 @@ exports.release_client = function (socket, port, host, local_addr, error) {
         return sockend();
     }
 
-    socket.removeAllListeners('close');
-    socket.removeAllListeners('error');
-    socket.removeAllListeners('end');
-    socket.removeAllListeners('timeout');
-    socket.removeAllListeners('line');
+    for (const event of ['close','error','end','timeout','line']) {
+        socket.removeAllListeners(event);
+    }
 
     socket.__fromPool = true;
 
