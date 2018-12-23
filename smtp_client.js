@@ -96,6 +96,7 @@ class SMTPClient extends events.EventEmitter {
                     return;
                 }
             }
+
             if (client.command === 'xclient' && /^5/.test(code)) {
                 // XCLIENT command was rejected (no permission?)
                 // Carry on without XCLIENT
@@ -107,11 +108,7 @@ class SMTPClient extends events.EventEmitter {
                     return;
                 }
             }
-            if (/^441/.test(code)) {
-                if (/Connection timed out/i.test(msg)) {
-                    //
-                }
-            }
+
             switch (client.command) {
                 case 'xclient':
                     client.xclient = true;
@@ -154,7 +151,7 @@ class SMTPClient extends events.EventEmitter {
                 return;
             }
             client.remote_ip = ipaddr.process(client.socket.remoteAddress).toString();
-        });
+        })
 
         function closed (msg) {
             return function (error) {
