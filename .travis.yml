@@ -25,7 +25,7 @@ script:
     - npm test
 
 after_success:
-    # - npm install istanbul codecov
+    - npm install istanbul codecov
     # - npm run cover
     # - ./node_modules/.bin/codecov
 
