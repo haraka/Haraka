@@ -9,6 +9,7 @@
 * early_talker: extend reasons to skip checking #2564
 * tls: add 'ca' option (for CA root file) #2571
 * outbound: little cleanups #2572
+* server: default to nodes=1 (was undefined) #2573
 
 ### New Features
 
