@@ -211,7 +211,7 @@ exports.smtp_client = {
         const smtp_client   = require('../smtp_client');
         const MessageStream = require('../messagestream');
 
-        smtp_client.get_client(server, (err, client) => {
+        smtp_client.get_client(server, (client) => {
 
             client
                 .on('greeting', command => {

@@ -101,12 +101,11 @@ exports.get_client = (port, host, local_addr, is_unix_socket, callback) => {
     if (pool.waitingClientsCount() >= obc.cfg.pool_concurrency_max) {
         return callback("Too many waiting clients for pool", null);
     }
-    pool.acquire((err, socket) => {
-        if (err) return callback(err);
+    pool.acquire().then(socket => {
         socket.__acquired = true;
         logger.loginfo(`[outbound] acquired socket ${socket.__uuid} for ${socket.__pool_name}`);
         callback(null, socket);
-    });
+    }).catch(callback);
 }
 
 exports.release_client = (socket, port, host, local_addr, error) => {
