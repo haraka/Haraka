@@ -96,7 +96,7 @@ exports._load_cur_queue = function (pid, cb_name, cb) {
 
 exports.load_queue_files = function (pid, cb_name, files, callback) {
     const self = exports;
-    
+
     if (files.length === 0) {
         if (callback) callback();
         return;
