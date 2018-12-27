@@ -146,7 +146,7 @@ exports.queue_discard = function (file, cb) {
         // we ignore not found error
     }
 
-    fs.unlink(path.join(this.queue_dir, file), function () {
+    fs.unlink(path.join(this.queue_dir || '', file), function () {
         cb(null, "OK");
     });
 }
