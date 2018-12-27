@@ -11,6 +11,7 @@ function _set_up (done) {
     this.plugin.outbound = outbound;
 
     this.connection = Connection.createConnection();
+    this.connection.remote.is_local = true;
     done();
 }
 
@@ -33,7 +34,8 @@ exports.access = {
             test.done();
         };
 
-        this.connection.remote.ip = '8.8.8.8';
+        this.connection.remote.is_local = false;
+
         this.plugin.hook_unrecognized_command(cb, this.connection, ['STATUS', 'POOL LIST']);
     }
 }

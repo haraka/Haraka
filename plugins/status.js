@@ -11,7 +11,7 @@ exports.register = function () {
 
 exports.hook_capabilities = function (next, connection) {
 
-    if (connection.remote.ip === '127.0.0.1' || connection.remote.ip === '::1') {
+    if (connection.remote.is_local) {
         connection.capabilities.push('STATUS');
     }
 
@@ -19,68 +19,64 @@ exports.hook_capabilities = function (next, connection) {
 }
 
 exports.hook_unrecognized_command = function (next, connection, params) {
-    const self = this;
-
-    const result_process = function (err, result) {
-        if (err) return next(DENY, err.message);
-        return connection.respond(211, result ? JSON.stringify(result) : "null", () => next(OK));
-    };
-
     if (params[0] !== 'STATUS') {
         next();
     }
-    else if (connection.remote.ip !== '127.0.0.1' && connection.remote.ip !== '::1') {
+    else if (!connection.remote.is_local) {
         return next(DENY, "STATUS not allowed remotely");
     }
     else {
-        if (server.cluster && !params[1].match(/^QUEUE LIST/)) {
-            self.call_master(params[1], result_process);
-        }
-        else {
-            self.command_action(params[1], result_process);
-        }
+        return this.run(params[1], function (err, result) {
+
+            if (err) return next(DENY, err.message);
+            return connection.respond(211, result ? JSON.stringify(result) : "null", () => next(OK));
+        })
+    }
+}
+
+exports.run = function (cmd, cb) {
+    if (server.cluster && !cmd.match(/^QUEUE LIST/)) {
+        this.call_master(cmd, cb);
+    }
+    else {
+        this.command_action(cmd, cb);
     }
 }
 
 exports.command_action = function (cmd, cb) {
-    const self = this;
     const params = cmd.split(' ');
 
     switch (params.shift()) {
         case 'POOL':
-            return self.pool_action(params, cb);
+            return this.pool_action(params, cb);
         case 'QUEUE':
-            return self.queue_action(params, cb);
+            return this.queue_action(params, cb);
         default:
             cb("unknown STATUS command")
     }
 }
 
 exports.pool_action = function (params, cb) {
-    const self = this;
-
     switch (params.shift()) {
         case 'LIST':
-            return self.pool_list(cb);
+            return this.pool_list(cb);
         default:
             cb("unknown POOL command")
     }
 }
 
 exports.queue_action = function (params, cb) {
-    const self = this;
-
     switch (params.shift()) {
         case 'LIST':
-            return self.queue_list(cb);
+            return this.queue_list(cb);
         case 'STATS':
-            return self.queue_stats(cb);
+            return this.queue_stats(cb);
         case 'INSPECT':
-            return self.queue_inspect(cb);
+            return this.queue_inspect(cb);
         case 'DISCARD':
-            return self.queue_discard(params.shift(), cb);
+            return this.queue_discard(params.shift(), cb);
         case 'PUSH':
-            return self.queue_push(params.shift(), cb);
+            return this.queue_push(params.shift(), cb);
         default:
             cb("unknown QUEUE command")
     }
@@ -169,7 +165,7 @@ exports.hook_init_master = function (next) {
 
     if (!server.cluster) return next();
 
-    const messageHandler = function (sender, msg) {
+    function messageHandler (sender, msg) {
         if (msg.event === 'status.request') {
             self.call_workers(msg, function (err, response) {
                 msg.result = response.filter((el) => el != null);
@@ -177,7 +173,7 @@ exports.hook_init_master = function (next) {
                 sender.send(msg);
             });
         }
-    };
+    }
 
     server.cluster.on('message', messageHandler);
     next();
@@ -186,7 +182,7 @@ exports.hook_init_master = function (next) {
 exports.hook_init_child = function (next) {
     const self = this;
 
-    const messageHandler = function (msg) {
+    function messageHandler (msg) {
         if (msg.event === 'status.request') {
             self.command_action(msg.params, function (err, result) {
                 msg.event = 'status.response';
@@ -194,19 +190,19 @@ exports.hook_init_child = function (next) {
                 process.send(msg);
             });
         }
-    };
+    }
 
     process.on('message', messageHandler);
     next();
 }
 
 exports.call_master = function (cmd, cb) {
-    const messageHandler = function (msg) {
+    function messageHandler (msg) {
         if (msg && msg.event === 'status.result') {
             process.removeListener('message', messageHandler);
             cb(null, msg.result);
         }
-    };
+    }
 
     process.on('message', messageHandler);
     process.send({event: 'status.request', params: cmd});
@@ -224,7 +220,7 @@ exports.call_workers = function (cmd, cb) {
 exports.call_worker = function (worker, cmd, cb) {
     let timeout;
 
-    const listen_responses = function (sender, msg) {
+    function listen_responses (sender, msg) {
         if (sender.id !== worker.id) return;
         if (msg.event !== 'status.response') return;
 
@@ -232,7 +228,7 @@ exports.call_worker = function (worker, cmd, cb) {
         server.cluster.removeListener('message', listen_responses);
 
         cb(null, msg.result);
-    };
+    }
 
     timeout = setTimeout(function () {
         server.cluster.removeListener('message', listen_responses);
