@@ -5,8 +5,8 @@ const path = require('path');
 const async = require('async');
 
 exports.register = function () {
-    this.outbound = require('./../outbound');
-    this.queue_dir = require('./../outbound/queue').queue_dir;
+    this.outbound = require('../outbound');
+    this.queue_dir = require('../outbound/queue').queue_dir;
 }
 
 exports.hook_capabilities = function (next, connection) {
@@ -19,23 +19,18 @@ exports.hook_capabilities = function (next, connection) {
 }
 
 exports.hook_unrecognized_command = function (next, connection, params) {
-    if (params[0] !== 'STATUS') {
-        next();
-    }
-    else if (!connection.remote.is_local) {
-        return next(DENY, "STATUS not allowed remotely");
-    }
-    else {
-        return this.run(params[1], function (err, result) {
+    if (params[0] !== 'STATUS') return next();
+    if (!connection.remote.is_local) return next(DENY, "STATUS not allowed remotely");
 
-            if (err) return next(DENY, err.message);
-            return connection.respond(211, result ? JSON.stringify(result) : "null", () => next(OK));
-        })
-    }
+    this.run(params[1], function (err, result) {
+        if (err) return next(DENY, err.message);
+
+        connection.respond(211, result ? JSON.stringify(result) : "null", () => next(OK));
+    });
 }
 
 exports.run = function (cmd, cb) {
-    if (server.cluster && !cmd.match(/^QUEUE LIST/)) {
+    if (server.cluster && !/^QUEUE LIST/.test(cmd)) {
         this.call_master(cmd, cb);
     }
     else {
@@ -89,7 +84,10 @@ exports.pool_list = function (cb) {
         Object.keys(server.notes.pool).forEach(function (name) {
             const instance = server.notes.pool[name];
 
-            result[name] = {inUse: instance.inUseObjectsCount(), size: instance.getPoolSize()};
+            result[name] = {
+                inUse: instance.inUseObjectsCount(),
+                size: instance.getPoolSize()
+            };
         });
     }
 
@@ -103,16 +101,14 @@ exports.queue_list = function (cb) {
         const result = [];
 
         if (qlist) {
-            qlist.forEach(function (todo) {
-                result.push({
-                    file: todo.file,
-                    uuid: todo.uuid,
-                    queue_time: todo.queue_time,
-                    domain: todo.domain,
-                    from: todo.mail_from.toString(),
-                    to: todo.rcpt_to.map((r) => r.toString())
-                });
-            });
+            qlist.forEach((todo) => result.push({
+                file: todo.file,
+                uuid: todo.uuid,
+                queue_time: todo.queue_time,
+                domain: todo.domain,
+                from: todo.mail_from.toString(),
+                to: todo.rcpt_to.map((r) => r.toString())
+            }));
         }
 
         cb(err, result);
@@ -124,13 +120,17 @@ exports.queue_stats = function (cb) {
 }
 
 exports.queue_inspect = function (cb) {
+    const delivery_queue_items = this.outbound.delivery_queue._tasks.toArray();
+    const fail_queue_items = this.outbound.temp_fail_queue.queue;
+
     cb(null, {
-        delivery_queue: this.outbound.delivery_queue._tasks.toArray().map(function (h) {
-            return {id: h.file};
-        }),
-        temp_fail_queue: this.outbound.temp_fail_queue.queue.map(function (i) {
-            return {id: i.id, fire_time: i.fire_time};
-        })
+        delivery_queue: delivery_queue_items.map((hmail) => ({
+            id: hmail.file
+        })),
+        temp_fail_queue: fail_queue_items.map((tqtimer) => ({
+            id: tqtimer.id,
+            fire_time: tqtimer.fire_time
+        }))
     });
 }
 
@@ -148,10 +148,12 @@ exports.queue_discard = function (file, cb) {
 }
 
 exports.queue_push = function (file, cb) {
-    for (let i = 0; i < this.outbound.temp_fail_queue.queue.length; i++) {
-        const ti = this.outbound.temp_fail_queue.queue[i];
-        if (ti.id !== file) continue;
-        ti.fire_time = -1;
+    const queue = this.outbound.temp_fail_queue.queue;
+
+    for (let i = 0; i < queue.length; i++) {
+        if (queue[i].id !== file) continue;
+
+        queue[i].fire_time = -1;
         break;
     }
 
@@ -165,46 +167,47 @@ exports.hook_init_master = function (next) {
 
     if (!server.cluster) return next();
 
-    function messageHandler (sender, msg) {
-        if (msg.event === 'status.request') {
-            self.call_workers(msg, function (err, response) {
-                msg.result = response.filter((el) => el != null);
-                msg.event = 'status.result';
-                sender.send(msg);
-            });
-        }
+    function message_handler (sender, msg) {
+        if (msg.event !== 'status.request') return;
+
+        self.call_workers(msg, function (err, response) {
+            msg.result = response.filter((el) => el != null);
+            msg.event = 'status.result';
+            sender.send(msg);
+        });
     }
 
-    server.cluster.on('message', messageHandler);
+    server.cluster.on('message', message_handler);
     next();
 }
 
 exports.hook_init_child = function (next) {
     const self = this;
 
-    function messageHandler (msg) {
-        if (msg.event === 'status.request') {
-            self.command_action(msg.params, function (err, result) {
-                msg.event = 'status.response';
-                msg.result = result;
-                process.send(msg);
-            });
-        }
+    function message_handler (msg) {
+        if (msg.event !== 'status.request') return;
+
+        self.command_action(msg.params, function (err, result) {
+            msg.event = 'status.response';
+            msg.result = result;
+            process.send(msg);
+        });
     }
 
-    process.on('message', messageHandler);
+    process.on('message', message_handler);
     next();
 }
 
 exports.call_master = function (cmd, cb) {
-    function messageHandler (msg) {
-        if (msg && msg.event === 'status.result') {
-            process.removeListener('message', messageHandler);
-            cb(null, msg.result);
-        }
+
+    function message_handler (msg) {
+        if (msg.event !== 'status.result') return;
+
+        process.removeListener('message', message_handler);
+        cb(null, msg.result);
     }
 
-    process.on('message', messageHandler);
+    process.on('message', message_handler);
     process.send({event: 'status.request', params: cmd});
 }
 
@@ -220,22 +223,22 @@ exports.call_workers = function (cmd, cb) {
 exports.call_worker = function (worker, cmd, cb) {
     let timeout;
 
-    function listen_responses (sender, msg) {
+    function message_handler (sender, msg) {
         if (sender.id !== worker.id) return;
         if (msg.event !== 'status.response') return;
 
         clearTimeout(timeout);
-        server.cluster.removeListener('message', listen_responses);
+        server.cluster.removeListener('message', message_handler);
 
         cb(null, msg.result);
     }
 
     timeout = setTimeout(function () {
-        server.cluster.removeListener('message', listen_responses);
+        server.cluster.removeListener('message', message_handler);
         cb();
     }, 1000);
 
 
-    server.cluster.on('message', listen_responses);
+    server.cluster.on('message', message_handler);
     worker.send(cmd);
 }

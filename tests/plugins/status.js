@@ -1,7 +1,7 @@
 'use strict';
 
 const fixtures = require('haraka-test-fixtures');
-const outbound = require('./../../outbound');
+const outbound = require('../../outbound');
 const TimerQueue = require('../../outbound/timer_queue');
 
 const Connection = fixtures.connection;
@@ -29,10 +29,10 @@ exports.access = {
     'remote': function (test) {
 
         test.expect(1);
-        const cb = function (code) {
+        function cb (code) {
             test.equal(DENY, code);
             test.done();
-        };
+        }
 
         this.connection.remote.is_local = false;
 
@@ -107,14 +107,14 @@ exports.queues = {
         });
         outbound.temp_fail_queue.add("file2", 2000, function () {});
 
-        const res = function () {
+        function res () {
             self.connection.respond = function (code, message) {
                 const data = JSON.parse(message);
                 test.equal(1, data.temp_fail_queue.length);
                 test.done();
             };
             self.plugin.hook_unrecognized_command(function () {}, self.connection, ['STATUS', 'QUEUE INSPECT']);
-        };
+        }
 
         this.plugin.hook_unrecognized_command(res, this.connection, ['STATUS', 'QUEUE DISCARD file1']);
     },
