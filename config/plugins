@@ -7,7 +7,7 @@
 #
 # To see the help docs for a particular plugin, run 'haraka -h plugin.name'
 
-status
+#status
 #process_title
 # Log to syslog (see 'haraka -h syslog')
 # syslog

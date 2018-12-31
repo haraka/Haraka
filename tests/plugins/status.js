@@ -62,8 +62,8 @@ exports.queues = {
         test.expect(2);
 
         outbound.temp_fail_queue = new TimerQueue(10);
-        outbound.temp_fail_queue.add("file1", 100, function () {});
-        outbound.temp_fail_queue.add("file2", 100, function () {});
+        outbound.temp_fail_queue.add('file1', 100, function () {});
+        outbound.temp_fail_queue.add('file2', 100, function () {});
 
         this.connection.respond = function (code, message) {
             const data = JSON.parse(message);
@@ -101,11 +101,11 @@ exports.queues = {
         test.expect(1);
 
         outbound.temp_fail_queue = new TimerQueue(10);
-        outbound.temp_fail_queue.add("file1", 10, function () {
-            test.ok(false, "This callback should not be called");
+        outbound.temp_fail_queue.add('file1', 10, function () {
+            test.ok(false, 'This callback should not be called');
             test.done();
         });
-        outbound.temp_fail_queue.add("file2", 2000, function () {});
+        outbound.temp_fail_queue.add('file2', 2000, function () {});
 
         function res () {
             self.connection.respond = function (code, message) {
@@ -122,11 +122,11 @@ exports.queues = {
         test.expect(1);
 
         const timeout = setTimeout(function () {
-            test.ok(false, "Timouted");
+            test.ok(false, 'Timeout');
             test.done();
         }, 1000);
 
-        outbound.temp_fail_queue.add("file", 1500, function () {
+        outbound.temp_fail_queue.add('file', 1500, function () {
             clearTimeout(timeout);
 
             test.ok(true);

@@ -20,12 +20,12 @@ exports.hook_capabilities = function (next, connection) {
 
 exports.hook_unrecognized_command = function (next, connection, params) {
     if (params[0] !== 'STATUS') return next();
-    if (!connection.remote.is_local) return next(DENY, "STATUS not allowed remotely");
+    if (!connection.remote.is_local) return next(DENY, 'STATUS not allowed remotely');
 
     this.run(params[1], function (err, result) {
         if (err) return next(DENY, err.message);
 
-        connection.respond(211, result ? JSON.stringify(result) : "null", () => next(OK));
+        connection.respond(211, result ? JSON.stringify(result) : 'null', () => next(OK));
     });
 }
 
@@ -47,7 +47,7 @@ exports.command_action = function (cmd, cb) {
         case 'QUEUE':
             return this.queue_action(params, cb);
         default:
-            cb("unknown STATUS command")
+            cb('unknown STATUS command')
     }
 }
 
@@ -56,7 +56,7 @@ exports.pool_action = function (params, cb) {
         case 'LIST':
             return this.pool_list(cb);
         default:
-            cb("unknown POOL command")
+            cb('unknown POOL command')
     }
 }
 
@@ -73,7 +73,7 @@ exports.queue_action = function (params, cb) {
         case 'PUSH':
             return this.queue_push(params.shift(), cb);
         default:
-            cb("unknown QUEUE command")
+            cb('unknown QUEUE command')
     }
 }
 
@@ -143,7 +143,7 @@ exports.queue_discard = function (file, cb) {
     }
 
     fs.unlink(path.join(this.queue_dir || '', file), function () {
-        cb(null, "OK");
+        cb(null, 'OK');
     });
 }
 
@@ -157,7 +157,7 @@ exports.queue_push = function (file, cb) {
         break;
     }
 
-    cb(null, "OK");
+    cb(null, 'OK');
 }
 
 // cluster IPC
