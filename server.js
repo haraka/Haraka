@@ -38,12 +38,17 @@ Server.load_smtp_ini = function () {
         Server.load_smtp_ini();
     });
 
+    if (Server.cfg.main.nodes === undefined) {
+        logger.logwarn(`smtp.ini.nodes unset, using 1, see https://github.com/haraka/Haraka/wiki/Performance-Tuning`)
+    }
+
     const defaults = {
         inactivity_timeout: 600,
         daemon_log_file: '/var/log/haraka.log',
         daemon_pid_file: '/var/run/haraka.pid',
         force_shutdown_timeout: 30,
         smtps_port: 465,
+        nodes: 1,
     };
 
     for (const key in defaults) {

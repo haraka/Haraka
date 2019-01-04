@@ -10,6 +10,7 @@
 * tls: add 'ca' option (for CA root file) #2571
 * outbound: little cleanups #2572
 * smtp_client: pass pool_timeout to new SMTPClient #2574
+* server: default to nodes=1 (was undefined) #2573
 
 ### New Features
 
