@@ -17,6 +17,7 @@
 * spamassassin: disable checks when requested #2564
 * clamd: permit skipping for relay clients #2564
 * outbound: exported outbound.temp_fail_queue, outbound.delivery_queue and add TimerQueue.discard() 
+* status plugin #2577
 
 ### Fixes
 
