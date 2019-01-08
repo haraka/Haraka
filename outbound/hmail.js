@@ -178,7 +178,7 @@ class HMailItem extends events.EventEmitter {
             this.logdebug(`Delivery of this email delayed for ${delay_seconds} seconds`);
             const hmail = this;
             hmail.next_cb();
-            temp_fail_queue.add(delay_seconds * 1000, function () { delivery_queue.push(hmail); });
+            temp_fail_queue.add(hmail.filename, delay_seconds * 1000, function () { delivery_queue.push(hmail); });
         }
         else {
             this.logdebug(`Sending mail: ${this.filename}`);
@@ -1355,7 +1355,7 @@ class HMailItem extends events.EventEmitter {
 
             hmail.next_cb();
 
-            temp_fail_queue.add(delay, function () { delivery_queue.push(hmail); });
+            temp_fail_queue.add(hmail.filename, delay, function () { delivery_queue.push(hmail); });
         });
     }
 
