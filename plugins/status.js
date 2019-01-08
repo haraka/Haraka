@@ -153,7 +153,9 @@ exports.queue_push = function (file, cb) {
     for (let i = 0; i < queue.length; i++) {
         if (queue[i].id !== file) continue;
 
-        queue[i].fire_time = -1;
+        let item = queue.splice(i, 1)[0];
+        item.cb();
+        
         break;
     }
 
