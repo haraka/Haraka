@@ -27,6 +27,15 @@ In that use case, Haraka should use context=myself.
     * context=sender    evaluate SPF based on the sender (connection.remote.ip)
     * context=myself    evaluate SPF based on Haraka's public IP
 
+By default, the plugin does SPF checks for the domain in EHLO/HELO string as
+well as the Envelope From. This can be selectively disabled:
+
+    [check]
+    ; SPF check the domain in helo string
+    helo=true
+    ; SPF check the domain in MAIL FROM
+    mfrom=true
+
 The rest of the optional settings (disabled by default) permit deferring or
 denying mail from senders whose SPF fails the checks.
 

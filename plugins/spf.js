@@ -46,6 +46,9 @@ exports.load_config = function () {
             '-deny_relay.mfrom_permerror',
             '-deny_relay.openspf_text',
 
+            '+check.helo',
+            '+check.mfrom',
+
             '-skip.relaying',
             '-skip.auth',
         ]
@@ -73,10 +76,19 @@ exports.load_config = function () {
         plugin.cfg.relay = { context: 'sender' };  // default/legacy
     }
 
+    if (plugin.cfg.check.helo) {
+        plugin.register_hook('helo', 'check_helo');
+        plugin.register_hook('ehlo', 'check_helo');
+    }
+
+    if (plugin.cfg.check.mfrom) {
+        plugin.register_hook('mail', 'check_mail');
+    }
+
     plugin.cfg.lookup_timeout = plugin.cfg.main.lookup_timeout || plugin.timeout - 1;
 };
 
-exports.hook_helo = exports.hook_ehlo = function (next, connection, helo) {
+exports.check_helo = function (next, connection, helo) {
     const plugin = this;
 
     // bypass auth'ed or relay'ing hosts if told to
@@ -128,7 +140,7 @@ exports.hook_helo = exports.hook_ehlo = function (next, connection, helo) {
     });
 }
 
-exports.hook_mail = function (next, connection, params) {
+exports.check_mail = function (next, connection, params) {
     const plugin = this;
 
     const txn = connection.transaction;
