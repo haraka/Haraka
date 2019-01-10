@@ -29,6 +29,7 @@
 * invalid DKIM when empty body #2410
 * prevent running callback multiple times on TLS unix socket #2509
 * add missing callback when listing queue and empty directory
+* correct MIME parsing when charset: utf8 and encoding: 8bit #2548
 
 
 ## 2.8.23 - Nov 18, 2018
