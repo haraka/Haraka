@@ -1,5 +1,5 @@
 
-## 2.8.24 - Mmm DD, 201Y
+## 2.8.24 - Jan DD, 2019
 
 ### Changes
 
@@ -11,6 +11,7 @@
 * outbound: little cleanups #2572
 * smtp_client: pass pool_timeout to new SMTPClient #2574
 * server: default to nodes=1 (was undefined) #2573
+* test/server: use IPv4 127.0.0.1 instead of localhost #2584
 
 ### New Features
 
