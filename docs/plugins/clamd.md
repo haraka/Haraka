@@ -113,6 +113,12 @@ meeting following criteria.
 
     If true, messages from localhost will be scanned.
 
+- relay
+
+    Default: true
+
+    If true, messages that are to be relayed will be scanned.
+
 ## clamd.excludes
 
   This file can contain a list of virus name patterns that when matched, are
