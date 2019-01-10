@@ -76,6 +76,43 @@ exports.basic = {
         test.equal(body.children.length, 2);
         test.done();
     },
+
+    'correct mime parsing (#2548)': function (test) {
+        const tests = [
+            ['utf-8', '8-bit', "Grüße, Buß\n", "Grüße, Buß\n"],
+            ['utf-8', 'quoted-printable', "Gr=C3=BC=C3=9Fe, Bu=C3=9F\n", "Grüße, Buß\n"],
+            ['utf-8', 'base64', "R3LDvMOfZSwgQnXDnw==\n", "Grüße, Buß"],
+            ['iso-8859-2', '8-bit', "\x50\xF8\x69\x68\x6C\x61\xB9\x6F\x76\x61\x63\xED\x20\xFA\x64\x61\x6A\x65\x0A", "Přihlašovací údaje\n"],
+            ['iso-8859-2', 'quoted-printable', "P=F8ihla=B9ovac=ED =FAdaje\n", "Přihlašovací údaje\n"],
+            ['iso-8859-2', 'base64', "UPhpaGxhuW92YWPtIPpkYWplCgo=\n", "Přihlašovací údaje\n\n"],
+        ];
+
+        test.expect(tests.length);
+
+        tests.forEach(function (data) {
+            const body = new Body();
+            body.add_filter(function () {});
+
+            body.state = 'headers'; // HACK
+            [
+                "Content-type: multipart/alternative;\n",
+                " boundary=------------D0A00162984CC178E2583417\n",
+                "\n",
+                "This is a multi-part message in MIME format.\n",
+                "--------------D0A00162984CC178E2583417\n",
+                "Content-Type: text/plain; charset=" + data[0] + "; format=flowed\n",
+                "Content-Transfer-Encoding: " + data[1] + "\n",
+                "\n",
+                data[2],
+                "--------------D0A00162984CC178E2583417--"
+            ].forEach((line) => body.parse_more(line));
+            body.parse_end();
+
+            test.equal(data[3], body.children[0].bodytext, `charset: ${data[0]}, encoding: ${data[1]}`);
+        });
+
+        test.done();
+    },
 }
 
 exports.banners = {
