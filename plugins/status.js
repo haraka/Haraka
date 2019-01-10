@@ -153,7 +153,7 @@ exports.queue_push = function (file, cb) {
     for (let i = 0; i < queue.length; i++) {
         if (queue[i].id !== file) continue;
 
-        let item = queue.splice(i, 1)[0];
+        const item = queue.splice(i, 1)[0];
         item.cb();
         
         break;
