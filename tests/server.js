@@ -250,7 +250,7 @@ exports.smtp_client = {
 
 exports.nodemailer = {
     setUp : function (done) {
-        _setupServer(this, 'localhost:2503', done);
+        _setupServer(this, '127.0.0.1:2503', done);
     },
     tearDown: _tearDownServer,
     'accepts SMTP message': function (test) {
@@ -258,7 +258,7 @@ exports.nodemailer = {
         test.expect(1);
         const nodemailer = require('nodemailer');
         const transporter = nodemailer.createTransport({
-            host: 'localhost',
+            host: '127.0.0.1',
             port: 2503,
             tls: {
                 // do not fail on invalid certs
@@ -292,7 +292,7 @@ exports.nodemailer = {
         test.expect(1);
         const nodemailer = require('nodemailer');
         const transporter = nodemailer.createTransport({
-            host: 'localhost',
+            host: '127.0.0.1',
             port: 2503,
             auth: {
                 user: 'matt',
@@ -331,7 +331,7 @@ exports.nodemailer = {
         test.expect(1);
         const nodemailer = require('nodemailer');
         const transporter = nodemailer.createTransport({
-            host: 'localhost',
+            host: '127.0.0.1',
             port: 2503,
             auth: {
                 user: 'matt',
@@ -369,7 +369,7 @@ exports.nodemailer = {
         test.expect(1);
         const nodemailer = require('nodemailer');
         const transporter = nodemailer.createTransport({
-            host: 'localhost',
+            host: '127.0.0.1',
             port: 2503,
             tls: {
                 // do not fail on invalid certs
@@ -416,7 +416,7 @@ exports.requireAuthorized_SMTPS = {
         test.expect(1);
         const nodemailer = require('nodemailer');
         const transporter = nodemailer.createTransport({
-            host: 'localhost',
+            host: '127.0.0.1',
             port: 2465,
             secure: true,
             tls: {
@@ -463,7 +463,7 @@ exports.requireAuthorized_STARTTLS = {
         test.expect(1);
         const nodemailer = require('nodemailer');
         const transporter = nodemailer.createTransport({
-            host: 'localhost',
+            host: '127.0.0.1',
             port: 2587,
             tls: {
                 // do not fail on invalid certs
