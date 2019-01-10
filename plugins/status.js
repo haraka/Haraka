@@ -155,7 +155,7 @@ exports.queue_push = function (file, cb) {
 
         const item = queue.splice(i, 1)[0];
         item.cb();
-        
+
         break;
     }
 
