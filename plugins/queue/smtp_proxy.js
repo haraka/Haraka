@@ -28,6 +28,10 @@ exports.load_smtp_proxy_ini = function () {
     function () {
         plugin.load_smtp_proxy_ini();
     });
+
+    if (plugin.cfg.main.enable_outbound) {
+        plugin.lognotice('outbound enabled, will default to disabled in Haraka v3 (see #1472)');
+    }
 }
 
 exports.hook_mail = function (next, connection, params) {
