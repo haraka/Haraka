@@ -79,6 +79,13 @@ exports.load_config = function () {
 exports.hook_helo = exports.hook_ehlo = function (next, connection, helo) {
     const plugin = this;
 
+    // bypass auth'ed or relay'ing hosts if told to
+    const skip_reason = exports.skip_hosts(connection);
+    if (skip_reason) {
+        connection.results.add(plugin, {skip: `host(${skip_reason})`});
+        return next();
+    }
+
     // Bypass private IPs
     if (connection.remote.is_private) {
         connection.results.add(plugin, {skip: 'host(private_ip)'});
