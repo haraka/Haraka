@@ -79,9 +79,9 @@ exports.load_queue = function (pid) {
     exports.delete_dot_files();
 
     exports._load_cur_queue(pid, exports._add_file, function () {
-        logger.loginfo(`[outbound] ${delivery_queue.length()} files in my delivery queue`);
-        logger.loginfo(`[outbound] ${load_queue.length()} files in my load queue`);
-        logger.loginfo(`[outbound] ${temp_fail_queue.length()} files in my temp fail queue`);
+        logger.loginfo(`[outbound] [pid: ${pid}] ${delivery_queue.length()} files in my delivery queue`);
+        logger.loginfo(`[outbound] [pid: ${pid}] ${load_queue.length()} files in my load queue`);
+        logger.loginfo(`[outbound] [pid: ${pid}] ${temp_fail_queue.length()} files in my temp fail queue`);
     });
 }
 
@@ -168,7 +168,9 @@ exports.load_queue_files = function (pid, input_files, iteratee, callback) {
         const parts = self.read_parts(file);
         if (!parts) return cb();
 
-        if (searchPid && parts.pid === searchPid) {
+        if (searchPid) {
+            if (parts.pid !== searchPid) return cb();
+
             self.rename_to_actual_pid(file, parts, function (error, renamed_file) {
                 if (error) {
                     logger.logerror(`[outbound] ${error}`);
@@ -185,9 +187,9 @@ exports.load_queue_files = function (pid, input_files, iteratee, callback) {
         }
 
     }, function (err, results) {
-        if (err) logger.logerr(`[outbound] ${err}`);
-        if (searchPid) logger.loginfo(`[outbound] ${stat_renamed} files old PID queue fixed up`);
-        logger.loginfo(`[outbound] ${stat_loaded} files loaded`);
+        if (err) logger.logerr(`[outbound] [pid: ${pid}] ${err}`);
+        if (searchPid) logger.loginfo(`[outbound] [pid: ${pid}] ${stat_renamed} files old PID queue fixed up`);
+        logger.logdebug(`[outbound] [pid: ${pid}] ${stat_loaded} files loaded`);
 
         async.map(results.filter((i) => i), iteratee, callback);
     });
