@@ -29,7 +29,7 @@ exports.queue_dir = queue_dir;
 
 const load_queue = async.queue(function (file, cb) {
     const hmail = new HMailItem(file, path.join(queue_dir, file));
-    exports._add_file(hmail);
+    exports._add_hmail(hmail);
     hmail.once('ready', cb);
 }, cfg.concurrency_max);
 
@@ -55,7 +55,7 @@ exports.get_stats = function () {
 }
 
 exports.list_queue = function (cb) {
-    exports._load_cur_queue(null, "_list_file", cb);
+    exports._load_cur_queue(null, exports._list_file, cb);
 }
 
 exports._stat_file = function (file, cb) {
@@ -65,7 +65,7 @@ exports._stat_file = function (file, cb) {
 
 exports.stat_queue = function (cb) {
     const self = exports;
-    exports._load_cur_queue(null, "_stat_file", function (err) {
+    exports._load_cur_queue(null, exports._stat_file, function (err) {
         if (err) return cb(err);
         return cb(null, self.stats());
     });
@@ -76,10 +76,16 @@ exports.load_queue = function (pid) {
     // This function is called first when not running under cluster,
     // so we create the queue directory if it doesn't already exist.
     exports.ensure_queue_dir();
-    exports._load_cur_queue(pid, "_add_file");
+    exports.delete_dot_files();
+
+    exports._load_cur_queue(pid, exports._add_file, function () {
+        logger.loginfo(`[outbound] ${delivery_queue.length()} files in my delivery queue`);
+        logger.loginfo(`[outbound] ${load_queue.length()} files in my load queue`);
+        logger.loginfo(`[outbound] ${temp_fail_queue.length()} files in my temp fail queue`);
+    });
 }
 
-exports._load_cur_queue = function (pid, cb_name, cb) {
+exports._load_cur_queue = function (pid, iteratee, cb) {
     const self = exports;
     logger.loginfo("[outbound] Loading outbound queue from ", queue_dir);
     fs.readdir(queue_dir, function (err, files) {
@@ -90,123 +96,101 @@ exports._load_cur_queue = function (pid, cb_name, cb) {
 
         self.cur_time = new Date(); // set once so we're not calling it a lot
 
-        self.load_queue_files(pid, cb_name, files, cb);
+        self.load_queue_files(pid, files, iteratee, cb);
     });
 }
 
-exports.load_queue_files = function (pid, cb_name, files, callback) {
+exports.read_parts = function (file) {
+    if (file.indexOf(_qfile.platformDOT) === 0) {
+        logger.logwarn(`[outbound] 'Skipping' dot-file in queue folder: ${file}`);
+        return false;
+    }
+
+    const parts = _qfile.parts(file);
+    if (!parts) {
+        logger.logerror("[outbound] Unrecognized file in queue folder: " + file);
+        return false;
+    }
+
+    return parts;
+}
+
+exports.rename_to_actual_pid = function (file, parts, cb) {
+    // maintain some original details for the rename
+    const new_filename = _qfile.name({
+        arrival: parts.arrival,
+        uid: parts.uid,
+        next_attempt: parts.next_attempt,
+        attempts: parts.attempts,
+    });
+
+    fs.rename(path.join(queue_dir, file), path.join(queue_dir, new_filename), function (err) {
+        if (err) {
+            return cb(`Unable to rename queue file: ${file} to ${new_filename} : ${err}`);
+        }
+
+        cb(null, new_filename);
+    });
+}
+
+exports._add_file = function (file, cb) {
     const self = exports;
+    const parts = _qfile.parts(file);
 
-    if (files.length === 0) {
-        if (callback) callback();
-        return;
-    }
-
-    if (cfg.disabled && cb_name === '_add_file') {
-        // try again in 1 second if delivery is disabled
-        setTimeout(function () {
-            exports.load_queue_files(pid, cb_name, files, callback);
-        }, 1000);
-        return;
-    }
-
-    if (pid) {
-        // Pre-scan to rename PID files to my PID:
-        logger.loginfo("[outbound] Grabbing queue files for pid: " + pid);
-        async.eachLimit(files, 200, function (file, cb) {
-
-            const parts = _qfile.parts(file);
-            if (parts && parts.pid === parseInt(pid)) {
-                const next_process = parts.next_attempt;
-                // maintain some original details for the rename
-                const new_filename = _qfile.name({
-                    arrival      : parts.arrival,
-                    uid          : parts.uid,
-                    next_attempt : parts.next_attempt,
-                    attempts     : parts.attempts,
-                });
-                // logger.loginfo("new_filename: ", new_filename);
-                fs.rename(path.join(queue_dir, file), path.join(queue_dir, new_filename), function (err) {
-                    if (err) {
-                        logger.logerror("[outbound] Unable to rename queue file: " + file +
-                            " to " + new_filename + " : " + err);
-                        return cb();
-                    }
-                    if (next_process <= self.cur_time) {
-                        load_queue.push(new_filename);
-                    }
-                    else {
-                        temp_fail_queue.add(new_filename, next_process - self.cur_time, function () {
-                            load_queue.push(new_filename);
-                        });
-                    }
-                    cb();
-                });
-            }
-            else if (file.indexOf(_qfile.platformDOT) === 0) {
-                logger.logwarn("[outbound] Removing left over dot-file: " + file);
-                return fs.unlink(path.join(queue_dir, file), function (err) {
-                    if (err) {
-                        logger.logerror("[outbound] Error removing dot-file: " + file + ": " + err);
-                    }
-                    cb();
-                });
-            }
-            else {
-                // Do this because otherwise we blow the stack
-                async.setImmediate(cb);
-            }
-        }, function (err) {
-            if (err) {
-                // no error cases yet, but log anyway
-                logger.logerror("[outbound] Error fixing up queue files: " + err);
-            }
-            logger.loginfo("[outbound] Done fixing up old PID queue files");
-            logger.loginfo("[outbound] " + delivery_queue.length() + " files in my delivery queue");
-            logger.loginfo("[outbound] " + load_queue.length() + " files in my load queue");
-            logger.loginfo("[outbound] " + temp_fail_queue.length() + " files in my temp fail queue");
-
-            if (callback) callback();
-        });
+    if (parts.next_attempt <= self.cur_time) {
+        logger.logdebug("[outbound] File needs processing now");
+        load_queue.push(file);
     }
     else {
-        logger.loginfo("[outbound] Loading the queue...");
-        const good_file = function (file) {
-            if (file.indexOf(_qfile.platformDOT) === 0) {
-                logger.logwarn("[outbound] Removing left over dot-file: " + file);
-                fs.unlink(path.join(queue_dir, file), function (err) {
-                    if (err) console.error(err);
-                });
-                return false;
-            }
-
-            if (!_qfile.parts(file)) {
-                logger.logerror("[outbound] Unrecognized file in queue folder: " + file);
-                return false;
-            }
-            return true;
-        }
-        async.mapSeries(files.filter(good_file), function (file, cb) {
-            // logger.logdebug("Loading queue file: " + file);
-            if (cb_name === '_add_file') {
-                const parts = _qfile.parts(file);
-                const next_process = parts.next_attempt;
-
-                if (next_process <= self.cur_time) {
-                    logger.logdebug("[outbound] File needs processing now");
-                    load_queue.push(file);
-                }
-                else {
-                    logger.logdebug("[outbound] File needs processing later: " + (next_process - self.cur_time) + "ms");
-                    temp_fail_queue.add(file, next_process - self.cur_time, function () { load_queue.push(file);});
-                }
-                async.setImmediate(cb);
-            }
-            else {
-                self[cb_name](file, cb);
-            }
-        }, callback);
+        logger.logdebug(`[outbound] File needs processing later: ${parts.next_attempt - self.cur_time}ms`);
+        temp_fail_queue.add(file, parts.next_attempt - self.cur_time, function () { load_queue.push(file);});
     }
+
+    cb();
+}
+
+exports.load_queue_files = function (pid, input_files, iteratee, callback) {
+    const self = exports;
+    const searchPid = parseInt(pid);
+
+    let stat_renamed = 0;
+    let stat_loaded = 0;
+
+    callback = callback || function () {};
+
+    if (searchPid) {
+        logger.loginfo("[outbound] Grabbing queue files for pid: " + pid);
+    } else {
+        logger.loginfo("[outbound] Loading the queue...");
+    }
+
+    async.map(input_files, function (file, cb) {
+        const parts = self.read_parts(file);
+        if (!parts) return cb();
+
+        if (searchPid && parts.pid === searchPid) {
+            self.rename_to_actual_pid(file, parts, function (error, renamed_file) {
+                if (error) {
+                    logger.logerror(`[outbound] ${error}`);
+                    return cb();
+                }
+
+                stat_renamed++;
+                stat_loaded++;
+                cb(null, renamed_file);
+            });
+        } else {
+            stat_loaded++;
+            cb(null, file);
+        }
+
+    }, function (err, results) {
+        if (err) logger.logerr(`[outbound] ${err}`);
+        if (searchPid) logger.loginfo(`[outbound] ${stat_renamed} files old PID queue fixed up`);
+        logger.loginfo(`[outbound] ${stat_loaded} files loaded`);
+
+        async.map(results.filter((i) => i), iteratee, callback);
+    });
 }
 
 exports.stats = function () {
@@ -293,7 +277,18 @@ exports.ensure_queue_dir = function () {
     }
 }
 
-exports._add_file = function (hmail) {
+exports.delete_dot_files = function () {
+    const files = fs.readdirSync(queue_dir);
+
+    files.forEach(function (file) {
+        if (file.indexOf(_qfile.platformDOT) === 0) {
+            logger.logwarn(`[outbound] Removing left over dot-file: ${file}`);
+            return fs.unlinkSync(path.join(queue_dir, file));
+        }
+    });
+}
+
+exports._add_hmail = function (hmail) {
     if (hmail.next_process < exports.cur_time) {
         delivery_queue.push(hmail);
     }
@@ -305,9 +300,12 @@ exports._add_file = function (hmail) {
 }
 
 exports.scan_queue_pids = function (cb) {
+    const self = exports;
+
     // Under cluster, this is called first by the master so
     // we create the queue directory if it doesn't exist.
-    exports.ensure_queue_dir();
+    self.ensure_queue_dir();
+    self.delete_dot_files();
 
     fs.readdir(queue_dir, function (err, files) {
         if (err) {
@@ -318,18 +316,8 @@ exports.scan_queue_pids = function (cb) {
         const pids = {};
 
         files.forEach(function (file) {
-            if (file.indexOf(_qfile.platformDOT) === 0) {
-                logger.logwarn("[outbound] Removing left over dot-file: " + file);
-                return fs.unlink(path.join(queue_dir, file), function () {});
-            }
-
-            const parts = _qfile.parts(file);
-            if (!parts) {
-                logger.logerror("[outbound] Unrecognized file in queue directory: " + queue_dir + '/' + file);
-                return;
-            }
-
-            pids[parts.pid] = true;
+            const parts = self.read_parts(file);
+            if (parts) pids[parts.pid] = true;
         });
 
         return cb(null, Object.keys(pids));
