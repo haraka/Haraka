@@ -99,6 +99,10 @@ exports.hook_helo = exports.hook_ehlo = function (next, connection, helo) {
         return next();
     }
 
+    // avoid 2nd EHLO evaluation if EHLO host is identical
+    const results = connection.results.get(plugin);
+    if (results && results.domain === helo) return next();
+
     let timeout = false;
     const spf = new SPF();
     const timer = setTimeout(function () {

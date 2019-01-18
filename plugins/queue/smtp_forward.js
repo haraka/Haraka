@@ -46,6 +46,10 @@ exports.load_smtp_forward_ini = function () {
     function () {
         plugin.load_smtp_forward_ini();
     });
+
+    if (plugin.cfg.main.enable_outbound) {
+        plugin.lognotice('outbound enabled, will default to disabled in Haraka v3 (see #1472)');
+    }
 }
 
 exports.get_config = function (connection) {
@@ -69,10 +73,10 @@ exports.get_config = function (connection) {
     return plugin.cfg[dom];
 }
 
-exports.is_outbound_enabled = function (cfg) {
+exports.is_outbound_enabled = function (dom_cfg) {
     const plugin = this;
 
-    if ('enable_outbound' in cfg) return cfg.enable_outbound; // pick up per-domain flag if set
+    if ('enable_outbound' in dom_cfg) return dom_cfg.enable_outbound; // per-domain flag
 
     return plugin.cfg.main.enable_outbound; // follow the global configuration
 };
@@ -184,10 +188,10 @@ exports.auth = function (cfg, connection, smtp_client) {
             }
         }
 
-        const base64 = function (str) {
+        function base64 (str) {
             const buffer = Buffer.from(str, 'UTF-8');
             return buffer.toString('base64');
-        };
+        }
 
         if (cfg.auth_type === 'plain') {
             connection.loginfo(plugin, 'Authenticating with AUTH PLAIN ' + cfg.auth_user);
@@ -195,7 +199,7 @@ exports.auth = function (cfg, connection, smtp_client) {
         }
         else if (cfg.auth_type === 'login') {
             smtp_client.authenticating = true;
-            smtp_client.authenticated=false;
+            smtp_client.authenticated = false;
 
             connection.loginfo(plugin, 'Authenticating with AUTH LOGIN ' + cfg.auth_user);
             smtp_client.send_command('AUTH', 'LOGIN');
@@ -212,22 +216,29 @@ exports.auth = function (cfg, connection, smtp_client) {
     });
 }
 
+exports.forward_enabled = function (connection, dom_cfg) {
+    const plugin = this;
+
+    const q_wants = connection.transaction.notes.get('queue.wants');
+    if (q_wants && q_wants !== 'smtp_forward') {
+        connection.logdebug(plugin, `skipping, unwanted (${q_wants})`);
+        return false;
+    }
+
+    if (connection.relaying && !plugin.is_outbound_enabled(dom_cfg)) {
+        connection.logdebug(plugin, 'skipping, outbound disabled');
+        return false;
+    }
+
+    return true;
+}
+
 exports.queue_forward = function (next, connection) {
     const plugin = this;
     const txn = connection.transaction;
 
-    const q_wants = txn.notes.get('queue.wants');
-    if (q_wants && q_wants !== 'smtp_forward') {
-        connection.logdebug(plugin, `skipping, unwanted (${q_wants})`);
-        return next();
-    }
-
     const cfg = plugin.get_config(connection);
-
-    if (connection.relaying && !plugin.is_outbound_enabled(cfg)) {
-        connection.logdebug(plugin, 'skipping, outbound disabled');
-        return next();
-    }
+    if (!plugin.forward_enabled(connection, cfg)) return next();
 
     smtp_client_mod.get_client_plugin(plugin, connection, cfg, function (err, smtp_client) {
         smtp_client.next = next;
@@ -237,7 +248,7 @@ exports.queue_forward = function (next, connection) {
         if (cfg.auth_user) plugin.auth(cfg, connection, smtp_client);
 
         connection.loginfo(plugin, 'forwarding to ' +
-            (cfg.forwarding_host_pool ? "host_pool" : cfg.host + ':' + cfg.port)
+            (cfg.forwarding_host_pool ? 'host_pool' : `${cfg.host}:${cfg.port}`)
         );
 
         function get_rs () {
@@ -245,7 +256,7 @@ exports.queue_forward = function (next, connection) {
             return connection.results;
         }
 
-        const dead_sender = function () {
+        function dead_sender () {
             if (smtp_client.is_dead_sender(plugin, connection)) {
                 get_rs().add(plugin, { err: 'dead sender' });
                 return true;
@@ -253,7 +264,7 @@ exports.queue_forward = function (next, connection) {
             return false;
         }
 
-        const send_rcpt = function () {
+        function send_rcpt () {
             if (dead_sender()) return;
             if (rcpt === txn.rcpt_to.length) {
                 smtp_client.send_command('DATA');
@@ -346,7 +357,7 @@ exports.get_mx = function (next, hmail, domain) {
     }
 
     // apply auth/mx options
-    mx_opts.forEach(function (o) {
+    mx_opts.forEach(o => {
         if (plugin.cfg[domain][o] === undefined) return;
         mx[o] = plugin.cfg[domain][o];
     })
