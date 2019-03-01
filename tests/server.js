@@ -150,25 +150,28 @@ exports.get_http_docroot = {
     },
 }
 
-function _setupServer (done) {
+function _setupServer (test, ip_port, done) {
     process.env.YES_REALLY_DO_DISCARD=1;   // for queue/discard plugin
     process.env.HARAKA_TEST_DIR=path.resolve('tests');
 
-    // this sets the default path for plugin instances to the test dir
+    // test sets the default path for plugin instances to the test dir
     const test_cfg_path=path.resolve('tests');
 
-    this.server = require('../server');
-    this.config = require('haraka-config').module_config(test_cfg_path);
-    this.server.logger.loglevel = 6;  // INFO
+    test.server = require('../server');
+    test.config = require('haraka-config').module_config(test_cfg_path);
+    test.server.logger.loglevel = 6;  // INFO
 
     // set the default path for the plugin loader
-    this.server.config = this.config.module_config(test_cfg_path);
-    this.server.plugins.config = this.config.module_config(test_cfg_path);
-    // this.server.outbound.config = this.config.module_config(test_cfg_path);
+    test.server.config = test.config.module_config(test_cfg_path);
+    test.server.plugins.config = test.config.module_config(test_cfg_path);
+    // test.server.outbound.config = test.config.module_config(test_cfg_path);
 
-    this.server.load_smtp_ini();
-    this.server.load_default_tls_config(() => {
-        this.server.createServer({});
+    test.server.load_smtp_ini();
+    test.server.cfg.main.listen = ip_port;
+    test.server.cfg.main.smtps_port = 2465;
+    // console.log(test.server.cfg);
+    test.server.load_default_tls_config(() => {
+        test.server.createServer({});
         done();
     })
 }
@@ -184,7 +187,9 @@ function _tearDownServer (done) {
 }
 
 exports.smtp_client = {
-    setUp : _setupServer,
+    setUp : function (done) {
+        _setupServer(this, 'localhost:2500', done);
+    },
     tearDown: _tearDownServer,
     'accepts SMTP message': function (test) {
 
@@ -244,15 +249,17 @@ exports.smtp_client = {
 }
 
 exports.nodemailer = {
-    setUp : _setupServer,
+    setUp : function (done) {
+        _setupServer(this, '127.0.0.1:2503', done);
+    },
     tearDown: _tearDownServer,
     'accepts SMTP message': function (test) {
 
         test.expect(1);
         const nodemailer = require('nodemailer');
         const transporter = nodemailer.createTransport({
-            host: 'localhost',
-            port: 2500,
+            host: '127.0.0.1',
+            port: 2503,
             tls: {
                 // do not fail on invalid certs
                 rejectUnauthorized: false
@@ -285,8 +292,8 @@ exports.nodemailer = {
         test.expect(1);
         const nodemailer = require('nodemailer');
         const transporter = nodemailer.createTransport({
-            host: 'localhost',
-            port: 2500,
+            host: '127.0.0.1',
+            port: 2503,
             auth: {
                 user: 'matt',
                 pass: 'goodPass'
@@ -324,8 +331,8 @@ exports.nodemailer = {
         test.expect(1);
         const nodemailer = require('nodemailer');
         const transporter = nodemailer.createTransport({
-            host: 'localhost',
-            port: 2500,
+            host: '127.0.0.1',
+            port: 2503,
             auth: {
                 user: 'matt',
                 pass: 'badPass'
@@ -362,8 +369,8 @@ exports.nodemailer = {
         test.expect(1);
         const nodemailer = require('nodemailer');
         const transporter = nodemailer.createTransport({
-            host: 'localhost',
-            port: 2500,
+            host: '127.0.0.1',
+            port: 2503,
             tls: {
                 // do not fail on invalid certs
                 rejectUnauthorized: false
@@ -396,5 +403,94 @@ exports.nodemailer = {
             console.log('Message sent: ' + info.response);
             test.done();
         });
+    },
+}
+
+exports.requireAuthorized_SMTPS = {
+    setUp : function (done) {
+        _setupServer(this, 'localhost:2465', done);
+    },
+    tearDown: _tearDownServer,
+    'rejects non-validated SMTPS connection': function (test) {
+
+        test.expect(1);
+        const nodemailer = require('nodemailer');
+        const transporter = nodemailer.createTransport({
+            host: '127.0.0.1',
+            port: 2465,
+            secure: true,
+            tls: {
+                // do not fail on invalid certs
+                rejectUnauthorized: false
+            }
+        });
+
+        // give the SMTPS listener a second to start listening
+        setTimeout(function () {
+            transporter.sendMail({
+                from: '"Testalicious Matt" <harakamail@gmail.com>',
+                to:   'nobody-will-see-this@haraka.local',
+                envelope: {
+                    from: 'Haraka Test <test@haraka.local>',
+                    to:   'Discard Queue <discard@haraka.local>',
+                },
+                subject: 'Hello ✔',
+                text: 'Hello world ?',
+                html: '<b>Hello world ?</b>',
+            },
+            function (error, info) {
+                if (error) {
+                    // console.log(error);
+                    if (error.message === 'socket hang up') {   // node 6 & 8
+                        test.equal(error.message, 'socket hang up')
+                    }
+                    else {     // node 10+
+                        test.equal(error.message, 'Client network socket disconnected before secure TLS connection was established');
+                    }
+                }
+                test.done();
+            });
+        }, 500);
+    },
+}
+
+exports.requireAuthorized_STARTTLS = {
+    setUp : function (done) {
+        _setupServer(this, 'localhost:2587', done);
+    },
+    'rejects non-validated STARTTLS connection': function (test) {
+
+        test.expect(1);
+        const nodemailer = require('nodemailer');
+        const transporter = nodemailer.createTransport({
+            host: '127.0.0.1',
+            port: 2587,
+            tls: {
+                // do not fail on invalid certs
+                rejectUnauthorized: false
+            }
+        });
+
+        // give the SMTPS listener a second to start listening
+        setTimeout(function () {
+            transporter.sendMail({
+                from: '"Testalicious Matt" <harakamail@gmail.com>',
+                to:   'nobody-will-see-this@haraka.local',
+                envelope: {
+                    from: 'Haraka Test <test@haraka.local>',
+                    to:   'Discard Queue <discard@haraka.local>',
+                },
+                subject: 'Hello ✔',
+                text: 'Hello world ?',
+                html: '<b>Hello world ?</b>',
+            },
+            function (error, info) {
+                if (error) {
+                    // console.log(error);
+                    test.equal(error.message, ['Unexpected socket close'])
+                }
+                test.done();
+            });
+        }, 500);
     },
 }

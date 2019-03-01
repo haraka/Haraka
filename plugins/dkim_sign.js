@@ -340,7 +340,7 @@ exports.get_sender_domain = function (connection) {
         addrs = addrparser.parse(from_hdr);
     }
     catch (e) {
-        plugin.logerror(`address-rfc2822 failed to parse From header: ${from_hdr}`)
+        connection.logerror(plugin, `address-rfc2822 failed to parse From header: ${from_hdr}`)
         return domain;
     }
     if (!addrs || ! addrs.length) return domain;
@@ -357,13 +357,13 @@ exports.get_sender_domain = function (connection) {
 
     // If From has multiple-addresses, we must parse and
     // use the domain in the Sender header.
-    const sender = txn.header.get('Sender');
+    const sender = txn.header.get_decoded('Sender');
     if (sender) {
         try {
             domain = (addrparser.parse(sender))[0].host().toLowerCase();
         }
         catch (e) {
-            plugin.logerror(e);
+            connection.logerror(plugin, e);
         }
     }
     return domain;

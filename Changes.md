@@ -1,24 +1,38 @@
 
-## 2.8.24 - Mmm DD, 201Y
+## 2.8.24 - Jan DD, 2019
 
 ### Changes
 
-* Implement SIGTERM graceful shutdown if pid is 1 #2547
 * early_talker: skip if sender has good karma #2551
 * dockerfile: update to node 10 #2552
 * Update deprecated usages of Buffer #2553
+* early_talker: extend reasons to skip checking #2564
+* tls: add 'ca' option (for CA root file) #2571
+* outbound: little cleanups #2572
+* smtp_client: pass pool_timeout to new SMTPClient #2574
+* server: default to nodes=1 (was undefined) #2573
+* test/server: use IPv4 127.0.0.1 instead of localhost #2584
 
 ### New Features
 
 * Implement SIGTERM graceful shutdown if pid is 1 #2547
+* tls: require validated certs on some ports with requireAuthorized #2554
+* spamassassin: disable checks when requested #2564
+* clamd: permit skipping for relay clients #2564
+* outbound: exported outbound.temp_fail_queue, outbound.delivery_queue and add TimerQueue.discard() 
+* status plugin #2577
 
 ### Fixes
 
 * mf.resolvable: reduce timeout by one second (so < plugin.timeout) #2544
+* LMTP blocks under stress #2556
 * invalid DKIM when empty body #2410
+* prevent running callback multiple times on TLS unix socket #2509
+* add missing callback when listing queue and empty directory
+* correct MIME parsing when charset: utf8 and encoding: 8bit #2548
+
 
 ## 2.8.23 - Nov 18, 2018
-
 
 ### Changes
 

@@ -252,8 +252,8 @@ exports.timer_queue = {
     'can add items': function (test) {
         test.expect(1);
 
-        this.ob_timer_queue.add(1000);
-        this.ob_timer_queue.add(2000);
+        this.ob_timer_queue.add("1", 1000);
+        this.ob_timer_queue.add("2", 2000);
 
         const tq_length = this.ob_timer_queue.length();
 
@@ -263,8 +263,8 @@ exports.timer_queue = {
     'can drain items': function (test) {
         test.expect(2);
 
-        this.ob_timer_queue.add(1000);
-        this.ob_timer_queue.add(2000);
+        this.ob_timer_queue.add("1", 1000);
+        this.ob_timer_queue.add("2", 2000);
 
         let tq_length = this.ob_timer_queue.length();
 
@@ -277,4 +277,22 @@ exports.timer_queue = {
 
         test.done();
     },
+    'can discard items by id': function (test) {
+        test.expect(3);
+
+        this.ob_timer_queue.add("1", 1000);
+        this.ob_timer_queue.add("2", 2000);
+
+        let tq_length = this.ob_timer_queue.length();
+
+        test.equal(tq_length, 2);
+
+        this.ob_timer_queue.discard("2");
+        tq_length = this.ob_timer_queue.length();
+
+        test.equal(tq_length, 1);
+        test.equal(this.ob_timer_queue.queue[0].id, "1");
+
+        test.done();
+    }
 }

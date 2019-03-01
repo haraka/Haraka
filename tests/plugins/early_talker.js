@@ -97,7 +97,7 @@ exports.early_talker = {
         const next = function (rc, msg) {
             test.equal(undefined, rc);
             test.equal(undefined, msg);
-            test.ok(this.connection.results.has('early_talker', 'skip', 'good karma'));
+            test.ok(this.connection.results.has('early_talker', 'skip', '+karma'));
             test.done();
         }.bind(this);
         this.plugin.pause = 1000;

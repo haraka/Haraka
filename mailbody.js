@@ -229,7 +229,12 @@ class Body extends events.EventEmitter {
         }
 
         if (/UTF-?8/i.test(enc)) {
-            this.bodytext = buf.toString();
+            if (this.decode_function === this.decode_8bit) {
+                // source string was UTF-8 but parsed as binary
+                this.bodytext = buf.toString('binary');
+            } else {
+                this.bodytext = buf.toString();
+            }
             return;
         }
 
