@@ -90,14 +90,14 @@ class Transaction {
             // Build up headers
             if (this.header_lines.length < MAX_HEADER_LINES) {
                 if (line[0] === 0x2E) line = line.slice(1); // Strip leading '.'
-                this.header_lines.push(line.toString(this.encoding).replace(/\r\n$/, '\n'));
+                this.header_lines.push(line.toString(this.encoding));
             }
         }
         else if (this.header_pos && this.parse_body) {
             let new_line = line;
             if (new_line[0] === 0x2E) new_line = new_line.slice(1); // Strip leading "."
 
-            new_line = this.body.parse_more(new_line.toString(this.encoding).replace(/\r\n$/, '\n'));
+            new_line = this.body.parse_more(new_line.toString(this.encoding));
 
             if (!new_line.length) return; // buffering for banners
         }
@@ -132,8 +132,7 @@ class Transaction {
             let data = this.body.parse_end();
             if (data.length) {
                 data = data.toString(this.encoding)
-                    .replace(/^\./gm, '..')
-                    .replace(/\r?\n/gm, '\r\n');
+                    .replace(/^\./gm, '..');
                 const line = Buffer.from(data, this.encoding);
 
                 this.body.force_end();
