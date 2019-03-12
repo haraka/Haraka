@@ -27,8 +27,11 @@ const queue_dir = queuelib.queue_dir;
 const temp_fail_queue = queuelib.temp_fail_queue;
 const delivery_queue = queuelib.delivery_queue;
 
+exports.temp_fail_queue = temp_fail_queue;
+exports.delivery_queue = delivery_queue;
+
 exports.net_utils = net_utils;
-exports.config    = config;
+exports.config = config;
 
 exports.get_stats = queuelib.get_stats;
 exports.list_queue = queuelib.list_queue;
@@ -38,10 +41,8 @@ exports.flush_queue = queuelib.flush_queue;
 exports.load_pid_queue = queuelib.load_pid_queue;
 exports.ensure_queue_dir = queuelib.ensure_queue_dir;
 exports.load_queue = queuelib.load_queue;
-exports._add_file = queuelib._add_file;
 exports.stats = queuelib.stats;
 exports.drain_pools = pools.drain_pools;
-
 
 process.on('message', function (msg) {
     if (msg.event && msg.event === 'outbound.load_pid_queue') {
@@ -52,7 +53,7 @@ process.on('message', function (msg) {
         exports.flush_queue(msg.domain, process.pid);
         return;
     }
-    if (msg.event && msg.event == 'outbound.shutdown') {
+    if (msg.event && msg.event === 'outbound.shutdown') {
         logger.loginfo("[outbound] Shutting down temp fail queue");
         exports.drain_pools();
         temp_fail_queue.shutdown();
@@ -248,7 +249,7 @@ exports.send_trans_email = function (transaction, next) {
 
     logger.add_log_methods(connection);
     if (!transaction.results) {
-        logger.logerror('adding missing results store');
+        logger.logdebug('adding results store');
         transaction.results = new ResultStore(connection);
     }
 

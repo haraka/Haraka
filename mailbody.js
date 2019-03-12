@@ -28,7 +28,7 @@ class Body extends events.EventEmitter {
         this.decode_function = null;
         this.children = []; // if multipart
         this.state = 'start';
-        this.buf = new Buffer(buf_siz);
+        this.buf = Buffer.alloc(buf_siz);
         this.buf_fill = 0;
         this.decode_accumulator = '';
         this.decode_qp = utils.decode_qp;
@@ -137,7 +137,7 @@ class Body extends events.EventEmitter {
     }
 
     _empty_filter (ct, enc) {
-        let new_buf = new Buffer('');
+        let new_buf = Buffer.from('');
         this.filters.forEach(function (filter) {
             new_buf = filter(ct, enc, new_buf) || new_buf;
         });
@@ -149,7 +149,7 @@ class Body extends events.EventEmitter {
         if (this.state === 'attachment') {
             if (this.buf_fill > 0) {
                 // see below for why we create a new buffer here.
-                const to_emit = new Buffer(this.buf_fill);
+                const to_emit = Buffer.alloc(this.buf_fill);
                 this.buf.copy(to_emit, 0, 0, this.buf_fill);
                 this.attachment_stream.emit_data(to_emit);
             }
@@ -165,7 +165,7 @@ class Body extends events.EventEmitter {
         if (this.state === 'attachment') {
             if (this.buf_fill > 0) {
                 // see below for why we create a new buffer here.
-                const to_emit = new Buffer(this.buf_fill);
+                const to_emit = Buffer.alloc(this.buf_fill);
                 this.buf.copy(to_emit, 0, 0, this.buf_fill);
                 this.attachment_stream.emit_data(to_emit);
             }
@@ -229,7 +229,12 @@ class Body extends events.EventEmitter {
         }
 
         if (/UTF-?8/i.test(enc)) {
-            this.bodytext = buf.toString();
+            if (this.decode_function === this.decode_8bit) {
+                // source string was UTF-8 but parsed as binary
+                this.bodytext = buf.toString('binary');
+            } else {
+                this.bodytext = buf.toString();
+            }
             return;
         }
 
@@ -305,7 +310,7 @@ class Body extends events.EventEmitter {
             // using async code, it will get overwritten under us. Creating a new
             // buffer eliminates that problem (at the expense of a malloc and a
             // memcpy())
-            const to_emit = new Buffer(this.buf_fill);
+            const to_emit = Buffer.alloc(this.buf_fill);
             this.buf.copy(to_emit, 0, 0, this.buf_fill);
             this.attachment_stream.emit_data(to_emit);
             if (buf.length > buf_siz) {
@@ -347,7 +352,7 @@ class Body extends events.EventEmitter {
         if (emit_length > 0) {
             const emit_now = to_process.substring(0, emit_length);
             this.decode_accumulator = to_process.substring(emit_length);
-            return new Buffer(emit_now, 'base64');
+            return Buffer.from(emit_now, 'base64');
         } else {
             this.decode_accumulator = '';
             // This is the end of the base64 data, we don't really have enough bits
@@ -360,12 +365,12 @@ class Body extends events.EventEmitter {
             while (to_process.length > 0 && to_process.length < 4) {
                 to_process += '=';
             }
-            return new Buffer(to_process, 'base64');
+            return Buffer.from(to_process, 'base64');
         }
     }
 
     decode_8bit (line) {
-        return new Buffer(line, 'binary');
+        return Buffer.from(line, 'binary');
     }
 }
 
@@ -426,11 +431,11 @@ function insert_banner (ct, enc, buf, banners) {
     }
 
     if (!banner_buf) {
-        banner_buf = new Buffer(banner_str);
+        banner_buf = Buffer.from(banner_str);
     }
 
     // Allocate a new buffer: (7 or 2 is <P>...</P> vs \n...\n - correct that if you change those!)
-    const new_buf = new Buffer(buf.length + banner_buf.length + (is_html ? 7 : 2));
+    const new_buf = Buffer.alloc(buf.length + banner_buf.length + (is_html ? 7 : 2));
 
     // Now we find where to insert it and combine it with the original buf:
     if (is_html) {

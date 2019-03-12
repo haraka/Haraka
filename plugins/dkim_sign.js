@@ -25,6 +25,7 @@ class DKIMSignStream extends Stream {
         this.hash = crypto.createHash('SHA256');
         this.line_buffer = { ar: [], len: 0 };
         this.signer = crypto.createSign('RSA-SHA256');
+        this.body_found = false;
     }
 
     write (buf) {
@@ -69,6 +70,7 @@ class DKIMSignStream extends Stream {
                     this.hash.update(lb);
                 }
                 this.hash.update(line);
+                this.body_found = true;
             }
         }
         if (buf.length) {
@@ -83,11 +85,15 @@ class DKIMSignStream extends Stream {
 
         // Add trailing CRLF if we have data left over
         if (this.buffer.ar.length) {
-            this.buffer.ar.push(new Buffer("\r\n"));
+            this.buffer.ar.push(Buffer.from("\r\n"));
             this.buffer.len += 2;
             const le = Buffer.concat(this.buffer.ar, this.buffer.len);
             this.hash.update(le);
             this.buffer = { ar: [], len: 0 };
+        }
+
+        if (!this.body_found) {
+            this.hash.update(Buffer.from("\r\n"));
         }
 
         const bodyhash = this.hash.digest('base64');
@@ -334,7 +340,7 @@ exports.get_sender_domain = function (connection) {
         addrs = addrparser.parse(from_hdr);
     }
     catch (e) {
-        plugin.logerror(`address-rfc2822 failed to parse From header: ${from_hdr}`)
+        connection.logerror(plugin, `address-rfc2822 failed to parse From header: ${from_hdr}`)
         return domain;
     }
     if (!addrs || ! addrs.length) return domain;
@@ -351,13 +357,13 @@ exports.get_sender_domain = function (connection) {
 
     // If From has multiple-addresses, we must parse and
     // use the domain in the Sender header.
-    const sender = txn.header.get('Sender');
+    const sender = txn.header.get_decoded('Sender');
     if (sender) {
         try {
             domain = (addrparser.parse(sender))[0].host().toLowerCase();
         }
         catch (e) {
-            plugin.logerror(e);
+            connection.logerror(plugin, e);
         }
     }
     return domain;

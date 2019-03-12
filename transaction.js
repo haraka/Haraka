@@ -76,7 +76,7 @@ class Transaction {
 
     add_data (line) {
         if (typeof line === 'string') { // This shouldn't ever happen.
-            line = new Buffer(line, this.encoding);
+            line = Buffer.from(line, this.encoding);
         }
         // is this the end of headers line?
         if (this.header_pos === 0 &&
@@ -134,7 +134,7 @@ class Transaction {
                 data = data.toString(this.encoding)
                     .replace(/^\./gm, '..')
                     .replace(/\r?\n/gm, '\r\n');
-                const line = new Buffer(data, this.encoding);
+                const line = Buffer.from(data, this.encoding);
 
                 this.body.force_end();
 

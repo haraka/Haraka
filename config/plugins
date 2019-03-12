@@ -7,12 +7,14 @@
 #
 # To see the help docs for a particular plugin, run 'haraka -h plugin.name'
 
+#status
 #process_title
 # Log to syslog (see 'haraka -h syslog')
 # syslog
 
 # CONNECT
 #toobusy
+#karma
 #relay
 # control which IPs, rDNS hostnames, HELO hostnames, MAIL FROM addresses, and
 # RCPT TO address you accept mail from. See 'haraka -h access'.
@@ -59,7 +61,6 @@ data.headers
 #clamd
 #spamassassin
 #dkim_sign
-#karma
 #limit
 
 # QUEUE

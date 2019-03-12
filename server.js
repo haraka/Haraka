@@ -38,12 +38,17 @@ Server.load_smtp_ini = function () {
         Server.load_smtp_ini();
     });
 
+    if (Server.cfg.main.nodes === undefined) {
+        logger.logwarn(`smtp.ini.nodes unset, using 1, see https://github.com/haraka/Haraka/wiki/Performance-Tuning`)
+    }
+
     const defaults = {
-        inactivity_timeout: 600,
+        inactivity_timeout: 300,
         daemon_log_file: '/var/log/haraka.log',
         daemon_pid_file: '/var/run/haraka.pid',
         force_shutdown_timeout: 30,
         smtps_port: 465,
+        nodes: 1,
     };
 
     for (const key in defaults) {
@@ -324,7 +329,7 @@ Server.createServer = function (params) {
 Server.load_default_tls_config = function (done) {
     // this fn exists solely for testing
     if (Server.config.root_path != tls_socket.config.root_path) {
-        logger.loginfo('resetting tls_config.config path');
+        logger.loginfo(`resetting tls_config.config path to ${Server.config.root_path}`);
         tls_socket.config = tls_socket.config.module_config(path.dirname(Server.config.root_path));
     }
     tls_socket.getSocketOpts('*', (opts) => {
@@ -352,7 +357,10 @@ Server.get_smtp_server = function (host, port, inactivity_timeout, done) {
     if (port === Server.cfg.main.smtps_port) {
         logger.loginfo('getting SocketOpts for SMTPS server');
         tls_socket.getSocketOpts('*', opts => {
-            logger.loginfo(`Creating TLS server on ${host}:${Server.cfg.main.smtps_port}`);
+            logger.loginfo(`Creating TLS server on ${host}:${port}`);
+
+            opts.rejectUnauthorized = tls_socket.get_rejectUnauthorized(opts.rejectUnauthorized, port, tls_socket.cfg.main.requireAuthorized)
+
             server = tls.createServer(opts, onConnect);
             tls_socket.addOCSP(server);
             server.has_tls=true;

@@ -14,7 +14,7 @@ class ChunkEmitter extends EventEmitter {
 
     fill (input) {
         if (typeof input === 'string') {
-            input = new Buffer(input);
+            input = Buffer.from(input);
         }
 
         // Optimization: don't allocate a new buffer until
@@ -25,7 +25,7 @@ class ChunkEmitter extends EventEmitter {
             this.bufs.push(input);
             this.bufs_size += input.length;
             if ((input.length + this.bufs_size) > this.buffer_size) {
-                this.buf = new Buffer(this.buffer_size);
+                this.buf = Buffer.alloc(this.buffer_size);
                 const in_new = Buffer.concat(this.bufs, this.bufs_size);
                 input = in_new;
                 // Reset
@@ -41,7 +41,7 @@ class ChunkEmitter extends EventEmitter {
             let remaining = this.buffer_size - this.pos;
             if (remaining === 0) {
                 this.emit('data', this.buf); //.slice(0));
-                this.buf = new Buffer(this.buffer_size);
+                this.buf = Buffer.alloc(this.buffer_size);
                 this.pos = 0;
                 remaining = this.buffer_size;
             }

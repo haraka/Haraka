@@ -92,6 +92,19 @@ exports.early_talker = {
         this.connection.early_talker = true;
         this.plugin.early_talker(next, this.connection);
     },
+    'relay good senders': function (test) {
+        test.expect(3);
+        const next = function (rc, msg) {
+            test.equal(undefined, rc);
+            test.equal(undefined, msg);
+            test.ok(this.connection.results.has('early_talker', 'skip', '+karma'));
+            test.done();
+        }.bind(this);
+        this.plugin.pause = 1000;
+        this.connection.results.add('karma', {good: 10});
+        this.connection.early_talker = true;
+        this.plugin.early_talker(next, this.connection);
+    },
     'test loading ip list': function (test) {
         const whitelist = this.plugin.load_ip_list(['123.123.123.123', '127.0.0.0/16']);
         test.expect(2);

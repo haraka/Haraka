@@ -168,9 +168,8 @@ class Connection {
         const has_host = self.remote.host ? `${self.remote.host} ` : '';
         const rhost = `client ${has_host}[${self.remote.ip}]`
 
-        if (!self.client.on) {
-            return;
-        }
+        if (!self.client.on) return;
+
         self.client.on('end', () => {
             if (self.state >= states.DISCONNECTING) return;
             self.remote.closed = true;
@@ -202,9 +201,7 @@ class Connection {
             self.process_data(data);
         });
 
-        const ha_list = net.isIPv6(self.remote.ip) ?
-            haproxy_hosts_ipv6
-            : haproxy_hosts_ipv4;
+        const ha_list = net.isIPv6(self.remote.ip) ? haproxy_hosts_ipv6 : haproxy_hosts_ipv4;
 
         if (ha_list.some((element, index, array) => {
             return ipaddr.parse(self.remote.ip).match(element[0], element[1]);
@@ -333,7 +330,7 @@ class Connection {
         /* eslint no-control-regex: 0 */
         if (/[^\x00-\x7F]/.test(this.current_line)) {
             // See if this is a TLS handshake
-            const buf = new Buffer(this.current_line.substr(0,3), 'binary');
+            const buf = Buffer.from(this.current_line.substr(0,3), 'binary');
             if (buf[0] === 0x16 && buf[1] === 0x03 &&
                (buf[2] === 0x00 || buf[2] === 0x01)) // SSLv3/TLS1.x format
             {
@@ -521,7 +518,7 @@ class Connection {
                 this.transaction.notes.data_line_length_exceeded = true;
                 const b = Buffer.concat([
                     this.current_data.slice(0, maxlength - 2),
-                    new Buffer("\r\n ", 'utf8'),
+                    Buffer.from("\r\n ", 'utf8'),
                     this.current_data.slice(maxlength - 2)
                 ], this.current_data.length + 3);
                 this.current_data = b;

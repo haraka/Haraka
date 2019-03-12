@@ -94,6 +94,36 @@ spamassassin.ini
     Time in seconds to wait for results from spamd
 
 
+[check]
+=======
+
+The optional check section can allow skipping SpamAssassin check for remote connection
+meeting following criteria.
+
+- authenticated
+
+    Default: true
+
+    If true, messages from authenticated users will be scored.
+
+- private\_ip
+
+    Default: true
+
+    If true, messages from private IPs will be scored.
+
+- local\_ip
+
+    Default: true
+
+    If true, messages from localhost will be scored.
+
+- relay
+
+    Default: true
+
+    If true, messages that are to be relayed will be scored.
+
 Extras
 ======
 
