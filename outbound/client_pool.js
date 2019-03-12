@@ -31,10 +31,14 @@ function _create_socket (pool_name, port, host, local_addr, is_unix_socket, call
     });
     socket.once('error', function (err) {
         socket.end();
+        socket.removeAllListeners();
+        socket.destroy();
         callback(`Outbound connection error: ${err}`, null);
     });
     socket.once('timeout', function () {
         socket.end();
+        socket.removeAllListeners();
+        socket.destroy();
         callback(`Outbound connection timed out to ${host}:${port}`, null);
     });
 }
