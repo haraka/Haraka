@@ -43,7 +43,7 @@ Server.load_smtp_ini = function () {
     }
 
     const defaults = {
-        inactivity_timeout: 600,
+        inactivity_timeout: 300,
         daemon_log_file: '/var/log/haraka.log',
         daemon_pid_file: '/var/run/haraka.pid',
         force_shutdown_timeout: 30,

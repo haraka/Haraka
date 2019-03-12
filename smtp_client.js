@@ -109,6 +109,12 @@ class SMTPClient extends events.EventEmitter {
                 }
             }
 
+            if (/^441/.test(code)) {
+                if (/Connection timed out/i.test(msg)) {
+                    client.destroy();
+                }
+            }
+
             switch (client.command) {
                 case 'xclient':
                     client.xclient = true;
