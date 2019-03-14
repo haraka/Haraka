@@ -12,7 +12,7 @@ Description=Haraka MTA
 After=syslog.target network.target remote-fs.target nss-lookup.target
 
 [Service]
-Type=forking
+Type=simple
 PIDFile=/var/run/haraka.pid
 ExecStart=/usr/bin/haraka -c /path/to/your/config
 KillMode=process
