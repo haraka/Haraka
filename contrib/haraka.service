@@ -1,8 +1,9 @@
 #
 # systemd service file for Haraka
 #
-# Put this file in /usr/lib/systemd/system, modify the paths to suit
-# then run:
+# Ensure that `daemonize` in `smpt.ini` is set to `false` (which is the default value).
+#
+# Put this file in /etc/systemd/system,  modify the paths to suit, then run:
 # sudo systemctl enable haraka
 # sudo systemctl start haraka
 #
