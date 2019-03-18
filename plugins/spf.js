@@ -12,10 +12,13 @@ exports.register = function () {
         return plugin.logdebug(str);
     };
 
-    plugin.load_config();
+    plugin.load_spf_ini();
+
+    plugin.register_hook('helo', 'helo_spf');
+    plugin.register_hook('ehlo', 'helo_spf');
 }
 
-exports.load_config = function () {
+exports.load_spf_ini = function () {
     const plugin = this;
     plugin.nu = net_utils;   // so tests can set public_ip
     plugin.SPF = SPF;
@@ -50,7 +53,7 @@ exports.load_config = function () {
             '-skip.auth',
         ]
     },
-    function () { plugin.load_config(); }
+    function () { plugin.load_spf_ini(); }
     );
 
     // when set, preserve legacy config settings
@@ -74,21 +77,21 @@ exports.load_config = function () {
     }
 
     plugin.cfg.lookup_timeout = plugin.cfg.main.lookup_timeout || plugin.timeout - 1;
-};
+}
 
-exports.hook_helo = exports.hook_ehlo = function (next, connection, helo) {
+exports.helo_spf = function (next, connection, helo) {
     const plugin = this;
 
     // bypass auth'ed or relay'ing hosts if told to
     const skip_reason = exports.skip_hosts(connection);
     if (skip_reason) {
-        connection.results.add(plugin, {skip: `host(${skip_reason})`});
+        connection.results.add(plugin, {skip: `helo(${skip_reason})`});
         return next();
     }
 
     // Bypass private IPs
     if (connection.remote.is_private) {
-        connection.results.add(plugin, {skip: 'host(private_ip)'});
+        connection.results.add(plugin, {skip: 'helo(private_ip)'});
         return next();
     }
 
@@ -128,7 +131,7 @@ exports.hook_helo = exports.hook_ehlo = function (next, connection, helo) {
             domain: host,
             emit: true,
         });
-        return next();
+        next();
     });
 }
 
@@ -168,8 +171,7 @@ exports.hook_mail = function (next, connection, params) {
             connection.auth_results(`spf=${auth_result} smtp.helo=${h_host}`);
 
             const sender = `<> via ${h_host}`;
-            return plugin.return_results(next, connection, spf, 'helo',
-                h_result, sender);
+            return plugin.return_results(next, connection, spf, 'helo', h_result, sender);
         }
     }
 
@@ -179,22 +181,20 @@ exports.hook_mail = function (next, connection, params) {
     const timer = setTimeout(function () {
         timeout = true;
         connection.loginfo(plugin, 'timeout');
-        return next();
+        next();
     }, plugin.cfg.lookup_timeout * 1000);
 
     spf.helo = connection.hello.host;
 
-    const ch_cb = function (err, result, ip) {
+    function ch_cb (err, result, ip) {
         if (timer) clearTimeout(timer);
         if (timeout) return;
         if (err) {
             connection.logerror(plugin, err);
             return next();
         }
-        plugin.log_result(connection, 'mfrom', host, mfrom,
-            spf.result(result), (ip ? ip : connection.remote.ip));
-        plugin.save_to_header(connection, spf, result, mfrom, host,
-            'mailfrom', (ip ? ip : connection.remote.ip));
+        plugin.log_result(connection, 'mfrom', host, mfrom, spf.result(result), (ip ? ip : connection.remote.ip));
+        plugin.save_to_header(connection, spf, result, mfrom, host, 'mailfrom', (ip ? ip : connection.remote.ip));
 
         auth_result = spf.result(result).toLowerCase();
         connection.auth_results(`spf=${auth_result} smtp.mailfrom=${host}`);
@@ -208,7 +208,7 @@ exports.hook_mail = function (next, connection, params) {
             emit: true,
         });
         plugin.return_results(next, connection, spf, 'mfrom', result, mfrom);
-    };
+    }
 
     // typical inbound (!relay)
     if (!connection.relaying) {
@@ -233,10 +233,8 @@ exports.hook_mail = function (next, connection, params) {
                 spf_result = spf.result(result).toLowerCase();
             }
             if (err || (spf_result && spf_result !== 'pass')) {
-                if (e) {
-                    // Error looking up public IP
-                    return ch_cb(e);
-                }
+                if (e) return ch_cb(e);  // Error looking up public IP
+
                 if (!my_public_ip) {
                     return ch_cb(new Error(`failed to discover public IP`));
                 }
@@ -302,17 +300,19 @@ exports.save_to_header = function (connection, spf, result, mfrom, host, id, ip)
     // Add a trace header
     if (!connection) return;
     if (!connection.transaction) return;
+    const des = result === spf.SPF_PASS ? 'designates' : 'does not designate';
+    const identity = `identity=${id}; client-ip=${ip ? ip : connection.remote.ip}`;
     connection.transaction.add_leading_header('Received-SPF',
-        `${spf.result(result)} (${connection.local.host}: domain of ${host}${result === spf.SPF_PASS ? ' designates ' : ' does not designate '}${connection.remote.ip} as permitted sender) receiver=${connection.local.host}; identity=${id}; client-ip=${ip ? ip : connection.remote.ip}; helo=${connection.hello.host}; envelope-from=<${mfrom}>`
+        `${spf.result(result)} (${connection.local.host}: domain of ${host} ${des} ${connection.remote.ip} as permitted sender) receiver=${connection.local.host}; ${identity} helo=${connection.hello.host}; envelope-from=<${mfrom}>`
     );
-};
+}
 
 exports.skip_hosts = function (connection) {
     const plugin = this;
 
-    const cbypass = plugin.cfg.skip;
-    if (cbypass) {
-        if (cbypass.relaying && connection.relaying) return 'relay';
-        if (cbypass.auth && connection.notes.auth_user) return 'auth';
+    const skip = plugin.cfg.skip;
+    if (skip) {
+        if (skip.relaying && connection.relaying) return 'relay';
+        if (skip.auth && connection.notes.auth_user) return 'auth';
     }
 }
