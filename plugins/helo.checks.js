@@ -181,7 +181,7 @@ exports.valid_hostname = function (next, connection, helo) {
         const excludes = this.config.get('helo.checks.allow', 'list');
         const tld = (helo.split(/\./).reverse())[0].toLowerCase();
         // Exclude .local, .lan and .corp
-        if (tld === 'local' || tld === 'lan' || tld === 'corp' || excludes.indexOf('.' + tld) !== -1) {
+        if (tld === 'local' || tld === 'lan' || tld === 'corp' || excludes.includes('.' + tld)) {
             return next();
         }
         connection.results.add(plugin, {fail: 'valid_hostname'});
@@ -422,7 +422,7 @@ exports.forward_dns = function (next, connection, helo) {
         }
         connection.results.add(plugin, {ips: ips});
 
-        if (ips.indexOf(connection.remote.ip) !== -1) {
+        if (ips.includes(connection.remote.ip)) {
             connection.results.add(plugin, {pass: 'forward_dns'});
             return next();
         }
