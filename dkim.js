@@ -133,7 +133,7 @@ class DKIMObject {
             for (let h=0; h<headers.length; h++) {
                 this.signed_headers.push(headers[h].trim().toLowerCase());
             }
-            if (this.signed_headers.indexOf('from') === -1) {
+            if (!this.signed_headers.includes('from')) {
                 return this.result('from field not signed', 'invalid');
             }
         }
@@ -308,7 +308,7 @@ class DKIMObject {
                 if (Array.isArray(record)) {
                     record = record.join('');
                 }
-                if (record.indexOf('p=') === -1) {
+                if (!record.includes('p=')) {
                     self.debug(`${self.identity}: ignoring TXT record: ${record}`);
                     continue;
                 }
@@ -345,13 +345,13 @@ class DKIMObject {
                     const hashes = self.dns_fields.h.split(':');
                     for (let k=0; k<hashes.length; k++) {
                         const hash = hashes[k].trim();
-                        if (self.fields.a.indexOf(hash) === -1) {
+                        if (!self.fields.a.includes(hash)) {
                             return self.result('inappropriate hash algorithm', 'invalid');
                         }
                     }
                 }
                 if (self.dns_fields.k) {
-                    if (self.fields.a.indexOf(self.dns_fields.k) === -1) {
+                    if (!self.fields.a.includes(self.dns_fields.k)) {
                         return self.result('inappropriate key type', 'invalid');
                     }
                 }
