@@ -18,7 +18,7 @@ exports.hook_data_post = function (next, connection) {
 
 function check_sigs (sigs, body) {
     for (let i=0,l=sigs.length; i < l; i++) {
-        if (body.bodytext.indexOf(sigs[i]) != -1) {
+        if (body.bodytext.includes(sigs[i])) {
             return 1;
         }
     }
