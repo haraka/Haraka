@@ -58,7 +58,7 @@
     "haraka-plugin-watch"   : "*",
     "ocsp"                  : "~1.2.0",
     "redis"                 : "~2.8.0",
-    "tmp"                   : "~0.0.28"
+    "tmp"                   : "~0.1.0"
   },
   "devDependencies": {
     "nodeunit"              : "*",
