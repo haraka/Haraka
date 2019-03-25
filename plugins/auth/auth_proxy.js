@@ -145,11 +145,11 @@ exports.try_auth_proxy = function (connection, hosts, user, passwd, cb) {
                     methods = parse[1].split(/\s+/);
                     connection.logdebug(self, 'found supported AUTH methods: ' + methods);
                     // Prefer PLAIN as it's easiest
-                    if (methods.indexOf('PLAIN') !== -1) {
+                    if (methods.includes('PLAIN')) {
                         socket.send_command('AUTH','PLAIN ' + utils.base64("\0" + user + "\0" + passwd));
                         return;
                     }
-                    else if (methods.indexOf('LOGIN') !== -1) {
+                    else if (methods.includes('LOGIN')) {
                         socket.send_command('AUTH','LOGIN');
                         return;
                     }
@@ -180,10 +180,10 @@ exports.try_auth_proxy = function (connection, hosts, user, passwd, cb) {
                 let u;
                 if ((u = /^([^@]+)@.+$/.exec(user))) {
                     user = u[1];
-                    if (methods.indexOf('PLAIN') !== -1) {
+                    if (methods.includes('PLAIN')) {
                         socket.send_command('AUTH', 'PLAIN ' + utils.base64("\0" + user + "\0" + passwd));
                     }
-                    else if (methods.indexOf('LOGIN') !== -1) {
+                    else if (methods.includes('LOGIN')) {
                         socket.send_command('AUTH', 'LOGIN');
                     }
                     return;
