@@ -180,8 +180,8 @@ exports.unarchive_recursive = function (connection, f, archive_file_name, cb) {
                 connection.logdebug(plugin, `file: ${file} depth=${depth}`);
                 files.push((prefix ? `${prefix}/` : '') + file);
                 const extn = path.extname(file.toLowerCase());
-                if (plugin.archive_exts.indexOf(extn) === -1 &&
-                    plugin.archive_exts.indexOf(extn.substring(1)) === -1)
+                if (!plugin.archive_exts.includes(extn) &&
+                    !plugin.archive_exts.includes(extn.substring(1)))
                 {
                     // Not an archive file extension
                     continue;
@@ -309,8 +309,8 @@ exports.start_attachment = function (connection, ctype, filename, body, stream) 
     connection.logdebug(plugin, `found attachment file: ${filename}`);
     // See if filename extension matches archive extension list
     // We check with the dot prefixed and without
-    if (archives_disabled || (plugin.archive_exts.indexOf(fileext) === -1 &&
-            plugin.archive_exts.indexOf(fileext.substring(1)) === -1))
+    if (archives_disabled || (!plugin.archive_exts.includes(fileext) &&
+            !plugin.archive_exts.includes(fileext.substring(1))))
     {
         return;
     }
