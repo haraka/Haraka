@@ -508,21 +508,21 @@ class HMailItem extends events.EventEmitter {
                 if (!mx.auth_type) {
                     // User hasn't specified an authentication type, so we pick one
                     // We'll prefer CRAM-MD5 as it's the most secure that we support.
-                    if (smtp_properties.auth.indexOf('CRAM-MD5') !== -1) {
+                    if (smtp_properties.auth.includes('CRAM-MD5')) {
                         mx.auth_type = 'CRAM-MD5';
                     }
                     // PLAIN requires less round-trips compared to LOGIN
-                    else if (smtp_properties.auth.indexOf('PLAIN') !== -1) {
+                    else if (smtp_properties.auth.includes('PLAIN')) {
                         // PLAIN requires less round trips compared to LOGIN
                         // So we'll make this our 2nd pick.
                         mx.auth_type = 'PLAIN';
                     }
-                    else if (smtp_properties.auth.indexOf('LOGIN') !== -1) {
+                    else if (smtp_properties.auth.includes('LOGIN')) {
                         mx.auth_type = 'LOGIN';
                     }
                 }
 
-                if (!mx.auth_type || (mx.auth_type && smtp_properties.auth.indexOf(mx.auth_type.toUpperCase()) === -1)) {
+                if (!mx.auth_type || (mx.auth_type && !smtp_properties.auth.includes(mx.auth_type.toUpperCase()))) {
                     // No compatible authentication types offered by the server
                     self.logwarn(`AUTH configured for domain ${self.todo.domain} but host ${host}did not offer any compatible types${(mx.auth_type) ? ` (requested: ${mx.auth_type})` : ''} (offered: ${smtp_properties.auth.join(',')})`);
                     // Proceed without authentication
