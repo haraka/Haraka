@@ -302,7 +302,7 @@ exports.get_headers_to_sign = function () {
         .split(/[,;:]/);
 
     // From MUST be present
-    if (headers.indexOf('from') === -1) {
+    if (!headers.includes('from')) {
         headers.push('from');
     }
     return headers;
