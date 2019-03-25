@@ -169,7 +169,7 @@ exports.select_auth_method = function (next, connection, method) {
     const split = method.split(/\s+/);
     method = split.shift().toUpperCase();
     if (!connection.notes.allowed_auth_methods) return next();
-    if (connection.notes.allowed_auth_methods.indexOf(method) === -1) {
+    if (!connection.notes.allowed_auth_methods.includes(method)) {
         return next();
     }
 
