@@ -175,7 +175,7 @@ exports.parse_x509_names = string => {
         const re = /DNS:([^,]+)[,\n]/g;
         while ((dns_name = re.exec(match[0])) !== null) {
             // log.loginfo(dns_name);
-            if (names_found.indexOf(dns_name[1]) !== -1) continue; // ignore dupes
+            if (names_found.includes(dns_name[1])) continue; // ignore dupes
             names_found.push(dns_name[1]);
         }
     }
