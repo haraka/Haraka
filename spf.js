@@ -531,7 +531,7 @@ class SPF {
                             return cb(null, self.SPF_NONE);
                         }
                         else {
-                            if (addresses.indexOf(self.ip) !== -1) {
+                            if (addresses.includes(self.ip)) {
                                 self.log_debug('mech_mx: ' + self.ip + ' => ' + addresses.join(',') + ': MATCH!');
                                 return cb(null, self.return_const(qualifier));
                             }
