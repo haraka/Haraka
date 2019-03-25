@@ -96,7 +96,7 @@ exports.transaction = {
         });
         this.transaction.end_data(function () {
             self.transaction.message_stream.get_data(function (body) {
-                test.ok(body.toString('binary').indexOf(message.toString('binary')) !== -1, "message not damaged");
+                test.ok(body.toString('binary').includes(message.toString('binary')), "message not damaged");
                 test.done();
             });
         });
