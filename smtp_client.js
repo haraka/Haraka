@@ -463,7 +463,7 @@ exports.get_client_plugin = function (plugin, connection, c, callback) {
 
             if (c.auth.type === null || typeof (c.auth.type) === 'undefined') return; // Ignore blank
             const auth_type = c.auth.type.toLowerCase();
-            if (smtp_client.auth_capabilities.indexOf(auth_type) === -1) {
+            if (!smtp_client.auth_capabilities.includes(auth_type)) {
                 throw new Error(`Auth type "${auth_type}" not supported by server (supports: ${smtp_client.auth_capabilities.join(',')})`);
             }
             switch (auth_type) {
