@@ -24,7 +24,7 @@ const mock_sock   = require('./fixtures/line_socket');
 ob_cfg.pool_concurrency_max = 0;
 
 const outbound_context = {
-    TODOItem: TODOItem,
+    TODOItem,
     exports: outbound
 }
 
