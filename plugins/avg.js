@@ -123,7 +123,7 @@ exports.hook_data_post = function (next, connection) {
                     const elapsed = Date.now() - start_time;
                     connection.loginfo(plugin, {
                         time: `${elapsed}ms`,
-                        code: code,
+                        code,
                         response: `"${response.join(' ')}"`
                     })
                     // Check code
