@@ -546,7 +546,7 @@ function log_run_item (item, hook, retval, object, params, msg) {
     if (is_not_cont) log = 'loginfo';
     if (is_not_cont || logger.would_log(logger.LOGDEBUG)) {
         object[log]({
-            'hook'      :  hook,
+            hook,
             'plugin'    :  item[0].name,
             'function'  :  item[1],
             'params'    :  ((params) ? ((typeof params === 'string') ? params : params[0]) : ''),
