@@ -5,18 +5,18 @@ const DKIMVerifyStream = dkim.DKIMVerifyStream;
 
 const plugin = exports;
 
-dkim.DKIMObject.prototype.debug = function (str) {
+dkim.DKIMObject.prototype.debug = str => {
     plugin.logdebug(str);
 }
 
-DKIMVerifyStream.prototype.debug = function (str) {
+DKIMVerifyStream.prototype.debug = str => {
     plugin.logdebug(str);
 }
 
 exports.hook_data_post = function (next, connection) {
     const self = this;
     const txn = connection.transaction;
-    const verifier = new DKIMVerifyStream(function (err, result, results) {
+    const verifier = new DKIMVerifyStream((err, result, results) => {
         if (err) {
             txn.results.add(self, { err });
             return next();
