@@ -45,7 +45,7 @@ exports.load_headers_ini = function () {
             '-reject.invalid_date',
             '+reject.delivered_to',
         ],
-    }, function () {
+    }, () => {
         plugin.load_headers_ini();
     });
 }
@@ -371,7 +371,7 @@ exports.mailing_list = function (next, connection) {
     let found_mlm = 0;
     const txr = connection.transaction.results;
 
-    Object.keys(mlms).forEach(function (name) {
+    Object.keys(mlms).forEach(name => {
         const header = connection.transaction.header.get(name);
         if (!header) { return; }  // header not present
         for (let i=0; i < mlms[name].length; i++) {
