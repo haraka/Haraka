@@ -1004,7 +1004,7 @@ class Connection {
                 addr = addr.substr(1, addr.length -2); // trim off < >
             }
             self.transaction.results.add({name: 'mail_from'}, {
-                action: action,
+                action,
                 code: constants.translate(retval),
                 address: addr,
             });
@@ -1061,7 +1061,7 @@ class Connection {
         }
 
         this.transaction.results.push({name: 'rcpt_to'}, {
-            recipient: recipient,
+            recipient,
         });
     }
     rcpt_ok_respond (retval, msg) {
@@ -1220,15 +1220,20 @@ class Connection {
         this.loginfo(
             'HAProxy',
             {
-                proto: proto,
+                proto,
                 src_ip: `${src_ip}:${src_port}`,
                 dst_ip: `${dst_ip}:${dst_port}`,
             }
         );
 
         this.notes.proxy = {
-            type: 'haproxy', proto: proto,
-            src_ip: src_ip, src_port: src_port, dst_ip: dst_ip, dst_port: dst_port, proxy_ip: this.remote.ip
+            type: 'haproxy', 
+            proto,
+            src_ip, 
+            src_port, 
+            dst_ip, 
+            dst_port, 
+            proxy_ip: this.remote.ip
         };
 
         this.reset_transaction(function () {
