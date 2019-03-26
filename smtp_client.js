@@ -160,7 +160,7 @@ class SMTPClient extends events.EventEmitter {
         })
 
         function closed (msg) {
-            return function (error) {
+            return error => {
                 if (!error) {
                     error = '';
                 }
@@ -301,13 +301,13 @@ exports.get_pool = (server, port, host, cfg) => {
 
     const pool = generic_pool.Pool({
         name,
-        create: function (callback) {
+        create: callback => {
             const smtp_client = new SMTPClient(port, host, connect_timeout, pool_timeout);
             logger.logdebug(`[smtp_client_pool] uuid=${smtp_client.uuid} host=${host}` +
                 ` port=${port} pool_timeout=${pool_timeout} created`);
             callback(null, smtp_client);
         },
-        destroy: function (smtp_client) {
+        destroy: smtp_client => {
             logger.logdebug(`[smtp_client_pool] ${smtp_client.uuid} destroyed, state={smtp_client.state}`);
             smtp_client.state = STATE.DESTROYED;
             smtp_client.socket.destroy();
@@ -319,14 +319,14 @@ exports.get_pool = (server, port, host, cfg) => {
         },
         max: cfg.max_connections || 1000,
         idleTimeoutMillis: (pool_timeout - 1) * 1000,
-        log: function (str, level) {
+        log: (str, level) => {
             level = (level === 'verbose') ? 'debug' : level;
             logger['log' + level](`[smtp_client_pool] [${name}] ${str}`);
         }
     });
 
     const acquire = pool.acquire;
-    pool.acquire = function (callback, priority) {
+    pool.acquire = (callback, priority) => {
         function callback_wrapper (err, smtp_client) {
             smtp_client.pool = pool;
             smtp_client.state = STATE.ACTIVE;
@@ -339,13 +339,13 @@ exports.get_pool = (server, port, host, cfg) => {
 }
 
 // Get a smtp_client for the given attributes.
-exports.get_client = function (server, callback, port, host, cfg) {
+exports.get_client = (server, callback, port, host, cfg) => {
     const pool = exports.get_pool(server, port, host, cfg);
     pool.acquire(callback);
 }
 
 
-exports.onCapabilitiesOutbound = function (smtp_client, secured, connection, config, on_secured) {
+exports.onCapabilitiesOutbound = (smtp_client, secured, connection, config, on_secured) => {
     for (const line in smtp_client.response) {
         if (/^XCLIENT/.test(smtp_client.response[line])) {
             if (!smtp_client.xclient) {
@@ -392,7 +392,7 @@ exports.onCapabilitiesOutbound = function (smtp_client, secured, connection, con
 // Get a smtp_client for the given attributes and set up the common
 // config and listeners for plugins. This is what smtp_proxy and
 // smtp_forward have in common.
-exports.get_client_plugin = function (plugin, connection, c, callback) {
+exports.get_client_plugin = (plugin, connection, c, callback) => {
     // c = config
     // Merge in authentication settings from smtp_forward/proxy.ini if present
     // FIXME: config.auth could be changed when API isn't frozen
