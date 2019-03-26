@@ -117,7 +117,7 @@ exports.check_user = function (next, connection, credentials, method) {
 
             connection.results.add({name:'auth'}, {
                 pass: plugin.name,
-                method: method,
+                method,
                 user: credentials[0],
             });
 
