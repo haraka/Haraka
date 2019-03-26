@@ -34,9 +34,9 @@ exports.hook_get_mx = function (next, hmail, domain) {
         port = this.cfg.main.port;
     }
     return next(OK, {
-        priority: priority,
+        priority,
         exchange: this.cfg.main.host,
-        port: port,
+        port,
         auth_type: authType,
         auth_user: hmail.todo.notes.auth_user,
         auth_pass: hmail.todo.notes.auth_passwd
