@@ -51,7 +51,7 @@ exports.advertise_starttls = function (next, connection) {
 
     redis.get(dbkey, (err, dbr) => {
         if (err) {
-            connection.results.add(plugin, {err: err});
+            connection.results.add(plugin, {err});
             return enable_tls();
         }
 
@@ -114,8 +114,8 @@ exports.upgrade_connection = function (next, connection, params) {
         connection.reset_transaction(() => {
 
             connection.setTLS({
-                cipher: cipher,
-                verified: verified,
+                cipher,
+                verified,
                 authorizationError: verifyErr,
                 peerCertificate: cert,
             });
