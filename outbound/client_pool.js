@@ -11,7 +11,7 @@ const cfg          = require('./config');
 
 function _create_socket (pool_name, port, host, local_addr, is_unix_socket, callback) {
     const socket = is_unix_socket ? sock.connect({path: host}) :
-        sock.connect({port: port, host: host, localAddress: local_addr});
+        sock.connect({port, host, localAddress: local_addr});
     socket.__pool_name = pool_name;
     socket.__uuid = utils.uuid();
     socket.setTimeout(cfg.connect_timeout * 1000);
@@ -19,8 +19,8 @@ function _create_socket (pool_name, port, host, local_addr, is_unix_socket, call
         '[outbound] created',
         {
             uuid: socket.__uuid,
-            host: host,
-            port: port,
+            host,
+            port,
             pool_timeout: cfg.pool_timeout
         }
     );
@@ -52,7 +52,7 @@ function get_pool (port, host, local_addr, is_unix_socket, max) {
     if (server.notes.pool[name]) return server.notes.pool[name];
 
     const pool = generic_pool.Pool({
-        name: name,
+        name,
         create: function (done) {
             _create_socket(this.name, port, host, local_addr, is_unix_socket, done);
         },
