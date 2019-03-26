@@ -13,7 +13,7 @@ exports.register = function () {
 exports.rabbitmq_queue = function (next, connection) {
     const plugin = this;
     connection.transaction.message_stream.get_data(function (str) {
-        if (channel && channel.sendToQueue(queue, str, {deliveryMode: deliveryMode})) {
+        if (channel && channel.sendToQueue(queue, str, {deliveryMode})) {
             return next(OK);
         }
         else {
@@ -52,13 +52,13 @@ exports.init_amqp_connection = function () {
                 plugin.logerror("Error creating rabbitmq channel: " + err2);
                 return conn.close();
             }
-            ch.assertExchange(exchangeName, exchangeType, {durable: durable}, function (err3, ok){
+            ch.assertExchange(exchangeName, exchangeType, {durable}, function (err3, ok){
                 if (err3) {
                     plugin.logerror("Error asserting rabbitmq exchange: " + err3);
                     return conn.close();
                 }
                 ch.assertQueue(queueName,
-                    {durable: durable, autoDelete: autoDelete},
+                    {durable, autoDelete},
                     function (err4, ok2) {
                         if (err4) {
                             plugin.logerror("Error asserting rabbitmq queue: " + err4);
