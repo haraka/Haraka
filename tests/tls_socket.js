@@ -76,7 +76,7 @@ exports.get_certs_dir = {
     setUp: _setup,
     'loads certs from config/tls': function (test) {
         test.expect(2);
-        this.socket.get_certs_dir('tls', function (err, certs) {
+        this.socket.get_certs_dir('tls', (err, certs) => {
             test.ifError(err);
             // console.error(certs);
             test.ok(certs);
