@@ -21,7 +21,7 @@ exports.transaction = {
 
         test.expect(3);
 
-        this.transaction.add_body_filter('text/plain', function (ct, enc, buf) {
+        this.transaction.add_body_filter('text/plain', (ct, enc, buf) => {
             // The actual functionality of these filter functions is tested in
             // mailbody.js.  This just makes sure the plumbing is in place.
 
@@ -42,10 +42,10 @@ exports.transaction = {
             "\n",
             "<p>HTML part</p>\n",
             "--abcd--\n",
-        ].forEach(function (line) {
+        ].forEach(line => {
             self.transaction.add_data(line);
         });
-        this.transaction.end_data(function () {
+        this.transaction.end_data(() => {
             test.done();
         });
     },
@@ -55,20 +55,20 @@ exports.transaction = {
 
         test.expect(2);
 
-        this.transaction.attachment_hooks(function () {});
+        this.transaction.attachment_hooks(() => {});
         this.transaction.set_banner('banner');
-        this.transaction.add_body_filter('', function () {
+        this.transaction.add_body_filter('', () => {
             test.ok(true, "body filter called");
         });
         [
             "Content-Type: text/plain\n",
             "\n",
             "Some text\n",
-        ].forEach(function (line) {
+        ].forEach(line => {
             self.transaction.add_data(line);
         });
-        this.transaction.end_data(function () {
-            self.transaction.message_stream.get_data(function (body) {
+        this.transaction.end_data(() => {
+            self.transaction.message_stream.get_data(body => {
                 test.ok(/banner$/.test(body.toString().trim()), "banner applied");
                 test.done();
             });
@@ -89,13 +89,13 @@ exports.transaction = {
         test.expect(1);
 
         this.transaction.parse_body = true;
-        this.transaction.attachment_hooks(function () {});
+        this.transaction.attachment_hooks(() => {});
 
-        payload.forEach(function (line) {
+        payload.forEach(line => {
             self.transaction.add_data(line);
         });
-        this.transaction.end_data(function () {
-            self.transaction.message_stream.get_data(function (body) {
+        this.transaction.end_data(() => {
+            self.transaction.message_stream.get_data(body => {
                 test.ok(body.toString('binary').includes(message.toString('binary')), "message not damaged");
                 test.done();
             });
@@ -129,12 +129,12 @@ exports.base64_handling = {
         const parsed_attachments = {};
         self.transaction.parse_body = true;
         //accumulate attachment buffers.
-        self.transaction.attachment_hooks(function (ct, filename, body, stream) {
+        self.transaction.attachment_hooks((ct, filename, body, stream) => {
             let attachment = Buffer.alloc(0);
-            stream.on('data', function (data) {
+            stream.on('data', data => {
                 attachment = Buffer.concat([attachment, data]);
             });
-            stream.on('end', function () {
+            stream.on('end', () => {
                 parsed_attachments[filename] = attachment;
             });
         });
