@@ -16,7 +16,7 @@ exports.register = function () {
     plugin.register_hook('unrecognized_command', 'upgrade_connection');
 }
 
-exports.shutdown = function () {
+exports.shutdown = () => {
     if (tls_socket.shutdown) tls_socket.shutdown();
 }
 
@@ -36,7 +36,7 @@ exports.advertise_starttls = function (next, connection) {
         return next();
     }
 
-    const enable_tls = function () {
+    const enable_tls = () => {
         connection.capabilities.push('STARTTLS');
         connection.tls.advertised = true;
         next();
@@ -68,7 +68,7 @@ exports.advertise_starttls = function (next, connection) {
     });
 }
 
-exports.set_notls = function (ip) {
+exports.set_notls = ip => {
 
     if (!tls_socket.cfg.redis) return;
     if (!tls_socket.cfg.redis.disable_for_failed_hosts) return;
@@ -127,7 +127,7 @@ exports.upgrade_connection = function (next, connection, params) {
     })
 }
 
-exports.hook_disconnect = function (next, connection) {
+exports.hook_disconnect = (next, connection) => {
     if (connection.notes.cleanUpDisconnect) {
         connection.notes.cleanUpDisconnect(true);
     }
