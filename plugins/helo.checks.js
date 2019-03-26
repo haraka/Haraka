@@ -70,7 +70,7 @@ exports.load_helo_checks_ini = function () {
         booleans.push('-reject.' + c);
     });
 
-    plugin.cfg = plugin.config.get('helo.checks.ini', { booleans: booleans },
+    plugin.cfg = plugin.config.get('helo.checks.ini', { booleans },
         function () {
             plugin.load_helo_checks_ini();
         });
@@ -420,7 +420,7 @@ exports.forward_dns = function (next, connection, helo) {
             connection.results.add(plugin, {err: 'forward_dns, no ips!'});
             return next();
         }
-        connection.results.add(plugin, {ips: ips});
+        connection.results.add(plugin, {ips});
 
         if (ips.includes(connection.remote.ip)) {
             connection.results.add(plugin, {pass: 'forward_dns'});
