@@ -172,7 +172,7 @@ class SPF {
 
         this.log_debug('ip=' + ip + ' domain=' + domain + ' mail_from=' + mail_from);
         // Get the SPF record for domain
-        dns.resolveTxt(domain, function (err, txt_rrs) {
+        dns.resolveTxt(domain, (err, txt_rrs) => {
             if (err) {
                 self.log_debug('error looking up TXT record: ' + err.message);
                 switch (err.code) {
@@ -353,7 +353,7 @@ class SPF {
         self.been_there[domain] = true;
         // Recurse
         const recurse = new SPF(self.count, self.been_there);
-        recurse.check_host(self.ip, domain, self.mail_from, function (err, result) {
+        recurse.check_host(self.ip, domain, self.mail_from, (err, result) => {
             if (!err) {
                 self.log_debug('mech_include: domain=' + domain + ' returned=' + self.const_translate(result));
                 switch (result) {
@@ -372,7 +372,7 @@ class SPF {
         const self = this;
         self.count++;
         const exists = args.substr(1);
-        dns.resolve(exists, function (err, addrs) {
+        dns.resolve(exists, (err, addrs) => {
             if (err) {
                 self.log_debug('mech_exists: ' + err);
                 switch (err.code) {
@@ -417,7 +417,7 @@ class SPF {
             resolve_method = 'resolve6';
         }
         // Use current domain
-        dns[resolve_method](domain, function (err, addrs) {
+        dns[resolve_method](domain, (err, addrs) => {
             if (err) {
                 self.log_debug('mech_a: ' + err);
                 switch (err.code) {
@@ -469,7 +469,7 @@ class SPF {
             domain = dm[1];
         }
         // Fetch the MX records for the specified domain
-        dns.resolveMx(domain, function (err, mxes) {
+        dns.resolveMx(domain, (err, mxes) => {
             if (err) {
                 switch (err.code) {
                     case dns.NOTFOUND:
@@ -498,7 +498,7 @@ class SPF {
                     cidr = cidr6;
                     resolve_method = 'resolve6';
                 }
-                dns[resolve_method](mx, function (err4, addrs) {
+                dns[resolve_method](mx, (err4, addrs) => {
                     pending--;
                     if (err4) {
                         switch (err4.code) {
@@ -562,7 +562,7 @@ class SPF {
             domain = dm[1];
         }
         // First do a PTR lookup for the connecting IP
-        dns.reverse(this.ip, function (err, ptrs) {
+        dns.reverse(this.ip, (err, ptrs) => {
             if (err) {
                 self.log_debug('mech_ptr: lookup=' + self.ip + ' => ' + err);
                 return cb(null, self.SPF_NONE);
@@ -580,7 +580,7 @@ class SPF {
                 for (let i=0; i<ptrs.length; i++) {
                     const ptr = ptrs[i];
                     pending++;
-                    dns[resolve_method](ptr, function (err3, addrs) {
+                    dns[resolve_method](ptr, (err3, addrs) => {
                         pending--;
                         if (err3) {
                             // Skip on error
