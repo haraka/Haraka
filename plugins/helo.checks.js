@@ -44,7 +44,7 @@ exports.register = function () {
     plugin.register_hook('ehlo', 'emit_log');
 
     if (plugin.cfg.check.match_re) {
-        const load_re_file = function () {
+        const load_re_file = () => {
             const regex_list = utils.valid_regexes(plugin.config.get('helo.checks.regexps', 'list', load_re_file));
             // pre-compile the regexes
             plugin.cfg.list_re = new RegExp('^(' + regex_list.join('|') + ')$', 'i');
@@ -65,13 +65,13 @@ exports.load_helo_checks_ini = function () {
         '-reject.proto_mismatch',
     ];
 
-    checks.forEach(function (c) {
+    checks.forEach(c => {
         booleans.push('+check.' + c);
         booleans.push('-reject.' + c);
     });
 
     plugin.cfg = plugin.config.get('helo.checks.ini', { booleans },
-        function () {
+        () => {
             plugin.load_helo_checks_ini();
         });
 
@@ -402,7 +402,7 @@ exports.forward_dns = function (next, connection, helo) {
         return next();
     }
 
-    const cb = function (err, ips) {
+    const cb = (err, ips) => {
         if (err) {
             if (err.code === dns.NOTFOUND || err.code === dns.NODATA || err.code === dns.SERVFAIL) {
                 connection.results.add(plugin, {fail: 'forward_dns('+err.code+')'});
@@ -513,7 +513,7 @@ exports.get_a_records = function (host, cb) {
 
     // Set-up timer
     let timed_out = false;
-    const timer = setTimeout(function () {
+    const timer = setTimeout(() => {
         timed_out = true;
         const err = new Error('timeout resolving: ' + host);
         err.code = dns.TIMEOUT;
@@ -525,7 +525,7 @@ exports.get_a_records = function (host, cb) {
     if (!/\.$/.test(host)) { host = host + '.'; }
 
     // do the queries
-    net_utils.get_ips_by_host(host, function (errs, ips) {
+    net_utils.get_ips_by_host(host, (errs, ips) => {
         // results is now equals to: {queryA: 1, queryAAAA: 2}
         if (timed_out) { return; }
         if (timer) { clearTimeout(timer); }
