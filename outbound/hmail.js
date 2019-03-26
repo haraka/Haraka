@@ -1277,7 +1277,7 @@ class HMailItem extends events.EventEmitter {
             'tls': ((secured) ? 'Y' : 'N'),
             'auth': ((authenticated) ? 'Y' : 'N'),
             'response': response,
-            'delay': delay,
+            delay,
             'fails': this.num_failures,
             'rcpts': `${ok_recips.length}/${fail_recips.length}/${bounce_recips.length}`
         });
@@ -1322,7 +1322,7 @@ class HMailItem extends events.EventEmitter {
 
         const delay = Math.pow(2, (this.num_failures + 5));
 
-        plugins.run_hooks('deferred', this, {delay: delay, err: err});
+        plugins.run_hooks('deferred', this, {delay, err});
     }
 
     deferred_respond (retval, msg, params) {
