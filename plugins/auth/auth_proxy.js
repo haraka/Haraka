@@ -202,7 +202,7 @@ exports.try_auth_proxy = function (connection, hosts, user, passwd, cb) {
         }
         switch (command) {
             case 'starttls':
-                this.upgrade({ key: key, cert: cert });
+                this.upgrade({ key, cert });
                 break;
             case 'connect':
                 socket.send_command('EHLO', connection.local.host);
