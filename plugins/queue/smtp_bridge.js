@@ -7,12 +7,12 @@ exports.register = function () {
 
 exports.load_flat_ini = function () {
     const plugin = this;
-    plugin.cfg = plugin.config.get('smtp_bridge.ini', function () {
+    plugin.cfg = plugin.config.get('smtp_bridge.ini', () => {
         plugin.load_flat_ini();
     });
 }
 
-exports.hook_data_post = function (next, connection) {
+exports.hook_data_post = (next, connection) => {
     const txn = connection.transaction;
     // Copy auth notes to transaction notes so they're available in hmail.todo.notes
     txn.notes.auth_user = connection.notes.auth_user;
