@@ -38,8 +38,7 @@ const _qfile = module.exports = {
         return QFILECOUNTER;
     },
 
-    rnd_unique: function (len) {
-        len = len || 6;
+    rnd_unique: function (len = 6) {
         const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
         const result = [];
         for (let i = len; i > 0; --i) {
