@@ -131,7 +131,7 @@ exports.hook_rcpt_ok = function (next, connection, rcpt) {
     return next();
 }
 
-exports.hook_data = function (next, connection) {
+exports.hook_data = (next, connection) => {
     const transaction = connection.transaction;
 
     // Add a header showing all pre-DATA rejections
