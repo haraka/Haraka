@@ -18,7 +18,7 @@ exports.hook_data_post = function (next, connection) {
     const txn = connection.transaction;
     const verifier = new DKIMVerifyStream(function (err, result, results) {
         if (err) {
-            txn.results.add(self, { err: err });
+            txn.results.add(self, { err });
             return next();
         }
         if (!results) {
