@@ -92,7 +92,7 @@ logger.load_log_ini = function () {
             '+main.timestamps',
         ]
     },
-    function () {
+    () => {
         self.load_log_ini();
     });
 
@@ -101,12 +101,12 @@ logger.load_log_ini = function () {
     this.set_format(this.cfg.main.format);
 }
 
-logger.colorize = function (color, str) {
+logger.colorize = (color, str) => {
     if (!util.inspect.colors[color]) { return str; }  // unknown color
     return `\u001b[${util.inspect.colors[color][0]}m${str}\u001b[${util.inspect.colors[color][1]}m`;
 }
 
-logger.dump_logs = function (cb) {
+logger.dump_logs = cb => {
     while (logger.deferred_logs.length > 0) {
         const log_item = logger.deferred_logs.shift();
         plugins.run_hooks('log', logger, log_item);
@@ -117,20 +117,20 @@ logger.dump_logs = function (cb) {
 }
 
 if (!util.isFunction) {
-    util.isFunction = function (functionToCheck) {
+    util.isFunction = functionToCheck => {
         const getType = {};
         return functionToCheck && getType.toString.call(functionToCheck) === '[object Function]';
     };
 }
 
 logger.dump_and_exit = function (code) {
-    this.dump_logs(function () {
+    this.dump_logs(() => {
         if (util.isFunction(code)) return code();
         process.exit(code);
     });
 }
 
-logger.log = function (level, data, logobj) {
+logger.log = (level, data, logobj) => {
     if (level === 'PROTOCOL') {
         data = data.replace(/\n/g, '\\n');
     }
@@ -157,7 +157,7 @@ logger.log = function (level, data, logobj) {
     return true;
 }
 
-logger.log_respond = function (retval, msg, data) {
+logger.log_respond = (retval, msg, data) => {
     // any other return code is irrelevant
     if (retval !== constants.cont) { return false; }
     let timestamp_string = '';
@@ -209,26 +209,26 @@ logger.set_format = function (format) {
 logger._init_loglevel = function () {
     const self = this;
 
-    const _loglevel = config.get('loglevel', 'value', function () {
+    const _loglevel = config.get('loglevel', 'value', () => {
         self._init_loglevel();
     });
 
     self.set_loglevel(_loglevel);
 }
 
-logger.would_log = function (level) {
+logger.would_log = level => {
     if (logger.loglevel < level) { return false; }
     return true;
 }
 
-logger.set_timestamps = function (value) {
+logger.set_timestamps = value => {
     logger.timestamps = !!value;
 }
 
 logger._init_timestamps = function () {
     const self = this;
 
-    const _timestamps = config.get('log_timestamps', 'value', function () {
+    const _timestamps = config.get('log_timestamps', 'value', () => {
         self._init_timestamps();
     });
 
@@ -239,8 +239,7 @@ logger._init_timestamps = function () {
 
 logger._init();
 
-logger.log_if_level = function (level, key, plugin) {
-    return function () {
+logger.log_if_level = (level, key, plugin) => function () {
         if (logger.loglevel < logger[key]) { return; }
         let logobj = {
             level,
@@ -314,10 +313,9 @@ logger.log_if_level = function (level, key, plugin) {
                 );
                 return true;
         }
-    };
-}
+    }
 
-logger.add_log_methods = function (object, plugin) {
+logger.add_log_methods = (object, plugin) => {
     if (!object) return;
     if (typeof(object) !== 'object') return;
     for (const level in logger.levels) {
