@@ -7,7 +7,7 @@ function dot_files (element) {
     return element.match(/^\./) == null;
 }
 
-exports.sandbox_require = function (id) {
+exports.sandbox_require = id => {
     if (id[0] == '.' && id[1] != '.') {
         let override;
         try {
@@ -33,7 +33,7 @@ exports.sandbox_require = function (id) {
 }
 
 function make_test (module_path, test_path, additional_sandbox) {
-    return function (test) {
+    return test => {
         let code = fs.readFileSync(module_path);
         code += fs.readFileSync(test_path);
         const sandbox = {
@@ -43,14 +43,14 @@ function make_test (module_path, test_path, additional_sandbox) {
             exports: {},
             test
         };
-        Object.keys(additional_sandbox).forEach(function (k) {
+        Object.keys(additional_sandbox).forEach(k => {
             sandbox[k] = additional_sandbox[k];
         });
         vm.runInNewContext(code, sandbox);
     };
 }
 
-exports.add_tests = function (module_path, tests_path, test_exports, add_to_sandbox) {
+exports.add_tests = (module_path, tests_path, test_exports, add_to_sandbox) => {
     const additional_sandbox = add_to_sandbox || {};
     const tests = fs.readdirSync(tests_path).filter(dot_files);
     for (let x = 0; x < tests.length; x++) {
