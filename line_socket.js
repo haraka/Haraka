@@ -37,7 +37,7 @@ function setup_line_processor (socket) {
 exports.Socket = Socket;
 
 // New interface - uses TLS
-exports.connect = function (port, host, cb) {
+exports.connect = (port, host, cb) => {
     let options = {};
     if (typeof port === 'object') {
         options = port;
