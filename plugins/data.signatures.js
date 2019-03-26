@@ -1,7 +1,7 @@
 'use strict';
 // Simple string signatures
 
-exports.hook_data = function (next, connection) {
+exports.hook_data = (next, connection) => {
     // enable mail body parsing
     connection.transaction.parse_body = true;
     next();
