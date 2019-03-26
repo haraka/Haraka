@@ -41,7 +41,7 @@ function make_test (module_path, test_path, additional_sandbox) {
             console: console,
             Buffer: Buffer,
             exports: {},
-            test: test
+            test
         };
         Object.keys(additional_sandbox).forEach(function (k) {
             sandbox[k] = additional_sandbox[k];
