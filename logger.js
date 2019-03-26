@@ -137,7 +137,7 @@ logger.log = function (level, data, logobj) {
     data = data.replace(/\r/g, '\\r')
         .replace(/\n$/, '');
 
-    const item = { 'level' : level, 'data'  : data, obj: logobj};
+    const item = { level, data, obj: logobj};
 
     // buffer until plugins are loaded
     if (!plugins || (Array.isArray(plugins.plugin_list) &&
