@@ -19,7 +19,7 @@ const HMailItem      = require('../outbound/hmail');
 const outbound       = require('../outbound');
 
 const outbound_context = {
-    TODOItem: TODOItem,
+    TODOItem,
     exports: outbound
 }
 
