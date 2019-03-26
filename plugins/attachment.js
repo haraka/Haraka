@@ -214,7 +214,7 @@ exports.unarchive_recursive = function (connection, f, archive_file_name, cb) {
                         }, plugin.cfg.timeout);
 
                         // Create WriteStream for this file
-                        const tws = fs.createWriteStream(tmpfile, { "fd": fd });
+                        const tws = fs.createWriteStream(tmpfile, { fd });
                         err = "";
 
                         cmd.stderr.on('data', (data) => {
