@@ -20,8 +20,8 @@ exports.lookup_mx = function lookup_mx (domain, cb) {
     // SERVFAIL
 
     // default wrap_mx just returns our object with "priority" and "exchange" keys
-    let wrap_mx = function (a) { return a; };
-    const process_dns = function (err, addresses) {
+    let wrap_mx = a => a;
+    const process_dns = (err, addresses) => {
         if (err) {
             if (err.code === 'ENODATA' || err.code === 'ENOTFOUND') {
                 // Most likely this is a hostname with no MX record
@@ -44,16 +44,16 @@ exports.lookup_mx = function lookup_mx (domain, cb) {
         return 1;
     };
 
-    dns.resolveMx(domain, function (err, addresses) {
+    dns.resolveMx(domain, (err, addresses) => {
         if (process_dns(err, addresses)) {
             return;
         }
 
         // if MX lookup failed, we lookup an A record. To do that we change
         // wrap_mx() to return same thing as resolveMx() does.
-        wrap_mx = function (a) { return {priority:0,exchange:a}; };
+        wrap_mx = a => ({priority:0,exchange:a});
         // IS: IPv6 compatible
-        dns.resolve(domain, function (err2, addresses2) {
+        dns.resolve(domain, (err2, addresses2) => {
             if (process_dns(err2, addresses2)) {
                 return;
             }
