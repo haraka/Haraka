@@ -55,7 +55,7 @@ exports.load_uri_config = function (next) {
         return next();
     }
     // Load excludes
-    this.config.get('data.uribl.excludes', 'list').forEach(function (domain) {
+    this.config.get('data.uribl.excludes', 'list').forEach(domain => {
         excludes[domain.toLowerCase()] = 1;
     });
     // Set defaults
@@ -195,7 +195,7 @@ exports.do_lookups = function (connection, next, hosts, type) {
         next(code, msg);
     }
 
-    timer = setTimeout(function () {
+    timer = setTimeout(() => {
         connection.logdebug(plugin, 'timeout');
         results.add(plugin, {err: `${type} timeout` });
         call_next();
@@ -207,14 +207,14 @@ exports.do_lookups = function (connection, next, hosts, type) {
         call_next();
     }
 
-    queries_to_run.forEach(function (query) {
+    queries_to_run.forEach(query => {
         let lookup = query.join('.');
         // Add root dot if necessary
         if (lookup[lookup.length-1] !== '.') {
             lookup = lookup + '.';
         }
         pending_queries++;
-        dns.resolve4(lookup, function (err, addrs) {
+        dns.resolve4(lookup, (err, addrs) => {
             pending_queries--;
             connection.logdebug(plugin, `${lookup} => (${(err) ? err : addrs.join(', ')})`);
 
@@ -275,7 +275,7 @@ exports.do_lookups = function (connection, next, hosts, type) {
 exports.hook_lookup_rdns = function (next, connection) {
     this.load_uri_config(next);
     const plugin = this;
-    dns.reverse(connection.remote.ip, function (err, rdns) {
+    dns.reverse(connection.remote.ip, (err, rdns) => {
         if (err) {
             if (err.code) {
                 if (err.code === dns.NXDOMAIN) return next();
@@ -306,7 +306,7 @@ exports.hook_mail = function (next, connection, params) {
     this.do_lookups(connection, next, params[0].host, 'envfrom');
 }
 
-exports.hook_data = function (next, connection) {
+exports.hook_data = (next, connection) => {
     // enable mail body parsing
     connection.transaction.parse_body = true;
     return next();
@@ -319,7 +319,7 @@ exports.hook_data_post = function (next, connection) {
     const trans = connection.transaction;
 
     // From header
-    const do_from_header = function (cb) {
+    const do_from_header = cb => {
         const from = trans.header.get_decoded('from');
         const fmatch = email_re.exec(from);
         if (fmatch) {
@@ -329,7 +329,7 @@ exports.hook_data_post = function (next, connection) {
     };
 
     // Reply-To header
-    const do_replyto_header = function (cb) {
+    const do_replyto_header = cb => {
         const replyto = trans.header.get('reply-to');
         const rmatch = email_re.exec(replyto);
         if (rmatch) {
@@ -339,7 +339,7 @@ exports.hook_data_post = function (next, connection) {
     };
 
     // Message-Id header
-    const do_msgid_header = function (cb) {
+    const do_msgid_header = cb => {
         const msgid = trans.header.get('message-id');
         const mmatch = /@([^>]+)>/.exec(msgid);
         if (mmatch) {
@@ -349,7 +349,7 @@ exports.hook_data_post = function (next, connection) {
     };
 
     // Body
-    const do_body = function (cb) {
+    const do_body = cb => {
         const urls = {};
         extract_urls(urls, trans.body, connection, plugin);
         return plugin.do_lookups(connection, cb, Object.keys(urls), 'body');
