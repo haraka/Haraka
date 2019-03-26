@@ -221,7 +221,7 @@ function get_deliveries (transaction) {
         recips[domain].push(rcpt);
     });
     Object.keys(recips).forEach(function (domain) {
-        deliveries.push({'domain': domain, 'rcpts': recips[domain]});
+        deliveries.push({domain, 'rcpts': recips[domain]});
     });
     return deliveries;
 }
@@ -244,7 +244,7 @@ exports.send_trans_email = function (transaction, next) {
     }
 
     const connection = {
-        transaction: transaction,
+        transaction,
     };
 
     logger.add_log_methods(connection);
@@ -271,7 +271,7 @@ exports.send_trans_email = function (transaction, next) {
                 for (let i=0, l=ok_paths.length; i<l; i++) {
                     fs.unlink(ok_paths[i], function () {});
                 }
-                transaction.results.add({ name: 'outbound'}, { err: err });
+                transaction.results.add({ name: 'outbound'}, { err });
                 if (next) next(constants.denysoft, err);
                 return;
             }
