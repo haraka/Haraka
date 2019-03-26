@@ -27,7 +27,7 @@ exports.hook_queue = function (next, connection) {
         if (connExchange_ && routing_) {
             //This is publish function of rabbitmq amqp library, currently direct queue is configured and routing is fixed.
             //Needs to be changed.
-            connExchange_.publish(routing_, buffere,{deliveryMode: deliveryMode}, function (error){
+            connExchange_.publish(routing_, buffere,{deliveryMode}, function (error){
                 if (error) {
                     //There was some error while sending the email to queue.
                     logger.logdebug("queueFailure: #{JSON.stringify(error)}");
@@ -112,13 +112,13 @@ exports.init_rabbitmq_server = function () {
     rabbitqueue.on('ready', function () {
         logger.logdebug("Connection is ready, will try making exchange");
         // Now connection is ready will try to open exchange with config data.
-        rabbitqueue.exchange(exchangeName, {  type: exchangeType,  confirm: confirm,  durable: durable }, function (connExchange) {
+        rabbitqueue.exchange(exchangeName, {  type: exchangeType,  confirm,  durable }, function (connExchange) {
 
 
             logger.logdebug("connExchange with server "+connExchange + " autoDelete : "+autoDelete);
 
             //Exchange is now open, will try to open queue.
-            return rabbitqueue.queue(queueName,{autoDelete: autoDelete,  durable:  durable  } , function (connQueue) {
+            return rabbitqueue.queue(queueName,{autoDelete,  durable  } , function (connQueue) {
                 logger.logdebug("connQueue with server "+connQueue);
 
                 //Creating the Routing key to bind the queue and exchange.
@@ -139,7 +139,7 @@ exports.init_rabbitmq_server = function () {
                     exchange : connExchange_,
                     queue : connQueue_,
                     routing : routing_,
-                    queueName : queueName
+                    queueName
                 });
                 logger.logdebug("exchange: " + exchangeName + ", queue: " + queueName+"  exchange : "+connExchange_ +" queue : "+connQueue_ );
             });
