@@ -22,7 +22,7 @@ function _setup (done) {
 }
 
 exports.loadingTLSConfig = {
-    'TLS enabled but no outbound config in tls.ini': function (test) {
+    'TLS enabled but no outbound config in tls.ini': test => {
         const plugin = new fixtures.plugin('queue/smtp_forward');
         test.expect(2);
 
