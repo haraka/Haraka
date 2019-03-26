@@ -496,7 +496,7 @@ exports.update_grey = function (key, create, cb) {
         new_record = {
             created : ts_now,
             updated : ts_now,
-            lifetime : lifetime,
+            lifetime,
             tried : 1
         };
 
