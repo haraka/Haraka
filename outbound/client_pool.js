@@ -24,18 +24,18 @@ function _create_socket (pool_name, port, host, local_addr, is_unix_socket, call
             pool_timeout: cfg.pool_timeout
         }
     );
-    socket.once('connect', function () {
+    socket.once('connect', () => {
         socket.removeAllListeners('error'); // these get added after callback
         socket.removeAllListeners('timeout');
         callback(null, socket);
     });
-    socket.once('error', function (err) {
+    socket.once('error', err => {
         socket.end();
         socket.removeAllListeners();
         socket.destroy();
         callback(`Outbound connection error: ${err}`, null);
     });
-    socket.once('timeout', function () {
+    socket.once('timeout', () => {
         socket.end();
         socket.removeAllListeners();
         socket.destroy();
@@ -56,21 +56,19 @@ function get_pool (port, host, local_addr, is_unix_socket, max) {
         create: function (done) {
             _create_socket(this.name, port, host, local_addr, is_unix_socket, done);
         },
-        validate: function (socket) {
-            return socket.__fromPool && socket.writable;
-        },
-        destroy: function (socket) {
+        validate: socket => socket.__fromPool && socket.writable,
+        destroy: socket => {
             logger.logdebug(`[outbound] destroying pool entry ${socket.__uuid} for ${host}:${port}`);
             socket.removeAllListeners();
             socket.__fromPool = false;
-            socket.on('line', function (line) {
+            socket.on('line', line => {
                 // Just assume this is a valid response
                 logger.logprotocol(`[outbound] S: ${line}`);
             });
-            socket.once('error', function (err) {
+            socket.once('error', err => {
                 logger.logwarn(`[outbound] Socket got an error while shutting down: ${err}`);
             });
-            socket.once('end', function () {
+            socket.once('end', () => {
                 logger.loginfo("[outbound] Remote end half closed during destroy()");
                 socket.destroy();
             })
@@ -82,7 +80,7 @@ function get_pool (port, host, local_addr, is_unix_socket, max) {
         },
         max: max || 10,
         idleTimeoutMillis: cfg.pool_timeout * 1000,
-        log: function (str, level) {
+        log: (str, level) => {
             if (/this._availableObjects.length=/.test(str)) return;
             level = (level === 'verbose') ? 'debug' : level;
             logger[`log${level}`](`[outbound] [${name}] ${str}`);
@@ -94,7 +92,7 @@ function get_pool (port, host, local_addr, is_unix_socket, max) {
 }
 
 // Get a socket for the given attributes.
-exports.get_client = function (port, host, local_addr, is_unix_socket, callback) {
+exports.get_client = (port, host, local_addr, is_unix_socket, callback) => {
     if (cfg.pool_concurrency_max == 0) {
         return _create_socket(null, port, host, local_addr, is_unix_socket, callback);
     }
@@ -103,7 +101,7 @@ exports.get_client = function (port, host, local_addr, is_unix_socket, callback)
     if (pool.waitingClientsCount() >= cfg.pool_concurrency_max) {
         return callback("Too many waiting clients for pool", null);
     }
-    pool.acquire(function (err, socket) {
+    pool.acquire((err, socket) => {
         if (err) return callback(err);
         socket.__acquired = true;
         logger.loginfo(`[outbound] acquired socket ${socket.__uuid} for ${socket.__pool_name}`);
@@ -111,7 +109,7 @@ exports.get_client = function (port, host, local_addr, is_unix_socket, callback)
     });
 }
 
-exports.release_client = function (socket, port, host, local_addr, error) {
+exports.release_client = (socket, port, host, local_addr, error) => {
     logger.logdebug(`[outbound] release_client: ${socket.__uuid} ${host}:${port} to ${local_addr}`);
 
     const name = socket.__pool_name;
@@ -151,12 +149,12 @@ exports.release_client = function (socket, port, host, local_addr, error) {
 
     socket.__fromPool = true;
 
-    socket.once('error', function (err) {
+    socket.once('error', err => {
         logger.logwarn(`[outbound] Socket [${name}] in pool got an error: ${err}`);
         sockend();
     });
 
-    socket.once('end', function () {
+    socket.once('end', () => {
         logger.loginfo(`[outbound] Socket [${name}] in pool got FIN`);
         socket.writable = false;
         sockend();
@@ -175,13 +173,13 @@ exports.release_client = function (socket, port, host, local_addr, error) {
     }
 }
 
-exports.drain_pools = function () {
+exports.drain_pools = () => {
     if (!server.notes.pool || Object.keys(server.notes.pool).length == 0) {
         return logger.logdebug("[outbound] Drain pools: No pools available");
     }
-    Object.keys(server.notes.pool).forEach(function (p) {
+    Object.keys(server.notes.pool).forEach(p => {
         logger.logdebug(`[outbound] Drain pools: Draining SMTP connection pool ${p}`);
-        server.notes.pool[p].drain(function () {
+        server.notes.pool[p].drain(() => {
             if (!server.notes.pool[p]) return;
             server.notes.pool[p].destroyAllNow();
             delete server.notes.pool[p];
