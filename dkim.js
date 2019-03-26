@@ -281,13 +281,13 @@ class DKIMObject {
         // Do the DNS lookup to retrieve the public key
         const self = this;
         let timeout = false;
-        const timer = setTimeout(function () {
+        const timer = setTimeout(() => {
             timeout = true;
             return self.result('DNS timeout', 'tempfail');
         }, this.timeout * 1000);
         const lookup = `${this.fields.s}._domainkey.${this.fields.d}`;
         this.debug(`${this.identity}: DNS lookup ${lookup} (timeout= ${this.timeout}s)`);
-        dns.resolveTxt(lookup, function (err, res) {
+        dns.resolveTxt(lookup, (err, res) => {
             if (timeout) return;
             clearTimeout(timer);
             if (err) {
@@ -449,7 +449,7 @@ class DKIMVerifyStream extends Stream {
             buf = this.buffer.pop(buf);
         }
 
-        const callback = function (err, result) {
+        const callback = (err, result) => {
             self.pending--;
             if (result) {
                 self.results.push({
@@ -472,7 +472,7 @@ class DKIMVerifyStream extends Stream {
             self.debug(JSON.stringify(result));
 
             if (self.pending === 0 && self.cb) {
-                return process.nextTick(function () {
+                return process.nextTick(() => {
                     self.cb(null, self.result, self.results);
                 });
             }
@@ -508,7 +508,7 @@ class DKIMVerifyStream extends Stream {
                     }
                     if (!this.header_idx['dkim-signature']) {
                         this._no_signatures_found = true;
-                        return process.nextTick(function () {
+                        return process.nextTick(() => {
                             self.cb(null, self.result, self.results);
                         });
                     }
@@ -521,7 +521,7 @@ class DKIMVerifyStream extends Stream {
                             this.dkim_objects.push(new DKIMObject(dkim_headers[d], this.header_idx, callback, this.timeout));
                         }
                         if (this.pending === 0) {
-                            process.nextTick(function () {
+                            process.nextTick(() => {
                                 if (self.cb) self.cb(new Error('no signatures found'));
                             });
                         }
@@ -565,7 +565,7 @@ class DKIMVerifyStream extends Stream {
         }
         if (this.pending === 0 && this._no_signatures_found === false) {
             const self = this;
-            process.nextTick(function () {
+            process.nextTick(() => {
                 self.cb(null, self.result, self.results);
             });
         }
