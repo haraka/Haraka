@@ -99,7 +99,7 @@ Server.flushQueue = function (domain) {
     }
 
     for (const id in cluster.workers) {
-        cluster.workers[id].send({event: 'outbound.flush_queue', domain: domain});
+        cluster.workers[id].send({event: 'outbound.flush_queue', domain});
     }
 }
 
@@ -232,7 +232,7 @@ Server.sendToMaster = function (command, params) {
             Server.receiveAsMaster(command, params);
         }
         else {
-            process.send({cmd: command, params: params});
+            process.send({cmd: command, params});
         }
     }
     else {
