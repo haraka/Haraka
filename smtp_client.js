@@ -300,7 +300,7 @@ exports.get_pool = (server, port, host, cfg) => {
     if (server.notes.pool[name]) return server.notes.pool[name];
 
     const pool = generic_pool.Pool({
-        name: name,
+        name,
         create: function (callback) {
             const smtp_client = new SMTPClient(port, host, connect_timeout, pool_timeout);
             logger.logdebug(`[smtp_client_pool] uuid=${smtp_client.uuid} host=${host}` +
