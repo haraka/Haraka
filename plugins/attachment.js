@@ -42,7 +42,7 @@ exports.load_attachment_ini = function () {
         default_archive_extns;
 }
 
-exports.find_bsdtar_path = function (cb) {
+exports.find_bsdtar_path = cb => {
     let found = false;
     let i = 0;
     ['/bin', '/usr/bin', '/usr/local/bin'].forEach((dir) => {
@@ -117,10 +117,10 @@ exports.unarchive_recursive = function (connection, f, archive_file_name, cb) {
     }
 
     function deleteTempFiles () {
-        tmpfiles.forEach(function (t) {
-            fs.close(t[0], function () {
+        tmpfiles.forEach(t => {
+            fs.close(t[0], () => {
                 connection.logdebug(plugin, `closed fd: ${t[0]}`);
-                fs.unlink(t[1], function () {
+                fs.unlink(t[1], () => {
                     connection.logdebug(plugin, `deleted tempfile: ${t[1]}`);
                 });
             });
@@ -320,9 +320,9 @@ exports.start_attachment = function (connection, ctype, filename, body, stream) 
     stream.pause();
     tmp.file((err, fn, fd) => {
         function cleanup () {
-            fs.close(fd, function () {
+            fs.close(fd, () => {
                 connection.logdebug(plugin, `closed fd: ${fd}`);
-                fs.unlink(fn, function () {
+                fs.unlink(fn, () => {
                     connection.logdebug(plugin, `unlinked: ${fn}`);
                 });
             });
@@ -494,7 +494,7 @@ exports.check_items_against_regexps = function (items, regexps) {
     return false;
 }
 
-exports.wait_for_attachment_hooks = function (next, connection) {
+exports.wait_for_attachment_hooks = (next, connection) => {
     const txn = connection.transaction;
     if (txn.notes.attachment_count > 0) {
         // this.loginfo("We still have attachment hooks running");
