@@ -476,7 +476,7 @@ class DKIMVerifyStream extends Stream {
                     self.cb(null, self.result, self.results);
                 });
             }
-        };
+        }
 
         // Process input buffer into lines
         let offset = 0;
