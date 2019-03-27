@@ -240,80 +240,80 @@ logger._init_timestamps = function () {
 logger._init();
 
 logger.log_if_level = (level, key, plugin) => function () {
-        if (logger.loglevel < logger[key]) { return; }
-        let logobj = {
-            level,
-            uuid: '-',
-            origin: (plugin || 'core'),
-            message: ''
-        };
-        for (let i=0; i < arguments.length; i++) {
-            const data = arguments[i];
-            if (typeof data !== 'object') {
-                logobj.message += (data);
-                continue;
-            }
-            if (!data) continue;
+    if (logger.loglevel < logger[key]) { return; }
+    let logobj = {
+        level,
+        uuid: '-',
+        origin: (plugin || 'core'),
+        message: ''
+    };
+    for (let i=0; i < arguments.length; i++) {
+        const data = arguments[i];
+        if (typeof data !== 'object') {
+            logobj.message += (data);
+            continue;
+        }
+        if (!data) continue;
 
-            // if the object is a connection, add the connection id
-            if (data instanceof connection.Connection) {
-                logobj.uuid = data.uuid;
-                if (data.tran_count > 0) {
-                    logobj.uuid += "." + data.tran_count;
-                }
-            }
-            else if (data instanceof plugins.Plugin) {
-                logobj.origin = data.name;
-            }
-            else if (data.name) {
-                logobj.origin = data.name;
-            }
-            else if (data instanceof outbound.HMailItem) {
-                logobj.origin = 'outbound';
-                if (data.todo) {
-                    if (data.todo.uuid)
-                        logobj.uuid = data.todo.uuid;
-                    if (data.todo.client_uuid) {
-                        // dirty hack
-                        logobj.origin = `outbound] [${data.todo.client_uuid}`;
-                    }
-                }
-            }
-            else if (
-                logger.format === logger.formats.LOGFMT &&
-                data.constructor === Object
-            ) {
-                logobj = Object.assign(logobj, data);
-            }
-            else if (typeof data === 'object' && data.hasOwnProperty('uuid')) {
-                logobj.uuid = data.uuid;
-            }
-            else if (data.constructor === Object) {
-                if (!logobj.message.endsWith(' ')) {
-                    logobj.message += ' ';
-                }
-                logobj.message += (stringify(data));
-            }
-            else {
-                logobj.message += (util.inspect(data));
+        // if the object is a connection, add the connection id
+        if (data instanceof connection.Connection) {
+            logobj.uuid = data.uuid;
+            if (data.tran_count > 0) {
+                logobj.uuid += "." + data.tran_count;
             }
         }
-        switch (logger.format) {
-            case logger.formats.LOGFMT:
-                logger.log(
-                    level,
-                    stringify(logobj)
-                );
-                return true;
-            case logger.formats.DEFAULT:
-            default:
-                logger.log(
-                    level,
-                    `[${logobj.level}] [${logobj.uuid}] [${logobj.origin}] ${logobj.message}`
-                );
-                return true;
+        else if (data instanceof plugins.Plugin) {
+            logobj.origin = data.name;
+        }
+        else if (data.name) {
+            logobj.origin = data.name;
+        }
+        else if (data instanceof outbound.HMailItem) {
+            logobj.origin = 'outbound';
+            if (data.todo) {
+                if (data.todo.uuid)
+                    logobj.uuid = data.todo.uuid;
+                if (data.todo.client_uuid) {
+                    // dirty hack
+                    logobj.origin = `outbound] [${data.todo.client_uuid}`;
+                }
+            }
+        }
+        else if (
+            logger.format === logger.formats.LOGFMT &&
+                data.constructor === Object
+        ) {
+            logobj = Object.assign(logobj, data);
+        }
+        else if (typeof data === 'object' && data.hasOwnProperty('uuid')) {
+            logobj.uuid = data.uuid;
+        }
+        else if (data.constructor === Object) {
+            if (!logobj.message.endsWith(' ')) {
+                logobj.message += ' ';
+            }
+            logobj.message += (stringify(data));
+        }
+        else {
+            logobj.message += (util.inspect(data));
         }
     }
+    switch (logger.format) {
+        case logger.formats.LOGFMT:
+            logger.log(
+                level,
+                stringify(logobj)
+            );
+            return true;
+        case logger.formats.DEFAULT:
+        default:
+            logger.log(
+                level,
+                `[${logobj.level}] [${logobj.uuid}] [${logobj.origin}] ${logobj.message}`
+            );
+            return true;
+    }
+}
 
 logger.add_log_methods = (object, plugin) => {
     if (!object) return;

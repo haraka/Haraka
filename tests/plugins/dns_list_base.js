@@ -56,7 +56,7 @@ exports.lookup = {
     },
     'Spamcop, unlisted IP': function (test) {
         test.expect(2);
-        const cb = (err, a) => {
+        const cb = function (err, a) {
             test.equal(null, err);
             test.equal(null, a);
             test.done();

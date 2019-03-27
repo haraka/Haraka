@@ -154,7 +154,7 @@ exports.load_queue_files = (pid, input_files, iteratee, callback) => {
     let stat_renamed = 0;
     let stat_loaded = 0;
 
-    callback = callback || () => {};
+    callback = callback || function () {};
 
     if (searchPid) {
         logger.loginfo("[outbound] Grabbing queue files for pid: " + pid);

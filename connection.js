@@ -1227,12 +1227,12 @@ class Connection {
         );
 
         this.notes.proxy = {
-            type: 'haproxy', 
+            type: 'haproxy',
             proto,
-            src_ip, 
-            src_port, 
-            dst_ip, 
-            dst_port, 
+            src_ip,
+            src_port,
+            dst_ip,
+            dst_port,
             proxy_ip: this.remote.ip
         };
 
