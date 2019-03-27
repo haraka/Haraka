@@ -29,7 +29,7 @@ const FsyncWriteStream = require('./fsync_writestream');
 let queue_dir;
 let temp_fail_queue;
 let delivery_queue;
-setImmediate(function () {
+setImmediate(() => {
     const queuelib = require('./queue');
     queue_dir = queuelib.queue_dir;
     temp_fail_queue = queuelib.temp_fail_queue;
@@ -155,13 +155,13 @@ class HMailItem extends events.EventEmitter {
             // try again in 1 second if delivery is disabled
             this.logdebug("delivery disabled temporarily. Retrying in 1s.");
             const hmail = this;
-            setTimeout(function () { hmail.send(); }, 1000);
+            setTimeout(() => { hmail.send(); }, 1000);
             return;
         }
 
         if (!this.todo) {
             const self = this;
-            this.once('ready', function () { self._send(); });
+            this.once('ready', () => { self._send(); });
         }
         else {
             this._send();
@@ -178,7 +178,7 @@ class HMailItem extends events.EventEmitter {
             this.logdebug(`Delivery of this email delayed for ${delay_seconds} seconds`);
             const hmail = this;
             hmail.next_cb();
-            temp_fail_queue.add(hmail.filename, delay_seconds * 1000, function () { delivery_queue.push(hmail); });
+            temp_fail_queue.add(hmail.filename, delay_seconds * 1000, () => { delivery_queue.push(hmail); });
         }
         else {
             this.logdebug(`Sending mail: ${this.filename}`);
@@ -215,20 +215,20 @@ class HMailItem extends events.EventEmitter {
             }
             case constants.deny:
                 hmail.logwarn(`get_mx plugin returned DENY: ${mx}`);
-                hmail.todo.rcpt_to.forEach(function (rcpt) {
+                hmail.todo.rcpt_to.forEach(rcpt => {
                     hmail.extend_rcpt_with_dsn(rcpt, DSN.addr_bad_dest_system(`No MX for ${hmail.todo.domain}`));
                 });
                 return hmail.bounce(`No MX for ${hmail.todo.domain}`);
             case constants.denysoft:
                 hmail.logwarn(`get_mx plugin returned DENYSOFT: ${mx}`);
-                hmail.todo.rcpt_to.forEach(function (rcpt) {
+                hmail.todo.rcpt_to.forEach(rcpt => {
                     hmail.extend_rcpt_with_dsn(rcpt, DSN.addr_bad_dest_system(`Temporary MX lookup error for ${hmail.todo.domain}`, 450));
                 });
                 return hmail.temp_fail(`Temporary MX lookup error for ${hmail.todo.domain}`);
         }
 
         // if none of the above return codes, drop through to this...
-        mx_lookup.lookup_mx(this.todo.domain, function (err, mxs) {
+        mx_lookup.lookup_mx(this.todo.domain, (err, mxs) => {
             hmail.found_mx(err, mxs);
         });
     }
@@ -238,20 +238,20 @@ class HMailItem extends events.EventEmitter {
         if (err) {
             this.lognotice(`MX Lookup for ${this.todo.domain} failed: ${err}`);
             if (err.code === dns.NXDOMAIN || err.code === dns.NOTFOUND) {
-                this.todo.rcpt_to.forEach(function (rcpt) {
+                this.todo.rcpt_to.forEach(rcpt => {
                     hmail.extend_rcpt_with_dsn(rcpt, DSN.addr_bad_dest_system(`No Such Domain: ${hmail.todo.domain}`));
                 });
                 this.bounce(`No Such Domain: ${this.todo.domain}`);
             }
             else if (err.code === 'NOMX') {
-                this.todo.rcpt_to.forEach(function (rcpt) {
+                this.todo.rcpt_to.forEach(rcpt => {
                     hmail.extend_rcpt_with_dsn(rcpt, DSN.addr_bad_dest_system(`Nowhere to deliver mail to for domain: ${hmail.todo.domain}`));
                 });
                 this.bounce(`Nowhere to deliver mail to for domain: ${hmail.todo.domain}`);
             }
             else {
                 // every other error is transient
-                this.todo.rcpt_to.forEach(function (rcpt) {
+                this.todo.rcpt_to.forEach(rcpt => {
                     hmail.extend_rcpt_with_dsn(rcpt, DSN.addr_unspecified(`DNS lookup failure: ${hmail.todo.domain}`));
                 });
                 this.temp_fail(`DNS lookup failure: ${err}`);
@@ -262,7 +262,7 @@ class HMailItem extends events.EventEmitter {
             const mxlist = sort_mx(mxs);
             // support draft-delany-nullmx-02
             if (mxlist.length === 1 && mxlist[0].priority === 0 && mxlist[0].exchange === '') {
-                this.todo.rcpt_to.forEach(function (rcpt) {
+                this.todo.rcpt_to.forEach(rcpt => {
                     hmail.extend_rcpt_with_dsn(rcpt, DSN.addr_bad_dest_system(`Domain ${hmail.todo.domain} sends and receives no email (NULL MX)`));
                 });
                 return this.bounce(`Domain ${this.todo.domain} sends and receives no email (NULL MX)`);
@@ -294,7 +294,7 @@ class HMailItem extends events.EventEmitter {
 
         // check if there are any MXs left
         if (this.mxlist.length === 0) {
-            this.todo.rcpt_to.forEach(function (rcpt) {
+            this.todo.rcpt_to.forEach(rcpt => {
                 self.extend_rcpt_with_dsn(rcpt, DSN.addr_bad_dest_system(`Tried all MXs${self.todo.domain}`));
             });
             return this.temp_fail("Tried all MXs");
@@ -317,7 +317,7 @@ class HMailItem extends events.EventEmitter {
         // we have a host, look up the addresses for the host
         // and try each in order they appear
         // IS: IPv6 compatible
-        dns.resolve(host, family, function (err, addresses) {
+        dns.resolve(host, family, (err, addresses) => {
             if (err) {
                 self.lognotice(`DNS lookup of ${host} failed: ${err}`);
                 return self.try_deliver(); // try next MX
@@ -362,7 +362,7 @@ class HMailItem extends events.EventEmitter {
         }
 
         this.loginfo(`Attempting to deliver to: ${host}:${port}${mx.using_lmtp ? " using LMTP" : ""} (${delivery_queue.length()}) (${temp_fail_queue.length()})`);
-        client_pool.get_client(port, host, mx.bind, mx.path ? true : false, function (err, socket) {
+        client_pool.get_client(port, host, mx.bind, mx.path ? true : false, (err, socket) => {
             if (err) {
                 if (err.match(/connection timed out|connect ECONNREFUSED/)) {
                     logger.lognotice(`[outbound] Failed to get pool entry: ${err}`);
@@ -384,7 +384,7 @@ class HMailItem extends events.EventEmitter {
         socket.removeAllListeners('close');
         socket.removeAllListeners('end');
 
-        socket.once('error', function (err) {
+        socket.once('error', err => {
             if (processing_mail) {
                 self.logerror(`Ongoing connection failed to ${host}:${port} : ${err}`);
                 processing_mail = false;
@@ -396,7 +396,7 @@ class HMailItem extends events.EventEmitter {
             }
         });
 
-        socket.once('close', function () {
+        socket.once('close', () => {
             if (processing_mail) {
                 self.logerror(`Remote end ${host}:${port} closed connection while we were processing mail. Trying next MX.`);
                 processing_mail = false;
@@ -406,7 +406,7 @@ class HMailItem extends events.EventEmitter {
         });
 
         let fin_sent = false;
-        socket.once('end', function () {
+        socket.once('end', () => {
             fin_sent = true;
             socket.writable = false;
             if (!processing_mail) {
@@ -436,7 +436,7 @@ class HMailItem extends events.EventEmitter {
             "auth": [],
         };
 
-        const send_command = socket.send_command = function (cmd, data) {
+        const send_command = socket.send_command = (cmd, data) => {
             if (!socket.writable) {
                 self.logerror("Socket writability went away");
                 if (processing_mail) {
@@ -452,7 +452,7 @@ class HMailItem extends events.EventEmitter {
             }
             if (authenticating) cmd = 'auth';
             self.logprotocol(`C: ${line}`);
-            socket.write(`${line}\r\n`, "utf8", function (err) {
+            socket.write(`${line}\r\n`, "utf8", err => {
                 if (err) {
                     self.logcrit(`Socket write failed unexpectedly: ${err}`);
                     // We may want to release client here - but I want to get this
@@ -572,7 +572,7 @@ class HMailItem extends events.EventEmitter {
                 () => { // Clear to GO
                     self.logdebug(`Trying TLS for domain: ${self.todo.domain}, host: ${host}`);
 
-                    socket.on('secure', function () {
+                    socket.on('secure', () => {
                         // Set this flag so we don't try STARTTLS again if it
                         // is incorrectly offered at EHLO once we are secured.
                         secured = true;
@@ -597,14 +597,14 @@ class HMailItem extends events.EventEmitter {
             fp_called = true;
             if (fail_recips.length) {
                 self.refcount++;
-                self.split_to_new_recipients(fail_recips, "Some recipients temporarily failed", function (hmail) {
+                self.split_to_new_recipients(fail_recips, "Some recipients temporarily failed", hmail => {
                     self.discard();
                     hmail.temp_fail(`Some recipients temp failed: ${fail_recips.join(', ')}`, { rcpt: fail_recips, mx: mx });
                 });
             }
             if (bounce_recips.length) {
                 self.refcount++;
-                self.split_to_new_recipients(bounce_recips, "Some recipients rejected", function (hmail) {
+                self.split_to_new_recipients(bounce_recips, "Some recipients rejected", hmail => {
                     self.discard();
                     hmail.bounce(`Some recipients failed: ${bounce_recips.join(', ')}`, { rcpt: bounce_recips, mx: mx });
                 });
@@ -630,7 +630,7 @@ class HMailItem extends events.EventEmitter {
             }
         }
 
-        socket.on('line', function (line) {
+        socket.on('line', line => {
             if (!processing_mail && command !== 'rset') {
                 if (command !== 'quit') {
                     self.logprotocol(`Received data after stopping processing: ${line}`);
@@ -645,7 +645,7 @@ class HMailItem extends events.EventEmitter {
                 processing_mail = false;
                 // Release back to the pool and instruct it to terminate this connection
                 client_pool.release_client(socket, port, host, mx.bind, true);
-                self.todo.rcpt_to.forEach(function (rcpt) {
+                self.todo.rcpt_to.forEach(rcpt => {
                     self.extend_rcpt_with_dsn(rcpt, DSN.proto_invalid_command(`Unrecognized response from upstream server: ${line}`));
                 });
                 self.bounce(`Unrecognized response from upstream server: ${line}`, {mx: mx});
@@ -686,7 +686,7 @@ class HMailItem extends events.EventEmitter {
                 }
                 // Error
                 reason = response.join(' ');
-                recipients.forEach(function (rcpt) {
+                recipients.forEach(rcpt => {
                     rcpt.dsn_action = 'delayed';
                     rcpt.dsn_smtp_code = code;
                     rcpt.dsn_smtp_extc = extc;
@@ -724,7 +724,7 @@ class HMailItem extends events.EventEmitter {
                 }
                 else if (processing_mail) {
                     reason = response.join(' ');
-                    recipients.forEach(function (rcpt) {
+                    recipients.forEach(rcpt => {
                         rcpt.dsn_action = 'delayed';
                         rcpt.dsn_smtp_code = code;
                         rcpt.dsn_smtp_extc = extc;
@@ -775,7 +775,7 @@ class HMailItem extends events.EventEmitter {
                     }
                 }
                 else {
-                    recipients.forEach(function (rcpt) {
+                    recipients.forEach(rcpt => {
                         rcpt.dsn_action = 'failed';
                         rcpt.dsn_smtp_code = code;
                         rcpt.dsn_smtp_extc = extc;
@@ -804,7 +804,7 @@ class HMailItem extends events.EventEmitter {
                     const tls_options = obtls.get_tls_options(mx);
 
                     smtp_properties = {};
-                    socket.upgrade(tls_options, function (authorized, verifyError, cert, cipher) {
+                    socket.upgrade(tls_options, (authorized, verifyError, cert, cipher) => {
                         const loginfo = {
                             verified: authorized
                         };
@@ -857,13 +857,13 @@ class HMailItem extends events.EventEmitter {
                     break;
                 case 'data': {
                     const data_stream = self.data_stream();
-                    data_stream.on('data', function (data) {
+                    data_stream.on('data', data => {
                         self.logdata(`C: ${data}`);
                     });
-                    data_stream.on('error', function (err) {
+                    data_stream.on('error', err => {
                         self.logerror(`Reading from the data stream failed: ${err}`);
                     });
-                    data_stream.on('end', function () {
+                    data_stream.on('end', () => {
                         send_command(mx.using_lmtp ? 'dot_lmtp' : 'dot');
                     });
                     data_stream.pipe(socket, {end: false});
@@ -924,7 +924,7 @@ class HMailItem extends events.EventEmitter {
 
         try {
             const data_stream = this.data_stream();
-            data_stream.on('data', function (data) {
+            data_stream.on('data', data => {
                 if (headers_done === false) {
                     buf += data;
                     let results;
@@ -939,13 +939,13 @@ class HMailItem extends events.EventEmitter {
                     }
                 }
             });
-            data_stream.on('end', function () {
+            data_stream.on('end', () => {
                 if (original_header_lines.length > 0) {
                     header.parse(original_header_lines);
                 }
                 self.populate_bounce_message_with_headers(from, to, reason, header, cb);
             });
-            data_stream.on('error', function (err) {
+            data_stream.on('error', err => {
                 cb(err);
             });
         } catch (err) {
@@ -999,7 +999,7 @@ class HMailItem extends events.EventEmitter {
             subject: header.get_decoded('Subject').trim(),
             recipients: this.todo.rcpt_to.join(', '),
             reason: reason,
-            extended_reason: this.todo.rcpt_to.map(function (recip) {
+            extended_reason: this.todo.rcpt_to.map(recip => {
                 if (recip.reason) {
                     return `${recip.original}: ${recip.reason}`;
                 }
@@ -1008,8 +1008,8 @@ class HMailItem extends events.EventEmitter {
             msgid: `<${utils.uuid()}@${config.get('me')}>`,
         };
 
-        bounce_msg_.forEach(function (line) {
-            line = line.replace(/\{(\w+)\}/g, function (i, word) { return values[word] || '?'; });
+        bounce_msg_.forEach(line => {
+            line = line.replace(/\{(\w+)\}/g, (i, word) => values[word] || '?');
 
             if (bounce_headers_done == false && line == '') {
                 bounce_headers_done = true;
@@ -1033,10 +1033,10 @@ class HMailItem extends events.EventEmitter {
         };
         const escape_pattern = new RegExp('[' + Object.keys(escaped_chars).join() + ']', 'g');
 
-        bounce_msg_html_.forEach(function (line) {
-            line = line.replace(/\{(\w+)\}/g, function (i, word) {
+        bounce_msg_html_.forEach(line => {
+            line = line.replace(/\{(\w+)\}/g, (i, word) => {
                 if (word in values) {
-                    return String(values[word]).replace(escape_pattern, function (m) { return '&' + escaped_chars[m] + ';'; });
+                    return String(values[word]).replace(escape_pattern, m => '&' + escaped_chars[m] + ';');
                 } else {
                     return '?';
                 }
@@ -1045,14 +1045,14 @@ class HMailItem extends events.EventEmitter {
             bounce_html_lines.push(line);
         });
 
-        bounce_msg_image_.forEach(function (line) {
+        bounce_msg_image_.forEach(line => {
             bounce_image_lines.push(line)
         });
 
         const boundary = `boundary_${utils.uuid()}`;
         const bounce_body = [];
 
-        bounce_header_lines.forEach(function (line) {
+        bounce_header_lines.forEach(line => {
             bounce_body.push(`${line}${CRLF}`);
         });
         bounce_body.push(`Content-Type: multipart/report; report-type=delivery-status;${CRLF}    boundary="${boundary}"${CRLF}`);
@@ -1080,7 +1080,7 @@ class HMailItem extends events.EventEmitter {
         bounce_body.push(`--${boundary}${boundary_incr}${CRLF}`);
         bounce_body.push(`Content-Type: text/plain; charset=us-ascii${CRLF}`);
         bounce_body.push(CRLF);
-        bounce_body_lines.forEach(function (line) {
+        bounce_body_lines.forEach(line => {
             bounce_body.push(`${line}${CRLF}`);
         });
         bounce_body.push(CRLF);
@@ -1089,7 +1089,7 @@ class HMailItem extends events.EventEmitter {
             bounce_body.push(`--${boundary}${boundary_incr}${CRLF}`);
             bounce_body.push(`Content-Type: text/html; charset=us-ascii${CRLF}`);
             bounce_body.push(CRLF);
-            bounce_html_lines.forEach(function (line) {
+            bounce_html_lines.forEach(line => {
                 bounce_body.push(`${line}${CRLF}`);
             });
             bounce_body.push(CRLF);
@@ -1100,7 +1100,7 @@ class HMailItem extends events.EventEmitter {
                 bounce_body.push(`--${boundary}${boundary_incr}${CRLF}`);
                 //bounce_body.push(`Content-Type: text/html; charset=us-ascii${CRLF}`);
                 //bounce_body.push(CRLF);
-                bounce_image_lines.forEach(function (line) {
+                bounce_image_lines.forEach(line => {
                     bounce_body.push(`${line}${CRLF}`);
                 });
                 bounce_body.push(CRLF);
@@ -1118,7 +1118,7 @@ class HMailItem extends events.EventEmitter {
         if (self.todo.queue_time) {
             bounce_body.push(`Arrival-Date: ${utils.date_to_str(new Date(self.todo.queue_time))}${CRLF}`);
         }
-        self.todo.rcpt_to.forEach(function (rcpt_to) {
+        self.todo.rcpt_to.forEach(rcpt_to => {
             bounce_body.push(CRLF);
             bounce_body.push(`Final-Recipient: rfc822;${rcpt_to.address()}${CRLF}`);
             let dsn_action = null;
@@ -1193,7 +1193,7 @@ class HMailItem extends events.EventEmitter {
         bounce_body.push(`Content-Description: Undelivered Message Headers${CRLF}`);
         bounce_body.push(`Content-Type: text/rfc822-headers${CRLF}`);
         bounce_body.push(CRLF);
-        header.header_list.forEach(function (line) {
+        header.header_list.forEach(line => {
             bounce_body.push(line);
         });
         bounce_body.push(CRLF);
@@ -1208,7 +1208,7 @@ class HMailItem extends events.EventEmitter {
         if (!this.todo) {
             // haven't finished reading the todo, delay here...
             const self = this;
-            self.once('ready', function () { self._bounce(err, opts); });
+            self.once('ready', () => { self._bounce(err, opts); });
             return;
         }
         this._bounce(err, opts);
@@ -1246,7 +1246,7 @@ class HMailItem extends events.EventEmitter {
                 return self.double_bounce(`Error populating bounce message: ${err2}`);
             }
 
-            outbound.send_email(from, recip, data_lines.join(''), function (code, msg2) {
+            outbound.send_email(from, recip, data_lines.join(''), (code, msg2) => {
                 if (code === constants.deny) {
                     // failed to even queue the mail
                     return self.double_bounce("Unable to queue the bounce message. Not sending bounce!");
@@ -1258,7 +1258,7 @@ class HMailItem extends events.EventEmitter {
 
     double_bounce (err) {
         this.lognotice(`Double bounce: ${err}`);
-        fs.unlink(this.path, function () {});
+        fs.unlink(this.path, () => {});
         this.next_cb();
         // TODO: fill this in... ?
         // One strategy is perhaps log to an mbox file. What do other servers do?
@@ -1288,13 +1288,13 @@ class HMailItem extends events.EventEmitter {
         this.refcount--;
         if (this.refcount === 0) {
             // Remove the file.
-            fs.unlink(this.path, function () {});
+            fs.unlink(this.path, () => {});
             this.next_cb();
         }
     }
 
     convert_temp_failed_to_bounce (err, extra) {
-        this.todo.rcpt_to.forEach(function (rcpt_to) {
+        this.todo.rcpt_to.forEach(rcpt_to => {
             rcpt_to.dsn_action = 'failed';
             if (rcpt_to.dsn_status) {
                 rcpt_to.dsn_status = (`${rcpt_to.dsn_status}`).replace(/^4/, '5');
@@ -1345,7 +1345,7 @@ class HMailItem extends events.EventEmitter {
         // const new_filename = this`.filename.replace(/^(\d+)_(\d+)_/, until + '_' + this.num_failures + '_');
 
         const hmail = this;
-        fs.rename(this.path, path.join(queue_dir, new_filename), function (err) {
+        fs.rename(this.path, path.join(queue_dir, new_filename), err => {
             if (err) {
                 return hmail.bounce(`Error re-queueing email: ${err}`);
             }
@@ -1355,7 +1355,7 @@ class HMailItem extends events.EventEmitter {
 
             hmail.next_cb();
 
-            temp_fail_queue.add(hmail.filename, delay, function () { delivery_queue.push(hmail); });
+            temp_fail_queue.add(hmail.filename, delay, () => { delivery_queue.push(hmail); });
         });
     }
 
@@ -1380,36 +1380,36 @@ class HMailItem extends events.EventEmitter {
         const fname = _qfile.name();
         const tmp_path = path.join(queue_dir, `${_qfile.platformDOT}${fname}`);
         const ws = new FsyncWriteStream(tmp_path, { flags: constants.WRITE_EXCL });
-        const err_handler = function (err, location) {
+        const err_handler = (err, location) => {
             logger.logerror(`[outbound] Error while splitting to new recipients (${location}): ${err}`);
-            hmail.todo.rcpt_to.forEach(function (rcpt) {
+            hmail.todo.rcpt_to.forEach(rcpt => {
                 hmail.extend_rcpt_with_dsn(rcpt, DSN.sys_unspecified(`Error splitting to new recipients: ${err}`));
             });
             hmail.bounce(`Error splitting to new recipients: ${err}`);
         };
 
-        ws.on('error', function (err) { err_handler(err, "tmp file writer");});
+        ws.on('error', err => { err_handler(err, "tmp file writer");});
 
         let writing = false;
 
-        const write_more = function () {
+        const write_more = () => {
             if (writing) return;
             writing = true;
             const rs = hmail.data_stream();
             rs.pipe(ws, {end: false});
-            rs.on('error', function (err) {
+            rs.on('error', err => {
                 err_handler(err, "hmail.data_stream reader");
             });
-            rs.on('end', function () {
-                ws.on('close', function () {
+            rs.on('end', () => {
+                ws.on('close', () => {
                     const dest_path = path.join(queue_dir, fname);
-                    fs.rename(tmp_path, dest_path, function (err) {
+                    fs.rename(tmp_path, dest_path, err => {
                         if (err) {
                             err_handler(err, "tmp file rename");
                         }
                         else {
                             const split_mail = new HMailItem (fname, dest_path);
-                            split_mail.once('ready', function () {
+                            split_mail.once('ready', () => {
                                 cb(split_mail);
                             });
                         }
@@ -1420,10 +1420,10 @@ class HMailItem extends events.EventEmitter {
             });
         };
 
-        ws.on('error', function (err) {
+        ws.on('error', err => {
             logger.logerror(`[outbound] Unable to write queue file (${fname}): ${err}`);
             ws.destroy();
-            hmail.todo.rcpt_to.forEach(function (rcpt) {
+            hmail.todo.rcpt_to.forEach(rcpt => {
                 hmail.extend_rcpt_with_dsn(rcpt, DSN.sys_unspecified(`Error re-queueing some recipients: ${err}`));
             });
             hmail.bounce(`Error re-queueing some recipients: ${err}`);
@@ -1456,9 +1456,7 @@ for (const key in logger) {
 // MXs must be sorted by priority order, but matched priorities must be
 // randomly shuffled in that list, so this is a bit complex.
 function sort_mx (mx_list) {
-    const sorted = mx_list.sort(function (a,b) {
-        return a.priority - b.priority;
-    });
+    const sorted = mx_list.sort((a,b) => a.priority - b.priority);
 
     // This isn't a very good shuffle but it'll do for now.
     for (let i=0,l=sorted.length-1; i<l; i++) {
