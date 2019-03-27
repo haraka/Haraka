@@ -5,7 +5,7 @@ exports.register = function () {
     this.register_hook('queue_outbound', 'discard');
 }
 
-exports.discard = function (next, connection) {
+exports.discard = (next, connection) => {
 
     const txn = connection.transaction;
 
