@@ -449,7 +449,7 @@ class DKIMVerifyStream extends Stream {
             buf = this.buffer.pop(buf);
         }
 
-        const callback = (err, result) => {
+        function callback (err, result) {
             self.pending--;
             if (result) {
                 self.results.push({
