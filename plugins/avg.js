@@ -23,7 +23,7 @@ exports.load_avg_ini = function () {
             '+defer.timeout',
             '+defer.error',
         ],
-    }, function () {
+    }, () => {
         plugin.load_avg_ini();
     });
 }
@@ -41,7 +41,7 @@ exports.hook_data_post = function (next, connection) {
     const tmpfile = plugin.get_tmp_file(connection.transaction);
     const ws      = fs.createWriteStream(tmpfile);
 
-    ws.once('error', function (err) {
+    ws.once('error', err => {
         connection.results.add(plugin, {
             err: `Error writing temporary file: ${err.message}`
         });
@@ -49,7 +49,7 @@ exports.hook_data_post = function (next, connection) {
         return next(DENYSOFT, 'Virus scanner error (AVG)');
     });
 
-    ws.once('close', function () {
+    ws.once('close', () => {
         const start_time = Date.now();
         const socket = new sock.Socket();
         socket.setTimeout((plugin.cfg.main.connect_timeout || 10) * 1000);
@@ -57,8 +57,8 @@ exports.hook_data_post = function (next, connection) {
         let command = 'connect';
         let response = [];
 
-        const do_next = function (code, msg) {
-            fs.unlink(tmpfile, function (){});
+        const do_next = (code, msg) => {
+            fs.unlink(tmpfile, () => {});
             return next(code, msg);
         };
 
@@ -70,14 +70,14 @@ exports.hook_data_post = function (next, connection) {
             response = [];
         };
 
-        socket.on('timeout', function () {
+        socket.on('timeout', () => {
             const msg = (connected ? 'connection' : 'session') +  ' timed out';
             connection.results.add(plugin, { err: msg });
             if (!plugin.cfg.defer.timeout) return do_next();
             return do_next(DENYSOFT, 'Virus scanner timeout (AVG)');
         });
 
-        socket.on('error', function (err) {
+        socket.on('error', err => {
             connection.results.add(plugin, { err: err.message });
             if (!plugin.cfg.defer.error) return do_next();
             return do_next(DENYSOFT, 'Virus scanner error (AVG)');
@@ -88,7 +88,7 @@ exports.hook_data_post = function (next, connection) {
             this.setTimeout((plugin.cfg.main.session_timeout || 30) * 1000);
         });
 
-        socket.on('line', function (line) {
+        socket.on('line', line => {
             const matches = smtp_regexp.exec(line);
             connection.logprotocol(plugin, '< ' + line);
             if (!matches) {
