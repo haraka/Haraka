@@ -13,7 +13,7 @@ const AUTH_METHOD_LOGIN = 'LOGIN';
 const LOGIN_STRING1 = 'VXNlcm5hbWU6'; //Username: base64 coded
 const LOGIN_STRING2 = 'UGFzc3dvcmQ6'; //Password: base64 coded
 
-exports.hook_capabilities = function (next, connection) {
+exports.hook_capabilities = (next, connection) => {
     // Don't offer AUTH capabilities unless session is encrypted
     if (!connection.tls.enabled) { return next(); }
 
@@ -24,9 +24,7 @@ exports.hook_capabilities = function (next, connection) {
 }
 
 // Override this at a minimum. Run cb(passwd) to provide a password.
-exports.get_plain_passwd = function (user, connection, cb) {
-    return cb();
-}
+exports.get_plain_passwd = (user, connection, cb) => cb()
 
 exports.hook_unrecognized_command = function (next, connection, params) {
     const plugin = this;
@@ -50,7 +48,7 @@ exports.hook_unrecognized_command = function (next, connection, params) {
 }
 
 exports.check_plain_passwd = function (connection, user, passwd, cb) {
-    const callback = function (plain_pw) {
+    const callback = plain_pw => {
         if (plain_pw === null  ) { return cb(false); }
         if (plain_pw !== passwd) { return cb(false); }
         return cb(true);
@@ -67,7 +65,7 @@ exports.check_plain_passwd = function (connection, user, passwd, cb) {
 }
 
 exports.check_cram_md5_passwd = function (connection, user, passwd, cb) {
-    const callback = function (plain_pw) {
+    const callback = plain_pw => {
         if (plain_pw == null) {
             return cb(false);
         }
@@ -95,10 +93,8 @@ exports.check_user = function (next, connection, credentials, method) {
     const plugin = this;
     connection.notes.authenticating = false;
     if (!(credentials[0] && credentials[1])) {
-        connection.respond(504, 'Invalid AUTH string', function () {
-            connection.reset_transaction(function () {
-                return next(OK);
-            });
+        connection.respond(504, 'Invalid AUTH string', () => {
+            connection.reset_transaction(() => next(OK));
         });
         return;
     }
@@ -121,7 +117,7 @@ exports.check_user = function (next, connection, credentials, method) {
                 user: credentials[0],
             });
 
-            connection.respond(status_code, status_message, function () {
+            connection.respond(status_code, status_message, () => {
                 connection.authheader = "(authenticated bits=0)\n";
                 connection.auth_results(`auth=pass (${method.toLowerCase()})`);
                 connection.notes.auth_user = credentials[0];
@@ -146,11 +142,9 @@ exports.check_user = function (next, connection, credentials, method) {
         connection.lognotice(plugin, `delaying for ${delay} seconds`);
         // here we include the username, as shown in RFC 5451 example
         connection.auth_results(`auth=fail (${method.toLowerCase()}) smtp.auth=${credentials[0]}`);
-        setTimeout(function () {
-            connection.respond(status_code, status_message, function () {
-                connection.reset_transaction(function () {
-                    return next(OK);
-                });
+        setTimeout(() => {
+            connection.respond(status_code, status_message, () => {
+                connection.reset_transaction(() => next(OK));
             });
         }, delay * 1000);
     }
@@ -204,7 +198,7 @@ exports.auth_plain = function (next, connection, params) {
         if (connection.notes.auth_plain_asked_login) {
             return next(DENYDISCONNECT, 'bad protocol');
         } else {
-            connection.respond(334, ' ', function () {
+            connection.respond(334, ' ', () => {
                 connection.notes.auth_plain_asked_login = true;
                 return next(OK);
             });
@@ -224,7 +218,7 @@ exports.auth_login = function (next, connection, params) {
         }
 
         const login = utils.unbase64(params[0]);
-        connection.respond(334, LOGIN_STRING2, function () {
+        connection.respond(334, LOGIN_STRING2, () => {
             connection.notes.auth_login_userlogin = login;
             connection.notes.auth_login_asked_login = true;
             return next(OK);
@@ -245,7 +239,7 @@ exports.auth_login = function (next, connection, params) {
             AUTH_METHOD_LOGIN);
     }
 
-    connection.respond(334, LOGIN_STRING1, function () {
+    connection.respond(334, LOGIN_STRING1, () => {
         connection.notes.auth_login_asked_login = true;
         return next(OK);
     });
@@ -262,12 +256,10 @@ exports.auth_cram_md5 = function (next, connection, params) {
     const ticket = `<${plugin.hexi(Math.floor(Math.random() * 1000000))}. ${plugin.hexi(Date.now())}@${connection.local.host}>`;
 
     connection.loginfo(plugin, `ticket: ${ticket}`);
-    connection.respond(334, utils.base64(ticket), function () {
+    connection.respond(334, utils.base64(ticket), () => {
         connection.notes.auth_ticket = ticket;
         return next(OK);
     });
 }
 
-exports.hexi = function (number) {
-    return String(Math.abs(parseInt(number)).toString(16));
-}
+exports.hexi = number => String(Math.abs(parseInt(number)).toString(16))
