@@ -47,7 +47,7 @@ exports.lookup = {
     setUp : _set_up,
     'Spamcop, test IP': function (test) {
         test.expect(2);
-        const cb = function (err, a) {
+        const cb = (err, a) => {
             test.equal(null, err);
             test.ok(a);
             test.done();
@@ -56,7 +56,7 @@ exports.lookup = {
     },
     'Spamcop, unlisted IP': function (test) {
         test.expect(2);
-        const cb = function (err, a) {
+        const cb = (err, a) => {
             test.equal(null, err);
             test.equal(null, a);
             test.done();
@@ -69,7 +69,7 @@ exports.multi = {
     setUp : _set_up,
     'Spamcop': function (test) {
         test.expect(4);
-        const cb = function (err, zone, a, pending) {
+        const cb = (err, zone, a, pending) => {
             test.equal(null, err);
             if (pending) {
                 test.ok((Array.isArray(a) && a.length > 0));
@@ -83,7 +83,7 @@ exports.multi = {
     },
     'CBL': function (test) {
         test.expect(4);
-        const cb = function (err, zone, a, pending) {
+        const cb = (err, zone, a, pending) => {
             test.equal(null, err);
             if (pending) {
                 test.ok((Array.isArray(a) && a.length > 0));
@@ -97,7 +97,7 @@ exports.multi = {
     },
     'Spamcop + CBL': function (test) {
         test.expect(12);
-        const cb = function (err, zone, a, pending) {
+        const cb = (err, zone, a, pending) => {
             test.equal(null, err);
             if (pending) {
                 test.ok(zone);
@@ -116,7 +116,7 @@ exports.multi = {
     },
     'Spamcop + CBL + negative result': function (test) {
         test.expect(12);
-        const cb = function (err, zone, a, pending) {
+        const cb = (err, zone, a, pending) => {
             test.equal(null, err);
             test.equal(null, a);
             if (pending) {
@@ -134,7 +134,7 @@ exports.multi = {
     },
     'IPv6 addresses supported': function (test) {
         test.expect(12);
-        const cb = function (err, zone, a, pending) {
+        const cb = (err, zone, a, pending) => {
             test.equal(null, a);
             if (pending) {
                 test.deepEqual(null, err);
@@ -157,7 +157,7 @@ exports.first = {
     setUp : _set_up,
     'positive result': function (test) {
         test.expect(3);
-        const cb = function (err, zone, a) {
+        const cb = (err, zone, a) => {
             test.equal(null, err);
             test.ok(zone);
             test.ok((Array.isArray(a) && a.length > 0));
@@ -168,7 +168,7 @@ exports.first = {
     },
     'negative result': function (test) {
         test.expect(3);
-        const cb = function (err, zone, a) {
+        const cb = (err, zone, a) => {
             test.equal(null, err);
             test.equal(null, zone);
             test.equal(null, a);
@@ -181,10 +181,10 @@ exports.first = {
         test.expect(7);
         const dnsbls = [ 'cbl.abuseat.org', 'bl.spamcop.net' ];
         let pending = dnsbls.length;
-        const cb = function () {
+        const cb = () => {
             test.ok(pending);
         };
-        const cb_each = function (err, zone, a) {
+        const cb_each = (err, zone, a) => {
             pending--;
             test.equal(null, err);
             test.ok(zone);
