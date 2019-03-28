@@ -531,7 +531,7 @@ else if (parsed.test) {
         },
         notes: new Notes(),
     }
-    const connection = new Connection.createConnection(client, server);
+    const connection = Connection.createConnection(client, server);
     if (parsed['set-relay']) connection.relaying = true;
 
     const run_next_hook = function () {
