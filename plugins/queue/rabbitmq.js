@@ -118,7 +118,7 @@ exports.init_rabbitmq_server = function () {
             logger.logdebug("connExchange with server "+connExchange + " autoDelete : "+autoDelete);
 
             //Exchange is now open, will try to open queue.
-            return rabbitqueue.queue(queueName,{autoDelete,  durable  } , connQueue => {
+            return rabbitqueue.queue(queueName,{autoDelete, durable }, connQueue => {
                 logger.logdebug("connQueue with server "+connQueue);
 
                 //Creating the Routing key to bind the queue and exchange.
