@@ -75,7 +75,7 @@ exports.get_vpopmaild_socket = {
 exports.get_plain_passwd = {
     setUp : _set_up,
     'matt@example.com': function (test) {
-        function cb(pass) {
+        function cb (pass) {
             test.expect(1);
             test.ok(pass);
             test.done();

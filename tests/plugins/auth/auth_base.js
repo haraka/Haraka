@@ -422,7 +422,7 @@ exports.auth_login = {
     'AUTH LOGIN, reauthentication': function (test) {
         test.expect(9);
 
-        function next3(code) {
+        function next3 (code) {
             test.equal(code, OK);
 
             test.done();

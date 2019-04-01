@@ -395,7 +395,7 @@ exports.craft_hostid = function (connection) {
     const ip = connection.remote.ip;
     let rdns = connection.remote.host;
 
-    function chsit(value, reason) { // cache the return value
+    function chsit (value, reason) { // cache the return value
         if (!value)
             plugin.logdebug(connection, `hostid set to IP: ${reason}`);
 

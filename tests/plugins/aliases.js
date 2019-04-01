@@ -83,7 +83,7 @@ exports.aliases = {
         test.done();
     },
     'aliases hook always returns next()' : function (test) {
-        function next(action) {
+        function next (action) {
             test.expect(1);
             test.equals(undefined, action);
             test.done();

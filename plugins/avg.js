@@ -57,7 +57,7 @@ exports.hook_data_post = function (next, connection) {
         let command = 'connect';
         let response = [];
 
-        function do_next(code, msg) {
+        function do_next (code, msg) {
             fs.unlink(tmpfile, () => {});
             return next(code, msg);
         }

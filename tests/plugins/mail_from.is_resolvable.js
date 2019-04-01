@@ -27,7 +27,7 @@ exports.mxErr = {
         const err = new Error('oops');
         err.code = null;
         let called = false;
-        function cb() { called = true; }
+        function cb () { called = true; }
         const r  = t.plugin.mxErr(t.connection, 'any.com', 'MX', err, cb);
         test.equal(r, true);
         test.equal(called, true);
@@ -42,7 +42,7 @@ exports.mxErr = {
         const err = new Error('oops');
         err.code=dns.NOTFOUND;
         let called = false;
-        function cb() { called = true; }
+        function cb () { called = true; }
         const r  = t.plugin.mxErr(t.connection, 'any.com', 'MX', err, cb);
         test.equal(r, false);
         test.equal(called, false);

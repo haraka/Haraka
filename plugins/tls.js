@@ -36,7 +36,7 @@ exports.advertise_starttls = function (next, connection) {
         return next();
     }
 
-    function enable_tls() {
+    function enable_tls () {
         connection.capabilities.push('STARTTLS');
         connection.tls.advertised = true;
         next();

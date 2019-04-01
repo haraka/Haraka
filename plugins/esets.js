@@ -20,7 +20,7 @@ exports.hook_data_post = function (next, connection) {
 
     let start_time;
 
-    function wsOnClose(error, stdout, stderr) {
+    function wsOnClose (error, stdout, stderr) {
         // Remove the temporary file
         fs.unlink(tmpfile, () => {});
 

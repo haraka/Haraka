@@ -39,7 +39,7 @@ exports.relay_all = {
         test.done();
     },
     'confirm_all hook always returns OK' : function (test) {
-        function next(action) {
+        function next (action) {
             test.expect(1);
             test.equals(action, OK);
             test.done();

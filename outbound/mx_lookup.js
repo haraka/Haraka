@@ -21,7 +21,7 @@ exports.lookup_mx = function lookup_mx (domain, cb) {
 
     // default wrap_mx just returns our object with "priority" and "exchange" keys
     let wrap_mx = a => a;
-    function process_dns(err, addresses) {
+    function process_dns (err, addresses) {
         if (err) {
             if (err.code === 'ENODATA' || err.code === 'ENOTFOUND') {
                 // Most likely this is a hostname with no MX record

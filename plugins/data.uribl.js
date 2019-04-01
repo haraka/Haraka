@@ -319,7 +319,7 @@ exports.hook_data_post = function (next, connection) {
     const trans = connection.transaction;
 
     // From header
-    function do_from_header(cb) {
+    function do_from_header (cb) {
         const from = trans.header.get_decoded('from');
         const fmatch = email_re.exec(from);
         if (fmatch) {
@@ -329,7 +329,7 @@ exports.hook_data_post = function (next, connection) {
     }
 
     // Reply-To header
-    function do_replyto_header(cb) {
+    function do_replyto_header (cb) {
         const replyto = trans.header.get('reply-to');
         const rmatch = email_re.exec(replyto);
         if (rmatch) {
@@ -339,7 +339,7 @@ exports.hook_data_post = function (next, connection) {
     }
 
     // Message-Id header
-    function do_msgid_header(cb) {
+    function do_msgid_header (cb) {
         const msgid = trans.header.get('message-id');
         const mmatch = /@([^>]+)>/.exec(msgid);
         if (mmatch) {
@@ -349,7 +349,7 @@ exports.hook_data_post = function (next, connection) {
     }
 
     // Body
-    function do_body(cb) {
+    function do_body (cb) {
         const urls = {};
         extract_urls(urls, trans.body, connection, plugin);
         return plugin.do_lookups(connection, cb, Object.keys(urls), 'body');

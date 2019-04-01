@@ -97,7 +97,7 @@ exports.acl = {
     },
     'relay.acl=false' : function (test) {
         test.expect(1);
-        function next(rc) {
+        function next (rc) {
             test.equal(undefined, rc);
             test.done();
         }
@@ -171,7 +171,7 @@ exports.dest_domains = {
     },
     'relay.dest_domains=false' : function (test) {
         test.expect(1);
-        function next(rc) {
+        function next (rc) {
             test.equal(undefined, rc);
             test.done();
         }
@@ -254,7 +254,7 @@ exports.force_routing = {
     },
     'relay.force_routing=false' : function (test) {
         test.expect(1);
-        function next(rc) {
+        function next (rc) {
             test.equal(undefined, rc);
             test.done();
         }
@@ -263,7 +263,7 @@ exports.force_routing = {
     },
     'dest_domains empty' : function (test) {
         test.expect(1);
-        function next(rc) {
+        function next (rc) {
             test.equal(undefined, rc);
             test.done();
         }
@@ -271,7 +271,7 @@ exports.force_routing = {
     },
     'dest_domains, no route' : function (test) {
         test.expect(2);
-        function next(rc, nexthop) {
+        function next (rc, nexthop) {
             // console.log(arguments);
             test.equal(undefined, rc);
             test.equal(undefined, nexthop);
@@ -282,7 +282,7 @@ exports.force_routing = {
     },
     'dest_domains, route' : function (test) {
         test.expect(2);
-        function next(rc, nexthop) {
+        function next (rc, nexthop) {
             test.equal(OK, rc);
             test.equal('other-server', nexthop);
             test.done();
@@ -307,7 +307,7 @@ exports.all = {
         test.done();
     },
     'all hook always returns OK' : function (test) {
-        function next(action) {
+        function next (action) {
             test.expect(1);
             test.equals(action, OK);
             test.done();

@@ -104,7 +104,7 @@ exports.multi = function (lookup, zones, cb) {
     const self = this;
     const listed = [];
 
-    function redis_incr(zone) {
+    function redis_incr (zone) {
         if (!self.enable_stats) return;
 
         // Statistics: check hit overlap

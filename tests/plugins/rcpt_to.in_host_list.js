@@ -74,7 +74,7 @@ exports.hook_mail = {
     setUp : _set_up,
     'null sender' : function (test) {
         test.expect(2);
-        function next(rc, msg) {
+        function next (rc, msg) {
             test.equal(undefined, rc);
             test.equal(undefined, msg);
             test.done();

@@ -233,7 +233,7 @@ exports.bad_rcpt = {
         test.expect(1);
         this.connection.transaction.mail_from= new Address.Address('<>');
         this.connection.transaction.rcpt_to= [ new Address.Address('test@good.com') ];
-        function cb(rc) {
+        function cb (rc) {
             test.equal(undefined, rc);
         }
         this.plugin.bad_rcpt(cb, this.connection);
@@ -243,7 +243,7 @@ exports.bad_rcpt = {
         test.expect(1);
         this.connection.transaction.mail_from= new Address.Address('<>');
         this.connection.transaction.rcpt_to= [ new Address.Address('test@bad1.com') ];
-        function cb(rc) {
+        function cb (rc) {
             test.equal(DENY, rc);
         }
         this.plugin.cfg.invalid_addrs = {'test@bad1.com': true, 'test@bad2.com': true };
@@ -257,7 +257,7 @@ exports.bad_rcpt = {
             new Address.Address('test@bad1.com'),
             new Address.Address('test@bad2.com')
         ];
-        function cb(rc) {
+        function cb (rc) {
             test.equal(DENY, rc);
         }
         this.plugin.cfg.invalid_addrs = {'test@bad1.com': true, 'test@bad2.com': true };
@@ -271,7 +271,7 @@ exports.bad_rcpt = {
             new Address.Address('test@good.com'),
             new Address.Address('test@bad2.com')
         ];
-        function cb(rc) {
+        function cb (rc) {
             test.equal(DENY, rc);
         }
         this.plugin.cfg.invalid_addrs = {'test@bad1.com': true, 'test@bad2.com': true };

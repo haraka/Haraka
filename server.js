@@ -455,7 +455,7 @@ Server.setup_http_listeners = () => {
     Server.http.app = app;
     logger.loginfo('express app is at Server.http.app');
 
-    function setupListener(host_port, cb) {
+    function setupListener (host_port, cb) {
         const hp = /^\[?([^\]]+)\]?:(\d+)$/.exec(host_port);
         if (!hp) {
             return cb(new Error('Invalid format for listen in http.ini'));
@@ -488,7 +488,7 @@ Server.setup_http_listeners = () => {
         Server.http.server.listen(hp[2], hp[1], 0);
     }
 
-    function registerRoutes(err) {
+    function registerRoutes (err) {
         if (err) {
             logger.logerror(`Failed to setup http routes: ${err.message}`);
         }
