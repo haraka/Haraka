@@ -271,22 +271,22 @@ exports.force_routing = {
     },
     'dest_domains, no route' : function (test) {
         test.expect(2);
-        const next = (rc, nexthop) => {
+        function next(rc, nexthop) {
             // console.log(arguments);
             test.equal(undefined, rc);
             test.equal(undefined, nexthop);
             test.done();
-        };
+        }
         this.plugin.dest = { domains: { foo: '{"action":"blah blah"}' } };
         this.plugin.force_routing(next, this.connection, 'foo');
     },
     'dest_domains, route' : function (test) {
         test.expect(2);
-        const next = (rc, nexthop) => {
+        function next(rc, nexthop) {
             test.equal(OK, rc);
             test.equal('other-server', nexthop);
             test.done();
-        };
+        }
         this.plugin.dest = { domains: { foo: '{"action":"blah blah","nexthop":"other-server"}' } };
         this.plugin.force_routing(next, this.connection, 'foo');
     },
