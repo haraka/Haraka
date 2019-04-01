@@ -488,7 +488,7 @@ Server.setup_http_listeners = () => {
         Server.http.server.listen(hp[2], hp[1], 0);
     }
 
-    const registerRoutes = err => {
+    function registerRoutes(err) {
         if (err) {
             logger.logerror(`Failed to setup http routes: ${err.message}`);
         }
@@ -496,7 +496,7 @@ Server.setup_http_listeners = () => {
         Server.plugins.run_hooks('init_http', Server);
         app.use(Server.http.express.static(Server.get_http_docroot()));
         app.use(Server.handle404);
-    };
+    }
 
     async.each(listeners, setupListener, registerRoutes);
 }
