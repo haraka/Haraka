@@ -1380,19 +1380,19 @@ class HMailItem extends events.EventEmitter {
         const fname = _qfile.name();
         const tmp_path = path.join(queue_dir, `${_qfile.platformDOT}${fname}`);
         const ws = new FsyncWriteStream(tmp_path, { flags: constants.WRITE_EXCL });
-        const err_handler = (err, location) => {
+        function err_handler(err, location) {
             logger.logerror(`[outbound] Error while splitting to new recipients (${location}): ${err}`);
             hmail.todo.rcpt_to.forEach(rcpt => {
                 hmail.extend_rcpt_with_dsn(rcpt, DSN.sys_unspecified(`Error splitting to new recipients: ${err}`));
             });
             hmail.bounce(`Error splitting to new recipients: ${err}`);
-        };
+        }
 
         ws.on('error', err => { err_handler(err, "tmp file writer");});
 
         let writing = false;
 
-        const write_more = () => {
+        function write_more() {
             if (writing) return;
             writing = true;
             const rs = hmail.data_stream();
@@ -1418,7 +1418,7 @@ class HMailItem extends events.EventEmitter {
                 ws.destroySoon();
                 return;
             });
-        };
+        }
 
         ws.on('error', err => {
             logger.logerror(`[outbound] Unable to write queue file (${fname}): ${err}`);
