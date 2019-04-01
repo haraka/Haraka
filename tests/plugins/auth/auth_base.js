@@ -422,11 +422,11 @@ exports.auth_login = {
     'AUTH LOGIN, reauthentication': function (test) {
         test.expect(9);
 
-        const next3 = code => {
+        function next3(code) {
             test.equal(code, OK);
 
             test.done();
-        };
+        }
 
         const next2 = function (code) {
             test.equal(code, OK);
