@@ -47,11 +47,11 @@ exports.lookup = {
     setUp : _set_up,
     'Spamcop, test IP': function (test) {
         test.expect(2);
-        const cb = (err, a) => {
+        function cb(err, a) {
             test.equal(null, err);
             test.ok(a);
             test.done();
-        };
+        }
         this.plugin.lookup('127.0.0.2', 'bl.spamcop.net', cb);
     },
     'Spamcop, unlisted IP': function (test) {
@@ -69,7 +69,7 @@ exports.multi = {
     setUp : _set_up,
     'Spamcop': function (test) {
         test.expect(4);
-        const cb = (err, zone, a, pending) => {
+        function cb(err, zone, a, pending) {
             test.equal(null, err);
             if (pending) {
                 test.ok((Array.isArray(a) && a.length > 0));
@@ -78,12 +78,12 @@ exports.multi = {
             else {
                 test.done();
             }
-        };
+        }
         this.plugin.multi('127.0.0.2', 'bl.spamcop.net', cb);
     },
     'CBL': function (test) {
         test.expect(4);
-        const cb = (err, zone, a, pending) => {
+        function cb(err, zone, a, pending) {
             test.equal(null, err);
             if (pending) {
                 test.ok((Array.isArray(a) && a.length > 0));
@@ -92,12 +92,12 @@ exports.multi = {
             else {
                 test.done();
             }
-        };
+        }
         this.plugin.multi('127.0.0.2', 'cbl.abuseat.org', cb);
     },
     'Spamcop + CBL': function (test) {
         test.expect(12);
-        const cb = (err, zone, a, pending) => {
+        function cb(err, zone, a, pending) {
             test.equal(null, err);
             if (pending) {
                 test.ok(zone);
@@ -110,13 +110,13 @@ exports.multi = {
                 test.equal(false, pending);
                 test.done();
             }
-        };
+        }
         const dnsbls = ['bl.spamcop.net','cbl.abuseat.org'];
         this.plugin.multi('127.0.0.2', dnsbls, cb);
     },
     'Spamcop + CBL + negative result': function (test) {
         test.expect(12);
-        const cb = (err, zone, a, pending) => {
+        function cb(err, zone, a, pending) {
             test.equal(null, err);
             test.equal(null, a);
             if (pending) {
@@ -128,13 +128,13 @@ exports.multi = {
                 test.equal(null, zone);
                 test.done();
             }
-        };
+        }
         const dnsbls = ['bl.spamcop.net','cbl.abuseat.org'];
         this.plugin.multi('127.0.0.1', dnsbls, cb);
     },
     'IPv6 addresses supported': function (test) {
         test.expect(12);
-        const cb = (err, zone, a, pending) => {
+        function cb(err, zone, a, pending) {
             test.equal(null, a);
             if (pending) {
                 test.deepEqual(null, err);
@@ -147,7 +147,7 @@ exports.multi = {
                 test.equal(null, zone);
                 test.done();
             }
-        };
+        }
         const dnsbls = ['bl.spamcop.net','cbl.abuseat.org'];
         this.plugin.multi('::1', dnsbls, cb);
     }
@@ -157,23 +157,23 @@ exports.first = {
     setUp : _set_up,
     'positive result': function (test) {
         test.expect(3);
-        const cb = (err, zone, a) => {
+        function cb(err, zone, a) {
             test.equal(null, err);
             test.ok(zone);
             test.ok((Array.isArray(a) && a.length > 0));
             test.done();
-        };
+        }
         const dnsbls = [ 'cbl.abuseat.org', 'bl.spamcop.net' ];
         this.plugin.first('127.0.0.2', dnsbls , cb);
     },
     'negative result': function (test) {
         test.expect(3);
-        const cb = (err, zone, a) => {
+        function cb(err, zone, a) {
             test.equal(null, err);
             test.equal(null, zone);
             test.equal(null, a);
             test.done();
-        };
+        }
         const dnsbls = [ 'cbl.abuseat.org', 'bl.spamcop.net' ];
         this.plugin.first('127.0.0.1', dnsbls, cb);
     },
@@ -181,16 +181,16 @@ exports.first = {
         test.expect(7);
         const dnsbls = [ 'cbl.abuseat.org', 'bl.spamcop.net' ];
         let pending = dnsbls.length;
-        const cb = () => {
+        function cb() {
             test.ok(pending);
-        };
-        const cb_each = (err, zone, a) => {
+        }
+        function cb_each(err, zone, a) {
             pending--;
             test.equal(null, err);
             test.ok(zone);
             test.ok((Array.isArray(a) && a.length > 0));
             if (pending === 0) test.done();
-        };
+        }
         this.plugin.first('127.0.0.2', dnsbls, cb, cb_each);
     }
 }
@@ -201,21 +201,21 @@ function zone_disable_test_func (zones, test, cb) {
 
     this.plugin.check_zones(9000);
 
-    const fin_check = () => {
+    function fin_check() {
         this.plugin.shutdown();
         cb();
         test.done();
     }
 
     let i = 0;
-    const again = () => {
+    function again() {
         i++;
         setTimeout(() => {
             if (this.plugin.zones.length === zones.length) return fin_check();
             if (i > 4) return fin_check();
             again();
         }, 1000);
-    };
+    }
     again();
 }
 
