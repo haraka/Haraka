@@ -67,7 +67,7 @@ exports.get_sender_domain = {
         test.expect(1);
         this.connection.transaction.header.add('From', 'root (Cron Daemon)');
         const r = this.plugin.get_sender_domain(this.connection);
-        this.plugin.get_key_dir(this.connection, r, function (err, dir) {
+        this.plugin.get_key_dir(this.connection, r, (err, dir) => {
             test.equal(dir, undefined);
             test.done();
         });
@@ -128,9 +128,9 @@ exports.get_key_dir = {
         this.connection = Connection.createConnection();
         this.connection.init_transaction();
 
-        fs.mkdir(path.resolve('tests','config','dkim'), function (err) {
+        fs.mkdir(path.resolve('tests','config','dkim'), err => {
             // if (err) console.error(err);
-            fs.mkdir(path.resolve('tests','config','dkim','example.com'), function (err2) {
+            fs.mkdir(path.resolve('tests','config','dkim','example.com'), err2 => {
                 // if (err2) console.error(err2);
                 done();
             });
@@ -138,7 +138,7 @@ exports.get_key_dir = {
     },
     'no transaction': function (test) {
         test.expect(2);
-        this.plugin.get_key_dir(this.connection, '', function (err, dir) {
+        this.plugin.get_key_dir(this.connection, '', (err, dir) => {
             test.equal(err.message, 'missing domain');
             test.equal(dir, undefined);
             test.done();
@@ -147,7 +147,7 @@ exports.get_key_dir = {
     'no key dir': function (test) {
         test.expect(1);
         this.connection.transaction.mail_from = new Address.Address('<matt@non-exist.com>');
-        this.plugin.get_key_dir(this.connection, 'non-exist.com', function (err, dir) {
+        this.plugin.get_key_dir(this.connection, 'non-exist.com', (err, dir) => {
             test.equal(dir, undefined);
             test.done();
         });
@@ -156,7 +156,7 @@ exports.get_key_dir = {
         test.expect(1);
         process.env.HARAKA = path.resolve('tests');
         this.connection.transaction.mail_from = new Address.Address('<matt@example.com>');
-        this.plugin.get_key_dir(this.connection, 'example.com', function (err, dir) {
+        this.plugin.get_key_dir(this.connection, 'example.com', (err, dir) => {
             // console.log(arguments);
             const expected = path.resolve('tests','config','dkim','example.com');
             test.equal(dir, expected);

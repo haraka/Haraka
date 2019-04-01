@@ -5,7 +5,7 @@ exports.load_host_list = function () {
     const plugin = this;
 
     const lowered_list = {};  // assemble
-    const raw_list = plugin.config.get('host_list', 'list', function () {
+    const raw_list = plugin.config.get('host_list', 'list', () => {
         plugin.load_host_list();
     });
 
@@ -22,7 +22,7 @@ exports.load_host_list_regex = function () {
     plugin.host_list_regex = plugin.config.get(
         'host_list_regex',
         'list',
-        function () { plugin.load_host_list_regex(); }
+        () => { plugin.load_host_list_regex(); }
     );
 
     plugin.hl_re = new RegExp ('^(?:' +

@@ -4,7 +4,7 @@ const outbound = require('./outbound');
 
 function setupInterval (title, server) {
     // Set up a timer to update title
-    return setInterval(function () {
+    return setInterval(() => {
         // Connections per second
         const av_cps = Math.round((server.notes.pt_connections/process.uptime()*100))/100;
         const cps = server.notes.pt_connections - server.notes.pt_cps_diff;
@@ -62,14 +62,14 @@ exports.hook_init_master = function (next, server) {
         server.notes.pt_concurrent_cluster = {};
         server.notes.pt_new_out_stats = [0,0,0,0];
         const cluster = server.cluster;
-        const recvMsg = function (msg) {
+        const recvMsg = msg => {
             let count;
             switch (msg.event) {
                 case 'process_title.connect':
                     server.notes.pt_connections++;
                     server.notes.pt_concurrent_cluster[msg.wid]++;
                     count = 0;
-                    Object.keys(server.notes.pt_concurrent_cluster).forEach(function (id) {
+                    Object.keys(server.notes.pt_concurrent_cluster).forEach(id => {
                         count += server.notes.pt_concurrent_cluster[id];
                     });
                     server.notes.pt_concurrent = count;
@@ -77,7 +77,7 @@ exports.hook_init_master = function (next, server) {
                 case 'process_title.disconnect':
                     server.notes.pt_concurrent_cluster[msg.wid]--;
                     count = 0;
-                    Object.keys(server.notes.pt_concurrent_cluster).forEach(function (id) {
+                    Object.keys(server.notes.pt_concurrent_cluster).forEach(id => {
                         count += server.notes.pt_concurrent_cluster[id];
                     });
                     server.notes.pt_concurrent = count;
@@ -106,15 +106,15 @@ exports.hook_init_master = function (next, server) {
             }
         };
         // Register any new workers
-        cluster.on('fork', function (worker) {
+        cluster.on('fork', worker => {
             server.notes.pt_concurrent_cluster[worker.id] = 0;
             cluster.workers[worker.id].on('message', recvMsg);
         });
-        cluster.on('exit', function (worker) {
+        cluster.on('exit', worker => {
             delete server.notes.pt_concurrent_cluster[worker.id];
             // Update concurrency
             let count = 0;
-            Object.keys(server.notes.pt_concurrent_cluster).forEach(function (id) {
+            Object.keys(server.notes.pt_concurrent_cluster).forEach(id => {
                 count += server.notes.pt_concurrent_cluster[id];
             });
             server.notes.pt_concurrent = count;
@@ -147,7 +147,7 @@ exports.shutdown = function () {
     clearInterval(this._interval);
 }
 
-exports.hook_connect_init = function (next, connection) {
+exports.hook_connect_init = (next, connection) => {
     const server = connection.server;
     connection.notes.pt_connect_run = true;
     if (server.cluster) {
@@ -159,7 +159,7 @@ exports.hook_connect_init = function (next, connection) {
     return next();
 }
 
-exports.hook_disconnect = function (next, connection) {
+exports.hook_disconnect = (next, connection) => {
     const server = connection.server;
     // Check that the hook above ran
     // It might not if the disconnection is immediate
@@ -182,7 +182,7 @@ exports.hook_disconnect = function (next, connection) {
     return next();
 }
 
-exports.hook_rcpt = function (next, connection) {
+exports.hook_rcpt = (next, connection) => {
     const server = connection.server;
     if (server.cluster) {
         const worker = server.cluster.worker;
@@ -192,7 +192,7 @@ exports.hook_rcpt = function (next, connection) {
     return next();
 }
 
-exports.hook_data = function (next, connection) {
+exports.hook_data = (next, connection) => {
     const server = connection.server;
     if (server.cluster) {
         const worker = server.cluster.worker;

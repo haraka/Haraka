@@ -9,7 +9,7 @@ exports.register = function () {
     this.queue_dir = require('../outbound/queue').queue_dir;
 }
 
-exports.hook_capabilities = function (next, connection) {
+exports.hook_capabilities = (next, connection) => {
 
     if (connection.remote.is_local) {
         connection.capabilities.push('STATUS');
@@ -22,7 +22,7 @@ exports.hook_unrecognized_command = function (next, connection, params) {
     if (params[0] !== 'STATUS') return next();
     if (!connection.remote.is_local) return next(DENY, 'STATUS not allowed remotely');
 
-    this.run(params[1], function (err, result) {
+    this.run(params[1], (err, result) => {
         if (err) return next(DENY, err.message);
 
         connection.respond(211, result ? JSON.stringify(result) : 'null', () => next(OK));
@@ -77,11 +77,11 @@ exports.queue_action = function (params, cb) {
     }
 }
 
-exports.pool_list = function (cb) {
+exports.pool_list = cb => {
     const result = {};
 
     if (server.notes.pool) {
-        Object.keys(server.notes.pool).forEach(function (name) {
+        Object.keys(server.notes.pool).forEach(name => {
             const instance = server.notes.pool[name];
 
             result[name] = {
@@ -95,7 +95,7 @@ exports.pool_list = function (cb) {
 }
 
 exports.queue_list = function (cb) {
-    this.outbound.list_queue(function (err, qlist) {
+    this.outbound.list_queue((err, qlist) => {
         if (err) cb(err);
 
         const result = [];
@@ -142,7 +142,7 @@ exports.queue_discard = function (file, cb) {
         // we ignore not found error
     }
 
-    fs.unlink(path.join(this.queue_dir || '', file), function () {
+    fs.unlink(path.join(this.queue_dir || '', file), () => {
         cb(null, 'OK');
     });
 }
@@ -172,7 +172,7 @@ exports.hook_init_master = function (next) {
     function message_handler (sender, msg) {
         if (msg.event !== 'status.request') return;
 
-        self.call_workers(msg, function (err, response) {
+        self.call_workers(msg, (err, response) => {
             msg.result = response.filter((el) => el != null);
             msg.event = 'status.result';
             sender.send(msg);
@@ -189,7 +189,7 @@ exports.hook_init_child = function (next) {
     function message_handler (msg) {
         if (msg.event !== 'status.request') return;
 
-        self.command_action(msg.params, function (err, result) {
+        self.command_action(msg.params, (err, result) => {
             msg.event = 'status.response';
             msg.result = result;
             process.send(msg);
@@ -200,7 +200,7 @@ exports.hook_init_child = function (next) {
     next();
 }
 
-exports.call_master = function (cmd, cb) {
+exports.call_master = (cmd, cb) => {
 
     function message_handler (msg) {
         if (msg.event !== 'status.result') return;
@@ -216,13 +216,13 @@ exports.call_master = function (cmd, cb) {
 exports.call_workers = function (cmd, cb) {
     const self = this;
 
-    async.map(server.cluster.workers, function (w, done) {
+    async.map(server.cluster.workers, (w, done) => {
         self.call_worker(w, cmd, done);
     }, cb);
 }
 
 // sends command to worker and then wait for response or timeout
-exports.call_worker = function (worker, cmd, cb) {
+exports.call_worker = (worker, cmd, cb) => {
     let timeout;
 
     function message_handler (sender, msg) {
@@ -235,7 +235,7 @@ exports.call_worker = function (worker, cmd, cb) {
         cb(null, msg.result);
     }
 
-    timeout = setTimeout(function () {
+    timeout = setTimeout(() => {
         server.cluster.removeListener('message', message_handler);
         cb();
     }, 1000);

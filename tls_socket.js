@@ -55,37 +55,37 @@ class pluggableStream extends stream.Stream {
     attach (socket) {
         const self = this;
         self.targetsocket = socket;
-        self.targetsocket.on('data', function (data) {
+        self.targetsocket.on('data', data => {
             self.emit('data', data);
         });
         self.targetsocket.on('connect', (a, b) => {
             self.emit('connect', a, b);
         });
-        self.targetsocket.on('secureConnection', function (a, b) {
+        self.targetsocket.on('secureConnection', (a, b) => {
             self.emit('secureConnection', a, b);
             self.emit('secure', a, b);
         });
-        self.targetsocket.on('secure', function (a, b) {
+        self.targetsocket.on('secure', (a, b) => {
             self.emit('secureConnection', a, b);
             self.emit('secure', a, b);
         });
-        self.targetsocket.on('end', function () {
+        self.targetsocket.on('end', () => {
             self.writable = self.targetsocket.writable;
             self.emit('end');
         });
-        self.targetsocket.on('close', function (had_error) {
+        self.targetsocket.on('close', had_error => {
             self.writable = self.targetsocket.writable;
             self.emit('close', had_error);
         });
-        self.targetsocket.on('drain', function () {
+        self.targetsocket.on('drain', () => {
             self.emit('drain');
         });
-        self.targetsocket.once('error', function (exception) {
+        self.targetsocket.once('error', exception => {
             self.writable = self.targetsocket.writable;
             exception.source = 'tls';
             self.emit('error', exception);
         });
-        self.targetsocket.on('timeout', function () {
+        self.targetsocket.on('timeout', () => {
             self.emit('timeout');
         });
         if (self.targetsocket.remotePort) {
@@ -107,7 +107,7 @@ class pluggableStream extends stream.Stream {
             this.targetsocket.removeAllListeners('drain');
         }
         this.targetsocket = {};
-        this.targetsocket.write = function () {};
+        this.targetsocket.write = () => {};
     }
 
     write (data, encoding, callback) {
@@ -175,7 +175,7 @@ exports.parse_x509_names = string => {
         const re = /DNS:([^,]+)[,\n]/g;
         while ((dns_name = re.exec(match[0])) !== null) {
             // log.loginfo(dns_name);
-            if (names_found.indexOf(dns_name[1]) !== -1) continue; // ignore dupes
+            if (names_found.includes(dns_name[1])) continue; // ignore dupes
             names_found.push(dns_name[1]);
         }
     }
@@ -424,7 +424,7 @@ exports.get_certs_dir = (tlsDir, done) => {
 
             const x509args = { noout: true, text: true };
 
-            openssl('x509', parsed.cert, x509args, function (e, as_str) {
+            openssl('x509', parsed.cert, x509args, (e, as_str) => {
                 if (e) {
                     log.logerror(`BAD TLS in ${file.path}`);
                     log.logerror(e);
@@ -607,7 +607,7 @@ function cleanOcspCache () {
 exports.certsByHost = certsByHost;
 exports.ocsp = ocsp;
 
-exports.get_rejectUnauthorized = function (rejectUnauthorized, port, port_list) {
+exports.get_rejectUnauthorized = (rejectUnauthorized, port, port_list) => {
     // console.log(`rejectUnauthorized: ${rejectUnauthorized}, port ${port}, list: ${port_list}`)
     if (rejectUnauthorized) {
         // console.log('true for all ports');
@@ -711,7 +711,7 @@ function connect (port, host, cb) {
             }
         })
 
-        cleartext.once('secureConnect', function () {
+        cleartext.once('secureConnect', () => {
             log.logdebug('client TLS secured.');
             if (cb2) cb2(
                 cleartext.authorized,

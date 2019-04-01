@@ -14,7 +14,7 @@ const _set_up = function (done) {
     this.plugin.load_spf_ini();
 
     // uncomment this line to see detailed SPF evaluation
-    this.plugin.SPF.prototype.log_debug = function () {};
+    this.plugin.SPF.prototype.log_debug = () => {};
 
     this.connection = fixtures.connection.createConnection();
     this.connection.transaction = fixtures.transaction.createTransaction();

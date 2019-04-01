@@ -19,7 +19,7 @@ exports.load_spamassassin_ini = function () {
             '+check.local_ip',
             '+check.relay',
         ],
-    }, function () {
+    }, () => {
         plugin.load_spamassassin_ini();
     });
 
@@ -39,7 +39,7 @@ exports.load_spamassassin_ini = function () {
     [
         'reject_threshold', 'relay_reject_threshold',
         'munge_subject_threshold', 'max_size'
-    ].forEach(function (item) {
+    ].forEach(item => {
         if (!plugin.cfg.main[item]) return;
         plugin.cfg.main[item] = Number(plugin.cfg.main[item]);
     });
@@ -61,7 +61,7 @@ exports.hook_data_post = function (next, connection) {
     let last_header;
     const start = Date.now();
 
-    socket.on('line', function (line) {
+    socket.on('line', line => {
         connection.logprotocol(plugin, `Spamd C: ${line} state=${state}`);
         line = line.replace(/\r?\n/, '');
         if (state === 'line0') {
@@ -100,7 +100,7 @@ exports.hook_data_post = function (next, connection) {
         }
     });
 
-    socket.once('end', function () {
+    socket.once('end', () => {
         // Abort if the transaction is gone
         if (!connection.transaction) return next();
 
@@ -293,7 +293,7 @@ exports.get_spamd_socket = function (next, connection, headers) {
         connection.transaction.message_stream.pipe(socket);
     });
 
-    socket.on('error', function (err) {
+    socket.on('error', err => {
         connection.logerror(plugin, `connection failed: ${err}`);
         // TODO: optionally DENYSOFT
         // TODO: add a transaction note

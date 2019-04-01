@@ -11,7 +11,7 @@ function _set_up (done) {
     const client = {
         remotePort: null,
         remoteAddress: null,
-        destroy: function () { true; },
+        destroy: () => { true; },
     };
     const server = {
         ip_address: null,
@@ -161,7 +161,7 @@ exports.connectionRaw = {
         test.expect(4);
         this.connection.set('proxy', 'ip', '172.16.15.1');
         this.connection.set('proxy', 'type', 'haproxy');
-        this.connection.set('proxy', 'timer', setTimeout(function () {}, 1000));
+        this.connection.set('proxy', 'timer', setTimeout(() => {}, 1000));
         this.connection.set('proxy', 'allowed', true);
 
         test.equal(true, this.connection.proxy.allowed);
@@ -185,7 +185,7 @@ exports.connectionPrivate = {
         const client = {
             remotePort: 2525,
             remoteAddress: '172.16.15.1',
-            destroy: function () { true; },
+            destroy: () => { true; },
         };
         const server = {
             ip_address: '172.16.15.254',
@@ -211,7 +211,7 @@ exports.connectionLocal = {
         const client = {
             remotePort: 2525,
             remoteAddress: '127.0.0.2',
-            destroy: function () { true; },
+            destroy: () => { true; },
         };
         const server = {
             ip_address: '127.0.0.1',

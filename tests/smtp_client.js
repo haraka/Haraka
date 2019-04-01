@@ -11,7 +11,7 @@ vm_harness.add_tests(
 const smtp_client = require('../smtp_client');
 const fixtures    = require('haraka-test-fixtures');
 
-exports.testUpgradeIsCalledOnSTARTTLS = function (test) {
+exports.testUpgradeIsCalledOnSTARTTLS = test => {
     test.expect(1);
 
     const plugin = new fixtures.plugin('queue/smtp_forward');
@@ -25,12 +25,12 @@ exports.testUpgradeIsCalledOnSTARTTLS = function (test) {
     let upgradeArgs = {};
 
     const socket = {
-        setTimeout: function (arg) {  },
-        setKeepAlive: function (arg) {  },
-        on: function (eventName, callback) {
+        setTimeout: arg => {  },
+        setKeepAlive: arg => {  },
+        on: (eventName, callback) => {
             cmds[eventName] = callback;
         },
-        upgrade: function (arg) {
+        upgrade: arg => {
             upgradeArgs = arg;
         }
     };
@@ -50,17 +50,17 @@ exports.testUpgradeIsCalledOnSTARTTLS = function (test) {
     test.done();
 }
 
-exports.startTLS = function (test) {
+exports.startTLS = test => {
     test.expect(1);
 
     let cmd = '';
 
     const socket = {
-        setTimeout: function (arg) {  },
-        setKeepAlive: function (arg) {  },
-        on: function (eventName, callback) {  },
-        upgrade: function (arg) {  },
-        write: function (arg) { cmd = arg; }
+        setTimeout: arg => {  },
+        setKeepAlive: arg => {  },
+        on: (eventName, callback) => {  },
+        upgrade: arg => {  },
+        write: arg => { cmd = arg; }
     };
 
     const client = new smtp_client.smtp_client(25, 'localhost', 30, 30, socket);

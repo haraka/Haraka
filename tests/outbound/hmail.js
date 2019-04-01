@@ -16,7 +16,7 @@ exports.HMailItem = {
             test.ok(this.hmail)
             test.done()
         })
-        this.hmail.on('error', function (err) {
+        this.hmail.on('error', err => {
             console.log(err)
             test.equal(err, undefined)
             test.done()
@@ -30,7 +30,7 @@ exports.HMailItem = {
             test.ok(this.hmail)
             test.done()
         })
-        this.hmail.on('error', function (err) {
+        this.hmail.on('error', err => {
             console.log(err)
             test.equal(err, undefined)
             test.done()

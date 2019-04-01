@@ -1,5 +1,3 @@
 "use strict";
 
-exports.check_the_base = function () {
-    return "base";
-}
+exports.check_the_base = () => "base"

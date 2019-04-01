@@ -233,9 +233,9 @@ exports.bad_rcpt = {
         test.expect(1);
         this.connection.transaction.mail_from= new Address.Address('<>');
         this.connection.transaction.rcpt_to= [ new Address.Address('test@good.com') ];
-        const cb = function (rc) {
+        function cb (rc) {
             test.equal(undefined, rc);
-        };
+        }
         this.plugin.bad_rcpt(cb, this.connection);
         test.done();
     },
@@ -243,9 +243,9 @@ exports.bad_rcpt = {
         test.expect(1);
         this.connection.transaction.mail_from= new Address.Address('<>');
         this.connection.transaction.rcpt_to= [ new Address.Address('test@bad1.com') ];
-        const cb = function (rc) {
+        function cb (rc) {
             test.equal(DENY, rc);
-        };
+        }
         this.plugin.cfg.invalid_addrs = {'test@bad1.com': true, 'test@bad2.com': true };
         this.plugin.bad_rcpt(cb, this.connection);
         test.done();
@@ -257,9 +257,9 @@ exports.bad_rcpt = {
             new Address.Address('test@bad1.com'),
             new Address.Address('test@bad2.com')
         ];
-        const cb = function (rc) {
+        function cb (rc) {
             test.equal(DENY, rc);
-        };
+        }
         this.plugin.cfg.invalid_addrs = {'test@bad1.com': true, 'test@bad2.com': true };
         this.plugin.bad_rcpt(cb, this.connection);
         test.done();
@@ -271,9 +271,9 @@ exports.bad_rcpt = {
             new Address.Address('test@good.com'),
             new Address.Address('test@bad2.com')
         ];
-        const cb = function (rc) {
+        function cb (rc) {
             test.equal(DENY, rc);
-        };
+        }
         this.plugin.cfg.invalid_addrs = {'test@bad1.com': true, 'test@bad2.com': true };
         this.plugin.bad_rcpt(cb, this.connection);
         test.done();

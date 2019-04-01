@@ -40,9 +40,7 @@ class Body extends events.EventEmitter {
     }
 
     set_banner (banners) {
-        this.add_filter(function (ct, enc, buf) {
-            return insert_banner(ct, enc, buf, banners);
-        });
+        this.add_filter((ct, enc, buf) => insert_banner(ct, enc, buf, banners));
     }
 
     parse_more (line) {
@@ -62,11 +60,11 @@ class Body extends events.EventEmitter {
             else {
                 this.emit('mime_boundary', line);
                 const bod = new Body(new Header(), this.options);
-                this.listeners('attachment_start').forEach(function (cb) { bod.on('attachment_start', cb) });
-                this.listeners('attachment_data' ).forEach(function (cb) { bod.on('attachment_data', cb) });
-                this.listeners('attachment_end'  ).forEach(function (cb) { bod.on('attachment_end', cb) });
+                this.listeners('attachment_start').forEach(cb => { bod.on('attachment_start', cb) });
+                this.listeners('attachment_data' ).forEach(cb => { bod.on('attachment_data', cb) });
+                this.listeners('attachment_end'  ).forEach(cb => { bod.on('attachment_end', cb) });
                 this.listeners('mime_boundary').forEach(cb => bod.on('mime_boundary', cb));
-                this.filters.forEach(function (f) { bod.add_filter(f); });
+                this.filters.forEach(f => { bod.add_filter(f); });
                 this.children.push(bod);
                 bod.state = 'headers';
             }
@@ -138,7 +136,7 @@ class Body extends events.EventEmitter {
 
     _empty_filter (ct, enc) {
         let new_buf = Buffer.from('');
-        this.filters.forEach(function (filter) {
+        this.filters.forEach(filter => {
             new_buf = filter(ct, enc, new_buf) || new_buf;
         });
 
@@ -196,7 +194,7 @@ class Body extends events.EventEmitter {
             // whatever encoding scheme we used to decode it.
 
             let new_buf = buf;
-            this.filters.forEach(function (filter) {
+            this.filters.forEach(filter => {
                 new_buf = filter(ct, enc, new_buf) || new_buf;
             });
 
@@ -277,9 +275,9 @@ class Body extends events.EventEmitter {
                 // next section
                 this.emit('mime_boundary', line);
                 const bod = new Body(new Header(), this.options);
-                this.listeners('attachment_start').forEach(function (cb) { bod.on('attachment_start', cb) });
+                this.listeners('attachment_start').forEach(cb => { bod.on('attachment_start', cb) });
                 this.listeners('mime_boundary').forEach(cb => bod.on('mime_boundary', cb));
-                this.filters.forEach(function (f) { bod.add_filter(f); });
+                this.filters.forEach(f => { bod.add_filter(f); });
                 this.children.push(bod);
                 bod.state = 'headers';
                 this.state = 'child';

@@ -192,7 +192,7 @@ class Connection {
 
         self.client.on('timeout', () => {
             if (self.state >= states.DISCONNECTING) return;
-            self.respond(421, 'timeout', function () {
+            self.respond(421, 'timeout', () => {
                 self.fail(`${rhost} connection timed out`);
             });
         });
@@ -509,7 +509,7 @@ class Connection {
                 // In command mode, reject:
                 this.client.pause();
                 this.current_data = null;
-                return this.respond(521, "Command line too long", function () {
+                return this.respond(521, "Command line too long", () => {
                     self.disconnect();
                 });
             }
@@ -998,17 +998,17 @@ class Connection {
             }
         );
 
-        const store_results = (action) => {
+        function store_results (action) {
             let addr = sender.format();
             if (addr.length > 2) {  // all but null sender
                 addr = addr.substr(1, addr.length -2); // trim off < >
             }
             self.transaction.results.add({name: 'mail_from'}, {
-                action: action,
+                action,
                 code: constants.translate(retval),
                 address: addr,
             });
-        };
+        }
 
         switch (retval) {
             case constants.deny:
@@ -1061,7 +1061,7 @@ class Connection {
         }
 
         this.transaction.results.push({name: 'rcpt_to'}, {
-            recipient: recipient,
+            recipient,
         });
     }
     rcpt_ok_respond (retval, msg) {
@@ -1170,7 +1170,7 @@ class Connection {
                     this.logalert("No plugin determined if relaying was allowed");
                 }
                 const rej_msg = `I cannot deliver mail for ${rcpt.format()}`;
-                this.respond(550, rej_msg, function () {
+                this.respond(550, rej_msg, () => {
                     self.rcpt_incr(rcpt, 'reject', rej_msg, retval);
                     self.transaction.rcpt_to.pop();
                 });
@@ -1220,18 +1220,23 @@ class Connection {
         this.loginfo(
             'HAProxy',
             {
-                proto: proto,
+                proto,
                 src_ip: `${src_ip}:${src_port}`,
                 dst_ip: `${dst_ip}:${dst_port}`,
             }
         );
 
         this.notes.proxy = {
-            type: 'haproxy', proto: proto,
-            src_ip: src_ip, src_port: src_port, dst_ip: dst_ip, dst_port: dst_port, proxy_ip: this.remote.ip
+            type: 'haproxy',
+            proto,
+            src_ip,
+            src_port,
+            dst_ip,
+            dst_port,
+            proxy_ip: this.remote.ip
         };
 
-        this.reset_transaction(function () {
+        this.reset_transaction(() => {
             self.set('proxy.ip', self.remote.ip);
             self.set('proxy.type', 'haproxy');
             self.relaying = false;
@@ -1332,7 +1337,7 @@ class Connection {
             return this.respond(503, 'Use EHLO/HELO before MAIL');
         }
         // Require authentication on connections to port 587 & 465
-        if (!this.relaying && [587,465].indexOf(this.local.port) !== -1) {
+        if (!this.relaying && [587,465].includes(this.local.port)) {
             this.errors++;
             return this.respond(550, 'Authentication required');
         }
@@ -1360,7 +1365,7 @@ class Connection {
         }
         // Get rest of key=value pairs
         const params = {};
-        results.forEach(function (param) {
+        results.forEach(param => {
             const kv = param.match(/^([^=]+)(?:=(.+))?$/);
             if (kv)
                 params[kv[1].toUpperCase()] = kv[2] || null;
@@ -1379,7 +1384,7 @@ class Connection {
         }
 
         const self = this;
-        this.init_transaction(function () {
+        this.init_transaction(() => {
             self.transaction.mail_from = from;
             if (self.hello.verb == 'HELO') {
                 self.transaction.encoding = 'binary';
@@ -1590,7 +1595,7 @@ class Connection {
             line[1] === 0x0a)
         {
             this.lognotice('Client sent bare line-feed - .\\n rather than .\\r\\n');
-            this.respond(451, "Bare line-feed; see http://haraka.github.com/barelf.html", function () {
+            this.respond(451, "Bare line-feed; see http://haraka.github.com/barelf.html", () => {
                 self.reset_transaction();
             });
             return;
@@ -1603,7 +1608,7 @@ class Connection {
 
         if (this.transaction.mime_part_count >= this.max_mime_parts) {
             this.logcrit("Possible DoS attempt - too many MIME parts");
-            this.respond(554, "Transaction failed due to too many MIME parts", function () {
+            this.respond(554, "Transaction failed due to too many MIME parts", () => {
                 self.disconnect();
             });
             return;
@@ -1626,7 +1631,7 @@ class Connection {
         const max_received = parseInt(config.get('max_received_count')) || 100;
         if (this.transaction.header.get_all('received').length > max_received) {
             this.logerror("Incoming message had too many Received headers");
-            this.respond(550, "Too many received headers - possible mail loop", function () {
+            this.respond(550, "Too many received headers - possible mail loop", () => {
                 self.reset_transaction();
             });
             return;
@@ -1643,7 +1648,7 @@ class Connection {
             this.transaction.add_header('Authentication-Results', ar_field);
         }
 
-        this.transaction.end_data(function () {
+        this.transaction.end_data(() => {
             // As this will be called asynchronously,
             // make sure we still have a transaction.
             if (!self.transaction) return;

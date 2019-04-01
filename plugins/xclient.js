@@ -12,7 +12,7 @@ exports.register = function () {
 
 exports.load_xclient_hosts = function () {
     const self = this;
-    const cfg = this.config.get('xclient.hosts', 'list', function () {
+    const cfg = this.config.get('xclient.hosts', 'list', () => {
         self.load_xclient_hosts();
     });
     const ah = {};
@@ -29,7 +29,7 @@ function xclient_allowed (ip) {
     return false;
 }
 
-exports.hook_capabilities = function (next, connection) {
+exports.hook_capabilities = (next, connection) => {
     if (xclient_allowed(connection.remote.ip)) {
         connection.capabilities.push('XCLIENT NAME ADDR PROTO HELO LOGIN');
     }

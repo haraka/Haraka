@@ -20,7 +20,7 @@ exports.hook_connect = function (next, connection) {
     if (connection.remote.is_private) return next();
 
     // Retrieve GBUdb information for the connecting IP
-    SNFClient("<snf><xci><gbudb><test ip='" + connection.remote.ip + "'/></gbudb></xci></snf>", function (err, result) {
+    SNFClient("<snf><xci><gbudb><test ip='" + connection.remote.ip + "'/></gbudb></xci></snf>", (err, result) => {
         if (err) {
             connection.logerror(self, err.message);
             return next();
@@ -105,7 +105,7 @@ exports.hook_data_post = function (next, connection) {
     const txn = connection.transaction;
     if (!txn) return next();
 
-    const tag_subject = function () {
+    function tag_subject (){
         const tag = cfg.main.tag_string || '[SPAM]';
         const subj = txn.header.get_decoded('Subject');
         // Try and prevent any double subject modifications
@@ -117,7 +117,7 @@ exports.hook_data_post = function (next, connection) {
         // Add spam flag
         txn.remove_header('X-Spam-Flag');
         txn.add_header('X-Spam-Flag', 'YES');
-    };
+    }
 
     // Check GBUdb results
     if (connection.notes.gbudb && connection.notes.gbudb.action) {
@@ -136,18 +136,18 @@ exports.hook_data_post = function (next, connection) {
     const tmpfile = tmpdir + '/' + txn.uuid + '.tmp';
     const ws = fs.createWriteStream(tmpfile);
 
-    ws.once('error', function (err) {
+    ws.once('error', err => {
         connection.logerror(self, 'Error writing temporary file: ' + err.message);
         return next();
     });
 
-    ws.once('close', function () {
+    ws.once('close', () => {
         const start_time = Date.now();
-        SNFClient("<snf><xci><scanner><scan file='" + tmpfile + "' xhdr='yes'/></scanner></xci></snf>", function (err, result) {
+        SNFClient("<snf><xci><scanner><scan file='" + tmpfile + "' xhdr='yes'/></scanner></xci></snf>", (err, result) => {
             const end_time = Date.now();
             const elapsed = end_time - start_time;
             // Delete the tempfile
-            fs.unlink(tmpfile, function (){});
+            fs.unlink(tmpfile, () => {});
             let match;
             // Make sure we actually got a result
             if ((match = /<result code='(\d+)'/.exec(result))) {
@@ -339,7 +339,7 @@ exports.hook_disconnect = function (next, connection) {
         (connection.rcpt_count.reject > 0 || connection.msg_count.reject > 0))
     {
         const snfreq = "<snf><xci><gbudb><bad ip='" + connection.remote.ip + "'/></gbudb></xci></snf>";
-        SNFClient(snfreq, function (err, result) {
+        SNFClient(snfreq, (err, result) => {
             if (err) {
                 connection.logerror(self, err.message);
             }
@@ -362,20 +362,18 @@ function SNFClient (req, cb) {
         this.destroy();
         return cb(new Error('connection timed out'));
     });
-    sock.once('error', function (err) {
-        return cb(err);
-    });
+    sock.once('error', err => cb(err));
     sock.once('connect', function () {
         // Connected, send request
         plugin.logprotocol('> ' + req);
         this.write(req + "\n");
     });
-    sock.on('data', function (data) {
+    sock.on('data', data => {
         plugin.logprotocol('< ' + data);
         // Buffer all the received lines
         (result ? result += data : result = data);
     });
-    sock.once('end', function () {
+    sock.once('end', () => {
         // Check for result
         let match;
         if (/<result /.exec(result)) {
