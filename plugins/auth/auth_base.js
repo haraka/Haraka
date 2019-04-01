@@ -48,7 +48,7 @@ exports.hook_unrecognized_command = function (next, connection, params) {
 }
 
 exports.check_plain_passwd = function (connection, user, passwd, cb) {
-    const callback = plain_pw => {
+    function callback(plain_pw) {
         if (plain_pw === null  ) { return cb(false); }
         if (plain_pw !== passwd) { return cb(false); }
         return cb(true);
@@ -65,7 +65,7 @@ exports.check_plain_passwd = function (connection, user, passwd, cb) {
 }
 
 exports.check_cram_md5_passwd = function (connection, user, passwd, cb) {
-    const callback = plain_pw => {
+    function callback(plain_pw) {
         if (plain_pw == null) {
             return cb(false);
         }
@@ -77,7 +77,7 @@ exports.check_cram_md5_passwd = function (connection, user, passwd, cb) {
             return cb(true);
         }
         return cb(false);
-    };
+    }
     if (this.get_plain_passwd.length == 2) {
         this.get_plain_passwd(user, callback);
     }
