@@ -319,41 +319,41 @@ exports.hook_data_post = function (next, connection) {
     const trans = connection.transaction;
 
     // From header
-    const do_from_header = cb => {
+    function do_from_header(cb) {
         const from = trans.header.get_decoded('from');
         const fmatch = email_re.exec(from);
         if (fmatch) {
             return plugin.do_lookups(connection, cb, fmatch[1], 'from');
         }
         cb();
-    };
+    }
 
     // Reply-To header
-    const do_replyto_header = cb => {
+    function do_replyto_header(cb) {
         const replyto = trans.header.get('reply-to');
         const rmatch = email_re.exec(replyto);
         if (rmatch) {
             return plugin.do_lookups(connection, cb, rmatch[1], 'replyto');
         }
         cb();
-    };
+    }
 
     // Message-Id header
-    const do_msgid_header = cb => {
+    function do_msgid_header(cb) {
         const msgid = trans.header.get('message-id');
         const mmatch = /@([^>]+)>/.exec(msgid);
         if (mmatch) {
             return plugin.do_lookups(connection, cb, mmatch[1], 'msgid');
         }
         cb();
-    };
+    }
 
     // Body
-    const do_body = cb => {
+    function do_body(cb) {
         const urls = {};
         extract_urls(urls, trans.body, connection, plugin);
         return plugin.do_lookups(connection, cb, Object.keys(urls), 'body');
-    };
+    }
 
     const chain = [ do_from_header, do_replyto_header, do_msgid_header, do_body ];
     function chain_caller (code, msg) {
