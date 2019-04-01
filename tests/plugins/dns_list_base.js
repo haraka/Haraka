@@ -201,21 +201,21 @@ function zone_disable_test_func (zones, test, cb) {
 
     this.plugin.check_zones(9000);
 
-    function fin_check () {
+    const fin_check = () => {
         this.plugin.shutdown();
         cb();
         test.done();
-    }
+    };
 
     let i = 0;
-    function again () {
+    const again = () => {
         i++;
         setTimeout(() => {
             if (this.plugin.zones.length === zones.length) return fin_check();
             if (i > 4) return fin_check();
             again();
         }, 1000);
-    }
+    };
     again();
 }
 
