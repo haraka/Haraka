@@ -92,12 +92,12 @@ exports.hook_lookup_rdns = function (next, connection) {
         return next(OK, connection.remote.ip);
     }
 
-    const call_next = (code, msg) => {
+    function call_next(code, msg) {
         clearTimeout(timeout_id);
         if (called_next) return;
         called_next++;
         next(code, msg);
-    };
+    }
 
     timeout_id = setTimeout(() => {
         connection.loginfo(plugin, 'timed out when looking up ' +
