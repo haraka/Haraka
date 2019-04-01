@@ -57,10 +57,10 @@ exports.hook_data_post = function (next, connection) {
         let command = 'connect';
         let response = [];
 
-        const do_next = (code, msg) => {
+        function do_next(code, msg) {
             fs.unlink(tmpfile, () => {});
             return next(code, msg);
-        };
+        }
 
         socket.send_command = function (cmd, data) {
             const line = cmd + (data ? (' ' + data) : '');
