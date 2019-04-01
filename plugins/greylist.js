@@ -395,7 +395,7 @@ exports.craft_hostid = function (connection) {
     const ip = connection.remote.ip;
     let rdns = connection.remote.host;
 
-    const chsit = (value, reason) => { // cache the return value
+    function chsit(value, reason) { // cache the return value
         if (!value)
             plugin.logdebug(connection, `hostid set to IP: ${reason}`);
 
@@ -408,7 +408,7 @@ exports.craft_hostid = function (connection) {
         value = value || ip;
 
         return ((trx.notes.greylist = trx.notes.greylist || {}).hostid = value);
-    };
+    }
 
     if (!rdns || rdns === 'Unknown' || rdns === 'DNSERROR') // no rDNS . FIXME: use fcrdns results
         return chsit(null, 'no rDNS info for this host');
