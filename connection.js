@@ -998,7 +998,7 @@ class Connection {
             }
         );
 
-        const store_results = (action) => {
+        function store_results(action) {
             let addr = sender.format();
             if (addr.length > 2) {  // all but null sender
                 addr = addr.substr(1, addr.length -2); // trim off < >
@@ -1008,7 +1008,7 @@ class Connection {
                 code: constants.translate(retval),
                 address: addr,
             });
-        };
+        }
 
         switch (retval) {
             case constants.deny:
