@@ -105,7 +105,7 @@ exports.hook_data_post = function (next, connection) {
     const txn = connection.transaction;
     if (!txn) return next();
 
-    const tag_subject = () => {
+    function tag_subject(){
         const tag = cfg.main.tag_string || '[SPAM]';
         const subj = txn.header.get_decoded('Subject');
         // Try and prevent any double subject modifications
@@ -117,7 +117,7 @@ exports.hook_data_post = function (next, connection) {
         // Add spam flag
         txn.remove_header('X-Spam-Flag');
         txn.add_header('X-Spam-Flag', 'YES');
-    };
+    }
 
     // Check GBUdb results
     if (connection.notes.gbudb && connection.notes.gbudb.action) {
