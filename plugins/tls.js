@@ -36,11 +36,11 @@ exports.advertise_starttls = function (next, connection) {
         return next();
     }
 
-    const enable_tls = () => {
+    function enable_tls() {
         connection.capabilities.push('STARTTLS');
         connection.tls.advertised = true;
         next();
-    };
+    }
 
     if (!tls_socket.cfg.redis || !server.notes.redis) {
         return enable_tls();
