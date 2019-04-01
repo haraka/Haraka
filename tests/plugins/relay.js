@@ -97,10 +97,10 @@ exports.acl = {
     },
     'relay.acl=false' : function (test) {
         test.expect(1);
-        const next = rc => {
+        function next(rc) {
             test.equal(undefined, rc);
             test.done();
-        };
+        }
         this.plugin.cfg.relay.acl=false;
         this.plugin.acl(() => {}, this.connection);
         this.plugin.pass_relaying(next, this.connection);
@@ -171,10 +171,10 @@ exports.dest_domains = {
     },
     'relay.dest_domains=false' : function (test) {
         test.expect(1);
-        const next = rc => {
+        function next(rc) {
             test.equal(undefined, rc);
             test.done();
-        };
+        }
         this.plugin.cfg.relay.dest_domains=false;
         this.plugin.dest_domains(next, this.connection, [{host:'foo'}]);
     },
@@ -254,19 +254,19 @@ exports.force_routing = {
     },
     'relay.force_routing=false' : function (test) {
         test.expect(1);
-        const next = rc => {
+        function next(rc) {
             test.equal(undefined, rc);
             test.done();
-        };
+        }
         this.plugin.cfg.relay.force_routing=false;
         this.plugin.force_routing(next, this.connection, 'foo');
     },
     'dest_domains empty' : function (test) {
         test.expect(1);
-        const next = rc => {
+        function next(rc) {
             test.equal(undefined, rc);
             test.done();
-        };
+        }
         this.plugin.force_routing(next, this.connection, 'foo');
     },
     'dest_domains, no route' : function (test) {
@@ -307,11 +307,11 @@ exports.all = {
         test.done();
     },
     'all hook always returns OK' : function (test) {
-        const next = action => {
+        function next(action) {
             test.expect(1);
             test.equals(action, OK);
             test.done();
-        };
+        }
         this.plugin.cfg.relay = { all: true };
         this.plugin.all(next, this.connection, ['foo@bar.com']);
     },
