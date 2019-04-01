@@ -83,11 +83,11 @@ exports.aliases = {
         test.done();
     },
     'aliases hook always returns next()' : function (test) {
-        const next = action => {
+        function next(action) {
             test.expect(1);
             test.equals(undefined, action);
             test.done();
-        };
+        }
 
         this.plugin.aliases(next, this.connection, this.params);
     },
