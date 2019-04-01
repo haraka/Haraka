@@ -97,7 +97,7 @@ exports.init_rabbitmq_server = function () {
     });
 
     //Declaring listerner on close on connection.
-    rabbitqueue.on('close',close => {
+    rabbitqueue.on('close', close => {
         logger.logdebug(" Connection  is beingclosed : "+close);
     });
 
