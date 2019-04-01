@@ -92,7 +92,7 @@ exports.init_rabbitmq_server = function () {
 
 
     //Declaring listerner on error on connection.
-    rabbitqueue.on('error',error => {
+    rabbitqueue.on('error', error => {
         logger.logdebug("There was some error on the connection : "+error);
     });
 
