@@ -75,11 +75,11 @@ exports.get_vpopmaild_socket = {
 exports.get_plain_passwd = {
     setUp : _set_up,
     'matt@example.com': function (test) {
-        const cb = pass => {
+        function cb(pass) {
             test.expect(1);
             test.ok(pass);
             test.done();
-        };
+        }
         if (this.plugin.cfg['example.com'].sysadmin) {
             this.plugin.get_plain_passwd('matt@example.com', cb);
         }
