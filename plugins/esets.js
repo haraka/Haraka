@@ -20,7 +20,7 @@ exports.hook_data_post = function (next, connection) {
 
     let start_time;
 
-    const wsOnClose = (error, stdout, stderr) => {
+    function wsOnClose(error, stdout, stderr) {
         // Remove the temporary file
         fs.unlink(tmpfile, () => {});
 
@@ -62,7 +62,7 @@ exports.hook_data_post = function (next, connection) {
             }
         }
         return next();
-    };
+    }
 
     ws.once('close', () => {
         start_time = Date.now();
