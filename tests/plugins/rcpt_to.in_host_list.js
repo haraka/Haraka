@@ -74,11 +74,11 @@ exports.hook_mail = {
     setUp : _set_up,
     'null sender' : function (test) {
         test.expect(2);
-        const next = function (rc, msg) {
+        function next (rc, msg) {
             test.equal(undefined, rc);
             test.equal(undefined, msg);
             test.done();
-        };
+        }
         this.connection.relaying=true;
         this.plugin.hook_mail(next, this.connection, [new Address('<>')]);
     },

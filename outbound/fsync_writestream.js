@@ -22,13 +22,13 @@ class FsyncWriteStream extends fs.WriteStream {
         close();
 
         function close (fd) {
-            fs.fsync(fd || self.fd, function (er) {
+            fs.fsync(fd || self.fd, er => {
                 if (er) {
                     self.emit('error', er);
                     return;
                 }
 
-                fs.close(fd || self.fd, function (err) {
+                fs.close(fd || self.fd, err => {
                     if (err) {
                         self.emit('error', err);
                     }

@@ -97,10 +97,10 @@ exports.acl = {
     },
     'relay.acl=false' : function (test) {
         test.expect(1);
-        const next = function (rc) {
+        function next (rc) {
             test.equal(undefined, rc);
             test.done();
-        };
+        }
         this.plugin.cfg.relay.acl=false;
         this.plugin.acl(() => {}, this.connection);
         this.plugin.pass_relaying(next, this.connection);
@@ -171,10 +171,10 @@ exports.dest_domains = {
     },
     'relay.dest_domains=false' : function (test) {
         test.expect(1);
-        const next = function (rc) {
+        function next (rc) {
             test.equal(undefined, rc);
             test.done();
-        };
+        }
         this.plugin.cfg.relay.dest_domains=false;
         this.plugin.dest_domains(next, this.connection, [{host:'foo'}]);
     },
@@ -254,39 +254,39 @@ exports.force_routing = {
     },
     'relay.force_routing=false' : function (test) {
         test.expect(1);
-        const next = function (rc) {
+        function next (rc) {
             test.equal(undefined, rc);
             test.done();
-        };
+        }
         this.plugin.cfg.relay.force_routing=false;
         this.plugin.force_routing(next, this.connection, 'foo');
     },
     'dest_domains empty' : function (test) {
         test.expect(1);
-        const next = function (rc) {
+        function next (rc) {
             test.equal(undefined, rc);
             test.done();
-        };
+        }
         this.plugin.force_routing(next, this.connection, 'foo');
     },
     'dest_domains, no route' : function (test) {
         test.expect(2);
-        const next = function (rc, nexthop) {
+        function next (rc, nexthop) {
             // console.log(arguments);
             test.equal(undefined, rc);
             test.equal(undefined, nexthop);
             test.done();
-        };
+        }
         this.plugin.dest = { domains: { foo: '{"action":"blah blah"}' } };
         this.plugin.force_routing(next, this.connection, 'foo');
     },
     'dest_domains, route' : function (test) {
         test.expect(2);
-        const next = function (rc, nexthop) {
+        function next (rc, nexthop) {
             test.equal(OK, rc);
             test.equal('other-server', nexthop);
             test.done();
-        };
+        }
         this.plugin.dest = { domains: { foo: '{"action":"blah blah","nexthop":"other-server"}' } };
         this.plugin.force_routing(next, this.connection, 'foo');
     },
@@ -307,11 +307,11 @@ exports.all = {
         test.done();
     },
     'all hook always returns OK' : function (test) {
-        const next = function (action) {
+        function next (action) {
             test.expect(1);
             test.equals(action, OK);
             test.done();
-        };
+        }
         this.plugin.cfg.relay = { all: true };
         this.plugin.all(next, this.connection, ['foo@bar.com']);
     },

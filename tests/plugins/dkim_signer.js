@@ -40,7 +40,7 @@ function getValueFromDKIM (dkim_header, key) {
 }
 
 exports.sign = {
-    'body hash simple': function (test) {
+    'body hash simple': test => {
         // took from RFC
         test.expect(1);
 
@@ -49,7 +49,7 @@ exports.sign = {
         const header = new Header();
         header.parse(['Ignored: header']);
         const signer = new DKIMSignStream('selector', 'haraka.top', privateKey, [], header,
-            function (n, dkim) {
+            (n, dkim) => {
                 test.equal(getValueFromDKIM(dkim, 'bh'), '2jUSOH9NhtVGCQWNr9BrIAPreKQjO6Sn7XIkfJVOzv8=');
                 test.done();
             }
@@ -57,7 +57,7 @@ exports.sign = {
         signer.write(Buffer.from(email));
         signer.end();
     },
-    'empty body hash simple': function (test) {
+    'empty body hash simple': test => {
         test.expect(1);
 
         const email = 'Ignored: header\r\n\r\n';
@@ -65,7 +65,7 @@ exports.sign = {
         const header = new Header();
         header.parse(['Ignored: header']);
         const signer = new DKIMSignStream('selector', 'haraka.top', privateKey, [], header,
-            function (n, dkim) {
+            (n, dkim) => {
                 test.equal(getValueFromDKIM(dkim, 'bh'), 'frcCV1k9oG9oKj3dpUqdJg1PxRT2RSN/XKdLCPjaYaY=');
                 test.done();
             }
@@ -73,13 +73,13 @@ exports.sign = {
         signer.write(Buffer.from(email));
         signer.end();
     },
-    'body hash simple, two writes': function (test) {
+    'body hash simple, two writes': test => {
         test.expect(1);
 
         const header = new Header();
         header.parse(['Ignored: header']);
         const signer = new DKIMSignStream('selector', 'haraka.top', privateKey, [], header,
-            function (n, dkim) {
+            (n, dkim) => {
                 test.equal(getValueFromDKIM(dkim, 'bh'), '2jUSOH9NhtVGCQWNr9BrIAPreKQjO6Sn7XIkfJVOzv8=');
                 test.done();
             }
@@ -88,7 +88,7 @@ exports.sign = {
         signer.write(Buffer.from('Are you hungry yet?\r\n\r\nJoe.\r\n'));
         signer.end();
     },
-    'body hash simple, empty lines': function (test) {
+    'body hash simple, empty lines': test => {
         test.expect(1);
 
         const email = 'Ignored: header\r\n\r\nHi.\r\n\r\nWe lost the game. Are you hungry yet?\r\n\r\nJoe.\r\n\r\n\r\n';
@@ -96,7 +96,7 @@ exports.sign = {
         const header = new Header();
         header.parse(['Ignored: header']);
         const signer = new DKIMSignStream('selector', 'haraka.top', privateKey, [], header,
-            function (n, dkim) {
+            (n, dkim) => {
                 test.equal(getValueFromDKIM(dkim, 'bh'), '2jUSOH9NhtVGCQWNr9BrIAPreKQjO6Sn7XIkfJVOzv8=');
                 test.done();
             }

@@ -1,4 +1,4 @@
-exports.register = function () {
+exports.register = () => {
 }
 
 exports.loaded_first = true;

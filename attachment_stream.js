@@ -49,15 +49,15 @@ class AttachmentStream extends Stream {
 
         const pipe = Stream.prototype.pipe.call(this, dest, options);
 
-        dest.on('drain', function () {
+        dest.on('drain', () => {
             // console.log("YYY: DRAIN!!!");
             if (self.paused) self.resume();
         });
-        dest.on('end', function () {
+        dest.on('end', () => {
             // console.log("YYY: END!!");
             if (self.paused) self.resume();
         });
-        dest.on('close', function () {
+        dest.on('close', () => {
             // console.log("YYY: CLOSE!!");
             if (self.paused) self.resume();
         });
@@ -106,6 +106,4 @@ class AttachmentStream extends Stream {
     }
 }
 
-exports.createStream = function (header) {
-    return new AttachmentStream (header);
-}
+exports.createStream = header => new AttachmentStream (header)

@@ -92,21 +92,21 @@ exports.hook_lookup_rdns = function (next, connection) {
         return next(OK, connection.remote.ip);
     }
 
-    const call_next = function (code, msg) {
+    function call_next (code, msg) {
         clearTimeout(timeout_id);
         if (called_next) return;
         called_next++;
         next(code, msg);
-    };
+    }
 
-    timeout_id = setTimeout(function () {
+    timeout_id = setTimeout(() => {
         connection.loginfo(plugin, 'timed out when looking up ' +
             connection.remote.ip + '. Disconnecting.');
         call_next(DENYDISCONNECT,
             '[' + connection.remote.ip + '] ' + timeout_msg);
     }, timeout * 1000);
 
-    dns.reverse(connection.remote.ip, function (err, domains) {
+    dns.reverse(connection.remote.ip, (err, domains) => {
         if (err) {
             if (!called_next) {
                 connection.auth_results("iprev=permerror");
@@ -135,8 +135,8 @@ exports.hook_lookup_rdns = function (next, connection) {
         // PTR record for a domain, however, DNS protocol does not
         // restrict one from having multiple PTR records for the same
         // address.  So here we are, dealing with that case.
-        domains.forEach(function (rdns2) {
-            net_utils.get_ips_by_host(rdns2, function (err2, addresses) {
+        domains.forEach(rdns2 => {
+            net_utils.get_ips_by_host(rdns2, (err2, addresses) => {
                 total_checks--;
 
                 if (err2 && err2.length) {

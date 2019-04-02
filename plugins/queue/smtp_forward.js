@@ -43,7 +43,7 @@ exports.load_smtp_forward_ini = function () {
             '*.enable_outbound'
         ],
     },
-    function () {
+    () => {
         plugin.load_smtp_forward_ini();
     });
 
@@ -177,7 +177,7 @@ exports.auth = function (cfg, connection, smtp_client) {
     const plugin = this;
 
     connection.loginfo(plugin, 'Configuring authentication for SMTP server ' + cfg.host + ':' + cfg.port);
-    smtp_client.on('capabilities', function () {
+    smtp_client.on('capabilities', () => {
         connection.loginfo(plugin, 'capabilities received');
 
         if ('secured' in smtp_client) {
@@ -203,13 +203,14 @@ exports.auth = function (cfg, connection, smtp_client) {
 
             connection.loginfo(plugin, 'Authenticating with AUTH LOGIN ' + cfg.auth_user);
             smtp_client.send_command('AUTH', 'LOGIN');
-            smtp_client.on('auth', function () {
+            smtp_client.on('auth', () => {
                 //TODO: nothing?
+
             });
-            smtp_client.on('auth_username', function () {
+            smtp_client.on('auth_username', () => {
                 smtp_client.send_command(base64(cfg.auth_user));
             });
-            smtp_client.on('auth_password', function () {
+            smtp_client.on('auth_password', () => {
                 smtp_client.send_command(base64(cfg.auth_pass));
             });
         }
@@ -240,7 +241,7 @@ exports.queue_forward = function (next, connection) {
     const cfg = plugin.get_config(connection);
     if (!plugin.forward_enabled(connection, cfg)) return next();
 
-    smtp_client_mod.get_client_plugin(plugin, connection, cfg, function (err, smtp_client) {
+    smtp_client_mod.get_client_plugin(plugin, connection, cfg, (err, smtp_client) => {
         smtp_client.next = next;
 
         let rcpt = 0;
@@ -277,7 +278,7 @@ exports.queue_forward = function (next, connection) {
         smtp_client.on('mail', send_rcpt);
 
         if (cfg.one_message_per_rcpt) {
-            smtp_client.on('rcpt', function () {
+            smtp_client.on('rcpt', () => {
                 smtp_client.send_command('DATA');
             });
         }
@@ -285,12 +286,12 @@ exports.queue_forward = function (next, connection) {
             smtp_client.on('rcpt', send_rcpt);
         }
 
-        smtp_client.on('data', function () {
+        smtp_client.on('data', () => {
             if (dead_sender()) return;
             smtp_client.start_data(txn.message_stream);
         });
 
-        smtp_client.on('dot', function () {
+        smtp_client.on('dot', () => {
             if (dead_sender()) return;
             get_rs().add(plugin, { pass: smtp_client.response });
             if (rcpt < txn.rcpt_to.length) {
@@ -301,12 +302,12 @@ exports.queue_forward = function (next, connection) {
             smtp_client.release();
         });
 
-        smtp_client.on('rset', function () {
+        smtp_client.on('rset', () => {
             if (dead_sender()) return;
             smtp_client.send_command('MAIL', 'FROM:' + txn.mail_from);
         });
 
-        smtp_client.on('bad_code', function (code, msg) {
+        smtp_client.on('bad_code', (code, msg) => {
             if (dead_sender()) return;
             smtp_client.call_next(((code && code[0] === '5') ? DENY : DENYSOFT),
                 msg);
@@ -315,7 +316,7 @@ exports.queue_forward = function (next, connection) {
     });
 }
 
-exports.get_mx_next_hop = function (next_hop) {
+exports.get_mx_next_hop = next_hop => {
     const dest = url.parse(next_hop);
     const mx = {
         priority: 0,

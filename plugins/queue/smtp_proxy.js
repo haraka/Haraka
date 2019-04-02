@@ -25,7 +25,7 @@ exports.load_smtp_proxy_ini = function () {
             '+main.enable_outbound',
         ],
     },
-    function () {
+    () => {
         plugin.load_smtp_proxy_ini();
     });
 
@@ -40,7 +40,7 @@ exports.hook_mail = function (next, connection, params) {
     connection.loginfo(plugin, 'forwarding to ' +
             (c.forwarding_host_pool ? "configured forwarding_host_pool" : c.host + ':' + c.port)
     );
-    smtp_client_mod.get_client_plugin(plugin, connection, c, function (err, smtp_client) {
+    smtp_client_mod.get_client_plugin(plugin, connection, c, (err, smtp_client) => {
         connection.notes.smtp_client = smtp_client;
         smtp_client.next = next;
 
@@ -48,7 +48,7 @@ exports.hook_mail = function (next, connection, params) {
         smtp_client.on('rcpt', smtp_client.call_next);
         smtp_client.on('data', smtp_client.call_next);
 
-        smtp_client.on('dot', function () {
+        smtp_client.on('dot', () => {
             if (smtp_client.is_dead_sender(plugin, connection)) {
                 delete connection.notes.smtp_client;
                 return;
@@ -59,11 +59,11 @@ exports.hook_mail = function (next, connection, params) {
             delete connection.notes.smtp_client;
         });
 
-        smtp_client.on('error', function () {
+        smtp_client.on('error', () => {
             delete connection.notes.smtp_client;
         });
 
-        smtp_client.on('bad_code', function (code, msg) {
+        smtp_client.on('bad_code', (code, msg) => {
             smtp_client.call_next(code.match(/^4/) ? DENYSOFT : DENY,
                 smtp_client.response.slice());
 
@@ -79,14 +79,14 @@ exports.hook_mail = function (next, connection, params) {
     });
 }
 
-exports.hook_rcpt_ok = function (next, connection, recipient) {
+exports.hook_rcpt_ok = (next, connection, recipient) => {
     const smtp_client = connection.notes.smtp_client;
     if (!smtp_client) return next();
     smtp_client.next = next;
     smtp_client.send_command('RCPT', 'TO:' + recipient.format(!smtp_client.smtp_utf8));
 }
 
-exports.hook_data = function (next, connection) {
+exports.hook_data = (next, connection) => {
     const smtp_client = connection.notes.smtp_client;
     if (!smtp_client) return next();
     smtp_client.next = next;
@@ -105,7 +105,7 @@ exports.hook_queue = function (next, connection) {
     smtp_client.start_data(connection.transaction.message_stream);
 }
 
-exports.hook_rset = function (next, connection) {
+exports.hook_rset = (next, connection) => {
     const smtp_client = connection.notes.smtp_client;
     if (!smtp_client) return next();
     smtp_client.release();
@@ -115,7 +115,7 @@ exports.hook_rset = function (next, connection) {
 
 exports.hook_quit = exports.hook_rset;
 
-exports.hook_disconnect = function (next, connection) {
+exports.hook_disconnect = (next, connection) => {
     const smtp_client = connection.notes.smtp_client;
     if (!smtp_client) return next();
     smtp_client.release();

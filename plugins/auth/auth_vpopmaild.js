@@ -10,7 +10,7 @@ exports.register = function () {
 
 exports.load_vpop_ini = function () {
     const plugin = this;
-    plugin.cfg = plugin.config.get('auth_vpopmaild.ini', function () {
+    plugin.cfg = plugin.config.get('auth_vpopmaild.ini', () => {
         plugin.load_vpop_ini();
     });
 }
@@ -37,7 +37,7 @@ exports.check_plain_passwd = function (connection, user, passwd, cb) {
     const socket = plugin.get_vpopmaild_socket(user);
     socket.setEncoding('utf8');
 
-    socket.on('data', function (chunk) {
+    socket.on('data', chunk => {
         chunk_count++;
         if (chunk_count === 1) {
             if (/^\+OK/.test(chunk)) {
@@ -54,7 +54,7 @@ exports.check_plain_passwd = function (connection, user, passwd, cb) {
             socket.end();             // disconnect
         }
     });
-    socket.on('end', function () {
+    socket.on('end', () => {
         connection.loginfo(plugin, 'AUTH user="' + user + '" success=' + auth_success);
         return cb(auth_success);
     });
@@ -92,15 +92,15 @@ exports.get_vpopmaild_socket = function (user) {
     socket.setTimeout(300 * 1000);
     socket.setEncoding('utf8');
 
-    socket.on('timeout', function () {
+    socket.on('timeout', () => {
         plugin.logerror("vpopmaild connection timed out");
         socket.end();
     });
-    socket.on('error', function (err) {
+    socket.on('error', err => {
         plugin.logerror("vpopmaild connection failed: " + err);
         socket.end();
     });
-    socket.on('connect', function () {
+    socket.on('connect', () => {
         plugin.logdebug('vpopmail connected');
     });
     return socket;
@@ -119,7 +119,7 @@ exports.get_plain_passwd = function (user, connection, cb) {
     let plain_pass = null;
     let chunk_count = 0;
 
-    socket.on('data', function (chunk) {
+    socket.on('data', chunk => {
         chunk_count++;
         plugin.logdebug(chunk_count + '\t' + chunk);
         if (chunk_count === 1) {
@@ -154,7 +154,7 @@ exports.get_plain_passwd = function (user, connection, cb) {
             socket.write("quit\n\r");
         }
     });
-    socket.on('end', function () {
+    socket.on('end', () => {
         cb(plain_pass ? plain_pass.toString() : plain_pass);
     });
 }

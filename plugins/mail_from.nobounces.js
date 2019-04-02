@@ -8,7 +8,7 @@ exports.register = function () {
     this.logwarn("NOTICE: plugin deprecated, use 'bounce' instead!");
 }
 
-exports.hook_mail = function (next, connection, params) {
+exports.hook_mail = (next, connection, params) => {
     const mail_from = params[0];
     if (mail_from.isNull()) {
         return next(DENY, "No bounces accepted here");

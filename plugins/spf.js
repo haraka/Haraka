@@ -8,9 +8,7 @@ exports.register = function () {
     const plugin = this;
 
     // Override logging in SPF module
-    SPF.prototype.log_debug = function (str) {
-        return plugin.logdebug(str);
-    };
+    SPF.prototype.log_debug = str => plugin.logdebug(str);
 
     plugin.load_spf_ini();
 
@@ -53,11 +51,11 @@ exports.load_spf_ini = function () {
             '-skip.auth',
         ]
     },
-    function () { plugin.load_spf_ini(); }
+    () => { plugin.load_spf_ini(); }
     );
 
     // when set, preserve legacy config settings
-    ['helo','mail'].forEach(function (phase) {
+    ['helo','mail'].forEach(phase => {
         if (plugin.cfg.main[`${phase}_softfail_reject`]) {
             plugin.cfg.deny[`${phase}_softfail`] = true;
         }
@@ -108,13 +106,13 @@ exports.helo_spf = function (next, connection, helo) {
 
     let timeout = false;
     const spf = new SPF();
-    const timer = setTimeout(function () {
+    const timer = setTimeout(() => {
         timeout = true;
         connection.loginfo(plugin, 'timeout');
         return next();
     }, plugin.cfg.lookup_timeout * 1000);
 
-    spf.check_host(connection.remote.ip, helo, null, function (err, result) {
+    spf.check_host(connection.remote.ip, helo, null, (err, result) => {
         if (timer) clearTimeout(timer);
         if (timeout) return;
         if (err) {
@@ -178,7 +176,7 @@ exports.hook_mail = function (next, connection, params) {
     if (!host) return next();  // null-sender
 
     let timeout = false;
-    const timer = setTimeout(function () {
+    const timer = setTimeout(() => {
         timeout = true;
         connection.loginfo(plugin, 'timeout');
         next();
@@ -221,13 +219,13 @@ exports.hook_mail = function (next, connection, params) {
     }
 
     // outbound (relaying), context=myself
-    net_utils.get_public_ip(function (e, my_public_ip) {
+    net_utils.get_public_ip((e, my_public_ip) => {
         // We always check the client IP first, because a relay
         // could be sending inbound mail from a non-local domain
         // which could case an incorrect SPF Fail result if we
         // check the public IP first, so we only check the public
         // IP if the client IP returns a result other than 'Pass'.
-        spf.check_host(connection.remote.ip, host, mfrom, function (err, result) {
+        spf.check_host(connection.remote.ip, host, mfrom, (err, result) => {
             let spf_result;
             if (result) {
                 spf_result = spf.result(result).toLowerCase();
@@ -239,7 +237,7 @@ exports.hook_mail = function (next, connection, params) {
                     return ch_cb(new Error(`failed to discover public IP`));
                 }
                 spf = new SPF();
-                spf.check_host(my_public_ip, host, mfrom, function (er, r) {
+                spf.check_host(my_public_ip, host, mfrom, (er, r) => {
                     ch_cb(er, r, my_public_ip);
                 });
                 return;
@@ -296,7 +294,7 @@ exports.return_results = function (next, connection, spf, scope, result, sender)
     }
 }
 
-exports.save_to_header = function (connection, spf, result, mfrom, host, id, ip) {
+exports.save_to_header = (connection, spf, result, mfrom, host, id, ip) => {
     // Add a trace header
     if (!connection) return;
     if (!connection.transaction) return;

@@ -5,6 +5,4 @@ exports.register = function () {
     plugin.inherits('base_plugin');
 }
 
-exports.main_plugin_method = function () {
-    return "main";
-}
+exports.main_plugin_method = () => "main"

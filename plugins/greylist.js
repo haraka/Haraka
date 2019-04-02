@@ -38,7 +38,7 @@ exports.load_config = function () {
             '+skip.dnswlorg',
             '-skip.mailspikewl'
         ]
-    }, function () {
+    }, () => {
         plugin.load_config();
     });
 
@@ -167,7 +167,7 @@ exports.hook_rcpt_ok = function (next, connection, rcpt) {
         return next();
     }
 
-    plugin.check_and_update_white(connection, function (err, white_rec) {
+    plugin.check_and_update_white(connection, (err, white_rec) => {
         if (err) {
             plugin.logerror(connection, `Got error: ${util.inspect(err)}`);
             return next(DENYSOFT, DSN.sec_unspecified('Backend failure. Please, retry later or contact our support.'));
@@ -188,7 +188,7 @@ exports.hook_rcpt_ok = function (next, connection, rcpt) {
         }
         else {
 
-            return plugin.process_tuple(connection, mail_from.address(), rcpt.address(), function (err2, white_promo_rec) {
+            return plugin.process_tuple(connection, mail_from.address(), rcpt.address(), (err2, white_promo_rec) => {
                 if (err2) {
                     if (err2 instanceof Error && err2.notanerror) {
                         plugin.logdebug(connection, 'host in GREY zone');
@@ -241,7 +241,7 @@ exports.process_tuple = function (connection, sender, rcpt, cb) {
 
     const key = plugin.craft_grey_key(connection, sender, rcpt);
 
-    return plugin.db_lookup(key, function (err, record) {
+    return plugin.db_lookup(key, (err, record) => {
         if (err) {
             if (err instanceof Error && err.what == 'db_error')
                 plugin.logwarn(connection, `got err from DB: ${util.inspect(err)}`);
@@ -259,7 +259,7 @@ exports.process_tuple = function (connection, sender, rcpt, cb) {
             return plugin.promote_to_white(connection, record, cb);
         }
 
-        return plugin.update_grey(key, !record, function (err2, created_record) {
+        return plugin.update_grey(key, !record, (err2, created_record) => {
             const err3 = new Error('in black zone');
             err3.record = created_record || record;
             err3.notanerror = true;
@@ -274,7 +274,7 @@ exports.check_and_update_white = function (connection, cb) {
 
     const key = plugin.craft_white_key(connection);
 
-    return plugin.db_lookup(key, function (err, record) {
+    return plugin.db_lookup(key, (err, record) => {
         if (err) {
             plugin.logwarn(connection, `got err from DB: ${util.inspect(err)}`);
             throw err;
@@ -395,7 +395,7 @@ exports.craft_hostid = function (connection) {
     const ip = connection.remote.ip;
     let rdns = connection.remote.host;
 
-    const chsit = function (value, reason) { // cache the return value
+    function chsit (value, reason) { // cache the return value
         if (!value)
             plugin.logdebug(connection, `hostid set to IP: ${reason}`);
 
@@ -408,7 +408,7 @@ exports.craft_hostid = function (connection) {
         value = value || ip;
 
         return ((trx.notes.greylist = trx.notes.greylist || {}).hostid = value);
-    };
+    }
 
     if (!rdns || rdns === 'Unknown' || rdns === 'DNSERROR') // no rDNS . FIXME: use fcrdns results
         return chsit(null, 'no rDNS info for this host');
@@ -472,7 +472,7 @@ exports.retrieve_grey = function (rcpt_key, sender_key, cb) {
     multi.hgetall(rcpt_key);
     multi.hgetall(sender_key);
 
-    multi.exec(function (err, result) {
+    multi.exec((err, result) => {
         if (err) {
             plugin.lognotice(`DB error: ${util.inspect(err)}`);
             err.what = 'db_error';
@@ -496,7 +496,7 @@ exports.update_grey = function (key, create, cb) {
         new_record = {
             created : ts_now,
             updated : ts_now,
-            lifetime : lifetime,
+            lifetime,
             tried : 1
         };
 
@@ -510,7 +510,7 @@ exports.update_grey = function (key, create, cb) {
         });
     }
 
-    multi.exec(function (err, records) {
+    multi.exec((err, records) => {
         if (err) {
             plugin.lognotice(`DB error: ${util.inspect(err)}`);
             err.what = 'db_error';
@@ -539,13 +539,13 @@ exports.promote_to_white = function (connection, grey_rec, cb) {
 
     const white_key = plugin.craft_white_key(connection);
 
-    return plugin.db.hmset(white_key, white_rec, function (err, result) {
+    return plugin.db.hmset(white_key, white_rec, (err, result) => {
         if (err) {
             plugin.lognotice(`DB error: ${util.inspect(err)}`);
             err.what = 'db_error';
             throw err;
         }
-        plugin.db.expire(white_key, white_ttl, function (err2, result2) {
+        plugin.db.expire(white_key, white_ttl, (err2, result2) => {
             if (err2) {
                 plugin.lognotice(`DB error: ${util.inspect(err2)}`);
             }
@@ -568,7 +568,7 @@ exports.update_white_record = function (key, record, cb) {
     });
     multi.expire(key, record.lifetime);
 
-    return multi.exec(function (err2, record2) {
+    return multi.exec((err2, record2) => {
         if (err2) {
             plugin.lognotice(`DB error: ${util.inspect(err2)}`);
             err2.what = 'db_error';
@@ -583,12 +583,12 @@ exports.update_white_record = function (key, record, cb) {
 exports.db_lookup = function (key, cb) {
     const plugin = this;
 
-    plugin.db.hgetall(key, function (err, result) {
+    plugin.db.hgetall(key, (err, result) => {
         if (err) {
             plugin.lognotice(`DB error: ${util.inspect(err)}`, key);
         }
         if (result && typeof result === 'object') { // groom known-to-be numeric values
-            ['created', 'updated', 'lifetime', 'tried', 'first_connect', 'whitelisted', 'tried_when_greylisted'].forEach(function (kk) {
+            ['created', 'updated', 'lifetime', 'tried', 'first_connect', 'whitelisted', 'tried_when_greylisted'].forEach(kk => {
                 const val = result[kk];
                 if (val !== undefined) {
                     result[kk] = Number(val);

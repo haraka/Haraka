@@ -12,7 +12,7 @@ function load_config () {
             '+enable_tls',
             '-ipv6_enabled',
         ],
-    }, function () {
+    }, () => {
         load_config();
     }).main;
 
