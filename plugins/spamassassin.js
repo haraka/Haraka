@@ -105,7 +105,7 @@ exports.hook_data_post = function (next, connection) {
         if (!connection.transaction) return next();
 
         if (spamd_response.headers && spamd_response.headers.Tests) {
-            spamd_response.tests = spamd_response.headers.Tests;
+            spamd_response.tests = spamd_response.headers.Tests.replace(/\s/g, '');
         }
         if (spamd_response.tests === undefined) {
             // strip the 'tests' from the X-Spam-Status header
@@ -116,7 +116,7 @@ exports.hook_data_post = function (next, connection) {
                 const tests = /tests=((?:(?!autolearn)[^ ])+)/.exec(
                     spamd_response.headers.Status.replace(/\r?\n\t/g,'')
                 );
-                if (tests) { spamd_response.tests = tests[1]; }
+                if (tests) spamd_response.tests = tests[1];
             }
         }
 
@@ -137,7 +137,7 @@ exports.hook_data_post = function (next, connection) {
 
         plugin.munge_subject(connection, spamd_response.score);
 
-        return next();
+        next();
     });
 }
 
