@@ -1254,7 +1254,7 @@ class Connection {
 
     cmd_internalcmd (line) {
         const self = this;
-        if (self.remote.ip != '127.0.0.1' && self.remote.ip != '::1') {
+        if (!self.remote.is_local) {
             return this.respond(501, "INTERNALCMD not allowed remotely");
         }
         const results = (String(line)).split(/ +/);
