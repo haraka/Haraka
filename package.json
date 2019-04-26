@@ -12,7 +12,7 @@
   },
   "main": "haraka.js",
   "engines": {
-    "node": ">= v6.14.4"
+    "node": ">= v8.15.1"
   },
   "dependencies": {
     "address-rfc2821"       : "^1.1.1",
@@ -63,12 +63,12 @@
   "devDependencies": {
     "nodeunit"              : "*",
     "haraka-test-fixtures"  : ">=1.0.27",
-    "eslint"                : ">=3",
+    "eslint"                : ">=4",
     "eslint-plugin-haraka"  : "*",
     "nodemailer"            : "*"
   },
   "bugs": {
-    "mail": "helpme@gmail.com",
+    "mail": "haraka.mail@gmail.com",
     "url": "https://github.com/haraka/Haraka/issues"
   },
   "greenkeeper": {
