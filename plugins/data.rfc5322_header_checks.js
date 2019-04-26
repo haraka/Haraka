@@ -12,7 +12,7 @@ exports.register = function () {
     this.logwarn("NOTICE: plugin deprecated, use 'data.headers' instead!");
 }
 
-exports.hook_data_post = function (next, connection) {
+exports.hook_data_post = (next, connection) => {
     const header = connection.transaction.header;
     // Headers that MUST be present
     for (let i=0,l=required_headers.length; i < l; i++) {

@@ -11,10 +11,10 @@ const _set_up = function (done) {
 
     this.plugin = new fixtures.plugin('spf');
     this.plugin.timeout = 8000;
-    this.plugin.load_config();
+    this.plugin.load_spf_ini();
 
     // uncomment this line to see detailed SPF evaluation
-    this.plugin.SPF.prototype.log_debug = function () {};
+    this.plugin.SPF.prototype.log_debug = () => {};
 
     this.connection = fixtures.connection.createConnection();
     this.connection.transaction = fixtures.transaction.createTransaction();
@@ -142,8 +142,8 @@ exports.hook_helo = {
         }
         test.expect(2);
         this.connection.remote.is_private=true;
-        this.plugin.hook_helo(next, this.connection);
-        this.plugin.hook_helo(next, this.connection, 'helo.sender.com');
+        this.plugin.helo_spf(next, this.connection);
+        this.plugin.helo_spf(next, this.connection, 'helo.sender.com');
     },
     'IPv4 literal': function (test) {
         function next (rc) {
@@ -152,7 +152,7 @@ exports.hook_helo = {
         }
         test.expect(1);
         this.connection.remote.ip='190.168.1.1';
-        this.plugin.hook_helo(next, this.connection, '[190.168.1.1]' );
+        this.plugin.helo_spf(next, this.connection, '[190.168.1.1]' );
     },
 
 }

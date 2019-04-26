@@ -17,7 +17,7 @@ exports.load_ini = function () {
             '-main.allow_mx_ip',
             '+main.reject_no_mx',
         ],
-    }, function () {
+    }, () => {
         plugin.load_ini();
     });
 
@@ -51,7 +51,7 @@ exports.hook_mail = function (next, connection, params) {
     let called_next  = 0;
     const domain       = mail_from.host;
     const c            = plugin.cfg.main;
-    const timeout_id   = setTimeout(function () {
+    const timeout_id   = setTimeout(() => {
         // DNS answer didn't return (UDP)
         connection.loginfo(plugin, 'timed out resolving MX for ' + domain);
         called_next++;
@@ -67,7 +67,7 @@ exports.hook_mail = function (next, connection, params) {
     }
 
     // IS: IPv6 compatible
-    dns.resolveMx(domain, function (err, addresses) {
+    dns.resolveMx(domain, (err, addresses) => {
         if (!txn) return;
         if (err && plugin.mxErr(connection, domain, 'MX', err, mxDone)) return;
 
@@ -93,7 +93,7 @@ exports.hook_mail = function (next, connection, params) {
                 'MX without A/AAAA records');
         }
 
-        addresses.forEach(function (addr) {
+        addresses.forEach(addr => {
             // Handle MX records that are IP addresses
             // This is invalid - but a lot of MTAs allow it.
             if (net_utils.get_ipany_re('^\\[','\\]$','').test(addr.exchange)) {
@@ -105,7 +105,7 @@ exports.hook_mail = function (next, connection, params) {
                 return;
             }
             pending_queries++;
-            net_utils.get_ips_by_host(addr.exchange, function (err2, addresses2) {
+            net_utils.get_ips_by_host(addr.exchange, (err2, addresses2) => {
                 pending_queries--;
                 if (!txn) return;
                 if (err2 && err2.length === 2) {
@@ -168,7 +168,7 @@ exports.implicit_mx = function (connection, domain, mxDone) {
     const plugin = this;
     const txn = connection.transaction;
 
-    net_utils.get_ips_by_host(domain, function (err, addresses) {
+    net_utils.get_ips_by_host(domain, (err, addresses) => {
         if (!txn) return;
         if (!addresses || !addresses.length) {
             txn.results.add(plugin, {fail: 'has_fwd_dns'});

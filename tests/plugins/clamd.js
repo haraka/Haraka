@@ -74,7 +74,7 @@ exports.hook_data = {
     'only_with_attachments, true': function (test) {
         this.plugin.cfg.main.only_with_attachments=true;
         test.expect(2);
-        this.connection.transaction.attachment_hooks = function () {};
+        this.connection.transaction.attachment_hooks = () => {};
         const next = function () {
             test.equal(true, this.plugin.cfg.main.only_with_attachments);
             test.equal(true, this.connection.transaction.parse_body);

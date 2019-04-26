@@ -15,20 +15,20 @@ const transaction = require('../../transaction');
  * @param options
  * @param callback
  */
-exports.newMockHMailItem = function (outbound_context, test, options, callback) {
+exports.newMockHMailItem = (outbound_context, test, options, callback) => {
     const opts = options || {};
     exports.createHMailItem(
         outbound_context,
         opts,
-        function (err, hmail) {
+        (err, hmail) => {
             if (err) {
                 test.ok(false, 'Could not create HMailItem: ' + err);
                 test.done();
                 return;
             }
             if (!hmail.todo) {
-                hmail.once('ready', function () {
-                    setImmediate(function (){callback(hmail);});
+                hmail.once('ready', () => {
+                    setImmediate(() => {callback(hmail);});
                 });
             }
             else {
@@ -45,7 +45,7 @@ exports.newMockHMailItem = function (outbound_context, test, options, callback) 
  * @param options
  * @param callback(err, hmail)
  */
-exports.createHMailItem = function (outbound_context, options, callback) {
+exports.createHMailItem = (outbound_context, options, callback) => {
 
     const mail_from = options.mail_from || 'sender@domain';
     const delivery_domain = options.delivery_domain || 'domain';
@@ -82,7 +82,7 @@ exports.createHMailItem = function (outbound_context, options, callback) {
 
     const hmails = [];
     const ok_paths = [];
-    outbound_context.exports.process_delivery(ok_paths, todo, hmails, function (err) {
+    outbound_context.exports.process_delivery(ok_paths, todo, hmails, err => {
         if (err) {
             callback('process_delivery error: ' + err);
             return;
@@ -106,14 +106,14 @@ exports.createHMailItem = function (outbound_context, options, callback) {
  * @param test
  * @param playbook
  */
-exports.playTestSmtpConversation = function (hmail, socket, test, playbook, callback) {
+exports.playTestSmtpConversation = (hmail, socket, test, playbook, callback) => {
     const testmx = {
         bind_helo: "haraka.test",
         exchange: "remote.testhost",
     };
     hmail.try_deliver_host_on_socket(testmx, 'testhost', 'testport', socket);
 
-    socket.write = function (line) {
+    socket.write = line => {
         //console.log('MockSocket.write(' + line.replace(/\n/, '\\n').replace(/\r/, '\\r') + ')');
         if (playbook.length == 0) {
             test.ok(false, 'missing next playbook entry');
@@ -129,13 +129,13 @@ exports.playTestSmtpConversation = function (hmail, socket, test, playbook, call
                 test.equals(expected.test + '\r\n', line, expected.description || 'Expected that line equals: ' + expected.test);
             }
             if (expected.end_test === true) {
-                setTimeout(function () {
+                setTimeout(() => {
                     callback();
                 }, 0);
                 return;
             }
         }
-        setTimeout(function () {
+        setTimeout(() => {
             let nextMessageFromServer;
             while (false != (nextMessageFromServer = getNextEntryFromPlaybook('remote', playbook))) {
                 socket.emit('line', nextMessageFromServer.line + '\r\n');

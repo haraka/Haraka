@@ -18,7 +18,7 @@ exports.load_config = function () {
             '+main.reject'
         ]
     },
-    function () {
+    () => {
         plugin.load_config();
     });
 
@@ -31,7 +31,7 @@ exports.load_config = function () {
     }
 
     // config/early_talker.pause is in milliseconds
-    plugin.pause = plugin.config.get('early_talker.pause', function () {
+    plugin.pause = plugin.config.get('early_talker.pause', () => {
         plugin.load_config();
     });
 }
@@ -39,28 +39,9 @@ exports.load_config = function () {
 exports.early_talker = function (next, connection) {
     const plugin = this;
     if (!plugin.pause) return next();
+    if (!plugin.should_check(connection)) return next();
 
-    if (connection.relaying) {    // Don't delay AUTH/RELAY clients
-        if (connection.early_talker) {
-            connection.results.add(plugin, { skip: 'relay client'});
-        }
-        return next();
-    }
-
-    // Don't delay whitelisted IPs
-    if (plugin.ip_in_list(connection.remote.ip)) { // check connecting IP
-        connection.results.add(plugin, { skip: 'whitelist' });
-        return next();
-    }
-
-    // Don't delay historically good senders
-    const karma = connection.results.get('karma');
-    if (karma && karma.good > 0) {
-        connection.results.add(plugin, { skip: 'good karma' });
-        return next();
-    }
-
-    const check = function () {
+    function check () {
         if (!connection) return next();
         if (!connection.early_talker) {
             connection.results.add(plugin, {pass: 'early'});
@@ -69,7 +50,7 @@ exports.early_talker = function (next, connection) {
         connection.results.add(plugin, {fail: 'early'});
         if (!plugin.cfg.main.reject) return next();
         return next(DENYDISCONNECT, "You talk too soon");
-    };
+    }
 
     let pause = plugin.pause;
     if (plugin.hook === 'connect_init') {
@@ -81,7 +62,7 @@ exports.early_talker = function (next, connection) {
         pause = plugin.pause - elapsed;
     }
 
-    setTimeout(function () { check(); }, pause);
+    setTimeout(() => { check(); }, pause);
 }
 
 
@@ -94,9 +75,7 @@ exports.early_talker = function (next, connection) {
 exports.ip_in_list = function (ip) {
     const plugin = this;
 
-    if (!plugin.whitelist) {
-        return false;
-    }
+    if (!plugin.whitelist) return false;
 
     const ipobj = ipaddr.parse(ip);
 
@@ -118,7 +97,7 @@ exports.ip_in_list = function (ip) {
  * @param  {Array} list A list of IP addresses / subnets
  * @return {Array}      The converted array
  */
-exports.load_ip_list = function (list) {
+exports.load_ip_list = list => {
     const whitelist = [];
 
     for (let i = 0; i < list.length; i++) {
@@ -136,4 +115,42 @@ exports.load_ip_list = function (list) {
         }
     }
     return whitelist;
+}
+
+exports.should_check = function (connection) {
+    const plugin = this;
+    // Skip delays for privileged senders
+
+    if (connection.notes.auth_user) {
+        connection.results.add(plugin, { skip: 'authed'});
+        return false;
+    }
+
+    if (connection.relaying) {
+        connection.results.add(plugin, { skip: 'relay'});
+        return false;
+    }
+
+    if (plugin.ip_in_list(connection.remote.ip)) {
+        connection.results.add(plugin, { skip: 'whitelist' });
+        return false;
+    }
+
+    const karma = connection.results.get('karma');
+    if (karma && karma.good > 0) {
+        connection.results.add(plugin, { skip: '+karma' });
+        return false;
+    }
+
+    if (connection.remote.is_local) {
+        connection.results.add(plugin, { skip: 'local_ip'});
+        return false;
+    }
+
+    if (connection.remote.is_private) {
+        connection.results.add(plugin, { skip: 'private_ip'});
+        return false;
+    }
+
+    return true;
 }

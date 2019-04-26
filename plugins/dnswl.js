@@ -8,14 +8,14 @@ exports.register = function () {
     plugin.load_dnswl_ini();
 
     // IMPORTANT: don't run this on hook_rcpt otherwise we're an open relay...
-    ['ehlo','helo','mail'].forEach(function (hook) {
+    ['ehlo','helo','mail'].forEach(hook => {
         plugin.register_hook(hook, 'check_dnswl');
     });
 }
 
 exports.load_dnswl_ini = function () {
     const plugin = this;
-    plugin.cfg = plugin.config.get('dnswl.ini', function () {
+    plugin.cfg = plugin.config.get('dnswl.ini', () => {
         plugin.load_dnswl_ini();
     });
 
@@ -44,9 +44,7 @@ exports.load_dnswl_ini = function () {
     }
 }
 
-exports.check_dnswl = function (next, connection) {
-    return connection.notes.dnswl ? next(OK) : next();
-}
+exports.check_dnswl = (next, connection) => connection.notes.dnswl ? next(OK) : next()
 
 exports.hook_connect = function (next, connection) {
     const plugin = this;
@@ -54,7 +52,7 @@ exports.hook_connect = function (next, connection) {
         connection.logerror(plugin, 'no zones');
         return next();
     }
-    plugin.first(connection.remote.ip, plugin.zones, function (err, zone, a) {
+    plugin.first(connection.remote.ip, plugin.zones, (err, zone, a) => {
         if (!a) return next();
         connection.loginfo(plugin, connection.remote.ip +
             ' is whitelisted by ' + zone + ': ' + a);

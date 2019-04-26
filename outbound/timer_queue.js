@@ -4,7 +4,8 @@ const logger = require('../logger');
 
 class TQTimer {
 
-    constructor (fire_time, cb) {
+    constructor (id, fire_time, cb) {
+        this.id = id;
         this.fire_time = fire_time;
         this.cb = cb;
     }
@@ -21,13 +22,13 @@ class TimerQueue {
         const self = this;
         interval = interval || 1000;
         this.queue = [];
-        this.interval_timer = setInterval(function () { self.fire(); }, interval);
+        this.interval_timer = setInterval(() => { self.fire(); }, interval);
     }
 
-    add (ms, cb) {
+    add (id, ms, cb) {
         const fire_time = Date.now() + ms;
 
-        const timer = new TQTimer(fire_time, cb);
+        const timer = new TQTimer(id, fire_time, cb);
 
         if ((this.queue.length === 0) ||
             fire_time >= this.queue[this.queue.length - 1].fire_time) {
@@ -43,6 +44,17 @@ class TimerQueue {
         }
 
         throw "Should never get here";
+    }
+
+    discard (id) {
+        for (let i = 0; i < this.queue.length; i++) {
+            if (this.queue[i].id === id) {
+                this.queue[i].cancel();
+                return this.queue.splice(i, 1);
+            }
+        }
+
+        throw `${id} not found`;
     }
 
     fire () {

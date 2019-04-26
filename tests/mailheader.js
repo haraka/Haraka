@@ -27,7 +27,7 @@ for (let i=0; i<lines.length; i++) {
 }
 
 exports.basic = {
-    parse_basic: function (test) {
+    parse_basic: test => {
         test.expect(3);
         const h = new Header();
         h.parse(lines);
@@ -39,7 +39,7 @@ exports.basic = {
         test.equal(h.get_decoded('fromUTF8'), 'Kohl’s <Kohls@s.kohls.com>');
         test.done();
     },
-    'content type w/parens': function (test) {
+    'content type w/parens': test => {
         test.expect(2);
         const h = new Header();
         h.parse(lines);
@@ -51,7 +51,7 @@ exports.basic = {
 }
 
 exports.add_headers = {
-    add_basic: function (test) {
+    add_basic: test => {
         test.expect(2);
         const h = new Header();
         h.parse(lines);
@@ -61,7 +61,7 @@ exports.add_headers = {
         test.equal(h.lines()[14], 'Fizz: buzz\n');
         test.done();
     },
-    add_utf8: function (test) {
+    add_utf8: test => {
         test.expect(4);
         const h = new Header();
         h.parse(lines);
@@ -77,7 +77,7 @@ exports.add_headers = {
 }
 
 exports.continuations = {
-    continuations_decoded: function (test) {
+    continuations_decoded: test => {
         test.expect(1);
         const h = new Header();
         h.parse(lines);

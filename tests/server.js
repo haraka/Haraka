@@ -112,7 +112,7 @@ exports.get_smtp_server = {
             test.expect(3);
             test.ok(server);
             test.equal(server.has_tls, false);
-            server.getConnections(function (err, count) {
+            server.getConnections((err, count) => {
                 test.equal(0, count);
                 test.done();
             });
@@ -132,7 +132,7 @@ exports.get_smtp_server = {
             test.expect(3);
             test.ok(server);
             test.equal(server.has_tls, true);
-            server.getConnections(function (err, count) {
+            server.getConnections((err, count) => {
                 test.equal(0, count);
                 test.done();
             });
@@ -191,7 +191,7 @@ exports.smtp_client = {
         _setupServer(this, 'localhost:2500', done);
     },
     tearDown: _tearDownServer,
-    'accepts SMTP message': function (test) {
+    'accepts SMTP message': test => {
 
         test.expect(1);
         const server = { notes: { } };
@@ -204,27 +204,27 @@ exports.smtp_client = {
         const smtp_client   = require('../smtp_client');
         const MessageStream = require('../messagestream');
 
-        smtp_client.get_client(server, function (err, client) {
+        smtp_client.get_client(server, (err, client) => {
 
             client
-                .on('greeting', function (command) {
+                .on('greeting', command => {
                     client.send_command('HELO', 'haraka.local');
                 })
-                .on('helo', function () {
+                .on('helo', () => {
                     client.send_command('MAIL', 'FROM:<test@haraka.local>');
                 })
-                .on('mail', function () {
+                .on('mail', () => {
                     client.send_command('RCPT', 'TO:<nobody-will-see-this@haraka.local>');
                 })
-                .on('rcpt', function () {
+                .on('rcpt', () => {
                     client.send_command('DATA');
                 })
-                .on('data', function () {
+                .on('data', () => {
                     const message_stream = new MessageStream(
                         { main : { spool_after : 1024 } }, "theMessageId"
                     );
 
-                    message_stream.on('end', function () {
+                    message_stream.on('end', () => {
                         client.socket.write('.\r\n');
                     })
                     message_stream.add_line('Header: test\r\n');
@@ -234,12 +234,12 @@ exports.smtp_client = {
 
                     client.start_data(message_stream);
                 })
-                .on('dot', function () {
+                .on('dot', () => {
                     test.ok(1);
                     client.release();
                     test.done();
                 })
-                .on('bad_code', function (code, msg) {
+                .on('bad_code', (code, msg) => {
                     client.release();
                     test.done();
                 });
@@ -250,15 +250,15 @@ exports.smtp_client = {
 
 exports.nodemailer = {
     setUp : function (done) {
-        _setupServer(this, 'localhost:2503', done);
+        _setupServer(this, '127.0.0.1:2503', done);
     },
     tearDown: _tearDownServer,
-    'accepts SMTP message': function (test) {
+    'accepts SMTP message': test => {
 
         test.expect(1);
         const nodemailer = require('nodemailer');
         const transporter = nodemailer.createTransport({
-            host: 'localhost',
+            host: '127.0.0.1',
             port: 2503,
             tls: {
                 // do not fail on invalid certs
@@ -276,7 +276,7 @@ exports.nodemailer = {
             text: 'Hello world ?',
             html: '<b>Hello world ?</b>',
         },
-        function (error, info){
+        (error, info) => {
             if (error){
                 console.log(error);
                 test.done();
@@ -287,12 +287,12 @@ exports.nodemailer = {
             test.done();
         });
     },
-    'accepts authenticated SMTP': function (test) {
+    'accepts authenticated SMTP': test => {
 
         test.expect(1);
         const nodemailer = require('nodemailer');
         const transporter = nodemailer.createTransport({
-            host: 'localhost',
+            host: '127.0.0.1',
             port: 2503,
             auth: {
                 user: 'matt',
@@ -315,7 +315,7 @@ exports.nodemailer = {
             text: 'Hello world ?',
             html: '<b>Hello world ?</b>',
         },
-        function (error, info){
+        (error, info) => {
             if (error){
                 console.log(error);
                 test.done();
@@ -326,12 +326,12 @@ exports.nodemailer = {
             test.done();
         });
     },
-    'rejects invalid auth': function (test) {
+    'rejects invalid auth': test => {
 
         test.expect(1);
         const nodemailer = require('nodemailer');
         const transporter = nodemailer.createTransport({
-            host: 'localhost',
+            host: '127.0.0.1',
             port: 2503,
             auth: {
                 user: 'matt',
@@ -353,7 +353,7 @@ exports.nodemailer = {
             text: 'Hello world ?',
             html: '<b>Hello world ?</b>',
         },
-        function (error, info){
+        (error, info) => {
             if (error){
                 test.equals(error.code, 'EAUTH');
                 // console.log(error);
@@ -364,12 +364,12 @@ exports.nodemailer = {
             test.done();
         });
     },
-    'DKIM validates signed message': function (test) {
+    'DKIM validates signed message': test => {
 
         test.expect(1);
         const nodemailer = require('nodemailer');
         const transporter = nodemailer.createTransport({
-            host: 'localhost',
+            host: '127.0.0.1',
             port: 2503,
             tls: {
                 // do not fail on invalid certs
@@ -392,7 +392,7 @@ exports.nodemailer = {
                 privateKey: '-----BEGIN RSA PRIVATE KEY-----\nMIIEpAIBAAKCAQEAxqoUAnQ9GB3iNnkS7coj0Iggd0nyryW062tpK95NC5UXmmAwIpUMfkYdiHY2o2duWYGF0Bp237M/QXKhJYTXfsgkwP/bq9OGWtRZxHPHhbhdjbiI\nqObi6zvYcxrI77gpWDDvruhMeS9Hwa1R99pLUWd4PsuYTzbV/jwu2pz+XZXXXNEU\nVxzDAAj0yF7mwxHMLzQfR+hdhWcrgN0stUP0o7hm7hoOP8IWgcSW3JiQYavIKoI4\nm4+I9I1LzDJN2rHVnQvmjUrqqpG7X6SyFVFtuTWGaMqf1Cj/t8eSvU9VdgLFllS8\ntThqUZHq5S5hm8M8VzLuQLG9U0dtFolcFmJkbQIDAQABAoIBAB4fUbNhjpXmihM6\nXm1htfZ7fXi45Kw76me7vJGjPklgTNjidsn3kZJf7UBwtC4ok6nMos6ABMA8fH3e\n9KIst0QI8tG0ucke5INHKWlJKNqUrtK7RTVe9M84HsStLgRzBwnRObZqkJXbXmT2\nc7RCDCOGrcvPsQNpzB6lX3FUVpk3x24RXpQV1qSgH8yuHSPc1C6rssXwPAgnESfS\nK3MHRx2CLZvTTkq/YCsT+wS/O9RWPCVOYuWaa5DDDAIp3Yw1wYq9Upoh0BdIFC3U\nWm+5Cr3o9wxcvS6+W2RA6I51eymzvCU5ZakWt/bnUDb6/ByxsWOn5rL4WfPpCwE4\nnuC72v0CgYEA9imEq6a0GoaEsMoR7cxT7uXKimQH+Jaq3CGkuh0iN32F4FXhuUKz\nLYKSLCZzpb1MiDJv6BBchV6uSQ6ATo1cZ8WzYQISikk175bf0SPom591OZElvKA2\nSOrTrXtbl33YbWZEgyEcpTgelVi5ys9rj4eKkMvM0lwRmW6gctEFXRcCgYEAzpqc\nR/wqPjgPhpF1CZtdEwOZg4kkOig8CBcuQ7o/hDG7N69A9ZbeJO8eD+gKDrHRfkYr\nTH/UdkZGjilBk/lxnpIZpyBLxQ6UdhNPuwtxXKAvuSN+aQ0pdJn8tg03OSj2OzTK\nJ4hMsO/wt1xM8EDRobLZEosMadaYZUHzx8VU5RsCgYEAvFZbuXEcT0cocpLIUOaK\nOTf7VRLfvmSYaUAcZoEv0sDpExDiWPodWO6To8/vn5lL2tCsKiOKhkhAlIjRxkgF\nsSfj7I7HXKJS7/LBX6RXrem8qMTS2JTDs9pnBk5hb3DLjDg4pxNIdWiQjbeKvw8f\nvnr3m30yQqhKlte7Tt15exUCgYBzq7RbyR6Nfy2SFdYE7usJPjawohOaS/RwQyov\n2RK+nGlJH+GqnjD5VLbsCOm4mG3F2NtdFSSKo4XVCdwhUMMAGKQsIbTKOwN7qAw3\nmIx7Y2PUr76SakAPfDc0ZenJItnZBBE6WOE3Ht8Siaa5zFCRy2QlMZxdlTv1VRt7\neUuyiQKBgQDdXJO5+3h1HPxbYZcmNm/2CJUNw2ehU8vCiBXCcWPn7JukayHx+TXy\nyj0j/b1SvmKgjB+4JWluiqIU+QBjRjvb397QY1YoCEaGZd0zdFjTZwQksQ5AFst9\nCiD9OFXe/kkmIUQQra6aw1CoppyAfvAblp8uevLWb57xU3VUB3xeGg==\n-----END RSA PRIVATE KEY-----\n',
             }
         },
-        function (error, info){
+        (error, info) => {
             // console.log(info);
             if (error){
                 console.log(error);
@@ -411,12 +411,12 @@ exports.requireAuthorized_SMTPS = {
         _setupServer(this, 'localhost:2465', done);
     },
     tearDown: _tearDownServer,
-    'rejects non-validated SMTPS connection': function (test) {
+    'rejects non-validated SMTPS connection': test => {
 
         test.expect(1);
         const nodemailer = require('nodemailer');
         const transporter = nodemailer.createTransport({
-            host: 'localhost',
+            host: '127.0.0.1',
             port: 2465,
             secure: true,
             tls: {
@@ -426,7 +426,7 @@ exports.requireAuthorized_SMTPS = {
         });
 
         // give the SMTPS listener a second to start listening
-        setTimeout(function () {
+        setTimeout(() => {
             transporter.sendMail({
                 from: '"Testalicious Matt" <harakamail@gmail.com>',
                 to:   'nobody-will-see-this@haraka.local',
@@ -438,7 +438,7 @@ exports.requireAuthorized_SMTPS = {
                 text: 'Hello world ?',
                 html: '<b>Hello world ?</b>',
             },
-            function (error, info) {
+            (error, info) => {
                 if (error) {
                     // console.log(error);
                     if (error.message === 'socket hang up') {   // node 6 & 8
@@ -458,12 +458,12 @@ exports.requireAuthorized_STARTTLS = {
     setUp : function (done) {
         _setupServer(this, 'localhost:2587', done);
     },
-    'rejects non-validated STARTTLS connection': function (test) {
+    'rejects non-validated STARTTLS connection': test => {
 
         test.expect(1);
         const nodemailer = require('nodemailer');
         const transporter = nodemailer.createTransport({
-            host: 'localhost',
+            host: '127.0.0.1',
             port: 2587,
             tls: {
                 // do not fail on invalid certs
@@ -472,7 +472,7 @@ exports.requireAuthorized_STARTTLS = {
         });
 
         // give the SMTPS listener a second to start listening
-        setTimeout(function () {
+        setTimeout(() => {
             transporter.sendMail({
                 from: '"Testalicious Matt" <harakamail@gmail.com>',
                 to:   'nobody-will-see-this@haraka.local',
@@ -484,7 +484,7 @@ exports.requireAuthorized_STARTTLS = {
                 text: 'Hello world ?',
                 html: '<b>Hello world ?</b>',
             },
-            function (error, info) {
+            (error, info) => {
                 if (error) {
                     // console.log(error);
                     test.equal(error.message, ['Unexpected socket close'])

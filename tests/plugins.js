@@ -38,7 +38,7 @@ From: https://github.com/haraka/Haraka/pull/1278#issuecomment-172134064
 */
 
 exports.plugin = {
-    'new Plugin() object': function (test) {
+    'new Plugin() object': test => {
         const pi = new plugin.Plugin(piName);
         test.expect(1);
         test.ok(pi);
@@ -58,12 +58,12 @@ exports.get_timeout = {
         process.env.WITHOUT_CONFIG_CACHE=true;
         this.to = getVal();
         const self = this;
-        fs.writeFile(toPath, this.to, function () {
+        fs.writeFile(toPath, this.to, () => {
             self.plugin = new plugin.Plugin(piName);
             done();
         });
     },
-    tearDown : function (done) {
+    tearDown : done => {
         delete process.env.WITHOUT_CONFIG_CACHE;
         fs.unlink(toPath, done);
     },
@@ -90,15 +90,15 @@ exports.get_timeout = {
 }
 
 exports.plugin_paths = {
-    setUp : function (done) {
+    setUp : done => {
         delete process.env.HARAKA;
         done();
     },
-    tearDown : function (done) {
+    tearDown : done => {
         delete process.env.HARAKA;
         done();
     },
-    'CORE plugin: (tls)' : function (test) {
+    'CORE plugin: (tls)' : test => {
         const p = new plugin.Plugin('tls');
 
         test.expect(1);
@@ -106,7 +106,7 @@ exports.plugin_paths = {
         test.done();
     },
 
-    'INSTALLED override: (tls)': function (test) {
+    'INSTALLED override: (tls)': test => {
         process.env.HARAKA = path.resolve(__dirname, '..', 'tests', 'installation');
 
         const p = new plugin.Plugin('tls');
@@ -116,7 +116,7 @@ exports.plugin_paths = {
         test.done();
     },
 
-    'INSTALLED node_modules package plugin: (test-plugin)': function (test) {
+    'INSTALLED node_modules package plugin: (test-plugin)': test => {
         process.env.HARAKA = path.resolve(__dirname, '..', 'tests', 'installation');
 
         const p = new plugin.Plugin('test-plugin');
@@ -135,7 +135,7 @@ exports.plugin_paths = {
         test.done();
     },
 
-    'CORE package plugin: asn': function (test) {
+    'CORE package plugin: asn': test => {
         const p = new plugin.Plugin('haraka-plugin-asn');
 
         test.expect(2);
@@ -144,7 +144,7 @@ exports.plugin_paths = {
         test.done();
     },
 
-    'plugins overrides node_modules': function (test) {
+    'plugins overrides node_modules': test => {
         process.env.HARAKA = path.resolve(__dirname, '..', 'tests', 'installation');
 
         const p = new plugin.Plugin('load_first');
@@ -163,7 +163,7 @@ exports.plugin_paths = {
         test.done();
     },
 
-    'INSTALLED plugins folder plugin: (folder_plugin)': function (test) {
+    'INSTALLED plugins folder plugin: (folder_plugin)': test => {
         process.env.HARAKA = path.resolve(__dirname, '..', 'tests', 'installation');
 
         const p = new plugin.Plugin('folder_plugin');
@@ -182,7 +182,7 @@ exports.plugin_paths = {
         test.done();
     },
 
-    'Inheritance: (inherits)': function (test) {
+    'Inheritance: (inherits)': test => {
         process.env.HARAKA = path.resolve(__dirname, '..', 'tests', 'installation');
 
         const p = new plugin.Plugin('inherits');
@@ -204,15 +204,15 @@ exports.plugin_paths = {
 }
 
 exports.plugin_config = {
-    setUp : function (done) {
+    setUp : done => {
         delete process.env.HARAKA;
         done();
     },
-    tearDown : function (done) {
+    tearDown : done => {
         delete process.env.HARAKA;
         done();
     },
-    'CORE plugin: (tls)' : function (test) {
+    'CORE plugin: (tls)' : test => {
 
         const p = new plugin.Plugin('tls');
 
@@ -222,7 +222,7 @@ exports.plugin_config = {
         test.done();
     },
 
-    'INSTALLED override: (tls)': function (test) {
+    'INSTALLED override: (tls)': test => {
         process.env.HARAKA = path.resolve(__dirname, '..', 'tests', 'installation');
 
         const p = new plugin.Plugin('tls');
@@ -235,7 +235,7 @@ exports.plugin_config = {
         test.done();
     },
 
-    'INSTALLED node_modules package plugin: (test-plugin)': function (test) {
+    'INSTALLED node_modules package plugin: (test-plugin)': test => {
         process.env.HARAKA = path.resolve(__dirname, '..', 'tests', 'installation');
 
         const p = new plugin.Plugin('test-plugin');

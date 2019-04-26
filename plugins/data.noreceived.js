@@ -7,7 +7,7 @@ exports.register = function () {
     this.logwarn("NOTICE: plugin deprecated, use 'data.headers' instead!");
 }
 
-exports.hook_data_post = function (next, connection) {
+exports.hook_data_post = (next, connection) => {
     // We always have the received header that Haraka added, so check for 1
     if (connection.transaction.header.get_all('Received').length === 1) {
         next(DENY, "Mails here must have a Received header");

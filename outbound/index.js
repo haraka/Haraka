@@ -27,8 +27,11 @@ const queue_dir = queuelib.queue_dir;
 const temp_fail_queue = queuelib.temp_fail_queue;
 const delivery_queue = queuelib.delivery_queue;
 
+exports.temp_fail_queue = temp_fail_queue;
+exports.delivery_queue = delivery_queue;
+
 exports.net_utils = net_utils;
-exports.config    = config;
+exports.config = config;
 
 exports.get_stats = queuelib.get_stats;
 exports.list_queue = queuelib.list_queue;
@@ -38,12 +41,10 @@ exports.flush_queue = queuelib.flush_queue;
 exports.load_pid_queue = queuelib.load_pid_queue;
 exports.ensure_queue_dir = queuelib.ensure_queue_dir;
 exports.load_queue = queuelib.load_queue;
-exports._add_file = queuelib._add_file;
 exports.stats = queuelib.stats;
 exports.drain_pools = pools.drain_pools;
 
-
-process.on('message', function (msg) {
+process.on('message', msg => {
     if (msg.event && msg.event === 'outbound.load_pid_queue') {
         exports.load_pid_queue(msg.data);
         return;
@@ -52,7 +53,7 @@ process.on('message', function (msg) {
         exports.flush_queue(msg.domain, process.pid);
         return;
     }
-    if (msg.event && msg.event == 'outbound.shutdown') {
+    if (msg.event && msg.event === 'outbound.shutdown') {
         logger.loginfo("[outbound] Shutting down temp fail queue");
         exports.drain_pools();
         temp_fail_queue.shutdown();
@@ -150,7 +151,7 @@ exports.send_email = function () {
     }
     else {
         // Assume a stream
-        return stream_line_reader(contents, transaction, function (err) {
+        return stream_line_reader(contents, transaction, err => {
             if (err) {
                 return next(constants.denysoft, `Error from stream line reader: ${err}`);
             }
@@ -206,7 +207,7 @@ function get_deliveries (transaction) {
 
     if (cfg.always_split) {
         logger.logdebug({name: "outbound"}, "always split");
-        transaction.rcpt_to.forEach(function (rcpt) {
+        transaction.rcpt_to.forEach(rcpt => {
             deliveries.push({domain: rcpt.host, rcpts: [ rcpt ]});
         });
         return deliveries;
@@ -214,13 +215,13 @@ function get_deliveries (transaction) {
 
     // First get each domain
     const recips = {};
-    transaction.rcpt_to.forEach(function (rcpt) {
+    transaction.rcpt_to.forEach(rcpt => {
         const domain = rcpt.host;
         if (!recips[domain]) { recips[domain] = []; }
         recips[domain].push(rcpt);
     });
-    Object.keys(recips).forEach(function (domain) {
-        deliveries.push({'domain': domain, 'rcpts': recips[domain]});
+    Object.keys(recips).forEach(domain => {
+        deliveries.push({domain, 'rcpts': recips[domain]});
     });
     return deliveries;
 }
@@ -243,16 +244,16 @@ exports.send_trans_email = function (transaction, next) {
     }
 
     const connection = {
-        transaction: transaction,
+        transaction,
     };
 
     logger.add_log_methods(connection);
     if (!transaction.results) {
-        logger.logerror('adding missing results store');
+        logger.logdebug('adding results store');
         transaction.results = new ResultStore(connection);
     }
 
-    connection.pre_send_trans_email_respond = function (retval) {
+    connection.pre_send_trans_email_respond = retval => {
         const deliveries = get_deliveries(transaction);
         const hmails = [];
         const ok_paths = [];
@@ -268,9 +269,9 @@ exports.send_trans_email = function (transaction, next) {
         (err, qfiles) => {
             if (err) {
                 for (let i=0, l=ok_paths.length; i<l; i++) {
-                    fs.unlink(ok_paths[i], function () {});
+                    fs.unlink(ok_paths[i], () => {});
                 }
-                transaction.results.add({ name: 'outbound'}, { err: err });
+                transaction.results.add({ name: 'outbound'}, { err });
                 if (next) next(constants.denysoft, err);
                 return;
             }
@@ -308,12 +309,12 @@ exports.process_delivery = function (ok_paths, todo, hmails, cb) {
     const tmp_path = path.join(queue_dir, `${_qfile.platformDOT}${fname}`);
     const ws = new FsyncWriteStream(tmp_path, { flags: constants.WRITE_EXCL });
 
-    ws.on('close', function () {
+    ws.on('close', () => {
         const dest_path = path.join(queue_dir, fname);
-        fs.rename(tmp_path, dest_path, function (err) {
+        fs.rename(tmp_path, dest_path, err => {
             if (err) {
                 logger.logerror(`[outbound] Unable to rename tmp file!: ${err}`);
-                fs.unlink(tmp_path, function () {});
+                fs.unlink(tmp_path, () => {});
                 cb(`Queue error: ${err}`);
             }
             else {
@@ -324,19 +325,19 @@ exports.process_delivery = function (ok_paths, todo, hmails, cb) {
         })
     })
 
-    ws.on('error', function (err) {
+    ws.on('error', err => {
         logger.logerror(`[outbound] Unable to write queue file (${fname}): ${err}`);
         ws.destroy();
-        fs.unlink(tmp_path, function () {});
+        fs.unlink(tmp_path, () => {});
         cb(`Queueing failed: ${err}`);
     })
 
-    self.build_todo(todo, ws, function () {
+    self.build_todo(todo, ws, () => {
         todo.message_stream.pipe(ws, { line_endings: '\r\n', dot_stuffing: true, ending_dot: false });
     });
 }
 
-exports.build_todo = function (todo, ws, write_more) {
+exports.build_todo = (todo, ws, write_more) => {
 
     const todo_str = `\n${JSON.stringify(todo, exclude_from_json, '\t')}\n`
     const todo_len = Buffer.byteLength(todo_str)

@@ -17,10 +17,10 @@ const lines = [
 ];
 
 exports.outbound = {
-    'converts \\n and \\r\\n line endings to \\r\\n' : function (test) {
+    'converts \\n and \\r\\n line endings to \\r\\n' : test => {
         test.expect(2);
 
-        ['\n', '\r\n'].forEach(function (ending) {
+        ['\n', '\r\n'].forEach(ending => {
             let contents = lines.join(ending);
             let result = '';
 
@@ -42,12 +42,12 @@ exports.outbound = {
         });
         test.done();
     },
-    'log_methods added': function (test) {
+    'log_methods added': test => {
         test.expect(Object.keys(logger.levels).length);
 
         const HMailItem = require('../../outbound/hmail');
 
-        Object.keys(logger.levels).forEach(function (level) {
+        Object.keys(logger.levels).forEach(level => {
             test.ok(HMailItem.prototype['log' + level.toLowerCase()], "Log method for level: " + level);
         });
         test.done();
@@ -147,7 +147,7 @@ exports.get_tls_options = {
         })
 
     },
-    tearDown: function (done) {
+    tearDown: done => {
         delete process.env.HARAKA_TEST_DIR;
         done();
     },
@@ -183,15 +183,15 @@ exports.build_todo = {
         catch (ignore) {}
         done();
     },
-    tearDown: function (done) {
+    tearDown: done => {
         // fs.unlink('tests/queue/multibyte', done);
         done();
     },
     'saves a file': function (test) {
         const todo = JSON.parse('{"queue_time":1507509981169,"domain":"redacteed.com","rcpt_to":[{"original":"<postmaster@redacteed.com>","original_host":"redacteed.com","host":"redacteed.com","user":"postmaster"}],"mail_from":{"original":"<matt@tnpi.net>","original_host":"tnpi.net","host":"tnpi.net","user":"matt"},"notes":{"authentication_results":["spf=pass smtp.mailfrom=tnpi.net"],"spf_mail_result":"Pass","spf_mail_record":"v=spf1 a mx include:mx.theartfarm.com ?include:forwards._spf.tnpi.net include:lists._spf.tnpi.net -all","attachment_count":0,"attachments":[{"ctype":"application/pdf","filename":"FileWithoutAccent Chars.pdf","extension":".pdf","md5":"6c1d5f5c047cff3f6320b1210970bdf6"}],"attachment_ctypes":["application/pdf","multipart/mixed","text/plain","application/pdf"],"attachment_files":["FileWithoutaccent Chars.pdf"],"attachment_archive_files":[]},"uuid":"1D5483B0-3E00-4280-A961-3AFD2017B4FC.1"}');
         const fd = fs.openSync('tests/queue/plain', 'w');
-        const ws = new fs.createWriteStream('tests/queue/plain', { fd: fd, flags: constants.WRITE_EXCL });
-        ws.on('close', function () {
+        const ws = new fs.createWriteStream('tests/queue/plain', { fd, flags: constants.WRITE_EXCL });
+        ws.on('close', () => {
             // console.log(arguments);
             test.ok(1);
             test.done();
@@ -208,8 +208,8 @@ exports.build_todo = {
     'saves a file with multibyte chars': function (test) {
         const todo = JSON.parse('{"queue_time":1507509981169,"domain":"redacteed.com","rcpt_to":[{"original":"<postmaster@redacteed.com>","original_host":"redacteed.com","host":"redacteed.com","user":"postmaster"}],"mail_from":{"original":"<matt@tnpi.net>","original_host":"tnpi.net","host":"tnpi.net","user":"matt"},"notes":{"authentication_results":["spf=pass smtp.mailfrom=tnpi.net"],"spf_mail_result":"Pass","spf_mail_record":"v=spf1 a mx include:mx.theartfarm.com ?include:forwards._spf.tnpi.net include:lists._spf.tnpi.net -all","attachment_count":0,"attachments":[{"ctype":"application/pdf","filename":"FileWîthÁccent Chars.pdf","extension":".pdf","md5":"6c1d5f5c047cff3f6320b1210970bdf6"}],"attachment_ctypes":["application/pdf","multipart/mixed","text/plain","application/pdf"],"attachment_files":["FileWîthÁccent Chars.pdf"],"attachment_archive_files":[]},"uuid":"1D5483B0-3E00-4280-A961-3AFD2017B4FC.1"}');
         const fd = fs.openSync('tests/queue/multibyte', 'w');
-        const ws = new fs.WriteStream('tests/queue/multibyte', { fd: fd, flags: constants.WRITE_EXCL });
-        ws.on('close', function () {
+        const ws = new fs.WriteStream('tests/queue/multibyte', { fd, flags: constants.WRITE_EXCL });
+        ws.on('close', () => {
             test.ok(1);
             test.done();
         })
@@ -252,8 +252,8 @@ exports.timer_queue = {
     'can add items': function (test) {
         test.expect(1);
 
-        this.ob_timer_queue.add(1000);
-        this.ob_timer_queue.add(2000);
+        this.ob_timer_queue.add("1", 1000);
+        this.ob_timer_queue.add("2", 2000);
 
         const tq_length = this.ob_timer_queue.length();
 
@@ -263,8 +263,8 @@ exports.timer_queue = {
     'can drain items': function (test) {
         test.expect(2);
 
-        this.ob_timer_queue.add(1000);
-        this.ob_timer_queue.add(2000);
+        this.ob_timer_queue.add("1", 1000);
+        this.ob_timer_queue.add("2", 2000);
 
         let tq_length = this.ob_timer_queue.length();
 
@@ -277,4 +277,22 @@ exports.timer_queue = {
 
         test.done();
     },
+    'can discard items by id': function (test) {
+        test.expect(3);
+
+        this.ob_timer_queue.add("1", 1000);
+        this.ob_timer_queue.add("2", 2000);
+
+        let tq_length = this.ob_timer_queue.length();
+
+        test.equal(tq_length, 2);
+
+        this.ob_timer_queue.discard("2");
+        tq_length = this.ob_timer_queue.length();
+
+        test.equal(tq_length, 1);
+        test.equal(this.ob_timer_queue.queue[0].id, "1");
+
+        test.done();
+    }
 }

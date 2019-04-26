@@ -152,7 +152,7 @@ exports.load_dkim_sign_ini = function () {
             '-disabled',
         ]
     },
-    function () { plugin.load_dkim_sign_ini(); }
+    () => { plugin.load_dkim_sign_ini(); }
     );
 }
 
@@ -161,7 +161,7 @@ exports.load_dkim_key = function () {
     plugin.private_key = plugin.config.get(
         'dkim.private.key',
         'data',
-        function () { plugin.load_dkim_key(); }
+        () => { plugin.load_dkim_key(); }
     ).join('\n');
 }
 
@@ -196,7 +196,7 @@ exports.hook_queue_outbound = exports.hook_pre_send_trans_email = function (next
         selector = plugin.cfg.main.selector;
     }
 
-    plugin.get_key_dir(connection, domain, function (err, keydir) {
+    plugin.get_key_dir(connection, domain, (err, keydir) => {
         if (err) {
             connection.logerror(plugin, err);
             return next(DENYSOFT, "Error getting key_dir in dkim_sign");
@@ -249,13 +249,13 @@ exports.get_key_dir = function (connection, domain, done) {
         dom_hier[i] = path.resolve(haraka_dir, 'config', 'dkim', dom);
     }
 
-    async.detectSeries(dom_hier, function (filePath, iterDone) {
-        fs.stat(filePath, function (err, stats) {
+    async.detectSeries(dom_hier, (filePath, iterDone) => {
+        fs.stat(filePath, (err, stats) => {
             if (err) return iterDone(null, false);
             iterDone(null, stats.isDirectory());
         });
     },
-    function (err, results) {
+    (err, results) => {
         connection.logdebug(plugin, results);
         done(err, results);
     });
@@ -302,7 +302,7 @@ exports.get_headers_to_sign = function () {
         .split(/[,;:]/);
 
     // From MUST be present
-    if (headers.indexOf('from') === -1) {
+    if (!headers.includes('from')) {
         headers.push('from');
     }
     return headers;
@@ -340,7 +340,7 @@ exports.get_sender_domain = function (connection) {
         addrs = addrparser.parse(from_hdr);
     }
     catch (e) {
-        plugin.logerror(`address-rfc2822 failed to parse From header: ${from_hdr}`)
+        connection.logerror(plugin, `address-rfc2822 failed to parse From header: ${from_hdr}`)
         return domain;
     }
     if (!addrs || ! addrs.length) return domain;
@@ -357,13 +357,13 @@ exports.get_sender_domain = function (connection) {
 
     // If From has multiple-addresses, we must parse and
     // use the domain in the Sender header.
-    const sender = txn.header.get('Sender');
+    const sender = txn.header.get_decoded('Sender');
     if (sender) {
         try {
             domain = (addrparser.parse(sender))[0].host().toLowerCase();
         }
         catch (e) {
-            plugin.logerror(e);
+            connection.logerror(plugin, e);
         }
     }
     return domain;

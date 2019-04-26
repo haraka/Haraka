@@ -7,7 +7,7 @@ function _set_up (done) {
 
     this.plugin = new fixtures.plugin('auth/auth_base');
 
-    this.plugin.get_plain_passwd = function (user, cb) {
+    this.plugin.get_plain_passwd = (user, cb) => {
         if (user === 'test') return cb('testpass');
         return cb(null);
     };
@@ -22,7 +22,7 @@ function _set_up_2 (done) {
 
     this.plugin = new fixtures.plugin('auth/auth_base');
 
-    this.plugin.get_plain_passwd = function (user, connection, cb) {
+    this.plugin.get_plain_passwd = (user, connection, cb) => {
         connection.notes.auth_custom_note = 'custom_note';
         if (user === 'test') return cb('testpass');
         return cb(null);
@@ -37,7 +37,7 @@ function _set_up_2 (done) {
 function _set_up_custom_pwcb_opts (done) {
     this.plugin = new fixtures.plugin('auth/auth_base');
 
-    this.plugin.check_plain_passwd = function (connection, user, passwd, pwok_cb) {
+    this.plugin.check_plain_passwd = (connection, user, passwd, pwok_cb) => {
         switch (user) {
             case 'legacyok_nomessage':      return pwok_cb(true);
             case 'legacyfail_nomessage':    return pwok_cb(false);
@@ -89,14 +89,14 @@ exports.hook_capabilities = {
 exports.get_plain_passwd = {
     setUp : _set_up,
     'get_plain_passwd, no result': function (test) {
-        this.plugin.get_plain_passwd('user', function (pass) {
+        this.plugin.get_plain_passwd('user', pass => {
             test.expect(1);
             test.equal(pass, null);
             test.done();
         });
     },
     'get_plain_passwd, test user': function (test) {
-        this.plugin.get_plain_passwd('test', function (pass) {
+        this.plugin.get_plain_passwd('test', pass => {
             test.expect(1);
             test.equal(pass, 'testpass');
             test.done();
@@ -107,21 +107,21 @@ exports.get_plain_passwd = {
 exports.check_plain_passwd = {
     setUp : _set_up,
     'valid password': function (test) {
-        this.plugin.check_plain_passwd(this.connection, 'test', 'testpass', function (pass) {
+        this.plugin.check_plain_passwd(this.connection, 'test', 'testpass', pass => {
             test.expect(1);
             test.equal(pass, true);
             test.done();
         });
     },
     'wrong password': function (test) {
-        this.plugin.check_plain_passwd(this.connection, 'test', 'test1pass', function (pass) {
+        this.plugin.check_plain_passwd(this.connection, 'test', 'test1pass', pass => {
             test.expect(1);
             test.equal(pass, false);
             test.done();
         });
     },
     'null password': function (test) {
-        this.plugin.check_plain_passwd(this.connection, 'test', null, function (pass) {
+        this.plugin.check_plain_passwd(this.connection, 'test', null, pass => {
             test.expect(1);
             test.equal(pass, false);
             test.done();
@@ -422,11 +422,11 @@ exports.auth_login = {
     'AUTH LOGIN, reauthentication': function (test) {
         test.expect(9);
 
-        const next3 = function (code) {
+        function next3 (code) {
             test.equal(code, OK);
 
             test.done();
-        };
+        }
 
         const next2 = function (code) {
             test.equal(code, OK);
