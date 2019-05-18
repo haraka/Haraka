@@ -1264,6 +1264,8 @@ class Connection {
                 return this.respond(501, "Invalid internalcmd_key - check config");
             }
             results.shift();
+        } else if (config.get('internalcmd_key')) {
+            return this.respond(501, "Missing internalcmd_key - check config");
         }
 
         // Now send the internal command to the master process
