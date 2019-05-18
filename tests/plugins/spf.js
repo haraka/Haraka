@@ -25,13 +25,23 @@ const _set_up = function (done) {
 
 exports.return_results = {
     setUp : _set_up,
-    'result, none': function (test) {
+    'result, none, reject=false': function (test) {
         function next () {
             test.equal(undefined, arguments[0]);
             test.done();
         }
         test.expect(1);
-        this.plugin.return_results(next, this.connection, spf, 'mfrom', spf.NONE, 'test@example.com');
+        this.plugin.cfg.deny.mfrom_none=false;
+        this.plugin.return_results(next, this.connection, spf, 'mfrom', spf.SPF_NONE, 'test@example.com');
+    },
+    'result, none, reject=true': function (test) {
+        function next () {
+            test.equal(DENY, arguments[0]);
+            test.done();
+        }
+        test.expect(1);
+        this.plugin.cfg.deny.mfrom_none=true;
+        this.plugin.return_results(next, this.connection, spf, 'mfrom', spf.SPF_NONE, 'test@example.com');
     },
     'result, neutral': function (test) {
         function next () {
@@ -39,7 +49,7 @@ exports.return_results = {
             test.done();
         }
         test.expect(1);
-        this.plugin.return_results(next, this.connection, spf, 'mfrom', spf.NEUTRAL, 'test@example.com');
+        this.plugin.return_results(next, this.connection, spf, 'mfrom', spf.SPF_NEUTRAL, 'test@example.com');
     },
     'result, pass': function (test) {
         function next () {

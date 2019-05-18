@@ -1,4 +1,11 @@
 
+## NEXT
+
+### New features
+
+* spf: add config option to fail on NONE #2644
+
+
 ## 2.8.24 - Mar 12, 2019
 
 ### Changes
