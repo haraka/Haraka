@@ -31,7 +31,7 @@ exports.return_results = {
             test.done();
         }
         test.expect(1);
-        this.plugin.return_results(next, this.connection, spf, 'mfrom', spf.NONE, 'test@example.com');
+        this.plugin.return_results(next, this.connection, spf, 'mfrom', spf.SPF_NONE, 'test@example.com');
     },
     'result, neutral': function (test) {
         function next () {
@@ -39,7 +39,7 @@ exports.return_results = {
             test.done();
         }
         test.expect(1);
-        this.plugin.return_results(next, this.connection, spf, 'mfrom', spf.NEUTRAL, 'test@example.com');
+        this.plugin.return_results(next, this.connection, spf, 'mfrom', spf.SPF_NEUTRAL, 'test@example.com');
     },
     'result, pass': function (test) {
         function next () {
