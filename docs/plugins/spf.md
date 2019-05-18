@@ -80,10 +80,12 @@ There's a special setting that would allow the plugin to emit a funny explanatio
     mfrom_temperror
 
     [deny]
+    helo_none
     helo_softfail
     helo_fail
     helo_permerror
 
+    mfrom_none
     mfrom_softfail
     mfrom_fail
     mfrom_permerror
@@ -96,10 +98,12 @@ There's a special setting that would allow the plugin to emit a funny explanatio
     mfrom_temperror
 
     [deny_relay]
+    helo_none
     helo_softfail
     helo_fail
     helo_permerror
 
+    mfrom_none
     mfrom_softfail
     mfrom_fail
     mfrom_permerror
