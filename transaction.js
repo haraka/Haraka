@@ -61,7 +61,7 @@ class Transaction {
             this.body.set_banner(this.banner);
         }
 
-        for (const o of body_filters) {
+        for (const o of this.body_filters) {
             this.body.add_filter((ct, enc, buf) => {
                 const re_match = (util.isRegExp(o.ct_match) && o.ct_match.test(ct.toLowerCase()));
                 const ct_begins = ct.toLowerCase().indexOf(String(o.ct_match).toLowerCase()) === 0;
