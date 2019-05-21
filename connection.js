@@ -1456,6 +1456,9 @@ class Connection {
                 if (this.tls.verifyError && this.tls.verifyError.code === 'UNABLE_TO_GET_ISSUER_CERT') {
                     sslheader += ' verify=NO)';
                 }
+                else {
+                    sslheader += ')';
+                }
             }
         }
 
