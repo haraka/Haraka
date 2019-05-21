@@ -126,7 +126,7 @@ class Header {
     _remove_more (key) {
         const key_len = key.length;
         for (let i=0, l=this.header_list.length; i < l; i++) {
-            if (this.header_list[i].substring(0, key_len).toLowerCase() === key) {
+            if (this.header_list[i].substring(0, key_len + 1).toLowerCase() === `${key}:`) {
                 this.header_list.splice(i, 1);
                 return this._remove_more(key);
             }
@@ -164,7 +164,8 @@ class Header {
         if (/[^\x00-\x7f]/.test(value)) {
             // Need to QP encode this header value and assume UTF-8
             value = '=?UTF-8?q?' + utils.encode_qp(value) + '?=';
-            value = value.replace(/=\n/g, ''); // remove wraps - headers can only wrap at whitespace (with continuations)
+            // remove wraps - headers can only wrap at whitespace (with continuations)
+            value = value.replace(/=\n/g, '');
         }
         this._add_header(key.toLowerCase(), value, "push");
         this._add_header_decode(key.toLowerCase(), value, "push");
