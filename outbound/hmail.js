@@ -295,7 +295,7 @@ class HMailItem extends events.EventEmitter {
         // check if there are any MXs left
         if (this.mxlist.length === 0) {
             this.todo.rcpt_to.forEach(rcpt => {
-                self.extend_rcpt_with_dsn(rcpt, DSN.addr_bad_dest_system(`Tried all MXs${self.todo.domain}`));
+                self.extend_rcpt_with_dsn(rcpt, DSN.addr_bad_dest_system(`Tried all MXs ${self.todo.domain}`));
             });
             return this.temp_fail("Tried all MXs");
         }
