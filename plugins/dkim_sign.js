@@ -183,17 +183,7 @@ exports.hook_queue_outbound = exports.hook_pre_send_trans_email = function (next
     let domain = plugin.get_sender_domain(connection);
 
     if (!domain) {
-        connection.transaction.results.add(plugin, {skip: "sending domain not detected", emit: true });
-
-        if (!plugin.cfg.main.domain || !plugin.private_key || !plugin.cfg.main.selector) {
-            return next();
-        }
-
-        connection.transaction.results.add(plugin, {msg: "using default key", emit: true });
-
-        domain = plugin.cfg.main.domain;
-        private_key = plugin.private_key;
-        selector = plugin.cfg.main.selector;
+        connection.transaction.results.add(plugin, {msg: "sending domain not detected", emit: true });
     }
 
     plugin.get_key_dir(connection, domain, (err, keydir) => {
@@ -207,8 +197,22 @@ exports.hook_queue_outbound = exports.hook_pre_send_trans_email = function (next
             private_key = plugin.load_key(path.join('dkim', domain, 'private'));
             selector    = plugin.load_key(path.join('dkim', domain, 'selector')).trim();
         }
+        else {
+            if (!plugin.cfg.main.domain || !plugin.private_key || !plugin.cfg.main.selector) {
+                return next();
+            }
 
-        if (!plugin.has_key_data(connection, domain, selector, private_key)) return next();
+            connection.transaction.results.add(plugin, {msg: "using default key", emit: true });
+
+            domain = plugin.cfg.main.domain;
+            private_key = plugin.private_key;
+            selector = plugin.cfg.main.selector;
+        }
+
+        if (!plugin.has_key_data(connection, domain, selector, private_key)) {
+            connection.logerror(`missing key data for ${selector}.${domain}`)
+            return next();
+        }
         connection.logdebug(plugin, `domain: ${domain}`);
 
         const headers_to_sign = plugin.get_headers_to_sign();
@@ -302,9 +306,8 @@ exports.get_headers_to_sign = function () {
         .split(/[,;:]/);
 
     // From MUST be present
-    if (!headers.includes('from')) {
-        headers.push('from');
-    }
+    if (!headers.includes('from')) headers.push('from');
+
     return headers;
 }
 
@@ -317,7 +320,7 @@ exports.get_sender_domain = function (connection) {
 
     const txn = connection.transaction;
 
-    // fallback to Envelope FROM when header parsing fails
+    // fallback: use Envelope FROM when header parsing fails
     let domain;
     if (txn.mail_from.host) {
         try { domain = txn.mail_from.host.toLowerCase(); }

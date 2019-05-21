@@ -9,7 +9,7 @@ const utils        = require('haraka-utils');
 
 const Connection   = fixtures.connection;
 
-const _set_up = function (done) {
+function _set_up (done) {
 
     this.plugin = new fixtures.plugin('dkim_sign');
     this.plugin.cfg = { main: { } };
