@@ -1448,16 +1448,13 @@ class Connection {
         let sslheader;
 
         if (this.get('tls.cipher.version')) {
-            sslheader = `(version=${this.tls.cipher.version} cipher=${this.tls.cipher.name} verify=`;
+            sslheader = `(cipher=${this.tls.cipher.name}`;
             if (this.tls.verified) {
-                sslheader += 'OK)';
+                sslheader += ' verify=OK)';
             }
             else {
                 if (this.tls.verifyError && this.tls.verifyError.code === 'UNABLE_TO_GET_ISSUER_CERT') {
-                    sslheader += 'NO)';
-                }
-                else {
-                    sslheader += 'FAIL)';
+                    sslheader += ' verify=NO)';
                 }
             }
         }
