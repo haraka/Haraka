@@ -21,8 +21,7 @@ class Header {
     parse (lines) {
         const self = this;
 
-        for (let i=0,l=lines.length; i < l; i++) {
-            const line = lines[i];
+        for (const line of lines) {
             if (/^[ \t]/.test(line)) {
                 // continuation
                 this.header_list[this.header_list.length - 1] += line;
@@ -32,8 +31,8 @@ class Header {
             }
         }
 
-        for (let i=0,l=this.header_list.length; i < l; i++) {
-            const match = this.header_list[i].match(/^([^\s:]*):\s*([\s\S]*)$/);
+        for (const header of this.header_list) {
+            const match = header.match(/^([^\s:]*):\s*([\s\S]*)$/);
             if (match) {
                 const key = match[1].toLowerCase();
                 const val = match[2];
@@ -41,7 +40,7 @@ class Header {
                 this._add_header(key, val, "push");
             }
             else {
-                logger.lognotice("Header did not look right: " + this.header_list[i]);
+                logger.lognotice(`Header did not look right: ${header}`);
             }
         }
 
@@ -126,8 +125,8 @@ class Header {
 
     _remove_more (key) {
         const key_len = key.length;
-        for (let i=0,l=this.header_list.length; i < l; i++) {
-            if (this.header_list[i].substring(0, key_len).toLowerCase() === key) {
+        for (let i=0, l=this.header_list.length; i < l; i++) {
+            if (this.header_list[i].substring(0, key_len + 1).toLowerCase() === `${key}:`) {
                 this.header_list.splice(i, 1);
                 return this._remove_more(key);
             }
@@ -165,7 +164,8 @@ class Header {
         if (/[^\x00-\x7f]/.test(value)) {
             // Need to QP encode this header value and assume UTF-8
             value = '=?UTF-8?q?' + utils.encode_qp(value) + '?=';
-            value = value.replace(/=\n/g, ''); // remove wraps - headers can only wrap at whitespace (with continuations)
+            // remove wraps - headers can only wrap at whitespace (with continuations)
+            value = value.replace(/=\n/g, '');
         }
         this._add_header(key.toLowerCase(), value, "push");
         this._add_header_decode(key.toLowerCase(), value, "push");

@@ -1,9 +1,24 @@
 
 ## NEXT
 
+### Changes
+
+* Actually enforce using key for INTERNALCMD #2643
+* trans: assign conditions to named vars #2638
+* drop node.js v6 support #2632
+* conn: use is_local instead of localhost addr tests #2627
+* spamassassin: spamassassin: strip useless WS from tests #2624
+* es6: many updates #2615
+* systemctl: update service definition #2612
+
 ### New features
 
 * spf: add config option to fail on NONE #2644
+
+### Fixes
+
+* mailheader: fully quality header name in _remove_more #2647
+* haraka: Connection.createConnection is not a constructor #2816
 
 
 ## 2.8.24 - Mar 12, 2019
