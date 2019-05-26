@@ -17,7 +17,7 @@
   "dependencies": {
     "address-rfc2821"       : "^1.1.1",
     "address-rfc2822"       : "^2.0.0",
-    "async"                 : "~2.6.0",
+    "async"                 : "~3.0.1",
     "daemon"                : "~1.1.0",
     "generic-pool"          : "~2.5.0",
     "iconv"                 : "~2.3.0",
