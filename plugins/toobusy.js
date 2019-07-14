@@ -17,7 +17,7 @@ exports.register = function () {
 
     plugin.loadConfig();
 
-    plugin.register_hook('connect_pre', 'check_busy');
+    plugin.register_hook('connect_init', 'check_busy');
 }
 
 exports.loadConfig = function () {
