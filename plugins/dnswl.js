@@ -26,7 +26,7 @@ exports.load_dnswl_ini = function () {
 
     if (plugin.cfg.main.stats_redis_host) {
         plugin.redis_host = plugin.cfg.main.stats_redis_host;
-        plugin.logdebug('set stats redis host to: ' + plugin.redis_host);
+        plugin.logdebug(`set stats redis host to: ${plugin.redis_host}`);
     }
 
     plugin.zones = [];
@@ -54,8 +54,7 @@ exports.hook_connect = function (next, connection) {
     }
     plugin.first(connection.remote.ip, plugin.zones, (err, zone, a) => {
         if (!a) return next();
-        connection.loginfo(plugin, connection.remote.ip +
-            ' is whitelisted by ' + zone + ': ' + a);
+        connection.loginfo(plugin, `${connection.remote.ip} is whitelisted by ${zone}: ${a}`);
         connection.notes.dnswl = true;
         return next(OK);
     });
