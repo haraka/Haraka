@@ -64,21 +64,9 @@ class Header {
             cur_lang: '', // Secondary languages are ignored for our purposes
         };
 
-        _decode_rfc2231(rfc2231_params, val);
+        val = _decode_rfc2231(rfc2231_params, val);
 
         // console.log(rfc2231_params);
-
-        for (const key in rfc2231_params.keys) {
-            val = val + ' ' + key + '="';
-            /* eslint no-constant-condition: 0 */
-            for (let i=0; true; i++) {
-                const _key = key + '*' + i;
-                const _val = rfc2231_params.kv[_key];
-                if (_val === undefined) break;
-                val = val + _val;
-            }
-            val = val + '";';
-        }
 
         // strip 822 comments in the most basic way - does not support nested comments
         // val = val.replace(/\([^\)]*\)/, '');
@@ -229,6 +217,34 @@ function _decode_header (matched, encoding, lang, cte, data) {
 }
 
 function _decode_rfc2231 (params, str) {
+    _parse_rfc2231(params, str);
+
+    for (const key in params.keys) {
+        str = str + ' ' + key + '="';
+        /* eslint no-constant-condition: 0 */
+        let merged = '';
+        for (let i=0; true; i++) {
+            const _key = key + '*' + i;
+            const _val = params.kv[_key];
+            if (_val === undefined) break;
+            merged = merged + _val;
+        }
+
+        try {
+            merged = decodeURIComponent(merged);
+        }
+        catch (e) {
+            logger.logerror("Decode header failed: " + key + ": " + merged);
+        }
+        merged = params.cur_enc ? try_convert(merged, params.cur_enc) : merged;
+
+        str = str + merged + '";';
+    }
+
+    return str;
+}
+
+function _parse_rfc2231 (params, str) {
     /*
     To explain the regexp below, the params are:
 
@@ -272,7 +288,7 @@ function _decode_rfc2231 (params, str) {
     const lang_match = /^(.*?)'(.*?)'(.*)/.exec(value);
     if (lang_match) {
         if (key_actual == params.cur_key && lang_match[2] != params.cur_lang) {
-            return _decode_rfc2231(params, str); // same key, different lang, throw it away
+            return _parse_rfc2231(params, str); // same key, different lang, throw it away
         }
         params.cur_enc = lang_match[1];
         params.cur_lang = lang_match[2];
@@ -285,12 +301,6 @@ function _decode_rfc2231 (params, str) {
 
     params.cur_key = key_actual;
     params.keys[key_actual] = '';
-    try {
-        value = decodeURIComponent(value);
-    }
-    catch (e) {
-        logger.logerror("Decode header failed: " + key + ": " + value);
-    }
-    params.kv[key_actual + '*' + key_id] = params.cur_enc ? try_convert(value, params.cur_enc) : value;
-    return _decode_rfc2231(params, str); // Get next one
+    params.kv[key_actual + '*' + key_id] = value;
+    return _parse_rfc2231(params, str); // Get next one
 }

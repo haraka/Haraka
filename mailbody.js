@@ -227,12 +227,7 @@ class Body extends events.EventEmitter {
         }
 
         if (/UTF-?8/i.test(enc)) {
-            if (this.decode_function === this.decode_8bit) {
-                // source string was UTF-8 but parsed as binary
-                this.bodytext = buf.toString('binary');
-            } else {
-                this.bodytext = buf.toString();
-            }
+            this.bodytext = buf.toString();
             return;
         }
 
@@ -368,6 +363,9 @@ class Body extends events.EventEmitter {
     }
 
     decode_8bit (line) {
+        if (/UTF-?8/i.test(this.body_encoding)) {
+            return Buffer.from(line, 'utf-8');
+        }
         return Buffer.from(line, 'binary');
     }
 }

@@ -98,3 +98,18 @@ exports.remove = {
         test.done()
     }
 }
+
+exports.decode = {
+    'multiline 8bit header (#2675)': test => {
+        this.h = new Header();
+        this.h.parse ([
+            "Content-Disposition: attachment;\n",
+            " filename*0*=utf-8''%E8%AC%9B%E6%BC%94%E4%BC%9A%E6;\n",
+            " filename*1*=%A1%88%E5%86%85%E6%9B%B8%EF%BC%86%E7%94%B3%E8%BE%BC%E6%9B%B8;\n",
+            " filename*2*=%E6%94%B9%2Etxt\n"
+        ]);
+        console.log(this.h.get_decoded('content-disposition'));
+        test.ok(this.h.get_decoded('content-disposition').includes('講演会案内書＆申込書改.txt'));
+        test.done();
+    }
+}
