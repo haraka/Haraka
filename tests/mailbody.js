@@ -85,6 +85,7 @@ exports.basic = {
             ['iso-8859-2', '8-bit', "\x50\xF8\x69\x68\x6C\x61\xB9\x6F\x76\x61\x63\xED\x20\xFA\x64\x61\x6A\x65\x0A", "Přihlašovací údaje\n"],
             ['iso-8859-2', 'quoted-printable', "P=F8ihla=B9ovac=ED =FAdaje\n", "Přihlašovací údaje\n"],
             ['iso-8859-2', 'base64', "UPhpaGxhuW92YWPtIPpkYWplCgo=\n", "Přihlašovací údaje\n\n"],
+            ['utf-8', '8-bit', "どうぞ宜しくお願い申し上げます", "どうぞ宜しくお願い申し上げます"]
         ];
 
         test.expect(tests.length);
