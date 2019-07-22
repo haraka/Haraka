@@ -19,6 +19,7 @@
 
 * mailheader: fully quality header name in _remove_more #2647
 * haraka: Connection.createConnection is not a constructor #2816
+* problems with japanese characters in body and part header #2675
 
 
 ## 2.8.24 - Mar 12, 2019
