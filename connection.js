@@ -332,9 +332,9 @@ class Connection {
         if (/[^\x00-\x7F]/.test(this.current_line)) {
             // See if this is a TLS handshake
             const buf = Buffer.from(this.current_line.substr(0,3), 'binary');
-            const tlsC = (buf[0] === 0x16 && buf[1] === 0x03);
-            const tls1c = (buf[2] === 0x00 || buf[2] === 0x01);
-            if (tlsC || tls1c) {
+            if (buf[0] === 0x16 && buf[1] === 0x03 &&
+               (buf[2] === 0x00 || buf[2] === 0x01) // SSLv3/TLS1.x format
+            ) {
                 // Nuke the current input buffer to prevent processing further input
                 this.current_data = null;
                 this.respond(501, 'SSL attempted over a non-SSL socket');
