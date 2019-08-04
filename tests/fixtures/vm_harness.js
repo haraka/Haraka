@@ -38,8 +38,8 @@ function make_test (module_path, test_path, additional_sandbox) {
         code += fs.readFileSync(test_path);
         const sandbox = {
             require: exports.sandbox_require,
-            console: console,
-            Buffer: Buffer,
+            console,
+            Buffer,
             exports: {},
             test
         };

@@ -20,7 +20,7 @@ const _set_up = function (done) {
 
 exports.init = {
     setUp: _set_up,
-    'ensure init is always run': function (test) {
+    'ensure init is always run' (test) {
         test.expect(4);
         test.equal(this.plugin.register_hook.args[2][0], 'helo');
         test.equal(this.plugin.register_hook.args[2][1], 'init');
@@ -32,7 +32,7 @@ exports.init = {
 
 exports.host_mismatch = {
     setUp : _set_up,
-    'host_mismatch, reject=false' : function (test) {
+    'host_mismatch, reject=false' (test) {
         test.expect(2);
         const outer = this;
         const cb = function () {
@@ -45,7 +45,7 @@ exports.host_mismatch = {
         this.plugin.host_mismatch(cb, this.connection, 'anything');
         test.done();
     },
-    'host_mismatch, reject=true' : function (test) {
+    'host_mismatch, reject=true' (test) {
         test.expect(2);
         const outer = this;
         const cb = function () {
@@ -63,7 +63,7 @@ exports.host_mismatch = {
 
 exports.proto_mismatch = {
     setUp : _set_up,
-    'proto_mismatch, reject=false, esmtp=false' : function (test) {
+    'proto_mismatch, reject=false, esmtp=false' (test) {
         test.expect(2);
         const outer = this;
         const cb = function () {
@@ -78,7 +78,7 @@ exports.proto_mismatch = {
         this.plugin.proto_mismatch(cb, this.connection, 'anything', 'esmtp');
         test.done();
     },
-    'proto_mismatch, reject=false, esmtp=true' : function (test) {
+    'proto_mismatch, reject=false, esmtp=true' (test) {
         test.expect(2);
         const outer = this;
         const cb = function () {
@@ -93,7 +93,7 @@ exports.proto_mismatch = {
         this.plugin.proto_mismatch(cb, this.connection, 'anything', 'esmtp');
         test.done();
     },
-    'proto_mismatch, reject=true' : function (test) {
+    'proto_mismatch, reject=true' (test) {
         test.expect(2);
         const outer = this;
         const cb = function () {
@@ -112,7 +112,7 @@ exports.proto_mismatch = {
 
 exports.rdns_match = {
     setUp : _set_up,
-    'pass' : function (test) {
+    'pass' (test) {
         test.expect(2);
         const outer = this;
         const cb = function () {
@@ -126,7 +126,7 @@ exports.rdns_match = {
         this.plugin.rdns_match(cb, this.connection, 'helo.example.com');
         test.done();
     },
-    'pass (org dom match)' : function (test) {
+    'pass (org dom match)' (test) {
         test.expect(2);
         const outer = this;
         const cb = function () {
@@ -141,7 +141,7 @@ exports.rdns_match = {
         this.plugin.rdns_match(cb, this.connection, 'helo.example.com');
         test.done();
     },
-    'fail' : function (test) {
+    'fail' (test) {
         test.expect(2);
         const outer = this;
         const cb = function () {
@@ -156,7 +156,7 @@ exports.rdns_match = {
         this.plugin.rdns_match(cb, this.connection, 'helo.example.com');
         test.done();
     },
-    'fail, reject' : function (test) {
+    'fail, reject' (test) {
         test.expect(2);
         const outer = this;
         const cb = function () {
@@ -175,7 +175,7 @@ exports.rdns_match = {
 
 exports.bare_ip = {
     setUp : _set_up,
-    'pass' : function (test) {
+    'pass' (test) {
         test.expect(2);
         const outer = this;
         const cb = function () {
@@ -188,7 +188,7 @@ exports.bare_ip = {
         this.plugin.bare_ip(cb, this.connection, '[192.168.1.2]');
         test.done();
     },
-    'fail' : function (test) {
+    'fail' (test) {
         test.expect(2);
         const outer = this;
         const cb = function () {
@@ -201,7 +201,7 @@ exports.bare_ip = {
         this.plugin.bare_ip(cb, this.connection, '192.168.1.1');
         test.done();
     },
-    'fail, reject' : function (test) {
+    'fail, reject' (test) {
         test.expect(2);
         const outer = this;
         const cb = function () {
@@ -219,7 +219,7 @@ exports.bare_ip = {
 
 exports.dynamic = {
     setUp : _set_up,
-    'pass' : function (test) {
+    'pass' (test) {
         test.expect(2);
         const outer = this;
         const test_helo = 'matt.simerson.tld';
@@ -234,7 +234,7 @@ exports.dynamic = {
         this.plugin.dynamic(cb, this.connection, test_helo);
         test.done();
     },
-    'fail' : function (test) {
+    'fail' (test) {
         test.expect(2);
         const outer = this;
         const test_helo = 'c-76-121-96-159.hsd1.wa.comcast.net';
@@ -250,7 +250,7 @@ exports.dynamic = {
         this.plugin.dynamic(cb, this.connection, test_helo);
         test.done();
     },
-    'fail, reject' : function (test) {
+    'fail, reject' (test) {
         test.expect(2);
         const outer = this;
         const test_helo = 'c-76-121-96-159.hsd1.wa.comcast.net';
@@ -270,7 +270,7 @@ exports.dynamic = {
 
 exports.big_company = {
     setUp : _set_up,
-    'pass, reject=false' : function (test) {
+    'pass, reject=false' (test) {
         test.expect(2);
         const outer = this;
         const test_helo = 'yahoo.com';
@@ -285,7 +285,7 @@ exports.big_company = {
         this.plugin.cfg.reject.big_company=true;
         this.plugin.big_company(cb, this.connection, test_helo);
     },
-    'fail, reject=false' : function (test) {
+    'fail, reject=false' (test) {
         test.expect(2);
         const outer = this;
         const test_helo = 'yahoo.com';
@@ -301,7 +301,7 @@ exports.big_company = {
         this.plugin.cfg.reject.big_company=false;
         this.plugin.big_company(cb, this.connection, test_helo);
     },
-    'fail, reject=true' : function (test) {
+    'fail, reject=true' (test) {
         test.expect(2);
         const outer = this;
         const test_helo = 'yahoo.com';
@@ -320,7 +320,7 @@ exports.big_company = {
 
 exports.literal_mismatch = {
     setUp : _set_up,
-    'pass' : function (test) {
+    'pass' (test) {
         test.expect(2);
         const outer = this;
         const test_helo = '[10.0.1.1]';
@@ -337,7 +337,7 @@ exports.literal_mismatch = {
         this.plugin.cfg.reject.literal_mismatch=true;
         this.plugin.literal_mismatch(cb, this.connection, test_helo);
     },
-    'pass, network' : function (test) {
+    'pass, network' (test) {
         test.expect(2);
         const outer = this;
         const test_helo = '[10.0.1.1]';
@@ -354,7 +354,7 @@ exports.literal_mismatch = {
         this.plugin.cfg.reject.literal_mismatch=true;
         this.plugin.literal_mismatch(cb, this.connection, test_helo);
     },
-    'fail, reject=false' : function (test) {
+    'fail, reject=false' (test) {
         test.expect(2);
         const outer = this;
         const test_helo = '[10.0.1.1]';
@@ -370,7 +370,7 @@ exports.literal_mismatch = {
         this.plugin.cfg.reject.literal_mismatch=false;
         this.plugin.literal_mismatch(cb, this.connection, test_helo);
     },
-    'fail, reject=true' : function (test) {
+    'fail, reject=true' (test) {
         test.expect(2);
         const outer = this;
         const test_helo = '[10.0.1.1]';
@@ -390,7 +390,7 @@ exports.literal_mismatch = {
 
 exports.valid_hostname = {
     setUp : _set_up,
-    'pass' : function (test) {
+    'pass' (test) {
         test.expect(2);
         const test_helo = 'great.domain.com';
         const outer = this;
@@ -405,7 +405,7 @@ exports.valid_hostname = {
         this.plugin.cfg.reject.valid_hostname=true;
         this.plugin.valid_hostname(cb, this.connection, test_helo);
     },
-    'fail, reject=false' : function (test) {
+    'fail, reject=false' (test) {
         test.expect(2);
         const test_helo = 'great.domain.non-existent-tld';
         const outer = this;
@@ -420,7 +420,7 @@ exports.valid_hostname = {
         this.plugin.cfg.reject.valid_hostname=false;
         this.plugin.valid_hostname(cb, this.connection, test_helo);
     },
-    'fail, reject=true' : function (test) {
+    'fail, reject=true' (test) {
         test.expect(2);
         const test_helo = 'great.domain.non-existent-tld';
         const outer = this;
@@ -439,7 +439,7 @@ exports.valid_hostname = {
 
 exports.forward_dns = {
     setUp : _set_up,
-    'pass' : function (test) {
+    'pass' (test) {
         test.expect(2);
         const outer = this;
         const test_helo = 'b.resolvers.level3.net';
@@ -457,7 +457,7 @@ exports.forward_dns = {
         this.connection.results.add(this.plugin, {pass: 'valid_hostname'});
         this.plugin.forward_dns(cb, this.connection, test_helo);
     },
-    'fail, reject=false' : function (test) {
+    'fail, reject=false' (test) {
         test.expect(2);
         const outer = this;
         const test_helo = 'www.google.com';
@@ -473,7 +473,7 @@ exports.forward_dns = {
         this.plugin.cfg.reject.forward_dns=false;
         this.plugin.forward_dns(cb, this.connection, test_helo);
     },
-    'fail, reject=true' : function (test) {
+    'fail, reject=true' (test) {
         test.expect(2);
         const outer = this;
         const test_helo = 'www.google.com';
@@ -494,7 +494,7 @@ exports.forward_dns = {
 
 exports.match_re = {
     setUp : _set_up,
-    'miss' : function (test) {
+    'miss' (test) {
         test.expect(3);
         const test_helo = 'not_in_re_list.net';
         const cb = function (rc, msg) {
@@ -507,7 +507,7 @@ exports.match_re = {
         this.plugin.cfg.list_re = new RegExp(`^(${['bad.tld'].join('|')})$`, 'i');
         this.plugin.match_re(cb, this.connection, test_helo);
     },
-    'hit, reject=no' : function (test) {
+    'hit, reject=no' (test) {
         test.expect(3);
         const test_helo = 'ylmf-pc';
         const cb = function (rc, msg) {
@@ -521,7 +521,7 @@ exports.match_re = {
         this.plugin.cfg.list_re = new RegExp(`^(${['ylmf-pc'].join('|')})$`, 'i');
         this.plugin.match_re(cb, this.connection, test_helo);
     },
-    'hit, reject=yes, exact' : function (test) {
+    'hit, reject=yes, exact' (test) {
         test.expect(3);
         const test_helo = 'ylmf-pc';
         const cb = function (rc, msg) {
@@ -535,7 +535,7 @@ exports.match_re = {
         this.plugin.cfg.list_re = new RegExp(`^(${['ylmf-pc'].join('|')})$`, 'i');
         this.plugin.match_re(cb, this.connection, test_helo);
     },
-    'hit, reject=yes, pattern' : function (test) {
+    'hit, reject=yes, pattern' (test) {
         test.expect(3);
         const test_helo = 'ylmf-pc';
         const cb = function (rc, msg) {

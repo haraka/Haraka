@@ -84,7 +84,8 @@ exports.ip_in_list = function (ip) {
             if (ipobj.match(plugin.whitelist[i])) {
                 return true;
             }
-        } catch (ignore) {
+        }
+        catch (ignore) {
         }
     }
     return false;
@@ -111,7 +112,8 @@ exports.load_ip_list = list => {
             }
 
             whitelist.push(addr);
-        } catch (ignore) {
+        }
+        catch (ignore) {
         }
     }
     return whitelist;

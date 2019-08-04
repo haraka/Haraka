@@ -8,7 +8,7 @@ const outbound = require('../../outbound/index');
 // const fixtures = path.resolve('tests', 'fixtures');
 
 exports.HMailItem = {
-    'normal queue file': function (test) {
+    'normal queue file' (test) {
         test.expect(1);
         this.hmail = new Hmail('1508455115683_1508455115683_0_90253_9Q4o4V_1_haraka', 'tests/queue/1508455115683_1508455115683_0_90253_9Q4o4V_1_haraka', {});
         this.hmail.on('ready', () => {
@@ -22,7 +22,7 @@ exports.HMailItem = {
             test.done()
         })
     },
-    'normal TODO w/multibyte chars loads w/o error': function (test) {
+    'normal TODO w/multibyte chars loads w/o error' (test) {
         test.expect(1);
         this.hmail = new Hmail('1507509981169_1507509981169_0_61403_e0Y0Ym_1_qfile', 'tests/fixtures/todo_qfile.txt', {});
         this.hmail.on('ready', () => {
@@ -36,7 +36,7 @@ exports.HMailItem = {
             test.done()
         })
     },
-    'too short TODO length declared': function (test) {
+    'too short TODO length declared' (test) {
         test.expect(1);
         this.hmail = new Hmail('1507509981169_1507509981169_0_61403_e0Y0Ym_1_haraka', 'tests/queue/1507509981169_1507509981169_0_61403_e0Y0Ym_1_haraka', {});
         this.hmail.on('ready', () => {
@@ -50,7 +50,7 @@ exports.HMailItem = {
             test.done();
         })
     },
-    'too long TODO length declared': function (test) {
+    'too long TODO length declared' (test) {
         test.expect(1);
         this.hmail = new Hmail('1508269674999_1508269674999_0_34002_socVUF_1_haraka', 'tests/queue/1508269674999_1508269674999_0_34002_socVUF_1_haraka', {});
         this.hmail.on('ready', () => {
@@ -64,7 +64,7 @@ exports.HMailItem = {
             test.done();
         })
     },
-    'lifecycle, reads and writes a haraka queue file': function (test) {
+    'lifecycle, reads and writes a haraka queue file' (test) {
         test.expect(1);
 
         this.hmail = new Hmail('1507509981169_1507509981169_0_61403_e0Y0Ym_2_qfile', 'tests/fixtures/todo_qfile.txt', {});

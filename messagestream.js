@@ -268,23 +268,24 @@ class MessageStream extends Stream {
             // Don't output headers if they where sent already
             if (this.headers_done && !this.headers_found_eoh) {
                 // Allow \r\n or \n here...
-                if ((line.length === 2 && line[0] === 0x0d && line[1] === 0x0a) ||
-                    (line.length === 1 && line[0] === 0x0a))
-                {
+                if (
+                    (line.length === 2 && line[0] === 0x0d && line[1] === 0x0a) ||
+                    (line.length === 1 && line[0] === 0x0a)
+                ) {
                     this.headers_found_eoh = true;
                 }
                 continue;
             }
             // Remove dot-stuffing if required
             if (!this.dot_stuffing && line.length >= 4 &&
-                line[0] === 0x2e && line[1] === 0x2e)
-            {
+                line[0] === 0x2e && line[1] === 0x2e
+            ) {
                 line = line.slice(1);
             }
             // We store lines in native CRLF format; so strip CR if requested
             if (this.line_endings === '\n' && line.length >= 2 &&
-                line[line.length-1] === 0x0a && line[line.length-2] === 0x0d)
-            {
+                line[line.length-1] === 0x0a && line[line.length-2] === 0x0d
+            ) {
                 // We copy the line to a new buffer before modifying the copy
                 line = Buffer.from(line);
                 line[line.length-2] = 0x0a;

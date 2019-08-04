@@ -336,8 +336,7 @@ exports.hook_disconnect = function (next, connection) {
 
     // Train GBUdb on rejected messages and recipients
     if (cfg.main.gbudb_report_deny && !connection.notes.snf_run &&
-        (connection.rcpt_count.reject > 0 || connection.msg_count.reject > 0))
-    {
+        (connection.rcpt_count.reject > 0 || connection.msg_count.reject > 0)) {
         const snfreq = "<snf><xci><gbudb><bad ip='" + connection.remote.ip + "'/></gbudb></xci></snf>";
         SNFClient(snfreq, (err, result) => {
             if (err) {

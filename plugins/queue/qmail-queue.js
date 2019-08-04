@@ -63,7 +63,8 @@ exports.hook_queue = function (next, connection) {
 
             try {
                 qmail_queue.stdout.end();
-            } catch (err) {
+            }
+            catch (err) {
                 if (err.code !== 'ENOTCONN') {
                     // Ignore ENOTCONN and re throw anything else
                     throw err

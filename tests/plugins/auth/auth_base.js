@@ -62,7 +62,7 @@ function _set_up_custom_pwcb_opts (done) {
 
 exports.hook_capabilities = {
     setUp : _set_up,
-    'no TLS, no auth': function (test) {
+    'no TLS, no auth' (test) {
         this.plugin.hook_capabilities((rc, msg) => {
             test.expect(3);
             test.equal(undefined, rc);
@@ -71,7 +71,7 @@ exports.hook_capabilities = {
             test.done();
         }, this.connection);
     },
-    'with TLS, auth is offered': function (test) {
+    'with TLS, auth is offered' (test) {
         this.connection.tls.enabled=true;
         this.connection.capabilities=[];
         this.plugin.hook_capabilities((rc, msg) => {
@@ -88,14 +88,14 @@ exports.hook_capabilities = {
 
 exports.get_plain_passwd = {
     setUp : _set_up,
-    'get_plain_passwd, no result': function (test) {
+    'get_plain_passwd, no result' (test) {
         this.plugin.get_plain_passwd('user', pass => {
             test.expect(1);
             test.equal(pass, null);
             test.done();
         });
     },
-    'get_plain_passwd, test user': function (test) {
+    'get_plain_passwd, test user' (test) {
         this.plugin.get_plain_passwd('test', pass => {
             test.expect(1);
             test.equal(pass, 'testpass');
@@ -106,21 +106,21 @@ exports.get_plain_passwd = {
 
 exports.check_plain_passwd = {
     setUp : _set_up,
-    'valid password': function (test) {
+    'valid password' (test) {
         this.plugin.check_plain_passwd(this.connection, 'test', 'testpass', pass => {
             test.expect(1);
             test.equal(pass, true);
             test.done();
         });
     },
-    'wrong password': function (test) {
+    'wrong password' (test) {
         this.plugin.check_plain_passwd(this.connection, 'test', 'test1pass', pass => {
             test.expect(1);
             test.equal(pass, false);
             test.done();
         });
     },
-    'null password': function (test) {
+    'null password' (test) {
         this.plugin.check_plain_passwd(this.connection, 'test', null, pass => {
             test.expect(1);
             test.equal(pass, false);
@@ -131,14 +131,14 @@ exports.check_plain_passwd = {
 
 exports.select_auth_method = {
     setUp : _set_up,
-    'no auth methods yield no result': function (test) {
+    'no auth methods yield no result' (test) {
         this.plugin.select_auth_method((code) => {
             test.equal(code, null);
             test.equal(false, this.connection.relaying);
             test.done();
         }, this.connection, 'AUTH PLAIN');
     },
-    'invalid AUTH method, no result': function (test) {
+    'invalid AUTH method, no result' (test) {
         this.connection.notes.allowed_auth_methods = ['PLAIN','LOGIN','CRAM-MD5'];
         this.plugin.select_auth_method((code) => {
             test.expect(2);
@@ -147,7 +147,7 @@ exports.select_auth_method = {
             test.done();
         }, this.connection, 'AUTH FOO');
     },
-    'valid AUTH method, valid attempt': function (test) {
+    'valid AUTH method, valid attempt' (test) {
         const method = `PLAIN ${utils.base64('discard\0test\0testpass')}`;
         this.connection.notes.allowed_auth_methods = ['PLAIN','LOGIN'];
         this.plugin.select_auth_method((code) => {
@@ -161,7 +161,7 @@ exports.select_auth_method = {
 
 exports.auth_plain = {
     setUp : _set_up,
-    'params type=string returns OK': function (test) {
+    'params type=string returns OK' (test) {
         test.expect(2);
         const next = function () {
             test.equal(arguments[0], OK);
@@ -170,7 +170,7 @@ exports.auth_plain = {
         }.bind(this);
         this.plugin.auth_plain(next, this.connection, 'AUTH FOO');
     },
-    'params type=empty array, returns OK': function (test) {
+    'params type=empty array, returns OK' (test) {
         const next = function () {
             test.expect(2);
             test.equal(arguments[0], OK);
@@ -179,7 +179,7 @@ exports.auth_plain = {
         }.bind(this);
         this.plugin.auth_plain(next, this.connection, []);
     },
-    'params type=array, successful auth': function (test) {
+    'params type=array, successful auth' (test) {
         test.expect(2);
         const method = utils.base64('discard\0test\0testpass');
         const next = function () {
@@ -189,7 +189,7 @@ exports.auth_plain = {
         }.bind(this);
         this.plugin.auth_plain(next, this.connection, [method]);
     },
-    'params type=with two line login': function (test) {
+    'params type=with two line login' (test) {
         const next = function () {
             test.expect(2);
             test.equal(this.connection.notes.auth_plain_asked_login, true);
@@ -202,7 +202,7 @@ exports.auth_plain = {
 
 exports.check_user = {
     setUp : _set_up_2,
-    'bad auth': function (test) {
+    'bad auth' (test) {
         const credentials = ['matt','ttam'];
         this.plugin.check_user((code) => {
             test.expect(3);
@@ -212,7 +212,7 @@ exports.check_user = {
             test.done();
         }, this.connection, credentials, 'PLAIN');
     },
-    'good auth': function (test) {
+    'good auth' (test) {
         const credentials = ['test','testpass'];
         this.plugin.check_user((code) => {
             test.expect(3);
@@ -226,7 +226,7 @@ exports.check_user = {
 
 exports.check_user_custom_opts = {
     setUp: _set_up_custom_pwcb_opts,
-    'legacyok_nomessage': function (test) {
+    'legacyok_nomessage' (test) {
         this.plugin.check_user((code, msg) => {
             test.equal(code, OK);
             test.equal(this.connection.relaying, true);
@@ -234,7 +234,7 @@ exports.check_user_custom_opts = {
             test.done();
         }, this.connection, ['legacyok_nomessage', 'any'], 'PLAIN');
     },
-    'legacyfail_nomessage': function (test) {
+    'legacyfail_nomessage' (test) {
         this.plugin.check_user((code, msg) => {
             test.equal(code, OK);
             test.equal(this.connection.relaying, false);
@@ -242,7 +242,7 @@ exports.check_user_custom_opts = {
             test.done();
         }, this.connection, ['legacyfail_nomessage', 'any'], 'PLAIN');
     },
-    'legacyok_message': function (test) {
+    'legacyok_message' (test) {
         this.plugin.check_user((code, msg) => {
             test.equal(code, OK);
             test.equal(this.connection.relaying, true);
@@ -250,7 +250,7 @@ exports.check_user_custom_opts = {
             test.done();
         }, this.connection, ['legacyok_message', 'any'], 'PLAIN');
     },
-    'legacyfail_message': function (test) {
+    'legacyfail_message' (test) {
         this.plugin.check_user((code, msg) => {
             test.equal(code, OK);
             test.equal(this.connection.relaying, false);
@@ -258,7 +258,7 @@ exports.check_user_custom_opts = {
             test.done();
         }, this.connection, ['legacyfail_message', 'any'], 'PLAIN');
     },
-    'newok': function (test) {
+    'newok' (test) {
         this.plugin.check_user((code, msg) => {
             test.equal(code, OK);
             test.equal(this.connection.relaying, true);
@@ -266,7 +266,7 @@ exports.check_user_custom_opts = {
             test.done();
         }, this.connection, ['newok', 'any'], 'PLAIN');
     },
-    'newfail': function (test) {
+    'newfail' (test) {
         this.plugin.check_user((code, msg) => {
             test.equal(code, OK);
             test.equal(this.connection.relaying, false);
@@ -278,7 +278,7 @@ exports.check_user_custom_opts = {
 
 exports.auth_notes_are_set = {
     setUp : _set_up_2,
-    'bad auth: no notes should be set': function (test) {
+    'bad auth: no notes should be set' (test) {
         const credentials = ['matt','ttam'];
         this.plugin.check_user((code) => {
             test.equal(this.connection.notes.auth_user, undefined);
@@ -286,7 +286,7 @@ exports.auth_notes_are_set = {
             test.done();
         }, this.connection, credentials, 'PLAIN');
     },
-    'good auth: dont store password': function (test) {
+    'good auth: dont store password' (test) {
         const creds = ['test','testpass'];
         this.plugin.blankout_password = true;
         this.plugin.check_user((code) => {
@@ -295,7 +295,7 @@ exports.auth_notes_are_set = {
             test.done();
         }, this.connection, creds, 'PLAIN');
     },
-    'good auth: store password (default)': function (test) {
+    'good auth: store password (default)' (test) {
         const creds = ['test','testpass'];
         this.plugin.check_user((code) => {
             test.equal(this.connection.notes.auth_user, creds[0]);
@@ -307,7 +307,7 @@ exports.auth_notes_are_set = {
 
 exports.hook_unrecognized_command = {
     setUp : _set_up,
-    'AUTH type FOO': function (test) {
+    'AUTH type FOO' (test) {
         const params = ['AUTH','FOO'];
         this.connection.notes.allowed_auth_methods = ['PLAIN','LOGIN'];
         this.plugin.hook_unrecognized_command((code) => {
@@ -317,7 +317,7 @@ exports.hook_unrecognized_command = {
             test.done();
         }, this.connection, params);
     },
-    'AUTH PLAIN': function (test) {
+    'AUTH PLAIN' (test) {
         const params = ['AUTH','PLAIN', utils.base64('discard\0test\0testpass')];
         this.connection.notes.allowed_auth_methods = ['PLAIN','LOGIN'];
         this.plugin.hook_unrecognized_command((code) => {
@@ -327,7 +327,7 @@ exports.hook_unrecognized_command = {
             test.done();
         }, this.connection, params);
     },
-    'AUTH PLAIN, authenticating': function (test) {
+    'AUTH PLAIN, authenticating' (test) {
         this.connection.notes.allowed_auth_methods = ['PLAIN','LOGIN'];
         this.connection.notes.authenticating=true;
         this.connection.notes.auth_method='PLAIN';
@@ -342,7 +342,7 @@ exports.hook_unrecognized_command = {
 
 exports.auth_login = {
     setUp : _set_up,
-    'AUTH LOGIN': function (test) {
+    'AUTH LOGIN' (test) {
         test.expect(8);
 
         const next3 = function (code) {
@@ -371,7 +371,7 @@ exports.auth_login = {
         this.plugin.hook_unrecognized_command(next, this.connection, params);
     },
 
-    'AUTH LOGIN <username>': function (test) {
+    'AUTH LOGIN <username>' (test) {
         test.expect(6);
 
         const next2 = function (code) {
@@ -394,7 +394,7 @@ exports.auth_login = {
         this.plugin.hook_unrecognized_command(next, this.connection, params);
     },
 
-    'AUTH LOGIN <username>, bad protocol': function (test) {
+    'AUTH LOGIN <username>, bad protocol' (test) {
         test.expect(7);
 
         const next2 = function (code, msg) {
@@ -419,7 +419,7 @@ exports.auth_login = {
     },
 
 
-    'AUTH LOGIN, reauthentication': function (test) {
+    'AUTH LOGIN, reauthentication' (test) {
         test.expect(9);
 
         function next3 (code) {
@@ -454,7 +454,7 @@ exports.auth_login = {
 
 exports.hexi = {
     setUp : _set_up,
-    'hexi': function (test) {
+    'hexi' (test) {
         test.expect(2);
         test.equal(this.plugin.hexi(512), 200);
         test.equal(this.plugin.hexi(8), 8);

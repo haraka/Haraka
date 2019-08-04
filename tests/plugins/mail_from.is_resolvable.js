@@ -20,7 +20,7 @@ const _set_up = function (done) {
 
 exports.mxErr = {
     setUp : _set_up,
-    'any.com, no err code': function (test) {
+    'any.com, no err code' (test) {
         test.expect(3);
         const t = this;
         const txn = t.connection.transaction;
@@ -35,7 +35,7 @@ exports.mxErr = {
         test.equal(mf.msg[0], 'any.com:MX:oops');
         test.done();
     },
-    'any.com, bypass err code': function (test) {
+    'any.com, bypass err code' (test) {
         test.expect(3);
         const t = this;
         const txn = t.connection.transaction;
@@ -54,7 +54,7 @@ exports.mxErr = {
 
 exports.implicit_mx = {
     setUp : _set_up,
-    'tnpi.net': function (test) {
+    'tnpi.net' (test) {
         test.expect(2);
         const t = this;
         const txn = this.connection.transaction;
@@ -65,7 +65,7 @@ exports.implicit_mx = {
             test.done();
         });
     },
-    'harakamail.com': function (test) {
+    'harakamail.com' (test) {
         test.expect(1);
         const t = this;
         const txn = this.connection.transaction;
@@ -77,7 +77,7 @@ exports.implicit_mx = {
             test.done();
         });
     },
-    'mx.theartfarm.com': function (test) {
+    'mx.theartfarm.com' (test) {
         test.expect(1);
         const t = this;
         const txn = this.connection.transaction;
@@ -88,7 +88,7 @@ exports.implicit_mx = {
             test.done();
         });
     },
-    'mxs4am.josef-froehle.de': function (test) {
+    'mxs4am.josef-froehle.de' (test) {
         test.expect(1);
         const t = this;
         const txn = this.connection.transaction;
@@ -100,7 +100,7 @@ exports.implicit_mx = {
             test.done();
         });
     },
-    'mxs4am-a.josef-froehle.de': function (test) {
+    'mxs4am-a.josef-froehle.de' (test) {
         test.expect(1);
         const t = this;
         const txn = this.connection.transaction;
@@ -112,7 +112,7 @@ exports.implicit_mx = {
             test.done();
         });
     },
-    'mxs4am-aaaa.josef-froehle.de': function (test) {
+    'mxs4am-aaaa.josef-froehle.de' (test) {
         test.expect(1);
         const t = this;
         const txn = this.connection.transaction;
@@ -124,7 +124,7 @@ exports.implicit_mx = {
             test.done();
         });
     },
-    'resolve-fail-definitive.josef-froehle.de': function (test) {
+    'resolve-fail-definitive.josef-froehle.de' (test) {
         test.expect(1);
         const t = this;
         const txn = this.connection.transaction;
@@ -135,7 +135,7 @@ exports.implicit_mx = {
             test.done();
         });
     },
-    'resolve-fail-a.josef-froehle.de': function (test) {
+    'resolve-fail-a.josef-froehle.de' (test) {
         test.expect(1);
         const t = this;
         const txn = this.connection.transaction;
@@ -146,7 +146,7 @@ exports.implicit_mx = {
             test.done();
         });
     },
-    'resolve-fail-aaaa.josef-froehle.de': function (test) {
+    'resolve-fail-aaaa.josef-froehle.de' (test) {
         test.expect(1);
         const t = this;
         const txn = this.connection.transaction;
