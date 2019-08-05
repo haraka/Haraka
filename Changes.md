@@ -10,10 +10,15 @@
 * spamassassin: spamassassin: strip useless WS from tests #2624
 * es6: many updates #2615
 * systemctl: update service definition #2612
+* lint: bracket style to match newer eslint:recommended #2680
+* lint: use object shorthands (eslint:recommended) #2680
+* logger: use safer Object.prototype.hasOwnProperty #2680
+
 
 ### New features
 
 * spf: add config option to fail on NONE #2644
+
 
 ### Fixes
 
