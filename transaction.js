@@ -182,7 +182,7 @@ class Transaction {
 
     add_body_filter (ct_match, filter) {
         this.parse_body = true;
-        this.body_filters.push({ 'ct_match': ct_match, 'filter': filter });
+        this.body_filters.push({ ct_match, filter });
     }
 
     incr_mime_count (line) {

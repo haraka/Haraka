@@ -460,8 +460,7 @@ exports.proto_mismatch = function (next, connection, helo, proto) {
     if (!r || (r && !r.helo_host)) { return next(); }
 
     if ((connection.esmtp && proto === 'smtp') ||
-        (!connection.esmtp && proto === 'esmtp'))
-    {
+        (!connection.esmtp && proto === 'esmtp')) {
         connection.results.add(plugin, {fail: 'proto_mismatch(' + proto + ')'});
         if (plugin.cfg.reject.proto_mismatch) {
             return next(DENY, (proto === 'smtp' ? 'HELO' : 'EHLO') + ' protocol mismatch');

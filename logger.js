@@ -140,9 +140,8 @@ logger.log = (level, data, logobj) => {
     const item = { level, data, obj: logobj};
 
     // buffer until plugins are loaded
-    if (!plugins || (Array.isArray(plugins.plugin_list) &&
-                     !plugins.plugin_list.length))
-    {
+    const emptyPluginList = !plugins || Array.isArray(plugins.plugin_list) && !plugins.plugin_list.length;
+    if (emptyPluginList) {
         logger.deferred_logs.push(item);
         return true;
     }
@@ -280,18 +279,14 @@ logger.log_if_level = (level, key, plugin) => function () {
             }
         }
         else if (
-            logger.format === logger.formats.LOGFMT &&
-                data.constructor === Object
-        ) {
+            logger.format === logger.formats.LOGFMT && data.constructor === Object) {
             logobj = Object.assign(logobj, data);
         }
-        else if (typeof data === 'object' && data.hasOwnProperty('uuid')) {
+        else if (typeof data === 'object' && Object.prototype.hasOwnProperty.call(data, "uuid")) {
             logobj.uuid = data.uuid;
         }
         else if (data.constructor === Object) {
-            if (!logobj.message.endsWith(' ')) {
-                logobj.message += ' ';
-            }
+            if (!logobj.message.endsWith(' ')) logobj.message += ' ';
             logobj.message += (stringify(data));
         }
         else {

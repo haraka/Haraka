@@ -17,7 +17,7 @@ function _set_up (done) {
 
 exports.is_acl_allowed = {
     setUp : _set_up,
-    'bare IP' : function (test) {
+    'bare IP' (test) {
         test.expect(3);
         this.plugin.acl_allow=['127.0.0.6'];
         this.connection.remote.ip='127.0.0.6';
@@ -28,7 +28,7 @@ exports.is_acl_allowed = {
         test.equal(false, this.plugin.is_acl_allowed(this.connection));
         test.done();
     },
-    'netmask' : function (test) {
+    'netmask' (test) {
         test.expect(3);
         this.plugin.acl_allow=['127.0.0.6/24'];
         this.connection.remote.ip='127.0.0.6';
@@ -39,7 +39,7 @@ exports.is_acl_allowed = {
         test.equal(false, this.plugin.is_acl_allowed(this.connection));
         test.done();
     },
-    'mixed (ipv4 & ipv6 (Issue #428))' : function (test) {
+    'mixed (ipv4 & ipv6 (Issue #428))' (test) {
         test.expect(3);
         this.connection.remote.ip='2607:f060:b008:feed::2';
         test.equal(false, this.plugin.is_acl_allowed(this.connection));
@@ -58,7 +58,7 @@ exports.is_acl_allowed = {
 
 exports.relay_dest_domains = {
     setUp : _set_up,
-    'relaying' : function (test) {
+    'relaying' (test) {
         test.expect(2);
         const outer = this;
         function next () {
@@ -71,7 +71,7 @@ exports.relay_dest_domains = {
         this.connection.relaying=true;
         this.plugin.relay_dest_domains(next, this.connection, [{host:'foo'}]);
     },
-    'no config' : function (test) {
+    'no config' (test) {
         test.expect(2);
         const outer = this;
         function next () {
@@ -81,7 +81,7 @@ exports.relay_dest_domains = {
         }
         this.plugin.relay_dest_domains(next, this.connection, [{host:'foo'}]);
     },
-    'action=undef' : function (test) {
+    'action=undef' (test) {
         test.expect(2);
         const outer = this;
         function next () {
@@ -92,7 +92,7 @@ exports.relay_dest_domains = {
         this.plugin.cfg.domains = { foo: '{"action":"dunno"}' };
         this.plugin.relay_dest_domains(next, this.connection, [{host:'foo'}]);
     },
-    'action=deny' : function (test) {
+    'action=deny' (test) {
         test.expect(2);
         const outer = this;
         function next () {
@@ -103,7 +103,7 @@ exports.relay_dest_domains = {
         this.plugin.cfg.domains = { foo: '{"action":"deny"}' };
         this.plugin.relay_dest_domains(next, this.connection, [{host:'foo'}]);
     },
-    'action=continue' : function (test) {
+    'action=continue' (test) {
         test.expect(2);
         const outer = this;
         function next () {
@@ -114,7 +114,7 @@ exports.relay_dest_domains = {
         this.plugin.cfg.domains = { foo: '{"action":"continue"}' };
         this.plugin.relay_dest_domains(next, this.connection, [{host:'foo'}]);
     },
-    'action=accept' : function (test) {
+    'action=accept' (test) {
         test.expect(2);
         const outer = this;
         function next () {
@@ -129,7 +129,7 @@ exports.relay_dest_domains = {
 
 exports.refresh_config = {
     setUp : _set_up,
-    'callback' : function (test) {
+    'callback' (test) {
         test.expect(1);
         function next () {
             test.equal(undefined, arguments[0]);

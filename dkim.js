@@ -198,9 +198,9 @@ class DKIMObject {
         if (this.run_cb) return;
 
         // Buffer any lines
-        if ((line.length === 2 && line[0] === 0x0d && line[1] === 0x0a) ||
-            (line.length === 1 && line[0] === 0x0a))
-        {
+        const isCRLF = line.length === 2 && line[0] === 0x0d && line[1] === 0x0a;
+        const isLF = line.length === 1 && line[0] === 0x0a;
+        if (isCRLF || isLF) {
             // Store any empty lines as both canonicalization alogoriths
             // ignore all empty lines at the end of the message body.
             this.line_buffer.push(line);
@@ -229,7 +229,7 @@ class DKIMObject {
                 identity: this.identity,
                 selector: this.fields.s,
                 domain: this.fields.d,
-                result: result
+                result
             }
         );
     }
@@ -445,7 +445,8 @@ class DKIMVerifyStream extends Stream {
                 return true;
             }
             buf = Buffer.concat([buf, new Buffer('\r\n\r\n')]);
-        } else {
+        }
+        else {
             buf = this.buffer.pop(buf);
         }
 

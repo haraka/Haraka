@@ -15,7 +15,7 @@ const _qfile = module.exports = {
             .replace(/_/g,  '\\137');
     },
 
-    name : function (overrides) {
+    name (overrides) {
         const o = overrides || {};
         const time = _qfile.time();
         return [

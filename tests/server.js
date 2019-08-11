@@ -10,19 +10,19 @@ function _set_up (done) {
 
 exports.get_listen_addrs = {
     setUp : _set_up,
-    'IPv4 fully qualified' : function (test) {
+    'IPv4 fully qualified' (test) {
         test.expect(1);
         const listeners = this.server.get_listen_addrs({listen: '127.0.0.1:25'});
         test.deepEqual(['127.0.0.1:25'], listeners);
         test.done();
     },
-    'IPv4, default port' : function (test) {
+    'IPv4, default port' (test) {
         test.expect(1);
         const listeners = this.server.get_listen_addrs({listen: '127.0.0.1'});
         test.deepEqual(['127.0.0.1:25'], listeners);
         test.done();
     },
-    'IPv4, custom port' : function (test) {
+    'IPv4, custom port' (test) {
         test.expect(1);
         const listeners = this.server.get_listen_addrs({
             listen: '127.0.0.1'
@@ -30,25 +30,25 @@ exports.get_listen_addrs = {
         test.deepEqual(['127.0.0.1:250'], listeners);
         test.done();
     },
-    'IPv6 fully qualified' : function (test) {
+    'IPv6 fully qualified' (test) {
         test.expect(1);
         const listeners = this.server.get_listen_addrs({listen: '[::1]:25'});
         test.deepEqual(['[::1]:25'], listeners);
         test.done();
     },
-    'IPv6, default port' : function (test) {
+    'IPv6, default port' (test) {
         test.expect(1);
         const listeners = this.server.get_listen_addrs({listen: '[::1]'});
         test.deepEqual(['[::1]:25'], listeners);
         test.done();
     },
-    'IPv6, custom port' : function (test) {
+    'IPv6, custom port' (test) {
         test.expect(1);
         const listeners = this.server.get_listen_addrs({listen: '[::1]'}, 250);
         test.deepEqual(['[::1]:250'], listeners);
         test.done();
     },
-    'IPv4 & IPv6 fully qualified' : function (test) {
+    'IPv4 & IPv6 fully qualified' (test) {
         test.expect(1);
         const listeners = this.server.get_listen_addrs({
             listen: '127.0.0.1:25,[::1]:25'
@@ -56,7 +56,7 @@ exports.get_listen_addrs = {
         test.deepEqual(['127.0.0.1:25','[::1]:25'], listeners);
         test.done();
     },
-    'IPv4 & IPv6, default port' : function (test) {
+    'IPv4 & IPv6, default port' (test) {
         test.expect(1);
         const listeners = this.server.get_listen_addrs({
             listen: '127.0.0.1:25,[::1]'
@@ -64,7 +64,7 @@ exports.get_listen_addrs = {
         test.deepEqual(['127.0.0.1:25','[::1]:25'], listeners);
         test.done();
     },
-    'IPv4 & IPv6, custom port' : function (test) {
+    'IPv4 & IPv6, custom port' (test) {
         test.expect(1);
         const listeners = this.server.get_listen_addrs({
             listen: '127.0.0.1,[::1]'
@@ -76,7 +76,7 @@ exports.get_listen_addrs = {
 
 exports.load_smtp_ini = {
     setUp : _set_up,
-    'saves settings to Server.cfg': function (test) {
+    'saves settings to Server.cfg' (test) {
         test.expect(3);
         this.server.load_smtp_ini();
         // console.log(this.server.cfg);
@@ -89,7 +89,7 @@ exports.load_smtp_ini = {
 }
 
 exports.get_smtp_server = {
-    setUp : function (done) {
+    setUp (done) {
         this.config = require('haraka-config');
         this.config = this.config.module_config(path.resolve('tests'));
 
@@ -99,7 +99,7 @@ exports.get_smtp_server = {
 
         this.server.load_default_tls_config(() => done());
     },
-    'gets a net server object': function (test) {
+    'gets a net server object' (test) {
         this.server.get_smtp_server('0.0.0.0', 2501, 10, (server) => {
             if (!server) {
                 console.error('unable to bind to 0.0.0.0:2501');
@@ -118,7 +118,7 @@ exports.get_smtp_server = {
             });
         });
     },
-    'gets a TLS net server object': function (test) {
+    'gets a TLS net server object' (test) {
         this.server.cfg.main.smtps_port = 2502;
         this.server.get_smtp_server('0.0.0.0', 2502, 10, (server) => {
             if (!server) {
@@ -142,7 +142,7 @@ exports.get_smtp_server = {
 
 exports.get_http_docroot = {
     setUp : _set_up,
-    'gets a fs path': function (test) {
+    'gets a fs path' (test) {
         test.expect(1);
         const docroot = this.server.get_http_docroot();
         test.ok(docroot);
@@ -187,7 +187,7 @@ function _tearDownServer (done) {
 }
 
 exports.smtp_client = {
-    setUp : function (done) {
+    setUp (done) {
         _setupServer(this, 'localhost:2500', done);
     },
     tearDown: _tearDownServer,
@@ -249,7 +249,7 @@ exports.smtp_client = {
 }
 
 exports.nodemailer = {
-    setUp : function (done) {
+    setUp (done) {
         _setupServer(this, '127.0.0.1:2503', done);
     },
     tearDown: _tearDownServer,
@@ -407,7 +407,7 @@ exports.nodemailer = {
 }
 
 exports.requireAuthorized_SMTPS = {
-    setUp : function (done) {
+    setUp (done) {
         _setupServer(this, 'localhost:2465', done);
     },
     tearDown: _tearDownServer,
@@ -455,7 +455,7 @@ exports.requireAuthorized_SMTPS = {
 }
 
 exports.requireAuthorized_STARTTLS = {
-    setUp : function (done) {
+    setUp (done) {
         _setupServer(this, 'localhost:2587', done);
     },
     'rejects non-validated STARTTLS connection': test => {

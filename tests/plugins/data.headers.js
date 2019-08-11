@@ -29,7 +29,7 @@ function _set_up (done) {
 
 exports.invalid_date = {
     setUp : _set_up,
-    'none': function (test) {
+    'none' (test) {
         test.expect(0);
         test.done();
     },
@@ -37,7 +37,7 @@ exports.invalid_date = {
 
 exports.user_agent = {
     setUp : _set_up,
-    'none': function (test) {
+    'none' (test) {
         test.expect(2);
         const outer = this;
         function next_cb () {
@@ -49,7 +49,7 @@ exports.user_agent = {
         outer.plugin.user_agent(next_cb, outer.connection);
         test.done();
     },
-    'user-agent': function (test) {
+    'user-agent' (test) {
         test.expect(2);
         const outer = this;
         function next_cb () {
@@ -62,7 +62,7 @@ exports.user_agent = {
         outer.plugin.user_agent(next_cb, outer.connection);
         test.done();
     },
-    'X-mailer': function (test) {
+    'X-mailer' (test) {
         test.expect(2);
         const outer = this;
         function next_cb () {
@@ -79,7 +79,7 @@ exports.user_agent = {
 
 exports.direct_to_mx = {
     setUp : _set_up,
-    'auth user': function (test) {
+    'auth user' (test) {
         test.expect(3);
         this.connection.notes.auth_user = 'test@example.com';
         const outer = this;
@@ -93,7 +93,7 @@ exports.direct_to_mx = {
         this.plugin.direct_to_mx(next_cb, this.connection);
         test.done();
     },
-    'received 0': function (test) {
+    'received 0' (test) {
         test.expect(3);
         const outer = this;
         function next_cb () {
@@ -106,7 +106,7 @@ exports.direct_to_mx = {
         this.plugin.direct_to_mx(next_cb, this.connection);
         test.done();
     },
-    'received 1': function (test) {
+    'received 1' (test) {
         test.expect(1);
         const outer = this;
         function next_cb () {
@@ -118,7 +118,7 @@ exports.direct_to_mx = {
         this.plugin.direct_to_mx(next_cb, this.connection);
         test.done();
     },
-    'received 2': function (test) {
+    'received 2' (test) {
         test.expect(3);
         const outer = this;
         function next_cb () {
@@ -137,7 +137,7 @@ exports.direct_to_mx = {
 
 exports.from_match = {
     setUp : _set_up,
-    'match bare': function (test) {
+    'match bare' (test) {
         test.expect(1);
         const outer = this;
         function next_cb () {
@@ -150,7 +150,7 @@ exports.from_match = {
         this.plugin.from_match(next_cb, this.connection);
         test.done();
     },
-    'match typical': function (test) {
+    'match typical' (test) {
         test.expect(1);
         const outer = this;
         function next_cb () {
@@ -163,7 +163,7 @@ exports.from_match = {
         this.plugin.from_match(next_cb, outer.connection);
         test.done();
     },
-    'match unquoted': function (test) {
+    'match unquoted' (test) {
         test.expect(1);
         const outer = this;
         function next_cb () {
@@ -176,7 +176,7 @@ exports.from_match = {
         this.plugin.from_match(next_cb, this.connection);
         test.done();
     },
-    'mismatch': function (test) {
+    'mismatch' (test) {
         test.expect(1);
         const outer = this;
         function next_cb () {
@@ -193,7 +193,7 @@ exports.from_match = {
 
 exports.mailing_list = {
     setUp : _set_up,
-    'ezmlm true': function (test) {
+    'ezmlm true' (test) {
         test.expect(2);
         const outer = this;
         function next_cb () {
@@ -206,7 +206,7 @@ exports.mailing_list = {
         this.plugin.mailing_list(next_cb, this.connection);
         test.done();
     },
-    'ezmlm false': function (test) {
+    'ezmlm false' (test) {
         test.expect(2);
         const outer = this;
         function next_cb () {
@@ -219,7 +219,7 @@ exports.mailing_list = {
         this.plugin.mailing_list(next_cb, this.connection);
         test.done();
     },
-    'yahoogroups': function (test) {
+    'yahoogroups' (test) {
         test.expect(1);
         const outer = this;
         function next_cb () {
@@ -231,7 +231,7 @@ exports.mailing_list = {
         this.plugin.mailing_list(next_cb, this.connection);
         test.done();
     },
-    'majordomo': function (test) {
+    'majordomo' (test) {
         test.expect(1);
         const outer = this;
         function next_cb () {
@@ -243,7 +243,7 @@ exports.mailing_list = {
         outer.plugin.mailing_list(next_cb, outer.connection);
         test.done();
     },
-    'mailman': function (test) {
+    'mailman' (test) {
         test.expect(1);
         const outer = this;
         outer.connection.transaction.header.add_end('X-Mailman-Version', "owner-blah-blah whatcha");
@@ -255,7 +255,7 @@ exports.mailing_list = {
         this.plugin.mailing_list(next_cb, this.connection);
         test.done();
     },
-    'majordomo v': function (test) {
+    'majordomo v' (test) {
         test.expect(1);
         const outer = this;
         function next_cb () {
@@ -267,7 +267,7 @@ exports.mailing_list = {
         this.plugin.mailing_list(next_cb, this.connection);
         test.done();
     },
-    'google groups': function (test) {
+    'google groups' (test) {
         test.expect(1);
         const outer = this;
         function next_cb () {
@@ -283,7 +283,7 @@ exports.mailing_list = {
 
 exports.delivered_to = {
     setUp : _set_up,
-    'disabled': function (test) {
+    'disabled' (test) {
         test.expect(2);
         const next_cb = function (res, msg) {
             test.equal(undefined, res);
@@ -293,7 +293,7 @@ exports.delivered_to = {
         this.plugin.cfg.check.delivered_to=false;
         this.plugin.delivered_to(next_cb, this.connection);
     },
-    'header not present': function (test) {
+    'header not present' (test) {
         test.expect(2);
         const next_cb = function (res, msg) {
             test.equal(undefined, res);
@@ -303,7 +303,7 @@ exports.delivered_to = {
         this.plugin.cfg.check.delivered_to=true;
         this.plugin.delivered_to(next_cb, this.connection);
     },
-    'no recipient match': function (test) {
+    'no recipient match' (test) {
         test.expect(2);
         const next_cb = function (res, msg) {
             test.equal(undefined, res);
@@ -315,7 +315,7 @@ exports.delivered_to = {
         this.connection.transaction.header.add_end('Delivered-To', "user@example.com");
         this.plugin.delivered_to(next_cb, this.connection);
     },
-    'recipient match': function (test) {
+    'recipient match' (test) {
         test.expect(2);
         const next_cb = function (res, msg) {
             test.equal(DENY, res);
@@ -328,7 +328,7 @@ exports.delivered_to = {
         this.connection.transaction.rcpt_to.push(new Address.Address('user@example.com'));
         this.plugin.delivered_to(next_cb, this.connection);
     },
-    'recipient match, reject disabled': function (test) {
+    'recipient match, reject disabled' (test) {
         test.expect(2);
         const next_cb = function (res, msg) {
             test.equal(undefined, res);

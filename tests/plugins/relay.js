@@ -13,13 +13,13 @@ function _set_up (done) {
 
 exports.plugin = {
     setUp : _set_up,
-    'should have register function' : function (test) {
+    'should have register function' (test) {
         test.expect(2);
         test.ok(this.plugin);
         test.equal('function', typeof this.plugin.register);
         test.done();
     },
-    'register function should call register_hook()' : function (test) {
+    'register function should call register_hook()' (test) {
         test.expect(1);
         // console.log(this.plugin);
         this.plugin.register();
@@ -31,7 +31,7 @@ exports.plugin = {
 
 exports.load_config_files = {
     setUp : _set_up,
-    'relay.ini' : function (test) {
+    'relay.ini' (test) {
         test.expect(3);
         this.plugin.load_relay_ini();
         test.ok(typeof this.plugin.cfg === 'object');
@@ -39,7 +39,7 @@ exports.load_config_files = {
         test.ok(this.plugin.cfg.relay);
         test.done();
     },
-    'relay_dest_domains.ini': function (test) {
+    'relay_dest_domains.ini' (test) {
         test.expect(1);
         this.plugin.load_dest_domains();
         test.ok(typeof this.plugin.dest === 'object');
@@ -49,7 +49,7 @@ exports.load_config_files = {
 
 exports.is_acl_allowed = {
     setUp : _set_up,
-    'bare IP' : function (test) {
+    'bare IP' (test) {
         test.expect(3);
         this.plugin.acl_allow=['127.0.0.6'];
         this.connection.remote.ip='127.0.0.6';
@@ -60,7 +60,7 @@ exports.is_acl_allowed = {
         test.equal(false, this.plugin.is_acl_allowed(this.connection));
         test.done();
     },
-    'netmask' : function (test) {
+    'netmask' (test) {
         test.expect(3);
         this.plugin.acl_allow=['127.0.0.6/24'];
         this.connection.remote.ip='127.0.0.6';
@@ -71,7 +71,7 @@ exports.is_acl_allowed = {
         test.equal(false, this.plugin.is_acl_allowed(this.connection));
         test.done();
     },
-    'mixed (ipv4 & ipv6 (Issue #428))' : function (test) {
+    'mixed (ipv4 & ipv6 (Issue #428))' (test) {
         test.expect(3);
         this.connection.remote.ip='2607:f060:b008:feed::2';
         test.equal(false, this.plugin.is_acl_allowed(this.connection));
@@ -89,13 +89,13 @@ exports.is_acl_allowed = {
 }
 
 exports.acl = {
-    setUp : function (callback) {
+    setUp (callback) {
         this.plugin = new fixtures.plugin('relay');
         this.plugin.cfg = { relay: { dest_domains: true } };
         this.connection = fixtures.connection.createConnection();
         callback();
     },
-    'relay.acl=false' : function (test) {
+    'relay.acl=false' (test) {
         test.expect(1);
         function next (rc) {
             test.equal(undefined, rc);
@@ -105,7 +105,7 @@ exports.acl = {
         this.plugin.acl(() => {}, this.connection);
         this.plugin.pass_relaying(next, this.connection);
     },
-    'relay.acl=true, miss' : function (test) {
+    'relay.acl=true, miss' (test) {
         test.expect(2);
         const next = function (rc) {
             test.equal(undefined, rc);
@@ -116,7 +116,7 @@ exports.acl = {
         this.plugin.acl(() => {}, this.connection);
         this.plugin.pass_relaying(next, this.connection);
     },
-    'relay.acl=true, hit' : function (test) {
+    'relay.acl=true, hit' (test) {
         test.expect(2);
         const next = function (rc) {
             test.equal(OK, rc);
@@ -129,7 +129,7 @@ exports.acl = {
         this.plugin.acl(() => {}, this.connection);
         this.plugin.pass_relaying(next, this.connection);
     },
-    'relay.acl=true, hit, missing mask' : function (test) {
+    'relay.acl=true, hit, missing mask' (test) {
         test.expect(2);
         const next = function (rc) {
             test.equal(OK, rc);
@@ -142,7 +142,7 @@ exports.acl = {
         this.plugin.acl(() => {}, this.connection);
         this.plugin.pass_relaying(next, this.connection);
     },
-    'relay.acl=true, hit, net': function (test) {
+    'relay.acl=true, hit, net' (test) {
         test.expect(2);
         const next = function (rc) {
             test.equal(OK, rc);
@@ -158,7 +158,7 @@ exports.acl = {
 }
 
 exports.dest_domains = {
-    setUp : function (callback) {
+    setUp (callback) {
         this.plugin = new fixtures.plugin('relay');
         this.plugin.cfg = { relay: { dest_domains: true } };
 
@@ -169,7 +169,7 @@ exports.dest_domains = {
 
         callback();
     },
-    'relay.dest_domains=false' : function (test) {
+    'relay.dest_domains=false' (test) {
         test.expect(1);
         function next (rc) {
             test.equal(undefined, rc);
@@ -178,7 +178,7 @@ exports.dest_domains = {
         this.plugin.cfg.relay.dest_domains=false;
         this.plugin.dest_domains(next, this.connection, [{host:'foo'}]);
     },
-    'relaying' : function (test) {
+    'relaying' (test) {
         test.expect(2);
         const next = function (rc) {
             test.equal(undefined, rc);
@@ -188,7 +188,7 @@ exports.dest_domains = {
         this.connection.relaying=true;
         this.plugin.dest_domains(next, this.connection, [{host:'foo'}]);
     },
-    'no config' : function (test) {
+    'no config' (test) {
         test.expect(2);
         const next = function (rc) {
             test.equal(undefined, rc);
@@ -197,7 +197,7 @@ exports.dest_domains = {
         }.bind(this);
         this.plugin.dest_domains(next, this.connection, [{host:'foo'}]);
     },
-    'action=undef' : function (test) {
+    'action=undef' (test) {
         test.expect(2);
         const next = function (rc) {
             test.equal(DENY, rc);
@@ -207,7 +207,7 @@ exports.dest_domains = {
         this.plugin.dest = { domains: { foo: '{"action":"dunno"}' } };
         this.plugin.dest_domains(next, this.connection, [{host:'foo'}]);
     },
-    'action=deny' : function (test) {
+    'action=deny' (test) {
         test.expect(2);
         const next = function (rc) {
             test.equal(DENY, rc);
@@ -217,7 +217,7 @@ exports.dest_domains = {
         this.plugin.dest = { domains: { foo: '{"action":"deny"}' } };
         this.plugin.dest_domains(next, this.connection, [{host:'foo'}]);
     },
-    'action=continue' : function (test) {
+    'action=continue' (test) {
         test.expect(2);
         const next = function (rc) {
             test.equal(CONT, rc);
@@ -227,7 +227,7 @@ exports.dest_domains = {
         this.plugin.dest = { domains: { foo: '{"action":"continue"}' } };
         this.plugin.dest_domains(next, this.connection, [{host:'foo'}]);
     },
-    'action=accept' : function (test) {
+    'action=accept' (test) {
         test.expect(2);
         const next = function (rc) {
             test.equal(CONT, rc);
@@ -240,7 +240,7 @@ exports.dest_domains = {
 }
 
 exports.force_routing = {
-    setUp : function (callback) {
+    setUp (callback) {
         this.plugin = new fixtures.plugin('relay');
         this.plugin.cfg = { relay: { force_routing: true } };
         this.plugin.dest = {};
@@ -252,7 +252,7 @@ exports.force_routing = {
 
         callback();
     },
-    'relay.force_routing=false' : function (test) {
+    'relay.force_routing=false' (test) {
         test.expect(1);
         function next (rc) {
             test.equal(undefined, rc);
@@ -261,7 +261,7 @@ exports.force_routing = {
         this.plugin.cfg.relay.force_routing=false;
         this.plugin.force_routing(next, this.connection, 'foo');
     },
-    'dest_domains empty' : function (test) {
+    'dest_domains empty' (test) {
         test.expect(1);
         function next (rc) {
             test.equal(undefined, rc);
@@ -269,7 +269,7 @@ exports.force_routing = {
         }
         this.plugin.force_routing(next, this.connection, 'foo');
     },
-    'dest_domains, no route' : function (test) {
+    'dest_domains, no route' (test) {
         test.expect(2);
         function next (rc, nexthop) {
             // console.log(arguments);
@@ -280,7 +280,7 @@ exports.force_routing = {
         this.plugin.dest = { domains: { foo: '{"action":"blah blah"}' } };
         this.plugin.force_routing(next, this.connection, 'foo');
     },
-    'dest_domains, route' : function (test) {
+    'dest_domains, route' (test) {
         test.expect(2);
         function next (rc, nexthop) {
             test.equal(OK, rc);
@@ -294,7 +294,7 @@ exports.force_routing = {
 
 exports.all = {
     setUp : _set_up,
-    'register_hook() should register available function' : function (test) {
+    'register_hook() should register available function' (test) {
         test.expect(3);
         test.ok(this.plugin.all);
         test.equal('function', typeof this.plugin.all);
@@ -306,7 +306,7 @@ exports.all = {
         test.equals(this.plugin.register_hook.args[3][1], 'all');
         test.done();
     },
-    'all hook always returns OK' : function (test) {
+    'all hook always returns OK' (test) {
         function next (action) {
             test.expect(1);
             test.equals(action, OK);
@@ -315,7 +315,7 @@ exports.all = {
         this.plugin.cfg.relay = { all: true };
         this.plugin.all(next, this.connection, ['foo@bar.com']);
     },
-    'all hook always sets connection.relaying to 1' : function (test) {
+    'all hook always sets connection.relaying to 1' (test) {
         const next = function (action) {
             test.expect(1);
             test.equals(this.connection.relaying, 1);

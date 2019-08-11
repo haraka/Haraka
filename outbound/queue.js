@@ -158,7 +158,8 @@ exports.load_queue_files = (pid, input_files, iteratee, callback) => {
 
     if (searchPid) {
         logger.loginfo("[outbound] Grabbing queue files for pid: " + pid);
-    } else {
+    }
+    else {
         logger.loginfo("[outbound] Loading the queue...");
     }
 
@@ -179,7 +180,8 @@ exports.load_queue_files = (pid, input_files, iteratee, callback) => {
                 stat_loaded++;
                 cb(null, renamed_file);
             });
-        } else {
+        }
+        else {
             stat_loaded++;
             cb(null, file);
         }
