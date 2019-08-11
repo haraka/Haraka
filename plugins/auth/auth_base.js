@@ -194,10 +194,12 @@ exports.auth_plain = function (next, connection, params) {
         const credentials = utils.unbase64(params[0]).split(/\0/);
         credentials.shift();  // Discard authid
         return plugin.check_user(next, connection, credentials, AUTH_METHOD_PLAIN);
-    } else {
+    }
+    else {
         if (connection.notes.auth_plain_asked_login) {
             return next(DENYDISCONNECT, 'bad protocol');
-        } else {
+        }
+        else {
             connection.respond(334, ' ', () => {
                 connection.notes.auth_plain_asked_login = true;
                 return next(OK);
@@ -211,8 +213,7 @@ exports.auth_login = function (next, connection, params) {
     const plugin = this;
     if ((!connection.notes.auth_login_asked_login && params[0]) ||
         ( connection.notes.auth_login_asked_login &&
-         !connection.notes.auth_login_userlogin))
-    {
+         !connection.notes.auth_login_userlogin)) {
         if (!params[0]){
             return next(DENYDISCONNECT, 'bad protocol');
         }

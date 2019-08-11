@@ -53,7 +53,7 @@ function get_pool (port, host, local_addr, is_unix_socket, max) {
 
     const pool = generic_pool.Pool({
         name,
-        create: function (done) {
+        create (done) {
             _create_socket(this.name, port, host, local_addr, is_unix_socket, done);
         },
         validate: socket => socket.__fromPool && socket.writable,
@@ -166,7 +166,8 @@ exports.release_client = (socket, port, host, local_addr, error) => {
         socket.__fromPool = false;
         if (server.notes.pool && server.notes.pool[name]) {
             server.notes.pool[name].destroy(socket);
-        } else {
+        }
+        else {
             socket.removeAllListeners();
             socket.destroy();
         }

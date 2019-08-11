@@ -34,7 +34,7 @@ function _set_up (done) {
 
 exports.parse = {
     setUp: _set_up,
-    'get_decoded': function (test) {
+    'get_decoded' (test) {
         test.expect(3);
         test.equal(this.h.lines().length, 13);
         test.equal(
@@ -44,7 +44,7 @@ exports.parse = {
         test.equal(this.h.get_decoded('fromUTF8'), 'Kohl’s <Kohls@s.kohls.com>');
         test.done();
     },
-    'content type w/parens': function (test) {
+    'content type w/parens' (test) {
         test.expect(2);
         test.equal(this.h.lines().length, 13);
         const ct = this.h.get_decoded('content-type2');
@@ -55,7 +55,7 @@ exports.parse = {
 
 exports.add_headers = {
     setUp: _set_up,
-    add_basic: function (test) {
+    add_basic (test) {
         test.expect(2);
         this.h.add('Foo', 'bar');
         test.equal(this.h.lines()[0], 'Foo: bar\n');
@@ -63,7 +63,7 @@ exports.add_headers = {
         test.equal(this.h.lines()[14], 'Fizz: buzz\n');
         test.done();
     },
-    add_utf8: function (test) {
+    add_utf8 (test) {
         test.expect(4);
         this.h.add('Foo', 'bøø');
         test.equal(this.h.lines()[0], 'Foo: =?UTF-8?q?b=C3=B8=C3=B8?=\n');
@@ -78,7 +78,7 @@ exports.add_headers = {
 
 exports.continuations = {
     setUp: _set_up,
-    continuations_decoded: function (test) {
+    continuations_decoded (test) {
         test.expect(1);
         test.ok(!/\n/.test(this.h.get_decoded('content-type')));
         test.done();
@@ -87,7 +87,7 @@ exports.continuations = {
 
 exports.remove = {
     setUp: _set_up,
-    'removes only specified header': function (test) {
+    'removes only specified header' (test) {
         test.expect(3)
         this.h.add('X-Test', 'remove-me')
         this.h.add('X-Test-1', 'do-not-remove-me')

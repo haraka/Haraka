@@ -12,7 +12,8 @@ if (!process.env.HARAKA) {
 process.env.HARAKA = process.env.HARAKA || path.resolve('.');
 try {
     require.paths.push(makePathJoin());
-} catch (e) {
+}
+catch (e) {
     process.env.NODE_PATH = process.env.NODE_PATH ?
         (`${process.env.NODE_PATH}:${makePathJoin()}`) :
         (makePathJoin());

@@ -16,7 +16,7 @@ exports.transaction = {
     setUp : _set_up,
     tearDown : _tear_down,
 
-    'add_body_filter': function (test) {
+    'add_body_filter' (test) {
         const self = this;
 
         test.expect(3);
@@ -50,7 +50,7 @@ exports.transaction = {
         });
     },
 
-    'regression: attachment_hooks before set_banner/add_body_filter': function (test) {
+    'regression: attachment_hooks before set_banner/add_body_filter' (test) {
         const self = this;
 
         test.expect(2);
@@ -75,7 +75,7 @@ exports.transaction = {
         });
     },
 
-    'correct output encoding when content in non-utf8 #2176': function (test) {
+    'correct output encoding when content in non-utf8 #2176' (test) {
         const self = this;
 
         // Czech panagram "Příliš žluťoučký kůň úpěl ďábelské ódy.\n" in ISO-8859-2 encoding
@@ -123,7 +123,7 @@ exports.base64_handling = {
     setUp : _set_up,
     tearDown: _tear_down,
 
-    'varied-base64-fold-lengths-preserve-data': function (test) {
+    'varied-base64-fold-lengths-preserve-data' (test) {
         const self = this;
 
         const parsed_attachments = {};
@@ -156,7 +156,7 @@ exports.base64_handling = {
         test.done();
     },
 
-    'base64-root-html-decodes-correct-number-of-bytes': function (test) {
+    'base64-root-html-decodes-correct-number-of-bytes' (test) {
         const self = this;
 
         self.transaction.parse_body = true;

@@ -17,7 +17,7 @@ function _set_up (done) {
 
 exports.register = {
     setUp : _set_up,
-    'loads the status plugin': function (test) {
+    'loads the status plugin' (test) {
         test.expect(1);
         test.equal('status', this.plugin.name);
         test.done();
@@ -26,7 +26,7 @@ exports.register = {
 
 exports.access = {
     setUp : _set_up,
-    'remote': function (test) {
+    'remote' (test) {
 
         test.expect(1);
         function cb (code) {
@@ -42,7 +42,7 @@ exports.access = {
 
 exports.pools = {
     setUp : _set_up,
-    'list_pools': function (test) {
+    'list_pools' (test) {
 
         test.expect(1);
         this.connection.respond = (code, message) => {
@@ -57,7 +57,7 @@ exports.pools = {
 
 exports.queues = {
     setUp : _set_up,
-    'inspect_queue': function (test) {
+    'inspect_queue' (test) {
         // should list delivery_queue and temp_fail_queue per cluster children
         test.expect(2);
 
@@ -73,7 +73,7 @@ exports.queues = {
         };
         this.plugin.hook_unrecognized_command(() => {}, this.connection, ['STATUS', 'QUEUE INSPECT']);
     },
-    'stat_queue': function (test) {
+    'stat_queue' (test) {
         // should list files only
         test.expect(1);
 
@@ -84,7 +84,7 @@ exports.queues = {
         };
         this.plugin.hook_unrecognized_command(() => {}, this.connection, ['STATUS', 'QUEUE STATS']);
     },
-    'list_queue': function (test) {
+    'list_queue' (test) {
         // should list files only
         test.expect(1);
 
@@ -95,7 +95,7 @@ exports.queues = {
         };
         this.plugin.hook_unrecognized_command(() => {}, this.connection, ['STATUS', 'QUEUE LIST']);
     },
-    'discard_from_queue': function (test) {
+    'discard_from_queue' (test) {
         const self = this;
 
         test.expect(1);
@@ -118,7 +118,7 @@ exports.queues = {
 
         this.plugin.hook_unrecognized_command(res, this.connection, ['STATUS', 'QUEUE DISCARD file1']);
     },
-    'push_email_at_queue': function (test) {
+    'push_email_at_queue' (test) {
         test.expect(1);
 
         const timeout = setTimeout(() => {

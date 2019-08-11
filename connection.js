@@ -264,7 +264,8 @@ class Connection {
             this.set('remote.is_local', net_utils.is_local_ip(this.remote.ip));
             if (this.remote.is_local) {
                 this.set('remote.is_private', true);
-            } else {
+            }
+            else {
                 this.set('remote.is_private', net_utils.is_private_ipv4(this.remote.ip));
             }
         }
@@ -332,8 +333,8 @@ class Connection {
             // See if this is a TLS handshake
             const buf = Buffer.from(this.current_line.substr(0,3), 'binary');
             if (buf[0] === 0x16 && buf[1] === 0x03 &&
-               (buf[2] === 0x00 || buf[2] === 0x01)) // SSLv3/TLS1.x format
-            {
+               (buf[2] === 0x00 || buf[2] === 0x01) // SSLv3/TLS1.x format
+            ) {
                 // Nuke the current input buffer to prevent processing further input
                 this.current_data = null;
                 this.respond(501, 'SSL attempted over a non-SSL socket');
@@ -434,9 +435,8 @@ class Connection {
             }
             let this_line = this.current_data.slice(0, offset+1);
             // Hack: bypass this code to allow HAProxy's PROXY extension
-            if (this.state === states.PAUSE &&
-                this.proxy.allowed && /^PROXY /.test(this_line))
-            {
+            const proxyStart = this.proxy.allowed && /^PROXY /.test(this_line);
+            if (this.state === states.PAUSE && proxyStart) {
                 if (this.proxy.timer) clearTimeout(this.proxy.timer);
                 this.state = states.CMD;
                 this.current_data = this.current_data.slice(this_line.length);
@@ -503,9 +503,7 @@ class Connection {
 
         if (this.current_data && (this.current_data.length > maxlength) &&
                 (utils.indexOfLF(this.current_data, maxlength) === -1)) {
-            if (this.state !== states.DATA       &&
-                this.state !== states.PAUSE_DATA)
-            {
+            if (this.state !== states.DATA && this.state !== states.PAUSE_DATA) {
                 // In command mode, reject:
                 this.client.pause();
                 this.current_data = null;
@@ -542,7 +540,8 @@ class Connection {
         }
         if (!Array.isArray(msg)) {
             messages = msg.toString().split(/\n/);
-        } else {
+        }
+        else {
             messages = msg.slice();
         }
         messages = messages.filter((msg2) => {
@@ -1047,14 +1046,15 @@ class Connection {
         const addr = rcpt.format();
         const recipient = {
             address: addr.substr(1, addr.length -2),
-            action:  action
+            action
         };
 
         if (msg && action !== 'accept') {
             if (typeof msg === 'object' && msg.constructor.name === 'DSN') {
                 recipient.msg   = msg.reply;
                 recipient.code  = msg.code;
-            } else {
+            }
+            else {
                 recipient.msg  = msg;
                 recipient.code  = constants.translate(retval);
             }
@@ -1264,7 +1264,8 @@ class Connection {
                 return this.respond(501, "Invalid internalcmd_key - check config");
             }
             results.shift();
-        } else if (config.get('internalcmd_key')) {
+        }
+        else if (config.get('internalcmd_key')) {
             return this.respond(501, "Missing internalcmd_key - check config");
         }
 
@@ -1585,8 +1586,7 @@ class Connection {
         if (line.length === 3 &&
             line[0] === 0x2e &&
             line[1] === 0x0d &&
-            line[2] === 0x0a)
-        {
+            line[2] === 0x0a) {
             self.data_done();
             return;
         }
@@ -1594,8 +1594,7 @@ class Connection {
         // Look for .\n
         if (line.length === 2 &&
             line[0] === 0x2e &&
-            line[1] === 0x0a)
-        {
+            line[1] === 0x0a) {
             this.lognotice('Client sent bare line-feed - .\\n rather than .\\r\\n');
             this.respond(451, "Bare line-feed; see http://haraka.github.com/barelf.html", () => {
                 self.reset_transaction();
@@ -1758,7 +1757,7 @@ class Connection {
             case constants.cont:
                 break;
             default:
-                this.transaction.results.add(res_as, { msg: msg });
+                this.transaction.results.add(res_as, { msg });
                 break;
         }
     }
@@ -1772,7 +1771,7 @@ class Connection {
                 'queue',
                 {
                     code: constants.translate(retval),
-                    msg: msg
+                    msg
                 }
             );
         }
@@ -1850,7 +1849,7 @@ class Connection {
                 'queue',
                 {
                     code: constants.translate(retval),
-                    msg: msg
+                    msg
                 }
             );
         }

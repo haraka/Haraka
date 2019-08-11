@@ -124,7 +124,7 @@ class Plugin {
         exports.registered_hooks[hook_name].push({
             plugin: this.name,
             method: method_name,
-            priority: priority,
+            priority,
             timeout: this.timeout,
             order: order++
         });
@@ -219,15 +219,15 @@ class Plugin {
             __filename: pp,
             __dirname:  path.dirname(pp),
             exports: plugin,
-            setTimeout: setTimeout,
-            clearTimeout: clearTimeout,
-            setInterval: setInterval,
-            clearInterval: clearInterval,
-            process: process,
-            Buffer: Buffer,
-            Math: Math,
+            setTimeout,
+            clearTimeout,
+            setInterval,
+            clearInterval,
+            process,
+            Buffer,
+            Math,
             server: plugins.server,
-            setImmediate: setImmediate
+            setImmediate
         };
         if (plugin.hasPackageJson) {
             delete sandbox.__filename;
@@ -427,8 +427,7 @@ plugins.run_hooks = (hook, object, params) => {
     }
 
     if (!is_required_hook(hook) && hook !== 'deny' &&
-        object.hooks_to_run && object.hooks_to_run.length)
-    {
+        object.hooks_to_run && object.hooks_to_run.length) {
         throw new Error('We are already running hooks! Fatal error!');
     }
 
