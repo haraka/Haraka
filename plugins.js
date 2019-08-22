@@ -308,7 +308,7 @@ const plugins = exports;
 plugins.Plugin = Plugin;
 
 plugins.load_plugins = override => {
-    logger.loginfo("Loading plugins");
+    logger.loginfo('Loading plugins');
     let plugin_list;
     if (override) {
         if (!Array.isArray(override)) override = [ override ];
@@ -319,7 +319,13 @@ plugins.load_plugins = override => {
     }
 
     plugin_list.forEach(plugin => {
-        plugins.load_plugin(plugin);
+        if (plugins.deprecated[plugin]) {
+            logger.lognotice(`the plugin ${plugin} has been replaced by '${plugins.deprecated[plugin]}'. Please update config/plugins`)
+            plugins.load_plugin(plugins.deprecated[plugin]);
+        }
+        else {
+            plugins.load_plugin(plugin);
+        }
     });
 
     plugins.plugin_list = Object.keys(plugins.registered_plugins);
@@ -340,6 +346,28 @@ plugins.load_plugins = override => {
     }
 
     logger.dump_logs(); // now logging plugins are loaded.
+}
+
+plugins.deprecated = {
+    'connect.asn'         : 'asn',
+    'connect.fcrdns'      : 'fcrdns',
+    'connect.geoip'       : 'geoip',
+    'connect.rdns_access' : 'access',
+    'data.nomsgid'        : 'data.headers',
+    'data.noreceived'     : 'data.headers',
+    'data.rfc5322_header_checks': 'data.headers',
+    'log.syslog'          : 'syslog',
+    'mail_from.access'    : 'access',
+    'mail_from.blocklist' : 'access',
+    'mail_from.nobounces' : 'bounce',
+    'max_unrecognized_commands' : 'limit',
+    'rate_limit'          : 'limit',
+    'rcpt_to.access'      : 'access',
+    'rcpt_to.blocklist'   : 'access',
+    'rcpt_to.qmail_deliverable' : 'qmail-deliverable',
+    'rdns.regexp'         : 'access',
+    'relay_acl'           : 'relay',
+    'relay_force_routing' : 'relay',
 }
 
 plugins.load_plugin = name => {
