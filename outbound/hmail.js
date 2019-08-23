@@ -380,10 +380,16 @@ class HMailItem extends events.EventEmitter {
     try_deliver_host_on_socket (mx, host, port, socket) {
         const self            = this;
         let processing_mail = true;
+        let command = mx.using_lmtp ? 'connect_lmtp' : 'connect';
 
         socket.removeAllListeners('error');
+        socket.removeAllListeners('timeout');
         socket.removeAllListeners('close');
         socket.removeAllListeners('end');
+
+        socket.once('timeout', function () {
+            socket.emit('error', `socket timeout waiting on ${command}`);
+        });
 
         socket.once('error', err => {
             if (processing_mail) {
@@ -415,7 +421,6 @@ class HMailItem extends events.EventEmitter {
             }
         });
 
-        let command = mx.using_lmtp ? 'connect_lmtp' : 'connect';
         let response = [];
 
         let recip_index = 0;
