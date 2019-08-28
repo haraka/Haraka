@@ -1,39 +1,36 @@
-# `dkim_sign`
+# dkim_sign
 
-This plugin implements the DKIM Core specification found at dkimcore.org
+This plugin implements the [DKIM Core specification](dkimcore.org).
 
-DKIM Core is a simplified subset of DKIM which is easier to understand
-and deploy, yet provides all the same delivery advantages as DKIM.
-
-This plugin can only *sign* outbound messages.  It does not validate
+This plugin only *signs* outbound messages. It does not validate
 DKIM signatures.
 
 
 ## Getting Started
 
-Generate DKIM selector and keys:
+Generate a DKIM selector and keys for your domain:
 
-    % cd /path/to/haraka/config/dkim
-    ./dkim_key_gen.sh example.org
+```sh
+cd /path/to/haraka/config/dkim
+./dkim_key_gen.sh example.org
+```
 
-Peek into the `dkim_key_gen.sh` shell script to see the commands used to
-create and format the DKIM public key. Within the config/dkim/example.org
- directory will be 4 files:
+Within the config/dkim/${domain} directory will be 4 files:
 
-    % ls config/dkim/example.org/
-    dns private public selector
+```sh
+ls config/dkim/example.org/
+dns private public selector
+```
 
-The`private` and `public` files contain the DKIM keys, the selector is
-in the `selector` file and the `dns` file contains a formatted record of
-the public key, as well as suggestions for DKIM, SPF, and DMARC policy
-records. The records in `dns` are ready to be copy/pasted into the DNS
-zone for example.org.
+The selector file contains the DNS label where the DKIM public key is published. The `private` and `public` files contain the DKIM keys.
+
+The `dns` file contains a formatted record of the public key suitable for copy/pasting into your domains zone file. It also has suggestions for DKIM, SPF, and DMARC policy records.
 
 The DKIM DNS record will look like this:
 
     may2013._domainkey TXT "v=DKIM1;p=[public key stripped of whitespace];"
 
-And the values in the address have the following meaning:
+The values in the address have the following meaning:
 
     hash: h=[ sha1 | sha256 ]
     test; t=[ s | s:y ]
@@ -45,7 +42,7 @@ And the values in the address have the following meaning:
 
 ## Key size
 
-The default key size created by `dkim_key_gen.sh` is 2048. As of mid-2014, there are some DNS providers that do not support key sizes that long.
+The default key size created by `dkim_key_gen.sh` is 2048. That is considered secure as of mid-2014 but after 2020, you should be using 4096.
 
 # What to sign
 
@@ -61,8 +58,7 @@ For an alternative, see the legacy Single Domain Configuration below.
 # Configuration
 
 This plugin uses the configuration `dkim_sign.ini` in INI format.
-All configuration should appear within the 'main' block and is
-checked for updates on every run.
+All configuration should appear within the 'main' block.
 
 - disabled = [ 1 | true | yes ]             (OPTIONAL)
 
@@ -74,7 +70,7 @@ checked for updates on every run.
     separated by either a comma, colon or semi-colon.
     This is to prevent any tampering of the specified headers.
     The 'From' header is required to be present by the RFC and
-    will be added if it is missing.
+    will be added if missing.
 
 
 ## Single Domain Configuration
