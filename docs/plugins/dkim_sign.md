@@ -2,8 +2,7 @@
 
 This plugin implements the [DKIM Core specification](dkimcore.org).
 
-This plugin only *signs* outbound messages. It does not validate
-DKIM signatures.
+This plugin only *signs* outbound messages. It does not validate DKIM signatures.
 
 
 ## Getting Started
@@ -57,8 +56,7 @@ For an alternative, see the legacy Single Domain Configuration below.
 
 # Configuration
 
-This plugin uses the configuration `dkim_sign.ini` in INI format.
-All configuration should appear within the 'main' block.
+This plugin is configured in `dkim_sign.ini`.
 
 - disabled = [ 1 | true | yes ]             (OPTIONAL)
 
@@ -66,16 +64,13 @@ All configuration should appear within the 'main' block.
 
 - headers\_to\_sign = list, of; headers       (REQUIRED)
 
-    Set this to the list of headers that should be signed
-    separated by either a comma, colon or semi-colon.
-    This is to prevent any tampering of the specified headers.
-    The 'From' header is required to be present by the RFC and
-    will be added if missing.
+    Set this to the list of headers that should be signed, separated by commas, colons or semi-colons. Signing prevents tampering with the specified headers.
+    The 'From' header is required by the RFC and will be added if missing.
 
 
 ## Single Domain Configuration
 
-To sign all messages with a single DKIM key, these two config settings
+To sign all messages with a single DKIM key, these config settings
 are required.
 
 - selector = name
@@ -92,5 +87,5 @@ are required.
 
 - dkim.private.key = filename
 
-    Create a file `dkim.private.key` in the config folder and paste
+    Create a file `dkim.private.key` in the config folder with
     your private key in it.
