@@ -11,14 +11,15 @@ const Stream     = require('stream').Stream;
 const utils      = require('haraka-utils');
 
 class DKIMSignStream extends Stream {
-    constructor (selector, domain, private_key, headers_to_sign, header, end_callback) {
+    constructor (props, header, done) {
         super();
-        this.selector = selector;
-        this.domain = domain;
-        this.private_key = private_key;
-        this.headers_to_sign = headers_to_sign;
+
+        this.selector = props.selector;
+        this.domain = props.domain;
+        this.private_key = props.private_key;
+        this.headers_to_sign = props.headers;
         this.header = header;
-        this.end_callback = end_callback;
+        this.end_callback = done;
         this.writable = true;
         this.found_eoh = false;
         this.buffer = { ar: [], len: 0 };
@@ -142,7 +143,7 @@ exports.DKIMSignStream = DKIMSignStream;
 exports.register = function () {
     const plugin = this;
     plugin.load_dkim_sign_ini();
-    plugin.load_dkim_key();
+    plugin.load_dkim_default_key();
 }
 
 exports.load_dkim_sign_ini = function () {
@@ -154,15 +155,15 @@ exports.load_dkim_sign_ini = function () {
     },
     () => { plugin.load_dkim_sign_ini(); }
     );
+
+    plugin.cfg.headers_to_sign = plugin.get_headers_to_sign();
 }
 
-exports.load_dkim_key = function () {
+exports.load_dkim_default_key = function () {
     const plugin = this;
-    plugin.private_key = plugin.config.get(
-        'dkim.private.key',
-        'data',
-        () => { plugin.load_dkim_key(); }
-    ).join('\n');
+    plugin.private_key = plugin.config.get('dkim.private.key', 'data', () => {
+        plugin.load_dkim_default_key();
+    }).join('\n');
 }
 
 exports.load_key = function (file) {
@@ -178,72 +179,97 @@ exports.hook_queue_outbound = exports.hook_pre_send_trans_email = function (next
         return next();
     }
 
-    let selector;
-    let private_key;
-    let domain = plugin.get_sender_domain(connection);
+    exports.get_sign_properties(connection, (err, props) => {
+        // props: selector, domain, & private_key
 
-    if (!domain) {
-        connection.transaction.results.add(plugin, {msg: "sending domain not detected", emit: true });
-    }
-
-    plugin.get_key_dir(connection, domain, (err, keydir) => {
-        if (err) {
-            connection.logerror(plugin, err);
-            return next(DENYSOFT, "Error getting key_dir in dkim_sign");
-        }
-
-        if (keydir) {
-            domain = path.basename(keydir);
-            private_key = plugin.load_key(path.join('dkim', domain, 'private'));
-            selector    = plugin.load_key(path.join('dkim', domain, 'selector')).trim();
-        }
-        else {
-            if (!plugin.cfg.main.domain || !plugin.private_key || !plugin.cfg.main.selector) {
-                return next();
-            }
-
-            connection.transaction.results.add(plugin, {msg: "using default key", emit: true });
-
-            domain = plugin.cfg.main.domain;
-            private_key = plugin.private_key;
-            selector = plugin.cfg.main.selector;
-        }
-
-        if (!plugin.has_key_data(connection, domain, selector, private_key)) {
-            connection.logerror(`missing key data for ${selector}.${domain}`)
+        if (!plugin.has_key_data(connection, props)) {
+            connection.logerror(`missing key data for ${props.selector}.${props.domain}`)
             return next();
         }
-        connection.logdebug(plugin, `domain: ${domain}`);
 
-        const headers_to_sign = plugin.get_headers_to_sign();
+        connection.logdebug(plugin, `domain: ${props.domain}`);
+
         const txn = connection.transaction;
-
-        function dkimCallback (err2, dkim_header) {
-            if (err2) {
-                txn.results.add(plugin, {err: err2.message});
-            }
-            else {
-                connection.loginfo(plugin, `signed for ${domain}`);
-                txn.results.add(plugin, {pass: dkim_header});
-                txn.add_header('DKIM-Signature', dkim_header);
-            }
-            connection.transaction.notes.dkim_signed = true;
-            next();
-        }
+        props.headers = plugin.cfg.headers_to_sign;
 
         txn.message_stream.pipe(
-            new DKIMSignStream(selector, domain, private_key, headers_to_sign, txn.header, dkimCallback)
+            new DKIMSignStream(props, txn.header, (err2, dkim_header) => {
+                if (err2) {
+                    txn.results.add(plugin, {err: err2.message});
+                    return next(err2);
+                }
+
+                connection.loginfo(plugin, `signed for ${props.domain}`);
+                txn.results.add(plugin, {pass: dkim_header});
+                txn.add_header('DKIM-Signature', dkim_header);
+
+                connection.transaction.notes.dkim_signed = true;
+                next();
+            })
         );
     });
 }
 
-exports.get_key_dir = function (connection, domain, done) {
+exports.get_sign_properties = function (connection, done) {
     const plugin = this;
 
-    if (!domain) return done(new Error('missing domain'));
+    const domain = plugin.get_sender_domain(connection);
+
+    if (!domain) {
+        connection.transaction.results.add(plugin, {msg: 'sending domain not detected', emit: true });
+    }
+
+    const props = { domain }
+
+    plugin.get_key_dir(connection, props, (err, keydir) => {
+        if (err) {
+            console.error(`err: ${err}`);
+            connection.logerror(plugin, err);
+            return done(new Error(`Error getting DKIM key_dir for ${domain}: ${err}`))
+        }
+
+        // a directory for ${domain} exists
+        if (keydir) {
+            props.domain      = path.basename(keydir);  // keydir might be apex (vs sub)domain
+            props.private_key = plugin.load_key(path.join('dkim', props.domain, 'private'));
+            props.selector    = plugin.load_key(path.join('dkim', props.domain, 'selector')).trim();
+
+            if (!props.selector) {
+                connection.transaction.results.add(plugin, {err: `missing selector for domain ${domain}`});
+            }
+            if (!props.private_key) {
+                connection.transaction.results.add(plugin, {err: `missing dkim private_key for domain ${domain}`});
+            }
+
+            if (props.selector && props.private_key ) {  // AND has correct files
+                return done(null, props);
+            }
+        }
+
+        // try [default / single domain] configuration
+        if (plugin.cfg.main.domain && plugin.cfg.main.selector && plugin.private_key) {
+
+            connection.transaction.results.add(plugin, {msg: 'using default key', emit: true });
+
+            props.domain = plugin.cfg.main.domain;
+            props.private_key = plugin.private_key;
+            props.selector = plugin.cfg.main.selector;
+
+            return done(null, props)
+        }
+
+        console.error(`no valid DKIM properties found`)
+        done();
+    })
+}
+
+exports.get_key_dir = function (connection, props, done) {
+    const plugin = this;
+
+    if (!props.domain) return done();
 
     // split the domain name into labels
-    const labels     = domain.split('.');
+    const labels     = props.domain.split('.');
     const haraka_dir = process.env.HARAKA || '';
 
     // list possible matches (ex: mail.example.com, example.com, com)
@@ -265,25 +291,25 @@ exports.get_key_dir = function (connection, domain, done) {
     });
 }
 
-exports.has_key_data = function (conn, domain, selector, private_key) {
+exports.has_key_data = function (conn, props) {
     const plugin = this;
 
     let missing = undefined;
 
     // Make sure we have all the relevant configuration
-    if (!private_key) {
+    if (!props.private_key) {
         missing = 'private key';
     }
-    else if (!selector) {
+    else if (!props.selector) {
         missing = 'selector';
     }
-    else if (!domain) {
+    else if (!props.domain) {
         missing = 'domain';
     }
 
     if (missing) {
-        if (domain) {
-            conn.lognotice(plugin, `skipped: no ${missing} for ${domain}`);
+        if (props.domain) {
+            conn.lognotice(plugin, `skipped: no ${missing} for ${props.domain}`);
         }
         else {
             conn.lognotice(plugin, `skipped: no ${missing}`);
@@ -291,16 +317,17 @@ exports.has_key_data = function (conn, domain, selector, private_key) {
         return false;
     }
 
-    conn.logprotocol(plugin, `using selector: ${selector} at domain ${domain}`);
+    conn.logprotocol(plugin, `using selector: ${props.selector} at domain ${props.domain}`);
     return true;
 }
 
-exports.get_headers_to_sign = function () {
+exports.get_headers_to_sign = function (cfg) {
     const plugin = this;
-    let headers = [];
-    if (!plugin.cfg.main.headers_to_sign) return headers;
 
-    headers = plugin.cfg.main.headers_to_sign
+    if (!cfg) cfg = plugin.cfg;
+    if (!cfg.main.headers_to_sign) return [ 'from' ];
+
+    const headers = cfg.main.headers_to_sign
         .toLowerCase()
         .replace(/\s+/g,'')
         .split(/[,;:]/);
