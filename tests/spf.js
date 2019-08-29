@@ -1,5 +1,5 @@
 const SPF = require('../spf').SPF;
-SPF.prototype.log_debug = function () {};  // noop, hush debug output
+SPF.prototype.log_debug = () => {};  // noop, hush debug output
 
 function _set_up (done) {
     this.SPF = new SPF();
@@ -8,12 +8,12 @@ function _set_up (done) {
 
 exports.SPF = {
     setUp : _set_up,
-    'new SPF': function (test) {
+    'new SPF' (test) {
         test.expect(1);
         test.ok(this.SPF);
         test.done();
     },
-    'constants' : function (test) {
+    'constants' (test) {
         test.expect(8);
         test.equal(1, this.SPF.SPF_NONE);
         test.equal(2, this.SPF.SPF_PASS);
@@ -25,7 +25,7 @@ exports.SPF = {
         test.equal(10, this.SPF.LIMIT);
         test.done();
     },
-    'mod_redirect, true': function (test) {
+    'mod_redirect, true' (test) {
         test.expect(2);
         function cb (err, rc) {
             test.equal(null, err);
@@ -35,7 +35,7 @@ exports.SPF = {
         this.SPF.been_there['example.com'] = true;
         this.SPF.mod_redirect('example.com', cb);
     },
-    'mod_redirect, false': function (test) {
+    'mod_redirect, false' (test) {
         test.expect(2);
         // var outer = this;
         function cb (err, rc) {

@@ -516,22 +516,22 @@ else if (parsed.test) {
     const client = {
         remoteAddress: ((parsed.ip) ? parsed.ip : '1.2.3.4'),
         remotePort: 1234,
-        destroy: function () {},
-        on: function (event, done) {},
-        end: function () {
+        destroy () {},
+        on (event, done) {},
+        end () {
             process.exit();
         },
-        write: function (buf) {},
-        resume: function () {},
-        pause: function () {},
+        write (buf) {},
+        resume () {},
+        pause () {},
     }
     const server = {
-        address: function () {
+        address () {
             return { port: 25, family: 'ipv4', address: '127.0.0.1' };
         },
         notes: new Notes(),
     }
-    const connection = new Connection.createConnection(client, server);
+    const connection = Connection.createConnection(client, server);
     if (parsed['set-relay']) connection.relaying = true;
 
     const run_next_hook = function () {

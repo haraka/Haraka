@@ -17,7 +17,7 @@ function _set_up (done) {
 
 exports.register = {
     setUp : _set_up,
-    'loads the status plugin': function (test) {
+    'loads the status plugin' (test) {
         test.expect(1);
         test.equal('status', this.plugin.name);
         test.done();
@@ -26,7 +26,7 @@ exports.register = {
 
 exports.access = {
     setUp : _set_up,
-    'remote': function (test) {
+    'remote' (test) {
 
         test.expect(1);
         function cb (code) {
@@ -42,97 +42,97 @@ exports.access = {
 
 exports.pools = {
     setUp : _set_up,
-    'list_pools': function (test) {
+    'list_pools' (test) {
 
         test.expect(1);
-        this.connection.respond = function (code, message) {
+        this.connection.respond = (code, message) => {
             const data = JSON.parse(message);
             test.equal('object', typeof data); // there should be one pools array for noncluster and more for cluster
             test.done();
         };
 
-        this.plugin.hook_unrecognized_command(function () {}, this.connection, ['STATUS', 'POOL LIST']);
+        this.plugin.hook_unrecognized_command(() => {}, this.connection, ['STATUS', 'POOL LIST']);
     }
 }
 
 exports.queues = {
     setUp : _set_up,
-    'inspect_queue': function (test) {
+    'inspect_queue' (test) {
         // should list delivery_queue and temp_fail_queue per cluster children
         test.expect(2);
 
         outbound.temp_fail_queue = new TimerQueue(10);
-        outbound.temp_fail_queue.add('file1', 100, function () {});
-        outbound.temp_fail_queue.add('file2', 100, function () {});
+        outbound.temp_fail_queue.add('file1', 100, () => {});
+        outbound.temp_fail_queue.add('file2', 100, () => {});
 
-        this.connection.respond = function (code, message) {
+        this.connection.respond = (code, message) => {
             const data = JSON.parse(message);
             test.equal(0, data.delivery_queue.length);
             test.equal(2, data.temp_fail_queue.length);
             test.done();
         };
-        this.plugin.hook_unrecognized_command(function () {}, this.connection, ['STATUS', 'QUEUE INSPECT']);
+        this.plugin.hook_unrecognized_command(() => {}, this.connection, ['STATUS', 'QUEUE INSPECT']);
     },
-    'stat_queue': function (test) {
+    'stat_queue' (test) {
         // should list files only
         test.expect(1);
 
-        this.connection.respond = function (code, message) {
+        this.connection.respond = (code, message) => {
             const data = JSON.parse(message);
             test.ok(/^\d+\/\d+\/\d+$/.test(data));
             test.done();
         };
-        this.plugin.hook_unrecognized_command(function () {}, this.connection, ['STATUS', 'QUEUE STATS']);
+        this.plugin.hook_unrecognized_command(() => {}, this.connection, ['STATUS', 'QUEUE STATS']);
     },
-    'list_queue': function (test) {
+    'list_queue' (test) {
         // should list files only
         test.expect(1);
 
-        this.connection.respond = function (code, message) {
+        this.connection.respond = (code, message) => {
             const data = JSON.parse(message);
             test.equal(0, data.length);
             test.done();
         };
-        this.plugin.hook_unrecognized_command(function () {}, this.connection, ['STATUS', 'QUEUE LIST']);
+        this.plugin.hook_unrecognized_command(() => {}, this.connection, ['STATUS', 'QUEUE LIST']);
     },
-    'discard_from_queue': function (test) {
+    'discard_from_queue' (test) {
         const self = this;
 
         test.expect(1);
 
         outbound.temp_fail_queue = new TimerQueue(10);
-        outbound.temp_fail_queue.add('file1', 10, function () {
+        outbound.temp_fail_queue.add('file1', 10, () => {
             test.ok(false, 'This callback should not be called');
             test.done();
         });
-        outbound.temp_fail_queue.add('file2', 2000, function () {});
+        outbound.temp_fail_queue.add('file2', 2000, () => {});
 
         function res () {
-            self.connection.respond = function (code, message) {
+            self.connection.respond = (code, message) => {
                 const data = JSON.parse(message);
                 test.equal(1, data.temp_fail_queue.length);
                 test.done();
             };
-            self.plugin.hook_unrecognized_command(function () {}, self.connection, ['STATUS', 'QUEUE INSPECT']);
+            self.plugin.hook_unrecognized_command(() => {}, self.connection, ['STATUS', 'QUEUE INSPECT']);
         }
 
         this.plugin.hook_unrecognized_command(res, this.connection, ['STATUS', 'QUEUE DISCARD file1']);
     },
-    'push_email_at_queue': function (test) {
+    'push_email_at_queue' (test) {
         test.expect(1);
 
-        const timeout = setTimeout(function () {
+        const timeout = setTimeout(() => {
             test.ok(false, 'Timeout');
             test.done();
         }, 1000);
 
-        outbound.temp_fail_queue.add('file', 1500, function () {
+        outbound.temp_fail_queue.add('file', 1500, () => {
             clearTimeout(timeout);
 
             test.ok(true);
             test.done();
         });
 
-        this.plugin.hook_unrecognized_command(function () {}, this.connection, ['STATUS', 'QUEUE PUSH file']);
+        this.plugin.hook_unrecognized_command(() => {}, this.connection, ['STATUS', 'QUEUE PUSH file']);
     },
 }

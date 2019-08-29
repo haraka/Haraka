@@ -18,7 +18,7 @@ exports.load_config = function () {
             '+main.reject'
         ]
     },
-    function () {
+    () => {
         plugin.load_config();
     });
 
@@ -31,7 +31,7 @@ exports.load_config = function () {
     }
 
     // config/early_talker.pause is in milliseconds
-    plugin.pause = plugin.config.get('early_talker.pause', function () {
+    plugin.pause = plugin.config.get('early_talker.pause', () => {
         plugin.load_config();
     });
 }
@@ -62,7 +62,7 @@ exports.early_talker = function (next, connection) {
         pause = plugin.pause - elapsed;
     }
 
-    setTimeout(function () { check(); }, pause);
+    setTimeout(() => { check(); }, pause);
 }
 
 
@@ -84,7 +84,8 @@ exports.ip_in_list = function (ip) {
             if (ipobj.match(plugin.whitelist[i])) {
                 return true;
             }
-        } catch (ignore) {
+        }
+        catch (ignore) {
         }
     }
     return false;
@@ -97,7 +98,7 @@ exports.ip_in_list = function (ip) {
  * @param  {Array} list A list of IP addresses / subnets
  * @return {Array}      The converted array
  */
-exports.load_ip_list = function (list) {
+exports.load_ip_list = list => {
     const whitelist = [];
 
     for (let i = 0; i < list.length; i++) {
@@ -111,7 +112,8 @@ exports.load_ip_list = function (list) {
             }
 
             whitelist.push(addr);
-        } catch (ignore) {
+        }
+        catch (ignore) {
         }
     }
     return whitelist;

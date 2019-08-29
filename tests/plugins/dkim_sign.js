@@ -23,7 +23,7 @@ const _set_up = function (done) {
 
 exports.get_sender_domain = {
     setUp : _set_up,
-    'no transaction': function (test) {
+    'no transaction' (test) {
         test.expect(1);
         delete this.connection.transaction;
         test.equal(
@@ -32,7 +32,7 @@ exports.get_sender_domain = {
         );
         test.done();
     },
-    'no headers': function (test) {
+    'no headers' (test) {
         test.expect(1);
         test.equal(
             this.plugin.get_sender_domain(this.connection),
@@ -40,7 +40,7 @@ exports.get_sender_domain = {
         );
         test.done();
     },
-    'no from header': function (test) {
+    'no from header' (test) {
         test.expect(1);
         this.connection.transaction.header.add('Date', utils.date_to_str(new Date()));
         test.equal(
@@ -49,58 +49,58 @@ exports.get_sender_domain = {
         );
         test.done();
     },
-    'no from header, env MAIL FROM': function (test) {
+    'no from header, env MAIL FROM' (test) {
         test.expect(1);
         this.connection.transaction.mail_from = new Address.Address('<test@example.com>');
         const r = this.plugin.get_sender_domain(this.connection);
         test.equal('example.com', r);
         test.done();
     },
-    'env MAIL FROM, case insensitive': function (test) {
+    'env MAIL FROM, case insensitive' (test) {
         test.expect(1);
         this.connection.transaction.mail_from = new Address.Address('<test@Example.cOm>');
         const r = this.plugin.get_sender_domain(this.connection);
         test.equal('example.com', r);
         test.done();
     },
-    'From header not a fqdn': function (test) {
+    'From header not a fqdn' (test) {
         test.expect(1);
         this.connection.transaction.header.add('From', 'root (Cron Daemon)');
         const r = this.plugin.get_sender_domain(this.connection);
-        this.plugin.get_key_dir(this.connection, r, function (err, dir) {
+        this.plugin.get_key_dir(this.connection, r, (err, dir) => {
             test.equal(dir, undefined);
             test.done();
         });
     },
-    'from header, simple': function (test) {
+    'from header, simple' (test) {
         test.expect(1);
         this.connection.transaction.header.add('From', 'John Doe <jdoe@example.com>');
         const r = this.plugin.get_sender_domain(this.connection);
         test.equal('example.com', r);
         test.done();
     },
-    'from header, case insensitive': function (test) {
+    'from header, case insensitive' (test) {
         test.expect(1);
         this.connection.transaction.header.add('From', 'John Doe <jdoe@Example.Com>');
         const r = this.plugin.get_sender_domain(this.connection);
         test.equal('example.com', r);
         test.done();
     },
-    'from header, less simple': function (test) {
+    'from header, less simple' (test) {
         test.expect(1);
         this.connection.transaction.header.add('From', '"Joe Q. Public" <john.q.public@example.com>');
         const r = this.plugin.get_sender_domain(this.connection);
         test.equal('example.com', r);
         test.done();
     },
-    'from header, RFC 5322 odd': function (test) {
+    'from header, RFC 5322 odd' (test) {
         test.expect(1);
         this.connection.transaction.header.add('From', 'Pete(A nice \\) chap) <pete(his account)@silly.test(his host)>');
         const r = this.plugin.get_sender_domain(this.connection);
         test.equal('silly.test', r);
         test.done();
     },
-    'from header group': function (test) {
+    'from header group' (test) {
         test.expect(1);
         this.connection.transaction.header.add('From', 'ben@example.com,carol@example.com');
         this.connection.transaction.header.add('Sender', 'dave@example.net');
@@ -108,7 +108,7 @@ exports.get_sender_domain = {
         test.equal('example.net', r);
         test.done();
     },
-    'from header group, RFC 6854': function (test) {
+    'from header group, RFC 6854' (test) {
         test.expect(1);
         // TODO: this test passes, but the parsing isn't correct. The From
         // addr parser doesn't support the RFC 6854 Group Syntax
@@ -121,42 +121,42 @@ exports.get_sender_domain = {
 }
 
 exports.get_key_dir = {
-    setUp : function (done) {
+    setUp (done) {
         this.plugin = new fixtures.plugin('dkim_sign');
         this.plugin.cfg = { main: { } };
 
         this.connection = Connection.createConnection();
         this.connection.init_transaction();
 
-        fs.mkdir(path.resolve('tests','config','dkim'), function (err) {
+        fs.mkdir(path.resolve('tests','config','dkim'), err => {
             // if (err) console.error(err);
-            fs.mkdir(path.resolve('tests','config','dkim','example.com'), function (err2) {
+            fs.mkdir(path.resolve('tests','config','dkim','example.com'), err2 => {
                 // if (err2) console.error(err2);
                 done();
             });
         });
     },
-    'no transaction': function (test) {
+    'no transaction' (test) {
         test.expect(2);
-        this.plugin.get_key_dir(this.connection, '', function (err, dir) {
+        this.plugin.get_key_dir(this.connection, '', (err, dir) => {
             test.equal(err.message, 'missing domain');
             test.equal(dir, undefined);
             test.done();
         });
     },
-    'no key dir': function (test) {
+    'no key dir' (test) {
         test.expect(1);
         this.connection.transaction.mail_from = new Address.Address('<matt@non-exist.com>');
-        this.plugin.get_key_dir(this.connection, 'non-exist.com', function (err, dir) {
+        this.plugin.get_key_dir(this.connection, 'non-exist.com', (err, dir) => {
             test.equal(dir, undefined);
             test.done();
         });
     },
-    'test example.com key dir': function (test) {
+    'test example.com key dir' (test) {
         test.expect(1);
         process.env.HARAKA = path.resolve('tests');
         this.connection.transaction.mail_from = new Address.Address('<matt@example.com>');
-        this.plugin.get_key_dir(this.connection, 'example.com', function (err, dir) {
+        this.plugin.get_key_dir(this.connection, 'example.com', (err, dir) => {
             // console.log(arguments);
             const expected = path.resolve('tests','config','dkim','example.com');
             test.equal(dir, expected);
@@ -167,7 +167,7 @@ exports.get_key_dir = {
 
 exports.get_headers_to_sign = {
     setUp : _set_up,
-    'none': function (test) {
+    'none' (test) {
         test.expect(1);
         test.deepEqual(
             this.plugin.get_headers_to_sign(this.plugin.cfg),
@@ -175,7 +175,7 @@ exports.get_headers_to_sign = {
         );
         test.done();
     },
-    'from, subject': function (test) {
+    'from, subject' (test) {
         test.expect(1);
         this.plugin.cfg.main.headers_to_sign='from,subject';
         test.deepEqual(
@@ -184,7 +184,7 @@ exports.get_headers_to_sign = {
         );
         test.done();
     },
-    'missing from': function (test) {
+    'missing from' (test) {
         test.expect(1);
         this.plugin.cfg.main.headers_to_sign='subject';
         test.deepEqual(

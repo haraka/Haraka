@@ -42,7 +42,7 @@ exports.load_relay_ini = function () {
             '-relay.all',
             '-relay.dest_domains',
         ],
-    }, function () {
+    }, () => {
         plugin.load_relay_ini();
     });
 }
@@ -52,7 +52,7 @@ exports.load_dest_domains = function () {
     plugin.dest = plugin.config.get(
         'relay_dest_domains.ini',
         'ini',
-        function () { plugin.load_dest_domains(); }
+        () => { plugin.load_dest_domains(); }
     );
 }
 
@@ -61,7 +61,7 @@ exports.load_acls = function () {
     const file_name = 'relay_acl_allow';
 
     // load with a self-referential callback
-    plugin.acl_allow = plugin.config.get(file_name, 'list', function () {
+    plugin.acl_allow = plugin.config.get(file_name, 'list', () => {
         plugin.load_acls();
     });
 
@@ -93,7 +93,7 @@ exports.acl = function (next, connection) {
     return next(OK);
 }
 
-exports.pass_relaying = function (next, connection) {
+exports.pass_relaying = (next, connection) => {
     if (connection.relaying) {
         return next(OK);
     }

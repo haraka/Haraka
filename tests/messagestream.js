@@ -15,13 +15,13 @@ function _tear_down (done) {
 exports.messagestream = {
     setUp : _set_up,
     tearDown : _tear_down,
-    'is a Stream': function (test) {
+    'is a Stream' (test) {
         test.expect(2);
         test.ok(this.ms instanceof MessageStream);
         test.ok(this.ms instanceof stream.Stream);
         test.done();
     },
-    'gets message data': function (test) {
+    'gets message data' (test) {
         this.ms.add_line('Header: test\r\n');
         this.ms.add_line('\r\n');
         this.ms.add_line('I am body text\r\n');

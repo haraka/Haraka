@@ -22,7 +22,7 @@ class TimerQueue {
         const self = this;
         interval = interval || 1000;
         this.queue = [];
-        this.interval_timer = setInterval(function () { self.fire(); }, interval);
+        this.interval_timer = setInterval(() => { self.fire(); }, interval);
     }
 
     add (id, ms, cb) {

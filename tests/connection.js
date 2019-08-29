@@ -11,11 +11,11 @@ function _set_up (done) {
     const client = {
         remotePort: null,
         remoteAddress: null,
-        destroy: function () { true; },
+        destroy: () => { true; },
     };
     const server = {
         ip_address: null,
-        address: function () {
+        address () {
             return this.ip_address;
         }
     }
@@ -30,7 +30,7 @@ function _tear_down (done) {
 exports.connectionRaw = {
     setUp : _set_up,
     tearDown : _tear_down,
-    'has remote object': function (test) {
+    'has remote object' (test) {
         test.expect(5);
         test.deepEqual(this.connection.remote, {
             ip: null,
@@ -48,7 +48,7 @@ exports.connectionRaw = {
         test.equal(this.connection.remote_info, null);
         test.done();
     },
-    'has local object': function (test) {
+    'has local object' (test) {
         test.expect(5);
         test.equal(this.connection.local.ip, null);
         test.equal(this.connection.local.port, null);
@@ -58,7 +58,7 @@ exports.connectionRaw = {
         test.equal(this.connection.local_port, null);
         test.done();
     },
-    'has tls object': function (test) {
+    'has tls object' (test) {
         test.expect(2);
         test.deepEqual(this.connection.tls, {
             enabled: false,
@@ -70,12 +70,12 @@ exports.connectionRaw = {
         test.equal(this.connection.using_tls, false);
         test.done();
     },
-    'get_capabilities' : function (test) {
+    'get_capabilities' (test) {
         test.expect(1);
         test.deepEqual([], this.connection.get_capabilities());
         test.done();
     },
-    'queue_msg, defined' : function (test) {
+    'queue_msg, defined' (test) {
         test.expect(1);
         test.equal(
             'test message',
@@ -83,7 +83,7 @@ exports.connectionRaw = {
         );
         test.done();
     },
-    'queue_msg, default deny' : function (test) {
+    'queue_msg, default deny' (test) {
         test.expect(2);
         test.equal(
             'Message denied',
@@ -95,7 +95,7 @@ exports.connectionRaw = {
         );
         test.done();
     },
-    'queue_msg, default denysoft' : function (test) {
+    'queue_msg, default denysoft' (test) {
         test.expect(2);
         test.equal(
             'Message denied temporarily',
@@ -107,12 +107,12 @@ exports.connectionRaw = {
         );
         test.done();
     },
-    'queue_msg, default else' : function (test) {
+    'queue_msg, default else' (test) {
         test.expect(1);
         test.equal('', this.connection.queue_msg('hello'));
         test.done();
     },
-    'has legacy connection properties' : function (test) {
+    'has legacy connection properties' (test) {
         test.expect(4);
         this.connection.set('remote', 'ip', '172.16.15.1');
         this.connection.set('hello', 'verb', 'EHLO');
@@ -124,7 +124,7 @@ exports.connectionRaw = {
         test.equal(true, this.connection.using_tls);
         test.done();
     },
-    'has normalized connection properties' : function (test) {
+    'has normalized connection properties' (test) {
         test.expect(5);
         this.connection.set('remote', 'ip', '172.16.15.1');
         this.connection.set('hello', 'verb', 'EHLO');
@@ -137,19 +137,19 @@ exports.connectionRaw = {
         test.equal(true, this.connection.tls.enabled);
         test.done();
     },
-    'sets remote.is_private and remote.is_local': function (test) {
+    'sets remote.is_private and remote.is_local' (test) {
         test.expect(2);
         test.equal(false, this.connection.remote.is_private);
         test.equal(false, this.connection.remote.is_local);
         test.done();
     },
-    'has legacy proxy property set' : function (test) {
+    'has legacy proxy property set' (test) {
         test.expect(1);
         this.connection.set('proxy', 'ip', '172.16.15.1');
         test.equal('172.16.15.1', this.connection.haproxy_ip);
         test.done();
     },
-    'has normalized proxy properties, default' : function (test) {
+    'has normalized proxy properties, default' (test) {
         test.expect(4);
         test.equal(false, this.connection.proxy.allowed);
         test.equal(null, this.connection.proxy.ip);
@@ -157,11 +157,11 @@ exports.connectionRaw = {
         test.equal(null, this.connection.proxy.timer);
         test.done();
     },
-    'has normalized proxy properties, set' : function (test) {
+    'has normalized proxy properties, set' (test) {
         test.expect(4);
         this.connection.set('proxy', 'ip', '172.16.15.1');
         this.connection.set('proxy', 'type', 'haproxy');
-        this.connection.set('proxy', 'timer', setTimeout(function () {}, 1000));
+        this.connection.set('proxy', 'timer', setTimeout(() => {}, 1000));
         this.connection.set('proxy', 'allowed', true);
 
         test.equal(true, this.connection.proxy.allowed);
@@ -180,16 +180,16 @@ exports.connectionRaw = {
 }
 
 exports.connectionPrivate = {
-    setUp: function (done) {
+    setUp (done) {
         this.backup = {};
         const client = {
             remotePort: 2525,
             remoteAddress: '172.16.15.1',
-            destroy: function () { true; },
+            destroy: () => { true; },
         };
         const server = {
             ip_address: '172.16.15.254',
-            address: function () {
+            address () {
                 return this.ip_address;
             }
         }
@@ -197,7 +197,7 @@ exports.connectionPrivate = {
         done();
     },
     tearDown : _tear_down,
-    'sets remote.is_private and remote.is_local': function (test) {
+    'sets remote.is_private and remote.is_local' (test) {
         test.expect(3);
         test.equal(true, this.connection.remote.is_private);
         test.equal(false, this.connection.remote.is_local);
@@ -207,15 +207,15 @@ exports.connectionPrivate = {
 }
 
 exports.connectionLocal = {
-    setUp: function (done) {
+    setUp (done) {
         const client = {
             remotePort: 2525,
             remoteAddress: '127.0.0.2',
-            destroy: function () { true; },
+            destroy: () => { true; },
         };
         const server = {
             ip_address: '127.0.0.1',
-            address: function () {
+            address () {
                 return this.ip_address;
             }
         };
@@ -223,7 +223,7 @@ exports.connectionLocal = {
         done();
     },
     tearDown : _tear_down,
-    'sets remote.is_private and remote.is_local': function (test) {
+    'sets remote.is_private and remote.is_local' (test) {
         test.expect(3);
         test.equal(true, this.connection.remote.is_private);
         test.equal(true, this.connection.remote.is_local);
@@ -235,27 +235,27 @@ exports.connectionLocal = {
 exports.get_remote = {
     setUp : _set_up,
     tearDown : _tear_down,
-    'valid hostname': function (test) {
+    'valid hostname' (test) {
         test.expect(1);
         this.connection.remote.host='a.host.tld'
         this.connection.remote.ip='172.16.199.198'
         test.equal(this.connection.get_remote('host'), 'a.host.tld [172.16.199.198]');
         test.done();
     },
-    'no hostname': function (test) {
+    'no hostname' (test) {
         test.expect(1);
         this.connection.remote.ip='172.16.199.198'
         test.equal(this.connection.get_remote('host'), '[172.16.199.198]');
         test.done();
     },
-    'DNSERROR': function (test) {
+    'DNSERROR' (test) {
         test.expect(1);
         this.connection.remote.host='DNSERROR'
         this.connection.remote.ip='172.16.199.198'
         test.equal(this.connection.get_remote('host'), '[172.16.199.198]');
         test.done();
     },
-    'NXDOMAIN': function (test) {
+    'NXDOMAIN' (test) {
         test.expect(1);
         this.connection.remote.host='NXDOMAIN'
         this.connection.remote.ip='172.16.199.198'
@@ -267,7 +267,7 @@ exports.get_remote = {
 exports.local_info = {
     setUp : _set_up,
     tearDown : _tear_down,
-    'is Haraka/version': function (test) {
+    'is Haraka/version' (test) {
         test.expect(1);
         test.ok(/Haraka\/\d.\d/.test(this.connection.local.info), this.connection.local.info);
         test.done();
@@ -277,14 +277,14 @@ exports.local_info = {
 exports.relaying = {
     setUp : _set_up,
     tearDown : _tear_down,
-    'sets and gets': function (test) {
+    'sets and gets' (test) {
         test.expect(3);
         test.equal(this.connection.relaying, false);
         test.ok(this.connection.relaying = 'alligators');
         test.equal(this.connection.relaying, 'alligators');
         test.done();
     },
-    'sets and gets in a transaction': function (test) {
+    'sets and gets in a transaction' (test) {
         test.expect(4);
         test.equal(this.connection.relaying, false);
         this.connection.transaction = {};
@@ -298,21 +298,21 @@ exports.relaying = {
 exports.get_set = {
     setUp : _set_up,
     tearDown : _tear_down,
-    'sets single level properties': function (test) {
+    'sets single level properties' (test) {
         test.expect(2);
         this.connection.set('encoding', true);
         test.ok(this.connection.encoding);
         test.ok(this.connection.get('encoding'));
         test.done();
     },
-    'sets two level deep properties': function (test) {
+    'sets two level deep properties' (test) {
         test.expect(2);
         this.connection.set('local.host', 'test');
         test.equal(this.connection.local.host, 'test');
         test.equal(this.connection.get('local.host'), 'test');
         test.done();
     },
-    'sets three level deep properties': function (test) {
+    'sets three level deep properties' (test) {
         test.expect(2);
         this.connection.set('some.fine.example', true);
         test.ok(this.connection.some.fine.example);

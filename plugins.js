@@ -77,7 +77,7 @@ class Plugin {
 
         // development mode
         paths = paths.concat(plugin_search_paths(__dirname, name));
-        paths.forEach(function (pp) {
+        paths.forEach(pp => {
             if (plugin.plugin_path) return;
             try {
                 fs.statSync(pp);
@@ -124,7 +124,7 @@ class Plugin {
         exports.registered_hooks[hook_name].push({
             plugin: this.name,
             method: method_name,
-            priority: priority,
+            priority,
             timeout: this.timeout,
             order: order++
         });
@@ -158,7 +158,7 @@ class Plugin {
 
     _make_custom_require () {
         const plugin = this;
-        return function (module) {
+        return module => {
             if (plugin.hasPackageJson) {
                 const mod = require(module);
                 constants.import(global);
@@ -219,15 +219,15 @@ class Plugin {
             __filename: pp,
             __dirname:  path.dirname(pp),
             exports: plugin,
-            setTimeout: setTimeout,
-            clearTimeout: clearTimeout,
-            setInterval: setInterval,
-            clearInterval: clearInterval,
-            process: process,
-            Buffer: Buffer,
-            Math: Math,
+            setTimeout,
+            clearTimeout,
+            setInterval,
+            clearInterval,
+            process,
+            Buffer,
+            Math,
             server: plugins.server,
-            setImmediate: setImmediate
+            setImmediate
         };
         if (plugin.hasPackageJson) {
             delete sandbox.__filename;
@@ -250,7 +250,7 @@ class Plugin {
     }
 }
 
-exports.shutdown_plugins = function () {
+exports.shutdown_plugins = () => {
     for (const i in exports.registered_plugins) {
         if (exports.registered_plugins[i].shutdown) {
             exports.registered_plugins[i].shutdown();
@@ -258,7 +258,7 @@ exports.shutdown_plugins = function () {
     }
 }
 
-process.on('message', function (msg) {
+process.on('message', msg => {
     if (msg.event && msg.event == 'plugins.shutdown') {
         logger.loginfo("[plugins] Shutting down plugins");
         exports.shutdown_plugins();
@@ -307,8 +307,8 @@ const plugins = exports;
 
 plugins.Plugin = Plugin;
 
-plugins.load_plugins = function (override) {
-    logger.loginfo("Loading plugins");
+plugins.load_plugins = override => {
+    logger.loginfo('Loading plugins');
     let plugin_list;
     if (override) {
         if (!Array.isArray(override)) override = [ override ];
@@ -318,8 +318,14 @@ plugins.load_plugins = function (override) {
         plugin_list = exports.config.get('plugins', 'list');
     }
 
-    plugin_list.forEach(function (plugin) {
-        plugins.load_plugin(plugin);
+    plugin_list.forEach(plugin => {
+        if (plugins.deprecated[plugin]) {
+            logger.lognotice(`the plugin ${plugin} has been replaced by '${plugins.deprecated[plugin]}'. Please update config/plugins`)
+            plugins.load_plugin(plugins.deprecated[plugin]);
+        }
+        else {
+            plugins.load_plugin(plugin);
+        }
     });
 
     plugins.plugin_list = Object.keys(plugins.registered_plugins);
@@ -328,7 +334,7 @@ plugins.load_plugins = function (override) {
     const hooks = Object.keys(plugins.registered_hooks);
     for (let h=0; h<hooks.length; h++) {
         const hook = hooks[h];
-        plugins.registered_hooks[hook].sort(function (a, b) {
+        plugins.registered_hooks[hook].sort((a, b) => {
             if (a.priority < b.priority) return -1;
             if (a.priority > b.priority) return 1;
             if (a.priority == b.priority) {
@@ -342,7 +348,29 @@ plugins.load_plugins = function (override) {
     logger.dump_logs(); // now logging plugins are loaded.
 }
 
-plugins.load_plugin = function (name) {
+plugins.deprecated = {
+    'connect.asn'         : 'asn',
+    'connect.fcrdns'      : 'fcrdns',
+    'connect.geoip'       : 'geoip',
+    'connect.rdns_access' : 'access',
+    'data.nomsgid'        : 'data.headers',
+    'data.noreceived'     : 'data.headers',
+    'data.rfc5322_header_checks': 'data.headers',
+    'log.syslog'          : 'syslog',
+    'mail_from.access'    : 'access',
+    'mail_from.blocklist' : 'access',
+    'mail_from.nobounces' : 'bounce',
+    'max_unrecognized_commands' : 'limit',
+    'rate_limit'          : 'limit',
+    'rcpt_to.access'      : 'access',
+    'rcpt_to.blocklist'   : 'access',
+    'rcpt_to.qmail_deliverable' : 'qmail-deliverable',
+    'rdns.regexp'         : 'access',
+    'relay_acl'           : 'relay',
+    'relay_force_routing' : 'relay',
+}
+
+plugins.load_plugin = name => {
     logger.loginfo(`Loading plugin: ${name}`);
 
     const plugin = plugins._load_and_compile_plugin(name);
@@ -358,7 +386,7 @@ plugins.load_plugin = function (name) {
 // to prevent it from blowing up any unit tests.
 plugins.server = { notes: {} };
 
-plugins._load_and_compile_plugin = function (name) {
+plugins._load_and_compile_plugin = name => {
     const plugin = new Plugin(name);
     if (!plugin.plugin_path) {
         const err = `Loading plugin ${plugin.name} failed: No plugin with this name found`;
@@ -372,7 +400,7 @@ plugins._load_and_compile_plugin = function (name) {
     return plugin;
 }
 
-plugins._register_plugin = function (plugin) {
+plugins._register_plugin = plugin => {
     plugin.register();
 
     // register any hook_blah methods.
@@ -386,7 +414,7 @@ plugins._register_plugin = function (plugin) {
     return plugin;
 }
 
-plugins.run_hooks = function (hook, object, params) {
+plugins.run_hooks = (hook, object, params) => {
     if (client_disconnected(object) && !is_required_hook(hook)) {
         object.logdebug(`aborting ${hook} hook`);
         return;
@@ -399,8 +427,7 @@ plugins.run_hooks = function (hook, object, params) {
     }
 
     if (!is_required_hook(hook) && hook !== 'deny' &&
-        object.hooks_to_run && object.hooks_to_run.length)
-    {
+        object.hooks_to_run && object.hooks_to_run.length) {
         throw new Error('We are already running hooks! Fatal error!');
     }
 
@@ -422,7 +449,7 @@ plugins.run_hooks = function (hook, object, params) {
     plugins.run_next_hook(hook, object, params);
 }
 
-plugins.run_next_hook = function (hook, object, params) {
+plugins.run_next_hook = (hook, object, params) => {
     if (client_disconnected(object) && !is_required_hook(hook)) {
         object.logdebug(`aborting ${hook} hook`);
         return;
@@ -491,7 +518,7 @@ plugins.run_next_hook = function (hook, object, params) {
     item.push(cancel);
 
     if (hook !== 'log' && item[0].timeout) {
-        timeout_id = setTimeout(function () {
+        timeout_id = setTimeout(() => {
             timed_out = true;
             object.logcrit(`Plugin ${item[0].name} timed out on hook ${hook} - make sure it calls the callback`);
             callback(constants.denysoft, 'plugin timeout');
@@ -546,7 +573,7 @@ function log_run_item (item, hook, retval, object, params, msg) {
     if (is_not_cont) log = 'loginfo';
     if (is_not_cont || logger.would_log(logger.LOGDEBUG)) {
         object[log]({
-            'hook'      :  hook,
+            hook,
             'plugin'    :  item[0].name,
             'function'  :  item[1],
             'params'    :  ((params) ? ((typeof params === 'string') ? params : params[0]) : ''),
@@ -568,7 +595,7 @@ function is_deny_retval (val) {
 }
 
 function get_denyfn (object, hook, params, retval, msg, respond_method) {
-    return function (deny_retval, deny_msg) {
+    return (deny_retval, deny_msg) => {
         switch (deny_retval) {
             case constants.ok:
                 // Override rejection

@@ -19,7 +19,7 @@ exports.load_spamassassin_ini = function () {
             '+check.local_ip',
             '+check.relay',
         ],
-    }, function () {
+    }, () => {
         plugin.load_spamassassin_ini();
     });
 
@@ -39,7 +39,7 @@ exports.load_spamassassin_ini = function () {
     [
         'reject_threshold', 'relay_reject_threshold',
         'munge_subject_threshold', 'max_size'
-    ].forEach(function (item) {
+    ].forEach(item => {
         if (!plugin.cfg.main[item]) return;
         plugin.cfg.main[item] = Number(plugin.cfg.main[item]);
     });
@@ -61,7 +61,7 @@ exports.hook_data_post = function (next, connection) {
     let last_header;
     const start = Date.now();
 
-    socket.on('line', function (line) {
+    socket.on('line', line => {
         connection.logprotocol(plugin, `Spamd C: ${line} state=${state}`);
         line = line.replace(/\r?\n/, '');
         if (state === 'line0') {
@@ -100,12 +100,12 @@ exports.hook_data_post = function (next, connection) {
         }
     });
 
-    socket.once('end', function () {
+    socket.once('end', () => {
         // Abort if the transaction is gone
         if (!connection.transaction) return next();
 
         if (spamd_response.headers && spamd_response.headers.Tests) {
-            spamd_response.tests = spamd_response.headers.Tests;
+            spamd_response.tests = spamd_response.headers.Tests.replace(/\s/g, '');
         }
         if (spamd_response.tests === undefined) {
             // strip the 'tests' from the X-Spam-Status header
@@ -116,7 +116,7 @@ exports.hook_data_post = function (next, connection) {
                 const tests = /tests=((?:(?!autolearn)[^ ])+)/.exec(
                     spamd_response.headers.Status.replace(/\r?\n\t/g,'')
                 );
-                if (tests) { spamd_response.tests = tests[1]; }
+                if (tests) spamd_response.tests = tests[1];
             }
         }
 
@@ -137,7 +137,7 @@ exports.hook_data_post = function (next, connection) {
 
         plugin.munge_subject(connection, spamd_response.score);
 
-        return next();
+        next();
     });
 }
 
@@ -293,7 +293,7 @@ exports.get_spamd_socket = function (next, connection, headers) {
         connection.transaction.message_stream.pipe(socket);
     });
 
-    socket.on('error', function (err) {
+    socket.on('error', err => {
         connection.logerror(plugin, `connection failed: ${err}`);
         // TODO: optionally DENYSOFT
         // TODO: add a transaction note

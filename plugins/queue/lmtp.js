@@ -11,7 +11,7 @@ exports.register = function () {
 
 exports.load_lmtp_ini = function () {
     const plugin = this;
-    plugin.cfg = plugin.config.get('lmtp.ini', function () {
+    plugin.cfg = plugin.config.get('lmtp.ini', () => {
         plugin.load_lmtp_ini();
     })
 }
@@ -37,7 +37,7 @@ exports.hook_get_mx = function (next, hmail, domain) {
     return next(OK, mx);
 }
 
-exports.hook_queue = function (next, connection) {
+exports.hook_queue = (next, connection) => {
     const txn = connection.transaction;
 
     const q_wants = txn.notes.get('queue.wants');

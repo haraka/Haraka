@@ -1,13 +1,13 @@
 'use strict';
 
 const os = require('os');
-const platform_dot = ((['win32','win64'].indexOf( process.platform ) !== -1) ? '' : '__tmp__') + '.';
+const platform_dot = ((['win32','win64'].includes(process.platform)) ? '' : '__tmp__') + '.';
 
 let QFILECOUNTER = 0;
 
 const _qfile = module.exports = {
     // File Name Format: $arrival_$nextattempt_$attempts_$pid_$uniquetag_$counter_$host
-    hostname : function (hostname) {
+    hostname : hostname => {
         if (!hostname) hostname = os.hostname();
         return hostname
             .replace(/\\/g, '\\057')
@@ -15,7 +15,7 @@ const _qfile = module.exports = {
             .replace(/_/g,  '\\137');
     },
 
-    name : function (overrides) {
+    name (overrides) {
         const o = overrides || {};
         const time = _qfile.time();
         return [
@@ -29,17 +29,14 @@ const _qfile = module.exports = {
         ].join('_');
     },
 
-    time : function () {
-        return new Date().getTime();
-    },
+    time : () => new Date().getTime(),
 
-    next_counter: function () {
+    next_counter: () => {
         QFILECOUNTER = (QFILECOUNTER < 10000) ? QFILECOUNTER+1 : 0;
         return QFILECOUNTER;
     },
 
-    rnd_unique: function (len) {
-        len = len || 6;
+    rnd_unique: (len = 6) => {
         const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
         const result = [];
         for (let i = len; i > 0; --i) {
@@ -48,7 +45,7 @@ const _qfile = module.exports = {
         return result.join('');
     },
 
-    parts : function (filename) {
+    parts : filename => {
         if (!filename) throw new Error("No filename provided");
 
         const PARTS_EXPECTED_OLD = 4;

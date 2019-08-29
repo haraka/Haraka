@@ -133,7 +133,7 @@ class DKIMObject {
             for (let h=0; h<headers.length; h++) {
                 this.signed_headers.push(headers[h].trim().toLowerCase());
             }
-            if (this.signed_headers.indexOf('from') === -1) {
+            if (!this.signed_headers.includes('from')) {
                 return this.result('from field not signed', 'invalid');
             }
         }
@@ -198,9 +198,9 @@ class DKIMObject {
         if (this.run_cb) return;
 
         // Buffer any lines
-        if ((line.length === 2 && line[0] === 0x0d && line[1] === 0x0a) ||
-            (line.length === 1 && line[0] === 0x0a))
-        {
+        const isCRLF = line.length === 2 && line[0] === 0x0d && line[1] === 0x0a;
+        const isLF = line.length === 1 && line[0] === 0x0a;
+        if (isCRLF || isLF) {
             // Store any empty lines as both canonicalization alogoriths
             // ignore all empty lines at the end of the message body.
             this.line_buffer.push(line);
@@ -229,7 +229,7 @@ class DKIMObject {
                 identity: this.identity,
                 selector: this.fields.s,
                 domain: this.fields.d,
-                result: result
+                result
             }
         );
     }
@@ -281,13 +281,13 @@ class DKIMObject {
         // Do the DNS lookup to retrieve the public key
         const self = this;
         let timeout = false;
-        const timer = setTimeout(function () {
+        const timer = setTimeout(() => {
             timeout = true;
             return self.result('DNS timeout', 'tempfail');
         }, this.timeout * 1000);
         const lookup = `${this.fields.s}._domainkey.${this.fields.d}`;
         this.debug(`${this.identity}: DNS lookup ${lookup} (timeout= ${this.timeout}s)`);
-        dns.resolveTxt(lookup, function (err, res) {
+        dns.resolveTxt(lookup, (err, res) => {
             if (timeout) return;
             clearTimeout(timer);
             if (err) {
@@ -308,7 +308,7 @@ class DKIMObject {
                 if (Array.isArray(record)) {
                     record = record.join('');
                 }
-                if (record.indexOf('p=') === -1) {
+                if (!record.includes('p=')) {
                     self.debug(`${self.identity}: ignoring TXT record: ${record}`);
                     continue;
                 }
@@ -345,13 +345,13 @@ class DKIMObject {
                     const hashes = self.dns_fields.h.split(':');
                     for (let k=0; k<hashes.length; k++) {
                         const hash = hashes[k].trim();
-                        if (self.fields.a.indexOf(hash) === -1) {
+                        if (!self.fields.a.includes(hash)) {
                             return self.result('inappropriate hash algorithm', 'invalid');
                         }
                     }
                 }
                 if (self.dns_fields.k) {
-                    if (self.fields.a.indexOf(self.dns_fields.k) === -1) {
+                    if (!self.fields.a.includes(self.dns_fields.k)) {
                         return self.result('inappropriate key type', 'invalid');
                     }
                 }
@@ -445,11 +445,12 @@ class DKIMVerifyStream extends Stream {
                 return true;
             }
             buf = Buffer.concat([buf, new Buffer('\r\n\r\n')]);
-        } else {
+        }
+        else {
             buf = this.buffer.pop(buf);
         }
 
-        const callback = function (err, result) {
+        function callback (err, result) {
             self.pending--;
             if (result) {
                 self.results.push({
@@ -472,11 +473,11 @@ class DKIMVerifyStream extends Stream {
             self.debug(JSON.stringify(result));
 
             if (self.pending === 0 && self.cb) {
-                return process.nextTick(function () {
+                return process.nextTick(() => {
                     self.cb(null, self.result, self.results);
                 });
             }
-        };
+        }
 
         // Process input buffer into lines
         let offset = 0;
@@ -508,7 +509,7 @@ class DKIMVerifyStream extends Stream {
                     }
                     if (!this.header_idx['dkim-signature']) {
                         this._no_signatures_found = true;
-                        return process.nextTick(function () {
+                        return process.nextTick(() => {
                             self.cb(null, self.result, self.results);
                         });
                     }
@@ -521,7 +522,7 @@ class DKIMVerifyStream extends Stream {
                             this.dkim_objects.push(new DKIMObject(dkim_headers[d], this.header_idx, callback, this.timeout));
                         }
                         if (this.pending === 0) {
-                            process.nextTick(function () {
+                            process.nextTick(() => {
                                 if (self.cb) self.cb(new Error('no signatures found'));
                             });
                         }
@@ -565,7 +566,7 @@ class DKIMVerifyStream extends Stream {
         }
         if (this.pending === 0 && this._no_signatures_found === false) {
             const self = this;
-            process.nextTick(function () {
+            process.nextTick(() => {
                 self.cb(null, self.result, self.results);
             });
         }

@@ -1,5 +1,33 @@
 
-## 2.8.24 - Jan DD, 2019
+## NEXT
+
+### Changes
+
+* Actually enforce using key for INTERNALCMD #2643
+* trans: assign conditions to named vars #2638
+* drop node.js v6 support #2632
+* conn: use is_local instead of localhost addr tests #2627
+* spamassassin: spamassassin: strip useless WS from tests #2624
+* es6: many updates #2615
+* systemctl: update service definition #2612
+* lint: bracket style to match newer eslint:recommended #2680
+* lint: use object shorthands (eslint:recommended) #2680
+* logger: use safer Object.prototype.hasOwnProperty #2680
+
+
+### New features
+
+* spf: add config option to fail on NONE #2644
+
+
+### Fixes
+
+* mailheader: fully quality header name in _remove_more #2647
+* haraka: Connection.createConnection is not a constructor #2816
+* problems with japanese characters in body and part header #2675
+
+
+## 2.8.24 - Mar 12, 2019
 
 ### Changes
 
@@ -12,6 +40,13 @@
 * smtp_client: pass pool_timeout to new SMTPClient #2574
 * server: default to nodes=1 (was undefined) #2573
 * test/server: use IPv4 127.0.0.1 instead of localhost #2584
+* queue/smtp_*: add v3 upgrade notice and config setting #2585
+* spf: use the skip config for helo/ehlo checks #2587
+* spf: avoid 2nd EHLO evaluation if EHLO host is identical #2592
+* queue.js refactoring #2593
+* Log dkim_sign parse errors with connection ID #2596
+* Update ipaddr.js to the latest version #2599
+* make inactivity timeout match docs #2607
 
 ### New Features
 
@@ -19,8 +54,8 @@
 * tls: require validated certs on some ports with requireAuthorized #2554
 * spamassassin: disable checks when requested #2564
 * clamd: permit skipping for relay clients #2564
-* outbound: exported outbound.temp_fail_queue, outbound.delivery_queue and add TimerQueue.discard() 
-* status plugin #2577
+* outbound: exported outbound.temp_fail_queue, outbound.delivery_queue and add TimerQueue.discard()
+* status: new plugin #2577
 
 ### Fixes
 
@@ -29,7 +64,10 @@
 * invalid DKIM when empty body #2410
 * prevent running callback multiple times on TLS unix socket #2509
 * add missing callback when listing queue and empty directory
-* correct MIME parsing when charset: utf8 and encoding: 8bit #2548
+* correct MIME parsing when charset: utf8 and encoding: 8bit #2582
+* spamassassin: default check flags to true #2583
+* smtp_client: destroy when connection gets conn timeout error #2604
+* on error and timeout, remove listeners and destroy conn. #2606
 
 
 ## 2.8.23 - Nov 18, 2018

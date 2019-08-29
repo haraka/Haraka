@@ -5,9 +5,7 @@ const net_utils = require('haraka-net-utils');
 const SPF = require('./spf').SPF;
 
 // Override logging in SPF module
-SPF.prototype.log_debug = function (str) {
-    return exports.logdebug(str);
-}
+SPF.prototype.log_debug = str => exports.logdebug(str)
 
 exports.register = function () {
     const plugin = this;
@@ -26,7 +24,7 @@ exports.register = function () {
 exports.load_bounce_bad_rcpt = function () {
     const plugin = this;
 
-    const new_list = plugin.config.get('bounce_bad_rcpt', 'list', function () {
+    const new_list = plugin.config.get('bounce_bad_rcpt', 'list', () => {
         plugin.load_bounce_bad_rcpt();
     });
 
@@ -54,7 +52,7 @@ exports.load_bounce_ini = function () {
             '-reject.bounce_spf',
             '-reject.non_local_msgid',
         ],
-    }, function () {
+    }, () => {
         plugin.load_bounce_ini();
     });
 
@@ -349,18 +347,18 @@ exports.bounce_spf = function (next, connection) {
         return next(retval, msg);
     }
 
-    timer = setTimeout(function () {
+    timer = setTimeout(() => {
         connection.logerror(plugin, 'Timed out');
         txn.results.add(plugin, { skip: 'bounce_spf(timeout)' });
         return run_cb(true);
     }, (plugin.timeout - 1) * 1000);
 
-    ips.forEach(function (ip) {
+    ips.forEach(ip => {
         if (aborted) return;
         const spf = new SPF();
         pending++;
         spf.check_host(ip, txn.rcpt_to[0].host, txn.rcpt_to[0].address(),
-            function (err, result) {
+            (err, result) => {
                 if (aborted) return;
                 pending--;
                 if (err) {

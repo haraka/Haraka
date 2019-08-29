@@ -42,7 +42,7 @@ exports.load_attachment_ini = function () {
         default_archive_extns;
 }
 
-exports.find_bsdtar_path = function (cb) {
+exports.find_bsdtar_path = cb => {
     let found = false;
     let i = 0;
     ['/bin', '/usr/bin', '/usr/local/bin'].forEach((dir) => {
@@ -117,10 +117,10 @@ exports.unarchive_recursive = function (connection, f, archive_file_name, cb) {
     }
 
     function deleteTempFiles () {
-        tmpfiles.forEach(function (t) {
-            fs.close(t[0], function () {
+        tmpfiles.forEach(t => {
+            fs.close(t[0], () => {
                 connection.logdebug(plugin, `closed fd: ${t[0]}`);
-                fs.unlink(t[1], function () {
+                fs.unlink(t[1], () => {
                     connection.logdebug(plugin, `deleted tempfile: ${t[1]}`);
                 });
             });
@@ -180,9 +180,8 @@ exports.unarchive_recursive = function (connection, f, archive_file_name, cb) {
                 connection.logdebug(plugin, `file: ${file} depth=${depth}`);
                 files.push((prefix ? `${prefix}/` : '') + file);
                 const extn = path.extname(file.toLowerCase());
-                if (plugin.archive_exts.indexOf(extn) === -1 &&
-                    plugin.archive_exts.indexOf(extn.substring(1)) === -1)
-                {
+                if (!plugin.archive_exts.includes(extn) &&
+                    !plugin.archive_exts.includes(extn.substring(1))) {
                     // Not an archive file extension
                     continue;
                 }
@@ -214,7 +213,7 @@ exports.unarchive_recursive = function (connection, f, archive_file_name, cb) {
                         }, plugin.cfg.timeout);
 
                         // Create WriteStream for this file
-                        const tws = fs.createWriteStream(tmpfile, { "fd": fd });
+                        const tws = fs.createWriteStream(tmpfile, { fd });
                         err = "";
 
                         cmd.stderr.on('data', (data) => {
@@ -309,9 +308,8 @@ exports.start_attachment = function (connection, ctype, filename, body, stream) 
     connection.logdebug(plugin, `found attachment file: ${filename}`);
     // See if filename extension matches archive extension list
     // We check with the dot prefixed and without
-    if (archives_disabled || (plugin.archive_exts.indexOf(fileext) === -1 &&
-            plugin.archive_exts.indexOf(fileext.substring(1)) === -1))
-    {
+    if (archives_disabled || (!plugin.archive_exts.includes(fileext) &&
+            !plugin.archive_exts.includes(fileext.substring(1)))) {
         return;
     }
     connection.logdebug(plugin, `found ${fileext} on archive list`);
@@ -320,9 +318,9 @@ exports.start_attachment = function (connection, ctype, filename, body, stream) 
     stream.pause();
     tmp.file((err, fn, fd) => {
         function cleanup () {
-            fs.close(fd, function () {
+            fs.close(fd, () => {
                 connection.logdebug(plugin, `closed fd: ${fd}`);
-                fs.unlink(fn, function () {
+                fs.unlink(fn, () => {
                     connection.logdebug(plugin, `unlinked: ${fn}`);
                 });
             });
@@ -472,8 +470,7 @@ exports.check_attachments = function (next, connection) {
 
 exports.check_items_against_regexps = function (items, regexps) {
     if ((regexps && Array.isArray(regexps) && regexps.length > 0) &&
-        (items && Array.isArray(items) && items.length > 0))
-    {
+        (items && Array.isArray(items) && items.length > 0)) {
         for (let r=0; r < regexps.length; r++) {
             let reg;
             try {
@@ -494,7 +491,7 @@ exports.check_items_against_regexps = function (items, regexps) {
     return false;
 }
 
-exports.wait_for_attachment_hooks = function (next, connection) {
+exports.wait_for_attachment_hooks = (next, connection) => {
     const txn = connection.transaction;
     if (txn.notes.attachment_count > 0) {
         // this.loginfo("We still have attachment hooks running");

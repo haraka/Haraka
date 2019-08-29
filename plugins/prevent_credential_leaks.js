@@ -5,14 +5,14 @@ function escapeRegExp (str) {
     return str.replace(/[-[\]/{}()*+?.\\^$|]/g, "\\$&");
 }
 
-exports.hook_data = function (next, connection) {
+exports.hook_data = (next, connection) => {
     if (connection.notes.auth_user && connection.notes.auth_passwd) {
         connection.transaction.parse_body = true;
     }
     next();
 }
 
-exports.hook_data_post = function (next, connection) {
+exports.hook_data_post = (next, connection) => {
     if (!(connection.notes.auth_user && connection.notes.auth_passwd)) {
         return next();
     }

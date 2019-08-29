@@ -51,7 +51,7 @@ logger.levels = {
 
 for (const le in logger.levels) {
     logger.levels[`LOG${le}`] = logger.levels[le];
-    logger['LOG' + le] = logger.levels[le];
+    logger[`LOG${le}`] = logger.levels[le];
 }
 
 logger.formats = {
@@ -92,7 +92,7 @@ logger.load_log_ini = function () {
             '+main.timestamps',
         ]
     },
-    function () {
+    () => {
         self.load_log_ini();
     });
 
@@ -101,12 +101,12 @@ logger.load_log_ini = function () {
     this.set_format(this.cfg.main.format);
 }
 
-logger.colorize = function (color, str) {
+logger.colorize = (color, str) => {
     if (!util.inspect.colors[color]) { return str; }  // unknown color
     return `\u001b[${util.inspect.colors[color][0]}m${str}\u001b[${util.inspect.colors[color][1]}m`;
 }
 
-logger.dump_logs = function (cb) {
+logger.dump_logs = cb => {
     while (logger.deferred_logs.length > 0) {
         const log_item = logger.deferred_logs.shift();
         plugins.run_hooks('log', logger, log_item);
@@ -117,32 +117,31 @@ logger.dump_logs = function (cb) {
 }
 
 if (!util.isFunction) {
-    util.isFunction = function (functionToCheck) {
+    util.isFunction = functionToCheck => {
         const getType = {};
         return functionToCheck && getType.toString.call(functionToCheck) === '[object Function]';
     };
 }
 
 logger.dump_and_exit = function (code) {
-    this.dump_logs(function () {
+    this.dump_logs(() => {
         if (util.isFunction(code)) return code();
         process.exit(code);
     });
 }
 
-logger.log = function (level, data, logobj) {
+logger.log = (level, data, logobj) => {
     if (level === 'PROTOCOL') {
         data = data.replace(/\n/g, '\\n');
     }
     data = data.replace(/\r/g, '\\r')
         .replace(/\n$/, '');
 
-    const item = { 'level' : level, 'data'  : data, obj: logobj};
+    const item = { level, data, obj: logobj};
 
     // buffer until plugins are loaded
-    if (!plugins || (Array.isArray(plugins.plugin_list) &&
-                     !plugins.plugin_list.length))
-    {
+    const emptyPluginList = !plugins || Array.isArray(plugins.plugin_list) && !plugins.plugin_list.length;
+    if (emptyPluginList) {
         logger.deferred_logs.push(item);
         return true;
     }
@@ -157,7 +156,7 @@ logger.log = function (level, data, logobj) {
     return true;
 }
 
-logger.log_respond = function (retval, msg, data) {
+logger.log_respond = (retval, msg, data) => {
     // any other return code is irrelevant
     if (retval !== constants.cont) { return false; }
     let timestamp_string = '';
@@ -209,26 +208,26 @@ logger.set_format = function (format) {
 logger._init_loglevel = function () {
     const self = this;
 
-    const _loglevel = config.get('loglevel', 'value', function () {
+    const _loglevel = config.get('loglevel', 'value', () => {
         self._init_loglevel();
     });
 
     self.set_loglevel(_loglevel);
 }
 
-logger.would_log = function (level) {
+logger.would_log = level => {
     if (logger.loglevel < level) { return false; }
     return true;
 }
 
-logger.set_timestamps = function (value) {
+logger.set_timestamps = value => {
     logger.timestamps = !!value;
 }
 
 logger._init_timestamps = function () {
     const self = this;
 
-    const _timestamps = config.get('log_timestamps', 'value', function () {
+    const _timestamps = config.get('log_timestamps', 'value', () => {
         self._init_timestamps();
     });
 
@@ -239,85 +238,79 @@ logger._init_timestamps = function () {
 
 logger._init();
 
-logger.log_if_level = function (level, key, plugin) {
-    return function () {
-        if (logger.loglevel < logger[key]) { return; }
-        let logobj = {
-            level,
-            uuid: '-',
-            origin: (plugin || 'core'),
-            message: ''
-        };
-        for (let i=0; i < arguments.length; i++) {
-            const data = arguments[i];
-            if (typeof data !== 'object') {
-                logobj.message += (data);
-                continue;
-            }
-            if (!data) continue;
-
-            // if the object is a connection, add the connection id
-            if (data instanceof connection.Connection) {
-                logobj.uuid = data.uuid;
-                if (data.tran_count > 0) {
-                    logobj.uuid += "." + data.tran_count;
-                }
-            }
-            else if (data instanceof plugins.Plugin) {
-                logobj.origin = data.name;
-            }
-            else if (data.name) {
-                logobj.origin = data.name;
-            }
-            else if (data instanceof outbound.HMailItem) {
-                logobj.origin = 'outbound';
-                if (data.todo) {
-                    if (data.todo.uuid)
-                        logobj.uuid = data.todo.uuid;
-                    if (data.todo.client_uuid) {
-                        // dirty hack
-                        logobj.origin = `outbound] [${data.todo.client_uuid}`;
-                    }
-                }
-            }
-            else if (
-                logger.format === logger.formats.LOGFMT &&
-                data.constructor === Object
-            ) {
-                logobj = Object.assign(logobj, data);
-            }
-            else if (typeof data === 'object' && data.hasOwnProperty('uuid')) {
-                logobj.uuid = data.uuid;
-            }
-            else if (data.constructor === Object) {
-                if (!logobj.message.endsWith(' ')) {
-                    logobj.message += ' ';
-                }
-                logobj.message += (stringify(data));
-            }
-            else {
-                logobj.message += (util.inspect(data));
-            }
-        }
-        switch (logger.format) {
-            case logger.formats.LOGFMT:
-                logger.log(
-                    level,
-                    stringify(logobj)
-                );
-                return true;
-            case logger.formats.DEFAULT:
-            default:
-                logger.log(
-                    level,
-                    `[${logobj.level}] [${logobj.uuid}] [${logobj.origin}] ${logobj.message}`
-                );
-                return true;
-        }
+logger.log_if_level = (level, key, plugin) => function () {
+    if (logger.loglevel < logger[key]) { return; }
+    let logobj = {
+        level,
+        uuid: '-',
+        origin: (plugin || 'core'),
+        message: ''
     };
+    for (let i=0; i < arguments.length; i++) {
+        const data = arguments[i];
+        if (typeof data !== 'object') {
+            logobj.message += (data);
+            continue;
+        }
+        if (!data) continue;
+
+        // if the object is a connection, add the connection id
+        if (data instanceof connection.Connection) {
+            logobj.uuid = data.uuid;
+            if (data.tran_count > 0) {
+                logobj.uuid += "." + data.tran_count;
+            }
+        }
+        else if (data instanceof plugins.Plugin) {
+            logobj.origin = data.name;
+        }
+        else if (data.name) {
+            logobj.origin = data.name;
+        }
+        else if (data instanceof outbound.HMailItem) {
+            logobj.origin = 'outbound';
+            if (data.todo) {
+                if (data.todo.uuid)
+                    logobj.uuid = data.todo.uuid;
+                if (data.todo.client_uuid) {
+                    // dirty hack
+                    logobj.origin = `outbound] [${data.todo.client_uuid}`;
+                }
+            }
+        }
+        else if (
+            logger.format === logger.formats.LOGFMT && data.constructor === Object) {
+            logobj = Object.assign(logobj, data);
+        }
+        else if (typeof data === 'object' && Object.prototype.hasOwnProperty.call(data, "uuid")) {
+            logobj.uuid = data.uuid;
+        }
+        else if (data.constructor === Object) {
+            if (!logobj.message.endsWith(' ')) logobj.message += ' ';
+            logobj.message += (stringify(data));
+        }
+        else {
+            logobj.message += (util.inspect(data));
+        }
+    }
+    switch (logger.format) {
+        case logger.formats.LOGFMT:
+            logger.log(
+                level,
+                stringify(logobj)
+            );
+            return true;
+        case logger.formats.DEFAULT:
+        default:
+            logger.log(
+                level,
+                `[${logobj.level}] [${logobj.uuid}] [${logobj.origin}] ${logobj.message}`
+            );
+            return true;
+    }
 }
 
-logger.add_log_methods = function (object, plugin) {
+logger.add_log_methods = (object, plugin) => {
     if (!object) return;
     if (typeof(object) !== 'object') return;
     for (const level in logger.levels) {

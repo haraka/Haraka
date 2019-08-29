@@ -7,7 +7,7 @@ exports.load_excludes = function () {
     const plugin = this;
 
     plugin.loginfo('Loading excludes file');
-    const list = plugin.config.get('clamd.excludes','list', function () {
+    const list = plugin.config.get('clamd.excludes','list', () => {
         plugin.load_excludes();
     });
 
@@ -95,7 +95,7 @@ exports.load_clamd_ini = function () {
             '+check.private_ip',
             '+check.local_ip'
         ],
-    }, function () {
+    }, () => {
         plugin.load_clamd_ini();
     });
 
@@ -125,7 +125,7 @@ exports.load_clamd_ini = function () {
 
     const all_reject_opts = [];
     const enabled_reject_opts = [];
-    Object.keys(rejectPatterns).forEach(function (opt) {
+    Object.keys(rejectPatterns).forEach(opt => {
         all_reject_opts.push(rejectPatterns[opt]);
         if (!plugin.cfg.reject[opt]) return;
         enabled_reject_opts.push(rejectPatterns[opt]);
@@ -158,7 +158,7 @@ exports.hook_data = function (next, connection) {
 
     const txn = connection.transaction;
     txn.parse_body = true;
-    txn.attachment_hooks(function (ctype, filename, body) {
+    txn.attachment_hooks((ctype, filename, body) => {
         connection.logdebug(plugin,
             `found ctype=${ctype}, filename=${filename}`);
         txn.notes.clamd_found_attachment = true;
@@ -190,7 +190,7 @@ exports.hook_data_post = function (next, connection) {
     const hosts = cfg.main.clamd_socket.split(/[,; ]+/);
 
     if (cfg.main.randomize_host_order) {
-        hosts.sort(function () { return 0.5 - Math.random(); });
+        hosts.sort(() => 0.5 - Math.random());
     }
 
     function try_next_host () {
@@ -204,7 +204,7 @@ exports.hook_data_post = function (next, connection) {
         connection.logdebug(plugin, `trying host: ${host}`);
         const socket = new sock.Socket();
 
-        socket.on('timeout', function () {
+        socket.on('timeout', () => {
             socket.destroy();
             if (!connected) {
                 connection.logerror(plugin, `Timeout connecting to ${host}`);
@@ -215,7 +215,7 @@ exports.hook_data_post = function (next, connection) {
             return next(DENYSOFT, 'Virus scanner timed out');
         });
 
-        socket.on('error', function (err) {
+        socket.on('error', err => {
             socket.destroy();
             if (!connected) {
                 connection.logerror(plugin,
@@ -234,7 +234,7 @@ exports.hook_data_post = function (next, connection) {
             return next(DENYSOFT, 'Virus scanner error');
         });
 
-        socket.on('connect', function () {
+        socket.on('connect', () => {
             connected = true;
             socket.setTimeout((cfg.main.timeout || 30) * 1000);
             const hp = socket.address();
@@ -246,7 +246,7 @@ exports.hook_data_post = function (next, connection) {
         });
 
         let result = '';
-        socket.on('line', function (line) {
+        socket.on('line', line => {
             connection.logprotocol(plugin, 'C:' + line.split('').filter((x) => {
                 return 31 < x.charCodeAt(0) && 127 > x.charCodeAt(0)
             }).join('') );
@@ -255,7 +255,7 @@ exports.hook_data_post = function (next, connection) {
 
         socket.setTimeout((cfg.main.connect_timeout || 10) * 1000);
 
-        socket.on('end', function () {
+        socket.on('end', () => {
             if (!txn) return next();
             if (/^stream: OK/.test(result)) {                // OK
                 txn.results.add(plugin, {pass: 'clean', emit: true});
@@ -357,7 +357,7 @@ exports.should_check = function (connection) {
     return result;
 }
 
-exports.send_clamd_predata = function (socket, cb) {
+exports.send_clamd_predata = (socket, cb) => {
     socket.write("zINSTREAM\0", () => {
         const received = 'Received: from Haraka clamd plugin\r\n';
         const buf = Buffer.alloc(received.length + 4);

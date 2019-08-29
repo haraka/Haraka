@@ -17,6 +17,4 @@ class Socket extends events.EventEmitter {
 
 exports.Socket = Socket;
 
-exports.connect = function (port, host, cb) {
-    return new Socket(port, host);
-}
+exports.connect = (port, host, cb) => new Socket(port, host)

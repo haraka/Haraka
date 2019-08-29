@@ -17,12 +17,12 @@ function _set_up (done) {
 
 exports.load_config = {
     setUp : _set_up,
-    'none': function (test) {
+    'none' (test) {
         test.expect(1);
         test.equal(undefined, this.plugin.cfg);
         test.done();
     },
-    'defaults': function (test) {
+    'defaults' (test) {
         test.expect(3);
         this.plugin.load_config();
         test.equal(true, this.plugin.cfg.main.reject);
@@ -34,12 +34,12 @@ exports.load_config = {
 
 exports.get_uniq_zones = {
     setUp : _set_up,
-    'none': function (test) {
+    'none' (test) {
         test.expect(1);
         test.equal(undefined, this.plugin.zones);
         test.done();
     },
-    'dnsbl.zones': function (test) {
+    'dnsbl.zones' (test) {
         test.expect(2);
         this.plugin.load_config();
         this.plugin.cfg.main.zones = 'dnsbl.test, dnsbl2.test';
@@ -53,24 +53,24 @@ exports.get_uniq_zones = {
 
 exports.should_skip = {
     setUp : _set_up,
-    'no connection': function (test) {
+    'no connection' (test) {
         test.expect(1);
         test.equal(true, this.plugin.should_skip());
         test.done();
     },
-    'no remote_ip': function (test) {
+    'no remote_ip' (test) {
         test.expect(1);
 
         test.equal(true, this.plugin.should_skip(this.connection));
         test.done();
     },
-    'private remote_ip, no zones': function (test) {
+    'private remote_ip, no zones' (test) {
         test.expect(1);
         this.connection.remote.ip = '192.168.1.1';
         test.equal(true, this.plugin.should_skip(this.connection));
         test.done();
     },
-    'private remote_ip': function (test) {
+    'private remote_ip' (test) {
         test.expect(1);
         this.connection.remote.is_private = true;
 
@@ -81,7 +81,7 @@ exports.should_skip = {
         test.equal(true, this.plugin.should_skip(this.connection));
         test.done();
     },
-    'public remote_ip': function (test) {
+    'public remote_ip' (test) {
         test.expect(1);
         this.connection.remote.ip = '208.1.1.1';
 
@@ -92,7 +92,7 @@ exports.should_skip = {
         test.equal(false, this.plugin.should_skip(this.connection));
         test.done();
     },
-    'public remote_ip, no zones': function (test) {
+    'public remote_ip, no zones' (test) {
         test.expect(1);
         this.connection.remote.ip = '208.1.1.1';
         test.equal(true, this.plugin.should_skip(this.connection));

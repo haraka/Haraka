@@ -32,22 +32,22 @@ const _set_up = function (done) {
 
 exports.in_list = {
     setUp : _set_up,
-    'inlist: mail(1)': function (test) {
+    'inlist: mail(1)' (test) {
         test.expect(1);
         test.ok(this.plugin.addr_in_list('mail', 'josef@example.com'));
         test.done();
     },
-    'inlist: rcpt(1)': function (test) {
+    'inlist: rcpt(1)' (test) {
         test.expect(1);
         test.ok(this.plugin.addr_in_list('rcpt', 'josef@example.net'));
         test.done();
     },
-    'inlist: dyndom(1)': function (test) {
+    'inlist: dyndom(1)' (test) {
         test.expect(1);
         test.ok(this.plugin.domain_in_list('dyndom', 'sgvps.net'));
         test.done();
     },
-    'inlist: ip(4)': function (test) {
+    'inlist: ip(4)' (test) {
         test.expect(4);
         test.ok(this.plugin.ip_in_list('123.123.123.234'));
         test.ok(this.plugin.ip_in_list('123.210.123.234'));

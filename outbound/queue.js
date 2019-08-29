@@ -27,21 +27,21 @@ else {
 
 exports.queue_dir = queue_dir;
 
-const load_queue = async.queue(function (file, cb) {
+const load_queue = async.queue((file, cb) => {
     const hmail = new HMailItem(file, path.join(queue_dir, file));
     exports._add_hmail(hmail);
     hmail.once('ready', cb);
 }, cfg.concurrency_max);
 
 let in_progress = 0;
-const delivery_queue = exports.delivery_queue = async.queue(function (hmail, cb) {
+const delivery_queue = exports.delivery_queue = async.queue((hmail, cb) => {
     in_progress++;
-    hmail.next_cb = function () {
+    hmail.next_cb = () => {
         in_progress--;
         cb();
     };
     if (obtls.cfg) return hmail.send();
-    obtls.init(function () {
+    obtls.init(() => {
         hmail.send();
     });
 }, cfg.concurrency_max);
@@ -50,45 +50,43 @@ const temp_fail_queue = exports.temp_fail_queue = new TimerQueue();
 
 let queue_count = 0;
 
-exports.get_stats = function () {
-    return in_progress + '/' + exports.delivery_queue.length() + '/' + exports.temp_fail_queue.length();
-}
+exports.get_stats = () => in_progress + '/' + exports.delivery_queue.length() + '/' + exports.temp_fail_queue.length()
 
-exports.list_queue = function (cb) {
+exports.list_queue = cb => {
     exports._load_cur_queue(null, exports._list_file, cb);
 }
 
-exports._stat_file = function (file, cb) {
+exports._stat_file = (file, cb) => {
     queue_count++;
     setImmediate(cb);
 }
 
-exports.stat_queue = function (cb) {
+exports.stat_queue = cb => {
     const self = exports;
-    exports._load_cur_queue(null, exports._stat_file, function (err) {
+    exports._load_cur_queue(null, exports._stat_file, err => {
         if (err) return cb(err);
         return cb(null, self.stats());
     });
 }
 
-exports.load_queue = function (pid) {
+exports.load_queue = pid => {
     // Initialise and load queue
     // This function is called first when not running under cluster,
     // so we create the queue directory if it doesn't already exist.
     exports.ensure_queue_dir();
     exports.delete_dot_files();
 
-    exports._load_cur_queue(pid, exports._add_file, function () {
+    exports._load_cur_queue(pid, exports._add_file, () => {
         logger.loginfo(`[outbound] [pid: ${pid}] ${delivery_queue.length()} files in my delivery queue`);
         logger.loginfo(`[outbound] [pid: ${pid}] ${load_queue.length()} files in my load queue`);
         logger.loginfo(`[outbound] [pid: ${pid}] ${temp_fail_queue.length()} files in my temp fail queue`);
     });
 }
 
-exports._load_cur_queue = function (pid, iteratee, cb) {
+exports._load_cur_queue = (pid, iteratee, cb) => {
     const self = exports;
     logger.loginfo("[outbound] Loading outbound queue from ", queue_dir);
-    fs.readdir(queue_dir, function (err, files) {
+    fs.readdir(queue_dir, (err, files) => {
         if (err) {
             return logger.logerror("[outbound] Failed to load queue directory (" +
                 queue_dir + "): " + err);
@@ -100,7 +98,7 @@ exports._load_cur_queue = function (pid, iteratee, cb) {
     });
 }
 
-exports.read_parts = function (file) {
+exports.read_parts = file => {
     if (file.indexOf(_qfile.platformDOT) === 0) {
         logger.logwarn(`[outbound] 'Skipping' dot-file in queue folder: ${file}`);
         return false;
@@ -115,7 +113,7 @@ exports.read_parts = function (file) {
     return parts;
 }
 
-exports.rename_to_actual_pid = function (file, parts, cb) {
+exports.rename_to_actual_pid = (file, parts, cb) => {
     // maintain some original details for the rename
     const new_filename = _qfile.name({
         arrival: parts.arrival,
@@ -124,7 +122,7 @@ exports.rename_to_actual_pid = function (file, parts, cb) {
         attempts: parts.attempts,
     });
 
-    fs.rename(path.join(queue_dir, file), path.join(queue_dir, new_filename), function (err) {
+    fs.rename(path.join(queue_dir, file), path.join(queue_dir, new_filename), err => {
         if (err) {
             return cb(`Unable to rename queue file: ${file} to ${new_filename} : ${err}`);
         }
@@ -133,7 +131,7 @@ exports.rename_to_actual_pid = function (file, parts, cb) {
     });
 }
 
-exports._add_file = function (file, cb) {
+exports._add_file = (file, cb) => {
     const self = exports;
     const parts = _qfile.parts(file);
 
@@ -143,13 +141,13 @@ exports._add_file = function (file, cb) {
     }
     else {
         logger.logdebug(`[outbound] File needs processing later: ${parts.next_attempt - self.cur_time}ms`);
-        temp_fail_queue.add(file, parts.next_attempt - self.cur_time, function () { load_queue.push(file);});
+        temp_fail_queue.add(file, parts.next_attempt - self.cur_time, () => { load_queue.push(file);});
     }
 
     cb();
 }
 
-exports.load_queue_files = function (pid, input_files, iteratee, callback) {
+exports.load_queue_files = (pid, input_files, iteratee, callback) => {
     const self = exports;
     const searchPid = parseInt(pid);
 
@@ -160,18 +158,19 @@ exports.load_queue_files = function (pid, input_files, iteratee, callback) {
 
     if (searchPid) {
         logger.loginfo("[outbound] Grabbing queue files for pid: " + pid);
-    } else {
+    }
+    else {
         logger.loginfo("[outbound] Loading the queue...");
     }
 
-    async.map(input_files, function (file, cb) {
+    async.map(input_files, (file, cb) => {
         const parts = self.read_parts(file);
         if (!parts) return cb();
 
         if (searchPid) {
             if (parts.pid !== searchPid) return cb();
 
-            self.rename_to_actual_pid(file, parts, function (error, renamed_file) {
+            self.rename_to_actual_pid(file, parts, (error, renamed_file) => {
                 if (error) {
                     logger.logerror(`[outbound] ${error}`);
                     return cb();
@@ -181,12 +180,13 @@ exports.load_queue_files = function (pid, input_files, iteratee, callback) {
                 stat_loaded++;
                 cb(null, renamed_file);
             });
-        } else {
+        }
+        else {
             stat_loaded++;
             cb(null, file);
         }
 
-    }, function (err, results) {
+    }, (err, results) => {
         if (err) logger.logerr(`[outbound] [pid: ${pid}] ${err}`);
         if (searchPid) logger.loginfo(`[outbound] [pid: ${pid}] ${stat_renamed} files old PID queue fixed up`);
         logger.logdebug(`[outbound] [pid: ${pid}] ${stat_loaded} files loaded`);
@@ -195,34 +195,34 @@ exports.load_queue_files = function (pid, input_files, iteratee, callback) {
     });
 }
 
-exports.stats = function () {
+exports.stats = () => {
     // TODO: output more data here
     const results = {
-        queue_dir:   queue_dir,
-        queue_count: queue_count,
+        queue_dir,
+        queue_count,
     };
 
     return results;
 }
 
-exports._list_file = function (file, cb) {
+exports._list_file = (file, cb) => {
     const tl_reader = fs.createReadStream(path.join(queue_dir, file), {start: 0, end: 3});
-    tl_reader.on('error', function (err) {
+    tl_reader.on('error', err => {
         console.error("Error reading queue file: " + file + ":", err);
     });
-    tl_reader.once('data', function (buf) {
+    tl_reader.once('data', buf => {
         // I'm making the assumption here we won't ever read less than 4 bytes
         // as no filesystem on the planet should be that dumb...
         tl_reader.destroy();
         const todo_len = (buf[0] << 24) + (buf[1] << 16) + (buf[2] << 8) + buf[3];
         const td_reader = fs.createReadStream(path.join(queue_dir, file), {encoding: 'utf8', start: 4, end: todo_len + 3});
         let todo = '';
-        td_reader.on('data', function (str) {
+        td_reader.on('data', str => {
             todo += str;
             if (Buffer.byteLength(todo) === todo_len) {
                 // we read everything
                 const todo_struct = JSON.parse(todo);
-                todo_struct.rcpt_to = todo_struct.rcpt_to.map(function (a) { return new Address (a); });
+                todo_struct.rcpt_to = todo_struct.rcpt_to.map(a => new Address (a));
                 todo_struct.mail_from = new Address (todo_struct.mail_from);
                 todo_struct.file = file;
                 todo_struct.full_path = path.join(queue_dir, file);
@@ -231,7 +231,7 @@ exports._list_file = function (file, cb) {
                 cb(null, todo_struct);
             }
         });
-        td_reader.on('end', function () {
+        td_reader.on('end', () => {
             if (Buffer.byteLength(todo) !== todo_len) {
                 console.error("Didn't find right amount of data in todo for file:", file);
                 return cb();
@@ -240,11 +240,11 @@ exports._list_file = function (file, cb) {
     });
 }
 
-exports.flush_queue = function (domain, pid) {
+exports.flush_queue = (domain, pid) => {
     if (domain) {
-        exports.list_queue(function (err, qlist) {
+        exports.list_queue((err, qlist) => {
             if (err) return logger.logerror("[outbound] Failed to load queue: " + err);
-            qlist.forEach(function (todo) {
+            qlist.forEach(todo => {
                 if (todo.domain.toLowerCase() != domain.toLowerCase()) return;
                 if (pid && todo.pid != pid) return;
                 // console.log("requeue: ", todo);
@@ -257,12 +257,12 @@ exports.flush_queue = function (domain, pid) {
     }
 }
 
-exports.load_pid_queue = function (pid) {
+exports.load_pid_queue = pid => {
     logger.loginfo("[outbound] Loading queue for pid: " + pid);
     exports.load_queue(pid);
 }
 
-exports.ensure_queue_dir = function () {
+exports.ensure_queue_dir = () => {
     // No reason not to do this stuff syncronously -
     // this code is only run at start-up.
     if (fs.existsSync(queue_dir)) return;
@@ -279,10 +279,10 @@ exports.ensure_queue_dir = function () {
     }
 }
 
-exports.delete_dot_files = function () {
+exports.delete_dot_files = () => {
     const files = fs.readdirSync(queue_dir);
 
-    files.forEach(function (file) {
+    files.forEach(file => {
         if (file.indexOf(_qfile.platformDOT) === 0) {
             logger.logwarn(`[outbound] Removing left over dot-file: ${file}`);
             return fs.unlinkSync(path.join(queue_dir, file));
@@ -290,18 +290,18 @@ exports.delete_dot_files = function () {
     });
 }
 
-exports._add_hmail = function (hmail) {
+exports._add_hmail = hmail => {
     if (hmail.next_process < exports.cur_time) {
         delivery_queue.push(hmail);
     }
     else {
-        temp_fail_queue.add(hmail.filename, hmail.next_process - exports.cur_time, function () {
+        temp_fail_queue.add(hmail.filename, hmail.next_process - exports.cur_time, () => {
             delivery_queue.push(hmail);
         });
     }
 }
 
-exports.scan_queue_pids = function (cb) {
+exports.scan_queue_pids = cb => {
     const self = exports;
 
     // Under cluster, this is called first by the master so
@@ -309,7 +309,7 @@ exports.scan_queue_pids = function (cb) {
     self.ensure_queue_dir();
     self.delete_dot_files();
 
-    fs.readdir(queue_dir, function (err, files) {
+    fs.readdir(queue_dir, (err, files) => {
         if (err) {
             logger.logerror("[outbound] Failed to load queue directory (" + queue_dir + "): " + err);
             return cb(err);
@@ -317,7 +317,7 @@ exports.scan_queue_pids = function (cb) {
 
         const pids = {};
 
-        files.forEach(function (file) {
+        files.forEach(file => {
             const parts = self.read_parts(file);
             if (parts) pids[parts.pid] = true;
         });
