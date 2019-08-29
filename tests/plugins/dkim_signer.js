@@ -44,7 +44,7 @@ function getValueFromDKIM (dkim_header, key) {
 const props = { selector: 'selector', domain: 'haraka.top', private_key: privateKey };
 
 exports.sign = {
-    setUp : function (done) {
+    setUp (done) {
         this.plugin = new fixtures.plugin('dkim_sign');
         this.plugin.load_dkim_sign_ini();
         props.headers = this.plugin.cfg.headers_to_sign;
