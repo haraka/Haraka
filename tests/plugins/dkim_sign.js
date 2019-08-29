@@ -218,16 +218,25 @@ exports.get_headers_to_sign = {
 const insecure_512b_test_key = '-----BEGIN RSA PRIVATE KEY-----\nMIGqAgEAAiEAsw3E27MbZuxmWpYfjNX5XzKTMxIv8bIAU/MpjiJE5rkCAwEAAQIg\nIVsyTj96nlzx4HRRIlqGXw7wx3C+vGhoM/Ql/eFXRVECEQDbUYF19fyzPDKAqb7p\nEu5tAhEA0QBD5Ns4QgpC8m1Qob05/QIQf1jWWU5aSyC7GmZ2ChQKCQIQIACNZNaY\nZ6xQkfRhG1LxNQIRAIyKwDCULf7Jl5ygc1MIIdk=\n-----END RSA PRIVATE KEY-----';
 
 exports.get_sign_properties = {
-    setUp : _set_up,
-    'example.com from ENV mail from' (test) {
-        test.expect(1);
-        // console.log(`__dirname: ${__dirname}`)
+    setUp (done) {
+        this.plugin = new fixtures.plugin('dkim_sign');
+        this.plugin.cfg = { main: { } };
+
+        this.connection = Connection.createConnection();
+        this.connection.init_transaction();
+        this.connection.transaction.mail_from = {};
+
         this.plugin.config.root_path = path.resolve(__dirname, '../config');
         this.plugin.load_dkim_sign_ini();
+        this.plugin.load_dkim_default_key();
+
+        done();
+    },
+    'example.com from ENV mail from' (test) {
+        test.expect(1);
         this.connection.transaction.mail_from = new Address.Address('<test@example.com>');
         this.plugin.get_sign_properties(this.connection, (err, props) => {
             if (err) console.error(err);
-            // if (props) console.log(props);
             test.deepEqual(props, {
                 domain: 'example.com',
                 selector: 'aug2019',
@@ -238,13 +247,8 @@ exports.get_sign_properties = {
     },
     'no domain discovered returns default' (test) {
         test.expect(1);
-        this.plugin.config.root_path = path.resolve(__dirname, '../config');
-        this.plugin.load_dkim_sign_ini();
-        this.plugin.load_dkim_default_key();
-        // console.log(this.plugin.cfg)
         this.plugin.get_sign_properties(this.connection, (err, props) => {
             if (err) console.error(err);
-            // console.log(props);
             test.deepEqual(props, {
                 domain: this.plugin.cfg.main.domain,
                 selector: this.plugin.cfg.main.selector,
@@ -252,5 +256,43 @@ exports.get_sign_properties = {
             });
             test.done();
         })
+    },
+}
+
+exports.has_key_data = {
+    setUp (done) {
+        this.plugin = new fixtures.plugin('dkim_sign');
+        this.plugin.cfg = { main: { } };
+
+        this.connection = Connection.createConnection();
+        done()
+    },
+    'no data' (test) {
+        test.expect(1);
+        test.equal(this.plugin.has_key_data(this.connection, {}), false);
+        test.done();
+    },
+    'fully populated' (test) {
+        test.expect(1);
+        test.equal(this.plugin.has_key_data(this.connection, {
+            selector: 'foo',
+            domain: 'bar',
+            private_key: 'anything',
+        }), true);
+        test.done();
+    },
+}
+
+exports.load_key = {
+    setUp (done) {
+        this.plugin = new fixtures.plugin('dkim_sign');
+        this.plugin.config.root_path = path.resolve(__dirname, '../config');
+        done()
+    },
+    'example.com test key' (test) {
+        test.expect(1);
+        const testKey = path.resolve('tests','config','dkim','example.com','private');
+        test.equal(this.plugin.load_key(testKey), insecure_512b_test_key);
+        test.done();
     },
 }
