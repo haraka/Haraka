@@ -70,8 +70,7 @@ This plugin is configured in `dkim_sign.ini`.
 
 ## Single Domain Configuration
 
-To sign all messages with a single DKIM key, these config settings
-are required.
+To sign all messages with a single DKIM key, you must set the selector and domain in dkim_sign.ini. You must also save your DKIM private key in the file `dkim.private.key` in the Haraka config directory.
 
 - selector = name
 
@@ -85,7 +84,18 @@ are required.
 
         <selector>._domainkey.<domain>
 
-- dkim.private.key = filename
+Test that your DKIM key is published properly with a DNS request like this:
 
-    Create a file `dkim.private.key` in the config folder with
-    your private key in it.
+```sh
+drill TXT $SELECTOR._domainkey.$DOMAIN
+dig TXT $SELECTOR._domainkey.$DOMAIN +short
+```
+
+### Example DNS query
+
+```sh
+export SELECTOR=mar2013
+export DOMAIN=simerson.net
+$ dig TXT $SELECTOR._domainkey.$DOMAIN +short
+"v=DKIM1;p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAoyUzGOTSOmakY8BcxXgi0mN/nFegLBPs7aaGQUtjHfa8yUrt9T2j6GSXgdjLuG3R43WjePQv3RHzc+bwwOkdw0XDOXiztn5mhrlaflbVr5PMSTrv64/cpFQKLtgQx8Vgqp7Dh3jw13rLomRTqJFgMrMHdhIibZEa69gtuAfDqoeXo6QDSGk5JuBAeRHEH27FriHulg5ob" "4F4lmh7fMFVsDGkQEF6jaIVYqvRjDyyQed3R3aTJX3fpb3QrtRqvfn/LAf+3kzW58AjsERpsNCSTD2RquxbnyoR/1wdGKb8cUlD/EXvqtvpVnOzHeSeMEqex3kQI8HOGsEehWZlKd+GqwIDAQAB"
+```
