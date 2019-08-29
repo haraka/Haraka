@@ -12,6 +12,7 @@ const Connection   = fixtures.connection;
 function _set_up (done) {
 
     this.plugin = new fixtures.plugin('dkim_sign');
+    this.plugin.config.root_path = path.resolve(__dirname, '../config');
     this.plugin.cfg = { main: { } };
 
     this.connection = Connection.createConnection();
@@ -19,6 +20,26 @@ function _set_up (done) {
     this.connection.transaction.mail_from = {};
 
     done();
+}
+
+exports.register = {
+    setUp : _set_up,
+    'registers plugin' (test) {
+        test.expect(2);
+        test.deepEqual(this.plugin.cfg, { main: {} });
+        this.plugin.register();
+        test.deepEqual(this.plugin.cfg,
+            { main:
+               {   disabled: false,
+                   selector: 'mail',
+                   domain: 'example.com',
+                   headers_to_sign: 'From, Sender, Reply-To, Subject, Date, Message-ID, To, Cc, MIME-Version'
+               },
+            headers_to_sign: [ 'from','sender','reply-to','subject','date','message-id','to','cc','mime-version' ]
+            }
+        );
+        test.done();
+    },
 }
 
 exports.load_dkim_sign_ini = {
@@ -29,7 +50,7 @@ exports.load_dkim_sign_ini = {
         this.plugin.load_dkim_sign_ini();
         test.deepEqual(this.plugin.cfg,
             { main:
-               {   disabled: true,
+               {   disabled: false,
                    selector: 'mail',
                    domain: 'example.com',
                    headers_to_sign: 'From, Sender, Reply-To, Subject, Date, Message-ID, To, Cc, MIME-Version'
@@ -284,11 +305,7 @@ exports.has_key_data = {
 }
 
 exports.load_key = {
-    setUp (done) {
-        this.plugin = new fixtures.plugin('dkim_sign');
-        this.plugin.config.root_path = path.resolve(__dirname, '../config');
-        done()
-    },
+    setUp : _set_up,
     'example.com test key' (test) {
         test.expect(1);
         const testKey = path.resolve('tests','config','dkim','example.com','private');
