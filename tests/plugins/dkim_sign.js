@@ -23,7 +23,7 @@ function _set_up (done) {
 
 exports.load_dkim_sign_ini = {
     setUp : _set_up,
-    'loads dkim_sign.ini': function (test) {
+    'loads dkim_sign.ini' (test) {
         test.expect(2);
         test.deepEqual(this.plugin.cfg, { main: {} });
         this.plugin.load_dkim_sign_ini();
@@ -216,6 +216,7 @@ exports.get_headers_to_sign = {
 }
 
 const insecure_512b_test_key = '-----BEGIN RSA PRIVATE KEY-----\nMIGqAgEAAiEAsw3E27MbZuxmWpYfjNX5XzKTMxIv8bIAU/MpjiJE5rkCAwEAAQIg\nIVsyTj96nlzx4HRRIlqGXw7wx3C+vGhoM/Ql/eFXRVECEQDbUYF19fyzPDKAqb7p\nEu5tAhEA0QBD5Ns4QgpC8m1Qob05/QIQf1jWWU5aSyC7GmZ2ChQKCQIQIACNZNaY\nZ6xQkfRhG1LxNQIRAIyKwDCULf7Jl5ygc1MIIdk=\n-----END RSA PRIVATE KEY-----';
+
 exports.get_sign_properties = {
     setUp : _set_up,
     'example.com from ENV mail from' (test) {
