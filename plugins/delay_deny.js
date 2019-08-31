@@ -29,7 +29,8 @@ exports.hook_deny = function (next, connection, params) {
     let included;
     if (cfg.main.included_plugins) {
         included = cfg.main.included_plugins.split(/[;, ]+/);
-    } else if (cfg.main.excluded_plugins) {
+    }
+    else if (cfg.main.excluded_plugins) {
         skip = cfg.main.excluded_plugins.split(/[;, ]+/);
     }
 
@@ -40,7 +41,8 @@ exports.hook_deny = function (next, connection, params) {
             !included.includes(`${pi_name}:${pi_hook}:${pi_function}`)) {
             return next();
         }
-    } else if (skip && skip.length) { // 'excluded' mode: delay deny everything except in skip list
+    }
+    else if (skip && skip.length) { // 'excluded' mode: delay deny everything except in skip list
         // Skip by <plugin name>
         if (skip.includes(pi_name)) {
             connection.logdebug(plugin, `not delaying excluded plugin: ${pi_name}`);

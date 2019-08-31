@@ -20,12 +20,12 @@ function _set_up (done) {
 
 exports.register = {
     setUp : _set_up,
-    'loads the spamassassin plugin': function (test) {
+    'loads the spamassassin plugin' (test) {
         test.expect(1);
         test.equal('spamassassin', this.plugin.name);
         test.done();
     },
-    'register loads spamassassin.ini': function (test) {
+    'register loads spamassassin.ini' (test) {
         test.expect(2);
         this.plugin.register();
         test.ok(this.plugin.cfg);
@@ -36,7 +36,7 @@ exports.register = {
 
 exports.load_spamassassin_ini = {
     setUp : _set_up,
-    'loads spamassassin.ini': function (test) {
+    'loads spamassassin.ini' (test) {
         test.expect(3);
         test.equal(undefined, this.plugin.cfg.main.spamd_socket);
         this.plugin.load_spamassassin_ini();
@@ -48,19 +48,19 @@ exports.load_spamassassin_ini = {
 
 exports.msg_too_big = {
     setUp : _set_up,
-    'max_size not set': function (test) {
+    'max_size not set' (test) {
         test.expect(1);
         test.equal(false, this.plugin.msg_too_big(this.connection));
         test.done();
     },
-    'max_size 10, data_bytes 9 = false': function (test) {
+    'max_size 10, data_bytes 9 = false' (test) {
         test.expect(1);
         this.plugin.cfg.main = { max_size: 10 };
         this.connection.transaction.data_bytes = 9;
         test.equal(false, this.plugin.msg_too_big(this.connection));
         test.done();
     },
-    'max_size 10, data_bytes 11 = true': function (test) {
+    'max_size 10, data_bytes 11 = true' (test) {
         test.expect(1);
         this.plugin.cfg.main = { max_size: 10 };
         this.connection.transaction.data_bytes = 11;
@@ -73,7 +73,7 @@ exports.msg_too_big = {
 
 exports.get_spamd_headers = {
     setUp : _set_up,
-    'returns a spamd protocol request': function (test) {
+    'returns a spamd protocol request' (test) {
         test.expect(1);
         this.connection.transaction.mail_from = new Address.Address('<matt@example.com>');
         this.connection.transaction.uuid = 'THIS-IS-A-TEST-UUID';
@@ -92,7 +92,7 @@ exports.get_spamd_headers = {
 
 exports.get_spamd_headers_relaying = {
     setUp : _set_up,
-    'returns a spamd protocol request when relaying': function (test) {
+    'returns a spamd protocol request when relaying' (test) {
         test.expect(1);
         this.connection.transaction.mail_from = new Address.Address('<matt@example.com>');
         this.connection.transaction.uuid = 'THIS-IS-A-TEST-UUID';
@@ -113,24 +113,24 @@ exports.get_spamd_headers_relaying = {
 
 exports.get_spamd_username = {
     setUp : _set_up,
-    'default': function (test) {
+    'default' (test) {
         test.expect(1);
         test.equal('default', this.plugin.get_spamd_username(this.connection));
         test.done();
     },
-    'set in txn.notes.spamd_user': function (test) {
+    'set in txn.notes.spamd_user' (test) {
         test.expect(1);
         this.connection.transaction.notes.spamd_user = 'txuser';
         test.equal('txuser', this.plugin.get_spamd_username(this.connection));
         test.done();
     },
-    'set in cfg.main.spamd_user': function (test) {
+    'set in cfg.main.spamd_user' (test) {
         test.expect(1);
         this.plugin.cfg.main.spamd_user = 'cfguser';
         test.equal('cfguser', this.plugin.get_spamd_username(this.connection));
         test.done();
     },
-    'set to first-recipient': function (test) {
+    'set to first-recipient' (test) {
         this.plugin.cfg.main.spamd_user = 'first-recipient';
         this.connection.transaction.rcpt_to = [ new Address.Address('<matt@example.com>') ];
         test.equal('matt@example.com', this.plugin.get_spamd_username(this.connection));
@@ -141,25 +141,25 @@ exports.get_spamd_username = {
 
 exports.score_too_high = {
     setUp : _set_up,
-    'no threshhold is not too high': function (test) {
+    'no threshhold is not too high' (test) {
         test.expect(1);
         test.ok(!this.plugin.score_too_high(this.connection, {score: 5}));
         test.done();
     },
-    'too high score is too high': function (test) {
+    'too high score is too high' (test) {
         test.expect(1);
         this.plugin.cfg.main.reject_threshold = 5;
         test.equal('spam score exceeded threshold', this.plugin.score_too_high(this.connection, {score: 6}));
         test.done();
     },
-    'ok score with relaying is ok': function (test) {
+    'ok score with relaying is ok' (test) {
         test.expect(1);
         this.connection.relaying = true;
         this.plugin.cfg.main.relay_reject_threshold = 7;
         test.equal(false, this.plugin.score_too_high(this.connection, {score: 6}));
         test.done();
     },
-    'too high score with relaying is too high': function (test) {
+    'too high score with relaying is too high' (test) {
         test.expect(1);
         this.connection.relaying = true;
         this.plugin.cfg.main.relay_reject_threshold = 7;

@@ -34,7 +34,7 @@ function _set_up (done) {
 
 exports.parse = {
     setUp: _set_up,
-    'get_decoded': function (test) {
+    'get_decoded' (test) {
         test.expect(3);
         test.equal(this.h.lines().length, 13);
         test.equal(
@@ -44,7 +44,7 @@ exports.parse = {
         test.equal(this.h.get_decoded('fromUTF8'), 'Kohl’s <Kohls@s.kohls.com>');
         test.done();
     },
-    'content type w/parens': function (test) {
+    'content type w/parens' (test) {
         test.expect(2);
         test.equal(this.h.lines().length, 13);
         const ct = this.h.get_decoded('content-type2');
@@ -55,7 +55,7 @@ exports.parse = {
 
 exports.add_headers = {
     setUp: _set_up,
-    add_basic: function (test) {
+    add_basic (test) {
         test.expect(2);
         this.h.add('Foo', 'bar');
         test.equal(this.h.lines()[0], 'Foo: bar\n');
@@ -63,7 +63,7 @@ exports.add_headers = {
         test.equal(this.h.lines()[14], 'Fizz: buzz\n');
         test.done();
     },
-    add_utf8: function (test) {
+    add_utf8 (test) {
         test.expect(4);
         this.h.add('Foo', 'bøø');
         test.equal(this.h.lines()[0], 'Foo: =?UTF-8?q?b=C3=B8=C3=B8?=\n');
@@ -78,7 +78,7 @@ exports.add_headers = {
 
 exports.continuations = {
     setUp: _set_up,
-    continuations_decoded: function (test) {
+    continuations_decoded (test) {
         test.expect(1);
         test.ok(!/\n/.test(this.h.get_decoded('content-type')));
         test.done();
@@ -87,7 +87,7 @@ exports.continuations = {
 
 exports.remove = {
     setUp: _set_up,
-    'removes only specified header': function (test) {
+    'removes only specified header' (test) {
         test.expect(3)
         this.h.add('X-Test', 'remove-me')
         this.h.add('X-Test-1', 'do-not-remove-me')
@@ -96,5 +96,20 @@ exports.remove = {
         test.equal(this.h.get('X-Test-1'), 'do-not-remove-me')
         test.ok(this.h.header_list.find(name => name === 'X-Test-1: do-not-remove-me\n'));
         test.done()
+    }
+}
+
+exports.decode = {
+    'multiline 8bit header (#2675)': test => {
+        this.h = new Header();
+        this.h.parse ([
+            "Content-Disposition: attachment;\n",
+            " filename*0*=utf-8''%E8%AC%9B%E6%BC%94%E4%BC%9A%E6;\n",
+            " filename*1*=%A1%88%E5%86%85%E6%9B%B8%EF%BC%86%E7%94%B3%E8%BE%BC%E6%9B%B8;\n",
+            " filename*2*=%E6%94%B9%2Etxt\n"
+        ]);
+        console.log(this.h.get_decoded('content-disposition'));
+        test.ok(this.h.get_decoded('content-disposition').includes('講演会案内書＆申込書改.txt'));
+        test.done();
     }
 }

@@ -37,7 +37,7 @@ exports.loadingTLSConfig = {
 
 exports.register = {
     setUp : _setup,
-    'register': function (test) {
+    'register' (test) {
         test.expect(1);
         this.plugin.register();
         test.ok(this.plugin.cfg.main);
@@ -47,7 +47,7 @@ exports.register = {
 
 exports.get_config = {
     setUp : _setup,
-    'no recipient': function (test) {
+    'no recipient' (test) {
         test.expect(3);
         const cfg = this.plugin.get_config(this.connection);
         test.equal(cfg.host, 'localhost');
@@ -55,7 +55,7 @@ exports.get_config = {
         test.equal(cfg.one_message_per_rcpt, true);
         test.done();
     },
-    'null recipient': function (test) {
+    'null recipient' (test) {
         test.expect(3);
         this.connection.transaction.rcpt_to.push(new Address('<>'));
         const cfg = this.plugin.get_config(this.connection);
@@ -64,7 +64,7 @@ exports.get_config = {
         test.equal(cfg.one_message_per_rcpt, true);
         test.done();
     },
-    'valid recipient': function (test) {
+    'valid recipient' (test) {
         test.expect(3);
         this.connection.transaction.rcpt_to.push(
             new Address('<matt@example.com>')
@@ -75,7 +75,7 @@ exports.get_config = {
         test.equal(cfg.host, 'localhost');
         test.done();
     },
-    'valid recipient with route': function (test) {
+    'valid recipient with route' (test) {
         test.expect(1);
         this.connection.transaction.rcpt_to.push(
             new Address('<matt@test.com>')
@@ -88,7 +88,7 @@ exports.get_config = {
         });
         test.done();
     },
-    'valid recipient with route & diff config': function (test) {
+    'valid recipient with route & diff config' (test) {
         test.expect(1);
         this.connection.transaction.rcpt_to.push(
             new Address('<matt@test1.com>')
@@ -100,7 +100,7 @@ exports.get_config = {
         });
         test.done();
     },
-    'valid 2 recipients with same route': function (test) {
+    'valid 2 recipients with same route' (test) {
         test.expect(1);
         this.connection.transaction.rcpt_to.push(
             new Address('<matt@test.com>'),
@@ -110,7 +110,7 @@ exports.get_config = {
         test.deepEqual(cfg.host, '1.2.3.4' );
         test.done();
     },
-    'null sender': function (test) {
+    'null sender' (test) {
         test.expect(3);
         this.plugin.cfg.main.domain_selector = 'mail_from';
         this.connection.transaction.mail_from = new Address('<>');
@@ -120,7 +120,7 @@ exports.get_config = {
         test.equal(cfg.one_message_per_rcpt, true);
         test.done();
     },
-    'return mail_from domain configuration': function (test) {
+    'return mail_from domain configuration' (test) {
         test.expect(1);
         this.connection.transaction.mail_from = new Address('<matt@test2.com>');
         this.plugin.cfg.main.domain_selector = 'mail_from';
@@ -134,7 +134,7 @@ exports.get_config = {
 const hmail = { todo: { notes: {} } };
 exports.get_mx = {
     setUp : _setup,
-    'returns no outbound route for undefined domains' : function (test) {
+    'returns no outbound route for undefined domains' (test) {
         test.expect(2);
         function cb (code, mx) {
             test.equal(code, undefined);
@@ -143,7 +143,7 @@ exports.get_mx = {
         }
         this.plugin.get_mx(cb, hmail, 'undefined.com');
     },
-    'returns an outbound route for defined domains' : function (test) {
+    'returns an outbound route for defined domains' (test) {
         test.expect(2);
         function cb (code, mx) {
             test.equal(code, OK);
@@ -160,19 +160,19 @@ exports.get_mx = {
 
 exports.is_outbound_enabled = {
     setUp : _setup,
-    'enable_outbound is true by default' : function (test) {
+    'enable_outbound is true by default' (test) {
         test.expect(1);
         test.equal(this.plugin.is_outbound_enabled(this.plugin.cfg), true);
         test.done();
     },
-    'per-domain enable_outbound is true by default' : function (test) {
+    'per-domain enable_outbound is true by default' (test) {
         test.expect(1);
         this.connection.transaction.rcpt_to = [ new Address('<postmaster@test.com>') ];
         const cfg = this.plugin.get_config(this.connection);
         test.equal(this.plugin.is_outbound_enabled(cfg), true);
         test.done();
     },
-    'per-domain enable_outbound can be set to false' : function (test) {
+    'per-domain enable_outbound can be set to false' (test) {
         test.expect(1);
         this.plugin.cfg['test.com'].enable_outbound = false;
         this.connection.transaction.rcpt_to = [ new Address('<postmaster@test.com>') ];
@@ -180,7 +180,7 @@ exports.is_outbound_enabled = {
         test.equal(this.plugin.is_outbound_enabled(cfg), false);
         test.done();
     },
-    'per-domain enable_outbound is true even if top level is false' : function (test) {
+    'per-domain enable_outbound is true even if top level is false' (test) {
         test.expect(1);
         this.plugin.cfg.main.enable_outbound = false; // this will be ignored
         this.plugin.cfg['test.com'].enable_outbound = true;

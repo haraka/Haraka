@@ -11,15 +11,21 @@
 * es6: many updates #2615
 * systemctl: update service definition #2612
 * outbound: permit # char in SMTP status code response #2689
+* lint: bracket style to match newer eslint:recommended #2680
+* lint: use object shorthands (eslint:recommended) #2680
+* logger: use safer Object.prototype.hasOwnProperty #2680
+
 
 ### New features
 
 * spf: add config option to fail on NONE #2644
 
+
 ### Fixes
 
 * mailheader: fully quality header name in _remove_more #2647
 * haraka: Connection.createConnection is not a constructor #2816
+* problems with japanese characters in body and part header #2675
 
 
 ## 2.8.24 - Mar 12, 2019
