@@ -1,6 +1,8 @@
 
 ## NEXT
 
+## 2.8.25 - 2019-NN-NN
+
 ### Changes
 
 * Actually enforce using key for INTERNALCMD #2643
@@ -13,12 +15,12 @@
 * lint: bracket style to match newer eslint:recommended #2680
 * lint: use object shorthands (eslint:recommended) #2680
 * logger: use safer Object.prototype.hasOwnProperty #2680
-
+* dkim_sign: restore default key signing feature
+* dkim_sign: improve docs, add tests, es6 updates #2649
 
 ### New features
 
 * spf: add config option to fail on NONE #2644
-
 
 ### Fixes
 
