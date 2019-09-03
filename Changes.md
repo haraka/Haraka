@@ -12,6 +12,7 @@
 * spamassassin: spamassassin: strip useless WS from tests #2624
 * es6: many updates #2615
 * systemctl: update service definition #2612
+* outbound: permit # char in SMTP status code response #2689
 * lint: bracket style to match newer eslint:recommended #2680
 * lint: use object shorthands (eslint:recommended) #2680
 * logger: use safer Object.prototype.hasOwnProperty #2680
@@ -254,7 +255,6 @@
     * npm packaged plugins:
         * plugins/rcpt_to.ldap -> haraka-plugin-rcpt-ldap #2144
         * plugins/auth/auth_ldap -> haraka-plugin-auth-ldap #2144
-        * plugins/graph -> haraka-plugin-graph #2185
         * plugins/graph -> haraka-plugin-graph #2185
     * config: replace ./config.js with haraka-config #2119
     * Replace concatenated strings with template literals (#2129) in:
