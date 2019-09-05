@@ -1,5 +1,7 @@
 'use strict';
 
+const fixtures     = require('haraka-test-fixtures');
+
 const DKIMSignStream = require('../../plugins/dkim_sign').DKIMSignStream;
 const Header = require('../../mailheader').Header;
 
@@ -20,7 +22,7 @@ GMot/L2x0IYyMLAz6oLWh2hm7zwtb0CgOrPo1ke44hFYnfc=
 -----END RSA PRIVATE KEY-----`;
 
 /*
-Body hash can be simply checked by:
+Body hash can be checked by:
 
 $ echo -e -n 'Hello world!\r\n'| openssl dgst -binary -sha256 | openssl base64
 z6TUz85EdYrACGMHYgZhJGvVy5oQI0dooVMKa2ZT7c4=
@@ -39,51 +41,52 @@ function getValueFromDKIM (dkim_header, key) {
     throw `Key ${key} not found at ${dkim_header}`;
 }
 
+const props = { selector: 'selector', domain: 'haraka.top', private_key: privateKey };
+
 exports.sign = {
-    'body hash simple': test => {
+    setUp (done) {
+        this.plugin = new fixtures.plugin('dkim_sign');
+        this.plugin.load_dkim_sign_ini();
+        props.headers = this.plugin.cfg.headers_to_sign;
+        done()
+    },
+    'body hash simple' (test) {
         // took from RFC
         test.expect(1);
-
         const email = 'Ignored: header\r\n\r\nHi.\r\n\r\nWe lost the game. Are you hungry yet?\r\n\r\nJoe.\r\n';
 
         const header = new Header();
         header.parse(['Ignored: header']);
-        const signer = new DKIMSignStream('selector', 'haraka.top', privateKey, [], header,
-            (n, dkim) => {
-                test.equal(getValueFromDKIM(dkim, 'bh'), '2jUSOH9NhtVGCQWNr9BrIAPreKQjO6Sn7XIkfJVOzv8=');
-                test.done();
-            }
-        );
+        const signer = new DKIMSignStream(props, header, (n, dkim) => {
+            test.equal(getValueFromDKIM(dkim, 'bh'), '2jUSOH9NhtVGCQWNr9BrIAPreKQjO6Sn7XIkfJVOzv8=');
+            test.done();
+        });
         signer.write(Buffer.from(email));
         signer.end();
     },
-    'empty body hash simple': test => {
+    'empty body hash simple' (test) {
         test.expect(1);
 
         const email = 'Ignored: header\r\n\r\n';
 
         const header = new Header();
         header.parse(['Ignored: header']);
-        const signer = new DKIMSignStream('selector', 'haraka.top', privateKey, [], header,
-            (n, dkim) => {
-                test.equal(getValueFromDKIM(dkim, 'bh'), 'frcCV1k9oG9oKj3dpUqdJg1PxRT2RSN/XKdLCPjaYaY=');
-                test.done();
-            }
-        );
+        const signer = new DKIMSignStream(props, header, (n, dkim) => {
+            test.equal(getValueFromDKIM(dkim, 'bh'), 'frcCV1k9oG9oKj3dpUqdJg1PxRT2RSN/XKdLCPjaYaY=');
+            test.done();
+        });
         signer.write(Buffer.from(email));
         signer.end();
     },
-    'body hash simple, two writes': test => {
+    'body hash simple, two writes' (test) {
         test.expect(1);
 
         const header = new Header();
         header.parse(['Ignored: header']);
-        const signer = new DKIMSignStream('selector', 'haraka.top', privateKey, [], header,
-            (n, dkim) => {
-                test.equal(getValueFromDKIM(dkim, 'bh'), '2jUSOH9NhtVGCQWNr9BrIAPreKQjO6Sn7XIkfJVOzv8=');
-                test.done();
-            }
-        );
+        const signer = new DKIMSignStream(props, header, (n, dkim) => {
+            test.equal(getValueFromDKIM(dkim, 'bh'), '2jUSOH9NhtVGCQWNr9BrIAPreKQjO6Sn7XIkfJVOzv8=');
+            test.done();
+        });
         signer.write(Buffer.from('Ignored: header\r\n\r\nHi.\r\n\r\nWe lost the game. '));
         signer.write(Buffer.from('Are you hungry yet?\r\n\r\nJoe.\r\n'));
         signer.end();
@@ -95,12 +98,10 @@ exports.sign = {
 
         const header = new Header();
         header.parse(['Ignored: header']);
-        const signer = new DKIMSignStream('selector', 'haraka.top', privateKey, [], header,
-            (n, dkim) => {
-                test.equal(getValueFromDKIM(dkim, 'bh'), '2jUSOH9NhtVGCQWNr9BrIAPreKQjO6Sn7XIkfJVOzv8=');
-                test.done();
-            }
-        );
+        const signer = new DKIMSignStream(props, header, (n, dkim) => {
+            test.equal(getValueFromDKIM(dkim, 'bh'), '2jUSOH9NhtVGCQWNr9BrIAPreKQjO6Sn7XIkfJVOzv8=');
+            test.done();
+        });
         signer.write(Buffer.from(email));
         signer.end();
     },
