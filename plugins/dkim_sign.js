@@ -181,6 +181,7 @@ exports.hook_queue_outbound = exports.hook_pre_send_trans_email = function (next
 
     exports.get_sign_properties(connection, (err, props) => {
         // props: selector, domain, & private_key
+        if (err) connection.logerror(plugin, `${err.message}`);
 
         if (!plugin.has_key_data(connection, props)) {
             connection.logerror(`missing key data for ${props.selector}.${props.domain}`)
@@ -225,7 +226,7 @@ exports.get_sign_properties = function (connection, done) {
         if (err) {
             console.error(`err: ${err}`);
             connection.logerror(plugin, err);
-            return done(new Error(`Error getting DKIM key_dir for ${domain}: ${err}`))
+            return done(new Error(`Error getting DKIM key_dir for ${domain}: ${err}`), props)
         }
 
         // a directory for ${domain} exists
@@ -259,7 +260,7 @@ exports.get_sign_properties = function (connection, done) {
         }
 
         console.error(`no valid DKIM properties found`)
-        done();
+        done(null, props);
     })
 }
 
