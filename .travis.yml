@@ -8,7 +8,7 @@ node_js:
 #   - "6"       # maint. ends  2019-04
     - "8"       # maint. ends  2020-01
     - "10"      # active until 2020-04
-    - "11"      # LTS to 2019-06
+#   - "11"      # LTS to 2019-06
     - "12"      # current to 2019-10, LTS to 2022-04
 
 matrix:

@@ -9,9 +9,10 @@ const utils        = require('haraka-utils');
 
 const Connection   = fixtures.connection;
 
-const _set_up = function (done) {
+function _set_up (done) {
 
     this.plugin = new fixtures.plugin('dkim_sign');
+    this.plugin.config.root_path = path.resolve(__dirname, '../config');
     this.plugin.cfg = { main: { } };
 
     this.connection = Connection.createConnection();
@@ -19,6 +20,46 @@ const _set_up = function (done) {
     this.connection.transaction.mail_from = {};
 
     done();
+}
+
+exports.register = {
+    setUp : _set_up,
+    'registers plugin' (test) {
+        test.expect(2);
+        test.deepEqual(this.plugin.cfg, { main: {} });
+        this.plugin.register();
+        test.deepEqual(this.plugin.cfg,
+            { main:
+               {   disabled: false,
+                   selector: 'mail',
+                   domain: 'example.com',
+                   headers_to_sign: 'From, Sender, Reply-To, Subject, Date, Message-ID, To, Cc, MIME-Version'
+               },
+            headers_to_sign: [ 'from','sender','reply-to','subject','date','message-id','to','cc','mime-version' ]
+            }
+        );
+        test.done();
+    },
+}
+
+exports.load_dkim_sign_ini = {
+    setUp : _set_up,
+    'loads dkim_sign.ini' (test) {
+        test.expect(2);
+        test.deepEqual(this.plugin.cfg, { main: {} });
+        this.plugin.load_dkim_sign_ini();
+        test.deepEqual(this.plugin.cfg,
+            { main:
+               {   disabled: false,
+                   selector: 'mail',
+                   domain: 'example.com',
+                   headers_to_sign: 'From, Sender, Reply-To, Subject, Date, Message-ID, To, Cc, MIME-Version'
+               },
+            headers_to_sign: [ 'from','sender','reply-to','subject','date','message-id','to','cc','mime-version' ]
+            }
+        );
+        test.done();
+    },
 }
 
 exports.get_sender_domain = {
@@ -67,7 +108,7 @@ exports.get_sender_domain = {
         test.expect(1);
         this.connection.transaction.header.add('From', 'root (Cron Daemon)');
         const r = this.plugin.get_sender_domain(this.connection);
-        this.plugin.get_key_dir(this.connection, r, (err, dir) => {
+        this.plugin.get_key_dir(this.connection, { domain: r }, (err, dir) => {
             test.equal(dir, undefined);
             test.done();
         });
@@ -139,7 +180,7 @@ exports.get_key_dir = {
     'no transaction' (test) {
         test.expect(2);
         this.plugin.get_key_dir(this.connection, '', (err, dir) => {
-            test.equal(err.message, 'missing domain');
+            test.ifError(err);
             test.equal(dir, undefined);
             test.done();
         });
@@ -156,7 +197,7 @@ exports.get_key_dir = {
         test.expect(1);
         process.env.HARAKA = path.resolve('tests');
         this.connection.transaction.mail_from = new Address.Address('<matt@example.com>');
-        this.plugin.get_key_dir(this.connection, 'example.com', (err, dir) => {
+        this.plugin.get_key_dir(this.connection, { domain: 'example.com' }, (err, dir) => {
             // console.log(arguments);
             const expected = path.resolve('tests','config','dkim','example.com');
             test.equal(dir, expected);
@@ -167,11 +208,11 @@ exports.get_key_dir = {
 
 exports.get_headers_to_sign = {
     setUp : _set_up,
-    'none' (test) {
+    'none configured, includes from' (test) {
         test.expect(1);
         test.deepEqual(
             this.plugin.get_headers_to_sign(this.plugin.cfg),
-            []
+            ['from']
         );
         test.done();
     },
@@ -184,13 +225,91 @@ exports.get_headers_to_sign = {
         );
         test.done();
     },
-    'missing from' (test) {
+    'subject configured, subject and from returned' (test) {
         test.expect(1);
         this.plugin.cfg.main.headers_to_sign='subject';
         test.deepEqual(
             this.plugin.get_headers_to_sign(this.plugin.cfg),
             ['subject', 'from']
         );
+        test.done();
+    },
+}
+
+const insecure_512b_test_key = '-----BEGIN RSA PRIVATE KEY-----\nMIGqAgEAAiEAsw3E27MbZuxmWpYfjNX5XzKTMxIv8bIAU/MpjiJE5rkCAwEAAQIg\nIVsyTj96nlzx4HRRIlqGXw7wx3C+vGhoM/Ql/eFXRVECEQDbUYF19fyzPDKAqb7p\nEu5tAhEA0QBD5Ns4QgpC8m1Qob05/QIQf1jWWU5aSyC7GmZ2ChQKCQIQIACNZNaY\nZ6xQkfRhG1LxNQIRAIyKwDCULf7Jl5ygc1MIIdk=\n-----END RSA PRIVATE KEY-----';
+
+exports.get_sign_properties = {
+    setUp (done) {
+        this.plugin = new fixtures.plugin('dkim_sign');
+        this.plugin.cfg = { main: { } };
+
+        this.connection = Connection.createConnection();
+        this.connection.init_transaction();
+        this.connection.transaction.mail_from = {};
+
+        this.plugin.config.root_path = path.resolve(__dirname, '../config');
+        this.plugin.load_dkim_sign_ini();
+        this.plugin.load_dkim_default_key();
+
+        done();
+    },
+    'example.com from ENV mail from' (test) {
+        test.expect(1);
+        this.connection.transaction.mail_from = new Address.Address('<test@example.com>');
+        this.plugin.get_sign_properties(this.connection, (err, props) => {
+            if (err) console.error(err);
+            test.deepEqual(props, {
+                domain: 'example.com',
+                selector: 'aug2019',
+                private_key: insecure_512b_test_key,
+            });
+            test.done();
+        })
+    },
+    'no domain discovered returns default' (test) {
+        test.expect(1);
+        this.plugin.get_sign_properties(this.connection, (err, props) => {
+            if (err) console.error(err);
+            test.deepEqual(props, {
+                domain: this.plugin.cfg.main.domain,
+                selector: this.plugin.cfg.main.selector,
+                private_key: this.plugin.private_key,
+            });
+            test.done();
+        })
+    },
+}
+
+exports.has_key_data = {
+    setUp (done) {
+        this.plugin = new fixtures.plugin('dkim_sign');
+        this.plugin.cfg = { main: { } };
+
+        this.connection = Connection.createConnection();
+        done()
+    },
+    'no data' (test) {
+        test.expect(1);
+        test.equal(this.plugin.has_key_data(this.connection, {}), false);
+        test.done();
+    },
+    'fully populated' (test) {
+        test.expect(1);
+        test.equal(this.plugin.has_key_data(this.connection, {
+            selector: 'foo',
+            domain: 'bar',
+            private_key: 'anything',
+        }), true);
+        test.done();
+    },
+}
+
+exports.load_key = {
+    setUp : _set_up,
+    'example.com test key' (test) {
+        test.expect(1);
+        const testKey = path.resolve('tests','config','dkim','example.com','private');
+        test.equal(this.plugin.load_key(testKey), insecure_512b_test_key);
         test.done();
     },
 }
