@@ -1,23 +1,35 @@
 
-## NEXT
-
-## 2.8.25 - 2019-NN-NN
+## NEXT - 20YY-MM-DD
 
 ### Changes
 
+### New features
+
+### Fixes
+
+
+## 2.8.25 - 2019-09-NN
+
+### Changes
+
+* conn: remove TLS version from header #2648
 * Actually enforce using key for INTERNALCMD #2643
 * trans: assign conditions to named vars #2638
 * drop node.js v6 support #2632
 * conn: use is_local instead of localhost addr tests #2627
 * spamassassin: spamassassin: strip useless WS from tests #2624
-* es6: many updates #2615
+* es6: many updates #2615, #2674, #2680
 * systemctl: update service definition #2612
-* outbound: permit # char in SMTP status code response #2689
 * lint: bracket style to match newer eslint:recommended #2680
 * lint: use object shorthands (eslint:recommended) #2680
 * logger: use safer Object.prototype.hasOwnProperty #2680
-* dkim_sign: restore default key signing feature
+* outbound: permit # char in SMTP status code response #2689
 * dkim_sign: improve docs, add tests, es6 updates #2649
+* dkim_sign: restore default key signing feature #2649
+* tmp module: update to latest #2614
+* semver: update to latest #2616, #2651
+* async: update to latest #2653, #2664
+* repo cleanup: replaced deprecated plugins with list #2681
 
 ### New features
 
@@ -26,8 +38,11 @@
 ### Fixes
 
 * mailheader: fully quality header name in _remove_more #2647
-* haraka: Connection.createConnection is not a constructor #2816
+* haraka: Connection.createConnection is not a constructor #2618
 * problems with japanese characters in body and part header #2675
+* toobusy: fix hook name (connect_pre -> connect) #2672
+* outbound: watch for socket timeouts #2687
+* outbound: permit # char prefix in SMTP status code response #2691
 
 
 ## 2.8.24 - Mar 12, 2019
