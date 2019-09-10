@@ -233,9 +233,9 @@ exports.get_sign_properties = function (connection, done) {
 
         // a directory for ${domain} exists
         if (keydir) {
-            props.domain      = path.basename(keydir);  // keydir might be apex (vs sub)domain
+            props.domain = path.basename(keydir);  // keydir might be apex (vs sub)domain
             props.private_key = plugin.load_key(path.join('dkim', props.domain, 'private'));
-            props.selector    = plugin.load_key(path.join('dkim', props.domain, 'selector')).trim();
+            props.selector = plugin.load_key(path.join('dkim', props.domain, 'selector')).trim();
 
             if (!props.selector) {
                 connection.transaction.results.add(plugin, {err: `missing selector for domain ${domain}`});
