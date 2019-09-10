@@ -17,7 +17,7 @@ class DKIMSignStream extends Stream {
         this.selector = props.selector;
 
         // fix issue #2668 renaming reserved kw/property of 'domain' to 'domain_name'
-        this.domain_name = props.domain_name || props.domain;
+        this.domain_name = props.domain;
         this.private_key = props.private_key;
         this.headers_to_sign = props.headers;
         this.header = header;
