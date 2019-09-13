@@ -341,9 +341,10 @@ exports.get_mx = function (next, hmail, domain) {
         return next(OK, plugin.get_mx_next_hop(hmail.todo.notes.next_hop));
     }
 
-    if (domain !== domain.toLowerCase()) domain = domain.toLowerCase();
+    const dom = plugin.cfg.main.domain_selector === 'mail_from' ? hmail.todo.mail_from.host.toLowerCase() : domain.toLowerCase();
+    const cfg = plugin.cfg[dom];
 
-    if (plugin.cfg[domain] === undefined) {
+    if (cfg === undefined) {
         plugin.logdebug('using DNS MX for: ' + domain);
         return next();
     }
@@ -355,14 +356,14 @@ exports.get_mx = function (next, hmail, domain) {
 
     const mx = {
         priority: 0,
-        exchange: plugin.cfg[domain].host || plugin.cfg.main.host,
-        port: plugin.cfg[domain].port || plugin.cfg.main.port || 25,
+        exchange: cfg.host || plugin.cfg.main.host,
+        port: cfg.port || plugin.cfg.main.port || 25,
     }
 
     // apply auth/mx options
     mx_opts.forEach(o => {
-        if (plugin.cfg[domain][o] === undefined) return;
-        mx[o] = plugin.cfg[domain][o];
+        if (cfg[o] === undefined) return;
+        mx[o] = plugin.cfg[dom][o];
     })
 
     return next(OK, mx);
