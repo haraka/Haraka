@@ -27,35 +27,66 @@ exports.SPF = {
     },
     'mod_redirect, true' (test) {
         test.expect(2);
-        function cb (err, rc) {
+        this.SPF.been_there['example.com'] = true;
+        this.SPF.mod_redirect('example.com', (err, rc) => {
             test.equal(null, err);
             test.equal(1, rc);
             test.done();
-        }
-        this.SPF.been_there['example.com'] = true;
-        this.SPF.mod_redirect('example.com', cb);
+        });
     },
     'mod_redirect, false' (test) {
         test.expect(2);
-        // var outer = this;
-        function cb (err, rc) {
-            test.equal(null, err);
-            if (rc === 7) {
-                // from time to time (this is the third time we've seen it,
-                // American Express publishes an invalid SPF record which results
-                // in a PERMERROR. Ignore it.
-                console.error("aexp SPF record is broken again");
-                test.equal(7, rc);
-            }
-            else {
-                test.equal(3, rc);
-            }
-            test.done();
-            // console.log(arguments);
-        }
         this.SPF.count=0;
         this.SPF.ip='212.70.129.94';
         this.SPF.mail_from='fraud@aexp.com';
-        this.SPF.mod_redirect('aexp.com', cb);
+        this.SPF.mod_redirect('aexp.com', (err, rc) => {
+            test.equal(null, err);
+            switch (rc) {
+                case 7:
+                    // from time to time (this is the third time we've seen it,
+                    // American Express publishes an invalid SPF record which results
+                    // in a PERMERROR. Ignore it.
+                    test.equal(rc, 7, "aexp SPF record is broken again");
+                    break;
+                case 6:
+                    test.equal(rc, 6, "temporary (likely DNS timeout) error");
+                    break;
+                default:
+                    test.equal(rc, 3);
+            }
+            test.done();
+        });
     },
+    'check_host, gmail.com, fail' (test) {
+        test.expect(2);
+        this.SPF.count=0;
+        this.SPF.check_host('212.70.129.94', 'gmail.com', 'haraka.mail@gmail.com', (err, rc) => {
+            test.equal(null, err);
+            switch (rc) {
+                case 3:
+                    test.equal(rc, 3, "fail");
+                    break;
+                case 4:
+                    test.equal(rc, 4, "soft fail");
+                    break;
+                case 7:
+                    test.equal(rc, 7, "perm error");
+                    break;
+                default:
+                    test.equal(rc, 4)
+            }
+            test.done();
+        });
+    },
+    'valid_ip, true' (test) {
+        test.expect(1);
+        test.equal(this.SPF.valid_ip(':212.70.129.94'), true);
+        test.done();
+    },
+    'valid_ip, false' (test) {
+        test.expect(1);
+        test.equal(this.SPF.valid_ip(':212.70.d.94'), false);
+        test.done();
+    }
+
 }

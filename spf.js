@@ -4,7 +4,6 @@
 const dns = require('dns');
 const ipaddr = require('ipaddr.js');
 
-// Constructor
 class SPF {
     constructor (count, been_there) {
         // For macro expansion
@@ -13,20 +12,15 @@ class SPF {
         this.spf_record = '';
 
         // RFC 4408 Section 10.1
-        // Limit the number of mechanisms/modifiers
-        // the require DNS lookups to complete.
+        // Limit the number of mechanisms/modifiers that require DNS lookups to complete.
         this.count = 0;
-        // If we have recursed we are supplied the count
-        if (count) {
-            this.count = count;
-        }
 
-        // Prevent circular references
-        // This isn't covered in the RFC...
+        // If we have recursed we are supplied the count
+        if (count) this.count = count;
+
+        // Prevent circular references, this isn't covered in the RFC
         this.been_there = {};
-        if (been_there) {
-            this.been_there = been_there;
-        }
+        if (been_there) this.been_there = been_there;
 
         // RFC 4408 Section 10.1
         this.LIMIT = 10;
@@ -64,7 +58,7 @@ class SPF {
             case this.SPF_NEUTRAL:   return 'Neutral';
             case this.SPF_TEMPERROR: return 'TempError';
             case this.SPF_PERMERROR: return 'PermError';
-            default:                 return 'Unknown (' + value + ')';
+            default:                 return `Unknown (${value})`;
         }
     }
 
@@ -87,9 +81,8 @@ class SPF {
             // match[3] = delimiter
             if (!match[3]) match[3] = '.';
             let strip = /(\d+)/.exec(match[2]);
-            if (strip) {
-                strip = strip[1];
-            }
+            if (strip) strip = strip[1];
+
             const reverse = ((('' + match[2]).indexOf('r')) !== -1 ? true : false);
             let replace;
             let kind;
@@ -150,6 +143,19 @@ class SPF {
         console.error(str);
     }
 
+    valid_ip (ip) {
+        const ip_split = /^:([^/ ]+)(?:\/([^ ]+))?$/.exec(ip);
+        if (!ip_split) {
+            this.log_debug(`invalid IP address: ${ip}`);
+            return false;
+        }
+        if (!ipaddr.isValid(ip_split[1])) {
+            this.log_debug(`invalid IP address: ${ip_split[1]}`);
+            return false;
+        }
+        return true;
+    }
+
     check_host (ip, domain, mail_from, cb) {
         const self = this;
         domain = domain.toLowerCase();
@@ -157,7 +163,7 @@ class SPF {
             mail_from = mail_from.toLowerCase();
         }
         else {
-            mail_from = 'postmaster@' + domain;
+            mail_from = `postmaster@${domain}`;
         }
         this.ipaddr = ipaddr.parse(ip);
         this.ip_ver = this.ipaddr.kind();
@@ -170,11 +176,12 @@ class SPF {
         this.domain = domain;
         this.mail_from = mail_from;
 
-        this.log_debug('ip=' + ip + ' domain=' + domain + ' mail_from=' + mail_from);
+        this.log_debug(`ip=${ip} domain=${domain} mail_from=${mail_from}`);
+
         // Get the SPF record for domain
         dns.resolveTxt(domain, (err, txt_rrs) => {
             if (err) {
-                self.log_debug('error looking up TXT record: ' + err.message);
+                self.log_debug(`error looking up TXT record: ${err.message}`);
                 switch (err.code) {
                     case dns.NOTFOUND:
                     case dns.NODATA:
@@ -185,34 +192,30 @@ class SPF {
 
             let spf_record;
             let match;
-            for (let i=0; i < txt_rrs.length; i++) {
+            for (let txt_rr of txt_rrs) {
                 // Node 0.11.x compatibility
-                if (Array.isArray(txt_rrs[i])) {
-                    txt_rrs[i] = txt_rrs[i].join('');
+                if (Array.isArray(txt_rr)) txt_rr = txt_rr.join('');
+
+                match = /^(v=spf1(?:$|\s.+$))/i.exec(txt_rr);
+                if (!match) {
+                    self.log_debug(`discarding TXT record: ${txt_rr}`);
+                    continue;
                 }
-                match = /^(v=spf1(?:$|\s.+$))/i.exec(txt_rrs[i]);
-                if (match) {
-                    if (!spf_record) {
-                        self.log_debug('found SPF record for domain ' + domain + ': ' + match[1]);
-                        spf_record = match[1].replace(/\s+/, ' ').toLowerCase();
-                    }
-                    else {
-                        // We've already found an MX record
-                        self.log_debug('found additional SPF record for domain ' + domain + ': ' + match[1]);
-                        return cb(null, self.SPF_PERMERROR);
-                    }
+
+                if (!spf_record) {
+                    self.log_debug(`found SPF record for domain ${domain}: ${match[1]}`);
+                    spf_record = match[1].replace(/\s+/, ' ').toLowerCase();
                 }
                 else {
-                    self.log_debug('discarding TXT record: ' + txt_rrs[i]);
+                    // already found an MX record
+                    self.log_debug(`found additional SPF record for domain ${domain}: ${match[1]}`);
+                    return cb(null, self.SPF_PERMERROR);
                 }
             }
 
-            if (!spf_record) {
-                // No SPF record found?
-                return cb(null, self.SPF_NONE);
-            }
+            if (!spf_record) return cb(null, self.SPF_NONE);   // No SPF record?
 
-            // Store the SPF record we used in the object
+            // Store the SPF record used in the object
             self.spf_record = spf_record;
 
             // Validate SPF record and build call chain
@@ -231,15 +234,10 @@ class SPF {
                     // match[2] = mechanism
                     // match[3] = optional args
                     if (!match[1]) match[1] = '+';
-                    self.log_debug('found mechanism: ' + match);
-                    // Validate IP addresses
+                    self.log_debug(`found mechanism: ${match}`);
+
                     if (match[2] === 'ip4' || match[2] === 'ip6') {
-                        const ip_split = /^:([^/ ]+)(?:\/([^ ]+))?$/.exec(match[3]);
-                        // Make sure the IP address is valid
-                        if (!ip_split || (ip_split && !ipaddr.isValid(ip_split[1]))) {
-                            self.log_debug('invalid IP address: ' + ip_split[1]);
-                            return cb(null, self.SPF_PERMERROR);
-                        }
+                        if (!this.valid_ip(match[3])) return cb(null, self.SPF_PERMERROR);
                     }
                     else {
                         // Validate macro strings
@@ -652,11 +650,11 @@ class SPF {
             const range = ipaddr.parse(match[1]);
             const rtype = range.kind();
             if (this.ip_ver !== rtype) {
-                this.log_debug('mech_ip: ' + this.ip + ' => ' + cidr + ': SKIP');
+                this.log_debug(`mech_ip: ${this.ip} => ${cidr}: SKIP`);
                 return cb(null, this.SPF_NONE);
             }
             if (this.ipaddr.match(range, match[2])) {
-                this.log_debug('mech_ip: ' + this.ip + ' => ' + cidr + ': MATCH!');
+                this.log_debug(`mech_ip: ${this.ip} => ${cidr}: MATCH!`);
                 return cb(null, this.return_const(qualifier));
             }
             else {
@@ -673,7 +671,7 @@ class SPF {
     mod_redirect (domain, cb) {
         // Avoid circular references
         if (this.been_there[domain]) {
-            this.log_debug('circular reference detected: ' + domain);
+            this.log_debug(`circular reference detected: ${domain}`);
             return cb(null, this.SPF_NONE);
         }
         this.count++;
