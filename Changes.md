@@ -18,6 +18,7 @@
 * logger: use safer Object.prototype.hasOwnProperty #2680
 * dkim_sign: restore default key signing feature
 * dkim_sign: improve docs, add tests, es6 updates #2649
+* spf: es6 patterns, results.pass, test improvements, es6 patterns #2700
 
 ### New features
 
