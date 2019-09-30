@@ -101,6 +101,7 @@ exports.remove = {
 
 exports.decode = {
     'multiline 8bit header (#2675)': test => {
+        test.expect(1);
         this.h = new Header();
         this.h.parse ([
             "Content-Disposition: attachment;\n",
@@ -110,6 +111,17 @@ exports.decode = {
         ]);
         console.log(this.h.get_decoded('content-disposition'));
         test.ok(this.h.get_decoded('content-disposition').includes('講演会案内書＆申込書改.txt'));
+        test.done();
+    },
+    'unfolding (#2702)': test => {
+        test.expect(1);
+        this.h = new Header();
+        this.h.parse ([
+            "Subject: =?UTF-8?Q?Die_beliebtesten_CAD-_und_AVA-Programme;_die_kl=C3=BCgsten_K?=\n",
+            " =?UTF-8?Q?=C3=B6pfe_der_Branche;_Abschluss_eines_BIM-Pilotprojekts;_Bauen?=\n",
+            " =?UTF-8?Q?_in_Zeiten_des_Klimawandels;_u.v.m?=\n"
+        ]);
+        test.equal(this.h.get_decoded('subject'), 'Die beliebtesten CAD- und AVA-Programme; die klügsten Köpfe der Branche; Abschluss eines BIM-Pilotprojekts; Bauen in Zeiten des Klimawandels; u.v.m');
         test.done();
     }
 }
