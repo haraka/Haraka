@@ -85,10 +85,10 @@ class Header {
             // no encoded stuff
             return val;
         }
-        
+
         //strip whitespace between encoded-words, rfc 2047 6.2
         val = val.replace(/(=\?.+?\?=)\s+(?==\?.+?\?=)/g,"$1");
-        
+
         val = val.replace(/=\?([\w_-]+)(\*[\w_-]+)?\?([bqBQ])\?([\s\S]*?)\?=/g, _decode_header);
 
         return val;
