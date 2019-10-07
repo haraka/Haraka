@@ -14,7 +14,9 @@ jobs:
     strategy:
       matrix:
         os: [ windows-latest ]
-        node-version: [8.x, 10.x, 12.x]
+        #node-version: [8.x, 10.x, 12.x]
+        # node 8 & 10 fail on github with node-gyp build errors
+        node-version: [12.x]
       fail-fast: false
 
     steps:
