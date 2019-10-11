@@ -8,7 +8,7 @@
 ### Fixes
 
 
-## 2.8.25 - 2019-09-NN
+## 2.8.25 - 2019-10-NN
 
 ### Changes
 
@@ -30,6 +30,7 @@
 * semver: update to latest #2616, #2651
 * async: update to latest #2653, #2664
 * repo cleanup: replaced deprecated plugins with list #2681
+* spf: es6 patterns, results.pass, test improvements, es6 patterns #2700
 
 ### New features
 
@@ -43,6 +44,7 @@
 * toobusy: fix hook name (connect_pre -> connect) #2672
 * outbound: watch for socket timeouts #2687
 * outbound: permit # char prefix in SMTP status code response #2691
+* mailheader: strip whitespace between encoded-words #2702
 
 
 ## 2.8.24 - Mar 12, 2019

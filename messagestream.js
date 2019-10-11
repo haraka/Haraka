@@ -30,7 +30,7 @@ class MessageStream extends Stream {
         this.fd = null;
         this.open_pending = false;
         this.spool_dir = cfg.main.spool_dir || '/tmp';
-        this.filename = this.spool_dir + '/' + id + '.eml';
+        this.filename = `${this.spool_dir}/${id}.eml`;
         this.write_pending = false;
 
         this.readable = true;
@@ -303,7 +303,7 @@ class MessageStream extends Stream {
         const self = this;
         // End dot required?
         if (this.ending_dot) {
-            this.read_ce.fill('.' + this.line_endings);
+            this.read_ce.fill(`.${this.line_endings}`);
         }
         // Tell the chunk emitter to send whatever is left
         // We don't close the fd here so we can re-use it later.

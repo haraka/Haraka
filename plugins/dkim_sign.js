@@ -15,7 +15,9 @@ class DKIMSignStream extends Stream {
         super();
 
         this.selector = props.selector;
-        this.domain = props.domain;
+
+        // fix issue #2668 renaming reserved kw/property of 'domain' to 'domain_name'
+        this.domain_name = props.domain;
         this.private_key = props.private_key;
         this.headers_to_sign = props.headers;
         this.header = header;
@@ -117,7 +119,7 @@ class DKIMSignStream extends Stream {
 
         // Create DKIM header
         let dkim_header = 'v=1;a=rsa-sha256;bh=' + bodyhash +
-                        ';c=relaxed/simple;d=' + this.domain +
+                        ';c=relaxed/simple;d=' + this.domain_name +
                         ';h=' + headers.join(':') +
                         ';s=' + this.selector +
                         ';b=';
@@ -231,9 +233,9 @@ exports.get_sign_properties = function (connection, done) {
 
         // a directory for ${domain} exists
         if (keydir) {
-            props.domain      = path.basename(keydir);  // keydir might be apex (vs sub)domain
+            props.domain = path.basename(keydir);  // keydir might be apex (vs sub)domain
             props.private_key = plugin.load_key(path.join('dkim', props.domain, 'private'));
-            props.selector    = plugin.load_key(path.join('dkim', props.domain, 'selector')).trim();
+            props.selector = plugin.load_key(path.join('dkim', props.domain, 'selector')).trim();
 
             if (!props.selector) {
                 connection.transaction.results.add(plugin, {err: `missing selector for domain ${domain}`});
@@ -252,9 +254,9 @@ exports.get_sign_properties = function (connection, done) {
 
             connection.transaction.results.add(plugin, {msg: 'using default key', emit: true });
 
-            props.domain = plugin.cfg.main.domain;
+            props.domain      = plugin.cfg.main.domain;
             props.private_key = plugin.private_key;
-            props.selector = plugin.cfg.main.selector;
+            props.selector    = plugin.cfg.main.selector;
 
             return done(null, props)
         }

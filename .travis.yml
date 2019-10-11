@@ -26,9 +26,9 @@ script:
     - npm test
 
 after_success:
-    - npm install istanbul codecov
-    - npm run cover
-    - ./node_modules/.bin/codecov
+#   - npm install istanbul codecov
+#   - npm run cover
+#   - ./node_modules/.bin/codecov
 
 sudo: false
 

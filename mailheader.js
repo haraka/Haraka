@@ -86,9 +86,11 @@ class Header {
             return val;
         }
 
-        val = val.replace(/=\?([\w_-]+)(\*[\w_-]+)?\?([bqBQ])\?([\s\S]*?)\?=/g, _decode_header);
-
-        return val;
+        return val
+            // strip whitespace between encoded-words, rfc 2047 6.2
+            .replace(/(=\?.+?\?=)\s+(?==\?.+?\?=)/g,"$1")
+            // decode each encoded match
+            .replace(/=\?([\w_-]+)(\*[\w_-]+)?\?([bqBQ])\?([\s\S]*?)\?=/g, _decode_header);
     }
 
     get (key) {
@@ -126,7 +128,7 @@ class Header {
         value = value.replace(/(\r?\n)*$/, '');
         if (/[^\x00-\x7f]/.test(value)) {
             // Need to QP encode this header value and assume UTF-8
-            value = '=?UTF-8?q?' + utils.encode_qp(value) + '?=';
+            value = `=?UTF-8?q?${utils.encode_qp(value)}?=`;
             value = value.replace(/=\n/g, ''); // remove wraps - headers can only wrap at whitespace (with continuations)
         }
         this._add_header(key.toLowerCase(), value, "unshift");
@@ -151,13 +153,13 @@ class Header {
         value = value.replace(/(\r?\n)*$/, '');
         if (/[^\x00-\x7f]/.test(value)) {
             // Need to QP encode this header value and assume UTF-8
-            value = '=?UTF-8?q?' + utils.encode_qp(value) + '?=';
+            value = `=?UTF-8?q?${utils.encode_qp(value)}?=`;
             // remove wraps - headers can only wrap at whitespace (with continuations)
             value = value.replace(/=\n/g, '');
         }
         this._add_header(key.toLowerCase(), value, "push");
         this._add_header_decode(key.toLowerCase(), value, "push");
-        this.header_list.push(key + ': ' + value + '\n');
+        this.header_list.push(`${key}: ${value}\n`);
     }
 
     lines () {
@@ -179,14 +181,14 @@ function try_convert (data, encoding) {
     }
     catch (err) {
         // TODO: raise a flag for this for possible scoring
-        logger.logwarn("initial iconv conversion from " + encoding + " to UTF-8 failed: " + err.message);
+        logger.logwarn(`initial iconv conversion from ${encoding} to UTF-8 failed: ${err.message}`);
         if (err.code !== 'EINVAL') {
             try {
                 const converter = new Iconv(encoding, "UTF-8//TRANSLIT//IGNORE");
                 data = converter.convert(data);
             }
             catch (e) {
-                logger.logerror("iconv from " + encoding + " to UTF-8 failed: " + e.message);
+                logger.logerror(`iconv from ${encoding} to UTF-8 failed: ${e.message}`);
             }
         }
     }
@@ -205,7 +207,7 @@ function _decode_header (matched, encoding, lang, cte, data) {
             data = Buffer.from(data, "base64");
             break;
         default:
-            logger.logerror("Invalid header encoding type: " + cte);
+            logger.logerror(`Invalid header encoding type: ${cte}`);
     }
 
     // convert with iconv if encoding != UTF-8
@@ -234,7 +236,7 @@ function _decode_rfc2231 (params, str) {
             merged = decodeURIComponent(merged);
         }
         catch (e) {
-            logger.logerror("Decode header failed: " + key + ": " + merged);
+            logger.logerror(`Decode header failed: ${key}: ${merged}`);
         }
         merged = params.cur_enc ? try_convert(merged, params.cur_enc) : merged;
 

@@ -133,6 +133,7 @@ exports.helo_spf = function (next, connection, helo) {
             domain: host,
             emit: true,
         });
+        if (spf.result(result) === 'Pass') connection.results.add(plugin, { pass: host });
         next();
     });
 }
@@ -209,6 +210,7 @@ exports.hook_mail = function (next, connection, params) {
             domain: host,
             emit: true,
         });
+        if (spf.result(result) === 'Pass') connection.results.add(plugin, { pass: host });
         plugin.return_results(next, connection, spf, 'mfrom', result, mfrom);
     }
 

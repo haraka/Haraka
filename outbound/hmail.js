@@ -210,7 +210,7 @@ class HMailItem extends events.EventEmitter {
                     }
                     mx_list = [{priority: 0, exchange: matches[1], port: matches[3]}];
                 }
-                hmail.logdebug(`Got an MX from Plugin: ${hmail.todo.domain} => 0 ${mx}`);
+                hmail.logdebug(`Got a MX from Plugin: ${hmail.todo.domain} => 0 ${JSON.stringify(mx)}`);
                 return hmail.found_mx(null, mx_list);
             }
             case constants.deny:
