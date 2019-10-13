@@ -398,7 +398,7 @@ exports.load_default_opts = () => {
 }
 
 function SNICallback (servername, sniDone) {
-    log.logdebug('SNI servername: ' + servername);
+    log.logdebug(`SNI servername: ${servername}`);
 
     if (ctxByHost[servername] === undefined) servername = '*';
 
@@ -415,11 +415,11 @@ exports.get_certs_dir = (tlsDir, done) => {
 
             const parsed = exports.parse_x509(file.data.toString());
             if (!parsed.key) {
-                return iter_done('no PRIVATE key in ' + file.path);
+                return iter_done(`no PRIVATE key in ${file.path}`);
             }
             if (!parsed.cert) {
-                log.logerror('no CERT in ' + file.path);
-                return iter_done('no CERT in ' + file.path);
+                log.logerror(`no CERT in ${file.path}`);
+                return iter_done(`no CERT in ${file.path}`);
             }
 
             const x509args = { noout: true, text: true };
@@ -432,7 +432,7 @@ exports.get_certs_dir = (tlsDir, done) => {
 
                 const expire = tlss.parse_x509_expire(file, as_str);
                 if (expire && expire < new Date()) {
-                    log.logerror(file.path + ' expired on ' + expire);
+                    log.logerror(`${file.path  } expired on ${expire}`);
                 }
 
                 iter_done(null, {
@@ -540,7 +540,7 @@ exports.ensureDhparams = done => {
 
     o.on('close', code => {
         if (code !== 0) {
-            return done('Error code: ' + code);
+            return done(`Error code: ${code}`);
         }
 
         log.loginfo(`Saved to ${fpResolved}`);
@@ -564,9 +564,9 @@ exports.addOCSP = server => {
 
     log.logdebug('adding OCSPRequest listener');
     server.on('OCSPRequest', (cert, issuer, ocr_cb) => {
-        log.logdebug('OCSPRequest: ' + cert);
+        log.logdebug(`OCSPRequest: ${cert}`);
         ocsp.getOCSPURI(cert, (err, uri) => {
-            log.logdebug('OCSP Request, URI: ' + uri + ', err=' +err);
+            log.logdebug(`OCSP Request, URI: ${uri  }, err=${ err}`);
             if (err) return ocr_cb(err);
             if (uri === null) return ocr_cb();  // not working OCSP server
 
@@ -577,7 +577,7 @@ exports.addOCSP = server => {
                 if (err2) return ocr_cb(err2);
 
                 if (cached) {
-                    log.logdebug('OCSP cache: ' + util.inspect(cached));
+                    log.logdebug(`OCSP cache: ${util.inspect(cached)}`);
                     return ocr_cb(err2, cached.response);
                 }
 
@@ -586,7 +586,7 @@ exports.addOCSP = server => {
                     ocsp: req.data
                 };
 
-                log.logdebug('OCSP req:' + util.inspect(req));
+                log.logdebug(`OCSP req:${util.inspect(req)}`);
                 ocspCache.request(req.id, options, ocr_cb);
             })
         })
@@ -598,7 +598,7 @@ exports.shutdown = () => {
 }
 
 function cleanOcspCache () {
-    log.logdebug('Cleaning ocspCache. How many keys? ' + Object.keys(ocspCache.cache).length);
+    log.logdebug(`Cleaning ocspCache. How many keys? ${Object.keys(ocspCache.cache).length}`);
     Object.keys(ocspCache.cache).forEach((key) => {
         clearTimeout(ocspCache.cache[key].timer);
     });
@@ -707,7 +707,7 @@ function connect (port, host, cb) {
 
         cleartext.on('error', err => {
             if (err.reason) {
-                log.logerror("client TLS error: " + err);
+                log.logerror(`client TLS error: ${err}`);
             }
         })
 

@@ -187,7 +187,7 @@ class DKIMObject {
 
         if (!header_name) return header;
 
-        let hc = header_name.toLowerCase() + ':' + header_value;
+        let hc = `${header_name.toLowerCase()}:${header_value}`;
         hc = hc.replace(/\r\n([\t ]+)/g, "$1");
         hc = hc.replace(/[\t ]+/g, ' ');
         hc = hc.replace(/[\t ]+(\r?\n)$/, "$1");
@@ -376,9 +376,9 @@ class DKIMObject {
                 if (!self.dns_fields.p) return self.result('key revoked', 'invalid');
 
                 // crypto.verifier requires the key in PEM format
-                self.public_key = '-----BEGIN PUBLIC KEY-----\r\n' +
-                    self.dns_fields.p.replace(/(.{1,76})/g, '$1\r\n') +
-                    '-----END PUBLIC KEY-----\r\n';
+                self.public_key = `-----BEGIN PUBLIC KEY-----\r\n${
+                    self.dns_fields.p.replace(/(.{1,76})/g, '$1\r\n')
+                }-----END PUBLIC KEY-----\r\n`;
 
                 let verified;
                 try {

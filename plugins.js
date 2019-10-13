@@ -196,7 +196,7 @@ class Plugin {
         }
 
         try {
-            return '"use strict";' + fs.readFileSync(pp);
+            return `"use strict";${fs.readFileSync(pp)}`;
         }
         catch (err) {
             if (exports.config.get('smtp.ini').main.ignore_bad_plugins) {
@@ -498,7 +498,7 @@ plugins.run_next_hook = (hook, object, params) => {
             }
         }
 
-        const respond_method = hook + '_respond';
+        const respond_method = `${hook}_respond`;
         if (item && is_deny_retval(retval) && hook.substr(0,5) !== 'init_') {
             object.deny_respond =
                 get_denyfn(object, hook, params, retval, msg, respond_method);

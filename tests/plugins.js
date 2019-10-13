@@ -46,7 +46,7 @@ exports.plugin = {
     }
 }
 
-const toPath = path.join('config', piName + '.timeout');
+const toPath = path.join('config', `${piName  }.timeout`);
 
 const toVals = [ '0', '3', '60', 'apple'];
 function getVal () {

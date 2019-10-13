@@ -53,9 +53,9 @@ exports.hook_mail = function (next, connection, params) {
     const c            = plugin.cfg.main;
     const timeout_id   = setTimeout(() => {
         // DNS answer didn't return (UDP)
-        connection.loginfo(plugin, 'timed out resolving MX for ' + domain);
+        connection.loginfo(plugin, `timed out resolving MX for ${domain}`);
         called_next++;
-        if (txn) results.add(plugin, {err: 'timeout(' + domain + ')'});
+        if (txn) results.add(plugin, {err: `timeout(${domain})`});
         next(DENYSOFT, 'Temporary resolver error (timeout)');
     }, c.timeout * 1000);
 
@@ -84,7 +84,7 @@ exports.hook_mail = function (next, connection, params) {
 
             records = Object.keys(records);
             if (records && records.length) {
-                connection.logdebug(plugin, domain + ': ' + records);
+                connection.logdebug(plugin, `${domain}: ${records}`);
                 results.add(plugin, {pass: 'has_fwd_dns'});
                 return mxDone();
             }
@@ -97,8 +97,8 @@ exports.hook_mail = function (next, connection, params) {
             // Handle MX records that are IP addresses
             // This is invalid - but a lot of MTAs allow it.
             if (net_utils.get_ipany_re('^\\[','\\]$','').test(addr.exchange)) {
-                connection.logwarn(plugin, domain + ': invalid MX ' +
-                        addr.exchange);
+                connection.logwarn(plugin, `${domain}: invalid MX ${
+                    addr.exchange}`);
                 if (c.allow_mx_ip) {
                     records[addr.exchange] = 1;
                 }
@@ -110,27 +110,24 @@ exports.hook_mail = function (next, connection, params) {
                 if (!txn) return;
                 if (err2 && err2.length === 2) {
                     results.add(plugin, {msg: err2[0].message});
-                    connection.logdebug(plugin, domain + ': MX ' +
-                            addr.priority + ' ' + addr.exchange +
-                            ' => ' + err2[0].message);
+                    connection.logdebug(plugin, `${domain}: MX ${addr.priority} ${addr.exchange} => ${err2[0].message}`);
                     check_results();
                     return;
                 }
-                connection.logdebug(plugin, domain + ': MX ' + addr.priority +
-                        ' ' + addr.exchange + ' => ' + addresses2);
+                connection.logdebug(plugin, `${domain}: MX ${addr.priority} ${addr.exchange} => ${addresses2}`);
                 for (let i=0; i < addresses2.length; i++) {
                     // Ignore anything obviously bogus
                     if (net.isIPv4(addresses2[i])){
                         if (plugin.re_bogus_ip.test(addresses2[i])) {
-                            connection.logdebug(plugin, addr.exchange +
-                                    ': discarding ' + addresses2[i]);
+                            connection.logdebug(plugin, `${addr.exchange
+                            }: discarding ${addresses2[i]}`);
                             continue;
                         }
                     }
                     if (net.isIPv6(addresses2[i])){
                         if (net_utils.ipv6_bogus(addresses2[i])) {
-                            connection.logdebug(plugin, addr.exchange +
-                                    ': discarding ' + addresses2[i]);
+                            connection.logdebug(plugin, `${addr.exchange
+                            }: discarding ${addresses2[i]}`);
                             continue;
                         }
                     }
@@ -148,8 +145,8 @@ exports.mxErr = function (connection, domain, type, err, mxDone) {
     const plugin = this;
     const txn = connection.transaction;
     if (!txn) return;
-    txn.results.add(plugin, {msg: domain + ':' + type + ':' + err.message});
-    connection.logdebug(plugin, domain + ':' + type + ' => ' + err.message);
+    txn.results.add(plugin, {msg: `${domain}:${type}:${err.message}`});
+    connection.logdebug(plugin, `${domain}:${type} => ${err.message}`);
     switch (err.code) {
         case dns.NXDOMAIN:
         case dns.NOTFOUND:
@@ -157,7 +154,7 @@ exports.mxErr = function (connection, domain, type, err, mxDone) {
             // Ignore
             break;
         default:
-            mxDone(DENYSOFT, 'Temp. resolver error (' + err.code + ')');
+            mxDone(DENYSOFT, `Temp. resolver error (${err.code})`);
             return true;
     }
     return false;
@@ -176,20 +173,20 @@ exports.implicit_mx = function (connection, domain, mxDone) {
                 'No MX for your FROM address');
         }
 
-        connection.logdebug(plugin, domain + ': A/AAAA => ' + addresses);
+        connection.logdebug(plugin, `${domain}: A/AAAA => ${addresses}`);
         let records = {};
         for (let i=0; i < addresses.length; i++) {
             const addr = addresses[i];
             // Ignore anything obviously bogus
             if (net.isIPv4(addr)){
                 if (plugin.re_bogus_ip.test(addr)) {
-                    connection.logdebug(plugin, domain + ': discarding ' + addr);
+                    connection.logdebug(plugin, `${domain}: discarding ${addr}`);
                     continue;
                 }
             }
             if (net.isIPv6(addr)){
                 if (net_utils.ipv6_bogus(addr)) {
-                    connection.logdebug(plugin, domain + ': discarding ' + addr);
+                    connection.logdebug(plugin, `${domain}: discarding ${addr}`);
                     continue;
                 }
             }
@@ -202,7 +199,7 @@ exports.implicit_mx = function (connection, domain, mxDone) {
             return mxDone();
         }
 
-        txn.results.add(plugin, {fail: 'implicit_mx('+domain+')'});
+        txn.results.add(plugin, {fail: `implicit_mx(${domain})`});
         return mxDone();
     });
 }

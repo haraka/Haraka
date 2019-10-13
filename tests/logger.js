@@ -297,7 +297,7 @@ exports.add_log_methods = {
         const levels = ['DATA','PROTOCOL','DEBUG','INFO','NOTICE','WARN','ERROR','CRIT','ALERT','EMERG'];
         test.expect(levels.length);
         for (let i=0; i<levels.length; i++) {
-            test.ok('function' === typeof(testObj['log'+levels[i].toLowerCase()]));
+            test.ok('function' === typeof(testObj[`log${levels[i].toLowerCase()}`]));
         }
         test.done();
     },

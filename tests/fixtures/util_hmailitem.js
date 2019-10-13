@@ -22,7 +22,7 @@ exports.newMockHMailItem = (outbound_context, test, options, callback) => {
         opts,
         (err, hmail) => {
             if (err) {
-                test.ok(false, 'Could not create HMailItem: ' + err);
+                test.ok(false, `Could not create HMailItem: ${err}`);
                 test.done();
                 return;
             }
@@ -56,11 +56,11 @@ exports.createHMailItem = (outbound_context, options, callback) => {
     conn.transaction.mail_from = new Address(mail_from);
 
     const todo = new outbound_context.TODOItem(delivery_domain, mail_recipients, conn.transaction);
-    todo.uuid = todo.uuid + '.' + 1;
+    todo.uuid = `${todo.uuid}.1`;
 
     let contents = [
-        "From: " + mail_from,
-        "To: " + mail_recipients.join(", "),
+        `From: ${mail_from}`,
+        `To: ${mail_recipients.join(", ")}`,
         "MIME-Version: 1.0",
         "Content-type: text/plain; charset=us-ascii",
         "Subject: Some subject here",
@@ -84,7 +84,7 @@ exports.createHMailItem = (outbound_context, options, callback) => {
     const ok_paths = [];
     outbound_context.exports.process_delivery(ok_paths, todo, hmails, err => {
         if (err) {
-            callback('process_delivery error: ' + err);
+            callback(`process_delivery error: ${err}`);
             return;
         }
         if (hmails.length == 0) {
@@ -123,10 +123,10 @@ exports.playTestSmtpConversation = (hmail, socket, test, playbook, callback) => 
         let expected;
         while (false != (expected = getNextEntryFromPlaybook('haraka', playbook))) {
             if (typeof expected.test === 'function') {
-                test.ok(expected.test(line), expected.description || 'Expected that line works with func: ' + expected.test);
+                test.ok(expected.test(line), expected.description || `Expected that line works with func: ${expected.test}`);
             }
             else {
-                test.equals(expected.test + '\r\n', line, expected.description || 'Expected that line equals: ' + expected.test);
+                test.equals(`${expected.test}\r\n`, line, expected.description || `Expected that line equals: ${expected.test}`);
             }
             if (expected.end_test === true) {
                 setTimeout(() => {
@@ -138,7 +138,7 @@ exports.playTestSmtpConversation = (hmail, socket, test, playbook, callback) => 
         setTimeout(() => {
             let nextMessageFromServer;
             while (false != (nextMessageFromServer = getNextEntryFromPlaybook('remote', playbook))) {
-                socket.emit('line', nextMessageFromServer.line + '\r\n');
+                socket.emit('line', `${nextMessageFromServer.line}\r\n`);
             }
         }, 0);
     }

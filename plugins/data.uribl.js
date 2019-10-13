@@ -211,7 +211,7 @@ exports.do_lookups = function (connection, next, hosts, type) {
         let lookup = query.join('.');
         // Add root dot if necessary
         if (lookup[lookup.length-1] !== '.') {
-            lookup = lookup + '.';
+            lookup = `${lookup}.`;
         }
         pending_queries++;
         dns.resolve4(lookup, (err, addrs) => {
@@ -390,7 +390,7 @@ function extract_urls (urls, body, connection, self) {
     // match plain hostname.tld
     while ((match = schemeless.exec(body.bodytext))) {
         try {
-            uri = url.parse('http://' + match[1]);
+            uri = url.parse(`http://${match[1]}`);
             urls[uri.hostname] = uri;
         }
         catch (error) {

@@ -226,7 +226,7 @@ function _decode_rfc2231 (params, str) {
         /* eslint no-constant-condition: 0 */
         let merged = '';
         for (let i=0; true; i++) {
-            const _key = key + '*' + i;
+            const _key = `${key}*${i}`;
             const _val = params.kv[_key];
             if (_val === undefined) break;
             merged += _val;

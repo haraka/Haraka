@@ -72,7 +72,7 @@ exports.load_acls = function () {
         }
         if (!cidr[1]) {
             plugin.logerror(plugin, `appending missing CIDR suffix in: ${file_name}`);
-            plugin.acl_allow[i] = cidr[0] + '/32';
+            plugin.acl_allow[i] = `${cidr[0]  }/32`;
         }
     }
 }

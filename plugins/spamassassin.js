@@ -86,7 +86,7 @@ exports.hook_data_post = function (next, connection) {
         else if (state === 'headers') {
             const m = line.match(/^X-Spam-([\x21-\x39\x3B-\x7E]+):\s*(.*)/);
             if (m) {
-                connection.logdebug(plugin, "header: " + line);
+                connection.logdebug(plugin, `header: ${line}`);
                 last_header = m[1];
                 spamd_response.headers[m[1]] = m[2];
                 return;
@@ -160,7 +160,7 @@ exports.fixup_old_headers = function (transaction) {
         default:
             for (key in headers) {
                 if (!key) continue;
-                key = 'X-Spam-' + key;
+                key = `X-Spam-${key}`;
                 const old_val = transaction.header.get(key);
                 transaction.remove_header(key);
                 if (old_val) {
@@ -179,7 +179,7 @@ exports.munge_subject = function (connection, score) {
     if (parseFloat(score) < parseFloat(munge)) return;
 
     const subj = connection.transaction.header.get('Subject');
-    const subject_re = new RegExp('^' + utils.regexp_escape(plugin.cfg.main.subject_prefix));
+    const subject_re = new RegExp(`^${utils.regexp_escape(plugin.cfg.main.subject_prefix)}`);
     if (subject_re.test(subj)) return;    // prevent double munge
 
     connection.transaction.remove_header('Subject');

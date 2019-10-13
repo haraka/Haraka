@@ -27,7 +27,7 @@ exports.hook_capabilities = function (next, connection) {
         methods = plugin.cfg.core.methods.split(',');
     }
     if (methods && methods.length > 0) {
-        connection.capabilities.push('AUTH ' + methods.join(' '));
+        connection.capabilities.push(`AUTH ${methods.join(' ')}`);
         connection.notes.allowed_auth_methods = methods;
     }
     next();

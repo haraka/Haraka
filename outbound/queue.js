@@ -88,8 +88,7 @@ exports._load_cur_queue = (pid, iteratee, cb) => {
     logger.loginfo("[outbound] Loading outbound queue from ", queue_dir);
     fs.readdir(queue_dir, (err, files) => {
         if (err) {
-            return logger.logerror("[outbound] Failed to load queue directory (" +
-                queue_dir + "): " + err);
+            return logger.logerror(`[outbound] Failed to load queue directory (${queue_dir}): ${err}`);
         }
 
         self.cur_time = new Date(); // set once so we're not calling it a lot
@@ -106,7 +105,7 @@ exports.read_parts = file => {
 
     const parts = _qfile.parts(file);
     if (!parts) {
-        logger.logerror("[outbound] Unrecognized file in queue folder: " + file);
+        logger.logerror(`[outbound] Unrecognized file in queue folder: ${file}`);
         return false;
     }
 

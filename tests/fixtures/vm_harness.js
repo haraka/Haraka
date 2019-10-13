@@ -11,23 +11,23 @@ exports.sandbox_require = id => {
     if (id[0] == '.' && id[1] != '.') {
         let override;
         try {
-            override = path.join(__dirname, id + '.js');
+            override = path.join(__dirname, `${id}.js`);
             fs.statSync(override);
             id = override;
         }
         catch (e) {
             try {
-                override = path.join(__dirname, '..', '..', 'outbound', id.replace(/^[./]*/, '') + '.js');
+                override = path.join(__dirname, '..', '..', 'outbound', `${id.replace(/^[./]*/, '')}.js`);
                 fs.statSync(override);
                 id = override;
             }
             catch (err) {
-                id = '../../' + id.replace(/^[./]*/, '');
+                id = `../../${  id.replace(/^[./]*/, '')}`;
             }
         }
     }
     else if (id[0] == '.' && id[1] == '.') {
-        id = '../../' + id.replace(/^[./]*/, '');
+        id = `../../${  id.replace(/^[./]*/, '')}`;
     }
     return require(id);
 }

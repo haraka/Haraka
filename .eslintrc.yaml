@@ -9,5 +9,6 @@ root: true
 
 rules:
   semi-style: [error, last]
+  prefer-template: "warn"
 
 extends: ["eslint:recommended", "plugin:haraka/recommended"]

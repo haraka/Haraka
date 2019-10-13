@@ -283,7 +283,7 @@ exports.nodemailer = {
                 return;
             }
             test.deepEqual(info.accepted, [ 'discard@haraka.local' ]);
-            console.log('Message sent: ' + info.response);
+            console.log(`Message sent: ${info.response}`);
             test.done();
         });
     },
@@ -322,7 +322,7 @@ exports.nodemailer = {
                 return;
             }
             test.deepEqual(info.accepted, [ 'discard@haraka.local' ]);
-            console.log('Message sent: ' + info.response);
+            console.log(`Message sent: ${info.response}`);
             test.done();
         });
     },
@@ -400,7 +400,7 @@ exports.nodemailer = {
                 return;
             }
             test.deepEqual(info.accepted, [ 'discard@haraka.local' ]);
-            console.log('Message sent: ' + info.response);
+            console.log(`Message sent: ${info.response}`);
             test.done();
         });
     },

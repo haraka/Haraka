@@ -178,7 +178,7 @@ exports.check_recipient = function (next, connection, params) {
 exports.auth = function (cfg, connection, smtp_client) {
     const plugin = this;
 
-    connection.loginfo(plugin, 'Configuring authentication for SMTP server ' + cfg.host + ':' + cfg.port);
+    connection.loginfo(plugin, `Configuring authentication for SMTP server ${cfg.host}:${cfg.port}`);
     smtp_client.on('capabilities', () => {
         connection.loginfo(plugin, 'capabilities received');
 
@@ -196,14 +196,14 @@ exports.auth = function (cfg, connection, smtp_client) {
         }
 
         if (cfg.auth_type === 'plain') {
-            connection.loginfo(plugin, 'Authenticating with AUTH PLAIN ' + cfg.auth_user);
-            smtp_client.send_command('AUTH', 'PLAIN ' + base64('\0' + cfg.auth_user + '\0' + cfg.auth_pass));
+            connection.loginfo(plugin, `Authenticating with AUTH PLAIN ${cfg.auth_user}`);
+            smtp_client.send_command('AUTH', `PLAIN ${base64(`\0${cfg.auth_user}\0${cfg.auth_pass}`)}`);
         }
         else if (cfg.auth_type === 'login') {
             smtp_client.authenticating = true;
             smtp_client.authenticated = false;
 
-            connection.loginfo(plugin, 'Authenticating with AUTH LOGIN ' + cfg.auth_user);
+            connection.loginfo(plugin, `Authenticating with AUTH LOGIN ${cfg.auth_user}`);
             smtp_client.send_command('AUTH', 'LOGIN');
             smtp_client.on('auth', () => {
                 //TODO: nothing?
@@ -250,8 +250,8 @@ exports.queue_forward = function (next, connection) {
 
         if (cfg.auth_user) plugin.auth(cfg, connection, smtp_client);
 
-        connection.loginfo(plugin, 'forwarding to ' +
-            (cfg.forwarding_host_pool ? 'host_pool' : `${cfg.host}:${cfg.port}`)
+        connection.loginfo(plugin, `forwarding to ${
+            cfg.forwarding_host_pool ? 'host_pool' : `${cfg.host}:${cfg.port}`}`
         );
 
         function get_rs () {
@@ -273,7 +273,7 @@ exports.queue_forward = function (next, connection) {
                 smtp_client.send_command('DATA');
                 return;
             }
-            smtp_client.send_command('RCPT', 'TO:' + txn.rcpt_to[rcpt].format(!smtp_client.smtp_utf8));
+            smtp_client.send_command('RCPT', `TO:${txn.rcpt_to[rcpt].format(!smtp_client.smtp_utf8)}`);
             rcpt++;
         }
 
@@ -306,7 +306,7 @@ exports.queue_forward = function (next, connection) {
 
         smtp_client.on('rset', () => {
             if (dead_sender()) return;
-            smtp_client.send_command('MAIL', 'FROM:' + txn.mail_from);
+            smtp_client.send_command('MAIL', `FROM:${txn.mail_from}`);
         });
 
         smtp_client.on('bad_code', (code, msg) => {
@@ -345,7 +345,7 @@ exports.get_mx = function (next, hmail, domain) {
     const cfg = plugin.cfg[dom];
 
     if (cfg === undefined) {
-        plugin.logdebug('using DNS MX for: ' + domain);
+        plugin.logdebug(`using DNS MX for: ${domain}`);
         return next();
     }
 

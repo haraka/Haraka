@@ -25,8 +25,8 @@ exports.load_host_list_regex = function () {
         () => { plugin.load_host_list_regex(); }
     );
 
-    plugin.hl_re = new RegExp ('^(?:' +
-                plugin.host_list_regex.join('|') + ')$', 'i');
+    plugin.hl_re = new RegExp (`^(?:${
+        plugin.host_list_regex.join('|')})$`, 'i');
 }
 
 exports.hook_mail = function (next, connection, params) {
@@ -47,8 +47,7 @@ exports.hook_mail = function (next, connection, params) {
     if (plugin.in_host_list(domain) || plugin.in_host_regex(domain)) {
         if (anti_spoof && !connection.relaying) {
             txn.results.add(plugin, {fail: 'mail_from.anti_spoof'});
-            return next(DENY, "Mail from domain '" + domain + "'" +
-                              " is not allowed from your host");
+            return next(DENY, `Mail from domain '${domain}' is not allowed from your host`);
         }
         txn.results.add(plugin, {pass: 'mail_from'});
         txn.notes.local_sender = true;
@@ -61,7 +60,7 @@ exports.hook_mail = function (next, connection, params) {
 
 exports.in_host_list = function (domain) {
     const plugin = this;
-    plugin.logdebug("checking " + domain + " in config/host_list");
+    plugin.logdebug(`checking ${domain} in config/host_list`);
     if (plugin.host_list[domain]) {
         return true;
     }
@@ -73,7 +72,7 @@ exports.in_host_regex = function (domain) {
     if (!plugin.host_list_regex) return false;
     if (!plugin.host_list_regex.length) return false;
 
-    plugin.logdebug("checking " + domain + " against config/host_list_regex ");
+    plugin.logdebug(`checking ${domain} against config/host_list_regex `);
 
     if (plugin.hl_re.test(domain)) { return true; }
     return false;

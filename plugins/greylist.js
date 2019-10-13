@@ -382,7 +382,7 @@ exports.craft_grey_key = function (connection, from, to) {
 // Build white DB key off supplied params.
 exports.craft_white_key = function (connection) {
     const plugin = this;
-    return 'white:' + plugin.craft_hostid(connection);
+    return `white:${plugin.craft_hostid(connection)}`;
 }
 
 // Return so-called +hostid+.

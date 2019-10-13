@@ -258,7 +258,7 @@ logger.log_if_level = (level, key, plugin) => function () {
         if (data instanceof connection.Connection) {
             logobj.uuid = data.uuid;
             if (data.tran_count > 0) {
-                logobj.uuid += "." + data.tran_count;
+                logobj.uuid += `.${data.tran_count}`;
             }
         }
         else if (data instanceof plugins.Plugin) {
@@ -314,9 +314,9 @@ logger.add_log_methods = (object, plugin) => {
     if (!object) return;
     if (typeof(object) !== 'object') return;
     for (const level in logger.levels) {
-        const fname = 'log' + level.toLowerCase();
+        const fname = `log${level.toLowerCase()}`;
         if (object[fname]) continue;  // already added
-        object[fname] = logger.log_if_level(level, 'LOG'+level, plugin);
+        object[fname] = logger.log_if_level(level, `LOG${level}`, plugin);
     }
 }
 

@@ -32,6 +32,6 @@ exports.tarpit = function (next, connection) {
 
     if (!delay) return next();
 
-    connection.loginfo(plugin, 'tarpitting response for ' + delay + 's');
+    connection.loginfo(plugin, `tarpitting response for ${delay}s`);
     setTimeout(() => next(),  delay * 1000);
 }
