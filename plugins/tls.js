@@ -55,15 +55,12 @@ exports.advertise_starttls = function (next, connection) {
             return enable_tls();
         }
 
-        if (!dbr) {
-            connection.results.add(plugin, { msg: 'no_tls unset'});
-            return enable_tls();
-        }
+        if (!dbr) return enable_tls();
 
         // last TLS attempt failed
         redis.del(dbkey); // retry TLS next connection.
 
-        connection.results.add(plugin, { msg: 'tls disabled'});
+        connection.results.add(plugin, { msg: 'no_tls'});
         return next();
     });
 }
