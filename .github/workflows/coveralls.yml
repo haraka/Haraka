@@ -23,7 +23,7 @@ jobs:
     - name: install, run
       run: |
         npm install
-        npm install istanbul codecov
+        npm install --no-save nyc codecov
         npm run cover
 
     - name: Coveralls

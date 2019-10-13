@@ -3,7 +3,12 @@
   "name": "Haraka",
   "license": "MIT",
   "description": "An SMTP Server project.",
-  "keywords": [ "haraka", "smtp", "server", "email" ],
+  "keywords": [
+    "haraka",
+    "smtp",
+    "server",
+    "email"
+  ],
   "version": "2.8.25",
   "homepage": "http://haraka.github.io",
   "repository": {
@@ -65,7 +70,7 @@
     "haraka-test-fixtures"  : ">=1.0.27",
     "eslint"                : ">=4",
     "eslint-plugin-haraka"  : "*",
-    "nodemailer"            : "*"
+    "nodemailer"            : "6.2.1"
   },
   "bugs": {
     "mail": "haraka.mail@gmail.com",
@@ -86,6 +91,6 @@
     "test": "node run_tests",
     "lint": "node node_modules/.bin/eslint *.js outbound/*.js plugins/*.js plugins/*/*.js tests/*.js tests/*/*.js tests/*/*/*.js bin/haraka bin/spf bin/dkimverify",
     "lintfix": "node node_modules/.bin/eslint --fix *.js outbound/*.js plugins/*.js plugins/*/*.js tests/*.js tests/*/*.js tests/*/*/*.js bin/haraka bin/spf bin/dkimverify",
-    "cover": "NODE_ENV=cov node node_modules/.bin/istanbul cov run_tests"
+    "cover": "NODE_ENV=cov node_modules/.bin/nyc --reporter=lcovonly npm run test"
   }
 }
