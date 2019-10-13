@@ -3,6 +3,8 @@
 
 ### Changes
 
+* lint: add 'prefer-template'
+
 ### New features
 
 ### Fixes
