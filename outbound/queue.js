@@ -50,7 +50,7 @@ const temp_fail_queue = exports.temp_fail_queue = new TimerQueue();
 
 let queue_count = 0;
 
-exports.get_stats = () => in_progress + '/' + exports.delivery_queue.length() + '/' + exports.temp_fail_queue.length()
+exports.get_stats = () => `${in_progress}/${exports.delivery_queue.length()}/${exports.temp_fail_queue.length()}`;
 
 exports.list_queue = cb => {
     exports._load_cur_queue(null, exports._list_file, cb);
@@ -157,7 +157,7 @@ exports.load_queue_files = (pid, input_files, iteratee, callback) => {
     callback = callback || function () {};
 
     if (searchPid) {
-        logger.loginfo("[outbound] Grabbing queue files for pid: " + pid);
+        logger.loginfo(`[outbound] Grabbing queue files for pid: ${pid}`);
     }
     else {
         logger.loginfo("[outbound] Loading the queue...");
@@ -208,7 +208,7 @@ exports.stats = () => {
 exports._list_file = (file, cb) => {
     const tl_reader = fs.createReadStream(path.join(queue_dir, file), {start: 0, end: 3});
     tl_reader.on('error', err => {
-        console.error("Error reading queue file: " + file + ":", err);
+        console.error(`Error reading queue file: ${file}:`, err);
     });
     tl_reader.once('data', buf => {
         // I'm making the assumption here we won't ever read less than 4 bytes
@@ -243,7 +243,7 @@ exports._list_file = (file, cb) => {
 exports.flush_queue = (domain, pid) => {
     if (domain) {
         exports.list_queue((err, qlist) => {
-            if (err) return logger.logerror("[outbound] Failed to load queue: " + err);
+            if (err) return logger.logerror(`[outbound] Failed to load queue: ${err}`);
             qlist.forEach(todo => {
                 if (todo.domain.toLowerCase() != domain.toLowerCase()) return;
                 if (pid && todo.pid != pid) return;
@@ -258,7 +258,7 @@ exports.flush_queue = (domain, pid) => {
 }
 
 exports.load_pid_queue = pid => {
-    logger.loginfo("[outbound] Loading queue for pid: " + pid);
+    logger.loginfo(`[outbound] Loading queue for pid: ${pid}`);
     exports.load_queue(pid);
 }
 
@@ -267,13 +267,13 @@ exports.ensure_queue_dir = () => {
     // this code is only run at start-up.
     if (fs.existsSync(queue_dir)) return;
 
-    logger.logdebug("[outbound] Creating queue directory " + queue_dir);
+    logger.logdebug(`[outbound] Creating queue directory ${queue_dir}`);
     try {
         fs.mkdirSync(queue_dir, 493); // 493 == 0755
     }
     catch (err) {
         if (err.code !== 'EEXIST') {
-            logger.logerror("[outbound] Error creating queue directory: " + err);
+            logger.logerror(`[outbound] Error creating queue directory: ${err}`);
             throw err;
         }
     }
@@ -311,7 +311,7 @@ exports.scan_queue_pids = cb => {
 
     fs.readdir(queue_dir, (err, files) => {
         if (err) {
-            logger.logerror("[outbound] Failed to load queue directory (" + queue_dir + "): " + err);
+            logger.logerror(`[outbound] Failed to load queue directory (${queue_dir}): ${err}`);
             return cb(err);
         }
 
