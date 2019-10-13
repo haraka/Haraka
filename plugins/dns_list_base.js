@@ -172,8 +172,7 @@ exports.check_zones = function (interval) {
             // Try the test point
             self.lookup('127.0.0.2', zone, (err2, a2) => {
                 if (!a2) {
-                    self.logwarn(`zone '${zone
-                    }' did not respond to test point (${err2})`);
+                    self.logwarn(`zone '${zone}' did not respond to test point (${err2})`);
                     return self.disable_zone(zone, a2);
                 }
                 // Was this zone previously disabled?
@@ -216,7 +215,6 @@ exports.disable_zone = function (zone, result) {
     if (!this.disabled_zones.includes(zone)) {
         this.disabled_zones.push(zone);
     }
-    this.logwarn(`disabling zone '${zone}'${result ? `: ${
-        result}` : ''}`);
+    this.logwarn(`disabling zone '${zone}'${result ? `: ${result}` : ''}`);
     return true;
 }

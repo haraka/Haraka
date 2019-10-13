@@ -97,8 +97,7 @@ exports.hook_mail = function (next, connection, params) {
             // Handle MX records that are IP addresses
             // This is invalid - but a lot of MTAs allow it.
             if (net_utils.get_ipany_re('^\\[','\\]$','').test(addr.exchange)) {
-                connection.logwarn(plugin, `${domain}: invalid MX ${
-                    addr.exchange}`);
+                connection.logwarn(plugin, `${domain}: invalid MX ${addr.exchange}`);
                 if (c.allow_mx_ip) {
                     records[addr.exchange] = 1;
                 }
@@ -119,15 +118,13 @@ exports.hook_mail = function (next, connection, params) {
                     // Ignore anything obviously bogus
                     if (net.isIPv4(addresses2[i])){
                         if (plugin.re_bogus_ip.test(addresses2[i])) {
-                            connection.logdebug(plugin, `${addr.exchange
-                            }: discarding ${addresses2[i]}`);
+                            connection.logdebug(plugin, `${addr.exchange}: discarding ${addresses2[i]}`);
                             continue;
                         }
                     }
                     if (net.isIPv6(addresses2[i])){
                         if (net_utils.ipv6_bogus(addresses2[i])) {
-                            connection.logdebug(plugin, `${addr.exchange
-                            }: discarding ${addresses2[i]}`);
+                            connection.logdebug(plugin, `${addr.exchange}: discarding ${addresses2[i]}`);
                             continue;
                         }
                     }

@@ -118,11 +118,7 @@ class DKIMSignStream extends Stream {
         }
 
         // Create DKIM header
-        let dkim_header = `v=1;a=rsa-sha256;bh=${bodyhash
-        };c=relaxed/simple;d=${this.domain_name
-        };h=${headers.join(':')
-        };s=${this.selector
-        };b=`;
+        let dkim_header = `v=1;a=rsa-sha256;bh=${bodyhash};c=relaxed/simple;d=${this.domain_name};h=${headers.join(':')};s=${this.selector};b=`;
         this.signer.update(`dkim-signature:${dkim_header}`);
         const signature = this.signer.sign(this.private_key, 'base64');
         dkim_header += signature;
