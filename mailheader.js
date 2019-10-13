@@ -133,7 +133,7 @@ class Header {
         }
         this._add_header(key.toLowerCase(), value, "unshift");
         this._add_header_decode(key.toLowerCase(), value, "unshift");
-        this.header_list.unshift(key + ': ' + value + '\n');
+        this.header_list.unshift(`${key}: ${value}\n`);
     }
 
     _add_header (key, value, method) {
@@ -222,14 +222,14 @@ function _decode_rfc2231 (params, str) {
     _parse_rfc2231(params, str);
 
     for (const key in params.keys) {
-        str = str + ' ' + key + '="';
+        str += ` ${key}="`;
         /* eslint no-constant-condition: 0 */
         let merged = '';
         for (let i=0; true; i++) {
             const _key = key + '*' + i;
             const _val = params.kv[_key];
             if (_val === undefined) break;
-            merged = merged + _val;
+            merged += _val;
         }
 
         try {
@@ -240,7 +240,7 @@ function _decode_rfc2231 (params, str) {
         }
         merged = params.cur_enc ? try_convert(merged, params.cur_enc) : merged;
 
-        str = str + merged + '";';
+        str += `${merged}";`;
     }
 
     return str;
@@ -303,6 +303,6 @@ function _parse_rfc2231 (params, str) {
 
     params.cur_key = key_actual;
     params.keys[key_actual] = '';
-    params.kv[key_actual + '*' + key_id] = value;
+    params.kv[`${key_actual}*${key_id}`] = value;
     return _parse_rfc2231(params, str); // Get next one
 }
