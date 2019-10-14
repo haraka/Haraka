@@ -123,7 +123,7 @@ exports.hook_unrecognized_command = function (next, connection, params) {
     if (xclient.proto) {
         connection.set('hello', 'verb', ((xclient.proto === 'esmtp') ? 'EHLO' : 'HELO'));
     }
-    connection.esmtp = (xclient.proto === 'esmtp') ? true : false;
+    connection.esmtp = (xclient.proto === 'esmtp');
     connection.xclient = true;
     if (!xclient.name) {
         return next(NEXT_HOOK, 'lookup_rdns');

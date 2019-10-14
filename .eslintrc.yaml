@@ -9,5 +9,6 @@ root: true
 
 rules:
   semi-style: [error, last]
+  no-unneeded-ternary: 1
 
 extends: ["eslint:recommended", "plugin:haraka/recommended"]
