@@ -197,7 +197,7 @@ exports.unarchive_recursive = function (connection, f, archive_file_name, cb) {
                         // Extract this file from the archive
                         count++;
                         const cmd = spawn(bsdtar_path,
-                            [ '-Oxf', in_file, '--include=' + file ],
+                            [ '-Oxf', in_file, `--include=${file}` ],
                             {
                                 'cwd': '/tmp',
                                 'env': {
@@ -233,7 +233,7 @@ exports.unarchive_recursive = function (connection, f, archive_file_name, cb) {
                                 return do_cb(new Error(`bsdtar terminated by signal: ${signal}`));
                             }
                             // Recurse
-                            return listFiles(tmpfile, (prefix ? prefix + '/' : '') + file, depth);
+                            return listFiles(tmpfile, (prefix ? `${prefix}/` : '') + file, depth);
                         });
                         cmd.stdout.pipe(tws);
                     });

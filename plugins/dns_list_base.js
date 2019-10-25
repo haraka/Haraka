@@ -36,7 +36,7 @@ exports.lookup = function (lookup, zone, cb) {
     if (query[query.length - 1] !== '.') {
         query += '.';
     }
-    this.logdebug('looking up: ' + query);
+    this.logdebug(`looking up: ${query}`);
     // IS: IPv6 compatible (maybe; only if BL return IPv4 answers)
     dns.resolve(query, 'A', (err, a) => {
         self.stats_incr_zone(err, zone, start);  // Statistics
@@ -66,7 +66,7 @@ exports.stats_incr_zone = function (err, zone, start) {
     const plugin = this;
     if (!plugin.enable_stats) return;
 
-    const rkey = 'dns-list-stat:' + zone;
+    const rkey = `dns-list-stat:${zone}`;
     const elapsed = new Date().getTime() - start;
     redis_client.hincrby(rkey, 'TOTAL', 1);
     const foo = (err) ? err.code : 'LISTED';
@@ -90,7 +90,7 @@ exports.init_redis = function () {
 
     redis_client = redis.createClient(port, host);
     redis_client.on('error', err => {
-        plugin.logerror('Redis error: ' + err);
+        plugin.logerror(`Redis error: ${err}`);
         redis_client.quit();
         redis_client = null; // should force a reconnect
         // not sure if that's the right thing but better than nothing...
@@ -100,7 +100,7 @@ exports.init_redis = function () {
 exports.multi = function (lookup, zones, cb) {
     if (!lookup) return cb();
     if (!zones ) return cb();
-    if (typeof zones === 'string') zones = [ '' + zones ];
+    if (typeof zones === 'string') zones = [ `${zones}` ];
     const self = this;
     const listed = [];
 
@@ -110,7 +110,7 @@ exports.multi = function (lookup, zones, cb) {
         // Statistics: check hit overlap
         for (let i=0; i < listed.length; i++) {
             const foo = (listed[i] === zone) ? 'TOTAL' : listed[i];
-            redis_client.hincrby('dns-list-overlap:' + zone, foo, 1);
+            redis_client.hincrby(`dns-list-overlap:${zone}`, foo, 1);
         }
     }
 
@@ -133,7 +133,7 @@ exports.multi = function (lookup, zones, cb) {
 // Return first positive or last result.
 exports.first = function (lookup, zones, cb, cb_each) {
     if (!lookup || !zones) return cb();
-    if (typeof zones === 'string') zones = [ '' + zones ];
+    if (typeof zones === 'string') zones = [ `${zones}` ];
     let ran_cb = false;
     this.multi(lookup, zones, (err, zone, a, pending) => {
         if (zone && cb_each && typeof cb_each === 'function') {
@@ -172,13 +172,12 @@ exports.check_zones = function (interval) {
             // Try the test point
             self.lookup('127.0.0.2', zone, (err2, a2) => {
                 if (!a2) {
-                    self.logwarn('zone \'' + zone +
-                    '\' did not respond to test point (' + err2 + ')');
+                    self.logwarn(`zone '${zone}' did not respond to test point (${err2})`);
                     return self.disable_zone(zone, a2);
                 }
                 // Was this zone previously disabled?
                 if (!self.zones.includes(zone)) {
-                    self.loginfo('re-enabling zone ' + zone);
+                    self.loginfo(`re-enabling zone ${zone}`);
                     self.zones.push(zone);
                 }
             });
@@ -186,7 +185,7 @@ exports.check_zones = function (interval) {
     }
     // Set a timer to re-test
     if (interval && interval >= 5 && !this._interval) {
-        this.logdebug('will re-test list zones every ' + interval + ' minutes');
+        this.logdebug(`will re-test list zones every ${interval} minutes`);
         this._interval = setInterval(() => {
             self.check_zones();
         }, (interval * 60) * 1000);
@@ -216,7 +215,6 @@ exports.disable_zone = function (zone, result) {
     if (!this.disabled_zones.includes(zone)) {
         this.disabled_zones.push(zone);
     }
-    this.logwarn('disabling zone \'' + zone + '\'' + (result ? ': ' +
-        result : ''));
+    this.logwarn(`disabling zone '${zone}'${result ? `: ${result}` : ''}`);
     return true;
 }

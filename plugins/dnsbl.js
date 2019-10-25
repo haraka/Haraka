@@ -39,7 +39,7 @@ exports.load_config = function () {
     if (plugin.cfg.main.stats_redis_host &&
         plugin.cfg.main.stats_redis_host !== plugin.redis_host) {
         plugin.redis_host = plugin.cfg.main.stats_redis_host;
-        plugin.loginfo('set stats redis host to: ' + plugin.redis_host);
+        plugin.loginfo(`set stats redis host to: ${plugin.redis_host}`);
     }
 
     plugin.get_uniq_zones();
@@ -74,7 +74,7 @@ exports.should_skip = function (connection) {
     if (!connection) { return true; }
 
     if (connection.remote.is_private) {
-        connection.logdebug(plugin, 'skip private: ' + connection.remote.ip);
+        connection.logdebug(plugin, `skip private: ${connection.remote.ip}`);
         return true;
     }
 
@@ -99,7 +99,7 @@ exports.connect_first = function (next, connection) {
         }
         if (!a) return next();
 
-        const msg = 'host [' + remote_ip + '] is blacklisted by ' + zone;
+        const msg = `host [${remote_ip}] is blacklisted by ${zone}`;
         if (plugin.cfg.main.reject) return next(DENY, msg);
 
         connection.loginfo(plugin, msg);
@@ -119,7 +119,7 @@ exports.connect_multi = function (next, connection) {
 
     const hits = [];
     function get_deny_msg () {
-        return 'host [' + remote_ip + '] is blacklisted by ' + hits.join(', ');
+        return `host [${remote_ip}] is blacklisted by ${hits.join(', ')}`;
     }
 
     plugin.multi(remote_ip, plugin.zones, (err, zone, a, pending) => {

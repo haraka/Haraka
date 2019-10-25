@@ -31,7 +31,7 @@ exports.hook_data_post = (next, connection) => {
     const passwd_regexp = new RegExp(bound_regexp + escapeRegExp(passwd) + bound_regexp, 'm');
     const user_regexp   = new RegExp(bound_regexp +
                                    escapeRegExp(user) +
-                                   (domain ? '(?:' + escapeRegExp(domain) + ')?' : '') +
+                                   (domain ? `(?:${escapeRegExp(domain)})?` : '') +
                                    bound_regexp, 'im');
 
     if (look_for_credentials(user_regexp, passwd_regexp, connection.transaction.body)) {

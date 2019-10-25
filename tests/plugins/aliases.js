@@ -337,7 +337,7 @@ exports.aliases = {
             test.expect(2);
             test.ok(this.connection.loginfo.called);
             test.equals(this.connection.loginfo.args[1],
-                "unknown action: " + this.configfile.test7.action);
+                `unknown action: ${this.configfile.test7.action}`);
             test.done();
         }.bind(this);
 

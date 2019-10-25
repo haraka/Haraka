@@ -47,7 +47,7 @@ exports.advertise_starttls = function (next, connection) {
     }
 
     const redis = server.notes.redis;
-    const dbkey = 'no_tls|' + connection.remote.ip;
+    const dbkey = `no_tls|${connection.remote.ip}`;
 
     redis.get(dbkey, (err, dbr) => {
         if (err) {
@@ -71,7 +71,7 @@ exports.set_notls = ip => {
     if (!tls_socket.cfg.redis.disable_for_failed_hosts) return;
     if (!server.notes.redis) return;
 
-    server.notes.redis.set('no_tls|' + ip, true);
+    server.notes.redis.set(`no_tls|${ip}`, true);
 }
 
 exports.upgrade_connection = function (next, connection, params) {

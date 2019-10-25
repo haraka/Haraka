@@ -37,8 +37,8 @@ exports.load_smtp_proxy_ini = function () {
 exports.hook_mail = function (next, connection, params) {
     const plugin = this;
     const c = plugin.cfg.main;
-    connection.loginfo(plugin, 'forwarding to ' +
-            (c.forwarding_host_pool ? "configured forwarding_host_pool" : c.host + ':' + c.port)
+    connection.loginfo(plugin, `forwarding to ${
+        c.forwarding_host_pool ? "configured forwarding_host_pool" : `${c.host}:${c.port}`}`
     );
     smtp_client_mod.get_client_plugin(plugin, connection, c, (err, smtp_client) => {
         connection.notes.smtp_client = smtp_client;
@@ -83,7 +83,7 @@ exports.hook_rcpt_ok = (next, connection, recipient) => {
     const smtp_client = connection.notes.smtp_client;
     if (!smtp_client) return next();
     smtp_client.next = next;
-    smtp_client.send_command('RCPT', 'TO:' + recipient.format(!smtp_client.smtp_utf8));
+    smtp_client.send_command('RCPT', `TO:${recipient.format(!smtp_client.smtp_utf8)}`);
 }
 
 exports.hook_data = (next, connection) => {

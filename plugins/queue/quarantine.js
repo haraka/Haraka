@@ -29,7 +29,7 @@ exports.load_quarantine_ini = function () {
 const zeroPad = exports.zeroPad = (n, digits) => {
     n = n.toString();
     while (n.length < digits) {
-        n = '0' + n;
+        n = `0${n}`;
     }
     return n;
 }
@@ -43,7 +43,7 @@ exports.clean_tmp_directory = function (next) {
 
     if (fs.existsSync(tmp_dir)) {
         const dirent = fs.readdirSync(tmp_dir);
-        plugin.loginfo('Removing temporary files from: ' + tmp_dir);
+        plugin.loginfo(`Removing temporary files from: ${tmp_dir}`);
         for (let i=0; i<dirent.length; i++) {
             fs.unlinkSync(path.join(tmp_dir, dirent[i]));
         }
@@ -113,20 +113,20 @@ exports.quarantine = function (next, connection) {
     // final destination.
     mkdirp(msg_dir, error => {
         if (error) {
-            connection.logerror(plugin, 'Error creating directory: ' + msg_dir);
+            connection.logerror(plugin, `Error creating directory: ${msg_dir}`);
             return next();
         }
 
         const ws = fs.createWriteStream(tmp_path);
 
         ws.on('error', err => {
-            connection.logerror(plugin, 'Error writing quarantine file: ' + err.message);
+            connection.logerror(plugin, `Error writing quarantine file: ${err.message}`);
             return next();
         });
         ws.on('close', () => {
             fs.link(tmp_path, msg_path, err => {
                 if (err) {
-                    connection.logerror(plugin, 'Error writing quarantine file: ' + err);
+                    connection.logerror(plugin, `Error writing quarantine file: ${err}`);
                 }
                 else {
                     // Add a note to where we stored the message

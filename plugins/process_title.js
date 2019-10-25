@@ -30,14 +30,12 @@ function setupInterval (title, server) {
             process.send({event: 'process_title.outbound_stats', data: out});
         }
         // Update title
-        let new_title = title + ' cn=' + server.notes.pt_connections +
-            ' cc=' + server.notes.pt_concurrent + ' cps=' + cps + '/' + av_cps +
-            '/' + server.notes.pt_cps_max + ' rcpts=' + server.notes.pt_recipients +
-            '/' + rpm + ' rps=' + rps + '/' + av_rps +  '/' +
-            server.notes.pt_rps_max + ' msgs=' + server.notes.pt_messages + '/' + mpc +
-            ' mps=' + mps + '/' + av_mps + '/' + server.notes.pt_mps_max + ' out=' + out + ' ';
+        let new_title = `${title} cn=${server.notes.pt_connections} cc=${server.notes.pt_concurrent
+        } cps=${cps}/${av_cps}/${server.notes.pt_cps_max} rcpts=${server.notes.pt_recipients}/${rpm
+        } rps=${rps}/${av_rps}/${server.notes.pt_rps_max} msgs=${server.notes.pt_messages}/${mpc
+        } mps=${mps}/${av_mps}/${server.notes.pt_mps_max} out=${out} `;
         if (/\(master\)/.test(title)) {
-            new_title += 'respawn=' + server.notes.pt_child_exits + ' ';
+            new_title += `respawn=${server.notes.pt_child_exits} `;
         }
         process.title = new_title;
     }, 1000);
@@ -143,7 +141,7 @@ exports.hook_init_child = function (next, server) {
 }
 
 exports.shutdown = function () {
-    this.logdebug("Shutting down interval: " + this._interval);
+    this.logdebug(`Shutting down interval: ${this._interval}`);
     clearInterval(this._interval);
 }
 

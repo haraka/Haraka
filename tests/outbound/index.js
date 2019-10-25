@@ -48,7 +48,7 @@ exports.outbound = {
         const HMailItem = require('../../outbound/hmail');
 
         Object.keys(logger.levels).forEach(level => {
-            test.ok(HMailItem.prototype['log' + level.toLowerCase()], "Log method for level: " + level);
+            test.ok(HMailItem.prototype[`log${level.toLowerCase()}`], `Log method for level: ${level}`);
         });
         test.done();
     }

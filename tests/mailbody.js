@@ -9,7 +9,7 @@ function _fill_body (body, quote) {
     quote = quote || "";
 
     body.state = 'headers';
-    body.parse_more("Content-Type: multipart/alternative; boundary=" + quote + "abcdef" + quote + "\n");
+    body.parse_more(`Content-Type: multipart/alternative; boundary=${quote}abcdef${quote}\n`);
     body.parse_more("From: =?US-ASCII*EN?Q?Keith_Moore?= <moore@cs.utk.edu>\n");
     body.parse_more("\n");
     body.parse_more("--abcdef\n");
@@ -101,8 +101,8 @@ exports.basic = {
                 "\n",
                 "This is a multi-part message in MIME format.\n",
                 "--------------D0A00162984CC178E2583417\n",
-                "Content-Type: text/plain; charset=" + data[0] + "; format=flowed\n",
-                "Content-Transfer-Encoding: " + data[1] + "\n",
+                `Content-Type: text/plain; charset=${data[0]}; format=flowed\n`,
+                `Content-Transfer-Encoding: ${data[1]}\n`,
                 "\n",
                 data[2],
                 "--------------D0A00162984CC178E2583417--"
@@ -202,7 +202,7 @@ exports.banners = {
         const results = _fill_empty_body(body);
 
         test.equal(results[0], banners[0]);
-        test.equal(results[1], '<P>' + banners[1] + '</P>');
+        test.equal(results[1], `<P>${banners[1]}</P>`);
 
         test.done();
     },

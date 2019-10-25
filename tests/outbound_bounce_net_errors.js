@@ -48,7 +48,7 @@ exports.bounce_3464 = {
                 files.forEach((file,index) => {
                     const curPath = path.resolve(queue_dir, file);
                     if (fs.lstatSync(curPath).isDirectory()) { // recurse
-                        return done(new Error('did not expect an sub folder here ("' + curPath + '")! cancel'));
+                        return done(new Error(`did not expect an sub folder here ("${curPath}")! cancel`));
                     }
                 });
                 files.forEach((file,index) => {

@@ -137,7 +137,7 @@ Server.gracefulShutdown = () => {
 Server._graceful = shutdown => {
     if (!Server.cluster && shutdown) {
         ['outbound', 'cfreader', 'plugins'].forEach(module => {
-            process.emit('message', {event: module + '.shutdown'});
+            process.emit('message', {event: `${module  }.shutdown`});
         });
         const t = setTimeout(shutdown, Server.cfg.main.force_shutdown_timeout * 1000);
         return t.unref();
@@ -163,7 +163,7 @@ Server._graceful = shutdown => {
         logger.lognotice(`Killing node: ${id}`);
         const worker = cluster.workers[id];
         ['outbound', 'cfreader', 'plugins'].forEach(module => {
-            worker.send({event: module + '.shutdown'});
+            worker.send({event: `${module  }.shutdown`});
         })
         worker.disconnect();
         let disconnect_received = false;
@@ -205,7 +205,7 @@ Server._graceful = shutdown => {
         if (shutdown) {
             logger.loginfo("Workers closed. Shutting down master process subsystems");
             ['outbound', 'cfreader', 'plugins'].forEach(module => {
-                process.emit('message', {event: module + '.shutdown'});
+                process.emit('message', {event: `${module  }.shutdown`});
             })
             const t2 = setTimeout(shutdown, Server.cfg.main.force_shutdown_timeout * 1000);
             return t2.unref();

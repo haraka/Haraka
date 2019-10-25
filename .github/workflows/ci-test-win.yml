@@ -1,6 +1,6 @@
 name: Haraka Tests - Windows
 
-on: [push]
+on: [ push, pull_request ]
 
 # no docker/images support on Windows (currently), so run w/o Redis
 # also, stack run commands so test doesn't begin before install completes

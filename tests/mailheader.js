@@ -23,7 +23,7 @@ const lines = [
 ];
 
 for (let i=0; i<lines.length; i++) {
-    lines[i] = lines[i] + '\n';
+    lines[i] = `${lines[i]  }\n`;
 }
 
 function _set_up (done) {

@@ -310,7 +310,7 @@ exports.from_match = function (next, connection) {
     const msg_dom = tlds.get_organizational_domain(hdr_addr.host());
     if (env_dom && msg_dom && env_dom.toLowerCase() === msg_dom.toLowerCase()) {
         const fcrdns  = connection.results.get('fcrdns');
-        if (fcrdns && fcrdns.fcrdns && new RegExp(msg_dom + '\\b', 'i').test(fcrdns.fcrdns)) {
+        if (fcrdns && fcrdns.fcrdns && new RegExp(`${msg_dom  }\\b`, 'i').test(fcrdns.fcrdns)) {
             extra.push('fcrdns');
         }
         const helo = connection.results.get('helo.checks');
