@@ -329,7 +329,7 @@ class MessageStream extends Stream {
         this.line_endings = ((options && options.line_endings) ? options.line_endings : "\r\n");
         this.dot_stuffing = ((options && options.dot_stuffing) ? options.dot_stuffing : false);
         this.ending_dot   = ((options && options.ending_dot) ? options.ending_dot : false);
-        this.clamd_style  = ((options && options.clamd_style) ? true : false);
+        this.clamd_style  = (!!((options && options.clamd_style)));
         this.buffer_size  = ((options && options.buffer_size) ? options.buffer_size : 1024 * 64);
         this.start        = ((options && parseInt(options.start)) ? parseInt(options.start) : 0);
         // Reset

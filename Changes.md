@@ -4,6 +4,7 @@
 ### Changes
 
 * lint: add 'prefer-template'
+* restore TLS version info, set correctly #2723
 
 ### New features
 

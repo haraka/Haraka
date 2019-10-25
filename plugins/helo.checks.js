@@ -77,13 +77,13 @@ exports.load_helo_checks_ini = function () {
 
     // backwards compatible with old config file
     if (plugin.cfg.check_no_dot !== undefined) {
-        plugin.cfg.check.valid_hostname = plugin.cfg.check_no_dot ? true : false;
+        plugin.cfg.check.valid_hostname = !!plugin.cfg.check_no_dot;
     }
     if (plugin.cfg.check_dynamic !== undefined) {
-        plugin.cfg.check.dynamic = plugin.cfg.check_dynamic ? true : false;
+        plugin.cfg.check.dynamic = !!plugin.cfg.check_dynamic;
     }
     if (plugin.cfg.check_raw_ip !== undefined) {
-        plugin.cfg.check.bare_ip = plugin.cfg.check_raw_ip ? true : false;
+        plugin.cfg.check.bare_ip = !!plugin.cfg.check_raw_ip;
     }
 
     // non-default setting, so apply their localized setting

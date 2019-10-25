@@ -652,11 +652,13 @@ function createServer (cb) {
                 .on('secure', () => {
                     log.logdebug('TLS secured.');
                     socket.emit('secure');
+                    const cipher = cleartext.getCipher();
+                    cipher.version = cleartext.getProtocol();
                     if (cb2) cb2(
                         cleartext.authorized,
                         cleartext.authorizationError,
                         cleartext.getPeerCertificate(),
-                        cleartext.getCipher()
+                        cipher
                     );
                 })
 
@@ -713,11 +715,13 @@ function connect (port, host, cb) {
 
         cleartext.once('secureConnect', () => {
             log.logdebug('client TLS secured.');
+            const cipher = cleartext.getCipher();
+            cipher.version = cleartext.getProtocol();
             if (cb2) cb2(
                 cleartext.authorized,
                 cleartext.authorizationError,
                 cleartext.getPeerCertificate(),
-                cleartext.getCipher()
+                cipher
             );
         });
 
