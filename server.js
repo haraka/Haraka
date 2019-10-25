@@ -346,8 +346,11 @@ Server.get_smtp_server = (host, port, inactivity_timeout, done) => {
 
         if (!server.has_tls) return;
 
+        const cipher = client.getCipher();
+        cipher.version = client.getProtocol(); // replace min with actual
+
         connection.setTLS({
-            cipher: client.getCipher(),
+            cipher,
             verified: client.authorized,
             verifyError: client.authorizationError,
             peerCertificate: client.getPeerCertificate(),

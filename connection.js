@@ -1449,7 +1449,7 @@ class Connection {
         let sslheader;
 
         if (this.get('tls.cipher.version')) {
-            sslheader = `(cipher=${this.tls.cipher.name}`;
+            sslheader = `(version=${this.tls.cipher.version} cipher=${this.tls.cipher.name}`;
             if (this.tls.verified) {
                 sslheader += ' verify=OK)';
             }
