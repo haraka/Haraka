@@ -139,7 +139,7 @@ exports.load_clamd_ini = function () {
     // resolve mismatch between docs (...attachment) and code (...attachments)
     if (plugin.cfg.main.only_with_attachment !== undefined) {
         plugin.cfg.main.only_with_attachments =
-            plugin.cfg.main.only_with_attachment ? true : false;
+            !!plugin.cfg.main.only_with_attachment;
     }
 }
 

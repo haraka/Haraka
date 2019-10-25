@@ -87,7 +87,7 @@ class Connection {
             type: null,
             timer: null,         // c.proxy_timer
         };
-        this.set('tls', 'enabled', (server.has_tls ? true : false));
+        this.set('tls', 'enabled', (!!server.has_tls));
 
         this.current_data = null;
         this.current_line = null;
@@ -102,7 +102,7 @@ class Connection {
         this.tran_count = 0;
         this.capabilities = null;
         this.ehlo_hello_message = config.get('ehlo_hello_message') || 'Haraka is at your service.'
-        this.banner_includes_uuid = config.get('banner_includes_uuid') ? true : false;
+        this.banner_includes_uuid = !!config.get('banner_includes_uuid');
         this.deny_includes_uuid = config.get('deny_includes_uuid') || null;
         this.early_talker = false;
         this.pipelining = false;
@@ -131,7 +131,7 @@ class Connection {
         this.errors = 0;
         this.last_rcpt_msg = null;
         this.hook = null;
-        this.header_hide_version = config.get('header_hide_version') ? true : false;
+        this.header_hide_version = !!config.get('header_hide_version');
         if (!this.header_hide_version) {
             this.local.info += `/${JSON.parse(hpj).version}`;
         }
@@ -1476,7 +1476,7 @@ class Connection {
     }
     auth_results (message) {
         // http://tools.ietf.org/search/rfc7001
-        const has_tran = (this.transaction && this.transaction.notes) ? true : false;
+        const has_tran = !!((this.transaction && this.transaction.notes));
 
         // initialize connection note
         if (!this.notes.authentication_results) {

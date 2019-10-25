@@ -83,7 +83,7 @@ class SPF {
             let strip = /(\d+)/.exec(match[2]);
             if (strip) strip = strip[1];
 
-            const reverse = ((('' + match[2]).indexOf('r')) !== -1 ? true : false);
+            const reverse = ((('' + match[2]).indexOf('r')) !== -1);
             let replace;
             let kind;
             switch (match[1]) {
