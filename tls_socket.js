@@ -415,11 +415,11 @@ exports.get_certs_dir = (tlsDir, done) => {
 
             const parsed = exports.parse_x509(file.data.toString());
             if (!parsed.key) {
-                return iter_done(`no PRIVATE key in ${file.path}`);
+                return iter_done(null, {err: new Error(`no PRIVATE key in ${file.path}`)});
             }
             if (!parsed.cert) {
                 log.logerror(`no CERT in ${file.path}`);
-                return iter_done(`no CERT in ${file.path}`);
+                return iter_done(null, { err: new Error(`no CERT in ${file.path}`) });
             }
 
             const x509args = { noout: true, text: true };
@@ -456,6 +456,7 @@ exports.get_certs_dir = (tlsDir, done) => {
 
             log.loginfo(`found ${certs.length} TLS certs in config/tls`);
             certs.forEach(cert => {
+                if (undefined === cert) return;
                 if (cert.err) {
                     log.logerror(`${cert.file} had error: ${cert.err.message}`);
                 }
