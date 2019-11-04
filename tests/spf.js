@@ -64,11 +64,11 @@ exports.SPF = {
             test.equal(null, err);
             switch (rc) {
                 case 1:
-                    if ((['win32','win64'].includes(process.platform)) {
-                      test.equal(rc, 1, "none");
-                      console.log('Why does DNS lookup not find gmail SPF record when running on GitHub Actions?');
-                      break;
+                    if (['win32','win64'].includes(process.platform)) {
+                        test.equal(rc, 1, "none");
+                        console.log('Why does DNS lookup not find gmail SPF record when running on GitHub Actions?');
                     }
+                    break;
                 case 3:
                     test.equal(rc, 3, "fail");
                     break;
