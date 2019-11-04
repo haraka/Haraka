@@ -17,7 +17,7 @@ exports.register = function () {
 
     plugin.loadConfig();
 
-    plugin.register_hook('connect_pre', 'check_busy');
+    plugin.register_hook('connect', 'check_busy', -100);
 }
 
 exports.loadConfig = function () {
@@ -44,8 +44,7 @@ exports.check_busy = function (next, connection) {
         // Log a CRIT error at the first occurrence
         const currentLag = toobusy.lag();
         const maxLag = toobusy.maxLag();
-        this.logcrit(
-            `deferring connections: lag=${currentLag} max=${maxLag}`);
+        this.logcrit(`deferring connections: lag=${currentLag} max=${maxLag}`);
     }
 
     return next(DENYSOFTDISCONNECT, 'Too busy; please try again later');

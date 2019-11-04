@@ -5,10 +5,11 @@ node_js:
 #   - 0.10      # no longer maintained by node.js (2016-10-31)
 #   - 0.12      # maint. ended 2016-12-31
 #   - 4         # maint. ended 2018-04
-    - "6"       # maint. ends  2019-04
+#   - "6"       # maint. ends  2019-04
     - "8"       # maint. ends  2020-01
     - "10"      # active until 2020-04
-    - "11"      # current
+#   - "11"      # LTS to 2019-06
+    - "12"      # current to 2019-10, LTS to 2022-04
 
 matrix:
   fast_finish: true
@@ -25,9 +26,9 @@ script:
     - npm test
 
 after_success:
-    - npm install istanbul codecov
-    - npm run cover
-    - ./node_modules/.bin/codecov
+#   - npm install istanbul codecov
+#   - npm run cover
+#   - ./node_modules/.bin/codecov
 
 sudo: false
 

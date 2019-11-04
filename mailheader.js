@@ -21,8 +21,7 @@ class Header {
     parse (lines) {
         const self = this;
 
-        for (let i=0,l=lines.length; i < l; i++) {
-            const line = lines[i];
+        for (const line of lines) {
             if (/^[ \t]/.test(line)) {
                 // continuation
                 this.header_list[this.header_list.length - 1] += line;
@@ -32,8 +31,8 @@ class Header {
             }
         }
 
-        for (let i=0,l=this.header_list.length; i < l; i++) {
-            const match = this.header_list[i].match(/^([^\s:]*):\s*([\s\S]*)$/);
+        for (const header of this.header_list) {
+            const match = header.match(/^([^\s:]*):\s*([\s\S]*)$/);
             if (match) {
                 const key = match[1].toLowerCase();
                 const val = match[2];
@@ -41,7 +40,7 @@ class Header {
                 this._add_header(key, val, "push");
             }
             else {
-                logger.lognotice("Header did not look right: " + this.header_list[i]);
+                logger.lognotice(`Header did not look right: ${header}`);
             }
         }
 
@@ -65,21 +64,9 @@ class Header {
             cur_lang: '', // Secondary languages are ignored for our purposes
         };
 
-        _decode_rfc2231(rfc2231_params, val);
+        val = _decode_rfc2231(rfc2231_params, val);
 
         // console.log(rfc2231_params);
-
-        for (const key in rfc2231_params.keys) {
-            val = val + ' ' + key + '="';
-            /* eslint no-constant-condition: 0 */
-            for (let i=0; true; i++) {
-                const _key = key + '*' + i;
-                const _val = rfc2231_params.kv[_key];
-                if (_val === undefined) break;
-                val = val + _val;
-            }
-            val = val + '";';
-        }
 
         // strip 822 comments in the most basic way - does not support nested comments
         // val = val.replace(/\([^\)]*\)/, '');
@@ -99,9 +86,11 @@ class Header {
             return val;
         }
 
-        val = val.replace(/=\?([\w_-]+)(\*[\w_-]+)?\?([bqBQ])\?([\s\S]*?)\?=/g, _decode_header);
-
-        return val;
+        return val
+            // strip whitespace between encoded-words, rfc 2047 6.2
+            .replace(/(=\?.+?\?=)\s+(?==\?.+?\?=)/g,"$1")
+            // decode each encoded match
+            .replace(/=\?([\w_-]+)(\*[\w_-]+)?\?([bqBQ])\?([\s\S]*?)\?=/g, _decode_header);
     }
 
     get (key) {
@@ -126,8 +115,8 @@ class Header {
 
     _remove_more (key) {
         const key_len = key.length;
-        for (let i=0,l=this.header_list.length; i < l; i++) {
-            if (this.header_list[i].substring(0, key_len).toLowerCase() === key) {
+        for (let i=0, l=this.header_list.length; i < l; i++) {
+            if (this.header_list[i].substring(0, key_len + 1).toLowerCase() === `${key}:`) {
                 this.header_list.splice(i, 1);
                 return this._remove_more(key);
             }
@@ -139,12 +128,12 @@ class Header {
         value = value.replace(/(\r?\n)*$/, '');
         if (/[^\x00-\x7f]/.test(value)) {
             // Need to QP encode this header value and assume UTF-8
-            value = '=?UTF-8?q?' + utils.encode_qp(value) + '?=';
+            value = `=?UTF-8?q?${utils.encode_qp(value)}?=`;
             value = value.replace(/=\n/g, ''); // remove wraps - headers can only wrap at whitespace (with continuations)
         }
         this._add_header(key.toLowerCase(), value, "unshift");
         this._add_header_decode(key.toLowerCase(), value, "unshift");
-        this.header_list.unshift(key + ': ' + value + '\n');
+        this.header_list.unshift(`${key}: ${value}\n`);
     }
 
     _add_header (key, value, method) {
@@ -164,12 +153,13 @@ class Header {
         value = value.replace(/(\r?\n)*$/, '');
         if (/[^\x00-\x7f]/.test(value)) {
             // Need to QP encode this header value and assume UTF-8
-            value = '=?UTF-8?q?' + utils.encode_qp(value) + '?=';
-            value = value.replace(/=\n/g, ''); // remove wraps - headers can only wrap at whitespace (with continuations)
+            value = `=?UTF-8?q?${utils.encode_qp(value)}?=`;
+            // remove wraps - headers can only wrap at whitespace (with continuations)
+            value = value.replace(/=\n/g, '');
         }
         this._add_header(key.toLowerCase(), value, "push");
         this._add_header_decode(key.toLowerCase(), value, "push");
-        this.header_list.push(key + ': ' + value + '\n');
+        this.header_list.push(`${key}: ${value}\n`);
     }
 
     lines () {
@@ -191,14 +181,14 @@ function try_convert (data, encoding) {
     }
     catch (err) {
         // TODO: raise a flag for this for possible scoring
-        logger.logwarn("initial iconv conversion from " + encoding + " to UTF-8 failed: " + err.message);
+        logger.logwarn(`initial iconv conversion from ${encoding} to UTF-8 failed: ${err.message}`);
         if (err.code !== 'EINVAL') {
             try {
                 const converter = new Iconv(encoding, "UTF-8//TRANSLIT//IGNORE");
                 data = converter.convert(data);
             }
             catch (e) {
-                logger.logerror("iconv from " + encoding + " to UTF-8 failed: " + e.message);
+                logger.logerror(`iconv from ${encoding} to UTF-8 failed: ${e.message}`);
             }
         }
     }
@@ -217,7 +207,7 @@ function _decode_header (matched, encoding, lang, cte, data) {
             data = Buffer.from(data, "base64");
             break;
         default:
-            logger.logerror("Invalid header encoding type: " + cte);
+            logger.logerror(`Invalid header encoding type: ${cte}`);
     }
 
     // convert with iconv if encoding != UTF-8
@@ -229,6 +219,34 @@ function _decode_header (matched, encoding, lang, cte, data) {
 }
 
 function _decode_rfc2231 (params, str) {
+    _parse_rfc2231(params, str);
+
+    for (const key in params.keys) {
+        str += ` ${key}="`;
+        /* eslint no-constant-condition: 0 */
+        let merged = '';
+        for (let i=0; true; i++) {
+            const _key = `${key}*${i}`;
+            const _val = params.kv[_key];
+            if (_val === undefined) break;
+            merged += _val;
+        }
+
+        try {
+            merged = decodeURIComponent(merged);
+        }
+        catch (e) {
+            logger.logerror(`Decode header failed: ${key}: ${merged}`);
+        }
+        merged = params.cur_enc ? try_convert(merged, params.cur_enc) : merged;
+
+        str += `${merged}";`;
+    }
+
+    return str;
+}
+
+function _parse_rfc2231 (params, str) {
     /*
     To explain the regexp below, the params are:
 
@@ -272,7 +290,7 @@ function _decode_rfc2231 (params, str) {
     const lang_match = /^(.*?)'(.*?)'(.*)/.exec(value);
     if (lang_match) {
         if (key_actual == params.cur_key && lang_match[2] != params.cur_lang) {
-            return _decode_rfc2231(params, str); // same key, different lang, throw it away
+            return _parse_rfc2231(params, str); // same key, different lang, throw it away
         }
         params.cur_enc = lang_match[1];
         params.cur_lang = lang_match[2];
@@ -285,12 +303,6 @@ function _decode_rfc2231 (params, str) {
 
     params.cur_key = key_actual;
     params.keys[key_actual] = '';
-    try {
-        value = decodeURIComponent(value);
-    }
-    catch (e) {
-        logger.logerror("Decode header failed: " + key + ": " + value);
-    }
-    params.kv[key_actual + '*' + key_id] = params.cur_enc ? try_convert(value, params.cur_enc) : value;
-    return _decode_rfc2231(params, str); // Get next one
+    params.kv[`${key_actual}*${key_id}`] = value;
+    return _parse_rfc2231(params, str); // Get next one
 }

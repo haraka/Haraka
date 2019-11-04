@@ -29,19 +29,23 @@ exports.load_spf_ini = function () {
             '-defer_relay.helo_temperror',
             '-defer_relay.mfrom_temperror',
 
+            '-deny.helo_none',
             '-deny.helo_softfail',
             '-deny.helo_fail',
             '-deny.helo_permerror',
             '-deny.openspf_text',
 
+            '-deny.mfrom_none',
             '-deny.mfrom_softfail',
             '-deny.mfrom_fail',
             '-deny.mfrom_permerror',
 
+            '-deny_relay.helo_none',
             '-deny_relay.helo_softfail',
             '-deny_relay.helo_fail',
             '-deny_relay.helo_permerror',
 
+            '-deny_relay.mfrom_none',
             '-deny_relay.mfrom_softfail',
             '-deny_relay.mfrom_fail',
             '-deny_relay.mfrom_permerror',
@@ -129,6 +133,7 @@ exports.helo_spf = function (next, connection, helo) {
             domain: host,
             emit: true,
         });
+        if (spf.result(result) === 'Pass') connection.results.add(plugin, { pass: host });
         next();
     });
 }
@@ -205,6 +210,7 @@ exports.hook_mail = function (next, connection, params) {
             domain: host,
             emit: true,
         });
+        if (spf.result(result) === 'Pass') connection.results.add(plugin, { pass: host });
         plugin.return_results(next, connection, spf, 'mfrom', result, mfrom);
     }
 
@@ -262,6 +268,11 @@ exports.return_results = function (next, connection, spf, scope, result, sender)
 
     switch (result) {
         case spf.SPF_NONE:
+            if (plugin.cfg[deny][`${scope}_none`]) {
+                text = plugin.cfg[deny].openspf_text ? text : `${msgpre} SPF record not found`;
+                return next(DENY, text);
+            }
+            return next();
         case spf.SPF_NEUTRAL:
         case spf.SPF_PASS:
             return next();

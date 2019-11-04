@@ -5,7 +5,7 @@
 const nopt = require('nopt');
 const path = require('path');
 const base_path = path.join(__dirname, '..');
-const dkim = require(base_path + '/dkim');
+const dkim = require(`${base_path}/dkim`);
 const DKIMVerifyStream = dkim.DKIMVerifyStream;
 
 const parsed = nopt({ 'debug': Boolean });
@@ -28,7 +28,7 @@ const verifier = new DKIMVerifyStream(function (err, result, results) {
         });
     }
     else {
-        console.log('Result: ' + result);
+        console.log(`Result: ${result}`);
     }
 });
 

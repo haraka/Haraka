@@ -82,7 +82,8 @@ exports.load_config_lists = function () {
                 }
 
                 plugin.whitelist[type].push(addr);
-            } catch (e) {}
+            }
+            catch (e) {}
         }
 
         plugin.logdebug(`whitelist {${type}} loaded from ${file_name} with ${plugin.whitelist[type].length} entries`);
@@ -381,7 +382,7 @@ exports.craft_grey_key = function (connection, from, to) {
 // Build white DB key off supplied params.
 exports.craft_white_key = function (connection) {
     const plugin = this;
-    return 'white:' + plugin.craft_hostid(connection);
+    return `white:${plugin.craft_hostid(connection)}`;
 }
 
 // Return so-called +hostid+.
@@ -615,7 +616,8 @@ exports.addr_in_list = function (type, address) {
     try {
         const addr = new Address(address);
         return !!plugin.whitelist[type][addr.host];
-    } catch (err) {
+    }
+    catch (err) {
         return false;
     }
 }
@@ -631,7 +633,8 @@ exports.ip_in_list = function (ip) {
             if (ipobj.match(list[i])) {
                 return true;
             }
-        } catch (e) {}
+        }
+        catch (e) {}
     }
 
     return false;

@@ -210,7 +210,7 @@ class HMailItem extends events.EventEmitter {
                     }
                     mx_list = [{priority: 0, exchange: matches[1], port: matches[3]}];
                 }
-                hmail.logdebug(`Got an MX from Plugin: ${hmail.todo.domain} => 0 ${mx}`);
+                hmail.logdebug(`Got a MX from Plugin: ${hmail.todo.domain} => 0 ${JSON.stringify(mx)}`);
                 return hmail.found_mx(null, mx_list);
             }
             case constants.deny:
@@ -295,7 +295,7 @@ class HMailItem extends events.EventEmitter {
         // check if there are any MXs left
         if (this.mxlist.length === 0) {
             this.todo.rcpt_to.forEach(rcpt => {
-                self.extend_rcpt_with_dsn(rcpt, DSN.addr_bad_dest_system(`Tried all MXs${self.todo.domain}`));
+                self.extend_rcpt_with_dsn(rcpt, DSN.addr_bad_dest_system(`Tried all MXs ${self.todo.domain}`));
             });
             return this.temp_fail("Tried all MXs");
         }
@@ -362,11 +362,12 @@ class HMailItem extends events.EventEmitter {
         }
 
         this.loginfo(`Attempting to deliver to: ${host}:${port}${mx.using_lmtp ? " using LMTP" : ""} (${delivery_queue.length()}) (${temp_fail_queue.length()})`);
-        client_pool.get_client(port, host, mx.bind, mx.path ? true : false, (err, socket) => {
+        client_pool.get_client(port, host, mx.bind, !!mx.path, (err, socket) => {
             if (err) {
                 if (err.match(/connection timed out|connect ECONNREFUSED/)) {
                     logger.lognotice(`[outbound] Failed to get pool entry: ${err}`);
-                } else {
+                }
+                else {
                     logger.logerror(`[outbound] Failed to get pool entry: ${err}`);
                 }
                 // try next host
@@ -379,10 +380,16 @@ class HMailItem extends events.EventEmitter {
     try_deliver_host_on_socket (mx, host, port, socket) {
         const self            = this;
         let processing_mail = true;
+        let command = mx.using_lmtp ? 'connect_lmtp' : 'connect';
 
         socket.removeAllListeners('error');
+        socket.removeAllListeners('timeout');
         socket.removeAllListeners('close');
         socket.removeAllListeners('end');
+
+        socket.once('timeout', function () {
+            socket.emit('error', `socket timeout waiting on ${command}`);
+        });
 
         socket.once('error', err => {
             if (processing_mail) {
@@ -414,7 +421,6 @@ class HMailItem extends events.EventEmitter {
             }
         });
 
-        let command = mx.using_lmtp ? 'connect_lmtp' : 'connect';
         let response = [];
 
         let recip_index = 0;
@@ -599,14 +605,14 @@ class HMailItem extends events.EventEmitter {
                 self.refcount++;
                 self.split_to_new_recipients(fail_recips, "Some recipients temporarily failed", hmail => {
                     self.discard();
-                    hmail.temp_fail(`Some recipients temp failed: ${fail_recips.join(', ')}`, { rcpt: fail_recips, mx: mx });
+                    hmail.temp_fail(`Some recipients temp failed: ${fail_recips.join(', ')}`, { rcpt: fail_recips, mx });
                 });
             }
             if (bounce_recips.length) {
                 self.refcount++;
                 self.split_to_new_recipients(bounce_recips, "Some recipients rejected", hmail => {
                     self.discard();
-                    hmail.bounce(`Some recipients failed: ${bounce_recips.join(', ')}`, { rcpt: bounce_recips, mx: mx });
+                    hmail.bounce(`Some recipients failed: ${bounce_recips.join(', ')}`, { rcpt: bounce_recips, mx });
                 });
             }
             processing_mail = false;
@@ -648,7 +654,7 @@ class HMailItem extends events.EventEmitter {
                 self.todo.rcpt_to.forEach(rcpt => {
                     self.extend_rcpt_with_dsn(rcpt, DSN.proto_invalid_command(`Unrecognized response from upstream server: ${line}`));
                 });
-                self.bounce(`Unrecognized response from upstream server: ${line}`, {mx: mx});
+                self.bounce(`Unrecognized response from upstream server: ${line}`, {mx});
                 return;
             }
 
@@ -785,7 +791,7 @@ class HMailItem extends events.EventEmitter {
                     });
                     send_command(cfg.pool_concurrency_max && !mx.using_lmtp ? 'RSET' : 'QUIT');
                     processing_mail = false;
-                    return self.bounce(reason, { mx: mx });
+                    return self.bounce(reason, { mx });
                 }
             }
 
@@ -948,7 +954,8 @@ class HMailItem extends events.EventEmitter {
             data_stream.on('error', err => {
                 cb(err);
             });
-        } catch (err) {
+        }
+        catch (err) {
             self.populate_bounce_message_with_headers(from, to, reason, header, cb);
         }
     }
@@ -994,11 +1001,11 @@ class HMailItem extends events.EventEmitter {
         const values = {
             date: utils.date_to_str(new Date()),
             me:   config.get('me'),
-            from: from,
-            to:   to,
+            from,
+            to,
             subject: header.get_decoded('Subject').trim(),
             recipients: this.todo.rcpt_to.join(', '),
-            reason: reason,
+            reason,
             extended_reason: this.todo.rcpt_to.map(recip => {
                 if (recip.reason) {
                     return `${recip.original}: ${recip.reason}`;
@@ -1031,13 +1038,14 @@ class HMailItem extends events.EventEmitter {
             "\r": '#10',
             "\n": '#13'
         };
-        const escape_pattern = new RegExp('[' + Object.keys(escaped_chars).join() + ']', 'g');
+        const escape_pattern = new RegExp(`[${Object.keys(escaped_chars).join()}]`, 'g');
 
         bounce_msg_html_.forEach(line => {
             line = line.replace(/\{(\w+)\}/g, (i, word) => {
                 if (word in values) {
-                    return String(values[word]).replace(escape_pattern, m => '&' + escaped_chars[m] + ';');
-                } else {
+                    return String(values[word]).replace(escape_pattern, m => `&${escaped_chars[m]};`);
+                }
+                else {
                     return '?';
                 }
             });
@@ -1270,13 +1278,13 @@ class HMailItem extends events.EventEmitter {
         this.lognotice({
             'delivered file': this.filename,
             'domain': this.todo.domain,
-            'host': host,
-            'ip': ip,
-            'port': port,
-            'mode': mode,
+            host,
+            ip,
+            port,
+            mode,
             'tls': ((secured) ? 'Y' : 'N'),
             'auth': ((authenticated) ? 'Y' : 'N'),
-            'response': response,
+            response,
             delay,
             'fails': this.num_failures,
             'rcpts': `${ok_recips.length}/${fail_recips.length}/${bounce_recips.length}`
@@ -1471,7 +1479,7 @@ function sort_mx (mx_list) {
     return sorted;
 }
 
-const smtp_regexp = /^(\d{3})([ -])(?:(\d\.\d\.\d)\s)?(.*)/;
+const smtp_regexp = /^(\d{3})([ -])#?(?:(\d\.\d\.\d)\s)?(.*)/;
 
 function cram_md5_response (username, password, challenge) {
     const crypto = require('crypto');

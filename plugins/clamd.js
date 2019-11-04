@@ -139,7 +139,7 @@ exports.load_clamd_ini = function () {
     // resolve mismatch between docs (...attachment) and code (...attachments)
     if (plugin.cfg.main.only_with_attachment !== undefined) {
         plugin.cfg.main.only_with_attachments =
-            plugin.cfg.main.only_with_attachment ? true : false;
+            !!plugin.cfg.main.only_with_attachment;
     }
 }
 
@@ -247,9 +247,9 @@ exports.hook_data_post = function (next, connection) {
 
         let result = '';
         socket.on('line', line => {
-            connection.logprotocol(plugin, 'C:' + line.split('').filter((x) => {
+            connection.logprotocol(plugin, `C:${line.split('').filter((x) => {
                 return 31 < x.charCodeAt(0) && 127 > x.charCodeAt(0)
-            }).join('') );
+            }).join('')}` );
             result = line.replace(/\r?\n/, '');
         });
 
@@ -282,7 +282,7 @@ exports.hook_data_post = function (next, connection) {
                 for (let i=0; i < plugin.skip_list_exclude.length; i++) {
                     if (!plugin.skip_list_exclude[i].test(virus)) continue;
                     return next(DENY,
-                        'Message is infected with ' + (virus || 'UNKNOWN'));
+                        `Message is infected with ${virus || 'UNKNOWN'}`);
                 }
 
                 // Check skip list
@@ -292,8 +292,8 @@ exports.hook_data_post = function (next, connection) {
                     txn.add_header('X-Haraka-Virus', virus);
                     return next();
                 }
-                return next(DENY, 'Message is infected with ' +
-                        (virus || 'UNKNOWN'));
+                return next(DENY, `Message is infected with ${
+                    virus || 'UNKNOWN'}`);
             }
 
             if (/size limit exceeded/.test(result)) {

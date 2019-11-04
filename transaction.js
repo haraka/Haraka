@@ -62,17 +62,13 @@ class Transaction {
             this.body.set_banner(this.banner);
         }
 
-        this.body_filters.forEach(o => {
+        for (const o of this.body_filters) {
             this.body.add_filter((ct, enc, buf) => {
-                if ((util.isRegExp(o.ct_match) &&
-                        o.ct_match.test(ct.toLowerCase())) ||
-                    ct.toLowerCase()
-                        .indexOf(String(o.ct_match)
-                            .toLowerCase()) === 0) {
-                    return o.filter(ct, enc, buf);
-                }
-            });
-        });
+                const re_match = (util.isRegExp(o.ct_match) && o.ct_match.test(ct.toLowerCase()));
+                const ct_begins = ct.toLowerCase().indexOf(String(o.ct_match).toLowerCase()) === 0;
+                if (re_match || ct_begins) return o.filter(ct, enc, buf);
+            })
+        }
     }
 
     add_data (line) {
@@ -187,7 +183,7 @@ class Transaction {
 
     add_body_filter (ct_match, filter) {
         this.parse_body = true;
-        this.body_filters.push({ 'ct_match': ct_match, 'filter': filter });
+        this.body_filters.push({ ct_match, filter });
     }
 
     incr_mime_count (line) {

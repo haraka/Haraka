@@ -187,7 +187,7 @@ class DKIMObject {
 
         if (!header_name) return header;
 
-        let hc = header_name.toLowerCase() + ':' + header_value;
+        let hc = `${header_name.toLowerCase()}:${header_value}`;
         hc = hc.replace(/\r\n([\t ]+)/g, "$1");
         hc = hc.replace(/[\t ]+/g, ' ');
         hc = hc.replace(/[\t ]+(\r?\n)$/, "$1");
@@ -198,9 +198,9 @@ class DKIMObject {
         if (this.run_cb) return;
 
         // Buffer any lines
-        if ((line.length === 2 && line[0] === 0x0d && line[1] === 0x0a) ||
-            (line.length === 1 && line[0] === 0x0a))
-        {
+        const isCRLF = line.length === 2 && line[0] === 0x0d && line[1] === 0x0a;
+        const isLF = line.length === 1 && line[0] === 0x0a;
+        if (isCRLF || isLF) {
             // Store any empty lines as both canonicalization alogoriths
             // ignore all empty lines at the end of the message body.
             this.line_buffer.push(line);
@@ -229,7 +229,7 @@ class DKIMObject {
                 identity: this.identity,
                 selector: this.fields.s,
                 domain: this.fields.d,
-                result: result
+                result
             }
         );
     }
@@ -376,9 +376,9 @@ class DKIMObject {
                 if (!self.dns_fields.p) return self.result('key revoked', 'invalid');
 
                 // crypto.verifier requires the key in PEM format
-                self.public_key = '-----BEGIN PUBLIC KEY-----\r\n' +
-                    self.dns_fields.p.replace(/(.{1,76})/g, '$1\r\n') +
-                    '-----END PUBLIC KEY-----\r\n';
+                self.public_key = `-----BEGIN PUBLIC KEY-----\r\n${
+                    self.dns_fields.p.replace(/(.{1,76})/g, '$1\r\n')
+                }-----END PUBLIC KEY-----\r\n`;
 
                 let verified;
                 try {
@@ -445,7 +445,8 @@ class DKIMVerifyStream extends Stream {
                 return true;
             }
             buf = Buffer.concat([buf, new Buffer('\r\n\r\n')]);
-        } else {
+        }
+        else {
             buf = this.buffer.pop(buf);
         }
 

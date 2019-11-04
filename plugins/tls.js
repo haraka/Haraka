@@ -47,7 +47,7 @@ exports.advertise_starttls = function (next, connection) {
     }
 
     const redis = server.notes.redis;
-    const dbkey = 'no_tls|' + connection.remote.ip;
+    const dbkey = `no_tls|${connection.remote.ip}`;
 
     redis.get(dbkey, (err, dbr) => {
         if (err) {
@@ -55,15 +55,12 @@ exports.advertise_starttls = function (next, connection) {
             return enable_tls();
         }
 
-        if (!dbr) {
-            connection.results.add(plugin, { msg: 'no_tls unset'});
-            return enable_tls();
-        }
+        if (!dbr) return enable_tls();
 
         // last TLS attempt failed
         redis.del(dbkey); // retry TLS next connection.
 
-        connection.results.add(plugin, { msg: 'tls disabled'});
+        connection.results.add(plugin, { msg: 'no_tls'});
         return next();
     });
 }
@@ -74,7 +71,7 @@ exports.set_notls = ip => {
     if (!tls_socket.cfg.redis.disable_for_failed_hosts) return;
     if (!server.notes.redis) return;
 
-    server.notes.redis.set('no_tls|' + ip, true);
+    server.notes.redis.set(`no_tls|${ip}`, true);
 }
 
 exports.upgrade_connection = function (next, connection, params) {

@@ -137,7 +137,7 @@ Server.gracefulShutdown = () => {
 Server._graceful = shutdown => {
     if (!Server.cluster && shutdown) {
         ['outbound', 'cfreader', 'plugins'].forEach(module => {
-            process.emit('message', {event: module + '.shutdown'});
+            process.emit('message', {event: `${module  }.shutdown`});
         });
         const t = setTimeout(shutdown, Server.cfg.main.force_shutdown_timeout * 1000);
         return t.unref();
@@ -163,7 +163,7 @@ Server._graceful = shutdown => {
         logger.lognotice(`Killing node: ${id}`);
         const worker = cluster.workers[id];
         ['outbound', 'cfreader', 'plugins'].forEach(module => {
-            worker.send({event: module + '.shutdown'});
+            worker.send({event: `${module  }.shutdown`});
         })
         worker.disconnect();
         let disconnect_received = false;
@@ -205,7 +205,7 @@ Server._graceful = shutdown => {
         if (shutdown) {
             logger.loginfo("Workers closed. Shutting down master process subsystems");
             ['outbound', 'cfreader', 'plugins'].forEach(module => {
-                process.emit('message', {event: module + '.shutdown'});
+                process.emit('message', {event: `${module  }.shutdown`});
             })
             const t2 = setTimeout(shutdown, Server.cfg.main.force_shutdown_timeout * 1000);
             return t2.unref();
@@ -346,8 +346,11 @@ Server.get_smtp_server = (host, port, inactivity_timeout, done) => {
 
         if (!server.has_tls) return;
 
+        const cipher = client.getCipher();
+        cipher.version = client.getProtocol(); // replace min with actual
+
         connection.setTLS({
-            cipher: client.getCipher(),
+            cipher,
             verified: client.authorized,
             verifyError: client.authorizationError,
             peerCertificate: client.getPeerCertificate(),

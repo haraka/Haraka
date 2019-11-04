@@ -1,39 +1,35 @@
-# `dkim_sign`
+# dkim_sign
 
-This plugin implements the DKIM Core specification found at dkimcore.org
+This plugin implements the [DKIM Core specification](dkimcore.org).
 
-DKIM Core is a simplified subset of DKIM which is easier to understand
-and deploy, yet provides all the same delivery advantages as DKIM.
-
-This plugin can only *sign* outbound messages.  It does not validate
-DKIM signatures.
+This plugin only *signs* outbound messages. It does not validate DKIM signatures.
 
 
 ## Getting Started
 
-Generate DKIM selector and keys:
+Generate a DKIM selector and keys for your domain:
 
-    % cd /path/to/haraka/config/dkim
-    ./dkim_key_gen.sh example.org
+```sh
+cd /path/to/haraka/config/dkim
+./dkim_key_gen.sh example.org
+```
 
-Peek into the `dkim_key_gen.sh` shell script to see the commands used to
-create and format the DKIM public key. Within the config/dkim/example.org
- directory will be 4 files:
+Within the config/dkim/${domain} directory will be 4 files:
 
-    % ls config/dkim/example.org/
-    dns private public selector
+```sh
+ls config/dkim/example.org/
+dns private public selector
+```
 
-The`private` and `public` files contain the DKIM keys, the selector is
-in the `selector` file and the `dns` file contains a formatted record of
-the public key, as well as suggestions for DKIM, SPF, and DMARC policy
-records. The records in `dns` are ready to be copy/pasted into the DNS
-zone for example.org.
+The selector file contains the DNS label where the DKIM public key is published. The `private` and `public` files contain the DKIM keys.
+
+The `dns` file contains a formatted record of the public key suitable for copy/pasting into your domains zone file. It also has suggestions for DKIM, SPF, and DMARC policy records.
 
 The DKIM DNS record will look like this:
 
     may2013._domainkey TXT "v=DKIM1;p=[public key stripped of whitespace];"
 
-And the values in the address have the following meaning:
+The values in the address have the following meaning:
 
     hash: h=[ sha1 | sha256 ]
     test; t=[ s | s:y ]
@@ -45,7 +41,7 @@ And the values in the address have the following meaning:
 
 ## Key size
 
-The default key size created by `dkim_key_gen.sh` is 2048. As of mid-2014, there are some DNS providers that do not support key sizes that long.
+The default key size created by `dkim_key_gen.sh` is 2048. That is considered secure as of mid-2014 but after 2020, you should be using 4096.
 
 # What to sign
 
@@ -60,9 +56,7 @@ For an alternative, see the legacy Single Domain Configuration below.
 
 # Configuration
 
-This plugin uses the configuration `dkim_sign.ini` in INI format.
-All configuration should appear within the 'main' block and is
-checked for updates on every run.
+This plugin is configured in `dkim_sign.ini`.
 
 - disabled = [ 1 | true | yes ]             (OPTIONAL)
 
@@ -70,17 +64,13 @@ checked for updates on every run.
 
 - headers\_to\_sign = list, of; headers       (REQUIRED)
 
-    Set this to the list of headers that should be signed
-    separated by either a comma, colon or semi-colon.
-    This is to prevent any tampering of the specified headers.
-    The 'From' header is required to be present by the RFC and
-    will be added if it is missing.
+    Set this to the list of headers that should be signed, separated by commas, colons or semi-colons. Signing prevents tampering with the specified headers.
+    The 'From' header is required by the RFC and will be added if missing.
 
 
 ## Single Domain Configuration
 
-To sign all messages with a single DKIM key, these two config settings
-are required.
+To sign all messages with a single DKIM key, you must set the selector and domain in dkim_sign.ini. You must also save your DKIM private key in the file `dkim.private.key` in the Haraka config directory.
 
 - selector = name
 
@@ -94,7 +84,18 @@ are required.
 
         <selector>._domainkey.<domain>
 
-- dkim.private.key = filename
+Test that your DKIM key is published properly with a DNS request like this:
 
-    Create a file `dkim.private.key` in the config folder and paste
-    your private key in it.
+```sh
+drill TXT $SELECTOR._domainkey.$DOMAIN
+dig TXT $SELECTOR._domainkey.$DOMAIN +short
+```
+
+### Example DNS query
+
+```sh
+export SELECTOR=mar2013
+export DOMAIN=simerson.net
+$ dig TXT $SELECTOR._domainkey.$DOMAIN +short
+"v=DKIM1;p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAoyUzGOTSOmakY8BcxXgi0mN/nFegLBPs7aaGQUtjHfa8yUrt9T2j6GSXgdjLuG3R43WjePQv3RHzc+bwwOkdw0XDOXiztn5mhrlaflbVr5PMSTrv64/cpFQKLtgQx8Vgqp7Dh3jw13rLomRTqJFgMrMHdhIibZEa69gtuAfDqoeXo6QDSGk5JuBAeRHEH27FriHulg5ob" "4F4lmh7fMFVsDGkQEF6jaIVYqvRjDyyQed3R3aTJX3fpb3QrtRqvfn/LAf+3kzW58AjsERpsNCSTD2RquxbnyoR/1wdGKb8cUlD/EXvqtvpVnOzHeSeMEqex3kQI8HOGsEehWZlKd+GqwIDAQAB"
+```

@@ -227,12 +227,7 @@ class Body extends events.EventEmitter {
         }
 
         if (/UTF-?8/i.test(enc)) {
-            if (this.decode_function === this.decode_8bit) {
-                // source string was UTF-8 but parsed as binary
-                this.bodytext = buf.toString('binary');
-            } else {
-                this.bodytext = buf.toString();
-            }
+            this.bodytext = buf.toString();
             return;
         }
 
@@ -351,7 +346,8 @@ class Body extends events.EventEmitter {
             const emit_now = to_process.substring(0, emit_length);
             this.decode_accumulator = to_process.substring(emit_length);
             return Buffer.from(emit_now, 'base64');
-        } else {
+        }
+        else {
             this.decode_accumulator = '';
             // This is the end of the base64 data, we don't really have enough bits
             // to fill up the bytes, but that's because we're on the last line, and ==
@@ -368,6 +364,9 @@ class Body extends events.EventEmitter {
     }
 
     decode_8bit (line) {
+        if (/UTF-?8/i.test(this.body_encoding)) {
+            return Buffer.from(line, 'utf-8');
+        }
         return Buffer.from(line, 'binary');
     }
 }
@@ -379,9 +378,7 @@ function _get_html_insert_position (buf) {
 
     // otherwise, if we return -1 then the buf.copy will die with
     // RangeError: out of range index
-    if (buf.length === 0){
-        return 0;
-    }
+    if (buf.length === 0) return 0;
 
     // TODO: consider re-writing this to go backwards from the end
     for (let i=0,l=buf.length; i<l; i++) {
@@ -390,8 +387,8 @@ function _get_html_insert_position (buf) {
                  (buf[i+3] === 111 || buf[i+3] === 79) && // "o" or "O"
                  (buf[i+4] === 100 || buf[i+4] === 68) && // "d" or "D"
                  (buf[i+5] === 121 || buf[i+5] === 89) && // "y" or "Y"
-                 buf[i+6] === 62)
-            {
+                 buf[i+6] === 62
+            ) {
                 // matched </body>
                 return i;
             }
@@ -399,8 +396,8 @@ function _get_html_insert_position (buf) {
                  (buf[i+3] === 116 || buf[i+3] === 84) && // "t" or "T"
                  (buf[i+4] === 109 || buf[i+4] === 77) && // "m" or "M"
                  (buf[i+5] === 108 || buf[i+5] === 76) && // "l" or "L"
-                 buf[i+6] === 62)
-            {
+                 buf[i+6] === 62
+            ) {
                 // matched </html>
                 return i;
             }

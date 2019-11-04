@@ -181,8 +181,7 @@ exports.unarchive_recursive = function (connection, f, archive_file_name, cb) {
                 files.push((prefix ? `${prefix}/` : '') + file);
                 const extn = path.extname(file.toLowerCase());
                 if (!plugin.archive_exts.includes(extn) &&
-                    !plugin.archive_exts.includes(extn.substring(1)))
-                {
+                    !plugin.archive_exts.includes(extn.substring(1))) {
                     // Not an archive file extension
                     continue;
                 }
@@ -198,7 +197,7 @@ exports.unarchive_recursive = function (connection, f, archive_file_name, cb) {
                         // Extract this file from the archive
                         count++;
                         const cmd = spawn(bsdtar_path,
-                            [ '-Oxf', in_file, '--include=' + file ],
+                            [ '-Oxf', in_file, `--include=${file}` ],
                             {
                                 'cwd': '/tmp',
                                 'env': {
@@ -234,7 +233,7 @@ exports.unarchive_recursive = function (connection, f, archive_file_name, cb) {
                                 return do_cb(new Error(`bsdtar terminated by signal: ${signal}`));
                             }
                             // Recurse
-                            return listFiles(tmpfile, (prefix ? prefix + '/' : '') + file, depth);
+                            return listFiles(tmpfile, (prefix ? `${prefix}/` : '') + file, depth);
                         });
                         cmd.stdout.pipe(tws);
                     });
@@ -310,8 +309,7 @@ exports.start_attachment = function (connection, ctype, filename, body, stream) 
     // See if filename extension matches archive extension list
     // We check with the dot prefixed and without
     if (archives_disabled || (!plugin.archive_exts.includes(fileext) &&
-            !plugin.archive_exts.includes(fileext.substring(1))))
-    {
+            !plugin.archive_exts.includes(fileext.substring(1)))) {
         return;
     }
     connection.logdebug(plugin, `found ${fileext} on archive list`);
@@ -472,8 +470,7 @@ exports.check_attachments = function (next, connection) {
 
 exports.check_items_against_regexps = function (items, regexps) {
     if ((regexps && Array.isArray(regexps) && regexps.length > 0) &&
-        (items && Array.isArray(items) && items.length > 0))
-    {
+        (items && Array.isArray(items) && items.length > 0)) {
         for (let r=0; r < regexps.length; r++) {
             let reg;
             try {

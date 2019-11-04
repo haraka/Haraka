@@ -21,13 +21,13 @@ function _set_up (done) {
 
 exports.in_host_list = {
     setUp : _set_up,
-    'miss' : function (test) {
+    'miss' (test) {
         test.expect(1);
         const r = this.plugin.in_host_list('test.com');
         test.equal(false, r);
         test.done();
     },
-    'hit' : function (test) {
+    'hit' (test) {
         test.expect(1);
         this.plugin.host_list['test.com'] = true;
         const r = this.plugin.in_host_list('test.com');
@@ -38,13 +38,13 @@ exports.in_host_list = {
 
 exports.in_host_regex = {
     setUp : _set_up,
-    'undef' : function (test) {
+    'undef' (test) {
         test.expect(1);
         const r = this.plugin.in_host_regex('test.com');
         test.equal(false, r);
         test.done();
     },
-    'miss' : function (test) {
+    'miss' (test) {
         test.expect(1);
         this.plugin.host_list_regex=['miss.com'];
         this.plugin.hl_re = new RegExp (`^(?:${this.plugin.host_list_regex.join('|')})$`, 'i');
@@ -52,7 +52,7 @@ exports.in_host_regex = {
         test.equal(false, r);
         test.done();
     },
-    'exact hit' : function (test) {
+    'exact hit' (test) {
         test.expect(1);
         this.plugin.host_list_regex=['test.com'];
         this.plugin.hl_re = new RegExp (`^(?:${this.plugin.host_list_regex.join('|')})$`, 'i');
@@ -60,7 +60,7 @@ exports.in_host_regex = {
         test.equal(true, r);
         test.done();
     },
-    're hit' : function (test) {
+    're hit' (test) {
         test.expect(1);
         this.plugin.host_list_regex=['.*est.com'];
         this.plugin.hl_re = new RegExp (`^(?:${this.plugin.host_list_regex.join('|')})$`, 'i');
@@ -72,7 +72,7 @@ exports.in_host_regex = {
 
 exports.hook_mail = {
     setUp : _set_up,
-    'null sender' : function (test) {
+    'null sender' (test) {
         test.expect(2);
         function next (rc, msg) {
             test.equal(undefined, rc);
@@ -82,7 +82,7 @@ exports.hook_mail = {
         this.connection.relaying=true;
         this.plugin.hook_mail(next, this.connection, [new Address('<>')]);
     },
-    'miss' : function (test) {
+    'miss' (test) {
         test.expect(3);
         const next = function (rc, msg) {
             test.equal(undefined, rc);
@@ -94,7 +94,7 @@ exports.hook_mail = {
         this.plugin.host_list = { 'miss.com': true };
         this.plugin.hook_mail(next, this.connection, [new Address('<user@example.com>')]);
     },
-    'hit' : function (test) {
+    'hit' (test) {
         test.expect(3);
         const next = function (rc, msg) {
             test.equal(undefined, rc);
@@ -107,7 +107,7 @@ exports.hook_mail = {
         this.plugin.host_list = { 'example.com': true };
         this.plugin.hook_mail(next, this.connection, [new Address('<user@example.com>')]);
     },
-    'hit, regex, exact' : function (test) {
+    'hit, regex, exact' (test) {
         test.expect(3);
         const next = function (rc, msg) {
             test.equal(undefined, rc);
@@ -121,7 +121,7 @@ exports.hook_mail = {
         this.plugin.hl_re = new RegExp (`^(?:${this.plugin.host_list_regex.join('|')})$`, 'i');
         this.plugin.hook_mail(next, this.connection, [new Address('<user@example.com>')]);
     },
-    'hit, regex, pattern' : function (test) {
+    'hit, regex, pattern' (test) {
         test.expect(3);
         const next = function (rc, msg) {
             test.equal(undefined, rc);
@@ -139,7 +139,7 @@ exports.hook_mail = {
 
 exports.hook_rcpt = {
     setUp : _set_up,
-    'missing txn' : function (test) {
+    'missing txn' (test) {
         test.expect(1);
         // sometimes txn goes away, make sure it's handled
         function next (rc, msg) {
@@ -151,7 +151,7 @@ exports.hook_rcpt = {
         test.ok(true);
         test.done();
     },
-    'hit list' : function (test) {
+    'hit list' (test) {
         test.expect(2);
         function next (rc, msg) {
             test.equal(OK, rc);
@@ -161,7 +161,7 @@ exports.hook_rcpt = {
         this.plugin.host_list = { 'test.com': true };
         this.plugin.hook_rcpt(next, this.connection, [new Address('test@test.com')]);
     },
-    'miss list' : function (test) {
+    'miss list' (test) {
         test.expect(2);
         function next (rc, msg) {
             test.equal(undefined, rc);
@@ -171,7 +171,7 @@ exports.hook_rcpt = {
         this.plugin.host_list = { 'miss.com': true };
         this.plugin.hook_rcpt(next, this.connection, [new Address('test@test.com')]);
     },
-    'hit regex, exact' : function (test) {
+    'hit regex, exact' (test) {
         test.expect(2);
         function next (rc, msg) {
             test.equal(OK, rc);
@@ -182,7 +182,7 @@ exports.hook_rcpt = {
         this.plugin.hl_re = new RegExp (`^(?:${this.plugin.host_list_regex.join('|')})$`, 'i');
         this.plugin.hook_rcpt(next, this.connection, [new Address('test@test.com')]);
     },
-    'hit regex, pattern' : function (test) {
+    'hit regex, pattern' (test) {
         test.expect(2);
         function next (rc, msg) {
             test.equal(OK, rc);
@@ -193,7 +193,7 @@ exports.hook_rcpt = {
         this.plugin.hl_re = new RegExp (`^(?:${this.plugin.host_list_regex.join('|')})$`, 'i');
         this.plugin.hook_rcpt(next, this.connection, [new Address('test@test.com')]);
     },
-    'miss regex, pattern' : function (test) {
+    'miss regex, pattern' (test) {
         test.expect(2);
         function next (rc, msg) {
             test.equal(undefined, rc);
@@ -204,7 +204,7 @@ exports.hook_rcpt = {
         this.plugin.hl_re = new RegExp (`^(?:${this.plugin.host_list_regex.join('|')})$`, 'i');
         this.plugin.hook_rcpt(next, this.connection, [new Address('test@test.com')]);
     },
-    'rcpt miss, relaying to local sender' : function (test) {
+    'rcpt miss, relaying to local sender' (test) {
         test.expect(2);
         function next (rc, msg) {
             test.equal(OK, rc);

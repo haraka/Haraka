@@ -203,11 +203,11 @@ class SMTPClient extends events.EventEmitter {
     }
 
     send_command (command, data) {
-        const line = (command === 'dot') ? '.' : command + (data ? (' ' + data) : '');
+        const line = (command === 'dot') ? '.' : command + (data ? (` ${data}`) : '');
         this.emit('client_protocol', line);
         this.command = command.toLowerCase();
         this.response = [];
-        this.socket.write(line + "\r\n");
+        this.socket.write(`${line}\r\n`);
     }
 
     start_data (data) {
@@ -264,14 +264,14 @@ class SMTPClient extends events.EventEmitter {
         const this_logger = logger;
 
         this.socket.upgrade(tls_options, (verified, verifyError, cert, cipher) => {
-            this_logger.loginfo('secured:' +
-                ((cipher) ? ` cipher=${cipher.name} version=${cipher.version}` : '') +
-                    ` verified=${verified}` +
-                    ((verifyError) ? ` error="${verifyError}"` : '') +
-                    ((cert && cert.subject) ? ` cn="${cert.subject.CN}" organization="${cert.subject.O}"` : '') +
-                    ((cert && cert.issuer) ? ` issuer="${cert.issuer.O}"` : '') +
-                    ((cert && cert.valid_to) ? ` expires="${cert.valid_to}"` : '') +
-                    ((cert && cert.fingerprint) ? ` fingerprint=${cert.fingerprint}` : ''));
+            this_logger.loginfo(`secured:${
+                (cipher) ? ` cipher=${cipher.name} version=${cipher.version}` : ''
+            } verified=${verified}${
+                (verifyError) ? ` error="${verifyError}"` : ''
+            }${(cert && cert.subject) ? ` cn="${cert.subject.CN}" organization="${cert.subject.O}"` : ''
+            }${(cert && cert.issuer) ? ` issuer="${cert.issuer.O}"` : ''
+            }${(cert && cert.valid_to) ? ` expires="${cert.valid_to}"` : ''
+            }${(cert && cert.fingerprint) ? ` fingerprint=${cert.fingerprint}` : ''}`);
         });
     }
 
@@ -321,7 +321,7 @@ exports.get_pool = (server, port, host, cfg) => {
         idleTimeoutMillis: (pool_timeout - 1) * 1000,
         log: (str, level) => {
             level = (level === 'verbose') ? 'debug' : level;
-            logger['log' + level](`[smtp_client_pool] [${name}] ${str}`);
+            logger[`log${level}`](`[smtp_client_pool] [${name}] ${str}`);
         }
     });
 
@@ -473,7 +473,7 @@ exports.get_client_plugin = (plugin, connection, c, callback) => {
                     }
                     logger.logdebug(`[smtp_client_pool] uuid=${smtp_client.uuid} authenticating as "${c.auth.user}"`);
                     smtp_client.send_command('AUTH',
-                        `PLAIN ${utils.base64(c.auth.user + "\0" + c.auth.user + "\0" + c.auth.pass)}`);
+                        `PLAIN ${utils.base64(`${c.auth.user}\0${c.auth.user}\0${c.auth.pass}`)}`);
                     break;
                 case 'cram-md5':
                     throw new Error("Not implemented");

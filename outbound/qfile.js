@@ -1,7 +1,7 @@
 'use strict';
 
 const os = require('os');
-const platform_dot = ((['win32','win64'].includes(process.platform)) ? '' : '__tmp__') + '.';
+const platform_dot = `${(['win32','win64'].includes(process.platform)) ? '' : '__tmp__'}.`;
 
 let QFILECOUNTER = 0;
 
@@ -15,7 +15,7 @@ const _qfile = module.exports = {
             .replace(/_/g,  '\\137');
     },
 
-    name : function (overrides) {
+    name (overrides) {
         const o = overrides || {};
         const time = _qfile.time();
         return [

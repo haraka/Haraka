@@ -29,7 +29,7 @@ exports.hook_rcpt = function (next, connection, params) {
         return next();
     }
 
-    connection.logdebug(plugin, "Checking if " + rcpt + " host is in host_list");
+    connection.logdebug(plugin, `Checking if ${rcpt} host is in host_list`);
 
     const domain = rcpt.host.toLowerCase();
 

@@ -30,7 +30,7 @@ class MessageStream extends Stream {
         this.fd = null;
         this.open_pending = false;
         this.spool_dir = cfg.main.spool_dir || '/tmp';
-        this.filename = this.spool_dir + '/' + id + '.eml';
+        this.filename = `${this.spool_dir}/${id}.eml`;
         this.write_pending = false;
 
         this.readable = true;
@@ -268,23 +268,24 @@ class MessageStream extends Stream {
             // Don't output headers if they where sent already
             if (this.headers_done && !this.headers_found_eoh) {
                 // Allow \r\n or \n here...
-                if ((line.length === 2 && line[0] === 0x0d && line[1] === 0x0a) ||
-                    (line.length === 1 && line[0] === 0x0a))
-                {
+                if (
+                    (line.length === 2 && line[0] === 0x0d && line[1] === 0x0a) ||
+                    (line.length === 1 && line[0] === 0x0a)
+                ) {
                     this.headers_found_eoh = true;
                 }
                 continue;
             }
             // Remove dot-stuffing if required
             if (!this.dot_stuffing && line.length >= 4 &&
-                line[0] === 0x2e && line[1] === 0x2e)
-            {
+                line[0] === 0x2e && line[1] === 0x2e
+            ) {
                 line = line.slice(1);
             }
             // We store lines in native CRLF format; so strip CR if requested
             if (this.line_endings === '\n' && line.length >= 2 &&
-                line[line.length-1] === 0x0a && line[line.length-2] === 0x0d)
-            {
+                line[line.length-1] === 0x0a && line[line.length-2] === 0x0d
+            ) {
                 // We copy the line to a new buffer before modifying the copy
                 line = Buffer.from(line);
                 line[line.length-2] = 0x0a;
@@ -302,7 +303,7 @@ class MessageStream extends Stream {
         const self = this;
         // End dot required?
         if (this.ending_dot) {
-            this.read_ce.fill('.' + this.line_endings);
+            this.read_ce.fill(`.${this.line_endings}`);
         }
         // Tell the chunk emitter to send whatever is left
         // We don't close the fd here so we can re-use it later.
@@ -328,7 +329,7 @@ class MessageStream extends Stream {
         this.line_endings = ((options && options.line_endings) ? options.line_endings : "\r\n");
         this.dot_stuffing = ((options && options.dot_stuffing) ? options.dot_stuffing : false);
         this.ending_dot   = ((options && options.ending_dot) ? options.ending_dot : false);
-        this.clamd_style  = ((options && options.clamd_style) ? true : false);
+        this.clamd_style  = (!!((options && options.clamd_style)));
         this.buffer_size  = ((options && options.buffer_size) ? options.buffer_size : 1024 * 64);
         this.start        = ((options && parseInt(options.start)) ? parseInt(options.start) : 0);
         // Reset

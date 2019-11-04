@@ -14,7 +14,7 @@ const mkdirp  = require('mkdirp');
 const utils   = require('haraka-utils');
 const sprintf = require('sprintf-js').sprintf;
 const base = path.join(__dirname, '..');
-const ver  = JSON.parse(fs.readFileSync(base+'/package.json', 'utf8')).version;
+const ver  = JSON.parse(fs.readFileSync(`${base}/package.json`, 'utf8')).version;
 const knownOpts = {
     "version":     Boolean,
     "verbose":     Boolean,
@@ -90,23 +90,23 @@ function listPlugins (b, dir) {
 
     if (!dir) { dir = "plugins/"; }
 
-    let plist = dir + "\n";
+    let plist = `${dir}\n`;
     const subdirs = [];
     const gl = path.join((b ? b : base), dir);
     const pd = fs.readdirSync(gl);
 
     pd.forEach(function (p) {
-        const stat = fs.statSync(gl + '/' + p);
+        const stat = fs.statSync(`${gl}/${p}`);
         if (stat.isFile() && ~p.search('.js')) {
-            plist += "\t" + p.replace('.js', '') + "\n";
+            plist += `\t${p.replace('.js', '')}\n`;
         }
         else if (stat.isDirectory()) {
-            subdirs.push(dir + p + "/");
+            subdirs.push(`${dir + p}/`);
         }
     });
 
     subdirs.forEach(function (s) {
-        plist += "\n" + listPlugins(b, s);
+        plist += `\n${listPlugins(b, s)}`;
     });
 
     return plist;
@@ -115,16 +115,16 @@ function listPlugins (b, dir) {
 
 // Show message when create
 function create (dirPath) {
-    console.log('\x1b[32mcreate\x1b[0m: ' + dirPath);
+    console.log(`\x1b[32mcreate\x1b[0m: ${dirPath}`);
 }
 
 // Warning messsage
 function warning (msg) {
-    console.error('\x1b[31mwarning\x1b[0m: ' + msg);
+    console.error(`\x1b[31mwarning\x1b[0m: ${msg}`);
 }
 
 function fail (msg) {
-    console.error('\x1b[31merror\x1b[0m: ' + msg);
+    console.error(`\x1b[31merror\x1b[0m: ${msg}`);
     process.exit(-1);
 }
 
@@ -286,7 +286,7 @@ const plugin_doc = [
 function createFile (filePath, data, info) {
     try {
         if (fs.existsSync(filePath) && !parsed.force) {
-            throw filePath + " already exists";
+            throw `${filePath} already exists`;
         }
         mkDir(path.dirname(filePath));
         const fd = fs.openSync(filePath, 'w');
@@ -294,7 +294,7 @@ function createFile (filePath, data, info) {
         fs.writeSync(fd, output, null);
     }
     catch (e) {
-        warning("Unable to create file: " + e);
+        warning(`Unable to create file: ${e}`);
     }
 }
 
@@ -303,12 +303,12 @@ let logger;
 let outbound;
 let plugins;
 if (parsed.version) {
-    console.log("\033[32;40mHaraka.js\033[0m — Version: " + ver);
+    console.log(`\x1B[32;40mHaraka.js\x1B[0m — Version: ${ver}`);
 }
 else if (parsed.list) {
-    console.log("\033[32;40m*global\033[0m\n" + listPlugins());
+    console.log(`\x1B[32;40m*global\x1B[0m\n${ listPlugins() }`);
     if (parsed.configs) {
-        console.log("\033[32;40m*local\033[0m\n" + listPlugins(parsed.configs));
+        console.log(`\x1B[32;40m*local\x1B[0m\n${ listPlugins(parsed.configs) }`);
     }
 }
 else if (parsed.help) {
@@ -318,14 +318,14 @@ else if (parsed.help) {
     else {
         let md_path;
         const md_paths = [
-            path.join(base, 'docs', parsed.help + '.md'),
-            path.join(base, 'docs', 'plugins', parsed.help + '.md'),
-            path.join(base, 'docs', 'deprecated', parsed.help + '.md'),
-            path.join(base, 'node_modules', 'haraka-plugin-' + parsed.help, 'README.md'),
+            path.join(base, 'docs', `${parsed.help}.md`),
+            path.join(base, 'docs', 'plugins', `${parsed.help}.md`),
+            path.join(base, 'docs', 'deprecated', `${parsed.help}.md`),
+            path.join(base, 'node_modules', `haraka-plugin-${parsed.help}`, 'README.md'),
         ];
         if (parsed.configs) {
-            md_paths.unshift(path.join(parsed.configs, 'docs', 'plugins', parsed.help + '.md'));
-            md_paths.unshift(path.join(parsed.configs, 'docs', parsed.help + '.md'));
+            md_paths.unshift(path.join(parsed.configs, 'docs', 'plugins', `${parsed.help}.md`));
+            md_paths.unshift(path.join(parsed.configs, 'docs', `${parsed.help}.md`));
         }
         for (let i=0, j=md_paths.length; i<j; i++) {
             const _md_path = md_paths[i];
@@ -335,7 +335,7 @@ else if (parsed.help) {
             }
         }
         if (!md_path) {
-            warning("No documentation found for: " + parsed.help);
+            warning(`No documentation found for: ${parsed.help}`);
             process.exit();
         }
         let pager = 'less';
@@ -353,18 +353,18 @@ else if (parsed.help) {
     }
 }
 else if (parsed.configs && parsed.plugin) {
-    const js_path = path.join(parsed.configs, 'plugins', parsed.plugin + '.js');
+    const js_path = path.join(parsed.configs, 'plugins', `${parsed.plugin}.js`);
     createFile(js_path,
         plugin_src, { plugin: parsed.plugin, config: parsed.configs });
 
-    const doc_path = path.join(parsed.configs, 'docs', 'plugins', parsed.plugin + '.md');
+    const doc_path = path.join(parsed.configs, 'docs', 'plugins', `${parsed.plugin}.md`);
     createFile(doc_path,
         plugin_doc, { plugin: parsed.plugin, config: parsed.configs });
 
-    console.log("Plugin " + parsed.plugin + " created");
-    console.log("Now edit javascript in:    " + js_path);
-    console.log("Add the plugin to config:  " + path.join(parsed.configs, 'config', 'plugins'));
-    console.log("And edit documentation in: " + doc_path);
+    console.log(`Plugin ${parsed.plugin} created`);
+    console.log(`Now edit javascript in:    ${js_path}`);
+    console.log(`Add the plugin to config:  ${path.join(parsed.configs, 'config', 'plugins')}`);
+    console.log(`And edit documentation in: ${doc_path}`);
 }
 else if (parsed.qlist) {
     if (!parsed.configs) {
@@ -412,7 +412,7 @@ else if (parsed.qunstick) {
         send_internal_command('flushQueue', cb);
     }
     else {
-        send_internal_command('flushQueue ' + domain, cb);
+        send_internal_command(`flushQueue ${domain}`, cb);
     }
 }
 else if (parsed.graceful) {
@@ -450,7 +450,7 @@ else if (parsed.order) {
     }
     catch (e) {
         process.env.NODE_PATH = process.env.NODE_PATH ?
-            (process.env.NODE_PATH + ':' + path.join(process.env.HARAKA, 'node_modules'))
+            (`${process.env.NODE_PATH}:${path.join(process.env.HARAKA, 'node_modules')}`)
             :
             (path.join(process.env.HARAKA, 'node_modules'));
         require('module')._initPaths(); // Horrible hack
@@ -464,7 +464,7 @@ else if (parsed.order) {
     const hooks = Object.keys(plugins.registered_hooks);
     for (let h = 0; h < hooks.length; h++) {
         const hook = hooks[h];
-        console.log(sprintf('%\'--80s', 'Hook: ' + hook + ' '));
+        console.log(sprintf('%\'--80s', `Hook: ${hook} `));
         console.log(sprintf('%-35s %-35s %-4s %-3s', 'Plugin', 'Method', 'Prio', 'T/O'));
         console.log(sprintf("%'-80s",''));
         for (let p=0; p<plugins.registered_hooks[hook].length; p++) {
@@ -485,7 +485,7 @@ else if (parsed.test) {
     }
     catch (e) {
         process.env.NODE_PATH = process.env.NODE_PATH ?
-            (process.env.NODE_PATH + ':' + path.join(process.env.HARAKA, 'node_modules'))
+            (`${process.env.NODE_PATH}:${path.join(process.env.HARAKA, 'node_modules')}`)
             :
             (path.join(process.env.HARAKA, 'node_modules'));
         require('module')._initPaths(); // Horrible hack
@@ -516,17 +516,17 @@ else if (parsed.test) {
     const client = {
         remoteAddress: ((parsed.ip) ? parsed.ip : '1.2.3.4'),
         remotePort: 1234,
-        destroy: function () {},
-        on: function (event, done) {},
-        end: function () {
+        destroy () {},
+        on (event, done) {},
+        end () {
             process.exit();
         },
-        write: function (buf) {},
-        resume: function () {},
-        pause: function () {},
+        write (buf) {},
+        resume () {},
+        pause () {},
     }
     const server = {
-        address: function () {
+        address () {
             return { port: 25, family: 'ipv4', address: '127.0.0.1' };
         },
         notes: new Notes(),
@@ -602,7 +602,7 @@ else if (parsed.test) {
         const args = arguments;
         // Dump MIME structure and decoded body text?
         function dump_mime_structure (body) {
-            console.log('Found MIME part ' + body.ct);
+            console.log(`Found MIME part ${body.ct}`);
             console.log(body.bodytext);
             for (let m=0,l=body.children.length; m < l; m++) {
                 dump_mime_structure(body.children[m]);
@@ -633,16 +633,16 @@ else if (parsed.configs) {
     const haraka_path = path.join(base, 'haraka.js');
 
     const base_dir = process.argv[3];
-    const err_msg = "Did you install a Haraka config? (haraka -i " + base_dir +")";
+    const err_msg = `Did you install a Haraka config? (haraka -i ${base_dir })`;
     if (!fs.existsSync(base_dir)) {
-        fail( "No such directory: " + base_dir + "\n" + err_msg );
+        fail( `No such directory: ${base_dir}\n${err_msg}` );
     }
 
     const smtp_ini_path = path.join(base_dir,'config','smtp.ini');
     const smtp_json = path.join(base_dir,'config','smtp.json');
     const smtp_yaml = path.join(base_dir,'config','smtp.yaml');
     if (!fs.existsSync(smtp_ini_path) && !fs.existsSync(smtp_json) && !fs.existsSync(smtp_yaml)) {
-        fail( "No smtp.ini at: " + smtp_ini_path + "\n" + err_msg );
+        fail( `No smtp.ini at: ${smtp_ini_path}\n${err_msg}` );
     }
 
     process.argv[1] = haraka_path;
@@ -678,7 +678,7 @@ function send_internal_command (cmd, done) {
     const sock = net.connect(hp[2], hp[1], function () {
         sock.once('data', function (data) {
             // this is the greeting. Ignore it...
-            sock.write('INTERNALCMD ' + (key ? ('key:' + key + ' ') : '') + cmd + '\r\n');
+            sock.write(`INTERNALCMD ${key ? (`key:${key} `) : ''}${cmd}\r\n`);
             sock.once('data', function (data2) {
                 console.log(data2.toString().replace(/\r?\n$/, ''));
                 sock.write('QUIT\r\n');

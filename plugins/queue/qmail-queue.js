@@ -8,7 +8,7 @@ exports.register = function () {
 
     plugin.queue_exec = plugin.config.get('qmail-queue.path') || '/var/qmail/bin/qmail-queue';
     if (!fs.existsSync(plugin.queue_exec)) {
-        throw new Error("Cannot find qmail-queue binary (" + plugin.queue_exec + ")");
+        throw new Error(`Cannot find qmail-queue binary (${plugin.queue_exec})`);
     }
 
     plugin.load_qmail_queue_ini();
@@ -47,7 +47,7 @@ exports.hook_queue = function (next, connection) {
 
     qmail_queue.on('exit', function finished (code) {
         if (code !== 0) {
-            connection.logerror(plugin, "Unable to queue message to qmail-queue: " + code);
+            connection.logerror(plugin, `Unable to queue message to qmail-queue: ${code}`);
             next();
         }
         else {
@@ -63,7 +63,8 @@ exports.hook_queue = function (next, connection) {
 
             try {
                 qmail_queue.stdout.end();
-            } catch (err) {
+            }
+            catch (err) {
                 if (err.code !== 'ENOTCONN') {
                     // Ignore ENOTCONN and re throw anything else
                     throw err

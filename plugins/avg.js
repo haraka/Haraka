@@ -63,15 +63,15 @@ exports.hook_data_post = function (next, connection) {
         }
 
         socket.send_command = function (cmd, data) {
-            const line = cmd + (data ? (' ' + data) : '');
+            const line = cmd + (data ? (` ${data}`) : '');
             connection.logprotocol(plugin, `> ${line}`);
-            this.write(line + '\r\n');
+            this.write(`${line}\r\n`);
             command = cmd.toLowerCase();
             response = [];
         };
 
         socket.on('timeout', () => {
-            const msg = (connected ? 'connection' : 'session') +  ' timed out';
+            const msg = `${connected ? 'connection' : 'session'   } timed out`;
             connection.results.add(plugin, { err: msg });
             if (!plugin.cfg.defer.timeout) return do_next();
             return do_next(DENYSOFT, 'Virus scanner timeout (AVG)');
@@ -90,7 +90,7 @@ exports.hook_data_post = function (next, connection) {
 
         socket.on('line', line => {
             const matches = smtp_regexp.exec(line);
-            connection.logprotocol(plugin, '< ' + line);
+            connection.logprotocol(plugin, `< ${line}`);
             if (!matches) {
                 connection.results.add(plugin,
                     { err: `Unrecognized response: ${line}` });

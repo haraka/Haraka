@@ -51,7 +51,7 @@ logger.levels = {
 
 for (const le in logger.levels) {
     logger.levels[`LOG${le}`] = logger.levels[le];
-    logger['LOG' + le] = logger.levels[le];
+    logger[`LOG${le}`] = logger.levels[le];
 }
 
 logger.formats = {
@@ -140,9 +140,8 @@ logger.log = (level, data, logobj) => {
     const item = { level, data, obj: logobj};
 
     // buffer until plugins are loaded
-    if (!plugins || (Array.isArray(plugins.plugin_list) &&
-                     !plugins.plugin_list.length))
-    {
+    const emptyPluginList = !plugins || Array.isArray(plugins.plugin_list) && !plugins.plugin_list.length;
+    if (emptyPluginList) {
         logger.deferred_logs.push(item);
         return true;
     }
@@ -259,7 +258,7 @@ logger.log_if_level = (level, key, plugin) => function () {
         if (data instanceof connection.Connection) {
             logobj.uuid = data.uuid;
             if (data.tran_count > 0) {
-                logobj.uuid += "." + data.tran_count;
+                logobj.uuid += `.${data.tran_count}`;
             }
         }
         else if (data instanceof plugins.Plugin) {
@@ -280,18 +279,14 @@ logger.log_if_level = (level, key, plugin) => function () {
             }
         }
         else if (
-            logger.format === logger.formats.LOGFMT &&
-                data.constructor === Object
-        ) {
+            logger.format === logger.formats.LOGFMT && data.constructor === Object) {
             logobj = Object.assign(logobj, data);
         }
-        else if (typeof data === 'object' && data.hasOwnProperty('uuid')) {
+        else if (typeof data === 'object' && Object.prototype.hasOwnProperty.call(data, "uuid")) {
             logobj.uuid = data.uuid;
         }
         else if (data.constructor === Object) {
-            if (!logobj.message.endsWith(' ')) {
-                logobj.message += ' ';
-            }
+            if (!logobj.message.endsWith(' ')) logobj.message += ' ';
             logobj.message += (stringify(data));
         }
         else {
@@ -319,9 +314,9 @@ logger.add_log_methods = (object, plugin) => {
     if (!object) return;
     if (typeof(object) !== 'object') return;
     for (const level in logger.levels) {
-        const fname = 'log' + level.toLowerCase();
+        const fname = `log${level.toLowerCase()}`;
         if (object[fname]) continue;  // already added
-        object[fname] = logger.log_if_level(level, 'LOG'+level, plugin);
+        object[fname] = logger.log_if_level(level, `LOG${level}`, plugin);
     }
 }
 

@@ -46,7 +46,7 @@ exports.plugin = {
     }
 }
 
-const toPath = path.join('config', piName + '.timeout');
+const toPath = path.join('config', `${piName  }.timeout`);
 
 const toVals = [ '0', '3', '60', 'apple'];
 function getVal () {
@@ -54,7 +54,7 @@ function getVal () {
 }
 
 exports.get_timeout = {
-    setUp : function (done) {
+    setUp (done) {
         process.env.WITHOUT_CONFIG_CACHE=true;
         this.to = getVal();
         const self = this;
@@ -67,22 +67,22 @@ exports.get_timeout = {
         delete process.env.WITHOUT_CONFIG_CACHE;
         fs.unlink(toPath, done);
     },
-    '0s' : function (test) {
+    '0s' (test) {
         test.expect(1);
         test.equal( this.plugin.timeout, this.to );
         test.done();
     },
-    '3s' : function (test) {
+    '3s' (test) {
         test.expect(1);
         test.equal( this.plugin.timeout, this.to );
         test.done();
     },
-    '60s' : function (test) {
+    '60s' (test) {
         test.expect(1);
         test.equal( this.plugin.timeout, this.to );
         test.done();
     },
-    '30s default (overrides NaN apple)' : function (test) {
+    '30s default (overrides NaN apple)' (test) {
         test.expect(1);
         test.equal( this.plugin.timeout, 30 );
         test.done();

@@ -3,8 +3,13 @@
   "name": "Haraka",
   "license": "MIT",
   "description": "An SMTP Server project.",
-  "keywords": [ "haraka", "smtp", "server", "email" ],
-  "version": "2.8.24",
+  "keywords": [
+    "haraka",
+    "smtp",
+    "server",
+    "email"
+  ],
+  "version": "2.8.25",
   "homepage": "http://haraka.github.io",
   "repository": {
     "type": "git",
@@ -12,19 +17,19 @@
   },
   "main": "haraka.js",
   "engines": {
-    "node": ">= v6.14.4"
+    "node": ">= v8.15.1"
   },
   "dependencies": {
     "address-rfc2821"       : "^1.1.1",
     "address-rfc2822"       : "^2.0.0",
-    "async"                 : "~2.6.0",
+    "async"                 : "~3.1.0",
     "daemon"                : "~1.1.0",
     "generic-pool"          : "~2.5.0",
     "iconv"                 : "~2.3.0",
     "ipaddr.js"             : "~1.9.0",
     "nopt"                  : "~4.0.1",
     "npid"                  : "~0.4.0",
-    "semver"                : "~6.0.0",
+    "semver"                : "~6.3.0",
     "sprintf-js"            : "~1.1.0",
     "haraka-config"         : ">=1.0.15",
     "haraka-constants"      : ">=1.0.5",
@@ -63,12 +68,12 @@
   "devDependencies": {
     "nodeunit"              : "*",
     "haraka-test-fixtures"  : ">=1.0.27",
-    "eslint"                : ">=3",
+    "eslint"                : ">=4",
     "eslint-plugin-haraka"  : "*",
-    "nodemailer"            : "*"
+    "nodemailer"            : "6.2.1"
   },
   "bugs": {
-    "mail": "helpme@gmail.com",
+    "mail": "haraka.mail@gmail.com",
     "url": "https://github.com/haraka/Haraka/issues"
   },
   "greenkeeper": {
@@ -86,6 +91,6 @@
     "test": "node run_tests",
     "lint": "node node_modules/.bin/eslint *.js outbound/*.js plugins/*.js plugins/*/*.js tests/*.js tests/*/*.js tests/*/*/*.js bin/haraka bin/spf bin/dkimverify",
     "lintfix": "node node_modules/.bin/eslint --fix *.js outbound/*.js plugins/*.js plugins/*/*.js tests/*.js tests/*/*.js tests/*/*/*.js bin/haraka bin/spf bin/dkimverify",
-    "cover": "NODE_ENV=cov node node_modules/.bin/istanbul cov run_tests"
+    "cover": "NODE_ENV=cov node_modules/.bin/nyc --reporter=lcovonly npm run test"
   }
 }

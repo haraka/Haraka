@@ -1,4 +1,55 @@
 
+## NEXT - 20YY-MM-DD
+
+### Changes
+
+* lint: add 'prefer-template'
+* restore TLS version info, set correctly #2723
+
+### New features
+
+### Fixes
+
+
+## 2.8.25 - 2019-10-11
+
+### Changes
+
+* conn: remove TLS version from header #2648
+* Actually enforce using key for INTERNALCMD #2643
+* trans: assign conditions to named vars #2638
+* drop node.js v6 support #2632
+* conn: use is_local instead of localhost addr tests #2627
+* spamassassin: spamassassin: strip useless WS from tests #2624
+* es6: many updates #2615, #2674, #2680
+* systemctl: update service definition #2612
+* lint: bracket style to match newer eslint:recommended #2680
+* lint: use object shorthands (eslint:recommended) #2680
+* logger: use safer Object.prototype.hasOwnProperty #2680
+* outbound: permit # char in SMTP status code response #2689
+* dkim_sign: improve docs, add tests, es6 updates #2649
+* dkim_sign: restore default key signing feature #2649
+* tmp module: update to latest #2614
+* semver: update to latest #2616, #2651
+* async: update to latest #2653, #2664
+* repo cleanup: replaced deprecated plugins with list #2681
+* spf: es6 patterns, results.pass, test improvements, es6 patterns #2700
+
+### New features
+
+* spf: add config option to fail on NONE #2644
+
+### Fixes
+
+* mailheader: fully quality header name in _remove_more #2647
+* haraka: Connection.createConnection is not a constructor #2618
+* problems with japanese characters in body and part header #2675
+* toobusy: fix hook name (connect_pre -> connect) #2672
+* outbound: watch for socket timeouts #2687
+* outbound: permit # char prefix in SMTP status code response #2691
+* mailheader: strip whitespace between encoded-words #2702
+
+
 ## 2.8.24 - Mar 12, 2019
 
 ### Changes
@@ -224,7 +275,6 @@
     * npm packaged plugins:
         * plugins/rcpt_to.ldap -> haraka-plugin-rcpt-ldap #2144
         * plugins/auth/auth_ldap -> haraka-plugin-auth-ldap #2144
-        * plugins/graph -> haraka-plugin-graph #2185
         * plugins/graph -> haraka-plugin-graph #2185
     * config: replace ./config.js with haraka-config #2119
     * Replace concatenated strings with template literals (#2129) in:

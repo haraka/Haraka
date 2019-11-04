@@ -22,7 +22,7 @@ function _set_up (done) {
 
 exports.hook_capabilities = {
     setUp : _set_up,
-    'no TLS': function (test) {
+    'no TLS' (test) {
         const cb = function (rc, msg) {
             test.expect(3);
             test.equal(undefined, rc);
@@ -32,7 +32,7 @@ exports.hook_capabilities = {
         }.bind(this);
         this.plugin.hook_capabilities(cb, this.connection);
     },
-    'with TLS': function (test) {
+    'with TLS' (test) {
         const cb = function (rc, msg) {
             test.expect(3);
             test.equal(undefined, rc);
@@ -45,7 +45,7 @@ exports.hook_capabilities = {
         this.connection.capabilities=[];
         this.plugin.hook_capabilities(cb, this.connection);
     },
-    'with TLS, sysadmin': function (test) {
+    'with TLS, sysadmin' (test) {
         const cb = function (rc, msg) {
             test.expect(3);
             test.equal(undefined, rc);
@@ -62,7 +62,7 @@ exports.hook_capabilities = {
 
 exports.get_vpopmaild_socket = {
     setUp : _set_up,
-    'any': function (test) {
+    'any' (test) {
         test.expect(1);
         const socket = this.plugin.get_vpopmaild_socket('foo@localhost.com');
         // console.log(socket);
@@ -74,7 +74,7 @@ exports.get_vpopmaild_socket = {
 
 exports.get_plain_passwd = {
     setUp : _set_up,
-    'matt@example.com': function (test) {
+    'matt@example.com' (test) {
         function cb (pass) {
             test.expect(1);
             test.ok(pass);

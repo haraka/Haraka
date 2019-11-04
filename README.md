@@ -57,6 +57,8 @@ Plugins are provided for running mail through [SpamAssassin][9], validating
 Haraka requires [node.js][1] to run. Install Haraka with [npm][2]:
 
 ```sh
+# If the second command gives "nobody" errors, uncomment & run the next command
+# npm -g config set user root
 npm install -g Haraka
 ```
 

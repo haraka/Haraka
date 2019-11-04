@@ -35,7 +35,7 @@ exports.hook_data_post = function (next, connection) {
     // Check sender is in list
     const sender = connection.transaction.mail_from.address();
     if (!utils.in_array(sender, senders)) {
-        return next(DENY, "You are not allowed to block mail, " + sender);
+        return next(DENY, `You are not allowed to block mail, ${sender}`);
     }
 
     // Now extract the "From" from the body...
@@ -45,17 +45,17 @@ exports.hook_data_post = function (next, connection) {
         return next();
     }
 
-    connection.loginfo(this, "Blocking new sender: " + to_block);
+    connection.loginfo(this, `Blocking new sender: ${to_block}`);
 
     connection.transaction.notes.block_me = 1;
 
     // add to mail_from.blocklist
     fs.open('./config/mail_from.blocklist', 'a', (err, fd) => {
         if (err) {
-            connection.logerror(self, "Unable to append to mail_from.blocklist: " + err);
+            connection.logerror(self, `Unable to append to mail_from.blocklist: ${err}`);
             return;
         }
-        fs.write(fd, to_block + "\n", null, 'UTF-8', (err2, written) => {
+        fs.write(fd, `${to_block}\n`, null, 'UTF-8', (err2, written) => {
             fs.close(fd);
         });
     });
