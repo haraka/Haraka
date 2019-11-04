@@ -295,7 +295,7 @@ exports.send_trans_email = function (transaction, next) {
 exports.timeout_occurred = function (transaction) {
     const self = this;
     logger.loginfo(`[outbound] Outbound timeout occurred on transaction ${transaction.uuid}`);
-    for (let qfile of transaction.qfiles) {
+    for (const qfile of transaction.qfiles) {
         if (!qfile) continue;
         logger.logerror(`[outbound] Cleaning up qfile: ${qfile}`);
         fs.unlink(qfile, err => logger.logerror(`[outbound] Error removing qfile: ${err}`));
