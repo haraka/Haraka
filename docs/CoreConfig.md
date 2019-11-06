@@ -140,3 +140,7 @@ The list of plugins to load
   Defaults to 1000. There's a potential denial of service in large numbers of
   MIME parts in carefully crafted emails. If this limit is too low for some
   reason you can increase it by setting a value in this file.
+
+* connection\_close\_message
+  
+  Defaults to `closing connection. Have a jolly good day.` can be overrridden with custom text
