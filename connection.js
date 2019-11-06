@@ -102,6 +102,7 @@ class Connection {
         this.tran_count = 0;
         this.capabilities = null;
         this.ehlo_hello_message = config.get('ehlo_hello_message') || 'Haraka is at your service.'
+        this.connection_close_message = config.get('connection_close_message') || 'closing connection. Have a jolly good day.'
         this.banner_includes_uuid = !!config.get('banner_includes_uuid');
         this.deny_includes_uuid = config.get('deny_includes_uuid') || null;
         this.early_talker = false;
@@ -925,7 +926,7 @@ class Connection {
     }
     quit_respond (retval, msg) {
         const self = this;
-        this.respond(221, msg || `${this.local.host} closing connection. Have a jolly good day.`, () => {
+        this.respond(221, msg || `${this.local.host} ${this.connection_close_message}`, () => {
             self.disconnect();
         });
     }
