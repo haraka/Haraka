@@ -8,6 +8,8 @@
 
 ### New features
 
+* connection_close_message: added ability to override close connection message replacing `closing connection. Have a jolly good day.`
+
 ### Fixes
 
 * TLS: don't abort loading certs in config/tls dir when an error is encountered.
