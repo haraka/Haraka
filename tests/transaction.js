@@ -100,7 +100,45 @@ exports.transaction = {
                 test.done();
             });
         });
-    }
+    },
+
+    'bannering with nested mime structure' (test) {
+        test.expect(4);
+
+        this.transaction.set_banner('TEXT_BANNER', 'HTML_BANNER');
+        [
+            'Content-Type: multipart/mixed; boundary="TOP_LEVEL"',
+            '',
+            '--TOP_LEVEL',
+            'Content-Type: multipart/alternative; boundary="INNER_LEVEL"',
+            '',
+            '--INNER_LEVEL',
+            'Content-Type: text/plain; charset=us-ascii',
+            '',
+            'Hello, this is a text part',
+            '--INNER_LEVEL',
+            'Content-Type: text/html; charset=us-ascii',
+            '',
+            '<p>This is an html part</p>',
+            '--INNER_LEVEL--',
+            '--TOP_LEVEL--',
+        ].forEach(line => {
+            this.transaction.add_data(`${line}\r\n`);
+        });
+        this.transaction.end_data(() => {
+            this.transaction.message_stream.get_data(body => {
+                test.ok(/Hello, this is a text part/.test(body.toString()),
+                    "text content comes through in final message");
+                test.ok(/This is an html part/.test(body.toString()),
+                    "html content comes through in final message");
+                test.ok(/TEXT_BANNER/.test(body.toString()),
+                    "text banner comes through in final message");
+                test.ok(/HTML_BANNER/.test(body.toString()),
+                    "html banner comes through in final message");
+                test.done();
+            });
+        });
+    },
 }
 
 function write_file_data_to_transaction (test_transaction, filename) {
