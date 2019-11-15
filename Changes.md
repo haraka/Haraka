@@ -5,6 +5,7 @@
 
 * lint: add 'prefer-template'
 * restore TLS version info, set correctly #2723
+* fix broken bannering on nested mime parts #2736
 
 ### New features
 
