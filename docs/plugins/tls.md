@@ -105,7 +105,7 @@ Specifies minimum allowable TLS protocol version to use. Example:
 
      minVersion=TLSv1.1 
 
-If not set Haraka will use by default node's tls.DEFAULT_MIN_VERSION constant.
+If unset, the default is node's tls.DEFAULT_MIN_VERSION constant.
 
 (**Node.js 11.4+ required**, for older instances you can use *secureProtocol* settings)
 
