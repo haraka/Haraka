@@ -293,7 +293,7 @@ exports.applySocketOpts = name => {
     // https://nodejs.org/api/tls.html#tls_tls_createsecurecontext_options
     const createSecureContextOptions = [
         'key', 'cert', 'dhparam',
-        'pfx', 'passphrase', 'ca', 'crl', 'ciphers', 'honorCipherOrder',
+        'pfx', 'passphrase', 'ca', 'crl', 'ciphers', 'minVersion', 'honorCipherOrder',
         'ecdhCurve', 'secureProtocol', 'secureOptions', 'sessionIdContext'
     ];
 

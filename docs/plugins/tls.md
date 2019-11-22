@@ -97,7 +97,17 @@ A list of allowable ciphers to use. Example:
 
     ciphers=EECDH+AESGCM:EDH+aRSA+AESGCM:EECDH+AES256:EDH+aRSA+AES256:EECDH+AES128:EDH+aRSA+AES128:RSA+AES:RSA+3DES
 
-See also: [Strong SSL Ciphers](http://cipherli.st) and the [SSLlabs Test Page](https://www.ssllabs.com/ssltest/index.html)
+See also: [Mozilla SSL configuration generator](https://ssl-config.mozilla.org/) and the [SSLlabs Test Page](https://www.ssllabs.com/ssltest/index.html)
+
+### minVersion
+
+Specifies minimum allowable TLS protocol version to use. Example:
+
+     minVersion=TLSv1.1 
+
+If unset, the default is node's tls.DEFAULT_MIN_VERSION constant.
+
+(**Node.js 11.4+ required**, for older instances you can use *secureProtocol* settings)
 
 ### honorCipherOrder
 

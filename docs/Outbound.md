@@ -43,7 +43,7 @@ plugin uses, along with other values in `tls.ini`. See the [tls plugin
 docs](http://haraka.github.io/manual/plugins/tls.html) for information on generating those
 files.
 
-Within `tls.ini` you can specify global options for the values `ciphers`,
+Within `tls.ini` you can specify global options for the values `ciphers`, `minVersion`,
 `requestCert` and `rejectUnauthorized`, alternatively you can provide
 separate values by putting them under a key: `[outbound]`, such as:
 
