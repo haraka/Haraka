@@ -17,7 +17,7 @@
   },
   "main": "haraka.js",
   "engines": {
-    "node": ">= v8.15.1"
+    "node": ">= v10.17.0"
   },
   "dependencies": {
     "address-rfc2821"       : "^1.1.1",
@@ -68,7 +68,7 @@
   "devDependencies": {
     "nodeunit"              : "*",
     "haraka-test-fixtures"  : ">=1.0.27",
-    "eslint"                : ">=4",
+    "eslint"                : ">=6",
     "eslint-plugin-haraka"  : "*",
     "nodemailer"            : "6.2.1"
   },

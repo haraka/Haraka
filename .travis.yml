@@ -5,16 +5,16 @@ node_js:
 #   - 0.10      # no longer maintained by node.js (2016-10-31)
 #   - 0.12      # maint. ended 2016-12-31
 #   - 4         # maint. ended 2018-04
-#   - "6"       # maint. ends  2019-04
-    - "8"       # maint. ends  2020-01
-    - "10"      # active until 2020-04
-#   - "11"      # LTS to 2019-06
+#   - "6"       # maint. ended 2019-04
+#   - "8"       # maint. ends  2019-12
+    - "10"      # active to 2020-04, maint ends 2021-04
     - "12"      # current to 2019-10, LTS to 2022-04
+    - "13"      # current to 2020-04
 
 matrix:
   fast_finish: true
   allow_failures:
-#   - node_js: "8"
+    - node_js: "13"
 
 services:
     - redis-server
