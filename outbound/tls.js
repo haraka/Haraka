@@ -6,7 +6,7 @@ const config       = require('haraka-config');
 const hkredis      = require('haraka-plugin-redis');
 
 const inheritable_opts = [
-    'key', 'cert', 'ciphers', 'dhparam',
+    'key', 'cert', 'ciphers', 'minVersion', 'dhparam',
     'requestCert', 'honorCipherOrder', 'rejectUnauthorized'
 ];
 
