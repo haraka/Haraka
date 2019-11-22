@@ -3,7 +3,13 @@ env:
   node: true
 
 parserOptions:
-  ecmaVersion: 8
+  #ecmaVersion: 2015 (6)
+  #ecmaVersion: 2016 (7) (node 6)
+  #ecmaVersion: 2017 (8) (node 8)
+  ecmaVersion: 2017
+  #ecmaVersion: 2018 (9) (node 10)
+  #ecmaVersion: 2019 (10) (node 12)
+  #ecmaVersion: 2020 (11) (node 14)
 
 plugins:
   - haraka
