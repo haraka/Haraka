@@ -46,7 +46,23 @@ exports.log = {
         test.equal(1, this.logger.deferred_logs.length);
         test.done();
     },
-    'log in logfmt w/deffered' (test) {
+    'log in logfmt w/deferred' (test) {
+        test.expect(1);
+        this.logger.plugins = { plugin_list: true };
+        this.logger.deferred_logs.push( { level: 'INFO', data: 'log test info'} );
+        test.ok(this.logger.log('INFO', 'another test info'));
+        test.done();
+    },
+    'log in json' (test) {
+        this.logger.deferred_logs = [];
+        test.expect(3);
+        this.logger.format = this.logger.formats.JSON;
+        test.equal(0, this.logger.deferred_logs.length);
+        test.ok(this.logger.log('WARN','test warning'));
+        test.equal(1, this.logger.deferred_logs.length);
+        test.done();
+    },
+    'log in json w/deferred' (test) {
         test.expect(1);
         this.logger.plugins = { plugin_list: true };
         this.logger.deferred_logs.push( { level: 'INFO', data: 'log test info'} );
@@ -81,6 +97,13 @@ exports.set_format = {
         this.logger.format = '';
         this.logger.set_format('LOGFMT');
         test.equal(this.logger.format, this.logger.formats.LOGFMT);
+        test.done();
+    },
+    'set format to JSON' (test) {
+        test.expect(1);
+        this.logger.format = '';
+        this.logger.set_format('JSON');
+        test.equal(this.logger.format, this.logger.formats.JSON);
         test.done();
     },
     'set format to DEFAULT if empty' (test) {

@@ -55,15 +55,35 @@ This is implemented by testing for argument type in
 the logger.js log\* method. objects-as-arguments are then sniffed
 to try to determine if they're a connection or plugin instance.
 
-The logfmt format is also supported and can be enabled by changing the format
-from `default` to `logfmt` in the `config/log.ini` file which will
-start logging in the following format below.
+### Log formats
+
+Apart from the default log format described above, Haraka also supports logging
+as [`logfmt`](https://brandur.org/logfmt) and JSON. These can be used by
+changing the `format` attribute in `log.ini` to the desired format, e.g.:
+
+```ini
+; format=default
+; format=json
+format=logfmt
+```
+
+Here's an example of a log line generated with `logfmt`:
 
     level=PROTOCOL uuid=9FF7F70E-5D57-435A-AAD9-EA069B6159D9.1 source=core message="S: 354 go ahead, make my day"
 
-Any objects you pass through will also be appeneded to the log line as
-key=value and will look like this:
+And the same line formatted as JSON:
+
+```json
+{"level":"PROTOCOL","uuid":"9FF7F70E-5D57-435A-AAD9-EA069B6159D9.1","source":"core","message":"S: 354 go ahead, make my day"}
+```
+
+Any objects passed to the log methods will also have their properties included
+in the log line. For example, using `logfmt`:
 
     level=NOTICE uuid=9FF7F70E-5D57-435A-AAD9-EA069B6159D9.1 source=core message=disconnect ip=127.0.0.1 rdns=Unknown helo=3h2dnz8a0if relay=N early=N esmtp=N tls=N pipe=N errors=0 txns=1 rcpts=1/0/0 msgs=1/0/0 bytes=222 lr="" time=0.052
 
-You can find out more about logfmt here: [https://brandur.org/logfmt](https://brandur.org/logfmt)
+And using JSON:
+
+```json
+{"level":"NOTICE","uuid":"9FF7F70E-5D57-435A-AAD9-EA069B6159D9.1","source":"core","message":"disconnect","ip":"127.0.0.1","rdns":"Unknown","helo":"3h2dnz8a0if","relay":"N","early":"N","esmtp":"N","tls":"N","pipe":"N","errors":0,"txns":1,"rcpts":"1/0/0","msgs":"1/0/0","bytes":222,"lr":"","time":0.052}
+```
