@@ -1,7 +1,7 @@
 #
 # systemd service file for Haraka
 #
-# Ensure that `daemonize` in `smpt.ini` is set to `false` (which is the default value).
+# Ensure that `daemonize` in `smtp.ini` is set to `false` (which is the default value).
 #
 # Put this file in /etc/systemd/system,  modify the paths to suit, then run:
 # sudo systemctl enable haraka
