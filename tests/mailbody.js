@@ -36,8 +36,8 @@ function _fill_body (body, quote) {
     let html = body.parse_more("--abcdef--\n");
     body.parse_end();
 
-    text = text.replace(/--abcdef\n$/, '').trim();
-    html = html.replace(/--abcdef--\n$/, '').trim();
+    text = text.toString().replace(/--abcdef\n$/, '').trim();
+    html = html.toString().replace(/--abcdef--\n$/, '').trim();
 
     return [text, html];
 }
@@ -60,8 +60,8 @@ function _fill_empty_body (body) {
     let html = body.parse_more("--abcdef--\n");
     body.parse_end();
 
-    text = text.replace(/--abcdef\n$/, '').trim();
-    html = html.replace(/--abcdef--\n$/, '').trim();
+    text = text.toString().replace(/--abcdef\n$/, '').trim();
+    html = html.toString().replace(/--abcdef--\n$/, '').trim();
 
     return [text, html];
 }
@@ -79,13 +79,13 @@ exports.basic = {
 
     'correct mime parsing (#2548)': test => {
         const tests = [
-            ['utf-8', '8-bit', "Grüße, Buß\n", "Grüße, Buß\n"],
-            ['utf-8', 'quoted-printable', "Gr=C3=BC=C3=9Fe, Bu=C3=9F\n", "Grüße, Buß\n"],
-            ['utf-8', 'base64', "R3LDvMOfZSwgQnXDnw==\n", "Grüße, Buß"],
-            ['iso-8859-2', '8-bit', "\x50\xF8\x69\x68\x6C\x61\xB9\x6F\x76\x61\x63\xED\x20\xFA\x64\x61\x6A\x65\x0A", "Přihlašovací údaje\n"],
-            ['iso-8859-2', 'quoted-printable', "P=F8ihla=B9ovac=ED =FAdaje\n", "Přihlašovací údaje\n"],
-            ['iso-8859-2', 'base64', "UPhpaGxhuW92YWPtIPpkYWplCgo=\n", "Přihlašovací údaje\n\n"],
-            ['utf-8', '8-bit', "どうぞ宜しくお願い申し上げます", "どうぞ宜しくお願い申し上げます"]
+            ['utf-8', '8-bit', Buffer.from("Grüße, Buß\n"), Buffer.from("Grüße, Buß\n")],
+            ['utf-8', 'quoted-printable', Buffer.from("Gr=C3=BC=C3=9Fe, Bu=C3=9F\n"), Buffer.from("Grüße, Buß\n")],
+            ['utf-8', 'base64', Buffer.from("R3LDvMOfZSwgQnXDnw==\n"), Buffer.from("Grüße, Buß")],
+            ['iso-8859-2', '8-bit', Buffer.from([0x50,0xF8,0x69,0x68,0x6C,0x61,0xB9,0x6F,0x76,0x61,0x63,0xED,0x20,0xFA,0x64,0x61,0x6A,0x65,0x0A]), Buffer.from("Přihlašovací údaje\n")],
+            ['iso-8859-2', 'quoted-printable', Buffer.from("P=F8ihla=B9ovac=ED =FAdaje\n"), Buffer.from("Přihlašovací údaje\n")],
+            ['iso-8859-2', 'base64', Buffer.from("UPhpaGxhuW92YWPtIPpkYWplCgo=\n"), Buffer.from("Přihlašovací údaje\n\n")],
+            ['utf-8', '8-bit', Buffer.from("どうぞ宜しくお願い申し上げます"), Buffer.from("どうぞ宜しくお願い申し上げます")]
         ];
 
         test.expect(tests.length);
@@ -265,7 +265,7 @@ exports.filters = {
         lines.push(body.parse_end());
 
         // Ignore blank lines.
-        lines = lines.filter(l => l.trim());
+        lines = lines.filter(l => l.toString().trim());
 
         let dupe = false;
         let line;
