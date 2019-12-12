@@ -29,7 +29,7 @@ queued for outbound delivery.
 
 * [Join the mailing list][8] (implemented as a Haraka plugin)
 * Join us on IRC at `#haraka` on [freenode][14]
-* [GitHub Issues](https://github.com/haraka/Haraka/issues)
+* [GitHub Issues][15]
 
 
 ### Screencast
@@ -129,9 +129,9 @@ Finally run Haraka:
 
 ### License and Author
 
-Haraka is MIT licensed - see the LICENSE file for details.
+Haraka is MIT licensed - see the [LICENSE][16] file for details.
 
-Haraka is a project started by Matt Sergeant, a 10 year veteran of the email
+Haraka is a project started by [Matt Sergeant][17], a 10 year veteran of the email
 and anti-spam world. Previous projects have been the project leader for
 SpamAssassin and a hacker on [Qpsmtpd][13].
 
@@ -148,7 +148,10 @@ SpamAssassin and a hacker on [Qpsmtpd][13].
 [11]: https://haraka.github.io/manual/plugins/dnsbl.html
 [12]: https://github.com/haraka/Haraka/tree/master/plugins
 [13]: https://github.com/smtpd/qpsmtpd/
-[14]: https://freenode.net/irc_servers.shtml
+[14]: https://webchat.freenode.net/
+[15]: https://github.com/haraka/Haraka/issues
+[16]: https://github.com/haraka/Haraka/blob/master/LICENSE
+[17]: https://github.com/baudehlo
 
 [ci-img]: https://travis-ci.org/haraka/Haraka.svg?branch=master
 [ci-url]: https://travis-ci.org/haraka/Haraka
