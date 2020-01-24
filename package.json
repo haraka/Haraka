@@ -39,7 +39,7 @@
     "haraka-results"        : "^2.0.0",
     "haraka-tld"            : "*",
     "haraka-utils"          : "*",
-    "mkdirp"                : "~0.5.1",
+    "mkdirp"                : "~1.0.0",
     "openssl-wrapper"       : "^0.3.4"
   },
   "optionalDependencies": {
