@@ -62,7 +62,7 @@
     "haraka-plugin-syslog"  : "*",
     "haraka-plugin-watch"   : "*",
     "ocsp"                  : "~1.2.0",
-    "redis"                 : "~2.8.0",
+    "redis"                 : "~3.0.0",
     "tmp"                   : "~0.1.0"
   },
   "devDependencies": {
