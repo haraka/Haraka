@@ -72,13 +72,10 @@ exports.get_base_dir = function () {
 exports.init_quarantine_dir = function (done) {
     const plugin = this;
     const tmp_dir = path.join(plugin.get_base_dir(), 'tmp');
-    mkdirp(tmp_dir, err => {
-        if (err) {
-            plugin.logerror(`Unable to create ${tmp_dir}`);
-        }
-        plugin.loginfo(`created ${tmp_dir}`);
-        done();
-    });
+    mkdirp(tmp_dir)
+        .then(made => plugin.loginfo(`created ${tmp_dir}`))
+        .catch(err => plugin.logerror(`Unable to create ${tmp_dir}`))
+        .finally(done);
 }
 
 exports.quarantine = function (next, connection) {
