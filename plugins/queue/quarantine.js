@@ -108,38 +108,38 @@ exports.quarantine = function (next, connection) {
     // successful we hardlink the file to the final destination and then
     // remove the temporary file to guarantee a complete file in the
     // final destination.
-    mkdirp(msg_dir, error => {
-        if (error) {
+    mkdirp(msg_dir)
+        .catch(err => { 
             connection.logerror(plugin, `Error creating directory: ${msg_dir}`);
-            return next();
-        }
+            next();
+        })
+        .then(ok => {
+            const ws = fs.createWriteStream(tmp_path);
 
-        const ws = fs.createWriteStream(tmp_path);
-
-        ws.on('error', err => {
-            connection.logerror(plugin, `Error writing quarantine file: ${err.message}`);
-            return next();
-        });
-        ws.on('close', () => {
-            fs.link(tmp_path, msg_path, err => {
-                if (err) {
-                    connection.logerror(plugin, `Error writing quarantine file: ${err}`);
-                }
-                else {
-                    // Add a note to where we stored the message
-                    txn.notes.quarantined = msg_path;
-                    txn.results.add(plugin, { pass: msg_path, emit: true });
-                    // Now delete the temporary file
-                    fs.unlink(tmp_path, () => {});
-                }
-                // Using notes.quarantine_action to decide what to do after the message is quarantined.
-                // Format can be either action = [ code, msg ] or action = code
-                const action = (connection.notes.quarantine_action || txn.notes.quarantine_action);
-                if (!action) return next();
-                if (Array.isArray(action)) return next(action[0], action[1]);
-                return next(action);
+            ws.on('error', err => {
+                connection.logerror(plugin, `Error writing quarantine file: ${err.message}`);
+                return next();
             });
-        });
-        txn.message_stream.pipe(ws, { line_endings: '\n' });
-    });
+            ws.on('close', () => {
+                fs.link(tmp_path, msg_path, err => {
+                    if (err) {
+                        connection.logerror(plugin, `Error writing quarantine file: ${err}`);
+                    }
+                    else {
+                        // Add a note to where we stored the message
+                        txn.notes.quarantined = msg_path;
+                        txn.results.add(plugin, { pass: msg_path, emit: true });
+                        // Now delete the temporary file
+                        fs.unlink(tmp_path, () => {});
+                    }
+                    // Using notes.quarantine_action to decide what to do after the message is quarantined.
+                    // Format can be either action = [ code, msg ] or action = code
+                    const action = (connection.notes.quarantine_action || txn.notes.quarantine_action);
+                    if (!action) return next();
+                    if (Array.isArray(action)) return next(action[0], action[1]);
+                    return next(action);
+                });
+            });
+            txn.message_stream.pipe(ws, { line_endings: '\n' });   
+        }); 
 }
